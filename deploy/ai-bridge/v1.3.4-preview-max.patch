@@ -1,0 +1,44 @@
+--- a/coinalyze_ai_bridge/config.py	2026-07-07 20:09:14.649261817 -0600
++++ b/coinalyze_ai_bridge/config.py	2026-08-04 12:36:10.586484175 -0600
+@@ -105,6 +105,7 @@
+     telegram_message_chunk_delay_seconds: float
+     telegram_preview_single_delivery: bool
+     telegram_preview_document_if_large: bool
++    telegram_preview_profile: str
+ 
+     analysis_interval_seconds: int
+     min_send_interval_seconds: int
+@@ -188,6 +189,9 @@
+             telegram_preview_document_if_large=_bool_env(
+                 "TELEGRAM_PREVIEW_DOCUMENT_IF_LARGE", True
+             ),
++            # /preview no gasta tokens de OpenAI: su salida se pega a mano en una IA web,
++            # asi que pide el perfil completo del dashboard (historico diario incluido).
++            telegram_preview_profile=_env("TELEGRAM_PREVIEW_PROFILE", "max").strip() or "max",
+             analysis_interval_seconds=_int_env("ANALYSIS_INTERVAL_SECONDS", 300),
+             min_send_interval_seconds=_int_env("MIN_SEND_INTERVAL_SECONDS", 240),
+             send_mode=mode,  # type: ignore[arg-type]
+--- a/coinalyze_ai_bridge/scheduler.py	2026-07-17 23:24:10.000000000 -0600
++++ b/coinalyze_ai_bridge/scheduler.py	2026-08-04 12:36:10.586829185 -0600
+@@ -389,7 +389,8 @@
+             f"Recibido. Generando preview sin OpenAI: {symbol_text}. La salida se publicará en {output_chat_id}",
+         )
+         try:
+-            payload = await self._collect_market_payload(symbols, profile_name="default")
++            profile = self.settings.telegram_preview_profile
++            payload = await self._collect_market_payload(symbols, profile_name=profile)
+             text = build_preview_text(payload)
+         except Exception as exc:
+             LOG.exception("manual_preview_failed")
+@@ -413,8 +414,9 @@
+                     filename=filename,
+                     content=build_preview_json(payload, pretty=True),
+                     caption=(
+-                        "PREVIEW completo para ChatGPT. No se consumieron tokens de OpenAI. "
+-                        "Se envía como un solo JSON porque excede el límite de texto de Telegram."
++                        f"PREVIEW completo (perfil {profile}) para pegar en una IA web. "
++                        "No se consumieron tokens de OpenAI. Se envía como un solo JSON "
++                        "porque excede el límite de texto de Telegram."
+                     ),
+                 )
+         else:

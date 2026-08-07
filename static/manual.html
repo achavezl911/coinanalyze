@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual de interpretación — Dashboard Coinalyze</title>
+<link rel="stylesheet" href="/static/manual.css">
+<style>
+nav.toc{margin:24px 0 8px;padding:16px 20px;background:var(--panel);border:1px solid var(--line);border-radius:8px;}
+nav.toc ul{margin:6px 0 0;padding-left:18px;columns:2;font-size:13px;}
+nav.toc a{color:var(--green);text-decoration:none;}
+h2{scroll-margin-top:70px;} h3{scroll-margin-top:70px;}
+</style></head><body>
+<header><span>Manual de interpretación · Dashboard Coinalyze</span><a href="/">← Volver al dashboard</a></header>
+<main>
+<nav class="toc"><strong>Contenido</strong><ul><li><a href="#parte-i-el-marco-mental">Parte I — El marco mental</a></li>
+<li><a href="#parte-ii-indicadores-de-fondo-mediano-plazo">Parte II — Indicadores de fondo (mediano plazo)</a></li>
+<li><a href="#parte-iii-paneles-de-estructura-y-contexto">Parte III — Paneles de estructura y contexto</a></li>
+<li><a href="#parte-iv-microestructura-y-ejecucion-scalping">Parte IV — Microestructura y ejecución (scalping)</a></li>
+<li><a href="#parte-v-como-se-relacionan-mapa-de-dependencias">Parte V — Cómo se relacionan (mapa de dependencias)</a></li>
+<li><a href="#parte-vi-lecturas-combinadas-setups">Parte VI — Lecturas combinadas (setups)</a></li>
+<li><a href="#parte-vii-alertas-automaticas-de-telegram">Parte VII — Alertas automáticas de Telegram</a></li>
+<li><a href="#parte-viii-rutina-de-lectura-sugerida">Parte VIII — Rutina de lectura sugerida</a></li>
+<li><a href="#parte-ix-errores-de-interpretacion-a-evitar">Parte IX — Errores de interpretación a evitar</a></li></ul></nav>
+<h1>Manual de interpretación — Dashboard Coinalyze</h1>
+<p>Guía económica de cada dato del dashboard y cómo leerlos <strong>en conjunto</strong> para anticipar movimientos. Nivel: operador de perpetuos con marco de microestructura. No enseña a operar de cero: explica qué mide cada panel, cómo interpretarlo y por qué.</p>
+<blockquote><strong>Advertencia de uso.</strong> Todo lo aquí descrito es lectura de microestructura, no señal mecánica de entrada. El dashboard mide <strong>presión y posicionamiento, no predice precio</strong>. Las combinaciones sugeridas son sesgos probabilísticos, no garantías. El tamaño, el stop y la invalidación son responsabilidad del operador y no los cubre esta herramienta.</blockquote>
+<blockquote><strong>Corrección v1.3.5.</strong> Este manual conserva secciones históricas de v1.2.1. El diferencial spot−futuros <strong>no demuestra acumulación ni distribución</strong>: las patas tienen distinta escala y el histórico de futuros es Binance frente a spot Binance+Bybit. Usa el CVD spot para el flujo de fondo y el panel <strong>CVD 90 sesiones</strong> para operaciones de dos sesiones. Whale casi siempre está vacío y ya no entra en los setups diarios. Esta corrección prevalece sobre cualquier descripción antigua del Diff que aparezca abajo.</blockquote>
+<blockquote><strong>Flujo de lectura v1.3.7.</strong> Empieza en <strong>Resumen</strong> y lee los tres horizontes por separado. “Esperar” significa que falta confirmación, no que el algoritmo esté roto. Usa Liquidez para ejecutar 1–15m, Contexto/CVD90 para dos sesiones y Estructura + Memoria 2 años para días–semanas. Una señal intradía no invalida por sí sola una tesis de largo plazo.</blockquote>
+<hr>
+<h2 id="parte-i-el-marco-mental">Parte I — El marco mental</h2>
+<p>El dashboard responde una pregunta central: <strong>¿quién está empujando el precio y con qué convicción?</strong> Separa el flujo en dos mundos y los contrasta:</p>
+<ul>
+<li><strong>Spot</strong>: dinero "real" que compra/vende el activo. Refleja convicción de mediano plazo (acumulación/distribución de manos fuertes).</li>
+<li><strong>Futuros/perpetuos</strong>: dinero apalancado, especulativo, que puede mover precio sin respaldo de spot. Refleja posicionamiento de corto plazo y sentimiento.</li>
+</ul>
+<p><strong>La tesis operativa:</strong> compara el CVD spot con la respuesta del precio en una escala histórica común. Si el precio avanza pero el percentil de flujo spot queda muy rezagado, falta confirmación de demanda; si el spot supera ampliamente al precio, puede existir presión aún no reflejada. El panel CVD 90 sesiones hace esta comparación sin restar magnitudes incompatibles.</p>
+<p>Todo lo demás en este manual es cómo medir esa divergencia y confirmarla con posicionamiento (OI, funding), presión forzada (liquidaciones), estructura de precio y contexto histórico.</p>
+<h3>Memoria de mercado de dos años</h3>
+<p><strong>Qué mide:</strong> clasifica el régimen actual mediante retorno de 5/20 días, posición y drawdown dentro del rango de 60 días, volatilidad y volumen relativo. Busca cinco episodios históricos similares, separados entre sí, y muestra lo que ocurrió 5/10/20 días después.</p>
+<p><strong>Cómo leerla:</strong> sirve para responder “¿se parece este entorno a otros vistos antes?” y ampliar barreras/estructura. No es una probabilidad ni reemplaza la confirmación actual. El histórico compacto proviene del OHLCV diario de futuros Binance vía Coinalyze; no contiene CVD spot de dos años. El CVD90 conserva su ventana propia porque su operación objetivo dura dos sesiones.</p>
+<hr>
+<h2 id="parte-ii-indicadores-de-fondo-mediano-plazo">Parte II — Indicadores de fondo (mediano plazo)</h2>
+<h3 id="1-cvd-de-futuros">1. CVD de futuros</h3>
+<p><strong>Qué mide:</strong> el volumen neto direccional de los perpetuos, en USD. Suma de (compras a mercado − ventas a mercado). Subiendo = los agresores compran; bajando = los agresores venden.</p>
+<p><strong>Cómo leerlo:</strong> la <strong>pendiente</strong> importa más que el nivel absoluto. CVD de futuros subiendo con precio subiendo = tendencia alcista con respaldo de flujo apalancado. CVD subiendo pero precio plano = compras absorbidas (alguien vende pasivo contra esas compras; señal de techo potencial).</p>
+<h3 id="2-cvd-de-spot">2. CVD de spot</h3>
+<p><strong>Qué mide:</strong> lo mismo pero para el mercado spot (Binance + Bybit combinados, en USD). Es el flujo de dinero "real".</p>
+<p><strong>Cómo leerlo:</strong> es tu lectura de convicción de fondo. Spot CVD subiendo sostenidamente = acumulación real; bajando = distribución real. Más lento y más significativo que el de futuros.</p>
+<h3 id="3-cvd-diferencial-el-indicador-central">3. CVD diferencial — comparación de magnitud</h3>
+<p><strong>Qué mide:</strong> <code>CVD_spot − CVD_futuros</code>, en USD. Spot cubre Binance+Bybit y el histórico de futuros cubre Binance; además el perpetuo mueve aproximadamente diez veces más volumen.</p>
+<p><strong>Cómo leerlo:</strong> muestra qué pata domina la magnitud, pero su signo suele ser el inverso del CVD de futuros y <strong>no identifica por sí solo acumulación o distribución spot</strong>. Lee primero el signo y el percentil de <code>cvd_spot_usd</code>; usa el Diff solo para describir discrepancia relativa y siempre declara sus venues.</p>
+<h3 id="4-whale-delta-intensidad-institucional">4. Whale delta / intensidad institucional</h3>
+<p><strong>Qué mide:</strong> el desbalance de los trades grandes (institucionales) en spot. Umbral por activo: BTC ≥5M USD/trade, ETH ≥1M, SOL ≥200k. Intensidad ∈ [−1, +1].</p>
+<p><strong>Cómo leerlo:</strong></p>
+<ul>
+<li>"Acumulación agresiva" (&gt; +0.6): las ballenas compran con fuerte desbalance. Alcista de convicción.</li>
+<li>"Distribución agresiva" (&lt; −0.6): las ballenas venden agresivo. Bajista de convicción.</li>
+<li>"Acumulando/Distribuyendo" (±0.3–0.6): sesgo moderado.</li>
+<li>"Neutro" / "Sin actividad": ausencia de señal (ruido, no señal débil).</li>
+</ul>
+<p><strong>Clave:</strong> con los umbrales actuales casi ningún trade cruza el filtro; la serie diaria está vacía en la práctica. Trátalo como no disponible y no como cero ni como confirmación.</p>
+<h3 id="5-funding-rate-y-divergencia-pfr-fr">5. Funding rate y divergencia PFR-FR</h3>
+<p><strong>Qué mide el funding:</strong> el costo de mantener perpetuos. Positivo = longs pagan a shorts (mayoría apalancada larga). Negativo = shorts pagan a longs.</p>
+<p><strong>Unidad:</strong> Coinalyze ya lo entrega en puntos porcentuales: <code>0.005</code> significa <code>0.005%</code>. No debe multiplicarse por 100 al mostrarlo.</p>
+<p><strong>Cómo leerlo:</strong></p>
+<ul>
+<li>Funding <strong>muy positivo y sostenido:</strong> exceso de longs apalancados. Combustible para liquidaciones en cascada si el precio cae (presión bajista latente).</li>
+<li>Funding <strong>negativo:</strong> exceso de shorts. Potencial para short squeeze al alza.</li>
+<li>Funding <strong>cerca de cero:</strong> posicionamiento equilibrado, mercado sano.</li>
+</ul>
+<p><strong>Divergencia PFR-FR</strong> (<code>funding_predicho − funding_vigente</code>): si el predicho se opone al vigente, anticipa un cambio de presión de posiciones. Señal de adelanto.</p>
+<h3 id="6-open-interest">6. Open Interest</h3>
+<p><strong>Qué mide:</strong> el valor total de contratos abiertos (USD). Cuánto dinero apalancado está en juego.</p>
+<p><strong>Cómo leerlo — SIEMPRE cruzado con precio:</strong></p>
+<ul>
+<li><strong>OI ↑ + precio ↑:</strong> nuevo dinero entrando largo. Alcista con convicción (cuidado si el funding se dispara → sobrecalentamiento).</li>
+<li><strong>OI ↑ + precio ↓:</strong> nuevo dinero entrando corto. Bajista con convicción.</li>
+<li><strong>OI ↓ + precio ↑:</strong> shorts cerrando (squeeze/cobertura). Rally de baja calidad, no es demanda nueva.</li>
+<li><strong>OI ↓ + precio ↓:</strong> longs cerrando (capitulación). Caída por desapalancamiento.</li>
+</ul>
+<h3 id="7-liquidaciones-24h">7. Liquidaciones (24h)</h3>
+<p><strong>Qué mide:</strong> USD liquidados forzosamente, por lado. <code>ratio = long/short</code>.</p>
+<p><strong>Cómo leerlo:</strong></p>
+<ul>
+<li>ratio &lt; 1 (más shorts liquidados): presión alcista (squeezes de shorts).</li>
+<li>ratio &gt; 1 (más longs liquidados): presión bajista (cascadas de longs).</li>
+<li>Los picos de liquidaciones marcan a menudo extremos locales (clímax de capitulación o euforia).</li>
+</ul>
+<h3 id="8-buy-trade-ratio">8. Buy-trade ratio</h3>
+<p><strong>Qué mide:</strong> fracción de trades de futuros que fueron compra a mercado. Mide <strong>participación</strong> (cuánta gente compra), no volumen (cuánto se compra).</p>
+<p><strong>Cómo leerlo:</strong> ortogonal al CVD. btr alto con CVD plano = muchos compradores pequeños sin mover volumen neto. Compara ventanas (15m/1h/24h) para ver aceleración de participación.</p>
+<h3 id="9-regime-score-y-etiqueta">9. Regime score y etiqueta</h3>
+<p><strong>Qué mide:</strong> es un sintetizador legado [−100, +100] con pesos heurísticos sobre Diff, whale, OI, funding y liquidaciones. Como Diff está desbalanceado y whale casi siempre falta, <strong>no debe usarse como señal</strong>. La tarjeta principal fue sustituida por CVD 90 sesiones.</p>
+<p><strong>Cómo leerlo:</strong> es un <strong>filtro de contexto</strong>, no una señal de entrada. Ejemplos: "Continuación alcista orgánica" (alza con respaldo real, favorece longs en pullback); "Euforia / Sobreextensión bullish" (alza sobreextendida con distribución, precaución); "Distribución / Capitulación (Bearish)" (manos fuertes saliendo).</p>
+<blockquote><strong>Advertencia:</strong> los pesos del score son heurísticos y <strong>no están calibrados con backtest</strong>. Úsalo para enmarcar, no para gatillar.</blockquote>
+<h3 id="10-historico-diario-y-diff-acumulado">10. Histórico diario y CVD spot acumulado</h3>
+<p><strong>Qué mide:</strong> una fila por día con CVD spot/fut/diff, CVD spot acumulado, racha spot, % de precio, ΔOI y funding. Es tu lectura de <strong>mediano plazo</strong>.</p>
+<p><strong>Cómo leerlo:</strong></p>
+<ul>
+<li><strong>La pendiente del CVD spot acumulado</strong> muestra compra o venta spot sostenida. Hacia abajo varias semanas = oferta spot persistente aunque el precio aguante.</li>
+<li><strong>La racha</strong> (días consecutivos del mismo signo de Diff): una racha de −5/−7/−10 días es convicción que un día aislado no da.</li>
+<li><strong>Precio % cruzado con CVD spot:</strong> varios días de precio subiendo con spot vendedor = falta de confirmación de demanda. El panel CVD 90 sesiones lo expresa en percentiles comparables.</li>
+<li><strong>ΔOI por sesión:</strong> distingue distribución con OI subiendo (shorts abriendo, bajista activo) de distribución con OI bajando (longs cerrando, desapalancamiento).</li>
+</ul>
+<hr>
+<h2 id="parte-iii-paneles-de-estructura-y-contexto">Parte III — Paneles de estructura y contexto</h2>
+<p>*Estos tres paneles se agregaron después del manual v1.2.1 y amplían el horizonte del tablero del scalping puro hacia estructura y régimen.*</p>
+<h3 id="11-matriz-delta-cvd-por-ventana-15s-4h">11. Matriz delta (CVD por ventana, 15s → 4h)</h3>
+<p><strong>Qué mide:</strong> delta spot y delta de futuros en ventanas: 15s, 30s, 1m, 3m, 5m, 15m, <strong>30m, 1h y 4h</strong>. El delta de futuros mide agresión apalancada; el delta spot confirma flujo real. <code>diff = spot − fut</code>.</p>
+<p><strong>Cómo leerlo:</strong></p>
+<ul>
+<li><strong>Fut + y spot +:</strong> impulso alcista confirmado. <strong>Fut − y spot −:</strong> impulso bajista confirmado.</li>
+<li><strong>Fut fuerte, spot débil/contrario:</strong> movimiento frágil (squeeze o apalancamiento sin confirmación).</li>
+<li><strong>Diff + con fut −:</strong> los futuros venden agresivo pero el spot resiste; posible absorción de ventas.</li>
+<li><strong>Diff − con fut +:</strong> los futuros compran agresivo pero el spot no confirma; posible distribución hacia apalancados.</li>
+</ul>
+<p><strong>La secuencia importa:</strong> 15s→30s→1m define aceleración inmediata; 3m→5m→15m define continuidad intradía; <strong>30m→1h→4h es tu CVD de medio plazo</strong> — el mismo concepto de divergencia spot/fut pero en el horizonte que decide swings, no scalps. Una divergencia que persiste en 1h y 4h pesa mucho más que una de 1m.</p>
+<h3 id="12-estructura-de-mercado-micro-mid-macro">12. Estructura de mercado (micro / mid / macro)</h3>
+<p><strong>Qué mide:</strong> un bias (Alcista / Bajista / Neutral) por horizonte, con voto de mayoría de señales independientes, más la <strong>estructura de precio</strong> (patrón de pivotes HH/HL vs LH/LL):</p>
+<ul>
+<li><strong>Micro (1m–15m):</strong> CVD fut 15m, precio, skew de liquidaciones RT, pivotes 1m.</li>
+<li><strong>Mid (30m–4h):</strong> CVD 1h y 4h, confirmación de OI, skew de liquidaciones 4h, pivotes 15m.</li>
+<li><strong>Macro (1d–7d):</strong> retorno y CVD de varios días, racha, pivotes sobre cierres diarios.</li>
+</ul>
+<p><strong>Cómo leerlo:</strong></p>
+<ul>
+<li><strong>Pivotes HH/HL</strong> (máximos y mínimos ascendentes) = estructura alcista. <strong>LH/LL</strong> (descendentes) = estructura bajista. <strong>Mixta</strong> = transición, sin sesgo claro.</li>
+<li>Cada fila muestra sus componentes como chips (▲/▼/·): ves el <strong>porqué</strong> del bias, no una caja negra.</li>
+<li><strong>La alineación de las tres capas es la lectura clave.</strong> Micro, mid y macro apuntando al mismo lado = señal de continuación de alta convicción. Micro en contra de mid/macro = probable trampa o rebote corto dentro de una tendencia mayor.</li>
+</ul>
+<p><strong>Nota:</strong> las capas 1d/3d/9d dependen del histórico diario acumulado; con pocos días muestran votos parciales hasta que la base madura.</p>
+<h3 id="13-contexto-macro-percentiles-a-1-ano">13. Contexto macro (percentiles a 1 año)</h3>
+<p><strong>Qué mide:</strong> cada métrica de la sesión más reciente (CVD fut/spot/diff, OI, ΔOI, funding, retorno) expresada como su <strong>percentil dentro del último año</strong> (~364 sesiones), con una etiqueta de régimen y un contador de "tensión".</p>
+<p><strong>Cómo leerlo:</strong> convierte un número suelto en contexto histórico. "Funding 0.008" no dice mucho; <strong>"funding en percentil 95 del año → extremo alto"</strong> dice que el posicionamiento largo está tan caro como casi nunca en 12 meses — combustible de squeeze bajista.</p>
+<ul>
+<li><strong>Percentil ≥ 95 (extremo alto) o ≤ 5 (extremo bajo):</strong> régimen atípico. Suele preceder movimientos grandes o marcar agotamiento. Cada extremo suma a la "tensión".</li>
+<li><strong>80–95 / 5–20 (alto / bajo):</strong> sesgo notable pero no extremo.</li>
+<li><strong>20–80 (normal):</strong> nada destacable en esa métrica.</li>
+</ul>
+<p><strong>Uso:</strong> es el filtro de "¿en qué parte del ciclo anual estamos?". OI en máximo de 1 año + funding extremo = mercado sobrecargado y frágil. CVD spot en percentil 95 = acumulación real inusualmente fuerte. Cruza siempre el contexto macro con la estructura y el flujo: un extremo de funding solo no es señal de entrada, es aviso de que el terreno está inclinado.</p>
+<hr>
+<h2 id="parte-iv-microestructura-y-ejecucion-scalping">Parte IV — Microestructura y ejecución (scalping)</h2>
+<p>El modo scalping comprime el marco de fondo a ventanas de segundos y minutos. El <code>regime_score</code> y la estructura siguen siendo contexto; para entrada rápida usa delta, book, absorción y liquidaciones inmediatas.</p>
+<h3 id="14-futures-tape-tiempo-real">14. Futures tape (tiempo real)</h3>
+<p><strong>Qué mide:</strong> flujo de trades de futuros en vivo (Binance USD-M + Bybit Linear): volumen comprador/vendedor, delta, número de trades y volumen medio.</p>
+<p><strong>Cómo leerlo:</strong> delta fuerte con muchos trades = participación amplia, mejor continuidad. Delta fuerte con pocos trades grandes = posible institucional/sweep, necesita confirmación. Delta fuerte <strong>sin</strong> desplazamiento de precio = absorción. Delta fuerte con spread ampliándose = ejecución riesgosa, no persigas.</p>
+<h3 id="15-order-book-imbalance">15. Order book imbalance</h3>
+<p><strong>Qué mide:</strong> presión visible del libro en L1/L5/L10, spread en bps y paredes cercanas. <code>imbalance_l5 = bid / (bid + ask)</code>.</p>
+<p><strong>Cómo leerlo:</strong> imbalance &gt; 0.60 = presión inmediata alcista; &lt; 0.40 = bajista. Spread bajo = ejecución limpia; alto/cambiante = peor entrada. Pared arriba = resistencia inmediata; abajo = soporte. <strong>El book es cancelable</strong>: úsalo como presión instantánea, no como convicción estructural.</p>
+<h3 id="16-absorcion">16. Absorción</h3>
+<p><strong>Qué mide:</strong> relación entre delta de futuros y desplazamiento de precio en 1m/3m/5m/15m.</p>
+<p><strong>Cómo leerlo:</strong> delta + fuerte con precio plano/bajando = <strong>absorción de compras</strong> (bajista; los compradores no logran mover precio). Delta − fuerte con precio plano/subiendo = <strong>absorción de ventas</strong> (alcista). Delta fuerte con precio acompañando = momentum, no absorción. Vale más cerca de VWAP, high/low intradía o niveles de liquidez.</p>
+<h3 id="17-liquidaciones-en-tiempo-real-y-masivas">17. Liquidaciones en tiempo real y masivas</h3>
+<p><strong>Qué mide:</strong> liquidaciones recientes por lado. El panel combina <strong>tiempo real por WebSocket (1m/5m/15m)</strong> con <strong>histórico multi-exchange de Coinalyze (30m/1h/4h)</strong>, así que las ventanas largas nunca quedan en cero.</p>
+<p><strong>Cómo leerlo:</strong></p>
+<ul>
+<li><strong>Short liquidations aumentando:</strong> combustible alcista ya detonando. <strong>Long liquidations aumentando:</strong> combustible bajista detonando.</li>
+<li><strong>Liquidaciones fuertes + OI bajando:</strong> cierre forzado / desapalancamiento.</li>
+<li><strong>Liquidaciones fuertes + spot absorbiendo:</strong> posible clímax local y reversión.</li>
+</ul>
+<p><strong>Liquidación masiva:</strong> cuando el total de 5m supera un umbral relativo a su baseline del día, es una cascada en curso — un movimiento grande <strong>ya ocurriendo</strong>, no una predicción. Genera alerta de Telegram (ver Parte VII). Una cascada puede continuar mucho más de lo esperado; no la persigas tarde.</p>
+<h3 id="18-niveles-de-liquidacion-por-precio">18. Niveles de liquidación por precio</h3>
+<p><strong>Qué mide:</strong> liquidaciones agregadas por bucket de precio y lado — <strong>dónde</strong> se concentraron, no solo cuántas.</p>
+<p><strong>Cómo leerlo:</strong> clúster de short liquidations arriba = zona que puede actuar como imán si el precio se acerca con momentum. Clúster de long liquidations abajo = zona de estrés que puede acelerar una cascada si se rompe. No lo confundas con soporte/resistencia permanente: es liquidez forzada ya ejecutada, útil para contexto inmediato.</p>
+<h3 id="18-bis-barreras-de-precio">18 bis. Barreras de precio y esfuerzo de ruptura</h3>
+<p><strong>Qué mide:</strong> agrupa rechazos diarios y 4h en zonas. La dificultad 0–100 combina toques, reacción en ATR, volumen relativo, absorción CVD y recencia. La presión viva cruza volumen perp de 15m frente a su mediana de 36h, delta, desplazamiento y book L5.</p>
+<p><strong>Cómo leerlo:</strong> barrera fuerte con presión menor de 70 = espera rechazo; presión ≥70 + cierre 15m fuera de la zona + retest = ruptura vigilable. Volumen alto con delta contrario sugiere absorción. Una mecha sola no confirma.</p>
+<p><strong>Límite:</strong> no existe un volumen exacto observable que garantice el cruce; hay liquidez oculta y cancelaciones. El score es dificultad histórica, no probabilidad.</p>
+<h3 id="19-basis-perp-spot">19. Basis perp-spot</h3>
+<p><strong>Qué mide:</strong> diferencia entre precio de perpetuo y spot, en bps. Positivo = prima; negativo = descuento.</p>
+<p><strong>Cómo leerlo:</strong> prima creciente = más demanda/apalancamiento en perpetuos. Prima positiva + spot débil = rally frágil sostenido por futuros. Descuento creciente = presión vendedora o estrés de apalancamiento. <strong>Clave:</strong> el Diff compara flujo, el basis compara precio; cuando ambos señalan fragilidad, la lectura vale más.</p>
+<h3 id="20-vwap-y-niveles-intradia">20. VWAP y niveles intradía</h3>
+<p><strong>Qué mide:</strong> precio medio ponderado por volumen de la sesión y la distancia actual a él.</p>
+<p><strong>Cómo leerlo:</strong> precio sobre VWAP + delta comprador = longs en pullback de mayor calidad. Bajo VWAP + delta vendedor = shorts en rebote de mayor calidad. Precio lejos de VWAP = no persigas, espera pullback.</p>
+<h3 id="21-scalp-score">21. Scalp score</h3>
+<p><strong>Qué mide:</strong> sintetizador de corto plazo (delta fut 20%, divergencia spot/fut 15%, order book 20%, absorción 20%, liquidaciones 10%, OI micro 10%, VWAP 5%). Produce long_score, short_score, estado, confianza y razón.</p>
+<p><strong>Cómo leerlo:</strong> estados típicos — Long/Short Momentum, Long Pullback, Short Rejection, <strong>No Trade</strong> (información contradictoria o degradada). <strong>Uso correcto:</strong> prioriza atención, no es gatillo único. Si contradice el contexto de fondo, reduce tamaño o espera. Si <code>book_status</code> no es <code>ok</code>, trátalo como preliminar.</p>
+<h3 id="22-data-confidence">22. Data confidence</h3>
+<p><strong>Qué mide:</strong> calidad operativa de los datos por símbolo (edad de snapshots, lag de feeds, estado del book, cobertura de venues).</p>
+<p><strong>Cómo leerlo:</strong> OK = feeds frescos y libro confiable. Degraded = algún carril retrasado/parcial, reduce confianza y tamaño. Stale/Missing = no uses el componente afectado. <strong>Regla:</strong> ninguna señal de scalp se lee sin revisar antes data confidence. Un score alto con feed degradado es una alerta de infraestructura, no una ventaja.</p>
+<hr>
+<h2 id="parte-v-como-se-relacionan-mapa-de-dependencias">Parte V — Cómo se relacionan (mapa de dependencias)</h2>
+<p>Ningún indicador se lee solo. Las relaciones clave:</p>
+<ul>
+<li><strong>CVD spot ↔ Precio:</strong> el rango del flujo spot frente a la respuesta del precio revela acumulación o falta de confirmación. El panel CVD 90 sesiones formaliza esta comparación.</li>
+<li><strong>OI ↔ Precio ↔ Funding:</strong> el trío del apalancamiento. OI↑ + precio↑ + funding disparado = alza sobrecalentada y frágil.</li>
+<li><strong>Funding ↔ Liquidaciones:</strong> funding extremo predice qué lado se liquidará. Muy positivo → longs vulnerables → vigila cascada de long_liq.</li>
+<li><strong>Estructura ↔ Flujo:</strong> un giro de pivotes (HH/HL→LH/LL) confirmado por CVD spot vendedor pesa más que cualquiera solo.</li>
+<li><strong>Contexto macro ↔ todo:</strong> un extremo de percentil histórico inclina el contexto; opera a favor de la pendiente del CVD spot y de la estructura, no contra ellos.</li>
+</ul>
+<hr>
+<h2 id="parte-vi-lecturas-combinadas-setups">Parte VI — Lecturas combinadas (setups)</h2>
+<p>Sesgos probabilísticos, <strong>no señales mecánicas</strong>. Cada uno requiere confirmación de precio y gestión de riesgo propia.</p>
+<h3 id="setup-a-distribucion-encubierta-short-de-mediano-plazo">Setup A — Distribución encubierta (SHORT de mediano plazo)</h3>
+<p>CVD spot vendedor · precio lateral o subiendo · racha spot vendedora (≥3 sesiones) · acumulado spot bajista · OI subiendo con funding positivo. <strong>Lectura:</strong> la demanda spot se retira mientras el precio aguanta por apalancamiento. <strong>Invalidación:</strong> el CVD spot gira comprador o se rompe la racha.</p>
+<h3 id="setup-b-acumulacion-silenciosa-long-de-mediano-plazo">Setup B — Acumulación silenciosa (LONG de mediano plazo)</h3>
+<p>CVD spot comprador · precio lateral o débil · racha spot compradora (≥3 sesiones) · acumulado spot alcista · funding neutro/negativo y OI no acelerado. <strong>Lectura:</strong> demanda spot acumula discretamente antes de que el precio lo refleje. <strong>Invalidación:</strong> el CVD spot gira vendedor o aparece ruptura bajista con spot vendedor.</p>
+<h3 id="setup-c-squeeze-de-shorts-inminente-long-de-corto-plazo">Setup C — Squeeze de shorts inminente (LONG de corto plazo)</h3>
+<p>Funding negativo profundizando · ratio de liquidación &lt; 1 · OI alto + precio rebotando · btr subiendo. <strong>Lectura:</strong> demasiados shorts apalancados; un impulso al alza los liquida en cascada. Técnico, no por demanda de fondo. <strong>Invalidación:</strong> funding gira positivo o se pierde soporte.</p>
+<h3 id="setup-d-euforia-techo-de-corto-plazo-short-reducir-longs">Setup D — Euforia / techo de corto plazo (SHORT / reducir longs)</h3>
+<p>Funding muy positivo y sostenido · OI↑ + precio parabólico · CVD futuros disparado con CVD spot plano/cayendo · primeras long_liq. <strong>Lectura:</strong> alza por apalancamiento sin respaldo spot, vulnerable a corrección violenta. <strong>Invalidación:</strong> el CVD spot se suma y el funding se normaliza sin caída.</p>
+<h3 id="setup-e-capitulacion-suelo-de-corto-plazo-long-contrarian">Setup E — Capitulación / suelo de corto plazo (LONG contrarian)</h3>
+<p>Pico de long_liq · ratio &gt;&gt; 1 · OI desplomándose · CVD spot girando positivo · funding neutro/negativo. <strong>Lectura:</strong> el desapalancamiento forzado con demanda spot puede marcar un suelo local. Alto riesgo, requiere confirmación. <strong>Invalidación:</strong> las liquidaciones siguen sin que el spot acumule.</p>
+<hr>
+<h2 id="parte-vii-alertas-automaticas-de-telegram">Parte VII — Alertas automáticas de Telegram</h2>
+<p>El bot ya <strong>no</strong> manda alertas de scalping muy corto. Ahora avisa solo cuando puede venir un <strong>movimiento grande o un cambio de estructura</strong>, con dos disparadores deterministas (sin costo de IA; el análisis con IA sigue bajo demanda con <code>/chatgpt</code> y <code>/preview</code>):</p>
+<ul>
+<li><strong>Cambio de estructura:</strong> cuando el patrón de pivotes de un horizonte se voltea (HH/HL ↔ LH/LL) respecto al último estado avisado. Horizontes medios <strong>1h/4h/8h</strong> y largos <strong>1d/3d/9d</strong>. Es *edge-triggered*: avisa una vez por giro, no repite mientras la estructura se mantiene. Te da nivel, dirección y el patrón.</li>
+<li><strong>Liquidaciones masivas:</strong> cuando el total de liquidaciones de 5m supera su umbral relativo al baseline. Distingue <strong>cascada bajista</strong> (longs liquidados) de <strong>squeeze alcista</strong> (shorts liquidados), con el múltiplo sobre baseline.</li>
+</ul>
+<p><strong>Cómo actuar:</strong> una alerta de estructura es reactiva — la estructura ya cambió; revisa si el CVD spot y el contexto macro acompañan antes de operar. Una alerta de liquidación masiva es un evento <strong>en curso</strong>: no persigas la cascada tarde; espera absorción del spot para el contrarian, o úsala como confirmación de continuación si el OI se desploma con ella.</p>
+<blockquote>Las alertas HTF son raras por diseño. Recibir pocas y con sentido es la intención, opuesto al ruido del scalp.</blockquote>
+<hr>
+<h2 id="parte-viii-rutina-de-lectura-sugerida">Parte VIII — Rutina de lectura sugerida</h2>
+<ol>
+<li>1. <strong>Contexto anual (Contexto macro):</strong> ¿hay métricas en extremo de percentil? Define si el terreno está inclinado.</li>
+<li>2. <strong>Mediano plazo (CVD 90 sesiones + estructura macro/mid):</strong> ¿qué dice la separación spot/precio? ¿la racha spot y los pivotes confirman? Esto fija tu sesgo de fondo.</li>
+<li>3. <strong>Estado actual (snapshot + regime):</strong> ¿confirma o contradice el sesgo de fondo?</li>
+<li>4. <strong>Flujo:</strong> ¿el CVD spot confirma al precio? ¿spot y futuros divergen en ventanas frescas?</li>
+<li>5. <strong>Apalancamiento (OI + funding + liquidaciones):</strong> ¿el movimiento tiene respaldo o es frágil? ¿qué lado es vulnerable?</li>
+<li>6. <strong>Timing corto (matriz delta + book + absorción):</strong> ¿hay aceleración ahora mismo?</li>
+</ol>
+<p><strong>Regla de oro:</strong> mayor convicción cuando el corto plazo (5–6) se alinea con el CVD spot de 90 sesiones y la estructura (1–2). Cuando los pasos se contradicen, espera.</p>
+<hr>
+<h2 id="parte-ix-errores-de-interpretacion-a-evitar">Parte IX — Errores de interpretación a evitar</h2>
+<ul>
+<li><strong>Leer un indicador aislado.</strong> El Diff sin sus escalas y venues, o el OI sin el precio, engañan. Siempre combina.</li>
+<li><strong>Tratar el regime label o el scalp score como gatillo.</strong> Son contexto; los pesos no están calibrados.</li>
+<li><strong>Confundir participación (btr) con volumen (CVD).</strong> Su divergencia es información, no contradicción.</li>
+<li><strong>Ignorar el horizonte.</strong> El histórico diario (mediano) y el snapshot (ahora) responden preguntas distintas; no los mezcles.</li>
+<li><strong>Operar contra la pendiente del CVD spot acumulado</strong> sin confirmación estructural fuerte.</li>
+<li><strong>Confundir squeeze con demanda real.</strong> Un short covering sube rápido y falla igual de rápido.</li>
+<li><strong>Perseguir un movimiento tarde.</strong> Delta o liquidación fuerte *después* del desplazamiento suele ser mala entrada.</li>
+<li><strong>Operar con data confidence degradado.</strong> Un score limpio sobre feeds viejos es una trampa.</li>
+<li><strong>Olvidar que esto mide presión, no precio.</strong> La distribución puede durar semanas antes de resolverse. El dashboard dice que la presión existe, no cuándo se materializa. El timing y el riesgo son tuyos.</li>
+</ul>
+<hr>
+<p>*Este manual describe la interpretación de los datos. La instalación, arquitectura y operación del stack están documentadas por separado.*</p>
+</main></body></html>

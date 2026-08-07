@@ -1,0 +1,33 @@
+[Unit]
+Description=Coinalyze scalp realtime collector
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=coinalyze
+Group=coinalyze
+WorkingDirectory=/opt/coinalyze
+EnvironmentFile=/etc/coinalyze/coinalyze.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/coinalyze/.venv/bin/python -m app.scalp_collector
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+MemoryMax=512M
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target

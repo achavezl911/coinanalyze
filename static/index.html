@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Coinalyze Operator</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script defer src="/static/vendor/lightweight-charts-5.2.0.min.js"></script>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+  <!-- La barra usa grid-template-areas: cada bloque declara SU area, asi que anadir un
+       control no lo empuja a una columna implicita ni lo solapa con el vecino. -->
+  <header class="topbar">
+    <div class="brand tb-brand">
+      <p class="eyebrow">OPERATOR DASHBOARD</p>
+      <h1>Coinalyze</h1>
+    </div>
+
+    <div class="asset-control tb-symbol">
+      <span class="control-label">Activo</span>
+      <nav id="symbol-tabs" class="symbol-tabs" aria-label="Símbolos"></nav>
+    </div>
+
+    <div class="asset-control tb-profile">
+      <span class="control-label">Perfil</span>
+      <nav id="profile-tabs" class="symbol-tabs" aria-label="Perfil de trading">
+        <button type="button" class="active" data-profile="intradia">Intradía ≤ 4 h</button>
+        <button type="button" data-profile="swing">Swing varios días</button>
+      </nav>
+    </div>
+
+    <!-- Dirección y setup son INDEPENDIENTES: la primera dice hacia dónde mira el operador,
+         el segundo qué tiene que pasar para confirmarlo. Antes eran un solo selector y las
+         cuatro opciones "esperando …" recorrían exactamente la misma lógica. -->
+    <div class="asset-control tb-direction">
+      <span class="control-label">Dirección</span>
+      <select id="direction-select" class="hyp-select" aria-label="Dirección de la tesis">
+        <option value="long">Long</option>
+        <option value="short">Short</option>
+        <option value="neutral">Neutral</option>
+      </select>
+    </div>
+
+    <div class="asset-control tb-setup">
+      <span class="control-label">Setup</span>
+      <select id="setup-select" class="hyp-select" aria-label="Tipo de setup">
+        <option value="ninguno">Ninguno</option>
+        <option value="ruptura">Ruptura</option>
+        <option value="rechazo">Rechazo</option>
+        <option value="reversion">Reversión</option>
+        <option value="continuacion">Continuación</option>
+      </select>
+    </div>
+
+    <div class="live-strip tb-live" aria-label="Mercado en tiempo real">
+      <span id="live-price" class="live-pill">Precio —</span>
+      <span id="live-delta" class="live-pill">Δ5s —</span>
+      <span id="live-book" class="live-pill">Book —</span>
+      <span id="data-confidence" class="live-pill">Datos —</span>
+      <span id="live-sources" class="live-pill" title="Colectores sanos sobre esperados">Fuentes —</span>
+      <span id="live-latency" class="live-pill" title="Mayor latencia entre los colectores">Lat —</span>
+      <span id="live-error" class="live-pill" title="Último endpoint que falló">Sin errores</span>
+    </div>
+
+    <div class="topbar-actions tb-actions">
+      <a href="/static/manual.html">Manual</a>
+      <a href="/static/guia_uso_dashboard.pdf" target="_blank" rel="noopener">Guía</a>
+      <span class="connection-status">
+        <span id="connection-dot" class="dot"></span>
+        <span id="connection-text">Inicializando</span>
+      </span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="market-nav" aria-label="Secciones del mercado">
+      <p class="nav-title">Secciones</p>
+      <nav class="section-links">
+        <a href="#mesa" class="active" data-tab="mesa"><span>01</span>Mesa de operación</a>
+        <a href="#estructura" class="" data-tab="estructura"><span>02</span>Estructura</a>
+        <a href="#flujo" class="" data-tab="flujo"><span>03</span>Flujo</a>
+        <a href="#derivados" class="" data-tab="derivados"><span>04</span>Derivados</a>
+        <a href="#liquidez" class="" data-tab="liquidez"><span>05</span>Liquidez y ejecución</a>
+        <a href="#contexto" class="" data-tab="contexto"><span>06</span>Contexto</a>
+        <a href="#calidad" class="" data-tab="calidad"><span>07</span>Calidad de datos</a>
+        <a href="#replay" class="" data-tab="replay"><span>08</span>Replay y validación</a>
+      </nav>
+      <div class="nav-legend">
+        <p><i class="legend-dot up"></i>Presión compradora</p>
+        <p><i class="legend-dot down"></i>Presión vendedora</p>
+        <p><i class="legend-dot flat"></i>Neutral / sin confirmar</p>
+      </div>
+    </aside>
+
+    <main>
+      <section id="mesa" class="market-section">
+        <header class="section-heading">
+          <span class="section-number">01</span>
+          <div>
+            <p class="section-kicker">DECISIÓN</p>
+            <h2>Mesa de operación</h2>
+            <p>Calidad, contexto, timing y coste en una sola vista.</p>
+            <!-- El perfil no cambia ningún dato: cambia qué temporalidad se lee primero.
+                 La jerarquía activa se declara aquí y se refleja en las tablas. -->
+            <p class="profile-legend" id="profile-emphasis">
+              <span><i class="ctx"></i><b id="emphasis-contexto">—</b> contexto</span>
+              <span><i class="cnf"></i><b id="emphasis-confirmacion">—</b> confirmación</span>
+              <span><i class="ent"></i><b id="emphasis-entrada">—</b> entrada / gatillo</span>
+              <span id="emphasis-note"></span>
+            </p>
+          </div>
+          <span id="desk-asof" class="live-pill" title="Ancla temporal común del snapshot de Mesa">—</span>
+        </header>
+
+        <div class="context-grid">
+        <article class="panel hypothesis-panel" aria-labelledby="hyp-title">
+          <header>
+            <div>
+              <h3 id="hyp-title">Estado de la hipótesis</h3>
+              <span id="hyp-subtitle">—</span>
+            </div>
+            <span id="hyp-verdict" class="live-pill">—</span>
+          </header>
+          <dl id="hyp-summary" class="metric-list compact"></dl>
+          <div id="hyp-evidence" class="hyp-evidence"></div>
+          <small id="hyp-note" class="tfprofile-foot"></small>
+        </article>
+
+        <article class="panel tfprofile-panel" aria-labelledby="tfprofile-title">
+          <header>
+            <div>
+              <h3 id="tfprofile-title">Jerarquía de temporalidades</h3>
+              <span id="tfprofile-subtitle">—</span>
+            </div>
+            <span id="tfprofile-bias" class="live-pill">—</span>
+          </header>
+          <div id="tfprofile-layers" class="tfprofile-layers"></div>
+          <div id="tfprofile-contradictions" class="tfprofile-notes"></div>
+          <small id="tfprofile-footnote" class="tfprofile-foot"></small>
+        </article>
+
+          <article class="panel chart-panel overview-price">
+            <header>
+              <div><h3>Precio y estructura</h3><span id="price-context"></span></div>
+              <div class="chart-mode" aria-label="Marco de la gráfica">
+                <button id="price-mode-intraday" type="button" class="active">5m</button>
+                <button id="price-mode-wyckoff" type="button">Wyckoff 1D</button>
+              </div>
+            </header>
+            <div id="price-chart" class="chart chart-large"></div>
+          </article>
+
+        <article class="panel quick-read-panel" aria-labelledby="quick-read-title">
+          <header>
+            <div>
+              <h3 id="quick-read-title">Lectura rápida del flujo</h3>
+              <span>Qué ocurre · qué significa · qué falta</span>
+            </div>
+            <strong id="quick-read-date" class="quick-read-date">Última sesión cerrada</strong>
+          </header>
+          <div id="quick-read-body" class="quick-read-body"></div>
+        </article>
+
+          <article class="panel levels-panel">
+            <header><h3>Ejecución inmediata</h3><span>VWAP · spread · book</span></header>
+            <dl id="levels" class="metric-list compact"></dl>
+          </article>
+
+        <article class="panel decision-board" aria-labelledby="decision-title">
+          <header>
+            <div>
+              <h3 id="decision-title">Plan operativo por horizonte</h3>
+              <span>No mezcles una entrada intradía con una tesis de varias sesiones.</span>
+            </div>
+            <strong id="decision-alignment" class="decision-alignment neutral">Calculando…</strong>
+          </header>
+          <div id="decision-horizons" class="horizon-grid"></div>
+          <p class="decision-disclaimer">Las señales exigen confirmación y una invalidación definida. Son apoyo analítico, no una orden ni una garantía de resultado.</p>
+        </article>
+        </div>
+
+        <section id="summary" class="summary-grid" aria-label="Indicadores esenciales"></section>
+      </section>
+
+      <section id="estructura" class="market-section" hidden>
+        <header class="section-heading">
+          <span class="section-number">02</span>
+          <div>
+            <p class="section-kicker">UBICACIÓN</p>
+            <h2>Estructura</h2>
+            <p>Tendencia, niveles y barreras por temporalidad.</p>
+          </div>
+        </header>
+
+        <div class="context-grid">
+          <article class="panel matrix-panel structure-panel">
+            <header><h3>Estructura por capa</h3><span id="structure-align">Micro · mid · macro</span></header>
+            <div class="table-scroll"><table><thead><tr><th>Capa</th><th>Sesgo</th><th>Pivotes</th><th>Componentes</th></tr></thead><tbody id="structure-body"></tbody></table></div>
+          </article>
+
+          <article class="panel matrix-panel trend-panel">
+            <header><h3>Tendencia multi-timeframe</h3><span id="trend-sub">15m → 3D</span></header>
+            <div class="table-scroll"><table><thead><tr><th>Marco</th><th>Estructura</th><th>Flujo</th><th>OI</th><th>Momentum</th><th>Sesgo</th></tr></thead><tbody id="trend-body"></tbody></table></div>
+          </article>
+
+          <article class="panel barrier-panel">
+            <header><h3>Barreras de precio</h3><span id="barrier-sub">Soporte · resistencia · esfuerzo de ruptura</span></header>
+            <div id="barrier-map" class="barrier-map"></div>
+          </article>
+
+          <article class="panel analyzer-panel">
+            <header>
+              <div class="analyzer-tabs" role="tablist" aria-label="Analizadores de nivel">
+                <button id="analyzer-tab-zone" type="button" class="active" role="tab" aria-selected="true" aria-controls="analyzer-zone">Lectura de zona</button>
+                <button id="analyzer-tab-range" type="button" role="tab" aria-selected="false" aria-controls="analyzer-range">¿Es un rango?</button>
+                <!-- No es un modelo calibrado: es el conteo de intentos historicos que
+                     acabaron rompiendo. Llamarlo "probabilidad" exageraba la evidencia. -->
+                <button id="analyzer-tab-breakout" type="button" role="tab" aria-selected="false" aria-controls="analyzer-breakout">Frecuencia histórica de ruptura</button>
+              </div>
+              <span id="analyzer-sub">Los campos llegan precargados con lo que el panel ya detectó</span>
+            </header>
+
+            <section id="analyzer-zone" class="analyzer-pane" role="tabpanel" aria-labelledby="analyzer-tab-zone">
+              <p class="analyzer-lead" id="zone-sub">Acumulación · distribución · rotación</p>
+              <form id="zone-form" class="zone-form" autocomplete="off">
+                <label for="zone-low">Desde</label>
+                <input id="zone-low" type="number" step="any" min="0" inputmode="decimal" required>
+                <label for="zone-high">Hasta</label>
+                <input id="zone-high" type="number" step="any" min="0" inputmode="decimal" required>
+                <button type="submit">Analizar</button>
+                <span id="zone-hint" class="zone-hint">Precio en USDT. Se buscan las visitas del último año.</span>
+              </form>
+              <div id="zone-body" class="zone-body"></div>
+            </section>
+
+            <section id="analyzer-range" class="analyzer-pane" role="tabpanel" aria-labelledby="analyzer-tab-range" hidden>
+              <p class="analyzer-lead" id="range-sub">Cinco pruebas con umbral medido</p>
+              <form id="range-form" class="zone-form" autocomplete="off">
+                <label for="range-low">Suelo</label>
+                <input id="range-low" type="number" step="any" min="0" inputmode="decimal" required>
+                <label for="range-high">Techo</label>
+                <input id="range-high" type="number" step="any" min="0" inputmode="decimal" required>
+                <label for="range-start">Desde</label>
+                <input id="range-start" type="date">
+                <label for="range-end">Hasta</label>
+                <input id="range-end" type="date">
+                <button type="submit">Validar</button>
+                <span id="range-hint" class="zone-hint">Velas diarias. Sin fechas, usa las últimas 180 sesiones.</span>
+              </form>
+              <div id="range-body" class="zone-body"></div>
+            </section>
+
+            <section id="analyzer-breakout" class="analyzer-pane" role="tabpanel" aria-labelledby="analyzer-tab-breakout" hidden>
+              <p class="analyzer-lead" id="breakout-sub">Tasa base histórica, no un modelo</p>
+              <form id="breakout-form" class="zone-form" autocomplete="off">
+                <label for="breakout-level">Nivel</label>
+                <input id="breakout-level" type="number" step="any" min="0" inputmode="decimal" required>
+                <label for="breakout-direction">Dirección</label>
+                <select id="breakout-direction">
+                  <option value="up">Alcista</option>
+                  <option value="down">Bajista</option>
+                </select>
+                <button type="submit">Calcular</button>
+                <span id="breakout-hint" class="zone-hint">Frecuencia con la que intentos parecidos acabaron en ruptura sostenida.</span>
+              </form>
+              <div id="breakout-body" class="zone-body"></div>
+            </section>
+          </article>
+
+          <article class="panel wyckoff-panel">
+            <header>
+              <h3>Wyckoff automático</h3>
+              <span id="wyckoff-sub">Buscando el rango reciente…</span>
+            </header>
+            <div id="wyckoff-body" class="wyckoff-body"></div>
+          </article>
+
+          <article class="panel swing-panel">
+            <header><h3>Swing Score</h3><span id="swing-sub">Long vs short</span></header>
+            <div id="swing-body" class="swing-body"></div>
+          </article>
+
+          <article class="panel matrix-panel passive-panel">
+            <header><h3>Manos silenciosas</h3><span id="passive-sub">Reacumulación / redistribución</span></header>
+            <div class="table-scroll"><table><thead><tr><th>Horizonte</th><th>Lectura</th><th>Absorción</th><th>Flujo spot/fut</th><th>Precio</th></tr></thead><tbody id="passive-body"></tbody></table></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="flujo" class="market-section" hidden>
+        <header class="section-heading">
+          <span class="section-number">03</span>
+          <div>
+            <p class="section-kicker">OFERTA Y DEMANDA</p>
+            <h2>Flujo</h2>
+            <p>Delta, CVD y absorción por ventana.</p>
+          </div>
+        </header>
+
+        <div class="context-grid">
+          <!-- La DIFERENCIA spot−futuros no es una dirección: el perp mueve ~10× el spot, así
+               que su signo es el del CVD de futuros invertido en el 93-94 % de las sesiones.
+               La lectura direccional la dan las dos patas por separado y su cuadrante; la
+               resta queda como columna auxiliar, oculta salvo que se pida. -->
+          <article class="panel matrix-panel delta-panel">
+            <header>
+              <div><h3>Matriz de delta</h3><span>15s → 8h · cada pata por separado</span></div>
+              <label class="diff-toggle"><input type="checkbox" id="show-diff"> Ver diferencia (auditoría)</label>
+            </header>
+            <div class="table-scroll"><table><thead><tr><th>Horizonte</th><th>Cobertura</th><th>Δ spot</th><th>Δ futuros</th><th>Δ/vol spot</th><th>Δ/vol fut</th><th>Cuadrante</th><th>Vol. fut</th><th>ΔOI (5m+)</th><th class="diff-col" hidden>Diferencia</th></tr></thead><tbody id="delta-matrix"></tbody></table></div>
+            <p class="source-note" id="delta-diff-note" hidden>La diferencia resta dos mercados de escala distinta (el perp mueve ~10× el spot). No lleva color direccional y se publica solo para auditoría.</p>
+          </article>
+
+          <article class="panel chart-panel cvd-panel">
+            <header><h3>CVD spot vs futuros</h3><span>Diferencial acumulado · velas cerradas · eje UTC</span></header>
+            <div id="cvd-chart" class="chart"></div>
+            <div class="legend">
+              <span><i class="legend-line spot"></i>Spot</span>
+              <span><i class="legend-line fut"></i>Futuros</span>
+              <span><i class="legend-line diff"></i>Diferencia</span>
+            </div>
+            <!-- Recuento de huecos: la gráfica los deja VER (serie partida por tramos) y
+                 aquí se dice cuántos son y cuánto tiempo suman. -->
+            <p class="source-note" id="cvd-gaps"></p>
+          </article>
+
+          <article class="panel matrix-panel absorption-panel">
+            <header><h3>Absorción</h3><span id="absorption-sub">Delta vs precio · umbral medido por ventana</span></header>
+            <div class="table-scroll"><table><thead><tr><th>Horizonte</th><th>Δ futuros</th><th>Δ/vol</th><th>Umbral</th><th>Fuente umbral</th><th>Banda</th><th>Muestra</th><th>Precio</th><th>Estado</th></tr></thead><tbody id="absorption-matrix"></tbody></table></div>
+          </article>
+
+          <article class="panel daily-bars-panel">
+            <header><h3>Flujo por sesión</h3><span id="dailybars-sub">spot vs futuros</span></header>
+            <div id="dailybars-body" class="daily-bars"></div>
+          </article>
+
+          <article class="panel chart-panel whale-panel">
+            <!-- El tamano de una orden no identifica a quien la manda. Lo que se mide es el
+                 delta de las operaciones spot grandes, y eso es lo que se dice. -->
+            <header><h3>Operaciones spot de gran tamaño</h3><span>Delta de trades grandes · eje UTC · el tamaño no identifica al participante</span></header>
+            <div id="whale-chart" class="chart chart-compact"></div>
+            <p id="whale-note" class="panel-note" hidden></p>
+          </article>
+        </div>
+      </section>
+
+      <section id="derivados" class="market-section" hidden>
+        <header class="section-heading">
+          <span class="section-number">04</span>
+          <div>
+            <p class="section-kicker">POSICIONAMIENTO</p>
+            <h2>Derivados</h2>
+            <p>Posicionamiento en derivados: OI, funding, basis y liquidaciones.</p>
+          </div>
+        </header>
+
+        <div class="context-grid">
+          <article class="panel chart-panel oi-panel">
+            <header><h3>Open Interest</h3><span>15 min · eje UTC</span></header>
+            <div id="oi-chart" class="chart chart-compact"></div>
+            <p class="source-note" id="oi-gaps"></p>
+          </article>
+
+        <article class="panel funding-panel">
+          <header><div><h3>Funding</h3><span>Actual, acumulado y percentil</span></div></header>
+          <dl id="funding-list" class="metric-list compact"></dl>
+        </article>
+
+        <article class="panel positioning-panel">
+          <header><div><h3>Posicionamiento</h3><span>Reparto long/short de cuentas</span></div></header>
+          <dl id="positioning-list" class="metric-list compact"></dl>
+        </article>
+
+          <article class="panel basis-panel">
+            <header><h3>Basis perp-spot</h3><span>Precio y latencia</span></header>
+            <dl id="basis-details" class="metric-list compact"></dl>
+          </article>
+
+          <article class="panel matrix-panel liquidations-panel">
+            <header><h3>Liquidaciones</h3><span>Tiempo real · 1m → 4h</span></header>
+            <div class="table-scroll"><table><thead><tr><th>Horizonte</th><th>Long</th><th>Short</th><th>Ratio</th><th>Eventos</th></tr></thead><tbody id="liq-matrix"></tbody></table></div>
+          </article>
+
+          <article class="panel liq-levels-panel">
+            <header><h3>Concentración por precio</h3><span id="liq-levels-sub">Densidad ya ejecutada · últimos 60 min</span></header>
+            <div id="liq-levels-body" class="liq-profile"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="liquidez" class="market-section" hidden>
+        <header class="section-heading">
+          <span class="section-number">05</span>
+          <div>
+            <p class="section-kicker">COSTE REAL</p>
+            <h2>Liquidez y ejecución</h2>
+            <p>Libro, profundidad y coste estimado de entrar.</p>
+          </div>
+        </header>
+
+        <div class="context-grid">
+          <article class="panel matrix-panel book-panel">
+            <header><h3>Order book</h3><span>bid share = bid/(bid+ask), 0-1</span></header>
+            <div class="table-scroll"><table><thead><tr><th>Venue</th><th>Spread</th><th title="bid/(bid+ask) del mejor nivel. 0.5 = equilibrio, &gt;0.5 mas bid">L1 bid share</th><th title="bid/(bid+ask) sumando 5 niveles">L5 bid share</th><th title="bid/(bid+ask) sumando 10 niveles. En el venue combinado la profundidad se suma pero el spread es el del venue mas estrecho">L10 bid share</th><th>Muro arriba</th><th>Muro abajo</th></tr></thead><tbody id="orderbook-body"></tbody></table></div>
+          </article>
+
+        <article class="panel execution-panel">
+          <header><div><h3>Coste de ejecución</h3><span>Slippage por tamaño, por venue</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Venue</th><th>Lado</th><th>Tamaño</th><th>Precio medio</th><th>Slippage</th><th>Niveles</th><th>Estado</th></tr></thead><tbody id="execution-body"></tbody></table></div>
+        </article>
+
+        <article class="panel impact-panel">
+          <header><div><h3>Impacto de mercado</h3><span>bps por millón de delta neto</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Ventana</th><th>Impacto</th><th>Delta neto</th><th>Movimiento</th><th>Banda</th><th>Cobertura</th></tr></thead><tbody id="impact-body"></tbody></table></div>
+        </article>
+
+          <article class="panel profile-panel">
+            <header>
+              <div><h3>Perfil de volumen y delta</h3><span id="profile-sub">Dónde se negoció y de qué lado</span></div>
+              <div id="profile-windows" class="chart-mode" aria-label="Ventana del perfil">
+                <button type="button" data-interval="4hour" data-days="30">30 d</button>
+                <button type="button" data-interval="4hour" data-days="90" class="active">90 d</button>
+                <button type="button" data-interval="4hour" data-days="300">300 d</button>
+                <button type="button" data-interval="5min" data-days="9">Intradía</button>
+              </div>
+            </header>
+            <div class="profile-layout">
+              <div id="profile-chart" class="profile-chart"></div>
+              <dl id="profile-stats" class="metric-list compact"></dl>
+            </div>
+            <p id="profile-note" class="panel-note"></p>
+          </article>
+        </div>
+      </section>
+
+      <section id="contexto" class="market-section" hidden>
+        <header class="section-heading">
+          <span class="section-number">06</span>
+          <div>
+            <p class="section-kicker">HORIZONTE MAYOR</p>
+            <h2>Contexto</h2>
+            <p>Sesiones, memoria de mercado y macro externo.</p>
+          </div>
+        </header>
+
+        <div class="context-grid">
+          <article class="panel daily-panel">
+            <header>
+              <div><h3>Contexto diario NYSE</h3><span id="daily-context"></span></div>
+              <span class="warning">Lectura contextual</span>
+            </header>
+            <div id="daily-chart" class="chart chart-daily"></div>
+            <div class="table-scroll"><table><thead><tr><th>Sesión</th><th>Precio</th><th>Agresión ejecutada</th><th>Respuesta del precio</th><th>CVD spot</th><th>CVD futuros</th><th>Acum. spot</th><th>ΔOI</th><th>Funding</th></tr></thead><tbody id="daily-body"></tbody></table></div>
+            <p class="source-note" id="daily-gaps"></p>
+            <p class="source-note" id="daily-sources"></p>
+          </article>
+
+          <article class="panel memory-panel">
+            <header><h3>Memoria de mercado · 2 años</h3><span id="memory-sub">Precio, volumen y episodios comparables</span></header>
+            <div id="market-memory" class="market-memory"></div>
+          </article>
+
+          <article class="panel reading-panel">
+            <header><h3>Lectura operativa CVD 90 sesiones</h3><span id="reading-sub">2 sesiones</span></header>
+            <div id="market-reading" class="market-reading"></div>
+          </article>
+
+          <article class="panel divergence-panel">
+            <header>
+              <div><h3>Divergencias</h3><span id="divergence-sub">—</span></div>
+              <span class="warning">Precio vs CVD spot</span>
+            </header>
+            <div class="table-scroll"><table><thead><tr><th>Ventana</th><th>Precio</th><th>CVD spot acum.</th><th>Divergencia</th><th>Lectura</th></tr></thead><tbody id="divergence-body"></tbody></table></div>
+          </article>
+
+          <article class="panel matrix-panel macro-panel">
+            <header><h3>Percentiles internos</h3><span id="macro-sub">CVD · OI · funding</span></header>
+            <div class="table-scroll"><table><thead><tr><th>Métrica</th><th>Valor</th><th>Percentil</th><th>Régimen</th></tr></thead><tbody id="macro-body"></tbody></table></div>
+          </article>
+
+          <article class="panel external-macro-panel">
+            <header>
+              <div><h3>Régimen macro externo</h3><span id="external-macro-sub">Tasas · dólar · riesgo · liquidez · eventos</span></div>
+              <span id="external-macro-badge" class="warning">Actualizando</span>
+            </header>
+            <div id="external-macro-body" class="external-macro"></div>
+          </article>
+
+          <article class="panel setup-panel">
+            <header><h3>Lecturas combinadas</h3><span>Setups A–E</span></header>
+            <div id="setups" class="setup-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="calidad" class="market-section" hidden>
+        <header class="section-heading">
+          <span class="section-number">07</span>
+          <div>
+            <p class="section-kicker">INTEGRIDAD</p>
+            <h2>Calidad de datos</h2>
+            <p>Estado de cada fuente antes de leer cualquier métrica.</p>
+          </div>
+        </header>
+
+        <div class="context-grid">
+        <!-- Tres niveles SEPARADOS. Antes un solo panel titulado "Fuentes de datos" listaba
+             procesos internos: un colector vivo no es un feed, y un feed completo no
+             garantiza que la métrica que se apoya en él sea utilizable. -->
+        <article class="panel quality-panel">
+          <header><div><h3>Salud de servicios</h3><span>Procesos internos: API, ingest, WebSockets, scalp, daily y PostgreSQL</span></div><span id="quality-global" class="live-pill">—</span></header>
+          <div class="table-scroll"><table><thead><tr><th>Servicio</th><th>Estado</th><th>Último latido</th><th>Latencia</th><th>Detalle</th></tr></thead><tbody id="quality-body"></tbody></table></div>
+          <div id="quality-errors" class="tfprofile-notes"></div>
+        </article>
+
+        <article class="panel quality-panel feeds-panel">
+          <header><div><h3>Calidad de feeds</h3><span id="feeds-sub">Feeds reales de mercado: venue, mercado y tipo de dato</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Exchange</th><th>Mercado</th><th>Símbolo</th><th>Tipo de dato</th><th>Estado</th><th>Último ts</th><th>Latencia</th><th>Cobertura</th><th>Muestras</th><th>Esperadas</th><th>Hueco int.</th><th>Fuentes ausentes</th><th>Último error</th></tr></thead><tbody id="feeds-body"></tbody></table></div>
+          <small class="tfprofile-foot">La cobertura solo se calcula donde existe cadencia esperada. Los feeds de eventos (liquidaciones) no la tienen: su estado sale del latido del colector, no de la antigüedad del último evento.</small>
+        </article>
+
+        <article class="panel quality-panel metrics-quality-panel">
+          <header><div><h3>Calidad por métrica</h3><span>Estado de cada métrica publicada, no del feed que la alimenta</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Métrica</th><th>Temporalidad</th><th>Estado</th><th>Cobertura</th><th>Fuente</th><th>Latencia</th></tr></thead><tbody id="metrics-quality-body"></tbody></table></div>
+        </article>
+        </div>
+
+        <section class="health-band" aria-label="Estado del sistema">
+          <header><div><p class="section-kicker">SISTEMA</p><h3>Pipeline de datos</h3></div><span id="health-status"></span></header>
+          <div id="health-services" class="health-grid"></div>
+        </section>
+      </section>
+
+      <section id="replay" class="market-section" hidden>
+        <header class="section-heading">
+          <span class="section-number">08</span>
+          <div>
+            <p class="section-kicker">VALIDACIÓN</p>
+            <h2>Replay y validación</h2>
+            <p>Qué pasó después de cada veredicto registrado.</p>
+          </div>
+        </header>
+
+        <div class="context-grid">
+        <article class="panel replay-panel">
+          <header><div><h3>Veredictos registrados</h3><span>Y el retorno realizado después</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Sesión</th><th>Sesgo</th><th>Score</th><th>Convicción</th><th>Régimen</th><th>Ret. 7s</th><th>Ret. 14s</th></tr></thead><tbody id="replay-body"></tbody></table></div>
+          <small class="tfprofile-foot">Historial de veredictos ya emitidos. No es una promesa de rentabilidad ni un backtest.</small>
+        </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>Datos analíticos de mercado. No ejecuta órdenes ni administra cuentas de trading.</footer>
+</body>
+</html>

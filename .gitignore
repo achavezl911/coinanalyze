@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Entorno / secretos — NUNCA versionar
+.env
+*.env
+!.env.example
+*.key
+*.pem
+id_rsa*
+id_ed25519*
+
+# Artefactos de despliegue y backups locales
+.deploy-backups/
+*.bak.*
+*.tar.gz
+*.tgz
+
+# Sistema
+.DS_Store
+*.swp
