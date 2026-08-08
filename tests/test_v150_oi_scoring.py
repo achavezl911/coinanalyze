@@ -11,7 +11,14 @@ Reglas duras de la especificacion (§2.3):
 
 from __future__ import annotations
 
-from app.scalp_logic import compute_scalp_summary
+from datetime import UTC, datetime
+
+import pytest
+
+from app.scalp_logic import (
+    _closed_1m_window_bounds,
+    compute_scalp_summary,
+)
 
 W_OI = 10
 
@@ -107,10 +114,78 @@ def test_precio_15m_ausente_no_hay_lectura_de_oi() -> None:
     assert "oi" in out["missing_components"]
 
 
-def test_cobertura_15m_parcial_se_publica() -> None:
-    out = compute_scalp_summary(ctx(**_oi(0.6), **_px15(0.4, bars=3)))
+def test_ventana_15m_termina_antes_de_la_vela_1m_abierta() -> None:
+    now = datetime(
+        2026, 8, 8,
+        17, 49, 37,
+        tzinfo=UTC,
+    )
+
+    start, end = _closed_1m_window_bounds(now, minutes=15)
+
+    assert start == datetime(
+        2026, 8, 8,
+        17, 34, 0,
+        tzinfo=UTC,
+    )
+
+    assert end == datetime(
+        2026, 8, 8,
+        17, 49, 0,
+        tzinfo=UTC,
+    )
+
+    assert (end - start).total_seconds() == 15 * 60
+
+    # 17:49 es la vela abierta y queda fuera porque el SQL utiliza ts < end.
+    assert end < now
+
+
+def test_cobertura_15m_completa_permite_lectura_oi() -> None:
+    out = compute_scalp_summary(
+        ctx(
+            **_oi(0.6),
+            **_px15(0.4, bars=15),
+            fut_delta_3m=800.0,
+        )
+    )
+
+    assert out["price_move_15m_coverage"] == "complete"
+    assert out["price_move_15m_status"] == "MEASURED"
+    assert out["price_move_15m_pct"] == pytest.approx(0.4)
+
+    assert out["oi_price_status"] == "MEASURED"
+    assert out["oi_contributes_direction"] is True
+    assert "oi" not in out["missing_components"]
+
+
+def test_cobertura_15m_parcial_no_permite_scoring_de_oi() -> None:
+    out = compute_scalp_summary(
+        ctx(
+            **_oi(0.6),
+            **_px15(0.4, bars=3),
+            fut_delta_3m=800.0,
+        )
+    )
+
     assert out["price_move_15m_coverage"] == "partial"
-    assert out["oi_timeframe"] == "15m"
+    assert out["price_move_15m_status"] == "PARTIAL"
+
+    # El 0.4 % calculable matemáticamente NO representa una ventana de 15 m
+    # completa, así que no se publica.
+    assert out["price_move_15m_pct"] is None
+
+    # Sin precio 15m válido no existe cuadrante precio + OI.
+    assert out["oi_price_status"] == "NO_EVALUABLE"
+    assert out["oi_price_quadrant"] is None
+    assert out["oi_directional_support"] is None
+    assert out["oi_contributes_direction"] is False
+
+    # Fundamental: OI no consume peso cuando la ventana está incompleta.
+    assert "oi" in out["missing_components"]
+
+    # Y por supuesto tampoco inclina el score.
+    assert out["long_score"] == out["short_score"]
 
 
 def test_expansion_pero_flujo_contradice_no_vota_direccion() -> None:
