@@ -25,7 +25,7 @@ SETUPS = ("ruptura", "rechazo", "reversion", "continuacion")
 def ctx_rico(**overrides: object) -> dict[str, object]:
     """Contexto con TODO observado, incluido lo que el sistema real no mide todavía."""
     base: dict[str, object] = {
-        "price": 101.0, "barrier_level": 100.0, "touched_level": True,
+        "price": 101.0, "barrier_level": 100.0, "breakout_boundary": 100.0, "touched_level": True,
         "volume_multiple": 1.4, "spot_delta": 500.0, "fut_delta": 900.0,
         "oi_chg_pct": 0.3, "book_bid_share": 0.62, "absorption": "Absorción de ventas",
         "reaction_pct": 0.4, "vwap_dist_pct": 0.2, "prior_trend": "alcista",

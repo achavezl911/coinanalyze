@@ -367,21 +367,25 @@ def _eval_ruptura(ctx: dict[str, Any], signo: int) -> list[dict[str, Any]]:
     """Ruptura. CRITICOS: la barrera, el cierre al otro lado, la ACEPTACION y no volver
     dentro. Sin aceptacion medida no hay ruptura confirmada: "precio por encima de la
     resistencia + delta positivo" describe un toque, no una ruptura sostenida."""
-    price, level = ctx.get("price"), ctx.get("barrier_level")
+    price = ctx.get("price")
+    level = ctx.get("breakout_boundary")
     mas_alla = _beyond(price, level, signo)
+
     reqs = [
         _req(
             "barrera relevante",
             CUMPLE if level is not None else NO_EVALUABLE,
-            f"nivel {level}" if level is not None else "sin barrera identificada",
+            f"frontera {level}" if level is not None else "sin frontera de ruptura identificada",
             nivel=CRITICAL,
         ),
         _req(
             "cierre mas alla de la barrera",
             NO_EVALUABLE if mas_alla is None else (CUMPLE if mas_alla else PENDIENTE),
-            "sin precio o sin barrera"
-            if mas_alla is None
-            else (f"precio {price} respecto de {level}"),
+            (
+                "sin precio o sin frontera de ruptura"
+                if mas_alla is None
+                else f"precio {price} respecto de frontera {level}"
+            ),
             nivel=CRITICAL,
         ),
     ]
