@@ -21,7 +21,9 @@ from app.setups import (
     LEGACY_HYPOTHESES,
     SETUP_LABELS,
     SETUP_SPECS,
+    classify_oi,
     evaluate_setup,
+    oi_price_reading,
     split_hypothesis,
 )
 from app.wyckoff import wyckoff_auto_read
@@ -39,6 +41,18 @@ asi que este 0.10 dejaba pasar el 78 % de las ventanas de 3 m y habria rechazado
 las de 4 h. El umbral real sale de `metric_baseline` (percentil p75 por simbolo y ventana) y
 esta constante queda como red de seguridad, siempre etiquetada como tal en la respuesta.
 """
+
+OI_SCORE_FULL_PCT = 0.5
+"""|Δ%| de OI 15m que satura la contribucion direccional del OI al score.
+
+Solo escala la MAGNITUD del voto cuando el OI ya aporta direccion (expansion coherente con
+precio y flujo). No decide la direccion: eso lo hace `oi_price_reading()` en app/positioning
+(hoy en app/setups). Un mismo umbral que el viejo `oi_chg_15m_pct / 0.5`, pero ahora el signo
+lo pone el cuadrante precio+OI, no el signo de ΔOI.
+"""
+
+OI_15M_EXPECTED_BARS = 15
+"""Velas de 1 min esperadas en la ventana de 15 m; base de la cobertura de price_move_15m."""
 
 COLLECTOR_THRESHOLDS: dict[str, tuple[int, int]] = {
     "ingest": (60, 300),
@@ -282,6 +296,13 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
           SELECT (array_agg(oi_close ORDER BY ts DESC))[1] AS oi_now,
                  (array_agg(oi_close ORDER BY ts ASC))[1] AS oi_start
           FROM open_interest WHERE symbol=$1 AND interval='5min' AND ts >= now()-interval '15 minutes'
+        ), px_15m AS (
+          -- Precio de la MISMA ventana de 15 m que el OI, desde velas 1 min CERRADAS. No se
+          -- reutiliza la ventana de 3 m como aproximacion (spec 2.1). `bars` da la cobertura.
+          SELECT (array_agg(close ORDER BY ts ASC))[1] AS first_px_15m,
+                 (array_agg(close ORDER BY ts DESC))[1] AS last_px_15m,
+                 COUNT(*)::int AS bars_15m
+          FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts >= now()-interval '15 minutes'
         ), vwap AS (
           SELECT SUM(close*volume)/NULLIF(SUM(volume),0) AS session_vwap
           FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts >= $3
@@ -312,6 +333,7 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
                END AS book_status,
                EXTRACT(EPOCH FROM now()-book.ts)::float8 AS book_lag_seconds,
                liq.long_liq,liq.short_liq,oi.oi_now,oi.oi_start,vwap.session_vwap,
+               px_15m.first_px_15m,px_15m.last_px_15m,px_15m.bars_15m,
                liq_feed.liq_feed_status,liq_feed.liq_feed_lag_s
         FROM base
         LEFT JOIN price ON true
@@ -323,6 +345,7 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
         LEFT JOIN book ON true
         LEFT JOIN liq ON true
         LEFT JOIN oi ON true
+        LEFT JOIN px_15m ON true
         LEFT JOIN vwap ON true
         LEFT JOIN liq_feed ON true
         """,
@@ -373,6 +396,24 @@ def _measured_event_sum(raw: object, measured: bool) -> float | None:
     return 0.0 if value is None else value
 
 
+def _coverage_status(bars: object, expected: int) -> str:
+    """Cobertura de una ventana por conteo de velas: complete / partial / none.
+
+    `complete` con al menos el 85 % de las velas esperadas; `partial` con al menos una;
+    `none` sin ninguna. Sirve para publicar la calidad de `price_move_15m_pct` sin fingir que
+    una ventana medio vacia es un movimiento fiable.
+    """
+    try:
+        n = int(bars) if bars is not None else 0
+    except (TypeError, ValueError):
+        n = 0
+    if n <= 0:
+        return "none"
+    if n >= max(1, int(expected * 0.85)):
+        return "complete"
+    return "partial"
+
+
 def compute_scalp_summary(ctx: dict[str, Any]) -> dict[str, Any]:
     fut_delta_1m = as_float(ctx.get("fut_delta_1m"))
     fut_volume_1m = as_float(ctx.get("fut_volume_1m"))
@@ -386,6 +427,11 @@ def compute_scalp_summary(ctx: dict[str, Any]) -> dict[str, Any]:
     last_px = _first_present(as_float(ctx.get("last_px_3m")), as_float(ctx.get("price")))
     oi_now = as_float(ctx.get("oi_now"))
     oi_start = as_float(ctx.get("oi_start"))
+    # Movimiento de precio de la MISMA ventana que el OI (15 m), no el de 3 m. Sale de velas
+    # 1 min CERRADAS de esos 15 minutos; su cobertura viaja aparte. Nunca se aproxima con 3 m.
+    first_px_15m = as_float(ctx.get("first_px_15m"))
+    last_px_15m = as_float(ctx.get("last_px_15m"))
+    bars_15m = ctx.get("bars_15m")
     vwap = as_float(ctx.get("session_vwap"))
     price = _first_present(as_float(ctx.get("price")), last_px)
 
@@ -477,14 +523,43 @@ def compute_scalp_summary(ctx: dict[str, Any]) -> dict[str, Any]:
     }
     # Un componente sin dato NO vota 0 (eso es un voto neutral fabricado): queda fuera y el
     # score se renormaliza sobre el peso realmente medido, que ademas se publica.
-    # El OI necesita SUS DOS insumos (variacion medida) ademas del movimiento de precio que le
-    # da signo. Antes solo se comprobaba el precio, asi que sin OI el componente valia
-    # 0.0 * signo = 0.0 y sumaba sus 10 puntos de peso como si se hubiera medido.
-    oi_component = (
-        max(-1.0, min(1.0, oi_chg_15m_pct / 0.5)) * (1 if price_move_3m >= 0 else -1)
-        if oi_chg_15m_pct is not None and price_move_3m is not None
+    #
+    # OPEN INTEREST — reemplaza `clamp(oi_chg_15m/0.5) * dir(price_3m)`, que trataba ΔOI como un
+    # delta direccional y ademas comparaba OI de 15 m con precio de 3 m (ventanas distintas).
+    # Ahora:
+    #   1) el movimiento de precio es de la MISMA ventana de 15 m (`price_move_15m_pct`);
+    #   2) el OI se clasifica como ESTADO (expansion/contraccion/plano) sin direccion propia;
+    #   3) `oi_price_reading()` compone precio+OI+flujo y dice con QUE direccion es compatible.
+    # El OI solo vota direccion cuando hay POSICIONAMIENTO NUEVO (expansion) coherente con el
+    # precio y el flujo no lo contradice. Una contraccion (cierre/desapalancamiento) NO vota al
+    # lado contrario: es medida pero neutral (0.0). El OI ausente, o sin precio 15 m con que
+    # leerlo, NO cuenta peso (None).
+    coverage_15m = _coverage_status(bars_15m, OI_15M_EXPECTED_BARS)
+    price_move_15m_pct = (
+        ((last_px_15m - first_px_15m) / first_px_15m * 100)
+        if first_px_15m and last_px_15m and coverage_15m != "none"
         else None
     )
+    oi_state = classify_oi(oi_chg_15m_pct, oi_to_volume=None, timeframe="15m")
+    oi_reading = oi_price_reading(
+        price_move_15m_pct, oi_state, fut_delta=fut_delta_3m, spot_delta=spot_delta_3m
+    )
+    oi_supports = oi_reading["supports"]
+    oi_directional = bool(
+        oi_reading.get("new_positioning")
+        and oi_supports is not None
+        and oi_reading.get("flow_agrees") is not False
+    )
+    if oi_chg_15m_pct is None or price_move_15m_pct is None:
+        # OI no medido, o sin precio de la MISMA ventana: no hay lectura -> no cuenta peso.
+        oi_component = None
+    elif oi_directional:
+        strength = min(1.0, abs(oi_chg_15m_pct) / OI_SCORE_FULL_PCT)
+        oi_component = oi_supports * strength
+    else:
+        # Medido pero sin direccion (plano, contraccion, o flujo que contradice): vota neutral,
+        # NUNCA al lado contrario. Cuenta peso como una lectura real de "sin posicionamiento".
+        oi_component = 0.0
     long_score = short_score = 0.0
     measured_weight = 0.0
     missing: list[str] = []
@@ -576,6 +651,16 @@ def compute_scalp_summary(ctx: dict[str, Any]) -> dict[str, Any]:
         "oi_chg_15m_pct": oi_chg_15m_pct,
         "oi_start": oi_start,
         "oi_now": oi_now,
+        # Lectura de OI: permite ver POR QUE el OI contribuyo o no al score (spec 2.5).
+        "oi_state": oi_state["state"],
+        "oi_price_quadrant": oi_reading["quadrant"],
+        "oi_reading": oi_reading["reading"],
+        "oi_directional_support": oi_supports,
+        "oi_new_positioning": oi_reading.get("new_positioning"),
+        "oi_timeframe": "15m",
+        "oi_contributes_direction": oi_directional,
+        "price_move_15m_pct": price_move_15m_pct,
+        "price_move_15m_coverage": coverage_15m,
         "session_vwap": vwap,
         "vwap_dist_pct": vwap_dist_pct,
         "absorption": absorption_label,
@@ -1839,6 +1924,69 @@ async def structure_detail(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         det["group"] = group
         out[label] = det
     return {"symbol": symbol, "horizons": out}
+
+
+_CONFIRMATION_TF: dict[str, tuple[str, int]] = {
+    # Timeframe de CONFIRMACION de ruptura por perfil (spec 1.2). Intradia usa 15 m, coherente
+    # con la definicion del sistema ("Cierre 15m sobre ..." en price_barrier_read); swing sube a
+    # 4 h, la capa de confirmacion de su perfil.
+    "intradia": ("15m", 900),
+    "swing": ("4h", 14400),
+}
+
+
+async def setup_confirmation_bundle(
+    conn: asyncpg.Connection, symbol: str, profile: str
+) -> dict[str, Any]:
+    """Velas CERRADAS del timeframe de confirmacion + pivotes + ATR para `setup_observables`.
+
+    Reutiliza `_resample_highs_lows`, `_swings` y `_atr` (no duplica logica) y EXCLUYE la vela
+    aun abierta: su cierre todavia puede cambiar, y usarla como cierre seria justo lo que la
+    especificacion prohibe. `bars` viaja con `ts` en segundos epoch para que el helper puro
+    detecte huecos por la separacion entre velas.
+    """
+    tf_label, secs = _CONFIRMATION_TF.get(profile, _CONFIRMATION_TF["intradia"])
+    # 15 m se remuestrea desde 5min (~8-9 dias, sobra para la confirmacion); 4 h es nativo.
+    source = "5min" if secs < 14400 else "4hour"
+    raw = await _resample_highs_lows(conn, symbol, secs, 400, source)
+    now = datetime.now(UTC)
+    now_epoch = now.timestamp()
+    bars: list[dict[str, Any]] = []
+    for r in raw:
+        bucket = r.get("bucket")
+        if bucket is None:
+            continue
+        start = bucket.timestamp()
+        if start + secs > now_epoch:
+            # Vela AUN ABIERTA: no cuenta como cierre.
+            continue
+        close = as_float(r.get("close"))
+        if close is None:
+            continue
+        bars.append(
+            {
+                "ts": int(start),
+                "open": None,
+                "high": as_float(r.get("high")),
+                "low": as_float(r.get("low")),
+                "close": close,
+            }
+        )
+    highs_seq = [b["high"] for b in bars]
+    lows_seq = [b["low"] for b in bars]
+    times_seq = [b["ts"] for b in bars]
+    sh, sl = _swings(highs_seq, lows_seq, times_seq, k=2)
+    atr = _atr(bars) if len(bars) >= 2 else None
+    return {
+        "timeframe": tf_label,
+        "bar_seconds": secs,
+        "source": f"ohlcv:{tf_label} (resample de {source}, velas cerradas)",
+        "as_of": now.isoformat(),
+        "bars": bars,
+        "pivots": {"highs": sh, "lows": sl},
+        "atr": atr,
+        "sample_count": len(bars),
+    }
 
 
 _CVD_WINDOWS = (

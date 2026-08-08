@@ -44,6 +44,11 @@ def ctx_completo(**overrides: object) -> dict[str, object]:
         "short_liq": 5_000.0,
         "oi_now": 1_000.0,
         "oi_start": 990.0,
+        # Ventana de precio de 15 m (misma que el OI): sube, y con OI en expansion el OI aporta
+        # direccion. `bars_15m` completa la cobertura. Sin estos campos el OI no podria leerse.
+        "first_px_15m": 100.0,
+        "last_px_15m": 100.3,
+        "bars_15m": 15,
         "session_vwap": 100.0,
     }
     base.update(overrides)
@@ -160,8 +165,11 @@ def test_sin_precios_de_ventana_la_absorcion_no_se_evalua() -> None:
     assert out["price_move_3m_pct"] is None
     assert out["absorption"] == "No evaluable"
     assert "absorption" in out["missing_components"]
-    # Sin precio tampoco hay distancia a VWAP: caen absorcion, OI (pierde el signo) y VWAP.
-    assert out["measured_weight"] == 100 - W_ABSORPTION - W_OI - W_VWAP
+    # Sin precio de 3 m caen absorcion y VWAP. El OI YA NO depende de la ventana de 3 m: su
+    # signo lo pone el precio de 15 m (que sigue presente), asi que sigue votando. Comparar OI
+    # de 15 m con precio de 3 m era justamente el error corregido.
+    assert "oi" not in out["missing_components"]
+    assert out["measured_weight"] == 100 - W_ABSORPTION - W_VWAP
 
 
 # ---------------- combinaciones parciales ----------------

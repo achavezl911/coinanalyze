@@ -680,6 +680,419 @@ def _structure_event(horizon: dict[str, Any]) -> tuple[str | None, str | None]:
     return None, None
 
 
+# ---------------- observables MEDIDOS sobre velas CERRADAS ----------------
+#
+# Estos cinco observables estaban fijados a None en `build_setup_context()` (fail-closed
+# honesto: sin medida no se inventa). Aqui se miden cuando el llamador aporta un paquete de
+# velas YA CERRADAS del timeframe de confirmacion del perfil (`setup_confirmation_bundle()` en
+# scalp_logic.py). El helper es PURO: recibe las velas y la estructura, no toca la base.
+
+OBS_MEASURED = "MEASURED"
+OBS_PENDING = "PENDING"
+OBS_UNAVAILABLE = "UNAVAILABLE"
+OBS_PARTIAL = "PARTIAL"
+OBS_STALE = "STALE"
+OBS_ERROR = "ERROR"
+OBS_NO_EVALUABLE = "NO_EVALUABLE"
+
+RETEST_ATR_MULT = 0.5
+"""Fraccion de ATR dentro de la cual un regreso al nivel roto cuenta como CONTACTO de retest.
+
+Convencion declarada; se normaliza por ATR (o por anchura de zona / % del precio si no hay
+ATR) para no usar una tolerancia monetaria fija universal, como pide la especificacion.
+"""
+
+LEVEL_TOL_ATR_MULT = 0.5
+"""Fraccion de ATR de tolerancia para decir que un pullback TOCA un nivel estructural."""
+
+FALLBACK_TOL_PCT = 0.15
+"""Tolerancia de respaldo (% del precio) cuando no hay ATR ni anchura de zona utilizables."""
+
+
+def _obs(
+    value: Any,
+    status: str,
+    *,
+    source: str | None = None,
+    timeframe: str | None = None,
+    as_of: str | None = None,
+    sample_count: int | None = None,
+    coverage: str | None = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    """Un observable medido, con su procedencia. `value` es lo que consume `evaluate_setup`."""
+    out = {
+        "value": value,
+        "status": status,
+        "source": source,
+        "timeframe": timeframe,
+        "as_of": as_of,
+        "sample_count": sample_count,
+        "coverage": coverage,
+    }
+    out.update(extra)
+    return out
+
+
+def _breakout_frontier(setup: str, signo: int, zone: dict[str, Any]) -> tuple[float | None, int]:
+    """Frontera de ACEPTACION y su signo, NUNCA el centro de la zona (spec 1.1).
+
+    Ruptura larga -> `resistance.high`; ruptura corta -> `support.low`. En un rechazo la
+    aceptacion RELEVANTE (la que lo invalida) es al otro lado del nivel apoyado: rechazo largo
+    sobre soporte se rompe cerrando por DEBAJO de `support.low`.
+    """
+    low, high = zone.get("low"), zone.get("high")
+    if setup == "ruptura":
+        if signo > 0:
+            return high, 1
+        if signo < 0:
+            return low, -1
+    elif setup == "rechazo":
+        if signo > 0:
+            return low, -1
+        if signo < 0:
+            return high, 1
+    return None, 0
+
+
+def _tolerance(
+    atr: float | None, zone: dict[str, Any] | None, ref_price: float | None, atr_mult: float
+) -> tuple[float | None, str | None]:
+    """Tolerancia normalizada: ATR primero; si no, media anchura de zona; si no, % del precio."""
+    if atr is not None and atr > 0:
+        return atr * atr_mult, "atr"
+    if zone:
+        low, high = zone.get("low"), zone.get("high")
+        if low is not None and high is not None and high > low:
+            return (high - low) * 0.5, "anchura_zona"
+    if ref_price:
+        return abs(ref_price) * FALLBACK_TOL_PCT / 100.0, "pct_precio"
+    return None, None
+
+
+def _norm_bars(bundle: dict[str, Any]) -> list[dict[str, Any]]:
+    """Velas CERRADAS ascendentes con ts en segundos epoch. La vela abierta ya se excluyo."""
+    bars: list[dict[str, Any]] = []
+    for raw in bundle.get("bars") or []:
+        ts = raw.get("ts")
+        close = raw.get("close")
+        if ts is None or close is None:
+            continue
+        bars.append(
+            {
+                "ts": int(ts),
+                "open": raw.get("open"),
+                "high": raw.get("high") if raw.get("high") is not None else close,
+                "low": raw.get("low") if raw.get("low") is not None else close,
+                "close": close,
+            }
+        )
+    bars.sort(key=lambda b: b["ts"])
+    return bars
+
+
+def _gap_in(bars: list[dict[str, Any]], bar_seconds: int | None) -> bool:
+    """¿Falta alguna vela en la secuencia? (separacion distinta al paso del timeframe)."""
+    if not bar_seconds or len(bars) < 2:
+        return False
+    return any(bars[i]["ts"] - bars[i - 1]["ts"] != bar_seconds for i in range(1, len(bars)))
+
+
+def _bars_closed_beyond(
+    bars: list[dict[str, Any]], boundary: float | None, bsign: int,
+    *, bar_seconds: int | None, tf: str | None, source: str | None, as_of: str | None,
+) -> dict[str, Any]:
+    """Cuenta la RACHA final de velas cerradas al otro lado de la frontera. No mira mechas."""
+    if boundary is None or bsign == 0:
+        return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                    coverage="sin frontera de aceptacion medida")
+    if not bars:
+        return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                    sample_count=0, coverage="sin velas cerradas")
+    beyond = [(b["close"] - boundary) * bsign > 0 for b in bars]
+    # Racha de cierres fuera contando desde la vela cerrada MAS reciente hacia atras.
+    run = 0
+    for flag in reversed(beyond):
+        if flag:
+            run += 1
+        else:
+            break
+    idx_beyond = [i for i, f in enumerate(beyond) if f]
+    first_i = idx_beyond[0] if idx_beyond else None
+    last_i = idx_beyond[-1] if idx_beyond else None
+    # Un hueco DENTRO de la racha necesaria rompe la evidencia de aceptacion continua.
+    ventana = bars[len(bars) - max(run, 1):]
+    if run and _gap_in(ventana, bar_seconds):
+        return _obs(None, OBS_NO_EVALUABLE, timeframe=tf, source=source, as_of=as_of,
+                    sample_count=len(bars), coverage="hueco en la secuencia de aceptacion",
+                    bars_examined=len(bars))
+    return _obs(
+        run, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
+        sample_count=len(bars),
+        coverage="completa" if not _gap_in(bars, bar_seconds) else "con_huecos_previos",
+        bars_examined=len(bars),
+        first_close_beyond=bars[first_i]["ts"] if first_i is not None else None,
+        last_close_beyond=bars[last_i]["ts"] if last_i is not None else None,
+        boundary=boundary,
+    )
+
+
+def _returned_inside(
+    bars: list[dict[str, Any]], setup: str, signo: int, boundary: float | None, bsign: int,
+    zone: dict[str, Any], *, tf: str | None, source: str | None, as_of: str | None,
+) -> dict[str, Any]:
+    """¿Volvio el precio al rango tras salir/tocar? None mientras no pueda evaluarse (spec 1.3).
+
+    Nunca se convierte None en False: False solo si SE observo el periodo posterior y NO regreso.
+    """
+    if boundary is None or bsign == 0 or not bars:
+        return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                    coverage="sin frontera o sin velas")
+    low, high = zone.get("low"), zone.get("high")
+    if setup == "ruptura":
+        # Solo evaluable tras al menos un cierre fuera de la zona.
+        idx = next((i for i, b in enumerate(bars) if (b["close"] - boundary) * bsign > 0), None)
+        if idx is None:
+            return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                        coverage="aun no hay cierre fuera")
+        posteriores = bars[idx + 1:]
+        if not posteriores:
+            return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                        coverage="sin periodo posterior al cierre fuera")
+        volvio = any((b["close"] - boundary) * bsign <= 0 for b in posteriores)
+        return _obs(volvio, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
+                    sample_count=len(posteriores),
+                    coverage="regreso observado" if volvio else "no regreso en el periodo")
+    if setup == "rechazo":
+        if low is None or high is None:
+            return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                        coverage="sin bordes de zona para medir el retorno")
+        idx = next((i for i, b in enumerate(bars) if low <= b["close"] <= high), None)
+        if idx is None:
+            return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                        coverage="el precio aun no entro en la zona")
+        posteriores = bars[idx + 1:]
+        if not posteriores:
+            return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                        coverage="sin periodo posterior al toque")
+        # Rechazo largo (soporte): retorno = cerrar de vuelta por encima del borde superior.
+        volvio = any(b["close"] > high for b in posteriores) if signo > 0 else any(
+            b["close"] < low for b in posteriores)
+        return _obs(volvio, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
+                    sample_count=len(posteriores),
+                    coverage="retorno al rango observado" if volvio else "sin retorno todavia")
+    return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of)
+
+
+def _retest_done(
+    bars: list[dict[str, Any]], signo: int, boundary: float | None, bsign: int, atr: float | None,
+    zone: dict[str, Any], *, tf: str | None, source: str | None, as_of: str | None,
+) -> dict[str, Any]:
+    """Retest (SECONDARY): ruptura previa -> vuelta al nivel dentro de tolerancia -> reaccion."""
+    if boundary is None or bsign == 0 or not bars:
+        return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                    retest_status="pending", coverage="sin frontera o sin velas")
+    idx = next((i for i, b in enumerate(bars) if (b["close"] - boundary) * bsign > 0), None)
+    if idx is None:
+        return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                    retest_status="none", coverage="sin ruptura previa")
+    tol, tol_src = _tolerance(atr, zone, boundary, RETEST_ATR_MULT)
+    if tol is None:
+        return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                    retest_status="pending", coverage="sin tolerancia normalizable")
+    # Contacto: una vela posterior cuyo extremo del lado del nivel se acerca a la frontera.
+    for j in range(idx + 1, len(bars)):
+        b = bars[j]
+        edge = b["low"] if bsign > 0 else b["high"]
+        dist = abs(edge - boundary)
+        if dist <= tol:
+            reaccion = any((k["close"] - boundary) * bsign > 0 for k in bars[j + 1:])
+            if reaccion:
+                return _obs(True, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
+                            retest_status="done", retest_time=b["ts"],
+                            retest_distance_atr=(dist / atr) if atr else None,
+                            coverage=f"contacto a {dist:.6g} ({tol_src})")
+    # Hubo ruptura y velas posteriores, pero ningun contacto+reaccion: aun sin retest.
+    if len(bars) - 1 > idx:
+        return _obs(False, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
+                    retest_status="not_yet", coverage="ruptura sin retest observado")
+    return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                retest_status="pending", coverage="sin periodo posterior")
+
+
+def _last_pivots(pivots: dict[str, Any] | None) -> tuple[list, list]:
+    piv = pivots or {}
+    highs = [tuple(p) for p in (piv.get("highs") or []) if p and len(p) >= 2]
+    lows = [tuple(p) for p in (piv.get("lows") or []) if p and len(p) >= 2]
+    return highs, lows
+
+
+def _pullback(
+    bars: list[dict[str, Any]], signo: int, pivots: dict[str, Any] | None, atr: float | None,
+    *, tf: str | None, source: str | None, as_of: str | None,
+) -> dict[str, Any]:
+    """Retroceso del ULTIMO impulso estructural en el sentido de la tendencia (spec 1.5).
+
+    No es `ultimo - anterior`: identifica impulso (pivote a pivote) y mide el retroceso desde
+    su extremo. Sin impulso completo -> None.
+    """
+    if signo == 0 or not bars:
+        return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                    coverage="sin direccion o sin velas")
+    highs, lows = _last_pivots(pivots)
+    if signo > 0:
+        if not highs or not lows:
+            return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                        coverage="faltan pivotes para un impulso alcista")
+        impulse_end = highs[-1]
+        starts = [lo for lo in lows if lo[0] < impulse_end[0]]
+        if not starts:
+            return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                        coverage="sin pivote de inicio antes del maximo")
+        impulse_start = starts[-1]
+        if impulse_end[1] <= impulse_start[1]:
+            return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                        coverage="el ultimo tramo no es un impulso alcista")
+        posteriores = [b for b in bars if b["ts"] > impulse_end[0]]
+        if not posteriores:
+            return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                        coverage="sin velas posteriores al maximo")
+        pb_extreme = min(b["low"] for b in posteriores)
+        pb_extreme_bar = min(posteriores, key=lambda b: b["low"])
+        rango = impulse_end[1] - impulse_start[1]
+    else:
+        if not highs or not lows:
+            return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                        coverage="faltan pivotes para un impulso bajista")
+        impulse_end = lows[-1]
+        starts = [hi for hi in highs if hi[0] < impulse_end[0]]
+        if not starts:
+            return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                        coverage="sin pivote de inicio antes del minimo")
+        impulse_start = starts[-1]
+        if impulse_end[1] >= impulse_start[1]:
+            return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                        coverage="el ultimo tramo no es un impulso bajista")
+        posteriores = [b for b in bars if b["ts"] > impulse_end[0]]
+        if not posteriores:
+            return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                        coverage="sin velas posteriores al minimo")
+        pb_extreme = max(b["high"] for b in posteriores)
+        pb_extreme_bar = max(posteriores, key=lambda b: b["high"])
+        rango = impulse_start[1] - impulse_end[1]
+    if rango <= 0:
+        return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                    coverage="impulso de rango nulo")
+    pullback_pct = (pb_extreme - impulse_end[1]) / impulse_end[1] * 100
+    pullback_atr = abs(impulse_end[1] - pb_extreme) / atr if atr else None
+    return _obs(
+        round(pullback_pct, 4), OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
+        sample_count=len(posteriores), coverage="impulso y retroceso medidos",
+        pullback_atr=round(pullback_atr, 4) if pullback_atr is not None else None,
+        impulse_start=impulse_start[0], impulse_end=impulse_end[0],
+        pullback_start=impulse_end[0], pullback_low=pb_extreme if signo > 0 else None,
+        pullback_high=pb_extreme if signo < 0 else None,
+        pullback_extreme_ts=pb_extreme_bar["ts"],
+    )
+
+
+def _level_defended(
+    bars: list[dict[str, Any]], signo: int, pivots: dict[str, Any] | None, atr: float | None,
+    zone: dict[str, Any], *, tf: str | None, source: str | None, as_of: str | None,
+) -> dict[str, Any]:
+    """Nivel estructural defendido: pullback lo toca, no hay aceptacion al otro lado, reacciona.
+
+    Usa UN nivel explicito (el ultimo swing en el sentido de la tendencia) y lo declara; no
+    mezcla soporte/VWAP/POC en silencio (spec 1.6).
+    """
+    if signo == 0 or not bars:
+        return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                    coverage="sin direccion o sin velas")
+    highs, lows = _last_pivots(pivots)
+    piv = lows if signo > 0 else highs
+    if not piv:
+        return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                    defended_level_type=None, defended_level_price=None,
+                    coverage="sin nivel estructural identificable")
+    level_ts, level = piv[-1]
+    tol, tol_src = _tolerance(atr, zone, level, LEVEL_TOL_ATR_MULT)
+    if tol is None:
+        return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
+                    defended_level_type="swing_low" if signo > 0 else "swing_high",
+                    defended_level_price=level, coverage="sin tolerancia normalizable")
+    posteriores = [b for b in bars if b["ts"] >= level_ts]
+    if len(posteriores) < 2:
+        return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                    defended_level_type="swing_low" if signo > 0 else "swing_high",
+                    defended_level_price=level, coverage="sin velas posteriores suficientes")
+    # Aceptacion INVALIDANTE al otro lado: dos cierres claramente pasados el nivel.
+    if signo > 0:
+        aceptados = sum(1 for b in posteriores if b["close"] < level - tol)
+        extremo = min(b["low"] for b in posteriores)
+        toco = extremo <= level + tol
+        reacciono = posteriores[-1]["close"] > extremo
+    else:
+        aceptados = sum(1 for b in posteriores if b["close"] > level + tol)
+        extremo = max(b["high"] for b in posteriores)
+        toco = extremo >= level - tol
+        reacciono = posteriores[-1]["close"] < extremo
+    tipo = "swing_low" if signo > 0 else "swing_high"
+    if aceptados >= 2:
+        return _obs(False, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
+                    defended_level_type=tipo, defended_level_price=level,
+                    coverage=f"nivel perdido: {aceptados} cierres aceptados al otro lado")
+    if toco and reacciono:
+        return _obs(True, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
+                    defended_level_type=tipo, defended_level_price=level,
+                    coverage=f"nivel tocado ({tol_src}) y con reaccion a favor")
+    return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
+                defended_level_type=tipo, defended_level_price=level,
+                coverage="nivel aun sin probar o sin reaccion")
+
+
+def setup_observables(
+    *,
+    direction: str,
+    setup: str,
+    zone: dict[str, Any] | None,
+    bundle: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Mide los cinco observables reales desde velas CERRADAS y estructura.
+
+    Devuelve, por observable, `{value, status, source, timeframe, sample_count, as_of,
+    coverage, ...}`. `value` es lo que consume `evaluate_setup`; el resto explica la medida.
+    Nunca infiere False por ausencia: usa None / NO_EVALUABLE / PENDING segun corresponda.
+    """
+    zone = zone or {}
+    bundle = bundle or {}
+    signo = DIRECTIONS.get(direction, {}).get("sign", 0)
+    tf = bundle.get("timeframe")
+    source = bundle.get("source")
+    as_of = bundle.get("as_of")
+    bar_seconds = bundle.get("bar_seconds")
+    atr = bundle.get("atr")
+    pivots = bundle.get("pivots")
+    bars = _norm_bars(bundle)
+
+    boundary, bsign = _breakout_frontier(setup, signo, zone)
+    return {
+        "zone_low": zone.get("low"),
+        "zone_high": zone.get("high"),
+        "zone_center": zone.get("center"),
+        "breakout_boundary": boundary,
+        "bars_closed_beyond": _bars_closed_beyond(
+            bars, boundary, bsign, bar_seconds=bar_seconds, tf=tf, source=source, as_of=as_of),
+        "returned_inside": _returned_inside(
+            bars, setup, signo, boundary, bsign, zone, tf=tf, source=source, as_of=as_of),
+        "retest_done": _retest_done(
+            bars, signo, boundary, bsign, atr, zone, tf=tf, source=source, as_of=as_of),
+        "pullback_pct": _pullback(
+            bars, signo, pivots, atr, tf=tf, source=source, as_of=as_of),
+        "level_defended": _level_defended(
+            bars, signo, pivots, atr, zone, tf=tf, source=source, as_of=as_of),
+    }
+
+
 def build_setup_context(
     scalp: dict[str, Any],
     profile: dict[str, Any],
@@ -689,6 +1102,7 @@ def build_setup_context(
     *,
     direction: str = "neutral",
     setup: str = "ninguno",
+    observ_bundle: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Traduce los bloques ya publicados a los observables que pide cada setup.
 
@@ -720,6 +1134,28 @@ def build_setup_context(
     else:
         zona = resistencia if direction == "long" else (soporte if direction == "short" else {})
     nivel = zona.get("center")
+
+    # Observables MEDIDOS sobre velas cerradas cuando el llamador aporta el paquete de
+    # confirmacion; si no, los cinco siguen en None (fail-closed, no se inventan). El
+    # `barrier_level` de arriba sigue siendo el CENTRO para el chequeo blando de "cierre mas
+    # alla"; la frontera de ruptura real es `breakout_boundary`, publicada aparte (spec 1.1).
+    signo = DIRECTIONS.get(direction, {}).get("sign", 0)
+    boundary, _ = _breakout_frontier(setup, signo, zona) if zona else (None, 0)
+    medidos: dict[str, Any] = {
+        "bars_closed_beyond": None,
+        "returned_inside": None,
+        "retest_done": None,
+        "pullback_pct": None,
+        "level_defended": None,
+    }
+    observables: dict[str, Any] | None = None
+    if observ_bundle is not None:
+        observables = setup_observables(
+            direction=direction, setup=setup, zone=zona, bundle=observ_bundle
+        )
+        boundary = observables.get("breakout_boundary", boundary)
+        for clave in medidos:
+            medidos[clave] = observables[clave]["value"]
 
     horizontes = structure.get("horizons") or {}
     horizonte = horizontes.get("4h") or horizontes.get("1h") or {}
@@ -759,13 +1195,19 @@ def build_setup_context(
             if contexto_bias is not None and confirm_bias is not None
             else None
         ),
-        # NO medidos por este sistema. Se declaran explicitamente para que se vea que faltan
-        # y no se confundan con un False.
-        "bars_closed_beyond": None,
-        "retest_done": None,
-        "returned_inside": None,
-        "pullback_pct": None,
-        "level_defended": None,
+        # Fronteras de la zona: el centro NO es la frontera de ruptura (spec 1.1).
+        "zone_low": zona.get("low"),
+        "zone_high": zona.get("high"),
+        "zone_center": zona.get("center"),
+        "breakout_boundary": boundary,
+        # Medidos desde velas cerradas si hay paquete; si no, None (fail-closed, no False).
+        "bars_closed_beyond": medidos["bars_closed_beyond"],
+        "retest_done": medidos["retest_done"],
+        "returned_inside": medidos["returned_inside"],
+        "pullback_pct": medidos["pullback_pct"],
+        "level_defended": medidos["level_defended"],
+        # Procedencia completa de cada observable (value/status/source/timeframe/as_of/...).
+        "observables": observables,
     }
 
 
