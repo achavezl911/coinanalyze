@@ -67,6 +67,7 @@ from app.scalp_logic import (
     range_validate,
     reference_levels,
     scalp_context,
+    setup_confirmation_bundle,
     spot_perp_flow,
     structure_detail,
     swing_score,
@@ -664,6 +665,7 @@ async def hypothesis(
         ctx = await scalp_context(conn, selected)
         barriers = await price_barriers(conn, selected)
         structure = await structure_detail(conn, selected)
+        observ_bundle = await setup_confirmation_bundle(conn, selected, profile)
     view = profile_view(trend, matrix, profile)
     scalp = compute_scalp_summary(ctx)
     return {
@@ -678,6 +680,7 @@ async def hypothesis(
                 scalp, view, trend, barriers, structure,
                 direction=direction or split_hypothesis(hypothesis)[0],
                 setup=setup if setup != "ninguno" else split_hypothesis(hypothesis)[1],
+                observ_bundle=observ_bundle,
             ),
             plan={
                 "entry": entry,
@@ -733,6 +736,7 @@ async def desk_state(
         quality = await data_quality(conn, selected)
         barriers = await price_barriers(conn, selected)
         structure = await structure_detail(conn, selected)
+        observ_bundle = await setup_confirmation_bundle(conn, selected, profile)
     scalp = compute_scalp_summary(ctx)
     view = profile_view(trend, matrix, profile)
     evidence = hypothesis_evidence(
@@ -745,6 +749,7 @@ async def desk_state(
             scalp, view, trend, barriers, structure,
             direction=direction or "long",
             setup=setup,
+            observ_bundle=observ_bundle,
         ),
     )
     stamp = as_of.isoformat()
