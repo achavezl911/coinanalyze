@@ -1,0 +1,8 @@
+# Excluir del knowledge graph contenido que no aporta arquitectura propia.
+# (NO afecta runtime; static/vendor sigue versionado y sirviéndose en prod.)
+static/vendor/
+graphify-out/
+.git/
+.venv/
+.claude/
+.codex/
