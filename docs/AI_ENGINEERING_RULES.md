@@ -83,3 +83,21 @@ Detalle completo en [`DEVELOPMENT_WORKFLOW.md`](DEVELOPMENT_WORKFLOW.md).
   ```
 - Lint: `ruff check .`  ·  Tests: `pytest -q`  ·  Sintaxis: `python -m compileall -q app`
 - No introducir dependencias nuevas sin justificarlo y fijarlas en `requirements.lock`.
+
+## GRAPH-FIRST POLICY (Graphify)
+
+Para exploración de arquitectura, análisis de dependencias, análisis de impacto o localización
+de código relevante:
+
+1. **Consulta Graphify primero** (`graphify query "<pregunta>"`, `graphify affected "<X>"`,
+   `graphify path "<A>" "<B>"`, `graphify explain "<concepto>"`).
+2. Usa `graphify-out/GRAPH_REPORT.md` para orientación arquitectónica amplia.
+3. Identifica el **conjunto mínimo** de archivos fuente relevantes.
+4. Lee y **verifica esos archivos directamente**.
+5. El **código fuente es la autoridad** cuando contradice al grafo.
+6. Nunca tomes decisiones de implementación **solo** desde `graph.json`.
+7. Actualiza el grafo tras cambios estructurales (`graphify update .`).
+
+El objetivo no es impedir leer código, sino evitar exploración repetitiva e innecesaria y reducir
+el consumo de contexto. Si Graphify falla o está ausente, continúa leyendo el source con
+normalidad. Detalle completo en [GRAPHIFY.md](GRAPHIFY.md).

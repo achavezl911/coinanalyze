@@ -1,0 +1,4 @@
+# Mantener el knowledge graph FUERA del contexto directo de Claude para no invalidar el
+# prompt cache. Claude debe consultarlo con `graphify query/affected/path/explain`
+# (que leen graph.json por dentro y devuelven solo lo relevante), NO cargar graph.json entero.
+graphify-out/

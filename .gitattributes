@@ -1,1 +1,7 @@
 * text=auto eol=lf
+
+# Graphify: union-merge del grafo entre ramas (registrar el driver una vez:
+#   git config merge.graphify.driver "graphify merge-driver %O %A %B")
+graphify-out/graph.json merge=graphify
+graphify-out/graph.json -diff linguist-generated=true
+graphify-out/GRAPH_REPORT.md linguist-generated=true
