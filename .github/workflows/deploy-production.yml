@@ -1,0 +1,117 @@
+name: Deploy production
+
+# Manual, gated production deploy. Builds an artifact from the current main
+# commit, transfers it to the prod LXC (10.151.1.6) as the low-privilege
+# coinalyze-deploy user, and invokes the root-owned trust-boundary wrapper
+# (/usr/local/sbin/deploy-coinalyze), which verifies the checksum, backs up the
+# DB, applies schema, switches the release symlink, restarts, smoke-tests and
+# rolls back on failure. Nothing here runs a repo script as root.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to run on production"
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      confirm:
+        description: 'Type "deploy production" to confirm (deploy only)'
+        required: false
+        default: ""
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PROD_HOST: 10.151.1.6
+  PROD_USER: coinalyze-deploy
+  WRAPPER: /usr/local/sbin/deploy-coinalyze
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, coinanalyze]
+    environment: production
+    steps:
+      - name: Guard — deploy only from main
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "::error::Production deploy is only allowed from the main branch."; exit 1
+          fi
+
+      - name: Guard — confirmation text (deploy)
+        if: ${{ inputs.action == 'deploy' }}
+        run: |
+          if [ "${{ inputs.confirm }}" != "deploy production" ]; then
+            echo '::error::You must type exactly: deploy production'; exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo '10.151.1.6 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF2rB1q+Y8G5Szf6/l2mtH2UxCr9S/UbdSgh1lJUnTVP' > ~/.ssh/known_hosts_prod
+
+      - name: Rollback
+        if: ${{ inputs.action == 'rollback' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+              -o UserKnownHostsFile=~/.ssh/known_hosts_prod -o StrictHostKeyChecking=yes \
+              ${PROD_USER}@${PROD_HOST} "sudo -n ${WRAPPER} rollback"
+
+      - name: Build artifact
+        if: ${{ inputs.action == 'deploy' }}
+        id: build
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse HEAD)"
+          ART="coinalyze-${SHA}.tgz"
+          tar czf "/tmp/${ART}" \
+            --exclude='./.git' --exclude='./.github' --exclude='./.venv' \
+            --exclude='*/__pycache__' --exclude='./.pytest_cache' --exclude='./.ruff_cache' \
+            --exclude='./graphify-out' \
+            -C "${GITHUB_WORKSPACE}" .
+          SUM="$(sha256sum "/tmp/${ART}" | awk '{print $1}')"
+          echo "sha=${SHA}"  >> "$GITHUB_OUTPUT"
+          echo "art=${ART}"  >> "$GITHUB_OUTPUT"
+          echo "sum=${SUM}"  >> "$GITHUB_OUTPUT"
+          echo "Built ${ART} (${SUM})"
+
+      - name: Transfer artifact
+        if: ${{ inputs.action == 'deploy' }}
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+              -o UserKnownHostsFile=~/.ssh/known_hosts_prod -o StrictHostKeyChecking=yes \
+              "/tmp/${{ steps.build.outputs.art }}" \
+              ${PROD_USER}@${PROD_HOST}:incoming/
+
+      - name: Deploy via trust-boundary wrapper
+        if: ${{ inputs.action == 'deploy' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+              -o UserKnownHostsFile=~/.ssh/known_hosts_prod -o StrictHostKeyChecking=yes \
+              ${PROD_USER}@${PROD_HOST} \
+              "sudo -n ${WRAPPER} deploy /home/${PROD_USER}/incoming/${{ steps.build.outputs.art }} ${{ steps.build.outputs.sum }} ${{ steps.build.outputs.sha }}"
+
+      - name: Cleanup remote artifact
+        if: ${{ always() && inputs.action == 'deploy' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+              -o UserKnownHostsFile=~/.ssh/known_hosts_prod -o StrictHostKeyChecking=yes \
+              ${PROD_USER}@${PROD_HOST} \
+              "rm -f /home/${PROD_USER}/incoming/${{ steps.build.outputs.art }}" || true
+
+      - name: Cleanup local key
+        if: ${{ always() }}
+        run: rm -f ~/.ssh/deploy_key
