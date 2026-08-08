@@ -22,6 +22,7 @@ def ctx_rico(**overrides: object) -> dict[str, object]:
     base: dict[str, object] = {
         "price": 101.0,
         "barrier_level": 100.0,
+        "breakout_boundary": 100.0,
         "touched_level": True,
         "volume_multiple": 1.4,
         "spot_delta": 500.0,

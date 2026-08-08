@@ -3841,6 +3841,7 @@ def hypothesis_evidence(
         stop=as_float(plan.get("stop")),
         funding_bps=as_float(plan.get("funding_bps")),
     )
+    setup_ctx = setup_context or {}
     return {
         "hypothesis": hypothesis,
         "direction": direction,
@@ -3869,6 +3870,13 @@ def hypothesis_evidence(
         "counts": {key: len(value) for key, value in buckets.items()},
         "pending_conditions": pending_conditions,
         "invalidations": invalidations,
+        "setup_observables": setup_ctx.get("observables"),
+        "setup_zone": {
+            "zone_low": setup_ctx.get("zone_low"),
+            "zone_high": setup_ctx.get("zone_high"),
+            "zone_center": setup_ctx.get("zone_center"),
+            "breakout_boundary": setup_ctx.get("breakout_boundary"),
+        },
         "note": (
             "Clasificacion de evidencia sobre una hipotesis del operador. No es una "
             "recomendacion y no ejecuta ninguna operacion."
