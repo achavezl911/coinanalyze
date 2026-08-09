@@ -48,9 +48,9 @@ def test_scalp_summary_degrades_when_book_is_not_fresh(book_status: str):
 
 def test_local_book_rejects_non_monotonic_sequence():
     book = LocalBook("BTCUSDT_PERP.A", "bybit")
-    book.reset([["100", "1"]], [["101", "1"]], 1000, sequence=10)
-    assert book.apply_delta([["100", "2"]], [], 1001, sequence=11) is True
-    assert book.apply_delta([["100", "3"]], [], 1002, sequence=11) is False
+    book.reset([["100", "1"]], [["101", "1"]], 1000, update_id=10)
+    assert book.apply_delta([["100", "2"]], [], 1001, update_id=11) is True
+    assert book.apply_delta([["100", "3"]], [], 1002, update_id=11) is False
 
 
 @pytest.mark.asyncio
@@ -58,10 +58,12 @@ async def test_liquidation_queue_overflow_is_counted(monkeypatch):
     small_queue: asyncio.Queue = asyncio.Queue(maxsize=1)
     monkeypatch.setattr(scalp, "LIQ_QUEUE", small_queue)
     monkeypatch.setattr(scalp, "LIQ_DROPPED", 0)
+    monkeypatch.setattr(scalp, "LIQ_LOSS_PENDING", {})
     item = (None, "BTCUSDT_PERP.A", "binance", "long", 1.0, 1.0, 1.0, "e")
     await safe_liq_put(item)  # type: ignore[arg-type]
     await safe_liq_put(item)  # type: ignore[arg-type]
     assert scalp.LIQ_DROPPED == 1
+    assert "binance" in scalp.LIQ_LOSS_PENDING
     assert small_queue.qsize() == 1
 
 

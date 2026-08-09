@@ -481,4 +481,18 @@ ALTER TABLE pipeline_heartbeat
     ADD CONSTRAINT pipeline_heartbeat_service_check
     CHECK (service IN ('ingest','ws','ws-binance','ws-bybit','scalp','daily','api'));
 
+CREATE TABLE IF NOT EXISTS market_feed_health (
+    feed text NOT NULL,
+    exchange text NOT NULL,
+    status text NOT NULL CHECK (status IN ('ok','degraded','error')),
+    healthy_since timestamptz,
+    last_loss_at timestamptz,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    detail text CHECK (detail IS NULL OR length(detail) <= 500),
+    PRIMARY KEY (feed, exchange)
+);
+
+CREATE INDEX IF NOT EXISTS market_feed_health_updated_idx
+    ON market_feed_health(feed, updated_at DESC);
+
 COMMIT;

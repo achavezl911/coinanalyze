@@ -54,6 +54,13 @@ lo pone el cuadrante precio+OI, no el signo de ΔOI.
 OI_15M_EXPECTED_BARS = 15
 """Velas de 1 min esperadas en la ventana de 15 m; base de la cobertura de price_move_15m."""
 
+OI_15M_EXPECTED_SAMPLES = 4
+"""Observaciones OI 5m necesarias para medir dos cierres separados exactamente 15m."""
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
 
 def _closed_1m_window_bounds(
     now: datetime | None = None,
@@ -75,6 +82,23 @@ def _closed_1m_window_bounds(
     start = end - timedelta(minutes=minutes)
 
     return start, end
+
+
+def _closed_5m_oi_bounds(
+    now: datetime | None = None,
+) -> tuple[datetime, datetime, datetime]:
+    """Límites para cuatro buckets OI 5m cerrados y su intervalo efectivo.
+
+    Coinalyze etiqueta los buckets OHLC con su inicio. A las 11:49:37, los cuatro
+    buckets OI cerrados empiezan 11:25, 11:30, 11:35 y 11:40; sus cierres efectivos
+    comparables son 11:30 y 11:45. El precio usa por ello [11:30, 11:45).
+    """
+    ref = now or _utc_now()
+    ref = ref.replace(tzinfo=UTC) if ref.tzinfo is None else ref.astimezone(UTC)
+    end = ref.replace(minute=(ref.minute // 5) * 5, second=0, microsecond=0)
+    source_start = end - timedelta(minutes=20)
+    effective_start = end - timedelta(minutes=15)
+    return source_start, effective_start, end
 
 COLLECTOR_THRESHOLDS: dict[str, tuple[int, int]] = {
     "ingest": (60, 300),
@@ -287,12 +311,9 @@ def score_component(value: float | None) -> tuple[float, float]:
 
 async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     session_start = current_nyse_start()
-
-    # Últimos 15 minutos COMPLETOS de OHLCV 1m.
-    # La frontera superior es el inicio de la vela actualmente abierta.
-    px_15m_start, px_15m_end = _closed_1m_window_bounds(
-        minutes=OI_15M_EXPECTED_BARS
-    )
+    as_of = _utc_now()
+    oi_source_start, oi_window_start, oi_window_end = _closed_5m_oi_bounds(as_of)
+    liquidation_window_start = as_of - timedelta(minutes=5)
 
     row = await conn.fetchrow(
         """
@@ -320,39 +341,57 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
         ), liq AS (
           SELECT SUM(CASE WHEN side='long' THEN notional_usd ELSE 0 END) AS long_liq,
                  SUM(CASE WHEN side='short' THEN notional_usd ELSE 0 END) AS short_liq
-          FROM liquidations_realtime WHERE symbol=$1 AND ts >= now()-interval '5 minutes'
-        ), oi AS (
+          FROM liquidations_realtime
+          WHERE symbol=$1 AND ts >= $7 AND ts < $8
+        ), oi_raw AS (
           SELECT (array_agg(oi_close ORDER BY ts DESC))[1] AS oi_now,
-                 (array_agg(oi_close ORDER BY ts ASC))[1] AS oi_start
-          FROM open_interest WHERE symbol=$1 AND interval='5min' AND ts >= now()-interval '15 minutes'
+                 (array_agg(oi_close ORDER BY ts ASC))[1] AS oi_start,
+                 COUNT(*)::int AS oi_samples,
+                 MIN(ts) AS first_bucket,
+                 MAX(ts) AS last_bucket
+          FROM open_interest
+          WHERE symbol=$1 AND interval='5min' AND ts >= $4 AND ts < $6
+        ), oi AS (
+          SELECT
+            CASE WHEN oi_samples=4 AND last_bucket-first_bucket=interval '15 minutes'
+                 THEN oi_now END AS oi_now,
+            CASE WHEN oi_samples=4 AND last_bucket-first_bucket=interval '15 minutes'
+                 THEN oi_start END AS oi_start,
+            oi_samples,
+            CASE
+              WHEN oi_samples=4 AND last_bucket-first_bucket=interval '15 minutes'
+                THEN 'complete'
+              WHEN oi_samples>0 THEN 'partial'
+              ELSE 'unavailable'
+            END AS oi_window_status
+          FROM oi_raw
         ), px_15m AS (
-          -- Ventana EXACTA de 15 velas 1m completamente cerradas.
-          --
-          -- $4 = inicio de la ventana cerrada
-          -- $5 = inicio de la vela actualmente abierta (exclusive)
-          --
-          -- Se usa OPEN de la primera vela y CLOSE de la última:
-          -- así el movimiento representa las 15 velas completas y no sólo
-          -- la distancia entre el primer close y el último close.
           SELECT
                  (array_agg(open  ORDER BY ts ASC))[1]  AS first_px_15m,
                  (array_agg(close ORDER BY ts DESC))[1] AS last_px_15m,
-                 COUNT(*)::int AS bars_15m
+                 COUNT(*)::int AS bars_15m,
+                 MIN(ts) AS first_bar,
+                 MAX(ts) AS last_bar
           FROM ohlcv
           WHERE symbol = $1
             AND interval = '1min'
-            AND ts >= $4
-            AND ts <  $5
+            AND ts >= $5
+            AND ts <  $6
         ), vwap AS (
           SELECT SUM(close*volume)/NULLIF(SUM(volume),0) AS session_vwap
           FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts >= $3
         ), liq_feed AS (
-          -- Las liquidaciones son un feed de EVENTOS: la suma NULL puede ser "no hubo
-          -- eventos" o "no se estaba escuchando". Solo el heartbeat del collector distingue
-          -- las dos, y sin distinguirlas no se puede publicar un cero honesto.
-          SELECT status AS liq_feed_status,
-                 EXTRACT(EPOCH FROM now()-updated_at)::float8 AS liq_feed_lag_s
-          FROM pipeline_heartbeat WHERE service='ws'
+          SELECT
+            MAX(status) FILTER (WHERE exchange='binance') AS liq_binance_status,
+            MAX(healthy_since) FILTER (WHERE exchange='binance') AS liq_binance_healthy_since,
+            MAX(last_loss_at) FILTER (WHERE exchange='binance') AS liq_binance_last_loss_at,
+            MAX(updated_at) FILTER (WHERE exchange='binance') AS liq_binance_updated_at,
+            MAX(status) FILTER (WHERE exchange='bybit') AS liq_bybit_status,
+            MAX(healthy_since) FILTER (WHERE exchange='bybit') AS liq_bybit_healthy_since,
+            MAX(last_loss_at) FILTER (WHERE exchange='bybit') AS liq_bybit_last_loss_at,
+            MAX(updated_at) FILTER (WHERE exchange='bybit') AS liq_bybit_updated_at
+          FROM market_feed_health
+          WHERE feed='liquidations' AND exchange IN ('binance','bybit')
         ), base AS (SELECT 1 AS anchor)
         SELECT COALESCE(fut_px.fut_px, price.price) AS price,
                fut_px.fut_px AS fut_price,
@@ -361,7 +400,7 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
                -- en SQL lo publicaba sin mirar la edad de cada pata.
                fut_px.fut_event_ms AS fut_event_ms,
                spot_px.spot_event_ms AS spot_event_ms,
-               (EXTRACT(EPOCH FROM now())*1000)::float8 AS now_ms,
+               (EXTRACT(EPOCH FROM $8::timestamptz)*1000)::float8 AS now_ms,
                fut_1m.delta AS fut_delta_1m,fut_1m.volume AS fut_volume_1m,fut_1m.trades AS fut_trades_1m,
                fut_3m.delta AS fut_delta_3m,fut_3m.volume AS fut_volume_3m,fut_3m.first_px AS first_px_3m,fut_3m.last_px AS last_px_3m,
                spot_3m.delta AS spot_delta_3m,spot_3m.volume AS spot_volume_3m,
@@ -373,8 +412,20 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
                END AS book_status,
                EXTRACT(EPOCH FROM now()-book.ts)::float8 AS book_lag_seconds,
                liq.long_liq,liq.short_liq,oi.oi_now,oi.oi_start,vwap.session_vwap,
+               $5::timestamptz AS oi_window_start,
+               $6::timestamptz AS oi_window_end,
+               oi.oi_samples AS oi_window_samples,
+               oi.oi_window_status,
                px_15m.first_px_15m,px_15m.last_px_15m,px_15m.bars_15m,
-               liq_feed.liq_feed_status,liq_feed.liq_feed_lag_s
+               CASE
+                 WHEN px_15m.bars_15m=15
+                  AND px_15m.last_bar-px_15m.first_bar=interval '14 minutes'
+                   THEN 'complete'
+                 WHEN px_15m.bars_15m>0 THEN 'partial'
+                 ELSE 'none'
+               END AS price_move_15m_coverage,
+               $7::timestamptz AS liquidation_window_start,
+               liq_feed.*
         FROM base
         LEFT JOIN price ON true
         LEFT JOIN fut_px ON true
@@ -392,8 +443,11 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
         symbol,
         WS_SYMBOL_MAP[symbol],
         session_start,
-        px_15m_start,
-        px_15m_end,
+        oi_source_start,
+        oi_window_start,
+        oi_window_end,
+        liquidation_window_start,
+        as_of,
     )
     ctx = dict(row) if row else {}
     # La puerta de absorcion del resumen mira la ventana de 3 m: su umbral sale de la
@@ -419,15 +473,44 @@ def _liquidation_window_measured(ctx: dict[str, Any]) -> bool:
     """¿Se estaba ESCUCHANDO el feed de liquidaciones durante la ventana?
 
     Las liquidaciones son un stream de eventos: la ausencia de filas puede significar calma
-    (dato legitimo: cero liquidado) o collector caido (dato inexistente). Lo unico que
-    distingue los dos casos es el heartbeat del colector de WS, que es quien las recibe.
-    Sin heartbeat en el contexto se responde False: fail-closed, se prefiere N/D a un cero.
+    (dato legitimo: cero liquidado) o un stream caido (dato inexistente). Ambos venues deben
+    haber permanecido sanos durante toda la ventana, sin pérdidas y con estado fresco.
     """
-    status = ctx.get("liq_feed_status")
-    lag = as_float(ctx.get("liq_feed_lag_s"))
-    if status != "ok" or lag is None:
+    now = _as_utc_datetime(ctx.get("now_ms"), milliseconds=True)
+    window_start = _as_utc_datetime(ctx.get("liquidation_window_start"))
+    if now is None or window_start is None:
         return False
-    return 0 <= lag <= COLLECTOR_THRESHOLDS["ws"][1]
+    freshness = timedelta(seconds=COLLECTOR_THRESHOLDS["scalp"][1])
+    for exchange in ("binance", "bybit"):
+        prefix = f"liq_{exchange}_"
+        healthy_since = _as_utc_datetime(ctx.get(prefix + "healthy_since"))
+        last_loss_at = _as_utc_datetime(ctx.get(prefix + "last_loss_at"))
+        updated_at = _as_utc_datetime(ctx.get(prefix + "updated_at"))
+        if (
+            ctx.get(prefix + "status") != "ok"
+            or healthy_since is None
+            or updated_at is None
+            or not (now - freshness <= updated_at <= now + timedelta(seconds=1))
+            or healthy_since > window_start
+            or (last_loss_at is not None and last_loss_at >= window_start)
+        ):
+            return False
+    return True
+
+
+def _as_utc_datetime(value: object, *, milliseconds: bool = False) -> datetime | None:
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+    if milliseconds:
+        number = as_float(value)
+        return datetime.fromtimestamp(number / 1000, UTC) if number is not None else None
+    if isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
+    return None
 
 
 def _measured_event_sum(raw: object, measured: bool) -> float | None:
@@ -513,6 +596,7 @@ def compute_scalp_summary(ctx: dict[str, Any]) -> dict[str, Any]:
     last_px = _first_present(as_float(ctx.get("last_px_3m")), as_float(ctx.get("price")))
     oi_now = as_float(ctx.get("oi_now"))
     oi_start = as_float(ctx.get("oi_start"))
+    oi_window_status = str(ctx.get("oi_window_status") or "unavailable")
     # Movimiento de precio de la MISMA ventana que el OI (15 m), no el de 3 m. Sale de velas
     # 1 min CERRADAS de esos 15 minutos; su cobertura viaja aparte. Nunca se aproxima con 3 m.
     first_px_15m = as_float(ctx.get("first_px_15m"))
@@ -546,7 +630,10 @@ def compute_scalp_summary(ctx: dict[str, Any]) -> dict[str, Any]:
     # 0.0 entraba al score como un voto neutral con peso 10 que nadie habia medido.
     oi_chg_15m_pct = (
         ((oi_now - oi_start) / oi_start * 100)
-        if oi_now is not None and oi_start is not None and oi_start != 0
+        if oi_window_status == "complete"
+        and oi_now is not None
+        and oi_start is not None
+        and oi_start != 0
         else None
     )
     # Sin VWAP la distancia es DESCONOCIDA. Un 0.0 se lee como "el precio esta justo sobre el
@@ -630,6 +717,14 @@ def compute_scalp_summary(ctx: dict[str, Any]) -> dict[str, Any]:
         bars_15m,
         OI_15M_EXPECTED_BARS,
     )
+    declared_price_coverage = ctx.get("price_move_15m_coverage")
+    if declared_price_coverage in {"complete", "partial", "none"}:
+        coverage_15m = str(declared_price_coverage)
+        if coverage_15m != "complete":
+            price_move_15m_pct = None
+            price_move_15m_status = (
+                "PARTIAL" if coverage_15m == "partial" else "UNAVAILABLE"
+            )
     oi_state = classify_oi(oi_chg_15m_pct, oi_to_volume=None, timeframe="15m")
     oi_reading = oi_price_reading(
         price_move_15m_pct, oi_state, fut_delta=fut_delta_3m, spot_delta=spot_delta_3m
@@ -744,9 +839,22 @@ def compute_scalp_summary(ctx: dict[str, Any]) -> dict[str, Any]:
         # marca los dos casos llegan indistinguibles y el frontend pinta un cero.
         "liquidations_measured": liq_measured,
         "liquidations_window": "5m",
+        "liquidation_feed_health": {
+            exchange: {
+                "status": ctx.get(f"liq_{exchange}_status"),
+                "healthy_since": ctx.get(f"liq_{exchange}_healthy_since"),
+                "last_loss_at": ctx.get(f"liq_{exchange}_last_loss_at"),
+                "updated_at": ctx.get(f"liq_{exchange}_updated_at"),
+            }
+            for exchange in ("binance", "bybit")
+        },
         "oi_chg_15m_pct": oi_chg_15m_pct,
         "oi_start": oi_start,
         "oi_now": oi_now,
+        "oi_window_start": ctx.get("oi_window_start"),
+        "oi_window_end": ctx.get("oi_window_end"),
+        "oi_window_samples": int(ctx.get("oi_window_samples") or 0),
+        "oi_window_status": oi_window_status,
         # Lectura de OI: permite ver POR QUE el OI contribuyo o no al score (spec 2.5).
         "oi_state": oi_state["state"],
         "oi_price_quadrant": oi_reading["quadrant"],
@@ -2940,7 +3048,7 @@ FEED_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         "feed": "liquidations", "table": "liquidations_realtime", "market": "perpetuo",
         "data_type": "liquidaciones (eventos)", "exchanges": ("binance", "bybit"),
-        "interval_seconds": None, "collector": "ws", "symbol_space": "perp",
+        "interval_seconds": None, "collector": "scalp", "symbol_space": "perp",
         "filter": None, "exchange_column": "exchange",
     },
     {
@@ -2982,6 +3090,14 @@ async def feed_quality(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             "detail FROM pipeline_heartbeat"
         )
     }
+    liquidation_health = {
+        str(r["exchange"]): dict(r)
+        for r in await conn.fetch(
+            "SELECT exchange,status,healthy_since,last_loss_at,updated_at,detail,"
+            "EXTRACT(EPOCH FROM now()-updated_at)::float8 AS lag "
+            "FROM market_feed_health WHERE feed='liquidations'"
+        )
+    }
     filas: list[dict[str, Any]] = []
     for spec in FEED_DEFINITIONS:
         sym = ws_symbol if spec["symbol_space"] == "spot" else symbol
@@ -3019,6 +3135,10 @@ async def feed_quality(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
                 )
             }
             ausentes = sorted(set(spec["exchanges"]) - vistos)
+        if spec["feed"] == "liquidations":
+            # Un venue sin eventos puede estar perfectamente sano; la presencia de filas no
+            # prueba conectividad. Para liquidaciones manda la salud específica del stream.
+            ausentes = None
         # Hueco interno mayor: SOLO en las dos tablas de trades en tiempo real, que es donde
         # `max_internal_gap` esta definido. En `liquidations_realtime` no significa nada: es
         # un feed de eventos y un hueco ahi es mercado tranquilo, no pérdida de datos. Antes
@@ -3027,7 +3147,21 @@ async def feed_quality(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
         if spec["table"] in GAP_MEASURABLE_TABLES:
             hueco = await max_internal_gap(conn, spec["table"], sym, "combined", ventana)
 
-        estado, ultimo_error = _feed_status(spec, heartbeats, latencia, muestras, ausentes)
+        if spec["feed"] == "liquidations":
+            estado, ultimo_error = _liquidation_feed_quality_status(
+                liquidation_health,
+                spec["exchanges"],
+                now,
+                ventana,
+            )
+        else:
+            estado, ultimo_error = _feed_status(
+                spec,
+                heartbeats,
+                latencia,
+                muestras,
+                ausentes,
+            )
         filas.append(
             {
                 "feed": spec["feed"],
@@ -3059,6 +3193,41 @@ async def feed_quality(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             "esperada; el resto se publica como null, no como cero."
         ),
     }
+
+
+def _liquidation_feed_quality_status(
+    health: dict[str, dict[str, Any]],
+    exchanges: tuple[str, ...],
+    now: datetime,
+    window_seconds: int,
+) -> tuple[str, str | None]:
+    """Evaluate operational state and continuity across the displayed quality window."""
+    rows = [(exchange, health.get(exchange)) for exchange in exchanges]
+    if any(row is None for _, row in rows):
+        return "UNAVAILABLE", "sin salud de todos los streams"
+
+    freshness = timedelta(seconds=COLLECTOR_THRESHOLDS["scalp"][1])
+    continuity_start = now - timedelta(seconds=window_seconds)
+    for exchange, row in rows:
+        assert row is not None
+        updated_at = _as_utc_datetime(row.get("updated_at"))
+        if (
+            row.get("status") != "ok"
+            or updated_at is None
+            or not (now - freshness <= updated_at <= now + timedelta(seconds=1))
+        ):
+            detail = row.get("detail")
+            return "DOWN", str(detail) if detail else f"stream {exchange} no saludable"
+
+    for exchange, row in rows:
+        assert row is not None
+        healthy_since = _as_utc_datetime(row.get("healthy_since"))
+        last_loss_at = _as_utc_datetime(row.get("last_loss_at"))
+        if healthy_since is None or healthy_since > continuity_start:
+            return "PARTIAL", f"continuidad incompleta: {exchange} reconectó dentro de la ventana"
+        if last_loss_at is not None and last_loss_at >= continuity_start:
+            return "PARTIAL", f"continuidad incompleta: pérdida reciente en {exchange}"
+    return "OK", None
 
 
 def _feed_status(

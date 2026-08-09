@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ from app.scalp_logic import (
     FEED_DEFINITIONS,
     GAP_MEASURABLE_TABLES,
     _feed_status,
+    _liquidation_feed_quality_status,
     feed_quality,
     max_internal_gap,
     metric_quality,
@@ -101,6 +103,48 @@ def test_un_feed_de_eventos_sin_eventos_no_es_un_feed_caido() -> None:
     """Liquidaciones: colector vivo y cero eventos es CALMA, no fallo."""
     estado, _ = _feed_status(LIQUIDACIONES, _hb(), latencia=3600.0, muestras=0, ausentes=[])
     assert estado == "OK"
+
+
+def test_calidad_de_liquidaciones_exige_continuidad_de_toda_la_ventana() -> None:
+    now = datetime(2026, 8, 9, 12, 0, tzinfo=UTC)
+    complete = {
+        exchange: {
+            "status": "ok",
+            "healthy_since": now - timedelta(minutes=20),
+            "last_loss_at": now - timedelta(minutes=20),
+            "updated_at": now - timedelta(seconds=10),
+            "detail": None,
+        }
+        for exchange in ("binance", "bybit")
+    }
+    assert _liquidation_feed_quality_status(
+        complete,
+        ("binance", "bybit"),
+        now,
+        900,
+    ) == ("OK", None)
+
+    reconnected = {exchange: dict(row) for exchange, row in complete.items()}
+    reconnected["bybit"]["healthy_since"] = now - timedelta(minutes=2)
+    status, detail = _liquidation_feed_quality_status(
+        reconnected,
+        ("binance", "bybit"),
+        now,
+        900,
+    )
+    assert status == "PARTIAL"
+    assert "reconectó" in str(detail)
+
+    lost = {exchange: dict(row) for exchange, row in complete.items()}
+    lost["binance"]["last_loss_at"] = now - timedelta(minutes=1)
+    status, detail = _liquidation_feed_quality_status(
+        lost,
+        ("binance", "bybit"),
+        now,
+        900,
+    )
+    assert status == "PARTIAL"
+    assert "pérdida" in str(detail)
 
 
 def test_un_feed_continuo_sin_registros_si_esta_stale() -> None:
