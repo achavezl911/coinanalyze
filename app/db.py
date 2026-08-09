@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 import asyncpg
 
 from app.config import MARKET_SYMBOL_CATALOG, MarketSymbol, Settings
@@ -72,6 +74,49 @@ async def acquire_service_lock(
         await conn.close()
         raise
     return conn
+
+
+async def monitor_service_lock(
+    conn: asyncpg.Connection,
+    service: str,
+    shard_index: int = 0,
+    shard_count: int = 1,
+    *,
+    poll_seconds: float = 10.0,
+    query_timeout: float = 10.0,
+) -> None:
+    """Fail when the PostgreSQL session that owns a service lock is lost."""
+    key = f"coinanalyze:{service}:{shard_index}:{shard_count}"
+    while True:
+        await asyncio.sleep(poll_seconds)
+        try:
+            await asyncio.wait_for(conn.fetchval("SELECT 1"), timeout=query_timeout)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            raise RuntimeError(f"service lock connection lost: {key}") from exc
+
+
+async def wait_for_stop_or_lock_loss(
+    stop: asyncio.Event,
+    lock_monitor: asyncio.Task[None],
+    *,
+    timeout: float | None = None,
+) -> bool:
+    """Return whether shutdown was requested, and propagate lock loss immediately."""
+    stop_wait = asyncio.create_task(stop.wait())
+    try:
+        done, _ = await asyncio.wait(
+            (stop_wait, lock_monitor),
+            timeout=timeout,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        if lock_monitor in done:
+            await lock_monitor
+        return stop_wait in done
+    finally:
+        stop_wait.cancel()
+        await asyncio.gather(stop_wait, return_exceptions=True)
 
 
 async def heartbeat(
@@ -211,3 +256,189 @@ async def mark_feed_error(
     data_loss: bool = False,
 ) -> None:
     await _mark_feed_unhealthy(conn, feed, exchange, "error", detail, data_loss)
+
+
+async def _mark_feed_shard_health(
+    conn: asyncpg.Connection,
+    feed: str,
+    exchange: str,
+    shard_index: int,
+    shard_count: int,
+    expected_shards: tuple[int, ...],
+    status: str,
+    detail: str | None,
+    data_loss: bool,
+) -> None:
+    """Persist one shard and refresh the fail-closed feed/exchange aggregate."""
+    if shard_index not in expected_shards:
+        raise ValueError("feed health cannot be written by a shard without symbols")
+    lock_key = f"coinanalyze:feed-health:{feed}:{exchange}:{shard_count}"
+    async with conn.transaction():
+        await conn.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+            lock_key,
+        )
+        await conn.execute(
+            """
+            INSERT INTO market_feed_health_shard(
+              feed, exchange, shard_index, shard_count, status,
+              healthy_since, last_loss_at, updated_at, detail
+            ) VALUES(
+              $1, $2, $3, $4, $5,
+              CASE WHEN $5='ok' THEN now() END,
+              CASE WHEN $7 THEN now() END,
+              now(), $6
+            )
+            ON CONFLICT(feed, exchange, shard_index, shard_count) DO UPDATE SET
+              status=EXCLUDED.status,
+              healthy_since=CASE
+                WHEN EXCLUDED.status='ok' AND market_feed_health_shard.status='ok'
+                  THEN market_feed_health_shard.healthy_since
+                WHEN EXCLUDED.status='ok' THEN now()
+                ELSE market_feed_health_shard.healthy_since
+              END,
+              last_loss_at=CASE
+                WHEN $7 THEN now()
+                ELSE market_feed_health_shard.last_loss_at
+              END,
+              updated_at=now(),
+              detail=EXCLUDED.detail
+            """,
+            feed,
+            exchange,
+            shard_index,
+            shard_count,
+            status,
+            detail,
+            data_loss,
+        )
+        await conn.execute(
+            """
+            WITH aggregate AS (
+              SELECT
+                COUNT(*)::int AS observed_shards,
+                bool_or(status='error') AS has_error,
+                bool_or(status='degraded') AS has_degraded,
+                bool_and(status='ok') AS all_ok,
+                MAX(healthy_since) AS healthy_since,
+                MAX(last_loss_at) AS last_loss_at,
+                MIN(updated_at) AS updated_at,
+                left(
+                  string_agg(
+                    'shard_' || shard_index || '=' || status || ':' || COALESCE(detail,''),
+                    ';' ORDER BY shard_index
+                  ),
+                  500
+                ) AS detail
+              FROM market_feed_health_shard
+              WHERE feed=$1 AND exchange=$2 AND shard_count=$3
+                AND shard_index=ANY($4::integer[])
+            )
+            INSERT INTO market_feed_health(
+              feed, exchange, status, healthy_since, last_loss_at, updated_at, detail
+            )
+            SELECT
+              $1,
+              $2,
+              CASE
+                WHEN observed_shards <> cardinality($4::integer[]) THEN 'degraded'
+                WHEN has_error THEN 'error'
+                WHEN has_degraded THEN 'degraded'
+                ELSE 'ok'
+              END,
+              CASE
+                WHEN observed_shards = cardinality($4::integer[]) AND all_ok
+                  THEN healthy_since
+              END,
+              last_loss_at,
+              COALESCE(updated_at, now()),
+              CASE
+                WHEN observed_shards <> cardinality($4::integer[])
+                  THEN left(
+                    'missing shard health: expected=' || cardinality($4::integer[]) ||
+                    ',observed=' || observed_shards,
+                    500
+                  )
+                ELSE detail
+              END
+            FROM aggregate
+            ON CONFLICT(feed, exchange) DO UPDATE SET
+              status=EXCLUDED.status,
+              healthy_since=EXCLUDED.healthy_since,
+              last_loss_at=EXCLUDED.last_loss_at,
+              updated_at=EXCLUDED.updated_at,
+              detail=EXCLUDED.detail
+            """,
+            feed,
+            exchange,
+            shard_count,
+            list(expected_shards),
+        )
+
+
+async def mark_feed_shard_connected(
+    conn: asyncpg.Connection,
+    feed: str,
+    exchange: str,
+    shard_index: int,
+    shard_count: int,
+    expected_shards: tuple[int, ...],
+    detail: str | None = None,
+) -> None:
+    await _mark_feed_shard_health(
+        conn,
+        feed,
+        exchange,
+        shard_index,
+        shard_count,
+        expected_shards,
+        "ok",
+        detail,
+        False,
+    )
+
+
+async def mark_feed_shard_degraded(
+    conn: asyncpg.Connection,
+    feed: str,
+    exchange: str,
+    shard_index: int,
+    shard_count: int,
+    expected_shards: tuple[int, ...],
+    detail: str | None = None,
+    data_loss: bool = False,
+) -> None:
+    await _mark_feed_shard_health(
+        conn,
+        feed,
+        exchange,
+        shard_index,
+        shard_count,
+        expected_shards,
+        "degraded",
+        detail,
+        data_loss,
+    )
+
+
+async def mark_feed_shard_error(
+    conn: asyncpg.Connection,
+    feed: str,
+    exchange: str,
+    shard_index: int,
+    shard_count: int,
+    expected_shards: tuple[int, ...],
+    detail: str | None = None,
+    data_loss: bool = False,
+) -> None:
+    await _mark_feed_shard_health(
+        conn,
+        feed,
+        exchange,
+        shard_index,
+        shard_count,
+        expected_shards,
+        "error",
+        detail,
+        data_loss,
+    )

@@ -26,6 +26,26 @@ def test_scalp_score_uses_spot_futures_divergence():
     assert summary["short_score"] > summary["long_score"]
 
 
+class _CleanupConnection:
+    def __init__(self):
+        self.calls: list[tuple[str, tuple[object, ...]]] = []
+
+    async def execute(self, query, *args):
+        self.calls.append((query, args))
+
+
+@pytest.mark.asyncio
+async def test_designated_shard_cleans_expired_rows_for_removed_symbols():
+    conn = _CleanupConnection()
+
+    await scalp.cleanup_expired_rows(conn)  # type: ignore[arg-type]
+
+    assert scalp.owns_global_cleanup(0) is True
+    assert scalp.owns_global_cleanup(1) is False
+    assert len(conn.calls) == 5
+    assert all("symbol" not in query for query, _args in conn.calls)
+
+
 @pytest.mark.parametrize("book_status", ["missing", "stale"])
 def test_scalp_summary_degrades_when_book_is_not_fresh(book_status: str):
     summary = compute_scalp_summary(

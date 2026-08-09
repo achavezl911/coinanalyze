@@ -17,7 +17,13 @@ from app.coinalyze import (
     validate_rate_budget,
 )
 from app.config import BYBIT_SYMBOL_MAP, Settings, get_settings
-from app.db import acquire_service_lock, create_pool, heartbeat
+from app.db import (
+    acquire_service_lock,
+    create_pool,
+    heartbeat,
+    monitor_service_lock,
+    wait_for_stop_or_lock_loss,
+)
 from app.external_macro import refresh_external_macro
 from app.logging_setup import configure_logging
 from app.metrics import compute_and_store_all
@@ -318,6 +324,7 @@ async def ingest_ohlcv_cycle(
                 conn, ohlcv, identity, start_ohlcv, end_ts, "1min"
             )
             rolled_up = await rollup_ohlcv_5m(conn, symbols, start_ohlcv, end_ts)
+            await compute_and_store_all(conn, symbols)
         await heartbeat(
             conn,
             "ingest",
@@ -392,7 +399,6 @@ async def ingest_metrics_cycle(
             counts["long_short"] = await upsert_long_short(
                 conn, long_short, identity, start_history, end_ts
             )
-            await compute_and_store_all(conn, symbols)
         await heartbeat(conn, "ingest", status="ok", detail=f"feed=metrics_5m,{counts}"[:500])
     LOGGER.info("ingest_metrics_cycle_complete counts=%s", counts)
     # Este contexto cambia despacio y no consume cuota de Coinalyze. Cada fuente se degrada
@@ -458,6 +464,11 @@ async def run() -> None:
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
+    lock_monitor = asyncio.create_task(
+        monitor_service_lock(service_lock, "ingest"),
+        name="service-lock",
+    )
+    tasks: tuple[asyncio.Task[None], ...] = ()
 
     try:
         limiter = PostgresSlidingWindowRateLimiter(
@@ -489,11 +500,12 @@ async def run() -> None:
                     )
                 ),
             )
-            await stop.wait()
-            for task in tasks:
-                task.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
+            await wait_for_stop_or_lock_loss(stop, lock_monitor)
     finally:
+        for task in tasks:
+            task.cancel()
+        lock_monitor.cancel()
+        await asyncio.gather(*tasks, lock_monitor, return_exceptions=True)
         await pool.close()
         await service_lock.close()
 

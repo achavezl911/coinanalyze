@@ -30,11 +30,14 @@ ALTER TABLE spot_trades_realtime DROP CONSTRAINT IF EXISTS spot_trades_realtime_
 ALTER TABLE spot_trades_realtime ADD CONSTRAINT spot_trades_realtime_symbol_check
     CHECK (symbol IN ('BTC','ETH','SOL'));
 
+DELETE FROM pipeline_heartbeat
+WHERE service ~ '^(ws|ws-binance|ws-bybit|scalp):[0-9]+/[0-9]+$';
 ALTER TABLE pipeline_heartbeat DROP CONSTRAINT IF EXISTS pipeline_heartbeat_service_check;
 ALTER TABLE pipeline_heartbeat ADD CONSTRAINT pipeline_heartbeat_service_check
     CHECK (service IN ('ingest','ws','ws-binance','ws-bybit','scalp','daily','api'));
 
 DROP TABLE IF EXISTS external_api_rate_event;
+DROP TABLE IF EXISTS market_feed_health_shard;
 DROP TABLE IF EXISTS market_assets;
 
 COMMIT;

@@ -45,4 +45,19 @@ CREATE TABLE IF NOT EXISTS external_api_rate_event (
 CREATE INDEX IF NOT EXISTS external_api_rate_event_provider_ts_idx
     ON external_api_rate_event(provider, ts);
 
+CREATE TABLE IF NOT EXISTS market_feed_health_shard (
+    feed text NOT NULL,
+    exchange text NOT NULL,
+    shard_index integer NOT NULL CHECK (shard_index >= 0),
+    shard_count integer NOT NULL CHECK (shard_count > 0 AND shard_index < shard_count),
+    status text NOT NULL CHECK (status IN ('ok','degraded','error')),
+    healthy_since timestamptz,
+    last_loss_at timestamptz,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    detail text CHECK (detail IS NULL OR length(detail) <= 500),
+    PRIMARY KEY (feed, exchange, shard_index, shard_count)
+);
+CREATE INDEX IF NOT EXISTS market_feed_health_shard_updated_idx
+    ON market_feed_health_shard(feed, exchange, shard_count, updated_at DESC);
+
 COMMIT;

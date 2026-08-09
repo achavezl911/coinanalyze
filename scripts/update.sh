@@ -85,14 +85,13 @@ write_nginx_allowlist() {
 }
 
 SERVICES=(coinalyze-api coinalyze-ingest coinalyze-daily)
-for service in coinalyze-ws coinalyze-scalp; do
-  systemctl is-active --quiet "$service" && SERVICES+=("$service")
-done
-mapfile -t ACTIVE_SHARD_SERVICES < <(
-  systemctl list-units --type=service --state=active --plain --no-legend \
-    'coinalyze-ws@*.service' 'coinalyze-scalp@*.service' | awk '{print $1}'
+mapfile -t CONFIGURED_COLLECTOR_SERVICES < <(
+  systemctl list-unit-files --type=service --state=enabled --no-legend \
+    'coinalyze-ws.service' 'coinalyze-scalp.service' \
+    'coinalyze-ws@*.service' 'coinalyze-scalp@*.service' \
+    | awk '{print $1}' | sort -u
 )
-SERVICES+=("${ACTIVE_SHARD_SERVICES[@]}")
+SERVICES+=("${CONFIGURED_COLLECTOR_SERVICES[@]}")
 BACKUP_KEY_FILE=${BACKUP_ENCRYPTION_KEY_FILE:-/etc/coinalyze/backup.key}
 recover() {
   rc=$?

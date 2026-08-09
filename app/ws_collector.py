@@ -14,7 +14,14 @@ from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosed
 
 from app.config import SPOT_PAIR_MAP, WHALE_THRESHOLD_MAP, WS_SYMBOL_MAP, get_settings
-from app.db import acquire_service_lock, create_pool, heartbeat, heartbeat_shard
+from app.db import (
+    acquire_service_lock,
+    create_pool,
+    heartbeat,
+    heartbeat_shard,
+    monitor_service_lock,
+    wait_for_stop_or_lock_loss,
+)
 from app.logging_setup import configure_logging
 from app.sharding import assigned_symbols
 
@@ -507,6 +514,15 @@ async def run() -> None:
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
+    lock_monitor = asyncio.create_task(
+        monitor_service_lock(
+            service_lock,
+            "ws",
+            settings.COLLECTOR_SHARD_INDEX,
+            settings.COLLECTOR_SHARD_COUNT,
+        ),
+        name="service-lock",
+    )
 
     tasks = [
         asyncio.create_task(flush_minute(pool), name="flush-minute"),
@@ -529,11 +545,12 @@ async def run() -> None:
             )
         )
     try:
-        await stop.wait()
+        await wait_for_stop_or_lock_loss(stop, lock_monitor)
     finally:
         for task in tasks:
             task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+        lock_monitor.cancel()
+        await asyncio.gather(*tasks, lock_monitor, return_exceptions=True)
         await pool.close()
         await service_lock.close()
 

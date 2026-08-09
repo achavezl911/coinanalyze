@@ -61,16 +61,26 @@ def test_horizontal_collectors_have_compatible_template_units() -> None:
 
 
 def test_scalable_services_acquire_lifetime_locks_before_websockets() -> None:
-    for module in ("app/ws_collector.py", "app/scalp_collector.py"):
+    for module in (
+        "app/ws_collector.py",
+        "app/scalp_collector.py",
+        "app/ingest.py",
+        "app/daily_agg.py",
+    ):
         source = Path(module).read_text(encoding="utf-8")
         assert source.index("await acquire_service_lock(") < source.index("await create_pool(")
+        assert "monitor_service_lock(" in source
 
     assert 'acquire_service_lock(settings, "ingest")' in Path("app/ingest.py").read_text()
     assert 'acquire_service_lock(settings, "daily")' in Path("app/daily_agg.py").read_text()
 
 
-def test_update_restarts_active_template_instances_without_starting_legacy_duplicates() -> None:
+def test_update_restarts_enabled_collectors_even_when_not_active() -> None:
     source = Path("scripts/update.sh").read_text(encoding="utf-8")
-    assert "ACTIVE_SHARD_SERVICES" in source
+    assert "CONFIGURED_COLLECTOR_SERVICES" in source
+    assert "list-unit-files --type=service --state=enabled" in source
     assert "'coinalyze-ws@*.service' 'coinalyze-scalp@*.service'" in source
+    assert "for service in coinalyze-ws coinalyze-scalp" not in source
+    assert "ACTIVE_SHARD_SERVICES" not in source
+    assert "list-units --type=service --state=active" not in source
     assert "enable --now coinalyze-scalp" not in source

@@ -11,7 +11,13 @@ import asyncpg
 
 from app.coinalyze import CoinalyzeClient, PostgresSlidingWindowRateLimiter, validate_rate_budget
 from app.config import SPOT_HISTORY_MAP, WS_SYMBOL_MAP, get_settings
-from app.db import acquire_service_lock, create_pool, heartbeat
+from app.db import (
+    acquire_service_lock,
+    create_pool,
+    heartbeat,
+    monitor_service_lock,
+    wait_for_stop_or_lock_loss,
+)
 from app.ingest import seconds_until_aligned_run, upsert_ohlcv
 from app.interpretation import evaluate_setups
 from app.logging_setup import configure_logging
@@ -550,6 +556,10 @@ async def run() -> None:
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
+    lock_monitor = asyncio.create_task(
+        monitor_service_lock(service_lock, "daily"),
+        name="service-lock",
+    )
     try:
         limiter = PostgresSlidingWindowRateLimiter(pool, settings.COINALYZE_RATE_LIMIT_UNITS)
         async with CoinalyzeClient(
@@ -565,13 +575,23 @@ async def run() -> None:
                     else seconds_until_aligned_run(datetime.now(UTC).timestamp(), 3600, 45)
                 )
                 first_run = False
-                try:
-                    await asyncio.wait_for(stop.wait(), timeout=timeout)
+                if await wait_for_stop_or_lock_loss(
+                    stop,
+                    lock_monitor,
+                    timeout=timeout,
+                ):
                     continue
-                except TimeoutError:
-                    pass
+                cycle_task = asyncio.create_task(cycle(pool, client))
+                done, _ = await asyncio.wait(
+                    (cycle_task, lock_monitor),
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                if lock_monitor in done:
+                    cycle_task.cancel()
+                    await asyncio.gather(cycle_task, return_exceptions=True)
+                    await lock_monitor
                 try:
-                    await cycle(pool, client)
+                    await cycle_task
                 except Exception as exc:
                     LOGGER.exception("daily_cycle_failed")
                     try:
@@ -579,6 +599,8 @@ async def run() -> None:
                     except Exception:
                         LOGGER.exception("daily_heartbeat_failed")
     finally:
+        lock_monitor.cancel()
+        await asyncio.gather(lock_monitor, return_exceptions=True)
         await pool.close()
         await service_lock.close()
 

@@ -94,10 +94,29 @@ def load_market_catalog(path: str | os.PathLike[str] | None = None) -> tuple[Mar
     return items
 
 
-_VERSIONED_CATALOG_PATH = Path("config/market_symbols.json")
-MARKET_SYMBOL_CATALOG_FILE = os.environ.get("MARKET_SYMBOL_CATALOG_FILE", "").strip()
-if not MARKET_SYMBOL_CATALOG_FILE and _VERSIONED_CATALOG_PATH.is_file():
-    MARKET_SYMBOL_CATALOG_FILE = str(_VERSIONED_CATALOG_PATH)
+def resolve_project_root(
+    module_file: str | os.PathLike[str] = __file__,
+    deployment_root: str | os.PathLike[str] = "/opt/coinalyze",
+) -> Path:
+    source_root = Path(module_file).resolve().parents[1]
+    return source_root if (source_root / "config").is_dir() else Path(deployment_root)
+
+
+_PROJECT_ROOT = resolve_project_root()
+
+
+def resolve_market_catalog_path(configured_path: str | None = None) -> str:
+    configured = (configured_path or "").strip()
+    if configured:
+        path = Path(configured)
+        return str(path if path.is_absolute() else _PROJECT_ROOT / path)
+    versioned_path = _PROJECT_ROOT / "config" / "market_symbols.json"
+    return str(versioned_path) if versioned_path.is_file() else ""
+
+
+MARKET_SYMBOL_CATALOG_FILE = resolve_market_catalog_path(
+    os.environ.get("MARKET_SYMBOL_CATALOG_FILE")
+)
 MARKET_SYMBOL_CATALOG = load_market_catalog(MARKET_SYMBOL_CATALOG_FILE or None)
 SUPPORTED_SYMBOLS = tuple(item.symbol for item in MARKET_SYMBOL_CATALOG)
 WS_SYMBOL_MAP = {item.symbol: item.base_asset for item in MARKET_SYMBOL_CATALOG}

@@ -19,9 +19,10 @@ from app.db import (
     acquire_service_lock,
     create_pool,
     heartbeat_shard,
-    mark_feed_connected,
-    mark_feed_degraded,
-    mark_feed_error,
+    mark_feed_shard_connected,
+    mark_feed_shard_degraded,
+    mark_feed_shard_error,
+    monitor_service_lock,
 )
 from app.logging_setup import configure_logging
 from app.scalp_logic import compute_scalp_summary, scalp_context
@@ -36,6 +37,15 @@ ACTIVE_SYMBOLS = assigned_symbols(
     SETTINGS.COLLECTOR_SHARD_COUNT,
 )
 ACTIVE_SYMBOL_SET = frozenset(ACTIVE_SYMBOLS)
+LIQUIDATION_HEALTH_SHARDS = tuple(
+    shard_index
+    for shard_index in range(SETTINGS.COLLECTOR_SHARD_COUNT)
+    if assigned_symbols(
+        tuple(SETTINGS.SYMBOLS),
+        shard_index,
+        SETTINGS.COLLECTOR_SHARD_COUNT,
+    )
+)
 
 BINANCE_STREAM_BASE = "wss://fstream.binance.com/stream?streams="
 BINANCE_MARKET_STREAM_BASE = "wss://fstream.binance.com/market/stream?streams="
@@ -437,20 +447,34 @@ async def persist_liquidation_feed_state(
     try:
         async with pool.acquire() as conn:
             if status == "ok":
-                await mark_feed_connected(conn, "liquidations", exchange, detail)
-            elif status == "error":
-                await mark_feed_error(
+                await mark_feed_shard_connected(
                     conn,
                     "liquidations",
                     exchange,
+                    SETTINGS.COLLECTOR_SHARD_INDEX,
+                    SETTINGS.COLLECTOR_SHARD_COUNT,
+                    LIQUIDATION_HEALTH_SHARDS,
+                    detail,
+                )
+            elif status == "error":
+                await mark_feed_shard_error(
+                    conn,
+                    "liquidations",
+                    exchange,
+                    SETTINGS.COLLECTOR_SHARD_INDEX,
+                    SETTINGS.COLLECTOR_SHARD_COUNT,
+                    LIQUIDATION_HEALTH_SHARDS,
                     detail,
                     data_loss=data_loss,
                 )
             else:
-                await mark_feed_degraded(
+                await mark_feed_shard_degraded(
                     conn,
                     "liquidations",
                     exchange,
+                    SETTINGS.COLLECTOR_SHARD_INDEX,
+                    SETTINGS.COLLECTOR_SHARD_COUNT,
+                    LIQUIDATION_HEALTH_SHARDS,
                     detail,
                     data_loss=data_loss,
                 )
@@ -469,25 +493,34 @@ async def persist_liquidation_health_snapshot(conn: asyncpg.Connection) -> None:
     for exchange, connected in LIQ_FEED_CONNECTED.items():
         loss_at = LIQ_LOSS_PENDING.get(exchange)
         if loss_at is not None:
-            await mark_feed_degraded(
+            await mark_feed_shard_degraded(
                 conn,
                 "liquidations",
                 exchange,
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+                LIQUIDATION_HEALTH_SHARDS,
                 f"queue overflow detected at {loss_at.isoformat()}",
                 data_loss=True,
             )
         if connected:
-            await mark_feed_connected(
+            await mark_feed_shard_connected(
                 conn,
                 "liquidations",
                 exchange,
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+                LIQUIDATION_HEALTH_SHARDS,
                 "subscription active",
             )
         else:
-            await mark_feed_degraded(
+            await mark_feed_shard_degraded(
                 conn,
                 "liquidations",
                 exchange,
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+                LIQUIDATION_HEALTH_SHARDS,
                 "stream disconnected",
             )
         if loss_at is not None and LIQ_LOSS_PENDING.get(exchange) == loss_at:
@@ -498,10 +531,13 @@ async def reset_liquidation_feed_health(conn: asyncpg.Connection) -> None:
     """Break persisted continuity before any stream can reconnect after process start."""
     for exchange in LIQ_FEED_CONNECTED:
         LIQ_FEED_CONNECTED[exchange] = False
-        await mark_feed_degraded(
+        await mark_feed_shard_degraded(
             conn,
             "liquidations",
             exchange,
+            SETTINGS.COLLECTOR_SHARD_INDEX,
+            SETTINGS.COLLECTOR_SHARD_COUNT,
+            LIQUIDATION_HEALTH_SHARDS,
             "scalp collector starting; awaiting stream confirmation",
         )
 
@@ -1188,20 +1224,47 @@ async def monitor(pool: asyncpg.Pool) -> None:
             LOGGER.exception("scalp_heartbeat_failed")
 
 
+def owns_global_cleanup(shard_index: int) -> bool:
+    return shard_index == 0
+
+
+async def cleanup_expired_rows(conn: asyncpg.Connection) -> None:
+    await conn.execute(
+        "DELETE FROM futures_trades_realtime "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_TRADE_RETENTION_HOURS,
+    )
+    # futures_trades_agg debe cubrir una sesion NYSE completa (24h) para que
+    # daily_agg pueda calcular el CVD de futuros de Binance+Bybit; ver
+    # SCALP_MINUTE_RETENTION_HOURS.
+    await conn.execute(
+        "DELETE FROM futures_trades_agg "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_MINUTE_RETENTION_HOURS,
+    )
+    await conn.execute(
+        "DELETE FROM orderbook_snapshot "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_ORDERBOOK_RETENTION_HOURS,
+    )
+    await conn.execute(
+        "DELETE FROM liquidations_realtime "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_TRADE_RETENTION_HOURS,
+    )
+    await conn.execute(
+        "DELETE FROM scalp_signal_snapshot "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_SIGNAL_RETENTION_HOURS,
+    )
+
+
 async def cleanup(pool: asyncpg.Pool) -> None:
     while True:
         await asyncio.sleep(3600)
         try:
             async with pool.acquire() as conn:
-                symbols = list(ACTIVE_SYMBOLS)
-                await conn.execute("DELETE FROM futures_trades_realtime WHERE ts < now()-($1::int * interval '1 hour') AND symbol=ANY($2::text[])", SETTINGS.SCALP_TRADE_RETENTION_HOURS, symbols)
-                # futures_trades_agg debe cubrir una sesion NYSE completa (24h) para que
-                # daily_agg pueda calcular el CVD de futuros de Binance+Bybit; ver
-                # SCALP_MINUTE_RETENTION_HOURS.
-                await conn.execute("DELETE FROM futures_trades_agg WHERE ts < now()-($1::int * interval '1 hour') AND symbol=ANY($2::text[])", SETTINGS.SCALP_MINUTE_RETENTION_HOURS, symbols)
-                await conn.execute("DELETE FROM orderbook_snapshot WHERE ts < now()-($1::int * interval '1 hour') AND symbol=ANY($2::text[])", SETTINGS.SCALP_ORDERBOOK_RETENTION_HOURS, symbols)
-                await conn.execute("DELETE FROM liquidations_realtime WHERE ts < now()-($1::int * interval '1 hour') AND symbol=ANY($2::text[])", SETTINGS.SCALP_TRADE_RETENTION_HOURS, symbols)
-                await conn.execute("DELETE FROM scalp_signal_snapshot WHERE ts < now()-($1::int * interval '1 hour') AND symbol=ANY($2::text[])", SETTINGS.SCALP_SIGNAL_RETENTION_HOURS, symbols)
+                await cleanup_expired_rows(conn)
         except Exception:
             LOGGER.exception("scalp_cleanup_failed")
 
@@ -1221,9 +1284,19 @@ async def main() -> None:
         ),
     )
     tasks = [
+        asyncio.create_task(
+            monitor_service_lock(
+                service_lock,
+                "scalp",
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+            ),
+            name="service-lock",
+        ),
         asyncio.create_task(monitor(pool)),
-        asyncio.create_task(cleanup(pool)),
     ]
+    if owns_global_cleanup(SETTINGS.COLLECTOR_SHARD_INDEX):
+        tasks.append(asyncio.create_task(cleanup(pool)))
     if ACTIVE_SYMBOLS:
         async with pool.acquire() as conn:
             await reset_liquidation_feed_health(conn)

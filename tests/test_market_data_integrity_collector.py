@@ -249,14 +249,14 @@ async def test_monitor_persists_queue_loss_then_restores_connected_status(
     monkeypatch.setattr(scalp, "LIQ_FEED_CONNECTED", {"binance": True, "bybit": False})
     monkeypatch.setattr(scalp, "LIQ_LOSS_PENDING", {"binance": loss_at})
 
-    async def degraded(_conn, _feed, exchange, _detail=None, data_loss=False):
+    async def degraded(_conn, _feed, exchange, *_args, data_loss=False):
         calls.append((exchange, "degraded", data_loss))
 
-    async def connected(_conn, _feed, exchange, _detail=None):
+    async def connected(_conn, _feed, exchange, *_args):
         calls.append((exchange, "ok", False))
 
-    monkeypatch.setattr(scalp, "mark_feed_degraded", degraded)
-    monkeypatch.setattr(scalp, "mark_feed_connected", connected)
+    monkeypatch.setattr(scalp, "mark_feed_shard_degraded", degraded)
+    monkeypatch.setattr(scalp, "mark_feed_shard_connected", connected)
 
     await persist_liquidation_health_snapshot(object())  # type: ignore[arg-type]
 
@@ -276,11 +276,11 @@ async def test_collector_startup_breaks_persisted_liquidation_continuity(
     connected = {"binance": True, "bybit": True}
     monkeypatch.setattr(scalp, "LIQ_FEED_CONNECTED", connected)
 
-    async def degraded(_conn, feed, exchange, _detail=None, data_loss=False):
+    async def degraded(_conn, feed, exchange, *_args, data_loss=False):
         assert data_loss is False
         calls.append((feed, exchange))
 
-    monkeypatch.setattr(scalp, "mark_feed_degraded", degraded)
+    monkeypatch.setattr(scalp, "mark_feed_shard_degraded", degraded)
 
     await reset_liquidation_feed_health(object())  # type: ignore[arg-type]
 

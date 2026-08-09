@@ -8,7 +8,12 @@ import asyncpg
 import pytest
 
 from app.config import MarketSymbol, Settings
-from app.db import acquire_service_lock, heartbeat_shard, sync_market_catalog
+from app.db import (
+    acquire_service_lock,
+    heartbeat_shard,
+    monitor_service_lock,
+    sync_market_catalog,
+)
 
 
 class _LockConnection:
@@ -39,6 +44,26 @@ async def test_service_lock_closes_connection_when_shard_is_owned(monkeypatch):
 
     assert conn.closed is True
     assert conn.key == "coinanalyze:ws:1:3"
+
+
+class _LostLockConnection:
+    async def fetchval(self, _query: str):
+        raise ConnectionError("database connection closed")
+
+
+@pytest.mark.asyncio
+async def test_service_lock_monitor_fails_process_on_connection_loss():
+    with pytest.raises(
+        RuntimeError,
+        match="service lock connection lost: coinanalyze:scalp:1:2",
+    ):
+        await monitor_service_lock(
+            _LostLockConnection(),  # type: ignore[arg-type]
+            "scalp",
+            1,
+            2,
+            poll_seconds=0,
+        )
 
 
 class _CatalogConnection:
@@ -130,6 +155,18 @@ def test_schema_removes_literal_asset_checks_and_adds_foreign_keys():
     assert "symbol text NOT NULL CHECK (symbol IN ('BTC','ETH','SOL'))" not in source
     assert source.count("REFERENCES market_assets(base_asset)") >= 3
     assert "CREATE TABLE IF NOT EXISTS external_api_rate_event" in source
+
+
+def test_horizontal_rollback_removes_shard_heartbeats_before_legacy_check():
+    source = Path(
+        "sql/migrations/20260809_horizontal_safe_collectors.down.sql"
+    ).read_text(encoding="utf-8")
+    delete = "DELETE FROM pipeline_heartbeat"
+    legacy_check = "ALTER TABLE pipeline_heartbeat ADD CONSTRAINT"
+
+    assert delete in source
+    assert "(ws|ws-binance|ws-bybit|scalp):[0-9]+/[0-9]+" in source
+    assert source.index(delete) < source.index(legacy_check)
 
 
 class _HeartbeatConnection:

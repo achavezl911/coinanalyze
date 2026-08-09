@@ -1,7 +1,9 @@
 import json
+from pathlib import Path
 
 import pytest
 
+import app.config as config
 from app.config import (
     BYBIT_SYMBOL_MAP,
     DEFAULT_MARKET_CATALOG,
@@ -15,6 +17,8 @@ from app.config import (
     WS_SYMBOL_MAP,
     Settings,
     load_market_catalog,
+    resolve_market_catalog_path,
+    resolve_project_root,
 )
 
 
@@ -77,6 +81,29 @@ def test_versioned_catalog_can_extend_with_fourth_asset(tmp_path):
 
     assert len(catalog) == 4
     assert catalog[-1].base_asset == "XRP"
+
+
+def test_versioned_catalog_auto_detection_is_independent_of_working_directory(
+    tmp_path,
+    monkeypatch,
+):
+    project_root = tmp_path / "project"
+    catalog_path = project_root / "config" / "market_symbols.json"
+    catalog_path.parent.mkdir(parents=True)
+    catalog_path.write_text('{"version":1,"symbols":[]}', encoding="utf-8")
+    unrelated_cwd = tmp_path / "elsewhere"
+    unrelated_cwd.mkdir()
+    monkeypatch.setattr(config, "_PROJECT_ROOT", project_root)
+    monkeypatch.chdir(unrelated_cwd)
+
+    assert Path(resolve_market_catalog_path()) == catalog_path
+
+
+def test_installed_package_uses_stable_deployment_root_for_catalog(tmp_path):
+    installed_module = tmp_path / "venv" / "site-packages" / "app" / "config.py"
+    deployment_root = tmp_path / "deployment"
+
+    assert resolve_project_root(installed_module, deployment_root) == deployment_root
 
 
 def test_invalid_shard_settings_are_rejected():
