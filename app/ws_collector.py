@@ -15,9 +15,13 @@ from websockets.exceptions import ConnectionClosed
 
 from app.config import SPOT_PAIR_MAP, WHALE_THRESHOLD_MAP, WS_SYMBOL_MAP, get_settings
 from app.db import (
+    ServiceOwnership,
+    ServiceOwnershipLost,
     acquire_service_lock,
     create_pool,
+    fenced_transaction,
     heartbeat,
+    heartbeat_owned,
     heartbeat_shard,
     monitor_service_lock,
     wait_for_stop_or_lock_loss,
@@ -205,7 +209,10 @@ def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[flo
     return price, qty, ts_ms
 
 
-async def flush_minute(pool: asyncpg.Pool) -> None:
+async def flush_minute(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     while True:
         await asyncio.sleep(5)
         snapshots = await STORE.minute_snapshot()
@@ -226,7 +233,7 @@ async def flush_minute(pool: asyncpg.Pool) -> None:
             )
         try:
             async with pool.acquire() as conn:
-                async with conn.transaction():
+                async with fenced_transaction(conn, ownership):
                     await conn.executemany(
                         """
                         INSERT INTO spot_trades_agg(
@@ -275,11 +282,16 @@ async def flush_minute(pool: asyncpg.Pool) -> None:
                         [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
                     )
             await STORE.ack_minute(snapshots)
+        except ServiceOwnershipLost:
+            raise
         except Exception:
             LOGGER.exception("minute_flush_failed retained_buckets=%d", len(snapshots))
 
 
-async def flush_realtime(pool: asyncpg.Pool) -> None:
+async def flush_realtime(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     while True:
         await asyncio.sleep(2)
         snapshots = await STORE.realtime_snapshot()
@@ -299,7 +311,7 @@ async def flush_realtime(pool: asyncpg.Pool) -> None:
             )
         try:
             async with pool.acquire() as conn:
-                async with conn.transaction():
+                async with fenced_transaction(conn, ownership):
                     await conn.executemany(
                         """
                         INSERT INTO spot_trades_realtime(
@@ -342,6 +354,8 @@ async def flush_realtime(pool: asyncpg.Pool) -> None:
                         [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
                     )
             await STORE.ack_realtime(snapshots)
+        except ServiceOwnershipLost:
+            raise
         except Exception:
             LOGGER.exception("realtime_flush_failed retained_buckets=%d", len(snapshots))
 
@@ -442,6 +456,7 @@ async def heartbeat_loop(
     symbols: tuple[str, ...],
     shard_index: int,
     shard_count: int,
+    ownership: ServiceOwnership | None = None,
 ) -> None:
     while True:
         await asyncio.sleep(20)
@@ -470,16 +485,28 @@ async def heartbeat_loop(
                         f"dropped_trades={STORE.dropped_trades} "
                         f"last_event:{age_text}"
                     ),
+                    ownership=ownership,
                 )
                 for exchange, age in ages.items() if symbols else ():
                     venue_status = "ok" if age <= 90.0 else "degraded"
                     venue_age = f"{age:.0f}s" if math.isfinite(age) else "never"
-                    await heartbeat(
-                        conn,
-                        f"ws-{exchange}:{shard_index}/{shard_count}",
-                        status=venue_status,
-                        detail=f"last_event={venue_age}",
-                    )
+                    if ownership is None:
+                        await heartbeat(
+                            conn,
+                            f"ws-{exchange}:{shard_index}/{shard_count}",
+                            status=venue_status,
+                            detail=f"last_event={venue_age}",
+                        )
+                    else:
+                        await heartbeat_owned(
+                            conn,
+                            ownership,
+                            f"ws-{exchange}:{shard_index}/{shard_count}",
+                            status=venue_status,
+                            detail=f"last_event={venue_age}",
+                        )
+        except ServiceOwnershipLost:
+            raise
         except Exception:
             LOGGER.exception("ws_heartbeat_failed")
 
@@ -509,6 +536,7 @@ async def run() -> None:
             f"coinalyze-ws-{settings.COLLECTOR_SHARD_INDEX}-"
             f"{settings.COLLECTOR_SHARD_COUNT}"
         ),
+        ownership=service_lock,
     )
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
@@ -525,14 +553,15 @@ async def run() -> None:
     )
 
     tasks = [
-        asyncio.create_task(flush_minute(pool), name="flush-minute"),
-        asyncio.create_task(flush_realtime(pool), name="flush-realtime"),
+        asyncio.create_task(flush_minute(pool, service_lock), name="flush-minute"),
+        asyncio.create_task(flush_realtime(pool, service_lock), name="flush-realtime"),
         asyncio.create_task(
             heartbeat_loop(
                 pool,
                 symbols,
                 settings.COLLECTOR_SHARD_INDEX,
                 settings.COLLECTOR_SHARD_COUNT,
+                service_lock,
             ),
             name="heartbeat",
         ),
@@ -545,7 +574,11 @@ async def run() -> None:
             )
         )
     try:
-        await wait_for_stop_or_lock_loss(stop, lock_monitor)
+        await wait_for_stop_or_lock_loss(
+            stop,
+            lock_monitor,
+            critical_tasks=tuple(tasks),
+        )
     finally:
         for task in tasks:
             task.cancel()

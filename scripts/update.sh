@@ -92,7 +92,30 @@ mapfile -t CONFIGURED_COLLECTOR_SERVICES < <(
     | awk '{print $1}' | sort -u
 )
 SERVICES+=("${CONFIGURED_COLLECTOR_SERVICES[@]}")
+REQUIRED_HEARTBEATS=(api ingest ingest:ohlcv_1m ingest:metrics_5m daily)
+for service in "${SERVICES[@]}"; do
+  [[ $service == coinalyze-ws* ]] && REQUIRED_HEARTBEATS+=(ws)
+  [[ $service == coinalyze-scalp* ]] && REQUIRED_HEARTBEATS+=(scalp)
+done
+mapfile -t REQUIRED_HEARTBEATS < <(printf '%s\n' "${REQUIRED_HEARTBEATS[@]}" | sort -u)
 BACKUP_KEY_FILE=${BACKUP_ENCRYPTION_KEY_FILE:-/etc/coinalyze/backup.key}
+report_service_failures() {
+  local service
+  for service in "${SERVICES[@]}"; do
+    if systemctl is-failed --quiet "$service" || ! systemctl is-active --quiet "$service"; then
+      echo "Required service failed or is inactive: $service" >&2
+      systemctl status "$service" --no-pager -l || true
+      journalctl -u "$service" -n 120 --no-pager || true
+    fi
+  done
+}
+has_failed_service() {
+  local service
+  for service in "${SERVICES[@]}"; do
+    systemctl is-failed --quiet "$service" && return 0
+  done
+  return 1
+}
 recover() {
   rc=$?
   if (( rc != 0 )); then
@@ -173,21 +196,35 @@ chmod 0750 /opt/coinalyze/scripts/*.sh /opt/coinalyze/deploy/proxmox/install.sh
 
 nginx -t
 systemctl daemon-reload
+DEPLOY_RESTART_EPOCH=$(psql -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" \
+  -v ON_ERROR_STOP=1 -Atqc "SELECT extract(epoch FROM clock_timestamp())")
 systemctl restart "${SERVICES[@]}" nginx
-for i in $(seq 1 30); do
-  if /opt/coinalyze/scripts/smoke_test.sh >/dev/null 2>&1; then
+DEPLOY_HEALTH_TIMEOUT_SECONDS=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-450}
+DEPLOY_HEALTH_POLL_SECONDS=${DEPLOY_HEALTH_POLL_SECONDS:-5}
+DEPLOY_HEALTH_DEADLINE=$((SECONDS + DEPLOY_HEALTH_TIMEOUT_SECONDS))
+while (( SECONDS < DEPLOY_HEALTH_DEADLINE )); do
+  if REQUIRED_SYSTEMD_SERVICES="${SERVICES[*]}" \
+    REQUIRED_HEARTBEATS="${REQUIRED_HEARTBEATS[*]}" \
+    DEPLOY_RESTART_EPOCH="$DEPLOY_RESTART_EPOCH" \
+    /opt/coinalyze/scripts/smoke_test.sh >/dev/null 2>&1; then
     /opt/coinalyze/scripts/backup.sh
     trap - EXIT
     echo "Update complete."
     exit 0
   fi
-  if ! systemctl is-active --quiet coinalyze-api; then
-    systemctl status coinalyze-api --no-pager -l || true
-    journalctl -u coinalyze-api -n 120 --no-pager || true
+  if has_failed_service || ! systemctl is-active --quiet coinalyze-api; then
+    report_service_failures
     exit 1
   fi
-  sleep 2
+  sleep "$DEPLOY_HEALTH_POLL_SECONDS"
 done
-echo "API smoke test did not pass within timeout." >&2
-journalctl -u coinalyze-api -n 120 --no-pager || true
+echo "Deployment health gate did not pass within timeout." >&2
+REQUIRED_SYSTEMD_SERVICES="${SERVICES[*]}" \
+  REQUIRED_HEARTBEATS="${REQUIRED_HEARTBEATS[*]}" \
+  DEPLOY_RESTART_EPOCH="$DEPLOY_RESTART_EPOCH" \
+  /opt/coinalyze/scripts/smoke_test.sh || true
+report_service_failures
+for service in "${SERVICES[@]}"; do
+  journalctl -u "$service" -n 120 --no-pager || true
+done
 exit 1

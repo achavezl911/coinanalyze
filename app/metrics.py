@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 import asyncpg
 
 from app.config import WHALE_THRESHOLD_MAP, WS_SYMBOL_MAP
+from app.cutoffs import ClosedCutoff
 
 NY = ZoneInfo("America/New_York")
 WHALE_ACTIVITY_MIN = WHALE_THRESHOLD_MAP
@@ -158,67 +159,73 @@ WITH
 fut AS (
     SELECT
       (array_agg(close ORDER BY ts DESC))[1] AS price,
-      SUM(volume * close) FILTER (WHERE ts >= now() - interval '24 hours') AS vol_24h,
-      SUM(delta * close) FILTER (WHERE ts >= now() - interval '24 hours') AS cvd_24h,
+      (array_agg(ts ORDER BY ts DESC))[1] AS price_ts,
+      SUM(volume * close) FILTER (WHERE ts >= $4 - interval '24 hours') AS vol_24h,
+      SUM(delta * close) FILTER (WHERE ts >= $4 - interval '24 hours') AS cvd_24h,
       SUM(delta * close) FILTER (WHERE ts >= $3) AS cvd_session,
-      SUM(delta * close) FILTER (WHERE ts >= now() - interval '3 minutes') AS delta_3min,
-      (SUM(btx) FILTER (WHERE ts >= now() - interval '15 minutes'))::double precision /
-        NULLIF(SUM(tx) FILTER (WHERE ts >= now() - interval '15 minutes'), 0) AS btr_15m,
-      (SUM(btx) FILTER (WHERE ts >= now() - interval '1 hour'))::double precision /
-        NULLIF(SUM(tx) FILTER (WHERE ts >= now() - interval '1 hour'), 0) AS btr_1h,
-      (SUM(btx) FILTER (WHERE ts >= now() - interval '24 hours'))::double precision /
-        NULLIF(SUM(tx) FILTER (WHERE ts >= now() - interval '24 hours'), 0) AS btr_24h
+      SUM(delta * close) FILTER (WHERE ts >= $4 - interval '3 minutes') AS delta_3min,
+      (SUM(btx) FILTER (WHERE ts >= $4 - interval '15 minutes'))::double precision /
+        NULLIF(SUM(tx) FILTER (WHERE ts >= $4 - interval '15 minutes'), 0) AS btr_15m,
+      (SUM(btx) FILTER (WHERE ts >= $4 - interval '1 hour'))::double precision /
+        NULLIF(SUM(tx) FILTER (WHERE ts >= $4 - interval '1 hour'), 0) AS btr_1h,
+      (SUM(btx) FILTER (WHERE ts >= $4 - interval '24 hours'))::double precision /
+        NULLIF(SUM(tx) FILTER (WHERE ts >= $4 - interval '24 hours'), 0) AS btr_24h
     FROM ohlcv
-    WHERE symbol = $1 AND interval = '1min' AND ts >= now() - interval '25 hours'
+    WHERE symbol = $1 AND interval = '1min'
+      AND ts >= $4 - interval '25 hours' AND ts < $4
 ),
 price_1h AS (
     SELECT close AS value FROM ohlcv
-    WHERE symbol = $1 AND interval = '1min' AND ts <= now() - interval '1 hour'
+    WHERE symbol = $1 AND interval = '1min' AND ts <= $4 - interval '1 hour'
     ORDER BY ts DESC LIMIT 1
 ),
 spot AS (
     SELECT
-      SUM(buy_vol_usd - sell_vol_usd) FILTER (WHERE ts >= now() - interval '24 hours') AS cvd_24h,
+      SUM(buy_vol_usd - sell_vol_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS cvd_24h,
       SUM(buy_vol_usd - sell_vol_usd) FILTER (WHERE ts >= $3) AS cvd_session,
-      SUM(inst_buy_usd) FILTER (WHERE ts >= now() - interval '24 hours') AS inst_buy,
-      SUM(inst_sell_usd) FILTER (WHERE ts >= now() - interval '24 hours') AS inst_sell
+      SUM(inst_buy_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS inst_buy,
+      SUM(inst_sell_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS inst_sell
     FROM spot_trades_agg
     WHERE symbol = $2 AND exchange = 'combined' AND interval = '1min'
-      AND ts >= now() - interval '25 hours'
+      AND ts >= $4 - interval '25 hours' AND ts < $4
 ),
 oi_now AS (
-    SELECT oi_close AS value FROM open_interest
-    WHERE symbol = $1 AND interval = '5min' ORDER BY ts DESC LIMIT 1
+    SELECT oi_close AS value, ts FROM open_interest
+    WHERE symbol = $1 AND interval = '5min' AND ts < $5 ORDER BY ts DESC LIMIT 1
 ),
 oi_old AS (
     SELECT oi_close AS value FROM open_interest
-    WHERE symbol = $1 AND interval = '5min' AND ts <= now() - interval '24 hours'
+    WHERE symbol = $1 AND interval = '5min' AND ts < $5 - interval '24 hours'
     ORDER BY ts DESC LIMIT 1
 ),
 oi_b AS (
     SELECT oi_close AS value FROM oi_bybit
-    WHERE symbol = $1 AND interval = '5min' ORDER BY ts DESC LIMIT 1
+    WHERE symbol = $1 AND interval = '5min' AND ts < $5 ORDER BY ts DESC LIMIT 1
 ),
 fund AS (
     SELECT AVG(fr_close) AS value FROM funding_rate
-    WHERE symbol = $1 AND interval = '5min' AND ts >= now() - interval '24 hours'
+    WHERE symbol = $1 AND interval = '5min'
+      AND ts >= $5 - interval '24 hours' AND ts < $5
 ),
 pfund AS (
     SELECT AVG(pfr_close) AS value FROM predicted_funding_rate
-    WHERE symbol = $1 AND interval = '5min' AND ts >= now() - interval '24 hours'
+    WHERE symbol = $1 AND interval = '5min'
+      AND ts >= $5 - interval '24 hours' AND ts < $5
 ),
 liq AS (
     SELECT SUM(long_liq) AS long_value, SUM(short_liq) AS short_value
     FROM liquidations
-    WHERE symbol = $1 AND interval = '5min' AND ts >= now() - interval '24 hours'
+    WHERE symbol = $1 AND interval = '5min'
+      AND ts >= $5 - interval '24 hours' AND ts < $5
 )
 SELECT
-  fut.price, fut.vol_24h, fut.cvd_24h, fut.cvd_session, fut.delta_3min,
+  fut.price, fut.price_ts, fut.vol_24h, fut.cvd_24h, fut.cvd_session, fut.delta_3min,
   fut.btr_15m, fut.btr_1h, fut.btr_24h,
   price_1h.value AS price_1h,
   spot.cvd_24h AS spot_cvd_24h, spot.cvd_session AS spot_cvd_session,
   spot.inst_buy, spot.inst_sell,
-  oi_now.value AS oi_now, oi_old.value AS oi_old, oi_b.value AS oi_bybit,
+  oi_now.value AS oi_now, oi_now.ts AS oi_ts, oi_old.value AS oi_old,
+  oi_b.value AS oi_bybit,
   fund.value AS fr_avg, pfund.value AS pfr_avg,
   liq.long_value AS long_liq, liq.short_value AS short_liq
 FROM fut
@@ -238,9 +245,22 @@ async def compute_snapshot(
     symbol: str,
     ws_symbol: str,
     now_utc: datetime | None = None,
+    *,
+    price_cutoff: datetime | None = None,
+    metrics_cutoff: datetime | None = None,
 ) -> dict[str, float | str | int | None]:
+    now_utc = now_utc or datetime.now(UTC)
     session_start = current_nyse_start(now_utc)
-    row = await conn.fetchrow(SNAPSHOT_QUERY, symbol, ws_symbol, session_start)
+    price_cutoff = price_cutoff or ClosedCutoff.at(now_utc, 60).exclusive_boundary
+    metrics_cutoff = metrics_cutoff or ClosedCutoff.at(now_utc, 300).exclusive_boundary
+    row = await conn.fetchrow(
+        SNAPSHOT_QUERY,
+        symbol,
+        ws_symbol,
+        session_start,
+        price_cutoff,
+        metrics_cutoff,
+    )
     data = dict(row) if row else {}
 
     price = optional_finite(data.get("price"))
@@ -311,6 +331,8 @@ async def compute_snapshot(
         "btr_1h": data.get("btr_1h"),
         "btr_24h": data.get("btr_24h"),
         "pfr_fr_div": (pfr_avg - fr_avg) if None not in (pfr_avg, fr_avg) else None,
+        "price_cutoff_at": data.get("price_ts"),
+        "metrics_cutoff_at": data.get("oi_ts"),
     }
     score, label = compute_regime(snap)
     snap["regime_score"] = score
@@ -327,10 +349,11 @@ async def insert_snapshot(conn: asyncpg.Connection, snap: dict[str, object]) -> 
           cvd_spot_session, oi_bybit, liq_ratio_24h, cvd_diff_24h,
           cvd_diff_ses, fr_avg, pfr_avg, long_liq_24h, short_liq_24h,
           whale_intensity, whale_label, regime_score, regime_label, price_dir_1h,
-          btr_15m, btr_1h, btr_24h, pfr_fr_div
+          btr_15m, btr_1h, btr_24h, pfr_fr_div, price_cutoff_at,
+          metrics_cutoff_at
         ) VALUES (
           now(), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
-          $18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28
+          $18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30
         )
         """,
         snap["symbol"], snap["price"], snap["oi"], snap["oi_chg_24h_pct"],
@@ -341,11 +364,25 @@ async def insert_snapshot(conn: asyncpg.Connection, snap: dict[str, object]) -> 
         snap["long_liq_24h"], snap["short_liq_24h"], snap["whale_intensity"],
         snap["whale_label"], snap["regime_score"], snap["regime_label"],
         snap["price_dir_1h"], snap["btr_15m"], snap["btr_1h"], snap["btr_24h"],
-        snap["pfr_fr_div"],
+        snap["pfr_fr_div"], snap["price_cutoff_at"], snap["metrics_cutoff_at"],
     )
 
 
-async def compute_and_store_all(conn: asyncpg.Connection, symbols: tuple[str, ...]) -> None:
+async def compute_and_store_all(
+    conn: asyncpg.Connection,
+    symbols: tuple[str, ...],
+    *,
+    now_utc: datetime | None = None,
+    price_cutoff: datetime | None = None,
+    metrics_cutoff: datetime | None = None,
+) -> None:
     for symbol in symbols:
-        snap = await compute_snapshot(conn, symbol, WS_SYMBOL_MAP[symbol])
+        snap = await compute_snapshot(
+            conn,
+            symbol,
+            WS_SYMBOL_MAP[symbol],
+            now_utc,
+            price_cutoff=price_cutoff,
+            metrics_cutoff=metrics_cutoff,
+        )
         await insert_snapshot(conn, snap)

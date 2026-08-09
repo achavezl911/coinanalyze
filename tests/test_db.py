@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+import asyncio
 import os
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
+from uuid import uuid4
 
 import asyncpg
 import pytest
 
 from app.config import MarketSymbol, Settings
 from app.db import (
+    INGEST_COMPONENT_MAX_AGES,
+    ServiceOwnershipLost,
     acquire_service_lock,
+    fenced_transaction,
+    heartbeat_component,
     heartbeat_shard,
     monitor_service_lock,
     sync_market_catalog,
@@ -155,6 +161,7 @@ def test_schema_removes_literal_asset_checks_and_adds_foreign_keys():
     assert "symbol text NOT NULL CHECK (symbol IN ('BTC','ETH','SOL'))" not in source
     assert source.count("REFERENCES market_assets(base_asset)") >= 3
     assert "CREATE TABLE IF NOT EXISTS external_api_rate_event" in source
+    assert "CREATE TABLE IF NOT EXISTS service_ownership" in source
 
 
 def test_horizontal_rollback_removes_shard_heartbeats_before_legacy_check():
@@ -169,12 +176,38 @@ def test_horizontal_rollback_removes_shard_heartbeats_before_legacy_check():
     assert source.index(delete) < source.index(legacy_check)
 
 
+def test_final_review_migration_is_idempotent_and_has_rollback():
+    upgrade = Path("sql/migrations/20260809_final_review_fixes.sql").read_text(
+        encoding="utf-8"
+    )
+    rollback = Path("sql/migrations/20260809_final_review_fixes.down.sql").read_text(
+        encoding="utf-8"
+    )
+
+    assert "ADD COLUMN IF NOT EXISTS price_cutoff_at" in upgrade
+    assert "ADD COLUMN IF NOT EXISTS metrics_cutoff_at" in upgrade
+    assert "CREATE TABLE IF NOT EXISTS service_ownership" in upgrade
+    assert "DROP TABLE IF EXISTS service_ownership" in rollback
+    assert "DROP COLUMN IF EXISTS metrics_cutoff_at" in rollback
+    assert upgrade.startswith("BEGIN;") and upgrade.rstrip().endswith("COMMIT;")
+    assert "BEGIN;" in rollback and rollback.rstrip().endswith("COMMIT;")
+
+
 class _HeartbeatConnection:
     def __init__(self) -> None:
         self.calls = []
 
     async def execute(self, query, *args):
         self.calls.append((query, args))
+
+    def transaction(self):
+        return self
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_args):
+        return None
 
 
 @pytest.mark.asyncio
@@ -183,6 +216,233 @@ async def test_shard_heartbeat_publishes_instance_and_aggregate():
 
     await heartbeat_shard(conn, "ws", 1, 3, status="ok", detail="symbols=ETH")
 
-    assert conn.calls[0][1][0] == "ws:1/3"
-    assert conn.calls[1][1] == ("ws", "ws:%/3", 3)
-    assert "COUNT(*) <> $3" in conn.calls[1][0]
+    assert conn.calls[0][1][0] == "coinanalyze:heartbeat-shards:ws:3"
+    assert conn.calls[1][1][0] == "ws:1/3"
+    assert conn.calls[2][1] == ("ws", "ws:%/3", 3)
+    assert "COUNT(*) <> $3" in conn.calls[2][0]
+
+
+async def _prepare_fencing_schema(conn: asyncpg.Connection) -> None:
+    await conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS service_ownership (
+          service text NOT NULL,
+          shard_index integer NOT NULL,
+          shard_count integer NOT NULL,
+          generation bigint NOT NULL,
+          acquired_at timestamptz NOT NULL DEFAULT now(),
+          PRIMARY KEY(service,shard_index,shard_count)
+        )
+        """
+    )
+
+
+@pytest.mark.asyncio
+async def test_postgres_takeover_fences_old_writer_pool_transaction():
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    settings = _test_settings(dsn)
+    service = f"fence-test-{uuid4().hex}"
+    owner_a = owner_b = writer_a = writer_b = control = None
+    try:
+        control = await asyncpg.connect(dsn)
+        await _prepare_fencing_schema(control)
+        await control.execute(
+            """
+            CREATE TABLE IF NOT EXISTS service_fencing_test_write (
+              test_key text PRIMARY KEY,
+              writer text NOT NULL
+            )
+            """
+        )
+        owner_a = await acquire_service_lock(settings, service)
+        writer_a = await asyncpg.connect(dsn)
+        async with fenced_transaction(writer_a, owner_a):
+            await writer_a.execute(
+                "INSERT INTO service_fencing_test_write(test_key,writer) VALUES($1,'A')",
+                service,
+            )
+
+        terminated = await control.fetchval(
+            "SELECT pg_terminate_backend($1)", owner_a.connection.get_server_pid()
+        )
+        assert terminated is True
+        owner_b = await acquire_service_lock(settings, service)
+        assert owner_b.generation > owner_a.generation
+        writer_b = await asyncpg.connect(dsn)
+
+        with pytest.raises(ServiceOwnershipLost, match="generation"):
+            async with fenced_transaction(writer_a, owner_a):
+                await writer_a.execute(
+                    "UPDATE service_fencing_test_write SET writer='OLD' WHERE test_key=$1",
+                    service,
+                )
+
+        async with fenced_transaction(writer_b, owner_b):
+            await writer_b.execute(
+                "UPDATE service_fencing_test_write SET writer='B' WHERE test_key=$1",
+                service,
+            )
+        assert await control.fetchval(
+            "SELECT writer FROM service_fencing_test_write WHERE test_key=$1", service
+        ) == "B"
+    finally:
+        if control is not None:
+            await control.execute("DELETE FROM service_fencing_test_write WHERE test_key=$1", service)
+            await control.execute("DELETE FROM service_ownership WHERE service=$1", service)
+        for connection in (writer_a, writer_b, control):
+            if connection is not None and not connection.is_closed():
+                await connection.close()
+        for owner in (owner_a, owner_b):
+            if owner is not None and not owner.is_closed():
+                await owner.close()
+
+
+class _PausedAggregateConnection:
+    def __init__(
+        self,
+        connection: asyncpg.Connection,
+        reached: asyncio.Event,
+        release: asyncio.Event,
+    ) -> None:
+        self.connection = connection
+        self.reached = reached
+        self.release = release
+
+    def transaction(self):
+        return self.connection.transaction()
+
+    async def execute(self, query: str, *args):
+        result = await self.connection.execute(query, *args)
+        if "COUNT(*) <> $3" in query:
+            self.reached.set()
+            await self.release.wait()
+        return result
+
+
+@pytest.mark.asyncio
+async def test_postgres_concurrent_shard_heartbeat_cannot_commit_stale_ok_last():
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    service = f"heartbeat-test-{uuid4().hex}"
+    first = second = control = None
+    reached = asyncio.Event()
+    release = asyncio.Event()
+    try:
+        first = await asyncpg.connect(dsn)
+        second = await asyncpg.connect(dsn)
+        control = await asyncpg.connect(dsn)
+        await heartbeat_shard(first, service, 0, 2, status="ok", detail="old-0")
+        await heartbeat_shard(first, service, 1, 2, status="ok", detail="old-1")
+
+        old_ok = asyncio.create_task(
+            heartbeat_shard(
+                _PausedAggregateConnection(first, reached, release),
+                service,
+                0,
+                2,
+                status="ok",
+                detail="old-computation",
+            )
+        )
+        await asyncio.wait_for(reached.wait(), timeout=3)
+        new_degraded = asyncio.create_task(
+            heartbeat_shard(
+                second,
+                service,
+                1,
+                2,
+                status="degraded",
+                detail="new-failure",
+            )
+        )
+        await asyncio.sleep(0.1)
+        assert not new_degraded.done()
+        release.set()
+        await asyncio.gather(old_ok, new_degraded)
+
+        aggregate = await control.fetchrow(
+            "SELECT status,updated_at FROM pipeline_heartbeat WHERE service=$1", service
+        )
+        shard_times = await control.fetch(
+            "SELECT updated_at FROM pipeline_heartbeat WHERE service LIKE $1 ORDER BY service",
+            f"{service}:%/2",
+        )
+        assert aggregate["status"] == "degraded"
+        assert aggregate["updated_at"] == min(row["updated_at"] for row in shard_times)
+    finally:
+        release.set()
+        if control is not None:
+            await control.execute(
+                "DELETE FROM pipeline_heartbeat WHERE service=$1 OR service LIKE $2",
+                service,
+                f"{service}:%/2",
+            )
+        for connection in (first, second, control):
+            if connection is not None and not connection.is_closed():
+                await connection.close()
+
+
+@pytest.mark.parametrize(
+    ("healthy_component", "failed_component"),
+    [("ohlcv_1m", "metrics_5m"), ("metrics_5m", "ohlcv_1m")],
+)
+@pytest.mark.asyncio
+async def test_postgres_ingest_component_failure_cannot_be_overwritten_concurrently(
+    healthy_component: str,
+    failed_component: str,
+):
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    aggregate = f"ingest-test-{uuid4().hex}"
+    first = second = control = None
+    try:
+        first = await asyncpg.connect(dsn)
+        second = await asyncpg.connect(dsn)
+        control = await asyncpg.connect(dsn)
+
+        async def keep_writing_ok() -> None:
+            for _ in range(5):
+                await heartbeat_component(
+                    first,
+                    aggregate,
+                    healthy_component,
+                    INGEST_COMPONENT_MAX_AGES,
+                    status="ok",
+                )
+
+        async def keep_writing_error() -> None:
+            for _ in range(5):
+                await heartbeat_component(
+                    second,
+                    aggregate,
+                    failed_component,
+                    INGEST_COMPONENT_MAX_AGES,
+                    status="error",
+                    detail="repeated failure",
+                )
+
+        await asyncio.gather(keep_writing_ok(), keep_writing_error())
+        rows = await control.fetch(
+            "SELECT service,status,updated_at FROM pipeline_heartbeat "
+            "WHERE service=$1 OR service LIKE $2",
+            aggregate,
+            f"{aggregate}:%",
+        )
+        by_service = {row["service"]: row for row in rows}
+        assert by_service[aggregate]["status"] == "error"
+        assert by_service[f"{aggregate}:{failed_component}"]["status"] == "error"
+        assert by_service[f"{aggregate}:{healthy_component}"]["status"] == "ok"
+    finally:
+        if control is not None:
+            await control.execute(
+                "DELETE FROM pipeline_heartbeat WHERE service=$1 OR service LIKE $2",
+                aggregate,
+                f"{aggregate}:%",
+            )
+        for connection in (first, second, control):
+            if connection is not None and not connection.is_closed():
+                await connection.close()

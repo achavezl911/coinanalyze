@@ -18,6 +18,7 @@ import asyncpg
 import httpx
 
 from app.config import Settings
+from app.db import ServiceOwnership, fenced_transaction
 
 LOGGER = logging.getLogger(__name__)
 USER_AGENT = "CoinalyzeOperatorDashboard/1.5.0 (market-context; contact: local-operator)"
@@ -466,7 +467,11 @@ async def _get(client: httpx.AsyncClient, url: str, **kwargs: Any) -> str:
 
 
 async def refresh_external_macro(
-    pool: asyncpg.Pool, settings: Settings, *, force: bool = False
+    pool: asyncpg.Pool,
+    settings: Settings,
+    *,
+    force: bool = False,
+    ownership: ServiceOwnership | None = None,
 ) -> dict[str, Any]:
     if not settings.EXTERNAL_MACRO_ENABLED:
         return {"status": "disabled"}
@@ -531,30 +536,35 @@ async def refresh_external_macro(
 
     observations = list({(row[0], row[1]): row for row in observations}.values())
     calendar_events = list({(row[0], row[1]): row for row in calendar_events}.values())
-    async with pool.acquire() as conn, conn.transaction():
-        if observations:
-            await conn.executemany(
-                """
-                INSERT INTO external_macro_observation(series, observed_on, value, source, fetched_at)
-                VALUES($1,$2,$3,$4,now())
-                ON CONFLICT(series, observed_on) DO UPDATE SET
-                  value=EXCLUDED.value, source=EXCLUDED.source, fetched_at=now()
-                """,
-                observations,
+    async with pool.acquire() as conn:
+        async with fenced_transaction(conn, ownership):
+            if observations:
+                await conn.executemany(
+                    """
+                    INSERT INTO external_macro_observation(
+                      series, observed_on, value, source, fetched_at
+                    ) VALUES($1,$2,$3,$4,now())
+                    ON CONFLICT(series, observed_on) DO UPDATE SET
+                      value=EXCLUDED.value, source=EXCLUDED.source, fetched_at=now()
+                    """,
+                    observations,
+                )
+            if calendar_events:
+                await conn.executemany(
+                    """
+                    INSERT INTO macro_event(
+                      event_key,event_at,title,importance,source,fetched_at
+                    ) VALUES($1,$2,$3,$4,$5,now())
+                    ON CONFLICT(event_key,event_at) DO UPDATE SET
+                      title=EXCLUDED.title, importance=EXCLUDED.importance,
+                      source=EXCLUDED.source, fetched_at=now()
+                    """,
+                    calendar_events,
+                )
+            await conn.execute(
+                "DELETE FROM external_macro_observation WHERE observed_on < current_date - 800"
             )
-        if calendar_events:
-            await conn.executemany(
-                """
-                INSERT INTO macro_event(event_key,event_at,title,importance,source,fetched_at)
-                VALUES($1,$2,$3,$4,$5,now())
-                ON CONFLICT(event_key,event_at) DO UPDATE SET
-                  title=EXCLUDED.title, importance=EXCLUDED.importance,
-                  source=EXCLUDED.source, fetched_at=now()
-                """,
-                calendar_events,
-            )
-        await conn.execute("DELETE FROM external_macro_observation WHERE observed_on < current_date - 800")
-        await conn.execute("DELETE FROM macro_event WHERE event_at < now() - interval '30 days'")
+            await conn.execute("DELETE FROM macro_event WHERE event_at < now() - interval '30 days'")
     if errors:
         LOGGER.warning("external_macro_partial errors=%s", errors)
     result = {"status": "ok" if not errors else "partial", "observations": len(observations), "events": len(calendar_events), "errors": errors}

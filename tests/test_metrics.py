@@ -2,7 +2,14 @@ from datetime import UTC, date, datetime
 
 import pytest
 
-from app.metrics import compute_regime, current_nyse_start, session_bounds, whale_classification
+from app.metrics import (
+    SNAPSHOT_QUERY,
+    compute_regime,
+    compute_snapshot,
+    current_nyse_start,
+    session_bounds,
+    whale_classification,
+)
 
 
 def test_current_nyse_start_before_open_uses_previous_calendar_day():
@@ -54,3 +61,40 @@ def test_compute_regime_organic_bullish():
     )
     assert score > 60
     assert label == "Continuación alcista orgánica"
+
+
+class _SnapshotConnection:
+    def __init__(self) -> None:
+        self.args = ()
+
+    async def fetchrow(self, _query, *args):
+        self.args = args
+        return {
+            "price": 100.0,
+            "price_ts": datetime(2026, 8, 9, 12, 4, tzinfo=UTC),
+            "price_1h": 99.0,
+            "oi_now": 250.0,
+            "oi_ts": datetime(2026, 8, 9, 12, 0, tzinfo=UTC),
+            "oi_old": 100.0,
+        }
+
+
+async def test_snapshot_scoring_uses_separate_closed_price_and_oi_cutoffs():
+    conn = _SnapshotConnection()
+    now = datetime(2026, 8, 9, 12, 5, 15, tzinfo=UTC)
+
+    snapshot = await compute_snapshot(conn, "BTCUSDT_PERP.A", "BTC", now)
+
+    assert conn.args[3] == datetime(2026, 8, 9, 12, 5, tzinfo=UTC)
+    assert conn.args[4] == datetime(2026, 8, 9, 12, 5, tzinfo=UTC)
+    assert snapshot["price"] == 100.0
+    assert snapshot["oi"] == 250.0
+    assert snapshot["oi_chg_24h_pct"] == 150.0
+    assert snapshot["price_cutoff_at"] == datetime(2026, 8, 9, 12, 4, tzinfo=UTC)
+    assert snapshot["metrics_cutoff_at"] == datetime(2026, 8, 9, 12, 0, tzinfo=UTC)
+
+
+def test_snapshot_query_has_strict_closed_upper_bounds():
+    assert "ts < $4" in SNAPSHOT_QUERY
+    assert SNAPSHOT_QUERY.count("ts < $5") >= 5
+    assert "now() - interval '24 hours'" not in SNAPSHOT_QUERY

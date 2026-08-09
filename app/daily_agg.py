@@ -12,9 +12,13 @@ import asyncpg
 from app.coinalyze import CoinalyzeClient, PostgresSlidingWindowRateLimiter, validate_rate_budget
 from app.config import SPOT_HISTORY_MAP, WS_SYMBOL_MAP, get_settings
 from app.db import (
+    ServiceOwnership,
+    ServiceOwnershipLost,
     acquire_service_lock,
     create_pool,
+    fenced_transaction,
     heartbeat,
+    heartbeat_owned,
     monitor_service_lock,
     wait_for_stop_or_lock_loss,
 )
@@ -456,7 +460,11 @@ async def _store_baseline(
     return total
 
 
-async def cycle(pool: asyncpg.Pool, client: CoinalyzeClient) -> None:
+async def cycle(
+    pool: asyncpg.Pool,
+    client: CoinalyzeClient,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     settings = get_settings()
     end_ts = int(datetime.now(UTC).timestamp())
     start_ts = end_ts - 3 * 86400
@@ -494,7 +502,7 @@ async def cycle(pool: asyncpg.Pool, client: CoinalyzeClient) -> None:
     except Exception:
         LOGGER.exception("daily_ohlcv_refresh_failed")
     async with pool.acquire() as conn:
-        async with conn.transaction():
+        async with fenced_transaction(conn, ownership):
             identity = {symbol: symbol for symbol in settings.SYMBOLS}
             spot_identity = {symbol: symbol for symbol in spot_symbols}
             daily_candles = await upsert_ohlcv(
@@ -517,15 +525,15 @@ async def cycle(pool: asyncpg.Pool, client: CoinalyzeClient) -> None:
                 settings.REALTIME_RETENTION_HOURS,
                 settings.DAILY_SESSION_RETENTION_DAYS,
             )
-        await heartbeat(
-            conn,
-            "daily",
-            detail=(
-                f"daily_candles={daily_candles},h4_candles={h4_candles},"
-                f"spot_candles={spot_candles},baselines={baselines},"
-                f"daily_rows={inserted},verdicts={verdicts}"
-            ),
+        heartbeat_detail = (
+            f"daily_candles={daily_candles},h4_candles={h4_candles},"
+            f"spot_candles={spot_candles},baselines={baselines},"
+            f"daily_rows={inserted},verdicts={verdicts}"
         )
+        if ownership is None:
+            await heartbeat(conn, "daily", detail=heartbeat_detail)
+        else:
+            await heartbeat_owned(conn, ownership, "daily", detail=heartbeat_detail)
     LOGGER.info(
         "daily_cycle_complete daily_candles=%d h4_candles=%d inserted=%d verdicts=%d",
         daily_candles,
@@ -551,7 +559,11 @@ async def run() -> None:
         settings.COINALYZE_RATE_LIMIT_UNITS,
     )
     service_lock = await acquire_service_lock(settings, "daily")
-    pool = await create_pool(settings, application_name="coinalyze-daily")
+    pool = await create_pool(
+        settings,
+        application_name="coinalyze-daily",
+        ownership=service_lock,
+    )
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -581,7 +593,7 @@ async def run() -> None:
                     timeout=timeout,
                 ):
                     continue
-                cycle_task = asyncio.create_task(cycle(pool, client))
+                cycle_task = asyncio.create_task(cycle(pool, client, service_lock))
                 done, _ = await asyncio.wait(
                     (cycle_task, lock_monitor),
                     return_when=asyncio.FIRST_COMPLETED,
@@ -592,10 +604,21 @@ async def run() -> None:
                     await lock_monitor
                 try:
                     await cycle_task
+                except ServiceOwnershipLost:
+                    raise
                 except Exception as exc:
                     LOGGER.exception("daily_cycle_failed")
                     try:
-                        await heartbeat(pool, "daily", status="error", detail=str(exc)[:500])
+                        async with pool.acquire() as conn:
+                            await heartbeat_owned(
+                                conn,
+                                service_lock,
+                                "daily",
+                                status="error",
+                                detail=str(exc)[:500],
+                            )
+                    except ServiceOwnershipLost:
+                        raise
                     except Exception:
                         LOGGER.exception("daily_heartbeat_failed")
     finally:

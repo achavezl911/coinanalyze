@@ -375,6 +375,8 @@ CREATE TABLE IF NOT EXISTS metrics_snapshot (
     btr_1h double precision CHECK (btr_1h IS NULL OR (finite_float8(btr_1h) AND btr_1h BETWEEN 0 AND 1)),
     btr_24h double precision CHECK (btr_24h IS NULL OR (finite_float8(btr_24h) AND btr_24h BETWEEN 0 AND 1)),
     pfr_fr_div double precision CHECK (pfr_fr_div IS NULL OR finite_float8(pfr_fr_div)),
+    price_cutoff_at timestamptz,
+    metrics_cutoff_at timestamptz,
     PRIMARY KEY (symbol, ts)
 );
 -- v1.5.0: ausencia != cero. whale_intensity y regime_score se escribian como 0.0 cuando la
@@ -385,6 +387,8 @@ CREATE TABLE IF NOT EXISTS metrics_snapshot (
 -- medido de un cero fabricado.
 ALTER TABLE metrics_snapshot ALTER COLUMN whale_intensity DROP NOT NULL;
 ALTER TABLE metrics_snapshot ALTER COLUMN regime_score DROP NOT NULL;
+ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS price_cutoff_at timestamptz;
+ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS metrics_cutoff_at timestamptz;
 
 CREATE INDEX IF NOT EXISTS metrics_snapshot_latest_idx ON metrics_snapshot(symbol, ts DESC);
 CREATE INDEX IF NOT EXISTS metrics_snapshot_ts_idx ON metrics_snapshot(ts DESC);
@@ -509,6 +513,15 @@ CREATE TABLE IF NOT EXISTS pipeline_heartbeat (
     updated_at timestamptz NOT NULL,
     status text NOT NULL CHECK (status IN ('ok','degraded','error')),
     detail text CHECK (detail IS NULL OR length(detail) <= 500)
+);
+
+CREATE TABLE IF NOT EXISTS service_ownership (
+    service text NOT NULL CHECK (length(service) BETWEEN 1 AND 100),
+    shard_index integer NOT NULL CHECK (shard_index >= 0),
+    shard_count integer NOT NULL CHECK (shard_count > 0 AND shard_index < shard_count),
+    generation bigint NOT NULL CHECK (generation > 0),
+    acquired_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (service, shard_index, shard_count)
 );
 
 -- Upgrade existing v1.0/v1.1.0 installations where the CHECK constraint

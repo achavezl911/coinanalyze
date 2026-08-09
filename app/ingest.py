@@ -17,10 +17,15 @@ from app.coinalyze import (
     validate_rate_budget,
 )
 from app.config import BYBIT_SYMBOL_MAP, Settings, get_settings
+from app.cutoffs import ClosedCutoff
 from app.db import (
+    INGEST_COMPONENT_MAX_AGES,
+    ServiceOwnership,
+    ServiceOwnershipLost,
     acquire_service_lock,
     create_pool,
-    heartbeat,
+    fenced_transaction,
+    heartbeat_component,
     monitor_service_lock,
     wait_for_stop_or_lock_loss,
 )
@@ -46,7 +51,7 @@ OHLCV_INTERVAL_SECONDS = {"1min": 60, "5min": 300, "4hour": 14400, "daily": 8640
 
 def valid_ts(value: object, start_ts: int, end_ts: int, tolerance: int = 300) -> datetime:
     ts = int(value)  # type: ignore[arg-type]
-    if ts < start_ts - tolerance or ts > end_ts + tolerance:
+    if ts < start_ts - tolerance or ts > end_ts:
         raise ValueError("timestamp outside requested window")
     return datetime.fromtimestamp(ts, tz=UTC)
 
@@ -301,34 +306,49 @@ async def ingest_cycle(
     pool: asyncpg.Pool,
     client: CoinalyzeClient,
     settings: Settings,
+    ownership: ServiceOwnership | None = None,
 ) -> None:
-    await ingest_ohlcv_cycle(pool, client, settings)
-    await ingest_metrics_cycle(pool, client, settings)
+    await ingest_ohlcv_cycle(pool, client, settings, ownership=ownership)
+    await ingest_metrics_cycle(pool, client, settings, ownership=ownership)
 
 
 async def ingest_ohlcv_cycle(
     pool: asyncpg.Pool,
     client: CoinalyzeClient,
     settings: Settings,
+    ownership: ServiceOwnership | None = None,
+    now_utc: datetime | None = None,
 ) -> None:
-    end_ts = int(time.time() // 60 * 60)
-    start_ohlcv = end_ts - 40 * 60
+    now_utc = now_utc or datetime.now(UTC)
+    cutoff = ClosedCutoff.at(now_utc, 60)
+    metrics_cutoff = ClosedCutoff.at(now_utc, 300)
+    end_ts = cutoff.api_end_ts
+    start_ohlcv = cutoff.boundary_ts - 40 * 60
     symbols = tuple(settings.SYMBOLS)
     identity = {symbol: symbol for symbol in symbols}
     ohlcv = await client.history(
         "ohlcv-history", symbols, interval="1min", start_ts=start_ohlcv, end_ts=end_ts
     )
     async with pool.acquire() as conn:
-        async with conn.transaction():
+        async with fenced_transaction(conn, ownership):
             count = await upsert_ohlcv(
                 conn, ohlcv, identity, start_ohlcv, end_ts, "1min"
             )
             rolled_up = await rollup_ohlcv_5m(conn, symbols, start_ohlcv, end_ts)
-            await compute_and_store_all(conn, symbols)
-        await heartbeat(
+            await compute_and_store_all(
+                conn,
+                symbols,
+                now_utc=now_utc,
+                price_cutoff=cutoff.exclusive_boundary,
+                metrics_cutoff=metrics_cutoff.exclusive_boundary,
+            )
+        await heartbeat_component(
             conn,
             "ingest",
+            "ohlcv_1m",
+            INGEST_COMPONENT_MAX_AGES,
             detail=f"feed=ohlcv_1m,rows={count},rollup_5m={rolled_up}",
+            ownership=ownership,
         )
     LOGGER.info("ingest_ohlcv_cycle_complete rows=%d rollup_5m=%d", count, rolled_up)
 
@@ -337,9 +357,14 @@ async def ingest_metrics_cycle(
     pool: asyncpg.Pool,
     client: CoinalyzeClient,
     settings: Settings,
+    ownership: ServiceOwnership | None = None,
+    now_utc: datetime | None = None,
 ) -> None:
-    end_ts = int(time.time() // 300 * 300)
-    start_history = end_ts - 26 * 60 * 60
+    now_utc = now_utc or datetime.now(UTC)
+    cutoff = ClosedCutoff.at(now_utc, 300)
+    price_cutoff = ClosedCutoff.at(now_utc, 60)
+    end_ts = cutoff.api_end_ts
+    start_history = cutoff.boundary_ts - 26 * 60 * 60
     symbols = tuple(settings.SYMBOLS)
     identity = {symbol: symbol for symbol in symbols}
     bybit_symbols = tuple(BYBIT_SYMBOL_MAP[symbol] for symbol in symbols)
@@ -380,7 +405,7 @@ async def ingest_metrics_cycle(
 
     counts: dict[str, int] = {}
     async with pool.acquire() as conn:
-        async with conn.transaction():
+        async with fenced_transaction(conn, ownership):
             counts["oi"] = await upsert_ohlc_metric(
                 conn, "open_interest", "oi", oi, identity, start_history, end_ts
             )
@@ -399,12 +424,28 @@ async def ingest_metrics_cycle(
             counts["long_short"] = await upsert_long_short(
                 conn, long_short, identity, start_history, end_ts
             )
-        await heartbeat(conn, "ingest", status="ok", detail=f"feed=metrics_5m,{counts}"[:500])
+            await compute_and_store_all(
+                conn,
+                symbols,
+                now_utc=now_utc,
+                price_cutoff=price_cutoff.exclusive_boundary,
+                metrics_cutoff=cutoff.exclusive_boundary,
+            )
+        await heartbeat_component(
+            conn,
+            "ingest",
+            "metrics_5m",
+            INGEST_COMPONENT_MAX_AGES,
+            detail=f"feed=metrics_5m,{counts}"[:500],
+            ownership=ownership,
+        )
     LOGGER.info("ingest_metrics_cycle_complete counts=%s", counts)
     # Este contexto cambia despacio y no consume cuota de Coinalyze. Cada fuente se degrada
     # por separado: un calendario externo caído nunca invalida la ingestión de mercado.
     try:
-        await refresh_external_macro(pool, settings)
+        await refresh_external_macro(pool, settings, ownership=ownership)
+    except ServiceOwnershipLost:
+        raise
     except Exception:
         LOGGER.exception("external_macro_refresh_failed")
 
@@ -425,6 +466,7 @@ async def run_aligned_feed(
     cadence_seconds: int,
     offset_seconds: int,
     name: str,
+    on_error=None,
 ) -> None:
     while not stop.is_set():
         timeout = seconds_until_aligned_run(time.time(), cadence_seconds, offset_seconds)
@@ -435,8 +477,12 @@ async def run_aligned_feed(
             pass
         try:
             await callback()
-        except Exception:
+        except ServiceOwnershipLost:
+            raise
+        except Exception as exc:
             LOGGER.exception("ingest_feed_failed feed=%s", name)
+            if on_error is not None:
+                await on_error(exc)
 
 
 async def run() -> None:
@@ -459,7 +505,11 @@ async def run() -> None:
         settings.COINALYZE_RATE_LIMIT_UNITS,
     )
     service_lock = await acquire_service_lock(settings, "ingest")
-    pool = await create_pool(settings, application_name="coinalyze-ingest")
+    pool = await create_pool(
+        settings,
+        application_name="coinalyze-ingest",
+        ownership=service_lock,
+    )
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -471,6 +521,17 @@ async def run() -> None:
     tasks: tuple[asyncio.Task[None], ...] = ()
 
     try:
+        async with pool.acquire() as conn:
+            for feed in INGEST_COMPONENT_MAX_AGES:
+                await heartbeat_component(
+                    conn,
+                    "ingest",
+                    feed,
+                    INGEST_COMPONENT_MAX_AGES,
+                    status="degraded",
+                    detail="collector starting; awaiting successful cycle",
+                    ownership=service_lock,
+                )
         limiter = PostgresSlidingWindowRateLimiter(
             pool,
             settings.COINALYZE_RATE_LIMIT_UNITS,
@@ -480,27 +541,49 @@ async def run() -> None:
             settings.API_KEY,
             limiter,
         ) as client:
+            async def mark_error(feed: str, exc: Exception) -> None:
+                async with pool.acquire() as conn:
+                    await heartbeat_component(
+                        conn,
+                        "ingest",
+                        feed,
+                        INGEST_COMPONENT_MAX_AGES,
+                        status="error",
+                        detail=f"{type(exc).__name__}: {exc}"[:500],
+                        ownership=service_lock,
+                    )
+
             tasks = (
                 asyncio.create_task(
                     run_aligned_feed(
                         stop,
-                        lambda: ingest_ohlcv_cycle(pool, client, settings),
+                        lambda: ingest_ohlcv_cycle(
+                            pool, client, settings, ownership=service_lock
+                        ),
                         cadence_seconds=settings.INGEST_INTERVAL_SECONDS,
                         offset_seconds=5,
                         name="ohlcv_1m",
+                        on_error=lambda exc: mark_error("ohlcv_1m", exc),
                     )
                 ),
                 asyncio.create_task(
                     run_aligned_feed(
                         stop,
-                        lambda: ingest_metrics_cycle(pool, client, settings),
+                        lambda: ingest_metrics_cycle(
+                            pool, client, settings, ownership=service_lock
+                        ),
                         cadence_seconds=300,
                         offset_seconds=15,
                         name="metrics_5m",
+                        on_error=lambda exc: mark_error("metrics_5m", exc),
                     )
                 ),
             )
-            await wait_for_stop_or_lock_loss(stop, lock_monitor)
+            await wait_for_stop_or_lock_loss(
+                stop,
+                lock_monitor,
+                critical_tasks=tasks,
+            )
     finally:
         for task in tasks:
             task.cancel()
