@@ -9,6 +9,8 @@ from typing import Any, Protocol
 import asyncpg
 import httpx
 
+from app.db import ServiceOwnership, assert_service_ownership
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -30,6 +32,7 @@ class PostgresSlidingWindowRateLimiter:
         *,
         provider: str = "coinalyze",
         window_seconds: float = 60.0,
+        ownership: ServiceOwnership | None = None,
     ) -> None:
         if max_units < 1:
             raise ValueError("max_units must be >= 1")
@@ -39,6 +42,7 @@ class PostgresSlidingWindowRateLimiter:
         self.max_units = max_units
         self.provider = provider
         self.window_seconds = window_seconds
+        self.ownership = ownership
 
     async def acquire(self, units: int) -> None:
         if units < 1:
@@ -53,6 +57,12 @@ class PostgresSlidingWindowRateLimiter:
                         "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
                         f"rate:{self.provider}",
                     )
+                    # Fence BEFORE cleaning/counting/inserting: an owner that lost its
+                    # generation must not be allowed to reserve a unit, even transiently.
+                    # ServiceOwnershipLost propagates out of this transaction (rolling back
+                    # any partial work) instead of being caught by the retry loop below.
+                    if self.ownership is not None:
+                        await assert_service_ownership(conn, self.ownership)
                     await conn.execute(
                         """
                         DELETE FROM external_api_rate_event

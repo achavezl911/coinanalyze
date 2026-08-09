@@ -1,9 +1,14 @@
+import asyncio
+import os
 from datetime import UTC, datetime
+
+import asyncpg
+import pytest
 
 import app.ingest as ingest
 from app.config import Settings
 from app.cutoffs import ClosedCutoff
-from app.ingest import rollup_ohlcv_5m, seconds_until_aligned_run, upsert_ohlcv
+from app.ingest import publish_snapshot, rollup_ohlcv_5m, seconds_until_aligned_run, upsert_ohlcv
 
 
 class FakeConnection:
@@ -110,6 +115,9 @@ class _CycleConnection:
         return self
 
     async def __aexit__(self, *_args):
+        return None
+
+    async def execute(self, *_args, **_kwargs):
         return None
 
 
@@ -260,3 +268,215 @@ async def test_oi_jump_in_latest_closed_bucket_is_in_immediate_metrics_snapshot(
     assert pool.conn.snapshot_args[2] == 200.0
     assert pool.conn.snapshot_args[-2] == datetime(2026, 8, 9, 12, 4, tzinfo=UTC)
     assert pool.conn.snapshot_args[-1] == datetime(2026, 8, 9, 12, 0, tzinfo=UTC)
+
+
+def _test_dsn() -> str | None:
+    return os.environ.get("TEST_DATABASE_URL")
+
+
+@pytest.mark.asyncio
+async def test_postgres_snapshot_publication_is_serialized_across_ohlcv_and_metrics_cycles():
+    """Reproduces the confirmed race: A(OHLCV) writes a new closed price without
+    committing; B(metrics) starts later, cannot see it, persists OI and publishes a
+    snapshot with the older price, then commits; A commits afterwards. Without
+    serialization + a real-time clock at insert time, B's snapshot could sort as
+    "latest" even though A's is the correct, more recent one.
+    """
+    dsn = _test_dsn()
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    # WS_SYMBOL_MAP/BYBIT_SYMBOL_MAP only cover the catalog symbols, so this must reuse
+    # one of them (pre-seeded by sql/schema.sql) rather than a synthetic name.
+    symbol = "BTCUSDT_PERP.A"
+    conn_a = conn_b = control = None
+    try:
+        control = await asyncpg.connect(dsn)
+        # Baseline committed state: an old closed candle and the latest committed OI.
+        await control.execute(
+            """
+            INSERT INTO ohlcv(ts,symbol,interval,open,high,low,close,volume,buy_volume,tx,btx)
+            VALUES(to_timestamp(1786276980),$1,'1min',99,100,98,100,10,5,10,5)
+            """,
+            symbol,
+        )
+        await control.execute(
+            """
+            INSERT INTO open_interest(ts,symbol,interval,oi_open,oi_high,oi_low,oi_close)
+            VALUES(to_timestamp(1786276800),$1,'5min',250,250,250,250)
+            """,
+            symbol,
+        )
+
+        conn_a = await asyncpg.connect(dsn)
+        conn_b = await asyncpg.connect(dsn)
+
+        # A (OHLCV cycle): begins writing the new closed price (12:04) but does not
+        # commit yet.
+        tx_a = conn_a.transaction()
+        await tx_a.start()
+        await conn_a.execute(
+            """
+            INSERT INTO ohlcv(ts,symbol,interval,open,high,low,close,volume,buy_volume,tx,btx)
+            VALUES(to_timestamp(1786277040),$1,'1min',100,105,100,104,10,5,10,5)
+            """,
+            symbol,
+        )
+
+        # B (metrics cycle): runs its own publish_snapshot concurrently while A is still
+        # uncommitted. Under READ COMMITTED it must not see A's new price.
+        await publish_snapshot(
+            conn_b,
+            None,
+            (symbol,),
+            now_utc=datetime(2026, 8, 9, 12, 5, 15, tzinfo=UTC),
+            price_cutoff=datetime(2026, 8, 9, 12, 5, tzinfo=UTC),
+            metrics_cutoff=datetime(2026, 8, 9, 12, 5, tzinfo=UTC),
+        )
+        stale_row = await control.fetchrow(
+            "SELECT price, oi FROM metrics_snapshot WHERE symbol=$1 ORDER BY ts DESC LIMIT 1",
+            symbol,
+        )
+        assert stale_row["price"] == 100.0
+        assert stale_row["oi"] == 250.0
+
+        # A commits its OHLCV write, then publishes its own (correct) snapshot.
+        await tx_a.commit()
+        await publish_snapshot(
+            conn_a,
+            None,
+            (symbol,),
+            now_utc=datetime(2026, 8, 9, 12, 5, 15, tzinfo=UTC),
+            price_cutoff=datetime(2026, 8, 9, 12, 5, tzinfo=UTC),
+            metrics_cutoff=datetime(2026, 8, 9, 12, 5, tzinfo=UTC),
+        )
+
+        latest = await control.fetchrow(
+            """
+            SELECT price, oi, price_cutoff_at, metrics_cutoff_at
+            FROM metrics_snapshot WHERE symbol=$1 ORDER BY ts DESC LIMIT 1
+            """,
+            symbol,
+        )
+        assert latest["price"] == 104.0
+        assert latest["oi"] == 250.0
+        assert latest["price_cutoff_at"] == datetime(2026, 8, 9, 12, 4, tzinfo=UTC)
+        assert latest["metrics_cutoff_at"] == datetime(2026, 8, 9, 12, 0, tzinfo=UTC)
+    finally:
+        if control is not None:
+            await control.execute(
+                "DELETE FROM metrics_snapshot WHERE symbol=$1 AND ts > $2",
+                symbol,
+                datetime(2026, 8, 9, tzinfo=UTC),
+            )
+            await control.execute(
+                "DELETE FROM ohlcv WHERE symbol=$1 AND ts > $2",
+                symbol,
+                datetime(2026, 8, 9, tzinfo=UTC),
+            )
+            await control.execute(
+                "DELETE FROM open_interest WHERE symbol=$1 AND ts > $2",
+                symbol,
+                datetime(2026, 8, 9, tzinfo=UTC),
+            )
+        for connection in (conn_a, conn_b, control):
+            if connection is not None and not connection.is_closed():
+                await connection.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_snapshot_publish_lock_serializes_concurrent_cycles():
+    """The advisory lock must force one publish_snapshot() call to wait for the other:
+    this is what keeps clock_timestamp() ordering equal to real completion order instead
+    of depending on scheduling luck.
+    """
+    dsn = _test_dsn()
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    symbol = "ETHUSDT_PERP.A"
+    conn_a = conn_b = control = None
+    try:
+        control = await asyncpg.connect(dsn)
+        await control.execute(
+            """
+            INSERT INTO ohlcv(ts,symbol,interval,open,high,low,close,volume,buy_volume,tx,btx)
+            VALUES(to_timestamp(1786276980),$1,'1min',99,100,98,100,10,5,10,5)
+            """,
+            symbol,
+        )
+        conn_a = await asyncpg.connect(dsn)
+        conn_b = await asyncpg.connect(dsn)
+
+        held = asyncio.Event()
+        release = asyncio.Event()
+        real_lock_query = "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))"
+
+        class _PacedConnection:
+            """Delegates to a real asyncpg connection, pausing right after it takes
+            the shared advisory lock so the test can prove a concurrent publish
+            attempt actually blocks on it (asyncpg.Connection attributes are
+            read-only, so this wraps rather than monkeypatches)."""
+
+            def __init__(self, conn: asyncpg.Connection) -> None:
+                self._conn = conn
+
+            def transaction(self):
+                return self._conn.transaction()
+
+            async def execute(self, query, *args):
+                result = await self._conn.execute(query, *args)
+                if query == real_lock_query:
+                    held.set()
+                    await release.wait()
+                return result
+
+            async def fetchrow(self, query, *args):
+                return await self._conn.fetchrow(query, *args)
+
+        async def slow_publish() -> None:
+            await publish_snapshot(
+                _PacedConnection(conn_a),  # type: ignore[arg-type]
+                None,
+                (symbol,),
+                now_utc=datetime(2026, 8, 9, 12, 5, 15, tzinfo=UTC),
+                price_cutoff=datetime(2026, 8, 9, 12, 5, tzinfo=UTC),
+                metrics_cutoff=datetime(2026, 8, 9, 12, 5, tzinfo=UTC),
+            )
+
+        task_a = asyncio.create_task(slow_publish())
+        await asyncio.wait_for(held.wait(), timeout=3)
+
+        task_b = asyncio.create_task(
+            publish_snapshot(
+                conn_b,
+                None,
+                (symbol,),
+                now_utc=datetime(2026, 8, 9, 12, 5, 15, tzinfo=UTC),
+                price_cutoff=datetime(2026, 8, 9, 12, 5, tzinfo=UTC),
+                metrics_cutoff=datetime(2026, 8, 9, 12, 5, tzinfo=UTC),
+            )
+        )
+        await asyncio.sleep(0.2)
+        assert not task_b.done(), "B must block on the shared advisory lock while A holds it"
+        release.set()
+        await asyncio.gather(task_a, task_b)
+
+        rows = await control.fetch(
+            "SELECT ts FROM metrics_snapshot WHERE symbol=$1 ORDER BY ts", symbol
+        )
+        assert len(rows) == 2
+        assert rows[0]["ts"] < rows[1]["ts"]
+    finally:
+        if control is not None:
+            await control.execute(
+                "DELETE FROM metrics_snapshot WHERE symbol=$1 AND ts > $2",
+                symbol,
+                datetime(2026, 8, 9, tzinfo=UTC),
+            )
+            await control.execute(
+                "DELETE FROM ohlcv WHERE symbol=$1 AND ts > $2",
+                symbol,
+                datetime(2026, 8, 9, tzinfo=UTC),
+            )
+        for connection in (conn_a, conn_b, control):
+            if connection is not None and not connection.is_closed():
+                await connection.close()

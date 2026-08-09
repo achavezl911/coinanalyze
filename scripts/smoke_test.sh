@@ -15,12 +15,22 @@ fi
 if [[ -n "${API_INTERNAL_TOKEN:-}" && "$BASE_URL" == http://127.0.0.1:* ]]; then
   CURL_HEADERS=(-H "X-Internal-Token: ${API_INTERNAL_TOKEN}")
 fi
-for service in $REQUIRED_SYSTEMD_SERVICES; do
-  if systemctl is-failed --quiet "$service" || ! systemctl is-active --quiet "$service"; then
-    echo "Required service is not active and healthy: $service" >&2
-    exit 1
-  fi
-done
+# A collector can pass this check and still die while the HTTP probes below run: its
+# heartbeat can stay inside the freshness window even after the process is gone. Reusing
+# this function both before and after the probes closes that window instead of trusting
+# a single point-in-time check taken before anything actually exercised the services.
+require_active_services() {
+  local service
+  for service in $REQUIRED_SYSTEMD_SERVICES; do
+    if systemctl is-failed --quiet "$service" || ! systemctl is-active --quiet "$service"; then
+      echo "Required service is not active and healthy: $service" >&2
+      return 1
+    fi
+  done
+  return 0
+}
+
+require_active_services || exit 1
 curl --fail --silent --show-error "${CURL_HEADERS[@]}" "$BASE_URL/api/symbols" >/dev/null
 HEALTH_JSON=$(mktemp)
 trap 'rm -f "$HEALTH_JSON"' EXIT
@@ -74,4 +84,7 @@ if [[ -n "$SYMBOL" ]]; then
       "${CURL_HEADERS[@]}" "$BASE_URL$path" >/dev/null
   done
 fi
+# Required again, immediately before success: a collector that died mid-probe must not
+# be masked by a still-fresh heartbeat or by probes that happened to succeed anyway.
+require_active_services || exit 1
 printf 'Smoke test OK: %s\n' "$BASE_URL"

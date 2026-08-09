@@ -573,7 +573,9 @@ async def run() -> None:
         name="service-lock",
     )
     try:
-        limiter = PostgresSlidingWindowRateLimiter(pool, settings.COINALYZE_RATE_LIMIT_UNITS)
+        limiter = PostgresSlidingWindowRateLimiter(
+            pool, settings.COINALYZE_RATE_LIMIT_UNITS, ownership=service_lock
+        )
         async with CoinalyzeClient(
             settings.COINALYZE_BASE_URL,
             settings.API_KEY,

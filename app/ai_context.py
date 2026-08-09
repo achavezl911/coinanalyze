@@ -399,9 +399,15 @@ async def data_confidence_row(conn: asyncpg.Connection, symbol: str) -> dict[str
             for component, max_age in INGEST_COMPONENT_MAX_AGES.items()
         },
     }
+    # Same clock source as /api/healthz: lag_seconds is derived from PostgreSQL's own
+    # now(), not the application's. Clock skew between the API process and PostgreSQL
+    # could otherwise make healthz degraded while this endpoint reads a heartbeat as
+    # fresh (or vice versa), because required_heartbeat_failures() falls back to
+    # Python's datetime.now(UTC) whenever a row has no lag_seconds of its own.
     collector_heartbeats = await conn.fetch(
-        "SELECT service,status,updated_at FROM pipeline_heartbeat "
-        "WHERE service=ANY($1::text[])",
+        "SELECT service,status,updated_at,"
+        "EXTRACT(EPOCH FROM now()-updated_at)::float8 AS lag_seconds "
+        "FROM pipeline_heartbeat WHERE service=ANY($1::text[])",
         list(required_heartbeats),
     )
     item["collectors_stale"] = bool(

@@ -160,7 +160,13 @@ fut AS (
     SELECT
       (array_agg(close ORDER BY ts DESC))[1] AS price,
       (array_agg(ts ORDER BY ts DESC))[1] AS price_ts,
-      SUM(volume * close) FILTER (WHERE ts >= $4 - interval '24 hours') AS vol_24h,
+      -- Explicit cast on the first use of $4/$5: PostgreSQL's parameter-type inference
+      -- resolves each parameter number once for the whole statement, but if the first
+      -- usage it encounters is `$N - interval` it can infer $N itself as `interval`
+      -- (interval - interval = interval), which then fails everywhere else $N is
+      -- compared to a timestamptz column. The cast fixes inference without changing
+      -- the value bound at execution time (still the caller's timestamptz).
+      SUM(volume * close) FILTER (WHERE ts >= $4::timestamptz - interval '24 hours') AS vol_24h,
       SUM(delta * close) FILTER (WHERE ts >= $4 - interval '24 hours') AS cvd_24h,
       SUM(delta * close) FILTER (WHERE ts >= $3) AS cvd_session,
       SUM(delta * close) FILTER (WHERE ts >= $4 - interval '3 minutes') AS delta_3min,
@@ -191,7 +197,7 @@ spot AS (
 ),
 oi_now AS (
     SELECT oi_close AS value, ts FROM open_interest
-    WHERE symbol = $1 AND interval = '5min' AND ts < $5 ORDER BY ts DESC LIMIT 1
+    WHERE symbol = $1 AND interval = '5min' AND ts < $5::timestamptz ORDER BY ts DESC LIMIT 1
 ),
 oi_old AS (
     SELECT oi_close AS value FROM open_interest
@@ -341,6 +347,10 @@ async def compute_snapshot(
 
 
 async def insert_snapshot(conn: asyncpg.Connection, snap: dict[str, object]) -> None:
+    # clock_timestamp() is read when the statement executes, not when the transaction
+    # began (now()/CURRENT_TIMESTAMP are frozen at BEGIN). Combined with the exclusive
+    # advisory lock in publish_snapshot(), this keeps `ts` ordering equal to real
+    # publication order across both the OHLCV and metrics cycles.
     await conn.execute(
         """
         INSERT INTO metrics_snapshot(
@@ -352,7 +362,7 @@ async def insert_snapshot(conn: asyncpg.Connection, snap: dict[str, object]) -> 
           btr_15m, btr_1h, btr_24h, pfr_fr_div, price_cutoff_at,
           metrics_cutoff_at
         ) VALUES (
-          now(), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
+          clock_timestamp(), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
           $18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30
         )
         """,

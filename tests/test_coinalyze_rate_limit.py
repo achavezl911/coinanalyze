@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime, timedelta
+from urllib.parse import parse_qs, unquote, urlparse
+from uuid import uuid4
 
+import asyncpg
 import pytest
 
 from app.coinalyze import CoinalyzeClient, PostgresSlidingWindowRateLimiter, validate_rate_budget
+from app.config import Settings
+from app.db import ServiceOwnershipLost, acquire_service_lock
 
 
 class _Transaction:
@@ -134,3 +140,80 @@ async def test_each_http_retry_acquires_global_units(monkeypatch):
 
     assert result == {"BTCUSDT_PERP.A": []}
     assert limiter.units == [1, 1]
+
+
+def _test_settings(dsn: str) -> Settings:
+    parsed = urlparse(dsn)
+    query = parse_qs(parsed.query)
+    return Settings(
+        PG_HOST=parsed.hostname or "127.0.0.1",
+        PG_PORT=parsed.port or 5432,
+        PG_DB=parsed.path.lstrip("/"),
+        PG_USER=unquote(parsed.username or "postgres"),
+        PG_PASSWORD=unquote(parsed.password or ""),
+        PG_SSLMODE=query.get("sslmode", ["disable"])[0],
+    )
+
+
+@pytest.mark.asyncio
+async def test_postgres_rate_limiter_fences_reservations_after_ownership_takeover():
+    """A reserves; B takes over the shard; A's next acquire() must be fenced instead of
+    reserving a unit, and B must still be able to reserve afterwards.
+    """
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    settings = _test_settings(dsn)
+    provider = f"fence-rate-{uuid4().hex}"
+    owner_a = owner_b = pool = control = None
+    try:
+        control = await asyncpg.connect(dsn)
+        owner_a = await acquire_service_lock(settings, provider)
+        pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=2)
+
+        limiter_a = PostgresSlidingWindowRateLimiter(
+            pool, 10, provider=provider, ownership=owner_a
+        )
+        await limiter_a.acquire(3)
+
+        terminated = await control.fetchval(
+            "SELECT pg_terminate_backend($1)", owner_a.connection.get_server_pid()
+        )
+        assert terminated is True
+        owner_b = await acquire_service_lock(settings, provider)
+        assert owner_b.generation > owner_a.generation
+
+        with pytest.raises(ServiceOwnershipLost, match="generation"):
+            await limiter_a.acquire(2)
+
+        rows = await control.fetch(
+            "SELECT units FROM external_api_rate_event WHERE provider=$1 ORDER BY ts",
+            provider,
+        )
+        assert [row["units"] for row in rows] == [3]
+
+        limiter_b = PostgresSlidingWindowRateLimiter(
+            pool, 10, provider=provider, ownership=owner_b
+        )
+        await limiter_b.acquire(2)
+
+        rows = await control.fetch(
+            "SELECT units FROM external_api_rate_event WHERE provider=$1 ORDER BY ts",
+            provider,
+        )
+        assert [row["units"] for row in rows] == [3, 2]
+    finally:
+        if control is not None:
+            await control.execute(
+                "DELETE FROM external_api_rate_event WHERE provider=$1", provider
+            )
+            await control.execute(
+                "DELETE FROM service_ownership WHERE service=$1", provider
+            )
+        if pool is not None:
+            await pool.close()
+        for owner in (owner_a, owner_b):
+            if owner is not None and not owner.is_closed():
+                await owner.close()
+        if control is not None:
+            await control.close()

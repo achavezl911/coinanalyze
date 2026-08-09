@@ -35,6 +35,10 @@ from app.metrics import compute_and_store_all
 
 LOGGER = logging.getLogger(__name__)
 
+# Shared by both the OHLCV and metrics cycles so snapshot publication is serialized
+# process-wide, not just per-cycle. See publish_snapshot() for why this is required.
+SNAPSHOT_PUBLISH_LOCK_KEY = "coinanalyze:metrics-snapshot-publish"
+
 
 def finite(value: object) -> float:
     number = float(value)  # type: ignore[arg-type]
@@ -302,6 +306,48 @@ async def upsert_long_short(
     return len(records)
 
 
+async def publish_snapshot(
+    conn: asyncpg.Connection,
+    ownership: ServiceOwnership | None,
+    symbols: tuple[str, ...],
+    *,
+    now_utc: datetime | None,
+    price_cutoff: datetime | None,
+    metrics_cutoff: datetime | None,
+) -> None:
+    """Serialize metrics_snapshot publication across the OHLCV and metrics cycles.
+
+    Must be called AFTER the caller's own feed-write transaction already committed.
+    Without this, two concurrent cycles (A=OHLCV, B=metrics) can interleave so that: A
+    starts writing a new closed price but has not committed yet; B starts later, cannot
+    see A's uncommitted price under READ COMMITTED, computes a snapshot from the older
+    price, and commits first; A then commits its own (correct, newer) snapshot, but if
+    that snapshot were written with `now()` its `ts` is fixed at A's transaction BEGIN,
+    which was earlier than B's, so ORDER BY ts DESC would surface B's stale snapshot as
+    "latest" even though A committed the correct one afterwards.
+
+    This function opens a fresh transaction, takes one exclusive advisory lock shared by
+    both cycles (serializing publication process-wide), re-reads already-committed
+    market data, and inserts with clock_timestamp() (evaluated at execution, not BEGIN).
+    Serialization + a real-time clock together guarantee `ts` ordering matches actual
+    publication order. Changing only now() to clock_timestamp() without the lock and the
+    fresh transaction would not be enough: a still-open feed-write transaction would
+    keep hiding committed data from re-reads until it committed.
+    """
+    async with fenced_transaction(conn, ownership):
+        await conn.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+            SNAPSHOT_PUBLISH_LOCK_KEY,
+        )
+        await compute_and_store_all(
+            conn,
+            symbols,
+            now_utc=now_utc,
+            price_cutoff=price_cutoff,
+            metrics_cutoff=metrics_cutoff,
+        )
+
+
 async def ingest_cycle(
     pool: asyncpg.Pool,
     client: CoinalyzeClient,
@@ -335,13 +381,16 @@ async def ingest_ohlcv_cycle(
                 conn, ohlcv, identity, start_ohlcv, end_ts, "1min"
             )
             rolled_up = await rollup_ohlcv_5m(conn, symbols, start_ohlcv, end_ts)
-            await compute_and_store_all(
-                conn,
-                symbols,
-                now_utc=now_utc,
-                price_cutoff=cutoff.exclusive_boundary,
-                metrics_cutoff=metrics_cutoff.exclusive_boundary,
-            )
+        # Feed data is committed above; publish_snapshot opens its own transaction and
+        # re-reads committed state, serialized against the metrics cycle.
+        await publish_snapshot(
+            conn,
+            ownership,
+            symbols,
+            now_utc=now_utc,
+            price_cutoff=cutoff.exclusive_boundary,
+            metrics_cutoff=metrics_cutoff.exclusive_boundary,
+        )
         await heartbeat_component(
             conn,
             "ingest",
@@ -424,13 +473,16 @@ async def ingest_metrics_cycle(
             counts["long_short"] = await upsert_long_short(
                 conn, long_short, identity, start_history, end_ts
             )
-            await compute_and_store_all(
-                conn,
-                symbols,
-                now_utc=now_utc,
-                price_cutoff=price_cutoff.exclusive_boundary,
-                metrics_cutoff=cutoff.exclusive_boundary,
-            )
+        # Feed data is committed above; publish_snapshot opens its own transaction and
+        # re-reads committed state, serialized against the OHLCV cycle.
+        await publish_snapshot(
+            conn,
+            ownership,
+            symbols,
+            now_utc=now_utc,
+            price_cutoff=price_cutoff.exclusive_boundary,
+            metrics_cutoff=cutoff.exclusive_boundary,
+        )
         await heartbeat_component(
             conn,
             "ingest",
@@ -535,6 +587,7 @@ async def run() -> None:
         limiter = PostgresSlidingWindowRateLimiter(
             pool,
             settings.COINALYZE_RATE_LIMIT_UNITS,
+            ownership=service_lock,
         )
         async with CoinalyzeClient(
             settings.COINALYZE_BASE_URL,

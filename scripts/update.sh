@@ -207,6 +207,12 @@ while (( SECONDS < DEPLOY_HEALTH_DEADLINE )); do
     REQUIRED_HEARTBEATS="${REQUIRED_HEARTBEATS[*]}" \
     DEPLOY_RESTART_EPOCH="$DEPLOY_RESTART_EPOCH" \
     /opt/coinalyze/scripts/smoke_test.sh >/dev/null 2>&1; then
+    # Reuse the same service-check smoke_test.sh already passed: closes the window
+    # between smoke_test.sh's own final gate and this success message.
+    if has_failed_service || ! systemctl is-active --quiet coinalyze-api; then
+      report_service_failures
+      exit 1
+    fi
     /opt/coinalyze/scripts/backup.sh
     trap - EXIT
     echo "Update complete."

@@ -112,3 +112,93 @@ def test_update_uses_database_restart_time_and_all_required_units():
     assert "ingest:ohlcv_1m" in source
     assert "ingest:metrics_5m" in source
     assert source.index("smoke_test.sh >/dev/null") < source.index('echo "Update complete."')
+
+
+def _smoke_env_with_mid_probe_failure(
+    tmp_path: Path, *, fail_after_url_substring: str, failed_unit: str
+) -> dict[str, str]:
+    """A collector that is healthy at the top of smoke_test.sh but dies once a specific
+    HTTP probe fires. The fake `systemctl` only reports it failed once the marker file
+    exists, so the pre-probe check must pass and only the post-probe recheck can catch it.
+    """
+    marker = tmp_path / "collector_died"
+    _write_executable(
+        tmp_path / "systemctl",
+        f"""#!/usr/bin/env bash
+set -eu
+command=$1
+shift
+unit=${{!#}}
+effective_failed=""
+if [[ -f "{marker}" ]]; then
+  effective_failed="{failed_unit}"
+fi
+if [[ $command == is-failed ]]; then
+  [[ "$effective_failed" == "$unit" ]]
+elif [[ $command == is-active ]]; then
+  [[ "$effective_failed" != "$unit" ]]
+else
+  exit 0
+fi
+""",
+    )
+    _write_executable(
+        tmp_path / "curl",
+        f"""#!/usr/bin/env bash
+set -eu
+url=${{!#}}
+case "$url" in
+  *{fail_after_url_substring}*) touch "{marker}" ;;
+esac
+case "$url" in
+  */api/healthz)
+    printf '{{"status":"ok","services":[{{"service":"api","status":"ok","updated_at":"%s"}}]}}' \
+      "${{HEARTBEAT_TS:-1970-01-01T00:03:30+00:00}}"
+    ;;
+  */api/symbols) printf '[]' ;;
+  *) printf '{{}}' ;;
+esac
+""",
+    )
+    env = os.environ.copy()
+    env.update(
+        {
+            "PATH": f"{tmp_path}:{env['PATH']}",
+            "METRICS_ENABLED": "false",
+            "REQUIRED_SYSTEMD_SERVICES": f"coinalyze-api {failed_unit}",
+            "REQUIRED_HEARTBEATS": "api",
+            "DEPLOY_RESTART_EPOCH": "200",
+            "COINALYZE_ENV_FILE": str(tmp_path / "missing.env"),
+        }
+    )
+    return env
+
+
+def test_smoke_fails_when_collector_dies_during_http_probes(tmp_path: Path):
+    env = _smoke_env_with_mid_probe_failure(
+        tmp_path,
+        fail_after_url_substring="/api/symbols",
+        failed_unit="coinalyze-ws@1.service",
+    )
+
+    result = subprocess.run(
+        ["bash", str(ROOT / "scripts" / "smoke_test.sh")],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "coinalyze-ws@1.service" in result.stderr
+    assert "Smoke test OK" not in result.stdout
+
+
+def test_update_rechecks_services_immediately_before_success():
+    source = (ROOT / "scripts" / "update.sh").read_text(encoding="utf-8")
+
+    smoke_call_idx = source.index("smoke_test.sh >/dev/null")
+    complete_idx = source.index('echo "Update complete."')
+    recheck_idx = source.index("has_failed_service", smoke_call_idx)
+
+    assert smoke_call_idx < recheck_idx < complete_idx
