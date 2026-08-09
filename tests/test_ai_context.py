@@ -53,7 +53,9 @@ def test_spot_venue_confidence_uses_fresh_rows_for_the_selected_symbol() -> None
     assert "service IN ('ws-binance','ws-bybit') AND status='ok'" not in ai_source
     assert "await data_confidence_row(conn, selected)" in api_source
     schema = (Path(__file__).resolve().parents[1] / "sql" / "schema.sql").read_text()
-    assert "'ws-binance','ws-bybit'" in schema
+    assert "CHECK (length(service) BETWEEN 1 AND 100)" in schema
+    ws_source = (Path(__file__).resolve().parents[1] / "app" / "ws_collector.py").read_text()
+    assert 'f"ws-{exchange}:{shard_index}/{shard_count}"' in ws_source
 
 
 def test_rough_token_estimate_positive():

@@ -1,18 +1,75 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 BASE_URL=${1:-http://127.0.0.1:8000}
+DEPLOY_RESTART_EPOCH=${DEPLOY_RESTART_EPOCH:-}
+REQUIRED_HEARTBEATS=${REQUIRED_HEARTBEATS:-}
+REQUIRED_SYSTEMD_SERVICES=${REQUIRED_SYSTEMD_SERVICES:-}
 CURL_HEADERS=()
-if [[ -f /etc/coinalyze/coinalyze.env ]]; then
+COINALYZE_ENV_FILE=${COINALYZE_ENV_FILE:-/etc/coinalyze/coinalyze.env}
+if [[ -f "$COINALYZE_ENV_FILE" ]]; then
   set -a
   # shellcheck disable=SC1091
-  source /etc/coinalyze/coinalyze.env
+  source "$COINALYZE_ENV_FILE"
   set +a
 fi
 if [[ -n "${API_INTERNAL_TOKEN:-}" && "$BASE_URL" == http://127.0.0.1:* ]]; then
   CURL_HEADERS=(-H "X-Internal-Token: ${API_INTERNAL_TOKEN}")
 fi
+# A collector can pass this check and still die while the HTTP probes below run: its
+# heartbeat can stay inside the freshness window even after the process is gone. Reusing
+# this function both before and after the probes closes that window instead of trusting
+# a single point-in-time check taken before anything actually exercised the services.
+require_active_services() {
+  local service
+  for service in $REQUIRED_SYSTEMD_SERVICES; do
+    if systemctl is-failed --quiet "$service" || ! systemctl is-active --quiet "$service"; then
+      echo "Required service is not active and healthy: $service" >&2
+      return 1
+    fi
+  done
+  return 0
+}
+
+require_active_services || exit 1
 curl --fail --silent --show-error "${CURL_HEADERS[@]}" "$BASE_URL/api/symbols" >/dev/null
-curl --fail --silent --show-error "${CURL_HEADERS[@]}" "$BASE_URL/api/healthz" >/dev/null
+HEALTH_JSON=$(mktemp)
+trap 'rm -f "$HEALTH_JSON"' EXIT
+curl --fail --silent --show-error "${CURL_HEADERS[@]}" "$BASE_URL/api/healthz" >"$HEALTH_JSON"
+python3 - "$HEALTH_JSON" "$DEPLOY_RESTART_EPOCH" "$REQUIRED_HEARTBEATS" <<'PY_HEALTH'
+import datetime
+import json
+import sys
+
+path, restart_epoch, required_raw = sys.argv[1:]
+try:
+    with open(path, encoding="utf-8") as handle:
+        health = json.load(handle)
+except (OSError, json.JSONDecodeError) as exc:
+    raise SystemExit(f"healthz did not return valid JSON: {exc}")
+if health.get("status") != "ok":
+    raise SystemExit(f"healthz is not ok: {health.get('status')!r}")
+if restart_epoch:
+    try:
+        deployed_at = datetime.datetime.fromtimestamp(float(restart_epoch), datetime.UTC)
+    except (ValueError, OverflowError) as exc:
+        raise SystemExit(f"invalid deploy restart epoch: {exc}")
+    services = {str(row.get("service")): row for row in health.get("services", [])}
+    for service in required_raw.split():
+        row = services.get(service)
+        if row is None:
+            raise SystemExit(f"post-restart heartbeat missing: {service}")
+        try:
+            updated_at = datetime.datetime.fromisoformat(
+                str(row["updated_at"]).replace("Z", "+00:00")
+            )
+        except (KeyError, ValueError) as exc:
+            raise SystemExit(f"invalid heartbeat timestamp for {service}: {exc}")
+        if updated_at < deployed_at:
+            raise SystemExit(
+                f"heartbeat predates restart: {service} updated_at={updated_at.isoformat()} "
+                f"restart={deployed_at.isoformat()}"
+            )
+PY_HEALTH
 curl --fail --silent --show-error "${CURL_HEADERS[@]}" "$BASE_URL/api/ai/profiles" >/dev/null
 # /metrics estuvo devolviendo 500 durante versiones sin que nadie lo notara,
 # justamente porque el smoke test no lo cubria.
@@ -27,4 +84,7 @@ if [[ -n "$SYMBOL" ]]; then
       "${CURL_HEADERS[@]}" "$BASE_URL$path" >/dev/null
   done
 fi
+# Required again, immediately before success: a collector that died mid-probe must not
+# be masked by a still-fresh heartbeat or by probes that happened to succeed anyway.
+require_active_services || exit 1
 printf 'Smoke test OK: %s\n' "$BASE_URL"

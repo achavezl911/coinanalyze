@@ -14,20 +14,47 @@ import asyncpg
 import websockets
 from websockets.exceptions import ConnectionClosed
 
-from app.config import FUTURES_PAIR_MAP, PAIR_SYMBOL_MAP, get_settings
-from app.db import create_pool, heartbeat, mark_feed_connected, mark_feed_degraded, mark_feed_error
+from app.config import FUTURES_PAIR_MAP, LARGE_TRADE_THRESHOLD_MAP, PAIR_SYMBOL_MAP, get_settings
+from app.db import (
+    ServiceOwnership,
+    ServiceOwnershipLost,
+    acquire_service_lock,
+    create_pool,
+    fenced_transaction,
+    heartbeat_shard,
+    mark_feed_shard_connected,
+    mark_feed_shard_degraded,
+    mark_feed_shard_error,
+    monitor_service_lock,
+)
 from app.logging_setup import configure_logging
 from app.scalp_logic import compute_scalp_summary, scalp_context
+from app.sharding import assigned_symbols
 
 LOGGER = logging.getLogger(__name__)
 SETTINGS = get_settings()
 configure_logging(SETTINGS.LOG_LEVEL)
+ACTIVE_SYMBOLS = assigned_symbols(
+    tuple(SETTINGS.SYMBOLS),
+    SETTINGS.COLLECTOR_SHARD_INDEX,
+    SETTINGS.COLLECTOR_SHARD_COUNT,
+)
+ACTIVE_SYMBOL_SET = frozenset(ACTIVE_SYMBOLS)
+LIQUIDATION_HEALTH_SHARDS = tuple(
+    shard_index
+    for shard_index in range(SETTINGS.COLLECTOR_SHARD_COUNT)
+    if assigned_symbols(
+        tuple(SETTINGS.SYMBOLS),
+        shard_index,
+        SETTINGS.COLLECTOR_SHARD_COUNT,
+    )
+)
 
 BINANCE_STREAM_BASE = "wss://fstream.binance.com/stream?streams="
 BINANCE_MARKET_STREAM_BASE = "wss://fstream.binance.com/market/stream?streams="
 BYBIT_LINEAR_WS = "wss://stream.bybit.com/v5/public/linear"
 MAX_NOTIONAL_USD = 10_000_000_000.0
-LARGE_TRADE_THRESHOLD = {"BTCUSDT_PERP.A": 1_000_000.0, "ETHUSDT_PERP.A": 400_000.0, "SOLUSDT_PERP.A": 150_000.0}
+LARGE_TRADE_THRESHOLD = LARGE_TRADE_THRESHOLD_MAP
 REALTIME_MAX_EVENT_AGE_SECONDS = 15.0
 LATE_TRADE_GRACE_SECONDS = 125.0
 TRADESTORE_DROPPED_BUCKETS = 0
@@ -400,7 +427,7 @@ BOOK_STORE = BookStore()
 LIQ_QUEUE: asyncio.Queue[tuple[datetime, str, str, str, float, float, float, str]] = asyncio.Queue(maxsize=5000)
 LAST_TRADE_EVENT = {
     (symbol, exchange): 0.0
-    for symbol in SETTINGS.SYMBOLS
+    for symbol in ACTIVE_SYMBOLS
     for exchange in ("binance", "bybit")
 }
 LAST_FLUSH = {"trades": 0.0, "books": 0.0, "liquidations": 0.0, "signals": 0.0}
@@ -416,31 +443,52 @@ async def persist_liquidation_feed_state(
     detail: str | None = None,
     *,
     data_loss: bool = False,
+    ownership: ServiceOwnership | None = None,
 ) -> bool:
     """Persist low-frequency feed state; event handlers only mutate in-memory flags."""
     if pool is None:
         return False
+    fence = {"ownership": ownership} if ownership is not None else {}
     try:
         async with pool.acquire() as conn:
             if status == "ok":
-                await mark_feed_connected(conn, "liquidations", exchange, detail)
-            elif status == "error":
-                await mark_feed_error(
+                await mark_feed_shard_connected(
                     conn,
                     "liquidations",
                     exchange,
+                    SETTINGS.COLLECTOR_SHARD_INDEX,
+                    SETTINGS.COLLECTOR_SHARD_COUNT,
+                    LIQUIDATION_HEALTH_SHARDS,
+                    detail,
+                    **fence,
+                )
+            elif status == "error":
+                await mark_feed_shard_error(
+                    conn,
+                    "liquidations",
+                    exchange,
+                    SETTINGS.COLLECTOR_SHARD_INDEX,
+                    SETTINGS.COLLECTOR_SHARD_COUNT,
+                    LIQUIDATION_HEALTH_SHARDS,
                     detail,
                     data_loss=data_loss,
+                    **fence,
                 )
             else:
-                await mark_feed_degraded(
+                await mark_feed_shard_degraded(
                     conn,
                     "liquidations",
                     exchange,
+                    SETTINGS.COLLECTOR_SHARD_INDEX,
+                    SETTINGS.COLLECTOR_SHARD_COUNT,
+                    LIQUIDATION_HEALTH_SHARDS,
                     detail,
                     data_loss=data_loss,
+                    **fence,
                 )
         return True
+    except ServiceOwnershipLost:
+        raise
     except Exception:
         LOGGER.exception(
             "liquidation_feed_health_persist_failed exchange=%s status=%s",
@@ -450,50 +498,74 @@ async def persist_liquidation_feed_state(
         return False
 
 
-async def persist_liquidation_health_snapshot(conn: asyncpg.Connection) -> None:
+async def persist_liquidation_health_snapshot(
+    conn: asyncpg.Connection,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     """Flush connection and loss flags from memory without doing DB I/O per event."""
+    fence = {"ownership": ownership} if ownership is not None else {}
     for exchange, connected in LIQ_FEED_CONNECTED.items():
         loss_at = LIQ_LOSS_PENDING.get(exchange)
         if loss_at is not None:
-            await mark_feed_degraded(
+            await mark_feed_shard_degraded(
                 conn,
                 "liquidations",
                 exchange,
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+                LIQUIDATION_HEALTH_SHARDS,
                 f"queue overflow detected at {loss_at.isoformat()}",
                 data_loss=True,
+                **fence,
             )
         if connected:
-            await mark_feed_connected(
+            await mark_feed_shard_connected(
                 conn,
                 "liquidations",
                 exchange,
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+                LIQUIDATION_HEALTH_SHARDS,
                 "subscription active",
+                **fence,
             )
         else:
-            await mark_feed_degraded(
+            await mark_feed_shard_degraded(
                 conn,
                 "liquidations",
                 exchange,
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+                LIQUIDATION_HEALTH_SHARDS,
                 "stream disconnected",
+                **fence,
             )
         if loss_at is not None and LIQ_LOSS_PENDING.get(exchange) == loss_at:
             LIQ_LOSS_PENDING.pop(exchange, None)
 
 
-async def reset_liquidation_feed_health(conn: asyncpg.Connection) -> None:
+async def reset_liquidation_feed_health(
+    conn: asyncpg.Connection,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     """Break persisted continuity before any stream can reconnect after process start."""
+    fence = {"ownership": ownership} if ownership is not None else {}
     for exchange in LIQ_FEED_CONNECTED:
         LIQ_FEED_CONNECTED[exchange] = False
-        await mark_feed_degraded(
+        await mark_feed_shard_degraded(
             conn,
             "liquidations",
             exchange,
+            SETTINGS.COLLECTOR_SHARD_INDEX,
+            SETTINGS.COLLECTOR_SHARD_COUNT,
+            LIQUIDATION_HEALTH_SHARDS,
             "scalp collector starting; awaiting stream confirmation",
+            **fence,
         )
 
 
 def mark_exchange_disconnected(exchange: str) -> None:
-    for symbol in SETTINGS.SYMBOLS:
+    for symbol in ACTIVE_SYMBOLS:
         LAST_TRADE_EVENT[(symbol, exchange)] = 0.0
 
 
@@ -505,14 +577,17 @@ def all_expected_fresh(
     return bool(expected) and all(0 <= lags.get(key, -1) < max_lag for key in expected)
 
 
-async def flush_trades(pool: asyncpg.Pool) -> None:
+async def flush_trades(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     while True:
         await asyncio.sleep(SETTINGS.SCALP_FLUSH_SECONDS)
         snapshots = await TRADE_STORE.realtime_snapshot()
         minute_snapshots = await TRADE_STORE.minute_snapshot()
         try:
             async with pool.acquire() as conn:
-                async with conn.transaction():
+                async with fenced_transaction(conn, ownership):
                     if snapshots:
                         await _write_trade_rows(conn, "futures_trades_realtime", snapshots, realtime=True)
                         await _write_combined_realtime(conn, snapshots)
@@ -525,6 +600,8 @@ async def flush_trades(pool: asyncpg.Pool) -> None:
                 await TRADE_STORE.ack_realtime(snapshots)
             if minute_snapshots:
                 await TRADE_STORE.ack_minute(minute_snapshots)
+        except ServiceOwnershipLost:
+            raise
         except Exception:
             LOGGER.exception("scalp_trade_flush_failed")
             await TRADE_STORE.prune()
@@ -634,7 +711,10 @@ async def _write_combined_minute(
     )
 
 
-async def flush_books(pool: asyncpg.Pool) -> None:
+async def flush_books(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     while True:
         await asyncio.sleep(SETTINGS.SCALP_ORDERBOOK_FLUSH_SECONDS)
         rows = await BOOK_STORE.snapshot()
@@ -652,7 +732,7 @@ async def flush_books(pool: asyncpg.Pool) -> None:
         ]
         try:
             async with pool.acquire() as conn:
-                async with conn.transaction():
+                async with fenced_transaction(conn, ownership):
                     await conn.executemany(
                         """
                         INSERT INTO orderbook_snapshot(
@@ -668,6 +748,8 @@ async def flush_books(pool: asyncpg.Pool) -> None:
                     await _write_combined_books(conn, rows)
                     await _write_ladders(conn)
                     LAST_FLUSH["books"] = time.monotonic()
+        except ServiceOwnershipLost:
+            raise
         except Exception:
             LOGGER.exception("orderbook_flush_failed")
 
@@ -748,7 +830,10 @@ async def _write_combined_books(conn: asyncpg.Connection, rows: list[BookStats])
         )
 
 
-async def flush_liquidations(pool: asyncpg.Pool) -> None:
+async def flush_liquidations(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     buffer: list[tuple[datetime, str, str, str, float, float, float, str]] = []
     while True:
         try:
@@ -765,16 +850,19 @@ async def flush_liquidations(pool: asyncpg.Pool) -> None:
             continue
         try:
             async with pool.acquire() as conn:
-                await conn.executemany(
-                    """
-                    INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id)
-                    VALUES($1,$2,$3,$4,$5,$6,$7,$8)
-                    ON CONFLICT(exchange,event_id) DO NOTHING
-                    """,
-                    buffer,
-                )
-                LAST_FLUSH["liquidations"] = time.monotonic()
+                async with fenced_transaction(conn, ownership):
+                    await conn.executemany(
+                        """
+                        INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id)
+                        VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+                        ON CONFLICT(exchange,event_id) DO NOTHING
+                        """,
+                        buffer,
+                    )
+                    LAST_FLUSH["liquidations"] = time.monotonic()
             buffer.clear()
+        except ServiceOwnershipLost:
+            raise
         except Exception:
             LOGGER.exception("liquidation_flush_failed retained=%d", len(buffer))
             await asyncio.sleep(2)
@@ -782,7 +870,7 @@ async def flush_liquidations(pool: asyncpg.Pool) -> None:
 
 async def binance_loop() -> None:
     global BINANCE_BOOK_RECONNECT_TOTAL
-    pairs = [FUTURES_PAIR_MAP[s].lower() for s in SETTINGS.SYMBOLS]
+    pairs = [FUTURES_PAIR_MAP[s].lower() for s in ACTIVE_SYMBOLS]
     streams: list[str] = []
     for pair in pairs:
         # forceOrder queda suscrito aqui A PROPOSITO aunque binance_market_loop() ya
@@ -823,7 +911,7 @@ async def handle_binance(message: dict[str, Any]) -> None:
     event_type = data.get("e")
     pair = str(data.get("s") or stream.split("@")[0]).upper()
     symbol = PAIR_SYMBOL_MAP.get(pair)
-    if not symbol:
+    if not symbol or symbol not in ACTIVE_SYMBOL_SET:
         return
     if event_type in {"aggTrade", "trade"}:
         parsed = valid_trade(data.get("p"), data.get("q"), data.get("T") or data.get("E"))
@@ -858,10 +946,13 @@ async def handle_binance(message: dict[str, Any]) -> None:
         await safe_liq_put((datetime.fromtimestamp(event_ms / 1000, UTC), symbol, "binance", side, price * qty, price, qty, event_id))
 
 
-async def binance_market_loop(pool: asyncpg.Pool | None = None) -> None:
+async def binance_market_loop(
+    pool: asyncpg.Pool | None = None,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     """Liquidaciones Binance. Las URLs legacy se decomisaron el 2026-04-23: forceOrder
     solo emite en el endpoint /market nuevo; trade/depth siguen en la conexion legacy."""
-    pairs = [FUTURES_PAIR_MAP[s].lower() for s in SETTINGS.SYMBOLS]
+    pairs = [FUTURES_PAIR_MAP[s].lower() for s in ACTIVE_SYMBOLS]
     url = BINANCE_MARKET_STREAM_BASE + "/".join(f"{p}@forceOrder" for p in pairs)
     backoff = WS_RECONNECT_INITIAL_SECONDS
     while True:
@@ -873,6 +964,7 @@ async def binance_market_loop(pool: asyncpg.Pool | None = None) -> None:
                     "binance",
                     "ok",
                     "forceOrder connection open",
+                    ownership=ownership,
                 )
                 LOGGER.info("binance_market_connected streams=%d", len(pairs))
                 async for raw in ws:
@@ -885,7 +977,10 @@ async def binance_market_loop(pool: asyncpg.Pool | None = None) -> None:
                 "binance",
                 "degraded",
                 "forceOrder connection closed",
+                ownership=ownership,
             )
+            raise
+        except ServiceOwnershipLost:
             raise
         except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError) as exc:
             LOGGER.warning("binance_market_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
@@ -897,13 +992,17 @@ async def binance_market_loop(pool: asyncpg.Pool | None = None) -> None:
             "binance",
             "degraded",
             "forceOrder connection closed",
+            ownership=ownership,
         )
         await asyncio.sleep(backoff)
         backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
 
 
-async def bybit_loop(pool: asyncpg.Pool | None = None) -> None:
-    pairs = [FUTURES_PAIR_MAP[s] for s in SETTINGS.SYMBOLS]
+async def bybit_loop(
+    pool: asyncpg.Pool | None = None,
+    ownership: ServiceOwnership | None = None,
+) -> None:
+    pairs = [FUTURES_PAIR_MAP[s] for s in ACTIVE_SYMBOLS]
     args = []
     for pair in pairs:
         args.extend([f"publicTrade.{pair}", f"orderbook.50.{pair}", f"allLiquidation.{pair}"])
@@ -924,6 +1023,7 @@ async def bybit_loop(pool: asyncpg.Pool | None = None) -> None:
                                 "bybit",
                                 "ok",
                                 "allLiquidation subscription confirmed",
+                                ownership=ownership,
                             )
                         else:
                             LIQ_FEED_CONNECTED["bybit"] = False
@@ -932,6 +1032,7 @@ async def bybit_loop(pool: asyncpg.Pool | None = None) -> None:
                                 "bybit",
                                 "error",
                                 f"subscription rejected: {message.get('ret_msg')!s}"[:500],
+                                ownership=ownership,
                             )
                         continue
                     await handle_bybit(message)
@@ -942,7 +1043,10 @@ async def bybit_loop(pool: asyncpg.Pool | None = None) -> None:
                 "bybit",
                 "degraded",
                 "allLiquidation connection closed",
+                ownership=ownership,
             )
+            raise
+        except ServiceOwnershipLost:
             raise
         except BookResyncRequired as exc:
             LOGGER.warning("bybit_linear_resync reason=%s retry=%.1fs", exc, backoff)
@@ -956,6 +1060,7 @@ async def bybit_loop(pool: asyncpg.Pool | None = None) -> None:
             "bybit",
             "degraded",
             "allLiquidation connection closed",
+            ownership=ownership,
         )
         await BOOK_STORE.drop_exchange("bybit")
         mark_exchange_disconnected("bybit")
@@ -986,7 +1091,7 @@ async def handle_bybit(message: dict[str, Any]) -> None:
     parts = topic.split(".")
     pair = parts[-1].upper()
     symbol = PAIR_SYMBOL_MAP.get(pair)
-    if not symbol:
+    if not symbol or symbol not in ACTIVE_SYMBOL_SET:
         return
     data = message.get("data") or []
     if topic.startswith("publicTrade"):
@@ -1070,14 +1175,17 @@ async def safe_liq_put(item: tuple[datetime, str, str, str, float, float, float,
 
 
 
-async def persist_scalp_signals(pool: asyncpg.Pool) -> None:
+async def persist_scalp_signals(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     while True:
         await asyncio.sleep(SETTINGS.SCALP_SIGNAL_INTERVAL_SECONDS)
         try:
             async with pool.acquire() as conn:
-                async with conn.transaction():
+                async with fenced_transaction(conn, ownership):
                     records: list[tuple[object, ...]] = []
-                    for symbol in SETTINGS.SYMBOLS:
+                    for symbol in ACTIVE_SYMBOLS:
                         ctx = await scalp_context(conn, symbol)
                         summary = compute_scalp_summary(ctx)
                         records.append(
@@ -1112,11 +1220,16 @@ async def persist_scalp_signals(pool: asyncpg.Pool) -> None:
                         records,
                     )
                     LAST_FLUSH["signals"] = time.monotonic()
+        except ServiceOwnershipLost:
+            raise
         except Exception:
             LOGGER.exception("scalp_signal_snapshot_failed")
 
 
-async def monitor(pool: asyncpg.Pool) -> None:
+async def monitor(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     while True:
         await asyncio.sleep(30)
         now = time.monotonic()
@@ -1152,54 +1265,132 @@ async def monitor(pool: asyncpg.Pool) -> None:
         )
         queue_ok = LIQ_QUEUE.qsize() < int(LIQ_QUEUE.maxsize * 0.8)
         book_ok = all_expected_fresh(book_lags, expected, SETTINGS.BINANCE_BOOK_STALE_SECONDS)
-        store_ok = rt_buckets <= SETTINGS.TRADESTORE_MAX_BUCKETS_PER_KEY * len(SETTINGS.SYMBOLS) * 3
-        status = "ok" if feed_ok and flush_ok and queue_ok and book_ok and store_ok else "degraded"
+        store_ok = rt_buckets <= SETTINGS.TRADESTORE_MAX_BUCKETS_PER_KEY * len(ACTIVE_SYMBOLS) * 3
+        status = (
+            "ok"
+            if not ACTIVE_SYMBOLS or (feed_ok and flush_ok and queue_ok and book_ok and store_ok)
+            else "degraded"
+        )
         try:
             async with pool.acquire() as conn:
-                await heartbeat(conn, "scalp", status=status, detail=detail)
-                await persist_liquidation_health_snapshot(conn)
+                await heartbeat_shard(
+                    conn,
+                    "scalp",
+                    SETTINGS.COLLECTOR_SHARD_INDEX,
+                    SETTINGS.COLLECTOR_SHARD_COUNT,
+                    status=status,
+                    detail=(f"symbols={','.join(ACTIVE_SYMBOLS) or 'none'};{detail}")[:500],
+                    ownership=ownership,
+                )
+                if ACTIVE_SYMBOLS:
+                    await persist_liquidation_health_snapshot(conn, ownership)
+        except ServiceOwnershipLost:
+            raise
         except Exception:
             LOGGER.exception("scalp_heartbeat_failed")
 
 
-async def cleanup(pool: asyncpg.Pool) -> None:
+def owns_global_cleanup(shard_index: int) -> bool:
+    return shard_index == 0
+
+
+async def cleanup_expired_rows(conn: asyncpg.Connection) -> None:
+    await conn.execute(
+        "DELETE FROM futures_trades_realtime "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_TRADE_RETENTION_HOURS,
+    )
+    # futures_trades_agg debe cubrir una sesion NYSE completa (24h) para que
+    # daily_agg pueda calcular el CVD de futuros de Binance+Bybit; ver
+    # SCALP_MINUTE_RETENTION_HOURS.
+    await conn.execute(
+        "DELETE FROM futures_trades_agg "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_MINUTE_RETENTION_HOURS,
+    )
+    await conn.execute(
+        "DELETE FROM orderbook_snapshot "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_ORDERBOOK_RETENTION_HOURS,
+    )
+    await conn.execute(
+        "DELETE FROM liquidations_realtime "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_TRADE_RETENTION_HOURS,
+    )
+    await conn.execute(
+        "DELETE FROM scalp_signal_snapshot "
+        "WHERE ts < now()-($1::int * interval '1 hour')",
+        SETTINGS.SCALP_SIGNAL_RETENTION_HOURS,
+    )
+
+
+async def cleanup(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> None:
     while True:
         await asyncio.sleep(3600)
         try:
             async with pool.acquire() as conn:
-                await conn.execute("DELETE FROM futures_trades_realtime WHERE ts < now()-($1::int * interval '1 hour')", SETTINGS.SCALP_TRADE_RETENTION_HOURS)
-                # futures_trades_agg debe cubrir una sesion NYSE completa (24h) para que
-                # daily_agg pueda calcular el CVD de futuros de Binance+Bybit; ver
-                # SCALP_MINUTE_RETENTION_HOURS.
-                await conn.execute("DELETE FROM futures_trades_agg WHERE ts < now()-($1::int * interval '1 hour')", SETTINGS.SCALP_MINUTE_RETENTION_HOURS)
-                await conn.execute("DELETE FROM orderbook_snapshot WHERE ts < now()-($1::int * interval '1 hour')", SETTINGS.SCALP_ORDERBOOK_RETENTION_HOURS)
-                await conn.execute("DELETE FROM liquidations_realtime WHERE ts < now()-($1::int * interval '1 hour')", SETTINGS.SCALP_TRADE_RETENTION_HOURS)
-                await conn.execute("DELETE FROM scalp_signal_snapshot WHERE ts < now()-($1::int * interval '1 hour')", SETTINGS.SCALP_SIGNAL_RETENTION_HOURS)
+                async with fenced_transaction(conn, ownership):
+                    await cleanup_expired_rows(conn)
+        except ServiceOwnershipLost:
+            raise
         except Exception:
             LOGGER.exception("scalp_cleanup_failed")
 
 
 async def main() -> None:
-    pool = await create_pool(SETTINGS, application_name="coinalyze-scalp")
-    async with pool.acquire() as conn:
-        await reset_liquidation_feed_health(conn)
+    service_lock = await acquire_service_lock(
+        SETTINGS,
+        "scalp",
+        SETTINGS.COLLECTOR_SHARD_INDEX,
+        SETTINGS.COLLECTOR_SHARD_COUNT,
+    )
+    pool = await create_pool(
+        SETTINGS,
+        application_name=(
+            f"coinalyze-scalp-{SETTINGS.COLLECTOR_SHARD_INDEX}-"
+            f"{SETTINGS.COLLECTOR_SHARD_COUNT}"
+        ),
+        ownership=service_lock,
+    )
     tasks = [
-        asyncio.create_task(binance_loop()),
-        asyncio.create_task(binance_market_loop(pool)),
-        asyncio.create_task(bybit_loop(pool)),
-        asyncio.create_task(flush_trades(pool)),
-        asyncio.create_task(flush_books(pool)),
-        asyncio.create_task(flush_liquidations(pool)),
-        asyncio.create_task(persist_scalp_signals(pool)),
-        asyncio.create_task(monitor(pool)),
-        asyncio.create_task(cleanup(pool)),
+        asyncio.create_task(
+            monitor_service_lock(
+                service_lock,
+                "scalp",
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+            ),
+            name="service-lock",
+        ),
+        asyncio.create_task(monitor(pool, service_lock)),
     ]
+    if owns_global_cleanup(SETTINGS.COLLECTOR_SHARD_INDEX):
+        tasks.append(asyncio.create_task(cleanup(pool, service_lock)))
+    if ACTIVE_SYMBOLS:
+        async with pool.acquire() as conn:
+            await reset_liquidation_feed_health(conn, service_lock)
+        tasks.extend(
+            (
+                asyncio.create_task(binance_loop()),
+                asyncio.create_task(binance_market_loop(pool, service_lock)),
+                asyncio.create_task(bybit_loop(pool, service_lock)),
+                asyncio.create_task(flush_trades(pool, service_lock)),
+                asyncio.create_task(flush_books(pool, service_lock)),
+                asyncio.create_task(flush_liquidations(pool, service_lock)),
+                asyncio.create_task(persist_scalp_signals(pool, service_lock)),
+            )
+        )
     try:
         await asyncio.gather(*tasks)
     finally:
         for task in tasks:
             task.cancel()
         await pool.close()
+        await service_lock.close()
 
 
 if __name__ == "__main__":

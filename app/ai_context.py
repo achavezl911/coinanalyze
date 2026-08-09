@@ -7,6 +7,7 @@ import asyncpg
 
 from app.analysis_prompt import ANALYSIS_PROMPT
 from app.config import WS_SYMBOL_MAP, get_settings
+from app.db import INGEST_COMPONENT_MAX_AGES, required_heartbeat_failures
 from app.external_macro import align_with_internal, external_macro_context
 from app.interpretation import cvd_swing_read, evaluate_setups
 from app.scalp_logic import (
@@ -389,11 +390,29 @@ async def data_confidence_row(conn: asyncpg.Connection, symbol: str) -> dict[str
         book_lag is not None and book_lag <= 30
     )
     snapshot_ok = snapshot_lag is not None and snapshot_lag <= 180
-    stale = await conn.fetchval(
-        "SELECT bool_or(status <> 'ok' OR extract(epoch from now()-updated_at) > 180) "
-        "FROM pipeline_heartbeat WHERE service IN ('ws','scalp','ingest')"
+    required_heartbeats = {
+        "ws": 180.0,
+        "scalp": 180.0,
+        "ingest": max(INGEST_COMPONENT_MAX_AGES.values()),
+        **{
+            f"ingest:{component}": max_age
+            for component, max_age in INGEST_COMPONENT_MAX_AGES.items()
+        },
+    }
+    # Same clock source as /api/healthz: lag_seconds is derived from PostgreSQL's own
+    # now(), not the application's. Clock skew between the API process and PostgreSQL
+    # could otherwise make healthz degraded while this endpoint reads a heartbeat as
+    # fresh (or vice versa), because required_heartbeat_failures() falls back to
+    # Python's datetime.now(UTC) whenever a row has no lag_seconds of its own.
+    collector_heartbeats = await conn.fetch(
+        "SELECT service,status,updated_at,"
+        "EXTRACT(EPOCH FROM now()-updated_at)::float8 AS lag_seconds "
+        "FROM pipeline_heartbeat WHERE service=ANY($1::text[])",
+        list(required_heartbeats),
     )
-    item["collectors_stale"] = bool(stale)
+    item["collectors_stale"] = bool(
+        required_heartbeat_failures(collector_heartbeats, required_heartbeats)
+    )
     item["status"] = (
         "ok"
         if live_ok

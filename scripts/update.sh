@@ -84,8 +84,41 @@ write_nginx_allowlist() {
   chmod 0644 /etc/nginx/snippets/coinalyze-allowlist.conf
 }
 
-SERVICES=(coinalyze-api coinalyze-ingest coinalyze-ws coinalyze-scalp coinalyze-daily)
+SERVICES=(coinalyze-api coinalyze-ingest coinalyze-daily)
+mapfile -t CONFIGURED_COLLECTOR_SERVICES < <(
+  systemctl list-unit-files --type=service --state=enabled --no-legend \
+    'coinalyze-ws.service' 'coinalyze-scalp.service' \
+    'coinalyze-ws@*.service' 'coinalyze-scalp@*.service' \
+    | awk '{print $1}' | sort -u
+)
+SERVICES+=("${CONFIGURED_COLLECTOR_SERVICES[@]}")
+REQUIRED_HEARTBEATS=(api ingest ingest:ohlcv_1m ingest:metrics_5m daily)
+for service in "${SERVICES[@]}"; do
+  [[ $service == coinalyze-ws* ]] && REQUIRED_HEARTBEATS+=(ws)
+  [[ $service == coinalyze-scalp* ]] && REQUIRED_HEARTBEATS+=(scalp)
+done
+mapfile -t REQUIRED_HEARTBEATS < <(printf '%s\n' "${REQUIRED_HEARTBEATS[@]}" | sort -u)
 BACKUP_KEY_FILE=${BACKUP_ENCRYPTION_KEY_FILE:-/etc/coinalyze/backup.key}
+report_service_failures() {
+  local service
+  for service in "${SERVICES[@]}"; do
+    if systemctl is-failed --quiet "$service" || ! systemctl is-active --quiet "$service"; then
+      echo "Required service failed or is inactive: $service" >&2
+      systemctl status "$service" --no-pager -l || true
+      journalctl -u "$service" -n 120 --no-pager || true
+    fi
+  done
+}
+has_unhealthy_service() {
+  local service
+  for service in "${SERVICES[@]}"; do
+    if systemctl is-failed --quiet "$service" || \
+       ! systemctl is-active --quiet "$service"; then
+      return 0
+    fi
+  done
+  return 1
+}
 recover() {
   rc=$?
   if (( rc != 0 )); then
@@ -103,8 +136,12 @@ set +a
 LXC_IP=$(hostname -I | awk '{print $1}')
 sed -i \
   -e "s/^TRUSTED_HOSTS=.*/TRUSTED_HOSTS=\'[\"127.0.0.1\",\"localhost\",\"$LXC_IP\"]\'/" \
-  -e "s/^SYMBOLS=.*/SYMBOLS=\'[\"BTCUSDT_PERP.A\",\"ETHUSDT_PERP.A\",\"SOLUSDT_PERP.A\"]\'/" \
   /etc/coinalyze/coinalyze.env
+# Migra solo el pin legacy exacto: así el catálogo versionado puede crecer sin otra edición,
+# pero una selección operativa personalizada se conserva.
+if grep -qx "SYMBOLS='\[\"BTCUSDT_PERP.A\",\"ETHUSDT_PERP.A\",\"SOLUSDT_PERP.A\"\]'" /etc/coinalyze/coinalyze.env; then
+  sed -i '/^SYMBOLS=/d' /etc/coinalyze/coinalyze.env
+fi
 if ! grep -q "^API_INTERNAL_TOKEN=" /etc/coinalyze/coinalyze.env; then
   API_INTERNAL_TOKEN=$(openssl rand -hex 32)
   echo "API_INTERNAL_TOKEN=$API_INTERNAL_TOKEN" >> /etc/coinalyze/coinalyze.env
@@ -122,7 +159,7 @@ if ! grep -q "^NGINX_ALLOWED_CIDRS=" /etc/coinalyze/coinalyze.env; then
 NGINX_ALLOWED_CIDRS='["127.0.0.1/32","::1/128","10.10.100.0/28"]'
 ENV_APPEND
 fi
-for kv in SCALP_ENABLED=true SCALP_FLUSH_SECONDS=2 SCALP_ORDERBOOK_FLUSH_SECONDS=2 SCALP_TRADE_RETENTION_HOURS=6 SCALP_MINUTE_RETENTION_HOURS=36 SCALP_ORDERBOOK_RETENTION_HOURS=6 SCALP_SIGNAL_INTERVAL_SECONDS=10 SCALP_SIGNAL_RETENTION_HOURS=72 HTF_DATA_RETENTION_DAYS=400 DAILY_SESSION_RETENTION_DAYS=0 METRICS_ENABLED=true EXTERNAL_MACRO_ENABLED=true EXTERNAL_MACRO_REFRESH_SECONDS=3600; do
+for kv in COLLECTOR_SHARD_INDEX=0 COLLECTOR_SHARD_COUNT=1 SCALP_ENABLED=true SCALP_FLUSH_SECONDS=2 SCALP_ORDERBOOK_FLUSH_SECONDS=2 SCALP_TRADE_RETENTION_HOURS=6 SCALP_MINUTE_RETENTION_HOURS=36 SCALP_ORDERBOOK_RETENTION_HOURS=6 SCALP_SIGNAL_INTERVAL_SECONDS=10 SCALP_SIGNAL_RETENTION_HOURS=72 HTF_DATA_RETENTION_DAYS=400 DAILY_SESSION_RETENTION_DAYS=0 METRICS_ENABLED=true EXTERNAL_MACRO_ENABLED=true EXTERNAL_MACRO_REFRESH_SECONDS=3600; do
   key=${kv%%=*}
   grep -q "^${key}=" /etc/coinalyze/coinalyze.env || echo "$kv" >> /etc/coinalyze/coinalyze.env
 done
@@ -162,22 +199,49 @@ chmod 0750 /opt/coinalyze/scripts/*.sh /opt/coinalyze/deploy/proxmox/install.sh
 
 nginx -t
 systemctl daemon-reload
-systemctl enable --now coinalyze-scalp >/dev/null 2>&1 || true
+DEPLOY_RESTART_EPOCH=$(psql -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" \
+  -v ON_ERROR_STOP=1 -Atqc "SELECT extract(epoch FROM clock_timestamp())")
 systemctl restart "${SERVICES[@]}" nginx
-for i in $(seq 1 30); do
-  if /opt/coinalyze/scripts/smoke_test.sh >/dev/null 2>&1; then
+DEPLOY_HEALTH_TIMEOUT_SECONDS=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-450}
+DEPLOY_HEALTH_POLL_SECONDS=${DEPLOY_HEALTH_POLL_SECONDS:-5}
+DEPLOY_HEALTH_DEADLINE=$((SECONDS + DEPLOY_HEALTH_TIMEOUT_SECONDS))
+while (( SECONDS < DEPLOY_HEALTH_DEADLINE )); do
+  if REQUIRED_SYSTEMD_SERVICES="${SERVICES[*]}" \
+    REQUIRED_HEARTBEATS="${REQUIRED_HEARTBEATS[*]}" \
+    DEPLOY_RESTART_EPOCH="$DEPLOY_RESTART_EPOCH" \
+    /opt/coinalyze/scripts/smoke_test.sh >/dev/null 2>&1; then
+    # Reuse the same service-check smoke_test.sh already passed: closes the window
+    # between smoke_test.sh's own final gate and this success message.
+    if has_unhealthy_service || ! systemctl is-active --quiet coinalyze-api; then
+      report_service_failures
+      exit 1
+    fi
     /opt/coinalyze/scripts/backup.sh
+
+    # El servicio también puede morir durante el backup. El deployment
+    # sólo puede declararse exitoso si todos los servicios siguen activos.
+    if has_unhealthy_service; then
+      report_service_failures
+      exit 1
+    fi
+
     trap - EXIT
     echo "Update complete."
     exit 0
   fi
-  if ! systemctl is-active --quiet coinalyze-api; then
-    systemctl status coinalyze-api --no-pager -l || true
-    journalctl -u coinalyze-api -n 120 --no-pager || true
+  if has_unhealthy_service || ! systemctl is-active --quiet coinalyze-api; then
+    report_service_failures
     exit 1
   fi
-  sleep 2
+  sleep "$DEPLOY_HEALTH_POLL_SECONDS"
 done
-echo "API smoke test did not pass within timeout." >&2
-journalctl -u coinalyze-api -n 120 --no-pager || true
+echo "Deployment health gate did not pass within timeout." >&2
+REQUIRED_SYSTEMD_SERVICES="${SERVICES[*]}" \
+  REQUIRED_HEARTBEATS="${REQUIRED_HEARTBEATS[*]}" \
+  DEPLOY_RESTART_EPOCH="$DEPLOY_RESTART_EPOCH" \
+  /opt/coinalyze/scripts/smoke_test.sh || true
+report_service_failures
+for service in "${SERVICES[@]}"; do
+  journalctl -u "$service" -n 120 --no-pager || true
+done
 exit 1

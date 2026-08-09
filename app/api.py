@@ -25,7 +25,12 @@ from app.ai_context import (
     normalize_profile,
 )
 from app.config import SUPPORTED_SYMBOLS, WS_SYMBOL_MAP, get_settings
-from app.db import create_pool, heartbeat
+from app.db import (
+    INGEST_COMPONENT_MAX_AGES,
+    create_pool,
+    heartbeat,
+    required_heartbeat_failures,
+)
 from app.delta_profile import delta_profile
 from app.external_macro import align_with_internal, external_macro_context
 from app.interpretation import cvd_swing_read, daily_flow_read, evaluate_setups
@@ -1783,7 +1788,17 @@ async def prometheus_metrics() -> Response:
 
 @app.get("/api/healthz")
 async def health() -> dict[str, Any]:
-    thresholds = {"ingest": 180.0, "ws": 90.0, "scalp": 90.0, "daily": 3900.0, "api": 180.0}
+    thresholds = {
+        "ingest": max(INGEST_COMPONENT_MAX_AGES.values()),
+        **{
+            f"ingest:{component}": max_age
+            for component, max_age in INGEST_COMPONENT_MAX_AGES.items()
+        },
+        "ws": 90.0,
+        "scalp": 90.0,
+        "daily": 3900.0,
+        "api": 180.0,
+    }
     async with app.state.pool.acquire() as conn:
         await conn.fetchval("SELECT 1")
         await heartbeat(conn, "api")
@@ -1801,11 +1816,7 @@ async def health() -> dict[str, Any]:
         )
     by_service = {str(row["service"]): row for row in heartbeats}
     missing_services = sorted(set(thresholds) - set(by_service))
-    degraded = bool(missing_services)
-    for service, threshold in thresholds.items():
-        row = by_service.get(service)
-        if row and (row["status"] != "ok" or float(row["lag_seconds"]) > threshold):
-            degraded = True
+    degraded = bool(required_heartbeat_failures(heartbeats, thresholds))
     latest_by_symbol = {str(row["symbol"]): row for row in latest}
     missing_symbols = sorted(set(SETTINGS.SYMBOLS) - set(latest_by_symbol))
     if missing_symbols or any(float(row["lag_seconds"]) > 180.0 for row in latest):
