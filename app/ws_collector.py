@@ -13,19 +13,17 @@ import asyncpg
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosed
 
-from app.config import SPOT_PAIR_MAP, get_settings
-from app.db import create_pool, heartbeat
+from app.config import SPOT_PAIR_MAP, WHALE_THRESHOLD_MAP, WS_SYMBOL_MAP, get_settings
+from app.db import acquire_service_lock, create_pool, heartbeat, heartbeat_shard
 from app.logging_setup import configure_logging
+from app.sharding import assigned_symbols
 
 LOGGER = logging.getLogger(__name__)
-BINANCE_URL = (
-    "wss://stream.binance.com:9443/stream?streams="
-    "btcusdt@aggTrade/ethusdt@aggTrade/solusdt@aggTrade"
-)
+BINANCE_STREAM_BASE = "wss://stream.binance.com:9443/stream?streams="
 BYBIT_URL = "wss://stream.bybit.com/v5/public/spot"
 MAX_NOTIONAL_USD = 1_000_000_000_000.0
 MAX_MESSAGE_TRADES = 1_000
-WHALE_TRADE_THRESHOLD = {'BTC': 5_000_000.0, 'ETH': 1_000_000.0, 'SOL': 200_000.0}
+WHALE_TRADE_THRESHOLD = WHALE_THRESHOLD_MAP
 LATE_TRADE_GRACE_SECONDS = 125.0
 REALTIME_MAX_EVENT_AGE_SECONDS = 15.0
 
@@ -172,6 +170,15 @@ class BucketStore:
 
 STORE = BucketStore()
 LAST_EVENT_MONOTONIC = {"binance": 0.0, "bybit": 0.0}
+
+
+def spot_pairs(symbols: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]] for symbol in symbols)
+
+
+def binance_url(symbols: tuple[str, ...]) -> str:
+    streams = "/".join(f"{pair.lower()}@aggTrade" for pair in spot_pairs(symbols))
+    return BINANCE_STREAM_BASE + streams
 
 
 def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[float, float, int] | None:
@@ -332,12 +339,15 @@ async def flush_realtime(pool: asyncpg.Pool) -> None:
             LOGGER.exception("realtime_flush_failed retained_buckets=%d", len(snapshots))
 
 
-async def binance_consumer() -> None:
+async def binance_consumer(symbols: tuple[str, ...]) -> None:
+    pairs = spot_pairs(symbols)
+    pair_symbol_map = {SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]]: WS_SYMBOL_MAP[symbol] for symbol in symbols}
+    url = binance_url(symbols)
     backoff = 1.0
     while True:
         try:
             async with connect(
-                BINANCE_URL, open_timeout=10, close_timeout=5, ping_interval=20,
+                url, open_timeout=10, close_timeout=5, ping_interval=20,
                 ping_timeout=20, max_size=1_048_576, max_queue=64,
             ) as websocket:
                 LOGGER.info("binance_connected")
@@ -351,8 +361,8 @@ async def binance_consumer() -> None:
                     if not isinstance(data, dict):
                         continue
                     pair = str(data.get("s", ""))
-                    symbol = pair.removesuffix("USDT")
-                    if symbol not in SPOT_PAIR_MAP:
+                    symbol = pair_symbol_map.get(pair)
+                    if symbol is None or pair not in pairs:
                         continue
                     trade = valid_trade(data.get("p"), data.get("q"), data.get("T"))
                     if trade is None:
@@ -371,9 +381,11 @@ async def binance_consumer() -> None:
         backoff = min(backoff * 2, 60.0)
 
 
-async def bybit_consumer() -> None:
+async def bybit_consumer(symbols: tuple[str, ...]) -> None:
     backoff = 1.0
-    args = [f"publicTrade.{pair}" for pair in SPOT_PAIR_MAP.values()]
+    pairs = spot_pairs(symbols)
+    pair_symbol_map = {SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]]: WS_SYMBOL_MAP[symbol] for symbol in symbols}
+    args = [f"publicTrade.{pair}" for pair in pairs]
     while True:
         try:
             async with connect(
@@ -398,8 +410,8 @@ async def bybit_consumer() -> None:
                         if not isinstance(data, dict):
                             continue
                         pair = str(data.get("s", ""))
-                        symbol = pair.removesuffix("USDT")
-                        if symbol not in SPOT_PAIR_MAP:
+                        symbol = pair_symbol_map.get(pair)
+                        if symbol is None:
                             continue
                         trade = valid_trade(data.get("p"), data.get("v"), data.get("T", default_ts))
                         if trade is None:
@@ -418,7 +430,12 @@ async def bybit_consumer() -> None:
         backoff = min(backoff * 2, 60.0)
 
 
-async def heartbeat_loop(pool: asyncpg.Pool) -> None:
+async def heartbeat_loop(
+    pool: asyncpg.Pool,
+    symbols: tuple[str, ...],
+    shard_index: int,
+    shard_count: int,
+) -> None:
     while True:
         await asyncio.sleep(20)
         try:
@@ -427,29 +444,32 @@ async def heartbeat_loop(pool: asyncpg.Pool) -> None:
                 name: (now - last if last > 0 else float("inf"))
                 for name, last in LAST_EVENT_MONOTONIC.items()
             }
-            status = "ok" if all(age <= 90.0 for age in ages.values()) else "degraded"
+            status = "ok" if not symbols or all(age <= 90.0 for age in ages.values()) else "degraded"
             age_text = ",".join(
                 f"{name}={age:.0f}s" if math.isfinite(age) else f"{name}=never"
                 for name, age in ages.items()
             )
             async with pool.acquire() as conn:
-                await heartbeat(
+                await heartbeat_shard(
                     conn,
                     "ws",
+                    shard_index,
+                    shard_count,
                     status=status,
                     detail=(
+                        f"symbols={','.join(symbols) or 'none'} "
                         f"minute={len(STORE.minute)} realtime={len(STORE.realtime)} "
                         f"dropped_buckets={STORE.dropped_buckets} "
                         f"dropped_trades={STORE.dropped_trades} "
                         f"last_event:{age_text}"
                     ),
                 )
-                for exchange, age in ages.items():
+                for exchange, age in ages.items() if symbols else ():
                     venue_status = "ok" if age <= 90.0 else "degraded"
                     venue_age = f"{age:.0f}s" if math.isfinite(age) else "never"
                     await heartbeat(
                         conn,
-                        f"ws-{exchange}",
+                        f"ws-{exchange}:{shard_index}/{shard_count}",
                         status=venue_status,
                         detail=f"last_event={venue_age}",
                     )
@@ -465,19 +485,49 @@ async def run() -> None:
         max_buckets_per_key=settings.TRADESTORE_MAX_BUCKETS_PER_KEY,
     )
     configure_logging(settings.LOG_LEVEL)
-    pool = await create_pool(settings, application_name="coinalyze-ws")
+    symbols = assigned_symbols(
+        tuple(settings.SYMBOLS),
+        settings.COLLECTOR_SHARD_INDEX,
+        settings.COLLECTOR_SHARD_COUNT,
+    )
+    service_lock = await acquire_service_lock(
+        settings,
+        "ws",
+        settings.COLLECTOR_SHARD_INDEX,
+        settings.COLLECTOR_SHARD_COUNT,
+    )
+    pool = await create_pool(
+        settings,
+        application_name=(
+            f"coinalyze-ws-{settings.COLLECTOR_SHARD_INDEX}-"
+            f"{settings.COLLECTOR_SHARD_COUNT}"
+        ),
+    )
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
 
     tasks = [
-        asyncio.create_task(binance_consumer(), name="binance"),
-        asyncio.create_task(bybit_consumer(), name="bybit"),
         asyncio.create_task(flush_minute(pool), name="flush-minute"),
         asyncio.create_task(flush_realtime(pool), name="flush-realtime"),
-        asyncio.create_task(heartbeat_loop(pool), name="heartbeat"),
+        asyncio.create_task(
+            heartbeat_loop(
+                pool,
+                symbols,
+                settings.COLLECTOR_SHARD_INDEX,
+                settings.COLLECTOR_SHARD_COUNT,
+            ),
+            name="heartbeat",
+        ),
     ]
+    if symbols:
+        tasks.extend(
+            (
+                asyncio.create_task(binance_consumer(symbols), name="binance"),
+                asyncio.create_task(bybit_consumer(symbols), name="bybit"),
+            )
+        )
     try:
         await stop.wait()
     finally:
@@ -485,6 +535,7 @@ async def run() -> None:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
         await pool.close()
+        await service_lock.close()
 
 
 if __name__ == "__main__":

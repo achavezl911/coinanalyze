@@ -9,13 +9,32 @@ AS $$
     SELECT value NOT IN ('NaN'::double precision, 'Infinity'::double precision, '-Infinity'::double precision)
 $$;
 
+CREATE TABLE IF NOT EXISTS market_assets (
+    base_asset text PRIMARY KEY CHECK (length(base_asset) BETWEEN 1 AND 20),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO market_assets(base_asset) VALUES ('BTC'),('ETH'),('SOL')
+ON CONFLICT DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS symbols (
     symbol text PRIMARY KEY,
-    base_asset text NOT NULL CHECK (base_asset IN ('BTC','ETH','SOL')),
+    base_asset text NOT NULL REFERENCES market_assets(base_asset),
     quote_asset text NOT NULL DEFAULT 'USDT' CHECK (quote_asset = 'USDT'),
     is_perpetual boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE symbols DROP CONSTRAINT IF EXISTS symbols_base_asset_check;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'symbols_base_asset_fkey'
+    ) THEN
+        ALTER TABLE symbols ADD CONSTRAINT symbols_base_asset_fkey
+            FOREIGN KEY (base_asset) REFERENCES market_assets(base_asset);
+    END IF;
+END $$;
 
 INSERT INTO symbols(symbol, base_asset) VALUES
     ('BTCUSDT_PERP.A','BTC'),
@@ -143,7 +162,7 @@ CREATE INDEX IF NOT EXISTS long_short_ratio_ts_idx ON long_short_ratio(symbol, t
 
 CREATE TABLE IF NOT EXISTS spot_trades_agg (
     ts timestamptz NOT NULL,
-    symbol text NOT NULL CHECK (symbol IN ('BTC','ETH','SOL')),
+    symbol text NOT NULL REFERENCES market_assets(base_asset),
     exchange text NOT NULL CHECK (exchange IN ('binance','bybit','combined')),
     interval text NOT NULL CHECK (interval = '1min'),
     buy_vol_usd double precision NOT NULL CHECK (finite_float8(buy_vol_usd) AND buy_vol_usd >= 0),
@@ -159,11 +178,21 @@ CREATE TABLE IF NOT EXISTS spot_trades_agg (
     CHECK (inst_buy_usd + mid_buy_usd + retail_buy_usd <= buy_vol_usd + 0.01),
     CHECK (inst_sell_usd + mid_sell_usd + retail_sell_usd <= sell_vol_usd + 0.01)
 );
+ALTER TABLE spot_trades_agg DROP CONSTRAINT IF EXISTS spot_trades_agg_symbol_check;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'spot_trades_agg_symbol_fkey'
+    ) THEN
+        ALTER TABLE spot_trades_agg ADD CONSTRAINT spot_trades_agg_symbol_fkey
+            FOREIGN KEY (symbol) REFERENCES market_assets(base_asset);
+    END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS spot_trades_agg_ts_idx ON spot_trades_agg(ts DESC);
 
 CREATE TABLE IF NOT EXISTS spot_trades_realtime (
     ts timestamptz NOT NULL,
-    symbol text NOT NULL CHECK (symbol IN ('BTC','ETH','SOL')),
+    symbol text NOT NULL REFERENCES market_assets(base_asset),
     exchange text NOT NULL CHECK (exchange IN ('binance','bybit','combined')),
     buy_vol_usd double precision NOT NULL CHECK (finite_float8(buy_vol_usd) AND buy_vol_usd >= 0),
     sell_vol_usd double precision NOT NULL CHECK (finite_float8(sell_vol_usd) AND sell_vol_usd >= 0),
@@ -174,6 +203,16 @@ CREATE TABLE IF NOT EXISTS spot_trades_realtime (
     last_event_ms bigint NOT NULL DEFAULT 0 CHECK (last_event_ms >= 0),
     PRIMARY KEY (symbol, exchange, ts)
 );
+ALTER TABLE spot_trades_realtime DROP CONSTRAINT IF EXISTS spot_trades_realtime_symbol_check;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'spot_trades_realtime_symbol_fkey'
+    ) THEN
+        ALTER TABLE spot_trades_realtime ADD CONSTRAINT spot_trades_realtime_symbol_fkey
+            FOREIGN KEY (symbol) REFERENCES market_assets(base_asset);
+    END IF;
+END $$;
 ALTER TABLE spot_trades_realtime ADD COLUMN IF NOT EXISTS last_event_ms bigint NOT NULL DEFAULT 0 CHECK (last_event_ms >= 0);
 CREATE INDEX IF NOT EXISTS spot_trades_realtime_ts_idx ON spot_trades_realtime(ts DESC);
 CREATE INDEX IF NOT EXISTS spot_trades_realtime_symbol_exchange_ts_idx ON spot_trades_realtime(symbol, exchange, ts DESC);
@@ -466,7 +505,7 @@ CREATE TABLE IF NOT EXISTS metric_baseline (
 );
 
 CREATE TABLE IF NOT EXISTS pipeline_heartbeat (
-    service text PRIMARY KEY CHECK (service IN ('ingest','ws','ws-binance','ws-bybit','scalp','daily','api')),
+    service text PRIMARY KEY CHECK (length(service) BETWEEN 1 AND 100),
     updated_at timestamptz NOT NULL,
     status text NOT NULL CHECK (status IN ('ok','degraded','error')),
     detail text CHECK (detail IS NULL OR length(detail) <= 500)
@@ -479,7 +518,16 @@ ALTER TABLE pipeline_heartbeat
     DROP CONSTRAINT IF EXISTS pipeline_heartbeat_service_check;
 ALTER TABLE pipeline_heartbeat
     ADD CONSTRAINT pipeline_heartbeat_service_check
-    CHECK (service IN ('ingest','ws','ws-binance','ws-bybit','scalp','daily','api'));
+    CHECK (length(service) BETWEEN 1 AND 100);
+
+CREATE TABLE IF NOT EXISTS external_api_rate_event (
+    provider text NOT NULL,
+    ts timestamptz NOT NULL DEFAULT now(),
+    units integer NOT NULL CHECK (units > 0)
+);
+
+CREATE INDEX IF NOT EXISTS external_api_rate_event_provider_ts_idx
+    ON external_api_rate_event(provider, ts);
 
 CREATE TABLE IF NOT EXISTS market_feed_health (
     feed text NOT NULL,

@@ -80,6 +80,11 @@ set_raw_kv() {
   fi
 }
 
+remove_key() {
+  local key="$1"
+  sed -i "/^${key}=/d" "$ENV_FILE"
+}
+
 current_value() {
   local key="$1"
   grep -E "^${key}=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//"
@@ -153,7 +158,9 @@ if [[ -n "$LXC_IP" ]]; then
 else
   set_raw_kv "TRUSTED_HOSTS" "'[\"127.0.0.1\",\"localhost\"]'"
 fi
-set_raw_kv "SYMBOLS" "'[\"BTCUSDT_PERP.A\",\"ETHUSDT_PERP.A\",\"SOLUSDT_PERP.A\"]'"
+if grep -qx "SYMBOLS='\[\"BTCUSDT_PERP.A\",\"ETHUSDT_PERP.A\",\"SOLUSDT_PERP.A\"\]'" "$ENV_FILE"; then
+  remove_key "SYMBOLS"
+fi
 
 for kv in \
   HARD_DATA_RETENTION_DAYS=14 SNAPSHOT_RETENTION_DAYS=30 REALTIME_RETENTION_HOURS=2 \

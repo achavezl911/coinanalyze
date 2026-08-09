@@ -1,4 +1,4 @@
-from app.ingest import rollup_ohlcv_5m, upsert_ohlcv
+from app.ingest import rollup_ohlcv_5m, seconds_until_aligned_run, upsert_ohlcv
 
 
 class FakeConnection:
@@ -49,3 +49,8 @@ async def test_rollup_ohlcv_5m_uses_local_one_minute_bars():
     assert "date_bin('5 minutes'" in conn.query
     assert "interval = '1min'" in conn.query
     assert conn.args == (list(symbols), 1000, 2000)
+
+
+def test_feed_schedules_align_after_closed_buckets():
+    assert seconds_until_aligned_run(61.0, 60, 5) == 64.0
+    assert seconds_until_aligned_run(301.0, 300, 15) == 314.0

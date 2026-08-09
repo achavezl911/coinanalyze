@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "mode": "extend",
+  "symbols": [
+    {
+      "symbol": "XRPUSDT_PERP.A",
+      "base_asset": "XRP",
+      "futures_pair": "XRPUSDT",
+      "bybit_oi_symbol": "XRPUSDT.6",
+      "spot_pair": "XRPUSDT",
+      "spot_history_symbol": "XRPUSD.A",
+      "whale_threshold_usd": 100000.0,
+      "large_trade_threshold_usd": 50000.0
+    }
+  ]
+}

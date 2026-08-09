@@ -84,7 +84,15 @@ write_nginx_allowlist() {
   chmod 0644 /etc/nginx/snippets/coinalyze-allowlist.conf
 }
 
-SERVICES=(coinalyze-api coinalyze-ingest coinalyze-ws coinalyze-scalp coinalyze-daily)
+SERVICES=(coinalyze-api coinalyze-ingest coinalyze-daily)
+for service in coinalyze-ws coinalyze-scalp; do
+  systemctl is-active --quiet "$service" && SERVICES+=("$service")
+done
+mapfile -t ACTIVE_SHARD_SERVICES < <(
+  systemctl list-units --type=service --state=active --plain --no-legend \
+    'coinalyze-ws@*.service' 'coinalyze-scalp@*.service' | awk '{print $1}'
+)
+SERVICES+=("${ACTIVE_SHARD_SERVICES[@]}")
 BACKUP_KEY_FILE=${BACKUP_ENCRYPTION_KEY_FILE:-/etc/coinalyze/backup.key}
 recover() {
   rc=$?
@@ -103,8 +111,12 @@ set +a
 LXC_IP=$(hostname -I | awk '{print $1}')
 sed -i \
   -e "s/^TRUSTED_HOSTS=.*/TRUSTED_HOSTS=\'[\"127.0.0.1\",\"localhost\",\"$LXC_IP\"]\'/" \
-  -e "s/^SYMBOLS=.*/SYMBOLS=\'[\"BTCUSDT_PERP.A\",\"ETHUSDT_PERP.A\",\"SOLUSDT_PERP.A\"]\'/" \
   /etc/coinalyze/coinalyze.env
+# Migra solo el pin legacy exacto: así el catálogo versionado puede crecer sin otra edición,
+# pero una selección operativa personalizada se conserva.
+if grep -qx "SYMBOLS='\[\"BTCUSDT_PERP.A\",\"ETHUSDT_PERP.A\",\"SOLUSDT_PERP.A\"\]'" /etc/coinalyze/coinalyze.env; then
+  sed -i '/^SYMBOLS=/d' /etc/coinalyze/coinalyze.env
+fi
 if ! grep -q "^API_INTERNAL_TOKEN=" /etc/coinalyze/coinalyze.env; then
   API_INTERNAL_TOKEN=$(openssl rand -hex 32)
   echo "API_INTERNAL_TOKEN=$API_INTERNAL_TOKEN" >> /etc/coinalyze/coinalyze.env
@@ -122,7 +134,7 @@ if ! grep -q "^NGINX_ALLOWED_CIDRS=" /etc/coinalyze/coinalyze.env; then
 NGINX_ALLOWED_CIDRS='["127.0.0.1/32","::1/128","10.10.100.0/28"]'
 ENV_APPEND
 fi
-for kv in SCALP_ENABLED=true SCALP_FLUSH_SECONDS=2 SCALP_ORDERBOOK_FLUSH_SECONDS=2 SCALP_TRADE_RETENTION_HOURS=6 SCALP_MINUTE_RETENTION_HOURS=36 SCALP_ORDERBOOK_RETENTION_HOURS=6 SCALP_SIGNAL_INTERVAL_SECONDS=10 SCALP_SIGNAL_RETENTION_HOURS=72 HTF_DATA_RETENTION_DAYS=400 DAILY_SESSION_RETENTION_DAYS=0 METRICS_ENABLED=true EXTERNAL_MACRO_ENABLED=true EXTERNAL_MACRO_REFRESH_SECONDS=3600; do
+for kv in COLLECTOR_SHARD_INDEX=0 COLLECTOR_SHARD_COUNT=1 SCALP_ENABLED=true SCALP_FLUSH_SECONDS=2 SCALP_ORDERBOOK_FLUSH_SECONDS=2 SCALP_TRADE_RETENTION_HOURS=6 SCALP_MINUTE_RETENTION_HOURS=36 SCALP_ORDERBOOK_RETENTION_HOURS=6 SCALP_SIGNAL_INTERVAL_SECONDS=10 SCALP_SIGNAL_RETENTION_HOURS=72 HTF_DATA_RETENTION_DAYS=400 DAILY_SESSION_RETENTION_DAYS=0 METRICS_ENABLED=true EXTERNAL_MACRO_ENABLED=true EXTERNAL_MACRO_REFRESH_SECONDS=3600; do
   key=${kv%%=*}
   grep -q "^${key}=" /etc/coinalyze/coinalyze.env || echo "$kv" >> /etc/coinalyze/coinalyze.env
 done
@@ -162,7 +174,6 @@ chmod 0750 /opt/coinalyze/scripts/*.sh /opt/coinalyze/deploy/proxmox/install.sh
 
 nginx -t
 systemctl daemon-reload
-systemctl enable --now coinalyze-scalp >/dev/null 2>&1 || true
 systemctl restart "${SERVICES[@]}" nginx
 for i in $(seq 1 30); do
   if /opt/coinalyze/scripts/smoke_test.sh >/dev/null 2>&1; then

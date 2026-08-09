@@ -14,10 +14,9 @@ import argparse
 import asyncio
 import time
 
-import asyncpg
-
-from app.coinalyze import CoinalyzeClient
+from app.coinalyze import CoinalyzeClient, PostgresSlidingWindowRateLimiter
 from app.config import SPOT_HISTORY_MAP, get_settings
+from app.db import create_pool
 from app.ingest import upsert_ohlcv
 
 MAX_SUPPORTED_DAYS = 300
@@ -49,14 +48,15 @@ async def main() -> None:
     end = int(time.time())
     start = end - args.days * 86400
     step = args.chunk_days * 86400
-    conn = await asyncpg.connect(settings.pg_dsn)
+    pool = await create_pool(settings, application_name="coinalyze-backfill-4h")
+    limiter = PostgresSlidingWindowRateLimiter(pool, settings.COINALYZE_RATE_LIMIT_UNITS)
     inserted = 0
     oldest_with_data: int | None = None
     try:
         async with CoinalyzeClient(
             settings.COINALYZE_BASE_URL,
             settings.API_KEY,
-            settings.COINALYZE_RATE_LIMIT_UNITS,
+            limiter,
         ) as client:
             cursor = start
             while cursor < end:
@@ -74,21 +74,23 @@ async def main() -> None:
                             end_ts=chunk_end,
                         )
                     )
-                async with conn.transaction():
-                    count = await upsert_ohlcv(
-                        conn, payload, identity, cursor, chunk_end, "4hour"
-                    )
+                async with pool.acquire() as conn:
+                    async with conn.transaction():
+                        count = await upsert_ohlcv(
+                            conn, payload, identity, cursor, chunk_end, "4hour"
+                        )
                 inserted += count
                 if count and oldest_with_data is None:
                     oldest_with_data = cursor
                 print(f"{cursor}..{chunk_end}: {count} filas", flush=True)
                 cursor = chunk_end
-        covered = await conn.fetch(
-            "SELECT symbol, count(*) AS bars, min(ts)::date AS oldest "
-            "FROM ohlcv WHERE interval='4hour' GROUP BY symbol ORDER BY symbol"
-        )
+        async with pool.acquire() as conn:
+            covered = await conn.fetch(
+                "SELECT symbol, count(*) AS bars, min(ts)::date AS oldest "
+                "FROM ohlcv WHERE interval='4hour' GROUP BY symbol ORDER BY symbol"
+            )
     finally:
-        await conn.close()
+        await pool.close()
 
     print(f"Backfill terminado: {inserted} filas procesadas", flush=True)
     for row in covered:

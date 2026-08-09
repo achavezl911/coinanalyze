@@ -9,10 +9,10 @@ from zoneinfo import ZoneInfo
 
 import asyncpg
 
-from app.coinalyze import CoinalyzeClient
+from app.coinalyze import CoinalyzeClient, PostgresSlidingWindowRateLimiter, validate_rate_budget
 from app.config import SPOT_HISTORY_MAP, WS_SYMBOL_MAP, get_settings
-from app.db import create_pool, heartbeat
-from app.ingest import upsert_ohlcv
+from app.db import acquire_service_lock, create_pool, heartbeat
+from app.ingest import seconds_until_aligned_run, upsert_ohlcv
 from app.interpretation import evaluate_setups
 from app.logging_setup import configure_logging
 from app.metrics import session_bounds
@@ -450,7 +450,7 @@ async def _store_baseline(
     return total
 
 
-async def cycle(pool: asyncpg.Pool) -> None:
+async def cycle(pool: asyncpg.Pool, client: CoinalyzeClient) -> None:
     settings = get_settings()
     end_ts = int(datetime.now(UTC).timestamp())
     start_ts = end_ts - 3 * 86400
@@ -463,42 +463,28 @@ async def cycle(pool: asyncpg.Pool) -> None:
     spot_h4_payload: dict[str, list[dict]] = {}
     spot_symbols = tuple(SPOT_HISTORY_MAP[s] for s in settings.SYMBOLS if s in SPOT_HISTORY_MAP)
     try:
-        async with CoinalyzeClient(
-            settings.COINALYZE_BASE_URL,
-            settings.API_KEY,
-            settings.COINALYZE_RATE_LIMIT_UNITS,
-        ) as client:
-            daily_payload = await client.history(
-                "ohlcv-history",
-                settings.SYMBOLS,
-                interval="daily",
-                start_ts=start_ts,
+        daily_payload = await client.history(
+            "ohlcv-history", settings.SYMBOLS, interval="daily", start_ts=start_ts,
+            end_ts=end_ts,
+        )
+        await asyncio.sleep(1)
+        h4_payload = await client.history(
+            "ohlcv-history", settings.SYMBOLS, interval="4hour", start_ts=start_4h,
+            end_ts=end_ts,
+        )
+        # El spot va en la MISMA rejilla temporal que el perp para que las dos patas se
+        # puedan restar bucket a bucket sin realinear nada.
+        if spot_symbols:
+            await asyncio.sleep(1)
+            spot_daily_payload = await client.history(
+                "ohlcv-history", spot_symbols, interval="daily", start_ts=start_ts,
                 end_ts=end_ts,
             )
-            h4_payload = await client.history(
-                "ohlcv-history",
-                settings.SYMBOLS,
-                interval="4hour",
-                start_ts=start_4h,
+            await asyncio.sleep(1)
+            spot_h4_payload = await client.history(
+                "ohlcv-history", spot_symbols, interval="4hour", start_ts=start_4h,
                 end_ts=end_ts,
             )
-            # El spot va en la MISMA rejilla temporal que el perp para que las dos patas se
-            # puedan restar bucket a bucket sin realinear nada.
-            if spot_symbols:
-                spot_daily_payload = await client.history(
-                    "ohlcv-history",
-                    spot_symbols,
-                    interval="daily",
-                    start_ts=start_ts,
-                    end_ts=end_ts,
-                )
-                spot_h4_payload = await client.history(
-                    "ohlcv-history",
-                    spot_symbols,
-                    interval="4hour",
-                    start_ts=start_4h,
-                    end_ts=end_ts,
-                )
     except Exception:
         LOGGER.exception("daily_ohlcv_refresh_failed")
     async with pool.acquire() as conn:
@@ -546,27 +532,55 @@ async def cycle(pool: asyncpg.Pool) -> None:
 async def run() -> None:
     settings = get_settings()
     configure_logging(settings.LOG_LEVEL)
+    budget = validate_rate_budget(len(settings.SYMBOLS), settings.COINALYZE_RATE_LIMIT_UNITS)
+    LOGGER.info(
+        "coinalyze_rate_budget symbols=%d ohlcv_units_per_cycle=%d "
+        "metrics_units_per_cycle=%d daily_units_per_cycle=%d projected_units_per_minute=%.2f "
+        "configured_limit=%d",
+        budget.symbol_count,
+        budget.ohlcv_units_per_cycle,
+        budget.metrics_units_per_cycle,
+        budget.daily_units_per_cycle,
+        budget.projected_units_per_minute,
+        settings.COINALYZE_RATE_LIMIT_UNITS,
+    )
+    service_lock = await acquire_service_lock(settings, "daily")
     pool = await create_pool(settings, application_name="coinalyze-daily")
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
     try:
-        while not stop.is_set():
-            try:
-                await cycle(pool)
-            except Exception as exc:
-                LOGGER.exception("daily_cycle_failed")
+        limiter = PostgresSlidingWindowRateLimiter(pool, settings.COINALYZE_RATE_LIMIT_UNITS)
+        async with CoinalyzeClient(
+            settings.COINALYZE_BASE_URL,
+            settings.API_KEY,
+            limiter,
+        ) as client:
+            first_run = True
+            while not stop.is_set():
+                timeout = (
+                    45.0
+                    if first_run
+                    else seconds_until_aligned_run(datetime.now(UTC).timestamp(), 3600, 45)
+                )
+                first_run = False
                 try:
-                    await heartbeat(pool, "daily", status="error", detail=str(exc)[:500])
-                except Exception:
-                    LOGGER.exception("daily_heartbeat_failed")
-            try:
-                await asyncio.wait_for(stop.wait(), timeout=3600)
-            except TimeoutError:
-                pass
+                    await asyncio.wait_for(stop.wait(), timeout=timeout)
+                    continue
+                except TimeoutError:
+                    pass
+                try:
+                    await cycle(pool, client)
+                except Exception as exc:
+                    LOGGER.exception("daily_cycle_failed")
+                    try:
+                        await heartbeat(pool, "daily", status="error", detail=str(exc)[:500])
+                    except Exception:
+                        LOGGER.exception("daily_heartbeat_failed")
     finally:
         await pool.close()
+        await service_lock.close()
 
 
 if __name__ == "__main__":

@@ -1,59 +1,117 @@
 from __future__ import annotations
 
+import json
+import math
+import os
+from dataclasses import asdict, dataclass
 from functools import lru_cache
 from ipaddress import ip_network
+from pathlib import Path
 from typing import Annotated
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-SUPPORTED_SYMBOLS = (
-    "BTCUSDT_PERP.A",
-    "ETHUSDT_PERP.A",
-    "SOLUSDT_PERP.A",
+
+@dataclass(frozen=True, slots=True)
+class MarketSymbol:
+    symbol: str
+    base_asset: str
+    futures_pair: str
+    bybit_oi_symbol: str
+    spot_pair: str
+    spot_history_symbol: str
+    whale_threshold_usd: float
+    large_trade_threshold_usd: float
+
+
+# Catálogo único por defecto. Los umbrales reproducen los valores actuales; no son una
+# recalibración. MARKET_SYMBOL_CATALOG_FILE puede apuntar a un JSON versionado que extienda o
+# reemplace estas filas sin contener credenciales.
+DEFAULT_MARKET_CATALOG = (
+    MarketSymbol(
+        "BTCUSDT_PERP.A", "BTC", "BTCUSDT", "BTCUSDT.6", "BTCUSDT", "BTCUSD.A",
+        5_000_000.0, 1_000_000.0,
+    ),
+    MarketSymbol(
+        "ETHUSDT_PERP.A", "ETH", "ETHUSDT", "ETHUSDT.6", "ETHUSDT", "ETHUSD.A",
+        1_000_000.0, 400_000.0,
+    ),
+    MarketSymbol(
+        "SOLUSDT_PERP.A", "SOL", "SOLUSDT", "SOLUSDT.6", "SOLUSDT", "SOLUSD.A",
+        200_000.0, 150_000.0,
+    ),
 )
 
-WS_SYMBOL_MAP = {
-    "BTCUSDT_PERP.A": "BTC",
-    "ETHUSDT_PERP.A": "ETH",
-    "SOLUSDT_PERP.A": "SOL",
-}
 
-BYBIT_SYMBOL_MAP = {
-    "BTCUSDT_PERP.A": "BTCUSDT.6",
-    "ETHUSDT_PERP.A": "ETHUSDT.6",
-    "SOLUSDT_PERP.A": "SOLUSDT.6",
-}
+def load_market_catalog(path: str | os.PathLike[str] | None = None) -> tuple[MarketSymbol, ...]:
+    catalog = {item.symbol: item for item in DEFAULT_MARKET_CATALOG}
+    if path:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(payload, dict) or payload.get("version") != 1:
+            raise ValueError("market symbol catalog must be an object with version=1")
+        mode = payload.get("mode", "extend")
+        if mode not in {"extend", "replace"}:
+            raise ValueError("market symbol catalog mode must be extend or replace")
+        rows = payload.get("symbols")
+        if not isinstance(rows, list):
+            raise ValueError("market symbol catalog symbols must be a list")
+        if mode == "replace":
+            catalog.clear()
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ValueError("market symbol catalog rows must be objects")
+            item = MarketSymbol(**row)
+            catalog[item.symbol] = item
 
-SPOT_PAIR_MAP = {
-    "BTC": "BTCUSDT",
-    "ETH": "ETHUSDT",
-    "SOL": "SOLUSDT",
-}
+    items = tuple(catalog.values())
+    if not items:
+        raise ValueError("market symbol catalog cannot be empty")
+    for item in items:
+        values = asdict(item)
+        if any(not isinstance(values[field], str) or not values[field].strip() for field in (
+            "symbol", "base_asset", "futures_pair", "bybit_oi_symbol", "spot_pair",
+            "spot_history_symbol",
+        )):
+            raise ValueError("market symbol identifiers cannot be empty")
+        if (
+            not math.isfinite(item.whale_threshold_usd)
+            or not math.isfinite(item.large_trade_threshold_usd)
+            or item.whale_threshold_usd <= 0
+            or item.large_trade_threshold_usd <= 0
+        ):
+            raise ValueError("market symbol thresholds must be positive")
+    for field in (
+        "base_asset",
+        "futures_pair",
+        "bybit_oi_symbol",
+        "spot_pair",
+        "spot_history_symbol",
+    ):
+        values = [getattr(item, field) for item in items]
+        if len(values) != len(set(values)):
+            raise ValueError(f"market symbol catalog has duplicate {field}")
+    return items
 
-# Coinalyze SI sirve mercados spot con delta real: /spot-markets los marca con
-# `has_buy_sell_data: true` y ohlcv-history devuelve bv/btx, con la misma profundidad por
-# intervalo que el perp (4hour ~300 d, daily ~2 anios). Hasta ahora el CVD spot solo salia de
-# los colectores WS propios, limitados por retencion (14 d el agg, 2 h el realtime).
-#
-# Se usa el spot del MISMO venue que el perp (sufijo .A = Binance en ambos) a proposito: la
-# asimetria documentada en v1.3.4 era comparar perp de Binance contra spot de Binance+Bybit.
-# Con las dos patas en Binance, la comparacion es entre mercados, no entre venues.
-# El spot de Bybit (sBTCUSDT.6 etc.) existe y tambien trae delta; no se ingiere porque
-# duplicaria la cuota sin cambiar la lectura.
-SPOT_HISTORY_MAP = {
-    "BTCUSDT_PERP.A": "BTCUSD.A",
-    "ETHUSDT_PERP.A": "ETHUSD.A",
-    "SOLUSDT_PERP.A": "SOLUSD.A",
-}
 
-FUTURES_PAIR_MAP = {
-    "BTCUSDT_PERP.A": "BTCUSDT",
-    "ETHUSDT_PERP.A": "ETHUSDT",
-    "SOLUSDT_PERP.A": "SOLUSDT",
+_VERSIONED_CATALOG_PATH = Path("config/market_symbols.json")
+MARKET_SYMBOL_CATALOG_FILE = os.environ.get("MARKET_SYMBOL_CATALOG_FILE", "").strip()
+if not MARKET_SYMBOL_CATALOG_FILE and _VERSIONED_CATALOG_PATH.is_file():
+    MARKET_SYMBOL_CATALOG_FILE = str(_VERSIONED_CATALOG_PATH)
+MARKET_SYMBOL_CATALOG = load_market_catalog(MARKET_SYMBOL_CATALOG_FILE or None)
+SUPPORTED_SYMBOLS = tuple(item.symbol for item in MARKET_SYMBOL_CATALOG)
+WS_SYMBOL_MAP = {item.symbol: item.base_asset for item in MARKET_SYMBOL_CATALOG}
+BYBIT_SYMBOL_MAP = {item.symbol: item.bybit_oi_symbol for item in MARKET_SYMBOL_CATALOG}
+SPOT_PAIR_MAP = {item.base_asset: item.spot_pair for item in MARKET_SYMBOL_CATALOG}
+SPOT_HISTORY_MAP = {item.symbol: item.spot_history_symbol for item in MARKET_SYMBOL_CATALOG}
+FUTURES_PAIR_MAP = {item.symbol: item.futures_pair for item in MARKET_SYMBOL_CATALOG}
+PAIR_SYMBOL_MAP = {item.futures_pair: item.symbol for item in MARKET_SYMBOL_CATALOG}
+WHALE_THRESHOLD_MAP = {
+    item.base_asset: item.whale_threshold_usd for item in MARKET_SYMBOL_CATALOG
 }
-
-PAIR_SYMBOL_MAP = {value: key for key, value in FUTURES_PAIR_MAP.items()}
+LARGE_TRADE_THRESHOLD_MAP = {
+    item.symbol: item.large_trade_threshold_usd for item in MARKET_SYMBOL_CATALOG
+}
 
 
 class Settings(BaseSettings):
@@ -66,7 +124,7 @@ class Settings(BaseSettings):
 
     API_KEY: str = ""
     COINALYZE_BASE_URL: str = "https://api.coinalyze.net/v1"
-    INGEST_INTERVAL_SECONDS: int = Field(default=60, ge=30, le=900)
+    INGEST_INTERVAL_SECONDS: int = Field(default=60, ge=60, le=60)
     COINALYZE_RATE_LIMIT_UNITS: int = Field(default=35, ge=1, le=40)
     EXTERNAL_MACRO_ENABLED: bool = True
     EXTERNAL_MACRO_REFRESH_SECONDS: int = Field(default=3600, ge=900, le=21600)
@@ -82,6 +140,9 @@ class Settings(BaseSettings):
     PG_POOL_MIN: int = Field(default=1, ge=1, le=10)
     PG_POOL_MAX: int = Field(default=4, ge=1, le=30)
     PG_SSLMODE: str = "disable"
+
+    COLLECTOR_SHARD_INDEX: int = Field(default=0, ge=0)
+    COLLECTOR_SHARD_COUNT: int = Field(default=1, ge=1)
 
     API_HOST: str = "127.0.0.1"
     API_PORT: int = Field(default=8000, ge=1, le=65535)
@@ -172,6 +233,12 @@ class Settings(BaseSettings):
         if value < pool_min:
             raise ValueError("PG_POOL_MAX must be >= PG_POOL_MIN")
         return value
+
+    @model_validator(mode="after")
+    def validate_shard(self) -> Settings:
+        if self.COLLECTOR_SHARD_INDEX >= self.COLLECTOR_SHARD_COUNT:
+            raise ValueError("COLLECTOR_SHARD_INDEX must be less than COLLECTOR_SHARD_COUNT")
+        return self
 
     @property
     def pg_dsn(self) -> str:

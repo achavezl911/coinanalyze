@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncpg
 
-from app.config import Settings
+from app.config import MARKET_SYMBOL_CATALOG, MarketSymbol, Settings
 
 
 async def create_pool(settings: Settings, *, application_name: str) -> asyncpg.Pool:
@@ -13,7 +13,7 @@ async def create_pool(settings: Settings, *, application_name: str) -> asyncpg.P
         await conn.execute("SET idle_in_transaction_session_timeout = '30s'")
         await conn.execute("SELECT set_config('application_name', $1, false)", application_name)
 
-    return await asyncpg.create_pool(
+    pool = await asyncpg.create_pool(
         dsn=settings.pg_dsn,
         min_size=settings.PG_POOL_MIN,
         max_size=settings.PG_POOL_MAX,
@@ -21,6 +21,57 @@ async def create_pool(settings: Settings, *, application_name: str) -> asyncpg.P
         command_timeout=30,
         init=init_connection,
     )
+    await sync_market_catalog(pool)
+    return pool
+
+
+async def sync_market_catalog(
+    pool: asyncpg.Pool,
+    catalog: tuple[MarketSymbol, ...] = MARKET_SYMBOL_CATALOG,
+) -> None:
+    assets = [(item.base_asset,) for item in catalog]
+    symbols = [(item.symbol, item.base_asset, True) for item in catalog]
+    symbols.extend((item.spot_history_symbol, item.base_asset, False) for item in catalog)
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await conn.executemany(
+                "INSERT INTO market_assets(base_asset) VALUES($1) ON CONFLICT DO NOTHING",
+                assets,
+            )
+            await conn.executemany(
+                """
+                INSERT INTO symbols(symbol,base_asset,is_perpetual)
+                VALUES($1,$2,$3)
+                ON CONFLICT(symbol) DO UPDATE SET
+                  base_asset=EXCLUDED.base_asset,
+                  is_perpetual=EXCLUDED.is_perpetual
+                """,
+                symbols,
+            )
+
+
+async def acquire_service_lock(
+    settings: Settings,
+    service: str,
+    shard_index: int = 0,
+    shard_count: int = 1,
+) -> asyncpg.Connection:
+    conn = await asyncpg.connect(
+        dsn=settings.pg_dsn,
+        server_settings={"application_name": f"coinalyze-lock-{service}"},
+    )
+    key = f"coinanalyze:{service}:{shard_index}:{shard_count}"
+    try:
+        locked = await conn.fetchval(
+            "SELECT pg_try_advisory_lock(hashtextextended($1, 0))",
+            key,
+        )
+        if not locked:
+            raise RuntimeError(f"service shard already active: {key}")
+    except BaseException:
+        await conn.close()
+        raise
+    return conn
 
 
 async def heartbeat(
@@ -42,6 +93,45 @@ async def heartbeat(
         service,
         status,
         detail,
+    )
+
+
+async def heartbeat_shard(
+    conn: asyncpg.Connection,
+    service: str,
+    shard_index: int,
+    shard_count: int,
+    *,
+    status: str = "ok",
+    detail: str | None = None,
+) -> None:
+    instance = f"{service}:{shard_index}/{shard_count}"
+    await heartbeat(conn, instance, status=status, detail=detail)
+    await conn.execute(
+        """
+        INSERT INTO pipeline_heartbeat(service,updated_at,status,detail)
+        SELECT $1,
+               COALESCE(MIN(updated_at),now()),
+               CASE
+                 WHEN COUNT(*) <> $3 THEN 'degraded'
+                 WHEN bool_or(status='error') THEN 'error'
+                 WHEN bool_or(status='degraded') THEN 'degraded'
+                 ELSE 'ok'
+               END,
+               CASE
+                 WHEN $3=1 THEN MAX(detail)
+                 ELSE left(string_agg(service || '=' || COALESCE(detail,''), ';'),500)
+               END
+        FROM pipeline_heartbeat
+        WHERE service LIKE $2
+        ON CONFLICT(service) DO UPDATE SET
+          updated_at=EXCLUDED.updated_at,
+          status=EXCLUDED.status,
+          detail=EXCLUDED.detail
+        """,
+        service,
+        f"{service}:%/{shard_count}",
+        shard_count,
     )
 
 

@@ -2,7 +2,14 @@ import time
 
 import pytest
 
-from app.ws_collector import WHALE_TRADE_THRESHOLD, Bucket, BucketStore, valid_trade
+from app.ws_collector import (
+    WHALE_TRADE_THRESHOLD,
+    Bucket,
+    BucketStore,
+    binance_url,
+    spot_pairs,
+    valid_trade,
+)
 
 
 def test_valid_trade_rejects_bad_values(monkeypatch):
@@ -54,4 +61,13 @@ def test_heartbeat_publishes_each_spot_venue() -> None:
     from pathlib import Path
 
     source = (Path(__file__).resolve().parents[1] / "app" / "ws_collector.py").read_text()
-    assert 'f"ws-{exchange}"' in source
+    assert 'f"ws-{exchange}:{shard_index}/{shard_count}"' in source
+
+
+def test_websocket_topics_are_generated_only_for_assigned_symbols():
+    symbols = ("ETHUSDT_PERP.A",)
+
+    assert spot_pairs(symbols) == ("ETHUSDT",)
+    assert binance_url(symbols).endswith("ethusdt@aggTrade")
+    assert "btcusdt" not in binance_url(symbols)
+    assert "solusdt" not in binance_url(symbols)

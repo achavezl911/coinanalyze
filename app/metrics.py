@@ -6,10 +6,10 @@ from zoneinfo import ZoneInfo
 
 import asyncpg
 
-from app.config import WS_SYMBOL_MAP
+from app.config import WHALE_THRESHOLD_MAP, WS_SYMBOL_MAP
 
 NY = ZoneInfo("America/New_York")
-WHALE_ACTIVITY_MIN = {"BTC": 5_000_000.0, "ETH": 1_000_000.0, "SOL": 200_000.0}
+WHALE_ACTIVITY_MIN = WHALE_THRESHOLD_MAP
 
 
 def current_nyse_start(now_utc: datetime | None = None) -> datetime:

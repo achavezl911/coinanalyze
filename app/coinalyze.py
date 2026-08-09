@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
-from collections import deque
-from typing import Any
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Protocol
 
+import asyncpg
 import httpx
 
 LOGGER = logging.getLogger(__name__)
@@ -15,36 +16,132 @@ class CoinalyzeError(RuntimeError):
     pass
 
 
-class SlidingWindowRateLimiter:
-    """Counts Coinalyze billing units, where each requested symbol consumes one unit."""
+class RateLimiter(Protocol):
+    async def acquire(self, units: int) -> None: ...
 
-    def __init__(self, max_units: int, window_seconds: float = 60.0) -> None:
+
+class PostgresSlidingWindowRateLimiter:
+    """Global billing-unit window shared by every process using the same PostgreSQL."""
+
+    def __init__(
+        self,
+        pool: asyncpg.Pool,
+        max_units: int,
+        *,
+        provider: str = "coinalyze",
+        window_seconds: float = 60.0,
+    ) -> None:
+        if max_units < 1:
+            raise ValueError("max_units must be >= 1")
+        if window_seconds <= 0:
+            raise ValueError("window_seconds must be positive")
+        self.pool = pool
         self.max_units = max_units
+        self.provider = provider
         self.window_seconds = window_seconds
-        self._events: deque[tuple[float, int]] = deque()
-        self._lock = asyncio.Lock()
 
-    async def acquire(self, cost: int) -> None:
-        if cost > self.max_units:
+    async def acquire(self, units: int) -> None:
+        if units < 1:
+            raise ValueError("requested units must be >= 1")
+        if units > self.max_units:
             raise ValueError("Request cost exceeds rate limiter capacity")
         while True:
-            async with self._lock:
-                now = time.monotonic()
-                while self._events and now - self._events[0][0] >= self.window_seconds:
-                    self._events.popleft()
-                used = sum(item[1] for item in self._events)
-                if used + cost <= self.max_units:
-                    self._events.append((now, cost))
-                    return
-                sleep_for = self.window_seconds - (now - self._events[0][0]) + 0.05
+            sleep_for = 0.05
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    await conn.execute(
+                        "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+                        f"rate:{self.provider}",
+                    )
+                    await conn.execute(
+                        """
+                        DELETE FROM external_api_rate_event
+                        WHERE provider=$1
+                          AND ts <= now() - make_interval(secs => $2::double precision)
+                        """,
+                        self.provider,
+                        self.window_seconds,
+                    )
+                    rows = await conn.fetch(
+                        """
+                        SELECT ts,units,now() AS db_now
+                        FROM external_api_rate_event
+                        WHERE provider=$1
+                        ORDER BY ts
+                        """,
+                        self.provider,
+                    )
+                    used = sum(int(row["units"]) for row in rows)
+                    if used + units <= self.max_units:
+                        await conn.execute(
+                            "INSERT INTO external_api_rate_event(provider,units) VALUES($1,$2)",
+                            self.provider,
+                            units,
+                        )
+                        return
+
+                    units_to_expire = used + units - self.max_units
+                    expired_units = 0
+                    for row in rows:
+                        expired_units += int(row["units"])
+                        if expired_units >= units_to_expire:
+                            event_ts: datetime = row["ts"]
+                            db_now: datetime = row["db_now"]
+                            sleep_for = (
+                                self.window_seconds - (db_now - event_ts).total_seconds() + 0.05
+                            )
+                            break
             await asyncio.sleep(max(sleep_for, 0.05))
 
 
+@dataclass(frozen=True, slots=True)
+class CoinalyzeRateBudget:
+    symbol_count: int
+    ohlcv_units_per_cycle: int
+    metrics_units_per_cycle: int
+    daily_units_per_cycle: int
+    projected_units_per_minute: float
+
+
+def validate_rate_budget(
+    symbol_count: int,
+    configured_limit: int,
+    *,
+    ohlcv_cadence_seconds: int = 60,
+    metrics_cadence_seconds: int = 300,
+    daily_cadence_seconds: int = 3600,
+) -> CoinalyzeRateBudget:
+    if symbol_count < 1:
+        raise ValueError("symbol_count must be >= 1")
+    ohlcv_units = symbol_count
+    metrics_units = 6 * symbol_count
+    daily_units = 4 * symbol_count
+    projected = (
+        ohlcv_units * 60 / ohlcv_cadence_seconds
+        + metrics_units * 60 / metrics_cadence_seconds
+        + daily_units * 60 / daily_cadence_seconds
+    )
+    if symbol_count > configured_limit or projected > configured_limit:
+        raise RuntimeError(
+            "Coinalyze quota cannot satisfy configured workload: "
+            f"symbols={symbol_count} ohlcv_units/cycle={ohlcv_units} "
+            f"metrics_units/cycle={metrics_units} daily_units/cycle={daily_units} "
+            f"projected_units/min={projected:.2f} limit={configured_limit}"
+        )
+    return CoinalyzeRateBudget(
+        symbol_count,
+        ohlcv_units,
+        metrics_units,
+        daily_units,
+        projected,
+    )
+
+
 class CoinalyzeClient:
-    def __init__(self, base_url: str, api_key: str, max_units: int = 35) -> None:
+    def __init__(self, base_url: str, api_key: str, limiter: RateLimiter) -> None:
         if not api_key:
             raise CoinalyzeError("API_KEY is empty")
-        self._limiter = SlidingWindowRateLimiter(max_units=max_units)
+        self._limiter = limiter
         self._client = httpx.AsyncClient(
             base_url=base_url.rstrip("/"),
             headers={
@@ -74,7 +171,6 @@ class CoinalyzeClient:
         convert_to_usd: bool | None = None,
     ) -> dict[str, list[dict[str, Any]]]:
         symbols = list(symbols)
-        await self._limiter.acquire(cost=len(symbols))
         params: dict[str, Any] = {
             "symbols": ",".join(symbols),
             "interval": interval,
@@ -86,6 +182,7 @@ class CoinalyzeClient:
 
         delay = 1.0
         for attempt in range(1, 6):
+            await self._limiter.acquire(len(symbols))
             try:
                 response = await self._client.get(f"/{endpoint}", params=params)
             except (httpx.TimeoutException, httpx.NetworkError) as exc:
