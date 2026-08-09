@@ -11,13 +11,15 @@ Reglas duras de la especificacion (§2.3):
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from app.scalp_logic import (
     _closed_1m_window_bounds,
+    _closed_5m_oi_bounds,
     compute_scalp_summary,
+    scalp_context,
 )
 
 W_OI = 10
@@ -30,6 +32,7 @@ def ctx(**over):
     """
     base = {
         "oi_now": None, "oi_start": None,
+        "oi_window_status": "complete", "oi_window_samples": 4,
         "first_px_15m": None, "last_px_15m": None, "bars_15m": 0,
         "fut_delta_3m": None, "spot_delta_3m": None,
         "book_status": "ok",
@@ -106,6 +109,20 @@ def test_oi_ausente_no_aporta_peso() -> None:
     assert "oi" in out["missing_components"]
 
 
+def test_bucket_oi_faltante_no_aporta_peso_aunque_haya_extremos() -> None:
+    out = compute_scalp_summary(
+        ctx(
+            **_oi(0.6),
+            **_px15(0.4),
+            oi_window_status="partial",
+            oi_window_samples=3,
+        )
+    )
+    assert out["oi_chg_15m_pct"] is None
+    assert out["oi_window_status"] == "partial"
+    assert "oi" in out["missing_components"]
+
+
 def test_precio_15m_ausente_no_hay_lectura_de_oi() -> None:
     # OI presente pero SIN precio de la misma ventana: no se puede leer -> no cuenta peso.
     out = compute_scalp_summary(ctx(**_oi(0.6), first_px_15m=None, last_px_15m=None, bars_15m=0))
@@ -139,6 +156,17 @@ def test_ventana_15m_termina_antes_de_la_vela_1m_abierta() -> None:
 
     # 17:49 es la vela abierta y queda fuera porque el SQL utiliza ts < end.
     assert end < now
+
+
+def test_oi_cerrado_delimita_exactamente_la_misma_ventana_de_precio() -> None:
+    now = datetime(2026, 8, 9, 11, 49, 37, tzinfo=UTC)
+
+    source_start, window_start, window_end = _closed_5m_oi_bounds(now)
+
+    assert source_start == datetime(2026, 8, 9, 11, 25, tzinfo=UTC)
+    assert window_start == datetime(2026, 8, 9, 11, 30, tzinfo=UTC)
+    assert window_end == datetime(2026, 8, 9, 11, 45, tzinfo=UTC)
+    assert window_end - window_start == timedelta(minutes=15)
 
 
 def test_cobertura_15m_completa_permite_lectura_oi() -> None:
@@ -186,6 +214,49 @@ def test_cobertura_15m_parcial_no_permite_scoring_de_oi() -> None:
 
     # Y por supuesto tampoco inclina el score.
     assert out["long_score"] == out["short_score"]
+
+
+class _ScalpContextConnection:
+    def __init__(self) -> None:
+        self.query = ""
+        self.args = ()
+
+    async def fetchrow(self, query, *args):
+        self.query = query
+        self.args = args
+        return {
+            "oi_window_start": args[4],
+            "oi_window_end": args[5],
+            "oi_window_samples": 4,
+            "oi_window_status": "complete",
+            "bars_15m": 15,
+            "price_move_15m_coverage": "complete",
+        }
+
+    async def fetch(self, *_args):
+        return []
+
+
+@pytest.mark.asyncio
+async def test_consulta_alinea_oi_y_precio_a_114937_sin_velas_abiertas(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = datetime(2026, 8, 9, 11, 49, 37, tzinfo=UTC)
+    conn = _ScalpContextConnection()
+    monkeypatch.setattr("app.scalp_logic._utc_now", lambda: now)
+
+    out = await scalp_context(conn, "BTCUSDT_PERP.A")  # type: ignore[arg-type]
+
+    assert out["oi_window_start"] == datetime(2026, 8, 9, 11, 30, tzinfo=UTC)
+    assert out["oi_window_end"] == datetime(2026, 8, 9, 11, 45, tzinfo=UTC)
+    assert out["oi_window_samples"] == 4
+    assert out["oi_window_status"] == "complete"
+    assert out["price_move_15m_coverage"] == "complete"
+    assert "ts >= $5" in conn.query and "ts <  $6" in conn.query
+    assert "oi_samples=4" in conn.query
+    assert "last_bucket-first_bucket=interval '15 minutes'" in conn.query
+    assert "last_bar-px_15m.first_bar=interval '14 minutes'" in conn.query
+    assert conn.args[5] < now
 
 
 def test_expansion_pero_flujo_contradice_no_vota_direccion() -> None:

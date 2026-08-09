@@ -2,6 +2,28 @@
 
 ---
 
+## PR1 — integridad P0 de market data (2026-08-09)
+
+- Bybit conserva la semántica documentada de la posición liquidada: `Buy` es long y `Sell`
+  es short. Binance mantiene su semántica previa basada en el lado de la orden forzada.
+- `market_feed_health` registra por exchange la continuidad real del stream de
+  liquidaciones. Una ventana de 5 minutos sólo se publica como medida si Binance y Bybit
+  estuvieron sanos durante toda ella, sin pérdidas de cola y con estado reciente.
+- El libro Bybit valida continuidad con `u` (update ID); `seq` queda sólo como diagnóstico.
+  Duplicados, retrocesos o saltos eliminan el libro local hasta recibir un snapshot nuevo;
+  `u=1` reemplaza el libro conforme a la documentación oficial.
+- OI 15m usa cuatro observaciones 5m consecutivas y cerradas. Como `ts` etiqueta el inicio
+  del bucket, sus cierres efectivos delimitan la misma ventana `[start,end)` que las quince
+  velas 1m cerradas usadas para el movimiento de precio.
+
+**Migración:** `sql/schema.sql` crea tabla e índice con `IF NOT EXISTS`; puede aplicarse sobre
+una instalación existente sin borrar datos. **Rollback:** detener primero el código que lee
+la salud específica y después ejecutar `DROP INDEX IF EXISTS market_feed_health_updated_idx;`
+y `DROP TABLE IF EXISTS market_feed_health;`. La tabla sólo contiene estado operativo, no
+eventos de mercado.
+
+---
+
 ## Segunda ronda (2026-08-07): cuatro correcciones previas al gap recovery
 
 ### 1. El umbral de 5 bps desaparece también de la capa visual
@@ -36,10 +58,11 @@ Cada requisito declara ahora su nivel:
 techo es `CANDIDATO`. Se publica `coverage_pct`, `critical_total`, `critical_evaluable`,
 `confirmation_total`, `confirmation_evaluable`, `missing_critical` y `missing_confirmation`.
 
-**Consecuencia medida en producción:** ningún setup confirma hoy, porque
-`bars_closed_beyond`, `retest_done`, `returned_inside`, `pullback_pct` y `level_defended` no
-se miden. Ruptura y rechazo quedan en `CANDIDATO` con 2 de 4 críticos evaluables. Es el
-resultado correcto: antes decía `CONFIRMADO` sin haber mirado.
+**Nota histórica superseded:** en ese momento ningún setup confirmaba porque
+`bars_closed_beyond`, `retest_done`, `returned_inside`, `pullback_pct` y `level_defended` aún
+no se medían. El commit posterior `957b4b1` añadió `setup_observables()` sobre velas cerradas;
+cuando el llamador aporta `observ_bundle`, los cinco observables ya se miden. Sin ese paquete
+siguen en `None`, conservando el comportamiento fail-closed.
 
 ### 3. El signo del Open Interest deja de votar dirección
 
@@ -173,10 +196,11 @@ Ahora son dos controles independientes y `app/setups.py` da a cada setup su prop
 
 Estados publicados: `PENDIENTE`, `CANDIDATO`, `CONFIRMADO`, `FALLIDO`, `NO EVALUABLE`.
 
-`build_setup_context()` traduce los bloques ya publicados a los observables de cada setup, y
-**declara explícitamente lo que este sistema no mide**: `bars_closed_beyond`, `retest_done`,
-`returned_inside`, `pullback_pct` y `level_defended` viajan como `None`, de modo que el
-requisito correspondiente queda `no_evaluable` en vez de darse por bueno.
+**Afirmación histórica superseded por `957b4b1`:** originalmente `build_setup_context()`
+dejaba `bars_closed_beyond`, `retest_done`, `returned_inside`, `pullback_pct` y
+`level_defended` en `None`. La implementación posterior añadió `setup_observables()` y los
+mide con velas cerradas cuando recibe `observ_bundle`; si el paquete falta o la cobertura no
+alcanza, conserva `None / NO_EVALUABLE / PENDING` sin inventar un resultado.
 
 Compatibilidad: `split_hypothesis()` traduce los siete valores antiguos al par
 (dirección, setup), tanto en el backend como en el navegador.

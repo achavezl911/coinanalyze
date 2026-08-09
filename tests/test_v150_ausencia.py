@@ -8,6 +8,8 @@ ausente siguiera votando 0, la cobertura no bajaria y estos tests fallarian.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
 from app.scalp_logic import compute_scalp_summary
@@ -24,6 +26,10 @@ W_VWAP = 5
 
 def ctx_completo(**overrides: object) -> dict[str, object]:
     """Contexto con los 7 componentes medibles. `None` explicito retira un insumo."""
+    now = datetime(2026, 8, 9, 12, 0, tzinfo=UTC)
+    window_start = now - timedelta(minutes=5)
+    healthy_since = window_start - timedelta(minutes=1)
+    updated_at = now - timedelta(seconds=10)
     base: dict[str, object] = {
         "fut_delta_1m": 100.0,
         "fut_volume_1m": 1_000.0,
@@ -37,18 +43,28 @@ def ctx_completo(**overrides: object) -> dict[str, object]:
         "price": 100.2,
         "book_status": "ok",
         "spread_bps": 1.0,
-        # Heartbeat del colector de WS vivo => la ventana de liquidaciones SI se midio.
-        "liq_feed_status": "ok",
-        "liq_feed_lag_s": 3.0,
+        "now_ms": now.timestamp() * 1000,
+        "liquidation_window_start": window_start,
+        "liq_binance_status": "ok",
+        "liq_binance_healthy_since": healthy_since,
+        "liq_binance_last_loss_at": None,
+        "liq_binance_updated_at": updated_at,
+        "liq_bybit_status": "ok",
+        "liq_bybit_healthy_since": healthy_since,
+        "liq_bybit_last_loss_at": None,
+        "liq_bybit_updated_at": updated_at,
         "long_liq": 20_000.0,
         "short_liq": 5_000.0,
         "oi_now": 1_000.0,
         "oi_start": 990.0,
+        "oi_window_status": "complete",
+        "oi_window_samples": 4,
         # Ventana de precio de 15 m (misma que el OI): sube, y con OI en expansion el OI aporta
         # direccion. `bars_15m` completa la cobertura. Sin estos campos el OI no podria leerse.
         "first_px_15m": 100.0,
         "last_px_15m": 100.3,
         "bars_15m": 15,
+        "price_move_15m_coverage": "complete",
         "session_vwap": 100.0,
     }
     base.update(overrides)
@@ -118,9 +134,20 @@ def test_precio_exactamente_sobre_vwap_publica_cero() -> None:
 @pytest.mark.parametrize(
     ("caso", "overrides"),
     [
-        ("sin_heartbeat", {"liq_feed_status": None, "liq_feed_lag_s": None}),
-        ("heartbeat_en_error", {"liq_feed_status": "error"}),
-        ("heartbeat_viejo", {"liq_feed_lag_s": 3_600.0}),
+        ("sin_salud_binance", {"liq_binance_status": None}),
+        ("bybit_en_error", {"liq_bybit_status": "error"}),
+        (
+            "estado_viejo",
+            {"liq_binance_updated_at": datetime(2026, 8, 9, 11, 0, tzinfo=UTC)},
+        ),
+        (
+            "conexion_tardia",
+            {"liq_bybit_healthy_since": datetime(2026, 8, 9, 11, 58, tzinfo=UTC)},
+        ),
+        (
+            "perdida_en_ventana",
+            {"liq_bybit_last_loss_at": datetime(2026, 8, 9, 11, 57, tzinfo=UTC)},
+        ),
     ],
 )
 def test_liquidaciones_sin_ventana_medida_quedan_en_none(caso: str, overrides: dict) -> None:
@@ -180,8 +207,7 @@ def test_combinacion_parcial_resta_exactamente_los_pesos_ausentes() -> None:
         ctx_completo(
             oi_now=None,
             session_vwap=None,
-            liq_feed_status=None,
-            liq_feed_lag_s=None,
+            liq_binance_status=None,
         )
     )
     assert set(out["missing_components"]) == {"oi", "vwap", "liquidations"}
@@ -195,8 +221,6 @@ def test_bajo_el_50_por_ciento_de_peso_no_hay_lectura() -> None:
         {
             "book_status": "ok",
             "imbalance_l5": 0.6,
-            "liq_feed_status": "ok",
-            "liq_feed_lag_s": 2.0,
         }
     )
     assert out["evidence_coverage_pct"] < 50
@@ -247,7 +271,7 @@ def test_los_componentes_ausentes_coinciden_con_missing_components() -> None:
         {"imbalance_l5": None},
         {"spot_delta_3m": None},
         {"fut_volume_1m": None},
-        {"liq_feed_status": None},
+        {"liq_binance_status": None},
     ):
         out = compute_scalp_summary(ctx_completo(**overrides))
         ausente = sum(pesos[name] for name in out["missing_components"])

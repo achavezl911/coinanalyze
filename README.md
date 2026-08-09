@@ -42,9 +42,11 @@ Detalle completo en [`docs/CHANGES_v1.5.0.md`](docs/CHANGES_v1.5.0.md).
 **Limitaciones conocidas.** El recuperador general de huecos (`data_gaps`, CLI y endpoints
 `/api/data-quality/gaps*`) **no forma parte de esta versión** y sigue pendiente. Las bandas
 de coste/objetivo y los pesos por capa son convenciones declaradas, no resultados
-backtesteados, y viajan en la respuesta para poder auditarlos. `bars_closed_beyond`,
-`retest_done`, `returned_inside`, `pullback_pct` y `level_defended` no los mide este sistema:
-los requisitos que dependen de ellos quedan `no_evaluable` en vez de darse por buenos.
+backtesteados, y viajan en la respuesta para poder auditarlos. La afirmación anterior de que
+`bars_closed_beyond`, `retest_done`, `returned_inside`, `pullback_pct` y `level_defended` no
+se medían quedó **superseded** por la implementación posterior de `setup_observables()`:
+ahora se calculan desde velas cerradas cuando existe un `observ_bundle`; sin ese paquete
+siguen en `None` de forma fail-closed.
 
 ## v1.4.9 — régimen macro externo interpretable
 

@@ -15,7 +15,7 @@ import websockets
 from websockets.exceptions import ConnectionClosed
 
 from app.config import FUTURES_PAIR_MAP, PAIR_SYMBOL_MAP, get_settings
-from app.db import create_pool, heartbeat
+from app.db import create_pool, heartbeat, mark_feed_connected, mark_feed_degraded, mark_feed_error
 from app.logging_setup import configure_logging
 from app.scalp_logic import compute_scalp_summary, scalp_context
 
@@ -205,16 +205,34 @@ class LocalBook:
         self.bids: dict[float, float] = {}
         self.asks: dict[float, float] = {}
         self.ts_ms = 0
-        self.sequence: int | None = None
+        self.update_id: int | None = None
+        self.cross_seq: int | None = None
 
-    def reset(self, bids: list[list[str]], asks: list[list[str]], ts_ms: int, sequence: int | None = None) -> None:
+    def reset(
+        self,
+        bids: list[list[str]],
+        asks: list[list[str]],
+        ts_ms: int,
+        update_id: int | None = None,
+        cross_seq: int | None = None,
+    ) -> None:
         self.bids = self._levels(bids)
         self.asks = self._levels(asks)
         self.ts_ms = ts_ms
-        self.sequence = sequence
+        self.update_id = update_id
+        self.cross_seq = cross_seq
 
-    def apply_delta(self, bids: list[list[str]], asks: list[list[str]], ts_ms: int, sequence: int | None = None) -> bool:
-        if sequence is not None and self.sequence is not None and sequence <= self.sequence:
+    def apply_delta(
+        self,
+        bids: list[list[str]],
+        asks: list[list[str]],
+        ts_ms: int,
+        update_id: int | None = None,
+        cross_seq: int | None = None,
+    ) -> bool:
+        if update_id is None:
+            return False
+        if self.update_id is not None and update_id != self.update_id + 1:
             return False
         for book, levels in ((self.bids, bids), (self.asks, asks)):
             for price_raw, qty_raw in levels:
@@ -230,8 +248,9 @@ class LocalBook:
                 else:
                     book[price] = qty
         self.ts_ms = ts_ms
-        if sequence is not None:
-            self.sequence = sequence
+        if update_id is not None:
+            self.update_id = update_id
+        self.cross_seq = cross_seq
         return True
 
     @staticmethod
@@ -300,17 +319,41 @@ class BookStore:
         self.books: dict[tuple[str, str], LocalBook] = {}
         self.lock = asyncio.Lock()
 
-    async def set_snapshot(self, symbol: str, exchange: str, bids: list[list[str]], asks: list[list[str]], ts_ms: int, sequence: int | None = None) -> None:
+    async def set_snapshot(
+        self,
+        symbol: str,
+        exchange: str,
+        bids: list[list[str]],
+        asks: list[list[str]],
+        ts_ms: int,
+        update_id: int | None = None,
+        cross_seq: int | None = None,
+    ) -> None:
         async with self.lock:
-            self.books.setdefault((symbol, exchange), LocalBook(symbol, exchange)).reset(bids, asks, ts_ms, sequence)
+            self.books.setdefault((symbol, exchange), LocalBook(symbol, exchange)).reset(
+                bids,
+                asks,
+                ts_ms,
+                update_id,
+                cross_seq,
+            )
 
-    async def apply_delta(self, symbol: str, exchange: str, bids: list[list[str]], asks: list[list[str]], ts_ms: int, sequence: int | None = None) -> bool:
+    async def apply_delta(
+        self,
+        symbol: str,
+        exchange: str,
+        bids: list[list[str]],
+        asks: list[list[str]],
+        ts_ms: int,
+        update_id: int | None = None,
+        cross_seq: int | None = None,
+    ) -> bool:
         async with self.lock:
             key = (symbol, exchange)
             book = self.books.get(key)
             if book is None:
                 return False
-            ok = book.apply_delta(bids, asks, ts_ms, sequence)
+            ok = book.apply_delta(bids, asks, ts_ms, update_id, cross_seq)
             if not ok:
                 self.books.pop(key, None)
             return ok
@@ -362,6 +405,91 @@ LAST_TRADE_EVENT = {
 }
 LAST_FLUSH = {"trades": 0.0, "books": 0.0, "liquidations": 0.0, "signals": 0.0}
 LIQ_DROPPED = 0
+LIQ_FEED_CONNECTED = {"binance": False, "bybit": False}
+LIQ_LOSS_PENDING: dict[str, datetime] = {}
+
+
+async def persist_liquidation_feed_state(
+    pool: asyncpg.Pool | None,
+    exchange: str,
+    status: str,
+    detail: str | None = None,
+    *,
+    data_loss: bool = False,
+) -> bool:
+    """Persist low-frequency feed state; event handlers only mutate in-memory flags."""
+    if pool is None:
+        return False
+    try:
+        async with pool.acquire() as conn:
+            if status == "ok":
+                await mark_feed_connected(conn, "liquidations", exchange, detail)
+            elif status == "error":
+                await mark_feed_error(
+                    conn,
+                    "liquidations",
+                    exchange,
+                    detail,
+                    data_loss=data_loss,
+                )
+            else:
+                await mark_feed_degraded(
+                    conn,
+                    "liquidations",
+                    exchange,
+                    detail,
+                    data_loss=data_loss,
+                )
+        return True
+    except Exception:
+        LOGGER.exception(
+            "liquidation_feed_health_persist_failed exchange=%s status=%s",
+            exchange,
+            status,
+        )
+        return False
+
+
+async def persist_liquidation_health_snapshot(conn: asyncpg.Connection) -> None:
+    """Flush connection and loss flags from memory without doing DB I/O per event."""
+    for exchange, connected in LIQ_FEED_CONNECTED.items():
+        loss_at = LIQ_LOSS_PENDING.get(exchange)
+        if loss_at is not None:
+            await mark_feed_degraded(
+                conn,
+                "liquidations",
+                exchange,
+                f"queue overflow detected at {loss_at.isoformat()}",
+                data_loss=True,
+            )
+        if connected:
+            await mark_feed_connected(
+                conn,
+                "liquidations",
+                exchange,
+                "subscription active",
+            )
+        else:
+            await mark_feed_degraded(
+                conn,
+                "liquidations",
+                exchange,
+                "stream disconnected",
+            )
+        if loss_at is not None and LIQ_LOSS_PENDING.get(exchange) == loss_at:
+            LIQ_LOSS_PENDING.pop(exchange, None)
+
+
+async def reset_liquidation_feed_health(conn: asyncpg.Connection) -> None:
+    """Break persisted continuity before any stream can reconnect after process start."""
+    for exchange in LIQ_FEED_CONNECTED:
+        LIQ_FEED_CONNECTED[exchange] = False
+        await mark_feed_degraded(
+            conn,
+            "liquidations",
+            exchange,
+            "scalp collector starting; awaiting stream confirmation",
+        )
 
 
 def mark_exchange_disconnected(exchange: str) -> None:
@@ -730,7 +858,7 @@ async def handle_binance(message: dict[str, Any]) -> None:
         await safe_liq_put((datetime.fromtimestamp(event_ms / 1000, UTC), symbol, "binance", side, price * qty, price, qty, event_id))
 
 
-async def binance_market_loop() -> None:
+async def binance_market_loop(pool: asyncpg.Pool | None = None) -> None:
     """Liquidaciones Binance. Las URLs legacy se decomisaron el 2026-04-23: forceOrder
     solo emite en el endpoint /market nuevo; trade/depth siguen en la conexion legacy."""
     pairs = [FUTURES_PAIR_MAP[s].lower() for s in SETTINGS.SYMBOLS]
@@ -739,21 +867,42 @@ async def binance_market_loop() -> None:
     while True:
         try:
             async with websockets.connect(url, ping_interval=20, ping_timeout=20, max_size=2_000_000) as ws:
+                LIQ_FEED_CONNECTED["binance"] = True
+                await persist_liquidation_feed_state(
+                    pool,
+                    "binance",
+                    "ok",
+                    "forceOrder connection open",
+                )
                 LOGGER.info("binance_market_connected streams=%d", len(pairs))
                 async for raw in ws:
                     backoff = WS_RECONNECT_INITIAL_SECONDS
                     await handle_binance(json.loads(raw))
         except asyncio.CancelledError:
+            LIQ_FEED_CONNECTED["binance"] = False
+            await persist_liquidation_feed_state(
+                pool,
+                "binance",
+                "degraded",
+                "forceOrder connection closed",
+            )
             raise
         except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError) as exc:
             LOGGER.warning("binance_market_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
         except Exception:
             LOGGER.exception("binance_market_ws_error retry=%.1fs", backoff)
+        LIQ_FEED_CONNECTED["binance"] = False
+        await persist_liquidation_feed_state(
+            pool,
+            "binance",
+            "degraded",
+            "forceOrder connection closed",
+        )
         await asyncio.sleep(backoff)
         backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
 
 
-async def bybit_loop() -> None:
+async def bybit_loop(pool: asyncpg.Pool | None = None) -> None:
     pairs = [FUTURES_PAIR_MAP[s] for s in SETTINGS.SYMBOLS]
     args = []
     for pair in pairs:
@@ -766,8 +915,34 @@ async def bybit_loop() -> None:
                 LOGGER.info("bybit_linear_connected topics=%d", len(args))
                 async for raw in ws:
                     backoff = WS_RECONNECT_INITIAL_SECONDS
-                    await handle_bybit(json.loads(raw))
+                    message = json.loads(raw)
+                    if message.get("op") == "subscribe":
+                        if message.get("success") is True:
+                            LIQ_FEED_CONNECTED["bybit"] = True
+                            await persist_liquidation_feed_state(
+                                pool,
+                                "bybit",
+                                "ok",
+                                "allLiquidation subscription confirmed",
+                            )
+                        else:
+                            LIQ_FEED_CONNECTED["bybit"] = False
+                            await persist_liquidation_feed_state(
+                                pool,
+                                "bybit",
+                                "error",
+                                f"subscription rejected: {message.get('ret_msg')!s}"[:500],
+                            )
+                        continue
+                    await handle_bybit(message)
         except asyncio.CancelledError:
+            LIQ_FEED_CONNECTED["bybit"] = False
+            await persist_liquidation_feed_state(
+                pool,
+                "bybit",
+                "degraded",
+                "allLiquidation connection closed",
+            )
             raise
         except BookResyncRequired as exc:
             LOGGER.warning("bybit_linear_resync reason=%s retry=%.1fs", exc, backoff)
@@ -775,6 +950,13 @@ async def bybit_loop() -> None:
             LOGGER.warning("bybit_linear_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
         except Exception:
             LOGGER.exception("bybit_linear_ws_error retry=%.1fs", backoff)
+        LIQ_FEED_CONNECTED["bybit"] = False
+        await persist_liquidation_feed_state(
+            pool,
+            "bybit",
+            "degraded",
+            "allLiquidation connection closed",
+        )
         await BOOK_STORE.drop_exchange("bybit")
         mark_exchange_disconnected("bybit")
         await asyncio.sleep(backoff)
@@ -786,6 +968,15 @@ def parse_sequence(value: object) -> int | None:
         return int(value)  # type: ignore[arg-type]
     except (TypeError, ValueError, OverflowError):
         return None
+
+
+def bybit_liquidated_position_side(raw_side: object) -> str | None:
+    side = str(raw_side or "").strip().upper()
+    if side == "BUY":
+        return "long"
+    if side == "SELL":
+        return "short"
+    return None
 
 
 async def handle_bybit(message: dict[str, Any]) -> None:
@@ -814,13 +1005,38 @@ async def handle_bybit(message: dict[str, Any]) -> None:
         ts_ms = int(message.get("ts") or data.get("ts") or now_ms())
         bids = data.get("b") or []
         asks = data.get("a") or []
-        sequence = parse_sequence(data.get("seq") or data.get("u") or message.get("seq"))
-        if message.get("type") == "snapshot":
-            await BOOK_STORE.set_snapshot(symbol, "bybit", bids, asks, ts_ms, sequence)
+        update_id = parse_sequence(data.get("u"))
+        cross_seq = parse_sequence(data.get("seq"))
+        if message.get("type") == "snapshot" or update_id == 1:
+            if update_id is None:
+                await BOOK_STORE.drop_exchange("bybit")
+                raise BookResyncRequired(f"Bybit snapshot missing update ID for {symbol}")
+            await BOOK_STORE.set_snapshot(
+                symbol,
+                "bybit",
+                bids,
+                asks,
+                ts_ms,
+                update_id=update_id,
+                cross_seq=cross_seq,
+            )
         else:
-            if not await BOOK_STORE.apply_delta(symbol, "bybit", bids, asks, ts_ms, sequence):
-                LOGGER.warning("bybit_orderbook_sequence_gap symbol=%s sequence=%s", symbol, sequence)
-                raise BookResyncRequired(f"Bybit orderbook sequence gap for {symbol}")
+            if not await BOOK_STORE.apply_delta(
+                symbol,
+                "bybit",
+                bids,
+                asks,
+                ts_ms,
+                update_id=update_id,
+                cross_seq=cross_seq,
+            ):
+                LOGGER.warning(
+                    "bybit_orderbook_update_gap symbol=%s update_id=%s cross_seq=%s",
+                    symbol,
+                    update_id,
+                    cross_seq,
+                )
+                raise BookResyncRequired(f"Bybit orderbook update ID gap for {symbol}")
     elif topic.startswith("allLiquidation"):
         liqs = data if isinstance(data, list) else [data]
         for liq in liqs:
@@ -828,9 +1044,16 @@ async def handle_bybit(message: dict[str, Any]) -> None:
             if parsed is None:
                 continue
             price, qty, event_ms = parsed
-            order_side = str(liq.get("S", "")).upper()
-            side = "long" if order_side == "SELL" else "short"
-            event_id = str(liq.get("id") or f"{symbol}:{event_ms}:{order_side}:{price}:{qty}")
+            side = bybit_liquidated_position_side(liq.get("S"))
+            if side is None:
+                LOGGER.warning(
+                    "bybit_liquidation_invalid_side symbol=%s raw_side=%r",
+                    symbol,
+                    liq.get("S"),
+                )
+                continue
+            raw_side = str(liq.get("S", "")).upper()
+            event_id = str(liq.get("id") or f"{symbol}:{event_ms}:{raw_side}:{price}:{qty}")
             await safe_liq_put((datetime.fromtimestamp(event_ms / 1000, UTC), symbol, "bybit", side, price * qty, price, qty, event_id))
 
 
@@ -840,6 +1063,7 @@ async def safe_liq_put(item: tuple[datetime, str, str, str, float, float, float,
         LIQ_QUEUE.put_nowait(item)
     except asyncio.QueueFull:
         LIQ_DROPPED += 1
+        LIQ_LOSS_PENDING[item[2]] = datetime.now(UTC)
         if LIQ_DROPPED == 1 or LIQ_DROPPED % 100 == 0:
             LOGGER.warning("liquidation_queue_overflow dropped_total=%d queue_size=%d", LIQ_DROPPED, LIQ_QUEUE.qsize())
 
@@ -933,6 +1157,7 @@ async def monitor(pool: asyncpg.Pool) -> None:
         try:
             async with pool.acquire() as conn:
                 await heartbeat(conn, "scalp", status=status, detail=detail)
+                await persist_liquidation_health_snapshot(conn)
         except Exception:
             LOGGER.exception("scalp_heartbeat_failed")
 
@@ -956,10 +1181,12 @@ async def cleanup(pool: asyncpg.Pool) -> None:
 
 async def main() -> None:
     pool = await create_pool(SETTINGS, application_name="coinalyze-scalp")
+    async with pool.acquire() as conn:
+        await reset_liquidation_feed_health(conn)
     tasks = [
         asyncio.create_task(binance_loop()),
-        asyncio.create_task(binance_market_loop()),
-        asyncio.create_task(bybit_loop()),
+        asyncio.create_task(binance_market_loop(pool)),
+        asyncio.create_task(bybit_loop(pool)),
         asyncio.create_task(flush_trades(pool)),
         asyncio.create_task(flush_books(pool)),
         asyncio.create_task(flush_liquidations(pool)),

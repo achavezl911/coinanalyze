@@ -43,3 +43,81 @@ async def heartbeat(
         status,
         detail,
     )
+
+
+async def mark_feed_connected(
+    conn: asyncpg.Connection,
+    feed: str,
+    exchange: str,
+    detail: str | None = None,
+) -> None:
+    """Mark a market feed healthy without resetting an existing healthy period."""
+    await conn.execute(
+        """
+        INSERT INTO market_feed_health(
+          feed, exchange, status, healthy_since, updated_at, detail
+        ) VALUES($1, $2, 'ok', now(), now(), $3)
+        ON CONFLICT (feed, exchange) DO UPDATE
+          SET status = 'ok',
+              healthy_since = CASE
+                WHEN market_feed_health.status = 'ok'
+                  THEN market_feed_health.healthy_since
+                ELSE now()
+              END,
+              updated_at = now(),
+              detail = EXCLUDED.detail
+        """,
+        feed,
+        exchange,
+        detail,
+    )
+
+
+async def _mark_feed_unhealthy(
+    conn: asyncpg.Connection,
+    feed: str,
+    exchange: str,
+    status: str,
+    detail: str | None,
+    data_loss: bool,
+) -> None:
+    await conn.execute(
+        """
+        INSERT INTO market_feed_health(
+          feed, exchange, status, last_loss_at, updated_at, detail
+        ) VALUES($1, $2, $3, CASE WHEN $5 THEN now() END, now(), $4)
+        ON CONFLICT (feed, exchange) DO UPDATE
+          SET status = EXCLUDED.status,
+              last_loss_at = CASE
+                WHEN $5 THEN now()
+                ELSE market_feed_health.last_loss_at
+              END,
+              updated_at = now(),
+              detail = EXCLUDED.detail
+        """,
+        feed,
+        exchange,
+        status,
+        detail,
+        data_loss,
+    )
+
+
+async def mark_feed_degraded(
+    conn: asyncpg.Connection,
+    feed: str,
+    exchange: str,
+    detail: str | None = None,
+    data_loss: bool = False,
+) -> None:
+    await _mark_feed_unhealthy(conn, feed, exchange, "degraded", detail, data_loss)
+
+
+async def mark_feed_error(
+    conn: asyncpg.Connection,
+    feed: str,
+    exchange: str,
+    detail: str | None = None,
+    data_loss: bool = False,
+) -> None:
+    await _mark_feed_unhealthy(conn, feed, exchange, "error", detail, data_loss)
