@@ -109,10 +109,13 @@ report_service_failures() {
     fi
   done
 }
-has_failed_service() {
+has_unhealthy_service() {
   local service
   for service in "${SERVICES[@]}"; do
-    systemctl is-failed --quiet "$service" && return 0
+    if systemctl is-failed --quiet "$service" || \
+       ! systemctl is-active --quiet "$service"; then
+      return 0
+    fi
   done
   return 1
 }
@@ -209,16 +212,24 @@ while (( SECONDS < DEPLOY_HEALTH_DEADLINE )); do
     /opt/coinalyze/scripts/smoke_test.sh >/dev/null 2>&1; then
     # Reuse the same service-check smoke_test.sh already passed: closes the window
     # between smoke_test.sh's own final gate and this success message.
-    if has_failed_service || ! systemctl is-active --quiet coinalyze-api; then
+    if has_unhealthy_service || ! systemctl is-active --quiet coinalyze-api; then
       report_service_failures
       exit 1
     fi
     /opt/coinalyze/scripts/backup.sh
+
+    # El servicio también puede morir durante el backup. El deployment
+    # sólo puede declararse exitoso si todos los servicios siguen activos.
+    if has_unhealthy_service; then
+      report_service_failures
+      exit 1
+    fi
+
     trap - EXIT
     echo "Update complete."
     exit 0
   fi
-  if has_failed_service || ! systemctl is-active --quiet coinalyze-api; then
+  if has_unhealthy_service || ! systemctl is-active --quiet coinalyze-api; then
     report_service_failures
     exit 1
   fi

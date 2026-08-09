@@ -199,6 +199,109 @@ def test_update_rechecks_services_immediately_before_success():
 
     smoke_call_idx = source.index("smoke_test.sh >/dev/null")
     complete_idx = source.index('echo "Update complete."')
-    recheck_idx = source.index("has_failed_service", smoke_call_idx)
+    recheck_idx = source.index("has_unhealthy_service", smoke_call_idx)
 
     assert smoke_call_idx < recheck_idx < complete_idx
+
+
+def _extract_bash_function(source: str, name: str) -> str:
+    """Pull one `name() { ... }` function body out by brace-depth matching.
+
+    Bash's own `${VAR}` expansions inside the body are balanced brace pairs, so a
+    naive depth counter still finds the correct closing brace.
+    """
+    start = source.index(f"{name}() {{")
+    open_idx = source.index("{", start)
+    depth = 0
+    idx = open_idx
+    while True:
+        char = source[idx]
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        idx += 1
+    return source[start : idx + 1]
+
+
+def _extract_final_success_gate(source: str) -> str:
+    """Pull the literal `if <smoke passed> ... fi` success branch out of update.sh's
+    health-gate loop (the block containing both post-smoke and post-backup rechecks),
+    so the regression test below exercises the real, current code instead of a
+    hand-copied reimplementation.
+    """
+    start = source.index('if REQUIRED_SYSTEMD_SERVICES="${SERVICES[*]}" \\\n')
+    end = source.index("\n  fi\n", start) + len("\n  fi\n")
+    return source[start:end]
+
+
+def test_update_final_gate_rejects_inactive_not_failed_collector_after_smoke_passes(
+    tmp_path: Path,
+):
+    """update.sh must never print 'Update complete.' if a required service is merely
+    inactive (not systemd-failed) once smoke_test.sh has already succeeded — that gap
+    is exactly what has_unhealthy_service (used both after smoke and after backup.sh)
+    closes over the older has_failed_service, which only looked at `is-failed`.
+    """
+    source = (ROOT / "scripts" / "update.sh").read_text(encoding="utf-8")
+
+    fake_smoke = tmp_path / "smoke_test.sh"
+    _write_executable(fake_smoke, "#!/usr/bin/env bash\nexit 0\n")
+    fake_backup = tmp_path / "backup.sh"
+    _write_executable(fake_backup, "#!/usr/bin/env bash\nexit 0\n")
+
+    success_gate = _extract_final_success_gate(source)
+    success_gate = success_gate.replace(
+        "/opt/coinalyze/scripts/smoke_test.sh", str(fake_smoke)
+    ).replace("/opt/coinalyze/scripts/backup.sh", str(fake_backup))
+
+    harness = "\n".join(
+        [
+            "#!/usr/bin/env bash",
+            "set -Eeuo pipefail",
+            "SERVICES=(coinalyze-api coinalyze-fake-ws)",
+            "REQUIRED_HEARTBEATS=(api)",
+            "DEPLOY_RESTART_EPOCH=0",
+            _extract_bash_function(source, "report_service_failures"),
+            _extract_bash_function(source, "has_unhealthy_service"),
+            success_gate,
+            "",
+        ]
+    )
+    harness_path = tmp_path / "harness.sh"
+    _write_executable(harness_path, harness)
+
+    # coinalyze-fake-ws is inactive but NOT systemd-failed: the exact case
+    # has_failed_service used to miss.
+    _write_executable(
+        tmp_path / "systemctl",
+        """#!/usr/bin/env bash
+set -eu
+command=$1
+shift
+unit=${!#}
+if [[ $command == is-failed ]]; then
+  exit 1
+elif [[ $command == is-active ]]; then
+  [[ "$unit" != "coinalyze-fake-ws" ]]
+else
+  exit 0
+fi
+""",
+    )
+    env = os.environ.copy()
+    env["PATH"] = f"{tmp_path}:{env['PATH']}"
+
+    result = subprocess.run(
+        ["bash", str(harness_path)],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "Update complete." not in result.stdout
+    assert "coinalyze-fake-ws" in result.stderr
