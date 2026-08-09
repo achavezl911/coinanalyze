@@ -44,6 +44,13 @@ async def test_designated_shard_cleans_expired_rows_for_removed_symbols():
     assert scalp.owns_global_cleanup(1) is False
     assert len(conn.calls) == 5
     assert all("symbol" not in query for query, _args in conn.calls)
+    managed = [args[0] for query, args in conn.calls if "apply_temporal_retention" in query]
+    assert managed == [
+        "futures_trades_realtime",
+        "orderbook_snapshot",
+        "liquidations_realtime",
+        "scalp_signal_snapshot",
+    ]
 
 
 @pytest.mark.parametrize("book_status", ["missing", "stale"])

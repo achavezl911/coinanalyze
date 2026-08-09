@@ -29,6 +29,7 @@ from app.db import (
     monitor_service_lock,
 )
 from app.logging_setup import configure_logging
+from app.partitioning import apply_temporal_retention
 from app.scalp_logic import compute_scalp_summary, scalp_context
 from app.sharding import assigned_symbols
 
@@ -1322,9 +1323,9 @@ def owns_global_cleanup(shard_index: int) -> bool:
 
 
 async def cleanup_expired_rows(conn: asyncpg.Connection) -> None:
-    await conn.execute(
-        "DELETE FROM futures_trades_realtime "
-        "WHERE ts < now()-($1::int * interval '1 hour')",
+    await apply_temporal_retention(
+        conn,
+        "futures_trades_realtime",
         SETTINGS.SCALP_TRADE_RETENTION_HOURS,
     )
     # futures_trades_agg debe cubrir una sesion NYSE completa (24h) para que
@@ -1335,19 +1336,19 @@ async def cleanup_expired_rows(conn: asyncpg.Connection) -> None:
         "WHERE ts < now()-($1::int * interval '1 hour')",
         SETTINGS.SCALP_MINUTE_RETENTION_HOURS,
     )
-    await conn.execute(
-        "DELETE FROM orderbook_snapshot "
-        "WHERE ts < now()-($1::int * interval '1 hour')",
+    await apply_temporal_retention(
+        conn,
+        "orderbook_snapshot",
         SETTINGS.SCALP_ORDERBOOK_RETENTION_HOURS,
     )
-    await conn.execute(
-        "DELETE FROM liquidations_realtime "
-        "WHERE ts < now()-($1::int * interval '1 hour')",
+    await apply_temporal_retention(
+        conn,
+        "liquidations_realtime",
         SETTINGS.SCALP_TRADE_RETENTION_HOURS,
     )
-    await conn.execute(
-        "DELETE FROM scalp_signal_snapshot "
-        "WHERE ts < now()-($1::int * interval '1 hour')",
+    await apply_temporal_retention(
+        conn,
+        "scalp_signal_snapshot",
         SETTINGS.SCALP_SIGNAL_RETENTION_HOURS,
     )
 
