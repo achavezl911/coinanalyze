@@ -8,6 +8,7 @@ import asyncpg
 
 from app.config import WHALE_THRESHOLD_MAP, WS_SYMBOL_MAP
 from app.cutoffs import ClosedCutoff
+from app.data_gaps import GapRequirement, blocking_requirement_keys
 
 NY = ZoneInfo("America/New_York")
 WHALE_ACTIVITY_MIN = WHALE_THRESHOLD_MAP
@@ -269,6 +270,98 @@ async def compute_snapshot(
     )
     data = dict(row) if row else {}
 
+    requirements = [
+        GapRequirement(
+            "price", "ohlcv_1min", "binance", "perpetual", symbol,
+            price_cutoff - timedelta(minutes=1), price_cutoff,
+        ),
+        GapRequirement(
+            "fut_24h", "ohlcv_1min", "binance", "perpetual", symbol,
+            price_cutoff - timedelta(hours=24), price_cutoff,
+        ),
+        GapRequirement(
+            "fut_session", "ohlcv_1min", "binance", "perpetual", symbol,
+            session_start, price_cutoff,
+        ),
+        GapRequirement(
+            "fut_3m", "ohlcv_1min", "binance", "perpetual", symbol,
+            price_cutoff - timedelta(minutes=3), price_cutoff,
+        ),
+        GapRequirement(
+            "fut_15m", "ohlcv_1min", "binance", "perpetual", symbol,
+            price_cutoff - timedelta(minutes=15), price_cutoff,
+        ),
+        GapRequirement(
+            "fut_1h", "ohlcv_1min", "binance", "perpetual", symbol,
+            price_cutoff - timedelta(hours=1), price_cutoff,
+        ),
+        GapRequirement(
+            "oi_binance_24h", "open_interest_5min", "binance", "perpetual", symbol,
+            metrics_cutoff - timedelta(hours=24), metrics_cutoff,
+        ),
+        GapRequirement(
+            "oi_bybit", "open_interest_5min", "bybit", "perpetual", symbol,
+            metrics_cutoff - timedelta(minutes=5), metrics_cutoff,
+        ),
+        GapRequirement(
+            "funding_24h", "funding_rate", "binance", "perpetual", symbol,
+            metrics_cutoff - timedelta(hours=24), metrics_cutoff,
+        ),
+        GapRequirement(
+            "predicted_funding_24h", "predicted_funding_rate", "binance",
+            "perpetual", symbol, metrics_cutoff - timedelta(hours=24), metrics_cutoff,
+        ),
+        GapRequirement(
+            "liquidations_24h", "liquidations_5min", "binance", "perpetual", symbol,
+            metrics_cutoff - timedelta(hours=24), metrics_cutoff,
+        ),
+    ]
+    for exchange in ("binance", "bybit", "combined"):
+        requirements.extend(
+            (
+                GapRequirement(
+                    "spot_24h", "spot_trades", exchange, "spot", ws_symbol,
+                    price_cutoff - timedelta(hours=24), price_cutoff,
+                ),
+                GapRequirement(
+                    "spot_session", "spot_trades", exchange, "spot", ws_symbol,
+                    session_start, price_cutoff,
+                ),
+            )
+        )
+    blocked = await blocking_requirement_keys(conn, requirements)
+    if "price" in blocked:
+        data["price"] = None
+        data["price_ts"] = None
+    if "fut_24h" in blocked:
+        for key in ("vol_24h", "cvd_24h", "btr_24h"):
+            data[key] = None
+    if "fut_session" in blocked:
+        data["cvd_session"] = None
+    if "fut_3m" in blocked:
+        data["delta_3min"] = None
+    if "fut_15m" in blocked:
+        data["btr_15m"] = None
+    if "fut_1h" in blocked:
+        data["btr_1h"] = None
+    if "spot_24h" in blocked:
+        for key in ("spot_cvd_24h", "inst_buy", "inst_sell"):
+            data[key] = None
+    if "spot_session" in blocked:
+        data["spot_cvd_session"] = None
+    if "oi_binance_24h" in blocked:
+        for key in ("oi_now", "oi_ts", "oi_old"):
+            data[key] = None
+    if "oi_bybit" in blocked:
+        data["oi_bybit"] = None
+    if "funding_24h" in blocked:
+        data["fr_avg"] = None
+    if "predicted_funding_24h" in blocked:
+        data["pfr_avg"] = None
+    if "liquidations_24h" in blocked:
+        data["long_liq"] = None
+        data["short_liq"] = None
+
     price = optional_finite(data.get("price"))
     price_1h = optional_finite(data.get("price_1h"))
     price_dir = 0
@@ -340,7 +433,17 @@ async def compute_snapshot(
         "price_cutoff_at": data.get("price_ts"),
         "metrics_cutoff_at": data.get("oi_ts"),
     }
-    score, label = compute_regime(snap)
+    regime_sources = {
+        "fut_24h", "spot_24h", "oi_binance_24h", "funding_24h",
+        "liquidations_24h",
+    }
+    # Healthy source absence keeps the existing measured-component policy. An explicit
+    # loss interval is different: renormalizing around it would present incomplete
+    # evidence as a complete regime, so the aggregate itself fails closed.
+    if blocked & regime_sources:
+        score, label = None, "Sin datos suficientes"
+    else:
+        score, label = compute_regime(snap)
     snap["regime_score"] = score
     snap["regime_label"] = label
     return snap

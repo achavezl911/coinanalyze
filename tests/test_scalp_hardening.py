@@ -79,11 +79,13 @@ async def test_liquidation_queue_overflow_is_counted(monkeypatch):
     monkeypatch.setattr(scalp, "LIQ_QUEUE", small_queue)
     monkeypatch.setattr(scalp, "LIQ_DROPPED", 0)
     monkeypatch.setattr(scalp, "LIQ_LOSS_PENDING", {})
+    monkeypatch.setattr(scalp, "LIQ_GAP_PENDING", set())
     item = (None, "BTCUSDT_PERP.A", "binance", "long", 1.0, 1.0, 1.0, "e")
     await safe_liq_put(item)  # type: ignore[arg-type]
     await safe_liq_put(item)  # type: ignore[arg-type]
     assert scalp.LIQ_DROPPED == 1
     assert "binance" in scalp.LIQ_LOSS_PENDING
+    assert len(scalp.LIQ_GAP_PENDING) == 1
     assert small_queue.qsize() == 1
 
 

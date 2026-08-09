@@ -25,6 +25,7 @@ from app.ai_context import (
     normalize_profile,
 )
 from app.config import SUPPORTED_SYMBOLS, WS_SYMBOL_MAP, get_settings
+from app.data_gaps import GapRequirement, blocking_requirement_keys
 from app.db import (
     INGEST_COMPONENT_MAX_AGES,
     create_pool,
@@ -220,6 +221,43 @@ def records(rows: list[asyncpg.Record]) -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+async def mask_gapped_series_rows(
+    conn: asyncpg.Connection,
+    rows: list[dict[str, Any]],
+    *,
+    bucket: timedelta,
+    feed: str,
+    exchanges: tuple[str, ...],
+    market: str,
+    symbol: str,
+    value_keys: tuple[str, ...] = (),
+    cumulative_keys: tuple[str, ...] = (),
+) -> None:
+    """Expose gap buckets as null and never continue an incomplete cumulative value."""
+    requirements: list[GapRequirement] = []
+    for index, row in enumerate(rows):
+        start = row.get("bucket")
+        if not isinstance(start, datetime):
+            continue
+        for exchange in exchanges:
+            requirements.append(
+                GapRequirement(
+                    str(index), feed, exchange, market, symbol, start, start + bucket,
+                )
+            )
+    blocked_indexes = sorted(
+        int(key) for key in await blocking_requirement_keys(conn, requirements)
+    )
+    for index in blocked_indexes:
+        row = rows[index]
+        for value_key in value_keys:
+            row[value_key] = None
+    if blocked_indexes:
+        for row in rows[blocked_indexes[0] :]:
+            for cumulative_key in cumulative_keys:
+                row[cumulative_key] = None
+
+
 async def latest_snapshot(conn: asyncpg.Connection, symbol: str) -> dict[str, Any] | None:
     row = await conn.fetchrow(
         "SELECT * FROM metrics_snapshot WHERE symbol=$1 ORDER BY ts DESC LIMIT 1", symbol
@@ -412,7 +450,19 @@ async def cvd(
             bucket,
             limit,
         )
-    return records(rows)
+        result = records(rows)
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+            value_keys=("delta_usd",),
+            cumulative_keys=("cvd",),
+        )
+    return result
 
 
 @app.get("/api/cvd/spot")
@@ -441,7 +491,19 @@ async def cvd_spot(
             bucket,
             limit,
         )
-    return records(rows)
+        result = records(rows)
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="spot_trades",
+            exchanges=("binance", "bybit", "combined"),
+            market="spot",
+            symbol=ws_symbol,
+            value_keys=("delta_usd",),
+            cumulative_keys=("cvd",),
+        )
+    return result
 
 
 @app.get("/api/cvd/divergence")
@@ -493,7 +555,28 @@ async def cvd_divergence(
             bucket,
             limit,
         )
-    return records(rows)
+        result = records(rows)
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+            cumulative_keys=("cvd_fut", "cvd_diff"),
+        )
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="spot_trades",
+            exchanges=("binance", "bybit", "combined"),
+            market="spot",
+            symbol=ws_symbol,
+            cumulative_keys=("cvd_spot", "cvd_diff"),
+        )
+    return result
 
 
 @app.get("/api/oi")

@@ -9,6 +9,7 @@ import asyncpg
 
 from app.breakout import breakout_read
 from app.config import SPOT_HISTORY_MAP, WS_SYMBOL_MAP
+from app.data_gaps import GapRequirement, blocking_requirement_keys
 from app.interpretation import (
     BARRIER_INTRADAY_TARGET_BARS,
     MARKET_MEMORY_DAYS,
@@ -2309,10 +2310,37 @@ async def spot_flow_windows(
         labels,
         seconds,
     )
+    now = datetime.now(UTC)
+    requirements: list[GapRequirement] = []
+    for label, window_seconds in windows:
+        start = now - timedelta(seconds=window_seconds)
+        for exchange in ("binance", "bybit"):
+            requirements.append(
+                GapRequirement(
+                    f"{label}:{exchange}", "spot_trades", exchange, "spot", symbol,
+                    start, now,
+                )
+            )
+        for exchange in ("binance", "bybit", "combined"):
+            requirements.append(
+                GapRequirement(
+                    f"{label}:combined", "spot_trades", exchange, "spot", symbol,
+                    start, now,
+                )
+            )
+    blocked = await blocking_requirement_keys(conn, requirements)
     result: dict[str, dict[str, dict[str, Any]]] = {label: {} for label in labels}
     for row in rows:
         item = dict(row)
-        complete = bool(item.get("complete"))
+        gap_key = f"{item['horizon']}:{item['exchange']}"
+        explicit_gap = gap_key in blocked
+        complete = bool(item.get("complete")) and not explicit_gap
+        item["complete"] = complete
+        if explicit_gap:
+            item["delta"] = None
+            item["volume"] = None
+            item["trades"] = None
+            item["gap_reason"] = "data_gap"
         item["coverage_status"] = (
             "complete"
             if complete
@@ -2367,6 +2395,24 @@ async def cvd_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     now = datetime.now(UTC)
     rt_fut, rtf_lo, rtf_hi = await _cvd_src(conn, "futures_trades_realtime", symbol, False)
     spot_flows = await spot_flow_windows(conn, ws, _CVD_WINDOWS)
+    futures_requirements: list[GapRequirement] = []
+    for label, seconds in _CVD_WINDOWS:
+        start = now - timedelta(seconds=seconds)
+        for exchange in ("binance", "bybit"):
+            futures_requirements.append(
+                GapRequirement(
+                    f"{label}:{exchange}", "futures_trades", exchange, "perpetual",
+                    symbol, start, now,
+                )
+            )
+        for exchange in ("binance", "bybit", "combined"):
+            futures_requirements.append(
+                GapRequirement(
+                    f"{label}:combined", "futures_trades", exchange, "perpetual",
+                    symbol, start, now,
+                )
+            )
+    blocked_futures = await blocking_requirement_keys(conn, futures_requirements)
 
     def obs(lo):
         return (now - lo).total_seconds() if lo else 0.0
@@ -2399,7 +2445,9 @@ async def cvd_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
         sgap = spot_combined.get("end_gap_seconds")
         ssource = spot_combined.get("source")
         sreason = (
-            None
+            "data_gap"
+            if spot_combined.get("gap_reason") == "data_gap"
+            else None
             if spot_complete
             else (
                 "missing_recent_bucket"
@@ -2410,8 +2458,12 @@ async def cvd_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
         f = s = None
         if fsrc is not None:
             fd, fn = get(fsrc, "combined", lab)
-            f = fd if fn > 0 else None
-            freason = "missing_recent_bucket" if fn == 0 else None
+            f = fd if fn > 0 and f"{lab}:combined" not in blocked_futures else None
+            freason = (
+                "data_gap"
+                if f"{lab}:combined" in blocked_futures
+                else ("missing_recent_bucket" if fn == 0 else None)
+            )
         if spot_complete and spot_combined.get("source_rows"):
             s = as_float(spot_combined.get("delta"))
         by_venue = {}
@@ -2419,7 +2471,10 @@ async def cvd_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             fv, fvn = get(fsrc, v, lab) if fsrc is not None else (None, 0)
             spot_venue = spot_window.get(v) or {}
             sv = as_float(spot_venue.get("delta")) if spot_venue.get("complete") else None
-            by_venue[v] = {"spot": sv, "futures": fv if fvn > 0 else None}
+            by_venue[v] = {
+                "spot": sv,
+                "futures": fv if fvn > 0 and f"{lab}:{v}" not in blocked_futures else None,
+            }
         windows[lab] = {
             "window": lab,
             "window_seconds": sec,
@@ -3476,8 +3531,29 @@ async def _realtime_flow(
         seconds,
     )
     item = dict(row) if row else {}
+    now = datetime.now(UTC)
+    feed = "spot_trades" if table == "spot_trades_realtime" else "futures_trades"
+    market = "spot" if table == "spot_trades_realtime" else "perpetual"
+    blocked = await blocking_requirement_keys(
+        conn,
+        [
+            GapRequirement(
+                "flow", feed, exchange, market, symbol,
+                now - timedelta(seconds=seconds), now,
+            )
+            for exchange in ("binance", "bybit", "combined")
+        ],
+    )
     item["max_gap_seconds"] = await max_internal_gap(conn, table, symbol, "combined", seconds)
-    item["complete"] = bool(item.get("span_ok")) and not _gap_too_large(item["max_gap_seconds"])
+    item["complete"] = bool(item.get("span_ok")) and not _gap_too_large(
+        item["max_gap_seconds"]
+    )
+    item["complete"] = item["complete"] and "flow" not in blocked
+    if "flow" in blocked:
+        item["delta"] = None
+        item["volume"] = None
+        item["trades"] = None
+        item["gap_reason"] = "data_gap"
     item["delta"] = as_float(item.get("delta"))
     item["volume"] = as_float(item.get("volume"))
     item["trades"] = int(item["trades"]) if item.get("trades") is not None else None
