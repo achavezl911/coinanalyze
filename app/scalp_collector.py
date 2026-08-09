@@ -64,6 +64,12 @@ BINANCE_BOOK_RECONNECT_TOTAL = 0
 WS_RECONNECT_INITIAL_SECONDS = 5.0
 WS_RECONNECT_MAX_SECONDS = 60.0
 
+LIQUIDATION_INSERT_SQL = """
+INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+ON CONFLICT(exchange,event_id,ts) DO NOTHING
+"""
+
 
 class BookResyncRequired(RuntimeError):
     pass
@@ -852,11 +858,7 @@ async def flush_liquidations(
             async with pool.acquire() as conn:
                 async with fenced_transaction(conn, ownership):
                     await conn.executemany(
-                        """
-                        INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id)
-                        VALUES($1,$2,$3,$4,$5,$6,$7,$8)
-                        ON CONFLICT(exchange,event_id) DO NOTHING
-                        """,
+                        LIQUIDATION_INSERT_SQL,
                         buffer,
                     )
                     LAST_FLUSH["liquidations"] = time.monotonic()
