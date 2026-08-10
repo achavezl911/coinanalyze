@@ -381,6 +381,10 @@ PR4/PR5/PR6 data untouched.
 
 ## Next
 
-PR9 should analyze **regime dependence** of validated signal/component behavior
-without changing the live model. PR11 remains the point where alternative model
-choices are evaluated out of sample.
+PR9 regime-dependence analysis is implemented in
+[`SIGNAL_REGIMES.md`](SIGNAL_REGIMES.md).
+
+It conditions PR7 signal performance and PR8 component attribution on the
+immutable decision-time `regime_score` / `regime_label` provenance captured by
+PR4, without changing the live model. PR11 remains the point where alternative
+model choices are evaluated out of sample.
