@@ -32,6 +32,7 @@ from app.logging_setup import configure_logging
 from app.partitioning import apply_temporal_retention
 from app.scalp_logic import compute_scalp_summary, scalp_context
 from app.sharding import assigned_symbols
+from app.signal_ledger import persist_signal_observations
 
 LOGGER = logging.getLogger(__name__)
 SETTINGS = get_settings()
@@ -438,7 +439,7 @@ LAST_TRADE_EVENT = {
     for symbol in ACTIVE_SYMBOLS
     for exchange in ("binance", "bybit")
 }
-LAST_FLUSH = {"trades": 0.0, "books": 0.0, "liquidations": 0.0, "signals": 0.0}
+LAST_FLUSH = {"trades": 0.0, "books": 0.0, "liquidations": 0.0, "signals": 0.0, "ledger": 0.0}
 LIQ_DROPPED = 0
 LIQ_FEED_CONNECTED = {"binance": False, "bybit": False}
 LIQ_LOSS_PENDING: dict[str, datetime] = {}
@@ -1228,6 +1229,7 @@ async def persist_scalp_signals(
             async with pool.acquire() as conn:
                 async with fenced_transaction(conn, ownership):
                     records: list[tuple[object, ...]] = []
+                    ledger_ok = True
                     for symbol in ACTIVE_SYMBOLS:
                         ctx = await scalp_context(conn, symbol)
                         summary = compute_scalp_summary(ctx)
@@ -1251,6 +1253,29 @@ async def persist_scalp_signals(
                                 summary.get("absorption"),
                             )
                         )
+                        try:
+                            # Savepoint: a ledger-only defect must not roll back the
+                            # operational snapshot. The outer fenced transaction still
+                            # holds the ServiceOwnership generation lock.
+                            async with conn.transaction():
+                                await persist_signal_observations(
+                                    conn,
+                                    symbol,
+                                    ctx,
+                                    summary,
+                                    collector_generation=(
+                                        ownership.generation if ownership else None
+                                    ),
+                                    collector_shard_index=SETTINGS.COLLECTOR_SHARD_INDEX,
+                                    collector_shard_count=SETTINGS.COLLECTOR_SHARD_COUNT,
+                                )
+                        except ServiceOwnershipLost:
+                            raise
+                        except Exception:
+                            ledger_ok = False
+                            LOGGER.exception(
+                                "signal_ledger_persist_failed symbol=%s", symbol
+                            )
                     await conn.executemany(
                         """
                         INSERT INTO scalp_signal_snapshot(
@@ -1262,6 +1287,8 @@ async def persist_scalp_signals(
                         """,
                         records,
                     )
+                    if ledger_ok:
+                        LAST_FLUSH["ledger"] = time.monotonic()
                     LAST_FLUSH["signals"] = time.monotonic()
         except ServiceOwnershipLost:
             raise
@@ -1304,6 +1331,7 @@ async def monitor(
         flush_ok = (
             0 <= flush_lags.get("trades", -1) < 30
             and 0 <= flush_lags.get("books", -1) < 30
+            and 0 <= flush_lags.get("ledger", -1) < max(90, SETTINGS.SCALP_SIGNAL_INTERVAL_SECONDS * 4)
             and 0 <= flush_lags.get("signals", -1) < max(90, SETTINGS.SCALP_SIGNAL_INTERVAL_SECONDS * 4)
         )
         queue_ok = LIQ_QUEUE.qsize() < int(LIQ_QUEUE.maxsize * 0.8)
