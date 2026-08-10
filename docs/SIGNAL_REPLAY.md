@@ -205,14 +205,9 @@ non-replayable; PR6 must not manufacture those contexts after redeploy.
 
 ## PR7
 
-PR7 backtesting should consume:
+PR7 is implemented in [`SIGNAL_BACKTESTING.md`](SIGNAL_BACKTESTING.md).
 
-```text
-signal_observation (periodic baseline)
-        +
-signal_replay_frame (decision-time inputs)
-        +
-signal_outcome (forward labels)
-```
-
-and never query later market state to recreate the historical decision input.
+It consumes the replayable periodic PR4 corpus plus PR5 outcomes, isolates all
+research versions explicitly, reports both dense and deterministic UTC
+non-overlapping sampling views, and never queries later market state to recreate
+historical decision input.
