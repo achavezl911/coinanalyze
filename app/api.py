@@ -332,7 +332,7 @@ async def daily_data(
         )
         SELECT s.session_date,s.symbol,s.cvd_spot_usd,s.cvd_fut_usd,s.cvd_diff_usd,
                s.cvd_fut_2v_usd,s.cvd_diff_2v_usd,s.cvd_fut_2v_minutes,
-               s.inst_delta_usd,s.price_open,s.price_close,s.price_chg_pct,
+               s.inst_delta_usd,s.price_open,s.price_high,s.price_low,s.price_close,s.price_chg_pct,
                s.oi_open,s.oi_close,s.oi_chg_usd,s.fr_avg,
                s.volume_usd,s.long_liq_usd,s.short_liq_usd,
                SUM(s.cvd_diff_usd) OVER (ORDER BY s.session_date) AS cumulative_diff,

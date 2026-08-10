@@ -3156,7 +3156,7 @@ function renderSwing(result) {
 function flowQuadrant(row) {
   const spot = asNumber(row.cvd_spot_usd);
   const futures = asNumber(row.cvd_fut_usd);
-  if (spot === null || futures === null || spot === 0 || futures === 0) return { key: 'sd', label: '\u2014', color: '#5b6673', cls: 'neutral' };
+  if (spot === null || futures === null || spot === 0 || futures === 0) return { key: 'sd', label: '—', color: '#5b6673', cls: 'neutral' };
   if (spot > 0 && futures > 0) return { key: 'ambos_compran', label: 'Ambos compraron', color: COLORS.green, cls: 'positive' };
   if (spot < 0 && futures < 0) return { key: 'ambos_venden', label: 'Ambos vendieron', color: COLORS.red, cls: 'negative' };
   if (spot > 0) return { key: 'spot_compra', label: 'Spot compró · futuros vendieron', color: COLORS.cyan, cls: 'neutral' };
@@ -3173,60 +3173,231 @@ const SESSION_RESPONSE = {
 function sessionResponse(row) {
   return SESSION_RESPONSE[row.price_response] || { label: '—', cls: 'neutral', detail: 'Sin datos suficientes para comparar flujo y respuesta del precio.' };
 }
+
+// OHLC de LA MISMA sesión que alimenta la barra de flujo. Una vela incompleta o
+// geométricamente imposible se omite: nunca se rellena con 0, close, nearest ni interpolación.
+function sessionOhlc(row) {
+  const open = asNumber(row && row.price_open);
+  const high = asNumber(row && row.price_high);
+  const low = asNumber(row && row.price_low);
+  const close = asNumber(row && row.price_close);
+  const values = [open, high, low, close];
+  if (values.some(value => value === null || value <= 0)) return null;
+  if (high < low || high < open || high < close || low > open || low > close) return null;
+  return { open, high, low, close };
+}
+
+// Escala común para las 24 sesiones visibles. Solo participan velas OHLC completas.
+// El padding es exclusivamente visual; no crea muestras ni altera los precios.
+function sessionPriceDomain(rows) {
+  const candles = safeArray(rows).map(sessionOhlc);
+  const valid = candles.filter(candle => candle !== null);
+  if (!valid.length) return null;
+  const observedLow = Math.min(...valid.map(candle => candle.low));
+  const observedHigh = Math.max(...valid.map(candle => candle.high));
+  const observedSpan = observedHigh - observedLow;
+  const reference = Math.max(Math.abs(observedLow), Math.abs(observedHigh), 1);
+  const pad = observedSpan > 0 ? observedSpan * 0.08 : reference * 0.005;
+  return {
+    min: observedLow - pad,
+    max: observedHigh + pad,
+    observed_low: observedLow,
+    observed_high: observedHigh,
+    present: valid.length,
+    missing: candles.length - valid.length,
+  };
+}
+
+function appendSessionColumnGuides(svg, count, NS) {
+  if (!count) return;
+  const width = 100 / count;
+  for (let index = 1; index < count; index++) {
+    const guide = document.createElementNS(NS, 'line');
+    const x = index * width;
+    guide.setAttribute('x1', String(x));
+    guide.setAttribute('y1', '0');
+    guide.setAttribute('x2', String(x));
+    guide.setAttribute('y2', '100');
+    guide.setAttribute('class', 'session-column-guide');
+    svg.append(guide);
+  }
+}
+
 function renderDailyBars(daily) {
   const b = $('dailybars-body');
   if (!b) return;
   const rows = safeArray(daily && daily.rows).slice(-24);
   if (!rows.length) { b.replaceChildren(); return; }
-  // Las sesiones sin CVD no participan en la normalizacion (un 0 fabricado no debe ser el
-  // maximo de nadie) y mas abajo tampoco dibujan barra: el hueco se ve como hueco.
-  const magnitudes = rows.map(r => ({ spot: asNumber(r.cvd_spot_usd), futures: asNumber(r.cvd_fut_usd) }));
+
+  const n = rows.length;
+  const W = 100 / n;
+  const NS = 'http://www.w3.org/2000/svg';
+  const priceDomain = sessionPriceDomain(rows);
+
+  // ---------------- precio OHLC ----------------
+  // Es un track independiente, pero usa EXACTAMENTE los mismos n slots que el flujo.
+  // Por eso vela i y barra i representan la misma session_date sin hacer joins en frontend.
+  const stack = document.createElement('div');
+  stack.className = 'session-map-stack';
+
+  const priceTrack = document.createElement('section');
+  priceTrack.className = 'session-map-track session-price-track';
+  const priceHead = document.createElement('div');
+  priceHead.className = 'session-map-track-head';
+  const priceLabel = document.createElement('strong');
+  priceLabel.textContent = 'Precio por sesión';
+  const priceMeta = document.createElement('span');
+  priceMeta.textContent = priceDomain
+    ? `OHLC 09:30 ET → 09:30 ET · rango ${money(priceDomain.observed_low, 2)} – ${money(priceDomain.observed_high, 2)} · ${priceDomain.present}/${n} completas`
+    : 'OHLC 09:30 ET → 09:30 ET · sin velas completas';
+  priceHead.append(priceLabel, priceMeta);
+  priceTrack.append(priceHead);
+
+  if (priceDomain) {
+    const priceSvg = document.createElementNS(NS, 'svg');
+    priceSvg.setAttribute('viewBox', '0 0 100 100');
+    priceSvg.setAttribute('preserveAspectRatio', 'none');
+    priceSvg.setAttribute('width', '100%');
+    priceSvg.setAttribute('height', '102');
+    priceSvg.setAttribute('class', 'session-price-svg');
+    priceSvg.setAttribute('role', 'img');
+    priceSvg.setAttribute('aria-label', 'Precio OHLC por sesión, alineado con el flujo inferior');
+    appendSessionColumnGuides(priceSvg, n, NS);
+
+    const scaleSpan = priceDomain.max - priceDomain.min;
+    const yOf = price => 94 - ((price - priceDomain.min) / scaleSpan) * 88;
+
+    rows.forEach((row, index) => {
+      const candle = sessionOhlc(row);
+      if (!candle) return;
+      const iso = String(row.session_date || '');
+      const q = flowQuadrant(row);
+      const response = sessionResponse(row);
+      const centerX = (index + 0.5) * W;
+      const bodyWidth = Math.max(0.45, W * 0.48);
+      const openY = yOf(candle.open);
+      const closeY = yOf(candle.close);
+      const highY = yOf(candle.high);
+      const lowY = yOf(candle.low);
+      const rawBodyHeight = Math.abs(closeY - openY);
+      const bodyHeight = Math.max(rawBodyHeight, 1.25);
+      const bodyCenterY = (openY + closeY) / 2;
+      const bodyY = Math.min(94 - bodyHeight, Math.max(6, bodyCenterY - bodyHeight / 2));
+      const direction = candle.close > candle.open ? 'up' : candle.close < candle.open ? 'down' : 'flat';
+
+      const group = document.createElementNS(NS, 'g');
+      group.setAttribute('class', `session-price-candle ${direction}`);
+      group.setAttribute('data-session-date', iso);
+
+      const wick = document.createElementNS(NS, 'line');
+      wick.setAttribute('x1', String(centerX));
+      wick.setAttribute('x2', String(centerX));
+      wick.setAttribute('y1', String(highY));
+      wick.setAttribute('y2', String(lowY));
+      wick.setAttribute('class', 'session-price-wick');
+
+      const body = document.createElementNS(NS, 'rect');
+      body.setAttribute('x', String(centerX - bodyWidth / 2));
+      body.setAttribute('y', String(bodyY));
+      body.setAttribute('width', String(bodyWidth));
+      body.setAttribute('height', String(bodyHeight));
+      body.setAttribute('class', 'session-price-body');
+
+      const tip = document.createElementNS(NS, 'title');
+      const sessionReturn = (candle.close / candle.open - 1) * 100;
+      tip.textContent = `${iso} · OHLC de la misma sesión`
+        + `\nO ${money(candle.open, 2)} · H ${money(candle.high, 2)} · L ${money(candle.low, 2)} · C ${money(candle.close, 2)}`
+        + `\nRetorno ${pct(sessionReturn)}`
+        + `\nFlujo ${q.label}`
+        + `\nRespuesta ${response.label}`;
+      group.append(wick, body, tip);
+      priceSvg.append(group);
+    });
+    priceTrack.append(priceSvg);
+  } else {
+    const empty = document.createElement('div');
+    empty.className = 'session-map-empty';
+    empty.textContent = 'Precio OHLC no disponible para estas sesiones. No se dibuja una línea ni velas sintéticas.';
+    priceTrack.append(empty);
+  }
+
+  // ---------------- flujo spot/futuros ----------------
+  const flowTrack = document.createElement('section');
+  flowTrack.className = 'session-map-track session-flow-track';
+  const flowHead = document.createElement('div');
+  flowHead.className = 'session-map-track-head';
+  const flowLabel = document.createElement('strong');
+  flowLabel.textContent = 'Flujo spot / futuros';
+  const flowMeta = document.createElement('span');
+  flowMeta.textContent = 'Mismas columnas y fechas que el precio superior';
+  flowHead.append(flowLabel, flowMeta);
+
+  const magnitudes = rows.map(r => ({
+    spot: asNumber(r.cvd_spot_usd),
+    futures: asNumber(r.cvd_fut_usd),
+  }));
   const spotMax = Math.max(1, ...magnitudes.filter(m => m.spot !== null).map(m => Math.abs(m.spot)));
   const futuresMax = Math.max(1, ...magnitudes.filter(m => m.futures !== null).map(m => Math.abs(m.futures)));
   const strengths = magnitudes.map(m => (m.spot === null && m.futures === null ? null : Math.max(
     m.spot === null ? 0 : Math.abs(m.spot) / spotMax,
     m.futures === null ? 0 : Math.abs(m.futures) / futuresMax,
   )));
-  const n = rows.length, W = 100 / n;
   const counts = { ambos_compran: 0, ambos_venden: 0, spot_compra: 0, futuros_compran: 0, sd: 0 };
-  // Se construye con DOM y no con innerHTML: las fechas y etiquetas vienen de la API y
-  // acaban dentro de <title>, asi que interpolarlas en una plantilla seria inyectar HTML.
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 100 100');
-  svg.setAttribute('preserveAspectRatio', 'none');
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '110');
+
+  const flowSvg = document.createElementNS(NS, 'svg');
+  flowSvg.setAttribute('viewBox', '0 0 100 100');
+  flowSvg.setAttribute('preserveAspectRatio', 'none');
+  flowSvg.setAttribute('width', '100%');
+  flowSvg.setAttribute('height', '110');
+  flowSvg.setAttribute('class', 'session-flow-svg');
+  flowSvg.setAttribute('role', 'img');
+  flowSvg.setAttribute('aria-label', 'Flujo spot y futuros por sesión');
+  appendSessionColumnGuides(flowSvg, n, NS);
+
   const zero = document.createElementNS(NS, 'line');
   for (const [k, val] of [['x1', 0], ['y1', 50], ['x2', 100], ['y2', 50]]) zero.setAttribute(k, String(val));
-  zero.setAttribute('stroke', '#243040');
-  zero.setAttribute('stroke-width', '0.4');
-  svg.append(zero);
-  // Las fechas van en HTML aparte: el SVG usa preserveAspectRatio="none", que estira el
-  // eje X varias veces y deformaria cualquier texto puesto dentro.
+  zero.setAttribute('class', 'session-flow-zero');
+  flowSvg.append(zero);
+
+  // Las fechas van en HTML aparte: preserveAspectRatio="none" deformaría texto SVG.
   const dates = document.createElement('div');
   dates.className = 'bars-dates';
   dates.style.gridTemplateColumns = `repeat(${n}, minmax(0, 1fr))`;
+
   for (let i = 0; i < n; i++) {
-    const row = rows[i], q = flowQuadrant(row);
+    const row = rows[i];
+    const q = flowQuadrant(row);
+    const response = sessionResponse(row);
     counts[q.key] += 1;
-    const iso = String(rows[i].session_date || '');
+    const iso = String(row.session_date || '');
     const spotUsd = magnitudes[i].spot;
-    // Sin CVD no hay barra que dibujar. Antes `Number(null) >= 0` daba true y la sesion
-    // ausente se pintaba como una barra de compra spot pegada al eje.
+
+    // Sin CVD spot no hay barra direccional. Nunca Number(null) -> 0.
     if (strengths[i] !== null && spotUsd !== null) {
-      const hh = strengths[i] * 46, y = spotUsd >= 0 ? (50 - hh) : 50;
+      const hh = strengths[i] * 46;
+      const y = spotUsd >= 0 ? (50 - hh) : 50;
       const rect = document.createElementNS(NS, 'rect');
       rect.setAttribute('x', String(i * W + 0.4));
       rect.setAttribute('y', String(y));
       rect.setAttribute('width', String(W - 0.8));
       rect.setAttribute('height', String(hh));
       rect.setAttribute('fill', q.color);
+      rect.setAttribute('class', `session-flow-bar ${q.key}`);
+      rect.setAttribute('data-session-date', iso);
+
+      const candle = sessionOhlc(row);
+      const priceDetail = candle
+        ? `OHLC ${money(candle.open, 2)} / ${money(candle.high, 2)} / ${money(candle.low, 2)} / ${money(candle.close, 2)}`
+        : 'OHLC N/D';
       const tip = document.createElementNS(NS, 'title');
-      tip.textContent = `${iso} · ${q.label}\nSpot ${money(row.cvd_spot_usd)} · Fut ${money(row.cvd_fut_usd)} · Precio ${pct(row.price_chg_pct)}`;
+      tip.textContent = `${iso} · ${q.label}`
+        + `\nSpot ${money(row.cvd_spot_usd)} · Fut ${money(row.cvd_fut_usd)}`
+        + `\n${priceDetail} · retorno ${pct(row.price_chg_pct)}`
+        + `\n${response.label}: ${response.detail}`;
       rect.append(tip);
-      svg.append(rect);
+      flowSvg.append(rect);
     }
+
     const cell = document.createElement('span');
     cell.title = iso;
     const long = document.createElement('b');
@@ -3238,26 +3409,39 @@ function renderDailyBars(daily) {
     cell.append(long, short);
     dates.append(cell);
   }
+
+  flowTrack.append(flowHead, flowSvg);
+  stack.append(priceTrack, flowTrack);
+
   const legend = document.createElement('div');
   legend.className = 'bars-legend';
-  for (const [key, text] of [['ambos_compran', 'Ambos compraron'], ['ambos_venden', 'Ambos vendieron'], ['spot_compra', 'Spot compró / futuros vendieron'], ['futuros_compran', 'Spot vendió / futuros compraron']]) {
+  for (const [key, text] of [
+    ['ambos_compran', 'Ambos compraron'],
+    ['ambos_venden', 'Ambos vendieron'],
+    ['spot_compra', 'Spot compró / futuros vendieron'],
+    ['futuros_compran', 'Spot vendió / futuros compraron'],
+  ]) {
     const item = document.createElement('span');
     const dot = document.createElement('i');
     dot.style.background = QUADRANT_COLOR[key];
     item.append(dot, `${text}: ${counts[key]}`);
     legend.append(item);
   }
+
   const caption = document.createElement('div');
   caption.className = 'bars-caption';
-  const first = String(rows[0].session_date || ''), last = String(rows[n - 1].session_date || '');
-  caption.textContent = `Sobre el eje = spot comprador; bajo el eje = spot vendedor. La altura compara cada pata contra su propio máximo de 24 sesiones para que el mayor volumen del perp no oculte al spot. El color muestra si futuros acompañó o se opuso; no etiqueta acumulación institucional. ${n} sesiones, ${first} a ${last}.`;
-  // replaceChildren y no append: refresh() repinta cada 15 s y con append se apilaba
-  // un gr\u00e1fico nuevo encima del anterior en cada ciclo.
-  b.replaceChildren(svg, dates, legend, caption);
-  const sub = $('dailybars-sub');
-  if (sub) sub.textContent = `${counts.ambos_compran} compra conjunta · ${counts.ambos_venden} venta conjunta · ${counts.spot_compra + counts.futuros_compran} desacuerdo`;
-}
+  const first = String(rows[0].session_date || '');
+  const last = String(rows[n - 1].session_date || '');
+  caption.textContent = `Mapeo 1:1: cada vela superior y cada barra inferior comparten exactamente la misma columna y session_date (09:30 ET → 09:30 ET). `
+    + `La vela muestra la respuesta REAL del precio; el color del flujo no la predice. `
+    + `Sobre el eje = spot comprador; bajo el eje = spot vendedor. La altura del flujo compara cada pata contra su propio máximo de 24 sesiones para que el mayor volumen del perp no oculte al spot. `
+    + `El color indica si futuros acompañó o se opuso; no etiqueta acumulación institucional. ${n} sesiones, ${first} a ${last}.`;
 
+  // Un solo eje de fechas debajo de ambos tracks deja inequívoco el mapeo columna a columna.
+  b.replaceChildren(stack, dates, legend, caption);
+  const sub = $('dailybars-sub');
+  if (sub) sub.textContent = `${counts.ambos_compran} compra conjunta · ${counts.ambos_venden} venta conjunta · ${counts.spot_compra + counts.futuros_compran} desacuerdo · OHLC ${priceDomain ? `${priceDomain.present}/${n}` : '0/' + n}`;
+}
 function renderDivergences(result) {
   const body = $('divergence-body');
   if (!body) return;
