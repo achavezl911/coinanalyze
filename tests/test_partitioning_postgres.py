@@ -242,14 +242,22 @@ def _scan_relations(plan: dict[str, object]) -> set[str]:
 
 
 def test_supported_deployment_path_includes_the_real_partition_migration() -> None:
+    # schema.sql must be self-contained: the production deploy wrapper
+    # (deploy-coinalyze, outside this repo) copies ONLY schema.sql to a
+    # scratch path before running `psql -f` on it -- no sibling
+    # sql/migrations/ directory exists there. A relative \ir include would
+    # silently fail to find its target in that environment (psql exits 0 on
+    # a missing \ir target, so ON_ERROR_STOP does not catch it), which would
+    # make the deploy wrapper report success while the real partition
+    # migration never ran. The migration is inlined directly instead.
     schema = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
     update = (ROOT / "scripts/update.sh").read_text(encoding="utf-8")
-    include = r"\ir migrations/20260809_temporal_partitioning.sql"
 
-    assert include in schema
-    assert schema.index("COMMIT;", schema.index("SELECT ensure_temporal_partitions();")) < schema.index(
-        include
-    )
+    assert r"\ir migrations/20260809_temporal_partitioning.sql" not in schema
+    assert MIGRATION.strip() in schema
+    assert schema.index(
+        "SELECT ensure_temporal_partitions();"
+    ) < schema.index(MIGRATION.strip())
     assert "sql/migrations/20260809_temporal_partitioning.sql" in update
     assert "sql/migrations/20260809_temporal_partitioning.down.sql" in update
 
