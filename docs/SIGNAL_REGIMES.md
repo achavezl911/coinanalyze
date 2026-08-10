@@ -447,6 +447,10 @@ untouched.
 
 ## Next
 
-PR10 should add **execution-cost modeling** so raw signal edge can be compared
-against spread/slippage/fees without contaminating PR7-PR9 gross research
-metrics.
+PR10 execution-cost modeling is implemented in
+[`SIGNAL_EXECUTION_COSTS.md`](SIGNAL_EXECUTION_COSTS.md).
+
+It prospectively freezes venue-specific taker cost curves at observation time
+because `orderbook_depth` is current-state only, then overlays those measured
+entry costs and explicit fee scenarios on PR5 gross outcomes without changing
+PR7-PR9 gross research metrics.
