@@ -17,7 +17,7 @@ from app.coinalyze import (
     validate_rate_budget,
 )
 from app.config import BYBIT_SYMBOL_MAP, Settings, get_settings
-from app.cutoffs import ClosedCutoff
+from app.cutoffs import OHLCV_1M_REFRESH_LOOKBACK_SECONDS, ClosedCutoff
 from app.db import (
     INGEST_COMPONENT_MAX_AGES,
     ServiceOwnership,
@@ -369,7 +369,7 @@ async def ingest_ohlcv_cycle(
     cutoff = ClosedCutoff.at(now_utc, 60)
     metrics_cutoff = ClosedCutoff.at(now_utc, 300)
     end_ts = cutoff.api_end_ts
-    start_ohlcv = cutoff.boundary_ts - 40 * 60
+    start_ohlcv = cutoff.boundary_ts - OHLCV_1M_REFRESH_LOOKBACK_SECONDS
     symbols = tuple(settings.SYMBOLS)
     identity = {symbol: symbol for symbol in symbols}
     ohlcv = await client.history(
