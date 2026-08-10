@@ -658,6 +658,51 @@ WHERE obs.is_periodic OR (obs.is_transition AND obs.actionable)
 ON CONFLICT(observation_id,horizon_minutes) DO NOTHING;
 -- PR5_SIGNAL_OUTCOMES_END
 
+-- PR6_SIGNAL_REPLAY_BEGIN
+-- Decision-time inputs for deterministic signal replay. This is deliberately
+-- forward-only: historical context is never reconstructed after the fact from
+-- corrected/recovered market data or current-state health tables.
+CREATE TABLE IF NOT EXISTS signal_replay_frame (
+    frame_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    observation_id bigint NOT NULL UNIQUE
+        REFERENCES signal_observation(observation_id) ON DELETE RESTRICT,
+    context_version smallint NOT NULL CHECK (context_version >= 1),
+    context_as_of timestamptz NOT NULL,
+    context_hash text NOT NULL
+        CHECK (context_hash ~ '^[0-9a-f]{64}$'),
+    context jsonb NOT NULL CHECK (jsonb_typeof(context) = 'object'),
+    created_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+CREATE INDEX IF NOT EXISTS signal_replay_frame_asof_idx
+    ON signal_replay_frame(context_as_of DESC);
+CREATE INDEX IF NOT EXISTS signal_replay_frame_asof_brin_idx
+    ON signal_replay_frame USING brin(context_as_of);
+
+CREATE OR REPLACE FUNCTION reject_signal_replay_frame_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'signal_replay_frame is append-only; % is not allowed', TG_OP
+        USING ERRCODE = '55000';
+    RETURN NULL;
+END
+$$;
+
+DROP TRIGGER IF EXISTS signal_replay_frame_no_update_delete ON signal_replay_frame;
+CREATE TRIGGER signal_replay_frame_no_update_delete
+BEFORE UPDATE OR DELETE ON signal_replay_frame
+FOR EACH ROW EXECUTE FUNCTION reject_signal_replay_frame_mutation();
+
+DROP TRIGGER IF EXISTS signal_replay_frame_no_truncate ON signal_replay_frame;
+CREATE TRIGGER signal_replay_frame_no_truncate
+BEFORE TRUNCATE ON signal_replay_frame
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_replay_frame_mutation();
+
+-- No INSERT ... SELECT backfill belongs here. A replay frame is truthful only
+-- when the exact live scalp_context was captured at decision time.
+-- PR6_SIGNAL_REPLAY_END
+
 CREATE TABLE IF NOT EXISTS metrics_snapshot (
     ts timestamptz NOT NULL DEFAULT now(),
     symbol text NOT NULL REFERENCES symbols(symbol),

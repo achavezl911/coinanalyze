@@ -148,3 +148,9 @@ PR4 pretende preservar.
 PR5 quedó implementado en [`SIGNAL_OUTCOMES.md`](SIGNAL_OUTCOMES.md).
 Los outcomes se vinculan por `observation_id`; la observación original nunca
 se recalcula ni modifica.
+
+## PR6
+
+PR6 quedó implementado en [`SIGNAL_REPLAY.md`](SIGNAL_REPLAY.md). Cada nueva
+observación PR4 congela también el `scalp_context` exacto que produjo su
+evidencia. No existe backfill de contextos históricos.

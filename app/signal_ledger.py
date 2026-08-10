@@ -9,9 +9,12 @@ from typing import Any
 import asyncpg
 
 from app.signal_outcomes import schedule_signal_outcomes
+from app.signal_replay import (
+    SCALP_SIGNAL_LOGIC_VERSION,
+    persist_signal_replay_frame,
+)
 
 SIGNAL_FAMILY = "scalp"
-SCALP_SIGNAL_LOGIC_VERSION = "scalp-summary-v1"
 SIGNAL_EVIDENCE_VERSION = 1
 SIGNAL_SAMPLING_VERSION = 1
 
@@ -342,6 +345,8 @@ async def persist_signal_observations(
     )
     if row is None:
         return 0
+    observation_id = int(row["observation_id"])
+    await persist_signal_replay_frame(conn, observation_id, ctx)
     if write_periodic or (write_transition and actionable):
-        await schedule_signal_outcomes(conn, int(row["observation_id"]), observed_at)
+        await schedule_signal_outcomes(conn, observation_id, observed_at)
     return 1
