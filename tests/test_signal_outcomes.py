@@ -4,12 +4,19 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from app.cutoffs import OHLCV_1M_REFRESH_LOOKBACK_SECONDS
 from app.signal_outcomes import (
     OUTCOME_SETTLEMENT_LAG,
     compute_path_metrics,
     expected_bar_timestamps,
     outcome_window,
 )
+
+
+def test_settlement_waits_until_ohlcv_revision_window_is_closed() -> None:
+    assert timedelta(
+        seconds=OHLCV_1M_REFRESH_LOOKBACK_SECONDS
+    ) < OUTCOME_SETTLEMENT_LAG
 
 
 def test_outcome_window_starts_at_first_full_minute_after_observation() -> None:

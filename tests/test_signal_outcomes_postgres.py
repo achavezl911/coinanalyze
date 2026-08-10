@@ -11,6 +11,7 @@ import pytest
 from app.signal_outcomes import (
     MISSING_DATA_FINAL_GRACE,
     OUTCOME_HORIZONS_MINUTES,
+    OUTCOME_SETTLEMENT_LAG,
     materialize_due_signal_outcomes,
     outcome_window,
     schedule_signal_outcomes,
@@ -178,6 +179,13 @@ async def test_schema_backfill_and_scheduler_are_idempotent() -> None:
         assert await conn.fetchval(
             "SELECT count(*) FROM signal_outcome WHERE observation_id=$1", oid
         ) == len(OUTCOME_HORIZONS_MINUTES)
+        backfilled = await conn.fetchrow(
+            """SELECT window_end,due_at FROM signal_outcome
+               WHERE observation_id=$1 AND horizon_minutes=3""", oid
+        )
+        assert backfilled["due_at"] == (
+            backfilled["window_end"] + OUTCOME_SETTLEMENT_LAG
+        )
         await conn.execute(OUTCOME_DDL)
         assert await schedule_signal_outcomes(conn, oid, observed) == 0
     finally:

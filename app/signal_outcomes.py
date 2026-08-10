@@ -8,11 +8,17 @@ from typing import Any
 
 import asyncpg
 
+from app.cutoffs import OHLCV_1M_REFRESH_LOOKBACK_SECONDS
 from app.data_gaps import GapRequirement, blocking_requirement_keys
 
 OUTCOME_HORIZONS_MINUTES = (1, 3, 5, 15, 30, 60, 120, 240)
 OUTCOME_VERSION = 1
-OUTCOME_SETTLEMENT_LAG = timedelta(minutes=2)
+# ohlcv-history is re-fetched/upserted for the previous 40 minutes. Final
+# outcome rows are immutable, so settle only after that source revision
+# window has closed, plus the existing 2-minute ingest-delivery buffer.
+OUTCOME_SETTLEMENT_LAG = timedelta(
+    seconds=OHLCV_1M_REFRESH_LOOKBACK_SECONDS, minutes=2
+)
 MISSING_DATA_FINAL_GRACE = timedelta(days=7)
 MISSING_DATA_RETRY = timedelta(minutes=15)
 DEFAULT_BATCH_LIMIT = 128

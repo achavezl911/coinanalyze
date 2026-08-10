@@ -26,8 +26,13 @@ PR4; MFE/MAE sólo describen el path medido posterior.
 ## Fuente y cobertura
 
 Sólo se usa `ohlcv` del mismo futures symbol con `interval='1min'`. El ingest
-actual usa `ClosedCutoff`, así que PR5 espera dos minutos adicionales antes de
-intentar materializar.
+usa `ClosedCutoff`, pero también vuelve a solicitar y hace UPSERT de los 40
+minutos anteriores. Por tanto una vela cerrada todavía puede recibir una
+corrección tardía durante esa ventana. Como un `signal_outcome` final es
+inmutable, PR5 espera esos 40 minutos completos más 2 minutos de buffer
+(`OUTCOME_SETTLEMENT_LAG = 42m`) antes de finalizar. Así no congela como verdad
+histórica una revisión preliminar que el propio ingest todavía considera
+mutable.
 
 Un horizonte N exige exactamente N timestamps consecutivos. Además consulta
 PR3 con la identidad exacta `ohlcv_1min/binance/perpetual/symbol`; cualquier

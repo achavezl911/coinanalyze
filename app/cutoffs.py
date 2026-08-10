@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+OHLCV_1M_REFRESH_LOOKBACK_SECONDS = 40 * 60
+
 
 @dataclass(frozen=True, slots=True)
 class ClosedCutoff:

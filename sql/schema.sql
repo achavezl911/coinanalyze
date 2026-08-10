@@ -642,9 +642,9 @@ SELECT
   date_trunc('minute',obs.observed_at) + interval '1 minute',
   date_trunc('minute',obs.observed_at) + interval '1 minute'
       + make_interval(mins => horizon.minutes),
-  date_trunc('minute',obs.observed_at) + interval '3 minutes'
+  date_trunc('minute',obs.observed_at) + interval '43 minutes'
       + make_interval(mins => horizon.minutes),
-  date_trunc('minute',obs.observed_at) + interval '3 minutes'
+  date_trunc('minute',obs.observed_at) + interval '43 minutes'
       + make_interval(mins => horizon.minutes),
   EXTRACT(EPOCH FROM (
       date_trunc('minute',obs.observed_at) + interval '1 minute' - obs.observed_at
