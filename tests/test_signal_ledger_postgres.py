@@ -21,6 +21,10 @@ OUTCOME_DDL = (
     SCHEMA_SQL.split("-- PR5_SIGNAL_OUTCOMES_BEGIN", 1)[1]
     .split("-- PR5_SIGNAL_OUTCOMES_END", 1)[0]
 )
+REPLAY_DDL = (
+    SCHEMA_SQL.split("-- PR6_SIGNAL_REPLAY_BEGIN", 1)[1]
+    .split("-- PR6_SIGNAL_REPLAY_END", 1)[0]
+)
 
 BASE_SQL = """
 CREATE OR REPLACE FUNCTION finite_float8(value double precision)
@@ -81,6 +85,7 @@ async def _connect_schema(schema: str) -> asyncpg.Connection:
     await conn.execute(BASE_SQL)
     await conn.execute(LEDGER_DDL)
     await conn.execute(OUTCOME_DDL)
+    await conn.execute(REPLAY_DDL)
     return conn
 
 
@@ -121,7 +126,12 @@ async def _persist(
     return await persist_signal_observations(
         conn,
         symbol,
-        {"price": 100.0, "ohlcv_price": 99.0, "fut_event_ms": 1_786_300_000_000},
+        {
+            "now_ms": 1_786_300_001_000.0,
+            "price": 100.0,
+            "ohlcv_price": 99.0,
+            "fut_event_ms": 1_786_300_000_000,
+        },
         summary or _summary(),
         collector_generation=generation,
         collector_shard_index=0,
@@ -141,10 +151,13 @@ async def test_schema_is_ordinary_idempotent_and_preserves_rows() -> None:
         ) == b"r"
         assert await _persist(conn) == 1
         before = await conn.fetchval("SELECT count(*) FROM signal_observation")
+        replay_before = await conn.fetchval("SELECT count(*) FROM signal_replay_frame")
 
         await conn.execute(LEDGER_DDL)
+        await conn.execute(REPLAY_DDL)
 
         assert await conn.fetchval("SELECT count(*) FROM signal_observation") == before
+        assert await conn.fetchval("SELECT count(*) FROM signal_replay_frame") == replay_before
         assert await conn.fetchval(
             """
             SELECT count(*) = 1
@@ -300,10 +313,12 @@ async def test_stale_service_generation_cannot_write_research_history() -> None:
             async with fenced_transaction(conn, stale):
                 await _persist(conn, generation=1)
         assert await conn.fetchval("SELECT count(*) FROM signal_observation") == 0
+        assert await conn.fetchval("SELECT count(*) FROM signal_replay_frame") == 0
 
         current = ServiceOwnership(conn, "scalp", 0, 1, 2)
         async with fenced_transaction(conn, current):
             assert await _persist(conn, generation=2) == 1
         assert await conn.fetchval("SELECT count(*) FROM signal_observation") == 1
+        assert await conn.fetchval("SELECT count(*) FROM signal_replay_frame") == 1
     finally:
         await _drop_schema(conn, schema)
