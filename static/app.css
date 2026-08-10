@@ -495,8 +495,70 @@ tbody tr:hover { background: rgba(98, 168, 255, .045); }
 .imb-gauge i.positive { background: var(--green); }
 .imb-gauge i.negative { background: var(--red); }
 
-.daily-bars { min-height: 150px; padding: 10px 12px; }
+.daily-bars { min-height: 270px; padding: 10px 12px; }
 .daily-bars svg { display: block; }
+.session-map-stack { display: grid; gap: 7px; }
+.session-map-track {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  background: var(--surface-soft);
+}
+.session-map-track-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 28px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.session-map-track-head strong {
+  color: #c8cdd3;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.session-map-track-head span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-price-svg { width: 100%; height: 102px; }
+.session-flow-svg { width: 100%; height: 110px; }
+.session-column-guide {
+  stroke: rgba(148, 155, 164, .10);
+  stroke-width: .14;
+  vector-effect: non-scaling-stroke;
+}
+.session-price-wick {
+  stroke: #737d88;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.session-price-candle.up .session-price-body { fill: var(--green); }
+.session-price-candle.down .session-price-body { fill: var(--red); }
+.session-price-candle.flat .session-price-body { fill: #7d8792; }
+.session-flow-zero {
+  stroke: #344050;
+  stroke-width: .65;
+  vector-effect: non-scaling-stroke;
+}
+.session-flow-bar { opacity: .94; }
+.session-map-empty {
+  min-height: 82px;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
 
 .profile-panel { grid-column: span 12; }
 .profile-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, 300px); gap: 12px; padding: 12px; }
