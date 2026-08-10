@@ -293,7 +293,9 @@ from the active release but leaves PR4/PR5/PR6 data untouched.
 
 ## Next
 
-PR8 should perform **signal attribution** over the same version-isolated
-periodic corpus, using frozen evidence/context fields to determine which
-components contribute useful or harmful predictive information without changing
-live weights yet.
+PR8 signal attribution is implemented in
+[`SIGNAL_ATTRIBUTION.md`](SIGNAL_ATTRIBUTION.md).
+
+It uses the same version-isolated periodic corpus and frozen decision-time
+evidence/context to measure component/outcome associations without changing live
+weights or making causal claims.
