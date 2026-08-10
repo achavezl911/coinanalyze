@@ -395,6 +395,7 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
           WHERE feed='liquidations' AND exchange IN ('binance','bybit')
         ), base AS (SELECT 1 AS anchor)
         SELECT COALESCE(fut_px.fut_px, price.price) AS price,
+               price.price AS ohlcv_price,
                fut_px.fut_px AS fut_price,
                spot_px.spot_px AS spot_price,
                -- El basis lo decide basis_quality(): aqui solo viajan los insumos. Calcularlo

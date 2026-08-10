@@ -374,6 +374,105 @@ ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS absorption text;
 CREATE INDEX IF NOT EXISTS scalp_signal_snapshot_latest_idx ON scalp_signal_snapshot(symbol, ts DESC);
 CREATE INDEX IF NOT EXISTS scalp_signal_snapshot_state_idx ON scalp_signal_snapshot(symbol, state, ts DESC);
 
+-- PR4_SIGNAL_OBSERVATION_LEDGER_BEGIN
+-- Investigación forward-only: congela lo que el sistema sabía EN VIVO. Nunca se
+-- reconstruye después con datos recuperados o lógica nueva.
+CREATE TABLE IF NOT EXISTS signal_observation (
+    observation_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    observed_at timestamptz NOT NULL,
+    observed_minute timestamptz NOT NULL,
+    symbol text NOT NULL REFERENCES symbols(symbol),
+    signal_family text NOT NULL CHECK (signal_family = 'scalp'),
+    is_periodic boolean NOT NULL,
+    is_transition boolean NOT NULL,
+    logic_version text NOT NULL CHECK (length(logic_version) BETWEEN 1 AND 80),
+    evidence_version smallint NOT NULL CHECK (evidence_version >= 1),
+    sampling_version smallint NOT NULL CHECK (sampling_version >= 1),
+    decision_status text NOT NULL
+        CHECK (decision_status IN ('evaluable','not_evaluable')),
+    direction text NOT NULL
+        CHECK (direction IN ('long','short','neutral','unavailable')),
+    actionable boolean NOT NULL,
+    state text NOT NULL CHECK (length(state) BETWEEN 1 AND 80),
+    confidence text NOT NULL CHECK (confidence IN ('baja','media','alta')),
+    reason text NOT NULL CHECK (length(reason) BETWEEN 1 AND 500),
+    reference_price double precision
+        CHECK (reference_price IS NULL OR
+               (finite_float8(reference_price) AND reference_price > 0)),
+    reference_price_source text
+        CHECK (reference_price_source IS NULL OR
+               length(reference_price_source) BETWEEN 1 AND 80),
+    reference_price_at timestamptz,
+    long_score double precision NOT NULL
+        CHECK (finite_float8(long_score) AND long_score BETWEEN 0 AND 100),
+    short_score double precision NOT NULL
+        CHECK (finite_float8(short_score) AND short_score BETWEEN 0 AND 100),
+    evidence_coverage_pct double precision NOT NULL
+        CHECK (finite_float8(evidence_coverage_pct) AND
+               evidence_coverage_pct BETWEEN 0 AND 100),
+    metrics_snapshot_ts timestamptz,
+    regime_score double precision
+        CHECK (regime_score IS NULL OR
+               (finite_float8(regime_score) AND regime_score BETWEEN -100 AND 100)),
+    regime_label text
+        CHECK (regime_label IS NULL OR length(regime_label) BETWEEN 1 AND 100),
+    price_cutoff_at timestamptz,
+    metrics_cutoff_at timestamptz,
+    collector_generation bigint
+        CHECK (collector_generation IS NULL OR collector_generation > 0),
+    collector_shard_index integer NOT NULL CHECK (collector_shard_index >= 0),
+    collector_shard_count integer NOT NULL CHECK (collector_shard_count > 0),
+    decision_fingerprint text NOT NULL CHECK (length(decision_fingerprint) = 64),
+    evidence jsonb NOT NULL CHECK (jsonb_typeof(evidence) = 'object'),
+    created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    CHECK (is_periodic OR is_transition),
+    CHECK (collector_shard_index < collector_shard_count),
+    CHECK (
+        (decision_status='not_evaluable' AND
+         direction='unavailable' AND NOT actionable)
+        OR
+        (
+            decision_status='evaluable'
+            AND (
+                (direction IN ('long','short') AND actionable)
+                OR (direction='neutral' AND NOT actionable)
+            )
+        )
+    )
+);
+CREATE UNIQUE INDEX IF NOT EXISTS signal_observation_periodic_slot_uidx
+    ON signal_observation(symbol, signal_family, observed_minute)
+    WHERE is_periodic;
+CREATE INDEX IF NOT EXISTS signal_observation_symbol_ts_idx
+    ON signal_observation(symbol, observed_at DESC);
+CREATE INDEX IF NOT EXISTS signal_observation_state_ts_idx
+    ON signal_observation(signal_family, state, observed_at DESC);
+CREATE INDEX IF NOT EXISTS signal_observation_actionable_idx
+    ON signal_observation(symbol, direction, observed_at DESC)
+    WHERE actionable;
+CREATE INDEX IF NOT EXISTS signal_observation_ts_brin_idx
+    ON signal_observation USING brin(observed_at);
+
+CREATE OR REPLACE FUNCTION reject_signal_observation_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'signal_observation is append-only; % is not allowed', TG_OP
+        USING ERRCODE = '55000';
+    RETURN NULL;
+END
+$$;
+DROP TRIGGER IF EXISTS signal_observation_no_update_delete ON signal_observation;
+CREATE TRIGGER signal_observation_no_update_delete
+BEFORE UPDATE OR DELETE ON signal_observation
+FOR EACH ROW EXECUTE FUNCTION reject_signal_observation_mutation();
+DROP TRIGGER IF EXISTS signal_observation_no_truncate ON signal_observation;
+CREATE TRIGGER signal_observation_no_truncate
+BEFORE TRUNCATE ON signal_observation
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_observation_mutation();
+-- PR4_SIGNAL_OBSERVATION_LEDGER_END
+
 CREATE TABLE IF NOT EXISTS metrics_snapshot (
     ts timestamptz NOT NULL DEFAULT now(),
     symbol text NOT NULL REFERENCES symbols(symbol),
