@@ -10,6 +10,8 @@ from pathlib import Path
 import asyncpg
 import pytest
 
+from app.signal_execution import DENSE_PERIODIC
+from app.signal_outcomes import OUTCOME_SETTLEMENT_LAG
 from app.signal_walk_forward import (
     WalkForwardManifestOptions,
     _static_options_spec,
@@ -284,12 +286,17 @@ async def _insert_backdated_manifest(
     discovery_start: datetime,
     cutoff_at: datetime,
 ) -> dict:
-    """Fixture-only helper: freeze always uses the live clock and a future
-    cutoff, so to exercise a *mature* fold in a fast unit test we build the
-    exact same spec/hash shape independently here and INSERT it directly
-    (a plain INSERT is allowed; only UPDATE/DELETE/TRUNCATE are rejected)."""
+    """Fixture-only helper for a mature historical fold.
 
-    created_at = discovery_start - timedelta(days=1)
+    The stored schedule still obeys the production cutoff formula:
+    next_minute(created_at + warmup_days) == cutoff_at.
+    """
+
+    created_at = (
+        cutoff_at
+        - timedelta(days=options.warmup_days)
+        - timedelta(seconds=30)
+    )
     folds = compute_folds(
         discovery_start=discovery_start,
         cutoff_at=cutoff_at,
@@ -305,14 +312,19 @@ async def _insert_backdated_manifest(
         "cutoff_at": cutoff_at,
         "folds": folds,
     }
-    manifest_hash = hashlib.sha256(_canonical_json(spec).encode("utf-8")).hexdigest()
+    manifest_hash = hashlib.sha256(
+        _canonical_json(spec).encode("utf-8")
+    ).hexdigest()
 
     await conn.execute(
         """
         INSERT INTO signal_walk_forward_manifest(
           manifest_version,manifest_name,created_at,cutoff_at,warmup_days,
           test_days,fold_count,min_group_n,selection_policy,manifest_hash,spec
-        ) VALUES(1,$1,$2,$3,$4,$5,$6,$7,'fixed_kernel_no_selection_v1',$8,$9::jsonb)
+        ) VALUES(
+          1,$1,$2,$3,$4,$5,$6,$7,
+          'fixed_kernel_no_selection_v1',$8,$9::jsonb
+        )
         """,
         name,
         created_at,
@@ -326,13 +338,13 @@ async def _insert_backdated_manifest(
     )
     return folds[0]
 
-
 async def _insert_observation(
     conn: asyncpg.Connection,
     *,
     observed_at: datetime,
     direction: str,
     state: str = "Long Momentum",
+    reference_price: float = 100.0,
 ) -> int:
     return int(
         await conn.fetchval(
@@ -348,11 +360,12 @@ async def _insert_observation(
               collector_shard_index,collector_shard_count,
               decision_fingerprint,evidence
             ) VALUES(
-              $1,date_trunc('minute',$1::timestamptz),'BTCUSDT_PERP.A','scalp',
+              $1,date_trunc('minute',$1::timestamptz),
+              'BTCUSDT_PERP.A','scalp',
               true,false,
               'scalp-summary-v1',1,1,
               'evaluable',$2,true,$3,'media','test',
-              100.0,'futures_realtime_combined',
+              $4,'futures_realtime_combined',
               70,30,90,
               'trend_up',
               0,1,
@@ -363,9 +376,9 @@ async def _insert_observation(
             observed_at,
             direction,
             state,
+            reference_price,
         )
     )
-
 
 async def _insert_frame(conn: asyncpg.Connection, observation_id: int, observed_at: datetime) -> None:
     await conn.execute(
@@ -388,10 +401,33 @@ async def _insert_outcome(
     directional_return_pct: float,
     status: str = "evaluated",
     due_at: datetime | None = None,
+    outcome_version: int = 1,
 ) -> None:
+    observation = await conn.fetchrow(
+        """
+        SELECT direction,reference_price
+        FROM signal_observation
+        WHERE observation_id=$1
+        """,
+        observation_id,
+    )
+    assert observation is not None
+    direction = observation["direction"]
+    reference_price = float(observation["reference_price"])
+
+    market_return_pct = (
+        directional_return_pct
+        if direction == "long"
+        else -directional_return_pct
+    )
+    end_price = reference_price * (1.0 + market_return_pct / 100.0)
+
     window_end = window_start + timedelta(minutes=horizon_minutes)
-    resolved_due_at = due_at if due_at is not None else window_end + timedelta(minutes=42)
-    end_price = 100.0 * (1.0 + directional_return_pct / 100.0)
+    resolved_due_at = (
+        due_at
+        if due_at is not None
+        else window_end + OUTCOME_SETTLEMENT_LAG
+    )
 
     if status == "pending":
         await conn.execute(
@@ -403,7 +439,7 @@ async def _insert_outcome(
             ) VALUES(
               $1,$2,$3,$4,$5,
               $5,30,$2,0,
-              1,'pending',0
+              $6,'pending',0
             )
             """,
             observation_id,
@@ -411,6 +447,7 @@ async def _insert_outcome(
             window_start,
             window_end,
             resolved_due_at,
+            outcome_version,
         )
         return
 
@@ -426,10 +463,10 @@ async def _insert_outcome(
         ) VALUES(
           $1,$2,$3,$4,$5,
           $5,30,$2,$2,
-          1,$6,1,$5,$5,
-          100,$7,102,99,
-          $8,2,-1,
-          $8,1.5,0.4
+          $6,$7,1,$5,$5,
+          $8,$9,$10,$11,
+          $12,2,-1,
+          $13,1.5,0.4
         )
         """,
         observation_id,
@@ -437,33 +474,54 @@ async def _insert_outcome(
         window_start,
         window_end,
         resolved_due_at,
+        outcome_version,
         status,
+        reference_price,
         end_price,
+        reference_price * 1.02,
+        reference_price * 0.99,
+        market_return_pct,
         directional_return_pct,
     )
 
-
 async def _insert_execution_snapshot(
-    conn: asyncpg.Connection, *, observation_id: int, observed_at: datetime, exchange: str
+    conn: asyncpg.Connection,
+    *,
+    observation_id: int,
+    observed_at: datetime,
+    exchange: str,
+    status: str = "valid",
 ) -> None:
+    def leg(cost_bps: float, *, side: str, insufficient: bool) -> dict[str, object]:
+        if side == "buy":
+            avg_price = 100.0 * (1.0 + cost_bps / 10_000.0)
+        else:
+            avg_price = 100.0 * (1.0 - cost_bps / 10_000.0)
+        return {
+            "avg_price": avg_price,
+            "market_cost_bps_vs_mid": None if insufficient else cost_bps,
+            "insufficient_depth": insufficient,
+        }
+
     curve = {
         "1000": {
-            "buy": {"market_cost_bps_vs_mid": 5.0, "insufficient_depth": False},
-            "sell": {"market_cost_bps_vs_mid": 5.0, "insufficient_depth": False},
+            "buy": leg(5.0, side="buy", insufficient=False),
+            "sell": leg(5.0, side="sell", insufficient=False),
         },
         "10000": {
-            "buy": {"market_cost_bps_vs_mid": 8.0, "insufficient_depth": False},
-            "sell": {"market_cost_bps_vs_mid": 8.0, "insufficient_depth": False},
+            "buy": leg(8.0, side="buy", insufficient=False),
+            "sell": leg(8.0, side="sell", insufficient=False),
         },
         "50000": {
-            "buy": {"market_cost_bps_vs_mid": None, "insufficient_depth": True},
-            "sell": {"market_cost_bps_vs_mid": None, "insufficient_depth": True},
+            "buy": leg(20.0, side="buy", insufficient=True),
+            "sell": leg(20.0, side="sell", insufficient=True),
         },
         "100000": {
-            "buy": {"market_cost_bps_vs_mid": None, "insufficient_depth": True},
-            "sell": {"market_cost_bps_vs_mid": None, "insufficient_depth": True},
+            "buy": leg(30.0, side="buy", insufficient=True),
+            "sell": leg(30.0, side="sell", insufficient=True),
         },
     }
+    reason = None if status == "valid" else "fixture_nonvalid"
     await conn.execute(
         """
         INSERT INTO signal_execution_snapshot(
@@ -474,16 +532,18 @@ async def _insert_execution_snapshot(
           bid_depth_usd,ask_depth_usd,source_book_hash,cost_curve
         ) VALUES(
           $1,1,$2,$3::timestamptz,
-          $3::timestamptz-interval '1 second',1,'valid',NULL,
-          2,2,2,99.9,100.1,100.0,20.0,200000,200000,repeat('c',64),$4::jsonb
+          $3::timestamptz-interval '1 second',1,$4,$5,
+          2,2,2,99.9,100.1,100.0,20.0,
+          200000,200000,repeat('c',64),$6::jsonb
         )
         """,
         observation_id,
         exchange,
         observed_at,
+        status,
+        reason,
         json.dumps(curve),
     )
-
 
 @pytest.fixture
 def single_fold_options() -> WalkForwardManifestOptions:
@@ -544,6 +604,17 @@ async def test_synthetic_mature_fold_pairs_discovery_and_oos(
         # after discovery_end even though window_end itself does not.
     )
 
+    # The near-cutoff discovery observation is outcome-ineligible, but it
+    # still belongs to the PR10 execution era and must retain its exact
+    # Binance+Bybit snapshot cardinality.
+    for exchange in ("binance", "bybit"):
+        await _insert_execution_snapshot(
+            conn,
+            observation_id=late_obs,
+            observed_at=late_observed_at,
+            exchange=exchange,
+        )
+
     # 3. OOS row, well inside the test window.
     oos_obs = await _insert_observation(
         conn, observed_at=test_start + timedelta(days=1), direction="long"
@@ -572,7 +643,7 @@ async def test_synthetic_mature_fold_pairs_discovery_and_oos(
     assert fold_report["clock_state"] == "ready_by_clock"
     assert fold_report["evaluation_ready"] is True
 
-    overall = fold_report["gross_views"]["overall"]
+    overall = fold_report["gross_views"][DENSE_PERIODIC]["overall"]
     matching = [row for row in overall if row["horizon_minutes"] == 15]
     assert matching, "expected an overall/15m row"
     row = matching[0]
@@ -589,7 +660,7 @@ async def test_synthetic_mature_fold_pairs_discovery_and_oos(
     assert row["label"] == "insufficient_sample"
     assert row["sign_preserved"] is True
 
-    execution_rows = fold_report["execution_view"]
+    execution_rows = fold_report["execution_views"][DENSE_PERIODIC]
     binance_1k = [
         r
         for r in execution_rows
@@ -599,8 +670,14 @@ async def test_synthetic_mature_fold_pairs_discovery_and_oos(
     exec_row = binance_1k[0]
     assert exec_row["discovery"]["n_cost_evaluable"] == 1
     assert exec_row["test"]["n_cost_evaluable"] == 1
-    # gross return (bps) minus round-trip market cost (2 * 5bps entry model)
-    assert exec_row["discovery"]["net_expectancy_bps"] == pytest.approx(200.0 - 10.0)
+    # PR10-equivalent math: frozen venue entry fill + PR5 end price,
+    # with the symmetric modeled exit cost. Do not use gross - 2*cost.
+    expected = (
+        (102.0 * (1.0 - 5.0 / 10_000.0)) / 100.05 - 1.0
+    ) * 10_000.0
+    assert exec_row["discovery"][
+        "symmetric_market_net_expectancy_bps"
+    ] == pytest.approx(expected)
 
 
 @pytest.mark.asyncio
@@ -694,7 +771,7 @@ async def test_execution_view_never_reads_current_orderbook_depth(
     async with conn.transaction(isolation="repeatable_read", readonly=True):
         report = await evaluate_walk_forward(conn, name)
 
-    execution_rows = report["folds"][0]["execution_view"]
+    execution_rows = report["folds"][0]["execution_views"][DENSE_PERIODIC]
     assert any(r["test"]["n_cost_evaluable"] >= 1 for r in execution_rows)
 
 
@@ -715,7 +792,7 @@ async def test_no_fee_adjusted_metric_without_a_frozen_fee(
     async with conn.transaction(isolation="repeatable_read", readonly=True):
         report = await evaluate_walk_forward(conn, name)
 
-    for row in report["folds"][0]["execution_view"]:
+    for row in report["folds"][0]["execution_views"][DENSE_PERIODIC]:
         assert row["fee_bps_per_side_applied"] is None
 
 
@@ -732,3 +809,273 @@ async def test_evaluator_performs_no_writes(
         await evaluate_walk_forward(conn, manifest["manifest_name"])
         with pytest.raises(asyncpg.PostgresError):
             await conn.execute("INSERT INTO symbols(symbol) VALUES('SHOULD_FAIL_PERP.A')")
+
+
+@pytest.mark.asyncio
+async def test_wrong_outcome_version_blocks_mature_fold(
+    conn: asyncpg.Connection,
+    single_fold_options: WalkForwardManifestOptions,
+) -> None:
+    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
+    cutoff_at = discovery_start + timedelta(days=7)
+    name = "pr11-wrong-outcome-version"
+    fold = await _insert_backdated_manifest(
+        conn,
+        name=name,
+        options=single_fold_options,
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+    )
+
+    observed_at = fold["discovery_end"] - timedelta(days=2)
+    observation_id = await _insert_observation(
+        conn,
+        observed_at=observed_at,
+        direction="long",
+    )
+    await _insert_frame(conn, observation_id, observed_at)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=observed_at + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=1.0,
+        outcome_version=2,
+    )
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        report = await evaluate_walk_forward(conn, name)
+
+    fold_report = report["folds"][0]
+    assert fold_report["clock_state"] == "ready_by_clock"
+    assert fold_report["state"] == "integrity_blocked"
+    assert fold_report["evaluation_ready"] is False
+    assert (
+        fold_report["integrity"]["discovery"][
+            "missing_or_wrong_version_outcome_rows"
+        ]
+        == 1
+    )
+    assert report["gates"]["positive_oos_gate_count"] == 0
+    assert report["gates"]["positive_execution_oos_gate_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_execution_era_missing_second_venue_blocks_mature_fold(
+    conn: asyncpg.Connection,
+    single_fold_options: WalkForwardManifestOptions,
+) -> None:
+    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
+    cutoff_at = discovery_start + timedelta(days=7)
+    name = "pr11-execution-cardinality-block"
+    fold = await _insert_backdated_manifest(
+        conn,
+        name=name,
+        options=single_fold_options,
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+    )
+
+    discovery_at = fold["discovery_end"] - timedelta(days=2)
+    discovery_obs = await _insert_observation(
+        conn,
+        observed_at=discovery_at,
+        direction="long",
+    )
+    await _insert_frame(conn, discovery_obs, discovery_at)
+    await _insert_outcome(
+        conn,
+        observation_id=discovery_obs,
+        window_start=discovery_at + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=1.0,
+    )
+    for exchange in ("binance", "bybit"):
+        await _insert_execution_snapshot(
+            conn,
+            observation_id=discovery_obs,
+            observed_at=discovery_at,
+            exchange=exchange,
+        )
+
+    test_at = fold["test_start"] + timedelta(days=1)
+    test_obs = await _insert_observation(
+        conn,
+        observed_at=test_at,
+        direction="long",
+    )
+    await _insert_frame(conn, test_obs, test_at)
+    await _insert_outcome(
+        conn,
+        observation_id=test_obs,
+        window_start=test_at + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=1.0,
+    )
+    await _insert_execution_snapshot(
+        conn,
+        observation_id=test_obs,
+        observed_at=test_at,
+        exchange="binance",
+    )
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        report = await evaluate_walk_forward(conn, name)
+
+    fold_report = report["folds"][0]
+    assert fold_report["state"] == "integrity_blocked"
+    assert fold_report["evaluation_ready"] is False
+    execution_integrity = fold_report["integrity"]["execution"]
+    assert (
+        execution_integrity[
+            "execution_snapshot_cardinality_or_version_anomalies"
+        ]
+        == 1
+    )
+    assert (
+        execution_integrity["execution_era_observations_without_two_snapshots"]
+        == 1
+    )
+    assert report["gates"]["positive_oos_gate_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_frozen_fee_scenario_is_applied_only_to_matching_venue(
+    conn: asyncpg.Connection,
+) -> None:
+    options = WalkForwardManifestOptions(
+        name="pr11-fee-scenario",
+        fold_count=1,
+        horizons=(15,),
+        symbols=("BTCUSDT_PERP.A",),
+        min_group_n=1,
+        fee_bps_per_side=(("binance", 2.5),),
+    )
+    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
+    cutoff_at = discovery_start + timedelta(days=7)
+    fold = await _insert_backdated_manifest(
+        conn,
+        name=options.name,
+        options=options,
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+    )
+
+    pairs = (
+        (fold["discovery_end"] - timedelta(days=2), 2.0),
+        (fold["test_start"] + timedelta(days=1), 1.0),
+    )
+    for observed_at, directional_return_pct in pairs:
+        observation_id = await _insert_observation(
+            conn,
+            observed_at=observed_at,
+            direction="long",
+        )
+        await _insert_frame(conn, observation_id, observed_at)
+        await _insert_outcome(
+            conn,
+            observation_id=observation_id,
+            window_start=observed_at + timedelta(minutes=1),
+            horizon_minutes=15,
+            directional_return_pct=directional_return_pct,
+        )
+        for exchange in ("binance", "bybit"):
+            await _insert_execution_snapshot(
+                conn,
+                observation_id=observation_id,
+                observed_at=observed_at,
+                exchange=exchange,
+            )
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        report = await evaluate_walk_forward(conn, options.name)
+
+    dense = report["folds"][0]["execution_views"][DENSE_PERIODIC]
+    binance = next(
+        row
+        for row in dense
+        if row["exchange"] == "binance"
+        and row["size_usd"] == 1000.0
+        and row["horizon_minutes"] == 15
+    )
+    bybit = next(
+        row
+        for row in dense
+        if row["exchange"] == "bybit"
+        and row["size_usd"] == 1000.0
+        and row["horizon_minutes"] == 15
+    )
+
+    assert binance["fee_bps_per_side_applied"] == pytest.approx(2.5)
+    assert binance["discovery"]["modeled_net_after_fees_n"] == 1
+    assert binance["test"]["modeled_net_after_fees_n"] == 1
+    assert (
+        binance["discovery"]["modeled_net_after_fees_expectancy_bps"]
+        == pytest.approx(
+            binance["discovery"]["symmetric_market_net_expectancy_bps"] - 5.0
+        )
+    )
+
+    assert bybit["fee_bps_per_side_applied"] is None
+    assert bybit["discovery"]["modeled_net_after_fees_n"] == 0
+    assert bybit["test"]["modeled_net_after_fees_n"] == 0
+    assert bybit["discovery"]["modeled_net_after_fees_expectancy_bps"] is None
+
+
+@pytest.mark.asyncio
+async def test_schedule_tamper_with_valid_hash_still_fails_closed(
+    conn: asyncpg.Connection,
+) -> None:
+    now = await conn.fetchval("SELECT clock_timestamp()")
+    options = WalkForwardManifestOptions(
+        name="pr11-invalid-schedule",
+        fold_count=1,
+        horizons=(15,),
+    )
+    created_at = now - timedelta(days=30)
+    # Deliberately violates next_minute(created_at + warmup_days).
+    cutoff_at = created_at + timedelta(days=8)
+    discovery_start = created_at - timedelta(days=1)
+    folds = compute_folds(
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+        test_days=options.test_days,
+        fold_count=options.fold_count,
+        horizons=options.horizons,
+    )
+    spec = {
+        **_static_options_spec(options),
+        "name": options.name,
+        "created_at": created_at,
+        "discovery_start": discovery_start,
+        "cutoff_at": cutoff_at,
+        "folds": folds,
+    }
+    manifest_hash = hashlib.sha256(
+        _canonical_json(spec).encode("utf-8")
+    ).hexdigest()
+
+    await conn.execute(
+        """
+        INSERT INTO signal_walk_forward_manifest(
+          manifest_version,manifest_name,created_at,cutoff_at,warmup_days,
+          test_days,fold_count,min_group_n,selection_policy,manifest_hash,spec
+        ) VALUES(
+          1,$1,$2,$3,$4,$5,$6,$7,
+          'fixed_kernel_no_selection_v1',$8,$9::jsonb
+        )
+        """,
+        options.name,
+        created_at,
+        cutoff_at,
+        options.warmup_days,
+        options.test_days,
+        options.fold_count,
+        options.min_group_n,
+        manifest_hash,
+        _canonical_json(spec),
+    )
+
+    with pytest.raises(ValueError, match="prospective cutoff"):
+        async with conn.transaction(isolation="repeatable_read", readonly=True):
+            await evaluate_walk_forward(conn, options.name)

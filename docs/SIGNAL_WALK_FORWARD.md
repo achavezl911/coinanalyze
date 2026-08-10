@@ -222,38 +222,124 @@ scoring, or any PR4-PR10 table.
 
 ## Execution-adjusted OOS
 
-PR11 consumes **only** the immutable `signal_execution_snapshot` rows
-frozen by PR10 at observation time. It never reads current
-`orderbook_depth`. Paired dimensions: `(symbol, exchange, size_usd,
-horizon)`. For each cell it reports evaluated-actionable n, snapshot
-present/valid n, insufficient-depth n, cost-evaluable n and coverage, gross
-expectancy in bps, and a `symmetric_entry_book_v1` net expectancy (gross bps
-minus twice the frozen entry market cost, matching PR10's round-trip
-model). Missing/invalid/insufficient-depth snapshots remain in the
-denominator; they are never dropped silently.
+PR11 consumes **only** immutable PR10 `signal_execution_snapshot` rows. It
+never reads current `orderbook_depth` during historical evaluation.
 
-### Deviations from the full PR10 report contract (documented, not silent)
+The fixed execution dimensions are:
 
-- **No optional fee-adjusted net metric in this v1 pass.** PR10's CLI
-  accepts `--fee-bps-per-side`; PR11's manifest can freeze a fee scenario
-  into its spec (and the hash covers it), but the evaluator does not yet
-  compute a fee-adjusted net figure from it. Every execution-view row
-  reports `fee_bps_per_side_applied: null`, so there is never a fee-shaped
-  number without a frozen fee behind it — the gate the architecture actually
-  requires — but the fee-adjusted number itself is left for a follow-up
-  pass rather than risk an under-tested implementation of the full PR10 fee
-  formula inside PR11's first release.
-- **No invented minimum execution-coverage percentage.** As instructed,
-  PR11 v1 reports coverage counts and ratios but does not gate or claim a
-  minimum coverage percentage.
-- **Break-even fee / implementation-shortfall-vs-signal-reference are not
-  reproduced.** PR10's full report has additional derived statistics
-  (break-even fee per side, entry implementation shortfall against the PR4
-  reference price). PR11 v1 reports the core paired gross/net expectancy and
-  coverage counters described above; the remaining PR10-style derived
-  statistics can be layered on without changing the manifest contract or
-  the append-only schema, since they are pure read-side aggregation over
-  already-frozen `signal_execution_snapshot` rows.
+```text
+symbol
+× exchange
+× size_usd
+× horizon
+```
+
+with the frozen v1 execution grid:
+
+```text
+Binance / Bybit
+×
+$1k / $10k / $50k / $100k
+```
+
+Sampling is evaluated independently for both frozen modes:
+
+```text
+dense_periodic
+utc_nonoverlap
+```
+
+`utc_nonoverlap` is clock-only:
+
+```text
+floor(epoch(observed_minute)/60) mod horizon_minutes = 0
+```
+
+Signal direction, return, regime and execution cost never affect sampling
+membership.
+
+### PR10-equivalent execution math
+
+PR11 does **not** approximate execution-adjusted return as:
+
+```text
+PR5 gross return - 2 × cost_vs_mid
+```
+
+because PR5 gross return starts from immutable PR4 `reference_price`, while
+the executable venue fill can differ from that reference before book walking
+is considered.
+
+For every cost-evaluable row PR11 preserves:
+
+- immutable PR4 `reference_price`;
+- immutable PR5 `end_price`;
+- frozen PR10 directional venue `avg_price`;
+- frozen `market_cost_bps_vs_mid`;
+- directional insufficient-depth state.
+
+For long:
+
+```text
+entry = frozen BUY avg_price
+```
+
+For short:
+
+```text
+entry = frozen SELL avg_price
+```
+
+PR11 reports entry implementation shortfall relative to the PR4 reference and
+recomputes entry-only directional return directly from the frozen venue entry
+fill and PR5 end price.
+
+The modeled round-trip market return remains exactly the PR10 convention:
+
+```text
+symmetric_entry_book_v1
+```
+
+where the exit market cost is modeled from the frozen entry-side market-cost
+evidence. It is explicitly a modeled research quantity, not realized PnL.
+
+### Fee scenarios
+
+Fees are never looked up or invented.
+
+If a fee scenario was explicitly frozen into the manifest for a venue:
+
+```text
+modeled_net_after_fees_bps
+=
+symmetric_market_net_bps
+-
+2 × frozen_fee_bps_per_side
+```
+
+If no fee was frozen for that venue, fee-adjusted metrics remain `NULL`.
+
+Funding remains excluded.
+
+### Execution coverage semantics
+
+Missing evidence, non-valid evidence and valid-but-insufficient depth are
+different conditions and are reported separately:
+
+```text
+snapshot_missing_n
+snapshot_nonvalid_n
+insufficient_depth_n
+n_cost_evaluable
+cost_evaluable_pct
+```
+
+A stale/unavailable/missing snapshot is never relabeled as insufficient depth.
+
+PR11 v1 does not invent a minimum execution-coverage percentage. Coverage is
+reported explicitly and the minimum sample gate uses cost-evaluable rows.
+
+## Integrity counters
 
 ## Integrity counters
 
@@ -279,6 +365,31 @@ the requested horizon set and left-joins `signal_outcome`, so a horizon with
 no scheduled row at all is visible as missing, not silently absent from the
 denominator.
 
+Global/fold-scoped PR10 execution integrity is also rechecked:
+
+```text
+compatible_periodic_observations
+periodic_without_execution_snapshot
+execution_covered_periodic_observations
+execution_snapshot_cardinality_or_version_anomalies
+execution_era_start
+execution_era_observations_without_two_snapshots
+execution_snapshot_version_excluded_rows
+execution_snapshot_error_rows
+future_book_timestamp_anomalies
+valid_snapshot_shape_anomalies
+combined_or_unknown_exchange_rows
+```
+
+Pre-PR10 rows without snapshots remain expected. Once the execution era starts,
+a periodic observation that does not have exactly one compatible Binance row
+and one compatible Bybit row blocks a mature OOS fold.
+
+A mature fold is `integrity_blocked` and `evaluation_ready=false` when required
+outcome-version/directional-metric integrity fails or when a blocking PR10
+execution integrity counter is nonzero. No positive OOS gate can pass while a
+fold is integrity-blocked.
+
 ## Production behavior expected immediately after deploy
 
 ```bash
@@ -296,10 +407,31 @@ the same `manifest_id`/`manifest_hash`, and the manifest count stays at 1.
   --output /tmp/pr11-walk-forward.json --csv /tmp/pr11-walk-forward.csv
 ```
 
-Immediately after release this must show: a valid manifest; the first OOS
-cutoff in the future (`first_oos_cutoff_in_future=true`);
-`ready_by_clock_fold_count=0`; `evaluation_ready_fold_count=0`; fold 1 in
-`discovery_collecting`; zero true-positive OOS gates. **That is success.**
+Immediately after release this must show:
+
+```text
+report_version=1
+walk_forward_spec_version=1
+manifest_version=1
+
+gates.manifest_hash_valid=true
+gates.schedule_valid=true
+gates.selection_policy_is_fixed_no_selection=true
+gates.first_oos_boundary_frozen_before_start=true
+gates.automatic_parameter_selection=false
+gates.automatic_live_model_changes=false
+gates.ready_by_clock_fold_count=0
+gates.evaluation_ready_fold_count=0
+gates.positive_oos_gate_count=0
+gates.positive_execution_oos_gate_count=0
+
+fold1.state=discovery_collecting
+```
+
+`first_oos_cutoff_in_future=true` is useful only as an immediate-deploy
+informational field. It naturally becomes false once OOS starts; the permanent
+anti-look-ahead proof is the hash/schedule validation plus the frozen-boundary
+gate above. **That immediate state is success.**
 Do not wait 7-14 days to manufacture an OOS conclusion that the data cannot
 yet support, and never report "strategy OOS validated" until a frozen fold
 has actually matured by the clock.

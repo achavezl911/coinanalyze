@@ -11,10 +11,12 @@ from typing import Any
 import asyncpg
 
 from app.signal_execution import (
+    DENSE_PERIODIC,
     EXECUTION_EXCHANGES,
     EXECUTION_SIZES_USD,
     EXECUTION_SNAPSHOT_VERSION,
     SAMPLING_MODES,
+    UTC_NONOVERLAP,
 )
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, OUTCOME_VERSION
 from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
@@ -438,23 +440,144 @@ async def freeze_walk_forward_manifest(
     return _manifest_record(row, reused_existing=False)
 
 
+def _options_from_spec(
+    manifest_name: str,
+    spec: dict[str, Any],
+) -> WalkForwardManifestOptions:
+    versions = spec.get("versions")
+    if not isinstance(versions, dict):
+        raise ValueError("walk-forward manifest versions are missing")
+
+    fees = spec.get("fee_bps_per_side", {})
+    if not isinstance(fees, dict):
+        raise ValueError("walk-forward manifest fee_bps_per_side must be an object")
+
+    options = WalkForwardManifestOptions(
+        name=manifest_name,
+        warmup_days=int(spec["warmup_days"]),
+        test_days=int(spec["test_days"]),
+        fold_count=int(spec["fold_count"]),
+        min_group_n=int(spec["min_group_n"]),
+        horizons=tuple(int(value) for value in spec["horizons_minutes"]),
+        sampling_modes=tuple(str(value) for value in spec["sampling_modes"]),
+        symbols=tuple(str(value) for value in spec["symbols"]),
+        exchanges=tuple(str(value) for value in spec["execution_exchanges"]),
+        sizes_usd=tuple(float(value) for value in spec["execution_sizes_usd"]),
+        fee_bps_per_side=tuple(
+            sorted((str(exchange), float(fee)) for exchange, fee in fees.items())
+        ),
+        logic_version=str(versions["logic_version"]),
+        evidence_version=int(versions["evidence_version"]),
+        sampling_version=int(versions["sampling_version"]),
+        context_version=int(versions["context_version"]),
+        outcome_version=int(versions["outcome_version"]),
+        execution_snapshot_version=int(versions["execution_snapshot_version"]),
+    )
+    validate_manifest_options(options)
+    return options
+
+
+def _parse_spec_timestamp(value: object, field: str) -> datetime:
+    if isinstance(value, datetime):
+        return _aware_utc(value)
+    if not isinstance(value, str):
+        raise ValueError(f"walk-forward manifest {field} must be an ISO timestamp")
+    return _aware_utc(datetime.fromisoformat(value.replace("Z", "+00:00")))
+
+
+def _validate_manifest_row(
+    row: asyncpg.Record | dict[str, Any],
+) -> tuple[dict[str, Any], WalkForwardManifestOptions]:
+    data = dict(row)
+    spec = _load_spec(data["spec"])
+
+    recomputed_hash = _spec_hash(spec)
+    if recomputed_hash != data["manifest_hash"]:
+        raise ValueError(
+            f"walk-forward manifest {data['manifest_name']!r} failed hash "
+            "verification (tamper or corruption)"
+        )
+
+    if int(data["manifest_version"]) != WALK_FORWARD_MANIFEST_VERSION:
+        raise ValueError("unsupported stored walk-forward manifest_version")
+    if int(spec.get("spec_version", 0)) != WALK_FORWARD_SPEC_VERSION:
+        raise ValueError("unsupported stored walk-forward spec_version")
+    if int(spec.get("manifest_version", 0)) != WALK_FORWARD_MANIFEST_VERSION:
+        raise ValueError("manifest JSON version disagrees with table row")
+    if spec.get("name") != data["manifest_name"]:
+        raise ValueError("manifest name disagrees with hashed spec")
+    if spec.get("selection_policy") != SELECTION_POLICY:
+        raise ValueError("unsupported stored walk-forward selection policy")
+    if data["selection_policy"] != SELECTION_POLICY:
+        raise ValueError("manifest row selection policy is not fixed-kernel")
+    if sorted(spec.get("gross_views", [])) != sorted(GROSS_VIEWS):
+        raise ValueError("manifest gross views differ from the frozen v1 contract")
+
+    options = _options_from_spec(str(data["manifest_name"]), spec)
+    static_expected = _static_options_spec(options)
+    stored_static = {key: spec.get(key) for key in static_expected}
+    if stored_static != static_expected:
+        raise ValueError("manifest static spec is internally inconsistent")
+
+    created_at = _parse_spec_timestamp(spec.get("created_at"), "created_at")
+    discovery_start = _parse_spec_timestamp(
+        spec.get("discovery_start"),
+        "discovery_start",
+    )
+    cutoff_at = _parse_spec_timestamp(spec.get("cutoff_at"), "cutoff_at")
+
+    if _aware_utc(data["created_at"]) != created_at:
+        raise ValueError("manifest created_at column disagrees with hashed spec")
+    if _aware_utc(data["cutoff_at"]) != cutoff_at:
+        raise ValueError("manifest cutoff_at column disagrees with hashed spec")
+    if int(data["warmup_days"]) != options.warmup_days:
+        raise ValueError("manifest warmup_days column disagrees with hashed spec")
+    if int(data["test_days"]) != options.test_days:
+        raise ValueError("manifest test_days column disagrees with hashed spec")
+    if int(data["fold_count"]) != options.fold_count:
+        raise ValueError("manifest fold_count column disagrees with hashed spec")
+    if int(data["min_group_n"]) != options.min_group_n:
+        raise ValueError("manifest min_group_n column disagrees with hashed spec")
+
+    expected_cutoff = _next_minute_strictly_after(
+        created_at + timedelta(days=options.warmup_days)
+    )
+    if cutoff_at != expected_cutoff:
+        raise ValueError("manifest cutoff is not the frozen prospective cutoff")
+    if not created_at < cutoff_at:
+        raise ValueError("manifest cutoff must be after manifest creation")
+    if not discovery_start < cutoff_at:
+        raise ValueError("manifest discovery_start must be before first OOS cutoff")
+
+    stored_lag = float(spec.get("outcome_settlement_lag_seconds", -1))
+    expected_lag = OUTCOME_SETTLEMENT_LAG.total_seconds()
+    if not math.isclose(stored_lag, expected_lag, rel_tol=0.0, abs_tol=1e-9):
+        raise ValueError("manifest PR5 settlement-lag contract changed")
+
+    expected_folds = compute_folds(
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+        test_days=options.test_days,
+        fold_count=options.fold_count,
+        horizons=options.horizons,
+    )
+    if _canonical_json(spec.get("folds")) != _canonical_json(expected_folds):
+        raise ValueError("manifest fold schedule does not match its frozen spec")
+
+    return spec, options
+
+
 def _reuse_or_fail(
     existing_row: asyncpg.Record,
     static_spec: dict[str, Any],
     name: str,
 ) -> dict[str, Any]:
-    stored_spec = _load_spec(existing_row["spec"])
+    stored_spec, _ = _validate_manifest_row(existing_row)
     stored_static = {key: stored_spec.get(key) for key in static_spec}
     if stored_static != static_spec:
         raise ValueError(
-            f"walk-forward manifest {name!r} already exists with a different static "
-            "spec; freeze fails closed instead of silently reusing or mutating it"
-        )
-    recomputed_hash = _spec_hash(stored_spec)
-    if recomputed_hash != existing_row["manifest_hash"]:
-        raise ValueError(
-            f"walk-forward manifest {name!r} failed hash verification (tamper or "
-            "corruption); refusing to reuse it"
+            f"walk-forward manifest {name!r} already exists with a different "
+            "static spec; freeze fails closed instead of mutating it"
         )
     return _manifest_record(existing_row, reused_existing=True)
 
@@ -462,8 +585,8 @@ def _reuse_or_fail(
 async def load_walk_forward_manifest(
     conn: asyncpg.Connection,
     name: str,
-) -> dict[str, Any]:
-    """Load and hash-verify an existing manifest. Fails closed on mismatch."""
+) -> tuple[dict[str, Any], WalkForwardManifestOptions]:
+    """Load, hash-verify and schedule-verify an immutable manifest."""
 
     row = await conn.fetchrow(
         "SELECT * FROM signal_walk_forward_manifest WHERE manifest_name=$1",
@@ -471,14 +594,8 @@ async def load_walk_forward_manifest(
     )
     if row is None:
         raise ValueError(f"walk-forward manifest {name!r} does not exist")
-    stored_spec = _load_spec(row["spec"])
-    recomputed_hash = _spec_hash(stored_spec)
-    if recomputed_hash != row["manifest_hash"]:
-        raise ValueError(
-            f"walk-forward manifest {name!r} failed hash verification (tamper or "
-            "corruption); evaluation fails closed"
-        )
-    return _manifest_record(row, reused_existing=True)
+    _, options = _validate_manifest_row(row)
+    return _manifest_record(row, reused_existing=True), options
 
 
 # ---------------------------------------------------------------------------
@@ -505,6 +622,16 @@ GENERALIZATION_LABELS = (
     "integrity_blocked",
 )
 
+EXECUTION_GENERALIZATION_LABELS = (
+    "positive_market_cost_generalization_observed",
+    "market_cost_edge_failed_to_generalize",
+    "oos_market_cost_positive_without_discovery_edge",
+    "non_positive_after_market_cost_both",
+    "not_ready",
+    "insufficient_execution_sample",
+    "integrity_blocked",
+)
+
 
 def _clock_fold_state(fold: dict[str, Any], *, generated_at: datetime) -> str:
     if generated_at < fold["discovery_end"]:
@@ -516,65 +643,25 @@ def _clock_fold_state(fold: dict[str, Any], *, generated_at: datetime) -> str:
     return "ready_by_clock"
 
 
-async def _fold_integrity_blockers(
-    conn: asyncpg.Connection,
-    *,
-    fold: dict[str, Any],
-    options: WalkForwardManifestOptions,
-) -> dict[str, Any]:
-    """Recovery/integrity checks that can keep a clock-mature fold from
-    becoming ``evaluation_ready``.
+def _sample_grid(
+    grid: list[dict[str, Any]],
+    mode: str,
+) -> list[dict[str, Any]]:
+    if mode == DENSE_PERIODIC:
+        return list(grid)
+    if mode != UTC_NONOVERLAP:
+        raise ValueError(f"unsupported sampling mode: {mode}")
 
-    A fold that reached ``ready_by_clock`` is still not usable if PR5 rows
-    covering its test window are stuck ``pending`` (outcome recovery still
-    owed) or if a data-gap/version anomaly makes the window untrustworthy.
-    """
-
-    pending_row = await conn.fetchrow(
-        """
-        SELECT COUNT(*) AS pending_n
-        FROM signal_outcome AS out
-        JOIN signal_observation AS obs
-          ON obs.observation_id = out.observation_id
-        WHERE obs.signal_family='scalp'
-          AND obs.is_periodic
-          AND obs.observed_at >= $1 AND obs.observed_at < $2
-          AND out.window_end <= $2
-          AND out.horizon_minutes = ANY($3::int[])
-          AND out.status='pending'
-        """,
-        fold["test_start"],
-        fold["test_end"],
-        list(options.horizons),
-    )
-    pending_n = int(pending_row["pending_n"]) if pending_row else 0
-    if pending_n > 0:
-        return {"state": "outcome_recovery_pending", "pending_outcome_rows": pending_n}
-    return {"state": None, "pending_outcome_rows": 0}
-
-
-def _fold_state_summary(
-    *,
-    fold: dict[str, Any],
-    generated_at: datetime,
-    blockers: dict[str, Any],
-) -> dict[str, Any]:
-    clock_state = _clock_fold_state(fold, generated_at=generated_at)
-    final_state = clock_state
-    if clock_state == "ready_by_clock" and blockers["state"] is not None:
-        final_state = blockers["state"]
-    return {
-        "fold_index": fold["fold_index"],
-        "discovery_start": fold["discovery_start"],
-        "discovery_end": fold["discovery_end"],
-        "test_start": fold["test_start"],
-        "test_end": fold["test_end"],
-        "test_maturity_at": fold["test_maturity_at"],
-        "clock_state": clock_state,
-        "state": final_state,
-        "evaluation_ready": final_state == "ready_by_clock",
-        "pending_outcome_rows": blockers["pending_outcome_rows"],
-    }
+    sampled: list[dict[str, Any]] = []
+    for row in grid:
+        observed_minute = row.get("observed_minute")
+        horizon = int(row["horizon_minutes"])
+        if not isinstance(observed_minute, datetime):
+            raise ValueError("utc_nonoverlap requires observed_minute")
+        minute_index = math.floor(_aware_utc(observed_minute).timestamp() / 60.0)
+        if minute_index % horizon == 0:
+            sampled.append(row)
+    return sampled
 
 
 async def _fetch_period_grid(
@@ -585,22 +672,21 @@ async def _fetch_period_grid(
     knowledge_cutoff: datetime,
     options: WalkForwardManifestOptions,
 ) -> list[dict[str, Any]]:
-    """One row per (periodic observation x requested horizon) inside the
-    period, left-joined to its PR5 outcome. This is the expected-rows grid
-    used for both gross statistics and integrity counters.
-
-    ``knowledge_cutoff`` encodes the knowledge-time rule: for discovery it is
-    ``discovery_end`` (rule 5); for test it is the report's
-    ``generated_at`` (rule 6). An outcome is only usable when
-    ``window_end <= period_end`` (path never crosses the period boundary)
-    AND ``due_at <= knowledge_cutoff``.
-    """
+    """Return the expected observation×horizon grid for one frozen period."""
 
     rows = await conn.fetch(
         """
         WITH periodic AS (
-          SELECT obs.observation_id, obs.symbol, obs.state, obs.direction,
-                 obs.regime_label, obs.actionable
+          SELECT
+            obs.observation_id,
+            obs.observed_at,
+            obs.observed_minute,
+            obs.symbol,
+            obs.state,
+            obs.direction,
+            obs.regime_label,
+            obs.actionable,
+            obs.reference_price
           FROM signal_observation AS obs
           JOIN signal_replay_frame AS frame
             ON frame.observation_id = obs.observation_id
@@ -610,7 +696,8 @@ async def _fetch_period_grid(
             AND obs.evidence_version=$5
             AND obs.sampling_version=$6
             AND frame.context_version=$7
-            AND obs.observed_at >= $1 AND obs.observed_at < $2
+            AND obs.observed_at >= $1
+            AND obs.observed_at < $2
             AND (
               cardinality($8::text[]) = 0
               OR obs.symbol = ANY($8::text[])
@@ -622,10 +709,24 @@ async def _fetch_period_grid(
           CROSS JOIN unnest($3::int[]) AS h(horizon_minutes)
         )
         SELECT
-          g.observation_id, g.symbol, g.state, g.direction, g.regime_label,
-          g.actionable, g.horizon_minutes,
-          out.outcome_version, out.status, out.window_end, out.due_at,
-          out.directional_return_pct, out.mfe_pct, out.mae_pct,
+          g.observation_id,
+          g.observed_at,
+          g.observed_minute,
+          g.symbol,
+          g.state,
+          g.direction,
+          g.regime_label,
+          g.actionable,
+          g.reference_price,
+          g.horizon_minutes,
+          out.outcome_version,
+          out.status,
+          out.window_end,
+          out.due_at,
+          out.end_price,
+          out.directional_return_pct,
+          out.mfe_pct,
+          out.mae_pct,
           out.market_return_pct
         FROM grid AS g
         LEFT JOIN signal_outcome AS out
@@ -645,9 +746,10 @@ async def _fetch_period_grid(
     result: list[dict[str, Any]] = []
     for record in rows:
         row = dict(record)
+        correct_version = row["outcome_version"] == options.outcome_version
         usable = (
             row["status"] is not None
-            and row["outcome_version"] == options.outcome_version
+            and correct_version
             and row["window_end"] is not None
             and row["window_end"] <= period_end
             and row["due_at"] is not None
@@ -656,6 +758,312 @@ async def _fetch_period_grid(
         row["usable"] = usable
         result.append(row)
     return result
+
+
+def _integrity_counters(
+    grid: list[dict[str, Any]],
+    *,
+    period_end: datetime,
+    expected_outcome_version: int,
+) -> dict[str, Any]:
+    periodic_ids = {row["observation_id"] for row in grid}
+    expected = len(grid)
+    requested = sum(1 for row in grid if row["status"] is not None)
+    missing_or_wrong_version = sum(
+        1
+        for row in grid
+        if row["status"] is None
+        or row["outcome_version"] != expected_outcome_version
+    )
+    boundary_purged = sum(
+        1
+        for row in grid
+        if row["status"] is not None
+        and row["outcome_version"] == expected_outcome_version
+        and row["window_end"] is not None
+        and row["window_end"] > period_end
+    )
+    not_yet_eligible = sum(
+        1
+        for row in grid
+        if row["status"] is not None
+        and row["outcome_version"] == expected_outcome_version
+        and row["window_end"] is not None
+        and row["window_end"] <= period_end
+        and not row["usable"]
+    )
+    knowledge_eligible = sum(1 for row in grid if row["usable"])
+    evaluated = sum(
+        1 for row in grid if row["usable"] and row["status"] == "evaluated"
+    )
+    pending = sum(
+        1 for row in grid if row["usable"] and row["status"] == "pending"
+    )
+    not_evaluable = sum(
+        1 for row in grid if row["usable"] and row["status"] == "not_evaluable"
+    )
+
+    directional_metric_anomalies = 0
+    for row in grid:
+        if not (row["usable"] and row["status"] == "evaluated"):
+            continue
+        directional = bool(
+            row["actionable"] and row["direction"] in ("long", "short")
+        )
+        metrics_present = (
+            row["directional_return_pct"] is not None
+            and row["mfe_pct"] is not None
+            and row["mae_pct"] is not None
+        )
+        if directional != metrics_present:
+            directional_metric_anomalies += 1
+
+    return {
+        "periodic_observations": len(periodic_ids),
+        "expected_outcome_rows": expected,
+        "requested_outcome_rows": requested,
+        "missing_or_wrong_version_outcome_rows": missing_or_wrong_version,
+        "boundary_purged_outcome_rows": boundary_purged,
+        "not_yet_knowledge_eligible_outcome_rows": not_yet_eligible,
+        "knowledge_eligible_outcome_rows": knowledge_eligible,
+        "evaluated_outcome_rows": evaluated,
+        "pending_outcome_rows": pending,
+        "not_evaluable_outcome_rows": not_evaluable,
+        "directional_metric_anomalies": directional_metric_anomalies,
+    }
+
+
+async def _fetch_execution_integrity(
+    conn: asyncpg.Connection,
+    *,
+    period_start: datetime,
+    period_end: datetime,
+    options: WalkForwardManifestOptions,
+) -> dict[str, Any]:
+    row = await conn.fetchrow(
+        """
+        WITH compatible AS (
+          SELECT
+            obs.observation_id,
+            obs.observed_at
+          FROM signal_observation AS obs
+          JOIN signal_replay_frame AS frame
+            ON frame.observation_id=obs.observation_id
+          WHERE obs.signal_family='scalp'
+            AND obs.is_periodic
+            AND obs.observed_at >= $1
+            AND obs.observed_at < $2
+            AND obs.logic_version=$3
+            AND obs.evidence_version=$4
+            AND obs.sampling_version=$5
+            AND frame.context_version=$6
+            AND (
+              cardinality($8::text[]) = 0
+              OR obs.symbol=ANY($8::text[])
+            )
+        ),
+        snapshot_counts AS (
+          SELECT
+            c.observation_id,
+            c.observed_at,
+            COUNT(s.execution_snapshot_id)::bigint AS snapshot_rows,
+            COUNT(s.execution_snapshot_id) FILTER (
+              WHERE s.snapshot_version=$7
+            )::bigint AS compatible_snapshot_rows,
+            COUNT(s.execution_snapshot_id) FILTER (
+              WHERE s.snapshot_version=$7 AND s.exchange='binance'
+            )::bigint AS binance_rows,
+            COUNT(s.execution_snapshot_id) FILTER (
+              WHERE s.snapshot_version=$7 AND s.exchange='bybit'
+            )::bigint AS bybit_rows,
+            COUNT(s.execution_snapshot_id) FILTER (
+              WHERE s.snapshot_version=$7
+                AND s.exchange NOT IN ('binance','bybit')
+            )::bigint AS unknown_rows
+          FROM compatible AS c
+          LEFT JOIN signal_execution_snapshot AS s
+            ON s.observation_id=c.observation_id
+          GROUP BY c.observation_id,c.observed_at
+        ),
+        execution_cohort AS (
+          SELECT *
+          FROM snapshot_counts
+          WHERE snapshot_rows=2
+            AND compatible_snapshot_rows=2
+            AND binance_rows=1
+            AND bybit_rows=1
+            AND unknown_rows=0
+        ),
+        first_execution AS (
+          SELECT MIN(c.observed_at) AS execution_era_start
+          FROM compatible AS c
+          JOIN signal_execution_snapshot AS s
+            ON s.observation_id=c.observation_id
+          WHERE s.snapshot_version=$7
+        )
+        SELECT
+          (SELECT COUNT(*) FROM compatible)::bigint
+            AS compatible_periodic_observations,
+
+          (SELECT COUNT(*) FROM snapshot_counts WHERE snapshot_rows=0)::bigint
+            AS periodic_without_execution_snapshot,
+
+          (SELECT COUNT(*) FROM execution_cohort)::bigint
+            AS execution_covered_periodic_observations,
+
+          (
+            SELECT COUNT(*)
+            FROM snapshot_counts
+            WHERE snapshot_rows > 0
+              AND (
+                snapshot_rows <> 2
+                OR compatible_snapshot_rows <> 2
+                OR binance_rows <> 1
+                OR bybit_rows <> 1
+                OR unknown_rows <> 0
+              )
+          )::bigint AS execution_snapshot_cardinality_or_version_anomalies,
+
+          (SELECT execution_era_start FROM first_execution)
+            AS execution_era_start,
+
+          (
+            SELECT COUNT(*)
+            FROM snapshot_counts, first_execution
+            WHERE first_execution.execution_era_start IS NOT NULL
+              AND snapshot_counts.observed_at >= first_execution.execution_era_start
+              AND (
+                snapshot_counts.snapshot_rows <> 2
+                OR snapshot_counts.compatible_snapshot_rows <> 2
+                OR snapshot_counts.binance_rows <> 1
+                OR snapshot_counts.bybit_rows <> 1
+                OR snapshot_counts.unknown_rows <> 0
+              )
+          )::bigint AS execution_era_observations_without_two_snapshots,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version <> $7
+          )::bigint AS execution_snapshot_version_excluded_rows,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version=$7
+              AND s.status='error'
+          )::bigint AS execution_snapshot_error_rows,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version=$7
+              AND s.reason='future_book_timestamp'
+          )::bigint AS future_book_timestamp_anomalies,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version=$7
+              AND s.status='valid'
+              AND (
+                s.source_book_hash IS NULL
+                OR length(s.source_book_hash) <> 64
+                OR (
+                  SELECT count(*)
+                  FROM jsonb_object_keys(s.cost_curve)
+                ) <> 4
+              )
+          )::bigint AS valid_snapshot_shape_anomalies,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version=$7
+              AND s.exchange NOT IN ('binance','bybit')
+          )::bigint AS combined_or_unknown_exchange_rows
+        """,
+        period_start,
+        period_end,
+        options.logic_version,
+        options.evidence_version,
+        options.sampling_version,
+        options.context_version,
+        options.execution_snapshot_version,
+        list(options.symbols),
+    )
+    return dict(row) if row else {}
+
+
+def _execution_integrity_blocked(summary: dict[str, Any]) -> bool:
+    blocking_fields = (
+        "execution_snapshot_cardinality_or_version_anomalies",
+        "execution_era_observations_without_two_snapshots",
+        "execution_snapshot_version_excluded_rows",
+        "future_book_timestamp_anomalies",
+        "valid_snapshot_shape_anomalies",
+        "combined_or_unknown_exchange_rows",
+    )
+    return any(int(summary.get(field) or 0) > 0 for field in blocking_fields)
+
+
+def _period_integrity_blocked(summary: dict[str, Any]) -> bool:
+    return (
+        int(summary.get("missing_or_wrong_version_outcome_rows") or 0) > 0
+        or int(summary.get("directional_metric_anomalies") or 0) > 0
+    )
+
+
+def _fold_state_summary(
+    *,
+    fold: dict[str, Any],
+    generated_at: datetime,
+    discovery_integrity: dict[str, Any],
+    test_integrity: dict[str, Any],
+    execution_integrity: dict[str, Any],
+) -> dict[str, Any]:
+    clock_state = _clock_fold_state(fold, generated_at=generated_at)
+    integrity_blocked = (
+        _period_integrity_blocked(discovery_integrity)
+        or _period_integrity_blocked(test_integrity)
+        or _execution_integrity_blocked(execution_integrity)
+    )
+
+    outcome_recovery_pending = bool(
+        int(discovery_integrity.get("pending_outcome_rows") or 0) > 0
+        or int(test_integrity.get("pending_outcome_rows") or 0) > 0
+    )
+
+    final_state = clock_state
+    if clock_state == "ready_by_clock":
+        if integrity_blocked:
+            final_state = "integrity_blocked"
+        elif outcome_recovery_pending:
+            final_state = "outcome_recovery_pending"
+
+    return {
+        "fold_index": fold["fold_index"],
+        "discovery_start": fold["discovery_start"],
+        "discovery_end": fold["discovery_end"],
+        "test_start": fold["test_start"],
+        "test_end": fold["test_end"],
+        "test_maturity_at": fold["test_maturity_at"],
+        "clock_state": clock_state,
+        "state": final_state,
+        "evaluation_ready": final_state == "ready_by_clock",
+        "integrity_blocked": integrity_blocked,
+        "outcome_recovery_pending": outcome_recovery_pending,
+    }
 
 
 def _percentile(values: list[float], pct: float) -> float | None:
@@ -672,63 +1080,18 @@ def _percentile(values: list[float], pct: float) -> float | None:
     return ordered[lo] * (hi - k) + ordered[hi] * (k - lo)
 
 
-def _integrity_counters(grid: list[dict[str, Any]], *, period_end: datetime) -> dict[str, Any]:
-    periodic_ids = {row["observation_id"] for row in grid}
-    expected = len(grid)
-    requested = sum(1 for row in grid if row["status"] is not None)
-    missing_or_wrong_version = sum(
-        1
-        for row in grid
-        if row["status"] is None
-        or row["outcome_version"] is None
-    )
-    boundary_purged = sum(
-        1
-        for row in grid
-        if row["status"] is not None
-        and row["window_end"] is not None
-        and row["window_end"] > period_end
-    )
-    not_yet_eligible = sum(
-        1
-        for row in grid
-        if row["status"] is not None
-        and row["window_end"] is not None
-        and row["window_end"] <= period_end
-        and not row["usable"]
-    )
-    knowledge_eligible = sum(1 for row in grid if row["usable"])
-    evaluated = sum(1 for row in grid if row["usable"] and row["status"] == "evaluated")
-    pending = sum(1 for row in grid if row["usable"] and row["status"] == "pending")
-    not_evaluable = sum(1 for row in grid if row["usable"] and row["status"] == "not_evaluable")
-    anomalies = 0
-    for row in grid:
-        if not (row["usable"] and row["status"] == "evaluated"):
-            continue
-        directional = row["direction"] in ("long", "short")
-        has_directional_metric = row["directional_return_pct"] is not None
-        if directional != has_directional_metric:
-            anomalies += 1
-
-    return {
-        "periodic_observations": len(periodic_ids),
-        "expected_outcome_rows": expected,
-        "requested_outcome_rows": requested,
-        "missing_or_wrong_version_outcome_rows": missing_or_wrong_version,
-        "boundary_purged_outcome_rows": boundary_purged,
-        "not_yet_knowledge_eligible_outcome_rows": not_yet_eligible,
-        "knowledge_eligible_outcome_rows": knowledge_eligible,
-        "evaluated_outcome_rows": evaluated,
-        "pending_outcome_rows": pending,
-        "not_evaluable_outcome_rows": not_evaluable,
-        "directional_metric_anomalies": anomalies,
-    }
-
-
-def _group_stats(rows: list[dict[str, Any]], *, min_group_n: int) -> dict[str, Any]:
-    returns = [r["directional_return_pct"] for r in rows if r["directional_return_pct"] is not None]
-    mfe = [r["mfe_pct"] for r in rows if r["mfe_pct"] is not None]
-    mae = [r["mae_pct"] for r in rows if r["mae_pct"] is not None]
+def _group_stats(
+    rows: list[dict[str, Any]],
+    *,
+    min_group_n: int,
+) -> dict[str, Any]:
+    returns = [
+        float(row["directional_return_pct"])
+        for row in rows
+        if row["directional_return_pct"] is not None
+    ]
+    mfe = [float(row["mfe_pct"]) for row in rows if row["mfe_pct"] is not None]
+    mae = [float(row["mae_pct"]) for row in rows if row["mae_pct"] is not None]
     n = len(returns)
     if n == 0:
         return {
@@ -742,6 +1105,7 @@ def _group_stats(rows: list[dict[str, Any]], *, min_group_n: int) -> dict[str, A
             "mae_mean_pct": None,
             "meets_min_group_n": False,
         }
+
     hits = sum(1 for value in returns if value > 0)
     return {
         "n": n,
@@ -761,36 +1125,62 @@ def _classify_generalization(
     discovery: dict[str, Any],
     test: dict[str, Any],
     min_group_n: int,
-    fold_evaluation_ready: bool,
-) -> str:
-    if not fold_evaluation_ready:
-        return "not_ready"
+    fold_state: str,
+) -> tuple[str, bool | None]:
+    del min_group_n
+    if fold_state == "integrity_blocked":
+        return "integrity_blocked", None
+    if fold_state != "ready_by_clock":
+        return "not_ready", None
     if not discovery["meets_min_group_n"] or not test["meets_min_group_n"]:
-        return "insufficient_sample"
-    d = discovery["expectancy_gross_pct"]
-    t = test["expectancy_gross_pct"]
-    if d is None or t is None:
-        return "insufficient_sample"
-    if d > 0 and t > 0:
-        return "positive_generalization_observed"
-    if d > 0 and t <= 0:
-        return "failed_to_generalize"
-    if d <= 0 and t > 0:
-        return "oos_positive_without_discovery_edge"
-    return "non_positive_both"
+        return "insufficient_sample", None
+
+    discovery_expectancy = discovery["expectancy_gross_pct"]
+    test_expectancy = test["expectancy_gross_pct"]
+    if discovery_expectancy is None or test_expectancy is None:
+        return "insufficient_sample", None
+    if discovery_expectancy > 0 and test_expectancy > 0:
+        return "positive_generalization_observed", True
+    if discovery_expectancy > 0 and test_expectancy <= 0:
+        return "failed_to_generalize", False
+    if discovery_expectancy <= 0 and test_expectancy > 0:
+        return "oos_positive_without_discovery_edge", False
+    return "non_positive_both", False
 
 
-def _group_key(row: dict[str, Any], view: str) -> tuple:
+def _group_key(row: dict[str, Any], view: str) -> tuple[Any, ...]:
     if view == "overall":
         return (row["symbol"], row["horizon_minutes"])
     if view == "state":
-        return (row["symbol"], row["state"], row["direction"], row["horizon_minutes"])
+        return (
+            row["symbol"],
+            row["state"],
+            row["direction"],
+            row["horizon_minutes"],
+        )
     if view == "regime":
-        return (row["symbol"], row["regime_label"], row["direction"], row["horizon_minutes"])
+        return (
+            row["symbol"],
+            row["regime_label"],
+            row["direction"],
+            row["horizon_minutes"],
+        )
     raise ValueError(f"unsupported gross view: {view}")
 
 
-def _actionable_evaluated(grid: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _dimension_names(view: str) -> tuple[str, ...]:
+    if view == "overall":
+        return ("symbol", "horizon_minutes")
+    if view == "state":
+        return ("symbol", "state", "direction", "horizon_minutes")
+    if view == "regime":
+        return ("symbol", "regime_label", "direction", "horizon_minutes")
+    raise ValueError(f"unsupported gross view: {view}")
+
+
+def _actionable_evaluated(
+    grid: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     return [
         row
         for row in grid
@@ -806,59 +1196,67 @@ def _build_gross_views(
     discovery_grid: list[dict[str, Any]],
     test_grid: list[dict[str, Any]],
     min_group_n: int,
-    fold_evaluation_ready: bool,
+    fold_state: str,
 ) -> dict[str, list[dict[str, Any]]]:
     discovery_rows = _actionable_evaluated(discovery_grid)
     test_rows = _actionable_evaluated(test_grid)
 
     views: dict[str, list[dict[str, Any]]] = {}
     for view in GROSS_VIEWS:
-        discovery_groups: dict[tuple, list[dict[str, Any]]] = {}
+        discovery_groups: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
         for row in discovery_rows:
             discovery_groups.setdefault(_group_key(row, view), []).append(row)
-        test_groups: dict[tuple, list[dict[str, Any]]] = {}
+
+        test_groups: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
         for row in test_rows:
             test_groups.setdefault(_group_key(row, view), []).append(row)
 
-        keys = sorted(set(discovery_groups) | set(test_groups), key=lambda item: [str(part) for part in item])
-        group_rows: list[dict[str, Any]] = []
+        keys = sorted(
+            set(discovery_groups) | set(test_groups),
+            key=lambda item: tuple("" if part is None else str(part) for part in item),
+        )
+        result: list[dict[str, Any]] = []
         for key in keys:
-            discovery_stats = _group_stats(discovery_groups.get(key, []), min_group_n=min_group_n)
-            test_stats = _group_stats(test_groups.get(key, []), min_group_n=min_group_n)
-            label = _classify_generalization(
+            discovery_stats = _group_stats(
+                discovery_groups.get(key, []),
+                min_group_n=min_group_n,
+            )
+            test_stats = _group_stats(
+                test_groups.get(key, []),
+                min_group_n=min_group_n,
+            )
+            label, positive_gate = _classify_generalization(
                 discovery=discovery_stats,
                 test=test_stats,
                 min_group_n=min_group_n,
-                fold_evaluation_ready=fold_evaluation_ready,
+                fold_state=fold_state,
             )
+
+            discovery_expectancy = discovery_stats["expectancy_gross_pct"]
+            test_expectancy = test_stats["expectancy_gross_pct"]
             expectancy_diff = None
             retention_ratio = None
-            hit_rate_diff = None
             sign_preserved = None
-            if (
-                discovery_stats["expectancy_gross_pct"] is not None
-                and test_stats["expectancy_gross_pct"] is not None
-            ):
-                expectancy_diff = (
-                    test_stats["expectancy_gross_pct"] - discovery_stats["expectancy_gross_pct"]
+            if discovery_expectancy is not None and test_expectancy is not None:
+                expectancy_diff = test_expectancy - discovery_expectancy
+                if discovery_expectancy != 0:
+                    retention_ratio = test_expectancy / discovery_expectancy
+                sign_preserved = (discovery_expectancy > 0) == (
+                    test_expectancy > 0
                 )
-                if discovery_stats["expectancy_gross_pct"] != 0:
-                    retention_ratio = (
-                        test_stats["expectancy_gross_pct"] / discovery_stats["expectancy_gross_pct"]
-                    )
-                sign_preserved = (
-                    discovery_stats["expectancy_gross_pct"] > 0
-                ) == (test_stats["expectancy_gross_pct"] > 0)
+
+            hit_rate_diff = None
             if (
                 discovery_stats["hit_rate_pct"] is not None
                 and test_stats["hit_rate_pct"] is not None
             ):
-                hit_rate_diff = test_stats["hit_rate_pct"] - discovery_stats["hit_rate_pct"]
+                hit_rate_diff = (
+                    test_stats["hit_rate_pct"] - discovery_stats["hit_rate_pct"]
+                )
 
-            dims = dict(zip(_dimension_names(view), key, strict=True))
-            group_rows.append(
+            result.append(
                 {
-                    **dims,
+                    **dict(zip(_dimension_names(view), key, strict=True)),
                     "discovery": discovery_stats,
                     "test": test_stats,
                     "expectancy_diff_pct": expectancy_diff,
@@ -866,20 +1264,11 @@ def _build_gross_views(
                     "hit_rate_diff_pct": hit_rate_diff,
                     "sign_preserved": sign_preserved,
                     "label": label,
+                    "positive_oos_gate_passed": positive_gate,
                 }
             )
-        views[view] = group_rows
+        views[view] = result
     return views
-
-
-def _dimension_names(view: str) -> tuple[str, ...]:
-    if view == "overall":
-        return ("symbol", "horizon_minutes")
-    if view == "state":
-        return ("symbol", "state", "direction", "horizon_minutes")
-    if view == "regime":
-        return ("symbol", "regime_label", "direction", "horizon_minutes")
-    raise ValueError(f"unsupported gross view: {view}")
 
 
 async def _fetch_execution_snapshots(
@@ -890,9 +1279,17 @@ async def _fetch_execution_snapshots(
 ) -> dict[int, dict[str, dict[str, Any]]]:
     if not observation_ids:
         return {}
+
     rows = await conn.fetch(
         """
-        SELECT observation_id, exchange, status, cost_curve
+        SELECT
+          observation_id,
+          exchange,
+          snapshot_version,
+          status,
+          reason,
+          mid_px,
+          cost_curve
         FROM signal_execution_snapshot
         WHERE observation_id = ANY($1::bigint[])
           AND snapshot_version = $2
@@ -903,32 +1300,239 @@ async def _fetch_execution_snapshots(
     result: dict[int, dict[str, dict[str, Any]]] = {}
     for record in rows:
         row = dict(record)
-        result.setdefault(row["observation_id"], {})[row["exchange"]] = row
+        result.setdefault(int(row["observation_id"]), {})[
+            str(row["exchange"])
+        ] = row
     return result
 
 
-def _execution_cost_bps(
+def _curve_leg(
     snapshot: dict[str, Any] | None,
     *,
     size_usd: float,
     side: str,
-) -> tuple[float | None, bool]:
-    """Returns (market_cost_bps_vs_mid, insufficient_depth)."""
-
+) -> dict[str, Any] | None:
     if snapshot is None or snapshot["status"] != "valid":
-        return None, True
+        return None
+
     curve = snapshot["cost_curve"]
     if isinstance(curve, str):
         curve = json.loads(curve)
-    entry = (curve or {}).get(str(int(size_usd)))
-    if not entry:
-        return None, True
+    if not isinstance(curve, dict):
+        return None
+
+    entry = curve.get(str(int(size_usd)))
+    if not isinstance(entry, dict):
+        return None
     leg = entry.get(side)
-    if not leg:
-        return None, True
-    cost = leg.get("market_cost_bps_vs_mid")
+    return leg if isinstance(leg, dict) else None
+
+
+def _execution_measure(
+    row: dict[str, Any],
+    snapshot: dict[str, Any] | None,
+    *,
+    size_usd: float,
+    fee_bps_per_side: float | None,
+) -> dict[str, Any]:
+    side = "buy" if row["direction"] == "long" else "sell"
+    status = None if snapshot is None else snapshot.get("status")
+    result: dict[str, Any] = {
+        "snapshot_missing": snapshot is None,
+        "snapshot_nonvalid": snapshot is not None and status != "valid",
+        "insufficient_depth": False,
+        "cost_evaluable": False,
+        "gross_directional_return_bps": (
+            None
+            if row["directional_return_pct"] is None
+            else float(row["directional_return_pct"]) * 100.0
+        ),
+        "entry_market_cost_bps": None,
+        "entry_implementation_shortfall_bps": None,
+        "entry_only_market_net_bps": None,
+        "symmetric_market_net_bps": None,
+        "modeled_net_after_fees_bps": None,
+    }
+
+    if snapshot is None or status != "valid":
+        return result
+
+    leg = _curve_leg(snapshot, size_usd=size_usd, side=side)
+    if leg is None:
+        return result
+
     insufficient = bool(leg.get("insufficient_depth"))
-    return (cost if cost is not None else None), insufficient
+    result["insufficient_depth"] = insufficient
+    if insufficient:
+        return result
+
+    entry_fill = leg.get("avg_price")
+    entry_cost = leg.get("market_cost_bps_vs_mid")
+    reference_price = row.get("reference_price")
+    end_price = row.get("end_price")
+
+    try:
+        entry_fill = None if entry_fill is None else float(entry_fill)
+        entry_cost = None if entry_cost is None else float(entry_cost)
+        reference_price = (
+            None if reference_price is None else float(reference_price)
+        )
+        end_price = None if end_price is None else float(end_price)
+    except (TypeError, ValueError, OverflowError):
+        return result
+
+    if (
+        entry_fill is None
+        or entry_fill <= 0
+        or entry_cost is None
+        or not math.isfinite(entry_cost)
+        or end_price is None
+        or end_price <= 0
+    ):
+        return result
+
+    result["entry_market_cost_bps"] = entry_cost
+    result["cost_evaluable"] = True
+
+    if reference_price is not None and reference_price > 0:
+        if row["direction"] == "long":
+            result["entry_implementation_shortfall_bps"] = (
+                entry_fill / reference_price - 1.0
+            ) * 10_000.0
+        else:
+            result["entry_implementation_shortfall_bps"] = (
+                reference_price - entry_fill
+            ) / reference_price * 10_000.0
+
+    if row["direction"] == "long":
+        result["entry_only_market_net_bps"] = (
+            end_price / entry_fill - 1.0
+        ) * 10_000.0
+        symmetric = (
+            (end_price * (1.0 - entry_cost / 10_000.0)) / entry_fill - 1.0
+        ) * 10_000.0
+    else:
+        result["entry_only_market_net_bps"] = (
+            entry_fill - end_price
+        ) / entry_fill * 10_000.0
+        symmetric = (
+            entry_fill - end_price * (1.0 + entry_cost / 10_000.0)
+        ) / entry_fill * 10_000.0
+
+    result["symmetric_market_net_bps"] = symmetric
+    if fee_bps_per_side is not None:
+        result["modeled_net_after_fees_bps"] = (
+            symmetric - 2.0 * fee_bps_per_side
+        )
+    return result
+
+
+def _execution_bucket_summary(
+    bucket: dict[str, Any] | None,
+    *,
+    min_group_n: int,
+) -> dict[str, Any]:
+    if bucket is None:
+        return {
+            "n_evaluated_actionable": 0,
+            "snapshot_missing_n": 0,
+            "snapshot_nonvalid_n": 0,
+            "insufficient_depth_n": 0,
+            "n_cost_evaluable": 0,
+            "cost_evaluable_pct": None,
+            "gross_expectancy_bps": None,
+            "entry_market_cost_mean_bps": None,
+            "entry_implementation_shortfall_mean_bps": None,
+            "entry_only_market_net_expectancy_bps": None,
+            "symmetric_market_net_expectancy_bps": None,
+            "symmetric_market_net_hit_rate_pct": None,
+            "modeled_net_after_fees_n": 0,
+            "modeled_net_after_fees_expectancy_bps": None,
+            "modeled_net_after_fees_hit_rate_pct": None,
+            "meets_min_group_n": False,
+        }
+
+    n_eval = int(bucket["n_evaluated_actionable"])
+    symmetric = bucket["symmetric_market_net_bps"]
+    after_fees = bucket["modeled_net_after_fees_bps"]
+    n_cost = len(symmetric)
+
+    return {
+        "n_evaluated_actionable": n_eval,
+        "snapshot_missing_n": int(bucket["snapshot_missing_n"]),
+        "snapshot_nonvalid_n": int(bucket["snapshot_nonvalid_n"]),
+        "insufficient_depth_n": int(bucket["insufficient_depth_n"]),
+        "n_cost_evaluable": n_cost,
+        "cost_evaluable_pct": (
+            None if n_eval == 0 else n_cost / n_eval * 100.0
+        ),
+        "gross_expectancy_bps": (
+            statistics.fmean(bucket["gross_bps"])
+            if bucket["gross_bps"]
+            else None
+        ),
+        "entry_market_cost_mean_bps": (
+            statistics.fmean(bucket["entry_market_cost_bps"])
+            if bucket["entry_market_cost_bps"]
+            else None
+        ),
+        "entry_implementation_shortfall_mean_bps": (
+            statistics.fmean(bucket["entry_implementation_shortfall_bps"])
+            if bucket["entry_implementation_shortfall_bps"]
+            else None
+        ),
+        "entry_only_market_net_expectancy_bps": (
+            statistics.fmean(bucket["entry_only_market_net_bps"])
+            if bucket["entry_only_market_net_bps"]
+            else None
+        ),
+        "symmetric_market_net_expectancy_bps": (
+            statistics.fmean(symmetric) if symmetric else None
+        ),
+        "symmetric_market_net_hit_rate_pct": (
+            None
+            if not symmetric
+            else sum(value > 0 for value in symmetric) / len(symmetric) * 100.0
+        ),
+        "modeled_net_after_fees_n": len(after_fees),
+        "modeled_net_after_fees_expectancy_bps": (
+            statistics.fmean(after_fees) if after_fees else None
+        ),
+        "modeled_net_after_fees_hit_rate_pct": (
+            None
+            if not after_fees
+            else sum(value > 0 for value in after_fees)
+            / len(after_fees)
+            * 100.0
+        ),
+        "meets_min_group_n": n_cost >= min_group_n,
+    }
+
+
+def _classify_execution_generalization(
+    *,
+    discovery: dict[str, Any],
+    test: dict[str, Any],
+    fold_state: str,
+) -> tuple[str, bool | None]:
+    if fold_state == "integrity_blocked":
+        return "integrity_blocked", None
+    if fold_state != "ready_by_clock":
+        return "not_ready", None
+    if not discovery["meets_min_group_n"] or not test["meets_min_group_n"]:
+        return "insufficient_execution_sample", None
+
+    discovery_net = discovery["symmetric_market_net_expectancy_bps"]
+    test_net = test["symmetric_market_net_expectancy_bps"]
+    if discovery_net is None or test_net is None:
+        return "insufficient_execution_sample", None
+    if discovery_net > 0 and test_net > 0:
+        return "positive_market_cost_generalization_observed", True
+    if discovery_net > 0 and test_net <= 0:
+        return "market_cost_edge_failed_to_generalize", False
+    if discovery_net <= 0 and test_net > 0:
+        return "oos_market_cost_positive_without_discovery_edge", False
+    return "non_positive_after_market_cost_both", False
 
 
 def _build_execution_views(
@@ -938,97 +1542,113 @@ def _build_execution_views(
     discovery_snapshots: dict[int, dict[str, dict[str, Any]]],
     test_snapshots: dict[int, dict[str, dict[str, Any]]],
     options: WalkForwardManifestOptions,
-    fold_evaluation_ready: bool,
+    fold_state: str,
 ) -> list[dict[str, Any]]:
     discovery_rows = _actionable_evaluated(discovery_grid)
     test_rows = _actionable_evaluated(test_grid)
+    fee_map = dict(options.fee_bps_per_side)
 
-    def _period_groups(
+    def period_groups(
         rows: list[dict[str, Any]],
         snapshots: dict[int, dict[str, dict[str, Any]]],
-    ) -> dict[tuple, dict[str, Any]]:
-        groups: dict[tuple, dict[str, Any]] = {}
+    ) -> dict[tuple[Any, ...], dict[str, Any]]:
+        groups: dict[tuple[Any, ...], dict[str, Any]] = {}
         for row in rows:
-            snap_by_exchange = snapshots.get(row["observation_id"], {})
-            side = "buy" if row["direction"] == "long" else "sell"
+            snapshot_by_exchange = snapshots.get(row["observation_id"], {})
             for exchange in options.exchanges:
-                snapshot = snap_by_exchange.get(exchange)
+                snapshot = snapshot_by_exchange.get(exchange)
                 for size_usd in options.sizes_usd:
-                    key = (row["symbol"], exchange, size_usd, row["horizon_minutes"])
+                    key = (
+                        row["symbol"],
+                        exchange,
+                        size_usd,
+                        row["horizon_minutes"],
+                    )
                     bucket = groups.setdefault(
                         key,
                         {
                             "n_evaluated_actionable": 0,
-                            "n_snapshot_present_valid": 0,
-                            "n_insufficient_depth": 0,
-                            "gross_returns": [],
-                            "net_returns": [],
+                            "snapshot_missing_n": 0,
+                            "snapshot_nonvalid_n": 0,
+                            "insufficient_depth_n": 0,
+                            "gross_bps": [],
+                            "entry_market_cost_bps": [],
+                            "entry_implementation_shortfall_bps": [],
+                            "entry_only_market_net_bps": [],
+                            "symmetric_market_net_bps": [],
+                            "modeled_net_after_fees_bps": [],
                         },
                     )
                     bucket["n_evaluated_actionable"] += 1
-                    cost_bps, insufficient = _execution_cost_bps(
-                        snapshot, size_usd=size_usd, side=side
+                    gross = (
+                        None
+                        if row["directional_return_pct"] is None
+                        else float(row["directional_return_pct"]) * 100.0
                     )
-                    if snapshot is not None and snapshot["status"] == "valid":
-                        bucket["n_snapshot_present_valid"] += 1
-                    if insufficient or cost_bps is None:
-                        bucket["n_insufficient_depth"] += 1
+                    if gross is not None:
+                        bucket["gross_bps"].append(gross)
+
+                    measure = _execution_measure(
+                        row,
+                        snapshot,
+                        size_usd=size_usd,
+                        fee_bps_per_side=fee_map.get(exchange),
+                    )
+                    if measure["snapshot_missing"]:
+                        bucket["snapshot_missing_n"] += 1
+                    if measure["snapshot_nonvalid"]:
+                        bucket["snapshot_nonvalid_n"] += 1
+                    if measure["insufficient_depth"]:
+                        bucket["insufficient_depth_n"] += 1
+                    if not measure["cost_evaluable"]:
                         continue
-                    gross_bps = row["directional_return_pct"] * 100.0
-                    bucket["gross_returns"].append(gross_bps)
-                    bucket["net_returns"].append(gross_bps - 2.0 * cost_bps)
+
+                    for field in (
+                        "entry_market_cost_bps",
+                        "entry_implementation_shortfall_bps",
+                        "entry_only_market_net_bps",
+                        "symmetric_market_net_bps",
+                        "modeled_net_after_fees_bps",
+                    ):
+                        value = measure[field]
+                        if value is not None:
+                            bucket[field].append(value)
         return groups
 
-    discovery_groups = _period_groups(discovery_rows, discovery_snapshots)
-    test_groups = _period_groups(test_rows, test_snapshots)
-
+    discovery_groups = period_groups(discovery_rows, discovery_snapshots)
+    test_groups = period_groups(test_rows, test_snapshots)
     keys = sorted(
         set(discovery_groups) | set(test_groups),
-        key=lambda item: (item[0], item[1], item[2], item[3]),
+        key=lambda item: tuple(str(part) for part in item),
     )
+
     result: list[dict[str, Any]] = []
     for key in keys:
         symbol, exchange, size_usd, horizon = key
+        discovery_stats = _execution_bucket_summary(
+            discovery_groups.get(key),
+            min_group_n=options.min_group_n,
+        )
+        test_stats = _execution_bucket_summary(
+            test_groups.get(key),
+            min_group_n=options.min_group_n,
+        )
+        label, positive_gate = _classify_execution_generalization(
+            discovery=discovery_stats,
+            test=test_stats,
+            fold_state=fold_state,
+        )
 
-        def _summarize(bucket: dict[str, Any] | None) -> dict[str, Any]:
-            if bucket is None:
-                return {
-                    "n_evaluated_actionable": 0,
-                    "n_snapshot_present_valid": 0,
-                    "n_insufficient_depth": 0,
-                    "n_cost_evaluable": 0,
-                    "gross_expectancy_bps": None,
-                    "net_expectancy_bps": None,
-                    "meets_min_group_n": False,
-                }
-            n_cost_evaluable = len(bucket["net_returns"])
-            return {
-                "n_evaluated_actionable": bucket["n_evaluated_actionable"],
-                "n_snapshot_present_valid": bucket["n_snapshot_present_valid"],
-                "n_insufficient_depth": bucket["n_insufficient_depth"],
-                "n_cost_evaluable": n_cost_evaluable,
-                "gross_expectancy_bps": (
-                    statistics.fmean(bucket["gross_returns"]) if bucket["gross_returns"] else None
-                ),
-                "net_expectancy_bps": (
-                    statistics.fmean(bucket["net_returns"]) if bucket["net_returns"] else None
-                ),
-                "meets_min_group_n": n_cost_evaluable >= options.min_group_n,
-            }
-
-        discovery_stats = _summarize(discovery_groups.get(key))
-        test_stats = _summarize(test_groups.get(key))
+        discovery_net = discovery_stats[
+            "symmetric_market_net_expectancy_bps"
+        ]
+        test_net = test_stats["symmetric_market_net_expectancy_bps"]
         net_diff = None
         retention_ratio = None
-        if (
-            discovery_stats["net_expectancy_bps"] is not None
-            and test_stats["net_expectancy_bps"] is not None
-        ):
-            net_diff = test_stats["net_expectancy_bps"] - discovery_stats["net_expectancy_bps"]
-            if discovery_stats["net_expectancy_bps"] != 0:
-                retention_ratio = (
-                    test_stats["net_expectancy_bps"] / discovery_stats["net_expectancy_bps"]
-                )
+        if discovery_net is not None and test_net is not None:
+            net_diff = test_net - discovery_net
+            if discovery_net != 0:
+                retention_ratio = test_net / discovery_net
 
         result.append(
             {
@@ -1036,12 +1656,13 @@ def _build_execution_views(
                 "exchange": exchange,
                 "size_usd": size_usd,
                 "horizon_minutes": horizon,
+                "fee_bps_per_side_applied": fee_map.get(exchange),
                 "discovery": discovery_stats,
                 "test": test_stats,
                 "net_expectancy_diff_bps": net_diff,
                 "net_expectancy_retention_ratio": retention_ratio,
-                "fee_bps_per_side_applied": None,
-                "not_ready": not fold_evaluation_ready,
+                "label": label,
+                "positive_market_cost_oos_gate_passed": positive_gate,
             }
         )
     return result
@@ -1054,9 +1675,6 @@ async def _evaluate_fold(
     generated_at: datetime,
     options: WalkForwardManifestOptions,
 ) -> dict[str, Any]:
-    blockers = await _fold_integrity_blockers(conn, fold=fold, options=options)
-    summary = _fold_state_summary(fold=fold, generated_at=generated_at, blockers=blockers)
-
     discovery_end = fold["discovery_end"]
     discovery_grid = await _fetch_period_grid(
         conn,
@@ -1073,97 +1691,167 @@ async def _evaluate_fold(
         options=options,
     )
 
-    discovery_integrity = _integrity_counters(discovery_grid, period_end=discovery_end)
-    test_integrity = _integrity_counters(test_grid, period_end=fold["test_end"])
-
-    gross_views = _build_gross_views(
-        discovery_grid=discovery_grid,
-        test_grid=test_grid,
-        min_group_n=options.min_group_n,
-        fold_evaluation_ready=summary["evaluation_ready"],
+    discovery_integrity = _integrity_counters(
+        discovery_grid,
+        period_end=discovery_end,
+        expected_outcome_version=options.outcome_version,
+    )
+    test_integrity = _integrity_counters(
+        test_grid,
+        period_end=fold["test_end"],
+        expected_outcome_version=options.outcome_version,
     )
 
-    discovery_ids = [row["observation_id"] for row in _actionable_evaluated(discovery_grid)]
-    test_ids = [row["observation_id"] for row in _actionable_evaluated(test_grid)]
+    execution_end = min(generated_at, fold["test_end"])
+    execution_integrity = await _fetch_execution_integrity(
+        conn,
+        period_start=fold["discovery_start"],
+        period_end=execution_end,
+        options=options,
+    )
+
+    summary = _fold_state_summary(
+        fold=fold,
+        generated_at=generated_at,
+        discovery_integrity=discovery_integrity,
+        test_integrity=test_integrity,
+        execution_integrity=execution_integrity,
+    )
+
+    all_discovery_ids = list(
+        {
+            int(row["observation_id"])
+            for row in _actionable_evaluated(discovery_grid)
+        }
+    )
+    all_test_ids = list(
+        {
+            int(row["observation_id"])
+            for row in _actionable_evaluated(test_grid)
+        }
+    )
     discovery_snapshots = await _fetch_execution_snapshots(
-        conn, discovery_ids, execution_snapshot_version=options.execution_snapshot_version
+        conn,
+        all_discovery_ids,
+        execution_snapshot_version=options.execution_snapshot_version,
     )
     test_snapshots = await _fetch_execution_snapshots(
-        conn, test_ids, execution_snapshot_version=options.execution_snapshot_version
+        conn,
+        all_test_ids,
+        execution_snapshot_version=options.execution_snapshot_version,
     )
-    execution_view = _build_execution_views(
-        discovery_grid=discovery_grid,
-        test_grid=test_grid,
-        discovery_snapshots=discovery_snapshots,
-        test_snapshots=test_snapshots,
-        options=options,
-        fold_evaluation_ready=summary["evaluation_ready"],
-    )
+
+    gross_by_mode: dict[str, Any] = {}
+    execution_by_mode: dict[str, Any] = {}
+    for mode in options.sampling_modes:
+        sampled_discovery = _sample_grid(discovery_grid, mode)
+        sampled_test = _sample_grid(test_grid, mode)
+
+        gross_by_mode[mode] = _build_gross_views(
+            discovery_grid=sampled_discovery,
+            test_grid=sampled_test,
+            min_group_n=options.min_group_n,
+            fold_state=summary["state"],
+        )
+        execution_by_mode[mode] = _build_execution_views(
+            discovery_grid=sampled_discovery,
+            test_grid=sampled_test,
+            discovery_snapshots=discovery_snapshots,
+            test_snapshots=test_snapshots,
+            options=options,
+            fold_state=summary["state"],
+        )
 
     return {
         **summary,
         "integrity": {
             "discovery": discovery_integrity,
             "test": test_integrity,
+            "execution": execution_integrity,
         },
-        "gross_views": gross_views,
-        "execution_view": execution_view,
+        "gross_views": gross_by_mode,
+        "execution_views": execution_by_mode,
     }
+
+
+def _parse_iso(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        return _aware_utc(value)
+    if not isinstance(value, str):
+        raise ValueError("manifest fold timestamp is not ISO text")
+    return _aware_utc(datetime.fromisoformat(value.replace("Z", "+00:00")))
 
 
 async def evaluate_walk_forward(
     conn: asyncpg.Connection,
     manifest_name: str,
-    options: WalkForwardManifestOptions | None = None,
 ) -> dict[str, Any]:
-    """Stage B (Evaluate): read-only, hash-verified walk-forward report.
+    """Stage B: hash/schedule-verified read-only walk-forward evaluation."""
 
-    Caller must run this inside a ``REPEATABLE READ READ ONLY`` transaction.
-    This function performs no INSERT/UPDATE/DELETE/DDL of its own.
-    """
-
-    manifest = await load_walk_forward_manifest(conn, manifest_name)
-    spec = manifest["spec"]
-    opts = options or WalkForwardManifestOptions(
-        name=manifest["manifest_name"],
-        warmup_days=manifest["warmup_days"],
-        test_days=manifest["test_days"],
-        fold_count=manifest["fold_count"],
-        min_group_n=manifest["min_group_n"],
-        horizons=tuple(spec["horizons_minutes"]),
-        sampling_modes=tuple(spec["sampling_modes"]),
-        symbols=tuple(spec["symbols"]),
-        exchanges=tuple(spec["execution_exchanges"]),
-        sizes_usd=tuple(spec["execution_sizes_usd"]),
-        fee_bps_per_side=tuple(sorted(spec["fee_bps_per_side"].items())),
-        logic_version=spec["versions"]["logic_version"],
-        evidence_version=spec["versions"]["evidence_version"],
-        sampling_version=spec["versions"]["sampling_version"],
-        context_version=spec["versions"]["context_version"],
-        outcome_version=spec["versions"]["outcome_version"],
-        execution_snapshot_version=spec["versions"]["execution_snapshot_version"],
-    )
-
+    manifest, options = await load_walk_forward_manifest(conn, manifest_name)
     generated_at = _aware_utc(await conn.fetchval("SELECT clock_timestamp()"))
 
-    folds = []
+    fold_specs: list[dict[str, Any]] = []
     for fold in manifest["folds"]:
-        fold_dt = {
-            "fold_index": fold["fold_index"],
-            "discovery_start": _parse_iso(fold["discovery_start"]),
-            "discovery_end": _parse_iso(fold["discovery_end"]),
-            "test_start": _parse_iso(fold["test_start"]),
-            "test_end": _parse_iso(fold["test_end"]),
-            "test_maturity_at": _parse_iso(fold["test_maturity_at"]),
-        }
-        folds.append(await _evaluate_fold(conn, fold=fold_dt, generated_at=generated_at, options=opts))
+        fold_specs.append(
+            {
+                "fold_index": int(fold["fold_index"]),
+                "discovery_start": _parse_iso(fold["discovery_start"]),
+                "discovery_end": _parse_iso(fold["discovery_end"]),
+                "test_start": _parse_iso(fold["test_start"]),
+                "test_end": _parse_iso(fold["test_end"]),
+                "test_maturity_at": _parse_iso(fold["test_maturity_at"]),
+            }
+        )
 
-    ready_by_clock_fold_count = sum(1 for fold in folds if fold["clock_state"] == "ready_by_clock")
-    evaluation_ready_fold_count = sum(1 for fold in folds if fold["evaluation_ready"])
-    first_oos_cutoff_in_future = manifest["cutoff_at"] > generated_at
+    folds = [
+        await _evaluate_fold(
+            conn,
+            fold=fold,
+            generated_at=generated_at,
+            options=options,
+        )
+        for fold in fold_specs
+    ]
+
+    ready_by_clock_fold_count = sum(
+        fold["clock_state"] == "ready_by_clock" for fold in folds
+    )
+    evaluation_ready_fold_count = sum(
+        bool(fold["evaluation_ready"]) for fold in folds
+    )
+
+    positive_oos_gate_count = 0
+    positive_execution_oos_gate_count = 0
+    for fold in folds:
+        for mode_views in fold["gross_views"].values():
+            for rows in mode_views.values():
+                positive_oos_gate_count += sum(
+                    row["positive_oos_gate_passed"] is True for row in rows
+                )
+        for rows in fold["execution_views"].values():
+            positive_execution_oos_gate_count += sum(
+                row["positive_market_cost_oos_gate_passed"] is True
+                for row in rows
+            )
+
+    global_execution_end = min(
+        generated_at,
+        fold_specs[-1]["test_end"],
+    )
+    execution_integrity = await _fetch_execution_integrity(
+        conn,
+        period_start=_parse_iso(manifest["spec"]["discovery_start"]),
+        period_end=global_execution_end,
+        options=options,
+    )
+
+    first_oos_cutoff_in_future = _aware_utc(manifest["cutoff_at"]) > generated_at
 
     return {
         "report_version": WALK_FORWARD_REPORT_VERSION,
+        "walk_forward_spec_version": WALK_FORWARD_SPEC_VERSION,
+        "manifest_version": WALK_FORWARD_MANIFEST_VERSION,
         "generated_at": generated_at,
         "manifest": {
             "manifest_id": manifest["manifest_id"],
@@ -1176,10 +1864,29 @@ async def evaluate_walk_forward(
             "test_days": manifest["test_days"],
             "fold_count": manifest["fold_count"],
             "min_group_n": manifest["min_group_n"],
+            "spec": manifest["spec"],
+        },
+        "gates": {
+            "manifest_hash_valid": True,
+            "schedule_valid": True,
+            "selection_policy_is_fixed_no_selection": True,
+            "first_oos_boundary_frozen_before_start": (
+                _aware_utc(manifest["created_at"])
+                < _aware_utc(manifest["cutoff_at"])
+            ),
+            "automatic_parameter_selection": False,
+            "automatic_live_model_changes": False,
+            "ready_by_clock_fold_count": ready_by_clock_fold_count,
+            "evaluation_ready_fold_count": evaluation_ready_fold_count,
+            "positive_oos_gate_count": positive_oos_gate_count,
+            "positive_execution_oos_gate_count": (
+                positive_execution_oos_gate_count
+            ),
         },
         "first_oos_cutoff_in_future": first_oos_cutoff_in_future,
         "ready_by_clock_fold_count": ready_by_clock_fold_count,
         "evaluation_ready_fold_count": evaluation_ready_fold_count,
+        "execution_integrity": execution_integrity,
         "folds": folds,
         "execution_contract": {
             "source": "signal_execution_snapshot (PR10 immutable)",
@@ -1189,14 +1896,9 @@ async def evaluate_walk_forward(
             "min_execution_coverage_pct": None,
         },
         "methodology": {
+            "sampling_modes": list(options.sampling_modes),
             "gross_views": list(GROSS_VIEWS),
             "no_ranking_or_winner_selection": True,
             "live_scoring_changes": False,
         },
     }
-
-
-def _parse_iso(value: Any) -> datetime:
-    if isinstance(value, datetime):
-        return _aware_utc(value)
-    return _aware_utc(datetime.fromisoformat(value))

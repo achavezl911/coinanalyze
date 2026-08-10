@@ -64,7 +64,7 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
 
     conn = await asyncpg.connect(settings.pg_dsn)
     try:
-        async with conn.transaction():
+        async with conn.transaction(isolation="serializable"):
             manifest = await freeze_walk_forward_manifest(conn, options)
     finally:
         await conn.close()
