@@ -303,5 +303,8 @@ never be backfilled later.
 
 ## Next
 
-PR11 should perform **walk-forward / out-of-sample model evaluation** after
-enough PR4-PR10 forward data has accumulated.
+PR11 performs **walk-forward / out-of-sample model evaluation**, implemented
+in [`SIGNAL_WALK_FORWARD.md`](SIGNAL_WALK_FORWARD.md). It consumes this
+table's immutable per-venue snapshots to build a paired discovery/OOS
+execution-adjusted view; it never reads current `orderbook_depth` and never
+backfills execution history for observations that predate PR10.
