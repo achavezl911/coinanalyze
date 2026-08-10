@@ -17,6 +17,8 @@ REQUIRED_PATHS=(
   pyproject.toml
   requirements.lock
   sql/schema.sql
+  sql/migrations/20260809_temporal_partitioning.sql
+  sql/migrations/20260809_temporal_partitioning.down.sql
   scripts/backup.sh
   scripts/backfill_ohlcv_daily.py
   scripts/smoke_test.sh

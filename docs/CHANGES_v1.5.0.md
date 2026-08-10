@@ -332,10 +332,17 @@ distribución declarada en cada punto de ruptura: 1920, 1440, 1366, 1100, 900, 7
 
 ---
 
+## PR #3: integridad explícita de huecos
+
+- `data_gap` distingue `unresolved`, `recovered` y `unrecoverable` con intervalos
+  semiabiertos `[start,end)` e identidad exacta por feed, exchange, mercado y símbolo.
+- `scripts/recover_gaps.py` solo acepta recuperación histórica de fuente y granularidad
+  idénticas. Sin adapter exacto clasifica el hueco como `unrecoverable`; no sustituye venues,
+  mercados ni trades por OHLCV y no sintetiza order books.
+- Los endpoints administrativos `/api/data-quality/gaps*` no forman parte de PR #3.
+
 ## Lo que NO entra en esta versión
 
-- **El recuperador general de huecos** (`data_gaps`, CLI, `/api/data-quality/gaps*`) sigue
-  sin implementarse, por decisión explícita. No se ha simulado ni esbozado.
 - Las bandas de coste/objetivo y los pesos por capa son **convenciones declaradas**, no
   resultados backtesteados. Viajan en la respuesta precisamente para que se puedan discutir.
 - No se ha validado contra PostgreSQL de producción con feeds vivos: las pruebas corren

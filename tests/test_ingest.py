@@ -219,6 +219,10 @@ class _StatefulMetricsConnection(_CycleConnection):
             "oi_old": 100.0,
         }
 
+    async def fetch(self, query, *_args):
+        assert "data_gap" in query
+        return []
+
     async def execute(self, query, *args):
         if "INSERT INTO metrics_snapshot" in query:
             self.snapshot_args = args
@@ -431,6 +435,9 @@ async def test_postgres_snapshot_publish_lock_serializes_concurrent_cycles():
 
             async def fetchrow(self, query, *args):
                 return await self._conn.fetchrow(query, *args)
+
+            async def fetch(self, query, *args):
+                return await self._conn.fetch(query, *args)
 
         async def slow_publish() -> None:
             await publish_snapshot(

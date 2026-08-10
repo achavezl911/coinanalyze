@@ -78,6 +78,9 @@ class _SnapshotConnection:
             "oi_old": 100.0,
         }
 
+    async def fetch(self, _query, *_args):
+        return []
+
 
 async def test_snapshot_scoring_uses_separate_closed_price_and_oi_cutoffs():
     conn = _SnapshotConnection()

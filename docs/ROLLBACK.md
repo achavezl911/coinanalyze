@@ -57,6 +57,9 @@ Restaurar el código **no** revierte cambios de esquema. Por eso:
 - Cambios de esquema **destructivos** (DROP/rename de columnas en uso) requieren estrategia
   explícita de migración/rollback en dos pasos (expand → migrate → contract), nunca en un solo
   deploy.
+- Tras `20260809_temporal_partitioning`, el rollback de aplicación soportado es el release
+  bridge `fix: prepare liquidation writes for partition migration`; el escritor raw de
+  `5ed802f` no es compatible con la clave de la tabla particionada.
 - Restauración de datos (último recurso): descomprimir el dump previo y restaurar con `psql`
   (operación manual y consciente, fuera del flujo automático).
 

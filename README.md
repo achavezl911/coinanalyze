@@ -39,9 +39,13 @@ Detalle completo en [`docs/CHANGES_v1.5.0.md`](docs/CHANGES_v1.5.0.md).
   participante) y “Lectura contextual”.
 - **Barra superior con `grid-template-areas`**, verificada a 1920/1440/1366/1100/900/700/430 px.
 
-**Limitaciones conocidas.** El recuperador general de huecos (`data_gaps`, CLI y endpoints
-`/api/data-quality/gaps*`) **no forma parte de esta versión** y sigue pendiente. Las bandas
-de coste/objetivo y los pesos por capa son convenciones declaradas, no resultados
+**Limitaciones conocidas.** La integridad de huecos explícitos y el CLI
+`scripts/recover_gaps.py` ya forman parte de PR #3. La recuperación solo se permite cuando
+existe una fuente histórica con exchange, mercado, significado, símbolo y granularidad
+idénticos; como todavía no hay adapters exactos registrados para los streams realtime ni
+para order books, esos huecos se marcan `unrecoverable` en vez de sintetizarse. Los endpoints
+administrativos `/api/data-quality/gaps*` siguen fuera de alcance. Las bandas de
+coste/objetivo y los pesos por capa son convenciones declaradas, no resultados
 backtesteados, y viajan en la respuesta para poder auditarlos. La afirmación anterior de que
 `bars_closed_beyond`, `retest_done`, `returned_inside`, `pullback_pct` y `level_defended` no
 se medían quedó **superseded** por la implementación posterior de `setup_observables()`:

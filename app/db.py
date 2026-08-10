@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 import asyncpg
 
 from app.config import MARKET_SYMBOL_CATALOG, MarketSymbol, Settings
+from app.partitioning import ensure_temporal_partitions
 
 INGEST_COMPONENT_MAX_AGES = {"ohlcv_1m": 180.0, "metrics_5m": 420.0}
 
@@ -91,6 +92,8 @@ async def create_pool(
         init=init_connection,
     )
     await sync_market_catalog(pool, ownership=ownership)
+    async with pool.acquire() as conn:
+        await ensure_temporal_partitions(conn)
     return pool
 
 

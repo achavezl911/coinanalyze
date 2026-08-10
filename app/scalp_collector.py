@@ -7,7 +7,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import asyncpg
@@ -15,6 +15,7 @@ import websockets
 from websockets.exceptions import ConnectionClosed
 
 from app.config import FUTURES_PAIR_MAP, LARGE_TRADE_THRESHOLD_MAP, PAIR_SYMBOL_MAP, get_settings
+from app.data_gaps import record_event_stream_loss
 from app.db import (
     ServiceOwnership,
     ServiceOwnershipLost,
@@ -28,6 +29,7 @@ from app.db import (
     monitor_service_lock,
 )
 from app.logging_setup import configure_logging
+from app.partitioning import apply_temporal_retention
 from app.scalp_logic import compute_scalp_summary, scalp_context
 from app.sharding import assigned_symbols
 
@@ -440,6 +442,7 @@ LAST_FLUSH = {"trades": 0.0, "books": 0.0, "liquidations": 0.0, "signals": 0.0}
 LIQ_DROPPED = 0
 LIQ_FEED_CONNECTED = {"binance": False, "bybit": False}
 LIQ_LOSS_PENDING: dict[str, datetime] = {}
+LIQ_GAP_PENDING: set[tuple[str, str, datetime]] = set()
 
 
 async def persist_liquidation_feed_state(
@@ -524,6 +527,15 @@ async def persist_liquidation_health_snapshot(
                 data_loss=True,
                 **fence,
             )
+            pending_gaps = sorted(
+                (item for item in LIQ_GAP_PENDING if item[1] == exchange),
+                key=lambda item: (item[2], item[0]),
+            )
+            for symbol, gap_exchange, event_at in pending_gaps:
+                await persist_liquidation_event_loss(
+                    conn, symbol, gap_exchange, event_at, ownership=ownership,
+                )
+                LIQ_GAP_PENDING.discard((symbol, gap_exchange, event_at))
         if connected:
             await mark_feed_shard_connected(
                 conn,
@@ -548,6 +560,30 @@ async def persist_liquidation_health_snapshot(
             )
         if loss_at is not None and LIQ_LOSS_PENDING.get(exchange) == loss_at:
             LIQ_LOSS_PENDING.pop(exchange, None)
+
+
+async def persist_liquidation_event_loss(
+    conn: asyncpg.Connection,
+    symbol: str,
+    exchange: str,
+    event_at: datetime,
+    *,
+    ownership: ServiceOwnership | None = None,
+) -> int:
+    """Fence the collector generation in the transaction that records event loss."""
+    async with fenced_transaction(conn, ownership):
+        return await record_event_stream_loss(
+            conn,
+            feed="liquidations",
+            exchange=exchange,
+            market="perpetual",
+            symbol=symbol,
+            start=event_at,
+            end=event_at + timedelta(microseconds=1),
+            evidence_type="queue_full",
+            detection_reason="liquidation event dropped because the persistence queue was full",
+            detection_source="scalp_collector.safe_liq_put",
+        )
 
 
 async def reset_liquidation_feed_health(
@@ -1170,7 +1206,12 @@ async def safe_liq_put(item: tuple[datetime, str, str, str, float, float, float,
         LIQ_QUEUE.put_nowait(item)
     except asyncio.QueueFull:
         LIQ_DROPPED += 1
-        LIQ_LOSS_PENDING[item[2]] = datetime.now(UTC)
+        loss_at = datetime.now(UTC)
+        LIQ_LOSS_PENDING[item[2]] = loss_at
+        event_at = item[0] if isinstance(item[0], datetime) else loss_at
+        if event_at.tzinfo is None or event_at.utcoffset() is None:
+            event_at = event_at.replace(tzinfo=UTC)
+        LIQ_GAP_PENDING.add((item[1], item[2], event_at.astimezone(UTC)))
         if LIQ_DROPPED == 1 or LIQ_DROPPED % 100 == 0:
             LOGGER.warning("liquidation_queue_overflow dropped_total=%d queue_size=%d", LIQ_DROPPED, LIQ_QUEUE.qsize())
 
@@ -1297,9 +1338,9 @@ def owns_global_cleanup(shard_index: int) -> bool:
 
 
 async def cleanup_expired_rows(conn: asyncpg.Connection) -> None:
-    await conn.execute(
-        "DELETE FROM futures_trades_realtime "
-        "WHERE ts < now()-($1::int * interval '1 hour')",
+    await apply_temporal_retention(
+        conn,
+        "futures_trades_realtime",
         SETTINGS.SCALP_TRADE_RETENTION_HOURS,
     )
     # futures_trades_agg debe cubrir una sesion NYSE completa (24h) para que
@@ -1310,19 +1351,19 @@ async def cleanup_expired_rows(conn: asyncpg.Connection) -> None:
         "WHERE ts < now()-($1::int * interval '1 hour')",
         SETTINGS.SCALP_MINUTE_RETENTION_HOURS,
     )
-    await conn.execute(
-        "DELETE FROM orderbook_snapshot "
-        "WHERE ts < now()-($1::int * interval '1 hour')",
+    await apply_temporal_retention(
+        conn,
+        "orderbook_snapshot",
         SETTINGS.SCALP_ORDERBOOK_RETENTION_HOURS,
     )
-    await conn.execute(
-        "DELETE FROM liquidations_realtime "
-        "WHERE ts < now()-($1::int * interval '1 hour')",
+    await apply_temporal_retention(
+        conn,
+        "liquidations_realtime",
         SETTINGS.SCALP_TRADE_RETENTION_HOURS,
     )
-    await conn.execute(
-        "DELETE FROM scalp_signal_snapshot "
-        "WHERE ts < now()-($1::int * interval '1 hour')",
+    await apply_temporal_retention(
+        conn,
+        "scalp_signal_snapshot",
         SETTINGS.SCALP_SIGNAL_RETENTION_HOURS,
     )
 

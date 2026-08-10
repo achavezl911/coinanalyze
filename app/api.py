@@ -25,6 +25,7 @@ from app.ai_context import (
     normalize_profile,
 )
 from app.config import SUPPORTED_SYMBOLS, WS_SYMBOL_MAP, get_settings
+from app.data_gaps import GapRequirement, blocking_requirement_keys
 from app.db import (
     INGEST_COMPONENT_MAX_AGES,
     create_pool,
@@ -220,6 +221,72 @@ def records(rows: list[asyncpg.Record]) -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+async def mask_gapped_series_rows(
+    conn: asyncpg.Connection,
+    rows: list[dict[str, Any]],
+    *,
+    bucket: timedelta,
+    feed: str,
+    exchanges: tuple[str, ...],
+    market: str,
+    symbol: str,
+    value_keys: tuple[str, ...] = (),
+    cumulative_keys: tuple[str, ...] = (),
+) -> None:
+    """Expose gap buckets as null and never continue an incomplete cumulative value."""
+    indexed_starts = [
+        (index, start)
+        for index, row in enumerate(rows)
+        if isinstance((start := row.get("bucket")), datetime)
+    ]
+    if not indexed_starts:
+        return
+    source_window_start = min(start for _, start in indexed_starts)
+    requirements: list[GapRequirement] = []
+    for index, start in indexed_starts:
+        for exchange in exchanges:
+            requirements.append(
+                GapRequirement(
+                    f"value:{index}",
+                    feed,
+                    exchange,
+                    market,
+                    symbol,
+                    start,
+                    start + bucket,
+                )
+            )
+            if cumulative_keys:
+                requirements.append(
+                    GapRequirement(
+                        f"cumulative:{index}",
+                        feed,
+                        exchange,
+                        market,
+                        symbol,
+                        source_window_start,
+                        start + bucket,
+                    )
+                )
+    blocked = await blocking_requirement_keys(conn, requirements)
+    blocked_values = {
+        int(key.removeprefix("value:")) for key in blocked if key.startswith("value:")
+    }
+    blocked_cumulative = {
+        int(key.removeprefix("cumulative:"))
+        for key in blocked
+        if key.startswith("cumulative:")
+    }
+    for index in blocked_values:
+        row = rows[index]
+        for value_key in value_keys:
+            row[value_key] = None
+    for index in blocked_cumulative:
+        row = rows[index]
+        for cumulative_key in cumulative_keys:
+            row[cumulative_key] = None
+
+
 async def latest_snapshot(conn: asyncpg.Connection, symbol: str) -> dict[str, Any] | None:
     row = await conn.fetchrow(
         "SELECT * FROM metrics_snapshot WHERE symbol=$1 ORDER BY ts DESC LIMIT 1", symbol
@@ -412,7 +479,19 @@ async def cvd(
             bucket,
             limit,
         )
-    return records(rows)
+        result = records(rows)
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+            value_keys=("delta_usd",),
+            cumulative_keys=("cvd",),
+        )
+    return result
 
 
 @app.get("/api/cvd/spot")
@@ -441,7 +520,19 @@ async def cvd_spot(
             bucket,
             limit,
         )
-    return records(rows)
+        result = records(rows)
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="spot_trades",
+            exchanges=("binance", "bybit", "combined"),
+            market="spot",
+            symbol=ws_symbol,
+            value_keys=("delta_usd",),
+            cumulative_keys=("cvd",),
+        )
+    return result
 
 
 @app.get("/api/cvd/divergence")
@@ -493,7 +584,28 @@ async def cvd_divergence(
             bucket,
             limit,
         )
-    return records(rows)
+        result = records(rows)
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+            cumulative_keys=("cvd_fut", "cvd_diff"),
+        )
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="spot_trades",
+            exchanges=("binance", "bybit", "combined"),
+            market="spot",
+            symbol=ws_symbol,
+            cumulative_keys=("cvd_spot", "cvd_diff"),
+        )
+    return result
 
 
 @app.get("/api/oi")

@@ -26,6 +26,7 @@ from app.ingest import seconds_until_aligned_run, upsert_ohlcv
 from app.interpretation import evaluate_setups
 from app.logging_setup import configure_logging
 from app.metrics import session_bounds
+from app.partitioning import apply_temporal_retention
 from app.scalp_logic import swing_score
 
 LOGGER = logging.getLogger(__name__)
@@ -331,9 +332,7 @@ async def apply_retention(
             "DELETE FROM daily_verdict WHERE session_date < (current_date - $1::int)",
             daily_days,
         )
-    await conn.execute(
-        "DELETE FROM spot_trades_realtime WHERE ts < now() - make_interval(hours => $1)", rt_hours
-    )
+    await apply_temporal_retention(conn, "spot_trades_realtime", rt_hours)
 
 
 # Ventanas con baseline y de que intervalo se construyen. 1min cubre hasta 1 h; por encima el

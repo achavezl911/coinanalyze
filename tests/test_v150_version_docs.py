@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 import tomllib
 from pathlib import Path
 
@@ -38,11 +37,11 @@ def test_el_changelog_documenta_lo_que_pide_el_prompt() -> None:
         assert tema.lower() in CHANGELOG.lower(), tema
 
 
-def test_se_declara_que_el_recuperador_de_huecos_NO_entra() -> None:
-    """Requisito explicito: no se implementó ni se simuló, y hay que decirlo."""
+def test_se_declaran_los_limites_exactos_del_recuperador_de_huecos() -> None:
     for documento in (README, CHANGELOG):
-        assert "data_gaps" in documento
-        assert re.search(r"no (forma parte|entra|se ha implementad)", documento, re.IGNORECASE)
+        assert "recover_gaps.py" in documento
+        assert "unrecoverable" in documento
+        assert "order book" in documento.lower()
 
 
 def test_se_declaran_las_limitaciones_conocidas() -> None:
@@ -52,10 +51,10 @@ def test_se_declaran_las_limitaciones_conocidas() -> None:
     assert "backtestead" in CHANGELOG
 
 
-def test_el_recuperador_de_huecos_no_esta_implementado() -> None:
-    """La documentación dice que no existe: se comprueba que efectivamente no existe."""
+def test_el_recuperador_de_huecos_existe_sin_inventar_endpoints() -> None:
     fuentes = "\n".join(
         ruta.read_text(encoding="utf-8") for ruta in (RAIZ / "app").glob("*.py")
     )
-    assert "data_gaps" not in fuentes
+    assert "data_gaps" in fuentes
+    assert (RAIZ / "scripts" / "recover_gaps.py").is_file()
     assert "/api/data-quality/gaps" not in fuentes

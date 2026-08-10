@@ -12,6 +12,8 @@ class FlowConnection:
         self.query = ""
 
     async def fetch(self, query, *_args):
+        if "data_gap" in query:
+            return []
         self.query = query
         return [
             {
@@ -54,6 +56,27 @@ async def test_long_spot_windows_stitch_history_and_live_tail_without_overlap():
     assert "spot_trades_agg" in conn.query
     assert "c.agg_hi+interval '1 minute'" in conn.query
     assert "NOT c.realtime_complete" in conn.query
+
+
+@pytest.mark.asyncio
+async def test_explicit_spot_gap_overrides_apparent_span_completeness():
+    class BlockedFlowConnection(FlowConnection):
+        async def fetch(self, query, *_args):
+            if "data_gap" in query:
+                return [{"key": "4h:combined"}]
+            return await super().fetch(query, *_args)
+
+    result = await spot_flow_windows(
+        BlockedFlowConnection(),
+        "BTC",
+        [("4h", 14400), ("8h", 28800)],
+    )
+
+    assert result["4h"]["combined"]["complete"] is False
+    assert result["4h"]["combined"]["coverage_status"] == "partial"
+    assert result["4h"]["combined"]["delta"] is None
+    assert result["4h"]["combined"]["gap_reason"] == "data_gap"
+    assert result["8h"]["combined"]["complete"] is True
 
 
 @pytest.mark.asyncio
