@@ -188,7 +188,12 @@ async def test_legacy_schema_migration_writer_duplicates_and_rollback() -> None:
         await conn.execute(ROLLBACK_SQL)
         assert await _primary_key_columns(conn) == ["exchange", "event_id"]
         assert await conn.fetchval(
-            "SELECT to_regclass('liquidations_realtime_exchange_event_ts_uidx') IS NULL"
+            "SELECT NOT EXISTS ("
+            "  SELECT 1 FROM pg_index"
+            "  JOIN pg_class AS idx ON idx.oid = pg_index.indexrelid"
+            "  WHERE pg_index.indrelid = 'liquidations_realtime'::regclass"
+            "    AND idx.relname = 'liquidations_realtime_exchange_event_ts_uidx'"
+            ")"
         )
         assert await conn.fetchval("SELECT count(*) FROM liquidations_realtime") == 3
     finally:
@@ -207,7 +212,12 @@ async def test_future_partitioned_schema_writer_is_globally_idempotent_and_down_
         await first.execute(PARTITIONED_SCHEMA_SQL)
         await first.execute(MIGRATION_SQL)
         assert await first.fetchval(
-            "SELECT to_regclass('liquidations_realtime_exchange_event_ts_uidx') IS NULL"
+            "SELECT NOT EXISTS ("
+            "  SELECT 1 FROM pg_index"
+            "  JOIN pg_class AS idx ON idx.oid = pg_index.indexrelid"
+            "  WHERE pg_index.indrelid = 'liquidations_realtime'::regclass"
+            "    AND idx.relname = 'liquidations_realtime_exchange_event_ts_uidx'"
+            ")"
         )
 
         first_transaction = first.transaction()
