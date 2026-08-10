@@ -85,6 +85,10 @@ $$;
 DROP FUNCTION IF EXISTS apply_temporal_retention(text, integer);
 DROP FUNCTION IF EXISTS drop_expired_temporal_partitions(text, timestamptz);
 DROP FUNCTION IF EXISTS ensure_temporal_partitions(timestamptz, integer, integer);
-DROP FUNCTION IF EXISTS enforce_liquidation_event_unique();
+
+-- The supported rollback target is the compatibility bridge release. Its legacy
+-- table still uses this function and trigger with the three-column writer.
+DELETE FROM schema_migration
+WHERE name = '20260809_temporal_partitioning';
 
 COMMIT;

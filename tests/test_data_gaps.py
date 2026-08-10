@@ -95,7 +95,7 @@ async def test_chart_gap_nulls_the_bucket_and_all_later_cumulative_values(
     ]
 
     async def blocked(_conn, _requirements):
-        return {"1"}
+        return {"value:1", "cumulative:1", "cumulative:2"}
 
     monkeypatch.setattr(api, "blocking_requirement_keys", blocked)
     await mask_gapped_series_rows(

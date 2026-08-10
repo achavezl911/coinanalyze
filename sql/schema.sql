@@ -813,3 +813,7 @@ $$;
 SELECT ensure_temporal_partitions();
 
 COMMIT;
+
+-- psql deployment entry point: CREATE TABLE IF NOT EXISTS cannot convert legacy
+-- ordinary tables. This include executes the verified transactional conversion.
+\ir migrations/20260809_temporal_partitioning.sql

@@ -234,28 +234,57 @@ async def mask_gapped_series_rows(
     cumulative_keys: tuple[str, ...] = (),
 ) -> None:
     """Expose gap buckets as null and never continue an incomplete cumulative value."""
+    indexed_starts = [
+        (index, start)
+        for index, row in enumerate(rows)
+        if isinstance((start := row.get("bucket")), datetime)
+    ]
+    if not indexed_starts:
+        return
+    source_window_start = min(start for _, start in indexed_starts)
     requirements: list[GapRequirement] = []
-    for index, row in enumerate(rows):
-        start = row.get("bucket")
-        if not isinstance(start, datetime):
-            continue
+    for index, start in indexed_starts:
         for exchange in exchanges:
             requirements.append(
                 GapRequirement(
-                    str(index), feed, exchange, market, symbol, start, start + bucket,
+                    f"value:{index}",
+                    feed,
+                    exchange,
+                    market,
+                    symbol,
+                    start,
+                    start + bucket,
                 )
             )
-    blocked_indexes = sorted(
-        int(key) for key in await blocking_requirement_keys(conn, requirements)
-    )
-    for index in blocked_indexes:
+            if cumulative_keys:
+                requirements.append(
+                    GapRequirement(
+                        f"cumulative:{index}",
+                        feed,
+                        exchange,
+                        market,
+                        symbol,
+                        source_window_start,
+                        start + bucket,
+                    )
+                )
+    blocked = await blocking_requirement_keys(conn, requirements)
+    blocked_values = {
+        int(key.removeprefix("value:")) for key in blocked if key.startswith("value:")
+    }
+    blocked_cumulative = {
+        int(key.removeprefix("cumulative:"))
+        for key in blocked
+        if key.startswith("cumulative:")
+    }
+    for index in blocked_values:
         row = rows[index]
         for value_key in value_keys:
             row[value_key] = None
-    if blocked_indexes:
-        for row in rows[blocked_indexes[0] :]:
-            for cumulative_key in cumulative_keys:
-                row[cumulative_key] = None
+    for index in blocked_cumulative:
+        row = rows[index]
+        for cumulative_key in cumulative_keys:
+            row[cumulative_key] = None
 
 
 async def latest_snapshot(conn: asyncpg.Connection, symbol: str) -> dict[str, Any] | None:

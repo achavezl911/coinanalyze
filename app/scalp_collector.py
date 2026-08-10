@@ -532,17 +532,8 @@ async def persist_liquidation_health_snapshot(
                 key=lambda item: (item[2], item[0]),
             )
             for symbol, gap_exchange, event_at in pending_gaps:
-                await record_event_stream_loss(
-                    conn,
-                    feed="liquidations",
-                    exchange=gap_exchange,
-                    market="perpetual",
-                    symbol=symbol,
-                    start=event_at,
-                    end=event_at + timedelta(microseconds=1),
-                    evidence_type="queue_full",
-                    detection_reason="liquidation event dropped because the persistence queue was full",
-                    detection_source="scalp_collector.safe_liq_put",
+                await persist_liquidation_event_loss(
+                    conn, symbol, gap_exchange, event_at, ownership=ownership,
                 )
                 LIQ_GAP_PENDING.discard((symbol, gap_exchange, event_at))
         if connected:
@@ -569,6 +560,30 @@ async def persist_liquidation_health_snapshot(
             )
         if loss_at is not None and LIQ_LOSS_PENDING.get(exchange) == loss_at:
             LIQ_LOSS_PENDING.pop(exchange, None)
+
+
+async def persist_liquidation_event_loss(
+    conn: asyncpg.Connection,
+    symbol: str,
+    exchange: str,
+    event_at: datetime,
+    *,
+    ownership: ServiceOwnership | None = None,
+) -> int:
+    """Fence the collector generation in the transaction that records event loss."""
+    async with fenced_transaction(conn, ownership):
+        return await record_event_stream_loss(
+            conn,
+            feed="liquidations",
+            exchange=exchange,
+            market="perpetual",
+            symbol=symbol,
+            start=event_at,
+            end=event_at + timedelta(microseconds=1),
+            evidence_type="queue_full",
+            detection_reason="liquidation event dropped because the persistence queue was full",
+            detection_source="scalp_collector.safe_liq_put",
+        )
 
 
 async def reset_liquidation_feed_health(

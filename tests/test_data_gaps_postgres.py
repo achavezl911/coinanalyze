@@ -4,11 +4,15 @@ import asyncio
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
+from uuid import uuid4
 
 import asyncpg
 import pytest
 
 import app.scalp_collector as scalp
+from app.api import mask_gapped_series_rows
+from app.config import Settings
 from app.data_gaps import (
     GapRequirement,
     RecoveryObservation,
@@ -17,8 +21,13 @@ from app.data_gaps import (
     record_data_gap,
     recover_gap,
 )
+from app.db import ServiceOwnershipLost, acquire_service_lock
 from app.metrics import compute_snapshot
-from app.scalp_collector import persist_liquidation_health_snapshot, safe_liq_put
+from app.scalp_collector import (
+    persist_liquidation_event_loss,
+    persist_liquidation_health_snapshot,
+    safe_liq_put,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = (ROOT / "sql/migrations/20260809_data_gap_integrity.sql").read_text(
@@ -60,6 +69,40 @@ async def _cadence_gap(
         evidence_type="missing_interval",
         detection_reason="configured cadence bucket absent",
         detection_source="test cadence detector",
+    )
+
+
+def _test_settings(dsn: str) -> Settings:
+    parsed = urlparse(dsn)
+    query = parse_qs(parsed.query)
+    return Settings(
+        PG_HOST=parsed.hostname or "127.0.0.1",
+        PG_PORT=parsed.port or 5432,
+        PG_DB=parsed.path.lstrip("/"),
+        PG_USER=unquote(parsed.username or "postgres"),
+        PG_PASSWORD=unquote(parsed.password or ""),
+        PG_SSLMODE=query.get("sslmode", ["disable"])[0],
+    )
+
+
+def _chart_rows(start: datetime) -> list[dict[str, object]]:
+    return [
+        {"bucket": start, "delta": 1.0, "cvd": 1.0},
+        {"bucket": start + timedelta(minutes=2), "delta": 2.0, "cvd": 3.0},
+    ]
+
+
+async def _mask_chart(conn: asyncpg.Connection, rows: list[dict[str, object]]) -> None:
+    await mask_gapped_series_rows(
+        conn,
+        rows,
+        bucket=timedelta(minutes=1),
+        feed="ohlcv_1min",
+        exchanges=("binance",),
+        market="perpetual",
+        symbol="BTCUSDT_PERP.A",
+        value_keys=("delta",),
+        cumulative_keys=("cvd",),
     )
 
 
@@ -154,6 +197,125 @@ async def test_postgres_gap_creation_overlap_boundaries_and_source_isolation() -
                 )
             ],
         ) == {"inside"}
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_missing_bucket_breaks_later_cvd_continuity() -> None:
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        start = datetime(2026, 8, 9, 12, tzinfo=UTC)
+        await _cadence_gap(
+            conn,
+            start=start + timedelta(minutes=1),
+            end=start + timedelta(minutes=2),
+        )
+        rows = _chart_rows(start)
+
+        await _mask_chart(conn, rows)
+
+        assert rows == [
+            {"bucket": start, "delta": 1.0, "cvd": 1.0},
+            {
+                "bucket": start + timedelta(minutes=2),
+                "delta": 2.0,
+                "cvd": None,
+            },
+        ]
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_chart_ignores_outside_unrelated_and_recovered_gaps() -> None:
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        start = datetime(2026, 8, 9, 12, tzinfo=UTC)
+        missing_start = start + timedelta(minutes=1)
+        missing_end = start + timedelta(minutes=2)
+        await _cadence_gap(
+            conn,
+            start=start - timedelta(minutes=1),
+            end=start,
+        )
+        for feed, exchange, market, symbol in (
+            ("ohlcv_1min", "bybit", "perpetual", "BTCUSDT_PERP.A"),
+            ("spot_trades", "binance", "perpetual", "BTCUSDT_PERP.A"),
+            ("ohlcv_1min", "binance", "spot", "BTCUSDT_PERP.A"),
+            ("ohlcv_1min", "binance", "perpetual", "ETHUSDT_PERP.A"),
+        ):
+            await record_data_gap(
+                conn,
+                feed=feed,
+                feed_class="cadence",
+                exchange=exchange,
+                market=market,
+                symbol=symbol,
+                granularity="1min",
+                start=missing_start,
+                end=missing_end,
+                expected_cadence=timedelta(minutes=1),
+                evidence_type="missing_interval",
+                detection_reason="unrelated test source",
+                detection_source="test chart isolation",
+            )
+        recovered_id = await _cadence_gap(
+            conn,
+            start=missing_start,
+            end=missing_end,
+        )
+        await conn.execute(
+            """
+            UPDATE data_gap
+            SET status='recovered',resolved_at=now(),recovered_at=now()
+            WHERE id=$1
+            """,
+            recovered_id,
+        )
+        rows = _chart_rows(start)
+
+        await _mask_chart(conn, rows)
+
+        assert rows == _chart_rows(start)
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_unrecoverable_missing_bucket_remains_non_evaluable() -> None:
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        start = datetime(2026, 8, 9, 12, tzinfo=UTC)
+        gap_id = await _cadence_gap(
+            conn,
+            start=start + timedelta(minutes=1),
+            end=start + timedelta(minutes=2),
+        )
+        await conn.execute(
+            """
+            UPDATE data_gap
+            SET status='unrecoverable',resolved_at=now(),recovered_at=NULL
+            WHERE id=$1
+            """,
+            gap_id,
+        )
+        rows = _chart_rows(start)
+
+        await _mask_chart(conn, rows)
+
+        assert rows[0]["cvd"] == 1.0
+        assert rows[1]["delta"] == 2.0
+        assert rows[1]["cvd"] is None
     finally:
         await tx.rollback()
         await conn.close()
@@ -387,4 +549,67 @@ async def test_postgres_liquidation_silence_creates_no_gap_but_queue_loss_does(
         }
     finally:
         await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_takeover_fences_event_loss_gap_in_the_insert_transaction() -> None:
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    settings = _test_settings(dsn)
+    service = f"gap-fence-{uuid4().hex}"
+    owner_a = owner_b = None
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    event_at = datetime(2026, 8, 9, 12, tzinfo=UTC)
+    try:
+        owner_a = await acquire_service_lock(settings, service)
+        generation_a = owner_a.generation
+        await owner_a.close()
+        owner_b = await acquire_service_lock(settings, service)
+        assert owner_b.generation == generation_a + 1
+
+        with pytest.raises(ServiceOwnershipLost, match="generation"):
+            await persist_liquidation_event_loss(
+                conn,
+                "BTCUSDT_PERP.A",
+                "binance",
+                event_at,
+                ownership=owner_a,
+            )
+        assert await conn.fetchval(
+            """
+            SELECT count(*) FROM data_gap
+            WHERE feed='liquidations' AND exchange='binance'
+              AND market='perpetual' AND symbol='BTCUSDT_PERP.A'
+              AND start_ts=$1
+            """,
+            event_at,
+        ) == 0
+
+        await persist_liquidation_event_loss(
+            conn,
+            "BTCUSDT_PERP.A",
+            "binance",
+            event_at,
+            ownership=owner_b,
+        )
+        assert await conn.fetchval(
+            """
+            SELECT count(*) FROM data_gap
+            WHERE feed='liquidations' AND exchange='binance'
+              AND market='perpetual' AND symbol='BTCUSDT_PERP.A'
+              AND start_ts=$1 AND status='unresolved'
+            """,
+            event_at,
+        ) == 1
+    finally:
+        await tx.rollback()
+        if owner_b is not None and not owner_b.is_closed():
+            await owner_b.close()
+        cleanup = await asyncpg.connect(dsn)
+        await cleanup.execute("DELETE FROM service_ownership WHERE service=$1", service)
+        await cleanup.close()
         await conn.close()

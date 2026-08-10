@@ -2,6 +2,11 @@ BEGIN;
 SET LOCAL TIME ZONE 'UTC';
 SET LOCAL lock_timeout = '10s';
 
+CREATE TABLE IF NOT EXISTS schema_migration (
+    name text PRIMARY KEY,
+    applied_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+
 -- Online safety is deliberate: all five sources are locked before the first copy, every
 -- replacement is verified, and only then are names swapped in this same transaction.
 DO $$
@@ -28,6 +33,8 @@ DECLARE
     mismatch_count integer;
     partitioned_count integer;
     ordinary_count integer;
+    bridge_recorded boolean;
+    liquidation_arbiter_ready boolean;
 BEGIN
     SELECT count(*) FILTER (WHERE c.relkind = 'p'),
            count(*) FILTER (WHERE c.relkind = 'r')
@@ -42,6 +49,38 @@ BEGIN
     IF ordinary_count <> cardinality(managed) OR partitioned_count <> 0 THEN
         RAISE EXCEPTION
             'temporal partition migration requires all five logical parents to be ordinary tables';
+    END IF;
+
+    SELECT EXISTS (
+        SELECT 1 FROM schema_migration
+        WHERE name = '20260809_partition_compatibility_bridge'
+    ) INTO bridge_recorded;
+    IF NOT bridge_recorded THEN
+        RAISE EXCEPTION
+            'temporal partition migration requires the partition compatibility bridge release';
+    END IF;
+
+    SELECT EXISTS (
+        SELECT 1
+        FROM pg_index AS index_definition
+        WHERE index_definition.indrelid =
+              to_regclass(format('%I.liquidations_realtime', schema_name))
+          AND index_definition.indisunique
+          AND index_definition.indisvalid
+          AND index_definition.indpred IS NULL
+          AND index_definition.indexprs IS NULL
+          AND (
+              SELECT array_agg(attribute.attname::text ORDER BY key_column.ordinality)
+              FROM unnest(index_definition.indkey)
+                WITH ORDINALITY AS key_column(attnum, ordinality)
+              JOIN pg_attribute AS attribute
+                ON attribute.attrelid = index_definition.indrelid
+               AND attribute.attnum = key_column.attnum
+          ) = ARRAY['exchange', 'event_id', 'ts']::text[]
+    ) INTO liquidation_arbiter_ready;
+    IF NOT liquidation_arbiter_ready THEN
+        RAISE EXCEPTION
+            'temporal partition migration requires the bridge liquidation conflict arbiter';
     END IF;
     FOREACH source_name IN ARRAY managed LOOP
         IF to_regclass(format('%I.%I', schema_name, source_name || '_unpartitioned_backup'))
@@ -298,11 +337,22 @@ BEGIN
             RAISE EXCEPTION 'partition-compatible primary key verification failed for %', source_name;
         END IF;
 
-        IF (SELECT count(*) FROM pg_index
-            WHERE indrelid = to_regclass(format('%I.%I', schema_name, replacement_name)))
+        IF (SELECT count(*) FROM pg_index AS replacement_index
+            WHERE replacement_index.indrelid =
+                  to_regclass(format('%I.%I', schema_name, replacement_name))
+              AND NOT replacement_index.indisprimary)
            <
-           (SELECT count(*) FROM pg_index
-            WHERE indrelid = to_regclass(format('%I.%I', schema_name, source_name)))
+           (SELECT count(*) FROM pg_index AS source_index
+            JOIN pg_class AS source_index_relation
+              ON source_index_relation.oid = source_index.indexrelid
+            WHERE source_index.indrelid =
+                  to_regclass(format('%I.%I', schema_name, source_name))
+              AND NOT source_index.indisprimary
+              AND NOT (
+                  source_name = 'liquidations_realtime'
+                  AND source_index_relation.relname =
+                      'liquidations_realtime_exchange_event_ts_uidx'
+              ))
         THEN
             RAISE EXCEPTION 'index verification failed for %', source_name;
         END IF;
@@ -478,4 +528,8 @@ END
 $$;
 
 SELECT ensure_temporal_partitions();
+
+INSERT INTO schema_migration(name)
+VALUES ('20260809_temporal_partitioning')
+ON CONFLICT (name) DO NOTHING;
 COMMIT;

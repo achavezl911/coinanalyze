@@ -42,11 +42,19 @@ async def _setup_legacy(conn: asyncpg.Connection, schema: str) -> None:
     await conn.execute(f'SET search_path TO "{schema}",public')
     await conn.execute(
         """
-        CREATE TABLE market_assets(base_asset text PRIMARY KEY);
-        INSERT INTO market_assets VALUES('BTC');
-        CREATE TABLE symbols(symbol text PRIMARY KEY, base_asset text NOT NULL
-            REFERENCES market_assets(base_asset));
-        INSERT INTO symbols VALUES('BTCUSDT_PERP.A','BTC');
+        CREATE TABLE market_assets(
+            base_asset text PRIMARY KEY,
+            created_at timestamptz NOT NULL DEFAULT now()
+        );
+        INSERT INTO market_assets(base_asset) VALUES('BTC');
+        CREATE TABLE symbols(
+            symbol text PRIMARY KEY,
+            base_asset text NOT NULL REFERENCES market_assets(base_asset),
+            quote_asset text NOT NULL DEFAULT 'USDT',
+            is_perpetual boolean NOT NULL DEFAULT true,
+            created_at timestamptz NOT NULL DEFAULT now()
+        );
+        INSERT INTO symbols(symbol,base_asset) VALUES('BTCUSDT_PERP.A','BTC');
 
         CREATE TABLE futures_trades_realtime (
             LIKE public.futures_trades_realtime INCLUDING DEFAULTS INCLUDING CONSTRAINTS
@@ -99,6 +107,27 @@ async def _setup_legacy(conn: asyncpg.Connection, schema: str) -> None:
             ADD FOREIGN KEY(symbol) REFERENCES symbols(symbol);
         CREATE INDEX liquidations_realtime_symbol_ts_idx
             ON liquidations_realtime(symbol,ts DESC);
+        CREATE UNIQUE INDEX liquidations_realtime_exchange_event_ts_uidx
+            ON liquidations_realtime(exchange,event_id,ts);
+
+        CREATE OR REPLACE FUNCTION enforce_liquidation_event_unique()
+        RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+            PERFORM pg_advisory_xact_lock(
+                hashtextextended(NEW.exchange || E'\x1f' || NEW.event_id, 0)
+            );
+            IF EXISTS (
+                SELECT 1 FROM liquidations_realtime
+                WHERE exchange=NEW.exchange AND event_id=NEW.event_id
+            ) THEN
+                RETURN NULL;
+            END IF;
+            RETURN NEW;
+        END
+        $$;
+        CREATE TRIGGER liquidations_realtime_event_unique_trigger
+        BEFORE INSERT ON liquidations_realtime
+        FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique();
 
         CREATE TABLE scalp_signal_snapshot (
             LIKE public.scalp_signal_snapshot INCLUDING DEFAULTS INCLUDING CONSTRAINTS
@@ -116,6 +145,13 @@ async def _setup_legacy(conn: asyncpg.Connection, schema: str) -> None:
         CREATE TABLE orderbook_depth (
             LIKE public.orderbook_depth INCLUDING ALL
         );
+
+        CREATE TABLE schema_migration(
+            name text PRIMARY KEY,
+            applied_at timestamptz NOT NULL DEFAULT clock_timestamp()
+        );
+        INSERT INTO schema_migration(name)
+        VALUES('20260809_partition_compatibility_bridge');
         """
     )
     base = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -174,6 +210,26 @@ async def _drop_schema(conn: asyncpg.Connection, schema: str) -> None:
     await conn.execute(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
 
 
+async def _run_supported_schema_deployment(schema: str) -> tuple[int, str]:
+    environment = os.environ.copy()
+    environment["PGOPTIONS"] = f"-c search_path={schema},public"
+    process = await asyncio.create_subprocess_exec(
+        "psql",
+        _dsn(),
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-X",
+        "-q",
+        "-f",
+        str(ROOT / "sql/schema.sql"),
+        env=environment,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    return process.returncode or 0, (stdout + stderr).decode()
+
+
 def _scan_relations(plan: dict[str, object]) -> set[str]:
     found: set[str] = set()
     relation = plan.get("Relation Name")
@@ -183,6 +239,104 @@ def _scan_relations(plan: dict[str, object]) -> set[str]:
         if isinstance(child, dict):
             found.update(_scan_relations(child))
     return found
+
+
+def test_supported_deployment_path_includes_the_real_partition_migration() -> None:
+    schema = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
+    update = (ROOT / "scripts/update.sh").read_text(encoding="utf-8")
+    include = r"\ir migrations/20260809_temporal_partitioning.sql"
+
+    assert include in schema
+    assert schema.index("COMMIT;", schema.index("SELECT ensure_temporal_partitions();")) < schema.index(
+        include
+    )
+    assert "sql/migrations/20260809_temporal_partitioning.sql" in update
+    assert "sql/migrations/20260809_temporal_partitioning.down.sql" in update
+
+
+@pytest.mark.asyncio
+async def test_supported_schema_deployment_executes_and_records_real_conversion() -> None:
+    conn = await asyncpg.connect(_dsn())
+    schema = _schema_name()
+    try:
+        await _setup_legacy(conn, schema)
+        before = {
+            table: await conn.fetchrow(
+                f"SELECT count(*) AS count,min(ts) AS min,max(ts) AS max FROM {table}"
+            )
+            for table in MANAGED
+        }
+
+        return_code, output = await _run_supported_schema_deployment(schema)
+        assert return_code == 0, output
+        assert await conn.fetchval(
+            """
+            SELECT count(*) = $2
+            FROM pg_class AS relation
+            JOIN pg_namespace AS namespace ON namespace.oid=relation.relnamespace
+            WHERE namespace.nspname=$1
+              AND relation.relname=ANY($3::text[])
+              AND relation.relkind='p'
+            """,
+            schema,
+            len(MANAGED),
+            list(MANAGED),
+        )
+        assert await conn.fetchval(
+            """
+            SELECT count(*) FROM schema_migration
+            WHERE name='20260809_temporal_partitioning'
+            """
+        ) == 1
+        for table in MANAGED:
+            assert await conn.fetchrow(
+                f"SELECT count(*) AS count,min(ts) AS min,max(ts) AS max FROM {table}"
+            ) == before[table]
+    finally:
+        await _drop_schema(conn, schema)
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_supported_schema_deployment_fails_before_swap_without_bridge() -> None:
+    conn = await asyncpg.connect(_dsn())
+    schema = _schema_name()
+    try:
+        await _setup_legacy(conn, schema)
+        await conn.execute(
+            "DELETE FROM schema_migration "
+            "WHERE name='20260809_partition_compatibility_bridge'"
+        )
+
+        return_code, output = await _run_supported_schema_deployment(schema)
+        assert return_code != 0
+        assert "requires the partition compatibility bridge release" in output
+        assert await conn.fetchval(
+            """
+            SELECT count(*) = $2
+            FROM pg_class AS relation
+            JOIN pg_namespace AS namespace ON namespace.oid=relation.relnamespace
+            WHERE namespace.nspname=$1
+              AND relation.relname=ANY($3::text[])
+              AND relation.relkind='r'
+            """,
+            schema,
+            len(MANAGED),
+            list(MANAGED),
+        )
+        assert await conn.fetchval(
+            """
+            SELECT count(*) FROM pg_class AS relation
+            JOIN pg_namespace AS namespace ON namespace.oid=relation.relnamespace
+            WHERE namespace.nspname=$1
+              AND right(relation.relname, length('_unpartitioned_backup')) =
+                  '_unpartitioned_backup'
+            """,
+            schema,
+        ) == 0
+    finally:
+        await _drop_schema(conn, schema)
+        await conn.close()
 
 
 @pytest.mark.asyncio
@@ -278,6 +432,12 @@ async def test_partition_migration_routes_boundaries_prunes_and_preserves_schema
 
         await conn.execute(MIGRATION)
         assert await conn.fetchval("SELECT count(*) FROM futures_trades_realtime") == 2
+        assert await conn.fetchval(
+            """
+            SELECT count(*) FROM schema_migration
+            WHERE name='20260809_temporal_partitioning'
+            """
+        ) == 1
     finally:
         await _drop_schema(conn, schema)
         await conn.close()
@@ -327,8 +487,12 @@ async def test_future_ensure_is_concurrent_and_retention_drops_only_complete_day
             "SELECT drop_expired_temporal_partitions('futures_trades_realtime',$1)",
             cutoff,
         ) >= 1
-        assert await owner.fetchval("SELECT to_regclass($1) IS NULL", full_child) is True
-        assert await owner.fetchval("SELECT to_regclass($1) IS NOT NULL", boundary_child) is True
+        assert await owner.fetchval(
+            "SELECT to_regclass($1) IS NULL", f"{schema}.{full_child}"
+        ) is True
+        assert await owner.fetchval(
+            "SELECT to_regclass($1) IS NOT NULL", f"{schema}.{boundary_child}"
+        ) is True
     finally:
         if first is not None:
             await first.close()
@@ -355,6 +519,21 @@ async def test_partition_rollback_restores_legacy_tables_when_rows_are_unchanged
             "SELECT to_regclass($1) IS NULL",
             f"{schema}.futures_trades_realtime_unpartitioned_backup",
         ) is True
+        assert await conn.fetchval(
+            "SELECT to_regprocedure('enforce_liquidation_event_unique()') IS NOT NULL"
+        ) is True
+        assert await conn.fetchval(
+            """
+            SELECT count(*) FROM schema_migration
+            WHERE name='20260809_partition_compatibility_bridge'
+            """
+        ) == 1
+        assert await conn.fetchval(
+            """
+            SELECT count(*) FROM schema_migration
+            WHERE name='20260809_temporal_partitioning'
+            """
+        ) == 0
     finally:
         await _drop_schema(conn, schema)
         await conn.close()

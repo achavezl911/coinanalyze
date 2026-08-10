@@ -26,6 +26,16 @@ identidad y convierte duplicados, incluso en días distintos, en no-ops.
 
 ## Migración y rollback
 
+La migración requiere que `20260809_partition_compatibility_bridge` figure en
+`schema_migration` y que la tabla legacy conserve el arbiter único de tres
+columnas. Así, una instalación que no haya desplegado primero el bridge falla
+antes de bloquear, copiar o renombrar tablas.
+
+`schema.sql` incluye explícitamente la migración mediante `\ir`; no se considera
+que `CREATE TABLE IF NOT EXISTS ... PARTITION BY` convierta una tabla existente.
+`psql -v ON_ERROR_STOP=1` hace que cualquier fallo de la conversión aborte el
+deployment, y el éxito queda registrado como `20260809_temporal_partitioning`.
+
 `20260809_temporal_partitioning.sql` bloquea las cinco fuentes, crea reemplazos,
 copia filas y verifica `COUNT/MIN/MAX`, columnas, constraints e índices antes de
 hacer el swap. Las tablas originales quedan como
@@ -33,4 +43,5 @@ hacer el swap. Las tablas originales quedan como
 
 El rollback compara padre y backup en ambas direcciones con `EXCEPT ALL`. Solo
 revierte si son idénticos; cualquier escritura o retención posterior hace que
-falle explícitamente para evitar pérdida de datos.
+falle explícitamente para evitar pérdida de datos. El destino soportado de
+rollback de aplicación es el release bridge, no el código raw de `5ed802f`.
