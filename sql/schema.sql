@@ -703,6 +703,104 @@ FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_replay_frame_mutation();
 -- when the exact live scalp_context was captured at decision time.
 -- PR6_SIGNAL_REPLAY_END
 
+-- PR10_SIGNAL_EXECUTION_BEGIN
+CREATE TABLE IF NOT EXISTS signal_execution_snapshot (
+    execution_snapshot_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    observation_id bigint NOT NULL
+        REFERENCES signal_observation(observation_id) ON DELETE RESTRICT,
+    snapshot_version smallint NOT NULL CHECK (snapshot_version >= 1),
+    exchange text NOT NULL CHECK (exchange IN ('binance','bybit')),
+    captured_at timestamptz NOT NULL,
+    book_ts timestamptz,
+    book_age_seconds double precision CHECK (
+        book_age_seconds IS NULL OR finite_float8(book_age_seconds)
+    ),
+    status text NOT NULL
+        CHECK (status IN ('valid','stale','unavailable','error')),
+    reason text CHECK (
+        reason IS NULL OR length(reason) BETWEEN 1 AND 120
+    ),
+    levels_reported integer NOT NULL DEFAULT 0 CHECK (levels_reported >= 0),
+    bid_levels_valid integer NOT NULL DEFAULT 0 CHECK (bid_levels_valid >= 0),
+    ask_levels_valid integer NOT NULL DEFAULT 0 CHECK (ask_levels_valid >= 0),
+    best_bid_px double precision CHECK (
+        best_bid_px IS NULL OR (finite_float8(best_bid_px) AND best_bid_px > 0)
+    ),
+    best_ask_px double precision CHECK (
+        best_ask_px IS NULL OR (finite_float8(best_ask_px) AND best_ask_px > 0)
+    ),
+    mid_px double precision CHECK (
+        mid_px IS NULL OR (finite_float8(mid_px) AND mid_px > 0)
+    ),
+    spread_bps double precision CHECK (
+        spread_bps IS NULL OR (finite_float8(spread_bps) AND spread_bps >= 0)
+    ),
+    bid_depth_usd double precision CHECK (
+        bid_depth_usd IS NULL OR
+        (finite_float8(bid_depth_usd) AND bid_depth_usd >= 0)
+    ),
+    ask_depth_usd double precision CHECK (
+        ask_depth_usd IS NULL OR
+        (finite_float8(ask_depth_usd) AND ask_depth_usd >= 0)
+    ),
+    source_book_hash text CHECK (
+        source_book_hash IS NULL OR source_book_hash ~ '^[0-9a-f]{64}$'
+    ),
+    cost_curve jsonb NOT NULL DEFAULT '{}'::jsonb
+        CHECK (jsonb_typeof(cost_curve) = 'object'),
+    created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    UNIQUE(observation_id,exchange),
+    CHECK (
+        status <> 'valid'
+        OR (
+            book_ts IS NOT NULL
+            AND source_book_hash IS NOT NULL
+            AND best_bid_px IS NOT NULL
+            AND best_ask_px IS NOT NULL
+            AND mid_px IS NOT NULL
+            AND spread_bps IS NOT NULL
+            AND best_ask_px >= best_bid_px
+            AND cost_curve <> '{}'::jsonb
+        )
+    ),
+    CHECK (
+        status = 'valid' OR cost_curve = '{}'::jsonb
+    )
+);
+
+CREATE INDEX IF NOT EXISTS signal_execution_snapshot_observation_idx
+    ON signal_execution_snapshot(observation_id,exchange);
+CREATE INDEX IF NOT EXISTS signal_execution_snapshot_book_ts_idx
+    ON signal_execution_snapshot(book_ts DESC);
+CREATE INDEX IF NOT EXISTS signal_execution_snapshot_book_ts_brin_idx
+    ON signal_execution_snapshot USING brin(book_ts);
+
+CREATE OR REPLACE FUNCTION reject_signal_execution_snapshot_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'signal_execution_snapshot is append-only; % is not allowed', TG_OP
+        USING ERRCODE = '55000';
+    RETURN NULL;
+END
+$$;
+
+DROP TRIGGER IF EXISTS signal_execution_snapshot_no_update_delete
+    ON signal_execution_snapshot;
+CREATE TRIGGER signal_execution_snapshot_no_update_delete
+BEFORE UPDATE OR DELETE ON signal_execution_snapshot
+FOR EACH ROW EXECUTE FUNCTION reject_signal_execution_snapshot_mutation();
+
+DROP TRIGGER IF EXISTS signal_execution_snapshot_no_truncate
+    ON signal_execution_snapshot;
+CREATE TRIGGER signal_execution_snapshot_no_truncate
+BEFORE TRUNCATE ON signal_execution_snapshot
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_execution_snapshot_mutation();
+
+-- No historical backfill: orderbook_depth is overwritten current state.
+-- PR10_SIGNAL_EXECUTION_END
+
 CREATE TABLE IF NOT EXISTS metrics_snapshot (
     ts timestamptz NOT NULL DEFAULT now(),
     symbol text NOT NULL REFERENCES symbols(symbol),

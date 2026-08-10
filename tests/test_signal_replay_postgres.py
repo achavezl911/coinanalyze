@@ -32,6 +32,10 @@ REPLAY_DDL = (
     SCHEMA_SQL.split("-- PR6_SIGNAL_REPLAY_BEGIN", 1)[1]
     .split("-- PR6_SIGNAL_REPLAY_END", 1)[0]
 )
+EXECUTION_DDL = (
+    SCHEMA_SQL.split("-- PR10_SIGNAL_EXECUTION_BEGIN", 1)[1]
+    .split("-- PR10_SIGNAL_EXECUTION_END", 1)[0]
+)
 
 BASE_SQL = """
 CREATE OR REPLACE FUNCTION finite_float8(value double precision)
@@ -61,6 +65,15 @@ CREATE TABLE metrics_snapshot (
     metrics_cutoff_at timestamptz,
     PRIMARY KEY(symbol, ts)
 );
+CREATE TABLE orderbook_depth (
+    symbol text NOT NULL REFERENCES symbols(symbol),
+    exchange text NOT NULL CHECK (exchange IN ('binance','bybit')),
+    ts timestamptz NOT NULL,
+    bids jsonb NOT NULL,
+    asks jsonb NOT NULL,
+    levels integer NOT NULL CHECK (levels >= 0),
+    PRIMARY KEY(symbol,exchange)
+);
 """
 
 
@@ -84,6 +97,7 @@ async def _connect_schema(schema: str) -> asyncpg.Connection:
     await conn.execute(LEDGER_DDL)
     await conn.execute(OUTCOME_DDL)
     await conn.execute(REPLAY_DDL)
+    await conn.execute(EXECUTION_DDL)
     return conn
 
 

@@ -8,6 +8,7 @@ from typing import Any
 
 import asyncpg
 
+from app.signal_execution import persist_signal_execution_snapshots
 from app.signal_outcomes import schedule_signal_outcomes
 from app.signal_replay import (
     SCALP_SIGNAL_LOGIC_VERSION,
@@ -347,6 +348,16 @@ async def persist_signal_observations(
         return 0
     observation_id = int(row["observation_id"])
     await persist_signal_replay_frame(conn, observation_id, ctx)
+    execution_rows = await persist_signal_execution_snapshots(
+        conn,
+        observation_id,
+        symbol,
+        observed_at,
+    )
+    if execution_rows != 2:
+        raise RuntimeError(
+            "signal execution snapshot capture did not persist both venues"
+        )
     if write_periodic or (write_transition and actionable):
         await schedule_signal_outcomes(conn, observation_id, observed_at)
     return 1
