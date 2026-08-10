@@ -801,6 +801,61 @@ FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_execution_snapshot_mutation();
 -- No historical backfill: orderbook_depth is overwritten current state.
 -- PR10_SIGNAL_EXECUTION_END
 
+-- PR11_SIGNAL_WALK_FORWARD_BEGIN
+-- Walk-forward / out-of-sample evaluation engine. This table records only
+-- the prospective, immutable research manifest that freezes a walk-forward
+-- program before its first OOS cutoff. Deploying this schema block must
+-- never itself create a manifest row and must never backfill one.
+CREATE TABLE IF NOT EXISTS signal_walk_forward_manifest (
+    manifest_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    manifest_version smallint NOT NULL CHECK (manifest_version >= 1),
+    manifest_name text NOT NULL UNIQUE
+        CHECK (manifest_name ~ '^[a-z][a-z0-9_-]{0,63}$'),
+    created_at timestamptz NOT NULL,
+    cutoff_at timestamptz NOT NULL,
+    warmup_days integer NOT NULL CHECK (warmup_days >= 1),
+    test_days integer NOT NULL CHECK (test_days >= 1),
+    fold_count integer NOT NULL CHECK (fold_count >= 1),
+    min_group_n integer NOT NULL CHECK (min_group_n >= 1),
+    selection_policy text NOT NULL
+        CHECK (selection_policy = 'fixed_kernel_no_selection_v1'),
+    manifest_hash text NOT NULL UNIQUE
+        CHECK (manifest_hash ~ '^[0-9a-f]{64}$'),
+    spec jsonb NOT NULL CHECK (jsonb_typeof(spec) = 'object'),
+    CHECK (created_at < cutoff_at)
+);
+
+CREATE INDEX IF NOT EXISTS signal_walk_forward_manifest_cutoff_idx
+    ON signal_walk_forward_manifest(cutoff_at);
+
+CREATE OR REPLACE FUNCTION reject_signal_walk_forward_manifest_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'signal_walk_forward_manifest is append-only; % is not allowed', TG_OP
+        USING ERRCODE = '55000';
+    RETURN NULL;
+END
+$$;
+
+DROP TRIGGER IF EXISTS signal_walk_forward_manifest_no_update_delete
+    ON signal_walk_forward_manifest;
+CREATE TRIGGER signal_walk_forward_manifest_no_update_delete
+BEFORE UPDATE OR DELETE ON signal_walk_forward_manifest
+FOR EACH ROW EXECUTE FUNCTION reject_signal_walk_forward_manifest_mutation();
+
+DROP TRIGGER IF EXISTS signal_walk_forward_manifest_no_truncate
+    ON signal_walk_forward_manifest;
+CREATE TRIGGER signal_walk_forward_manifest_no_truncate
+BEFORE TRUNCATE ON signal_walk_forward_manifest
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_walk_forward_manifest_mutation();
+
+-- No INSERT ... SELECT here: freezing a manifest is an explicit application
+-- action (scripts/freeze_walk_forward_manifest.py), never a schema-deploy
+-- side effect, and there is no backfill of a retroactive cutoff.
+-- PR11_SIGNAL_WALK_FORWARD_END
+
 CREATE TABLE IF NOT EXISTS metrics_snapshot (
     ts timestamptz NOT NULL DEFAULT now(),
     symbol text NOT NULL REFERENCES symbols(symbol),
