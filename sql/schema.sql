@@ -473,6 +473,191 @@ BEFORE TRUNCATE ON signal_observation
 FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_observation_mutation();
 -- PR4_SIGNAL_OBSERVATION_LEDGER_END
 
+-- PR5_SIGNAL_OUTCOMES_BEGIN
+-- Derived forward outcomes. Each path starts at the first full 1-minute candle
+-- strictly after observed_at, so MFE/MAE never use pre-signal price action.
+CREATE TABLE IF NOT EXISTS signal_outcome (
+    outcome_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    observation_id bigint NOT NULL
+        REFERENCES signal_observation(observation_id) ON DELETE RESTRICT,
+    horizon_minutes integer NOT NULL
+        CHECK (horizon_minutes IN (1,3,5,15,30,60,120,240)),
+    window_start timestamptz NOT NULL,
+    window_end timestamptz NOT NULL,
+    due_at timestamptz NOT NULL,
+    next_attempt_at timestamptz NOT NULL,
+    path_start_delay_seconds double precision NOT NULL
+        CHECK (finite_float8(path_start_delay_seconds)
+               AND path_start_delay_seconds >= 0
+               AND path_start_delay_seconds <= 60),
+    bars_expected integer NOT NULL CHECK (bars_expected = horizon_minutes),
+    bars_found integer NOT NULL DEFAULT 0
+        CHECK (bars_found >= 0 AND bars_found <= bars_expected),
+    outcome_version smallint NOT NULL DEFAULT 1 CHECK (outcome_version >= 1),
+    status text NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending','evaluated','not_evaluable')),
+    attempts integer NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+    last_attempt_at timestamptz,
+    finalized_at timestamptz,
+    final_reason text CHECK (
+        final_reason IS NULL OR length(final_reason) BETWEEN 1 AND 120
+    ),
+    entry_reference_price double precision CHECK (
+        entry_reference_price IS NULL
+        OR (finite_float8(entry_reference_price) AND entry_reference_price > 0)
+    ),
+    end_price double precision CHECK (
+        end_price IS NULL OR (finite_float8(end_price) AND end_price > 0)
+    ),
+    max_high double precision CHECK (
+        max_high IS NULL OR (finite_float8(max_high) AND max_high > 0)
+    ),
+    min_low double precision CHECK (
+        min_low IS NULL OR (finite_float8(min_low) AND min_low > 0)
+    ),
+    market_return_pct double precision CHECK (
+        market_return_pct IS NULL OR finite_float8(market_return_pct)
+    ),
+    up_excursion_pct double precision CHECK (
+        up_excursion_pct IS NULL OR finite_float8(up_excursion_pct)
+    ),
+    down_excursion_pct double precision CHECK (
+        down_excursion_pct IS NULL OR finite_float8(down_excursion_pct)
+    ),
+    directional_return_pct double precision CHECK (
+        directional_return_pct IS NULL OR finite_float8(directional_return_pct)
+    ),
+    mfe_pct double precision CHECK (
+        mfe_pct IS NULL OR (finite_float8(mfe_pct) AND mfe_pct >= 0)
+    ),
+    mae_pct double precision CHECK (
+        mae_pct IS NULL OR (finite_float8(mae_pct) AND mae_pct >= 0)
+    ),
+    created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    UNIQUE(observation_id,horizon_minutes),
+    CHECK (window_start < window_end),
+    CHECK (window_end = window_start + make_interval(mins => horizon_minutes)),
+    CHECK (due_at > window_end),
+    CHECK (
+        (status='pending'
+         AND finalized_at IS NULL
+         AND final_reason IS NULL
+         AND entry_reference_price IS NULL
+         AND end_price IS NULL
+         AND max_high IS NULL
+         AND min_low IS NULL
+         AND market_return_pct IS NULL
+         AND up_excursion_pct IS NULL
+         AND down_excursion_pct IS NULL
+         AND directional_return_pct IS NULL
+         AND mfe_pct IS NULL
+         AND mae_pct IS NULL)
+        OR
+        (status='evaluated'
+         AND finalized_at IS NOT NULL
+         AND final_reason IS NULL
+         AND bars_found = bars_expected
+         AND entry_reference_price IS NOT NULL
+         AND end_price IS NOT NULL
+         AND max_high IS NOT NULL
+         AND min_low IS NOT NULL
+         AND market_return_pct IS NOT NULL
+         AND up_excursion_pct IS NOT NULL
+         AND down_excursion_pct IS NOT NULL)
+        OR
+        (status='not_evaluable'
+         AND finalized_at IS NOT NULL
+         AND final_reason IS NOT NULL
+         AND entry_reference_price IS NULL
+         AND end_price IS NULL
+         AND max_high IS NULL
+         AND min_low IS NULL
+         AND market_return_pct IS NULL
+         AND up_excursion_pct IS NULL
+         AND down_excursion_pct IS NULL
+         AND directional_return_pct IS NULL
+         AND mfe_pct IS NULL
+         AND mae_pct IS NULL)
+    )
+);
+CREATE INDEX IF NOT EXISTS signal_outcome_due_idx
+    ON signal_outcome(next_attempt_at,due_at,outcome_id)
+    WHERE status='pending';
+CREATE INDEX IF NOT EXISTS signal_outcome_observation_idx
+    ON signal_outcome(observation_id,horizon_minutes);
+CREATE INDEX IF NOT EXISTS signal_outcome_status_finalized_idx
+    ON signal_outcome(status,finalized_at DESC);
+CREATE INDEX IF NOT EXISTS signal_outcome_horizon_status_idx
+    ON signal_outcome(horizon_minutes,status,finalized_at DESC);
+
+CREATE OR REPLACE FUNCTION guard_signal_outcome_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP IN ('DELETE','TRUNCATE') THEN
+        RAISE EXCEPTION 'signal_outcome is durable; % is not allowed', TG_OP
+            USING ERRCODE = '55000';
+    END IF;
+
+    IF OLD.status <> 'pending' THEN
+        RAISE EXCEPTION 'final signal_outcome rows are immutable'
+            USING ERRCODE = '55000';
+    END IF;
+
+    IF NEW.observation_id IS DISTINCT FROM OLD.observation_id
+       OR NEW.horizon_minutes IS DISTINCT FROM OLD.horizon_minutes
+       OR NEW.window_start IS DISTINCT FROM OLD.window_start
+       OR NEW.window_end IS DISTINCT FROM OLD.window_end
+       OR NEW.due_at IS DISTINCT FROM OLD.due_at
+       OR NEW.path_start_delay_seconds IS DISTINCT FROM OLD.path_start_delay_seconds
+       OR NEW.bars_expected IS DISTINCT FROM OLD.bars_expected
+       OR NEW.outcome_version IS DISTINCT FROM OLD.outcome_version
+       OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+        RAISE EXCEPTION 'signal_outcome scheduling identity is immutable'
+            USING ERRCODE = '55000';
+    END IF;
+
+    RETURN NEW;
+END
+$$;
+
+DROP TRIGGER IF EXISTS signal_outcome_guard_update_delete ON signal_outcome;
+CREATE TRIGGER signal_outcome_guard_update_delete
+BEFORE UPDATE OR DELETE ON signal_outcome
+FOR EACH ROW EXECUTE FUNCTION guard_signal_outcome_mutation();
+
+DROP TRIGGER IF EXISTS signal_outcome_no_truncate ON signal_outcome;
+CREATE TRIGGER signal_outcome_no_truncate
+BEFORE TRUNCATE ON signal_outcome
+FOR EACH STATEMENT EXECUTE FUNCTION guard_signal_outcome_mutation();
+
+INSERT INTO signal_outcome(
+  observation_id,horizon_minutes,window_start,window_end,due_at,next_attempt_at,
+  path_start_delay_seconds,bars_expected,outcome_version
+)
+SELECT
+  obs.observation_id,
+  horizon.minutes,
+  date_trunc('minute',obs.observed_at) + interval '1 minute',
+  date_trunc('minute',obs.observed_at) + interval '1 minute'
+      + make_interval(mins => horizon.minutes),
+  date_trunc('minute',obs.observed_at) + interval '3 minutes'
+      + make_interval(mins => horizon.minutes),
+  date_trunc('minute',obs.observed_at) + interval '3 minutes'
+      + make_interval(mins => horizon.minutes),
+  EXTRACT(EPOCH FROM (
+      date_trunc('minute',obs.observed_at) + interval '1 minute' - obs.observed_at
+  )),
+  horizon.minutes,
+  1
+FROM signal_observation AS obs
+CROSS JOIN (VALUES (1),(3),(5),(15),(30),(60),(120),(240))
+    AS horizon(minutes)
+WHERE obs.is_periodic OR (obs.is_transition AND obs.actionable)
+ON CONFLICT(observation_id,horizon_minutes) DO NOTHING;
+-- PR5_SIGNAL_OUTCOMES_END
+
 CREATE TABLE IF NOT EXISTS metrics_snapshot (
     ts timestamptz NOT NULL DEFAULT now(),
     symbol text NOT NULL REFERENCES symbols(symbol),

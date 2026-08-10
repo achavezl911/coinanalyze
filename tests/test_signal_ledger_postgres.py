@@ -17,6 +17,11 @@ BEGIN_MARKER = "-- PR4_SIGNAL_OBSERVATION_LEDGER_BEGIN"
 END_MARKER = "-- PR4_SIGNAL_OBSERVATION_LEDGER_END"
 LEDGER_DDL = SCHEMA_SQL.split(BEGIN_MARKER, 1)[1].split(END_MARKER, 1)[0]
 
+OUTCOME_DDL = (
+    SCHEMA_SQL.split("-- PR5_SIGNAL_OUTCOMES_BEGIN", 1)[1]
+    .split("-- PR5_SIGNAL_OUTCOMES_END", 1)[0]
+)
+
 BASE_SQL = """
 CREATE OR REPLACE FUNCTION finite_float8(value double precision)
 RETURNS boolean
@@ -75,6 +80,7 @@ async def _connect_schema(schema: str) -> asyncpg.Connection:
     await conn.execute("SET TIME ZONE 'UTC'")
     await conn.execute(BASE_SQL)
     await conn.execute(LEDGER_DDL)
+    await conn.execute(OUTCOME_DDL)
     return conn
 
 
@@ -267,8 +273,11 @@ async def test_ledger_rejects_update_delete_and_truncate() -> None:
             await conn.execute("UPDATE signal_observation SET reason='rewritten'")
         with pytest.raises(asyncpg.PostgresError, match="append-only"):
             await conn.execute("DELETE FROM signal_observation")
+        # PR5 added signal_outcome as a FK child of signal_observation. CASCADE
+        # is required so PostgreSQL's dependency check does not short-circuit
+        # before this table's own append-only BEFORE TRUNCATE trigger fires.
         with pytest.raises(asyncpg.PostgresError, match="append-only"):
-            await conn.execute("TRUNCATE signal_observation")
+            await conn.execute("TRUNCATE signal_observation CASCADE")
         assert await conn.fetchval("SELECT count(*) FROM signal_observation") == 1
     finally:
         await _drop_schema(conn, schema)

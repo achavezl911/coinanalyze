@@ -8,6 +8,8 @@ from typing import Any
 
 import asyncpg
 
+from app.signal_outcomes import schedule_signal_outcomes
+
 SIGNAL_FAMILY = "scalp"
 SCALP_SIGNAL_LOGIC_VERSION = "scalp-summary-v1"
 SIGNAL_EVIDENCE_VERSION = 1
@@ -338,4 +340,8 @@ async def persist_signal_observations(
         write_transition,
         evidence,
     )
-    return 1 if row is not None else 0
+    if row is None:
+        return 0
+    if write_periodic or (write_transition and actionable):
+        await schedule_signal_outcomes(conn, int(row["observation_id"]), observed_at)
+    return 1

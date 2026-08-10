@@ -33,6 +33,7 @@ from app.partitioning import apply_temporal_retention
 from app.scalp_logic import compute_scalp_summary, scalp_context
 from app.sharding import assigned_symbols
 from app.signal_ledger import persist_signal_observations
+from app.signal_outcomes import materialize_due_signal_outcomes
 
 LOGGER = logging.getLogger(__name__)
 SETTINGS = get_settings()
@@ -439,7 +440,7 @@ LAST_TRADE_EVENT = {
     for symbol in ACTIVE_SYMBOLS
     for exchange in ("binance", "bybit")
 }
-LAST_FLUSH = {"trades": 0.0, "books": 0.0, "liquidations": 0.0, "signals": 0.0, "ledger": 0.0}
+LAST_FLUSH = {"trades": 0.0, "books": 0.0, "liquidations": 0.0, "signals": 0.0, "ledger": 0.0, "outcomes": 0.0}
 LIQ_DROPPED = 0
 LIQ_FEED_CONNECTED = {"binance": False, "bybit": False}
 LIQ_LOSS_PENDING: dict[str, datetime] = {}
@@ -1289,6 +1290,16 @@ async def persist_scalp_signals(
                     )
                     if ledger_ok:
                         LAST_FLUSH["ledger"] = time.monotonic()
+                    if owns_global_cleanup(SETTINGS.COLLECTOR_SHARD_INDEX):
+                        try:
+                            async with conn.transaction():
+                                await materialize_due_signal_outcomes(conn)
+                        except ServiceOwnershipLost:
+                            raise
+                        except Exception:
+                            LOGGER.exception("signal_outcome_materialization_failed")
+                        else:
+                            LAST_FLUSH["outcomes"] = time.monotonic()
                     LAST_FLUSH["signals"] = time.monotonic()
         except ServiceOwnershipLost:
             raise
@@ -1328,11 +1339,18 @@ async def monitor(
             f"binance_reconnects:{BINANCE_BOOK_RECONNECT_TOTAL}",
         ])[:500]
         feed_ok = all_expected_fresh(feed_lags, expected, 90)
+        outcomes_ok = (
+            not owns_global_cleanup(SETTINGS.COLLECTOR_SHARD_INDEX)
+            or 0
+            <= flush_lags.get("outcomes", -1)
+            < max(90, SETTINGS.SCALP_SIGNAL_INTERVAL_SECONDS * 4)
+        )
         flush_ok = (
             0 <= flush_lags.get("trades", -1) < 30
             and 0 <= flush_lags.get("books", -1) < 30
             and 0 <= flush_lags.get("ledger", -1) < max(90, SETTINGS.SCALP_SIGNAL_INTERVAL_SECONDS * 4)
             and 0 <= flush_lags.get("signals", -1) < max(90, SETTINGS.SCALP_SIGNAL_INTERVAL_SECONDS * 4)
+            and outcomes_ok
         )
         queue_ok = LIQ_QUEUE.qsize() < int(LIQ_QUEUE.maxsize * 0.8)
         book_ok = all_expected_fresh(book_lags, expected, SETTINGS.BINANCE_BOOK_STALE_SECONDS)

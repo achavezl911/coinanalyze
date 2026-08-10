@@ -145,13 +145,6 @@ PR4 pretende preservar.
 
 ## PR5
 
-PR5 vinculará outcomes por `observation_id` y los materializará antes de que
-expire OHLCV 1 min:
-
-- 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h;
-- forward return;
-- MFE;
-- MAE;
-- cobertura/evaluabilidad.
-
-La observación original nunca se recalculará ni modificará.
+PR5 quedó implementado en [`SIGNAL_OUTCOMES.md`](SIGNAL_OUTCOMES.md).
+Los outcomes se vinculan por `observation_id`; la observación original nunca
+se recalcula ni modifica.
