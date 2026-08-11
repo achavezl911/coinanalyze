@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from app.api import daily_data
-from app.daily_agg import MIN_2V_COVERAGE_MINUTES, SESSION_QUERY
+from app.daily_agg import SESSION_MIN_COVERAGE_RATIO, SESSION_QUERY
 from app.scalp_logic import _conditional_outcome, _forward_returns, _slope_pct, divergence_scan
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,7 +37,11 @@ def test_macro_structure_and_swing_use_spot_not_the_scale_biased_diff() -> None:
     source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
     market = source[source.index("async def market_structure"):source.index("# ---------------- alertas HTF")]
     trend = source[source.index("async def trend_matrix"):source.index("async def swing_score")]
-    assert 'sum(as_float(r["cvd_spot_usd"])' in market
+    # F3 keeps the macro vote on spot CVD but a missing session must make the 7-session
+    # aggregate unavailable instead of contributing a synthetic zero.
+    assert 'r["cvd_spot_usd"]' in market
+    assert "cvd_diff_usd" not in market
+    assert "all(v is not None for v in cvd_tail)" in market
     assert 'sum(as_float(r["cvd_spot_usd"])' in trend
     assert '"CVD spot de fondo"' in trend
 
@@ -54,15 +58,21 @@ def test_daily_table_replaces_scale_biased_diffs_with_price_response() -> None:
 def test_session_query_measures_futures_on_the_same_venues_as_spot() -> None:
     assert "FROM futures_trades_agg" in SESSION_QUERY
     assert "exchange='combined'" in SESSION_QUERY
-    # Cobertura minima: una suma parcial no debe guardarse como si fuera la sesion entera.
-    assert 0 < MIN_2V_COVERAGE_MINUTES <= 1440
+    assert "spot.minutes AS spot_2v_minutes" in SESSION_QUERY
+    # F3: coverage is proportional to the real DST-aware session duration.
+    assert 0 < SESSION_MIN_COVERAGE_RATIO <= 1
+    # No rows is unknown, not a measured neutral session.
+    assert "COALESCE(SUM(buy_vol_usd - sell_vol_usd),0)" not in SESSION_QUERY
+    assert "COALESCE(SUM(inst_buy_usd - inst_sell_usd),0)" not in SESSION_QUERY
 
 
-def test_partial_sessions_never_overwrite_a_good_two_venue_value() -> None:
-    """futures_trades_agg se retiene horas: al recalcular una sesion vieja llega NULL."""
+def test_partial_sessions_preserve_only_previously_verified_two_venue_evidence() -> None:
+    """Retention loss may preserve PR20-verified evidence, never legacy/unverified evidence."""
     source = (ROOT / "app" / "daily_agg.py").read_text(encoding="utf-8")
-    assert "cvd_fut_2v_usd=COALESCE(EXCLUDED.cvd_fut_2v_usd, daily_session_agg.cvd_fut_2v_usd)" in source
-    assert "complete_2v = minutes_2v >= MIN_2V_COVERAGE_MINUTES" in source
+    assert "cvd_fut_2v_usd=CASE WHEN daily_session_agg.session_coverage_version=1" in source
+    assert "THEN COALESCE(EXCLUDED.cvd_fut_2v_usd,daily_session_agg.cvd_fut_2v_usd)" in source
+    assert "ELSE EXCLUDED.cvd_fut_2v_usd END" in source
+    assert "complete_futures_2v = _coverage_complete(futures_2v_minutes, expected_minutes)" in source
 
 
 def test_minute_retention_covers_a_full_nyse_session() -> None:
@@ -453,12 +463,20 @@ class _DailyReplayConnection:
 
 @pytest.mark.asyncio
 async def test_daily_replay_applies_as_of_to_history_and_selected_rows() -> None:
-    """Un replay antiguo no puede calcular percentiles con sesiones que aún no existían."""
+    """Replay cutoff must constrain each percentile population and the selected rows."""
     from datetime import date
 
     conn = _DailyReplayConnection()
     cutoff = date(2026, 6, 24)
     result = await daily_data(conn, "BTCUSDT_PERP.A", 60, cutoff)
-    assert conn.query.count("session_date <= $3") == 2
+    query = conn.query
+    spot_hist = query[query.index("spot_hist AS"):query.index("), diff_hist AS")]
+    diff_hist = query[query.index("diff_hist AS"):query.index("), selected AS")]
+    selected = query[query.index("selected AS"):query.index("), segmented AS")]
+    assert "session_date <= $3" in spot_hist
+    assert "session_date <= $3" in diff_hist
+    assert "session_date <= $3" in selected
+    assert "cvd_spot_usd IS NOT NULL" in spot_hist
+    assert "cvd_diff_usd IS NOT NULL" in diff_hist
     assert conn.args == ("BTCUSDT_PERP.A", 60, cutoff)
     assert result["quick_read"]["available"] is False

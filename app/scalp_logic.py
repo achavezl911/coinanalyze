@@ -1062,10 +1062,12 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
     # ---- macro (sesiones diarias)
     closes_d = [as_float(r["price_close"]) for r in daily if as_float(r["price_close"]) is not None]
     px7 = (closes_d[-1] - closes_d[-8]) if len(closes_d) >= 8 else None
-    cvd7 = sum(as_float(r["cvd_spot_usd"]) or 0 for r in daily[-7:]) if len(daily) >= 3 else None
+    cvd_tail = [as_float(r["cvd_spot_usd"]) for r in daily[-7:]]
+    cvd7 = sum(v for v in cvd_tail if v is not None) if len(cvd_tail) == 7 and all(v is not None for v in cvd_tail) else None
     racha = None
-    if len(daily) >= 3:
-        racha = sum(1 for r in daily[-3:] if (as_float(r["price_chg_pct"]) or 0) > 0) >= 2
+    price_tail = [as_float(r["price_chg_pct"]) for r in daily[-3:]]
+    if len(price_tail) == 3 and all(v is not None for v in price_tail):
+        racha = sum(1 for v in price_tail if v > 0) >= 2
     macro_ps = _pivot_structure(closes_d, closes_d, k=2) if len(closes_d) >= 10 else None
     macro = _structure_layer(
         "macro",
@@ -1105,9 +1107,16 @@ async def _resample_highs_lows(
     secs: int,
     limit: int,
     source_interval: str = "1min",
+    as_of: datetime | None = None,
 ) -> list[dict]:
+    """Resamplea exclusivamente buckets TARGET ya cerrados.
+
+    El collector conserva la vela abierta; esta frontera pertenece al consumidor historico.
+    El filtro ocurre ANTES de LIMIT para que la vela abierta no robe una muestra cerrada.
+    """
     if source_interval not in {"1min", "5min", "4hour", "daily"}:
         raise ValueError("unsupported OHLCV interval")
+    cutoff = as_of or datetime.now(UTC)
     rows = await conn.fetch(
         """
         WITH b AS (
@@ -1116,20 +1125,23 @@ async def _resample_highs_lows(
                  (array_agg(close ORDER BY ts DESC))[1] AS close,
                  SUM(volume * close) AS volume_usd
           FROM ohlcv WHERE symbol=$1 AND interval=$4
-          GROUP BY 1 ORDER BY 1 DESC LIMIT $3
-        ) SELECT * FROM b ORDER BY bucket
+          GROUP BY 1
+        ), closed AS (
+          SELECT * FROM b
+          WHERE bucket + make_interval(secs => $2::int) <= $5
+          ORDER BY bucket DESC LIMIT $3
+        )
+        SELECT * FROM closed ORDER BY bucket
         """,
-        symbol,
-        secs,
-        limit,
-        source_interval,
+        symbol, secs, limit, source_interval, cutoff,
     )
     return [dict(r) for r in rows]
 
 
 async def price_barriers(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     """Barreras de precio de dos años + pivotes 4h, con esfuerzo vivo de 15m."""
-    daily_bars = await _resample_highs_lows(conn, symbol, 86400, MARKET_MEMORY_DAYS, "daily")
+    as_of = datetime.now(UTC)
+    daily_bars = await _resample_highs_lows(conn, symbol, 86400, MARKET_MEMORY_DAYS, "daily", as_of)
     daily_rows = [
         {
             "session_date": row["bucket"],
@@ -1144,7 +1156,9 @@ async def price_barriers(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
     if len(daily_rows) < 120:
         fallback = await conn.fetch(
             "SELECT session_date,price_high,price_low,price_close,volume_usd,cvd_spot_usd "
-            "FROM daily_session_agg WHERE symbol=$1 ORDER BY session_date DESC LIMIT 730",
+            "FROM daily_session_agg WHERE symbol=$1 "
+            "AND price_high IS NOT NULL AND price_low IS NOT NULL AND price_close IS NOT NULL "
+            "ORDER BY session_date DESC LIMIT 730",
             symbol,
         )
         daily_rows = [dict(row) for row in reversed(fallback)]
@@ -1152,15 +1166,15 @@ async def price_barriers(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
     # 4hour llega a ~300 dias, 5min solo a ~8-9, y 1min es el ultimo recurso local. Las velas
     # 4hour nativas ya vienen alineadas a limites de 4 h desde epoch, asi que el date_bin del
     # resample es identidad y no deforma nada.
-    bars_4h = await _resample_highs_lows(conn, symbol, 14400, BARRIER_INTRADAY_TARGET_BARS, "4hour")
+    bars_4h = await _resample_highs_lows(conn, symbol, 14400, BARRIER_INTRADAY_TARGET_BARS, "4hour", as_of)
     intraday_source = "4hour"
     if len(bars_4h) < 120:
         bars_4h = await _resample_highs_lows(
-            conn, symbol, 14400, BARRIER_INTRADAY_TARGET_BARS, "5min"
+            conn, symbol, 14400, BARRIER_INTRADAY_TARGET_BARS, "5min", as_of
         )
         intraday_source = "5min"
     if len(bars_4h) < 20:
-        bars_4h = await _resample_highs_lows(conn, symbol, 14400, 120)
+        bars_4h = await _resample_highs_lows(conn, symbol, 14400, 120, "1min", as_of)
         intraday_source = "1min"
     # CVD spot por bucket de 4h: spot_trades_agg comparte reloj con las velas (ambos se
     # agrupan por date_bin desde epoch), asi que la absorcion de los pivotes 4h es medible.
@@ -1268,12 +1282,14 @@ async def zone_analysis(
     """
     if zone_low >= zone_high:
         raise ValueError("zone_low must be below zone_high")
+    as_of = datetime.now(UTC)
     bars = await conn.fetch(
         """
         SELECT ts, open, high, low, close, volume, buy_volume
         FROM ohlcv
         WHERE symbol=$1 AND interval='4hour'
-          AND ts >= now() - make_interval(days => $2)
+          AND ts >= $5 - make_interval(days => $2)
+          AND ts + interval '4 hours' <= $5
           AND low <= $4 AND high >= $3
         ORDER BY ts
         """,
@@ -1281,6 +1297,7 @@ async def zone_analysis(
         days,
         zone_low,
         zone_high,
+        as_of,
     )
     baseline_row = await conn.fetchrow(
         """
@@ -1289,15 +1306,18 @@ async def zone_analysis(
              FROM daily_session_agg WHERE symbol=$1) AS median_abs_cvd_spot,
           (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY volume*close)
              FROM ohlcv WHERE symbol=$1 AND interval='4hour'
-               AND ts >= now() - interval '90 days') AS median_bar_volume_usd,
+               AND ts >= $2 - interval '90 days'
+               AND ts + interval '4 hours' <= $2) AS median_bar_volume_usd,
           -- Escala de esfuerzo POR SIMBOLO: mediana de la fraccion direccional de UNA vela.
           -- El modelo A*n^-0.292 la extiende a ventanas de n velas; medido, la mediana
           -- empirica queda entre 0.77x y 1.17x de esa prediccion en BTC, ETH y SOL.
           (SELECT percentile_cont(0.5) WITHIN GROUP (
              ORDER BY abs(2*buy_volume - volume) / volume)
-             FROM ohlcv WHERE symbol=$1 AND interval='4hour' AND volume > 0) AS effort_scale
+             FROM ohlcv WHERE symbol=$1 AND interval='4hour' AND volume > 0
+               AND ts + interval '4 hours' <= $2) AS effort_scale
         """,
         symbol,
+        as_of,
     )
     funding_sample = [
         as_float(r["fr_avg"])
@@ -1337,7 +1357,7 @@ async def zone_analysis(
         end_date = visit_bars[-1]["ts"].date()
         session = await conn.fetchrow(
             """
-            SELECT SUM(cvd_spot_usd) AS cvd_spot, COUNT(*)::int AS n,
+            SELECT CASE WHEN COUNT(cvd_spot_usd)=COUNT(*) THEN SUM(cvd_spot_usd) END AS cvd_spot, COUNT(*)::int AS n,
                    (array_agg(oi_close ORDER BY session_date)
                       FILTER (WHERE oi_close IS NOT NULL))[1] AS oi_first,
                    (array_agg(oi_close ORDER BY session_date DESC)
@@ -1409,6 +1429,7 @@ async def range_validate(
     """
     if low >= high:
         raise ValueError("low must be below high")
+    as_of = datetime.now(UTC)
     if start_date is not None and end_date is not None:
         if start_date >= end_date:
             raise ValueError("start_date must be before end_date")
@@ -1417,10 +1438,11 @@ async def range_validate(
             for r in await conn.fetch(
                 "SELECT ts, open, high, low, close FROM ohlcv "
                 "WHERE symbol=$1 AND interval='daily' AND ts::date >= $2 AND ts::date <= $3 "
-                "ORDER BY ts",
+                "AND ts + interval '1 day' <= $4 ORDER BY ts",
                 symbol,
                 start_date,
                 end_date,
+                as_of,
             )
         ]
         # La referencia de volatilidad son las 90 sesiones anteriores al INICIO del tramo.
@@ -1430,9 +1452,10 @@ async def range_validate(
                 await conn.fetch(
                     "SELECT ts, open, high, low, close FROM ohlcv "
                     "WHERE symbol=$1 AND interval='daily' AND ts::date < $2 "
-                    "ORDER BY ts DESC LIMIT 90",
+                    "AND ts + interval '1 day' <= $3 ORDER BY ts DESC LIMIT 90",
                     symbol,
                     start_date,
+                    as_of,
                 )
             )
         ]
@@ -1448,12 +1471,13 @@ async def range_validate(
             for r in await conn.fetch(
                 "SELECT ts, open, high, low, close FROM ohlcv "
                 "WHERE symbol=$1 AND interval='daily' "
-                "  AND ts >= now() - make_interval(days => $2) "
-                "  AND ts <  now() - make_interval(days => $3) "
-                "ORDER BY ts",
+                "  AND ts >= $4 - make_interval(days => $2) "
+                "  AND ts <  $4 - make_interval(days => $3) "
+                "  AND ts + interval '1 day' <= $4 ORDER BY ts",
                 symbol,
                 start_days,
                 end_days_ago,
+                as_of,
             )
         ]
         prior = [
@@ -1461,11 +1485,12 @@ async def range_validate(
             for r in await conn.fetch(
                 "SELECT ts, open, high, low, close FROM ohlcv "
                 "WHERE symbol=$1 AND interval='daily' "
-                "  AND ts <  now() - make_interval(days => $2) "
-                "  AND ts >= now() - make_interval(days => $2 + 90) "
-                "ORDER BY ts",
+                "  AND ts <  $3 - make_interval(days => $2) "
+                "  AND ts >= $3 - make_interval(days => $2 + 90) "
+                "  AND ts + interval '1 day' <= $3 ORDER BY ts",
                 symbol,
                 start_days,
+                as_of,
             )
         ]
         window = {"mode": "sesiones", "end_days_ago": end_days_ago}
@@ -1483,12 +1508,15 @@ async def range_validate(
 
 async def wyckoff_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     """Rango automatico reciente con lectura Wyckoff + flujo y barras para dibujarlo."""
+    as_of = datetime.now(UTC)
     daily = [
         dict(row)
         for row in await conn.fetch(
             "SELECT ts,open,high,low,close,volume,buy_volume FROM ohlcv "
-            "WHERE symbol=$1 AND interval='daily' ORDER BY ts DESC LIMIT 730",
+            "WHERE symbol=$1 AND interval='daily' AND ts + interval '1 day' <= $2 "
+            "ORDER BY ts DESC LIMIT 730",
             symbol,
+            as_of,
         )
     ]
     daily.reverse()
@@ -1515,14 +1543,17 @@ async def level_breakout(
     El corpus agrupa los tres simbolos porque su tasa base es homogenea (36-42% medido); con
     uno solo la muestra se queda en ~40 intentos y ningun estrato llegaria al minimo de 10.
     """
+    as_of = datetime.now(UTC)
     bars_by_symbol: dict[str, list[dict[str, Any]]] = {}
     for candidate in WS_SYMBOL_MAP:
         bars_by_symbol[candidate] = [
             dict(r)
             for r in await conn.fetch(
                 "SELECT ts, high, low, close, volume, buy_volume FROM ohlcv "
-                "WHERE symbol=$1 AND interval='4hour' ORDER BY ts",
+                "WHERE symbol=$1 AND interval='4hour' AND ts + interval '4 hours' <= $2 "
+                "ORDER BY ts",
                 candidate,
+                as_of,
             )
         ]
     subject = bars_by_symbol.get(symbol) or []
@@ -1530,6 +1561,7 @@ async def level_breakout(
 
 
 async def market_memory(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+    as_of = datetime.now(UTC)
     rows = await conn.fetch(
         """
         SELECT ts::date AS date,open,high,low,close,
@@ -1537,10 +1569,12 @@ async def market_memory(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
                (2*buy_volume-volume)*close AS cvd_futures_usd
         FROM ohlcv
         WHERE symbol=$1 AND interval='daily'
+          AND ts + interval '1 day' <= $3
         ORDER BY ts DESC LIMIT $2
         """,
         symbol,
         MARKET_MEMORY_DAYS,
+        as_of,
     )
     return {"symbol": symbol, **market_memory_read([dict(row) for row in reversed(rows)])}
 
@@ -4612,16 +4646,19 @@ async def spot_perp_flow(
         return {"symbol": symbol, "status": "UNAVAILABLE", "reason": "sin spot mapeado", "rows": []}
     if interval not in {"4hour", "daily"}:
         raise ValueError("unsupported interval for spot_perp_flow")
+    as_of = datetime.now(UTC)
     rows = await conn.fetch(
         """
         WITH p AS (
           SELECT ts,close,delta*close AS delta_usd,volume*close AS volume_usd
           FROM ohlcv WHERE symbol=$1 AND interval=$3
-            AND ts >= now()-($4::int*interval '1 day')
+            AND ts >= $5-($4::int*interval '1 day')
+            AND ts + CASE WHEN $3='4hour' THEN interval '4 hours' ELSE interval '1 day' END <= $5
         ), s AS (
           SELECT ts,delta*close AS delta_usd,volume*close AS volume_usd
           FROM ohlcv WHERE symbol=$2 AND interval=$3
-            AND ts >= now()-($4::int*interval '1 day')
+            AND ts >= $5-($4::int*interval '1 day')
+            AND ts + CASE WHEN $3='4hour' THEN interval '4 hours' ELSE interval '1 day' END <= $5
         )
         -- LEFT JOIN a proposito: un bucket sin spot debe verse como hueco, no desaparecer.
         SELECT p.ts,p.close,
@@ -4634,6 +4671,7 @@ async def spot_perp_flow(
         spot_symbol,
         interval,
         days,
+        as_of,
     )
     out: list[dict[str, Any]] = []
     counts: dict[str, int] = {}

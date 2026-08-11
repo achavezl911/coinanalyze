@@ -135,6 +135,7 @@ function gapCaption(info) {
     + `${minutos ? ` · ${minutos} min sin datos` : ''} · ${detalle}${resto}`;
 }
 function signClass(value) { const n = asNumber(value); return n === null || n === 0 ? 'neutral' : n > 0 ? 'positive' : 'negative'; }
+function priceDirection1h(value) { const n = asNumber(value); if (n === null) return '1 h N/D'; return `1 h ${n > 0 ? 'al alza' : n < 0 ? 'a la baja' : 'lateral'}`; }
 function ts(value) { return Math.floor(new Date(value).getTime() / 1000); }
 function money(value, digits = 1) { const n = asNumber(value); if (n === null) return '—'; const abs = Math.abs(n); let d = 1, suffix = ''; if (abs >= 1e9) { d = 1e9; suffix = 'B'; } else if (abs >= 1e6) { d = 1e6; suffix = 'M'; } else if (abs >= 1e3) { d = 1e3; suffix = 'K'; } return `${n < 0 ? '-' : ''}$${(abs / d).toFixed(digits)}${suffix}`; }
 function number(value, digits = 2) { const n = asNumber(value); return n === null ? '—' : n.toLocaleString('en-US', { maximumFractionDigits: digits }); }
@@ -334,7 +335,7 @@ function renderSummary(s, scalp, cvdSwing = {}) {
   const sessions = safeArray((state.daily || {}).rows).length;
   const note = sessions ? `Últimas ${sessions} sesiones` : '';
   $('summary').replaceChildren(
-    card('Precio', money(s.price, 2), `1 h ${asNumber(s.price_dir_1h) > 0 ? 'al alza' : asNumber(s.price_dir_1h) < 0 ? 'a la baja' : 'lateral'}`, signClass(s.price_dir_1h), dailySeries('price_close'), `Cierre diario · ${note}`),
+    card('Precio', money(s.price, 2), priceDirection1h(s.price_dir_1h), signClass(s.price_dir_1h), dailySeries('price_close'), `Cierre diario · ${note}`),
     card('CVD spot 24 h', money(s.cvd_spot_24h), 'Binance + Bybit', signClass(s.cvd_spot_24h), dailySeries('cumulative_spot'), `CVD spot acumulado · ${note}`),
     card('Open Interest', money(s.oi), `${pct(s.oi_chg_24h_pct)} / 24 h`, signClass(s.oi_chg_24h_pct), dailySeries('oi_close'), `Open interest al cierre · ${note}`),
     card('Funding / liquidez', rate(s.fr_avg), `${number(scalp.spread_bps, 2)} bps · book ${scalp.book_status || 'sin datos'}`, fundingClass(s.fr_avg), dailySeries('fr_avg'), `Funding medio por sesión · ${note}`),

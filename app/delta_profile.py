@@ -224,13 +224,15 @@ async def delta_profile(
     La cobertura real manda: 4h llega a ~300 días y 5min a ~9 (Coinalyze no sirve más 5min
     hacia atrás). Se pide lo que se pueda y la respuesta declara cuántas velas entraron.
     """
-    since = datetime.now(UTC) - timedelta(days=days)
+    as_of = datetime.now(UTC)
+    since = as_of - timedelta(days=days)
     rows = await conn.fetch(
         "SELECT ts, low, high, close, volume, buy_volume FROM ohlcv "
-        "WHERE symbol=$1 AND interval=$2 AND ts >= $3 ORDER BY ts",
-        symbol,
-        interval,
-        since,
+        "WHERE symbol=$1 AND interval=$2 AND ts >= $3 "
+        "AND ts + CASE WHEN $2='4hour' THEN interval '4 hours' "
+        "                 WHEN $2='5min' THEN interval '5 minutes' END <= $4 "
+        "ORDER BY ts",
+        symbol, interval, since, as_of,
     )
     result = profile_read([dict(row) for row in rows], interval, price)
     return {"symbol": symbol, "requested_days": days, **result}

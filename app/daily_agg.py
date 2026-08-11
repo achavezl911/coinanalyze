@@ -40,10 +40,24 @@ def latest_closed_session_date(now_utc: datetime | None = None) -> date:
     return now_et.date() - timedelta(days=1)
 
 
-# Una sesion NYSE son 1440 minutos. Por debajo de esta cobertura el CVD de futuros de
-# 2 venues seria una suma parcial disfrazada de total, asi que se guarda NULL y el UPSERT
-# conserva el valor bueno que se escribio cuando la sesion acababa de cerrar.
-MIN_2V_COVERAGE_MINUTES = 1368  # 95% de 1440
+# PR20/F3: una sesion NYSE no siempre dura 1440 minutos en UTC. El cambio de DST
+# produce sesiones de 23 h y 25 h. La cobertura se mide contra la duracion REAL de
+# session_bounds() y por fuente; 0 sigue significando una medicion cuyo neto fue cero.
+SESSION_MIN_COVERAGE_RATIO = 0.95
+SESSION_COVERAGE_VERSION = 1
+
+
+def _expected_session_samples(start: datetime, end: datetime, cadence_seconds: int) -> int:
+    if cadence_seconds <= 0:
+        raise ValueError("cadence_seconds must be positive")
+    seconds = (end - start).total_seconds()
+    if seconds <= 0 or seconds % cadence_seconds:
+        raise ValueError("session window must be a positive exact multiple of cadence")
+    return int(seconds // cadence_seconds)
+
+
+def _coverage_complete(observed: int, expected: int) -> bool:
+    return expected > 0 and observed * 100 >= expected * int(SESSION_MIN_COVERAGE_RATIO * 100)
 
 
 SESSION_QUERY = """
@@ -56,54 +70,56 @@ WITH fut AS (
     MIN(low) AS price_low,
     SUM(volume * close) AS volume_usd,
     SUM(tx) AS tx_count,
-    COUNT(*) AS samples
+    COUNT(*)::int AS samples
   FROM ohlcv
   WHERE symbol=$1 AND interval='1min' AND ts >= $3 AND ts < $4
 ),
--- Misma pata de futuros que fut.cvd_fut pero restringida a Binance+Bybit, el mismo
--- universo de venues que spot_trades_agg. Es la unica comparacion legitima; ohlcv es el
--- perp de BINANCE (el sufijo .A de Coinalyze es Binance, no un agregado). El perp mueve
--- ~10x el spot, asi que restarle el spot de dos exchanges producia un "diferencial" que en
--- 92-95% de las sesiones era simplemente el CVD de futuros con el signo cambiado.
 fut2v AS (
   SELECT
     SUM(buy_vol_usd - sell_vol_usd) AS cvd_fut_2v,
-    COUNT(*) AS minutes
+    COUNT(*)::int AS minutes
   FROM futures_trades_agg
-  WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min' AND ts >= $3 AND ts < $4
+  WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
+    AND ts >= $3 AND ts < $4
 ),
 spot AS (
   SELECT
-    COALESCE(SUM(buy_vol_usd - sell_vol_usd),0) AS cvd_spot,
-    COALESCE(SUM(inst_buy_usd - inst_sell_usd),0) AS inst_delta
+    -- Ausencia de filas = NULL. COALESCE(...,0) fabricaba una sesion spot neutral.
+    SUM(buy_vol_usd - sell_vol_usd) AS cvd_spot,
+    SUM(inst_buy_usd - inst_sell_usd) AS inst_delta,
+    COUNT(*)::int AS minutes
   FROM spot_trades_agg
-  WHERE symbol=$2 AND exchange='combined' AND venue_count=2 AND interval='1min' AND ts >= $3 AND ts < $4
+  WHERE symbol=$2 AND exchange='combined' AND venue_count=2 AND interval='1min'
+    AND ts >= $3 AND ts < $4
 ),
 oi AS (
   SELECT
     (array_agg(oi_open ORDER BY ts ASC))[1] AS oi_open,
     (array_agg(oi_close ORDER BY ts DESC))[1] AS oi_close,
     MAX(oi_high) AS oi_high,
-    MIN(oi_low) AS oi_low
+    MIN(oi_low) AS oi_low,
+    COUNT(*)::int AS samples
   FROM open_interest
   WHERE symbol=$1 AND interval='5min' AND ts >= $3 AND ts < $4
 ),
 liq AS (
+  -- Feed de eventos: no hay COALESCE. Cero no se deduce de ausencia de eventos persistidos.
   SELECT SUM(long_liq) AS long_liq, SUM(short_liq) AS short_liq
   FROM liquidations
   WHERE symbol=$1 AND interval='5min' AND ts >= $3 AND ts < $4
 ),
 fr AS (
-  SELECT AVG(fr_close) AS fr_avg
+  SELECT AVG(fr_close) AS fr_avg, COUNT(*)::int AS samples
   FROM funding_rate
   WHERE symbol=$1 AND interval='5min' AND ts >= $3 AND ts < $4
 )
 SELECT fut.cvd_fut, fut.price_open, fut.price_close, fut.samples,
        fut.price_high, fut.price_low, fut.volume_usd, fut.tx_count,
        fut2v.cvd_fut_2v, fut2v.minutes AS fut_2v_minutes,
-       spot.cvd_spot, spot.inst_delta,
-       oi.oi_open, oi.oi_close, oi.oi_high, oi.oi_low,
-       liq.long_liq, liq.short_liq, fr.fr_avg
+       spot.cvd_spot, spot.inst_delta, spot.minutes AS spot_2v_minutes,
+       oi.oi_open, oi.oi_close, oi.oi_high, oi.oi_low, oi.samples AS oi_5m_samples,
+       liq.long_liq, liq.short_liq,
+       fr.fr_avg, fr.samples AS funding_5m_samples
 FROM fut CROSS JOIN fut2v CROSS JOIN spot CROSS JOIN oi CROSS JOIN liq CROSS JOIN fr
 """
 
@@ -115,11 +131,51 @@ async def compute_session(
     session_date_value: date,
 ) -> bool:
     start, end = session_bounds(session_date_value)
+    expected_minutes = _expected_session_samples(start, end, 60)
+    expected_5m = _expected_session_samples(start, end, 300)
     row = await conn.fetchrow(SESSION_QUERY, symbol, ws_symbol, start, end)
-    if not row or not row["samples"] or row["price_open"] is None or row["price_close"] is None:
+    if not row:
         return False
-    minutes_2v = int(row["fut_2v_minutes"] or 0)
-    complete_2v = minutes_2v >= MIN_2V_COVERAGE_MINUTES
+
+    futures_minutes = int(row["samples"] or 0)
+    spot_minutes = int(row["spot_2v_minutes"] or 0)
+    futures_2v_minutes = int(row["fut_2v_minutes"] or 0)
+    oi_samples = int(row["oi_5m_samples"] or 0)
+    funding_samples = int(row["funding_5m_samples"] or 0)
+
+    complete_futures = _coverage_complete(futures_minutes, expected_minutes)
+    complete_spot = _coverage_complete(spot_minutes, expected_minutes)
+    complete_futures_2v = _coverage_complete(futures_2v_minutes, expected_minutes)
+    complete_oi = _coverage_complete(oi_samples, expected_5m)
+    complete_funding = _coverage_complete(funding_samples, expected_5m)
+
+    # No se persiste una fila totalmente vacia. Una sesion parcial SI puede existir: cada
+    # grupo de metricas viaja NULL si su propia fuente no alcanza cobertura.
+    if (
+        not any((futures_minutes, spot_minutes, futures_2v_minutes, oi_samples, funding_samples))
+        and row["long_liq"] is None
+        and row["short_liq"] is None
+    ):
+        return False
+
+    cvd_fut = row["cvd_fut"] if complete_futures else None
+    price_open = row["price_open"] if complete_futures else None
+    price_close = row["price_close"] if complete_futures else None
+    price_high = row["price_high"] if complete_futures else None
+    price_low = row["price_low"] if complete_futures else None
+    volume_usd = row["volume_usd"] if complete_futures else None
+    tx_count = int(row["tx_count"]) if complete_futures and row["tx_count"] is not None else None
+
+    cvd_spot = row["cvd_spot"] if complete_spot else None
+    inst_delta = row["inst_delta"] if complete_spot else None
+    cvd_fut_2v = row["cvd_fut_2v"] if complete_futures_2v else None
+
+    oi_open = row["oi_open"] if complete_oi else None
+    oi_close = row["oi_close"] if complete_oi else None
+    oi_high = row["oi_high"] if complete_oi else None
+    oi_low = row["oi_low"] if complete_oi else None
+    fr_avg = row["fr_avg"] if complete_funding else None
+
     await conn.execute(
         """
         INSERT INTO daily_session_agg(
@@ -127,52 +183,83 @@ async def compute_session(
           price_open,price_close,oi_open,oi_close,fr_avg,
           cvd_fut_2v_usd,cvd_fut_2v_minutes,
           volume_usd,price_high,price_low,long_liq_usd,short_liq_usd,
-          oi_high,oi_low,tx_count,created_at
-        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,now())
+          oi_high,oi_low,tx_count,
+          session_coverage_version,session_expected_minutes,futures_ohlcv_minutes,
+          spot_2v_minutes,session_expected_5m_samples,oi_5m_samples,funding_5m_samples,
+          created_at
+        ) VALUES(
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+          $21,$22,$23,$24,$25,$26,$27,now()
+        )
         ON CONFLICT(symbol,session_date) DO UPDATE SET
-          cvd_spot_usd=EXCLUDED.cvd_spot_usd,
-          cvd_fut_usd=EXCLUDED.cvd_fut_usd,
-          inst_delta_usd=EXCLUDED.inst_delta_usd,
-          price_open=EXCLUDED.price_open,
-          price_close=EXCLUDED.price_close,
-          oi_open=EXCLUDED.oi_open,
-          oi_close=EXCLUDED.oi_close,
-          fr_avg=EXCLUDED.fr_avg,
-          -- Estas dependen de tablas de retencion corta: al recalcular una sesion vieja el
-          -- dato ya no existe y EXCLUDED viene NULL. COALESCE conserva el valor bueno que
-          -- se escribio cuando la sesion acababa de cerrar, en vez de borrarlo.
-          cvd_fut_2v_usd=COALESCE(EXCLUDED.cvd_fut_2v_usd, daily_session_agg.cvd_fut_2v_usd),
-          cvd_fut_2v_minutes=COALESCE(EXCLUDED.cvd_fut_2v_minutes, daily_session_agg.cvd_fut_2v_minutes),
-          volume_usd=COALESCE(EXCLUDED.volume_usd, daily_session_agg.volume_usd),
-          price_high=COALESCE(EXCLUDED.price_high, daily_session_agg.price_high),
-          price_low=COALESCE(EXCLUDED.price_low, daily_session_agg.price_low),
-          long_liq_usd=COALESCE(EXCLUDED.long_liq_usd, daily_session_agg.long_liq_usd),
-          short_liq_usd=COALESCE(EXCLUDED.short_liq_usd, daily_session_agg.short_liq_usd),
-          oi_high=COALESCE(EXCLUDED.oi_high, daily_session_agg.oi_high),
-          oi_low=COALESCE(EXCLUDED.oi_low, daily_session_agg.oi_low),
-          tx_count=COALESCE(EXCLUDED.tx_count, daily_session_agg.tx_count),
+          -- Si la fila previa es legacy/unverified, EXCLUDED (incluso NULL) manda. Solo una
+          -- medicion PR20 ya verificada puede sobrevivir a una recarga posterior sin retencion.
+          cvd_spot_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.cvd_spot_usd,daily_session_agg.cvd_spot_usd)
+            ELSE EXCLUDED.cvd_spot_usd END,
+          cvd_fut_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.cvd_fut_usd,daily_session_agg.cvd_fut_usd)
+            ELSE EXCLUDED.cvd_fut_usd END,
+          inst_delta_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.inst_delta_usd,daily_session_agg.inst_delta_usd)
+            ELSE EXCLUDED.inst_delta_usd END,
+          price_open=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.price_open,daily_session_agg.price_open)
+            ELSE EXCLUDED.price_open END,
+          price_close=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.price_close,daily_session_agg.price_close)
+            ELSE EXCLUDED.price_close END,
+          oi_open=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.oi_open,daily_session_agg.oi_open) ELSE EXCLUDED.oi_open END,
+          oi_close=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.oi_close,daily_session_agg.oi_close) ELSE EXCLUDED.oi_close END,
+          fr_avg=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.fr_avg,daily_session_agg.fr_avg) ELSE EXCLUDED.fr_avg END,
+          cvd_fut_2v_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.cvd_fut_2v_usd,daily_session_agg.cvd_fut_2v_usd)
+            ELSE EXCLUDED.cvd_fut_2v_usd END,
+          volume_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.volume_usd,daily_session_agg.volume_usd) ELSE EXCLUDED.volume_usd END,
+          price_high=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.price_high,daily_session_agg.price_high) ELSE EXCLUDED.price_high END,
+          price_low=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.price_low,daily_session_agg.price_low) ELSE EXCLUDED.price_low END,
+          long_liq_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.long_liq_usd,daily_session_agg.long_liq_usd) ELSE EXCLUDED.long_liq_usd END,
+          short_liq_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.short_liq_usd,daily_session_agg.short_liq_usd) ELSE EXCLUDED.short_liq_usd END,
+          oi_high=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.oi_high,daily_session_agg.oi_high) ELSE EXCLUDED.oi_high END,
+          oi_low=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.oi_low,daily_session_agg.oi_low) ELSE EXCLUDED.oi_low END,
+          tx_count=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN COALESCE(EXCLUDED.tx_count,daily_session_agg.tx_count) ELSE EXCLUDED.tx_count END,
+          cvd_fut_2v_minutes=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN GREATEST(COALESCE(daily_session_agg.cvd_fut_2v_minutes,0),EXCLUDED.cvd_fut_2v_minutes)
+            ELSE EXCLUDED.cvd_fut_2v_minutes END,
+          session_coverage_version=EXCLUDED.session_coverage_version,
+          session_expected_minutes=EXCLUDED.session_expected_minutes,
+          futures_ohlcv_minutes=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN GREATEST(COALESCE(daily_session_agg.futures_ohlcv_minutes,0),EXCLUDED.futures_ohlcv_minutes)
+            ELSE EXCLUDED.futures_ohlcv_minutes END,
+          spot_2v_minutes=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN GREATEST(COALESCE(daily_session_agg.spot_2v_minutes,0),EXCLUDED.spot_2v_minutes)
+            ELSE EXCLUDED.spot_2v_minutes END,
+          session_expected_5m_samples=EXCLUDED.session_expected_5m_samples,
+          oi_5m_samples=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN GREATEST(COALESCE(daily_session_agg.oi_5m_samples,0),EXCLUDED.oi_5m_samples)
+            ELSE EXCLUDED.oi_5m_samples END,
+          funding_5m_samples=CASE WHEN daily_session_agg.session_coverage_version=1
+            THEN GREATEST(COALESCE(daily_session_agg.funding_5m_samples,0),EXCLUDED.funding_5m_samples)
+            ELSE EXCLUDED.funding_5m_samples END,
           created_at=now()
         """,
-        session_date_value,
-        symbol,
-        row["cvd_spot"],
-        row["cvd_fut"],
-        row["inst_delta"],
-        row["price_open"],
-        row["price_close"],
-        row["oi_open"],
-        row["oi_close"],
-        row["fr_avg"],
-        row["cvd_fut_2v"] if complete_2v else None,
-        minutes_2v if complete_2v else None,
-        row["volume_usd"],
-        row["price_high"],
-        row["price_low"],
-        row["long_liq"],
-        row["short_liq"],
-        row["oi_high"],
-        row["oi_low"],
-        int(row["tx_count"]) if row["tx_count"] is not None else None,
+        session_date_value, symbol, cvd_spot, cvd_fut, inst_delta,
+        price_open, price_close, oi_open, oi_close, fr_avg,
+        cvd_fut_2v, futures_2v_minutes, volume_usd, price_high, price_low,
+        row["long_liq"], row["short_liq"], oi_high, oi_low, tx_count,
+        SESSION_COVERAGE_VERSION, expected_minutes, futures_minutes, spot_minutes,
+        expected_5m, oi_samples, funding_samples,
     )
     return True
 
@@ -199,10 +286,17 @@ DAILY_ROWS_QUERY = """
 WITH selected AS (
   SELECT * FROM daily_session_agg WHERE symbol=$1
   ORDER BY session_date DESC LIMIT 60
+), ordered AS (
+  SELECT *,
+         SUM(CASE WHEN cvd_spot_usd IS NULL THEN 1 ELSE 0 END)
+           OVER (ORDER BY session_date) AS spot_gap_group
+  FROM selected
 )
 SELECT session_date, cvd_spot_usd,
-       SUM(cvd_spot_usd) OVER (ORDER BY session_date) AS cumulative_spot
-FROM selected ORDER BY session_date
+       CASE WHEN cvd_spot_usd IS NULL THEN NULL
+            ELSE SUM(cvd_spot_usd) OVER (PARTITION BY spot_gap_group ORDER BY session_date)
+       END AS cumulative_spot
+FROM ordered ORDER BY session_date
 """
 
 
@@ -221,8 +315,8 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
             symbol,
             session_date_value,
         )
-        if session is None:
-            continue  # la sesion todavia no esta agregada; se guardara en el proximo ciclo
+        if session is None or session["price_close"] is None:
+            continue  # sin cierre medido no existe un veredicto diario evaluable
         swing = await swing_score(conn, symbol)
         snapshot = await conn.fetchrow(
             "SELECT * FROM metrics_snapshot WHERE symbol=$1 ORDER BY ts DESC LIMIT 1", symbol
@@ -369,22 +463,15 @@ BASELINE_METRICS = {
 
 
 async def refresh_baselines(conn: asyncpg.Connection, symbols: tuple[str, ...]) -> int:
-    """Mide cada metrica por simbolo y ventana y guarda su distribucion.
-
-    Se agrupa el intervalo fuente en buckets del tamano de la ventana y solo se acepta el
-    bucket COMPLETO (todas las velas presentes): un bucket a medias tiene menos volumen y
-    infla artificialmente el ratio.
-
-    Guarda MAD ademas de percentiles porque el z-score robusto ((x-mediana)/(1.4826*MAD)) es
-    el que aguanta la cola de estas distribuciones; con media y sigma un solo pico la deforma.
-    """
+    """Mide distribuciones usando exclusivamente buckets historicos ya cerrados."""
     total = 0
+    as_of = datetime.now(UTC)
     for label, seconds, source in BASELINE_WINDOWS:
         source_seconds = 60 if source == "1min" else 14400
         expected = max(seconds // source_seconds, 1)
         for metric, expression in BASELINE_METRICS.items():
             total += await _store_baseline(
-                conn, symbols, label, seconds, source, expected, metric, expression
+                conn, symbols, label, seconds, source, expected, metric, expression, as_of
             )
     return total
 
@@ -398,6 +485,7 @@ async def _store_baseline(
     expected: int,
     metric: str,
     expression: str,
+    as_of: datetime,
 ) -> int:
     total = 0
     rows = await conn.fetch(
@@ -410,10 +498,16 @@ async def _store_baseline(
                  (array_agg(close ORDER BY ts DESC))[1] AS px_close
           FROM ohlcv
           WHERE interval=$3 AND symbol = ANY($1::text[])
+            -- Filtra la vela fuente abierta. Es decisivo para 4h, donde parts=1 podia hacer
+            -- pasar la vela en curso como una muestra historica completa.
+            AND ts + CASE WHEN $3='4hour' THEN interval '4 hours' ELSE interval '1 minute' END <= $5
           GROUP BY 1,2
         ), r AS (
           SELECT symbol, ({expression}) AS ratio, bucket
-          FROM b WHERE volume > 0 AND parts = $4::int
+          FROM b
+          WHERE volume > 0 AND parts = $4::int
+            -- Para 8h/1d construidos con 4h, tambien exige que el TARGET haya cerrado.
+            AND bucket + make_interval(secs => $2::int) <= $5
         ), agg AS (
           SELECT symbol, count(*)::int AS n,
                  percentile_cont(0.50) WITHIN GROUP (ORDER BY ratio) AS p50,
@@ -421,7 +515,6 @@ async def _store_baseline(
                  percentile_cont(0.90) WITHIN GROUP (ORDER BY ratio) AS p90,
                  percentile_cont(0.95) WITHIN GROUP (ORDER BY ratio) AS p95,
                  min(bucket) AS lo, max(bucket) AS hi
-          -- El impacto es NULL cuando el delta es despreciable: fuera de la muestra, no cero.
           FROM r WHERE ratio IS NOT NULL GROUP BY symbol
         )
         SELECT agg.*,
@@ -429,13 +522,9 @@ async def _store_baseline(
                 FROM r WHERE r.symbol=agg.symbol AND r.ratio IS NOT NULL) AS mad
         FROM agg
         """,
-        list(symbols),
-        seconds,
-        source,
-        expected,
+        list(symbols), seconds, source, expected, as_of,
     )
     for row in rows:
-        # Una muestra corta no es una distribucion: mejor sin baseline que con una mentira.
         if not row["n"] or row["n"] < 30:
             continue
         await conn.execute(
