@@ -1891,6 +1891,9 @@ COMMIT;
 
 BEGIN;
 -- PR20_F3_F4_F7_BEGIN
+-- F4: NULL means price direction was not measurable. Zero is reserved for a real
+-- measured lateral move inside +/-20 bps.
+ALTER TABLE metrics_snapshot ALTER COLUMN price_dir_1h DROP NOT NULL;
 -- F3: partial daily sessions must preserve absence. Existing rows are legacy/unverified
 -- until prospectively recalculated by the v1 coverage contract.
 ALTER TABLE daily_session_agg ALTER COLUMN cvd_spot_usd DROP NOT NULL;

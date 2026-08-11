@@ -3,6 +3,14 @@ BEGIN;
 DO $$
 BEGIN
   IF EXISTS (
+    SELECT 1 FROM metrics_snapshot WHERE price_dir_1h IS NULL
+  ) THEN
+    RAISE EXCEPTION 'PR20 down migration requires removal/repair of metrics_snapshot rows with NULL price_dir_1h before restoring NOT NULL';
+  END IF;
+END $$;
+DO $$
+BEGIN
+  IF EXISTS (
     SELECT 1 FROM daily_session_agg
     WHERE cvd_spot_usd IS NULL OR cvd_fut_usd IS NULL OR inst_delta_usd IS NULL
        OR price_open IS NULL OR price_close IS NULL
@@ -23,4 +31,5 @@ ALTER TABLE daily_session_agg ALTER COLUMN cvd_fut_usd SET NOT NULL;
 ALTER TABLE daily_session_agg ALTER COLUMN inst_delta_usd SET NOT NULL;
 ALTER TABLE daily_session_agg ALTER COLUMN price_open SET NOT NULL;
 ALTER TABLE daily_session_agg ALTER COLUMN price_close SET NOT NULL;
+ALTER TABLE metrics_snapshot ALTER COLUMN price_dir_1h SET NOT NULL;
 COMMIT;

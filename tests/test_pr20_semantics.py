@@ -213,3 +213,25 @@ def test_pr20_does_not_change_live_evidence_version_or_pr11_kernel() -> None:
     walk = (ROOT / "app" / "signal_walk_forward.py").read_text(encoding="utf-8")
     assert "SIGNAL_EVIDENCE_VERSION = 2" in ledger
     assert 'DEFAULT_MANIFEST_NAME = "pr11-fixed-kernel-v1"' in walk
+def test_pr20_f4_schema_accepts_unmeasurable_price_direction() -> None:
+    schema = (ROOT / "sql" / "schema.sql").read_text(encoding="utf-8")
+    up = (
+        ROOT / "sql" / "migrations" / "20260811_pr20_semantics.sql"
+    ).read_text(encoding="utf-8")
+    down = (
+        ROOT / "sql" / "migrations" / "20260811_pr20_semantics_down.sql"
+    ).read_text(encoding="utf-8")
+
+    nullable = "ALTER TABLE metrics_snapshot ALTER COLUMN price_dir_1h DROP NOT NULL;"
+    restore = "ALTER TABLE metrics_snapshot ALTER COLUMN price_dir_1h SET NOT NULL;"
+
+    assert nullable in schema
+    assert nullable in up
+    assert "SELECT 1 FROM metrics_snapshot WHERE price_dir_1h IS NULL" in down
+    assert restore in down
+
+    # F4's application contract is deliberately nullable:
+    # None = not measurable, 0 = measured lateral.
+    metrics_source = (ROOT / "app" / "metrics.py").read_text(encoding="utf-8")
+    assert "price_dir: int | None = None" in metrics_source
+    assert 'snap["price_dir_1h"]' in metrics_source

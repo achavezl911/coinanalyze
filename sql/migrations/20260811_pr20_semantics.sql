@@ -1,5 +1,6 @@
 -- PR20 F3/F4/F7: nullable daily evidence + prospective coverage provenance.
 BEGIN;
+ALTER TABLE metrics_snapshot ALTER COLUMN price_dir_1h DROP NOT NULL;
 ALTER TABLE daily_session_agg ALTER COLUMN cvd_spot_usd DROP NOT NULL;
 ALTER TABLE daily_session_agg ALTER COLUMN cvd_fut_usd DROP NOT NULL;
 ALTER TABLE daily_session_agg ALTER COLUMN inst_delta_usd DROP NOT NULL;
