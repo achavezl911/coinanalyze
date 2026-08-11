@@ -413,8 +413,9 @@ async def compute_snapshot(
 
     price = optional_finite(data.get("price"))
     price_1h = optional_finite(data.get("price_1h"))
-    price_dir = 0
-    if price and price_1h:
+    # F4: NULL = no medido. Cero queda reservado a lateralidad REAL dentro de ±20 bps.
+    price_dir: int | None = None
+    if price is not None and price_1h is not None and price_1h > 0:
         change = (price - price_1h) / price_1h
         price_dir = 1 if change > 0.002 else -1 if change < -0.002 else 0
 

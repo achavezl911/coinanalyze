@@ -319,29 +319,44 @@ async def daily_data(
 ) -> dict[str, Any]:
     rows = await conn.fetch(
         """
-        WITH hist AS (
-          SELECT session_date,
-                 percent_rank() OVER (ORDER BY cvd_spot_usd) * 100 AS pct_spot,
-                 percent_rank() OVER (ORDER BY cvd_diff_usd) * 100 AS pct_diff
+        WITH spot_hist AS (
+          SELECT session_date, percent_rank() OVER (ORDER BY cvd_spot_usd) * 100 AS pct_spot
           FROM daily_session_agg
-          WHERE symbol=$1 AND ($3::date IS NULL OR session_date <= $3)
+          WHERE symbol=$1 AND cvd_spot_usd IS NOT NULL
+            AND ($3::date IS NULL OR session_date <= $3)
+        ), diff_hist AS (
+          SELECT session_date, percent_rank() OVER (ORDER BY cvd_diff_usd) * 100 AS pct_diff
+          FROM daily_session_agg
+          WHERE symbol=$1 AND cvd_diff_usd IS NOT NULL
+            AND ($3::date IS NULL OR session_date <= $3)
         ), selected AS (
           SELECT * FROM daily_session_agg
           WHERE symbol=$1 AND ($3::date IS NULL OR session_date <= $3)
           ORDER BY session_date DESC LIMIT $2
+        ), segmented AS (
+          SELECT selected.*,
+                 SUM(CASE WHEN cvd_spot_usd IS NULL THEN 1 ELSE 0 END)
+                   OVER (ORDER BY session_date) AS spot_gap_group,
+                 SUM(CASE WHEN cvd_diff_usd IS NULL THEN 1 ELSE 0 END)
+                   OVER (ORDER BY session_date) AS diff_gap_group
+          FROM selected
         )
         SELECT s.session_date,s.symbol,s.cvd_spot_usd,s.cvd_fut_usd,s.cvd_diff_usd,
                s.cvd_fut_2v_usd,s.cvd_diff_2v_usd,s.cvd_fut_2v_minutes,
+               s.session_coverage_version,s.session_expected_minutes,
+               s.futures_ohlcv_minutes,s.spot_2v_minutes,s.session_expected_5m_samples,
+               s.oi_5m_samples,s.funding_5m_samples,
                s.inst_delta_usd,s.price_open,s.price_high,s.price_low,s.price_close,s.price_chg_pct,
                s.oi_open,s.oi_close,s.oi_chg_usd,s.fr_avg,
                s.volume_usd,s.long_liq_usd,s.short_liq_usd,
-               SUM(s.cvd_diff_usd) OVER (ORDER BY s.session_date) AS cumulative_diff,
-               SUM(s.cvd_spot_usd) OVER (ORDER BY s.session_date) AS cumulative_spot,
-               round(h.pct_spot::numeric,0)::float8 AS cvd_spot_percentile,
-               round(h.pct_diff::numeric,0)::float8 AS cvd_diff_percentile,
-               -- Una sesion de CVD describe agresion ejecutada, no acumulacion/distribucion
-               -- institucional. Publicamos los signos factuales de ambas patas y la respuesta
-               -- del precio; la UI no tiene que reinterpretar el diferencial sesgado por escala.
+               CASE WHEN s.cvd_diff_usd IS NULL THEN NULL
+                    ELSE SUM(s.cvd_diff_usd) OVER (
+                      PARTITION BY s.diff_gap_group ORDER BY s.session_date) END AS cumulative_diff,
+               CASE WHEN s.cvd_spot_usd IS NULL THEN NULL
+                    ELSE SUM(s.cvd_spot_usd) OVER (
+                      PARTITION BY s.spot_gap_group ORDER BY s.session_date) END AS cumulative_spot,
+               round(dh.pct_diff::numeric,0)::float8 AS cvd_diff_percentile,
+               round(sh.pct_spot::numeric,0)::float8 AS cvd_spot_percentile,
                CASE
                  WHEN s.cvd_spot_usd > 0 AND s.cvd_fut_usd > 0 THEN 'ambos_compran'
                  WHEN s.cvd_spot_usd < 0 AND s.cvd_fut_usd < 0 THEN 'ambos_venden'
@@ -359,20 +374,20 @@ async def daily_data(
                  WHEN s.cvd_spot_usd * s.cvd_fut_usd < 0 THEN 'flujo_dividido'
                  ELSE 'sin_dato'
                END AS price_response
-        FROM selected s JOIN hist h USING (session_date)
+        FROM segmented s
+        LEFT JOIN spot_hist sh USING (session_date)
+        LEFT JOIN diff_hist dh USING (session_date)
         ORDER BY s.session_date
         """,
-        symbol,
-        days,
-        as_of,
+        symbol, days, as_of,
     )
     values = records(rows)
     streak = 0
     for row in reversed(values):
-        spot = float(row["cvd_spot_usd"])
-        sign = 1 if spot > 0 else -1 if spot < 0 else 0
-        if sign == 0:
+        spot = as_float(row.get("cvd_spot_usd"))
+        if spot is None or spot == 0:
             break
+        sign = 1 if spot > 0 else -1
         if streak == 0:
             streak = sign
         elif (streak > 0 and sign > 0) or (streak < 0 and sign < 0):
@@ -387,6 +402,11 @@ async def daily_data(
         "as_of": str(values[-1]["session_date"]) if values else None,
         "quick_read": daily_flow_read(values),
         "sources": DAILY_SOURCES,
+        "coverage_note": (
+            "session_coverage_version=NULL significa legacy/unverified. En v1 cada pata densa "
+            "se publica solo con >=95% de sus muestras esperadas para la duracion DST real; "
+            "NULL no significa cero."
+        ),
     }
 
 

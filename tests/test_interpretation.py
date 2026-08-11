@@ -231,3 +231,15 @@ def test_market_memory_returns_distinct_historical_analogs_without_calling_them_
 
 def test_market_memory_requires_enough_daily_history():
     assert market_memory_read([])["available"] is False
+def test_pr20_v7_setup_slope_does_not_reconnect_cumulative_segments() -> None:
+    rows = [
+        {"cvd_spot_usd": 1.0, "cumulative_spot": 100.0},
+        {"cvd_spot_usd": 1.0, "cumulative_spot": None},
+        {"cvd_spot_usd": 1.0, "cumulative_spot": -10.0},
+        {"cvd_spot_usd": 1.0, "cumulative_spot": -5.0},
+    ]
+    result = evaluate_setups({}, rows)
+    assert result["daily_slope"] == 5.0
+    by_id = {item["id"]: item for item in result["setups"]}
+    assert "CVD spot acumulado alcista" in by_id["B"]["matched"]
+    assert "CVD spot acumulado bajista" not in by_id["A"]["matched"]

@@ -12,8 +12,15 @@ from pathlib import Path
 import pytest
 
 from app.api import daily_data
-from app.daily_agg import MIN_2V_COVERAGE_MINUTES, SESSION_QUERY
-from app.scalp_logic import _conditional_outcome, _forward_returns, _slope_pct, divergence_scan
+from app.daily_agg import SESSION_MIN_COVERAGE_RATIO, SESSION_QUERY
+from app.scalp_logic import (
+    _complete_tail_values,
+    _conditional_outcome,
+    _contiguous_measured_suffix,
+    _forward_returns,
+    _slope_pct,
+    divergence_scan,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 JS = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
@@ -37,8 +44,14 @@ def test_macro_structure_and_swing_use_spot_not_the_scale_biased_diff() -> None:
     source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
     market = source[source.index("async def market_structure"):source.index("# ---------------- alertas HTF")]
     trend = source[source.index("async def trend_matrix"):source.index("async def swing_score")]
-    assert 'sum(as_float(r["cvd_spot_usd"])' in market
-    assert 'sum(as_float(r["cvd_spot_usd"])' in trend
+    # F3 keeps the macro vote on spot CVD but exact session windows fail closed on gaps.
+    assert '_complete_tail_values(daily, "cvd_spot_usd", 7)' in market
+    assert '_complete_tail_values(daily, "price_close", 8)' in market
+    assert '_contiguous_measured_suffix(daily, "price_close")' in market
+    assert "cvd_diff_usd" not in market
+    assert '_complete_tail_values(daily, "cvd_spot_usd", n_back)' in trend
+    assert '_contiguous_measured_suffix(ds, "price_close")' in trend
+    assert 'sum(as_float(r["cvd_spot_usd"]) or 0' not in trend
     assert '"CVD spot de fondo"' in trend
 
 
@@ -54,15 +67,21 @@ def test_daily_table_replaces_scale_biased_diffs_with_price_response() -> None:
 def test_session_query_measures_futures_on_the_same_venues_as_spot() -> None:
     assert "FROM futures_trades_agg" in SESSION_QUERY
     assert "exchange='combined'" in SESSION_QUERY
-    # Cobertura minima: una suma parcial no debe guardarse como si fuera la sesion entera.
-    assert 0 < MIN_2V_COVERAGE_MINUTES <= 1440
+    assert "spot.minutes AS spot_2v_minutes" in SESSION_QUERY
+    # F3: coverage is proportional to the real DST-aware session duration.
+    assert 0 < SESSION_MIN_COVERAGE_RATIO <= 1
+    # No rows is unknown, not a measured neutral session.
+    assert "COALESCE(SUM(buy_vol_usd - sell_vol_usd),0)" not in SESSION_QUERY
+    assert "COALESCE(SUM(inst_buy_usd - inst_sell_usd),0)" not in SESSION_QUERY
 
 
-def test_partial_sessions_never_overwrite_a_good_two_venue_value() -> None:
-    """futures_trades_agg se retiene horas: al recalcular una sesion vieja llega NULL."""
+def test_partial_sessions_preserve_only_previously_verified_two_venue_evidence() -> None:
+    """Retention loss may preserve PR20-verified evidence, never legacy/unverified evidence."""
     source = (ROOT / "app" / "daily_agg.py").read_text(encoding="utf-8")
-    assert "cvd_fut_2v_usd=COALESCE(EXCLUDED.cvd_fut_2v_usd, daily_session_agg.cvd_fut_2v_usd)" in source
-    assert "complete_2v = minutes_2v >= MIN_2V_COVERAGE_MINUTES" in source
+    assert "cvd_fut_2v_usd=CASE WHEN daily_session_agg.session_coverage_version=1" in source
+    assert "THEN COALESCE(EXCLUDED.cvd_fut_2v_usd,daily_session_agg.cvd_fut_2v_usd)" in source
+    assert "ELSE EXCLUDED.cvd_fut_2v_usd END" in source
+    assert "complete_futures_2v = _coverage_complete(futures_2v_minutes, expected_minutes)" in source
 
 
 def test_minute_retention_covers_a_full_nyse_session() -> None:
@@ -453,12 +472,85 @@ class _DailyReplayConnection:
 
 @pytest.mark.asyncio
 async def test_daily_replay_applies_as_of_to_history_and_selected_rows() -> None:
-    """Un replay antiguo no puede calcular percentiles con sesiones que aún no existían."""
+    """Replay cutoff must constrain each percentile population and the selected rows."""
     from datetime import date
 
     conn = _DailyReplayConnection()
     cutoff = date(2026, 6, 24)
     result = await daily_data(conn, "BTCUSDT_PERP.A", 60, cutoff)
-    assert conn.query.count("session_date <= $3") == 2
+    query = conn.query
+    spot_hist = query[query.index("spot_hist AS"):query.index("), diff_hist AS")]
+    diff_hist = query[query.index("diff_hist AS"):query.index("), selected AS")]
+    selected = query[query.index("selected AS"):query.index("), segmented AS")]
+    assert "session_date <= $3" in spot_hist
+    assert "session_date <= $3" in diff_hist
+    assert "session_date <= $3" in selected
+    assert "cvd_spot_usd IS NOT NULL" in spot_hist
+    assert "cvd_diff_usd IS NOT NULL" in diff_hist
     assert conn.args == ("BTCUSDT_PERP.A", 60, cutoff)
     assert result["quick_read"]["available"] is False
+def test_pr20_v7_daily_tail_helpers_do_not_bridge_missingness() -> None:
+    rows = [
+        {"session_date": "d1", "price_close": 101.0, "cvd_spot_usd": 1.0},
+        {"session_date": "d2", "price_close": None, "cvd_spot_usd": None},
+        {"session_date": "d3", "price_close": 103.0, "cvd_spot_usd": 2.0},
+        {"session_date": "d4", "price_close": 104.0, "cvd_spot_usd": 3.0},
+    ]
+    assert _complete_tail_values(rows, "cvd_spot_usd", 3) is None
+    assert _complete_tail_values(rows, "cvd_spot_usd", 2) == [2.0, 3.0]
+    suffix = _contiguous_measured_suffix(rows, "price_close")
+    assert [(row["session_date"], value) for row, value in suffix] == [
+        ("d3", 103.0),
+        ("d4", 104.0),
+    ]
+
+
+def test_pr20_v7_all_daily_structure_consumers_use_contiguous_price_suffixes() -> None:
+    source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
+    detail_start = source.index("async def structure_detail")
+    detail = source[detail_start:source.index("_CONFIRMATION_TF", detail_start)]
+    trend_start = source.index("async def trend_matrix")
+    trend = source[trend_start:source.index("async def swing_score", trend_start)]
+    assert '_contiguous_measured_suffix(ds, "price_close")' in detail
+    assert '_contiguous_measured_suffix(ds, "price_close")' in trend
+
+
+@pytest.mark.asyncio
+async def test_pr20_v7_divergence_fails_closed_on_internal_spot_cvd_gap() -> None:
+    rows = [
+        {
+            "session_date": f"d{i:02d}",
+            "price_close": 100.0 + i,
+            "cvd_spot_usd": -1_000_000.0,
+        }
+        for i in range(59, -1, -1)
+    ]
+    rows[2]["cvd_spot_usd"] = None
+    result = await divergence_scan(_DivergenceConnection(rows), "BTCUSDT_PERP.A")
+    assert result["windows"]["2d"]["available"] is True
+    assert result["windows"]["3d"]["available"] is False
+    assert result["windows"]["3d"]["reason"] == "missing_daily_evidence"
+    assert result["windows"]["3d"]["missing_cvd_spot"] is True
+    assert result["windows"]["3d"]["missing_price"] is False
+    assert result["windows"]["4s"]["available"] is False
+    assert result["sustained_windows_evaluated"] == 0
+
+
+@pytest.mark.asyncio
+async def test_pr20_v7_divergence_fails_closed_on_internal_price_gap() -> None:
+    rows = [
+        {
+            "session_date": f"d{i:02d}",
+            "price_close": 100.0 + i,
+            "cvd_spot_usd": -1_000_000.0,
+        }
+        for i in range(59, -1, -1)
+    ]
+    rows[2]["price_close"] = None
+    result = await divergence_scan(_DivergenceConnection(rows), "BTCUSDT_PERP.A")
+    assert result["windows"]["1d"]["available"] is True
+    assert result["windows"]["2d"]["available"] is False
+    assert result["windows"]["2d"]["reason"] == "missing_daily_evidence"
+    assert result["windows"]["2d"]["missing_price"] is True
+    assert result["windows"]["2d"]["missing_cvd_spot"] is False
+    assert result["windows"]["4s"]["available"] is False
