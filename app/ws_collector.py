@@ -224,7 +224,7 @@ async def flush_minute(
             touched.add((symbol, ts))
             records.append(
                 (
-                    datetime.fromtimestamp(ts, UTC), symbol, exchange, "1min",
+                    datetime.fromtimestamp(ts, UTC), symbol, exchange, 1, "1min",
                     bucket.buy_vol_usd, bucket.sell_vol_usd,
                     bucket.inst_buy_usd, bucket.inst_sell_usd,
                     bucket.mid_buy_usd, bucket.mid_sell_usd,
@@ -237,10 +237,10 @@ async def flush_minute(
                     await conn.executemany(
                         """
                         INSERT INTO spot_trades_agg(
-                          ts,symbol,exchange,interval,buy_vol_usd,sell_vol_usd,
+                          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
                           inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
                           retail_buy_usd,retail_sell_usd,trade_count
-                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
                         ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
                           buy_vol_usd=EXCLUDED.buy_vol_usd,
                           sell_vol_usd=EXCLUDED.sell_vol_usd,
@@ -257,18 +257,20 @@ async def flush_minute(
                     await conn.executemany(
                         """
                         INSERT INTO spot_trades_agg(
-                          ts,symbol,exchange,interval,buy_vol_usd,sell_vol_usd,
+                          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
                           inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
                           retail_buy_usd,retail_sell_usd,trade_count
                         )
-                        SELECT ts,symbol,'combined','1min',
+                        SELECT ts,symbol,'combined',2,'1min',
                           SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(inst_buy_usd),SUM(inst_sell_usd),
                           SUM(mid_buy_usd),SUM(mid_sell_usd),SUM(retail_buy_usd),SUM(retail_sell_usd),
                           SUM(trade_count)::integer
                         FROM spot_trades_agg
                         WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
                         GROUP BY ts,symbol
+                        HAVING COUNT(DISTINCT exchange)=2
                         ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
+                          venue_count=EXCLUDED.venue_count,
                           buy_vol_usd=EXCLUDED.buy_vol_usd,
                           sell_vol_usd=EXCLUDED.sell_vol_usd,
                           inst_buy_usd=EXCLUDED.inst_buy_usd,
@@ -303,7 +305,7 @@ async def flush_realtime(
             touched.add((symbol, ts))
             records.append(
                 (
-                    datetime.fromtimestamp(ts, UTC), symbol, exchange,
+                    datetime.fromtimestamp(ts, UTC), symbol, exchange, 1,
                     bucket.buy_vol_usd, bucket.sell_vol_usd,
                     bucket.inst_buy_usd, bucket.inst_sell_usd,
                     bucket.trade_count, bucket.last_px, bucket.last_event_ms,
@@ -315,9 +317,9 @@ async def flush_realtime(
                     await conn.executemany(
                         """
                         INSERT INTO spot_trades_realtime(
-                          ts,symbol,exchange,buy_vol_usd,sell_vol_usd,
+                          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
                           inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
-                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
                         ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
                           buy_vol_usd=EXCLUDED.buy_vol_usd,
                           sell_vol_usd=EXCLUDED.sell_vol_usd,
@@ -332,17 +334,19 @@ async def flush_realtime(
                     await conn.executemany(
                         """
                         INSERT INTO spot_trades_realtime(
-                          ts,symbol,exchange,buy_vol_usd,sell_vol_usd,
+                          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
                           inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
                         )
-                        SELECT ts,symbol,'combined',SUM(buy_vol_usd),SUM(sell_vol_usd),
+                        SELECT ts,symbol,'combined',2,SUM(buy_vol_usd),SUM(sell_vol_usd),
                           SUM(inst_buy_usd),SUM(inst_sell_usd),SUM(trade_count)::integer,
                           (array_agg(last_px ORDER BY last_event_ms DESC, exchange))[1],
                           MAX(last_event_ms)
                         FROM spot_trades_realtime
                         WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
                         GROUP BY ts,symbol
+                        HAVING COUNT(DISTINCT exchange)=2
                         ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
+                          venue_count=EXCLUDED.venue_count,
                           buy_vol_usd=EXCLUDED.buy_vol_usd,
                           sell_vol_usd=EXCLUDED.sell_vol_usd,
                           inst_buy_usd=EXCLUDED.inst_buy_usd,

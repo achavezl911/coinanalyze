@@ -70,14 +70,14 @@ fut2v AS (
     SUM(buy_vol_usd - sell_vol_usd) AS cvd_fut_2v,
     COUNT(*) AS minutes
   FROM futures_trades_agg
-  WHERE symbol=$1 AND exchange='combined' AND interval='1min' AND ts >= $3 AND ts < $4
+  WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min' AND ts >= $3 AND ts < $4
 ),
 spot AS (
   SELECT
     COALESCE(SUM(buy_vol_usd - sell_vol_usd),0) AS cvd_spot,
     COALESCE(SUM(inst_buy_usd - inst_sell_usd),0) AS inst_delta
   FROM spot_trades_agg
-  WHERE symbol=$2 AND exchange='combined' AND interval='1min' AND ts >= $3 AND ts < $4
+  WHERE symbol=$2 AND exchange='combined' AND venue_count=2 AND interval='1min' AND ts >= $3 AND ts < $4
 ),
 oi AS (
   SELECT

@@ -322,23 +322,23 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
           SELECT close AS price FROM ohlcv WHERE symbol=$1 AND interval='1min' ORDER BY ts DESC LIMIT 1
         ), fut_px AS (
           SELECT last_px AS fut_px,last_event_ms AS fut_event_ms FROM futures_trades_realtime
-          WHERE symbol=$1 AND exchange='combined' ORDER BY ts DESC LIMIT 1
+          WHERE symbol=$1 AND exchange='combined' AND venue_count=2 ORDER BY ts DESC LIMIT 1
         ), spot_px AS (
           SELECT last_px AS spot_px,last_event_ms AS spot_event_ms FROM spot_trades_realtime
-          WHERE symbol=$2 AND exchange='combined' ORDER BY ts DESC LIMIT 1
+          WHERE symbol=$2 AND exchange='combined' AND venue_count=2 ORDER BY ts DESC LIMIT 1
         ), fut_1m AS (
           SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,SUM(buy_vol_usd+sell_vol_usd) AS volume,
                  SUM(trade_count) AS trades,(array_agg(last_px ORDER BY ts DESC))[1] AS last_px
-          FROM futures_trades_realtime WHERE symbol=$1 AND exchange='combined' AND ts >= now()-interval '1 minute'
+          FROM futures_trades_realtime WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND ts >= now()-interval '1 minute'
         ), fut_3m AS (
           SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,SUM(buy_vol_usd+sell_vol_usd) AS volume,
                  (array_agg(last_px ORDER BY ts ASC))[1] AS first_px,(array_agg(last_px ORDER BY ts DESC))[1] AS last_px
-          FROM futures_trades_realtime WHERE symbol=$1 AND exchange='combined' AND ts >= now()-interval '3 minutes'
+          FROM futures_trades_realtime WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND ts >= now()-interval '3 minutes'
         ), spot_3m AS (
           SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,SUM(buy_vol_usd+sell_vol_usd) AS volume
-          FROM spot_trades_realtime WHERE symbol=$2 AND exchange='combined' AND ts >= now()-interval '3 minutes'
+          FROM spot_trades_realtime WHERE symbol=$2 AND exchange='combined' AND venue_count=2 AND ts >= now()-interval '3 minutes'
         ), book AS (
-          SELECT * FROM orderbook_snapshot WHERE symbol=$1 AND exchange='combined' ORDER BY ts DESC LIMIT 1
+          SELECT * FROM orderbook_snapshot WHERE symbol=$1 AND exchange='combined' AND venue_count=2 ORDER BY ts DESC LIMIT 1
         ), liq AS (
           SELECT SUM(CASE WHEN side='long' THEN notional_usd ELSE 0 END) AS long_liq,
                  SUM(CASE WHEN side='short' THEN notional_usd ELSE 0 END) AS short_liq
@@ -945,7 +945,7 @@ async def _cvd_fut_window(conn: asyncpg.Connection, symbol: str, seconds: int) -
     return as_float(
         await conn.fetchval(
             "SELECT SUM(buy_vol_usd-sell_vol_usd) FROM futures_trades_realtime "
-            "WHERE symbol=$1 AND exchange='combined' AND ts >= now()-($2::int * interval '1 second')",
+            "WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND ts >= now()-($2::int * interval '1 second')",
             symbol,
             seconds,
         )
@@ -1173,7 +1173,7 @@ async def price_barriers(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
             SELECT date_bin('4 hours'::interval, ts, '1970-01-01'::timestamptz) AS bucket,
                    SUM(buy_vol_usd - sell_vol_usd) AS cvd
             FROM spot_trades_agg
-            WHERE symbol=$1 AND exchange='combined' AND interval='1min'
+            WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
             GROUP BY 1
             """,
             WS_SYMBOL_MAP[symbol],
@@ -1193,7 +1193,7 @@ async def price_barriers(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
           SELECT date_bin('15 minutes'::interval,ts,'1970-01-01'::timestamptz) AS bucket,
                  SUM(buy_vol_usd+sell_vol_usd) AS volume
           FROM futures_trades_agg
-          WHERE symbol=$1 AND exchange='combined' AND interval='1min'
+          WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
             AND ts >= now()-interval '36 hours'
           GROUP BY 1
         ), baseline AS (
@@ -1205,7 +1205,7 @@ async def price_barriers(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
           SELECT SUM(buy_vol_usd+sell_vol_usd) AS volume,
                  SUM(buy_vol_usd-sell_vol_usd) AS delta
           FROM futures_trades_agg
-          WHERE symbol=$1 AND exchange='combined' AND interval='1min'
+          WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
             AND ts >= now()-interval '15 minutes'
         ), price AS (
           SELECT (array_agg(close ORDER BY ts ASC))[1] AS first_px,
@@ -1216,7 +1216,7 @@ async def price_barriers(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
           SELECT imbalance_l5,
                  CASE WHEN ts >= now()-interval '10 seconds' THEN 'ok' ELSE 'stale' END AS status
           FROM orderbook_snapshot
-          WHERE symbol=$1 AND exchange='combined' ORDER BY ts DESC LIMIT 1
+          WHERE symbol=$1 AND exchange='combined' AND venue_count=2 ORDER BY ts DESC LIMIT 1
         )
         SELECT recent.volume,recent.delta,baseline.normal_volume,baseline.buckets,
                price.first_px,price.last_px,book.imbalance_l5,COALESCE(book.status,'missing') AS book_status
@@ -1824,7 +1824,7 @@ async def _intraday_divergences(
           WHERE symbol=$1 AND interval='1min' AND ts >= now()-interval '17 hours'
         ), sp AS (
           SELECT ts, buy_vol_usd-sell_vol_usd AS delta FROM spot_trades_agg
-          WHERE symbol=$2 AND exchange='combined' AND interval='1min'
+          WHERE symbol=$2 AND exchange='combined' AND venue_count=2 AND interval='1min'
             AND ts >= now()-interval '17 hours'
         ), bound AS (
           SELECT LEAST((SELECT MAX(ts) FROM px),(SELECT MAX(ts) FROM sp)) AS complete_until
@@ -2229,11 +2229,13 @@ async def spot_flow_windows(
           SELECT exchange,MIN(ts) AS lo,MAX(ts) AS hi
           FROM spot_trades_realtime
           WHERE symbol=$1 AND exchange IN ('combined','binance','bybit')
+            AND (exchange <> 'combined' OR venue_count=2)
           GROUP BY exchange
         ), agg_span AS (
           SELECT exchange,MIN(ts) AS lo,MAX(ts) AS hi
           FROM spot_trades_agg
           WHERE symbol=$1 AND exchange IN ('combined','binance','bybit') AND interval='1min'
+            AND (exchange <> 'combined' OR venue_count=2)
           GROUP BY exchange
         ), choice AS (
           SELECT r.horizon,r.seconds,e.exchange,
@@ -2253,7 +2255,9 @@ async def spot_flow_windows(
                  SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows
           FROM choice c
           JOIN spot_trades_realtime t ON t.symbol=$1 AND t.exchange=c.exchange
-          WHERE c.realtime_complete AND t.ts >= c.window_start
+          WHERE c.realtime_complete
+            AND (c.exchange <> 'combined' OR t.venue_count=2)
+            AND t.ts >= c.window_start
           GROUP BY c.horizon,c.exchange
           UNION ALL
           SELECT c.horizon,c.exchange,
@@ -2262,7 +2266,9 @@ async def spot_flow_windows(
                  SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows
           FROM choice c
           JOIN spot_trades_agg t ON t.symbol=$1 AND t.exchange=c.exchange AND t.interval='1min'
-          WHERE NOT c.realtime_complete AND t.ts >= c.window_start AND t.ts <= c.agg_hi
+          WHERE NOT c.realtime_complete
+            AND (c.exchange <> 'combined' OR t.venue_count=2)
+            AND t.ts >= c.window_start AND t.ts <= c.agg_hi
           GROUP BY c.horizon,c.exchange
           UNION ALL
           SELECT c.horizon,c.exchange,
@@ -2272,6 +2278,7 @@ async def spot_flow_windows(
           FROM choice c
           JOIN spot_trades_realtime t ON t.symbol=$1 AND t.exchange=c.exchange
           WHERE NOT c.realtime_complete
+            AND (c.exchange <> 'combined' OR t.venue_count=2)
             AND t.ts >= GREATEST(
               c.window_start,COALESCE(c.agg_hi+interval '1 minute',c.window_start)
             )
@@ -2372,7 +2379,8 @@ async def _cvd_src(conn: asyncpg.Connection, table: str, symbol: str, is_agg: bo
     rows = await conn.fetch(
         f"SELECT exchange, {cols} FROM ("
         f"  SELECT exchange, ts, buy_vol_usd - sell_vol_usd AS d FROM {table} "
-        f"  WHERE symbol=$1 {iv}AND ts >= now()-interval '7 days'"
+        f"  WHERE symbol=$1 {iv}AND ts >= now()-interval '7 days' "
+        f"    AND (exchange <> 'combined' OR venue_count=2)"
         f") s GROUP BY exchange",
         symbol,
     )
@@ -3487,7 +3495,9 @@ async def max_internal_gap(
             f"""
             WITH edges AS (
               SELECT ts FROM {table}
-              WHERE symbol=$1 AND exchange=$2 AND ts >= now()-($3::int*interval '1 second')
+              WHERE symbol=$1 AND exchange=$2
+                AND ($2 <> 'combined' OR venue_count=2)
+                AND ts >= now()-($3::int*interval '1 second')
               UNION ALL SELECT now()-($3::int*interval '1 second')
             )
             SELECT MAX(EXTRACT(EPOCH FROM ts-prev))::float8
@@ -3510,7 +3520,7 @@ async def _realtime_flow(
         f"""
         WITH source AS (
           SELECT ts,buy_vol_usd,sell_vol_usd,trade_count
-          FROM {table} WHERE symbol=$1 AND exchange='combined'
+          FROM {table} WHERE symbol=$1 AND exchange='combined' AND venue_count=2
         ), span AS (
           SELECT MIN(ts) AS lo,MAX(ts) AS hi FROM source
         ), flow AS (

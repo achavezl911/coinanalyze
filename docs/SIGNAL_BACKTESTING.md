@@ -48,7 +48,7 @@ PR7 filters explicitly on all research contracts:
 - `context_version`;
 - `outcome_version`.
 
-The current defaults are the current PR4/PR5/PR6 constants.
+The PR7 report spec keeps its default evidence cohort pinned to `evidence_version=1`. The live writer may advance independently; newer evidence versions must be selected explicitly until a new research spec/manifest is registered. Sampling/context/outcome remain independently version-filtered.
 
 A future v2 corpus is not silently mixed with v1. Reports record the exact
 version tuple they used and count periodic observations excluded by incompatible

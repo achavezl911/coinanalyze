@@ -6,6 +6,7 @@ import asyncpg
 import pytest
 
 import app.ingest as ingest
+import app.metrics as metrics
 from app.config import Settings
 from app.cutoffs import ClosedCutoff
 from app.ingest import publish_snapshot, rollup_ohlcv_5m, seconds_until_aligned_run, upsert_ohlcv
@@ -134,6 +135,27 @@ class _CycleClient:
         return {}
 
 
+async def _complete_cadence_proof(_conn, **kwargs):
+    start = kwargs["start"]
+    end = kwargs["end"]
+    cadence = kwargs["cadence"]
+    expected_buckets = int((end - start) // cadence)
+    return ingest.CadenceCoverage(
+        start=start,
+        end=end,
+        cadence=cadence,
+        expected_buckets=expected_buckets,
+        observed_buckets=expected_buckets,
+        missing_buckets=0,
+        missing_windows=(),
+        recovered_gaps=0,
+    )
+
+
+async def _healthy_liquidation_history(*_args, **_kwargs):
+    return True
+
+
 async def test_one_minute_cycle_refreshes_metrics_snapshots(monkeypatch):
     refreshed: list[tuple[str, ...]] = []
 
@@ -151,6 +173,8 @@ async def test_one_minute_cycle_refreshes_metrics_snapshots(monkeypatch):
 
     monkeypatch.setattr(ingest, "upsert_ohlcv", fake_upsert)
     monkeypatch.setattr(ingest, "rollup_ohlcv_5m", fake_rollup)
+    monkeypatch.setattr(ingest, "_reconcile_persisted_cadence", _complete_cadence_proof)
+    monkeypatch.setattr(ingest, "_reconcile_response_cadence", _complete_cadence_proof)
     monkeypatch.setattr(ingest, "compute_and_store_all", fake_compute)
     monkeypatch.setattr(ingest, "heartbeat_component", fake_heartbeat)
     settings = Settings(SYMBOLS=("BTCUSDT_PERP.A",))
@@ -181,6 +205,7 @@ async def test_five_minute_cycle_refreshes_metrics_snapshots_after_upserts(monke
     monkeypatch.setattr(ingest, "upsert_ohlc_metric", fake_metric)
     monkeypatch.setattr(ingest, "upsert_liquidations", fake_metric)
     monkeypatch.setattr(ingest, "upsert_long_short", fake_metric)
+    monkeypatch.setattr(ingest, "_reconcile_response_cadence", _complete_cadence_proof)
     monkeypatch.setattr(ingest, "compute_and_store_all", fake_compute)
     monkeypatch.setattr(ingest, "heartbeat_component", fake_heartbeat)
     monkeypatch.setattr(ingest, "refresh_external_macro", fake_heartbeat)
@@ -253,6 +278,8 @@ async def test_oi_jump_in_latest_closed_bucket_is_in_immediate_metrics_snapshot(
     async def no_op(*_args, **_kwargs):
         return None
 
+    monkeypatch.setattr(ingest, "_reconcile_response_cadence", _complete_cadence_proof)
+    monkeypatch.setattr(metrics, "_liquidation_history_observed", _healthy_liquidation_history)
     monkeypatch.setattr(ingest, "heartbeat_component", no_op)
     monkeypatch.setattr(ingest, "refresh_external_macro", no_op)
     monkeypatch.setattr(ingest.asyncio, "sleep", no_op)

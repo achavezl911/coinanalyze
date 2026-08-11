@@ -510,7 +510,7 @@ async def cvd_spot(
               SELECT date_bin($2::interval, ts, '1970-01-01'::timestamptz) AS bucket,
                      SUM(buy_vol_usd-sell_vol_usd) AS delta_usd
               FROM spot_trades_agg
-              WHERE symbol=$1 AND exchange='combined' AND interval='1min'
+              WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
               GROUP BY 1 ORDER BY 1 DESC LIMIT $3
             )
             SELECT bucket,delta_usd,SUM(delta_usd) OVER (ORDER BY bucket) AS cvd
@@ -552,7 +552,7 @@ async def cvd_divergence(
                 (SELECT MAX(ts)+interval '1 minute' FROM ohlcv
                  WHERE symbol=$1 AND interval='1min'),
                 (SELECT MAX(ts)+interval '1 minute' FROM spot_trades_agg
-                 WHERE symbol=$2 AND exchange='combined' AND interval='1min')
+                 WHERE symbol=$2 AND exchange='combined' AND venue_count=2 AND interval='1min')
               ) AS complete_until
             ), fut AS (
               SELECT date_bin($3::interval, ts, '1970-01-01'::timestamptz) AS bucket,
@@ -563,7 +563,7 @@ async def cvd_divergence(
               SELECT date_bin($3::interval, ts, '1970-01-01'::timestamptz) AS bucket,
                      SUM(buy_vol_usd-sell_vol_usd) AS value
               FROM spot_trades_agg
-              WHERE symbol=$2 AND exchange='combined' AND interval='1min'
+              WHERE symbol=$2 AND exchange='combined' AND venue_count=2 AND interval='1min'
               GROUP BY 1
             ), joined AS (
               SELECT fut.bucket,fut.value AS fut_delta,spot.value AS spot_delta
@@ -674,7 +674,7 @@ async def whale_delta(
               SELECT date_bin($2::interval, ts, '1970-01-01'::timestamptz) AS bucket,
                      SUM(inst_buy_usd-inst_sell_usd) AS whale_delta
               FROM spot_trades_agg
-              WHERE symbol=$1 AND exchange='combined' AND interval='1min'
+              WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
               GROUP BY 1 ORDER BY 1 DESC LIMIT $3
             ) SELECT * FROM grouped ORDER BY bucket
             """,
@@ -1075,6 +1075,7 @@ async def scalp_orderbook(symbol: str) -> dict[str, Any]:
             """
             SELECT DISTINCT ON (exchange) * FROM orderbook_snapshot
             WHERE symbol=$1 AND ts >= now()-interval '30 seconds'
+              AND (exchange <> 'combined' OR venue_count=2)
             ORDER BY exchange,ts DESC
             """,
             selected,
@@ -1103,7 +1104,7 @@ async def scalp_absorption(symbol: str) -> list[dict[str, Any]]:
                          (array_agg(last_px ORDER BY ts ASC))[1] AS first_px,
                          (array_agg(last_px ORDER BY ts DESC))[1] AS last_px
                   FROM futures_trades_realtime
-                  WHERE symbol=$1 AND exchange='combined' AND ts >= now()-($2::int * interval '1 second')
+                  WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND ts >= now()-($2::int * interval '1 second')
                 ) SELECT * FROM fut
                 """,
                 selected,
@@ -1639,11 +1640,11 @@ async def scalp_basis(symbol: str) -> dict[str, Any]:
             """
             WITH fut AS (
               SELECT ts,last_px,last_event_ms FROM futures_trades_realtime
-              WHERE symbol=$1 AND exchange='combined'
+              WHERE symbol=$1 AND exchange='combined' AND venue_count=2
               ORDER BY ts DESC LIMIT 1
             ), spot AS (
               SELECT ts,last_px,last_event_ms FROM spot_trades_realtime
-              WHERE symbol=$2 AND exchange='combined'
+              WHERE symbol=$2 AND exchange='combined' AND venue_count=2
               ORDER BY ts DESC LIMIT 1
             )
             SELECT fut.ts AS fut_ts,spot.ts AS spot_ts,
@@ -1681,7 +1682,7 @@ async def liquidation_levels(
             """
             WITH ref AS (
               SELECT COALESCE(
-                (SELECT last_px FROM futures_trades_realtime WHERE symbol=$1 AND exchange='combined' ORDER BY ts DESC LIMIT 1),
+                (SELECT last_px FROM futures_trades_realtime WHERE symbol=$1 AND exchange='combined' AND venue_count=2 ORDER BY ts DESC LIMIT 1),
                 (SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' ORDER BY ts DESC LIMIT 1)
               ) AS px
             ), levels AS (
@@ -1953,7 +1954,7 @@ async def stream_generator(request: Request) -> AsyncIterator[bytes]:
                       inst_buy_usd-inst_sell_usd AS whale_delta_5s,
                       trade_count
                     FROM spot_trades_realtime
-                    WHERE exchange='combined' AND ts >= now()-interval '30 seconds'
+                    WHERE exchange='combined' AND venue_count=2 AND ts >= now()-interval '30 seconds'
                     ORDER BY symbol,ts DESC
                     """
                 )
@@ -1964,7 +1965,7 @@ async def stream_generator(request: Request) -> AsyncIterator[bytes]:
                       large_buy_usd-large_sell_usd AS large_delta_5s,
                       trade_count
                     FROM futures_trades_realtime
-                    WHERE exchange='combined' AND ts >= now()-interval '30 seconds'
+                    WHERE exchange='combined' AND venue_count=2 AND ts >= now()-interval '30 seconds'
                     ORDER BY symbol,ts DESC
                     """
                 )
@@ -1972,7 +1973,7 @@ async def stream_generator(request: Request) -> AsyncIterator[bytes]:
                     """
                     SELECT DISTINCT ON (symbol) symbol,ts,spread_bps,imbalance_l5
                     FROM orderbook_snapshot
-                    WHERE exchange='combined' AND ts >= now()-interval '30 seconds'
+                    WHERE exchange='combined' AND venue_count=2 AND ts >= now()-interval '30 seconds'
                     ORDER BY symbol,ts DESC
                     """
                 )

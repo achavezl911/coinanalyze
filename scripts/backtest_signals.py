@@ -13,13 +13,14 @@ import asyncpg
 from app.config import get_settings
 from app.signal_backtest import (
     ALLOWED_GROUP_DIMENSIONS,
+    DEFAULT_EVIDENCE_VERSION,
     DENSE_PERIODIC,
     SAMPLING_MODES,
     UTC_NONOVERLAP,
     BacktestOptions,
     build_signal_backtest_report,
 )
-from app.signal_ledger import SIGNAL_EVIDENCE_VERSION, SIGNAL_SAMPLING_VERSION
+from app.signal_ledger import SIGNAL_SAMPLING_VERSION
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_VERSION
 from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
 
@@ -174,7 +175,7 @@ def main() -> None:
     )
     parser.add_argument("--min-group-n", type=int, default=30)
     parser.add_argument("--logic-version", default=SCALP_SIGNAL_LOGIC_VERSION)
-    parser.add_argument("--evidence-version", type=int, default=SIGNAL_EVIDENCE_VERSION)
+    parser.add_argument("--evidence-version", type=int, default=DEFAULT_EVIDENCE_VERSION)
     parser.add_argument("--sampling-version", type=int, default=SIGNAL_SAMPLING_VERSION)
     parser.add_argument("--context-version", type=int, default=REPLAY_CONTEXT_VERSION)
     parser.add_argument("--outcome-version", type=int, default=OUTCOME_VERSION)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
@@ -9,6 +10,7 @@ import asyncpg
 from app.config import WHALE_THRESHOLD_MAP, WS_SYMBOL_MAP
 from app.cutoffs import ClosedCutoff
 from app.data_gaps import GapRequirement, blocking_requirement_keys
+from app.db import INGEST_COMPONENT_MAX_AGES
 
 NY = ZoneInfo("America/New_York")
 WHALE_ACTIVITY_MIN = WHALE_THRESHOLD_MAP
@@ -155,6 +157,41 @@ def compute_regime(
     return score, regime
 
 
+LIQUIDATION_HISTORY_HEARTBEAT = "ingest:liquidations_history"
+
+
+async def _liquidation_history_observed(
+    conn: asyncpg.Connection,
+    *,
+    required_start: datetime,
+    required_end: datetime,
+    now_utc: datetime,
+) -> bool:
+    """Require a recent successful event-history request covering the exact metric window."""
+    rows = await conn.fetch(
+        "SELECT updated_at,status,detail FROM pipeline_heartbeat WHERE service=$1",
+        LIQUIDATION_HISTORY_HEARTBEAT,
+    )
+    if len(rows) != 1:
+        return False
+    row = rows[0]
+    if row["status"] != "ok" or not isinstance(row["updated_at"], datetime):
+        return False
+    updated_at = row["updated_at"]
+    if updated_at.tzinfo is None or updated_at.utcoffset() is None:
+        return False
+    age_seconds = (now_utc - updated_at.astimezone(UTC)).total_seconds()
+    if age_seconds < -60 or age_seconds > INGEST_COMPONENT_MAX_AGES["metrics_5m"]:
+        return False
+    try:
+        detail = json.loads(str(row["detail"] or ""))
+        source_start = datetime.fromtimestamp(int(detail["source_start_ts"]), tz=UTC)
+        source_cutoff = datetime.fromtimestamp(int(detail["source_cutoff_ts"]), tz=UTC)
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError, OverflowError, OSError):
+        return False
+    return source_start <= required_start and source_cutoff >= required_end
+
+
 SNAPSHOT_QUERY = """
 WITH
 fut AS (
@@ -193,7 +230,7 @@ spot AS (
       SUM(inst_buy_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS inst_buy,
       SUM(inst_sell_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS inst_sell
     FROM spot_trades_agg
-    WHERE symbol = $2 AND exchange = 'combined' AND interval = '1min'
+    WHERE symbol = $2 AND exchange = 'combined' AND venue_count = 2 AND interval = '1min'
       AND ts >= $4 - interval '25 hours' AND ts < $4
 ),
 oi_now AS (
@@ -260,6 +297,12 @@ async def compute_snapshot(
     session_start = current_nyse_start(now_utc)
     price_cutoff = price_cutoff or ClosedCutoff.at(now_utc, 60).exclusive_boundary
     metrics_cutoff = metrics_cutoff or ClosedCutoff.at(now_utc, 300).exclusive_boundary
+    liquidations_measured = await _liquidation_history_observed(
+        conn,
+        required_start=metrics_cutoff - timedelta(hours=24),
+        required_end=metrics_cutoff,
+        now_utc=now_utc,
+    )
     row = await conn.fetchrow(
         SNAPSHOT_QUERY,
         symbol,
@@ -311,10 +354,6 @@ async def compute_snapshot(
             "predicted_funding_24h", "predicted_funding_rate", "binance",
             "perpetual", symbol, metrics_cutoff - timedelta(hours=24), metrics_cutoff,
         ),
-        GapRequirement(
-            "liquidations_24h", "liquidations_5min", "binance", "perpetual", symbol,
-            metrics_cutoff - timedelta(hours=24), metrics_cutoff,
-        ),
     ]
     for exchange in ("binance", "bybit", "combined"):
         requirements.extend(
@@ -358,7 +397,17 @@ async def compute_snapshot(
         data["fr_avg"] = None
     if "predicted_funding_24h" in blocked:
         data["pfr_avg"] = None
-    if "liquidations_24h" in blocked:
+    if not liquidations_measured:
+        data["long_liq"] = None
+        data["short_liq"] = None
+    elif data.get("long_liq") is None and data.get("short_liq") is None:
+        # The event source covered the whole required history window and canonical storage
+        # contains no events: zero is measured calm, not an invented cadence bucket.
+        data["long_liq"] = 0.0
+        data["short_liq"] = 0.0
+    elif data.get("long_liq") is None or data.get("short_liq") is None:
+        # Schema should make this impossible; fail closed if aggregate integrity is lost.
+        liquidations_measured = False
         data["long_liq"] = None
         data["short_liq"] = None
 
@@ -433,14 +482,11 @@ async def compute_snapshot(
         "price_cutoff_at": data.get("price_ts"),
         "metrics_cutoff_at": data.get("oi_ts"),
     }
-    regime_sources = {
-        "fut_24h", "spot_24h", "oi_binance_24h", "funding_24h",
-        "liquidations_24h",
-    }
+    regime_sources = {"fut_24h", "spot_24h", "oi_binance_24h", "funding_24h"}
     # Healthy source absence keeps the existing measured-component policy. An explicit
     # loss interval is different: renormalizing around it would present incomplete
     # evidence as a complete regime, so the aggregate itself fails closed.
-    if blocked & regime_sources:
+    if blocked & regime_sources or not liquidations_measured:
         score, label = None, "Sin datos suficientes"
     else:
         score, label = compute_regime(snap)
