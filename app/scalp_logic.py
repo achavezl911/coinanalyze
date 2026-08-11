@@ -917,6 +917,28 @@ def _sign_vote(value: float | None) -> bool | None:
     return value > 0
 
 
+def _complete_tail_values(rows: list, key: str, count: int) -> list[float] | None:
+    # Exact last-N semantics: missing evidence invalidates the requested tail.
+    if count <= 0 or len(rows) < count:
+        return None
+    values = [as_float(row[key]) for row in rows[-count:]]
+    if any(value is None for value in values):
+        return None
+    return [value for value in values if value is not None]
+
+
+def _contiguous_measured_suffix(rows: list, key: str) -> list[tuple[object, float]]:
+    # Preserve the temporal axis: never cross the first missing value toward the past.
+    suffix: list[tuple[object, float]] = []
+    for row in reversed(rows):
+        value = as_float(row[key])
+        if value is None:
+            break
+        suffix.append((row, value))
+    suffix.reverse()
+    return suffix
+
+
 def _structure_layer(
     name: str, horizon: str, components: dict, price_structure: str | None
 ) -> dict[str, Any]:
@@ -1060,14 +1082,18 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
     )
 
     # ---- macro (sesiones diarias)
-    closes_d = [as_float(r["price_close"]) for r in daily if as_float(r["price_close"]) is not None]
-    px7 = (closes_d[-1] - closes_d[-8]) if len(closes_d) >= 8 else None
-    cvd_tail = [as_float(r["cvd_spot_usd"]) for r in daily[-7:]]
-    cvd7 = sum(v for v in cvd_tail if v is not None) if len(cvd_tail) == 7 and all(v is not None for v in cvd_tail) else None
-    racha = None
-    price_tail = [as_float(r["price_chg_pct"]) for r in daily[-3:]]
-    if len(price_tail) == 3 and all(v is not None for v in price_tail):
-        racha = sum(1 for v in price_tail if v > 0) >= 2
+    price_8 = _complete_tail_values(daily, "price_close", 8)
+    px7 = price_8[-1] - price_8[0] if price_8 is not None else None
+    cvd_tail = _complete_tail_values(daily, "cvd_spot_usd", 7)
+    cvd7 = sum(cvd_tail) if cvd_tail is not None else None
+    price_tail = _complete_tail_values(daily, "price_chg_pct", 3)
+    racha = (
+        sum(1 for value in price_tail if value > 0) >= 2
+        if price_tail is not None
+        else None
+    )
+    macro_points = _contiguous_measured_suffix(daily, "price_close")
+    closes_d = [value for _, value in macro_points]
     macro_ps = _pivot_structure(closes_d, closes_d, k=2) if len(closes_d) >= 10 else None
     macro = _structure_layer(
         "macro",
@@ -1979,31 +2005,57 @@ async def divergence_scan(
     asc = list(reversed(rows))
     if len(asc) < 2:
         return {"symbol": symbol, "available": False, "sessions": len(asc), "intraday": intraday}
-    closes = [as_float(r["price_close"]) for r in asc]
-    cum, running = [], 0.0
-    for r in asc:
-        running += as_float(r["cvd_spot_usd"]) or 0.0
-        cum.append(running)
-
     windows: dict[str, Any] = {}
     for label, size in _DIVERGENCE_WINDOWS:
-        # size sesiones de cambio necesitan size+1 cierres (el ancla y el actual).
+        # size sesiones de cambio necesitan size+1 cierres (el ancla y el actual) y
+        # exactamente size observaciones de CVD. Un hueco invalida SOLO esa ventana y
+        # las mayores que lo contengan; nunca se rellena con cero ni se comprime el tiempo.
         if len(asc) < size + 1:
             windows[label] = {"available": False, "sessions": len(asc), "required": size + 1}
             continue
-        first_px, last_px = closes[-size - 1], closes[-1]
-        px_change = ((last_px / first_px - 1) * 100) if (first_px and last_px) else None
-        cvd_change = cum[-1] - cum[-size - 1]
+        price_tail = _complete_tail_values(asc, "price_close", size + 1)
+        cvd_tail = _complete_tail_values(asc, "cvd_spot_usd", size)
+        sustained = size >= SUSTAINED_MIN_SESSIONS
+        if price_tail is None or cvd_tail is None:
+            windows[label] = {
+                "available": False,
+                "sessions": size,
+                "required": size + 1,
+                "sustained": sustained,
+                "reason": "missing_daily_evidence",
+                "missing_price": price_tail is None,
+                "missing_cvd_spot": cvd_tail is None,
+            }
+            continue
+        first_px, last_px = price_tail[0], price_tail[-1]
+        if first_px <= 0 or last_px <= 0:
+            windows[label] = {
+                "available": False,
+                "sessions": size,
+                "required": size + 1,
+                "sustained": sustained,
+                "reason": "invalid_daily_price",
+                "missing_price": False,
+                "missing_cvd_spot": False,
+            }
+            continue
+        px_change = (last_px / first_px - 1) * 100
+        cvd_change = sum(cvd_tail)
         if size >= MIN_SLOPE_SESSIONS:
-            px_signal, cvd_signal = _slope_pct(closes[-size:]), _slope_pct(cum[-size:])
+            running = 0.0
+            cvd_cumulative: list[float] = []
+            for value in cvd_tail:
+                running += value
+                cvd_cumulative.append(running)
+            px_signal = _slope_pct(price_tail[-size:])
+            cvd_signal = _slope_pct(cvd_cumulative)
             method = "pendiente"
         else:
             # Con 1-3 sesiones no hay regresion posible: se compara extremo contra extremo,
             # con banda muerta para que un movimiento de ruido no marque divergencia.
             px_signal, cvd_signal, method = px_change, cvd_change, "cambio_extremos"
-            if px_signal is not None and abs(px_signal) < MIN_ENDPOINT_MOVE_PCT:
+            if abs(px_signal) < MIN_ENDPOINT_MOVE_PCT:
                 px_signal = 0.0
-        sustained = size >= SUSTAINED_MIN_SESSIONS
         state, reading = "sin_divergencia", None
         if px_signal is not None and cvd_signal is not None:
             if px_signal > 0 and cvd_signal < 0:
@@ -2158,8 +2210,9 @@ async def structure_detail(conn: asyncpg.Connection, symbol: str) -> dict[str, A
                 symbol,
             )
             ds = _dsr(rows, unit)
-            closes = [as_float(r["price_close"]) for r in ds]
-            times = [str(r["session_date"]) for r in ds]
+            price_points = _contiguous_measured_suffix(ds, "price_close")
+            closes = [value for _, value in price_points]
+            times = [str(row["session_date"]) for row, _ in price_points]
             close = closes[-1] if closes else None
             det = _structure_from_swings(closes, closes, times, close, k=2)
         det["timeframe"] = label
@@ -4920,13 +4973,16 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             flow_status = "daily_aggregate"
             n = unit
             ds = [daily[i] for i in range(len(daily) - 1, -1, -n)][::-1]
-            closes = [as_float(r["price_close"]) for r in ds if r["price_close"] is not None]
+            price_points = _contiguous_measured_suffix(ds, "price_close")
+            closes = [value for _, value in price_points]
+            times = [str(row["session_date"]) for row, _ in price_points]
             if len(closes) >= 5:
                 st = _structure_from_swings(
-                    closes, closes, [str(r["session_date"]) for r in ds], closes[-1], k=1
+                    closes, closes, times, closes[-1], k=1
                 )["state"]
             n_back = max(n, 1)
-            cvd_flow = sum(as_float(r["cvd_spot_usd"]) or 0 for r in daily[-n_back:])
+            cvd_tail = _complete_tail_values(daily, "cvd_spot_usd", n_back)
+            cvd_flow = sum(cvd_tail) if cvd_tail is not None else None
             # el OI debe medirse sobre las mismas n sesiones que el CVD: usar ds[0]
             # tomaba el extremo de toda la ventana cargada (~60 sesiones).
             if len(daily) > n_back:

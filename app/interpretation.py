@@ -150,8 +150,15 @@ def evaluate_setups(snapshot: dict[str, Any], daily_rows: list[dict[str, Any]]) 
         else:
             break
 
-    cumulative = [number(row.get("cumulative_spot")) for row in daily_rows]
-    cumulative = [value for value in cumulative if math.isfinite(value)]
+    # PR20 segmenta cumulative_spot al encontrar un hueco. Usar todos los valores finitos
+    # reconectaba segmentos separados y fabricaba una pendiente a traves de evidencia ausente.
+    cumulative: list[float] = []
+    for row in reversed(daily_rows):
+        value = number(row.get("cumulative_spot"))
+        if not math.isfinite(value):
+            break
+        cumulative.append(value)
+    cumulative.reverse()
     slope = 0.0
     if len(cumulative) >= 2:
         sample = cumulative[-min(5, len(cumulative)) :]

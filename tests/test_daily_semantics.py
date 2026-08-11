@@ -13,7 +13,14 @@ import pytest
 
 from app.api import daily_data
 from app.daily_agg import SESSION_MIN_COVERAGE_RATIO, SESSION_QUERY
-from app.scalp_logic import _conditional_outcome, _forward_returns, _slope_pct, divergence_scan
+from app.scalp_logic import (
+    _complete_tail_values,
+    _conditional_outcome,
+    _contiguous_measured_suffix,
+    _forward_returns,
+    _slope_pct,
+    divergence_scan,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 JS = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
@@ -37,12 +44,14 @@ def test_macro_structure_and_swing_use_spot_not_the_scale_biased_diff() -> None:
     source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
     market = source[source.index("async def market_structure"):source.index("# ---------------- alertas HTF")]
     trend = source[source.index("async def trend_matrix"):source.index("async def swing_score")]
-    # F3 keeps the macro vote on spot CVD but a missing session must make the 7-session
-    # aggregate unavailable instead of contributing a synthetic zero.
-    assert 'r["cvd_spot_usd"]' in market
+    # F3 keeps the macro vote on spot CVD but exact session windows fail closed on gaps.
+    assert '_complete_tail_values(daily, "cvd_spot_usd", 7)' in market
+    assert '_complete_tail_values(daily, "price_close", 8)' in market
+    assert '_contiguous_measured_suffix(daily, "price_close")' in market
     assert "cvd_diff_usd" not in market
-    assert "all(v is not None for v in cvd_tail)" in market
-    assert 'sum(as_float(r["cvd_spot_usd"])' in trend
+    assert '_complete_tail_values(daily, "cvd_spot_usd", n_back)' in trend
+    assert '_contiguous_measured_suffix(ds, "price_close")' in trend
+    assert 'sum(as_float(r["cvd_spot_usd"]) or 0' not in trend
     assert '"CVD spot de fondo"' in trend
 
 
@@ -480,3 +489,68 @@ async def test_daily_replay_applies_as_of_to_history_and_selected_rows() -> None
     assert "cvd_diff_usd IS NOT NULL" in diff_hist
     assert conn.args == ("BTCUSDT_PERP.A", 60, cutoff)
     assert result["quick_read"]["available"] is False
+def test_pr20_v7_daily_tail_helpers_do_not_bridge_missingness() -> None:
+    rows = [
+        {"session_date": "d1", "price_close": 101.0, "cvd_spot_usd": 1.0},
+        {"session_date": "d2", "price_close": None, "cvd_spot_usd": None},
+        {"session_date": "d3", "price_close": 103.0, "cvd_spot_usd": 2.0},
+        {"session_date": "d4", "price_close": 104.0, "cvd_spot_usd": 3.0},
+    ]
+    assert _complete_tail_values(rows, "cvd_spot_usd", 3) is None
+    assert _complete_tail_values(rows, "cvd_spot_usd", 2) == [2.0, 3.0]
+    suffix = _contiguous_measured_suffix(rows, "price_close")
+    assert [(row["session_date"], value) for row, value in suffix] == [
+        ("d3", 103.0),
+        ("d4", 104.0),
+    ]
+
+
+def test_pr20_v7_all_daily_structure_consumers_use_contiguous_price_suffixes() -> None:
+    source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
+    detail_start = source.index("async def structure_detail")
+    detail = source[detail_start:source.index("_CONFIRMATION_TF", detail_start)]
+    trend_start = source.index("async def trend_matrix")
+    trend = source[trend_start:source.index("async def swing_score", trend_start)]
+    assert '_contiguous_measured_suffix(ds, "price_close")' in detail
+    assert '_contiguous_measured_suffix(ds, "price_close")' in trend
+
+
+@pytest.mark.asyncio
+async def test_pr20_v7_divergence_fails_closed_on_internal_spot_cvd_gap() -> None:
+    rows = [
+        {
+            "session_date": f"d{i:02d}",
+            "price_close": 100.0 + i,
+            "cvd_spot_usd": -1_000_000.0,
+        }
+        for i in range(59, -1, -1)
+    ]
+    rows[2]["cvd_spot_usd"] = None
+    result = await divergence_scan(_DivergenceConnection(rows), "BTCUSDT_PERP.A")
+    assert result["windows"]["2d"]["available"] is True
+    assert result["windows"]["3d"]["available"] is False
+    assert result["windows"]["3d"]["reason"] == "missing_daily_evidence"
+    assert result["windows"]["3d"]["missing_cvd_spot"] is True
+    assert result["windows"]["3d"]["missing_price"] is False
+    assert result["windows"]["4s"]["available"] is False
+    assert result["sustained_windows_evaluated"] == 0
+
+
+@pytest.mark.asyncio
+async def test_pr20_v7_divergence_fails_closed_on_internal_price_gap() -> None:
+    rows = [
+        {
+            "session_date": f"d{i:02d}",
+            "price_close": 100.0 + i,
+            "cvd_spot_usd": -1_000_000.0,
+        }
+        for i in range(59, -1, -1)
+    ]
+    rows[2]["price_close"] = None
+    result = await divergence_scan(_DivergenceConnection(rows), "BTCUSDT_PERP.A")
+    assert result["windows"]["1d"]["available"] is True
+    assert result["windows"]["2d"]["available"] is False
+    assert result["windows"]["2d"]["reason"] == "missing_daily_evidence"
+    assert result["windows"]["2d"]["missing_price"] is True
+    assert result["windows"]["2d"]["missing_cvd_spot"] is False
+    assert result["windows"]["4s"]["available"] is False
