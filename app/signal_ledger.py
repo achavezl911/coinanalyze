@@ -16,7 +16,7 @@ from app.signal_replay import (
 )
 
 SIGNAL_FAMILY = "scalp"
-SIGNAL_EVIDENCE_VERSION = 1
+SIGNAL_EVIDENCE_VERSION = 2
 SIGNAL_SAMPLING_VERSION = 1
 
 _LONG_STATES = frozenset({"Long Momentum", "Long Pullback"})

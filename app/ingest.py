@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import math
 import signal
 import time
 from collections.abc import Iterable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import asyncpg
@@ -18,6 +19,7 @@ from app.coinalyze import (
 )
 from app.config import BYBIT_SYMBOL_MAP, Settings, get_settings
 from app.cutoffs import OHLCV_1M_REFRESH_LOOKBACK_SECONDS, ClosedCutoff
+from app.data_gaps import CadenceCoverage, reconcile_cadence_coverage
 from app.db import (
     INGEST_COMPONENT_MAX_AGES,
     ServiceOwnership,
@@ -25,6 +27,7 @@ from app.db import (
     acquire_service_lock,
     create_pool,
     fenced_transaction,
+    heartbeat,
     heartbeat_component,
     monitor_service_lock,
     wait_for_stop_or_lock_loss,
@@ -79,6 +82,7 @@ async def upsert_ohlcv(
     start_ts: int,
     end_ts: int,
     interval: str = "1min",
+    observed: dict[str, set[datetime]] | None = None,
 ) -> int:
     if interval not in OHLCV_INTERVAL_SECONDS:
         raise ValueError("unsupported OHLCV interval")
@@ -101,8 +105,9 @@ async def upsert_ohlcv(
                 or not 0 <= btx <= tx
             ):
                 continue
+            row_ts = valid_ts(row["t"], start_ts, end_ts, tolerance)
             record = (
-                valid_ts(row["t"], start_ts, end_ts, tolerance),
+                row_ts,
                 symbol,
                 interval,
                 open_px,
@@ -115,6 +120,8 @@ async def upsert_ohlcv(
                 btx,
             )
             records.append(record)
+            if observed is not None:
+                observed.setdefault(symbol, set()).add(row_ts)
         except (KeyError, TypeError, ValueError, OverflowError):
             continue
     if not records:
@@ -193,6 +200,7 @@ async def upsert_ohlc_metric(
     symbol_map: dict[str, str],
     start_ts: int,
     end_ts: int,
+    observed: dict[str, set[datetime]] | None = None,
 ) -> int:
     allowed = {
         ("open_interest", "oi"),
@@ -213,7 +221,10 @@ async def upsert_ohlc_metric(
                 or low_value > min(open_value, close_value, high_value)
             ):
                 continue
-            records.append((valid_ts(row["t"], start_ts, end_ts), symbol, "5min", *values))
+            row_ts = valid_ts(row["t"], start_ts, end_ts)
+            records.append((row_ts, symbol, "5min", *values))
+            if observed is not None:
+                observed.setdefault(symbol, set()).add(row_ts)
         except (KeyError, TypeError, ValueError, OverflowError):
             continue
     if not records:
@@ -273,6 +284,7 @@ async def upsert_long_short(
     symbol_map: dict[str, str],
     start_ts: int,
     end_ts: int,
+    observed: dict[str, set[datetime]] | None = None,
 ) -> int:
     """Posicionamiento: l/s son porcentajes que suman 100 y r es su cociente."""
     records: list[tuple[object, ...]] = []
@@ -287,9 +299,10 @@ async def upsert_long_short(
                 continue
             if abs(long_pct + short_pct - 100) > 1.0:
                 continue
-            records.append(
-                (valid_ts(row["t"], start_ts, end_ts), symbol, "5min", long_pct, short_pct, ratio)
-            )
+            row_ts = valid_ts(row["t"], start_ts, end_ts)
+            records.append((row_ts, symbol, "5min", long_pct, short_pct, ratio))
+            if observed is not None:
+                observed.setdefault(symbol, set()).add(row_ts)
         except (KeyError, TypeError, ValueError, OverflowError):
             continue
     if not records:
@@ -348,6 +361,143 @@ async def publish_snapshot(
         )
 
 
+_CADENCE_TABLES = frozenset({
+    "ohlcv", "open_interest", "oi_bybit", "funding_rate",
+    "predicted_funding_rate", "long_short_ratio",
+})
+PERSISTED_CADENCE_DETECTION_SOURCE = "historical_ingest_persisted_cadence_v2"
+RESPONSE_CADENCE_DETECTION_SOURCE = "historical_ingest_response_cadence_v2"
+LIQUIDATION_HISTORY_HEARTBEAT = "ingest:liquidations_history"
+
+
+async def _reconcile_persisted_cadence(
+    conn: asyncpg.Connection,
+    *,
+    table: str,
+    feed: str,
+    exchange: str,
+    market: str,
+    symbol: str,
+    interval: str,
+    start: datetime,
+    end: datetime,
+    cadence: timedelta,
+) -> CadenceCoverage:
+    if table not in _CADENCE_TABLES:
+        raise ValueError("unsupported cadence source table")
+    rows = await conn.fetch(
+        f"SELECT ts FROM {table} WHERE symbol=$1 AND interval=$2 "
+        "AND ts >= $3 AND ts < $4 ORDER BY ts",
+        symbol, interval, start, end,
+    )
+    return await reconcile_cadence_coverage(
+        conn,
+        observations=(row["ts"] for row in rows),
+        feed=feed,
+        exchange=exchange,
+        market=market,
+        symbol=symbol,
+        granularity=interval,
+        start=start,
+        end=end,
+        cadence=cadence,
+        detection_source=PERSISTED_CADENCE_DETECTION_SOURCE,
+    )
+
+
+async def _reconcile_response_cadence(
+    conn: asyncpg.Connection,
+    *,
+    observations: dict[str, set[datetime]],
+    feed: str,
+    exchange: str,
+    market: str,
+    symbol: str,
+    interval: str,
+    start: datetime,
+    end: datetime,
+    cadence: timedelta,
+) -> CadenceCoverage:
+    return await reconcile_cadence_coverage(
+        conn,
+        observations=observations.get(symbol, set()),
+        feed=feed,
+        exchange=exchange,
+        market=market,
+        symbol=symbol,
+        granularity=interval,
+        start=start,
+        end=end,
+        cadence=cadence,
+        detection_source=RESPONSE_CADENCE_DETECTION_SOURCE,
+    )
+
+
+def _liquidation_history_observation(
+    payload: dict[str, list[dict[str, Any]]],
+    requested_symbols: tuple[str, ...],
+    *,
+    accepted_rows: int,
+    source_start: datetime,
+    source_cutoff: datetime,
+) -> tuple[str, str]:
+    """Validate event-history observation without inventing cadence from silence."""
+    requested = set(requested_symbols)
+    observed_symbols = requested & set(payload)
+    missing_symbols = sorted(requested - observed_symbols)
+    returned_rows = sum(len(payload[symbol]) for symbol in requested_symbols if symbol in payload)
+    reasons: list[str] = []
+    if missing_symbols:
+        reasons.append("missing_symbols")
+    if accepted_rows != returned_rows:
+        reasons.append("rejected_rows")
+    status = "degraded" if reasons else "ok"
+    detail = json.dumps(
+        {
+            "source_start_ts": int(source_start.timestamp()),
+            "source_cutoff_ts": int(source_cutoff.timestamp()),
+            "requested_symbols": len(requested_symbols),
+            "observed_symbols": len(observed_symbols),
+            "missing_symbols": missing_symbols,
+            "returned_rows": returned_rows,
+            "accepted_rows": accepted_rows,
+            "reason": "+".join(reasons) if reasons else "complete_observation",
+        },
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return status, detail[:500]
+
+
+def _coverage_heartbeat_detail(
+    *,
+    feed: str,
+    cutoff: datetime,
+    rows: int | dict[str, int],
+    coverages: list[tuple[str, CadenceCoverage]],
+    extra: str | None = None,
+) -> tuple[str, str]:
+    expected = sum(item.expected_buckets for _, item in coverages)
+    observed = sum(item.observed_buckets for _, item in coverages)
+    missing = sum(item.missing_buckets for _, item in coverages)
+    grouped: dict[str, list[int]] = {}
+    for label, item in coverages:
+        total = grouped.setdefault(label, [0, 0, 0])
+        total[0] += item.observed_buckets
+        total[1] += item.expected_buckets
+        total[2] += item.missing_buckets
+    source_text = "|".join(
+        f"{label}:{v[0]}/{v[1]}:m{v[2]}" for label, v in sorted(grouped.items())
+    )
+    detail = (
+        f"feed={feed},source_cutoff={cutoff.isoformat()},coverage={observed}/{expected},"
+        f"missing={missing},sources={source_text},rows={rows}"
+    )
+    if extra:
+        detail += f",{extra}"
+    return ("ok" if missing == 0 else "degraded"), detail[:500]
+
+
 async def ingest_cycle(
     pool: asyncpg.Pool,
     client: CoinalyzeClient,
@@ -375,13 +525,36 @@ async def ingest_ohlcv_cycle(
     ohlcv = await client.history(
         "ohlcv-history", symbols, interval="1min", start_ts=start_ohlcv, end_ts=end_ts
     )
+    ohlcv_observed: dict[str, set[datetime]] = {}
     async with pool.acquire() as conn:
         async with fenced_transaction(conn, ownership):
             count = await upsert_ohlcv(
-                conn, ohlcv, identity, start_ohlcv, end_ts, "1min"
+                conn, ohlcv, identity, start_ohlcv, end_ts, "1min", observed=ohlcv_observed
             )
             rolled_up = await rollup_ohlcv_5m(conn, symbols, start_ohlcv, end_ts)
-        # Feed data is committed above; publish_snapshot opens its own transaction and
+            coverage_start = cutoff.exclusive_boundary - timedelta(hours=24)
+            response_start = datetime.fromtimestamp(start_ohlcv, tz=UTC)
+            ohlcv_coverages: list[tuple[str, CadenceCoverage]] = []
+            for symbol in symbols:
+                persisted = await _reconcile_persisted_cadence(
+                    conn, table="ohlcv", feed="ohlcv_1min", exchange="binance",
+                    market="perpetual", symbol=symbol, interval="1min",
+                    start=coverage_start, end=cutoff.exclusive_boundary,
+                    cadence=timedelta(minutes=1),
+                )
+                current = await _reconcile_response_cadence(
+                    conn, observations=ohlcv_observed, feed="ohlcv_1min",
+                    exchange="binance", market="perpetual", symbol=symbol, interval="1min",
+                    start=response_start, end=cutoff.exclusive_boundary,
+                    cadence=timedelta(minutes=1),
+                )
+                ohlcv_coverages.append(("ohlcv_1min@binance:persisted24h", persisted))
+                ohlcv_coverages.append(("ohlcv_1min@binance:response40m", current))
+            ohlcv_status, ohlcv_detail = _coverage_heartbeat_detail(
+                feed="ohlcv_1m", cutoff=cutoff.exclusive_boundary, rows=count,
+                coverages=ohlcv_coverages, extra=f"rollup_5m={rolled_up}",
+            )
+        # Feed data and cadence truth are committed above; publish_snapshot opens its own
         # re-reads committed state, serialized against the metrics cycle.
         await publish_snapshot(
             conn,
@@ -396,7 +569,8 @@ async def ingest_ohlcv_cycle(
             "ingest",
             "ohlcv_1m",
             INGEST_COMPONENT_MAX_AGES,
-            detail=f"feed=ohlcv_1m,rows={count},rollup_5m={rolled_up}",
+            status=ohlcv_status,
+            detail=ohlcv_detail,
             ownership=ownership,
         )
     LOGGER.info("ingest_ohlcv_cycle_complete rows=%d rollup_5m=%d", count, rolled_up)
@@ -453,27 +627,73 @@ async def ingest_metrics_cycle(
     )
 
     counts: dict[str, int] = {}
+    metric_observations: dict[str, dict[str, set[datetime]]] = {
+        "oi": {}, "oi_bybit": {}, "funding": {}, "predicted": {}, "long_short": {},
+    }
     async with pool.acquire() as conn:
         async with fenced_transaction(conn, ownership):
             counts["oi"] = await upsert_ohlc_metric(
-                conn, "open_interest", "oi", oi, identity, start_history, end_ts
+                conn, "open_interest", "oi", oi, identity, start_history, end_ts,
+                observed=metric_observations["oi"],
             )
             counts["oi_bybit"] = await upsert_ohlc_metric(
-                conn, "oi_bybit", "oi", oi_bybit, bybit_inverse, start_history, end_ts
+                conn, "oi_bybit", "oi", oi_bybit, bybit_inverse, start_history, end_ts,
+                observed=metric_observations["oi_bybit"],
             )
             counts["funding"] = await upsert_ohlc_metric(
-                conn, "funding_rate", "fr", funding, identity, start_history, end_ts
+                conn, "funding_rate", "fr", funding, identity, start_history, end_ts,
+                observed=metric_observations["funding"],
             )
             counts["predicted"] = await upsert_ohlc_metric(
-                conn, "predicted_funding_rate", "pfr", predicted, identity, start_history, end_ts
+                conn, "predicted_funding_rate", "pfr", predicted, identity, start_history, end_ts,
+                observed=metric_observations["predicted"],
             )
             counts["liquidations"] = await upsert_liquidations(
                 conn, liquidations, identity, start_history, end_ts
             )
             counts["long_short"] = await upsert_long_short(
-                conn, long_short, identity, start_history, end_ts
+                conn, long_short, identity, start_history, end_ts,
+                observed=metric_observations["long_short"],
             )
-        # Feed data is committed above; publish_snapshot opens its own transaction and
+
+            source_start = datetime.fromtimestamp(start_history, tz=UTC)
+            liq_status, liq_detail = _liquidation_history_observation(
+                liquidations, symbols, accepted_rows=counts["liquidations"],
+                source_start=source_start, source_cutoff=cutoff.exclusive_boundary,
+            )
+            # Event observation truth and accepted rows commit atomically before publication.
+            await heartbeat(
+                conn, LIQUIDATION_HISTORY_HEARTBEAT, status=liq_status, detail=liq_detail
+            )
+
+            coverage_start = cutoff.exclusive_boundary - timedelta(hours=24)
+            metrics_coverages: list[tuple[str, CadenceCoverage]] = []
+            cadence_sources = (
+                ("oi", "open_interest_5min", "binance"),
+                ("oi_bybit", "open_interest_5min", "bybit"),
+                ("funding", "funding_rate", "binance"),
+                ("predicted", "predicted_funding_rate", "binance"),
+                ("long_short", "long_short_ratio", "binance"),
+            )
+            for observation_key, feed, exchange in cadence_sources:
+                for symbol in symbols:
+                    proof = await _reconcile_response_cadence(
+                        conn, observations=metric_observations[observation_key],
+                        feed=feed, exchange=exchange, market="perpetual", symbol=symbol,
+                        interval="5min", start=coverage_start, end=cutoff.exclusive_boundary,
+                        cadence=timedelta(minutes=5),
+                    )
+                    metrics_coverages.append((f"{feed}@{exchange}:response24h", proof))
+            dense_status, metrics_detail = _coverage_heartbeat_detail(
+                feed="metrics_5m", cutoff=cutoff.exclusive_boundary,
+                rows=counts, coverages=metrics_coverages,
+                extra=f"liquidations_history={liq_status}",
+            )
+            metrics_status = (
+                "ok" if dense_status == "ok" and liq_status == "ok" else "degraded"
+            )
+        # Feed data, event observation health and cadence truth are committed above;
+        # publish_snapshot opens its own transaction and
         # re-reads committed state, serialized against the OHLCV cycle.
         await publish_snapshot(
             conn,
@@ -488,7 +708,8 @@ async def ingest_metrics_cycle(
             "ingest",
             "metrics_5m",
             INGEST_COMPONENT_MAX_AGES,
-            detail=f"feed=metrics_5m,{counts}"[:500],
+            status=metrics_status,
+            detail=metrics_detail,
             ownership=ownership,
         )
     LOGGER.info("ingest_metrics_cycle_complete counts=%s", counts)

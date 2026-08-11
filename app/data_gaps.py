@@ -242,6 +242,159 @@ def missing_cadence_windows(
 
 
 @dataclass(frozen=True, slots=True)
+class CadenceCoverage:
+    """Coverage proof for one exact cadence identity and half-open window."""
+
+    start: datetime
+    end: datetime
+    cadence: timedelta
+    expected_buckets: int
+    observed_buckets: int
+    missing_buckets: int
+    missing_windows: tuple[tuple[datetime, datetime], ...]
+    recovered_gaps: int
+
+    @property
+    def complete(self) -> bool:
+        return self.missing_buckets == 0
+
+
+async def reconcile_cadence_coverage(
+    conn: asyncpg.Connection,
+    *,
+    observations: Iterable[datetime],
+    feed: str,
+    exchange: str,
+    market: str,
+    symbol: str,
+    granularity: str,
+    start: datetime,
+    end: datetime,
+    cadence: timedelta,
+    detection_source: str,
+) -> CadenceCoverage:
+    """Record missing cadence and recover only when every expected bucket is proven.
+
+    ``observations`` are explicit proof supplied by the caller. They may come from accepted
+    rows in the current provider response or from canonical persisted storage. Event feeds
+    are deliberately excluded: silence in an event feed is never missing-cadence evidence.
+    """
+    start, end = _validated_window(start, end)
+    if cadence <= timedelta(0):
+        raise ValueError("cadence must be positive")
+    if not all((feed, exchange, market, symbol, granularity, detection_source)):
+        raise ValueError("cadence coverage identity cannot be empty")
+
+    present: set[datetime] = set()
+    for item in observations:
+        normalized = _aware_utc(item, "observation")
+        if start <= normalized < end:
+            present.add(normalized)
+
+    expected: list[datetime] = []
+    cursor = start
+    while cursor < end:
+        expected.append(cursor)
+        cursor += cadence
+    expected_set = set(expected)
+    missing_windows = tuple(
+        missing_cadence_windows(present, start=start, end=end, cadence=cadence)
+    )
+
+    for gap_start, gap_end in missing_windows:
+        gap_id = await record_data_gap(
+            conn,
+            feed=feed,
+            feed_class="cadence",
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            granularity=granularity,
+            start=gap_start,
+            end=gap_end,
+            evidence_type="missing_interval",
+            detection_reason="cadence reconciliation is missing expected source buckets",
+            detection_source=detection_source,
+            expected_cadence=cadence,
+        )
+        # If the same evidence interval had previously recovered and disappears again,
+        # it must block again. Explicitly unrecoverable rows remain immutable.
+        await conn.execute(
+            """
+            UPDATE data_gap
+            SET status='unresolved', resolved_at=NULL, recovered_at=NULL,
+                recovered_by=NULL, resolution_reason=NULL
+            WHERE id=$1 AND status='recovered'
+            """,
+            gap_id,
+        )
+
+    # Any exact cadence proof may recover an unresolved cadence gap for this source identity,
+    # regardless of which detector originally found it. This lets a later canonical scan
+    # recover a gap first detected from a current provider response.
+    rows = await conn.fetch(
+        """
+        SELECT id,start_ts,end_ts
+        FROM data_gap
+        WHERE feed=$1 AND feed_class='cadence'
+          AND exchange=$2 AND market=$3 AND symbol=$4 AND granularity=$5
+          AND evidence_type='missing_interval'
+          AND status='unresolved'
+          AND start_ts >= $6 AND end_ts <= $7
+        ORDER BY start_ts,id
+        """,
+        feed, exchange, market, symbol, granularity, start, end,
+    )
+
+    recovered = 0
+    for row in rows:
+        gap_start = _aware_utc(row["start_ts"], "gap_start")
+        gap_end = _aware_utc(row["end_ts"], "gap_end")
+        bucket = gap_start
+        proven = True
+        while bucket < gap_end:
+            if bucket not in expected_set or bucket not in present:
+                proven = False
+                break
+            bucket += cadence
+        if not proven:
+            continue
+        result = await conn.execute(
+            """
+            UPDATE data_gap
+            SET status='recovered',
+                resolved_at=clock_timestamp(), recovered_at=clock_timestamp(),
+                recovered_by='cadence_reconciliation',
+                recovery_attempts=recovery_attempts+1,
+                last_recovery_attempt_at=clock_timestamp(),
+                resolution_reason='all expected buckets are present in explicit cadence proof',
+                recovery_metadata=jsonb_build_object(
+                    'method','cadence_reconciliation',
+                    'proof_source',$4::text,
+                    'verified_start',$2::timestamptz,
+                    'verified_end',$3::timestamptz
+                )
+            WHERE id=$1 AND status='unresolved'
+            """,
+            int(row["id"]), start, end, detection_source,
+        )
+        if result == "UPDATE 1":
+            recovered += 1
+
+    observed = len(expected_set & present)
+    return CadenceCoverage(
+        start=start,
+        end=end,
+        cadence=cadence,
+        expected_buckets=len(expected),
+        observed_buckets=observed,
+        missing_buckets=len(expected) - observed,
+        missing_windows=missing_windows,
+        recovered_gaps=recovered,
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class RecoveryObservation:
     timestamp: datetime
     key: str

@@ -12,7 +12,7 @@ from app.signal_backtest import (
     SAMPLING_MODES,
     UTC_NONOVERLAP,
 )
-from app.signal_ledger import SIGNAL_EVIDENCE_VERSION, SIGNAL_SAMPLING_VERSION
+from app.signal_ledger import SIGNAL_SAMPLING_VERSION
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_VERSION
 from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
 
@@ -21,6 +21,7 @@ ATTRIBUTION_SPEC_VERSION = 1
 DEFAULT_LOOKBACK_DAYS = 30
 DEFAULT_MIN_GROUP_N = 30
 DEFAULT_GROUP_BY = ("symbol",)
+DEFAULT_EVIDENCE_VERSION = 1
 
 # These are the configured scalp-summary-v1 component weights. They are
 # descriptive provenance, not fitted attribution coefficients and PR8 never
@@ -47,7 +48,7 @@ class AttributionOptions:
     sampling_modes: tuple[str, ...] = SAMPLING_MODES
     min_group_n: int = DEFAULT_MIN_GROUP_N
     logic_version: str = SCALP_SIGNAL_LOGIC_VERSION
-    evidence_version: int = SIGNAL_EVIDENCE_VERSION
+    evidence_version: int = DEFAULT_EVIDENCE_VERSION
     sampling_version: int = SIGNAL_SAMPLING_VERSION
     context_version: int = REPLAY_CONTEXT_VERSION
     outcome_version: int = OUTCOME_VERSION

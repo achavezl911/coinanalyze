@@ -661,7 +661,7 @@ async def _write_trade_rows(
     if realtime:
         records = [
             (
-                datetime.fromtimestamp(ts, UTC), symbol, exchange,
+                datetime.fromtimestamp(ts, UTC), symbol, exchange, 1,
                 b.buy_vol_usd, b.sell_vol_usd, b.large_buy_usd, b.large_sell_usd,
                 b.trade_count, b.last_px, b.last_event_ms,
             )
@@ -669,8 +669,8 @@ async def _write_trade_rows(
         ]
         await conn.executemany(
             f"""
-            INSERT INTO {table}(ts,symbol,exchange,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count,last_px,last_event_ms)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+            INSERT INTO {table}(ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count,last_px,last_event_ms)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
             ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
               buy_vol_usd=EXCLUDED.buy_vol_usd,
               sell_vol_usd=EXCLUDED.sell_vol_usd,
@@ -685,15 +685,15 @@ async def _write_trade_rows(
     else:
         records = [
             (
-                datetime.fromtimestamp(ts, UTC), symbol, exchange, "1min",
+                datetime.fromtimestamp(ts, UTC), symbol, exchange, 1, "1min",
                 b.buy_vol_usd, b.sell_vol_usd, b.large_buy_usd, b.large_sell_usd, b.trade_count,
             )
             for (symbol, exchange, ts), b in snapshots
         ]
         await conn.executemany(
             f"""
-            INSERT INTO {table}(ts,symbol,exchange,interval,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+            INSERT INTO {table}(ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
             ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
               buy_vol_usd=EXCLUDED.buy_vol_usd,
               sell_vol_usd=EXCLUDED.sell_vol_usd,
@@ -712,14 +712,16 @@ async def _write_combined_realtime(
     touched = sorted({(symbol, ts) for (symbol, _, ts), _ in snapshots})
     await conn.executemany(
         """
-        INSERT INTO futures_trades_realtime(ts,symbol,exchange,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count,last_px,last_event_ms)
-        SELECT ts,symbol,'combined',SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(large_buy_usd),SUM(large_sell_usd),SUM(trade_count)::integer,
+        INSERT INTO futures_trades_realtime(ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count,last_px,last_event_ms)
+        SELECT ts,symbol,'combined',2,SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(large_buy_usd),SUM(large_sell_usd),SUM(trade_count)::integer,
                (array_agg(last_px ORDER BY last_event_ms DESC, exchange))[1],
                MAX(last_event_ms)
         FROM futures_trades_realtime
         WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
         GROUP BY ts,symbol
+        HAVING COUNT(DISTINCT exchange)=2
         ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
+          venue_count=EXCLUDED.venue_count,
           buy_vol_usd=EXCLUDED.buy_vol_usd,
           sell_vol_usd=EXCLUDED.sell_vol_usd,
           large_buy_usd=EXCLUDED.large_buy_usd,
@@ -739,12 +741,14 @@ async def _write_combined_minute(
     touched = sorted({(symbol, ts) for (symbol, _, ts), _ in snapshots})
     await conn.executemany(
         """
-        INSERT INTO futures_trades_agg(ts,symbol,exchange,interval,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count)
-        SELECT ts,symbol,'combined','1min',SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(large_buy_usd),SUM(large_sell_usd),SUM(trade_count)::integer
+        INSERT INTO futures_trades_agg(ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count)
+        SELECT ts,symbol,'combined',2,'1min',SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(large_buy_usd),SUM(large_sell_usd),SUM(trade_count)::integer
         FROM futures_trades_agg
         WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
         GROUP BY ts,symbol
+        HAVING COUNT(DISTINCT exchange)=2
         ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
+          venue_count=EXCLUDED.venue_count,
           buy_vol_usd=EXCLUDED.buy_vol_usd,
           sell_vol_usd=EXCLUDED.sell_vol_usd,
           large_buy_usd=EXCLUDED.large_buy_usd,
@@ -766,7 +770,7 @@ async def flush_books(
             continue
         records = [
             (
-                datetime.fromtimestamp(item.ts_ms / 1000, UTC), item.symbol, item.exchange,
+                datetime.fromtimestamp(item.ts_ms / 1000, UTC), item.symbol, item.exchange, 1,
                 item.bid_px, item.ask_px, item.mid_px, item.spread_bps,
                 item.bid_notional_l1, item.ask_notional_l1, item.bid_notional_l5, item.ask_notional_l5,
                 item.bid_notional_l10, item.ask_notional_l10, item.imbalance_l1, item.imbalance_l5,
@@ -780,11 +784,11 @@ async def flush_books(
                     await conn.executemany(
                         """
                         INSERT INTO orderbook_snapshot(
-                          ts,symbol,exchange,bid_px,ask_px,mid_px,spread_bps,
+                          ts,symbol,exchange,venue_count,bid_px,ask_px,mid_px,spread_bps,
                           bid_notional_l1,ask_notional_l1,bid_notional_l5,ask_notional_l5,
                           bid_notional_l10,ask_notional_l10,imbalance_l1,imbalance_l5,imbalance_l10,
                           wall_up_pct,wall_down_pct
-                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
                         ON CONFLICT(symbol,exchange,ts) DO NOTHING
                         """,
                         records,
@@ -840,7 +844,7 @@ async def _write_combined_books(conn: asyncpg.Connection, rows: list[BookStats])
               WHERE symbol=$1 AND exchange IN ('binance','bybit') AND ts >= now()-interval '10 seconds'
               ORDER BY exchange,ts DESC
             ), totals AS (
-              SELECT MIN(ts) AS ts,$1::text AS symbol,'combined' AS exchange,
+              SELECT MIN(ts) AS ts,$1::text AS symbol,'combined' AS exchange,2::smallint AS venue_count,
                 SUM(bid_notional_l1) AS bid_notional_l1,SUM(ask_notional_l1) AS ask_notional_l1,
                 SUM(bid_notional_l5) AS bid_notional_l5,SUM(ask_notional_l5) AS ask_notional_l5,
                 SUM(bid_notional_l10) AS bid_notional_l10,SUM(ask_notional_l10) AS ask_notional_l10,
@@ -848,7 +852,7 @@ async def _write_combined_books(conn: asyncpg.Connection, rows: list[BookStats])
                 CASE WHEN SUM(bid_notional_l5+ask_notional_l5)>0 THEN SUM(bid_notional_l5)/SUM(bid_notional_l5+ask_notional_l5) END AS imbalance_l5,
                 CASE WHEN SUM(bid_notional_l10+ask_notional_l10)>0 THEN SUM(bid_notional_l10)/SUM(bid_notional_l10+ask_notional_l10) END AS imbalance_l10,
                 MIN(wall_up_pct) AS wall_up_pct,MIN(wall_down_pct) AS wall_down_pct
-              FROM latest HAVING COUNT(*) > 0
+              FROM latest HAVING COUNT(DISTINCT exchange)=2
             ), best_venue AS (
               SELECT bid_px,ask_px,mid_px,spread_bps
               FROM latest
@@ -856,7 +860,7 @@ async def _write_combined_books(conn: asyncpg.Connection, rows: list[BookStats])
               ORDER BY spread_bps NULLS LAST, ts DESC
               LIMIT 1
             ), agg AS (
-              SELECT totals.ts,totals.symbol,totals.exchange,
+              SELECT totals.ts,totals.symbol,totals.exchange,totals.venue_count,
                 best_venue.bid_px,best_venue.ask_px,best_venue.mid_px,best_venue.spread_bps,
                 totals.bid_notional_l1,totals.ask_notional_l1,totals.bid_notional_l5,totals.ask_notional_l5,
                 totals.bid_notional_l10,totals.ask_notional_l10,totals.imbalance_l1,totals.imbalance_l5,totals.imbalance_l10,
@@ -864,11 +868,20 @@ async def _write_combined_books(conn: asyncpg.Connection, rows: list[BookStats])
               FROM totals LEFT JOIN best_venue ON true
             )
             INSERT INTO orderbook_snapshot(
-              ts,symbol,exchange,bid_px,ask_px,mid_px,spread_bps,bid_notional_l1,ask_notional_l1,
+              ts,symbol,exchange,venue_count,bid_px,ask_px,mid_px,spread_bps,bid_notional_l1,ask_notional_l1,
               bid_notional_l5,ask_notional_l5,bid_notional_l10,ask_notional_l10,imbalance_l1,
               imbalance_l5,imbalance_l10,wall_up_pct,wall_down_pct
             ) SELECT * FROM agg
-            ON CONFLICT(symbol,exchange,ts) DO NOTHING
+            ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
+              venue_count=EXCLUDED.venue_count,
+              bid_px=EXCLUDED.bid_px,ask_px=EXCLUDED.ask_px,mid_px=EXCLUDED.mid_px,
+              spread_bps=EXCLUDED.spread_bps,
+              bid_notional_l1=EXCLUDED.bid_notional_l1,ask_notional_l1=EXCLUDED.ask_notional_l1,
+              bid_notional_l5=EXCLUDED.bid_notional_l5,ask_notional_l5=EXCLUDED.ask_notional_l5,
+              bid_notional_l10=EXCLUDED.bid_notional_l10,ask_notional_l10=EXCLUDED.ask_notional_l10,
+              imbalance_l1=EXCLUDED.imbalance_l1,imbalance_l5=EXCLUDED.imbalance_l5,
+              imbalance_l10=EXCLUDED.imbalance_l10,
+              wall_up_pct=EXCLUDED.wall_up_pct,wall_down_pct=EXCLUDED.wall_down_pct
             """,
             symbol,
         )
