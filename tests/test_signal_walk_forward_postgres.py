@@ -14,6 +14,10 @@ from app.signal_execution import DENSE_PERIODIC
 from app.signal_outcomes import OUTCOME_SETTLEMENT_LAG
 from app.signal_walk_forward import (
     WalkForwardManifestOptions,
+    _actionable_evaluated,
+    _build_gross_views,
+    _fetch_period_grid,
+    _integrity_counters,
     _static_options_spec,
     compute_folds,
     evaluate_walk_forward,
@@ -345,12 +349,14 @@ async def _insert_observation(
     direction: str,
     state: str = "Long Momentum",
     reference_price: float = 100.0,
+    created_at: datetime | None = None,
 ) -> int:
+    row_created_at = created_at or observed_at
     return int(
         await conn.fetchval(
             """
             INSERT INTO signal_observation(
-              observed_at,observed_minute,symbol,signal_family,
+              observed_at,observed_minute,created_at,symbol,signal_family,
               is_periodic,is_transition,
               logic_version,evidence_version,sampling_version,
               decision_status,direction,actionable,state,confidence,reason,
@@ -360,7 +366,7 @@ async def _insert_observation(
               collector_shard_index,collector_shard_count,
               decision_fingerprint,evidence
             ) VALUES(
-              $1,date_trunc('minute',$1::timestamptz),
+              $1,date_trunc('minute',$1::timestamptz),$5,
               'BTCUSDT_PERP.A','scalp',
               true,false,
               'scalp-summary-v1',1,1,
@@ -377,18 +383,27 @@ async def _insert_observation(
             direction,
             state,
             reference_price,
+            row_created_at,
         )
     )
 
-async def _insert_frame(conn: asyncpg.Connection, observation_id: int, observed_at: datetime) -> None:
+
+async def _insert_frame(
+    conn: asyncpg.Connection,
+    observation_id: int,
+    observed_at: datetime,
+    *,
+    created_at: datetime | None = None,
+) -> None:
     await conn.execute(
         """
         INSERT INTO signal_replay_frame(
-          observation_id,context_version,context_as_of,context_hash,context
-        ) VALUES($1,1,$2,repeat('b',64),'{"now_ms":1}'::jsonb)
+          observation_id,context_version,context_as_of,context_hash,context,created_at
+        ) VALUES($1,1,$2,repeat('b',64),'{"now_ms":1}'::jsonb,$3)
         """,
         observation_id,
         observed_at,
+        created_at or observed_at,
     )
 
 
@@ -402,6 +417,8 @@ async def _insert_outcome(
     status: str = "evaluated",
     due_at: datetime | None = None,
     outcome_version: int = 1,
+    created_at: datetime | None = None,
+    finalized_at: datetime | None = None,
 ) -> None:
     observation = await conn.fetchrow(
         """
@@ -428,6 +445,8 @@ async def _insert_outcome(
         if due_at is not None
         else window_end + OUTCOME_SETTLEMENT_LAG
     )
+    row_created_at = created_at or window_start - timedelta(minutes=1)
+    row_finalized_at = finalized_at or resolved_due_at
 
     if status == "pending":
         await conn.execute(
@@ -435,11 +454,11 @@ async def _insert_outcome(
             INSERT INTO signal_outcome(
               observation_id,horizon_minutes,window_start,window_end,due_at,
               next_attempt_at,path_start_delay_seconds,bars_expected,bars_found,
-              outcome_version,status,attempts
+              outcome_version,status,attempts,created_at
             ) VALUES(
               $1,$2,$3,$4,$5,
               $5,30,$2,0,
-              $6,'pending',0
+              $6,'pending',0,$7
             )
             """,
             observation_id,
@@ -448,6 +467,33 @@ async def _insert_outcome(
             window_end,
             resolved_due_at,
             outcome_version,
+            row_created_at,
+        )
+        return
+
+    if status == "not_evaluable":
+        await conn.execute(
+            """
+            INSERT INTO signal_outcome(
+              observation_id,horizon_minutes,window_start,window_end,due_at,
+              next_attempt_at,path_start_delay_seconds,bars_expected,bars_found,
+              outcome_version,status,attempts,last_attempt_at,finalized_at,
+              final_reason,created_at
+            ) VALUES(
+              $1,$2,$3,$4,$5,
+              $5,30,$2,0,
+              $6,'not_evaluable',1,$7,$7,
+              'fixture_not_evaluable',$8
+            )
+            """,
+            observation_id,
+            horizon_minutes,
+            window_start,
+            window_end,
+            resolved_due_at,
+            outcome_version,
+            row_finalized_at,
+            row_created_at,
         )
         return
 
@@ -459,14 +505,14 @@ async def _insert_outcome(
           outcome_version,status,attempts,last_attempt_at,finalized_at,
           entry_reference_price,end_price,max_high,min_low,
           market_return_pct,up_excursion_pct,down_excursion_pct,
-          directional_return_pct,mfe_pct,mae_pct
+          directional_return_pct,mfe_pct,mae_pct,created_at
         ) VALUES(
           $1,$2,$3,$4,$5,
           $5,30,$2,$2,
-          $6,$7,1,$5,$5,
+          $6,$7,1,$14,$14,
           $8,$9,$10,$11,
           $12,2,-1,
-          $13,1.5,0.4
+          $13,1.5,0.4,$15
         )
         """,
         observation_id,
@@ -482,6 +528,8 @@ async def _insert_outcome(
         reference_price * 0.99,
         market_return_pct,
         directional_return_pct,
+        row_finalized_at,
+        row_created_at,
     )
 
 async def _insert_execution_snapshot(
@@ -544,6 +592,333 @@ async def _insert_execution_snapshot(
         reason,
         json.dumps(curve),
     )
+
+
+# ---------------------------------------------------------------------------
+# PR21 bitemporal knowledge-state projection
+# ---------------------------------------------------------------------------
+
+
+PR21_PERIOD_START = datetime(2026, 1, 2, 11, 0, tzinfo=UTC)
+PR21_PERIOD_END = datetime(2026, 1, 2, 14, 0, tzinfo=UTC)
+PR21_OBSERVED_AT = datetime(2026, 1, 2, 12, 0, tzinfo=UTC)
+PR21_CUTOFF = datetime(2026, 1, 2, 12, 30, tzinfo=UTC)
+PR21_DUE_AT = datetime(2026, 1, 2, 12, 20, tzinfo=UTC)
+
+
+async def _pr21_observation_and_frame(
+    conn: asyncpg.Connection,
+    *,
+    observation_created_at: datetime | None = None,
+    frame_created_at: datetime | None = None,
+) -> int:
+    observation_id = await _insert_observation(
+        conn,
+        observed_at=PR21_OBSERVED_AT,
+        direction="long",
+        created_at=observation_created_at,
+    )
+    await _insert_frame(
+        conn,
+        observation_id,
+        PR21_OBSERVED_AT,
+        created_at=frame_created_at,
+    )
+    return observation_id
+
+
+async def _pr21_grid(
+    conn: asyncpg.Connection,
+    *,
+    cutoff: datetime = PR21_CUTOFF,
+    horizons: tuple[int, ...] = (15,),
+) -> list[dict]:
+    return await _fetch_period_grid(
+        conn,
+        period_start=PR21_PERIOD_START,
+        period_end=PR21_PERIOD_END,
+        knowledge_cutoff=cutoff,
+        options=WalkForwardManifestOptions(
+            fold_count=1,
+            horizons=horizons,
+            symbols=("BTCUSDT_PERP.A",),
+            min_group_n=1,
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_pr21_discovery_late_finalized_evaluated_projects_to_pending(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=9.0,
+        due_at=PR21_DUE_AT,
+        finalized_at=PR21_CUTOFF + timedelta(minutes=12),
+    )
+
+    row = (await _pr21_grid(conn))[0]
+    assert row["usable"] is True
+    assert row["status"] == "pending"
+    assert row["finalized_at"] is None
+    for field in (
+        "end_price",
+        "directional_return_pct",
+        "mfe_pct",
+        "mae_pct",
+        "market_return_pct",
+    ):
+        assert row[field] is None
+
+
+@pytest.mark.asyncio
+async def test_pr21_late_not_evaluable_projects_to_pending(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=0.0,
+        status="not_evaluable",
+        due_at=PR21_DUE_AT,
+        finalized_at=PR21_CUTOFF + timedelta(minutes=1),
+    )
+    row = (await _pr21_grid(conn))[0]
+    assert row["usable"] is True
+    assert row["status"] == "pending"
+    assert row["finalized_at"] is None
+
+
+@pytest.mark.asyncio
+async def test_pr21_finalized_before_cutoff_is_evaluated(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=2.5,
+        due_at=PR21_DUE_AT,
+        finalized_at=PR21_CUTOFF - timedelta(seconds=1),
+    )
+    row = (await _pr21_grid(conn))[0]
+    assert row["usable"] is True
+    assert row["status"] == "evaluated"
+    assert row["directional_return_pct"] == pytest.approx(2.5)
+
+
+@pytest.mark.asyncio
+async def test_pr21_finalized_exactly_at_cutoff_is_known(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=3.0,
+        due_at=PR21_DUE_AT,
+        finalized_at=PR21_CUTOFF,
+    )
+    row = (await _pr21_grid(conn))[0]
+    assert row["usable"] is True
+    assert row["status"] == "evaluated"
+    assert row["finalized_at"] == PR21_CUTOFF
+
+
+@pytest.mark.asyncio
+async def test_pr21_due_after_cutoff_is_not_knowledge_eligible(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=4.0,
+        due_at=PR21_CUTOFF + timedelta(seconds=1),
+        finalized_at=PR21_CUTOFF + timedelta(minutes=2),
+    )
+    row = (await _pr21_grid(conn))[0]
+    assert row["status"] == "pending"
+    assert row["usable"] is False
+
+
+@pytest.mark.asyncio
+async def test_pr21_outcome_created_after_cutoff_is_not_visible(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=5.0,
+        due_at=PR21_DUE_AT,
+        created_at=PR21_CUTOFF + timedelta(microseconds=1),
+        finalized_at=PR21_CUTOFF + timedelta(minutes=2),
+    )
+    row = (await _pr21_grid(conn))[0]
+    assert row["status"] is None
+    assert row["outcome_version"] is None
+    assert row["outcome_created_at"] is None
+    assert row["usable"] is False
+
+
+@pytest.mark.asyncio
+async def test_pr21_observation_created_after_cutoff_is_not_visible(
+    conn: asyncpg.Connection,
+) -> None:
+    await _pr21_observation_and_frame(
+        conn,
+        observation_created_at=PR21_CUTOFF + timedelta(microseconds=1),
+    )
+    assert await _pr21_grid(conn) == []
+
+
+@pytest.mark.asyncio
+async def test_pr21_replay_frame_created_after_cutoff_is_not_visible(
+    conn: asyncpg.Connection,
+) -> None:
+    await _pr21_observation_and_frame(
+        conn,
+        frame_created_at=PR21_CUTOFF + timedelta(microseconds=1),
+    )
+    assert await _pr21_grid(conn) == []
+
+
+@pytest.mark.asyncio
+async def test_pr21_integrity_counts_late_final_as_pending(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=7.0,
+        due_at=PR21_DUE_AT,
+        finalized_at=PR21_CUTOFF + timedelta(minutes=10),
+    )
+    counters = _integrity_counters(
+        await _pr21_grid(conn),
+        period_end=PR21_PERIOD_END,
+        expected_outcome_version=1,
+    )
+    assert counters["knowledge_eligible_outcome_rows"] == 1
+    assert counters["pending_outcome_rows"] == 1
+    assert counters["evaluated_outcome_rows"] == 0
+    assert counters["not_evaluable_outcome_rows"] == 0
+    assert counters["missing_or_wrong_version_outcome_rows"] == 0
+
+
+@pytest.mark.asyncio
+async def test_pr21_late_final_excluded_from_fold1_metrics_but_available_later(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    finalized_at = PR21_CUTOFF + timedelta(minutes=10)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=8.0,
+        due_at=PR21_DUE_AT,
+        finalized_at=finalized_at,
+    )
+    early = await _pr21_grid(conn)
+    early_views = _build_gross_views(
+        discovery_grid=early,
+        test_grid=early,
+        min_group_n=1,
+        fold_state="ready_by_clock",
+    )
+    assert _actionable_evaluated(early) == []
+    assert early_views["overall"] == []
+
+    later = await _pr21_grid(conn, cutoff=finalized_at)
+    assert len(_actionable_evaluated(later)) == 1
+    later_views = _build_gross_views(
+        discovery_grid=later,
+        test_grid=later,
+        min_group_n=1,
+        fold_state="ready_by_clock",
+    )
+    assert later_views["overall"][0]["discovery"]["n"] == 1
+    assert later_views["overall"][0]["test"]["n"] == 1
+
+
+@pytest.mark.asyncio
+async def test_pr21_multiple_horizons_project_independently(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    cutoff = PR21_CUTOFF + timedelta(minutes=20)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=1.5,
+        due_at=PR21_DUE_AT,
+        finalized_at=cutoff - timedelta(seconds=1),
+    )
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=30,
+        directional_return_pct=30.0,
+        due_at=PR21_CUTOFF + timedelta(minutes=10),
+        finalized_at=cutoff + timedelta(minutes=10),
+    )
+    rows = {
+        row["horizon_minutes"]: row
+        for row in await _pr21_grid(conn, cutoff=cutoff, horizons=(15, 30))
+    }
+    assert rows[15]["status"] == "evaluated"
+    assert rows[15]["directional_return_pct"] == pytest.approx(1.5)
+    assert rows[30]["status"] == "pending"
+    assert rows[30]["directional_return_pct"] is None
+
+
+@pytest.mark.asyncio
+async def test_pr21_wrong_outcome_version_remains_excluded(
+    conn: asyncpg.Connection,
+) -> None:
+    observation_id = await _pr21_observation_and_frame(conn)
+    await _insert_outcome(
+        conn,
+        observation_id=observation_id,
+        window_start=PR21_OBSERVED_AT + timedelta(minutes=1),
+        horizon_minutes=15,
+        directional_return_pct=6.0,
+        due_at=PR21_DUE_AT,
+        outcome_version=2,
+        finalized_at=PR21_CUTOFF - timedelta(seconds=1),
+    )
+    row = (await _pr21_grid(conn))[0]
+    assert row["status"] == "evaluated"
+    assert row["usable"] is False
+    counters = _integrity_counters(
+        [row], period_end=PR21_PERIOD_END, expected_outcome_version=1
+    )
+    assert counters["missing_or_wrong_version_outcome_rows"] == 1
 
 @pytest.fixture
 def single_fold_options() -> WalkForwardManifestOptions:

@@ -312,20 +312,29 @@ async def daily_history(conn: asyncpg.Connection, symbol: str, sessions: int) ->
 
 
 async def verdict_history(conn: asyncpg.Connection, symbol: str, limit: int = 90) -> dict[str, Any]:
-    """Lo que dijo el modelo en sesiones pasadas y lo que hizo el precio despues."""
+    """First immutable observed verdict snapshot per captured session."""
     rows = await conn.fetch(
         """
         WITH v AS (
-          SELECT * FROM daily_verdict WHERE symbol=$1 ORDER BY session_date DESC LIMIT $2
+          SELECT * FROM daily_verdict_snapshot
+          WHERE symbol=$1 ORDER BY session_date DESC LIMIT $2
         )
         SELECT v.session_date,v.swing_bias,v.swing_score,v.swing_conviction,v.regime_score,
-               v.regime_label,v.setup_id,v.setup_state,v.setup_confidence,v.price_close,
-               (SELECT (d.price_close/v.price_close-1)*100 FROM daily_session_agg d
-                 WHERE d.symbol=$1 AND d.session_date>v.session_date
-                 ORDER BY d.session_date OFFSET 6 LIMIT 1) AS fwd_7s_pct,
-               (SELECT (d.price_close/v.price_close-1)*100 FROM daily_session_agg d
-                 WHERE d.symbol=$1 AND d.session_date>v.session_date
-                 ORDER BY d.session_date OFFSET 13 LIMIT 1) AS fwd_14s_pct
+               v.regime_label,v.setup_id,v.setup_state,v.setup_confidence,
+               v.session_price_close,v.session_price_close AS price_close,
+               v.observed_at,v.session_end_at,v.snapshot_version,v.logic_version,
+               v.reference_price,v.reference_price_at,v.metrics_snapshot_ts,
+               v.session_coverage_version,
+               CASE WHEN v.reference_price IS NULL THEN NULL ELSE
+                 (SELECT (d.price_close/v.reference_price-1)*100 FROM daily_session_agg d
+                  WHERE d.symbol=$1 AND d.session_date>v.session_date
+                  ORDER BY d.session_date OFFSET 6 LIMIT 1)
+               END AS fwd_7s_pct,
+               CASE WHEN v.reference_price IS NULL THEN NULL ELSE
+                 (SELECT (d.price_close/v.reference_price-1)*100 FROM daily_session_agg d
+                  WHERE d.symbol=$1 AND d.session_date>v.session_date
+                  ORDER BY d.session_date OFFSET 13 LIMIT 1)
+               END AS fwd_14s_pct
         FROM v ORDER BY v.session_date
         """,
         symbol,
@@ -335,9 +344,10 @@ async def verdict_history(conn: asyncpg.Connection, symbol: str, limit: int = 90
         "available": bool(rows),
         "sessions": len(rows),
         "series": [compact_dict(dict(row)) for row in rows],
-        "note": "veredictos congelados por sesion junto al retorno realizado. Se empezaron a "
-        "registrar en v1.3.3 (2026-08-02), asi que la serie es corta todavia y NO "
-        "alcanza para inferir tasa de acierto.",
+        "note": "first immutable observed verdict snapshot per session. observed_at es el "
+        "knowledge time y reference_price_at es el anchor del retorno. La captura es "
+        "prospectiva desde PR21 y no reconstruye veredictos legacy ni el estado exacto al "
+        "cierre; una serie corta NO alcanza para inferir tasa de acierto.",
     }
 
 

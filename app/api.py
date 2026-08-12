@@ -1556,29 +1556,39 @@ async def verdicts(
     symbol: str,
     limit: Annotated[int, Query(ge=1, le=730)] = 90,
 ) -> dict[str, Any]:
-    """Veredictos que el modelo emitio en sesiones pasadas, con el retorno posterior real.
+    """First immutable observed verdict snapshot for each captured session.
 
-    No evalua nada por su cuenta: expone el par (lo que dijo, lo que hizo el precio) para
-    que se pueda auditar. Los pesos del score siguen sin calibrar contra estos resultados.
+    The snapshot is evidence of what the system emitted and when it became knowable; it is
+    not represented as an exact reconstruction of the session-close state.
     """
     selected = validate_symbol(symbol)
     async with app.state.pool.acquire() as conn:
         rows = await conn.fetch(
             """
             WITH v AS (
-              SELECT * FROM daily_verdict WHERE symbol=$1
+              SELECT * FROM daily_verdict_snapshot WHERE symbol=$1
               ORDER BY session_date DESC LIMIT $2
             )
             SELECT v.session_date,v.swing_bias,v.swing_score,v.swing_conviction,
                    v.long_share_pct,v.regime_score,v.regime_label,
                    v.setup_id,v.setup_name,v.setup_state,v.setup_confidence,
-                   v.daily_streak,v.price_close,
-                   (SELECT (d.price_close/v.price_close-1)*100 FROM daily_session_agg d
-                     WHERE d.symbol=$1 AND d.session_date>v.session_date
-                     ORDER BY d.session_date OFFSET 6 LIMIT 1) AS fwd_return_7s_pct,
-                   (SELECT (d.price_close/v.price_close-1)*100 FROM daily_session_agg d
-                     WHERE d.symbol=$1 AND d.session_date>v.session_date
-                     ORDER BY d.session_date OFFSET 13 LIMIT 1) AS fwd_return_14s_pct
+                   v.daily_streak,
+                   v.session_price_close,v.session_price_close AS price_close,
+                   v.observed_at,v.session_end_at,v.snapshot_version,v.logic_version,
+                   v.reference_price,v.reference_price_at,v.metrics_snapshot_ts,
+                   v.session_coverage_version,
+                   CASE WHEN v.reference_price IS NULL THEN NULL ELSE
+                     (SELECT (d.price_close/v.reference_price-1)*100
+                      FROM daily_session_agg d
+                      WHERE d.symbol=$1 AND d.session_date>v.session_date
+                      ORDER BY d.session_date OFFSET 6 LIMIT 1)
+                   END AS fwd_return_7s_pct,
+                   CASE WHEN v.reference_price IS NULL THEN NULL ELSE
+                     (SELECT (d.price_close/v.reference_price-1)*100
+                      FROM daily_session_agg d
+                      WHERE d.symbol=$1 AND d.session_date>v.session_date
+                      ORDER BY d.session_date OFFSET 13 LIMIT 1)
+                   END AS fwd_return_14s_pct
             FROM v ORDER BY v.session_date DESC
             """,
             selected,
@@ -1588,9 +1598,10 @@ async def verdicts(
         "symbol": selected,
         "rows": records(rows),
         "note": (
-            "fwd_return_*_pct es el retorno realizado desde el cierre de esa sesion; null "
-            "mientras el horizonte no se haya cumplido. Se empezo a registrar en v1.3.3, "
-            "asi que la serie arranca vacia y se llena con el tiempo."
+            "snapshot = primera emision inmutable capturada para la sesion; observed_at = "
+            "momento en que fue conocible; reference_price_at = anchor de fwd_return_*_pct. "
+            "Si no habia una vela 1m completada al observarlo, reference_price y retornos "
+            "permanecen null. No es una reconstruccion exacta del cierre de sesion."
         ),
     }
 
