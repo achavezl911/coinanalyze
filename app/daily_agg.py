@@ -25,7 +25,7 @@ from app.db import (
 from app.ingest import seconds_until_aligned_run, upsert_ohlcv
 from app.interpretation import evaluate_setups
 from app.logging_setup import configure_logging
-from app.metrics import session_bounds
+from app.metrics import REGIME_LOGIC_VERSION, session_bounds
 from app.partitioning import apply_temporal_retention
 from app.scalp_logic import swing_score
 
@@ -46,7 +46,7 @@ def latest_closed_session_date(now_utc: datetime | None = None) -> date:
 SESSION_MIN_COVERAGE_RATIO = 0.95
 SESSION_COVERAGE_VERSION = 1
 DAILY_VERDICT_SNAPSHOT_VERSION = 1
-DAILY_VERDICT_LOGIC_VERSION = "daily-verdict-v1"
+DAILY_VERDICT_LOGIC_VERSION = "daily-verdict-v2"
 
 
 def _expected_session_samples(start: datetime, end: datetime, cadence_seconds: int) -> int:
@@ -324,7 +324,14 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
             continue  # sin cierre medido no existe un veredicto diario evaluable
         swing = await swing_score(conn, symbol)
         snapshot = await conn.fetchrow(
-            "SELECT * FROM metrics_snapshot WHERE symbol=$1 ORDER BY ts DESC LIMIT 1", symbol
+            """
+            SELECT * FROM metrics_snapshot
+            WHERE symbol=$1 AND regime_logic_version=$2
+            ORDER BY ts DESC
+            LIMIT 1
+            """,
+            symbol,
+            REGIME_LOGIC_VERSION,
         )
         primary: dict[str, object] = {}
         streak = None
@@ -350,6 +357,9 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
         regime_score = snapshot["regime_score"] if snapshot is not None else None
         regime_label = snapshot["regime_label"] if snapshot is not None else None
         metrics_snapshot_ts = snapshot["ts"] if snapshot is not None else None
+        regime_logic_version = (
+            snapshot["regime_logic_version"] if snapshot is not None else None
+        )
 
         observed_at = await conn.fetchval("SELECT clock_timestamp()")
         _, session_end_at = session_bounds(session_date_value)
@@ -377,13 +387,14 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
             """
             INSERT INTO daily_verdict_snapshot(
               session_date,symbol,snapshot_version,logic_version,
-              observed_at,session_end_at,metrics_snapshot_ts,session_coverage_version,
+              observed_at,session_end_at,metrics_snapshot_ts,regime_logic_version,
+              session_coverage_version,
               swing_bias,swing_score,swing_conviction,long_share_pct,swing_components,
               regime_score,regime_label,setup_id,setup_name,setup_state,setup_confidence,
               daily_streak,session_price_close,reference_price,reference_price_at
             ) VALUES(
-              $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,$15,$16,$17,
-              $18,$19,$20,$21,$22,$23
+              $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16,$17,$18,
+              $19,$20,$21,$22,$23,$24
             )
             ON CONFLICT(symbol,session_date) DO NOTHING
             """,
@@ -394,6 +405,7 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
             observed_at,
             session_end_at,
             metrics_snapshot_ts,
+            regime_logic_version,
             session["session_coverage_version"],
             swing_bias,
             swing.get("score"),

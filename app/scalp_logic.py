@@ -8,7 +8,7 @@ from typing import Any
 import asyncpg
 
 from app.breakout import breakout_read
-from app.config import SPOT_HISTORY_MAP, WS_SYMBOL_MAP
+from app.config import SPOT_HISTORY_MAP, WS_SYMBOL_MAP, get_settings
 from app.data_gaps import GapRequirement, blocking_requirement_keys
 from app.interpretation import (
     BARRIER_INTRADAY_TARGET_BARS,
@@ -963,27 +963,43 @@ def _structure_layer(
 _PIV_VOTE = {"HH/HL": True, "LH/LL": False}
 
 
-async def _cvd_fut_window(conn: asyncpg.Connection, symbol: str, seconds: int) -> float | None:
+async def _cvd_fut_window(
+    conn: asyncpg.Connection,
+    symbol: str,
+    seconds: int,
+    as_of: datetime | None = None,
+) -> float | None:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     return as_float(
         await conn.fetchval(
             "SELECT SUM(buy_vol_usd-sell_vol_usd) FROM futures_trades_realtime "
-            "WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND ts >= now()-($2::int * interval '1 second')",
+            "WHERE symbol=$1 AND exchange='combined' AND venue_count=2 "
+            "AND ts >= $3::timestamptz-($2::int * interval '1 second') "
+            "AND ts <= $3",
             symbol,
             seconds,
+            cutoff,
         )
     )
 
 
-async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def market_structure(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
     """Bias determinista por horizonte: order flow + OI + liquidaciones + pivotes de precio.
 
     Micro 1m-15m (ws), Mid 30m-4h (ws + historico), Macro sesiones diarias.
     Cada componente vota alcista/bajista/sin-dato; bias = mayoria simple, sin pesos.
     """
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     m1_rows = await conn.fetch(
         "SELECT high, low, close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+        "AND ts <= $2 "
         "ORDER BY ts DESC LIMIT 120",
         symbol,
+        cutoff,
     )
     m1 = [dict(r) for r in reversed(m1_rows)]
     m15_rows = await conn.fetch(
@@ -992,11 +1008,12 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
           SELECT date_bin('15 minutes'::interval, ts, '1970-01-01'::timestamptz) AS bucket,
                  MAX(high) AS high, MIN(low) AS low,
                  (array_agg(close ORDER BY ts DESC))[1] AS close
-          FROM ohlcv WHERE symbol=$1 AND interval='1min'
+          FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts <= $2
           GROUP BY 1 ORDER BY 1 DESC LIMIT 192
         ) SELECT * FROM b ORDER BY bucket
         """,
         symbol,
+        cutoff,
     )
     m15 = [dict(r) for r in m15_rows]
     daily_rows = await conn.fetch(
@@ -1018,8 +1035,10 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
     liq_rt = await conn.fetchrow(
         "SELECT SUM(CASE WHEN side='long' THEN notional_usd ELSE 0 END) AS long_liq,"
         "SUM(CASE WHEN side='short' THEN notional_usd ELSE 0 END) AS short_liq "
-        "FROM liquidations_realtime WHERE symbol=$1 AND ts >= now()-interval '15 minutes'",
+        "FROM liquidations_realtime WHERE symbol=$1 "
+        "AND ts >= $2::timestamptz-interval '15 minutes' AND ts <= $2",
         symbol,
+        cutoff,
     )
     micro_liq = None
     if liq_rt and ((as_float(liq_rt["long_liq"]) or 0) or (as_float(liq_rt["short_liq"]) or 0)):
@@ -1032,7 +1051,7 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         "micro",
         "1m-15m",
         {
-            "cvd15m": _sign_vote(await _cvd_fut_window(conn, symbol, 900)),
+            "cvd15m": _sign_vote(await _cvd_fut_window(conn, symbol, 900, cutoff)),
             "px15m": _sign_vote(px_change(m1, 15)),
             "liq15m": micro_liq,
             "piv": _PIV_VOTE.get(micro_ps),
@@ -1043,8 +1062,9 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
     # ---- mid (30m-4h)
     oi_rows = await conn.fetch(
         "SELECT oi_close FROM open_interest WHERE symbol=$1 AND interval='5min' "
-        "AND ts >= now()-interval '250 minutes' ORDER BY ts",
+        "AND ts >= $2::timestamptz-interval '250 minutes' AND ts <= $2 ORDER BY ts",
         symbol,
+        cutoff,
     )
     oi_vals = [as_float(r["oi_close"]) for r in oi_rows if as_float(r["oi_close"]) is not None]
     px4h = px_change(m15, 16)
@@ -1055,8 +1075,10 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         )  # OI subiendo confirma la direccion del precio; OI bajando = unwind, sin voto
     liq_hist = await conn.fetchrow(
         "SELECT SUM(long_liq) AS long_liq, SUM(short_liq) AS short_liq FROM liquidations "
-        "WHERE symbol=$1 AND interval='5min' AND ts >= now()-interval '4 hours'",
+        "WHERE symbol=$1 AND interval='5min' "
+        "AND ts >= $2::timestamptz-interval '4 hours' AND ts <= $2",
         symbol,
+        cutoff,
     )
     mid_liq = None
     if liq_hist and (
@@ -1072,8 +1094,8 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         "mid",
         "30m-4h",
         {
-            "cvd1h": _sign_vote(await _cvd_fut_window(conn, symbol, 3600)),
-            "cvd4h": _sign_vote(await _cvd_fut_window(conn, symbol, 14400)),
+            "cvd1h": _sign_vote(await _cvd_fut_window(conn, symbol, 3600, cutoff)),
+            "cvd4h": _sign_vote(await _cvd_fut_window(conn, symbol, 14400, cutoff)),
             "oi": oi_conf,
             "liq4h": mid_liq,
             "piv": _PIV_VOTE.get(mid_ps),
@@ -1112,7 +1134,12 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
     alignment = (
         f"alineado_{layers[0]['bias']}" if len(biases) == 1 and "neutral" not in biases else "mixto"
     )
-    return {"symbol": symbol, "layers": layers, "alignment": alignment}
+    return {
+        "symbol": symbol,
+        "as_of": cutoff.isoformat(),
+        "layers": layers,
+        "alignment": alignment,
+    }
 
 
 # ---------------- alertas HTF: estructura por horizonte + liquidaciones masivas ----------------
@@ -2298,12 +2325,47 @@ _CVD_WINDOWS = (
 )
 
 
+def _explicit_as_of(as_of: datetime) -> datetime:
+    if as_of.tzinfo is None or as_of.utcoffset() is None:
+        raise ValueError("as_of must be timezone-aware")
+    return as_of.astimezone(UTC)
+
+
+async def resolve_matrix_as_of(
+    conn: asyncpg.Connection, as_of: datetime | None = None
+) -> datetime:
+    """Resolve one PostgreSQL clock cutoff, or validate an explicitly injected cutoff."""
+    if as_of is not None:
+        return _explicit_as_of(as_of)
+    resolved = await conn.fetchval("SELECT clock_timestamp()")
+    if not isinstance(resolved, datetime):
+        raise RuntimeError("PostgreSQL did not return a matrix cutoff timestamp")
+    return _explicit_as_of(resolved)
+
+
+def _flow_imbalance(net: object, gross: object) -> float | None:
+    net_value = as_float(net)
+    gross_value = as_float(gross)
+    if net_value is None or gross_value is None or gross_value <= 0:
+        return None
+    return max(-1.0, min(1.0, net_value / gross_value))
+
+
+def _flow_rate(net: object, seconds: int) -> float | None:
+    net_value = as_float(net)
+    if net_value is None or seconds <= 0:
+        return None
+    return net_value / (seconds / 60.0)
+
+
 async def spot_flow_windows(
     conn: asyncpg.Connection,
     symbol: str,
     windows: tuple[tuple[str, int], ...] | list[tuple[str, int]],
+    as_of: datetime | None = None,
 ) -> dict[str, dict[str, dict[str, Any]]]:
     """Rolling spot flow with a complete 1-minute history plus a non-overlapping live tail."""
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     labels = [label for label, _ in windows]
     seconds = [value for _, value in windows]
     rows = await conn.fetch(
@@ -2317,20 +2379,22 @@ async def spot_flow_windows(
           FROM spot_trades_realtime
           WHERE symbol=$1 AND exchange IN ('combined','binance','bybit')
             AND (exchange <> 'combined' OR venue_count=2)
+            AND ts <= $4::timestamptz
           GROUP BY exchange
         ), agg_span AS (
           SELECT exchange,MIN(ts) AS lo,MAX(ts) AS hi
           FROM spot_trades_agg
           WHERE symbol=$1 AND exchange IN ('combined','binance','bybit') AND interval='1min'
             AND (exchange <> 'combined' OR venue_count=2)
+            AND ts <= $4::timestamptz
           GROUP BY exchange
         ), choice AS (
           SELECT r.horizon,r.seconds,e.exchange,
-                 now()-(r.seconds*interval '1 second') AS window_start,
+                 $4::timestamptz-(r.seconds*interval '1 second') AS window_start,
                  rt.lo AS rt_lo,rt.hi AS rt_hi,agg.lo AS agg_lo,agg.hi AS agg_hi,
                  COALESCE(
-                   rt.lo <= now()-(r.seconds*interval '1 second')
-                   AND rt.hi >= now()-interval '30 seconds',false
+                   rt.lo <= $4-(r.seconds*interval '1 second')
+                   AND rt.hi >= $4-interval '30 seconds',false
                  ) AS realtime_complete
           FROM requested r CROSS JOIN exchanges e
           LEFT JOIN rt_span rt USING(exchange)
@@ -2345,6 +2409,7 @@ async def spot_flow_windows(
           WHERE c.realtime_complete
             AND (c.exchange <> 'combined' OR t.venue_count=2)
             AND t.ts >= c.window_start
+            AND t.ts <= $4
           GROUP BY c.horizon,c.exchange
           UNION ALL
           SELECT c.horizon,c.exchange,
@@ -2356,6 +2421,7 @@ async def spot_flow_windows(
           WHERE NOT c.realtime_complete
             AND (c.exchange <> 'combined' OR t.venue_count=2)
             AND t.ts >= c.window_start AND t.ts <= c.agg_hi
+            AND t.ts <= $4
           GROUP BY c.horizon,c.exchange
           UNION ALL
           SELECT c.horizon,c.exchange,
@@ -2369,6 +2435,7 @@ async def spot_flow_windows(
             AND t.ts >= GREATEST(
               c.window_start,COALESCE(c.agg_hi+interval '1 minute',c.window_start)
             )
+            AND t.ts <= $4
           GROUP BY c.horizon,c.exchange
         )
         SELECT c.horizon,c.seconds,c.exchange,
@@ -2388,12 +2455,12 @@ async def spot_flow_windows(
                  ELSE COALESCE(
                    c.agg_lo <= c.window_start
                    AND c.agg_hi IS NOT NULL
-                   AND c.rt_hi >= now()-interval '30 seconds'
+                   AND c.rt_hi >= $4-interval '30 seconds'
                    AND c.rt_lo <= c.agg_hi+interval '1 minute',false
                  )
                END AS complete,
                CASE WHEN c.rt_hi IS NOT NULL
-                    THEN EXTRACT(EPOCH FROM now()-c.rt_hi)::float8 END AS end_gap_seconds,
+                    THEN EXTRACT(EPOCH FROM $4-c.rt_hi)::float8 END AS end_gap_seconds,
                CASE WHEN c.realtime_complete THEN 1 ELSE 60 END AS precision_seconds
         FROM choice c
         LEFT JOIN parts p ON p.horizon=c.horizon AND p.exchange=c.exchange
@@ -2404,29 +2471,30 @@ async def spot_flow_windows(
         symbol,
         labels,
         seconds,
+        cutoff,
     )
-    now = datetime.now(UTC)
     requirements: list[GapRequirement] = []
     for label, window_seconds in windows:
-        start = now - timedelta(seconds=window_seconds)
+        start = cutoff - timedelta(seconds=window_seconds)
         for exchange in ("binance", "bybit"):
             requirements.append(
                 GapRequirement(
                     f"{label}:{exchange}", "spot_trades", exchange, "spot", symbol,
-                    start, now,
+                    start, cutoff,
                 )
             )
         for exchange in ("binance", "bybit", "combined"):
             requirements.append(
                 GapRequirement(
                     f"{label}:combined", "spot_trades", exchange, "spot", symbol,
-                    start, now,
+                    start, cutoff,
                 )
             )
     blocked = await blocking_requirement_keys(conn, requirements)
     result: dict[str, dict[str, dict[str, Any]]] = {label: {} for label in labels}
     for row in rows:
         item = dict(row)
+        item["as_of"] = cutoff.isoformat()
         gap_key = f"{item['horizon']}:{item['exchange']}"
         explicit_gap = gap_key in blocked
         complete = bool(item.get("complete")) and not explicit_gap
@@ -2453,30 +2521,58 @@ async def spot_flow_windows(
     return result
 
 
-async def _cvd_src(conn: asyncpg.Connection, table: str, symbol: str, is_agg: bool):
-    """Delta por exchange y ventana desde una tabla de trades, con ts min/max (cobertura+end_gap)."""
+async def _cvd_src(
+    conn: asyncpg.Connection,
+    table: str,
+    symbol: str,
+    is_agg: bool,
+    as_of: datetime | None = None,
+):
+    """Net/gross flow per exchange, bounded by one explicit event-time cutoff."""
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     parts = []
     for lab, sec in _CVD_WINDOWS:
         parts.append(
-            f"SUM(CASE WHEN ts >= now()-interval '{sec} seconds' THEN d ELSE 0 END) AS w_{lab}"
+            f"SUM(d) FILTER (WHERE ts >= $2::timestamptz-interval '{sec} seconds' "
+            f"AND ts <= $2) "
+            f"AS w_{lab}"
         )
-        parts.append(f"COUNT(*) FILTER (WHERE ts >= now()-interval '{sec} seconds') AS n_{lab}")
+        parts.append(
+            f"SUM(gross) FILTER (WHERE ts >= $2::timestamptz-interval '{sec} seconds' "
+            f"AND ts <= $2) "
+            f"AS v_{lab}"
+        )
+        parts.append(
+            f"COUNT(*) FILTER (WHERE ts >= $2::timestamptz-interval '{sec} seconds' "
+            f"AND ts <= $2) "
+            f"AS n_{lab}"
+        )
     cols = ", ".join(parts)
     iv = "AND interval='1min' " if is_agg else ""
     rows = await conn.fetch(
         f"SELECT exchange, {cols} FROM ("
-        f"  SELECT exchange, ts, buy_vol_usd - sell_vol_usd AS d FROM {table} "
-        f"  WHERE symbol=$1 {iv}AND ts >= now()-interval '7 days' "
+        f"  SELECT exchange, ts, buy_vol_usd - sell_vol_usd AS d, "
+        f"         buy_vol_usd + sell_vol_usd AS gross FROM {table} "
+        f"  WHERE symbol=$1 {iv}AND ts >= $2::timestamptz-interval '7 days' "
+        f"    AND ts <= $2 "
         f"    AND (exchange <> 'combined' OR venue_count=2)"
         f") s GROUP BY exchange",
         symbol,
+        cutoff,
     )
     span = await conn.fetchrow(
-        f"SELECT min(ts) AS lo, max(ts) AS hi FROM {table} WHERE symbol=$1 {iv}", symbol
+        f"SELECT min(ts) AS lo, max(ts) AS hi FROM {table} "
+        f"WHERE symbol=$1 {iv}AND exchange='combined' AND venue_count=2 AND ts <= $2",
+        symbol,
+        cutoff,
     )
     out = {
         r["exchange"]: {
-            lab: {"delta": as_float(r[f"w_{lab}"]), "n": int(r[f"n_{lab}"] or 0)}
+            lab: {
+                "delta": as_float(r[f"w_{lab}"]),
+                "volume": as_float(r[f"v_{lab}"]),
+                "n": int(r[f"n_{lab}"] or 0),
+            }
             for lab, _ in _CVD_WINDOWS
         }
         for r in rows
@@ -2484,37 +2580,41 @@ async def _cvd_src(conn: asyncpg.Connection, table: str, symbol: str, is_agg: bo
     return out, (span["lo"] if span else None), (span["hi"] if span else None)
 
 
-async def cvd_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def cvd_matrix(
+    conn: asyncpg.Connection, symbol: str, as_of: datetime | None = None
+) -> dict[str, Any]:
     """CVD por ventana (1m-7d) spot/fut/diff por-venue. Ventanas cortas desde *_trades_realtime
     y spot largo desde agg 1min mas una cola realtime sin solapamiento."""
     ws = WS_SYMBOL_MAP[symbol]
-    now = datetime.now(UTC)
-    rt_fut, rtf_lo, rtf_hi = await _cvd_src(conn, "futures_trades_realtime", symbol, False)
-    spot_flows = await spot_flow_windows(conn, ws, _CVD_WINDOWS)
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    rt_fut, rtf_lo, rtf_hi = await _cvd_src(
+        conn, "futures_trades_realtime", symbol, False, cutoff
+    )
+    spot_flows = await spot_flow_windows(conn, ws, _CVD_WINDOWS, cutoff)
     futures_requirements: list[GapRequirement] = []
     for label, seconds in _CVD_WINDOWS:
-        start = now - timedelta(seconds=seconds)
+        start = cutoff - timedelta(seconds=seconds)
         for exchange in ("binance", "bybit"):
             futures_requirements.append(
                 GapRequirement(
                     f"{label}:{exchange}", "futures_trades", exchange, "perpetual",
-                    symbol, start, now,
+                    symbol, start, cutoff,
                 )
             )
         for exchange in ("binance", "bybit", "combined"):
             futures_requirements.append(
                 GapRequirement(
                     f"{label}:combined", "futures_trades", exchange, "perpetual",
-                    symbol, start, now,
+                    symbol, start, cutoff,
                 )
             )
     blocked_futures = await blocking_requirement_keys(conn, futures_requirements)
 
     def obs(lo):
-        return (now - lo).total_seconds() if lo else 0.0
+        return (cutoff - lo).total_seconds() if lo else 0.0
 
     def gap(hi):
-        return round((now - hi).total_seconds(), 1) if hi else None
+        return round((cutoff - hi).total_seconds(), 1) if hi else None
 
     def fresh(end_gap):
         if end_gap is None:
@@ -2530,7 +2630,7 @@ async def cvd_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
 
     def get(srcmap, ex, lab):
         c = (srcmap.get(ex) or {}).get(lab) or {}
-        return c.get("delta"), c.get("n") or 0
+        return c.get("delta"), c.get("volume"), c.get("n") or 0
 
     windows = {}
     for lab, sec in _CVD_WINDOWS:
@@ -2552,8 +2652,9 @@ async def cvd_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             )
         )
         f = s = None
+        futures_gross = spot_gross = None
         if fsrc is not None:
-            fd, fn = get(fsrc, "combined", lab)
+            fd, futures_gross, fn = get(fsrc, "combined", lab)
             f = fd if fn > 0 and f"{lab}:combined" not in blocked_futures else None
             freason = (
                 "data_gap"
@@ -2562,21 +2663,41 @@ async def cvd_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             )
         if spot_complete and spot_combined.get("source_rows"):
             s = as_float(spot_combined.get("delta"))
+            spot_gross = as_float(spot_combined.get("volume"))
+        if f is None:
+            futures_gross = None
         by_venue = {}
         for v in ("binance", "bybit"):
-            fv, fvn = get(fsrc, v, lab) if fsrc is not None else (None, 0)
+            fv, fvg, fvn = get(fsrc, v, lab) if fsrc is not None else (None, None, 0)
             spot_venue = spot_window.get(v) or {}
             sv = as_float(spot_venue.get("delta")) if spot_venue.get("complete") else None
+            svg = as_float(spot_venue.get("volume")) if spot_venue.get("complete") else None
+            measured_fv = fv if fvn > 0 and f"{lab}:{v}" not in blocked_futures else None
             by_venue[v] = {
                 "spot": sv,
-                "futures": fv if fvn > 0 and f"{lab}:{v}" not in blocked_futures else None,
+                "futures": measured_fv,
+                "spot_imbalance": _flow_imbalance(sv, svg),
+                "fut_imbalance": _flow_imbalance(measured_fv, fvg),
+                "spot_net_rate_usd_per_min": _flow_rate(sv, sec),
+                "fut_net_rate_usd_per_min": _flow_rate(measured_fv, sec),
             }
+        spot_imbalance = _flow_imbalance(s, spot_gross)
+        fut_imbalance = _flow_imbalance(f, futures_gross)
         windows[lab] = {
             "window": lab,
             "window_seconds": sec,
             "spot": s,
             "futures": f,
             "diff_spot_futures": (s - f) if (s is not None and f is not None) else None,
+            "spot_imbalance": spot_imbalance,
+            "fut_imbalance": fut_imbalance,
+            "imbalance_diff": (
+                spot_imbalance - fut_imbalance
+                if spot_imbalance is not None and fut_imbalance is not None
+                else None
+            ),
+            "spot_net_rate_usd_per_min": _flow_rate(s, sec),
+            "fut_net_rate_usd_per_min": _flow_rate(f, sec),
             "by_venue": by_venue,
             "spot_status": {
                 "available": s is not None,
@@ -2596,15 +2717,22 @@ async def cvd_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
         }
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "windows": windows,
         "window_meta": {
+            "as_of": cutoff.isoformat(),
             "window_type": "rolling",
+            "windows_are_nested": True,
+            "independent_confirmations": False,
+            "acceleration_measured": False,
             "reset_timezone": "UTC",
             "venues": ["binance", "bybit"],
-            "definition": "delta = SUM(buy_vol_usd - sell_vol_usd), USD",
-            "sources": "spot usa realtime cuando cubre la ventana; si no, agg 1min historico + cola realtime sin solapamiento. Futures usa realtime (~12h)",
+            "definition": "raw net = SUM(buy_vol_usd - sell_vol_usd), imbalance = net/gross, rate = net USD/min",
+            "sources": "spot usa realtime cuando cubre la ventana; si no, agg 1min historico + cola realtime sin solapamiento. Futures usa realtime con retencion configurable",
+            "futures_realtime_retention_hours": get_settings().SCALP_TRADE_RETENTION_HOURS,
             "freshness_rule": "end_gap<=90s fresh, <=180 degraded, >180 stale",
             "null_reasons": "insufficient_retention o missing_recent_bucket; null != flujo balanceado",
+            "as_of_semantics": "cutoff de tiempo de evento compartido; no implica un snapshot MVCC entre statements",
         },
     }
 
@@ -3079,14 +3207,20 @@ def _profile(prices: list, vols: list, nb: int = 50):
     }
 
 
-async def volume_profile(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
-    now = datetime.now(UTC)
-    day0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
+async def volume_profile(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    day0 = cutoff.replace(hour=0, minute=0, second=0, microsecond=0)
     week0 = day0 - timedelta(days=day0.weekday())
     rows = await conn.fetch(
-        "SELECT close, volume FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts >= $2 ORDER BY ts",
+        "SELECT close, volume FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+        "AND ts >= $2 AND ts <= $3 ORDER BY ts",
         symbol,
         day0,
+        cutoff,
     )
     prices = [as_float(r["close"]) for r in rows]
     vols = [as_float(r["volume"]) or 0.0 for r in rows]
@@ -3098,9 +3232,11 @@ async def volume_profile(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
         var = sum(v * (p - vwap_s) ** 2 for p, v in zip(prices, vols, strict=True) if p) / total
         sd = var**0.5
     wr = await conn.fetch(
-        "SELECT close, volume FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts >= $2",
+        "SELECT close, volume FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+        "AND ts >= $2 AND ts <= $3",
         symbol,
         week0,
+        cutoff,
     )
     wp = [as_float(r["close"]) for r in wr]
     wv = [as_float(r["volume"]) or 0.0 for r in wr]
@@ -3116,6 +3252,7 @@ async def volume_profile(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
         }
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "available": prof is not None,
         "session": prof,
         "vwap": {
@@ -3563,7 +3700,12 @@ def _gap_too_large(max_gap_seconds: float | None) -> bool:
 
 
 async def max_internal_gap(
-    conn: asyncpg.Connection, table: str, symbol: str, exchange: str, seconds: int
+    conn: asyncpg.Connection,
+    table: str,
+    symbol: str,
+    exchange: str,
+    seconds: int,
+    as_of: datetime | None = None,
 ) -> float | None:
     """Mayor hueco entre buckets consecutivos DENTRO de la ventana, en segundos.
 
@@ -3577,6 +3719,7 @@ async def max_internal_gap(
     """
     if table not in {"spot_trades_realtime", "futures_trades_realtime"}:
         raise ValueError("unsupported realtime flow table")
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     return as_float(
         await conn.fetchval(
             f"""
@@ -3584,8 +3727,9 @@ async def max_internal_gap(
               SELECT ts FROM {table}
               WHERE symbol=$1 AND exchange=$2
                 AND ($2 <> 'combined' OR venue_count=2)
-                AND ts >= now()-($3::int*interval '1 second')
-              UNION ALL SELECT now()-($3::int*interval '1 second')
+                AND ts >= $4::timestamptz-($3::int*interval '1 second')
+                AND ts <= $4
+              UNION ALL SELECT $4-($3::int*interval '1 second')
             )
             SELECT MAX(EXTRACT(EPOCH FROM ts-prev))::float8
             FROM (SELECT ts,lag(ts) OVER (ORDER BY ts) AS prev FROM edges) d
@@ -3594,42 +3738,49 @@ async def max_internal_gap(
             symbol,
             exchange,
             seconds,
+            cutoff,
         )
     )
 
 
 async def _realtime_flow(
-    conn: asyncpg.Connection, table: str, symbol: str, seconds: int
+    conn: asyncpg.Connection,
+    table: str,
+    symbol: str,
+    seconds: int,
+    as_of: datetime | None = None,
 ) -> dict[str, Any]:
     if table not in {"spot_trades_realtime", "futures_trades_realtime"}:
         raise ValueError("unsupported realtime flow table")
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     row = await conn.fetchrow(
         f"""
         WITH source AS (
           SELECT ts,buy_vol_usd,sell_vol_usd,trade_count
           FROM {table} WHERE symbol=$1 AND exchange='combined' AND venue_count=2
+            AND ts <= $3::timestamptz
         ), span AS (
           SELECT MIN(ts) AS lo,MAX(ts) AS hi FROM source
         ), flow AS (
           SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,
                  SUM(buy_vol_usd+sell_vol_usd) AS volume,
                  SUM(trade_count) AS trades,COUNT(*)::bigint AS source_rows
-          FROM source WHERE ts >= now()-($2::int*interval '1 second')
+          FROM source WHERE ts >= $3-($2::int*interval '1 second')
         )
         SELECT flow.*,span.lo,span.hi,
                COALESCE(
-                 span.lo <= now()-($2::int*interval '1 second')
-                 AND span.hi >= now()-interval '30 seconds',false
+                 span.lo <= $3-($2::int*interval '1 second')
+                 AND span.hi >= $3-interval '30 seconds',false
                ) AS span_ok,
                CASE WHEN span.hi IS NOT NULL
-                    THEN EXTRACT(EPOCH FROM now()-span.hi)::float8 END AS end_gap_seconds
+                    THEN EXTRACT(EPOCH FROM $3-span.hi)::float8 END AS end_gap_seconds
         FROM flow CROSS JOIN span
         """,
         symbol,
         seconds,
+        cutoff,
     )
     item = dict(row) if row else {}
-    now = datetime.now(UTC)
     feed = "spot_trades" if table == "spot_trades_realtime" else "futures_trades"
     market = "spot" if table == "spot_trades_realtime" else "perpetual"
     blocked = await blocking_requirement_keys(
@@ -3637,12 +3788,15 @@ async def _realtime_flow(
         [
             GapRequirement(
                 "flow", feed, exchange, market, symbol,
-                now - timedelta(seconds=seconds), now,
+                cutoff - timedelta(seconds=seconds), cutoff,
             )
             for exchange in ("binance", "bybit", "combined")
         ],
     )
-    item["max_gap_seconds"] = await max_internal_gap(conn, table, symbol, "combined", seconds)
+    item["max_gap_seconds"] = await max_internal_gap(
+        conn, table, symbol, "combined", seconds, cutoff
+    )
+    item["as_of"] = cutoff.isoformat()
     item["complete"] = bool(item.get("span_ok")) and not _gap_too_large(
         item["max_gap_seconds"]
     )
@@ -3668,15 +3822,22 @@ async def _realtime_flow(
     return item
 
 
-async def _oi_change_pct(conn: asyncpg.Connection, symbol: str, seconds: int) -> float | None:
+async def _oi_change_pct(
+    conn: asyncpg.Connection,
+    symbol: str,
+    seconds: int,
+    as_of: datetime | None = None,
+) -> float | None:
     if seconds < 300:
         return None
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     return as_float(
         await conn.fetchval(
             """
         WITH cur AS (
           SELECT ts,oi_close FROM open_interest
-          WHERE symbol=$1 AND interval='5min' ORDER BY ts DESC LIMIT 1
+          WHERE symbol=$1 AND interval='5min' AND ts <= $3::timestamptz
+          ORDER BY ts DESC LIMIT 1
         ), ago AS (
           SELECT oi.oi_close FROM open_interest oi,cur
           WHERE oi.symbol=$1 AND oi.interval='5min'
@@ -3688,25 +3849,37 @@ async def _oi_change_pct(conn: asyncpg.Connection, symbol: str, seconds: int) ->
         """,
             symbol,
             seconds,
+            cutoff,
         )
     )
 
 
 async def delta_matrix(
-    conn: asyncpg.Connection, symbol: str, windows: list[tuple[str, int]]
+    conn: asyncpg.Connection,
+    symbol: str,
+    windows: list[tuple[str, int]],
+    as_of: datetime | None = None,
 ) -> list[dict[str, Any]]:
-    spot_windows = await spot_flow_windows(conn, WS_SYMBOL_MAP[symbol], windows)
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    spot_windows = await spot_flow_windows(conn, WS_SYMBOL_MAP[symbol], windows, cutoff)
     baselines = await load_baselines(conn, symbol)
     rows: list[dict[str, Any]] = []
     for label, seconds in windows:
         spot = (spot_windows.get(label) or {}).get("combined") or {}
-        futures = await _realtime_flow(conn, "futures_trades_realtime", symbol, seconds)
+        futures = await _realtime_flow(
+            conn, "futures_trades_realtime", symbol, seconds, cutoff
+        )
         # El chequeo de huecos solo aplica a la pata servida por realtime (buckets de 5 s).
         # Cuando spot viene del agg de 1 min el umbral de 30 s no significa nada, y la fila
         # ya lo declara en `spot_source`.
         spot_gap = (
             await max_internal_gap(
-                conn, "spot_trades_realtime", WS_SYMBOL_MAP[symbol], "combined", seconds
+                conn,
+                "spot_trades_realtime",
+                WS_SYMBOL_MAP[symbol],
+                "combined",
+                seconds,
+                cutoff,
             )
             if spot.get("source") == "realtime"
             else None
@@ -3715,10 +3888,19 @@ async def delta_matrix(
         futures_complete = bool(futures.get("complete"))
         spot_delta = as_float(spot.get("delta")) if spot_complete else None
         futures_delta = as_float(futures.get("delta")) if futures_complete else None
+        spot_volume = as_float(spot.get("volume")) if spot_complete else None
+        futures_volume = as_float(futures.get("volume")) if futures_complete else None
+        spot_imbalance = _flow_imbalance(spot_delta, spot_volume)
+        fut_imbalance = _flow_imbalance(futures_delta, futures_volume)
         complete = spot_complete and futures_complete
         rows.append(
             {
                 "window": label,
+                "as_of": cutoff.isoformat(),
+                "window_type": "rolling",
+                "windows_are_nested": True,
+                "independent_confirmations": False,
+                "acceleration_measured": False,
                 "spot_delta": spot_delta,
                 "fut_delta": futures_delta,
                 "diff": (
@@ -3726,11 +3908,20 @@ async def delta_matrix(
                     if spot_delta is not None and futures_delta is not None
                     else None
                 ),
-                "spot_volume": as_float(spot.get("volume")) if spot_complete else None,
-                "fut_volume": as_float(futures.get("volume")) if futures_complete else None,
+                "spot_volume": spot_volume,
+                "fut_volume": futures_volume,
+                "spot_imbalance": spot_imbalance,
+                "fut_imbalance": fut_imbalance,
+                "imbalance_diff": (
+                    spot_imbalance - fut_imbalance
+                    if spot_imbalance is not None and fut_imbalance is not None
+                    else None
+                ),
+                "spot_net_rate_usd_per_min": _flow_rate(spot_delta, seconds),
+                "fut_net_rate_usd_per_min": _flow_rate(futures_delta, seconds),
                 "spot_trades": spot.get("trades") if spot_complete else None,
                 "fut_trades": futures.get("trades") if futures_complete else None,
-                "oi_change_pct": await _oi_change_pct(conn, symbol, seconds),
+                "oi_change_pct": await _oi_change_pct(conn, symbol, seconds, cutoff),
                 "coverage_status": (
                     "complete"
                     if complete
@@ -4505,7 +4696,11 @@ async def execution_cost(
 IMPACT_WINDOWS = (("5m", 300), ("15m", 900), ("18m", 1080), ("1h", 3600))
 
 
-async def market_impact(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def market_impact(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
     """Impacto REALIZADO: bps que se movio el precio por cada 1M USD de delta neto.
 
     Medido, no modelado: la referencia sale de `metric_baseline` sobre la misma serie. A 15 m
@@ -4519,6 +4714,7 @@ async def market_impact(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
     OJO con lo que NO es: no es el slippage de tu orden (eso es /api/scalp/execution-cost,
     que recorre el libro actual). Esto es el comportamiento agregado del mercado.
     """
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     baselines = await load_baselines(conn, symbol, "impact_bps_per_musd")
     windows: list[dict[str, Any]] = []
     for label, seconds in IMPACT_WINDOWS:
@@ -4531,10 +4727,13 @@ async def market_impact(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
                    -- compensar a uno que falta en medio. El span mide el hueco de verdad.
                    (EXTRACT(EPOCH FROM max(ts)-min(ts))/60.0)::float8 AS span_minutes
             FROM ohlcv
-            WHERE symbol=$1 AND interval='1min' AND ts >= now()-($2::int*interval '1 second')
+            WHERE symbol=$1 AND interval='1min'
+              AND ts >= $3::timestamptz-($2::int*interval '1 second')
+              AND ts <= $3
             """,
             symbol,
             seconds,
+            cutoff,
         )
         mins = int(row["mins"] or 0) if row else 0
         span = as_float(row["span_minutes"]) if row else None
@@ -4590,6 +4789,7 @@ async def market_impact(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
         )
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "metric": "impact_bps_per_musd",
         "definition": "|cambio de precio en bps| / (|delta neto| en millones de USD)",
         "windows": windows,
@@ -4804,14 +5004,21 @@ def _classify_passive(fut_delta, fut_vol, price_move_pct, spot_delta, location, 
     return absorbed, reading, conf, round(directional, 3)
 
 
-async def passive_flow(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
-    vp = await volume_profile(conn, symbol)
+async def passive_flow(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    vp = await volume_profile(conn, symbol, cutoff)
     prof = (vp or {}).get("session") or {}
     poc, vah, val = prof.get("poc"), prof.get("vah"), prof.get("val")
     px_now = as_float(
         await conn.fetchval(
-            "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' ORDER BY ts DESC LIMIT 1",
+            "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+            "AND ts <= $2 ORDER BY ts DESC LIMIT 1",
             symbol,
+            cutoff,
         )
     )
     if px_now and poc is not None and vah is not None and val is not None:
@@ -4819,33 +5026,37 @@ async def passive_flow(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     else:
         loc = "s/d"
     ws = WS_SYMBOL_MAP[symbol]
-    spot_flows = await spot_flow_windows(conn, ws, _PF_HORIZONS)
+    spot_flows = await spot_flow_windows(conn, ws, _PF_HORIZONS, cutoff)
     counts = {"reacumulacion_silenciosa": 0, "redistribucion_silenciosa": 0, "neutral": 0}
     out = {}
     for lab, sec in _PF_HORIZONS:
-        futures = await _realtime_flow(conn, "futures_trades_realtime", symbol, sec)
+        futures = await _realtime_flow(
+            conn, "futures_trades_realtime", symbol, sec, cutoff
+        )
         spot = (spot_flows.get(lab) or {}).get("combined") or {}
         flow_complete = bool(futures.get("complete")) and bool(spot.get("complete"))
         fut_delta = as_float(futures.get("delta")) if futures.get("complete") else None
         fut_vol = as_float(futures.get("volume")) if futures.get("complete") else None
         spot_delta = as_float(spot.get("delta")) if spot.get("complete") else None
         diff = spot_delta - fut_delta if spot_delta is not None and fut_delta is not None else None
-        bars = await _resample_highs_lows(conn, symbol, sec, 40)
+        bars = await _resample_highs_lows(conn, symbol, sec, 40, as_of=cutoff)
         atr = _atr(bars, 14)
         close = as_float(bars[-1]["close"]) if bars else px_now
         atr_pct = (atr / close * 100) if (atr and close) else None
         px_ago = as_float(
             await conn.fetchval(
-                "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts <= now()-($2::int*interval '1 second') "
+                "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+                "AND ts <= $2::timestamptz-($3::int*interval '1 second') "
                 "ORDER BY ts DESC LIMIT 1",
                 symbol,
+                cutoff,
                 sec,
             )
         )
         # Sin precio de referencia el movimiento es DESCONOCIDO, no cero: un 0.0 inventado
         # hace que _classify_passive lea "el precio aguanto" y dispare absorcion falsa.
         price_move_pct = ((px_now / px_ago - 1) * 100) if (px_now and px_ago) else None
-        oi_chg = await _oi_change_pct(conn, symbol, sec)
+        oi_chg = await _oi_change_pct(conn, symbol, sec, cutoff)
         if (
             flow_complete
             and fut_delta is not None
@@ -4887,6 +5098,7 @@ async def passive_flow(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     summary = dom if counts[dom] >= 2 else "neutral"
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "price": px_now,
         "location": loc,
         "value_area": {"poc": poc, "vah": vah, "val": val},
@@ -4910,12 +5122,19 @@ _TREND_TF = (
 )
 
 
-async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def trend_matrix(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     ws = WS_SYMBOL_MAP[symbol]
     px_now = as_float(
         await conn.fetchval(
-            "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' ORDER BY ts DESC LIMIT 1",
+            "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+            "AND ts <= $2 ORDER BY ts DESC LIMIT 1",
             symbol,
+            cutoff,
         )
     )
     drows = [
@@ -4928,7 +5147,10 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     ]
     daily = list(reversed(drows))
     spot_flows = await spot_flow_windows(
-        conn, ws, [(label, unit) for label, unit, kind in _TREND_TF if kind == "intra"]
+        conn,
+        ws,
+        [(label, unit) for label, unit, kind in _TREND_TF if kind == "intra"],
+        cutoff,
     )
     tfs = {}
     for lab, unit, kind in _TREND_TF:
@@ -4939,7 +5161,9 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
         confirm: dict[str, Any] = {"vote": None, "state": "sin_datos", "agreement": None}
         if kind == "intra":
             sec = unit
-            bars = await _resample_highs_lows(conn, symbol, sec, 60)
+            bars = await _resample_highs_lows(
+                conn, symbol, sec, 60, as_of=cutoff
+            )
             if len(bars) >= 7:
                 st = _structure_from_swings(
                     [as_float(b["high"]) for b in bars],
@@ -4948,7 +5172,9 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
                     as_float(bars[-1]["close"]),
                     k=2,
                 )["state"]
-            futures = await _realtime_flow(conn, "futures_trades_realtime", symbol, sec)
+            futures = await _realtime_flow(
+                conn, "futures_trades_realtime", symbol, sec, cutoff
+            )
             spot = (spot_flows.get(lab) or {}).get("combined") or {}
             flow_complete = bool(futures.get("complete")) and bool(spot.get("complete"))
             flow_status = "complete" if flow_complete else "partial"
@@ -4958,11 +5184,14 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             # flow_confirmation (signo de ambas patas), no del diferencial: ver su docstring.
             cvd_flow = spot_d - fut_d if spot_d is not None and fut_d is not None else None
             confirm = flow_confirmation(spot_d, fut_d)
-            oi_chg = await _oi_change_pct(conn, symbol, sec)
+            oi_chg = await _oi_change_pct(conn, symbol, sec, cutoff)
             px_ago = as_float(
                 await conn.fetchval(
-                    "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts <= now()-($2::int*interval '1 second') ORDER BY ts DESC LIMIT 1",
+                    "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+                    "AND ts <= $2::timestamptz-($3::int*interval '1 second') "
+                    "ORDER BY ts DESC LIMIT 1",
                     symbol,
+                    cutoff,
                     sec,
                 )
             )
@@ -5036,6 +5265,7 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     )
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "timeframes": tfs,
         "medium_term_alignment": align,
         "note": "sesgo por marco = estructura(pivotes)+flujo+momentum. En 1d/3d el flujo es "
@@ -5197,12 +5427,21 @@ def compute_swing_score(blocks: dict) -> dict[str, Any]:
     }
 
 
-async def swing_score(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def swing_score(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     blocks = {
         "structure_detail": await structure_detail(conn, symbol),
         "macro_context": await macro_context(conn, symbol),
         "cross_asset": await cross_asset(conn, symbol),
-        "passive_flow": await passive_flow(conn, symbol),
-        "trend_matrix": await trend_matrix(conn, symbol),
+        "passive_flow": await passive_flow(conn, symbol, cutoff),
+        "trend_matrix": await trend_matrix(conn, symbol, cutoff),
     }
-    return {"symbol": symbol, **compute_swing_score(blocks)}
+    return {
+        "symbol": symbol,
+        "as_of": cutoff.isoformat(),
+        **compute_swing_score(blocks),
+    }

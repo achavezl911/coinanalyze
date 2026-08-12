@@ -10,7 +10,11 @@ import asyncpg
 import pytest
 
 from app.signal_backtest import DENSE_PERIODIC, UTC_NONOVERLAP
-from app.signal_regime import RegimeAnalysisOptions, build_signal_regime_report
+from app.signal_regime import (
+    RegimeAnalysisOptions,
+    _regime_status_sql,
+    build_signal_regime_report,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_SQL = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
@@ -78,6 +82,56 @@ async def _drop_schema(conn: asyncpg.Connection, schema: str) -> None:
     await conn.execute("SET search_path TO public")
     await conn.execute(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
     await conn.close()
+
+
+async def _reader_status(
+    *, evidence_version: int, regime_logic_version: int | None
+) -> str:
+    schema = _schema_name()
+    conn = await _connect_schema(schema)
+    observed_at = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+    try:
+        return str(
+            await conn.fetchval(
+                f"""
+                SELECT {_regime_status_sql("obs")}
+                FROM (
+                  SELECT
+                    $1::smallint AS evidence_version,
+                    $2::smallint AS regime_logic_version,
+                    25.0::float8 AS regime_score,
+                    'measured regime'::text AS regime_label,
+                    $3::timestamptz AS metrics_snapshot_ts,
+                    $3::timestamptz AS price_cutoff_at,
+                    $3::timestamptz AS metrics_cutoff_at,
+                    $4::timestamptz AS observed_at
+                ) AS obs
+                """,
+                evidence_version,
+                regime_logic_version,
+                observed_at - timedelta(minutes=1),
+                observed_at,
+            )
+        )
+    finally:
+        await _drop_schema(conn, schema)
+
+
+@pytest.mark.asyncio
+async def test_pr22_regime_reader_v3_requires_regime_logic_v2() -> None:
+    assert await _reader_status(evidence_version=3, regime_logic_version=1) == "unavailable"
+    assert await _reader_status(evidence_version=3, regime_logic_version=2) == "available"
+
+
+@pytest.mark.asyncio
+async def test_pr22_regime_reader_v3_null_version_is_unavailable() -> None:
+    assert await _reader_status(evidence_version=3, regime_logic_version=None) == "unavailable"
+
+
+@pytest.mark.asyncio
+async def test_pr22_regime_reader_legacy_evidence_keeps_legacy_semantics() -> None:
+    assert await _reader_status(evidence_version=1, regime_logic_version=None) == "available"
+    assert await _reader_status(evidence_version=2, regime_logic_version=None) == "available"
 
 
 def _evidence(

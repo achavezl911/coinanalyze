@@ -62,6 +62,7 @@ CREATE TABLE metrics_snapshot (
     symbol text NOT NULL REFERENCES symbols(symbol),
     regime_score double precision,
     regime_label text,
+    regime_logic_version smallint,
     price_cutoff_at timestamptz,
     metrics_cutoff_at timestamptz,
     PRIMARY KEY(symbol, ts)

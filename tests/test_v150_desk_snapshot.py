@@ -26,7 +26,11 @@ class _ConnFalsa:
     async def fetchrow(self, *_args: Any, **_kwargs: Any) -> None:
         return None
 
-    async def fetchval(self, *_args: Any, **_kwargs: Any) -> None:
+    async def fetchval(self, *_args: Any, **_kwargs: Any) -> Any:
+        if _args and "clock_timestamp()" in str(_args[0]):
+            from datetime import UTC, datetime
+
+            return datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
         return None
 
 

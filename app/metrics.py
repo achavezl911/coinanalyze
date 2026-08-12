@@ -80,6 +80,7 @@ def whale_classification(inst_buy: float, inst_sell: float, asset: str) -> tuple
 
 REGIME_WEIGHTS = {"cvd": 25.0, "oi": 15.0, "funding": 15.0, "liquidations": 15.0, "whale": 30.0}
 REGIME_MIN_COVERAGE = 0.5
+REGIME_LOGIC_VERSION = 2
 """Fraccion minima del peso que debe estar medida para publicar un regimen.
 
 Por debajo de esto el score seria la opinion de uno o dos componentes presentada como si
@@ -87,6 +88,26 @@ fuese el balance completo. Antes se sumaba 0 por cada componente ausente, asi qu
 `compute_regime({})` devolvia (0.0, 'Lateral / Indecision'): un veredicto neutral que
 parecia medido y no lo estaba.
 """
+
+
+def normalized_cvd_imbalance(net: object, gross: object) -> float | None:
+    """Return a bounded measured imbalance, preserving unavailable gross volume."""
+    net_value = optional_finite(net)
+    gross_value = optional_finite(gross)
+    if net_value is None or gross_value is None or gross_value <= 0:
+        return None
+    return max(-1.0, min(1.0, net_value / gross_value))
+
+
+def regime_cvd_component(snap: dict[str, object]) -> float | None:
+    """Combine same-window normalized spot/futures legs; both are mandatory."""
+    spot = optional_finite(snap.get("cvd_spot_imbalance_24h"))
+    futures = optional_finite(snap.get("cvd_fut_imbalance_24h"))
+    if spot is None or futures is None:
+        return None
+    spot = max(-1.0, min(1.0, spot))
+    futures = max(-1.0, min(1.0, futures))
+    return 0.5 * spot + 0.5 * futures
 
 
 def compute_regime(
@@ -99,10 +120,9 @@ def compute_regime(
     """
     components: dict[str, float] = {}
 
-    vol_24h = optional_finite(snap.get("vol_24h"))
-    cvd_diff = optional_finite(snap.get("cvd_diff_24h"))
-    if cvd_diff is not None and vol_24h is not None and vol_24h > 0:
-        components["cvd"] = max(-1.0, min(1.0, cvd_diff / (vol_24h * 0.10)))
+    cvd_component = regime_cvd_component(snap)
+    if cvd_component is not None:
+        components["cvd"] = cvd_component
 
     oi_chg = optional_finite(snap.get("oi_chg_24h_pct"))
     if oi_chg is not None:
@@ -136,19 +156,28 @@ def compute_regime(
     raw = sum(value * REGIME_WEIGHTS[name] for name, value in components.items())
     score = round(max(-100.0, min(100.0, raw * total / measured)), 2)
     label = str(snap.get("whale_label") or "Neutro")
-    diff = cvd_diff if cvd_diff is not None else 0.0
 
-    if score > 60 and "Acumulación agresiva" in label and diff > 0:
+    if (
+        score > 60
+        and "Acumulación agresiva" in label
+        and cvd_component is not None
+        and cvd_component > 0
+    ):
         regime = "Continuación alcista orgánica"
     elif score > 40 and "Distribu" in label:
         regime = "Euforia / Sobreextensión bullish"
-    elif score > 20 and diff <= 0 and "Acumul" not in label:
+    elif (
+        score > 20
+        and cvd_component is not None
+        and cvd_component <= 0
+        and "Acumul" not in label
+    ):
         regime = "Squeeze inminente bullish"
     elif score < -60 and "Distribución agresiva" in label:
         regime = "Capitulación (Bearish)"
     elif score < -30 and "Distribu" in label:
         regime = "Distribución (Bearish)"
-    elif score < -20 and diff > 0:
+    elif score < -20 and cvd_component is not None and cvd_component > 0:
         regime = "Absorción de compras (Bearish)"
     elif abs(score) < 15 and "Acumul" in label:
         regime = "Compresión / Acumulación silenciosa"
@@ -226,6 +255,7 @@ price_1h AS (
 spot AS (
     SELECT
       SUM(buy_vol_usd - sell_vol_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS cvd_24h,
+      SUM(buy_vol_usd + sell_vol_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS vol_24h,
       SUM(buy_vol_usd - sell_vol_usd) FILTER (WHERE ts >= $3) AS cvd_session,
       SUM(inst_buy_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS inst_buy,
       SUM(inst_sell_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS inst_sell
@@ -266,7 +296,8 @@ SELECT
   fut.price, fut.price_ts, fut.vol_24h, fut.cvd_24h, fut.cvd_session, fut.delta_3min,
   fut.btr_15m, fut.btr_1h, fut.btr_24h,
   price_1h.value AS price_1h,
-  spot.cvd_24h AS spot_cvd_24h, spot.cvd_session AS spot_cvd_session,
+  spot.cvd_24h AS spot_cvd_24h, spot.vol_24h AS spot_vol_24h,
+  spot.cvd_session AS spot_cvd_session,
   spot.inst_buy, spot.inst_sell,
   oi_now.value AS oi_now, oi_now.ts AS oi_ts, oi_old.value AS oi_old,
   oi_b.value AS oi_bybit,
@@ -384,7 +415,7 @@ async def compute_snapshot(
     if "fut_1h" in blocked:
         data["btr_1h"] = None
     if "spot_24h" in blocked:
-        for key in ("spot_cvd_24h", "inst_buy", "inst_sell"):
+        for key in ("spot_cvd_24h", "spot_vol_24h", "inst_buy", "inst_sell"):
             data[key] = None
     if "spot_session" in blocked:
         data["spot_cvd_session"] = None
@@ -429,6 +460,9 @@ async def compute_snapshot(
     fut_24h = optional_finite(data.get("cvd_24h"))
     fut_session = optional_finite(data.get("cvd_session"))
     spot_24h = optional_finite(data.get("spot_cvd_24h"))
+    spot_vol_24h = optional_finite(data.get("spot_vol_24h"))
+    cvd_spot_imbalance_24h = normalized_cvd_imbalance(spot_24h, spot_vol_24h)
+    cvd_fut_imbalance_24h = normalized_cvd_imbalance(fut_24h, vol_24h)
     spot_session = optional_finite(data.get("spot_cvd_session"))
     inst_buy = optional_finite(data.get("inst_buy"))
     inst_sell = optional_finite(data.get("inst_sell"))
@@ -455,6 +489,9 @@ async def compute_snapshot(
         "oi_chg_24h_pct": oi_chg,
         "oi_vol_24h_ratio": oi_vol_ratio,
         "vol_24h": vol_24h,
+        "spot_vol_24h": spot_vol_24h,
+        "cvd_spot_imbalance_24h": cvd_spot_imbalance_24h,
+        "cvd_fut_imbalance_24h": cvd_fut_imbalance_24h,
         "delta_3min": optional_finite(data.get("delta_3min")),
         # Compatibility names: cvd_session is 24h; cvd_nyse_session is current NYSE session.
         "cvd_session": fut_24h,
@@ -482,6 +519,7 @@ async def compute_snapshot(
         "pfr_fr_div": (pfr_avg - fr_avg) if None not in (pfr_avg, fr_avg) else None,
         "price_cutoff_at": data.get("price_ts"),
         "metrics_cutoff_at": data.get("oi_ts"),
+        "regime_logic_version": REGIME_LOGIC_VERSION,
     }
     regime_sources = {"fut_24h", "spot_24h", "oi_binance_24h", "funding_24h"}
     # Healthy source absence keeps the existing measured-component policy. An explicit
@@ -510,10 +548,11 @@ async def insert_snapshot(conn: asyncpg.Connection, snap: dict[str, object]) -> 
           cvd_diff_ses, fr_avg, pfr_avg, long_liq_24h, short_liq_24h,
           whale_intensity, whale_label, regime_score, regime_label, price_dir_1h,
           btr_15m, btr_1h, btr_24h, pfr_fr_div, price_cutoff_at,
-          metrics_cutoff_at
+          metrics_cutoff_at, spot_vol_24h, cvd_spot_imbalance_24h,
+          cvd_fut_imbalance_24h, regime_logic_version
         ) VALUES (
           clock_timestamp(), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
-          $18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30
+          $18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34
         )
         """,
         snap["symbol"], snap["price"], snap["oi"], snap["oi_chg_24h_pct"],
@@ -525,6 +564,8 @@ async def insert_snapshot(conn: asyncpg.Connection, snap: dict[str, object]) -> 
         snap["whale_label"], snap["regime_score"], snap["regime_label"],
         snap["price_dir_1h"], snap["btr_15m"], snap["btr_1h"], snap["btr_24h"],
         snap["pfr_fr_div"], snap["price_cutoff_at"], snap["metrics_cutoff_at"],
+        snap["spot_vol_24h"], snap["cvd_spot_imbalance_24h"],
+        snap["cvd_fut_imbalance_24h"], snap["regime_logic_version"],
     )
 
 

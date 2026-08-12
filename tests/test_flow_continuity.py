@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -5,6 +6,7 @@ import pytest
 from app.scalp_logic import _oi_change_pct, spot_flow_windows
 
 ROOT = Path(__file__).resolve().parents[1]
+CUTOFF = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
 
 
 class FlowConnection:
@@ -48,7 +50,9 @@ class FlowConnection:
 @pytest.mark.asyncio
 async def test_long_spot_windows_stitch_history_and_live_tail_without_overlap():
     conn = FlowConnection()
-    result = await spot_flow_windows(conn, "BTC", [("4h", 14400), ("8h", 28800)])
+    result = await spot_flow_windows(
+        conn, "BTC", [("4h", 14400), ("8h", 28800)], CUTOFF
+    )
 
     assert result["4h"]["combined"]["delta"] == 100.0
     assert result["8h"]["combined"]["delta"] == 240.0
@@ -70,6 +74,7 @@ async def test_explicit_spot_gap_overrides_apparent_span_completeness():
         BlockedFlowConnection(),
         "BTC",
         [("4h", 14400), ("8h", 28800)],
+        CUTOFF,
     )
 
     assert result["4h"]["combined"]["complete"] is False
@@ -98,7 +103,7 @@ async def test_oi_change_is_anchored_to_latest_sample_instead_of_wall_clock():
             return 1.25
 
     conn = OIConnection()
-    assert await _oi_change_pct(conn, "BTCUSDT_PERP.A", 300) == 1.25
+    assert await _oi_change_pct(conn, "BTCUSDT_PERP.A", 300, CUTOFF) == 1.25
     assert "cur.ts-" in conn.query
     assert "now()-" not in conn.query
 

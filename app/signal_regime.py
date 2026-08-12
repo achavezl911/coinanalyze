@@ -6,6 +6,7 @@ from typing import Any
 
 import asyncpg
 
+from app.metrics import REGIME_LOGIC_VERSION
 from app.signal_attribution import (
     ATTRIBUTION_SPEC_VERSION,
     COMPONENT_WEIGHTS,
@@ -130,6 +131,9 @@ def _sampling_predicate(mode: str) -> str:
 def _regime_status_sql(prefix: str = "obs") -> str:
     return f"""
     CASE
+      WHEN {prefix}.evidence_version = 3
+        AND {prefix}.regime_logic_version IS DISTINCT FROM {REGIME_LOGIC_VERSION}
+      THEN 'unavailable'
       WHEN {prefix}.regime_score IS NULL
         OR {prefix}.regime_label IS NULL
         OR {prefix}.regime_label = 'Sin datos suficientes'
@@ -192,9 +196,11 @@ def _base_cte() -> str:
         obs.reference_price_source,
         obs.evidence_coverage_pct,
         obs.evidence,
+        obs.evidence_version,
         obs.metrics_snapshot_ts,
         obs.regime_score,
         obs.regime_label,
+        obs.regime_logic_version,
         obs.price_cutoff_at,
         obs.metrics_cutoff_at,
         frame.context,
@@ -726,8 +732,10 @@ def _distribution_query() -> str:
         obs.observation_id,
         obs.symbol,
         obs.observed_at,
+        obs.evidence_version,
         obs.regime_score,
         obs.regime_label,
+        obs.regime_logic_version,
         obs.metrics_snapshot_ts,
         obs.price_cutoff_at,
         obs.metrics_cutoff_at,
@@ -810,6 +818,7 @@ async def _fetch_corpus_summary(
             obs.logic_version,
             obs.evidence_version,
             obs.sampling_version,
+            obs.regime_logic_version,
             obs.metrics_snapshot_ts,
             obs.regime_score,
             obs.regime_label,

@@ -248,7 +248,7 @@ def test_pr19_evidence_version_boundary():
     from app.signal_regime import RegimeAnalysisOptions
     from app.signal_replay import REPLAY_CONTEXT_VERSION
 
-    assert SIGNAL_EVIDENCE_VERSION == 2
+    assert SIGNAL_EVIDENCE_VERSION == 3
     assert SIGNAL_SAMPLING_VERSION == 1
     assert REPLAY_CONTEXT_VERSION == 1
     assert BacktestOptions().evidence_version == 1

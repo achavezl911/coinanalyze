@@ -228,7 +228,10 @@ async def test_pr21_upgrade_up_down_empty_up_again_is_idempotent() -> None:
         assert await connection.fetchval("SELECT count(*) FROM daily_verdict") == 1
 
         await connection.execute(DOWN_SQL)
-        assert await connection.fetchval("SELECT to_regclass('daily_verdict_snapshot') IS NULL")
+        assert not await connection.fetchval(
+            "SELECT EXISTS (SELECT 1 FROM information_schema.tables "
+            "WHERE table_schema=current_schema() AND table_name='daily_verdict_snapshot')"
+        )
         await connection.execute(UP_SQL)
         assert await connection.fetchval("SELECT to_regclass('daily_verdict_snapshot') IS NOT NULL")
     finally:

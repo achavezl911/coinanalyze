@@ -108,4 +108,5 @@ def test_el_borde_de_entrada_cuenta_como_hueco() -> None:
     """Un collector caido al PRINCIPIO de la ventana no lo ve un lag() a secas."""
     source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
     consulta = source.split("async def max_internal_gap")[1].split("async def ")[0]
-    assert "UNION ALL SELECT now()-($3::int*interval '1 second')" in consulta
+    assert "UNION ALL SELECT $4-($3::int*interval '1 second')" in consulta
+    assert "AND ts <= $4" in consulta

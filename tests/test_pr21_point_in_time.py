@@ -12,8 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class _VerdictWriterConnection:
-    def __init__(self, *, reference: dict | None) -> None:
+    def __init__(self, *, reference: dict | None, metrics: dict | None = None) -> None:
         self.reference = reference
+        self.metrics = metrics
         self.observed_at = datetime(2026, 8, 11, 15, 7, 31, tzinfo=UTC)
         self.queries: list[tuple[str, tuple]] = []
 
@@ -22,10 +23,20 @@ class _VerdictWriterConnection:
         if "FROM daily_session_agg" in query:
             return {"price_close": 101.0, "session_coverage_version": 1}
         if "FROM metrics_snapshot" in query:
+            assert args[1] == daily_agg.REGIME_LOGIC_VERSION
+            if (
+                self.metrics is not None
+                and self.metrics.get("regime_logic_version") == args[1]
+            ):
+                return self.metrics
             return None
         if "FROM ohlcv" in query:
             return self.reference
         raise AssertionError(f"unexpected fetchrow query: {query}")
+
+    async def fetch(self, query: str, *args):
+        self.queries.append((query, args))
+        return []
 
     async def fetchval(self, query: str, *args):
         self.queries.append((query, args))
@@ -72,8 +83,8 @@ async def test_pr21_reference_price_requires_closed_1m_candle(monkeypatch) -> No
         if "INSERT INTO daily_verdict_snapshot" in query
     )
     assert "ON CONFLICT(symbol,session_date) DO NOTHING" in snapshot_query
-    assert snapshot_args[21] == 100.5
-    assert snapshot_args[22] == reference_at
+    assert snapshot_args[22] == 100.5
+    assert snapshot_args[23] == reference_at
     assert snapshot_args[4] >= snapshot_args[5]
 
     executed_sql = [query for query, _args in conn.queries]
@@ -103,8 +114,8 @@ async def test_pr21_missing_reference_price_keeps_returns_null(monkeypatch) -> N
         for query, args in conn.queries
         if "INSERT INTO daily_verdict_snapshot" in query
     )
-    assert snapshot_args[21] is None
     assert snapshot_args[22] is None
+    assert snapshot_args[23] is None
 
     api = (ROOT / "app/api.py").read_text(encoding="utf-8")
     body = api[api.index("async def verdicts(") : api.index("async def structure", api.index("async def verdicts("))]
@@ -160,6 +171,7 @@ def test_pr21_verdict_api_exposes_snapshot_provenance() -> None:
         "session_price_close",
         "metrics_snapshot_ts",
         "session_coverage_version",
+        "regime_logic_version",
     ):
         assert f"v.{field}" in body
 
@@ -188,7 +200,7 @@ async def test_pr21_snapshot_not_subject_to_daily_retention(monkeypatch) -> None
 
 def test_pr21_daily_verdict_versions_are_domain_specific() -> None:
     assert daily_agg.DAILY_VERDICT_SNAPSHOT_VERSION == 1
-    assert daily_agg.DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v1"
+    assert daily_agg.DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v2"
     source = (ROOT / "app/daily_agg.py").read_text(encoding="utf-8")
     for unrelated in (
         "SIGNAL_EVIDENCE_VERSION",
@@ -196,3 +208,82 @@ def test_pr21_daily_verdict_versions_are_domain_specific() -> None:
         "REPLAY_CONTEXT_VERSION",
     ):
         assert unrelated not in source
+
+
+async def _persist_pr22_daily_snapshot(monkeypatch: pytest.MonkeyPatch):
+    metrics_at = datetime(2026, 8, 11, 15, 0, tzinfo=UTC)
+    conn = _VerdictWriterConnection(
+        reference=None,
+        metrics={
+            "ts": metrics_at,
+            "regime_score": 12.0,
+            "regime_label": "v2",
+            "regime_logic_version": 2,
+        },
+    )
+    monkeypatch.setattr(daily_agg, "latest_closed_session_date", lambda: date(2026, 8, 11))
+    monkeypatch.setattr(daily_agg, "swing_score", _no_signal)
+    monkeypatch.setattr(
+        daily_agg,
+        "evaluate_setups",
+        lambda _snapshot, _rows: {"primary": None, "daily_streak": None},
+    )
+    await daily_agg.persist_verdicts(conn, ("BTCUSDT_PERP.A",))
+    return next(
+        (query, args)
+        for query, args in conn.queries
+        if "INSERT INTO daily_verdict_snapshot" in query
+    )
+
+
+@pytest.mark.asyncio
+async def test_pr22_new_daily_snapshot_uses_daily_verdict_v2(monkeypatch) -> None:
+    query, args = await _persist_pr22_daily_snapshot(monkeypatch)
+    assert "regime_logic_version" in query
+    assert args[3] == "daily-verdict-v2"
+
+
+@pytest.mark.asyncio
+async def test_pr22_daily_snapshot_copies_regime_logic_version(monkeypatch) -> None:
+    _, args = await _persist_pr22_daily_snapshot(monkeypatch)
+    assert args[7] == 2
+
+
+@pytest.mark.asyncio
+async def test_pr22_daily_v2_does_not_copy_legacy_regime(monkeypatch) -> None:
+    conn = _VerdictWriterConnection(
+        reference=None,
+        metrics={
+            "ts": datetime(2026, 8, 11, 15, 0, tzinfo=UTC),
+            "regime_score": 55.0,
+            "regime_label": "legacy",
+            "regime_logic_version": None,
+        },
+    )
+    monkeypatch.setattr(daily_agg, "latest_closed_session_date", lambda: date(2026, 8, 11))
+    monkeypatch.setattr(daily_agg, "swing_score", _no_signal)
+
+    def reject_legacy_setup(*_args, **_kwargs):
+        raise AssertionError("daily-verdict-v2 must not evaluate a legacy metrics snapshot")
+
+    monkeypatch.setattr(daily_agg, "evaluate_setups", reject_legacy_setup)
+    await daily_agg.persist_verdicts(conn, ("BTCUSDT_PERP.A",))
+    query, args = next(
+        (query, args)
+        for query, args in conn.queries
+        if "INSERT INTO daily_verdict_snapshot" in query
+    )
+    assert "logic_version" in query
+    assert args[3] == "daily-verdict-v2"
+    for index in (6, 7, 14, 15, 16, 17, 18, 19, 20):
+        assert args[index] is None
+
+
+@pytest.mark.asyncio
+async def test_pr22_daily_v2_uses_regime_v2_when_available(monkeypatch) -> None:
+    _, args = await _persist_pr22_daily_snapshot(monkeypatch)
+    assert args[3] == "daily-verdict-v2"
+    assert args[6] == datetime(2026, 8, 11, 15, 0, tzinfo=UTC)
+    assert args[7] == 2
+    assert args[14] == 12.0
+    assert args[15] == "v2"

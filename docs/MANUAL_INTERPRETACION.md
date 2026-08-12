@@ -147,22 +147,27 @@ lugar de "¿cuánto se compra?".
 **Cómo leerlo:** ortogonal al CVD. btr alto (>0.5) con CVD plano = muchos
 compradores pequeños sin mover volumen neto (posible acumulación minorista o
 distribución hacia retail). Útil para detectar divergencias entre participación y
-volumen. Compara las tres ventanas (15m/1h/24h) para ver aceleración: btr_15m > btr_1h
-> btr_24h = participación compradora acelerando.
+volumen. Las tres ventanas (15m/1h/24h) son rolling y anidadas: su orden aporta contexto
+de persistencia relativa, pero no mide una aceleración formal ni constituye confirmaciones
+independientes.
 
 ### 9. Regime score y label (regime_score, regime_label)
 
-**Qué mide:** un sintetizador [-100, +100] que combina CVD diferencial (peso 25),
-whale (30), OI (15), funding (15, invertido), liquidaciones (15). La etiqueta traduce
-el número + contexto a una frase.
+**Qué mide:** un sintetizador [-100, +100] que combina la media de los imbalances CVD
+spot/futuros de 24h (peso 25), whale (30), OI (15), funding (15, invertido) y
+liquidaciones (15). Cada imbalance es `net/gross` dentro del mismo mercado y ventana;
+si falta una pata gross/neteada, el componente CVD no vota. Los pesos no fueron
+recalibrados.
 
 **Cómo leerlo:** es un **filtro de contexto**, no una señal de entrada. Te dice en qué
 "régimen" está el mercado para que ajustes tu sesgo:
-- "Continuación alcista orgánica": score alto + ballenas acumulando + diff positivo.
+- "Continuación alcista orgánica": score alto + ballenas acumulando + componente CVD
+  normalizado positivo.
   El alza tiene respaldo real. Favorece longs en pullbacks.
 - "Euforia / Sobreextensión bullish": score alto PERO con distribución. El alza está
   sobreextendida y las manos fuertes venden. Precaución con longs; vigilar reversión.
-- "Squeeze inminente bullish": score positivo, diff no positivo, sin acumulación.
+- "Squeeze inminente bullish": score positivo, componente CVD normalizado no positivo,
+  sin acumulación.
   Posible squeeze técnico (no por demanda real).
 - "Distribución (Bearish)" / "Capitulación (Bearish)": manos fuertes saliendo.
   Favorece shorts o cash.
@@ -203,8 +208,8 @@ da:**
 
 Ningún indicador se lee solo. Las relaciones clave:
 
-- **CVD diferencial ↔ Whale**: el whale confirma QUIÉN mueve el CVD. Diff negativo +
-  whale distribuyendo = distribución institucional confirmada.
+- **CVD spot ↔ Whale**: ambas métricas describen agresión spot desde ángulos distintos.
+  No atribuyas identidad al flujo ni uses el Diff de escalas desiguales como dirección.
 - **OI ↔ Precio ↔ Funding**: el trío del apalancamiento. OI sube + precio sube +
   funding se dispara = alza sobrecalentada (frágil). OI sube + precio baja + funding
   negativo = bajada con convicción de shorts.
@@ -212,9 +217,9 @@ Ningún indicador se lee solo. Las relaciones clave:
   muy positivo → longs vulnerables → vigilar cascada de long_liq.
 - **btr ↔ CVD**: participación vs volumen. Divergencia entre ambos revela quién
   participa (retail vs ballenas).
-- **Diff acumulado (histórico) ↔ Diff actual (snapshot)**: el histórico te da el
-  contexto de mediano plazo; el snapshot, el estado ahora. Operar el snapshot a favor
-  de la pendiente del histórico es de mayor convicción que contra ella.
+- **CVD spot acumulado ↔ CVD spot actual**: el histórico da contexto de mediano plazo;
+  el snapshot, el estado ahora. El Diff raw queda como descripción de magnitud, no como
+  voto direccional.
 
 ---
 
@@ -263,7 +268,7 @@ CVD spot vendiendo.
 - Funding negativo y profundizando (exceso de shorts).
 - liq_ratio < 1 (ya se están liquidando shorts).
 - OI alto (mucho corto cargado) + precio rebotando.
-- btr subiendo (participación compradora acelerando).
+- btr comprador en ventanas anidadas (persistencia relativa, no aceleración formal).
 - Regime "Squeeze inminente bullish".
 
 **Lectura:** demasiados shorts apalancados; un movimiento al alza los liquida en
@@ -311,34 +316,34 @@ más recorrido).
 Un orden para no perderse entre tantos datos:
 
 1. **Contexto de mediano plazo primero (histórico diario):** ¿cuál es la pendiente del
-   Diff acumulado? ¿Hay racha? Esto define tu sesgo de fondo (acumulación vs
+   CVD spot acumulado? ¿Hay racha spot? Esto enmarca el flujo de fondo (compras vs
    distribución).
 2. **Estado actual (snapshot + regime):** ¿qué dice el régimen ahora? ¿Confirma o
    contradice el sesgo de fondo?
-3. **Confirmación de quién (whale + CVD diferencial):** ¿las ballenas están detrás del
-   movimiento? ¿Spot y futuros divergen?
+3. **Contexto de spot y futuros:** ¿sus signos coinciden? ¿Cómo se comparan sus
+   imbalances normalizados? No atribuyas identidad a los participantes.
 4. **Estado del apalancamiento (OI + funding + liquidaciones):** ¿el movimiento tiene
    respaldo o es frágil? ¿Qué lado está vulnerable?
-5. **Timing de corto plazo (CVD live + btr + delta_3min):** ¿hay aceleración ahora
-   mismo?
+5. **Timing de corto plazo (CVD live + btr + delta_3min):** ¿hay presión relativa,
+   net rate y persistencia ahora mismo?
 
 **Regla de oro:** mayor convicción cuando el corto plazo (pasos 4-5) se alinea con el
-mediano plazo (paso 1). Operar el snapshot a favor de la pendiente del Diff acumulado
+mediano plazo (paso 1). Operar el snapshot a favor de la pendiente del CVD spot acumulado
 es más seguro que contra ella. Cuando los pasos se contradicen, espera o reduce tamaño.
 
 ---
 
 ## Parte VI — Errores de interpretación a evitar
 
-- **Leer un indicador aislado.** El CVD diferencial sin el whale, o el OI sin el
-  precio, engañan. Siempre combina.
+- **Leer el Diff raw como dirección.** Mezcla mercados con escalas distintas; úsalo solo
+  como descripción de magnitud y lee las patas/imbalances por separado.
 - **Tratar el regime label como señal de entrada.** Es contexto. Los pesos no están
   calibrados.
 - **Confundir participación (btr) con volumen (CVD).** Son cosas distintas; su
   divergencia es información, no contradicción.
 - **Ignorar la unidad temporal.** El histórico diario (mediano plazo) y el snapshot
   (ahora) responden preguntas distintas. No los mezcles sin distinguir horizonte.
-- **Operar contra la pendiente del Diff acumulado** sin razón fuerte. El dinero real
+- **Operar contra la pendiente del CVD spot acumulado** sin razón fuerte. El flujo spot
   sostenido suele ganar.
 - **Sobreleer el ruido.** Whale "Neutro" o Diff cerca de cero = ausencia de señal, no
   señal débil. A veces no hay setup y lo correcto es no operar.
@@ -364,9 +369,11 @@ matrix, order book, absorción y liquidaciones inmediatas.
 
 ### 11. Delta matrix 15s–15m
 
-**Qué mide:** delta spot y delta de futuros en ventanas cortas: 15s, 30s, 1m, 3m, 5m
-y 15m. El delta de futuros mide agresión apalancada; el delta spot mide confirmación
-de flujo real. `diff = spot_delta − fut_delta`.
+**Qué mide:** delta spot y delta de futuros en ventanas rolling: 15s, 30s, 1m, 3m, 5m
+y 15m. El raw delta es notional agresivo neto acumulado en el lookback y
+`diff = spot_delta − fut_delta` conserva esa resta descriptiva. `imbalance = net/gross`
+mide presión agresiva relativa dentro de cada ventana; `net_rate_usd_per_min` mide neto
+agresivo USD por minuto.
 
 **Cómo leerlo:**
 
@@ -379,8 +386,10 @@ de flujo real. `diff = spot_delta − fut_delta`.
 - **Diff negativo fuerte con fut delta positivo:** los futuros compran agresivo, pero
   el spot no confirma; posible distribución hacia compradores apalancados.
 
-Para scalping, la secuencia importa: 15s → 30s → 1m define aceleración; 3m → 5m define
-continuidad; 15m define contexto intradía.
+Las ventanas están anidadas y son evidencia correlacionada/dependiente, no confirmaciones
+independientes. El mismo signo en 15s → 30s → 1m aporta contexto de persistencia inmediata;
+3m → 5m aporta contexto de continuidad y 15m contexto intradía. PR22 no publica una
+estadística formal de aceleración calculada sobre ventanas disjuntas.
 
 ### 12. Futures tape real-time
 
@@ -542,8 +551,8 @@ descuento.
 - **Descuento creciente:** presión vendedora en perpetuos o estrés de apalancamiento.
 - **Basis comprimiéndose:** convergencia; el impulso apalancado pierde ventaja.
 
-**Clave:** el CVD diferencial compara flujo; el basis compara precio. Cuando ambos
-señalan fragilidad, la lectura tiene mayor valor.
+**Clave:** las patas CVD y sus imbalances comparan flujo; el basis compara precio. El Diff
+raw conserva una resta descriptiva de escalas distintas y no añade un voto direccional.
 
 ### 21. Niveles de liquidación por precio
 
@@ -630,7 +639,7 @@ Orden recomendado para lectura rápida:
 1. **Data confidence:** confirma que feeds, snapshots y order book sean confiables.
 2. **Estado superior:** precio, spread, latencia y símbolo correcto.
 3. **Scalp score:** define si hay sesgo inmediato o `No Trade`.
-4. **Delta matrix:** confirma si la presión está acelerando o perdiendo fuerza.
+4. **Delta matrix:** compara imbalance, net rate y persistencia sin llamarlos aceleración.
 5. **Basis perp-spot:** valida si el precio de futuros confirma o se desacopla del
    spot.
 6. **Order book:** valida si la liquidez inmediata acompaña o bloquea la operación.
