@@ -251,8 +251,6 @@ async def upsert_liquidations(
     symbol_map: dict[str, str],
     start_ts: int,
     end_ts: int,
-    *,
-    accepted_by_symbol: dict[str, int] | None = None,
 ) -> int:
     records: list[tuple[object, ...]] = []
     for symbol, row in rows_for(payload, symbol_map):
@@ -264,8 +262,6 @@ async def upsert_liquidations(
             records.append(
                 (valid_ts(row["t"], start_ts, end_ts), symbol, "5min", long_liq, short_liq)
             )
-            if accepted_by_symbol is not None:
-                accepted_by_symbol[symbol] = accepted_by_symbol.get(symbol, 0) + 1
         except (KeyError, TypeError, ValueError, OverflowError):
             continue
     if not records:
@@ -462,6 +458,8 @@ def _liquidation_history_observation(
             "source_cutoff_ts": int(source_cutoff.timestamp()),
             "requested_symbols": len(requested_symbols),
             "observed_symbols": len(observed_symbols),
+            "requested_symbol_names": sorted(requested),
+            "observed_symbol_names": sorted(observed_symbols),
             "missing_symbols": missing_symbols,
             "returned_rows": returned_rows,
             "accepted_rows": accepted_rows,
@@ -471,54 +469,6 @@ def _liquidation_history_observation(
         sort_keys=True,
     )
     return status, detail[:500]
-
-
-async def persist_liquidation_history_observations(
-    conn: asyncpg.Connection,
-    payload: dict[str, list[dict[str, Any]]],
-    requested_symbols: tuple[str, ...],
-    *,
-    accepted_by_symbol: dict[str, int],
-    source_start: datetime,
-    source_cutoff: datetime,
-) -> int:
-    """Append one durable coverage verdict per requested symbol.
-
-    Liquidations are events, not a dense cadence. An explicitly returned empty history is
-    therefore COMPLETE, while a missing symbol or any rejected row is INCOMPLETE. The rows
-    and their accepted events are committed in the same ingest transaction.
-    """
-    observed_at = await conn.fetchval("SELECT clock_timestamp()")
-    if not isinstance(observed_at, datetime):
-        raise RuntimeError("PostgreSQL did not return a liquidation observation timestamp")
-    observations: list[tuple[object, ...]] = []
-    for symbol in requested_symbols:
-        symbol_present = symbol in payload
-        returned_rows = len(payload[symbol]) if symbol_present else 0
-        accepted_rows = accepted_by_symbol.get(symbol, 0)
-        complete = symbol_present and accepted_rows == returned_rows
-        observations.append(
-            (
-                symbol,
-                source_start,
-                source_cutoff,
-                observed_at,
-                "COMPLETE" if complete else "INCOMPLETE",
-                symbol_present,
-                returned_rows,
-                accepted_rows,
-            )
-        )
-    await conn.executemany(
-        """
-        INSERT INTO liquidation_history_observation(
-          symbol,source_start_at,source_cutoff_at,observed_at,status,
-          response_symbol_present,returned_rows,accepted_rows
-        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8)
-        """,
-        observations,
-    )
-    return len(observations)
 
 
 def _coverage_heartbeat_detail(
@@ -700,10 +650,8 @@ async def ingest_metrics_cycle(
                 conn, "predicted_funding_rate", "pfr", predicted, identity, start_history, end_ts,
                 observed=metric_observations["predicted"],
             )
-            accepted_liquidations: dict[str, int] = {}
             counts["liquidations"] = await upsert_liquidations(
-                conn, liquidations, identity, start_history, end_ts,
-                accepted_by_symbol=accepted_liquidations,
+                conn, liquidations, identity, start_history, end_ts
             )
             counts["long_short"] = await upsert_long_short(
                 conn, long_short, identity, start_history, end_ts,
@@ -711,14 +659,6 @@ async def ingest_metrics_cycle(
             )
 
             source_start = datetime.fromtimestamp(start_history, tz=UTC)
-            await persist_liquidation_history_observations(
-                conn,
-                liquidations,
-                symbols,
-                accepted_by_symbol=accepted_liquidations,
-                source_start=source_start,
-                source_cutoff=cutoff.exclusive_boundary,
-            )
             liq_status, liq_detail = _liquidation_history_observation(
                 liquidations, symbols, accepted_rows=counts["liquidations"],
                 source_start=source_start, source_cutoff=cutoff.exclusive_boundary,

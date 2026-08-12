@@ -1,19 +1,22 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 import pytest
+from fastapi import HTTPException
 
 import app.api as api
 from app.ai_context import verdict_history
 from app.daily_agg import (
-    DAILY_SESSION_SNAPSHOT_VERSION,
     DAILY_VERDICT_LOGIC_VERSION,
+    DAILY_VERDICT_OUTCOME_HORIZONS,
+    DAILY_VERDICT_OUTCOME_VERSION,
     LIQUIDATION_COVERAGE_VERSION,
+    SESSION_COVERAGE_VERSION,
+    materialize_daily_verdict_outcomes,
 )
-from app.ingest import persist_liquidation_history_observations
 from app.metrics import REGIME_LOGIC_VERSION
 from app.signal_execution import EXECUTION_SNAPSHOT_VERSION
 from app.signal_ledger import (
@@ -38,40 +41,10 @@ class CaptureConnection:
         self.args = args
         return self.rows
 
-
-@pytest.mark.asyncio
-async def test_daily_without_as_of_uses_only_mutable_projection() -> None:
-    conn = CaptureConnection()
-    result = await api.daily_data(conn, SYMBOL, 60)
-    assert "FROM daily_session_agg" in conn.query
-    assert "FROM daily_session_snapshot" not in conn.query
-    assert result["semantics"] == "mutable_latest_projection"
-    assert result["snapshot_version"] is None
-
-
-@pytest.mark.asyncio
-async def test_daily_as_of_uses_only_prospective_immutable_universe() -> None:
-    conn = CaptureConnection()
-    cutoff = date(2026, 8, 11)
-    result = await api.daily_data(conn, SYMBOL, 60, cutoff)
-    assert "FROM daily_session_snapshot" in conn.query
-    assert "FROM daily_session_agg" not in conn.query
-    assert "WHERE snapshot_version=1" in conn.query
-    assert conn.query.count("FROM source") == 3
-    assert conn.args == (SYMBOL, 60, cutoff)
-    assert result["semantics"] == "prospective_first_observation"
-    assert result["snapshot_version"] == 1
-    assert result["rows"] == []  # no fallback for sessions before prospective capture
-
-
-def test_daily_zero_classification_precedes_directional_branches() -> None:
-    text = Path(api.__file__).read_text(encoding="utf-8")
-    start = text.index("async def daily_data")
-    body = text[start : text.index("@app.get(\"/api/snapshot\")", start)]
-    null_guard = "WHEN s.cvd_spot_usd IS NULL OR s.cvd_fut_usd IS NULL THEN 'sin_dato'"
-    zero_guard = "WHEN s.cvd_spot_usd = 0 OR s.cvd_fut_usd = 0 THEN 'neutral'"
-    assert body.index(null_guard) < body.index(zero_guard) < body.index("'ambos_compran'")
-    assert body.count(zero_guard) == 2  # flow_direction and price_response
+    async def fetchval(self, query: str, *args: object) -> int:
+        self.query = query
+        self.args = args
+        return 0
 
 
 class PoolContext:
@@ -89,77 +62,92 @@ class PoolContext:
 
 
 @pytest.mark.asyncio
+async def test_daily_is_current_mutable_projection_with_optional_date_limit() -> None:
+    conn = CaptureConnection()
+    cutoff = date(2026, 8, 11)
+    result = await api.daily_data(conn, SYMBOL, 60, cutoff)
+    assert conn.query.count("FROM daily_session_agg") == 3
+    assert "daily_session_snapshot" not in conn.query
+    assert conn.args == (SYMBOL, 60, cutoff)
+    assert result["through_session_date"] == cutoff.isoformat()
+    assert result["temporal_semantics"] == "mutable_current_projection"
+    assert result["knowledge_time_replay"] is False
+
+
+@pytest.mark.asyncio
+async def test_daily_as_of_fails_explicitly_instead_of_claiming_pit() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        await api.daily(SYMBOL, 60, None, date(2026, 8, 11))
+    assert exc_info.value.status_code == 400
+    assert "PIT replay is not supported" in str(exc_info.value.detail)
+    assert "through_session_date" in str(exc_info.value.detail)
+
+
+def test_daily_zero_classification_precedes_price_missing_and_direction() -> None:
+    text = Path(api.__file__).read_text(encoding="utf-8")
+    start = text.index("async def daily_data")
+    body = text[start : text.index('@app.get("/api/snapshot")', start)]
+    null_guard = "WHEN s.cvd_spot_usd IS NULL OR s.cvd_fut_usd IS NULL THEN 'sin_dato'"
+    zero_guard = "WHEN s.cvd_spot_usd = 0 OR s.cvd_fut_usd = 0 THEN 'neutral'"
+    assert body.index(null_guard) < body.index(zero_guard) < body.index("'ambos_compran'")
+    price_case = body.index("END AS price_response")
+    price_start = body.rfind("CASE", 0, price_case)
+    price_body = body[price_start:price_case]
+    assert price_body.index(null_guard) < price_body.index(zero_guard)
+    assert price_body.index(zero_guard) < price_body.index("s.price_chg_pct IS NULL")
+
+
+@pytest.mark.asyncio
 async def test_verdict_api_defaults_to_current_logic_cohort(monkeypatch: pytest.MonkeyPatch) -> None:
     conn = CaptureConnection()
     monkeypatch.setattr(api.app.state, "pool", PoolContext(conn), raising=False)
-    result = await api.verdicts(SYMBOL, 25, DAILY_VERDICT_LOGIC_VERSION)
+    result = await api.verdicts(SYMBOL, 25)
     assert "logic_version=$2" in conn.query
+    assert "daily_verdict_outcome" in conn.query
     assert "daily_session_agg" not in conn.query
-    assert "session_date=v.session_date+7" in conn.query
-    assert "session_date=v.session_date+14" in conn.query
     assert "OFFSET" not in conn.query
-    assert conn.args == (SYMBOL, DAILY_VERDICT_LOGIC_VERSION, 25)
+    assert conn.args == (SYMBOL, DAILY_VERDICT_LOGIC_VERSION, 25, 1)
     assert result["logic_version"] == "daily-verdict-v4"
 
 
 @pytest.mark.asyncio
-async def test_verdict_api_explicit_version_is_one_cohort(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_verdict_api_explicit_version_is_exactly_one_cohort(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     conn = CaptureConnection()
     monkeypatch.setattr(api.app.state, "pool", PoolContext(conn), raising=False)
     result = await api.verdicts(SYMBOL, 25, "daily-verdict-v2")
-    assert conn.args == (SYMBOL, "daily-verdict-v2", 25)
+    assert conn.args == (SYMBOL, "daily-verdict-v2", 25, 1)
     assert result["logic_version"] == "daily-verdict-v2"
 
 
 @pytest.mark.asyncio
-async def test_ai_verdict_history_is_current_cohort_and_immutable_targets() -> None:
+async def test_ai_verdict_history_uses_only_current_cohort_and_outcomes() -> None:
     conn = CaptureConnection()
     result = await verdict_history(conn, SYMBOL, 90)
-    assert conn.args == (SYMBOL, 90, DAILY_VERDICT_LOGIC_VERSION)
+    assert conn.args == (SYMBOL, 90, DAILY_VERDICT_LOGIC_VERSION, 1)
     assert "logic_version=$3" in conn.query
+    assert "daily_verdict_outcome" in conn.query
     assert "daily_session_agg" not in conn.query
-    assert "session_date=v.session_date+7" in conn.query
-    assert "session_date=v.session_date+14" in conn.query
     assert result["logic_version"] == "daily-verdict-v4"
 
 
-def test_pr24_version_tuple_changes_only_requested_boundaries() -> None:
-    assert SIGNAL_EVIDENCE_VERSION == 5
-    assert DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v4"
-    assert DAILY_SESSION_SNAPSHOT_VERSION == 1
-    assert LIQUIDATION_COVERAGE_VERSION == 1
-
-
-class ObservationCapture:
-    def __init__(self, observed_at: datetime) -> None:
-        self.observed_at = observed_at
-        self.rows: list[tuple[object, ...]] = []
-
-    async def fetchval(self, _query: str) -> datetime:
-        return self.observed_at
-
-    async def executemany(
-        self, _query: str, rows: list[tuple[object, ...]]
-    ) -> None:
-        self.rows = rows
-
-
 @pytest.mark.asyncio
-async def test_liquidation_observations_distinguish_zero_missing_and_rejected() -> None:
-    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
-    conn = ObservationCapture(cutoff + timedelta(seconds=1))
-    await persist_liquidation_history_observations(
-        conn,  # type: ignore[arg-type]
-        {SYMBOL: [], "ETHUSDT_PERP.A": [{"t": 1}]},
-        (SYMBOL, "ETHUSDT_PERP.A", "SOLUSDT_PERP.A"),
-        accepted_by_symbol={SYMBOL: 0, "ETHUSDT_PERP.A": 0},
-        source_start=cutoff - timedelta(hours=26),
-        source_cutoff=cutoff,
-    )
-    by_symbol = {str(row[0]): row for row in conn.rows}
-    assert by_symbol[SYMBOL][4:] == ("COMPLETE", True, 0, 0)
-    assert by_symbol["ETHUSDT_PERP.A"][4:] == ("INCOMPLETE", True, 1, 0)
-    assert by_symbol["SOLUSDT_PERP.A"][4:] == ("INCOMPLETE", False, 0, 0)
+async def test_outcome_materializer_uses_exact_calendar_targets_and_v2_projection() -> None:
+    conn = CaptureConnection()
+    assert await materialize_daily_verdict_outcomes(conn) == 0
+    assert "verdict.session_date+horizon.horizon_sessions" in conn.query
+    assert "verdict.logic_version=$1" in conn.query
+    assert "target.session_coverage_version=2" in conn.query
+    assert "target.updated_at IS NOT NULL" in conn.query
+    assert "OFFSET" not in conn.query
+    assert conn.args == ("daily-verdict-v4", 1, [7, 14])
+
+
+def test_daily_cycle_attempts_outcomes_after_projection_refresh() -> None:
+    source = Path("app/daily_agg.py").read_text(encoding="utf-8")
+    cycle = source[source.index("async def cycle(") : source.index("async def run()")]
+    assert cycle.index("await backfill(") < cycle.index("materialize_daily_verdict_outcomes(")
 
 
 def test_ohlcv_reference_fails_closed_without_exact_close_timestamp() -> None:
@@ -177,8 +165,14 @@ def test_ohlcv_reference_fails_closed_without_exact_close_timestamp() -> None:
     assert select_reference_price(future_context, summary) == (None, None, None)
 
 
-def test_pr24_regime_guards_cover_new_versions_without_changing_old_defaults() -> None:
+def test_pr24_version_boundaries_and_regime_guards() -> None:
     schema = Path("sql/schema.sql").read_text(encoding="utf-8")
+    assert SESSION_COVERAGE_VERSION == 2
+    assert LIQUIDATION_COVERAGE_VERSION == 1
+    assert DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v4"
+    assert DAILY_VERDICT_OUTCOME_VERSION == 1
+    assert DAILY_VERDICT_OUTCOME_HORIZONS == (7, 14)
+    assert SIGNAL_EVIDENCE_VERSION == 5
     assert "evidence_version NOT IN (3,4,5)" in schema
     assert "'daily-verdict-v2','daily-verdict-v3','daily-verdict-v4'" in schema
     assert SCALP_SIGNAL_LOGIC_VERSION == "scalp-summary-v1"

@@ -199,21 +199,12 @@ async def test_five_minute_cycle_refreshes_metrics_snapshots_after_upserts(monke
     async def fake_heartbeat(*_args, **_kwargs):
         events.append("heartbeat")
 
-    async def fake_liquidation_observation(*_args, **_kwargs):
-        events.append("observation")
-        return 1
-
     async def no_sleep(_seconds):
         return None
 
     monkeypatch.setattr(ingest, "upsert_ohlc_metric", fake_metric)
     monkeypatch.setattr(ingest, "upsert_liquidations", fake_metric)
     monkeypatch.setattr(ingest, "upsert_long_short", fake_metric)
-    monkeypatch.setattr(
-        ingest,
-        "persist_liquidation_history_observations",
-        fake_liquidation_observation,
-    )
     monkeypatch.setattr(ingest, "_reconcile_response_cadence", _complete_cadence_proof)
     monkeypatch.setattr(ingest, "compute_and_store_all", fake_compute)
     monkeypatch.setattr(ingest, "heartbeat_component", fake_heartbeat)
@@ -227,8 +218,8 @@ async def test_five_minute_cycle_refreshes_metrics_snapshots_after_upserts(monke
         now_utc=datetime(2026, 8, 9, 12, 5, 15, tzinfo=UTC),
     )
 
-    assert events[:8] == ["metric"] * 6 + ["observation", "snapshot"]
-    assert events[8] == "heartbeat"
+    assert events[:7] == ["metric"] * 6 + ["snapshot"]
+    assert events[7] == "heartbeat"
 
 
 class _StatefulMetricsConnection(_CycleConnection):
@@ -291,7 +282,6 @@ async def test_oi_jump_in_latest_closed_bucket_is_in_immediate_metrics_snapshot(
     monkeypatch.setattr(metrics, "_liquidation_history_observed", _healthy_liquidation_history)
     monkeypatch.setattr(ingest, "heartbeat_component", no_op)
     monkeypatch.setattr(ingest, "refresh_external_macro", no_op)
-    monkeypatch.setattr(ingest, "persist_liquidation_history_observations", no_op)
     monkeypatch.setattr(ingest.asyncio, "sleep", no_op)
 
     await ingest.ingest_metrics_cycle(

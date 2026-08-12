@@ -7,7 +7,10 @@ import asyncpg
 
 from app.analysis_prompt import ANALYSIS_PROMPT
 from app.config import WS_SYMBOL_MAP, get_settings
-from app.daily_agg import DAILY_VERDICT_LOGIC_VERSION
+from app.daily_agg import (
+    DAILY_VERDICT_LOGIC_VERSION,
+    DAILY_VERDICT_OUTCOME_VERSION,
+)
 from app.db import INGEST_COMPONENT_MAX_AGES, required_heartbeat_failures
 from app.external_macro import align_with_internal, external_macro_context
 from app.interpretation import cvd_swing_read, evaluate_setups
@@ -407,26 +410,23 @@ async def verdict_history(conn: asyncpg.Connection, symbol: str, limit: int = 90
                v.observed_at,v.session_end_at,v.snapshot_version,v.logic_version,
                v.reference_price,v.reference_price_at,v.metrics_snapshot_ts,
                v.session_coverage_version,v.regime_logic_version,
-               CASE WHEN v.reference_price IS NULL THEN NULL ELSE
-                 (d7.price_close/v.reference_price-1)*100
-               END AS fwd_7s_pct,
-               CASE WHEN v.reference_price IS NULL THEN NULL ELSE
-                 (d14.price_close/v.reference_price-1)*100
-               END AS fwd_14s_pct
+               d7.return_pct AS fwd_7s_pct,
+               d14.return_pct AS fwd_14s_pct
         FROM v
-        LEFT JOIN daily_session_snapshot d7
-          ON d7.symbol=v.symbol
-         AND d7.snapshot_version=1
-         AND d7.session_date=v.session_date+7
-        LEFT JOIN daily_session_snapshot d14
-          ON d14.symbol=v.symbol
-         AND d14.snapshot_version=1
-         AND d14.session_date=v.session_date+14
+        LEFT JOIN daily_verdict_outcome d7
+          ON d7.snapshot_id=v.snapshot_id
+         AND d7.outcome_version=$4
+         AND d7.horizon_sessions=7
+        LEFT JOIN daily_verdict_outcome d14
+          ON d14.snapshot_id=v.snapshot_id
+         AND d14.outcome_version=$4
+         AND d14.horizon_sessions=14
         ORDER BY v.session_date
         """,
         symbol,
         limit,
         DAILY_VERDICT_LOGIC_VERSION,
+        DAILY_VERDICT_OUTCOME_VERSION,
     )
     return {
         "available": bool(rows),

@@ -26,8 +26,8 @@ from app.ai_context import (
 )
 from app.config import SUPPORTED_SYMBOLS, WS_SYMBOL_MAP, get_settings
 from app.daily_agg import (
-    DAILY_SESSION_SNAPSHOT_VERSION,
     DAILY_VERDICT_LOGIC_VERSION,
+    DAILY_VERDICT_OUTCOME_VERSION,
 )
 from app.data_gaps import GapRequirement, blocking_requirement_keys
 from app.db import (
@@ -320,37 +320,25 @@ DAILY_SOURCES = {
 
 
 async def daily_data(
-    conn: asyncpg.Connection, symbol: str, days: int, as_of: date | None = None
+    conn: asyncpg.Connection,
+    symbol: str,
+    days: int,
+    through_session_date: date | None = None,
 ) -> dict[str, Any]:
-    if as_of is None:
-        source = """
-          SELECT daily_session_agg.*,
-                 NULL::smallint AS snapshot_version,
-                 NULL::timestamptz AS observed_at,
-                 NULL::timestamptz AS session_end_at
-          FROM daily_session_agg
-        """
-        semantics = "mutable_latest_projection"
-    else:
-        source = f"""
-          SELECT * FROM daily_session_snapshot
-          WHERE snapshot_version={DAILY_SESSION_SNAPSHOT_VERSION}
-        """
-        semantics = "prospective_first_observation"
     rows = await conn.fetch(
-        f"""
-        WITH source AS ({source}), spot_hist AS (
+        """
+        WITH spot_hist AS (
           SELECT session_date, percent_rank() OVER (ORDER BY cvd_spot_usd) * 100 AS pct_spot
-          FROM source
+          FROM daily_session_agg
           WHERE symbol=$1 AND cvd_spot_usd IS NOT NULL
             AND ($3::date IS NULL OR session_date <= $3)
         ), diff_hist AS (
           SELECT session_date, percent_rank() OVER (ORDER BY cvd_diff_usd) * 100 AS pct_diff
-          FROM source
+          FROM daily_session_agg
           WHERE symbol=$1 AND cvd_diff_usd IS NOT NULL
             AND ($3::date IS NULL OR session_date <= $3)
         ), selected AS (
-          SELECT * FROM source
+          SELECT * FROM daily_session_agg
           WHERE symbol=$1 AND ($3::date IS NULL OR session_date <= $3)
           ORDER BY session_date DESC LIMIT $2
         ), segmented AS (
@@ -366,8 +354,9 @@ async def daily_data(
                s.session_coverage_version,s.session_expected_minutes,
                s.futures_ohlcv_minutes,s.spot_2v_minutes,s.session_expected_5m_samples,
                s.oi_5m_samples,s.funding_5m_samples,
-               s.liquidation_coverage_version,s.liquidation_observed_start_at,
-               s.liquidation_observed_end_at,s.snapshot_version,s.observed_at,s.session_end_at,
+               s.liquidation_coverage_version,s.liquidation_observed_at,
+               s.liquidation_source_start_at,s.liquidation_source_cutoff_at,
+               s.created_at,s.updated_at,
                s.inst_delta_usd,s.price_open,s.price_high,s.price_low,s.price_close,s.price_chg_pct,
                s.oi_open,s.oi_close,s.oi_chg_usd,s.fr_avg,
                s.volume_usd,s.long_liq_usd,s.short_liq_usd,
@@ -389,9 +378,9 @@ async def daily_data(
                  ELSE 'neutral'
                END AS flow_direction,
                CASE
-                 WHEN s.cvd_spot_usd IS NULL OR s.cvd_fut_usd IS NULL
-                      OR s.price_chg_pct IS NULL THEN 'sin_dato'
+                 WHEN s.cvd_spot_usd IS NULL OR s.cvd_fut_usd IS NULL THEN 'sin_dato'
                  WHEN s.cvd_spot_usd = 0 OR s.cvd_fut_usd = 0 THEN 'neutral'
+                 WHEN s.price_chg_pct IS NULL THEN 'sin_dato'
                  WHEN s.cvd_spot_usd < 0 AND s.cvd_fut_usd < 0
                       AND s.price_chg_pct >= 0 THEN 'venta_sin_caida'
                  WHEN s.cvd_spot_usd < 0 AND s.cvd_fut_usd < 0 THEN 'venta_con_caida'
@@ -406,7 +395,7 @@ async def daily_data(
         LEFT JOIN diff_hist dh USING (session_date)
         ORDER BY s.session_date
         """,
-        symbol, days, as_of,
+        symbol, days, through_session_date,
     )
     values = records(rows)
     streak = 0
@@ -426,15 +415,18 @@ async def daily_data(
         "streak": streak,
         "streak_source": "cvd_spot_usd",
         "rows": values,
-        "as_of": str(values[-1]["session_date"]) if values else None,
-        "semantics": semantics,
-        "snapshot_version": (
-            DAILY_SESSION_SNAPSHOT_VERSION if as_of is not None else None
+        "through_session_date": (
+            str(through_session_date) if through_session_date is not None else None
         ),
+        "projection_latest_session_date": (
+            str(values[-1]["session_date"]) if values else None
+        ),
+        "temporal_semantics": "mutable_current_projection",
+        "knowledge_time_replay": False,
         "quick_read": daily_flow_read(values),
         "sources": DAILY_SOURCES,
         "coverage_note": (
-            "session_coverage_version=NULL significa legacy/unverified. En v1 cada pata densa "
+            "session_coverage_version=NULL significa legacy/unverified. En v1/v2 cada pata densa "
             "se publica solo con >=95% de sus muestras esperadas para la duracion DST real; "
             "NULL no significa cero. liquidation_coverage_version=NULL significa que una suma "
             "de liquidaciones no es publicable como total de sesion."
@@ -1631,26 +1623,23 @@ async def verdicts(
                    v.observed_at,v.session_end_at,v.snapshot_version,v.logic_version,
                    v.reference_price,v.reference_price_at,v.metrics_snapshot_ts,
                    v.session_coverage_version,v.regime_logic_version,
-                   CASE WHEN v.reference_price IS NULL THEN NULL ELSE
-                     (d7.price_close/v.reference_price-1)*100
-                   END AS fwd_return_7s_pct,
-                   CASE WHEN v.reference_price IS NULL THEN NULL ELSE
-                     (d14.price_close/v.reference_price-1)*100
-                   END AS fwd_return_14s_pct
+                   d7.return_pct AS fwd_return_7s_pct,
+                   d14.return_pct AS fwd_return_14s_pct
             FROM v
-            LEFT JOIN daily_session_snapshot d7
-              ON d7.symbol=v.symbol
-             AND d7.snapshot_version=1
-             AND d7.session_date=v.session_date+7
-            LEFT JOIN daily_session_snapshot d14
-              ON d14.symbol=v.symbol
-             AND d14.snapshot_version=1
-             AND d14.session_date=v.session_date+14
+            LEFT JOIN daily_verdict_outcome d7
+              ON d7.snapshot_id=v.snapshot_id
+             AND d7.outcome_version=$4
+             AND d7.horizon_sessions=7
+            LEFT JOIN daily_verdict_outcome d14
+              ON d14.snapshot_id=v.snapshot_id
+             AND d14.outcome_version=$4
+             AND d14.horizon_sessions=14
             ORDER BY v.session_date DESC
             """,
             selected,
             logic_version,
             limit,
+            DAILY_VERDICT_OUTCOME_VERSION,
         )
     return {
         "symbol": selected,
@@ -1659,9 +1648,8 @@ async def verdicts(
         "note": (
             "snapshot = primera emision inmutable capturada para la sesion; observed_at = "
             "momento en que fue conocible; reference_price_at = anchor de fwd_return_*_pct. "
-            "Los targets usan exclusivamente daily_session_snapshot en la fecha calendario "
-            "exacta +7/+14; un target ausente deja el retorno null. No es una reconstruccion "
-            "exacta del cierre de sesion."
+            "Los retornos usan exclusivamente daily_verdict_outcome inmutable en la fecha "
+            "calendario exacta +7/+14; un target no medido deja el retorno null."
         ),
     }
 
@@ -1677,11 +1665,20 @@ async def structure(symbol: str) -> dict[str, Any]:
 async def daily(
     symbol: str,
     days: Annotated[int, Query(ge=2, le=730)] = 60,
-    as_of: date | None = None,
+    through_session_date: date | None = None,
+    as_of: Annotated[date | None, Query(deprecated=True)] = None,
 ) -> dict[str, Any]:
+    if as_of is not None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "PIT replay is not supported by /api/daily; use "
+                "through_session_date to limit the current mutable projection"
+            ),
+        )
     selected = validate_symbol(symbol)
     async with app.state.pool.acquire() as conn:
-        return await daily_data(conn, selected, days, as_of)
+        return await daily_data(conn, selected, days, through_session_date)
 
 
 @app.get("/api/setup")

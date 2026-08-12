@@ -51,6 +51,9 @@ class _SessionConn:
     async def fetchrow(self, _query, *_args):
         return self.row
 
+    async def fetch(self, _query, *_args):
+        return []
+
     async def execute(self, query, *args):
         self.executed.append((query, args))
         return "INSERT 0 1"

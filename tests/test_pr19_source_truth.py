@@ -92,6 +92,8 @@ def test_liquidation_empty_event_history_is_healthy_observation():
     assert detail["returned_rows"] == 0
     assert detail["accepted_rows"] == 0
     assert detail["missing_symbols"] == []
+    assert detail["requested_symbol_names"] == sorted(payload)
+    assert detail["observed_symbol_names"] == sorted(payload)
     assert detail["source_cutoff_ts"] == int(cutoff.timestamp())
 
 
@@ -118,14 +120,12 @@ def test_liquidation_rejected_returned_row_is_degraded():
     assert json.loads(detail_text)["reason"] == "rejected_rows"
 
 
-class LiquidationObservationConn:
-    def __init__(self, row):
-        self.row = row
+class HeartbeatConn:
+    def __init__(self, rows):
+        self.rows = rows
 
-    async def fetchrow(self, _query, *_args):
-        if self.row and self.row.get("status") == "COMPLETE":
-            return self.row
-        return None
+    async def fetch(self, _query, *_args):
+        return self.rows
 
 
 @pytest.mark.asyncio
@@ -133,25 +133,39 @@ async def test_liquidation_history_health_requires_exact_source_cutoff():
     required_end = datetime(2026, 8, 11, 12, 5, tzinfo=UTC)
     required_start = required_end - timedelta(hours=24)
     now = required_end + timedelta(seconds=30)
-    conn = LiquidationObservationConn({
-        "status": "COMPLETE",
-        "observed_at": now,
-        "source_start_at": required_start - timedelta(hours=2),
-        "source_cutoff_at": required_end,
+    detail = json.dumps({
+        "source_start_ts": int((required_start - timedelta(hours=2)).timestamp()),
+        "source_cutoff_ts": int(required_end.timestamp()),
+        "requested_symbols": 1,
+        "observed_symbols": 1,
+        "requested_symbol_names": ["BTCUSDT_PERP.A"],
+        "observed_symbol_names": ["BTCUSDT_PERP.A"],
+        "missing_symbols": [],
+        "returned_rows": 0,
+        "accepted_rows": 0,
+        "reason": "complete_observation",
     })
+    conn = HeartbeatConn([{"status": "ok", "updated_at": now, "detail": detail}])
     assert await _liquidation_history_observed(
         conn, symbol="BTCUSDT_PERP.A", required_start=required_start,
         required_end=required_end, now_utc=now,
     )
 
-    behind = LiquidationObservationConn({
-        "status": "COMPLETE",
-        "observed_at": now,
-        "source_start_at": required_start - timedelta(hours=2),
-        "source_cutoff_at": required_end - timedelta(minutes=5),
+    behind = json.dumps({
+        "source_start_ts": int((required_start - timedelta(hours=2)).timestamp()),
+        "source_cutoff_ts": int((required_end - timedelta(minutes=5)).timestamp()),
+        "requested_symbols": 1,
+        "observed_symbols": 1,
+        "requested_symbol_names": ["BTCUSDT_PERP.A"],
+        "observed_symbol_names": ["BTCUSDT_PERP.A"],
+        "missing_symbols": [],
+        "returned_rows": 0,
+        "accepted_rows": 0,
+        "reason": "complete_observation",
     })
+    conn = HeartbeatConn([{"status": "ok", "updated_at": now, "detail": behind}])
     assert not await _liquidation_history_observed(
-        behind, symbol="BTCUSDT_PERP.A", required_start=required_start,
+        conn, symbol="BTCUSDT_PERP.A", required_start=required_start,
         required_end=required_end, now_utc=now,
     )
 
@@ -161,22 +175,24 @@ async def test_liquidation_history_health_rejects_stale_or_degraded():
     end = datetime(2026, 8, 11, 12, 5, tzinfo=UTC)
     start = end - timedelta(hours=24)
     now = end + timedelta(minutes=8)
-    stale = LiquidationObservationConn({
-        "status": "COMPLETE",
-        "observed_at": end,
-        "source_start_at": start - timedelta(hours=2),
-        "source_cutoff_at": end,
+    detail = json.dumps({
+        "source_start_ts": int((start - timedelta(hours=2)).timestamp()),
+        "source_cutoff_ts": int(end.timestamp()),
+        "requested_symbols": 1,
+        "observed_symbols": 1,
+        "requested_symbol_names": ["BTCUSDT_PERP.A"],
+        "observed_symbol_names": ["BTCUSDT_PERP.A"],
+        "missing_symbols": [],
+        "returned_rows": 0,
+        "accepted_rows": 0,
+        "reason": "complete_observation",
     })
+    stale = HeartbeatConn([{"status": "ok", "updated_at": end, "detail": detail}])
     assert not await _liquidation_history_observed(
         stale, symbol="BTCUSDT_PERP.A", required_start=start,
         required_end=end, now_utc=now,
     )
-    degraded = LiquidationObservationConn({
-        "status": "INCOMPLETE",
-        "observed_at": now,
-        "source_start_at": start - timedelta(hours=2),
-        "source_cutoff_at": end,
-    })
+    degraded = HeartbeatConn([{"status": "degraded", "updated_at": now, "detail": detail}])
     assert not await _liquidation_history_observed(
         degraded, symbol="BTCUSDT_PERP.A", required_start=start,
         required_end=end, now_utc=now,

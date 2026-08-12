@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import math
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -188,6 +190,76 @@ def compute_regime(
 LIQUIDATION_HISTORY_HEARTBEAT = "ingest:liquidations_history"
 
 
+@dataclass(frozen=True)
+class LiquidationHistoryObservation:
+    observed_at: datetime
+    source_start_at: datetime
+    source_cutoff_at: datetime
+
+
+async def liquidation_history_observation(
+    conn: asyncpg.Connection,
+    *,
+    symbol: str,
+    required_start: datetime,
+    required_end: datetime,
+    now_utc: datetime | None = None,
+    max_age_seconds: float | None = None,
+) -> LiquidationHistoryObservation | None:
+    """Read and validate the liquidation event-window truth published by ingest."""
+    rows = await conn.fetch(
+        "SELECT updated_at,status,detail FROM pipeline_heartbeat WHERE service=$1",
+        LIQUIDATION_HISTORY_HEARTBEAT,
+    )
+    if len(rows) != 1:
+        return None
+    row = rows[0]
+    observed_at = row.get("updated_at")
+    if row.get("status") != "ok" or not isinstance(observed_at, datetime):
+        return None
+    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
+        return None
+    observed_at = observed_at.astimezone(UTC)
+    if now_utc is not None and max_age_seconds is not None:
+        age_seconds = (now_utc.astimezone(UTC) - observed_at).total_seconds()
+        if age_seconds < -60 or age_seconds > max_age_seconds:
+            return None
+    try:
+        detail = json.loads(str(row.get("detail") or ""))
+        source_start = datetime.fromtimestamp(int(detail["source_start_ts"]), tz=UTC)
+        source_cutoff = datetime.fromtimestamp(int(detail["source_cutoff_ts"]), tz=UTC)
+        requested_symbols = detail["requested_symbol_names"]
+        observed_symbols = detail["observed_symbol_names"]
+        missing_symbols = detail["missing_symbols"]
+        requested_count = int(detail["requested_symbols"])
+        observed_count = int(detail["observed_symbols"])
+        returned_rows = int(detail["returned_rows"])
+        accepted_rows = int(detail["accepted_rows"])
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError, OverflowError, OSError):
+        return None
+    if (
+        not isinstance(requested_symbols, list)
+        or not all(isinstance(item, str) for item in requested_symbols)
+        or not isinstance(observed_symbols, list)
+        or not all(isinstance(item, str) for item in observed_symbols)
+        or not isinstance(missing_symbols, list)
+        or missing_symbols
+        or requested_count != len(requested_symbols)
+        or observed_count != len(observed_symbols)
+        or symbol not in requested_symbols
+        or symbol not in observed_symbols
+        or returned_rows < 0
+        or accepted_rows != returned_rows
+        or detail.get("reason") != "complete_observation"
+        or source_start >= source_cutoff
+        or source_cutoff > observed_at
+        or source_start > required_start
+        or source_cutoff < required_end
+    ):
+        return None
+    return LiquidationHistoryObservation(observed_at, source_start, source_cutoff)
+
+
 async def _liquidation_history_observed(
     conn: asyncpg.Connection,
     *,
@@ -196,29 +268,16 @@ async def _liquidation_history_observed(
     required_end: datetime,
     now_utc: datetime,
 ) -> bool:
-    """Require durable COMPLETE event-history provenance for this symbol and window."""
-    row = await conn.fetchrow(
-        """
-        SELECT observed_at,source_start_at,source_cutoff_at
-        FROM liquidation_history_observation
-        WHERE symbol=$1 AND status='COMPLETE'
-          AND source_start_at <= $2 AND source_cutoff_at >= $3
-        ORDER BY observed_at DESC,observation_id DESC
-        LIMIT 1
-        """,
-        symbol,
-        required_start,
-        required_end,
+    """Require a recent valid event observation covering the exact metric window."""
+    observation = await liquidation_history_observation(
+        conn,
+        symbol=symbol,
+        required_start=required_start,
+        required_end=required_end,
+        now_utc=now_utc,
+        max_age_seconds=INGEST_COMPONENT_MAX_AGES["metrics_5m"],
     )
-    if row is None or not isinstance(row.get("observed_at"), datetime):
-        return False
-    observed_at = row["observed_at"]
-    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
-        return False
-    age_seconds = (now_utc - observed_at.astimezone(UTC)).total_seconds()
-    if age_seconds < -60 or age_seconds > INGEST_COMPONENT_MAX_AGES["metrics_5m"]:
-        return False
-    return row["source_start_at"] <= required_start and row["source_cutoff_at"] >= required_end
+    return observation is not None
 
 
 SNAPSHOT_QUERY = """

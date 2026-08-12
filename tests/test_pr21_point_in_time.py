@@ -87,33 +87,18 @@ async def test_pr21_reference_price_requires_closed_1m_candle(monkeypatch) -> No
     assert snapshot_args[23] == reference_at
     assert snapshot_args[4] >= snapshot_args[5]
 
-    session_snapshot_query, session_snapshot_args = next(
-        (query, args)
-        for query, args in conn.queries
-        if "INSERT INTO daily_session_snapshot" in query
-    )
-    assert "ON CONFLICT(symbol,session_date) DO NOTHING" in session_snapshot_query
-    assert session_snapshot_args[2] == daily_agg.DAILY_SESSION_SNAPSHOT_VERSION
-    assert session_snapshot_args[3] == snapshot_args[4] == conn.observed_at
-    assert session_snapshot_args[4] == snapshot_args[5]
-
     executed_sql = [query for query, _args in conn.queries]
     snapshot_index = next(
         index
         for index, query in enumerate(executed_sql)
         if "INSERT INTO daily_verdict_snapshot" in query
     )
-    session_snapshot_index = next(
-        index
-        for index, query in enumerate(executed_sql)
-        if "INSERT INTO daily_session_snapshot" in query
-    )
     projection_index = next(
         index
         for index, query in enumerate(executed_sql)
         if "INSERT INTO daily_verdict(" in query
     )
-    assert session_snapshot_index < snapshot_index < projection_index
+    assert snapshot_index < projection_index
     assert "ON CONFLICT(symbol,session_date) DO UPDATE" in executed_sql[projection_index]
 
 
@@ -134,7 +119,10 @@ async def test_pr21_missing_reference_price_keeps_returns_null(monkeypatch) -> N
 
     api = (ROOT / "app/api.py").read_text(encoding="utf-8")
     body = api[api.index("async def verdicts(") : api.index("async def structure", api.index("async def verdicts("))]
-    assert body.count("CASE WHEN v.reference_price IS NULL THEN NULL") == 2
+    assert "d7.return_pct AS fwd_return_7s_pct" in body
+    assert "d14.return_pct AS fwd_return_14s_pct" in body
+    materializer = (ROOT / "app/daily_agg.py").read_text(encoding="utf-8")
+    assert "verdict.reference_price IS NOT NULL" in materializer
 
 
 class _HistoryConnection:
@@ -154,7 +142,7 @@ async def test_pr21_verdict_history_reads_snapshot_not_mutable_projection() -> N
     result = await verdict_history(conn, "BTCUSDT_PERP.A", 12)
     assert "FROM daily_verdict_snapshot" in conn.query
     assert "FROM daily_verdict WHERE" not in conn.query
-    assert conn.args == ("BTCUSDT_PERP.A", 12, "daily-verdict-v4")
+    assert conn.args == ("BTCUSDT_PERP.A", 12, "daily-verdict-v4", 1)
     assert result["available"] is False
     assert "first immutable observed verdict snapshot" in result["note"]
 
@@ -167,12 +155,12 @@ def test_pr21_forward_return_uses_observation_reference_price() -> None:
         source = (ROOT / path).read_text(encoding="utf-8")
         start = source.index(start_marker)
         body = source[start : source.index(end_marker, start)]
-        assert "d7.price_close/v.reference_price" in body
-        assert "d14.price_close/v.reference_price" in body
+        assert "d7.return_pct" in body
+        assert "d14.return_pct" in body
+        assert "daily_verdict_outcome" in body
         assert "FROM daily_session_agg" not in body
         assert "OFFSET" not in body
-        assert "d.price_close/v.session_price_close" not in body
-        assert "d.price_close/v.price_close" not in body
+        assert "/v.reference_price" not in body
 
 
 def test_pr21_verdict_api_exposes_snapshot_provenance() -> None:
