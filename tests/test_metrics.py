@@ -52,6 +52,8 @@ def test_compute_regime_organic_bullish():
         {
             "vol_24h": 100_000_000,
             "cvd_diff_24h": 10_000_000,
+            "cvd_spot_imbalance_24h": 0.4,
+            "cvd_fut_imbalance_24h": 0.2,
             "oi_chg_24h_pct": 5,
             "fr_avg": -0.001,
             "liq_ratio_24h": 0,

@@ -297,8 +297,9 @@ async def test_oi_jump_in_latest_closed_bucket_is_in_immediate_metrics_snapshot(
     assert pool.conn.snapshot_args is not None
     assert pool.conn.snapshot_args[1] == 101.0
     assert pool.conn.snapshot_args[2] == 200.0
-    assert pool.conn.snapshot_args[-2] == datetime(2026, 8, 9, 12, 4, tzinfo=UTC)
-    assert pool.conn.snapshot_args[-1] == datetime(2026, 8, 9, 12, 0, tzinfo=UTC)
+    assert pool.conn.snapshot_args[28] == datetime(2026, 8, 9, 12, 4, tzinfo=UTC)
+    assert pool.conn.snapshot_args[29] == datetime(2026, 8, 9, 12, 0, tzinfo=UTC)
+    assert pool.conn.snapshot_args[-1] == metrics.REGIME_LOGIC_VERSION
 
 
 def _test_dsn() -> str | None:

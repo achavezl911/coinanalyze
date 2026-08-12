@@ -87,9 +87,9 @@ h2{scroll-margin-top:70px;} h3{scroll-margin-top:70px;}
 </ul>
 <h3 id="8-buy-trade-ratio">8. Buy-trade ratio</h3>
 <p><strong>Qué mide:</strong> fracción de trades de futuros que fueron compra a mercado. Mide <strong>participación</strong> (cuánta gente compra), no volumen (cuánto se compra).</p>
-<p><strong>Cómo leerlo:</strong> ortogonal al CVD. btr alto con CVD plano = muchos compradores pequeños sin mover volumen neto. Compara ventanas (15m/1h/24h) para ver aceleración de participación.</p>
+<p><strong>Cómo leerlo:</strong> ortogonal al CVD. btr alto con CVD plano = muchos compradores pequeños sin mover volumen neto. Las ventanas 15m/1h/24h son rolling y anidadas: compararlas aporta contexto de persistencia, no una medición formal de aceleración.</p>
 <h3 id="9-regime-score-y-etiqueta">9. Regime score y etiqueta</h3>
-<p><strong>Qué mide:</strong> es un sintetizador legado [−100, +100] con pesos heurísticos sobre Diff, whale, OI, funding y liquidaciones. Como Diff está desbalanceado y whale casi siempre falta, <strong>no debe usarse como señal</strong>. La tarjeta principal fue sustituida por CVD 90 sesiones.</p>
+<p><strong>Qué mide:</strong> es un sintetizador [−100, +100] con pesos heurísticos sobre la media de los imbalances CVD spot/futuros de 24h, whale, OI, funding y liquidaciones. Cada imbalance es neto/gross de su propio mercado; si falta una pata, CVD no vota. <strong>No debe usarse como señal</strong>. La tarjeta principal fue sustituida por CVD 90 sesiones.</p>
 <p><strong>Cómo leerlo:</strong> es un <strong>filtro de contexto</strong>, no una señal de entrada. Ejemplos: "Continuación alcista orgánica" (alza con respaldo real, favorece longs en pullback); "Euforia / Sobreextensión bullish" (alza sobreextendida con distribución, precaución); "Distribución / Capitulación (Bearish)" (manos fuertes saliendo).</p>
 <blockquote><strong>Advertencia:</strong> los pesos del score son heurísticos y <strong>no están calibrados con backtest</strong>. Úsalo para enmarcar, no para gatillar.</blockquote>
 <h3 id="10-historico-diario-y-diff-acumulado">10. Histórico diario y CVD spot acumulado</h3>
@@ -105,7 +105,7 @@ h2{scroll-margin-top:70px;} h3{scroll-margin-top:70px;}
 <h2 id="parte-iii-paneles-de-estructura-y-contexto">Parte III — Paneles de estructura y contexto</h2>
 <p>*Estos tres paneles se agregaron después del manual v1.2.1 y amplían el horizonte del tablero del scalping puro hacia estructura y régimen.*</p>
 <h3 id="11-matriz-delta-cvd-por-ventana-15s-4h">11. Matriz delta (CVD por ventana, 15s → 4h)</h3>
-<p><strong>Qué mide:</strong> delta spot y delta de futuros en ventanas: 15s, 30s, 1m, 3m, 5m, 15m, <strong>30m, 1h y 4h</strong>. El delta de futuros mide agresión apalancada; el delta spot confirma flujo real. <code>diff = spot − fut</code>.</p>
+<p><strong>Qué mide:</strong> delta spot y delta de futuros en ventanas rolling: 15s, 30s, 1m, 3m, 5m, 15m, <strong>30m, 1h y 4h</strong>. El raw delta es el notional agresivo neto acumulado; <code>diff = spot − fut</code> conserva esa resta descriptiva. <code>imbalance = net/gross</code> hace comparable la presión relativa y <code>net_rate_usd_per_min</code> expresa el neto por minuto.</p>
 <p><strong>Cómo leerlo:</strong></p>
 <ul>
 <li><strong>Fut + y spot +:</strong> impulso alcista confirmado. <strong>Fut − y spot −:</strong> impulso bajista confirmado.</li>
@@ -113,9 +113,9 @@ h2{scroll-margin-top:70px;} h3{scroll-margin-top:70px;}
 <li><strong>Diff + con fut −:</strong> los futuros venden agresivo pero el spot resiste; posible absorción de ventas.</li>
 <li><strong>Diff − con fut +:</strong> los futuros compran agresivo pero el spot no confirma; posible distribución hacia apalancados.</li>
 </ul>
-<p><strong>La secuencia importa:</strong> 15s→30s→1m define aceleración inmediata; 3m→5m→15m define continuidad intradía; <strong>30m→1h→4h es tu CVD de medio plazo</strong> — el mismo concepto de divergencia spot/fut pero en el horizonte que decide swings, no scalps. Una divergencia que persiste en 1h y 4h pesa mucho más que una de 1m.</p>
+<p><strong>Persistencia, no aceleración:</strong> las ventanas están anidadas y por ello son evidencia correlacionada, no confirmaciones independientes. El mismo signo en 15s→30s→1m aporta contexto de persistencia inmediata; 3m→5m→15m, contexto intradía; y 30m→1h→4h, contexto de medio plazo. PR22 no publica una estadística formal de aceleración sobre ventanas disjuntas.</p>
 <h3 id="12-estructura-de-mercado-micro-mid-macro">12. Estructura de mercado (micro / mid / macro)</h3>
-<p><strong>Qué mide:</strong> un bias (Alcista / Bajista / Neutral) por horizonte, con voto de mayoría de señales independientes, más la <strong>estructura de precio</strong> (patrón de pivotes HH/HL vs LH/LL):</p>
+<p><strong>Qué mide:</strong> un bias (Alcista / Bajista / Neutral) por horizonte, con voto heurístico de componentes observables, más la <strong>estructura de precio</strong> (patrón de pivotes HH/HL vs LH/LL). Las ventanas rolling solapadas no son evidencia estadísticamente independiente:</p>
 <ul>
 <li><strong>Micro (1m–15m):</strong> CVD fut 15m, precio, skew de liquidaciones RT, pivotes 1m.</li>
 <li><strong>Mid (30m–4h):</strong> CVD 1h y 4h, confirmación de OI, skew de liquidaciones 4h, pivotes 15m.</li>
@@ -217,7 +217,7 @@ h2{scroll-margin-top:70px;} h3{scroll-margin-top:70px;}
 <li>3. <strong>Estado actual (snapshot + regime):</strong> ¿confirma o contradice el sesgo de fondo?</li>
 <li>4. <strong>Flujo:</strong> ¿el CVD spot confirma al precio? ¿spot y futuros divergen en ventanas frescas?</li>
 <li>5. <strong>Apalancamiento (OI + funding + liquidaciones):</strong> ¿el movimiento tiene respaldo o es frágil? ¿qué lado es vulnerable?</li>
-<li>6. <strong>Timing corto (matriz delta + book + absorción):</strong> ¿hay aceleración ahora mismo?</li>
+<li>6. <strong>Timing corto (matriz delta + book + absorción):</strong> ¿hay presión relativa, net rate y persistencia ahora mismo?</li>
 </ol>
 <p><strong>Regla de oro:</strong> mayor convicción cuando el corto plazo (5–6) se alinea con el CVD spot de 90 sesiones y la estructura (1–2). Cuando los pasos se contradicen, espera.</p>
 <hr>

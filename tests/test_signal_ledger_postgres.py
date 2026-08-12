@@ -54,6 +54,7 @@ CREATE TABLE metrics_snapshot (
     symbol text NOT NULL REFERENCES symbols(symbol),
     regime_score double precision,
     regime_label text,
+    regime_logic_version smallint,
     price_cutoff_at timestamptz,
     metrics_cutoff_at timestamptz,
     PRIMARY KEY(symbol, ts)
@@ -271,6 +272,30 @@ async def test_latest_non_future_metrics_snapshot_is_frozen() -> None:
         assert row["metrics_snapshot_ts"] <= row["observed_at"]
         assert row["price_cutoff_at"] < row["observed_at"]
         assert row["metrics_cutoff_at"] < row["observed_at"]
+    finally:
+        await _drop_schema(conn, schema)
+
+
+@pytest.mark.asyncio
+async def test_pr22_signal_observation_copies_regime_logic_version() -> None:
+    schema = _schema_name()
+    conn = await _connect_schema(schema)
+    try:
+        await conn.execute(
+            """
+            INSERT INTO metrics_snapshot(
+              ts,symbol,regime_score,regime_label,regime_logic_version
+            ) VALUES(
+              clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',25,'v2',2
+            )
+            """
+        )
+        await _persist(conn)
+        row = await conn.fetchrow(
+            "SELECT evidence_version,regime_logic_version FROM signal_observation"
+        )
+        assert row["evidence_version"] == 3
+        assert row["regime_logic_version"] == 2
     finally:
         await _drop_schema(conn, schema)
 

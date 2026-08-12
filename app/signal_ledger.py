@@ -16,7 +16,7 @@ from app.signal_replay import (
 )
 
 SIGNAL_FAMILY = "scalp"
-SIGNAL_EVIDENCE_VERSION = 2
+SIGNAL_EVIDENCE_VERSION = 3
 SIGNAL_SAMPLING_VERSION = 1
 
 _LONG_STATES = frozenset({"Long Momentum", "Long Pullback"})
@@ -275,7 +275,8 @@ async def persist_signal_observations(
 
     metrics = await conn.fetchrow(
         """
-        SELECT ts,regime_score,regime_label,price_cutoff_at,metrics_cutoff_at
+        SELECT ts,regime_score,regime_label,regime_logic_version,
+               price_cutoff_at,metrics_cutoff_at
         FROM metrics_snapshot
         WHERE symbol=$1 AND ts <= $2
         ORDER BY ts DESC
@@ -308,6 +309,7 @@ async def persist_signal_observations(
         metrics["ts"] if metrics else None,
         metrics["regime_score"] if metrics else None,
         metrics["regime_label"] if metrics else None,
+        metrics["regime_logic_version"] if metrics else None,
         metrics["price_cutoff_at"] if metrics else None,
         metrics["metrics_cutoff_at"] if metrics else None,
         collector_generation,
@@ -323,18 +325,18 @@ async def persist_signal_observations(
           decision_status,direction,actionable,state,confidence,reason,
           reference_price,reference_price_source,reference_price_at,
           long_score,short_score,evidence_coverage_pct,
-          metrics_snapshot_ts,regime_score,regime_label,
+          metrics_snapshot_ts,regime_score,regime_label,regime_logic_version,
           price_cutoff_at,metrics_cutoff_at,
           collector_generation,collector_shard_index,collector_shard_count,
           decision_fingerprint,evidence
         ) VALUES(
-          $1,$2,$3,$4,$29,$30,
+          $1,$2,$3,$4,$30,$31,
           $5,$6,$7,
           $8,$9,$10,$11,$12,$13,
           $14,$15,$16,
           $17,$18,$19,
-          $20,$21,$22,$23,$24,
-          $25,$26,$27,$28,$31::jsonb
+          $20,$21,$22,$23,$24,$25,
+          $26,$27,$28,$29,$32::jsonb
         )
         ON CONFLICT DO NOTHING
         RETURNING observation_id

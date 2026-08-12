@@ -62,18 +62,22 @@ def test_la_matriz_distingue_ventana_movil_de_vela_cerrada() -> None:
 async def test_la_matriz_no_pide_ventanas_que_la_retencion_no_cubre() -> None:
     capturado: dict[str, object] = {}
 
+    class FakeConn:
+        async def fetchval(self, _query):
+            return datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+
     class FakePool:
         def acquire(self):
             class Ctx:
                 async def __aenter__(self):
-                    return object()
+                    return FakeConn()
 
                 async def __aexit__(self, *_):
                     return False
 
             return Ctx()
 
-    async def fake_delta_matrix(_conn, _symbol, windows):
+    async def fake_delta_matrix(_conn, _symbol, windows, _as_of=None):
         capturado["windows"] = windows
         return []
 

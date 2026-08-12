@@ -5,7 +5,7 @@ import hmac
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from ipaddress import ip_address, ip_network
 from pathlib import Path
 from typing import Annotated, Any
@@ -72,6 +72,7 @@ from app.scalp_logic import (
     profile_view,
     range_validate,
     reference_levels,
+    resolve_matrix_as_of,
     scalp_context,
     setup_confirmation_bundle,
     spot_perp_flow,
@@ -736,7 +737,8 @@ async def scalp_delta_matrix(symbol: str) -> list[dict[str, Any]]:
         ("1d", 86400),
     ]
     async with app.state.pool.acquire() as conn:
-        return await delta_matrix(conn, selected, windows)
+        as_of = await resolve_matrix_as_of(conn)
+        return await delta_matrix(conn, selected, windows, as_of)
 
 
 @app.get("/api/market-impact")
@@ -841,16 +843,17 @@ async def desk_state(
     direction: str | None = None,
     setup: str = "ninguno",
 ) -> dict[str, Any]:
-    """Snapshot COHERENTE de la Mesa: un solo calculo, un solo ancla temporal.
+    """Evaluacion de Mesa con un cutoff de tiempo de evento compartido.
 
     La Mesa pedia `/api/trend-matrix`, `/api/profile`, `/api/hypothesis` y
     `/api/dashboard/state` por separado. Cada uno volvia a calcular `trend_matrix`,
     `delta_matrix` y `scalp_context` con su propio `now()`, asi que dos paneles contiguos
     podian estar describiendo instantes distintos y contradecirse sin que se viera por que.
 
-    Aqui los componentes compartidos se calculan UNA vez, en una sola conexion, y todos se
-    publican bajo el mismo `as_of`. Los endpoints originales siguen existiendo: otras vistas
-    los usan y no todas necesitan el paquete completo.
+    Aqui los componentes compartidos se calculan UNA vez, en una sola conexion, y la matriz
+    delta recibe el mismo `as_of` de PostgreSQL. Esto alinea el cutoff de tiempo de evento;
+    varias sentencias autocommit NO constituyen un snapshot MVCC atomico. Los endpoints
+    originales siguen existiendo: otras vistas los usan y no todas necesitan el paquete completo.
     """
     selected = validate_symbol(symbol)
     if profile not in TRADING_PROFILES:
@@ -865,10 +868,10 @@ async def desk_state(
         raise HTTPException(
             status_code=422, detail=f"setup debe ser uno de: {', '.join(SETUP_LABELS)}"
         )
-    as_of = datetime.now(UTC)
     async with app.state.pool.acquire() as conn:
+        as_of = await resolve_matrix_as_of(conn)
         trend = await trend_matrix(conn, selected)
-        matrix = await delta_matrix(conn, selected, PROFILE_WINDOWS)
+        matrix = await delta_matrix(conn, selected, PROFILE_WINDOWS, as_of)
         ctx = await scalp_context(conn, selected)
         quality = await data_quality(conn, selected)
         barriers = await price_barriers(conn, selected)
@@ -928,8 +931,9 @@ async def desk_state(
             "profile_coverage_pct": view.get("coverage_pct"),
         },
         "note": (
-            "Todos los componentes comparten `as_of`. Los estados parciales NO se ocultan: "
-            "se declaran en `partial` y en el propio bloque."
+            "`as_of` es el cutoff de tiempo de evento compartido por la matriz delta, no un "
+            "snapshot MVCC atomico de las sentencias autocommit. Los estados parciales NO se "
+            "ocultan: se declaran en `partial` y en el propio bloque."
         ),
     }
 
@@ -1510,7 +1514,8 @@ async def passive_flow_endpoint(symbol: str) -> dict[str, Any]:
 async def cvd_matrix_endpoint(symbol: str) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     async with app.state.pool.acquire() as conn:
-        return await cvd_matrix(conn, selected)
+        as_of = await resolve_matrix_as_of(conn)
+        return await cvd_matrix(conn, selected, as_of)
 
 
 @app.get("/api/structure-detail")
@@ -1576,7 +1581,7 @@ async def verdicts(
                    v.session_price_close,v.session_price_close AS price_close,
                    v.observed_at,v.session_end_at,v.snapshot_version,v.logic_version,
                    v.reference_price,v.reference_price_at,v.metrics_snapshot_ts,
-                   v.session_coverage_version,
+                   v.session_coverage_version,v.regime_logic_version,
                    CASE WHEN v.reference_price IS NULL THEN NULL ELSE
                      (SELECT (d.price_close/v.reference_price-1)*100
                       FROM daily_session_agg d

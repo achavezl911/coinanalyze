@@ -416,6 +416,9 @@ CREATE TABLE IF NOT EXISTS signal_observation (
                (finite_float8(regime_score) AND regime_score BETWEEN -100 AND 100)),
     regime_label text
         CHECK (regime_label IS NULL OR length(regime_label) BETWEEN 1 AND 100),
+    regime_logic_version smallint
+        CONSTRAINT signal_observation_regime_logic_version_check
+        CHECK (regime_logic_version IS NULL OR regime_logic_version >= 1),
     price_cutoff_at timestamptz,
     metrics_cutoff_at timestamptz,
     collector_generation bigint
@@ -440,6 +443,20 @@ CREATE TABLE IF NOT EXISTS signal_observation (
         )
     )
 );
+ALTER TABLE signal_observation
+    ADD COLUMN IF NOT EXISTS regime_logic_version smallint;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='signal_observation'::regclass
+      AND conname='signal_observation_regime_logic_version_check'
+  ) THEN
+    ALTER TABLE signal_observation
+      ADD CONSTRAINT signal_observation_regime_logic_version_check
+      CHECK (regime_logic_version IS NULL OR regime_logic_version >= 1);
+  END IF;
+END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS signal_observation_periodic_slot_uidx
     ON signal_observation(symbol, signal_family, observed_minute)
     WHERE is_periodic;
@@ -864,11 +881,20 @@ CREATE TABLE IF NOT EXISTS metrics_snapshot (
     oi_chg_24h_pct double precision CHECK (oi_chg_24h_pct IS NULL OR finite_float8(oi_chg_24h_pct)),
     oi_vol_24h_ratio double precision CHECK (oi_vol_24h_ratio IS NULL OR (finite_float8(oi_vol_24h_ratio) AND oi_vol_24h_ratio >= 0)),
     vol_24h double precision CHECK (vol_24h IS NULL OR (finite_float8(vol_24h) AND vol_24h >= 0)),
+    spot_vol_24h double precision
+        CONSTRAINT metrics_snapshot_spot_vol_24h_check
+        CHECK (spot_vol_24h IS NULL OR (finite_float8(spot_vol_24h) AND spot_vol_24h >= 0)),
     delta_3min double precision CHECK (delta_3min IS NULL OR finite_float8(delta_3min)),
     cvd_session double precision CHECK (cvd_session IS NULL OR finite_float8(cvd_session)),
     cvd_nyse_session double precision CHECK (cvd_nyse_session IS NULL OR finite_float8(cvd_nyse_session)),
     cvd_spot_24h double precision CHECK (cvd_spot_24h IS NULL OR finite_float8(cvd_spot_24h)),
     cvd_spot_session double precision CHECK (cvd_spot_session IS NULL OR finite_float8(cvd_spot_session)),
+    cvd_spot_imbalance_24h double precision
+        CONSTRAINT metrics_snapshot_cvd_spot_imbalance_24h_check
+        CHECK (cvd_spot_imbalance_24h IS NULL OR (finite_float8(cvd_spot_imbalance_24h) AND cvd_spot_imbalance_24h BETWEEN -1 AND 1)),
+    cvd_fut_imbalance_24h double precision
+        CONSTRAINT metrics_snapshot_cvd_fut_imbalance_24h_check
+        CHECK (cvd_fut_imbalance_24h IS NULL OR (finite_float8(cvd_fut_imbalance_24h) AND cvd_fut_imbalance_24h BETWEEN -1 AND 1)),
     oi_bybit double precision CHECK (oi_bybit IS NULL OR (finite_float8(oi_bybit) AND oi_bybit >= 0)),
     liq_ratio_24h double precision CHECK (liq_ratio_24h IS NULL OR (finite_float8(liq_ratio_24h) AND liq_ratio_24h >= 0)),
     cvd_diff_24h double precision CHECK (cvd_diff_24h IS NULL OR finite_float8(cvd_diff_24h)),
@@ -881,6 +907,9 @@ CREATE TABLE IF NOT EXISTS metrics_snapshot (
     whale_label text NOT NULL CHECK (length(whale_label) BETWEEN 1 AND 80),
     regime_score double precision NOT NULL CHECK (finite_float8(regime_score) AND regime_score BETWEEN -100 AND 100),
     regime_label text NOT NULL CHECK (length(regime_label) BETWEEN 1 AND 100),
+    regime_logic_version smallint
+        CONSTRAINT metrics_snapshot_regime_logic_version_check
+        CHECK (regime_logic_version IS NULL OR regime_logic_version >= 1),
     price_dir_1h smallint NOT NULL CHECK (price_dir_1h IN (-1,0,1)),
     btr_15m double precision CHECK (btr_15m IS NULL OR (finite_float8(btr_15m) AND btr_15m BETWEEN 0 AND 1)),
     btr_1h double precision CHECK (btr_1h IS NULL OR (finite_float8(btr_1h) AND btr_1h BETWEEN 0 AND 1)),
@@ -900,6 +929,33 @@ ALTER TABLE metrics_snapshot ALTER COLUMN whale_intensity DROP NOT NULL;
 ALTER TABLE metrics_snapshot ALTER COLUMN regime_score DROP NOT NULL;
 ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS price_cutoff_at timestamptz;
 ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS metrics_cutoff_at timestamptz;
+ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS spot_vol_24h double precision;
+ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS cvd_spot_imbalance_24h double precision;
+ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS cvd_fut_imbalance_24h double precision;
+ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS regime_logic_version smallint;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='metrics_snapshot'::regclass
+                 AND conname='metrics_snapshot_spot_vol_24h_check') THEN
+    ALTER TABLE metrics_snapshot ADD CONSTRAINT metrics_snapshot_spot_vol_24h_check
+      CHECK (spot_vol_24h IS NULL OR (finite_float8(spot_vol_24h) AND spot_vol_24h >= 0));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='metrics_snapshot'::regclass
+                 AND conname='metrics_snapshot_cvd_spot_imbalance_24h_check') THEN
+    ALTER TABLE metrics_snapshot ADD CONSTRAINT metrics_snapshot_cvd_spot_imbalance_24h_check
+      CHECK (cvd_spot_imbalance_24h IS NULL OR (finite_float8(cvd_spot_imbalance_24h) AND cvd_spot_imbalance_24h BETWEEN -1 AND 1));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='metrics_snapshot'::regclass
+                 AND conname='metrics_snapshot_cvd_fut_imbalance_24h_check') THEN
+    ALTER TABLE metrics_snapshot ADD CONSTRAINT metrics_snapshot_cvd_fut_imbalance_24h_check
+      CHECK (cvd_fut_imbalance_24h IS NULL OR (finite_float8(cvd_fut_imbalance_24h) AND cvd_fut_imbalance_24h BETWEEN -1 AND 1));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='metrics_snapshot'::regclass
+                 AND conname='metrics_snapshot_regime_logic_version_check') THEN
+    ALTER TABLE metrics_snapshot ADD CONSTRAINT metrics_snapshot_regime_logic_version_check
+      CHECK (regime_logic_version IS NULL OR regime_logic_version >= 1);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS metrics_snapshot_latest_idx ON metrics_snapshot(symbol, ts DESC);
 CREATE INDEX IF NOT EXISTS metrics_snapshot_ts_idx ON metrics_snapshot(ts DESC);
@@ -980,6 +1036,9 @@ CREATE TABLE IF NOT EXISTS daily_verdict_snapshot (
     observed_at timestamptz NOT NULL,
     session_end_at timestamptz NOT NULL,
     metrics_snapshot_ts timestamptz,
+    regime_logic_version smallint
+        CONSTRAINT daily_verdict_snapshot_regime_logic_version_check
+        CHECK (regime_logic_version IS NULL OR regime_logic_version >= 1),
     session_coverage_version smallint CHECK (
         session_coverage_version IS NULL OR session_coverage_version >= 1
     ),
@@ -1030,6 +1089,20 @@ CREATE TABLE IF NOT EXISTS daily_verdict_snapshot (
     CHECK ((reference_price IS NULL) = (reference_price_at IS NULL)),
     CHECK (reference_price_at IS NULL OR reference_price_at <= observed_at)
 );
+ALTER TABLE daily_verdict_snapshot
+    ADD COLUMN IF NOT EXISTS regime_logic_version smallint;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='daily_verdict_snapshot'::regclass
+      AND conname='daily_verdict_snapshot_regime_logic_version_check'
+  ) THEN
+    ALTER TABLE daily_verdict_snapshot
+      ADD CONSTRAINT daily_verdict_snapshot_regime_logic_version_check
+      CHECK (regime_logic_version IS NULL OR regime_logic_version >= 1);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS daily_verdict_snapshot_date_idx
     ON daily_verdict_snapshot(session_date DESC);
 

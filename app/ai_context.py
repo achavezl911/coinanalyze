@@ -30,6 +30,7 @@ from app.scalp_logic import (
     oi_context,
     price_barriers,
     reference_levels,
+    resolve_matrix_as_of,
     scalp_context,
     spot_flow_windows,
     structure_detail,
@@ -115,11 +116,14 @@ SIGNIFICANT_FIELDS = {
     "oi_chg_24h_pct",
     "oi_vol_24h_ratio",
     "vol_24h",
+    "spot_vol_24h",
     "delta_3min",
     "cvd_session",
     "cvd_nyse_session",
     "cvd_spot_24h",
     "cvd_spot_session",
+    "cvd_spot_imbalance_24h",
+    "cvd_fut_imbalance_24h",
     "cvd_diff_24h",
     "cvd_diff_ses",
     "fr_avg",
@@ -131,6 +135,7 @@ SIGNIFICANT_FIELDS = {
     "whale_label",
     "regime_score",
     "regime_label",
+    "regime_logic_version",
     "price_dir_1h",
     "btr_15m",
     "btr_1h",
@@ -211,13 +216,26 @@ async def daily_data(conn: asyncpg.Connection, symbol: str, days: int = 60) -> l
         WITH selected AS (
           SELECT * FROM daily_session_agg WHERE symbol=$1
           ORDER BY session_date DESC LIMIT $2
+        ), segmented AS (
+          SELECT selected.*,
+                 SUM(CASE WHEN cvd_diff_usd IS NULL THEN 1 ELSE 0 END)
+                   OVER (ORDER BY session_date) AS diff_gap_group,
+                 SUM(CASE WHEN cvd_spot_usd IS NULL THEN 1 ELSE 0 END)
+                   OVER (ORDER BY session_date) AS spot_gap_group
+          FROM selected
         )
         SELECT session_date,symbol,cvd_spot_usd,cvd_fut_usd,cvd_diff_usd,
                inst_delta_usd,price_open,price_close,price_chg_pct,
                oi_open,oi_close,oi_chg_usd,fr_avg,
-               SUM(cvd_diff_usd) OVER (ORDER BY session_date) AS cumulative_diff,
-               SUM(cvd_spot_usd) OVER (ORDER BY session_date) AS cumulative_spot
-        FROM selected ORDER BY session_date
+               CASE WHEN cvd_diff_usd IS NULL THEN NULL
+                    ELSE SUM(cvd_diff_usd) OVER (
+                      PARTITION BY diff_gap_group ORDER BY session_date)
+               END AS cumulative_diff,
+               CASE WHEN cvd_spot_usd IS NULL THEN NULL
+                    ELSE SUM(cvd_spot_usd) OVER (
+                      PARTITION BY spot_gap_group ORDER BY session_date)
+               END AS cumulative_spot
+        FROM segmented ORDER BY session_date
         """,
         symbol,
         days,
@@ -226,31 +244,57 @@ async def daily_data(conn: asyncpg.Connection, symbol: str, days: int = 60) -> l
 
 
 DAILY_HISTORY_QUERY = """
-WITH hist AS (
+WITH spot_hist AS (
   SELECT session_date,
-         percent_rank() OVER (ORDER BY cvd_spot_usd) * 100 AS pct_spot,
-         percent_rank() OVER (ORDER BY cvd_diff_usd) * 100 AS pct_diff,
+         percent_rank() OVER (ORDER BY cvd_spot_usd) * 100 AS pct_spot
+  FROM daily_session_agg WHERE symbol=$1 AND cvd_spot_usd IS NOT NULL
+), diff_hist AS (
+  SELECT session_date,
+         percent_rank() OVER (ORDER BY cvd_diff_usd) * 100 AS pct_diff
+  FROM daily_session_agg WHERE symbol=$1 AND cvd_diff_usd IS NOT NULL
+), price_hist AS (
+  SELECT session_date,
          percent_rank() OVER (ORDER BY price_chg_pct) * 100 AS pct_ret
-  FROM daily_session_agg WHERE symbol=$1
+  FROM daily_session_agg WHERE symbol=$1 AND price_chg_pct IS NOT NULL
 ), selected AS (
   SELECT * FROM daily_session_agg WHERE symbol=$1
   ORDER BY session_date DESC LIMIT $2
+), segmented AS (
+  SELECT selected.*,
+         SUM(CASE WHEN cvd_spot_usd IS NULL THEN 1 ELSE 0 END)
+           OVER (ORDER BY session_date) AS spot_gap_group,
+         SUM(CASE WHEN cvd_fut_usd IS NULL THEN 1 ELSE 0 END)
+           OVER (ORDER BY session_date) AS fut_gap_group,
+         SUM(CASE WHEN cvd_diff_usd IS NULL THEN 1 ELSE 0 END)
+           OVER (ORDER BY session_date) AS diff_gap_group
+  FROM selected
 )
 SELECT s.session_date,s.price_open,s.price_close,s.price_chg_pct,
        s.cvd_spot_usd,s.cvd_fut_usd,s.cvd_diff_usd,s.cvd_fut_2v_usd,s.cvd_diff_2v_usd,
        s.oi_close,s.oi_chg_usd,s.fr_avg,s.volume_usd,s.long_liq_usd,s.short_liq_usd,
-       SUM(s.cvd_spot_usd) OVER (ORDER BY s.session_date) AS cum_spot,
-       SUM(s.cvd_fut_usd)  OVER (ORDER BY s.session_date) AS cum_fut,
-       SUM(s.cvd_diff_usd) OVER (ORDER BY s.session_date) AS cum_diff,
-       round(h.pct_spot::numeric,0)::float8 AS pct_spot,
-       round(h.pct_diff::numeric,0)::float8 AS pct_diff,
-       round(h.pct_ret::numeric,0)::float8  AS pct_ret,
+       CASE WHEN s.cvd_spot_usd IS NULL THEN NULL ELSE
+         SUM(s.cvd_spot_usd) OVER (
+           PARTITION BY s.spot_gap_group ORDER BY s.session_date) END AS cum_spot,
+       CASE WHEN s.cvd_fut_usd IS NULL THEN NULL ELSE
+         SUM(s.cvd_fut_usd) OVER (
+           PARTITION BY s.fut_gap_group ORDER BY s.session_date) END AS cum_fut,
+       CASE WHEN s.cvd_diff_usd IS NULL THEN NULL ELSE
+         SUM(s.cvd_diff_usd) OVER (
+           PARTITION BY s.diff_gap_group ORDER BY s.session_date) END AS cum_diff,
+       round(sh.pct_spot::numeric,0)::float8 AS pct_spot,
+       round(dh.pct_diff::numeric,0)::float8 AS pct_diff,
+       round(ph.pct_ret::numeric,0)::float8  AS pct_ret,
        CASE
+         WHEN s.cvd_spot_usd IS NULL OR s.cvd_fut_usd IS NULL THEN 'sin_dato'
+         WHEN s.cvd_spot_usd = 0 OR s.cvd_fut_usd = 0 THEN 'neutral'
          WHEN s.cvd_spot_usd > 0 AND s.cvd_fut_usd > 0 THEN 'ambos_compran'
          WHEN s.cvd_spot_usd < 0 AND s.cvd_fut_usd < 0 THEN 'ambos_venden'
          ELSE 'opuestos'
        END AS flow_direction
-FROM selected s JOIN hist h USING (session_date)
+FROM segmented s
+LEFT JOIN spot_hist sh USING (session_date)
+LEFT JOIN diff_hist dh USING (session_date)
+LEFT JOIN price_hist ph USING (session_date)
 ORDER BY s.session_date
 """
 
@@ -266,12 +310,32 @@ async def daily_history(conn: asyncpg.Connection, symbol: str, sessions: int) ->
     rows = await conn.fetch(DAILY_HISTORY_QUERY, symbol, sessions)
     if not rows:
         return {"available": False, "sessions": 0}
-    series = [compact_dict(dict(row)) for row in rows]
-    spot = [as_float(r["cvd_spot_usd"]) or 0.0 for r in rows]
-    fut = [as_float(r["cvd_fut_usd"]) or 0.0 for r in rows]
+    series = [
+        {key: compact_value(value) for key, value in dict(row).items()}
+        for row in rows
+    ]
+    spot = [as_float(r["cvd_spot_usd"]) for r in rows]
+    fut = [as_float(r["cvd_fut_usd"]) for r in rows]
+    diff = [as_float(r["cvd_diff_usd"]) for r in rows]
+    price_changes = [as_float(r["price_chg_pct"]) for r in rows]
     closes = [as_float(r["price_close"]) for r in rows]
-    up = sum(1 for r in rows if (as_float(r["price_chg_pct"]) or 0.0) > 0)
-    spot_up = sum(1 for value in spot if value > 0)
+
+    def total_or_none(values: list[float | None]) -> float | None:
+        if any(value is None for value in values):
+            return None
+        return round(sum(value for value in values if value is not None), 2)
+
+    def direction_counts(values: list[float | None]) -> tuple[int, int, int, int]:
+        return (
+            sum(value is not None and value > 0 for value in values),
+            sum(value is not None and value < 0 for value in values),
+            sum(value == 0 for value in values if value is not None),
+            sum(value is None for value in values),
+        )
+
+    spot_up, spot_down, spot_neutral, spot_unmeasured = direction_counts(spot)
+    fut_up, fut_down, fut_neutral, fut_unmeasured = direction_counts(fut)
+    price_up, price_down, price_neutral, price_unmeasured = direction_counts(price_changes)
     first_close, last_close = closes[0], closes[-1]
     return {
         "available": True,
@@ -280,18 +344,31 @@ async def daily_history(conn: asyncpg.Connection, symbol: str, sessions: int) ->
         "to": str(rows[-1]["session_date"]),
         "series": series,
         "totals": {
-            "cvd_spot_usd": round(sum(spot), 2),
-            "cvd_fut_usd": round(sum(fut), 2),
-            "cvd_diff_usd": round(sum(spot) - sum(fut), 2),
+            "cvd_spot_usd": total_or_none(spot),
+            "cvd_fut_usd": total_or_none(fut),
+            "cvd_diff_usd": total_or_none(diff),
             "price_change_pct": (
                 round((last_close / first_close - 1) * 100, 3)
-                if (first_close and last_close)
+                if not any(value is None for value in closes)
+                and first_close
+                and last_close
                 else None
             ),
-            "sessions_price_up": up,
-            "sessions_price_down": len(rows) - up,
+            "sessions_price_up": price_up,
+            "sessions_price_down": price_down,
+            "sessions_price_neutral": price_neutral,
+            "sessions_price_measured": len(rows) - price_unmeasured,
+            "sessions_price_unmeasured": price_unmeasured,
             "sessions_spot_buying": spot_up,
-            "sessions_spot_selling": len(rows) - spot_up,
+            "sessions_spot_selling": spot_down,
+            "sessions_spot_neutral": spot_neutral,
+            "sessions_spot_measured": len(rows) - spot_unmeasured,
+            "sessions_spot_unmeasured": spot_unmeasured,
+            "sessions_futures_buying": fut_up,
+            "sessions_futures_selling": fut_down,
+            "sessions_futures_neutral": fut_neutral,
+            "sessions_futures_measured": len(rows) - fut_unmeasured,
+            "sessions_futures_unmeasured": fut_unmeasured,
         },
         "field_notes": {
             "cvd_spot_usd": "spot Binance+Bybit; es la serie limpia de un solo universo",
@@ -301,10 +378,13 @@ async def daily_history(conn: asyncpg.Connection, symbol: str, sessions: int) ->
             "una lectura de acumulacion spot",
             "cvd_diff_2v_usd": "misma resta con ambas patas en Binance+Bybit; solo desde "
             "v1.3.3, null en sesiones anteriores",
-            "cum_*": "acumulado dentro de esta ventana, arranca en la sesion mas antigua",
+            "cum_*": "acumulado por segmento medido: null rompe la serie y el acumulado "
+            "reinicia despues del hueco",
             "pct_spot/pct_diff/pct_ret": "percentil del valor frente a toda la historia guardada",
-            "flow_direction": "que hicieron las DOS patas; 'opuestos' es el unico caso en que "
-            "el diferencial refleja discrepancia real spot vs futuros",
+            "flow_direction": "solo clasifica ambos_compran/ambos_venden/opuestos cuando "
+            "ambas patas fueron medidas; cero es neutral y sin una pata publica sin_dato",
+            "totals": "los totales existentes representan toda la ventana y quedan null "
+            "si falta una sesion; sessions_*_measured/unmeasured exponen la cobertura",
         },
         "note": "sesiones NYSE (09:30 ET a 09:30 ET). Para leer acumulacion o distribucion "
         "usa cvd_spot_usd y su acumulado, no el diferencial.",
@@ -324,7 +404,7 @@ async def verdict_history(conn: asyncpg.Connection, symbol: str, limit: int = 90
                v.session_price_close,v.session_price_close AS price_close,
                v.observed_at,v.session_end_at,v.snapshot_version,v.logic_version,
                v.reference_price,v.reference_price_at,v.metrics_snapshot_ts,
-               v.session_coverage_version,
+               v.session_coverage_version,v.regime_logic_version,
                CASE WHEN v.reference_price IS NULL THEN NULL ELSE
                  (SELECT (d.price_close/v.reference_price-1)*100 FROM daily_session_agg d
                   WHERE d.symbol=$1 AND d.session_date>v.session_date
@@ -663,6 +743,7 @@ async def build_ai_symbol_context(
     external = await external_macro_context(
         conn, etf_configured=bool(get_settings().COINGLASS_API_KEY)
     )
+    matrix_as_of = await resolve_matrix_as_of(conn)
     payload: dict[str, Any] = {
         "schema_version": "ai_context.v2",
         "interpretation_prompt": ANALYSIS_PROMPT,
@@ -676,12 +757,14 @@ async def build_ai_symbol_context(
         "operator_read": build_operator_read(summary, confidence),
         "local_alerts": local_alerts(summary, confidence),
         "cvd_swing_90d": cvd_swing_read(daily_rows),
-        "delta_matrix": await delta_matrix(conn, symbol, limits["delta_windows"]),
+        "delta_matrix": await delta_matrix(
+            conn, symbol, limits["delta_windows"], matrix_as_of
+        ),
         "orderbook": await latest_orderbook(conn, symbol),
         "market_structure": await market_structure(conn, symbol),
         "structure_horizons": await horizon_structure(conn, symbol),
         "structure_detail": await structure_detail(conn, symbol),
-        "cvd_matrix": await cvd_matrix(conn, symbol),
+        "cvd_matrix": await cvd_matrix(conn, symbol, matrix_as_of),
         "passive_flow": await _passive_flow(conn, symbol),
         "trend_matrix": await _trend_matrix(conn, symbol),
         "oi_context": await oi_context(conn, symbol),
