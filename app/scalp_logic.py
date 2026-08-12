@@ -150,15 +150,21 @@ def baseline_band(value: float | None, baseline: dict[str, Any] | None) -> dict[
 
 
 async def load_baselines(
-    conn: asyncpg.Connection, symbol: str, metric: str = "delta_ratio"
+    conn: asyncpg.Connection,
+    symbol: str,
+    metric: str = "delta_ratio",
+    as_of: datetime | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Baselines medidas por ventana. Devuelve {} si el job diario aun no las ha calculado."""
-    rows = await conn.fetch(
+    query = (
         "SELECT window_label,window_seconds,source_interval,sample_count,p50,p75,p90,p95,mad,"
-        "sample_start,sample_end FROM metric_baseline WHERE symbol=$1 AND metric=$2",
-        symbol,
-        metric,
+        "sample_start,sample_end FROM metric_baseline WHERE symbol=$1 AND metric=$2"
     )
+    args: tuple[object, ...] = (symbol, metric)
+    if as_of is not None:
+        query += " AND sample_end IS NOT NULL AND sample_end <= $3"
+        args += (_explicit_as_of(as_of),)
+    rows = await conn.fetch(query, *args)
     return {str(row["window_label"]): dict(row) for row in rows}
 
 CLOCK_TOLERANCE_SECONDS = 0.5
@@ -310,35 +316,58 @@ def score_component(value: float | None) -> tuple[float, float]:
     return bull, 1.0 - bull
 
 
-async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
-    session_start = current_nyse_start()
-    as_of = _utc_now()
-    oi_source_start, oi_window_start, oi_window_end = _closed_5m_oi_bounds(as_of)
-    liquidation_window_start = as_of - timedelta(minutes=5)
+async def scalp_context(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    session_start = current_nyse_start(cutoff)
+    oi_source_start, oi_window_start, oi_window_end = _closed_5m_oi_bounds(cutoff)
+    liquidation_window_start = cutoff - timedelta(minutes=5)
 
     row = await conn.fetchrow(
         """
         WITH price AS (
-          SELECT close AS price FROM ohlcv WHERE symbol=$1 AND interval='1min' ORDER BY ts DESC LIMIT 1
+          SELECT close AS price FROM ohlcv
+          WHERE symbol=$1 AND interval='1min' AND ts <= $8
+          ORDER BY ts DESC LIMIT 1
         ), fut_px AS (
           SELECT last_px AS fut_px,last_event_ms AS fut_event_ms FROM futures_trades_realtime
-          WHERE symbol=$1 AND exchange='combined' AND venue_count=2 ORDER BY ts DESC LIMIT 1
+          WHERE symbol=$1 AND exchange='combined' AND venue_count=2
+            AND ts <= $8
+            AND last_event_ms <= (EXTRACT(EPOCH FROM $8::timestamptz)*1000)::bigint
+          ORDER BY ts DESC LIMIT 1
         ), spot_px AS (
           SELECT last_px AS spot_px,last_event_ms AS spot_event_ms FROM spot_trades_realtime
-          WHERE symbol=$2 AND exchange='combined' AND venue_count=2 ORDER BY ts DESC LIMIT 1
+          WHERE symbol=$2 AND exchange='combined' AND venue_count=2
+            AND ts <= $8
+            AND last_event_ms <= (EXTRACT(EPOCH FROM $8::timestamptz)*1000)::bigint
+          ORDER BY ts DESC LIMIT 1
         ), fut_1m AS (
           SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,SUM(buy_vol_usd+sell_vol_usd) AS volume,
                  SUM(trade_count) AS trades,(array_agg(last_px ORDER BY ts DESC))[1] AS last_px
-          FROM futures_trades_realtime WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND ts >= now()-interval '1 minute'
+          FROM futures_trades_realtime
+          WHERE symbol=$1 AND exchange='combined' AND venue_count=2
+            AND ts >= $8::timestamptz-interval '1 minute' AND ts <= $8
+            AND last_event_ms <= (EXTRACT(EPOCH FROM $8::timestamptz)*1000)::bigint
         ), fut_3m AS (
           SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,SUM(buy_vol_usd+sell_vol_usd) AS volume,
                  (array_agg(last_px ORDER BY ts ASC))[1] AS first_px,(array_agg(last_px ORDER BY ts DESC))[1] AS last_px
-          FROM futures_trades_realtime WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND ts >= now()-interval '3 minutes'
+          FROM futures_trades_realtime
+          WHERE symbol=$1 AND exchange='combined' AND venue_count=2
+            AND ts >= $8::timestamptz-interval '3 minutes' AND ts <= $8
+            AND last_event_ms <= (EXTRACT(EPOCH FROM $8::timestamptz)*1000)::bigint
         ), spot_3m AS (
           SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,SUM(buy_vol_usd+sell_vol_usd) AS volume
-          FROM spot_trades_realtime WHERE symbol=$2 AND exchange='combined' AND venue_count=2 AND ts >= now()-interval '3 minutes'
+          FROM spot_trades_realtime
+          WHERE symbol=$2 AND exchange='combined' AND venue_count=2
+            AND ts >= $8::timestamptz-interval '3 minutes' AND ts <= $8
+            AND last_event_ms <= (EXTRACT(EPOCH FROM $8::timestamptz)*1000)::bigint
         ), book AS (
-          SELECT * FROM orderbook_snapshot WHERE symbol=$1 AND exchange='combined' AND venue_count=2 ORDER BY ts DESC LIMIT 1
+          SELECT * FROM orderbook_snapshot
+          WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND ts <= $8
+          ORDER BY ts DESC LIMIT 1
         ), liq AS (
           SELECT SUM(CASE WHEN side='long' THEN notional_usd ELSE 0 END) AS long_liq,
                  SUM(CASE WHEN side='short' THEN notional_usd ELSE 0 END) AS short_liq
@@ -380,7 +409,8 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
             AND ts <  $6
         ), vwap AS (
           SELECT SUM(close*volume)/NULLIF(SUM(volume),0) AS session_vwap
-          FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts >= $3
+          FROM ohlcv
+          WHERE symbol=$1 AND interval='1min' AND ts >= $3 AND ts <= $8
         ), liq_feed AS (
           SELECT
             MAX(status) FILTER (WHERE exchange='binance') AS liq_binance_status,
@@ -393,6 +423,7 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
             MAX(updated_at) FILTER (WHERE exchange='bybit') AS liq_bybit_updated_at
           FROM market_feed_health
           WHERE feed='liquidations' AND exchange IN ('binance','bybit')
+            AND updated_at <= $8
         ), base AS (SELECT 1 AS anchor)
         SELECT COALESCE(fut_px.fut_px, price.price) AS price,
                price.price AS ohlcv_price,
@@ -409,10 +440,11 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
                book.spread_bps,book.imbalance_l1,book.imbalance_l5,book.imbalance_l10,book.wall_up_pct,book.wall_down_pct,
                CASE
                  WHEN book.ts IS NULL THEN 'missing'
-                 WHEN book.ts < now()-interval '10 seconds' THEN 'stale'
-                 ELSE 'ok'
+                 WHEN EXTRACT(EPOCH FROM $8::timestamptz-book.ts)::float8
+                        BETWEEN 0 AND 10 THEN 'ok'
+                 ELSE 'stale'
                END AS book_status,
-               EXTRACT(EPOCH FROM now()-book.ts)::float8 AS book_lag_seconds,
+               EXTRACT(EPOCH FROM $8::timestamptz-book.ts)::float8 AS book_lag_seconds,
                liq.long_liq,liq.short_liq,oi.oi_now,oi.oi_start,vwap.session_vwap,
                $5::timestamptz AS oi_window_start,
                $6::timestamptz AS oi_window_end,
@@ -449,12 +481,12 @@ async def scalp_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
         oi_window_start,
         oi_window_end,
         liquidation_window_start,
-        as_of,
+        cutoff,
     )
     ctx = dict(row) if row else {}
     # La puerta de absorcion del resumen mira la ventana de 3 m: su umbral sale de la
     # distribucion medida de ESA ventana, no de una constante compartida con 1 m y 4 h.
-    baselines = await load_baselines(conn, symbol)
+    baselines = await load_baselines(conn, symbol, as_of=cutoff)
     ctx["baseline_3m"] = baselines.get("3m")
     return ctx
 
@@ -1178,6 +1210,7 @@ async def _resample_highs_lows(
                  (array_agg(close ORDER BY ts DESC))[1] AS close,
                  SUM(volume * close) AS volume_usd
           FROM ohlcv WHERE symbol=$1 AND interval=$4
+            AND ts <= $5
           GROUP BY 1
         ), closed AS (
           SELECT * FROM b
@@ -1773,18 +1806,34 @@ def _conditional_outcome(
     return out
 
 
-async def macro_context(conn: asyncpg.Connection, symbol: str, days: int = 365) -> dict[str, Any]:
+async def macro_context(
+    conn: asyncpg.Connection,
+    symbol: str,
+    days: int = 365,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    last_closed_session = current_nyse_start(cutoff).date()
     rows = await conn.fetch(
         """
         SELECT session_date, cvd_fut_usd, cvd_spot_usd, cvd_diff_usd, oi_close, oi_chg_usd,
                fr_avg, price_chg_pct, price_close
-        FROM daily_session_agg WHERE symbol=$1 ORDER BY session_date DESC LIMIT $2
+        FROM daily_session_agg
+        WHERE symbol=$1 AND session_date <= $3
+        ORDER BY session_date DESC LIMIT $2
         """,
         symbol,
         days,
+        last_closed_session,
     )
     if not rows:
-        return {"symbol": symbol, "sessions": 0, "metrics": [], "tension": 0}
+        return {
+            "symbol": symbol,
+            "as_of": cutoff.isoformat(),
+            "sessions": 0,
+            "metrics": [],
+            "tension": 0,
+        }
     latest = rows[0]
     asc = list(reversed(rows))
     closes_asc = [as_float(r["price_close"]) for r in asc]
@@ -1808,6 +1857,7 @@ async def macro_context(conn: asyncpg.Connection, symbol: str, days: int = 365) 
         metrics.append(entry)
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "sessions": len(rows),
         "session_date": str(latest["session_date"]),
         "metrics": metrics,
@@ -2219,12 +2269,20 @@ def _dsr(rows_desc, n):
     return [r[i] for i in range(len(r) - 1, -1, -n)][::-1]
 
 
-async def structure_detail(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def structure_detail(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
     """Estructura por horizonte con pivotes reales (reemplaza la etiqueta HH/HL por datos)."""
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    last_closed_session = current_nyse_start(cutoff).date()
     out: dict[str, Any] = {}
     for label, unit, group in _ALERT_HORIZONS:
         if group == "med":
-            bars = await _resample_highs_lows(conn, symbol, unit, 120)
+            bars = await _resample_highs_lows(
+                conn, symbol, unit, 120, as_of=cutoff
+            )
             highs = [as_float(b["high"]) for b in bars]
             lows = [as_float(b["low"]) for b in bars]
             times = [b["bucket"].isoformat() for b in bars]
@@ -2233,8 +2291,9 @@ async def structure_detail(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         else:
             rows = await conn.fetch(
                 "SELECT session_date, price_close FROM daily_session_agg WHERE symbol=$1 "
-                "ORDER BY session_date DESC LIMIT 400",
+                "AND session_date <= $2 ORDER BY session_date DESC LIMIT 400",
                 symbol,
+                last_closed_session,
             )
             ds = _dsr(rows, unit)
             price_points = _contiguous_measured_suffix(ds, "price_close")
@@ -2245,7 +2304,7 @@ async def structure_detail(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         det["timeframe"] = label
         det["group"] = group
         out[label] = det
-    return {"symbol": symbol, "horizons": out}
+    return {"symbol": symbol, "as_of": cutoff.isoformat(), "horizons": out}
 
 
 _CONFIRMATION_TF: dict[str, tuple[str, int]] = {
@@ -3010,26 +3069,39 @@ def _beta(asset_ret: list, base_ret: list):
     return round(cov / vb, 3) if vb > 0 else None
 
 
-async def _binned(conn: asyncpg.Connection, symbol: str, seconds: int, bucket_s: int) -> list:
+async def _binned(
+    conn: asyncpg.Connection,
+    symbol: str,
+    seconds: int,
+    bucket_s: int,
+    as_of: datetime,
+) -> list:
     rows = await conn.fetch(
         "SELECT date_bin(make_interval(secs => $2::int), ts, '1970-01-01'::timestamptz) AS b, "
         "(array_agg(close ORDER BY ts DESC))[1] AS c FROM ohlcv "
-        "WHERE symbol=$1 AND interval='1min' AND ts >= now()-($3::int * interval '1 second') "
+        "WHERE symbol=$1 AND interval='1min' "
+        "AND ts >= $4::timestamptz-($3::int * interval '1 second') AND ts <= $4 "
         "GROUP BY 1 ORDER BY 1",
         symbol,
         bucket_s,
         seconds,
+        as_of,
     )
     return [(r["b"], as_float(r["c"])) for r in rows]
 
 
-async def cross_asset(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def cross_asset(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
     """Correlacion, beta y fuerza relativa del `symbol` frente a los otros y a BTC."""
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     assets = list(WS_SYMBOL_MAP.keys())
     base = next((s for s in assets if s.startswith("BTC")), assets[0])
-    data = {s: dict(await _binned(conn, s, 86400, 300)) for s in assets}
+    data = {s: dict(await _binned(conn, s, 86400, 300, cutoff)) for s in assets}
     if not all(data.values()):
-        return {"symbol": symbol, "available": False}
+        return {"symbol": symbol, "as_of": cutoff.isoformat(), "available": False}
     common = sorted(set.intersection(*[set(d.keys()) for d in data.values()]))
     closes = {s: [data[s][b] for b in common] for s in assets}
 
@@ -3050,6 +3122,7 @@ async def cross_asset(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             rs[lab] = None
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "base": base,
         "available": True,
         "correlation": corr,
@@ -5141,8 +5214,9 @@ async def trend_matrix(
         dict(r)
         for r in await conn.fetch(
             "SELECT session_date, price_close, cvd_spot_usd, oi_close FROM daily_session_agg "
-            "WHERE symbol=$1 ORDER BY session_date DESC LIMIT 60",
+            "WHERE symbol=$1 AND session_date <= $2 ORDER BY session_date DESC LIMIT 60",
             symbol,
+            current_nyse_start(cutoff).date(),
         )
     ]
     daily = list(reversed(drows))
@@ -5434,14 +5508,15 @@ async def swing_score(
 ) -> dict[str, Any]:
     cutoff = await resolve_matrix_as_of(conn, as_of)
     blocks = {
-        "structure_detail": await structure_detail(conn, symbol),
-        "macro_context": await macro_context(conn, symbol),
-        "cross_asset": await cross_asset(conn, symbol),
+        "structure_detail": await structure_detail(conn, symbol, cutoff),
+        "macro_context": await macro_context(conn, symbol, as_of=cutoff),
+        "cross_asset": await cross_asset(conn, symbol, cutoff),
         "passive_flow": await passive_flow(conn, symbol, cutoff),
         "trend_matrix": await trend_matrix(conn, symbol, cutoff),
     }
     return {
         "symbol": symbol,
         "as_of": cutoff.isoformat(),
+        "as_of_semantics": "shared_event_time_cutoff",
         **compute_swing_score(blocks),
     }

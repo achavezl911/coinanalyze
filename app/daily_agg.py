@@ -46,7 +46,7 @@ def latest_closed_session_date(now_utc: datetime | None = None) -> date:
 SESSION_MIN_COVERAGE_RATIO = 0.95
 SESSION_COVERAGE_VERSION = 1
 DAILY_VERDICT_SNAPSHOT_VERSION = 1
-DAILY_VERDICT_LOGIC_VERSION = "daily-verdict-v2"
+DAILY_VERDICT_LOGIC_VERSION = "daily-verdict-v3"
 
 
 def _expected_session_samples(start: datetime, end: datetime, cadence_seconds: int) -> int:

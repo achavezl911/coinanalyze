@@ -239,13 +239,11 @@ class _ScalpContextConnection:
 
 @pytest.mark.asyncio
 async def test_consulta_alinea_oi_y_precio_a_114937_sin_velas_abiertas(
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     now = datetime(2026, 8, 9, 11, 49, 37, tzinfo=UTC)
     conn = _ScalpContextConnection()
-    monkeypatch.setattr("app.scalp_logic._utc_now", lambda: now)
 
-    out = await scalp_context(conn, "BTCUSDT_PERP.A")  # type: ignore[arg-type]
+    out = await scalp_context(conn, "BTCUSDT_PERP.A", now)  # type: ignore[arg-type]
 
     assert out["oi_window_start"] == datetime(2026, 8, 9, 11, 30, tzinfo=UTC)
     assert out["oi_window_end"] == datetime(2026, 8, 9, 11, 45, tzinfo=UTC)

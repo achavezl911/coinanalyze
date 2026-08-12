@@ -71,12 +71,15 @@ También se materializan columnas útiles para futuras consultas:
 - scores y coverage;
 - state/confidence/direction;
 - precio de referencia y procedencia;
-- último `metrics_snapshot` no futuro con regime/cutoffs;
+- último `metrics_snapshot` compatible visible antes del knowledge-time de la observación;
 - generación y shard del collector;
 - versiones de lógica, evidencia y sampling.
 
-El snapshot de métricas adjunto siempre cumple `metrics_snapshot.ts <=
-observed_at`.
+Desde `evidence_version=4`, primero se leen el snapshot de métricas y los libros
+de ejecución que se congelarán. Sólo después PostgreSQL emite `observed_at` con
+`clock_timestamp()`. Una fila que hace commit entre la lectura de provenance y
+ese reloj no puede quedar asociada retroactivamente. `metrics_snapshot.ts` sigue
+siendo tiempo de evento, no se presenta como commit time.
 
 ## Precio de referencia
 
@@ -123,6 +126,10 @@ su fallo tampoco queda silencioso.
 
 Un cambio material futuro debe incrementar la versión correspondiente. El
 análisis no debe mezclar versiones implícitamente.
+
+`evidence_version=4` cambia source/evidence semantics por las fronteras de
+event-time y knowledge-time; `logic_version=scalp-summary-v1`, sampling, replay,
+outcome y execution snapshot permanecen sin cambios.
 
 ## Retención
 
