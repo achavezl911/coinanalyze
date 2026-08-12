@@ -329,8 +329,9 @@ async def scalp_context(
     row = await conn.fetchrow(
         """
         WITH price AS (
-          SELECT close AS price FROM ohlcv
-          WHERE symbol=$1 AND interval='1min' AND ts <= $8
+          SELECT close AS price,ts + interval '1 minute' AS ohlcv_price_at FROM ohlcv
+          WHERE symbol=$1 AND interval='1min'
+            AND ts + interval '1 minute' <= $8
           ORDER BY ts DESC LIMIT 1
         ), fut_px AS (
           SELECT last_px AS fut_px,last_event_ms AS fut_event_ms FROM futures_trades_realtime
@@ -427,6 +428,7 @@ async def scalp_context(
         ), base AS (SELECT 1 AS anchor)
         SELECT COALESCE(fut_px.fut_px, price.price) AS price,
                price.price AS ohlcv_price,
+               price.ohlcv_price_at,
                fut_px.fut_px AS fut_price,
                spot_px.spot_px AS spot_price,
                -- El basis lo decide basis_quality(): aqui solo viajan los insumos. Calcularlo

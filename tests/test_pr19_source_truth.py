@@ -118,12 +118,14 @@ def test_liquidation_rejected_returned_row_is_degraded():
     assert json.loads(detail_text)["reason"] == "rejected_rows"
 
 
-class HeartbeatConn:
-    def __init__(self, rows):
-        self.rows = rows
+class LiquidationObservationConn:
+    def __init__(self, row):
+        self.row = row
 
-    async def fetch(self, _query, *_args):
-        return self.rows
+    async def fetchrow(self, _query, *_args):
+        if self.row and self.row.get("status") == "COMPLETE":
+            return self.row
+        return None
 
 
 @pytest.mark.asyncio
@@ -131,22 +133,26 @@ async def test_liquidation_history_health_requires_exact_source_cutoff():
     required_end = datetime(2026, 8, 11, 12, 5, tzinfo=UTC)
     required_start = required_end - timedelta(hours=24)
     now = required_end + timedelta(seconds=30)
-    detail = json.dumps({
-        "source_start_ts": int((required_start - timedelta(hours=2)).timestamp()),
-        "source_cutoff_ts": int(required_end.timestamp()),
+    conn = LiquidationObservationConn({
+        "status": "COMPLETE",
+        "observed_at": now,
+        "source_start_at": required_start - timedelta(hours=2),
+        "source_cutoff_at": required_end,
     })
-    conn = HeartbeatConn([{"status": "ok", "updated_at": now, "detail": detail}])
     assert await _liquidation_history_observed(
-        conn, required_start=required_start, required_end=required_end, now_utc=now
+        conn, symbol="BTCUSDT_PERP.A", required_start=required_start,
+        required_end=required_end, now_utc=now,
     )
 
-    behind = json.dumps({
-        "source_start_ts": int((required_start - timedelta(hours=2)).timestamp()),
-        "source_cutoff_ts": int((required_end - timedelta(minutes=5)).timestamp()),
+    behind = LiquidationObservationConn({
+        "status": "COMPLETE",
+        "observed_at": now,
+        "source_start_at": required_start - timedelta(hours=2),
+        "source_cutoff_at": required_end - timedelta(minutes=5),
     })
-    conn = HeartbeatConn([{"status": "ok", "updated_at": now, "detail": behind}])
     assert not await _liquidation_history_observed(
-        conn, required_start=required_start, required_end=required_end, now_utc=now
+        behind, symbol="BTCUSDT_PERP.A", required_start=required_start,
+        required_end=required_end, now_utc=now,
     )
 
 
@@ -155,17 +161,25 @@ async def test_liquidation_history_health_rejects_stale_or_degraded():
     end = datetime(2026, 8, 11, 12, 5, tzinfo=UTC)
     start = end - timedelta(hours=24)
     now = end + timedelta(minutes=8)
-    detail = json.dumps({
-        "source_start_ts": int((start - timedelta(hours=2)).timestamp()),
-        "source_cutoff_ts": int(end.timestamp()),
+    stale = LiquidationObservationConn({
+        "status": "COMPLETE",
+        "observed_at": end,
+        "source_start_at": start - timedelta(hours=2),
+        "source_cutoff_at": end,
     })
-    stale = HeartbeatConn([{"status": "ok", "updated_at": end, "detail": detail}])
     assert not await _liquidation_history_observed(
-        stale, required_start=start, required_end=end, now_utc=now
+        stale, symbol="BTCUSDT_PERP.A", required_start=start,
+        required_end=end, now_utc=now,
     )
-    degraded = HeartbeatConn([{"status": "degraded", "updated_at": now, "detail": detail}])
+    degraded = LiquidationObservationConn({
+        "status": "INCOMPLETE",
+        "observed_at": now,
+        "source_start_at": start - timedelta(hours=2),
+        "source_cutoff_at": end,
+    })
     assert not await _liquidation_history_observed(
-        degraded, required_start=start, required_end=end, now_utc=now
+        degraded, symbol="BTCUSDT_PERP.A", required_start=start,
+        required_end=end, now_utc=now,
     )
 
 
@@ -248,7 +262,7 @@ def test_pr19_evidence_version_boundary():
     from app.signal_regime import RegimeAnalysisOptions
     from app.signal_replay import REPLAY_CONTEXT_VERSION
 
-    assert SIGNAL_EVIDENCE_VERSION == 4
+    assert SIGNAL_EVIDENCE_VERSION == 5
     assert SIGNAL_SAMPLING_VERSION == 1
     assert REPLAY_CONTEXT_VERSION == 1
     assert BacktestOptions().evidence_version == 1

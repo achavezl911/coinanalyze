@@ -7,6 +7,7 @@ import asyncpg
 
 from app.analysis_prompt import ANALYSIS_PROMPT
 from app.config import WS_SYMBOL_MAP, get_settings
+from app.daily_agg import DAILY_VERDICT_LOGIC_VERSION
 from app.db import INGEST_COMPONENT_MAX_AGES, required_heartbeat_failures
 from app.external_macro import align_with_internal, external_macro_context
 from app.interpretation import cvd_swing_read, evaluate_setups
@@ -397,7 +398,8 @@ async def verdict_history(conn: asyncpg.Connection, symbol: str, limit: int = 90
         """
         WITH v AS (
           SELECT * FROM daily_verdict_snapshot
-          WHERE symbol=$1 ORDER BY session_date DESC LIMIT $2
+          WHERE symbol=$1 AND logic_version=$3
+          ORDER BY session_date DESC LIMIT $2
         )
         SELECT v.session_date,v.swing_bias,v.swing_score,v.swing_conviction,v.regime_score,
                v.regime_label,v.setup_id,v.setup_state,v.setup_confidence,
@@ -406,23 +408,30 @@ async def verdict_history(conn: asyncpg.Connection, symbol: str, limit: int = 90
                v.reference_price,v.reference_price_at,v.metrics_snapshot_ts,
                v.session_coverage_version,v.regime_logic_version,
                CASE WHEN v.reference_price IS NULL THEN NULL ELSE
-                 (SELECT (d.price_close/v.reference_price-1)*100 FROM daily_session_agg d
-                  WHERE d.symbol=$1 AND d.session_date>v.session_date
-                  ORDER BY d.session_date OFFSET 6 LIMIT 1)
+                 (d7.price_close/v.reference_price-1)*100
                END AS fwd_7s_pct,
                CASE WHEN v.reference_price IS NULL THEN NULL ELSE
-                 (SELECT (d.price_close/v.reference_price-1)*100 FROM daily_session_agg d
-                  WHERE d.symbol=$1 AND d.session_date>v.session_date
-                  ORDER BY d.session_date OFFSET 13 LIMIT 1)
+                 (d14.price_close/v.reference_price-1)*100
                END AS fwd_14s_pct
-        FROM v ORDER BY v.session_date
+        FROM v
+        LEFT JOIN daily_session_snapshot d7
+          ON d7.symbol=v.symbol
+         AND d7.snapshot_version=1
+         AND d7.session_date=v.session_date+7
+        LEFT JOIN daily_session_snapshot d14
+          ON d14.symbol=v.symbol
+         AND d14.snapshot_version=1
+         AND d14.session_date=v.session_date+14
+        ORDER BY v.session_date
         """,
         symbol,
         limit,
+        DAILY_VERDICT_LOGIC_VERSION,
     )
     return {
         "available": bool(rows),
         "sessions": len(rows),
+        "logic_version": DAILY_VERDICT_LOGIC_VERSION,
         "series": [compact_dict(dict(row)) for row in rows],
         "note": "first immutable observed verdict snapshot per session. observed_at es el "
         "knowledge time y reference_price_at es el anchor del retorno. La captura es "

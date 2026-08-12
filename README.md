@@ -63,6 +63,21 @@ siguen en `None` de forma fail-closed.
 
 Dashboard interno de microestructura y scalping para BTC, ETH y SOL. Incluye API privada para contexto IA, PostgreSQL local, colectores systemd, UI web y nginx como único punto remoto.
 
+## PR24 — integridad histórica diaria prospectiva
+
+- `daily_session_agg` continúa como `mutable_latest_projection`: `created_at` conserva la
+  primera creación y `updated_at` registra cada refresh operativo. `daily_session_snapshot`
+  congela prospectivamente la primera sesión capturada junto con su veredicto, sin backfill.
+- `/api/daily` sin `as_of` lee la proyección mutable. Con `as_of` usa exclusivamente snapshots
+  v1 (`prospective_first_observation`); no mezcla ni rellena sesiones anteriores a PR24.
+- `/api/verdicts` devuelve un solo cohort de `logic_version` (v4 por defecto). Los retornos +7
+  y +14 usan el snapshot de la fecha calendario exacta; un target ausente queda `null`.
+- Las sumas diarias de liquidaciones sólo se publican cuando una observación durable COMPLETE
+  cubre toda la sesión. Una respuesta completa vacía mide `0.0`; cobertura parcial o símbolo
+  ausente conserva `null`.
+- La evidencia signal v5 ancla el fallback OHLCV a `ts + 1 minute` de una vela realmente
+  cerrada. Un precio sin timestamp de fuente válido falla cerrado.
+
 ## v1.4.8 — lectura rápida del flujo sin look-ahead
 
 - Nueva tarjeta visible al entrar: resume la última sesión como **hecho**, **interpretación**,
@@ -392,6 +407,7 @@ uvicorn app.api:app --host 127.0.0.1 --port 8000
 | `/api/liquidations` | Liquidaciones long/short |
 | `/api/whale/delta` | Delta institucional spot |
 | `/api/daily` | Histórico NYSE, racha, lectura rápida y replay opcional con `as_of` |
+| `/api/verdicts` | Evidencia diaria inmutable por cohort de `logic_version` |
 | `/api/setup` | Evaluación de setups A–E e invalidaciones |
 | `/api/stream` | SSE de precio, delta y whale live |
 | `/api/healthz` | Estado y lag del pipeline |

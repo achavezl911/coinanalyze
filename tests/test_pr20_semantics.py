@@ -211,7 +211,7 @@ def test_pr20_schema_preserves_inline_partition_migration_as_exact_prior_transac
 def test_pr22_advances_live_evidence_without_changing_pr11_kernel() -> None:
     ledger = (ROOT / "app" / "signal_ledger.py").read_text(encoding="utf-8")
     walk = (ROOT / "app" / "signal_walk_forward.py").read_text(encoding="utf-8")
-    assert "SIGNAL_EVIDENCE_VERSION = 4" in ledger
+    assert "SIGNAL_EVIDENCE_VERSION = 5" in ledger
     assert 'DEFAULT_MANIFEST_NAME = "pr11-fixed-kernel-v1"' in walk
 def test_pr20_f4_schema_accepts_unmeasurable_price_direction() -> None:
     schema = (ROOT / "sql" / "schema.sql").read_text(encoding="utf-8")

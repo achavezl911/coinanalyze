@@ -21,7 +21,7 @@ from app.signal_replay import (
 )
 
 SIGNAL_FAMILY = "scalp"
-SIGNAL_EVIDENCE_VERSION = 4
+SIGNAL_EVIDENCE_VERSION = 5
 SIGNAL_SAMPLING_VERSION = 1
 
 _LONG_STATES = frozenset({"Long Momentum", "Long Pullback"})
@@ -109,13 +109,30 @@ def select_reference_price(
             if event_ms is not None and event_ms >= 0
             else None
         )
-        return futures_price, "futures_realtime_combined", event_at
+        if event_at is not None:
+            return futures_price, "futures_realtime_combined", event_at
 
     # ctx["price"] is COALESCE(realtime futures, OHLCV). If a stale futures row
     # exists, using that field here would relabel stale realtime as closed OHLCV.
     closed_price = _finite(ctx.get("ohlcv_price"))
-    if closed_price is not None and closed_price > 0:
-        return closed_price, "ohlcv_1min_latest_closed", None
+    closed_at = ctx.get("ohlcv_price_at")
+    if isinstance(closed_at, datetime) and closed_at.tzinfo is not None:
+        closed_at = closed_at.astimezone(UTC)
+    else:
+        closed_at = None
+    context_ms = _finite(ctx.get("now_ms"))
+    context_as_of = (
+        datetime.fromtimestamp(context_ms / 1000.0, UTC)
+        if context_ms is not None and context_ms >= 0
+        else None
+    )
+    if (
+        closed_price is not None
+        and closed_price > 0
+        and closed_at is not None
+        and (context_as_of is None or closed_at <= context_as_of)
+    ):
+        return closed_price, "ohlcv_1min_latest_closed", closed_at
 
     return None, None, None
 

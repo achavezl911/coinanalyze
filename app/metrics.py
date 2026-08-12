@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import math
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
@@ -192,33 +191,34 @@ LIQUIDATION_HISTORY_HEARTBEAT = "ingest:liquidations_history"
 async def _liquidation_history_observed(
     conn: asyncpg.Connection,
     *,
+    symbol: str,
     required_start: datetime,
     required_end: datetime,
     now_utc: datetime,
 ) -> bool:
-    """Require a recent successful event-history request covering the exact metric window."""
-    rows = await conn.fetch(
-        "SELECT updated_at,status,detail FROM pipeline_heartbeat WHERE service=$1",
-        LIQUIDATION_HISTORY_HEARTBEAT,
+    """Require durable COMPLETE event-history provenance for this symbol and window."""
+    row = await conn.fetchrow(
+        """
+        SELECT observed_at,source_start_at,source_cutoff_at
+        FROM liquidation_history_observation
+        WHERE symbol=$1 AND status='COMPLETE'
+          AND source_start_at <= $2 AND source_cutoff_at >= $3
+        ORDER BY observed_at DESC,observation_id DESC
+        LIMIT 1
+        """,
+        symbol,
+        required_start,
+        required_end,
     )
-    if len(rows) != 1:
+    if row is None or not isinstance(row.get("observed_at"), datetime):
         return False
-    row = rows[0]
-    if row["status"] != "ok" or not isinstance(row["updated_at"], datetime):
+    observed_at = row["observed_at"]
+    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
         return False
-    updated_at = row["updated_at"]
-    if updated_at.tzinfo is None or updated_at.utcoffset() is None:
-        return False
-    age_seconds = (now_utc - updated_at.astimezone(UTC)).total_seconds()
+    age_seconds = (now_utc - observed_at.astimezone(UTC)).total_seconds()
     if age_seconds < -60 or age_seconds > INGEST_COMPONENT_MAX_AGES["metrics_5m"]:
         return False
-    try:
-        detail = json.loads(str(row["detail"] or ""))
-        source_start = datetime.fromtimestamp(int(detail["source_start_ts"]), tz=UTC)
-        source_cutoff = datetime.fromtimestamp(int(detail["source_cutoff_ts"]), tz=UTC)
-    except (KeyError, TypeError, ValueError, json.JSONDecodeError, OverflowError, OSError):
-        return False
-    return source_start <= required_start and source_cutoff >= required_end
+    return row["source_start_at"] <= required_start and row["source_cutoff_at"] >= required_end
 
 
 SNAPSHOT_QUERY = """
@@ -330,6 +330,7 @@ async def compute_snapshot(
     metrics_cutoff = metrics_cutoff or ClosedCutoff.at(now_utc, 300).exclusive_boundary
     liquidations_measured = await _liquidation_history_observed(
         conn,
+        symbol=symbol,
         required_start=metrics_cutoff - timedelta(hours=24),
         required_end=metrics_cutoff,
         now_utc=now_utc,

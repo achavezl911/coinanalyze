@@ -87,18 +87,33 @@ async def test_pr21_reference_price_requires_closed_1m_candle(monkeypatch) -> No
     assert snapshot_args[23] == reference_at
     assert snapshot_args[4] >= snapshot_args[5]
 
+    session_snapshot_query, session_snapshot_args = next(
+        (query, args)
+        for query, args in conn.queries
+        if "INSERT INTO daily_session_snapshot" in query
+    )
+    assert "ON CONFLICT(symbol,session_date) DO NOTHING" in session_snapshot_query
+    assert session_snapshot_args[2] == daily_agg.DAILY_SESSION_SNAPSHOT_VERSION
+    assert session_snapshot_args[3] == snapshot_args[4] == conn.observed_at
+    assert session_snapshot_args[4] == snapshot_args[5]
+
     executed_sql = [query for query, _args in conn.queries]
     snapshot_index = next(
         index
         for index, query in enumerate(executed_sql)
         if "INSERT INTO daily_verdict_snapshot" in query
     )
+    session_snapshot_index = next(
+        index
+        for index, query in enumerate(executed_sql)
+        if "INSERT INTO daily_session_snapshot" in query
+    )
     projection_index = next(
         index
         for index, query in enumerate(executed_sql)
         if "INSERT INTO daily_verdict(" in query
     )
-    assert snapshot_index < projection_index
+    assert session_snapshot_index < snapshot_index < projection_index
     assert "ON CONFLICT(symbol,session_date) DO UPDATE" in executed_sql[projection_index]
 
 
@@ -139,7 +154,7 @@ async def test_pr21_verdict_history_reads_snapshot_not_mutable_projection() -> N
     result = await verdict_history(conn, "BTCUSDT_PERP.A", 12)
     assert "FROM daily_verdict_snapshot" in conn.query
     assert "FROM daily_verdict WHERE" not in conn.query
-    assert conn.args == ("BTCUSDT_PERP.A", 12)
+    assert conn.args == ("BTCUSDT_PERP.A", 12, "daily-verdict-v4")
     assert result["available"] is False
     assert "first immutable observed verdict snapshot" in result["note"]
 
@@ -152,7 +167,10 @@ def test_pr21_forward_return_uses_observation_reference_price() -> None:
         source = (ROOT / path).read_text(encoding="utf-8")
         start = source.index(start_marker)
         body = source[start : source.index(end_marker, start)]
-        assert "d.price_close/v.reference_price" in body
+        assert "d7.price_close/v.reference_price" in body
+        assert "d14.price_close/v.reference_price" in body
+        assert "FROM daily_session_agg" not in body
+        assert "OFFSET" not in body
         assert "d.price_close/v.session_price_close" not in body
         assert "d.price_close/v.price_close" not in body
 
@@ -200,7 +218,7 @@ async def test_pr21_snapshot_not_subject_to_daily_retention(monkeypatch) -> None
 
 def test_pr21_daily_verdict_versions_are_domain_specific() -> None:
     assert daily_agg.DAILY_VERDICT_SNAPSHOT_VERSION == 1
-    assert daily_agg.DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v3"
+    assert daily_agg.DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v4"
     source = (ROOT / "app/daily_agg.py").read_text(encoding="utf-8")
     for unrelated in (
         "SIGNAL_EVIDENCE_VERSION",
@@ -240,7 +258,7 @@ async def _persist_pr22_daily_snapshot(monkeypatch: pytest.MonkeyPatch):
 async def test_pr23_new_daily_snapshot_uses_daily_verdict_v3(monkeypatch) -> None:
     query, args = await _persist_pr22_daily_snapshot(monkeypatch)
     assert "regime_logic_version" in query
-    assert args[3] == "daily-verdict-v3"
+    assert args[3] == "daily-verdict-v4"
 
 
 @pytest.mark.asyncio
@@ -264,7 +282,7 @@ async def test_pr23_daily_v3_does_not_copy_legacy_regime(monkeypatch) -> None:
     monkeypatch.setattr(daily_agg, "swing_score", _no_signal)
 
     def reject_legacy_setup(*_args, **_kwargs):
-        raise AssertionError("daily-verdict-v3 must not evaluate a legacy metrics snapshot")
+        raise AssertionError("daily-verdict-v4 must not evaluate a legacy metrics snapshot")
 
     monkeypatch.setattr(daily_agg, "evaluate_setups", reject_legacy_setup)
     await daily_agg.persist_verdicts(conn, ("BTCUSDT_PERP.A",))
@@ -274,7 +292,7 @@ async def test_pr23_daily_v3_does_not_copy_legacy_regime(monkeypatch) -> None:
         if "INSERT INTO daily_verdict_snapshot" in query
     )
     assert "logic_version" in query
-    assert args[3] == "daily-verdict-v3"
+    assert args[3] == "daily-verdict-v4"
     for index in (6, 7, 14, 15, 16, 17, 18, 19, 20):
         assert args[index] is None
 
@@ -282,7 +300,7 @@ async def test_pr23_daily_v3_does_not_copy_legacy_regime(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_pr23_daily_v3_uses_regime_v2_when_available(monkeypatch) -> None:
     _, args = await _persist_pr22_daily_snapshot(monkeypatch)
-    assert args[3] == "daily-verdict-v3"
+    assert args[3] == "daily-verdict-v4"
     assert args[6] == datetime(2026, 8, 11, 15, 0, tzinfo=UTC)
     assert args[7] == 2
     assert args[14] == 12.0

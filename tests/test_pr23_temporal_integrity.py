@@ -250,9 +250,9 @@ async def test_macro_daily_query_excludes_sessions_after_cutoff() -> None:
     assert result["as_of"] == cutoff.isoformat()
 
 
-def test_pr23_versions_change_only_evidence_and_daily_logic() -> None:
-    assert SIGNAL_EVIDENCE_VERSION == 4
-    assert DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v3"
+def test_pr24_versions_change_only_evidence_and_daily_logic() -> None:
+    assert SIGNAL_EVIDENCE_VERSION == 5
+    assert DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v4"
     assert SCALP_SIGNAL_LOGIC_VERSION == "scalp-summary-v1"
     assert SIGNAL_SAMPLING_VERSION == 1
     assert REPLAY_CONTEXT_VERSION == 1

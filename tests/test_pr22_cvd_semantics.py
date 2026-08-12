@@ -162,8 +162,8 @@ async def test_pr22_new_metrics_snapshot_has_regime_logic_version_2() -> None:
     assert conn.args[-1] == 2
 
 
-def test_pr23_new_signal_observation_has_evidence_version_4() -> None:
-    assert SIGNAL_EVIDENCE_VERSION == 4
+def test_pr24_new_signal_observation_has_evidence_version_5() -> None:
+    assert SIGNAL_EVIDENCE_VERSION == 5
 
 
 class _NoopConnection:

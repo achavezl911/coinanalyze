@@ -46,7 +46,9 @@ def latest_closed_session_date(now_utc: datetime | None = None) -> date:
 SESSION_MIN_COVERAGE_RATIO = 0.95
 SESSION_COVERAGE_VERSION = 1
 DAILY_VERDICT_SNAPSHOT_VERSION = 1
-DAILY_VERDICT_LOGIC_VERSION = "daily-verdict-v3"
+DAILY_SESSION_SNAPSHOT_VERSION = 1
+LIQUIDATION_COVERAGE_VERSION = 1
+DAILY_VERDICT_LOGIC_VERSION = "daily-verdict-v4"
 
 
 def _expected_session_samples(start: datetime, end: datetime, cadence_seconds: int) -> int:
@@ -104,6 +106,14 @@ oi AS (
   FROM open_interest
   WHERE symbol=$1 AND interval='5min' AND ts >= $3 AND ts < $4
 ),
+liq_proof AS (
+  SELECT source_start_at,source_cutoff_at,accepted_rows
+  FROM liquidation_history_observation
+  WHERE symbol=$1 AND status='COMPLETE'
+    AND source_start_at <= $3 AND source_cutoff_at >= $4
+  ORDER BY observed_at DESC,observation_id DESC
+  LIMIT 1
+),
 liq AS (
   -- Feed de eventos: no hay COALESCE. Cero no se deduce de ausencia de eventos persistidos.
   SELECT SUM(long_liq) AS long_liq, SUM(short_liq) AS short_liq
@@ -121,6 +131,9 @@ SELECT fut.cvd_fut, fut.price_open, fut.price_close, fut.samples,
        spot.cvd_spot, spot.inst_delta, spot.minutes AS spot_2v_minutes,
        oi.oi_open, oi.oi_close, oi.oi_high, oi.oi_low, oi.samples AS oi_5m_samples,
        liq.long_liq, liq.short_liq,
+       (SELECT source_start_at FROM liq_proof) AS liquidation_observed_start_at,
+       (SELECT source_cutoff_at FROM liq_proof) AS liquidation_observed_end_at,
+       (SELECT accepted_rows FROM liq_proof) AS liquidation_accepted_rows,
        fr.fr_avg, fr.samples AS funding_5m_samples
 FROM fut CROSS JOIN fut2v CROSS JOIN spot CROSS JOIN oi CROSS JOIN liq CROSS JOIN fr
 """
@@ -150,13 +163,15 @@ async def compute_session(
     complete_futures_2v = _coverage_complete(futures_2v_minutes, expected_minutes)
     complete_oi = _coverage_complete(oi_samples, expected_5m)
     complete_funding = _coverage_complete(funding_samples, expected_5m)
+    liquidation_start = row.get("liquidation_observed_start_at")
+    liquidation_end = row.get("liquidation_observed_end_at")
+    complete_liquidations = liquidation_start is not None and liquidation_end is not None
 
     # No se persiste una fila totalmente vacia. Una sesion parcial SI puede existir: cada
     # grupo de metricas viaja NULL si su propia fuente no alcanza cobertura.
     if (
         not any((futures_minutes, spot_minutes, futures_2v_minutes, oi_samples, funding_samples))
-        and row["long_liq"] is None
-        and row["short_liq"] is None
+        and not complete_liquidations
     ):
         return False
 
@@ -177,6 +192,18 @@ async def compute_session(
     oi_high = row["oi_high"] if complete_oi else None
     oi_low = row["oi_low"] if complete_oi else None
     fr_avg = row["fr_avg"] if complete_funding else None
+    liquidation_accepted_rows = row.get("liquidation_accepted_rows")
+    if complete_liquidations and liquidation_accepted_rows == 0:
+        # The source explicitly returned this whole (wider) window with zero events. Old
+        # canonical rows must not turn that observed silence into a fabricated non-zero day.
+        long_liq = 0.0
+        short_liq = 0.0
+    else:
+        long_liq = (row["long_liq"] or 0.0) if complete_liquidations else None
+        short_liq = (row["short_liq"] or 0.0) if complete_liquidations else None
+    liquidation_coverage_version = (
+        LIQUIDATION_COVERAGE_VERSION if complete_liquidations else None
+    )
 
     await conn.execute(
         """
@@ -188,10 +215,11 @@ async def compute_session(
           oi_high,oi_low,tx_count,
           session_coverage_version,session_expected_minutes,futures_ohlcv_minutes,
           spot_2v_minutes,session_expected_5m_samples,oi_5m_samples,funding_5m_samples,
-          created_at
+          liquidation_coverage_version,liquidation_observed_start_at,
+          liquidation_observed_end_at,created_at,updated_at
         ) VALUES(
           $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
-          $21,$22,$23,$24,$25,$26,$27,now()
+          $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,clock_timestamp(),clock_timestamp()
         )
         ON CONFLICT(symbol,session_date) DO UPDATE SET
           -- Si la fila previa es legacy/unverified, EXCLUDED (incluso NULL) manda. Solo una
@@ -226,10 +254,18 @@ async def compute_session(
             THEN COALESCE(EXCLUDED.price_high,daily_session_agg.price_high) ELSE EXCLUDED.price_high END,
           price_low=CASE WHEN daily_session_agg.session_coverage_version=1
             THEN COALESCE(EXCLUDED.price_low,daily_session_agg.price_low) ELSE EXCLUDED.price_low END,
-          long_liq_usd=CASE WHEN daily_session_agg.session_coverage_version=1
-            THEN COALESCE(EXCLUDED.long_liq_usd,daily_session_agg.long_liq_usd) ELSE EXCLUDED.long_liq_usd END,
-          short_liq_usd=CASE WHEN daily_session_agg.session_coverage_version=1
-            THEN COALESCE(EXCLUDED.short_liq_usd,daily_session_agg.short_liq_usd) ELSE EXCLUDED.short_liq_usd END,
+          -- Una suma de eventos solo es publicable junto con prueba COMPLETE. Si el refresh
+          -- no puede probarla, se conserva exclusivamente una medicion PR24 ya demostrada.
+          long_liq_usd=CASE
+            WHEN EXCLUDED.liquidation_coverage_version=1 THEN EXCLUDED.long_liq_usd
+            WHEN daily_session_agg.liquidation_coverage_version=1
+              THEN daily_session_agg.long_liq_usd
+            ELSE NULL END,
+          short_liq_usd=CASE
+            WHEN EXCLUDED.liquidation_coverage_version=1 THEN EXCLUDED.short_liq_usd
+            WHEN daily_session_agg.liquidation_coverage_version=1
+              THEN daily_session_agg.short_liq_usd
+            ELSE NULL END,
           oi_high=CASE WHEN daily_session_agg.session_coverage_version=1
             THEN COALESCE(EXCLUDED.oi_high,daily_session_agg.oi_high) ELSE EXCLUDED.oi_high END,
           oi_low=CASE WHEN daily_session_agg.session_coverage_version=1
@@ -254,14 +290,27 @@ async def compute_session(
           funding_5m_samples=CASE WHEN daily_session_agg.session_coverage_version=1
             THEN GREATEST(COALESCE(daily_session_agg.funding_5m_samples,0),EXCLUDED.funding_5m_samples)
             ELSE EXCLUDED.funding_5m_samples END,
-          created_at=now()
+          liquidation_coverage_version=CASE
+            WHEN EXCLUDED.liquidation_coverage_version=1 THEN EXCLUDED.liquidation_coverage_version
+            ELSE daily_session_agg.liquidation_coverage_version END,
+          liquidation_observed_start_at=CASE
+            WHEN EXCLUDED.liquidation_coverage_version=1
+              THEN EXCLUDED.liquidation_observed_start_at
+            ELSE daily_session_agg.liquidation_observed_start_at END,
+          liquidation_observed_end_at=CASE
+            WHEN EXCLUDED.liquidation_coverage_version=1
+              THEN EXCLUDED.liquidation_observed_end_at
+            ELSE daily_session_agg.liquidation_observed_end_at END,
+          updated_at=clock_timestamp()
         """,
         session_date_value, symbol, cvd_spot, cvd_fut, inst_delta,
         price_open, price_close, oi_open, oi_close, fr_avg,
         cvd_fut_2v, futures_2v_minutes, volume_usd, price_high, price_low,
-        row["long_liq"], row["short_liq"], oi_high, oi_low, tx_count,
+        long_liq, short_liq, oi_high, oi_low, tx_count,
         SESSION_COVERAGE_VERSION, expected_minutes, futures_minutes, spot_minutes,
-        expected_5m, oi_samples, funding_samples,
+        expected_5m, oi_samples, funding_samples, liquidation_coverage_version,
+        liquidation_start if complete_liquidations else None,
+        liquidation_end if complete_liquidations else None,
     )
     return True
 
@@ -313,15 +362,18 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
     for symbol in symbols:
         session = await conn.fetchrow(
             """
-            SELECT price_close,session_coverage_version
+            SELECT *
             FROM daily_session_agg
             WHERE symbol=$1 AND session_date=$2
+            FOR SHARE
             """,
             symbol,
             session_date_value,
         )
         if session is None or session["price_close"] is None:
             continue  # sin cierre medido no existe un veredicto diario evaluable
+        observed_at = await conn.fetchval("SELECT clock_timestamp()")
+        _, session_end_at = session_bounds(session_date_value)
         swing = await swing_score(conn, symbol)
         snapshot = await conn.fetchrow(
             """
@@ -361,8 +413,6 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
             snapshot["regime_logic_version"] if snapshot is not None else None
         )
 
-        observed_at = await conn.fetchval("SELECT clock_timestamp()")
-        _, session_end_at = session_bounds(session_date_value)
         reference = await conn.fetchrow(
             """
             SELECT
@@ -381,6 +431,42 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
         reference_price = reference["reference_price"] if reference is not None else None
         reference_price_at = (
             reference["reference_price_at"] if reference is not None else None
+        )
+
+        await conn.execute(
+            """
+            INSERT INTO daily_session_snapshot(
+              symbol,session_date,snapshot_version,observed_at,session_end_at,
+              cvd_spot_usd,cvd_fut_usd,cvd_diff_usd,cvd_fut_2v_usd,cvd_diff_2v_usd,
+              inst_delta_usd,price_open,price_high,price_low,price_close,price_chg_pct,
+              oi_open,oi_high,oi_low,oi_close,oi_chg_usd,fr_avg,volume_usd,
+              long_liq_usd,short_liq_usd,tx_count,
+              session_coverage_version,session_expected_minutes,futures_ohlcv_minutes,
+              spot_2v_minutes,cvd_fut_2v_minutes,session_expected_5m_samples,
+              oi_5m_samples,funding_5m_samples,liquidation_coverage_version,
+              liquidation_observed_start_at,liquidation_observed_end_at
+            )
+            SELECT
+              symbol,session_date,$3,$4,$5,
+              cvd_spot_usd,cvd_fut_usd,cvd_diff_usd,cvd_fut_2v_usd,cvd_diff_2v_usd,
+              inst_delta_usd,price_open,price_high,price_low,price_close,price_chg_pct,
+              oi_open,oi_high,oi_low,oi_close,oi_chg_usd,fr_avg,volume_usd,
+              CASE WHEN liquidation_coverage_version=1 THEN long_liq_usd END,
+              CASE WHEN liquidation_coverage_version=1 THEN short_liq_usd END,
+              tx_count,session_coverage_version,session_expected_minutes,
+              futures_ohlcv_minutes,spot_2v_minutes,cvd_fut_2v_minutes,
+              session_expected_5m_samples,oi_5m_samples,funding_5m_samples,
+              liquidation_coverage_version,liquidation_observed_start_at,
+              liquidation_observed_end_at
+            FROM daily_session_agg
+            WHERE symbol=$1 AND session_date=$2
+            ON CONFLICT(symbol,session_date) DO NOTHING
+            """,
+            symbol,
+            session_date_value,
+            DAILY_SESSION_SNAPSHOT_VERSION,
+            observed_at,
+            session_end_at,
         )
 
         await conn.execute(

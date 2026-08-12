@@ -81,11 +81,17 @@ def test_reference_price_prefers_fresh_realtime_futures() -> None:
 
 
 def test_reference_price_falls_back_only_to_explicit_closed_ohlcv() -> None:
-    ctx = {"price": 100.5, "ohlcv_price": 99.0, "spot_price": 101.0}
+    closed_at = datetime(2026, 8, 11, 12, 1, tzinfo=UTC)
+    ctx = {
+        "price": 100.5,
+        "ohlcv_price": 99.0,
+        "ohlcv_price_at": closed_at,
+        "spot_price": 101.0,
+    }
     assert select_reference_price(ctx, _summary(fut_price=None)) == (
         99.0,
         "ohlcv_1min_latest_closed",
-        None,
+        closed_at,
     )
     # A stale futures row can still occupy ctx["price"] via COALESCE. Never
     # relabel it as OHLCV.
@@ -95,9 +101,9 @@ def test_reference_price_falls_back_only_to_explicit_closed_ohlcv() -> None:
             fut_price=100.5,
             basis_detail={"fut_age_seconds": 120.0, "stale_after_seconds": 30.0},
         ),
-    ) == (99.0, "ohlcv_1min_latest_closed", None)
+    ) == (99.0, "ohlcv_1min_latest_closed", closed_at)
     assert select_reference_price(
-        {"price": 100.5, "spot_price": 101.0},
+        {"price": 100.5, "ohlcv_price": 99.0, "spot_price": 101.0},
         _summary(fut_price=None),
     ) == (None, None, None)
 
