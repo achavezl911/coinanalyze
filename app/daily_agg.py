@@ -45,6 +45,8 @@ def latest_closed_session_date(now_utc: datetime | None = None) -> date:
 # session_bounds() y por fuente; 0 sigue significando una medicion cuyo neto fue cero.
 SESSION_MIN_COVERAGE_RATIO = 0.95
 SESSION_COVERAGE_VERSION = 1
+DAILY_VERDICT_SNAPSHOT_VERSION = 1
+DAILY_VERDICT_LOGIC_VERSION = "daily-verdict-v1"
 
 
 def _expected_session_samples(start: datetime, end: datetime, cadence_seconds: int) -> int:
@@ -301,17 +303,20 @@ FROM ordered ORDER BY session_date
 
 
 async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -> int:
-    """Congela el veredicto del modelo para la sesion recien cerrada.
+    """Persist the latest verdict and the first forward-only observed snapshot.
 
-    swing_score, regime y setups se calculaban al vuelo y se descartaban: metrics_snapshot
-    solo retiene 30 dias y scalp_signal_snapshot 72 horas, asi que no habia manera de
-    preguntar despues si el modelo acerto. Esta fila sobrevive con daily_session_agg.
+    ``daily_verdict`` remains the mutable operational projection. PR21 additionally records
+    one immutable ``daily_verdict_snapshot`` per session, without reconstructing legacy rows.
     """
     session_date_value = latest_closed_session_date()
     stored = 0
     for symbol in symbols:
         session = await conn.fetchrow(
-            "SELECT price_close FROM daily_session_agg WHERE symbol=$1 AND session_date=$2",
+            """
+            SELECT price_close,session_coverage_version
+            FROM daily_session_agg
+            WHERE symbol=$1 AND session_date=$2
+            """,
             symbol,
             session_date_value,
         )
@@ -328,6 +333,85 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
             setups = evaluate_setups(dict(snapshot), daily_rows)
             primary = setups.get("primary") or {}
             streak = setups.get("daily_streak")
+
+        swing_bias = (
+            swing.get("bias")
+            if swing.get("bias") in ("LONG", "SHORT", "NEUTRAL")
+            else None
+        )
+        swing_conviction = (
+            swing.get("conviction")
+            if swing.get("conviction") in ("baja", "media", "alta")
+            else None
+        )
+        swing_components = json.dumps(
+            swing.get("components") or [], ensure_ascii=False
+        )
+        regime_score = snapshot["regime_score"] if snapshot is not None else None
+        regime_label = snapshot["regime_label"] if snapshot is not None else None
+        metrics_snapshot_ts = snapshot["ts"] if snapshot is not None else None
+
+        observed_at = await conn.fetchval("SELECT clock_timestamp()")
+        _, session_end_at = session_bounds(session_date_value)
+        reference = await conn.fetchrow(
+            """
+            SELECT
+                ts + interval '1 minute' AS reference_price_at,
+                close AS reference_price
+            FROM ohlcv
+            WHERE symbol=$1
+              AND interval='1min'
+              AND ts + interval '1 minute' <= $2
+            ORDER BY ts DESC
+            LIMIT 1
+            """,
+            symbol,
+            observed_at,
+        )
+        reference_price = reference["reference_price"] if reference is not None else None
+        reference_price_at = (
+            reference["reference_price_at"] if reference is not None else None
+        )
+
+        await conn.execute(
+            """
+            INSERT INTO daily_verdict_snapshot(
+              session_date,symbol,snapshot_version,logic_version,
+              observed_at,session_end_at,metrics_snapshot_ts,session_coverage_version,
+              swing_bias,swing_score,swing_conviction,long_share_pct,swing_components,
+              regime_score,regime_label,setup_id,setup_name,setup_state,setup_confidence,
+              daily_streak,session_price_close,reference_price,reference_price_at
+            ) VALUES(
+              $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,$15,$16,$17,
+              $18,$19,$20,$21,$22,$23
+            )
+            ON CONFLICT(symbol,session_date) DO NOTHING
+            """,
+            session_date_value,
+            symbol,
+            DAILY_VERDICT_SNAPSHOT_VERSION,
+            DAILY_VERDICT_LOGIC_VERSION,
+            observed_at,
+            session_end_at,
+            metrics_snapshot_ts,
+            session["session_coverage_version"],
+            swing_bias,
+            swing.get("score"),
+            swing_conviction,
+            swing.get("long_share_pct"),
+            swing_components,
+            regime_score,
+            regime_label,
+            primary.get("id"),
+            primary.get("name"),
+            primary.get("state"),
+            primary.get("confidence"),
+            streak,
+            session["price_close"],
+            reference_price,
+            reference_price_at,
+        )
+
         await conn.execute(
             """
             INSERT INTO daily_verdict(
@@ -356,15 +440,13 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
             # swing_score puede devolver SIN_DATOS/"sin datos" cuando ningun componente pudo
             # medirse. La columna solo admite LONG/SHORT/NEUTRAL y baja/media/alta, y NULL ya
             # significa exactamente "no hubo veredicto": se guarda NULL en vez de inventar uno.
-            swing.get("bias") if swing.get("bias") in ("LONG", "SHORT", "NEUTRAL") else None,
+            swing_bias,
             swing.get("score"),
-            swing.get("conviction")
-            if swing.get("conviction") in ("baja", "media", "alta")
-            else None,
+            swing_conviction,
             swing.get("long_share_pct"),
-            json.dumps(swing.get("components") or [], ensure_ascii=False),
-            snapshot["regime_score"] if snapshot is not None else None,
-            snapshot["regime_label"] if snapshot is not None else None,
+            swing_components,
+            regime_score,
+            regime_label,
             primary.get("id"),
             primary.get("name"),
             primary.get("state"),

@@ -664,6 +664,58 @@ def _sample_grid(
     return sampled
 
 
+_OUTCOME_FINAL_VALUE_FIELDS = (
+    "end_price",
+    "directional_return_pct",
+    "mfe_pct",
+    "mae_pct",
+    "market_return_pct",
+)
+
+_OUTCOME_JOIN_FIELDS = (
+    "outcome_version",
+    "status",
+    "window_end",
+    "due_at",
+    "outcome_created_at",
+    "finalized_at",
+    *_OUTCOME_FINAL_VALUE_FIELDS,
+)
+
+
+def _project_outcome_as_of(
+    row: dict[str, Any], knowledge_cutoff: datetime
+) -> dict[str, Any]:
+    """Project one current PR5 row to what was knowable at a closed cutoff."""
+
+    projected = dict(row)
+    cutoff = _aware_utc(knowledge_cutoff)
+    outcome_created_at = projected.get("outcome_created_at")
+
+    # The SQL join already applies this guard. Keep it here too so this helper remains the
+    # single fail-closed projection surface if a caller supplies a materialized row directly.
+    if (
+        isinstance(outcome_created_at, datetime)
+        and _aware_utc(outcome_created_at) > cutoff
+    ):
+        for field in _OUTCOME_JOIN_FIELDS:
+            projected[field] = None
+        return projected
+
+    status = projected.get("status")
+    finalized_at = projected.get("finalized_at")
+    if status in ("evaluated", "not_evaluable") and (
+        not isinstance(finalized_at, datetime)
+        or _aware_utc(finalized_at) > cutoff
+    ):
+        projected["status"] = "pending"
+        projected["finalized_at"] = None
+        for field in _OUTCOME_FINAL_VALUE_FIELDS:
+            projected[field] = None
+
+    return projected
+
+
 async def _fetch_period_grid(
     conn: asyncpg.Connection,
     *,
@@ -686,7 +738,9 @@ async def _fetch_period_grid(
             obs.direction,
             obs.regime_label,
             obs.actionable,
-            obs.reference_price
+            obs.reference_price,
+            obs.created_at AS observation_created_at,
+            frame.created_at AS replay_frame_created_at
           FROM signal_observation AS obs
           JOIN signal_replay_frame AS frame
             ON frame.observation_id = obs.observation_id
@@ -698,6 +752,8 @@ async def _fetch_period_grid(
             AND frame.context_version=$7
             AND obs.observed_at >= $1
             AND obs.observed_at < $2
+            AND obs.created_at <= $9
+            AND frame.created_at <= $9
             AND (
               cardinality($8::text[]) = 0
               OR obs.symbol = ANY($8::text[])
@@ -718,11 +774,15 @@ async def _fetch_period_grid(
           g.regime_label,
           g.actionable,
           g.reference_price,
+          g.observation_created_at,
+          g.replay_frame_created_at,
           g.horizon_minutes,
           out.outcome_version,
           out.status,
           out.window_end,
           out.due_at,
+          out.created_at AS outcome_created_at,
+          out.finalized_at,
           out.end_price,
           out.directional_return_pct,
           out.mfe_pct,
@@ -732,6 +792,7 @@ async def _fetch_period_grid(
         LEFT JOIN signal_outcome AS out
           ON out.observation_id = g.observation_id
          AND out.horizon_minutes = g.horizon_minutes
+         AND out.created_at <= $9
         """,
         period_start,
         period_end,
@@ -741,11 +802,12 @@ async def _fetch_period_grid(
         options.sampling_version,
         options.context_version,
         list(options.symbols),
+        knowledge_cutoff,
     )
 
     result: list[dict[str, Any]] = []
     for record in rows:
-        row = dict(record)
+        row = _project_outcome_as_of(dict(record), knowledge_cutoff)
         correct_version = row["outcome_version"] == options.outcome_version
         usable = (
             row["status"] is not None

@@ -169,6 +169,12 @@ were mature.
 
 ## Knowledge-time rules
 
+PR5 separates scheduling time from publication time: `due_at` means an
+outcome may be attempted, while `finalized_at` records when its final
+`evaluated` or `not_evaluable` state actually became known. Therefore
+`due_at != finalized_at`; due-ness alone never proves that final metrics
+were available.
+
 **Discovery** (rule applied against `discovery_end`): a PR5 outcome is
 usable only if `out.window_end <= discovery_end` AND
 `out.due_at <= discovery_end`, for the exact matching PR4/5/6 version tuple.
@@ -187,6 +193,16 @@ ever cross the frozen test boundary) AND `out.due_at <= report generated_at`
 discovery, the OOS knowledge cutoff is the live evaluation clock, not
 `test_end`, because a test-window outcome's settlement can legitimately land
 after `test_end` while its price path stayed inside the window.
+
+For both periods, PR11 projects the row state **as of the closed
+`knowledge_cutoff`**. Observation, replay-frame, and outcome rows whose
+`created_at` is later than that cutoff are invisible. A current final row is
+preserved as final only when `finalized_at <= knowledge_cutoff` (equality is
+known). If `due_at <= knowledge_cutoff < finalized_at`, the historical row is
+usable but projected to `status='pending'`; `end_price`, return, MFE, MAE, and
+all other selected final metrics are cleared before downstream builders see
+it. It is counted as `pending_outcome_rows`, never evaluated,
+not-evaluable, or missing. Test/OOS keeps `knowledge_cutoff=generated_at`.
 
 ## Gross views
 

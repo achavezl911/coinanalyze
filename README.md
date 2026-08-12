@@ -221,8 +221,9 @@ tendencia de semanas de un pico aislado.
   volumen y liquidaciones, más `totals` y `field_notes` que advierten al modelo de cómo
   leer cada columna. `pro` trae 30 sesiones, `max` trae 90.
 - Nuevo perfil **`max`**: sin recortes — 90 sesiones, divergencias intradía, 9 ventanas de
-  delta, veredictos pasados con su retorno realizado. Pensado para pegar el JSON en una IA
-  por web, donde el coste en tokens no es la restricción.
+  delta, y primeras emisiones inmutables de veredictos capturadas por sesión con su
+  provenance y retorno desde el precio observable. Pensado para pegar el JSON en una IA por
+  web, donde el coste en tokens no es la restricción.
 - El bridge de Telegram usa `max` en `/preview` (`TELEGRAM_PREVIEW_PROFILE`), que ya
   entregaba el payload como documento JSON único. Resultado: **~446 KB, ~106 k tokens**,
   muy por debajo del límite de 50 MB de Telegram.
@@ -252,11 +253,13 @@ salía como acumulación siempre que los futuros vendieran más (36 sesiones as�
 - La tabla diaria muestra la procedencia de cada columna y el **percentil** de cada valor
   frente a toda la historia guardada. Se retiró la columna Whale: era $0 en el 98% de las
   sesiones porque los umbrales por trade casi nunca se cruzan con dos venues.
-- **`daily_verdict`**: el `swing_score`, su desglose, el régimen y el setup primario se
-  calculaban al vuelo y se descartaban (`metrics_snapshot` retiene 30 días,
-  `scalp_signal_snapshot` 72 horas). Ahora se congelan por sesión y `/api/verdicts` los
-  devuelve junto al retorno realizado a 7 y 14 sesiones. Los pesos siguen **sin calibrar**;
-  esto solo hace posible auditarlos más adelante.
+- **Veredictos diarios point-in-time**: `daily_verdict` sigue siendo la proyección operativa
+  más reciente y mutable. `daily_verdict_snapshot` conserva hacia adelante la **primera
+  emisión observada e inmutable** por `(symbol, session_date)`; no se hace backfill desde
+  veredictos legacy potencialmente reescritos. `observed_at` es el knowledge time y
+  `reference_price_at` identifica la última vela 1m ya completada que ancla los retornos de
+  `/api/verdicts`. No se afirma que el snapshot reconstruya el estado exacto al cierre. Los
+  pesos siguen **sin calibrar**; esta evidencia solo permite auditarlos más adelante.
 - **Percentiles condicionales** en `/api/macro-context`: además del percentil, la
   distribución empírica del retorno posterior en las sesiones históricas que estuvieron en
   ese mismo estado. Descriptivo, no predictivo: ~1 año de muestra y un solo régimen.
@@ -485,7 +488,7 @@ Extiende v1.1.2 sin modificar todavía el manual/PDF:
 - `monitor()` de scalp degrada también por flush de trades/books/signals, no solo por vivacidad WS.
 - `smoke_test.sh` soporta `API_INTERNAL_TOKEN` para validaciones locales endurecidas.
 - `scripts/calibrate_signals.py` genera reporte offline de forward returns sobre señales persistidas.
-- Retención configurable para `scalp_signal_snapshot`; `daily_session_agg` conserva histórico indefinidamente por default (`DAILY_SESSION_RETENTION_DAYS=0`).
+- Retención configurable para `scalp_signal_snapshot`; `daily_session_agg` conserva histórico indefinidamente por default (`DAILY_SESSION_RETENTION_DAYS=0`). `daily_verdict_snapshot` es evidencia durable y nunca participa de esa retención operativa.
 - Limpieza de código muerto de intervalos realtime en endpoints históricos y comparación de token con `hmac.compare_digest`.
 
 Validación local: pytest 20/20, ruff limpio, compileall OK, bash -n OK y wheel build OK.
