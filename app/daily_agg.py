@@ -25,7 +25,11 @@ from app.db import (
 from app.ingest import seconds_until_aligned_run, upsert_ohlcv
 from app.interpretation import evaluate_setups
 from app.logging_setup import configure_logging
-from app.metrics import REGIME_LOGIC_VERSION, session_bounds
+from app.metrics import (
+    REGIME_LOGIC_VERSION,
+    liquidation_history_observation,
+    session_bounds,
+)
 from app.partitioning import apply_temporal_retention
 from app.scalp_logic import swing_score
 
@@ -44,9 +48,12 @@ def latest_closed_session_date(now_utc: datetime | None = None) -> date:
 # produce sesiones de 23 h y 25 h. La cobertura se mide contra la duracion REAL de
 # session_bounds() y por fuente; 0 sigue significando una medicion cuyo neto fue cero.
 SESSION_MIN_COVERAGE_RATIO = 0.95
-SESSION_COVERAGE_VERSION = 1
+SESSION_COVERAGE_VERSION = 2
 DAILY_VERDICT_SNAPSHOT_VERSION = 1
-DAILY_VERDICT_LOGIC_VERSION = "daily-verdict-v3"
+LIQUIDATION_COVERAGE_VERSION = 1
+DAILY_VERDICT_LOGIC_VERSION = "daily-verdict-v4"
+DAILY_VERDICT_OUTCOME_VERSION = 1
+DAILY_VERDICT_OUTCOME_HORIZONS = (7, 14)
 
 
 def _expected_session_samples(start: datetime, end: datetime, cadence_seconds: int) -> int:
@@ -135,6 +142,12 @@ async def compute_session(
     start, end = session_bounds(session_date_value)
     expected_minutes = _expected_session_samples(start, end, 60)
     expected_5m = _expected_session_samples(start, end, 300)
+    liquidation_observation = await liquidation_history_observation(
+        conn,
+        symbol=symbol,
+        required_start=start,
+        required_end=end,
+    )
     row = await conn.fetchrow(SESSION_QUERY, symbol, ws_symbol, start, end)
     if not row:
         return False
@@ -150,13 +163,13 @@ async def compute_session(
     complete_futures_2v = _coverage_complete(futures_2v_minutes, expected_minutes)
     complete_oi = _coverage_complete(oi_samples, expected_5m)
     complete_funding = _coverage_complete(funding_samples, expected_5m)
+    complete_liquidations = liquidation_observation is not None
 
     # No se persiste una fila totalmente vacia. Una sesion parcial SI puede existir: cada
     # grupo de metricas viaja NULL si su propia fuente no alcanza cobertura.
     if (
         not any((futures_minutes, spot_minutes, futures_2v_minutes, oi_samples, funding_samples))
-        and row["long_liq"] is None
-        and row["short_liq"] is None
+        and not complete_liquidations
     ):
         return False
 
@@ -177,6 +190,11 @@ async def compute_session(
     oi_high = row["oi_high"] if complete_oi else None
     oi_low = row["oi_low"] if complete_oi else None
     fr_avg = row["fr_avg"] if complete_funding else None
+    long_liq = (row["long_liq"] or 0.0) if complete_liquidations else None
+    short_liq = (row["short_liq"] or 0.0) if complete_liquidations else None
+    liquidation_coverage_version = (
+        LIQUIDATION_COVERAGE_VERSION if complete_liquidations else None
+    )
 
     await conn.execute(
         """
@@ -188,80 +206,87 @@ async def compute_session(
           oi_high,oi_low,tx_count,
           session_coverage_version,session_expected_minutes,futures_ohlcv_minutes,
           spot_2v_minutes,session_expected_5m_samples,oi_5m_samples,funding_5m_samples,
-          created_at
+          liquidation_coverage_version,liquidation_observed_at,
+          liquidation_source_start_at,liquidation_source_cutoff_at,created_at,updated_at
         ) VALUES(
           $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
-          $21,$22,$23,$24,$25,$26,$27,now()
+          $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,clock_timestamp(),clock_timestamp()
         )
         ON CONFLICT(symbol,session_date) DO UPDATE SET
           -- Si la fila previa es legacy/unverified, EXCLUDED (incluso NULL) manda. Solo una
           -- medicion PR20 ya verificada puede sobrevivir a una recarga posterior sin retencion.
-          cvd_spot_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+          cvd_spot_usd=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.cvd_spot_usd,daily_session_agg.cvd_spot_usd)
             ELSE EXCLUDED.cvd_spot_usd END,
-          cvd_fut_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+          cvd_fut_usd=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.cvd_fut_usd,daily_session_agg.cvd_fut_usd)
             ELSE EXCLUDED.cvd_fut_usd END,
-          inst_delta_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+          inst_delta_usd=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.inst_delta_usd,daily_session_agg.inst_delta_usd)
             ELSE EXCLUDED.inst_delta_usd END,
-          price_open=CASE WHEN daily_session_agg.session_coverage_version=1
+          price_open=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.price_open,daily_session_agg.price_open)
             ELSE EXCLUDED.price_open END,
-          price_close=CASE WHEN daily_session_agg.session_coverage_version=1
+          price_close=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.price_close,daily_session_agg.price_close)
             ELSE EXCLUDED.price_close END,
-          oi_open=CASE WHEN daily_session_agg.session_coverage_version=1
+          oi_open=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.oi_open,daily_session_agg.oi_open) ELSE EXCLUDED.oi_open END,
-          oi_close=CASE WHEN daily_session_agg.session_coverage_version=1
+          oi_close=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.oi_close,daily_session_agg.oi_close) ELSE EXCLUDED.oi_close END,
-          fr_avg=CASE WHEN daily_session_agg.session_coverage_version=1
+          fr_avg=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.fr_avg,daily_session_agg.fr_avg) ELSE EXCLUDED.fr_avg END,
-          cvd_fut_2v_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+          cvd_fut_2v_usd=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.cvd_fut_2v_usd,daily_session_agg.cvd_fut_2v_usd)
             ELSE EXCLUDED.cvd_fut_2v_usd END,
-          volume_usd=CASE WHEN daily_session_agg.session_coverage_version=1
+          volume_usd=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.volume_usd,daily_session_agg.volume_usd) ELSE EXCLUDED.volume_usd END,
-          price_high=CASE WHEN daily_session_agg.session_coverage_version=1
+          price_high=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.price_high,daily_session_agg.price_high) ELSE EXCLUDED.price_high END,
-          price_low=CASE WHEN daily_session_agg.session_coverage_version=1
+          price_low=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.price_low,daily_session_agg.price_low) ELSE EXCLUDED.price_low END,
-          long_liq_usd=CASE WHEN daily_session_agg.session_coverage_version=1
-            THEN COALESCE(EXCLUDED.long_liq_usd,daily_session_agg.long_liq_usd) ELSE EXCLUDED.long_liq_usd END,
-          short_liq_usd=CASE WHEN daily_session_agg.session_coverage_version=1
-            THEN COALESCE(EXCLUDED.short_liq_usd,daily_session_agg.short_liq_usd) ELSE EXCLUDED.short_liq_usd END,
-          oi_high=CASE WHEN daily_session_agg.session_coverage_version=1
+          -- v2 never carries a legacy or stale event total without the current proof.
+          long_liq_usd=EXCLUDED.long_liq_usd,
+          short_liq_usd=EXCLUDED.short_liq_usd,
+          oi_high=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.oi_high,daily_session_agg.oi_high) ELSE EXCLUDED.oi_high END,
-          oi_low=CASE WHEN daily_session_agg.session_coverage_version=1
+          oi_low=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.oi_low,daily_session_agg.oi_low) ELSE EXCLUDED.oi_low END,
-          tx_count=CASE WHEN daily_session_agg.session_coverage_version=1
+          tx_count=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN COALESCE(EXCLUDED.tx_count,daily_session_agg.tx_count) ELSE EXCLUDED.tx_count END,
-          cvd_fut_2v_minutes=CASE WHEN daily_session_agg.session_coverage_version=1
+          cvd_fut_2v_minutes=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN GREATEST(COALESCE(daily_session_agg.cvd_fut_2v_minutes,0),EXCLUDED.cvd_fut_2v_minutes)
             ELSE EXCLUDED.cvd_fut_2v_minutes END,
           session_coverage_version=EXCLUDED.session_coverage_version,
           session_expected_minutes=EXCLUDED.session_expected_minutes,
-          futures_ohlcv_minutes=CASE WHEN daily_session_agg.session_coverage_version=1
+          futures_ohlcv_minutes=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN GREATEST(COALESCE(daily_session_agg.futures_ohlcv_minutes,0),EXCLUDED.futures_ohlcv_minutes)
             ELSE EXCLUDED.futures_ohlcv_minutes END,
-          spot_2v_minutes=CASE WHEN daily_session_agg.session_coverage_version=1
+          spot_2v_minutes=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN GREATEST(COALESCE(daily_session_agg.spot_2v_minutes,0),EXCLUDED.spot_2v_minutes)
             ELSE EXCLUDED.spot_2v_minutes END,
           session_expected_5m_samples=EXCLUDED.session_expected_5m_samples,
-          oi_5m_samples=CASE WHEN daily_session_agg.session_coverage_version=1
+          oi_5m_samples=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN GREATEST(COALESCE(daily_session_agg.oi_5m_samples,0),EXCLUDED.oi_5m_samples)
             ELSE EXCLUDED.oi_5m_samples END,
-          funding_5m_samples=CASE WHEN daily_session_agg.session_coverage_version=1
+          funding_5m_samples=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)
             THEN GREATEST(COALESCE(daily_session_agg.funding_5m_samples,0),EXCLUDED.funding_5m_samples)
             ELSE EXCLUDED.funding_5m_samples END,
-          created_at=now()
+          liquidation_coverage_version=EXCLUDED.liquidation_coverage_version,
+          liquidation_observed_at=EXCLUDED.liquidation_observed_at,
+          liquidation_source_start_at=EXCLUDED.liquidation_source_start_at,
+          liquidation_source_cutoff_at=EXCLUDED.liquidation_source_cutoff_at,
+          updated_at=clock_timestamp()
         """,
         session_date_value, symbol, cvd_spot, cvd_fut, inst_delta,
         price_open, price_close, oi_open, oi_close, fr_avg,
         cvd_fut_2v, futures_2v_minutes, volume_usd, price_high, price_low,
-        row["long_liq"], row["short_liq"], oi_high, oi_low, tx_count,
+        long_liq, short_liq, oi_high, oi_low, tx_count,
         SESSION_COVERAGE_VERSION, expected_minutes, futures_minutes, spot_minutes,
-        expected_5m, oi_samples, funding_samples,
+        expected_5m, oi_samples, funding_samples, liquidation_coverage_version,
+        liquidation_observation.observed_at if liquidation_observation else None,
+        liquidation_observation.source_start_at if liquidation_observation else None,
+        liquidation_observation.source_cutoff_at if liquidation_observation else None,
     )
     return True
 
@@ -468,6 +493,52 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
         )
         stored += 1
     return stored
+
+
+async def materialize_daily_verdict_outcomes(conn: asyncpg.Connection) -> int:
+    """Record due v4 forward outcomes from one exact measured calendar target."""
+    inserted = await conn.fetchval(
+        """
+        WITH due AS (
+          SELECT
+            verdict.snapshot_id,
+            horizon.horizon_sessions,
+            target.session_date AS target_session_date,
+            target.price_close AS target_price_close,
+            target.session_coverage_version AS target_session_coverage_version,
+            target.updated_at AS source_projection_updated_at,
+            (target.price_close / verdict.reference_price - 1) * 100 AS return_pct
+          FROM daily_verdict_snapshot AS verdict
+          CROSS JOIN unnest($3::integer[]) AS horizon(horizon_sessions)
+          JOIN daily_session_agg AS target
+            ON target.symbol=verdict.symbol
+           AND target.session_date=verdict.session_date+horizon.horizon_sessions
+          WHERE verdict.logic_version=$1
+            AND verdict.reference_price IS NOT NULL
+            AND target.session_coverage_version=2
+            AND target.price_close IS NOT NULL
+            AND target.updated_at IS NOT NULL
+        ), stored AS (
+          INSERT INTO daily_verdict_outcome(
+            snapshot_id,outcome_version,horizon_sessions,target_session_date,
+            target_price_close,target_session_coverage_version,
+            source_projection_updated_at,return_pct,recorded_at
+          )
+          SELECT
+            snapshot_id,$2,horizon_sessions,target_session_date,
+            target_price_close,target_session_coverage_version,
+            source_projection_updated_at,return_pct,clock_timestamp()
+          FROM due
+          ON CONFLICT(snapshot_id,outcome_version,horizon_sessions) DO NOTHING
+          RETURNING 1
+        )
+        SELECT count(*)::int FROM stored
+        """,
+        DAILY_VERDICT_LOGIC_VERSION,
+        DAILY_VERDICT_OUTCOME_VERSION,
+        list(DAILY_VERDICT_OUTCOME_HORIZONS),
+    )
+    return int(inserted or 0)
 
 
 async def apply_retention(
@@ -698,6 +769,7 @@ async def cycle(
             )
             inserted = await backfill(conn, settings.SYMBOLS, settings.DAILY_LOOKBACK_DAYS)
             verdicts = await persist_verdicts(conn, settings.SYMBOLS)
+            outcomes = await materialize_daily_verdict_outcomes(conn)
             baselines = await refresh_baselines(conn, settings.SYMBOLS)
             await apply_retention(
                 conn,
@@ -710,18 +782,20 @@ async def cycle(
         heartbeat_detail = (
             f"daily_candles={daily_candles},h4_candles={h4_candles},"
             f"spot_candles={spot_candles},baselines={baselines},"
-            f"daily_rows={inserted},verdicts={verdicts}"
+            f"daily_rows={inserted},verdicts={verdicts},outcomes={outcomes}"
         )
         if ownership is None:
             await heartbeat(conn, "daily", detail=heartbeat_detail)
         else:
             await heartbeat_owned(conn, ownership, "daily", detail=heartbeat_detail)
     LOGGER.info(
-        "daily_cycle_complete daily_candles=%d h4_candles=%d inserted=%d verdicts=%d",
+        "daily_cycle_complete daily_candles=%d h4_candles=%d inserted=%d "
+        "verdicts=%d outcomes=%d",
         daily_candles,
         h4_candles,
         inserted,
         verdicts,
+        outcomes,
     )
 
 

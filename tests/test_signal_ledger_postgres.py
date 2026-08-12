@@ -148,6 +148,7 @@ async def _persist(
             "now_ms": context_as_of.timestamp() * 1000.0,
             "price": 100.0,
             "ohlcv_price": 99.0,
+            "ohlcv_price_at": context_as_of,
             "fut_event_ms": int(context_as_of.timestamp() * 1000.0) - 1_000,
         },
         summary or _summary(),
@@ -379,7 +380,7 @@ async def test_metrics_snapshot_knowledge_time_uses_committed_visibility_before_
 
 
 @pytest.mark.asyncio
-async def test_pr23_v4_signal_does_not_copy_legacy_regime() -> None:
+async def test_pr24_v5_signal_does_not_copy_legacy_regime() -> None:
     schema = _schema_name()
     conn = await _connect_schema(schema)
     try:
@@ -402,7 +403,7 @@ async def test_pr23_v4_signal_does_not_copy_legacy_regime() -> None:
             FROM signal_observation ORDER BY observation_id
             """
         )
-        assert legacy_only["evidence_version"] == 4
+        assert legacy_only["evidence_version"] == 5
         for field in (
             "regime_score",
             "regime_label",
@@ -466,7 +467,7 @@ async def test_pr22_signal_observation_copies_regime_logic_version() -> None:
         row = await conn.fetchrow(
             "SELECT evidence_version,regime_logic_version FROM signal_observation"
         )
-        assert row["evidence_version"] == 4
+        assert row["evidence_version"] == 5
         assert row["regime_logic_version"] == 2
     finally:
         await _drop_schema(conn, schema)
@@ -480,13 +481,16 @@ async def test_evidence_and_reference_provenance_are_frozen() -> None:
         await _persist(conn, summary=_summary(optional=None))
         row = await conn.fetchrow(
             """
-            SELECT reference_price,reference_price_source,reference_price_at,evidence
+            SELECT observed_at,evidence_version,reference_price,reference_price_source,
+                   reference_price_at,evidence
             FROM signal_observation
             """
         )
         assert row["reference_price"] == 100.0
         assert row["reference_price_source"] == "futures_realtime_combined"
         assert row["reference_price_at"] is not None
+        assert row["reference_price_at"] <= row["observed_at"]
+        assert row["evidence_version"] == 5
         evidence = row["evidence"]
         if isinstance(evidence, str):
             evidence = json.loads(evidence)

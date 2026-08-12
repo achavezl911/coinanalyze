@@ -458,6 +458,8 @@ def _liquidation_history_observation(
             "source_cutoff_ts": int(source_cutoff.timestamp()),
             "requested_symbols": len(requested_symbols),
             "observed_symbols": len(observed_symbols),
+            "requested_symbol_names": sorted(requested),
+            "observed_symbol_names": sorted(observed_symbols),
             "missing_symbols": missing_symbols,
             "returned_rows": returned_rows,
             "accepted_rows": accepted_rows,

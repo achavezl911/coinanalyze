@@ -92,6 +92,8 @@ def test_liquidation_empty_event_history_is_healthy_observation():
     assert detail["returned_rows"] == 0
     assert detail["accepted_rows"] == 0
     assert detail["missing_symbols"] == []
+    assert detail["requested_symbol_names"] == sorted(payload)
+    assert detail["observed_symbol_names"] == sorted(payload)
     assert detail["source_cutoff_ts"] == int(cutoff.timestamp())
 
 
@@ -134,19 +136,37 @@ async def test_liquidation_history_health_requires_exact_source_cutoff():
     detail = json.dumps({
         "source_start_ts": int((required_start - timedelta(hours=2)).timestamp()),
         "source_cutoff_ts": int(required_end.timestamp()),
+        "requested_symbols": 1,
+        "observed_symbols": 1,
+        "requested_symbol_names": ["BTCUSDT_PERP.A"],
+        "observed_symbol_names": ["BTCUSDT_PERP.A"],
+        "missing_symbols": [],
+        "returned_rows": 0,
+        "accepted_rows": 0,
+        "reason": "complete_observation",
     })
     conn = HeartbeatConn([{"status": "ok", "updated_at": now, "detail": detail}])
     assert await _liquidation_history_observed(
-        conn, required_start=required_start, required_end=required_end, now_utc=now
+        conn, symbol="BTCUSDT_PERP.A", required_start=required_start,
+        required_end=required_end, now_utc=now,
     )
 
     behind = json.dumps({
         "source_start_ts": int((required_start - timedelta(hours=2)).timestamp()),
         "source_cutoff_ts": int((required_end - timedelta(minutes=5)).timestamp()),
+        "requested_symbols": 1,
+        "observed_symbols": 1,
+        "requested_symbol_names": ["BTCUSDT_PERP.A"],
+        "observed_symbol_names": ["BTCUSDT_PERP.A"],
+        "missing_symbols": [],
+        "returned_rows": 0,
+        "accepted_rows": 0,
+        "reason": "complete_observation",
     })
     conn = HeartbeatConn([{"status": "ok", "updated_at": now, "detail": behind}])
     assert not await _liquidation_history_observed(
-        conn, required_start=required_start, required_end=required_end, now_utc=now
+        conn, symbol="BTCUSDT_PERP.A", required_start=required_start,
+        required_end=required_end, now_utc=now,
     )
 
 
@@ -158,14 +178,24 @@ async def test_liquidation_history_health_rejects_stale_or_degraded():
     detail = json.dumps({
         "source_start_ts": int((start - timedelta(hours=2)).timestamp()),
         "source_cutoff_ts": int(end.timestamp()),
+        "requested_symbols": 1,
+        "observed_symbols": 1,
+        "requested_symbol_names": ["BTCUSDT_PERP.A"],
+        "observed_symbol_names": ["BTCUSDT_PERP.A"],
+        "missing_symbols": [],
+        "returned_rows": 0,
+        "accepted_rows": 0,
+        "reason": "complete_observation",
     })
     stale = HeartbeatConn([{"status": "ok", "updated_at": end, "detail": detail}])
     assert not await _liquidation_history_observed(
-        stale, required_start=start, required_end=end, now_utc=now
+        stale, symbol="BTCUSDT_PERP.A", required_start=start,
+        required_end=end, now_utc=now,
     )
     degraded = HeartbeatConn([{"status": "degraded", "updated_at": now, "detail": detail}])
     assert not await _liquidation_history_observed(
-        degraded, required_start=start, required_end=end, now_utc=now
+        degraded, symbol="BTCUSDT_PERP.A", required_start=start,
+        required_end=end, now_utc=now,
     )
 
 
@@ -248,7 +278,7 @@ def test_pr19_evidence_version_boundary():
     from app.signal_regime import RegimeAnalysisOptions
     from app.signal_replay import REPLAY_CONTEXT_VERSION
 
-    assert SIGNAL_EVIDENCE_VERSION == 4
+    assert SIGNAL_EVIDENCE_VERSION == 5
     assert SIGNAL_SAMPLING_VERSION == 1
     assert REPLAY_CONTEXT_VERSION == 1
     assert BacktestOptions().evidence_version == 1

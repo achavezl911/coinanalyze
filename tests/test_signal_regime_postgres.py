@@ -130,6 +130,13 @@ async def test_pr23_regime_reader_v4_requires_regime_logic_v2() -> None:
 
 
 @pytest.mark.asyncio
+async def test_pr24_regime_reader_v5_requires_regime_logic_v2() -> None:
+    assert await _reader_status(evidence_version=5, regime_logic_version=1) == "unavailable"
+    assert await _reader_status(evidence_version=5, regime_logic_version=None) == "unavailable"
+    assert await _reader_status(evidence_version=5, regime_logic_version=2) == "available"
+
+
+@pytest.mark.asyncio
 async def test_pr22_regime_reader_v3_null_version_is_unavailable() -> None:
     assert await _reader_status(evidence_version=3, regime_logic_version=None) == "unavailable"
     assert await _reader_status(evidence_version=4, regime_logic_version=None) == "unavailable"

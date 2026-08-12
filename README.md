@@ -63,6 +63,21 @@ siguen en `None` de forma fail-closed.
 
 Dashboard interno de microestructura y scalping para BTC, ETH y SOL. Incluye API privada para contexto IA, PostgreSQL local, colectores systemd, UI web y nginx como único punto remoto.
 
+## PR24 — integridad histórica diaria prospectiva
+
+- `daily_session_agg` continúa como proyección mutable: `created_at` conserva la primera
+  creación y `updated_at` registra prospectivamente cada refresh, sin reinterpretar legacy.
+- `/api/daily` expone `mutable_current_projection`; `through_session_date` sólo limita por
+  fecha la proyección actual y `as_of` falla explícitamente porque no existe replay PIT.
+- `/api/verdicts` devuelve un solo cohort de `logic_version` (v4 por defecto). Los retornos +7
+  y +14 usan `daily_verdict_outcome` en la fecha calendario exacta; un target ausente queda
+  `null` y la evidencia materializada no cambia con recomputes posteriores.
+- Las sumas diarias de liquidaciones sólo se publican cuando el heartbeat `ok` de ingest
+  prueba que la observación cubre toda la sesión. Una respuesta completa vacía mide `0.0`; cobertura parcial o símbolo
+  ausente conserva `null`.
+- La evidencia signal v5 ancla el fallback OHLCV a `ts + 1 minute` de una vela realmente
+  cerrada. Un precio sin timestamp de fuente válido falla cerrado.
+
 ## v1.4.8 — lectura rápida del flujo sin look-ahead
 
 - Nueva tarjeta visible al entrar: resume la última sesión como **hecho**, **interpretación**,
@@ -72,8 +87,8 @@ Dashboard interno de microestructura y scalping para BTC, ETH y SOL. Incluye API
 - El algoritmo combina el cuartil histórico del CVD spot, la dirección de futuros, la respuesta
   del precio y una secuencia de hasta cuatro sesiones. Sólo marca posible reversión cuando una
   defensa previa recibe después compra spot fuerte con avance.
-- `/api/daily` incorpora `quick_read` y acepta `as_of=AAAA-MM-DD`. Tanto la muestra visible como
-  los percentiles se cortan en esa fecha, de modo que un replay histórico no conoce el futuro.
+- `/api/daily` incorpora `quick_read`; desde PR24, `through_session_date=AAAA-MM-DD` limita la
+  proyección actual y el antiguo `as_of` se rechaza porque nunca constituyó replay PIT.
 - La interfaz mantiene los importes que sustentan la lectura y declara qué dato la confirmaría
   o invalidaría. “Confluencia” mide acuerdo entre evidencias, no probabilidad de éxito.
 
@@ -391,7 +406,8 @@ uvicorn app.api:app --host 127.0.0.1 --port 8000
 | `/api/oi` | Open Interest |
 | `/api/liquidations` | Liquidaciones long/short |
 | `/api/whale/delta` | Delta institucional spot |
-| `/api/daily` | Histórico NYSE, racha, lectura rápida y replay opcional con `as_of` |
+| `/api/daily` | Proyección NYSE mutable, limitable con `through_session_date` (sin replay PIT) |
+| `/api/verdicts` | Evidencia diaria inmutable por cohort de `logic_version` |
 | `/api/setup` | Evaluación de setups A–E e invalidaciones |
 | `/api/stream` | SSE de precio, delta y whale live |
 | `/api/healthz` | Estado y lag del pipeline |

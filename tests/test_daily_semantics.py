@@ -78,7 +78,10 @@ def test_session_query_measures_futures_on_the_same_venues_as_spot() -> None:
 def test_partial_sessions_preserve_only_previously_verified_two_venue_evidence() -> None:
     """Retention loss may preserve PR20-verified evidence, never legacy/unverified evidence."""
     source = (ROOT / "app" / "daily_agg.py").read_text(encoding="utf-8")
-    assert "cvd_fut_2v_usd=CASE WHEN daily_session_agg.session_coverage_version=1" in source
+    assert (
+        "cvd_fut_2v_usd=CASE WHEN daily_session_agg.session_coverage_version IN (1,2)"
+        in source
+    )
     assert "THEN COALESCE(EXCLUDED.cvd_fut_2v_usd,daily_session_agg.cvd_fut_2v_usd)" in source
     assert "ELSE EXCLUDED.cvd_fut_2v_usd END" in source
     assert "complete_futures_2v = _coverage_complete(futures_2v_minutes, expected_minutes)" in source
@@ -459,7 +462,7 @@ def test_api_exposes_provenance_for_the_daily_table() -> None:
     assert "async def verdicts" in source
 
 
-class _DailyReplayConnection:
+class _DailyProjectionConnection:
     def __init__(self):
         self.query = ""
         self.args = ()
@@ -471,11 +474,11 @@ class _DailyReplayConnection:
 
 
 @pytest.mark.asyncio
-async def test_daily_replay_applies_as_of_to_history_and_selected_rows() -> None:
-    """Replay cutoff must constrain each percentile population and the selected rows."""
+async def test_daily_date_limit_applies_to_current_projection_only() -> None:
+    """The date limit constrains every view of the mutable current projection."""
     from datetime import date
 
-    conn = _DailyReplayConnection()
+    conn = _DailyProjectionConnection()
     cutoff = date(2026, 6, 24)
     result = await daily_data(conn, "BTCUSDT_PERP.A", 60, cutoff)
     query = conn.query
@@ -488,6 +491,8 @@ async def test_daily_replay_applies_as_of_to_history_and_selected_rows() -> None
     assert "cvd_spot_usd IS NOT NULL" in spot_hist
     assert "cvd_diff_usd IS NOT NULL" in diff_hist
     assert conn.args == ("BTCUSDT_PERP.A", 60, cutoff)
+    assert result["temporal_semantics"] == "mutable_current_projection"
+    assert result["knowledge_time_replay"] is False
     assert result["quick_read"]["available"] is False
 def test_pr20_v7_daily_tail_helpers_do_not_bridge_missingness() -> None:
     rows = [

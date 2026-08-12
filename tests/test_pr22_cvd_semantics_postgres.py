@@ -255,11 +255,11 @@ async def test_pr22_fresh_schema_is_valid_and_idempotent() -> None:
         for table, constraint in (
             (
                 "signal_observation",
-                "signal_observation_pr23_regime_provenance_check",
+                "signal_observation_pr24_regime_provenance_check",
             ),
             (
                 "daily_verdict_snapshot",
-                "daily_verdict_snapshot_pr23_regime_provenance_check",
+                "daily_verdict_snapshot_pr24_regime_provenance_check",
             ),
         ):
             assert await conn.fetchval(
