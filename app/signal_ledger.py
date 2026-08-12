@@ -9,15 +9,19 @@ from typing import Any
 import asyncpg
 
 from app.metrics import REGIME_LOGIC_VERSION
-from app.signal_execution import persist_signal_execution_snapshots
+from app.signal_execution import (
+    load_signal_execution_inputs,
+    persist_signal_execution_snapshots,
+)
 from app.signal_outcomes import schedule_signal_outcomes
 from app.signal_replay import (
     SCALP_SIGNAL_LOGIC_VERSION,
     persist_signal_replay_frame,
+    replay_context_as_of,
 )
 
 SIGNAL_FAMILY = "scalp"
-SIGNAL_EVIDENCE_VERSION = 3
+SIGNAL_EVIDENCE_VERSION = 4
 SIGNAL_SAMPLING_VERSION = 1
 
 _LONG_STATES = frozenset({"Long Momentum", "Long Pullback"})
@@ -227,8 +231,28 @@ async def persist_signal_observations(
     reference_price, reference_source, reference_at = select_reference_price(ctx, summary)
     evidence = serialize_signal_evidence(summary)
 
-    # PostgreSQL is the sampling clock. Host clock skew cannot create minute
-    # slots or provenance timestamps that disagree with DB state.
+    # Freeze every committed DB input first. The observation clock is read only
+    # after these statements, so a row committed between the provenance read
+    # and observed_at cannot be retroactively associated with this observation.
+    context_as_of = replay_context_as_of(ctx)
+    metrics = await conn.fetchrow(
+        """
+        SELECT ts,regime_score,regime_label,regime_logic_version,
+               price_cutoff_at,metrics_cutoff_at
+        FROM metrics_snapshot
+        WHERE symbol=$1 AND ts <= $2
+          AND regime_logic_version=$3
+        ORDER BY ts DESC
+        LIMIT 1
+        """,
+        symbol,
+        context_as_of,
+        REGIME_LOGIC_VERSION,
+    )
+    execution_inputs = await load_signal_execution_inputs(conn, symbol)
+
+    # PostgreSQL is the sampling and knowledge clock. Host clock skew cannot
+    # create minute slots or provenance timestamps that disagree with DB state.
     observed_at = await conn.fetchval("SELECT clock_timestamp()")
     if not isinstance(observed_at, datetime):
         raise RuntimeError("PostgreSQL did not return a timestamp")
@@ -273,21 +297,6 @@ async def persist_signal_observations(
 
     if not write_periodic and not write_transition:
         return 0
-
-    metrics = await conn.fetchrow(
-        """
-        SELECT ts,regime_score,regime_label,regime_logic_version,
-               price_cutoff_at,metrics_cutoff_at
-        FROM metrics_snapshot
-        WHERE symbol=$1 AND ts <= $2
-          AND regime_logic_version=$3
-        ORDER BY ts DESC
-        LIMIT 1
-        """,
-        symbol,
-        observed_at,
-        REGIME_LOGIC_VERSION,
-    )
 
     common = (
         observed_at,
@@ -358,6 +367,7 @@ async def persist_signal_observations(
         observation_id,
         symbol,
         observed_at,
+        execution_inputs,
     )
     if execution_rows != 2:
         raise RuntimeError(

@@ -204,7 +204,7 @@ def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[flo
     if price > 10_000_000 or qty > 100_000_000 or price * qty > MAX_NOTIONAL_USD:
         return None
     now_ms = int(time.time() * 1000)
-    if ts_ms < now_ms - 120_000 or ts_ms > now_ms + 30_000:
+    if ts_ms < now_ms - 120_000 or ts_ms > now_ms:
         return None
     return price, qty, ts_ms
 

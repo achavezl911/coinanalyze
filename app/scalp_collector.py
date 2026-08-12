@@ -99,7 +99,7 @@ def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[flo
     if price > 10_000_000 or qty > 100_000_000 or price * qty > MAX_NOTIONAL_USD:
         return None
     current = now_ms()
-    if ts_ms < current - 120_000 or ts_ms > current + 30_000:
+    if ts_ms < current - 120_000 or ts_ms > current:
         return None
     return price, qty, ts_ms
 
@@ -839,9 +839,14 @@ async def _write_combined_books(conn: asyncpg.Connection, rows: list[BookStats])
     for symbol in touched:
         await conn.execute(
             """
-            WITH latest AS (
+            WITH cutoff AS (
+              SELECT clock_timestamp() AS as_of
+            ), latest AS (
               SELECT DISTINCT ON (exchange) * FROM orderbook_snapshot
-              WHERE symbol=$1 AND exchange IN ('binance','bybit') AND ts >= now()-interval '10 seconds'
+              CROSS JOIN cutoff
+              WHERE symbol=$1 AND exchange IN ('binance','bybit')
+                AND ts >= cutoff.as_of-interval '10 seconds'
+                AND ts <= cutoff.as_of
               ORDER BY exchange,ts DESC
             ), totals AS (
               SELECT MIN(ts) AS ts,$1::text AS symbol,'combined' AS exchange,2::smallint AS venue_count,
@@ -979,13 +984,26 @@ async def handle_binance(message: dict[str, Any]) -> None:
         global BINANCE_BOOK_STALE_TOTAL
         bids = data.get("b") or []
         asks = data.get("a") or []
-        ts_ms = int(data.get("E") or now_ms())
-        lag_s = (now_ms() - ts_ms) / 1000
-        if lag_s > SETTINGS.BINANCE_BOOK_MAX_EVENT_LAG_SECONDS:
-            BINANCE_BOOK_STALE_TOTAL += 1
-            LOGGER.warning("binance_orderbook_late_event symbol=%s lag_seconds=%.3f", symbol, lag_s)
+        reception_ms = now_ms()
+        try:
+            ts_ms = int(data["E"])
+        except (KeyError, TypeError, ValueError, OverflowError):
             await BOOK_STORE.drop_exchange("binance")
-            raise BookResyncRequired(f"stale Binance orderbook event for {symbol}")
+            raise BookResyncRequired(
+                f"invalid Binance orderbook event timestamp for {symbol}"
+            ) from None
+        lag_s = (reception_ms - ts_ms) / 1000
+        if ts_ms <= 0 or lag_s < 0 or lag_s > SETTINGS.BINANCE_BOOK_MAX_EVENT_LAG_SECONDS:
+            BINANCE_BOOK_STALE_TOTAL += 1
+            LOGGER.warning(
+                "binance_orderbook_invalid_event_time symbol=%s lag_seconds=%.3f",
+                symbol,
+                lag_s,
+            )
+            await BOOK_STORE.drop_exchange("binance")
+            raise BookResyncRequired(
+                f"invalid Binance orderbook event time for {symbol}"
+            )
         await BOOK_STORE.set_snapshot(symbol, "binance", bids, asks, ts_ms)
     elif event_type == "forceOrder":
         order = data.get("o") or {}
@@ -1160,7 +1178,22 @@ async def handle_bybit(message: dict[str, Any]) -> None:
     elif topic.startswith("orderbook"):
         if not isinstance(data, dict):
             return
-        ts_ms = int(message.get("ts") or data.get("ts") or now_ms())
+        reception_ms = now_ms()
+        raw_ts = message.get("ts")
+        if raw_ts is None:
+            raw_ts = data.get("ts")
+        try:
+            ts_ms = int(raw_ts)
+        except (TypeError, ValueError, OverflowError):
+            await BOOK_STORE.drop_exchange("bybit")
+            raise BookResyncRequired(
+                f"invalid Bybit orderbook event timestamp for {symbol}"
+            ) from None
+        if ts_ms <= 0 or ts_ms > reception_ms:
+            await BOOK_STORE.drop_exchange("bybit")
+            raise BookResyncRequired(
+                f"invalid Bybit orderbook event time for {symbol}"
+            )
         bids = data.get("b") or []
         asks = data.get("a") or []
         update_id = parse_sequence(data.get("u"))

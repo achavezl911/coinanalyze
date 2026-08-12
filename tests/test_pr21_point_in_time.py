@@ -200,7 +200,7 @@ async def test_pr21_snapshot_not_subject_to_daily_retention(monkeypatch) -> None
 
 def test_pr21_daily_verdict_versions_are_domain_specific() -> None:
     assert daily_agg.DAILY_VERDICT_SNAPSHOT_VERSION == 1
-    assert daily_agg.DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v2"
+    assert daily_agg.DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v3"
     source = (ROOT / "app/daily_agg.py").read_text(encoding="utf-8")
     for unrelated in (
         "SIGNAL_EVIDENCE_VERSION",
@@ -237,10 +237,10 @@ async def _persist_pr22_daily_snapshot(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.asyncio
-async def test_pr22_new_daily_snapshot_uses_daily_verdict_v2(monkeypatch) -> None:
+async def test_pr23_new_daily_snapshot_uses_daily_verdict_v3(monkeypatch) -> None:
     query, args = await _persist_pr22_daily_snapshot(monkeypatch)
     assert "regime_logic_version" in query
-    assert args[3] == "daily-verdict-v2"
+    assert args[3] == "daily-verdict-v3"
 
 
 @pytest.mark.asyncio
@@ -250,7 +250,7 @@ async def test_pr22_daily_snapshot_copies_regime_logic_version(monkeypatch) -> N
 
 
 @pytest.mark.asyncio
-async def test_pr22_daily_v2_does_not_copy_legacy_regime(monkeypatch) -> None:
+async def test_pr23_daily_v3_does_not_copy_legacy_regime(monkeypatch) -> None:
     conn = _VerdictWriterConnection(
         reference=None,
         metrics={
@@ -264,7 +264,7 @@ async def test_pr22_daily_v2_does_not_copy_legacy_regime(monkeypatch) -> None:
     monkeypatch.setattr(daily_agg, "swing_score", _no_signal)
 
     def reject_legacy_setup(*_args, **_kwargs):
-        raise AssertionError("daily-verdict-v2 must not evaluate a legacy metrics snapshot")
+        raise AssertionError("daily-verdict-v3 must not evaluate a legacy metrics snapshot")
 
     monkeypatch.setattr(daily_agg, "evaluate_setups", reject_legacy_setup)
     await daily_agg.persist_verdicts(conn, ("BTCUSDT_PERP.A",))
@@ -274,15 +274,15 @@ async def test_pr22_daily_v2_does_not_copy_legacy_regime(monkeypatch) -> None:
         if "INSERT INTO daily_verdict_snapshot" in query
     )
     assert "logic_version" in query
-    assert args[3] == "daily-verdict-v2"
+    assert args[3] == "daily-verdict-v3"
     for index in (6, 7, 14, 15, 16, 17, 18, 19, 20):
         assert args[index] is None
 
 
 @pytest.mark.asyncio
-async def test_pr22_daily_v2_uses_regime_v2_when_available(monkeypatch) -> None:
+async def test_pr23_daily_v3_uses_regime_v2_when_available(monkeypatch) -> None:
     _, args = await _persist_pr22_daily_snapshot(monkeypatch)
-    assert args[3] == "daily-verdict-v2"
+    assert args[3] == "daily-verdict-v3"
     assert args[6] == datetime(2026, 8, 11, 15, 0, tzinfo=UTC)
     assert args[7] == 2
     assert args[14] == 12.0

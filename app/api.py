@@ -802,9 +802,9 @@ async def hypothesis(
         as_of = await resolve_matrix_as_of(conn)
         trend = await trend_matrix(conn, selected, as_of)
         matrix = await delta_matrix(conn, selected, PROFILE_WINDOWS, as_of)
-        ctx = await scalp_context(conn, selected)
+        ctx = await scalp_context(conn, selected, as_of)
         barriers = await price_barriers(conn, selected)
-        structure = await structure_detail(conn, selected)
+        structure = await structure_detail(conn, selected, as_of)
         observ_bundle = await setup_confirmation_bundle(conn, selected, profile)
     view = profile_view(trend, matrix, profile)
     scalp = compute_scalp_summary(ctx)
@@ -874,10 +874,10 @@ async def desk_state(
         as_of = await resolve_matrix_as_of(conn)
         trend = await trend_matrix(conn, selected, as_of)
         matrix = await delta_matrix(conn, selected, PROFILE_WINDOWS, as_of)
-        ctx = await scalp_context(conn, selected)
+        ctx = await scalp_context(conn, selected, as_of)
         quality = await data_quality(conn, selected)
         barriers = await price_barriers(conn, selected)
-        structure = await structure_detail(conn, selected)
+        structure = await structure_detail(conn, selected, as_of)
         observ_bundle = await setup_confirmation_bundle(conn, selected, profile)
     scalp = compute_scalp_summary(ctx)
     view = profile_view(trend, matrix, profile)
@@ -951,9 +951,10 @@ async def quality_feeds(symbol: str) -> dict[str, Any]:
     """
     selected = validate_symbol(symbol)
     async with app.state.pool.acquire() as conn:
+        as_of = await resolve_matrix_as_of(conn)
         feeds = await feed_quality(conn, selected)
-        matrix = await delta_matrix(conn, selected, PROFILE_WINDOWS)
-        ctx = await scalp_context(conn, selected)
+        matrix = await delta_matrix(conn, selected, PROFILE_WINDOWS, as_of)
+        ctx = await scalp_context(conn, selected, as_of)
         quality = await data_quality(conn, selected)
     scalp = compute_scalp_summary(ctx)
     return {
@@ -1243,8 +1244,9 @@ async def scalp_liquidations(symbol: str) -> dict[str, Any]:
 async def scalp_alerts(symbol: str) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     async with app.state.pool.acquire() as conn:
-        ctx = await scalp_context(conn, selected)
-        impact = await market_impact(conn, selected)
+        as_of = await resolve_matrix_as_of(conn)
+        ctx = await scalp_context(conn, selected, as_of)
+        impact = await market_impact(conn, selected, as_of)
     summary = compute_scalp_summary(ctx)
     alerts: list[dict[str, Any]] = []
     if summary["state"] != "No Trade":

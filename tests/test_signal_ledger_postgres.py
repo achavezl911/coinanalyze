@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 import asyncpg
@@ -138,14 +140,15 @@ async def _persist(
     summary: dict[str, object] | None = None,
     generation: int | None = 1,
 ) -> int:
+    context_as_of = await conn.fetchval("SELECT clock_timestamp()")
     return await persist_signal_observations(
         conn,
         symbol,
         {
-            "now_ms": 1_786_300_001_000.0,
+            "now_ms": context_as_of.timestamp() * 1000.0,
             "price": 100.0,
             "ohlcv_price": 99.0,
-            "fut_event_ms": 1_786_300_000_000,
+            "fut_event_ms": int(context_as_of.timestamp() * 1000.0) - 1_000,
         },
         summary or _summary(),
         collector_generation=generation,
@@ -278,7 +281,105 @@ async def test_latest_non_future_metrics_snapshot_is_frozen() -> None:
 
 
 @pytest.mark.asyncio
-async def test_pr22_v3_signal_does_not_copy_legacy_regime() -> None:
+async def test_metrics_snapshot_knowledge_time_uses_committed_visibility_before_observed_at() -> None:
+    schema = _schema_name()
+    writer = await _connect_schema(schema)
+    observer = await asyncpg.connect(_dsn())
+    await observer.execute(f'SET search_path TO "{schema}", public')
+    await observer.execute("SET TIME ZONE 'UTC'")
+    metrics_read = asyncio.Event()
+    allow_observation_clock = asyncio.Event()
+
+    class PausedConnection:
+        def __init__(self, raw: asyncpg.Connection) -> None:
+            self.raw = raw
+            self.provenance_read_at: list[datetime] = []
+
+        def __getattr__(self, name: str):
+            return getattr(self.raw, name)
+
+        async def fetchrow(self, query: str, *args):
+            row = await self.raw.fetchrow(query, *args)
+            if "FROM metrics_snapshot" in query:
+                self.provenance_read_at.append(
+                    await self.raw.fetchval("SELECT clock_timestamp()")
+                )
+                if len(self.provenance_read_at) == 1:
+                    metrics_read.set()
+                    await allow_observation_clock.wait()
+            return row
+
+        async def fetch(self, query: str, *args):
+            return await self.raw.fetch(query, *args)
+
+        async def fetchval(self, query: str, *args):
+            return await self.raw.fetchval(query, *args)
+
+        async def execute(self, query: str, *args):
+            return await self.raw.execute(query, *args)
+
+    paused = PausedConnection(observer)
+    transaction = writer.transaction()
+    transaction_active = False
+    try:
+        await transaction.start()
+        transaction_active = True
+        await writer.execute(
+            """
+            INSERT INTO metrics_snapshot(
+              ts,symbol,regime_score,regime_label,regime_logic_version,
+              price_cutoff_at,metrics_cutoff_at
+            ) VALUES(
+              clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',42,'committed-v2',2,
+              clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '3 minutes'
+            )
+            """
+        )
+
+        first_task = asyncio.create_task(_persist(paused))  # type: ignore[arg-type]
+        await asyncio.wait_for(metrics_read.wait(), timeout=5)
+        await transaction.commit()
+        transaction_active = False
+        allow_observation_clock.set()
+        assert await first_task == 1
+
+        first = await observer.fetchrow(
+            """
+            SELECT observed_at,metrics_snapshot_ts,regime_score
+            FROM signal_observation ORDER BY observation_id LIMIT 1
+            """
+        )
+        assert first["metrics_snapshot_ts"] is None
+        assert first["regime_score"] is None
+        assert first["observed_at"] >= paused.provenance_read_at[0]
+
+        assert await _persist(
+            paused,  # type: ignore[arg-type]
+            summary=_summary(
+                long_score=20.0,
+                short_score=80.0,
+                state="Short Momentum",
+            ),
+        ) == 1
+        second = await observer.fetchrow(
+            """
+            SELECT observed_at,metrics_snapshot_ts,regime_score
+            FROM signal_observation ORDER BY observation_id DESC LIMIT 1
+            """
+        )
+        assert second["metrics_snapshot_ts"] is not None
+        assert second["regime_score"] == 42
+        assert second["observed_at"] >= paused.provenance_read_at[1]
+    finally:
+        allow_observation_clock.set()
+        if transaction_active:
+            await transaction.rollback()
+        await observer.close()
+        await _drop_schema(writer, schema)
+
+
+@pytest.mark.asyncio
+async def test_pr23_v4_signal_does_not_copy_legacy_regime() -> None:
     schema = _schema_name()
     conn = await _connect_schema(schema)
     try:
@@ -301,7 +402,7 @@ async def test_pr22_v3_signal_does_not_copy_legacy_regime() -> None:
             FROM signal_observation ORDER BY observation_id
             """
         )
-        assert legacy_only["evidence_version"] == 3
+        assert legacy_only["evidence_version"] == 4
         for field in (
             "regime_score",
             "regime_label",
@@ -365,7 +466,7 @@ async def test_pr22_signal_observation_copies_regime_logic_version() -> None:
         row = await conn.fetchrow(
             "SELECT evidence_version,regime_logic_version FROM signal_observation"
         )
-        assert row["evidence_version"] == 3
+        assert row["evidence_version"] == 4
         assert row["regime_logic_version"] == 2
     finally:
         await _drop_schema(conn, schema)

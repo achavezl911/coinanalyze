@@ -732,8 +732,9 @@ async def build_ai_symbol_context(
     bucket_bps: int = 10,
 ) -> dict[str, Any]:
     limits = PROFILE_LIMITS[profile]
+    matrix_as_of = await resolve_matrix_as_of(conn)
     snap = await latest_snapshot(conn, symbol)
-    ctx = await scalp_context(conn, symbol)
+    ctx = await scalp_context(conn, symbol, matrix_as_of)
     summary = compute_scalp_summary(ctx)
     confidence = await data_confidence_row(conn, symbol)
     daily_rows = await daily_data(conn, symbol, 730)
@@ -743,7 +744,6 @@ async def build_ai_symbol_context(
     external = await external_macro_context(
         conn, etf_configured=bool(get_settings().COINGLASS_API_KEY)
     )
-    matrix_as_of = await resolve_matrix_as_of(conn)
     payload: dict[str, Any] = {
         "schema_version": "ai_context.v2",
         "interpretation_prompt": ANALYSIS_PROMPT,
@@ -763,14 +763,14 @@ async def build_ai_symbol_context(
         "orderbook": await latest_orderbook(conn, symbol),
         "market_structure": await market_structure(conn, symbol, matrix_as_of),
         "structure_horizons": await horizon_structure(conn, symbol),
-        "structure_detail": await structure_detail(conn, symbol),
+        "structure_detail": await structure_detail(conn, symbol, matrix_as_of),
         "cvd_matrix": await cvd_matrix(conn, symbol, matrix_as_of),
         "passive_flow": await _passive_flow(conn, symbol, matrix_as_of),
         "trend_matrix": await _trend_matrix(conn, symbol, matrix_as_of),
         "oi_context": await oi_context(conn, symbol),
         "volatility": await volatility_context(conn, symbol),
         "reference_levels": await reference_levels(conn, symbol),
-        "cross_asset": await cross_asset(conn, symbol),
+        "cross_asset": await cross_asset(conn, symbol, matrix_as_of),
         "funding_context": await funding_context(conn, symbol),
         "liquidation_map": await liquidation_map(conn, symbol),
         "volume_profile": await volume_profile(conn, symbol, matrix_as_of),
@@ -778,7 +778,7 @@ async def build_ai_symbol_context(
         "market_memory_2y": await market_memory(conn, symbol),
         "context_metadata": await context_metadata(conn, symbol),
         "data_quality": await data_quality(conn, symbol),
-        "macro_context": await macro_context(conn, symbol),
+        "macro_context": await macro_context(conn, symbol, as_of=matrix_as_of),
         "external_macro_context": external,
         "divergences": await divergence_scan(
             conn, symbol, include_intraday=bool(limits["include_intraday_divergences"])

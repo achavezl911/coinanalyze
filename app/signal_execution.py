@@ -407,14 +407,11 @@ def execution_snapshot_record(
     }
 
 
-async def persist_signal_execution_snapshots(
+async def load_signal_execution_inputs(
     conn: asyncpg.Connection,
-    observation_id: int,
     symbol: str,
-    observed_at: datetime,
-) -> int:
-    """Persist exactly one forward-only execution snapshot per venue."""
-
+) -> dict[str, dict[str, Any]]:
+    """Read the committed order books before the observation knowledge timestamp."""
     rows = await conn.fetch(
         """
         SELECT exchange,ts,bids,asks,levels
@@ -426,7 +423,22 @@ async def persist_signal_execution_snapshots(
         symbol,
         list(EXECUTION_EXCHANGES),
     )
-    by_exchange = {str(row["exchange"]): dict(row) for row in rows}
+    return {str(row["exchange"]): dict(row) for row in rows}
+
+
+async def persist_signal_execution_snapshots(
+    conn: asyncpg.Connection,
+    observation_id: int,
+    symbol: str,
+    observed_at: datetime,
+    source_rows: dict[str, dict[str, Any]] | None = None,
+) -> int:
+    """Persist exactly one forward-only execution snapshot per venue."""
+    by_exchange = (
+        source_rows
+        if source_rows is not None
+        else await load_signal_execution_inputs(conn, symbol)
+    )
 
     inserted = 0
     for exchange in EXECUTION_EXCHANGES:

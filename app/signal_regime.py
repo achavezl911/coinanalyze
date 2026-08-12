@@ -131,7 +131,7 @@ def _sampling_predicate(mode: str) -> str:
 def _regime_status_sql(prefix: str = "obs") -> str:
     return f"""
     CASE
-      WHEN {prefix}.evidence_version = 3
+      WHEN {prefix}.evidence_version IN (3,4)
         AND {prefix}.regime_logic_version IS DISTINCT FROM {REGIME_LOGIC_VERSION}
       THEN 'unavailable'
       WHEN {prefix}.regime_score IS NULL

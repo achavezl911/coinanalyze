@@ -252,12 +252,20 @@ async def test_pr22_fresh_schema_is_valid_and_idempotent() -> None:
         assert await conn.fetchval(
             "SELECT count(*) FROM metrics_snapshot WHERE regime_logic_version IS NOT NULL"
         ) == 0
-        for constraint in (
-            "signal_observation_pr22_regime_provenance_check",
-            "daily_verdict_snapshot_pr22_regime_provenance_check",
+        for table, constraint in (
+            (
+                "signal_observation",
+                "signal_observation_pr23_regime_provenance_check",
+            ),
+            (
+                "daily_verdict_snapshot",
+                "daily_verdict_snapshot_pr23_regime_provenance_check",
+            ),
         ):
             assert await conn.fetchval(
-                "SELECT count(*)=1 FROM pg_constraint WHERE conname=$1",
+                "SELECT count(*)=1 FROM pg_constraint "
+                "WHERE conrelid=$1::regclass AND conname=$2",
+                table,
                 constraint,
             )
     finally:
