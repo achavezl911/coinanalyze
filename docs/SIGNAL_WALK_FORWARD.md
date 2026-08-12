@@ -468,3 +468,21 @@ calculations; read current `orderbook_depth`; rank groups by OOS
 performance or pick a winning configuration after seeing OOS results; model
 funding; or make any write other than the single explicit
 `freeze_walk_forward_manifest()` call.
+
+## PR25 addendum: spec v2 and the research visibility contract
+
+PR25 (`docs/PR25_RESEARCH_KNOWLEDGE_TIME.md`) fixed a P1: `obs.created_at`,
+`frame.created_at`, `out.created_at`/`finalized_at` are populated with
+`clock_timestamp()` *before* the collector transaction commits, so they are
+provenance, never proof of historical visibility. Everything above this
+section describes spec v1 (`WALK_FORWARD_SPEC_VERSION = 1`), which is frozen
+exactly as documented and remains the only spec version
+`pr11-fixed-kernel-v1` uses.
+
+A new `WALK_FORWARD_SPEC_VERSION_V2 = 2` requires a
+`signal_research_bundle_visibility` / `signal_outcome_final_visibility`
+certificate (see `app/signal_visibility.py`) instead of those created_at/
+finalized_at columns, and only ever applies to `evidence_version = 6`. No
+spec-v2 production manifest exists yet -- see the PR25 doc for the full
+contract, the frozen scientific tuple, and the CLI flags needed to freeze one
+in the future.

@@ -34,6 +34,7 @@ from app.scalp_logic import compute_scalp_summary, scalp_context
 from app.sharding import assigned_symbols
 from app.signal_ledger import persist_signal_observations
 from app.signal_outcomes import materialize_due_signal_outcomes
+from app.signal_visibility import run_certification_cycle
 
 LOGGER = logging.getLogger(__name__)
 SETTINGS = get_settings()
@@ -1347,6 +1348,24 @@ async def persist_scalp_signals(
                         else:
                             LAST_FLUSH["outcomes"] = time.monotonic()
                     LAST_FLUSH["signals"] = time.monotonic()
+
+                # PR25 (A3-01): certify research knowledge-time visibility only
+                # AFTER the source-writing outer fenced transaction above has
+                # exited/committed. This is a deliberately DISTINCT, later
+                # transaction -- never a nested savepoint inside the block
+                # above -- because a savepoint does not become durable until
+                # the outer transaction commits, and certification must only
+                # ever read already-committed source state. A certification
+                # failure must not roll back or otherwise affect the already
+                # committed source evidence; it is logged and retried on the
+                # next tick.
+                if owns_global_cleanup(SETTINGS.COLLECTOR_SHARD_INDEX):
+                    try:
+                        await run_certification_cycle(conn, ownership=ownership)
+                    except ServiceOwnershipLost:
+                        raise
+                    except Exception:
+                        LOGGER.exception("research_visibility_certification_failed")
         except ServiceOwnershipLost:
             raise
         except Exception:

@@ -163,7 +163,9 @@ async def test_pr22_new_metrics_snapshot_has_regime_logic_version_2() -> None:
 
 
 def test_pr24_new_signal_observation_has_evidence_version_5() -> None:
-    assert SIGNAL_EVIDENCE_VERSION == 5
+    # PR25 advanced the live writer to evidence_version=6 (prospective,
+    # additive research-visibility contract). See app/signal_visibility.py.
+    assert SIGNAL_EVIDENCE_VERSION == 6
 
 
 class _NoopConnection:

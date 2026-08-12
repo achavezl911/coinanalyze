@@ -11,8 +11,12 @@ import asyncpg
 import pytest
 
 from app.signal_execution import DENSE_PERIODIC
-from app.signal_outcomes import OUTCOME_SETTLEMENT_LAG
+from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG
+from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
+from app.signal_visibility import certify_final_outcomes, certify_research_bundles
 from app.signal_walk_forward import (
+    WALK_FORWARD_REPORT_VERSION_V2,
+    WALK_FORWARD_SPEC_VERSION_V2,
     WalkForwardManifestOptions,
     _actionable_evaluated,
     _build_gross_views,
@@ -37,6 +41,8 @@ OUTCOME_DDL = _ddl("PR5_SIGNAL_OUTCOMES")
 REPLAY_DDL = _ddl("PR6_SIGNAL_REPLAY")
 EXECUTION_DDL = _ddl("PR10_SIGNAL_EXECUTION")
 WALK_FORWARD_DDL = _ddl("PR11_SIGNAL_WALK_FORWARD")
+BUNDLE_VISIBILITY_DDL = _ddl("PR25_SIGNAL_RESEARCH_BUNDLE_VISIBILITY")
+FINAL_VISIBILITY_DDL = _ddl("PR25_SIGNAL_OUTCOME_FINAL_VISIBILITY")
 
 BASE_SQL = """
 CREATE OR REPLACE FUNCTION finite_float8(value double precision)
@@ -102,6 +108,8 @@ async def _connect_schema(schema: str) -> asyncpg.Connection:
     await conn.execute(REPLAY_DDL)
     await conn.execute(EXECUTION_DDL)
     await conn.execute(WALK_FORWARD_DDL)
+    await conn.execute(BUNDLE_VISIBILITY_DDL)
+    await conn.execute(FINAL_VISIBILITY_DDL)
     return conn
 
 
@@ -351,6 +359,7 @@ async def _insert_observation(
     state: str = "Long Momentum",
     reference_price: float = 100.0,
     created_at: datetime | None = None,
+    evidence_version: int = 1,
 ) -> int:
     row_created_at = created_at or observed_at
     return int(
@@ -370,7 +379,7 @@ async def _insert_observation(
               $1,date_trunc('minute',$1::timestamptz),$5,
               'BTCUSDT_PERP.A','scalp',
               true,false,
-              'scalp-summary-v1',1,1,
+              'scalp-summary-v1',$6,1,
               'evaluable',$2,true,$3,'media','test',
               $4,'futures_realtime_combined',
               70,30,90,
@@ -385,6 +394,7 @@ async def _insert_observation(
             state,
             reference_price,
             row_created_at,
+            evidence_version,
         )
     )
 
@@ -1455,3 +1465,125 @@ async def test_schedule_tamper_with_valid_hash_still_fails_closed(
     with pytest.raises(ValueError, match="prospective cutoff"):
         async with conn.transaction(isolation="repeatable_read", readonly=True):
             await evaluate_walk_forward(conn, options.name)
+
+
+# ---------------------------------------------------------------------------
+# PR25: spec v2 end-to-end (freeze -> certify -> evaluate).
+# ---------------------------------------------------------------------------
+
+
+async def _insert_v6_bundle(
+    conn: asyncpg.Connection,
+    *,
+    observed_at: datetime,
+    directional_return_pct: float,
+    both_venues: bool = True,
+) -> int:
+    """A complete (or deliberately incomplete) evidence_version=6 bundle."""
+
+    observation_id = await _insert_observation(
+        conn, observed_at=observed_at, direction="long", evidence_version=6
+    )
+    await _insert_frame(conn, observation_id, observed_at)
+
+    window_start = observed_at + timedelta(minutes=1)
+    for horizon in OUTCOME_HORIZONS_MINUTES:
+        if horizon == 15:
+            await _insert_outcome(
+                conn,
+                observation_id=observation_id,
+                window_start=window_start,
+                horizon_minutes=15,
+                directional_return_pct=directional_return_pct,
+                finalized_at=observed_at + timedelta(minutes=20),
+            )
+        else:
+            await _insert_outcome(
+                conn,
+                observation_id=observation_id,
+                window_start=window_start,
+                horizon_minutes=horizon,
+                directional_return_pct=0.0,
+                status="pending",
+            )
+
+    await _insert_execution_snapshot(
+        conn, observation_id=observation_id, observed_at=observed_at, exchange="binance"
+    )
+    if both_venues:
+        await _insert_execution_snapshot(
+            conn, observation_id=observation_id, observed_at=observed_at, exchange="bybit"
+        )
+    return observation_id
+
+
+@pytest.mark.asyncio
+async def test_spec_v2_evaluate_walk_forward_gates_by_certificate_end_to_end(
+    conn: asyncpg.Connection,
+) -> None:
+    # Real, non-backdated freeze/certify/evaluate flow (spec v2 needs no
+    # `_insert_backdated_manifest` trick, unlike the PR21 spec-v1 fixtures
+    # above): certification always stamps the real PostgreSQL clock, so the
+    # discovery window here is anchored to genuine wall-clock time, with the
+    # discovery bundles observed safely in the past and the frozen cutoff
+    # (and therefore discovery_end) safely in the future.
+    now = await conn.fetchval("SELECT clock_timestamp()")
+    discovery_observed_at = now - timedelta(days=2)
+    uncertified_observed_at = now - timedelta(days=1)
+
+    await _insert_v6_bundle(
+        conn, observed_at=discovery_observed_at, directional_return_pct=2.0
+    )
+    # This bundle is structurally incomplete (only one execution venue), so
+    # it can never be certified -- regardless of how extreme its return is,
+    # it must be invisible to every downstream metric.
+    await _insert_v6_bundle(
+        conn,
+        observed_at=uncertified_observed_at,
+        directional_return_pct=999.0,
+        both_venues=False,
+    )
+
+    options = WalkForwardManifestOptions(
+        name="pr25-spec-v2-e2e-test",
+        warmup_days=1,
+        test_days=7,
+        fold_count=1,
+        min_group_n=1,
+        horizons=(15,),
+        symbols=("BTCUSDT_PERP.A",),
+        logic_version=SCALP_SIGNAL_LOGIC_VERSION,
+        evidence_version=6,
+        sampling_version=1,
+        context_version=1,
+        outcome_version=1,
+        execution_snapshot_version=1,
+        spec_version=WALK_FORWARD_SPEC_VERSION_V2,
+        research_visibility_version=1,
+    )
+    async with conn.transaction():
+        manifest = await freeze_walk_forward_manifest(conn, options)
+    assert manifest["spec"]["spec_version"] == WALK_FORWARD_SPEC_VERSION_V2
+
+    bundles_certified = await certify_research_bundles(conn)
+    assert bundles_certified == 1  # the incomplete second bundle is skipped
+
+    finals_certified = await certify_final_outcomes(conn)
+    assert finals_certified == 2  # final-outcome certification ignores bundle completeness
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        report = await evaluate_walk_forward(conn, options.name)
+
+    assert report["report_version"] == WALK_FORWARD_REPORT_VERSION_V2
+    assert report["walk_forward_spec_version"] == WALK_FORWARD_SPEC_VERSION_V2
+    assert report["knowledge_visibility_contract"]["research_visibility_version"] == 1
+    assert report["knowledge_visibility_contract"]["uncertified_observation_excluded_from_grid"]
+
+    fold = report["folds"][0]
+    overall = fold["gross_views"][DENSE_PERIODIC]["overall"]
+    row = next(r for r in overall if r["symbol"] == "BTCUSDT_PERP.A" and r["horizon_minutes"] == 15)
+
+    # Only the certified bundle ever entered the grid: the uncertified 999.0
+    # outlier is provably absent, not merely down-weighted or diluted.
+    assert row["discovery"]["n"] == 1
+    assert row["discovery"]["expectancy_gross_pct"] == pytest.approx(2.0)

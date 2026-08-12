@@ -148,6 +148,61 @@ async def test_pr22_regime_reader_legacy_evidence_keeps_legacy_semantics() -> No
     assert await _reader_status(evidence_version=2, regime_logic_version=None) == "available"
 
 
+# ---------------------------------------------------------------------------
+# A3-03 (PR25): frozen evidence -> regime_logic_version map.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_pr25_regime_reader_v6_requires_regime_logic_v2() -> None:
+    assert await _reader_status(evidence_version=6, regime_logic_version=1) == "unavailable"
+    assert await _reader_status(evidence_version=6, regime_logic_version=None) == "unavailable"
+    assert await _reader_status(evidence_version=6, regime_logic_version=2) == "available"
+
+
+@pytest.mark.asyncio
+async def test_pr25_unknown_future_modern_evidence_version_fails_closed() -> None:
+    """evidence_version >= 3 absent from the frozen map must never inherit
+    whatever regime_logic_version happens to look "correct" -- it fails
+    closed regardless of the stored regime_logic_version value."""
+
+    assert await _reader_status(evidence_version=7, regime_logic_version=2) == "unavailable"
+    assert await _reader_status(evidence_version=7, regime_logic_version=None) == "unavailable"
+    assert await _reader_status(evidence_version=100, regime_logic_version=2) == "unavailable"
+
+
+@pytest.mark.asyncio
+async def test_pr25_frozen_map_is_immune_to_a_live_regime_logic_version_bump(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A simulated future/current REGIME_LOGIC_VERSION change must NOT
+    reinterpret already-published evidence 3/4/5/6. The historical reader
+    uses the frozen app.signal_regime.FROZEN_EVIDENCE_REGIME_LOGIC_VERSION
+    map, never the live app.metrics.REGIME_LOGIC_VERSION import (which this
+    module no longer even imports)."""
+
+    import app.metrics as metrics_module
+
+    monkeypatch.setattr(metrics_module, "REGIME_LOGIC_VERSION", 99)
+
+    # A row stored with the historically-correct regime_logic_version=2
+    # remains available, unaffected by the live constant now being 99.
+    assert await _reader_status(evidence_version=3, regime_logic_version=2) == "available"
+    assert await _reader_status(evidence_version=6, regime_logic_version=2) == "available"
+
+    # A row that happens to carry the NEW "live" value is still unavailable:
+    # the frozen map for evidence 3/4/5/6 pins the requirement at 2, not at
+    # whatever REGIME_LOGIC_VERSION currently is.
+    assert await _reader_status(evidence_version=3, regime_logic_version=99) == "unavailable"
+    assert await _reader_status(evidence_version=6, regime_logic_version=99) == "unavailable"
+
+
+def test_pr25_frozen_evidence_regime_map_is_exact() -> None:
+    from app.signal_regime import FROZEN_EVIDENCE_REGIME_LOGIC_VERSION
+
+    assert FROZEN_EVIDENCE_REGIME_LOGIC_VERSION == {3: 2, 4: 2, 5: 2, 6: 2}
+
+
 def _evidence(
     *,
     imbalance_l5: float | None,

@@ -454,3 +454,16 @@ It prospectively freezes venue-specific taker cost curves at observation time
 because `orderbook_depth` is current-state only, then overlays those measured
 entry costs and explicit fee scenarios on PR5 gross outcomes without changing
 PR7-PR9 gross research metrics.
+
+## PR25 addendum: frozen evidence -> regime_logic_version map
+
+PR25 (`docs/PR25_RESEARCH_KNOWLEDGE_TIME.md`, A3-03) replaced the live
+`REGIME_LOGIC_VERSION` comparison this reader used to make with an explicit,
+frozen `FROZEN_EVIDENCE_REGIME_LOGIC_VERSION` map in `app/signal_regime.py`
+(`_regime_status_sql()` no longer imports `REGIME_LOGIC_VERSION` at all). A
+future bump of that live constant can no longer silently reinterpret
+already-published evidence 3/4/5/6; any "modern" (evidence_version >= 3)
+value outside the frozen map fails closed as `unavailable` instead of
+inheriting whatever the current constant is. The `available_requires`
+semantics documented above are unchanged for evidence 1/2 and for evidence
+3/4/5/6 whose stored `regime_logic_version` matches the frozen value (2).
