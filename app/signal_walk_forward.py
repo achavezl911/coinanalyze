@@ -20,7 +20,6 @@ from app.signal_execution import (
 )
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, OUTCOME_VERSION
 from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
-from app.signal_visibility import RESEARCH_VISIBILITY_VERSION
 
 # ---------------------------------------------------------------------------
 # Versions and fixed research policy.
@@ -53,12 +52,22 @@ SUPPORTED_WALK_FORWARD_SPEC_VERSIONS = (
 # validate_manifest_options() fails closed unless every one of these values
 # is supplied exactly -- there is no "latest/current" fallback and spec v1 is
 # never silently mapped onto this tuple.
+#
+# Every value below is a LITERAL, pinned at the value the tuple had when
+# spec v2 was defined -- never imported/derived from each module's "current"
+# constant. If SCALP_SIGNAL_LOGIC_VERSION, REPLAY_CONTEXT_VERSION,
+# OUTCOME_VERSION, EXECUTION_SNAPSHOT_VERSION or RESEARCH_VISIBILITY_VERSION
+# ever advance in a future PR, this tuple -- and therefore how an
+# already-persisted spec-v2 manifest is interpreted -- must NOT change. A
+# future scientific semantics requires a new, explicit spec version instead
+# of silently inheriting whatever the live constants currently say.
+SPEC_V2_SUPPORTED_LOGIC_VERSION = "scalp-summary-v1"
 SPEC_V2_SUPPORTED_EVIDENCE_VERSION = 6
 SPEC_V2_SUPPORTED_SAMPLING_VERSION = 1
-SPEC_V2_SUPPORTED_CONTEXT_VERSION = REPLAY_CONTEXT_VERSION
-SPEC_V2_SUPPORTED_OUTCOME_VERSION = OUTCOME_VERSION
-SPEC_V2_SUPPORTED_EXECUTION_SNAPSHOT_VERSION = EXECUTION_SNAPSHOT_VERSION
-SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION = RESEARCH_VISIBILITY_VERSION
+SPEC_V2_SUPPORTED_CONTEXT_VERSION = 1
+SPEC_V2_SUPPORTED_OUTCOME_VERSION = 1
+SPEC_V2_SUPPORTED_EXECUTION_SNAPSHOT_VERSION = 1
+SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION = 1
 
 SELECTION_POLICY = "fixed_kernel_no_selection_v1"
 
@@ -118,10 +127,13 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
     derived from the PostgreSQL clock at freeze time plus ``warmup_days``,
     never accepted as a caller-supplied timestamp.
 
-    Spec v1 keeps its exact historical validation. Spec v2 additionally
-    requires the exact PR25 supported prospective scientific version tuple,
-    explicitly supplied -- never inferred, never defaulted, never mapped
-    from spec v1.
+    Spec v1 keeps its exact historical validation, including checking
+    logic_version against the live SCALP_SIGNAL_LOGIC_VERSION. Spec v2
+    instead requires the exact PR25 supported prospective scientific version
+    tuple -- including logic_version -- against the literal, frozen
+    SPEC_V2_SUPPORTED_* constants: explicitly supplied, never inferred,
+    never defaulted, never mapped from spec v1, and never re-read from any
+    module's live "current" constant.
     """
 
     if options.spec_version not in SUPPORTED_WALK_FORWARD_SPEC_VERSIONS:
@@ -138,7 +150,10 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
     if not 1 <= options.min_group_n <= 1_000_000:
         raise ValueError("min_group_n must be between 1 and 1000000")
 
-    if options.logic_version != SCALP_SIGNAL_LOGIC_VERSION:
+    if (
+        options.spec_version == WALK_FORWARD_SPEC_VERSION
+        and options.logic_version != SCALP_SIGNAL_LOGIC_VERSION
+    ):
         raise ValueError(
             "unsupported walk-forward logic_version; register a version-specific kernel"
         )
@@ -160,6 +175,7 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
             )
     else:
         required_tuple = (
+            ("logic_version", options.logic_version, SPEC_V2_SUPPORTED_LOGIC_VERSION),
             ("evidence_version", options.evidence_version, SPEC_V2_SUPPORTED_EVIDENCE_VERSION),
             ("sampling_version", options.sampling_version, SPEC_V2_SUPPORTED_SAMPLING_VERSION),
             ("context_version", options.context_version, SPEC_V2_SUPPORTED_CONTEXT_VERSION),

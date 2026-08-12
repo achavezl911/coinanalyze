@@ -6,8 +6,6 @@ from datetime import UTC, datetime
 import asyncpg
 
 from app.db import ServiceOwnership, fenced_transaction
-from app.signal_execution import EXECUTION_EXCHANGES
-from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES
 
 # ---------------------------------------------------------------------------
 # PR25: research knowledge-time visibility certification.
@@ -36,12 +34,14 @@ from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES
 # RESEARCH_VISIBILITY_VERSION = 1 certifies exactly ONE frozen scientific
 # tuple, hardcoded below rather than imported from each module's "current"
 # constant. This is deliberate: if evidence_version, context_version,
-# outcome_version or execution_snapshot_version advance again in a future PR,
-# this module must NOT silently start certifying the new tuple under the same
+# outcome_version, execution_snapshot_version, the outcome horizon grid or
+# the execution exchange set advance again in a future PR, this module must
+# NOT silently start certifying the new shape under the same
 # visibility_version -- a new RESEARCH_VISIBILITY_VERSION and a new frozen
-# tuple must be defined explicitly, exactly like PR11 spec v2's tuple. There
+# shape must be defined explicitly, exactly like PR11 spec v2's tuple. There
 # is no v1-v5 backfill: RESEARCH_VISIBILITY_VERSION=1 only ever applies to
-# evidence_version=6.
+# evidence_version=6, the frozen horizon grid and the frozen exchange set
+# below.
 # ---------------------------------------------------------------------------
 
 RESEARCH_VISIBILITY_VERSION = 1
@@ -50,6 +50,14 @@ _CERTIFIED_EVIDENCE_VERSION = 6
 _CERTIFIED_CONTEXT_VERSION = 1
 _CERTIFIED_OUTCOME_VERSION = 1
 _CERTIFIED_EXECUTION_SNAPSHOT_VERSION = 1
+
+# Frozen v1 bundle-completeness shape. Literal, not imported from
+# app.signal_outcomes.OUTCOME_HORIZONS_MINUTES / app.signal_execution.
+# EXECUTION_EXCHANGES: a future horizon or exchange change must define a new
+# visibility contract/version instead of silently changing what
+# visibility_version=1 certifies.
+_CERTIFIED_OUTCOME_HORIZONS: tuple[int, ...] = (1, 3, 5, 15, 30, 60, 120, 240)
+_CERTIFIED_EXECUTION_EXCHANGES: tuple[str, ...] = ("binance", "bybit")
 
 DEFAULT_CERTIFICATION_BATCH_SIZE = 500
 
@@ -123,11 +131,11 @@ async def _certify_research_bundles_once(
         RESEARCH_VISIBILITY_VERSION,
         _CERTIFIED_CONTEXT_VERSION,
         _CERTIFIED_OUTCOME_VERSION,
-        list(OUTCOME_HORIZONS_MINUTES),
-        len(OUTCOME_HORIZONS_MINUTES),
+        list(_CERTIFIED_OUTCOME_HORIZONS),
+        len(_CERTIFIED_OUTCOME_HORIZONS),
         _CERTIFIED_EXECUTION_SNAPSHOT_VERSION,
-        list(EXECUTION_EXCHANGES),
-        len(EXECUTION_EXCHANGES),
+        list(_CERTIFIED_EXECUTION_EXCHANGES),
+        len(_CERTIFIED_EXECUTION_EXCHANGES),
         batch_size,
     )
     if not candidates:

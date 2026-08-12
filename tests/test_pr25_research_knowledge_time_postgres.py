@@ -11,6 +11,8 @@ import pytest
 
 from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
 from app.signal_visibility import (
+    _CERTIFIED_EXECUTION_EXCHANGES,
+    _CERTIFIED_OUTCOME_HORIZONS,
     RESEARCH_VISIBILITY_VERSION,
     certify_final_outcomes,
     certify_research_bundles,
@@ -820,3 +822,30 @@ async def test_migration_down_fails_closed_on_research_visibility_version_refere
         )
         == 1
     )
+
+
+def test_visibility_v1_frozen_horizons_are_exact() -> None:
+    assert _CERTIFIED_OUTCOME_HORIZONS == (1, 3, 5, 15, 30, 60, 120, 240)
+
+
+def test_visibility_v1_frozen_exchanges_are_exact() -> None:
+    assert _CERTIFIED_EXECUTION_EXCHANGES == ("binance", "bybit")
+
+
+def test_visibility_v1_frozen_shape_survives_live_constant_monkeypatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A simulated future/current bump of OUTCOME_HORIZONS_MINUTES /
+    EXECUTION_EXCHANGES must NOT silently redefine what
+    RESEARCH_VISIBILITY_VERSION=1 certifies. app.signal_visibility no longer
+    even imports those names -- its bundle-completeness shape is the frozen
+    literal tuple below, bound at import time."""
+
+    import app.signal_execution as signal_execution_module
+    import app.signal_outcomes as signal_outcomes_module
+
+    monkeypatch.setattr(signal_outcomes_module, "OUTCOME_HORIZONS_MINUTES", (1, 3, 5))
+    monkeypatch.setattr(signal_execution_module, "EXECUTION_EXCHANGES", ("okx",))
+
+    assert _CERTIFIED_OUTCOME_HORIZONS == (1, 3, 5, 15, 30, 60, 120, 240)
+    assert _CERTIFIED_EXECUTION_EXCHANGES == ("binance", "bybit")
