@@ -8,6 +8,7 @@ from typing import Any
 
 import asyncpg
 
+from app.metrics import REGIME_LOGIC_VERSION
 from app.signal_execution import persist_signal_execution_snapshots
 from app.signal_outcomes import schedule_signal_outcomes
 from app.signal_replay import (
@@ -279,11 +280,13 @@ async def persist_signal_observations(
                price_cutoff_at,metrics_cutoff_at
         FROM metrics_snapshot
         WHERE symbol=$1 AND ts <= $2
+          AND regime_logic_version=$3
         ORDER BY ts DESC
         LIMIT 1
         """,
         symbol,
         observed_at,
+        REGIME_LOGIC_VERSION,
     )
 
     common = (

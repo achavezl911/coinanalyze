@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
-from app import api, scalp_logic
+from app import ai_context, api, scalp_logic
 from app.ai_context import DAILY_HISTORY_QUERY, daily_data, daily_history
 from app.metrics import (
     REGIME_LOGIC_VERSION,
@@ -475,6 +476,372 @@ async def test_pr22_api_exposes_effective_matrix_as_of(
     monkeypatch.setattr(api, "delta_matrix", fake_delta)
     result = await api.scalp_delta_matrix("BTCUSDT_PERP.A")
     assert result[0]["as_of"] == cutoff.isoformat()
+
+
+class _MultiHorizonConnection:
+    def __init__(self) -> None:
+        self.seen_query_cutoffs: list[datetime] = []
+
+    def _capture(self, args: tuple[Any, ...]) -> None:
+        self.seen_query_cutoffs.extend(arg for arg in args if isinstance(arg, datetime))
+
+    async def fetchval(self, _query: str, *args: Any) -> float:
+        self._capture(args)
+        return 100.0
+
+    async def fetch(self, _query: str, *args: Any) -> list[dict[str, Any]]:
+        self._capture(args)
+        return []
+
+    async def fetchrow(self, _query: str, *args: Any) -> dict[str, Any]:
+        self._capture(args)
+        return {"long_liq": None, "short_liq": None}
+
+
+def _patch_multi_horizon_helpers(
+    monkeypatch: pytest.MonkeyPatch,
+    seen: list[datetime],
+) -> None:
+    async def fake_volume_profile(_conn, _symbol, as_of=None):
+        seen.append(as_of)
+        return {"session": None}
+
+    async def fake_spot(_conn, _symbol, windows, as_of=None):
+        seen.append(as_of)
+        return {
+            label: {
+                "combined": {
+                    "delta": 10.0,
+                    "volume": 100.0,
+                    "complete": True,
+                    "source": "realtime",
+                }
+            }
+            for label, _seconds in windows
+        }
+
+    async def fake_realtime(_conn, _table, _symbol, _seconds, as_of=None):
+        seen.append(as_of)
+        return {"delta": 10.0, "volume": 100.0, "complete": True}
+
+    async def fake_oi(_conn, _symbol, _seconds, as_of=None):
+        seen.append(as_of)
+        return None
+
+    async def fake_resample(
+        _conn, _symbol, _seconds, _limit, _source_interval="1min", as_of=None
+    ):
+        seen.append(as_of)
+        return []
+
+    monkeypatch.setattr(scalp_logic, "volume_profile", fake_volume_profile)
+    monkeypatch.setattr(scalp_logic, "spot_flow_windows", fake_spot)
+    monkeypatch.setattr(scalp_logic, "_realtime_flow", fake_realtime)
+    monkeypatch.setattr(scalp_logic, "_oi_change_pct", fake_oi)
+    monkeypatch.setattr(scalp_logic, "_resample_highs_lows", fake_resample)
+
+
+@pytest.mark.asyncio
+async def test_pr22_passive_flow_uses_one_as_of(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+    seen: list[datetime] = []
+    conn = _MultiHorizonConnection()
+    _patch_multi_horizon_helpers(monkeypatch, seen)
+    result = await scalp_logic.passive_flow(
+        conn, "BTCUSDT_PERP.A", cutoff  # type: ignore[arg-type]
+    )
+    assert seen and set(seen) == {cutoff}
+    assert conn.seen_query_cutoffs and set(conn.seen_query_cutoffs) == {cutoff}
+    assert result["as_of"] == cutoff.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_pr22_trend_matrix_uses_one_as_of(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+    seen: list[datetime] = []
+    conn = _MultiHorizonConnection()
+    _patch_multi_horizon_helpers(monkeypatch, seen)
+    result = await scalp_logic.trend_matrix(
+        conn, "BTCUSDT_PERP.A", cutoff  # type: ignore[arg-type]
+    )
+    assert seen and set(seen) == {cutoff}
+    assert conn.seen_query_cutoffs and set(conn.seen_query_cutoffs) == {cutoff}
+    assert result["as_of"] == cutoff.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_pr22_market_structure_uses_one_as_of(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+    seen: list[datetime] = []
+    conn = _MultiHorizonConnection()
+
+    async def fake_cvd(_conn, _symbol, _seconds, as_of=None):
+        seen.append(as_of)
+        return None
+
+    monkeypatch.setattr(scalp_logic, "_cvd_fut_window", fake_cvd)
+    result = await scalp_logic.market_structure(
+        conn, "BTCUSDT_PERP.A", cutoff  # type: ignore[arg-type]
+    )
+    assert seen and set(seen) == {cutoff}
+    assert conn.seen_query_cutoffs and set(conn.seen_query_cutoffs) == {cutoff}
+    assert result["as_of"] == cutoff.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_pr22_market_impact_uses_one_as_of(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+
+    class Connection:
+        seen: list[datetime] = []
+
+        async def fetchrow(self, _query, *args):
+            self.seen.extend(arg for arg in args if isinstance(arg, datetime))
+            return {
+                "px_open": 100.0,
+                "px_close": 101.0,
+                "delta": 1_000.0,
+                "volume": 2_000.0,
+                "mins": 1,
+                "span_minutes": 0.0,
+            }
+
+    async def no_baselines(*_args, **_kwargs):
+        return {}
+
+    conn = Connection()
+    monkeypatch.setattr(scalp_logic, "load_baselines", no_baselines)
+    result = await scalp_logic.market_impact(
+        conn, "BTCUSDT_PERP.A", cutoff  # type: ignore[arg-type]
+    )
+    assert len(conn.seen) == len(scalp_logic.IMPACT_WINDOWS)
+    assert set(conn.seen) == {cutoff}
+    assert result["as_of"] == cutoff.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_pr22_absorption_matrix_uses_one_as_of(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+
+    class Connection:
+        seen: list[datetime] = []
+
+        async def fetchrow(self, _query, *args):
+            self.seen.extend(arg for arg in args if isinstance(arg, datetime))
+            return {
+                "delta": 10.0,
+                "volume": 100.0,
+                "buckets": 12,
+                "span_seconds": 55.0,
+                "first_px": 100.0,
+                "last_px": 101.0,
+            }
+
+    conn = Connection()
+
+    class Pool:
+        def acquire(self):
+            class Context:
+                async def __aenter__(self):
+                    return conn
+
+                async def __aexit__(self, *_args):
+                    return False
+
+            return Context()
+
+    async def fixed_as_of(_conn, as_of=None):
+        assert as_of is None
+        return cutoff
+
+    async def no_baselines(*_args, **_kwargs):
+        return {}
+
+    monkeypatch.setattr(api.app.state, "pool", Pool(), raising=False)
+    monkeypatch.setattr(api, "resolve_matrix_as_of", fixed_as_of)
+    monkeypatch.setattr(api, "load_baselines", no_baselines)
+    rows = await api.scalp_absorption("BTCUSDT_PERP.A")
+    assert len(conn.seen) == 4
+    assert set(conn.seen) == {cutoff}
+    assert {row["as_of"] for row in rows} == {cutoff.isoformat()}
+
+
+class _BundlePool:
+    def acquire(self):
+        class Context:
+            async def __aenter__(self):
+                return _NoopConnection()
+
+            async def __aexit__(self, *_args):
+                return False
+
+        return Context()
+
+
+def _patch_api_bundle(
+    monkeypatch: pytest.MonkeyPatch,
+    cutoff: datetime,
+    seen: list[datetime],
+) -> None:
+    async def fixed_as_of(_conn, as_of=None):
+        assert as_of is None
+        return cutoff
+
+    async def fake_trend(_conn, _symbol, as_of=None):
+        seen.append(as_of)
+        return {"timeframes": {}, "medium_term_alignment": "mixto"}
+
+    async def fake_delta(_conn, _symbol, _windows, as_of=None):
+        seen.append(as_of)
+        return []
+
+    async def empty_dict(*_args, **_kwargs):
+        return {}
+
+    monkeypatch.setattr(api.app.state, "pool", _BundlePool(), raising=False)
+    monkeypatch.setattr(api, "resolve_matrix_as_of", fixed_as_of)
+    monkeypatch.setattr(api, "trend_matrix", fake_trend)
+    monkeypatch.setattr(api, "delta_matrix", fake_delta)
+    for name in (
+        "scalp_context",
+        "price_barriers",
+        "structure_detail",
+        "setup_confirmation_bundle",
+    ):
+        monkeypatch.setattr(api, name, empty_dict)
+
+    async def fake_quality(*_args, **_kwargs):
+        return {"collectors": {}, "event_recency": {}}
+
+    monkeypatch.setattr(api, "data_quality", fake_quality)
+    monkeypatch.setattr(
+        api,
+        "profile_view",
+        lambda *_args, **_kwargs: {"missing_data": [], "coverage_pct": 0.0},
+    )
+    monkeypatch.setattr(
+        api,
+        "compute_scalp_summary",
+        lambda _ctx: {"missing_components": [], "evidence_coverage_pct": 0.0},
+    )
+    monkeypatch.setattr(api, "build_setup_context", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(
+        api,
+        "hypothesis_evidence",
+        lambda *_args, **_kwargs: {"setup": "ninguno"},
+    )
+
+
+@pytest.mark.asyncio
+async def test_pr22_profile_bundle_shares_trend_delta_as_of(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+    seen: list[datetime] = []
+    _patch_api_bundle(monkeypatch, cutoff, seen)
+    result = await api.trading_profile("BTCUSDT_PERP.A")
+    assert len(seen) == 2
+    assert set(seen) == {cutoff}
+    assert result["as_of"] == cutoff.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_pr22_hypothesis_bundle_shares_trend_delta_as_of(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+    seen: list[datetime] = []
+    _patch_api_bundle(monkeypatch, cutoff, seen)
+    result = await api.hypothesis("BTCUSDT_PERP.A")
+    assert len(seen) == 2
+    assert set(seen) == {cutoff}
+    assert result["as_of"] == cutoff.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_pr22_desk_bundle_shares_as_of(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+    seen: list[datetime] = []
+    _patch_api_bundle(monkeypatch, cutoff, seen)
+    result = await api.desk_state("BTCUSDT_PERP.A")
+    assert len(seen) == 2
+    assert set(seen) == {cutoff}
+    assert result["as_of"] == cutoff.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_pr22_ai_bundle_shares_cvd_flow_as_of(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+    seen: list[datetime] = []
+
+    async def fixed_as_of(_conn, as_of=None):
+        assert as_of is None
+        return cutoff
+
+    async def fake_delta(_conn, _symbol, _windows, as_of=None):
+        seen.append(as_of)
+        return []
+
+    async def fake_surface(_conn, _symbol, as_of=None):
+        seen.append(as_of)
+        return {}
+
+    async def empty_dict(*_args, **_kwargs):
+        return {}
+
+    async def empty_list(*_args, **_kwargs):
+        return []
+
+    monkeypatch.setattr(ai_context, "resolve_matrix_as_of", fixed_as_of)
+    monkeypatch.setattr(ai_context, "delta_matrix", fake_delta)
+    for name in (
+        "cvd_matrix",
+        "market_structure",
+        "_passive_flow",
+        "_trend_matrix",
+        "volume_profile",
+    ):
+        monkeypatch.setattr(ai_context, name, fake_surface)
+    monkeypatch.setattr(ai_context, "latest_snapshot", empty_dict)
+    monkeypatch.setattr(ai_context, "daily_data", empty_list)
+    monkeypatch.setattr(ai_context, "recent_signals", empty_list)
+    for name in (
+        "scalp_context",
+        "data_confidence_row",
+        "external_macro_context",
+        "latest_orderbook",
+        "horizon_structure",
+        "structure_detail",
+        "oi_context",
+        "volatility_context",
+        "reference_levels",
+        "cross_asset",
+        "funding_context",
+        "liquidation_map",
+        "price_barriers",
+        "market_memory",
+        "context_metadata",
+        "data_quality",
+        "macro_context",
+        "divergence_scan",
+        "liquidation_burst",
+        "liquidation_levels",
+    ):
+        monkeypatch.setattr(ai_context, name, empty_dict)
+    monkeypatch.setattr(ai_context, "compute_scalp_summary", lambda _ctx: {})
+    monkeypatch.setattr(ai_context, "build_operator_read", lambda *_args: {})
+    monkeypatch.setattr(ai_context, "local_alerts", lambda *_args: [])
+    monkeypatch.setattr(ai_context, "cvd_swing_read", lambda _rows: {})
+    monkeypatch.setattr(ai_context, "_compute_swing_score", lambda _payload: {})
+    monkeypatch.setattr(
+        ai_context, "align_with_internal", lambda external, _swing: external
+    )
+    monkeypatch.setattr(
+        ai_context,
+        "get_settings",
+        lambda: SimpleNamespace(COINGLASS_API_KEY=""),
+    )
+    await ai_context.build_ai_symbol_context(
+        _NoopConnection(), "BTCUSDT_PERP.A", profile="lite"  # type: ignore[arg-type]
+    )
+    assert len(seen) == 6
+    assert seen and set(seen) == {cutoff}
 
 
 class _DailyConnection:

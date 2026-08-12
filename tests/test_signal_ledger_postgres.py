@@ -251,11 +251,12 @@ async def test_latest_non_future_metrics_snapshot_is_frozen() -> None:
         await conn.execute(
             """
             INSERT INTO metrics_snapshot(
-              ts,symbol,regime_score,regime_label,price_cutoff_at,metrics_cutoff_at
+              ts,symbol,regime_score,regime_label,regime_logic_version,
+              price_cutoff_at,metrics_cutoff_at
             ) VALUES
-              (clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',-40,'bearish',
+              (clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',-40,'bearish',2,
                clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '5 minutes'),
-              (clock_timestamp()+interval '1 hour','BTCUSDT_PERP.A',80,'future',
+              (clock_timestamp()+interval '1 hour','BTCUSDT_PERP.A',80,'future',2,
                clock_timestamp()+interval '1 hour',clock_timestamp()+interval '1 hour')
             """
         )
@@ -272,6 +273,76 @@ async def test_latest_non_future_metrics_snapshot_is_frozen() -> None:
         assert row["metrics_snapshot_ts"] <= row["observed_at"]
         assert row["price_cutoff_at"] < row["observed_at"]
         assert row["metrics_cutoff_at"] < row["observed_at"]
+    finally:
+        await _drop_schema(conn, schema)
+
+
+@pytest.mark.asyncio
+async def test_pr22_v3_signal_does_not_copy_legacy_regime() -> None:
+    schema = _schema_name()
+    conn = await _connect_schema(schema)
+    try:
+        await conn.execute(
+            """
+            INSERT INTO metrics_snapshot(
+              ts,symbol,regime_score,regime_label,regime_logic_version,
+              price_cutoff_at,metrics_cutoff_at
+            ) VALUES(
+              clock_timestamp()-interval '2 minutes','BTCUSDT_PERP.A',55,'legacy',NULL,
+              clock_timestamp()-interval '3 minutes',clock_timestamp()-interval '4 minutes'
+            )
+            """
+        )
+        assert await _persist(conn) == 1
+        legacy_only = await conn.fetchrow(
+            """
+            SELECT evidence_version,regime_score,regime_label,regime_logic_version,
+                   metrics_snapshot_ts,price_cutoff_at,metrics_cutoff_at
+            FROM signal_observation ORDER BY observation_id
+            """
+        )
+        assert legacy_only["evidence_version"] == 3
+        for field in (
+            "regime_score",
+            "regime_label",
+            "regime_logic_version",
+            "metrics_snapshot_ts",
+            "price_cutoff_at",
+            "metrics_cutoff_at",
+        ):
+            assert legacy_only[field] is None
+
+        await conn.execute(
+            """
+            INSERT INTO metrics_snapshot(
+              ts,symbol,regime_score,regime_label,regime_logic_version,
+              price_cutoff_at,metrics_cutoff_at
+            ) VALUES(
+              clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',25,'v2',2,
+              clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '3 minutes'
+            )
+            """
+        )
+        assert await _persist(
+            conn,
+            summary=_summary(
+                long_score=20.0,
+                short_score=80.0,
+                state="Short Momentum",
+            ),
+        ) == 1
+        v2 = await conn.fetchrow(
+            """
+            SELECT regime_score,regime_label,regime_logic_version,metrics_snapshot_ts
+            FROM signal_observation ORDER BY observation_id DESC LIMIT 1
+            """
+        )
+        assert (v2["regime_score"], v2["regime_label"], v2["regime_logic_version"]) == (
+            25,
+            "v2",
+            2,
+        )
+        assert v2["metrics_snapshot_ts"] is not None
     finally:
         await _drop_schema(conn, schema)
 

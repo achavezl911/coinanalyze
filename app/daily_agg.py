@@ -25,7 +25,7 @@ from app.db import (
 from app.ingest import seconds_until_aligned_run, upsert_ohlcv
 from app.interpretation import evaluate_setups
 from app.logging_setup import configure_logging
-from app.metrics import session_bounds
+from app.metrics import REGIME_LOGIC_VERSION, session_bounds
 from app.partitioning import apply_temporal_retention
 from app.scalp_logic import swing_score
 
@@ -324,7 +324,14 @@ async def persist_verdicts(conn: asyncpg.Connection, symbols: tuple[str, ...]) -
             continue  # sin cierre medido no existe un veredicto diario evaluable
         swing = await swing_score(conn, symbol)
         snapshot = await conn.fetchrow(
-            "SELECT * FROM metrics_snapshot WHERE symbol=$1 ORDER BY ts DESC LIMIT 1", symbol
+            """
+            SELECT * FROM metrics_snapshot
+            WHERE symbol=$1 AND regime_logic_version=$2
+            ORDER BY ts DESC
+            LIMIT 1
+            """,
+            symbol,
+            REGIME_LOGIC_VERSION,
         )
         primary: dict[str, object] = {}
         streak = None

@@ -11,7 +11,8 @@ BEGIN
       AND column_name='regime_logic_version'
   ) THEN
     EXECUTE 'SELECT EXISTS (SELECT 1 FROM signal_observation '
-            'WHERE regime_logic_version IS NOT NULL)' INTO has_evidence;
+            'WHERE regime_logic_version IS NOT NULL OR evidence_version=3)'
+      INTO has_evidence;
     IF has_evidence THEN
       RAISE EXCEPTION 'PR22 down migration refuses to destroy signal_observation regime provenance';
     END IF;
@@ -22,7 +23,9 @@ BEGIN
       AND column_name='regime_logic_version'
   ) THEN
     EXECUTE 'SELECT EXISTS (SELECT 1 FROM daily_verdict_snapshot '
-            'WHERE regime_logic_version IS NOT NULL)' INTO has_evidence;
+            'WHERE regime_logic_version IS NOT NULL '
+            'OR logic_version=''daily-verdict-v2'')'
+      INTO has_evidence;
     IF has_evidence THEN
       RAISE EXCEPTION 'PR22 down migration refuses to destroy daily_verdict_snapshot regime provenance';
     END IF;
@@ -41,8 +44,10 @@ BEGIN
 END $$;
 
 ALTER TABLE IF EXISTS daily_verdict_snapshot
+  DROP CONSTRAINT IF EXISTS daily_verdict_snapshot_pr22_regime_provenance_check,
   DROP CONSTRAINT IF EXISTS daily_verdict_snapshot_regime_logic_version_check;
 ALTER TABLE IF EXISTS signal_observation
+  DROP CONSTRAINT IF EXISTS signal_observation_pr22_regime_provenance_check,
   DROP CONSTRAINT IF EXISTS signal_observation_regime_logic_version_check;
 ALTER TABLE IF EXISTS metrics_snapshot
   DROP CONSTRAINT IF EXISTS metrics_snapshot_regime_logic_version_check,

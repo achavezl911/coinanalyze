@@ -43,6 +43,38 @@ BEGIN
       ADD CONSTRAINT daily_verdict_snapshot_regime_logic_version_check
       CHECK (regime_logic_version IS NULL OR regime_logic_version >= 1);
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='signal_observation'::regclass
+                 AND conname='signal_observation_pr22_regime_provenance_check') THEN
+    ALTER TABLE signal_observation
+      ADD CONSTRAINT signal_observation_pr22_regime_provenance_check
+      CHECK (
+        evidence_version <> 3
+        OR regime_logic_version IS NOT DISTINCT FROM 2
+        OR (
+          regime_logic_version IS NULL
+          AND regime_score IS NULL
+          AND regime_label IS NULL
+          AND metrics_snapshot_ts IS NULL
+          AND price_cutoff_at IS NULL
+          AND metrics_cutoff_at IS NULL
+        )
+      );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='daily_verdict_snapshot'::regclass
+                 AND conname='daily_verdict_snapshot_pr22_regime_provenance_check') THEN
+    ALTER TABLE daily_verdict_snapshot
+      ADD CONSTRAINT daily_verdict_snapshot_pr22_regime_provenance_check
+      CHECK (
+        logic_version <> 'daily-verdict-v2'
+        OR regime_logic_version IS NOT DISTINCT FROM 2
+        OR (
+          regime_logic_version IS NULL
+          AND regime_score IS NULL
+          AND regime_label IS NULL
+          AND metrics_snapshot_ts IS NULL
+        )
+      );
+  END IF;
 END $$;
 
 COMMENT ON COLUMN metrics_snapshot.regime_logic_version IS

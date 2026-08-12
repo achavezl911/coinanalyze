@@ -963,27 +963,43 @@ def _structure_layer(
 _PIV_VOTE = {"HH/HL": True, "LH/LL": False}
 
 
-async def _cvd_fut_window(conn: asyncpg.Connection, symbol: str, seconds: int) -> float | None:
+async def _cvd_fut_window(
+    conn: asyncpg.Connection,
+    symbol: str,
+    seconds: int,
+    as_of: datetime | None = None,
+) -> float | None:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     return as_float(
         await conn.fetchval(
             "SELECT SUM(buy_vol_usd-sell_vol_usd) FROM futures_trades_realtime "
-            "WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND ts >= now()-($2::int * interval '1 second')",
+            "WHERE symbol=$1 AND exchange='combined' AND venue_count=2 "
+            "AND ts >= $3::timestamptz-($2::int * interval '1 second') "
+            "AND ts <= $3",
             symbol,
             seconds,
+            cutoff,
         )
     )
 
 
-async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def market_structure(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
     """Bias determinista por horizonte: order flow + OI + liquidaciones + pivotes de precio.
 
     Micro 1m-15m (ws), Mid 30m-4h (ws + historico), Macro sesiones diarias.
     Cada componente vota alcista/bajista/sin-dato; bias = mayoria simple, sin pesos.
     """
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     m1_rows = await conn.fetch(
         "SELECT high, low, close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+        "AND ts <= $2 "
         "ORDER BY ts DESC LIMIT 120",
         symbol,
+        cutoff,
     )
     m1 = [dict(r) for r in reversed(m1_rows)]
     m15_rows = await conn.fetch(
@@ -992,11 +1008,12 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
           SELECT date_bin('15 minutes'::interval, ts, '1970-01-01'::timestamptz) AS bucket,
                  MAX(high) AS high, MIN(low) AS low,
                  (array_agg(close ORDER BY ts DESC))[1] AS close
-          FROM ohlcv WHERE symbol=$1 AND interval='1min'
+          FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts <= $2
           GROUP BY 1 ORDER BY 1 DESC LIMIT 192
         ) SELECT * FROM b ORDER BY bucket
         """,
         symbol,
+        cutoff,
     )
     m15 = [dict(r) for r in m15_rows]
     daily_rows = await conn.fetch(
@@ -1018,8 +1035,10 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
     liq_rt = await conn.fetchrow(
         "SELECT SUM(CASE WHEN side='long' THEN notional_usd ELSE 0 END) AS long_liq,"
         "SUM(CASE WHEN side='short' THEN notional_usd ELSE 0 END) AS short_liq "
-        "FROM liquidations_realtime WHERE symbol=$1 AND ts >= now()-interval '15 minutes'",
+        "FROM liquidations_realtime WHERE symbol=$1 "
+        "AND ts >= $2::timestamptz-interval '15 minutes' AND ts <= $2",
         symbol,
+        cutoff,
     )
     micro_liq = None
     if liq_rt and ((as_float(liq_rt["long_liq"]) or 0) or (as_float(liq_rt["short_liq"]) or 0)):
@@ -1032,7 +1051,7 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         "micro",
         "1m-15m",
         {
-            "cvd15m": _sign_vote(await _cvd_fut_window(conn, symbol, 900)),
+            "cvd15m": _sign_vote(await _cvd_fut_window(conn, symbol, 900, cutoff)),
             "px15m": _sign_vote(px_change(m1, 15)),
             "liq15m": micro_liq,
             "piv": _PIV_VOTE.get(micro_ps),
@@ -1043,8 +1062,9 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
     # ---- mid (30m-4h)
     oi_rows = await conn.fetch(
         "SELECT oi_close FROM open_interest WHERE symbol=$1 AND interval='5min' "
-        "AND ts >= now()-interval '250 minutes' ORDER BY ts",
+        "AND ts >= $2::timestamptz-interval '250 minutes' AND ts <= $2 ORDER BY ts",
         symbol,
+        cutoff,
     )
     oi_vals = [as_float(r["oi_close"]) for r in oi_rows if as_float(r["oi_close"]) is not None]
     px4h = px_change(m15, 16)
@@ -1055,8 +1075,10 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         )  # OI subiendo confirma la direccion del precio; OI bajando = unwind, sin voto
     liq_hist = await conn.fetchrow(
         "SELECT SUM(long_liq) AS long_liq, SUM(short_liq) AS short_liq FROM liquidations "
-        "WHERE symbol=$1 AND interval='5min' AND ts >= now()-interval '4 hours'",
+        "WHERE symbol=$1 AND interval='5min' "
+        "AND ts >= $2::timestamptz-interval '4 hours' AND ts <= $2",
         symbol,
+        cutoff,
     )
     mid_liq = None
     if liq_hist and (
@@ -1072,8 +1094,8 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         "mid",
         "30m-4h",
         {
-            "cvd1h": _sign_vote(await _cvd_fut_window(conn, symbol, 3600)),
-            "cvd4h": _sign_vote(await _cvd_fut_window(conn, symbol, 14400)),
+            "cvd1h": _sign_vote(await _cvd_fut_window(conn, symbol, 3600, cutoff)),
+            "cvd4h": _sign_vote(await _cvd_fut_window(conn, symbol, 14400, cutoff)),
             "oi": oi_conf,
             "liq4h": mid_liq,
             "piv": _PIV_VOTE.get(mid_ps),
@@ -1112,7 +1134,12 @@ async def market_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, A
     alignment = (
         f"alineado_{layers[0]['bias']}" if len(biases) == 1 and "neutral" not in biases else "mixto"
     )
-    return {"symbol": symbol, "layers": layers, "alignment": alignment}
+    return {
+        "symbol": symbol,
+        "as_of": cutoff.isoformat(),
+        "layers": layers,
+        "alignment": alignment,
+    }
 
 
 # ---------------- alertas HTF: estructura por horizonte + liquidaciones masivas ----------------
@@ -3180,14 +3207,20 @@ def _profile(prices: list, vols: list, nb: int = 50):
     }
 
 
-async def volume_profile(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
-    now = datetime.now(UTC)
-    day0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
+async def volume_profile(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    day0 = cutoff.replace(hour=0, minute=0, second=0, microsecond=0)
     week0 = day0 - timedelta(days=day0.weekday())
     rows = await conn.fetch(
-        "SELECT close, volume FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts >= $2 ORDER BY ts",
+        "SELECT close, volume FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+        "AND ts >= $2 AND ts <= $3 ORDER BY ts",
         symbol,
         day0,
+        cutoff,
     )
     prices = [as_float(r["close"]) for r in rows]
     vols = [as_float(r["volume"]) or 0.0 for r in rows]
@@ -3199,9 +3232,11 @@ async def volume_profile(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
         var = sum(v * (p - vwap_s) ** 2 for p, v in zip(prices, vols, strict=True) if p) / total
         sd = var**0.5
     wr = await conn.fetch(
-        "SELECT close, volume FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts >= $2",
+        "SELECT close, volume FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+        "AND ts >= $2 AND ts <= $3",
         symbol,
         week0,
+        cutoff,
     )
     wp = [as_float(r["close"]) for r in wr]
     wv = [as_float(r["volume"]) or 0.0 for r in wr]
@@ -3217,6 +3252,7 @@ async def volume_profile(conn: asyncpg.Connection, symbol: str) -> dict[str, Any
         }
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "available": prof is not None,
         "session": prof,
         "vwap": {
@@ -4660,7 +4696,11 @@ async def execution_cost(
 IMPACT_WINDOWS = (("5m", 300), ("15m", 900), ("18m", 1080), ("1h", 3600))
 
 
-async def market_impact(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def market_impact(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
     """Impacto REALIZADO: bps que se movio el precio por cada 1M USD de delta neto.
 
     Medido, no modelado: la referencia sale de `metric_baseline` sobre la misma serie. A 15 m
@@ -4674,6 +4714,7 @@ async def market_impact(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
     OJO con lo que NO es: no es el slippage de tu orden (eso es /api/scalp/execution-cost,
     que recorre el libro actual). Esto es el comportamiento agregado del mercado.
     """
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     baselines = await load_baselines(conn, symbol, "impact_bps_per_musd")
     windows: list[dict[str, Any]] = []
     for label, seconds in IMPACT_WINDOWS:
@@ -4686,10 +4727,13 @@ async def market_impact(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
                    -- compensar a uno que falta en medio. El span mide el hueco de verdad.
                    (EXTRACT(EPOCH FROM max(ts)-min(ts))/60.0)::float8 AS span_minutes
             FROM ohlcv
-            WHERE symbol=$1 AND interval='1min' AND ts >= now()-($2::int*interval '1 second')
+            WHERE symbol=$1 AND interval='1min'
+              AND ts >= $3::timestamptz-($2::int*interval '1 second')
+              AND ts <= $3
             """,
             symbol,
             seconds,
+            cutoff,
         )
         mins = int(row["mins"] or 0) if row else 0
         span = as_float(row["span_minutes"]) if row else None
@@ -4745,6 +4789,7 @@ async def market_impact(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
         )
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "metric": "impact_bps_per_musd",
         "definition": "|cambio de precio en bps| / (|delta neto| en millones de USD)",
         "windows": windows,
@@ -4959,14 +5004,21 @@ def _classify_passive(fut_delta, fut_vol, price_move_pct, spot_delta, location, 
     return absorbed, reading, conf, round(directional, 3)
 
 
-async def passive_flow(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
-    vp = await volume_profile(conn, symbol)
+async def passive_flow(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    vp = await volume_profile(conn, symbol, cutoff)
     prof = (vp or {}).get("session") or {}
     poc, vah, val = prof.get("poc"), prof.get("vah"), prof.get("val")
     px_now = as_float(
         await conn.fetchval(
-            "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' ORDER BY ts DESC LIMIT 1",
+            "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+            "AND ts <= $2 ORDER BY ts DESC LIMIT 1",
             symbol,
+            cutoff,
         )
     )
     if px_now and poc is not None and vah is not None and val is not None:
@@ -4974,33 +5026,37 @@ async def passive_flow(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     else:
         loc = "s/d"
     ws = WS_SYMBOL_MAP[symbol]
-    spot_flows = await spot_flow_windows(conn, ws, _PF_HORIZONS)
+    spot_flows = await spot_flow_windows(conn, ws, _PF_HORIZONS, cutoff)
     counts = {"reacumulacion_silenciosa": 0, "redistribucion_silenciosa": 0, "neutral": 0}
     out = {}
     for lab, sec in _PF_HORIZONS:
-        futures = await _realtime_flow(conn, "futures_trades_realtime", symbol, sec)
+        futures = await _realtime_flow(
+            conn, "futures_trades_realtime", symbol, sec, cutoff
+        )
         spot = (spot_flows.get(lab) or {}).get("combined") or {}
         flow_complete = bool(futures.get("complete")) and bool(spot.get("complete"))
         fut_delta = as_float(futures.get("delta")) if futures.get("complete") else None
         fut_vol = as_float(futures.get("volume")) if futures.get("complete") else None
         spot_delta = as_float(spot.get("delta")) if spot.get("complete") else None
         diff = spot_delta - fut_delta if spot_delta is not None and fut_delta is not None else None
-        bars = await _resample_highs_lows(conn, symbol, sec, 40)
+        bars = await _resample_highs_lows(conn, symbol, sec, 40, as_of=cutoff)
         atr = _atr(bars, 14)
         close = as_float(bars[-1]["close"]) if bars else px_now
         atr_pct = (atr / close * 100) if (atr and close) else None
         px_ago = as_float(
             await conn.fetchval(
-                "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts <= now()-($2::int*interval '1 second') "
+                "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+                "AND ts <= $2::timestamptz-($3::int*interval '1 second') "
                 "ORDER BY ts DESC LIMIT 1",
                 symbol,
+                cutoff,
                 sec,
             )
         )
         # Sin precio de referencia el movimiento es DESCONOCIDO, no cero: un 0.0 inventado
         # hace que _classify_passive lea "el precio aguanto" y dispare absorcion falsa.
         price_move_pct = ((px_now / px_ago - 1) * 100) if (px_now and px_ago) else None
-        oi_chg = await _oi_change_pct(conn, symbol, sec)
+        oi_chg = await _oi_change_pct(conn, symbol, sec, cutoff)
         if (
             flow_complete
             and fut_delta is not None
@@ -5042,6 +5098,7 @@ async def passive_flow(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     summary = dom if counts[dom] >= 2 else "neutral"
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "price": px_now,
         "location": loc,
         "value_area": {"poc": poc, "vah": vah, "val": val},
@@ -5065,12 +5122,19 @@ _TREND_TF = (
 )
 
 
-async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def trend_matrix(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     ws = WS_SYMBOL_MAP[symbol]
     px_now = as_float(
         await conn.fetchval(
-            "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' ORDER BY ts DESC LIMIT 1",
+            "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+            "AND ts <= $2 ORDER BY ts DESC LIMIT 1",
             symbol,
+            cutoff,
         )
     )
     drows = [
@@ -5083,7 +5147,10 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     ]
     daily = list(reversed(drows))
     spot_flows = await spot_flow_windows(
-        conn, ws, [(label, unit) for label, unit, kind in _TREND_TF if kind == "intra"]
+        conn,
+        ws,
+        [(label, unit) for label, unit, kind in _TREND_TF if kind == "intra"],
+        cutoff,
     )
     tfs = {}
     for lab, unit, kind in _TREND_TF:
@@ -5094,7 +5161,9 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
         confirm: dict[str, Any] = {"vote": None, "state": "sin_datos", "agreement": None}
         if kind == "intra":
             sec = unit
-            bars = await _resample_highs_lows(conn, symbol, sec, 60)
+            bars = await _resample_highs_lows(
+                conn, symbol, sec, 60, as_of=cutoff
+            )
             if len(bars) >= 7:
                 st = _structure_from_swings(
                     [as_float(b["high"]) for b in bars],
@@ -5103,7 +5172,9 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
                     as_float(bars[-1]["close"]),
                     k=2,
                 )["state"]
-            futures = await _realtime_flow(conn, "futures_trades_realtime", symbol, sec)
+            futures = await _realtime_flow(
+                conn, "futures_trades_realtime", symbol, sec, cutoff
+            )
             spot = (spot_flows.get(lab) or {}).get("combined") or {}
             flow_complete = bool(futures.get("complete")) and bool(spot.get("complete"))
             flow_status = "complete" if flow_complete else "partial"
@@ -5113,11 +5184,14 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             # flow_confirmation (signo de ambas patas), no del diferencial: ver su docstring.
             cvd_flow = spot_d - fut_d if spot_d is not None and fut_d is not None else None
             confirm = flow_confirmation(spot_d, fut_d)
-            oi_chg = await _oi_change_pct(conn, symbol, sec)
+            oi_chg = await _oi_change_pct(conn, symbol, sec, cutoff)
             px_ago = as_float(
                 await conn.fetchval(
-                    "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts <= now()-($2::int*interval '1 second') ORDER BY ts DESC LIMIT 1",
+                    "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+                    "AND ts <= $2::timestamptz-($3::int*interval '1 second') "
+                    "ORDER BY ts DESC LIMIT 1",
                     symbol,
+                    cutoff,
                     sec,
                 )
             )
@@ -5191,6 +5265,7 @@ async def trend_matrix(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     )
     return {
         "symbol": symbol,
+        "as_of": cutoff.isoformat(),
         "timeframes": tfs,
         "medium_term_alignment": align,
         "note": "sesgo por marco = estructura(pivotes)+flujo+momentum. En 1d/3d el flujo es "
@@ -5352,12 +5427,21 @@ def compute_swing_score(blocks: dict) -> dict[str, Any]:
     }
 
 
-async def swing_score(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def swing_score(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+) -> dict[str, Any]:
+    cutoff = await resolve_matrix_as_of(conn, as_of)
     blocks = {
         "structure_detail": await structure_detail(conn, symbol),
         "macro_context": await macro_context(conn, symbol),
         "cross_asset": await cross_asset(conn, symbol),
-        "passive_flow": await passive_flow(conn, symbol),
-        "trend_matrix": await trend_matrix(conn, symbol),
+        "passive_flow": await passive_flow(conn, symbol, cutoff),
+        "trend_matrix": await trend_matrix(conn, symbol, cutoff),
     }
-    return {"symbol": symbol, **compute_swing_score(blocks)}
+    return {
+        "symbol": symbol,
+        "as_of": cutoff.isoformat(),
+        **compute_swing_score(blocks),
+    }
