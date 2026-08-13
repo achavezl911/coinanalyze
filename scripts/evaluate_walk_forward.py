@@ -215,6 +215,11 @@ def main() -> None:
             f"{gates['positive_execution_oos_gate_count']}"
         ),
     )
+    if "confirmatory_state" in report:
+        # PR26 spec v3: surface the confirmatory decision explicitly. This
+        # never influences (and is never influenced by) the exploratory
+        # gates printed above.
+        print(f"confirmatory_state={report['confirmatory_state']}")
 
 
 if __name__ == "__main__":

@@ -486,3 +486,42 @@ finalized_at columns, and only ever applies to `evidence_version = 6`. No
 spec-v2 production manifest exists yet -- see the PR25 doc for the full
 contract, the frozen scientific tuple, and the CLI flags needed to freeze one
 in the future.
+
+## PR26 addendum: spec v3 and the confirmatory contract
+
+Everything above (spec v1) and the PR25 addendum immediately above this
+section (spec v2) are frozen exactly as documented: PR26 never reinterprets
+`pr11-fixed-kernel-v1`, never creates `pr11-fixed-kernel-v2`, and never
+touches either spec's hash or behavior.
+
+A new `WALK_FORWARD_SPEC_VERSION_V3 = 3` turns PR11's exploratory walk-forward
+engine into a genuine confirmatory test. Spec v3 requires spec v2's exact PR25
+evidence6/research_visibility1 tuple unchanged (it reuses the same
+certificate-gated grid and execution-integrity fetchers), plus a fully hashed
+`confirmatory_contract` pinning exactly ONE primary hypothesis: one symbol,
+one horizon, one `utc_nonoverlap`-only sampling mode, one exchange, one size,
+an explicit taker fee, a versioned clock/direction-matched baseline
+(`clock_direction_matched_baseline_v1`), a frozen non-negative
+`unmodeled_execution_stress_bps`, a deterministic block-bootstrap inference
+engine (`block_bootstrap_v1`, Python stdlib only), and a fixed decision policy
+(`two_sided_block_bootstrap_ci_vs_minimum_effect_v1`). No field defaults from
+a current/live constant; every field is caller-required and fails closed if
+missing.
+
+`confirmatory_state` is `not_ready` until the manifest's LAST frozen fold
+reaches `ready_by_clock` (a pure clock gate); only then can `pass`/`fail`/
+`inconclusive` be computed, from OOS rows only, pooled across every matured
+fold's whole calendar blocks (never raw rows, never discovery). There is no
+adaptive/optional stopping: `evaluate_walk_forward(conn, manifest_name)`'s
+signature is unchanged, and re-evaluating a matured manifest later always
+returns the identical `confirmatory_result`. The existing exploratory
+gross/execution views, other horizons/exchanges/sizes, and
+`positive_oos_gate_count` remain exploratory and are structurally
+disconnected from the v3 decision -- see `app/signal_confirmatory.py`.
+
+`WALK_FORWARD_REPORT_VERSION_V3 = 3` adds three additive report keys
+(`confirmatory_contract`, `confirmatory_state`, `confirmatory_result`), never
+touching any v1/v2 report key. No spec-v3 production manifest is created by
+this PR. See `docs/PR26_CONFIRMATORY_WALK_FORWARD.md` for the full contract
+field reference, the exact baseline/bootstrap/decision-policy algorithms, and
+the CLI flags needed to freeze one in the future.

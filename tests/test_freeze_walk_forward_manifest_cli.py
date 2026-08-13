@@ -25,6 +25,53 @@ _SPEC_V2_FLAGS = {
     "--research-visibility-version": "1",
 }
 
+_CONFIRMATORY_FLAGS = {
+    "--primary-endpoint-version": "1",
+    "--primary-symbol": "BTCUSDT_PERP.A",
+    "--primary-horizon": "15",
+    "--primary-sampling-mode": "utc_nonoverlap",
+    "--primary-exchange": "binance",
+    "--primary-size-usd": "1000",
+    "--primary-taker-fee-bps": "2.0",
+    "--confirmatory-baseline-version": "1",
+    "--unmodeled-execution-stress-bps": "1.5",
+    "--confirmatory-inference-version": "1",
+    "--confirmatory-block-unit": "day",
+    "--confirmatory-block-length": "1",
+    "--bootstrap-repetitions": "500",
+    "--bootstrap-seed": "42",
+    "--confidence-level": "0.95",
+    "--minimum-effect-bps": "0.0",
+    "--minimum-primary-blocks": "5",
+    "--minimum-execution-data-coverage-pct": "50.0",
+    "--confirmatory-decision-policy": "two_sided_block_bootstrap_ci_vs_minimum_effect_v1",
+}
+_SPEC_V3_FLAGS = {**_SPEC_V2_FLAGS, **_CONFIRMATORY_FLAGS}
+
+
+def _spec_v3_args(
+    *, name: str, output: Path, omit_flag: str | None = None, acknowledge: bool = True
+) -> list[str]:
+    args = [
+        "--name",
+        name,
+        "--spec-version",
+        "3",
+        "--symbol",
+        "BTCUSDT_PERP.A",
+        "--fee-bps-per-side",
+        "binance=2.0",
+        "--output",
+        str(output),
+    ]
+    if acknowledge:
+        args.append("--acknowledge-confirmatory-primary-hypothesis")
+    for flag, value in _SPEC_V3_FLAGS.items():
+        if flag == omit_flag:
+            continue
+        args += [flag, value]
+    return args
+
 
 def _dsn() -> str:
     dsn = os.environ.get("TEST_DATABASE_URL")
@@ -171,3 +218,144 @@ def test_default_spec_version_is_v1(dsn: str) -> None:
     parser = cli.build_parser()
     args = parser.parse_args(["--name", "cli-default-spec-version-test"])
     assert args.spec_version == 1
+
+
+# ---------------------------------------------------------------------------
+# PR26: spec v3 confirmatory contract CLI.
+# ---------------------------------------------------------------------------
+
+
+def test_explicit_spec_v3_invocation_uses_exact_supplied_contract(
+    dsn: str, tmp_path: Path
+) -> None:
+    output = tmp_path / "spec_v3.json"
+    cli.main(_spec_v3_args(name="cli-spec-v3-explicit-test", output=output))
+
+    manifest = json.loads(output.read_text(encoding="utf-8"))
+    assert manifest["spec"]["spec_version"] == 3
+    versions = manifest["spec"]["versions"]
+    assert versions["research_visibility_version"] == 1
+
+    contract = manifest["spec"]["confirmatory_contract"]
+    assert contract["primary_symbol"] == "BTCUSDT_PERP.A"
+    assert contract["primary_horizon_minutes"] == 15
+    assert contract["primary_sampling_mode"] == "utc_nonoverlap"
+    assert contract["primary_exchange"] == "binance"
+    assert contract["primary_size_usd"] == 1000.0
+    assert contract["primary_taker_fee_bps"] == 2.0
+    assert contract["unmodeled_execution_stress_bps"] == 1.5
+    assert contract["block_unit"] == "day"
+    assert contract["bootstrap_seed"] == 42
+    assert (
+        contract["confirmatory_decision_policy"]
+        == "two_sided_block_bootstrap_ci_vs_minimum_effect_v1"
+    )
+
+    row = asyncio.run(_manifest_row(dsn, "cli-spec-v3-explicit-test"))
+    assert row is not None
+    stored_spec = json.loads(row["spec"])
+    assert stored_spec["spec_version"] == 3
+    assert stored_spec["confirmatory_contract"]["primary_symbol"] == "BTCUSDT_PERP.A"
+
+
+@pytest.mark.parametrize("omit_flag", sorted(_SPEC_V3_FLAGS))
+def test_spec_v3_missing_required_flag_fails_closed(
+    dsn: str, tmp_path: Path, omit_flag: str
+) -> None:
+    manifest_name = f"cli-spec-v3-missing-{omit_flag.strip('-').replace('-', '_')}"
+    output = tmp_path / "should-not-be-written.json"
+    args = _spec_v3_args(name=manifest_name, output=output, omit_flag=omit_flag)
+
+    with pytest.raises(SystemExit):
+        cli.main(args)
+
+    assert not output.exists()
+    row = asyncio.run(_manifest_row(dsn, manifest_name))
+    assert row is None
+
+
+def test_spec_v3_missing_acknowledge_flag_fails_closed(dsn: str, tmp_path: Path) -> None:
+    manifest_name = "cli-spec-v3-missing-acknowledge"
+    output = tmp_path / "should-not-be-written-ack.json"
+    args = _spec_v3_args(name=manifest_name, output=output, acknowledge=False)
+
+    with pytest.raises(SystemExit):
+        cli.main(args)
+
+    assert not output.exists()
+    row = asyncio.run(_manifest_row(dsn, manifest_name))
+    assert row is None
+
+
+def test_confirmatory_flag_forbidden_under_spec_v1(dsn: str, tmp_path: Path) -> None:
+    output = tmp_path / "should-not-be-written-v1-confirmatory.json"
+    with pytest.raises(SystemExit):
+        cli.main(
+            [
+                "--name",
+                "cli-v1-with-primary-symbol-test",
+                "--primary-symbol",
+                "BTCUSDT_PERP.A",
+                "--output",
+                str(output),
+            ]
+        )
+    assert not output.exists()
+    row = asyncio.run(_manifest_row(dsn, "cli-v1-with-primary-symbol-test"))
+    assert row is None
+
+
+def test_confirmatory_flag_forbidden_under_spec_v2(dsn: str, tmp_path: Path) -> None:
+    output = tmp_path / "should-not-be-written-v2-confirmatory.json"
+    args = [
+        "--name",
+        "cli-v2-with-primary-symbol-test",
+        "--spec-version",
+        "2",
+        "--output",
+        str(output),
+    ]
+    for flag, value in _SPEC_V2_FLAGS.items():
+        args += [flag, value]
+    args += ["--primary-symbol", "BTCUSDT_PERP.A"]
+
+    with pytest.raises(SystemExit):
+        cli.main(args)
+    assert not output.exists()
+    row = asyncio.run(_manifest_row(dsn, "cli-v2-with-primary-symbol-test"))
+    assert row is None
+
+
+def test_acknowledge_flag_forbidden_under_spec_v1(dsn: str, tmp_path: Path) -> None:
+    output = tmp_path / "should-not-be-written-ack-v1.json"
+    with pytest.raises(SystemExit):
+        cli.main(
+            [
+                "--name",
+                "cli-v1-with-acknowledge-test",
+                "--acknowledge-confirmatory-primary-hypothesis",
+                "--output",
+                str(output),
+            ]
+        )
+    assert not output.exists()
+    row = asyncio.run(_manifest_row(dsn, "cli-v1-with-acknowledge-test"))
+    assert row is None
+
+
+def test_no_production_manifest_name_is_used_by_confirmatory_cli_tests() -> None:
+    # None of the manifest names this test module freezes are the fixed
+    # production program names -- this PR never creates a production
+    # manifest.
+    from app.signal_walk_forward import DEFAULT_MANIFEST_NAME
+
+    assert DEFAULT_MANIFEST_NAME == "pr11-fixed-kernel-v1"
+    for name in (
+        "cli-spec-v3-explicit-test",
+        "cli-spec-v3-missing-acknowledge",
+        "cli-v1-with-primary-symbol-test",
+        "cli-v2-with-primary-symbol-test",
+        "cli-v1-with-acknowledge-test",
+    ):
+        assert name != DEFAULT_MANIFEST_NAME
+        assert not name.startswith("pr11-fixed-kernel")
