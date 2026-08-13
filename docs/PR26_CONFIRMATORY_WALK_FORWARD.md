@@ -21,7 +21,7 @@ de que empiece el OOS, con inferencia consciente de la dependencia temporal
 
 `app/signal_confirmatory.py` define `ConfirmatoryContract`, un dataclass
 congelado (`frozen=True, slots=True`) donde **ningún campo tiene valor por
-defecto** — el llamador debe suministrar los 19 campos explícitamente:
+defecto** — el llamador debe suministrar los 20 campos explícitamente:
 
 | Campo | Significado |
 |---|---|
@@ -42,6 +42,7 @@ defecto** — el llamador debe suministrar los 19 campos explícitamente:
 | `minimum_effect_bps` | Efecto mínimo económicamente relevante, comparado contra el límite inferior del CI. Debe ser `>= 0` — un umbral negativo permitiría que un CI parcial o totalmente negativo produjera PASS. |
 | `minimum_primary_blocks` | Mínimo de bloques primarios madurados para poder decidir. Debe ser `>= 2` (un solo bloque nunca puede dar un resample no degenerado). |
 | `minimum_execution_data_coverage_pct` | Cobertura mínima de datos de ejecución para poder decidir. Debe estar en `(0, 100]` — `0%` de cobertura exigida es estructuralmente degenerado (equivale a no exigir cobertura). |
+| `minimum_research_data_coverage_pct` | (Audit-4 A4-08) Cobertura mínima de FUENTE de investigación para poder decidir — ver [Completitud de outcomes y cobertura de fuente](#completitud-de-outcomes-y-cobertura-de-fuente-audit-4-a4-08). Debe estar en `(0, 100]`. Independiente de `minimum_execution_data_coverage_pct`: una mide cuántos slots esperados llegaron a estar certificados-visibles; la otra mide cuánta de la muestra ya evaluada es cost-evaluable. |
 | `confirmatory_decision_policy` | Identificador fijo (`two_sided_block_bootstrap_ci_vs_minimum_effect_v1`). |
 
 `validate_confirmatory_contract()` sólo valida estructura/tipo/rango — nunca
@@ -66,7 +67,7 @@ existente de `signal_walk_forward_manifest` (`_static_options_spec` añade la
 clave `confirmatory_contract` sólo cuando `spec_version ==
 WALK_FORWARD_SPEC_VERSION_V3`) — el mismo mecanismo que v2 usó para
 `research_visibility_version`. El hash del manifest (`_spec_hash`) cubre por
-lo tanto cada uno de los 19 campos: mutar cualquiera de ellos cambia el hash.
+lo tanto cada uno de los 20 campos: mutar cualquiera de ellos cambia el hash.
 
 ## Herencia exacta del contrato PR25
 
@@ -217,8 +218,10 @@ por su estado de integridad en vivo.
 
 1. Si los bloques primarios madurados son menos que `minimum_primary_blocks`,
    o la cobertura de datos de ejecución medida es menor que
-   `minimum_execution_data_coverage_pct`: **inconclusive**, sin correr el
-   bootstrap.
+   `minimum_execution_data_coverage_pct`, o `confirmatory_outcome_integrity.
+   outcome_complete` es falso, o `research_data_coverage.
+   research_data_coverage_pct` es menor que `minimum_research_data_coverage_pct`
+   (Audit-4 A4-08, ver abajo): **inconclusive**, sin correr el bootstrap.
 2. Si no: se corre `block_bootstrap_v1` sobre `primary_excess_bps` agrupado
    por bloque, pooled a través de TODOS los folds madurados (los folds siguen
    siendo diagnósticos de estabilidad temporal, nunca réplicas estadísticas
@@ -246,6 +249,85 @@ El endpoint primario confirmatorio usa **sólo** filas OOS (nunca discovery):
 `[test_start, test_end)` de cada fold madurado, vía la misma
 `_fetch_period_grid_v2` reutilizada sin cambios.
 
+## Completitud de outcomes y cobertura de fuente (Audit-4 A4-08)
+
+Antes de esta corrección, `_actionable_evaluated()`/`_all_periodic_evaluated()`
+filtraban a `status == "evaluated"` ANTES de que cualquier conteo ocurriera —
+filas `pending`/`not_evaluable`/faltantes/de versión incorrecta desaparecían
+silenciosamente del denominador confirmatorio, permitiendo que un subconjunto
+positivo remanente diera PASS aunque outcomes OOS siguieran pendientes al
+`confirmatory_knowledge_cutoff` congelado. Esto no es aceptable para un
+experimento confirmatorio de endpoint fijo.
+
+Dos mecanismos, distintos y no conflacionados, cierran ese gap:
+
+### `confirmatory_outcome_integrity` — completitud de outcomes
+
+`_fetch_confirmatory_primary_rows` ahora clasifica **toda** la grilla
+`sampled` (`_sample_grid`, ya certificada-visible por bundle) ANTES de
+filtrarla a evaluada, vía `_confirmatory_outcome_integrity_for_fold`. Reporta,
+sumado a través de todos los folds madurados:
+
+```
+eligible_sampled_periodic_n   # filas boundary-eligible ya visibles (bundle
+                               # certificado <= cutoff), independientemente
+                               # de su status
+evaluated_periodic_n
+pending_periodic_n
+not_evaluable_periodic_n
+missing_or_wrong_version_n
+evaluated_actionable_n        # subconjunto informativo: evaluada + actionable
+unresolved_actionable_n       # subconjunto informativo: actionable + NO evaluada
+outcome_complete               # True sii pending=not_evaluable=missing_or_wrong_version=0
+```
+
+Filas `boundary-purged` deterministas (`window_end` del outcome más allá del
+`test_end` congelado del fold) NUNCA se cuentan — nunca fueron un outcome
+esperado, y contarlas crearía incompletitud falsa.
+
+### `research_data_coverage` — cobertura de fuente de investigación
+
+Distinto de lo anterior: mide slots `utc_nonoverlap` esperados que ni
+siquiera llegaron a estar certificados-visibles (nunca aparecieron en la
+grilla en absoluto), no sólo los que están visibles pero pendientes.
+`_expected_utc_nonoverlap_slot_count` recorre, de forma puramente
+determinista (sin leer la base de datos ni el reloj), cada slot alineado a
+época para el símbolo/horizonte primario dentro de `[test_start, test_end)`
+de cada fold congelado — con la MISMA regla de alineación que `_sample_grid`
+(`minute_index % horizon_minutes == 0`) y la misma ventana de outcome que
+`app.signal_outcomes.outcome_window` (el inicio de la ventana es un minuto
+DESPUÉS del minuto observado, nunca el minuto observado mismo). Sólo cuenta
+slots cuya ventana cabe enteramente dentro de `test_end` — los boundary-purged
+deterministas nunca se esperan.
+
+```
+expected_sample_slots            # conteo determinista, sin DB
+certified_visible_sample_slots   # == eligible_sampled_periodic_n de arriba
+research_data_coverage_pct       # certified_visible / expected * 100 (100.0
+                                  # si expected_sample_slots == 0)
+```
+
+La decisión fija sólo puede proceder si `research_data_coverage_pct >=
+contract.minimum_research_data_coverage_pct`; si no, **inconclusive**. Esta PR
+no elige un umbral de producción — queda para la calibración futura previa al
+congelamiento.
+
+### Semántica de missingness: categorías nunca conflacionadas
+
+1. slot de investigación esperado ausente/no-certificado (`research_data_coverage`)
+2. fila de investigación visible pero outcome pending (`confirmatory_outcome_integrity`)
+3. fila de investigación visible pero outcome not_evaluable (`confirmatory_outcome_integrity`)
+4. snapshot de ejecución no válido (`coverage`)
+5. profundidad de ejecución insuficiente (`coverage`)
+6. cost-evaluable (`coverage`)
+
+Ninguna categoría se vuelve cero silenciosamente ni desaparece del
+denominador confirmatorio. La recuperación tardía (certificar/finalizar un
+outcome DESPUÉS del `confirmatory_knowledge_cutoff` congelado) nunca puede
+convertir un resultado `inconclusive` ya calculado en PASS — el resultado
+permanece byte-idéntico, exactamente como con un certificado de bundle
+tardío.
+
 ## Coverage characteristics (diagnóstico, Audit-4 A4-07)
 
 `confirmatory_result["coverage_characteristics"]` reporta, por cada uno de
@@ -269,8 +351,9 @@ nombres en su código fuente (verificado por test).
 ## CLI
 
 `scripts/freeze_walk_forward_manifest.py` exige, bajo `--spec-version 3`,
-**todos** los flags de la tupla v2 más un flag por cada uno de los 19 campos
-del contrato confirmatorio, además de
+**todos** los flags de la tupla v2 más un flag por cada uno de los 20 campos
+del contrato confirmatorio (incluyendo
+`--minimum-research-data-coverage-pct`, Audit-4 A4-08), además de
 `--acknowledge-confirmatory-primary-hypothesis` — un flag booleano explícito
 que el operador debe pasar para reconocer la única hipótesis primaria (
 símbolo/horizonte/modo de muestreo/exchange/tamaño) que está a punto de

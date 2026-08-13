@@ -66,7 +66,7 @@ _SPEC_V2_REQUIRED_FLAGS = (
 
 # PR26: spec v3 inherits every _SPEC_V2_REQUIRED_FLAGS entry above exactly
 # (the identical PR25 evidence6/research_visibility1 tuple) PLUS one flag
-# per ConfirmatoryContract field below -- every one of the 19 confirmatory
+# per ConfirmatoryContract field below -- every one of the 20 confirmatory
 # fields must be supplied explicitly, no default, no inference, no mapping
 # from a "current/live" constant.
 _CONFIRMATORY_REQUIRED_FLAGS = (
@@ -88,6 +88,7 @@ _CONFIRMATORY_REQUIRED_FLAGS = (
     ("minimum_effect_bps", "--minimum-effect-bps"),
     ("minimum_primary_blocks", "--minimum-primary-blocks"),
     ("minimum_execution_data_coverage_pct", "--minimum-execution-data-coverage-pct"),
+    ("minimum_research_data_coverage_pct", "--minimum-research-data-coverage-pct"),
     ("confirmatory_decision_policy", "--confirmatory-decision-policy"),
 )
 _SPEC_V3_REQUIRED_FLAGS = _SPEC_V2_REQUIRED_FLAGS + _CONFIRMATORY_REQUIRED_FLAGS
@@ -239,6 +240,9 @@ def _build_options(args: argparse.Namespace) -> WalkForwardManifestOptions:
             minimum_primary_blocks=args.minimum_primary_blocks,
             minimum_execution_data_coverage_pct=(
                 args.minimum_execution_data_coverage_pct
+            ),
+            minimum_research_data_coverage_pct=(
+                args.minimum_research_data_coverage_pct
             ),
             confirmatory_decision_policy=args.confirmatory_decision_policy,
         )
@@ -499,6 +503,17 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=None,
         help="Minimum execution-data coverage percent required to decide. Required under --spec-version 3.",
+    )
+    parser.add_argument(
+        "--minimum-research-data-coverage-pct",
+        type=float,
+        default=None,
+        help=(
+            "Minimum research-source coverage percent (deterministic expected "
+            "utc_nonoverlap slots vs certified-visible slots) required to decide. "
+            "Separate from --minimum-execution-data-coverage-pct. Required under "
+            "--spec-version 3."
+        ),
     )
     parser.add_argument(
         "--confirmatory-decision-policy",

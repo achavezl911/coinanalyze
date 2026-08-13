@@ -17,7 +17,7 @@ from app.signal_confirmatory import (
     confirmatory_contract_to_dict,
 )
 from app.signal_execution import DENSE_PERIODIC, UTC_NONOVERLAP
-from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG
+from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, outcome_window
 from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
 from app.signal_walk_forward import (
     DEFAULT_MANIFEST_NAME,
@@ -39,7 +39,9 @@ from app.signal_walk_forward import (
     _all_periodic_evaluated,
     _classify_generalization,
     _compute_confirmatory_result,
+    _confirmatory_outcome_integrity_for_fold,
     _execution_measure,
+    _expected_utc_nonoverlap_slot_count,
     _fetch_confirmatory_primary_rows,
     _group_stats,
     _next_minute_strictly_after,
@@ -598,6 +600,173 @@ def test_sampling_modes_are_distinct_and_utc_nonoverlap_is_clock_only() -> None:
     assert _sample_grid(grid, UTC_NONOVERLAP) == [grid[0]]
 
 
+# ---------------------------------------------------------------------------
+# A4-08: _expected_utc_nonoverlap_slot_count -- the deterministic expected
+# research-slot count, using the exact same epoch-alignment rule as
+# _sample_grid, but computed purely from the frozen fold window (no DB row).
+# ---------------------------------------------------------------------------
+
+
+def test_expected_utc_nonoverlap_slot_count_matches_a_hand_computed_value() -> None:
+    # [epoch, epoch+30min) at a 3-minute horizon: epoch-minute multiples of 3
+    # in [0, 30) are 0,3,...,27 -- 10 raw candidates. Each candidate's own
+    # outcome window starts ONE MINUTE AFTER it (app.signal_outcomes.
+    # outcome_window: start = minute_floor(observed_at) + 1min) and spans
+    # horizon_minutes from there, so candidate i's window_end is i+1+3. The
+    # trailing candidate (27) then has window_end=31, one minute past
+    # test_end=30 -- boundary-purged by construction, leaving 9.
+    test_start = datetime.fromtimestamp(0, tz=UTC)
+    test_end = datetime.fromtimestamp(30 * 60, tz=UTC)
+    assert (
+        _expected_utc_nonoverlap_slot_count(
+            test_start=test_start, test_end=test_end, horizon_minutes=3
+        )
+        == 9
+    )
+
+
+def test_expected_utc_nonoverlap_slot_count_excludes_deterministic_boundary_purged_slots() -> None:
+    # [epoch, epoch+16min) at a 5-minute horizon: raw candidates are
+    # 0,5,10,15. Candidate 10's window_end is 10+1+5=16 -- exactly equal to
+    # test_end, so it is boundary-ELIGIBLE (the boundary check is <=, never
+    # <). Candidate 15's window_end is 15+1+5=21, one minute past
+    # test_end=16 -- boundary-PURGED, never an expected outcome. The count
+    # (3: candidates 0, 5, 10) proves the purge drops exactly the trailing
+    # candidate, not silently rounds the whole window away.
+    test_start = datetime.fromtimestamp(0, tz=UTC)
+    test_end = datetime.fromtimestamp(16 * 60, tz=UTC)
+    assert (
+        _expected_utc_nonoverlap_slot_count(
+            test_start=test_start, test_end=test_end, horizon_minutes=5
+        )
+        == 3
+    )
+
+
+def test_expected_utc_nonoverlap_slot_count_is_zero_for_a_window_shorter_than_the_horizon() -> None:
+    test_start = datetime.fromtimestamp(0, tz=UTC)
+    test_end = datetime.fromtimestamp(2 * 60, tz=UTC)
+    assert (
+        _expected_utc_nonoverlap_slot_count(
+            test_start=test_start, test_end=test_end, horizon_minutes=15
+        )
+        == 0
+    )
+
+
+def test_expected_utc_nonoverlap_slot_count_matches_sample_grid_epoch_alignment() -> None:
+    # Cross-check against _sample_grid itself: build one synthetic row per
+    # whole minute in [test_start, test_end), run it through the SAME
+    # utc_nonoverlap sampling _fetch_period_grid_v2 would apply, keep only
+    # boundary-eligible rows (window_end <= test_end), and confirm the count
+    # matches the deterministic, DB-free calculation exactly.
+    horizon_minutes = 5
+    test_start = datetime.fromtimestamp(0, tz=UTC)
+    test_end = datetime.fromtimestamp(47 * 60, tz=UTC)
+
+    grid = []
+    minute = 0
+    while minute * 60 < test_end.timestamp():
+        observed_minute = datetime.fromtimestamp(minute * 60, tz=UTC)
+        grid.append(
+            {
+                "observed_minute": observed_minute,
+                "horizon_minutes": horizon_minutes,
+                # Real production window_end (app.signal_outcomes.outcome_window):
+                # start is one minute AFTER the observed minute, not the
+                # observed minute itself.
+                "window_end": outcome_window(observed_minute, horizon_minutes).end,
+            }
+        )
+        minute += 1
+
+    sampled = _sample_grid(grid, UTC_NONOVERLAP)
+    boundary_eligible = [row for row in sampled if row["window_end"] <= test_end]
+
+    assert len(boundary_eligible) == _expected_utc_nonoverlap_slot_count(
+        test_start=test_start, test_end=test_end, horizon_minutes=horizon_minutes
+    )
+
+
+# ---------------------------------------------------------------------------
+# A4-08: _confirmatory_outcome_integrity_for_fold -- pre-filter classification
+# of the sampled OOS grid. No category may silently disappear.
+# ---------------------------------------------------------------------------
+
+
+def _integrity_row(
+    *,
+    status: str | None,
+    window_end: datetime,
+    outcome_version: int = 1,
+    actionable: bool = True,
+    direction: str = "long",
+    market_return_pct: float | None = 0.01,
+) -> dict:
+    return {
+        "status": status,
+        "window_end": window_end,
+        "outcome_version": outcome_version,
+        "actionable": actionable,
+        "direction": direction,
+        "market_return_pct": market_return_pct if status == "evaluated" else None,
+    }
+
+
+def test_confirmatory_outcome_integrity_buckets_every_boundary_eligible_row_exactly_once() -> None:
+    period_end = datetime(2026, 1, 1, tzinfo=UTC)
+    inside = period_end - timedelta(minutes=1)
+    rows = [
+        _integrity_row(status="evaluated", window_end=inside),
+        _integrity_row(status="pending", window_end=inside),
+        _integrity_row(status="not_evaluable", window_end=inside),
+        _integrity_row(status=None, window_end=inside),  # missing outcome row
+        _integrity_row(status="evaluated", window_end=inside, outcome_version=2),  # wrong version
+        _integrity_row(
+            status="evaluated", window_end=inside, actionable=False, direction="neutral"
+        ),
+    ]
+
+    counters = _confirmatory_outcome_integrity_for_fold(
+        rows, period_end=period_end, outcome_version=1
+    )
+
+    assert counters["eligible_sampled_periodic_n"] == 6
+    assert counters["evaluated_periodic_n"] == 2
+    assert counters["pending_periodic_n"] == 1
+    assert counters["not_evaluable_periodic_n"] == 1
+    assert counters["missing_or_wrong_version_n"] == 2
+    assert counters["evaluated_actionable_n"] == 1
+    # actionable (default True) but not evaluated: pending, not_evaluable,
+    # missing, and wrong-version -- 4 rows.
+    assert counters["unresolved_actionable_n"] == 4
+
+
+def test_confirmatory_outcome_integrity_excludes_deterministic_boundary_purged_rows() -> None:
+    period_end = datetime(2026, 1, 1, tzinfo=UTC)
+    beyond = period_end + timedelta(minutes=1)
+    rows = [
+        _integrity_row(status="pending", window_end=beyond),
+        _integrity_row(status=None, window_end=None),
+    ]
+
+    counters = _confirmatory_outcome_integrity_for_fold(
+        rows, period_end=period_end, outcome_version=1
+    )
+
+    # Boundary-purged/window-less rows are never expected outcomes: every
+    # counter stays zero, they must not create false incompleteness.
+    assert counters == {
+        "eligible_sampled_periodic_n": 0,
+        "evaluated_periodic_n": 0,
+        "pending_periodic_n": 0,
+        "not_evaluable_periodic_n": 0,
+        "missing_or_wrong_version_n": 0,
+        "evaluated_actionable_n": 0,
+        "unresolved_actionable_n": 0,
+    }
+
+
 def _execution_row(
     *,
     direction: str = "long",
@@ -748,6 +917,7 @@ def _confirmatory_contract_kwargs() -> dict[str, object]:
         "minimum_effect_bps": 0.0,
         "minimum_primary_blocks": 5,
         "minimum_execution_data_coverage_pct": 50.0,
+        "minimum_research_data_coverage_pct": 50.0,
         "confirmatory_decision_policy": CONFIRMATORY_DECISION_POLICY_V1,
     }
 
@@ -1091,7 +1261,19 @@ async def test_confirmatory_primary_rows_query_only_the_test_oos_window() -> Non
         contract=contract,
     )
 
-    assert fetched == {"primary_rows": [], "baseline_rows": []}
+    assert fetched == {
+        "primary_rows": [],
+        "baseline_rows": [],
+        "outcome_integrity": {
+            "eligible_sampled_periodic_n": 0,
+            "evaluated_periodic_n": 0,
+            "pending_periodic_n": 0,
+            "not_evaluable_periodic_n": 0,
+            "missing_or_wrong_version_n": 0,
+            "evaluated_actionable_n": 0,
+            "unresolved_actionable_n": 0,
+        },
+    }
     assert len(conn.calls) == 1
     query, args = conn.calls[0]
     assert "signal_research_bundle_visibility" in query

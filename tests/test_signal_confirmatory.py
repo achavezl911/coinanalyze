@@ -70,6 +70,7 @@ def _contract_kwargs() -> dict[str, object]:
         "minimum_effect_bps": 0.0,
         "minimum_primary_blocks": 5,
         "minimum_execution_data_coverage_pct": 50.0,
+        "minimum_research_data_coverage_pct": 50.0,
         "confirmatory_decision_policy": CONFIRMATORY_DECISION_POLICY_V1,
     }
 
@@ -447,6 +448,7 @@ def test_finiteness_checks_reject_nan_and_inf() -> None:
         ("bootstrap_repetitions", 1),
         ("minimum_primary_blocks", 1),
         ("minimum_execution_data_coverage_pct", 0.0),
+        ("minimum_research_data_coverage_pct", 0.0),
     ],
 )
 def test_validate_confirmatory_contract_rejects_degenerate_values(
@@ -476,6 +478,50 @@ def test_validate_confirmatory_contract_accepts_the_minimum_non_degenerate_value
     kwargs["bootstrap_repetitions"] = 2
     kwargs["minimum_primary_blocks"] = 2
     kwargs["minimum_execution_data_coverage_pct"] = 100.0
+    kwargs["minimum_research_data_coverage_pct"] = 100.0
+    contract = ConfirmatoryContract(**kwargs)
+    validate_confirmatory_contract(
+        contract,
+        symbols=("BTCUSDT_PERP.A",),
+        horizons=(15,),
+        sampling_modes=("utc_nonoverlap",),
+        exchanges=("binance",),
+        sizes_usd=(1_000.0,),
+        fee_bps_per_side=(("binance", 2.0),),
+    )
+
+
+# ---------------------------------------------------------------------------
+# A4-08: minimum_research_data_coverage_pct -- 0 < x <= 100, caller-required,
+# separate from minimum_execution_data_coverage_pct.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("bad_value", [0.0, -0.0000001, -100.0, 100.0000001, 101.0])
+def test_validate_confirmatory_contract_rejects_research_coverage_out_of_range(
+    bad_value: float,
+) -> None:
+    kwargs = _contract_kwargs()
+    kwargs["minimum_research_data_coverage_pct"] = bad_value
+    contract = ConfirmatoryContract(**kwargs)
+    with pytest.raises(ValueError):
+        validate_confirmatory_contract(
+            contract,
+            symbols=("BTCUSDT_PERP.A",),
+            horizons=(15,),
+            sampling_modes=("utc_nonoverlap",),
+            exchanges=("binance",),
+            sizes_usd=(1_000.0,),
+            fee_bps_per_side=(("binance", 2.0),),
+        )
+
+
+@pytest.mark.parametrize("good_value", [0.0000001, 1.0, 50.0, 100.0])
+def test_validate_confirmatory_contract_accepts_research_coverage_in_range(
+    good_value: float,
+) -> None:
+    kwargs = _contract_kwargs()
+    kwargs["minimum_research_data_coverage_pct"] = good_value
     contract = ConfirmatoryContract(**kwargs)
     validate_confirmatory_contract(
         contract,

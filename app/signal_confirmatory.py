@@ -130,6 +130,7 @@ class ConfirmatoryContract:
     minimum_effect_bps: float
     minimum_primary_blocks: int
     minimum_execution_data_coverage_pct: float
+    minimum_research_data_coverage_pct: float
     confirmatory_decision_policy: str
 
 
@@ -169,6 +170,9 @@ def confirmatory_contract_from_dict(data: dict[str, Any]) -> ConfirmatoryContrac
         minimum_primary_blocks=int(data["minimum_primary_blocks"]),
         minimum_execution_data_coverage_pct=float(
             data["minimum_execution_data_coverage_pct"]
+        ),
+        minimum_research_data_coverage_pct=float(
+            data["minimum_research_data_coverage_pct"]
         ),
         confirmatory_decision_policy=str(data["confirmatory_decision_policy"]),
     )
@@ -310,6 +314,11 @@ def validate_confirmatory_contract(
     if not 0.0 < contract.minimum_execution_data_coverage_pct <= 100.0:
         raise ValueError(
             "confirmatory minimum_execution_data_coverage_pct must be > 0 and <= 100"
+        )
+
+    if not 0.0 < contract.minimum_research_data_coverage_pct <= 100.0:
+        raise ValueError(
+            "confirmatory minimum_research_data_coverage_pct must be > 0 and <= 100"
         )
 
     if contract.confirmatory_decision_policy != CONFIRMATORY_DECISION_POLICY_V1:

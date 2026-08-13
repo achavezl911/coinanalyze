@@ -20,14 +20,15 @@ from pathlib import Path
 import asyncpg
 import pytest
 
-from app.signal_confirmatory import ConfirmatoryContract
-from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG
+from app.signal_confirmatory import ConfirmatoryContract, confirmatory_block_key
+from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, outcome_window
 from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
 from app.signal_visibility import certify_final_outcomes, certify_research_bundles
 from app.signal_walk_forward import (
     WALK_FORWARD_REPORT_VERSION_V3,
     WALK_FORWARD_SPEC_VERSION_V3,
     WalkForwardManifestOptions,
+    _expected_utc_nonoverlap_slot_count,
     _static_options_spec,
     compute_folds,
     evaluate_walk_forward,
@@ -329,6 +330,30 @@ async def _insert_outcome(
         )
         return
 
+    if status == "not_evaluable":
+        await conn.execute(
+            """
+            INSERT INTO signal_outcome(
+              observation_id,horizon_minutes,window_start,window_end,due_at,
+              next_attempt_at,path_start_delay_seconds,bars_expected,bars_found,
+              outcome_version,status,attempts,last_attempt_at,finalized_at,
+              final_reason,created_at
+            ) VALUES(
+              $1,$2,$3,$4,$5,
+              $5,30,$2,0,
+              1,'not_evaluable',1,$5,$5,
+              'fixture_not_evaluable',$6
+            )
+            """,
+            observation_id,
+            horizon_minutes,
+            window_start,
+            window_end,
+            due_at,
+            row_created_at,
+        )
+        return
+
     await conn.execute(
         """
         INSERT INTO signal_outcome(
@@ -485,6 +510,110 @@ async def _insert_confirmatory_bundle(
     return observation_id
 
 
+async def _insert_confirmatory_bundle_with_primary_status(
+    conn: asyncpg.Connection,
+    *,
+    observed_at: datetime,
+    primary_status: str,
+    primary_horizon: int = 15,
+    direction: str = "long",
+) -> tuple[int, int]:
+    """A4-08 fixture: like ``_insert_confirmatory_bundle``, but the PRIMARY
+    horizon's own outcome row is left ``pending``/``not_evaluable`` instead
+    of evaluated. The bundle is still fully complete (all 8 horizon rows
+    present, both execution venues present), so it IS certifiable and
+    grid-visible -- only its outcome is unresolved. Returns
+    ``(observation_id, horizon_minutes)`` for later use with
+    ``_finalize_pending_outcome``.
+    """
+
+    observation_id = await _insert_observation(conn, observed_at=observed_at, direction=direction)
+    await _insert_frame(conn, observation_id, observed_at)
+
+    window_start = observed_at + timedelta(minutes=1)
+    for horizon in OUTCOME_HORIZONS_MINUTES:
+        await _insert_outcome(
+            conn,
+            observation_id=observation_id,
+            window_start=window_start,
+            horizon_minutes=horizon,
+            directional_return_pct=0.0,
+            status=primary_status if horizon == primary_horizon else "pending",
+        )
+
+    await _insert_execution_snapshot(
+        conn, observation_id=observation_id, observed_at=observed_at, exchange="binance"
+    )
+    await _insert_execution_snapshot(
+        conn, observation_id=observation_id, observed_at=observed_at, exchange="bybit"
+    )
+    return observation_id, primary_horizon
+
+
+async def _finalize_pending_outcome(
+    conn: asyncpg.Connection,
+    *,
+    observation_id: int,
+    horizon_minutes: int,
+    directional_return_pct: float,
+) -> None:
+    """A4-08 late-recovery fixture: transitions a still-``pending``
+    ``signal_outcome`` row to ``evaluated`` well after it was originally
+    inserted. ``signal_outcome_guard_update_delete`` permits this (it only
+    forbids mutating a row whose OLD.status is already final), matching how
+    a real late-arriving outcome would be finalized in production."""
+
+    observation = await conn.fetchrow(
+        "SELECT direction,reference_price FROM signal_observation WHERE observation_id=$1",
+        observation_id,
+    )
+    assert observation is not None
+    direction = observation["direction"]
+    reference_price = float(observation["reference_price"])
+    market_return_pct = (
+        directional_return_pct if direction in ("long", "neutral") else -directional_return_pct
+    )
+    end_price = reference_price * (1.0 + market_return_pct / 100.0)
+    finalized_at = await conn.fetchval("SELECT clock_timestamp()")
+
+    await conn.execute(
+        """
+        UPDATE signal_outcome
+        SET status='evaluated', attempts=attempts+1, last_attempt_at=$3,
+            finalized_at=$3, bars_found=bars_expected,
+            entry_reference_price=$4, end_price=$5,
+            max_high=$6, min_low=$7,
+            market_return_pct=$8, up_excursion_pct=2, down_excursion_pct=-1,
+            directional_return_pct=$8, mfe_pct=1.5, mae_pct=0.4
+        WHERE observation_id=$1 AND horizon_minutes=$2
+        """,
+        observation_id,
+        horizon_minutes,
+        finalized_at,
+        reference_price,
+        end_price,
+        max(reference_price, end_price) * 1.02,
+        min(reference_price, end_price) * 0.98,
+        market_return_pct,
+    )
+
+
+def _enumerate_expected_slots(fold: dict, *, horizon_minutes: int) -> list[datetime]:
+    """Test-only enumeration of the exact deterministic ``utc_nonoverlap``
+    slot timestamps ``_expected_utc_nonoverlap_slot_count`` counts for one
+    fold -- used to place bundles at KNOWN slot positions and to omit others
+    by construction, and to independently cross-check the deterministic
+    count end-to-end through the real database."""
+
+    candidate = _align_forward(fold["test_start"], minutes=horizon_minutes)
+    slots: list[datetime] = []
+    while candidate < fold["test_end"]:
+        if outcome_window(candidate, horizon_minutes).end <= fold["test_end"]:
+            slots.append(candidate)
+        candidate += timedelta(minutes=horizon_minutes)
+    return slots
+
+
 def _confirmatory_contract(**overrides: object) -> ConfirmatoryContract:
     fields: dict[str, object] = {
         "primary_endpoint_version": 1,
@@ -505,6 +634,15 @@ def _confirmatory_contract(**overrides: object) -> ConfirmatoryContract:
         "minimum_effect_bps": 100.0,
         "minimum_primary_blocks": 5,
         "minimum_execution_data_coverage_pct": 50.0,
+        # A4-08: intentionally near-zero. research_data_coverage_pct is a
+        # DENSE ratio (every deterministic utc_nonoverlap slot across the
+        # whole fold window, not just the handful of bundles a given fixture
+        # inserts), so any fixture that isn't specifically exercising this
+        # gate would otherwise trip it by construction. There is no
+        # production default (TASK.md: chosen at pre-freeze calibration
+        # time) -- this is a test-only no-op floor. Tests that DO exercise
+        # this gate override it explicitly.
+        "minimum_research_data_coverage_pct": 0.0001,
         "confirmatory_decision_policy": "two_sided_block_bootstrap_ci_vs_minimum_effect_v1",
     }
     fields.update(overrides)
@@ -1247,38 +1385,70 @@ async def test_confirmatory_late_bundle_certificate_after_frozen_cutoff_never_en
 async def test_confirmatory_late_final_outcome_certificate_after_frozen_cutoff_never_enters_sample(
     conn: asyncpg.Connection,
 ) -> None:
-    """Same shape as the bundle-level adversarial test, but isolating the
-    final-OUTCOME visibility certificate specifically: the bundle itself is
-    certified early (so the observation is visible in the grid at all), but
-    the final outcome's own visibility certificate is only produced late --
-    the row's outcome must stay projected to "pending" (never enter the
-    primary sample) on both the first and the second evaluation."""
+    """True two-stage isolation of the final-OUTCOME visibility certificate,
+    as distinct from bundle visibility.
 
-    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
-    cutoff_at = discovery_start + timedelta(days=7)
+    The old (2020-backdated) version of this test could not actually prove
+    what its docstring claimed: ``certify_research_bundles``/
+    ``certify_final_outcomes`` always stamp ``verified_visible_at`` with the
+    REAL wall clock (see ``_matured_v3_schedule``'s own docstring), so a
+    historically-backdated ``confirmatory_knowledge_cutoff`` (2020s) made
+    ANY real-time certification -- bundle OR outcome -- land after cutoff.
+    The observed ``n_evaluated_actionable == 0`` was therefore equally
+    explainable by a late BUNDLE certificate, never isolating late-outcome-
+    only visibility.
+
+    This version uses the near-real-time ``_matured_v3_schedule`` pattern
+    (already used elsewhere in this file) instead:
+
+    1. certify the BUNDLE genuinely BEFORE the frozen cutoff matures --
+       ``verified_visible_at <= confirmatory_knowledge_cutoff`` truly holds;
+    2. wait past the cutoff;
+    3. evaluate -- the observation is grid-visible (bundle certified) but its
+       outcome is still projected to "pending": confirmatory_outcome_integrity
+       must show it as pending, not simply absent, and the result must be
+       inconclusive with no bootstrap CI;
+    4. certify the final outcome only NOW, strictly AFTER the frozen cutoff
+       has already passed -- its ``verified_visible_at`` is necessarily
+       ``> confirmatory_knowledge_cutoff``;
+    5. evaluate again -- the result must be byte-identical: the final outcome
+       never becomes confirmatory-eligible no matter how much later it is
+       certified.
+    """
 
     contract = _confirmatory_contract(minimum_primary_blocks=2, minimum_effect_bps=0.0)
     options = _v3_options(name="pr26-late-outcome-cert-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = folds[0]["test_start"]
+    observed_at = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
 
-    await _insert_confirmatory_bundle(
-        conn, observed_at=test_start + timedelta(hours=1), directional_return_pct=5.0
-    )
-    # Certify the BUNDLE right away -- the observation is now visible in the
-    # grid -- but do NOT certify the final outcome yet.
+    await _insert_confirmatory_bundle(conn, observed_at=observed_at, directional_return_pct=5.0)
+    # Certify the BUNDLE genuinely BEFORE the frozen cutoff matures -- the
+    # observation is now visible in the grid -- but do NOT certify the final
+    # outcome yet.
     await certify_research_bundles(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
 
     async with conn.transaction(isolation="repeatable_read", readonly=True):
         first = await evaluate_walk_forward(conn, options.name)
 
     assert first["confirmatory_state"] == "inconclusive"
     assert first["confirmatory_result"]["n_evaluated_actionable"] == 0
+    assert first["confirmatory_result"]["ci_lower_bps"] is None
+    # A4-08: the observation IS visible (bundle certified before cutoff), but
+    # its outcome is still projected to pending -- not simply absent from
+    # the denominator.
+    integrity = first["confirmatory_result"]["confirmatory_outcome_integrity"]
+    assert integrity["outcome_complete"] is False
+    assert integrity["eligible_sampled_periodic_n"] >= 1
+    assert integrity["pending_periodic_n"] >= 1
+    assert integrity["evaluated_periodic_n"] == 0
 
-    # Certify the final outcome now -- its verified_visible_at is real
-    # "now", after the frozen (2020s) confirmatory_knowledge_cutoff.
+    # Certify the final outcome now -- strictly AFTER the frozen cutoff has
+    # already passed, so its verified_visible_at is necessarily after
+    # confirmatory_knowledge_cutoff.
     await certify_final_outcomes(conn)
 
     async with conn.transaction(isolation="repeatable_read", readonly=True):
@@ -1286,6 +1456,268 @@ async def test_confirmatory_late_final_outcome_certificate_after_frozen_cutoff_n
 
     assert second["confirmatory_result"] == first["confirmatory_result"]
     assert second["confirmatory_result"]["n_evaluated_actionable"] == 0
+
+
+# ---------------------------------------------------------------------------
+# A4-08: outcome completeness -- a manifest whose evaluated-only subset would
+# PASS must go inconclusive if any other eligible boundary-safe row at the
+# same frozen experiment is still pending/not_evaluable, and late recovery
+# after the frozen cutoff must never change that.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_confirmatory_selective_pending_outcomes_force_inconclusive_and_survive_late_recovery(
+    conn: asyncpg.Connection,
+) -> None:
+    """Enough OOS blocks exist to PASS from the evaluated subset alone (the
+    exact diluted-baseline PASS shape as
+    ``test_confirmatory_pass_with_genuine_excess_over_diluted_baseline``),
+    but several additional eligible primary rows at the SAME frozen
+    experiment -- one ``pending``, one ``not_evaluable`` -- exist at
+    ``confirmatory_knowledge_cutoff``. Before the fix, ``_actionable_evaluated``/
+    ``_all_periodic_evaluated`` would have silently dropped these and let the
+    remaining positive subset PASS. The confirmatory layer must instead
+    inspect the full sampled grid and go inconclusive with no bootstrap CI.
+    Finalizing/certifying the pending outcome AFTER the frozen cutoff (late
+    recovery) must never change the result."""
+
+    contract = _confirmatory_contract(minimum_primary_blocks=2, minimum_effect_bps=0.0)
+    options = _v3_options(name="pr26-selective-pending-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
+    folds = await _insert_backdated_manifest(
+        conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
+    )
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
+
+    # 2 fully-evaluated, diluted-baseline calendar-day blocks -- would PASS
+    # on the evaluated-only subset alone.
+    await _insert_diluted_spread_bundles(
+        conn,
+        test_start=test_start,
+        actionable_direction="long",
+        actionable_directional_return_pct=5.0,
+        dilution_market_return_pct=-5.0,
+        day_count=2,
+    )
+
+    # Additional eligible primary rows at the SAME frozen experiment, left
+    # unresolved at confirmatory_knowledge_cutoff -- execution coverage of
+    # the evaluated subset above is otherwise sufficient on its own.
+    pending_observation_id, pending_horizon = await _insert_confirmatory_bundle_with_primary_status(
+        conn,
+        observed_at=test_start + timedelta(days=0, hours=5),
+        primary_status="pending",
+        direction="long",
+    )
+    await _insert_confirmatory_bundle_with_primary_status(
+        conn,
+        observed_at=test_start + timedelta(days=1, hours=5),
+        primary_status="not_evaluable",
+        direction="long",
+    )
+
+    await certify_research_bundles(conn)
+    # certify_final_outcomes certifies every row whose status is already
+    # 'evaluated' or 'not_evaluable' -- the 4 diluted-spread rows (so they
+    # actually project as evaluated, not pending) AND the not_evaluable row
+    # (a terminal status, certified once). The still-pending row is
+    # untouched -- not_evaluable/evaluated only -- and stays projected to
+    # pending, exactly the scenario under test.
+    await certify_final_outcomes(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        first = await evaluate_walk_forward(conn, options.name)
+
+    assert first["confirmatory_state"] == "inconclusive"
+    assert first["confirmatory_result"]["ci_lower_bps"] is None
+    assert first["confirmatory_result"]["ci_upper_bps"] is None
+    integrity = first["confirmatory_result"]["confirmatory_outcome_integrity"]
+    assert integrity["outcome_complete"] is False
+    assert integrity["pending_periodic_n"] >= 1
+    assert integrity["not_evaluable_periodic_n"] >= 1
+
+    # Finalize/certify the pending outcome AFTER the frozen cutoff has
+    # already passed (late recovery). not_evaluable is a terminal status in
+    # production -- it is never "recovered" -- so only the pending row is
+    # finalized here.
+    await _finalize_pending_outcome(
+        conn,
+        observation_id=pending_observation_id,
+        horizon_minutes=pending_horizon,
+        directional_return_pct=50.0,
+    )
+    await certify_final_outcomes(conn)
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        second = await evaluate_walk_forward(conn, options.name)
+
+    # Byte-identical: late recovery after the frozen cutoff can never flip
+    # INCONCLUSIVE to PASS.
+    assert second["confirmatory_result"] == first["confirmatory_result"]
+    assert second["confirmatory_state"] == "inconclusive"
+
+
+# ---------------------------------------------------------------------------
+# A4-08: research-source coverage -- deterministic expected utc_nonoverlap
+# slots that were never even certified-visible (a research-source gap, not
+# an outcome-status gap) must gate inference too, and a fully-covered
+# fixture must reach the normal bootstrap path.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_confirmatory_missing_research_slots_gate_inference(
+    conn: asyncpg.Connection,
+) -> None:
+    """Strong positive evaluated rows exist that would otherwise PASS, but
+    several deterministic expected ``utc_nonoverlap`` slots are deliberately
+    never populated at all -- no row whatsoever, not even pending -- a
+    research-source coverage gap, distinct from ``confirmatory_outcome_integrity``
+    (which only sees rows that already made it into the certificate-gated
+    grid). Freezing ``minimum_research_data_coverage_pct`` above the achieved
+    ratio must gate inference to inconclusive, using the FULL deterministic
+    ``expected_sample_slots`` count -- proving omitted slots are not silently
+    removed from the denominator. See
+    ``test_confirmatory_full_research_coverage_allows_bootstrap`` for the
+    fully-covered sibling proof (a separate manifest/schema, so its
+    real-time-anchored utc_nonoverlap slots can never collide with this
+    one's)."""
+
+    horizon = 240
+    contract = _confirmatory_contract(
+        minimum_primary_blocks=2,
+        minimum_effect_bps=0.0,
+        primary_horizon_minutes=horizon,
+        minimum_research_data_coverage_pct=60.0,
+    )
+    options = _v3_options(
+        name="pr26-missing-slots-test",
+        contract=contract,
+        horizons=(horizon,),
+        test_days=2,
+        fold_count=1,
+    )
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
+    folds = await _insert_backdated_manifest(
+        conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
+    )
+    fold = folds[0]
+
+    expected_slots = _enumerate_expected_slots(fold, horizon_minutes=horizon)
+    # Independent cross-check: the pure-Python deterministic count must agree
+    # with this test's own enumeration.
+    assert len(expected_slots) == _expected_utc_nonoverlap_slot_count(
+        test_start=fold["test_start"], test_end=fold["test_end"], horizon_minutes=horizon
+    )
+    assert len(expected_slots) >= 4
+
+    # Populate only 2 pairs (actionable + same-block dilution) out of the
+    # full deterministic slot grid -- widely spaced so they land in two
+    # DISTINCT calendar-day blocks, deliberately omitting every other
+    # expected slot (no row at all, not even pending).
+    block_a = expected_slots[0], expected_slots[1]
+    block_b = expected_slots[-2], expected_slots[-1]
+    assert confirmatory_block_key(
+        block_a[0], block_unit=contract.block_unit, block_length=contract.block_length
+    ) != confirmatory_block_key(
+        block_b[0], block_unit=contract.block_unit, block_length=contract.block_length
+    )
+
+    for actionable_slot, dilution_slot in (block_a, block_b):
+        await _insert_confirmatory_bundle(
+            conn,
+            observed_at=actionable_slot,
+            directional_return_pct=5.0,
+            direction="long",
+            primary_horizon=horizon,
+        )
+        await _insert_confirmatory_bundle(
+            conn,
+            observed_at=dilution_slot,
+            directional_return_pct=-5.0,
+            direction="neutral",
+            primary_horizon=horizon,
+        )
+    populated_slots = 4
+
+    await certify_research_bundles(conn)
+    await certify_final_outcomes(conn)
+    await _wait_past(conn, fold["test_maturity_at"])
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        report = await evaluate_walk_forward(conn, options.name)
+
+    coverage = report["confirmatory_result"]["research_data_coverage"]
+    assert coverage["expected_sample_slots"] == len(expected_slots)
+    assert coverage["certified_visible_sample_slots"] == populated_slots
+    achieved_pct = populated_slots / len(expected_slots) * 100.0
+    assert coverage["research_data_coverage_pct"] == pytest.approx(achieved_pct)
+    assert achieved_pct < contract.minimum_research_data_coverage_pct
+    assert report["confirmatory_state"] == "inconclusive"
+    assert report["confirmatory_result"]["ci_lower_bps"] is None
+
+
+@pytest.mark.asyncio
+async def test_confirmatory_full_research_coverage_allows_bootstrap(
+    conn: asyncpg.Connection,
+) -> None:
+    """Sibling proof to
+    ``test_confirmatory_missing_research_slots_gate_inference``: populate
+    EVERY deterministic expected ``utc_nonoverlap`` slot (full research
+    coverage) and confirm the normal bootstrap path is reached -- full
+    coverage must not be incorrectly gated."""
+
+    horizon = 240
+    contract = _confirmatory_contract(
+        minimum_primary_blocks=2,
+        minimum_effect_bps=0.0,
+        primary_horizon_minutes=horizon,
+        minimum_research_data_coverage_pct=100.0,
+    )
+    options = _v3_options(
+        name="pr26-full-research-coverage-test",
+        contract=contract,
+        horizons=(horizon,),
+        test_days=2,
+        fold_count=1,
+    )
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
+    folds = await _insert_backdated_manifest(
+        conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
+    )
+    fold = folds[0]
+    slots = _enumerate_expected_slots(fold, horizon_minutes=horizon)
+    assert len(slots) >= 4
+
+    # Alternate direction per slot so every calendar-day block gets both an
+    # actionable row and a dilution row, keeping the baseline a real,
+    # independent control (same pattern as _insert_diluted_spread_bundles).
+    for index, slot in enumerate(slots):
+        await _insert_confirmatory_bundle(
+            conn,
+            observed_at=slot,
+            directional_return_pct=5.0 if index % 2 == 0 else -5.0,
+            direction="long" if index % 2 == 0 else "neutral",
+            primary_horizon=horizon,
+        )
+
+    await certify_research_bundles(conn)
+    await certify_final_outcomes(conn)
+    await _wait_past(conn, fold["test_maturity_at"])
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        report = await evaluate_walk_forward(conn, options.name)
+
+    coverage = report["confirmatory_result"]["research_data_coverage"]
+    assert coverage["expected_sample_slots"] == len(slots)
+    assert coverage["certified_visible_sample_slots"] == len(slots)
+    assert coverage["research_data_coverage_pct"] == pytest.approx(100.0)
+    assert report["confirmatory_result"]["confirmatory_outcome_integrity"]["outcome_complete"] is True
+    # Full coverage must reach the normal bootstrap path -- not gated.
+    assert report["confirmatory_result"]["ci_lower_bps"] is not None
+    assert report["confirmatory_state"] in ("pass", "fail")
 
 
 # ---------------------------------------------------------------------------

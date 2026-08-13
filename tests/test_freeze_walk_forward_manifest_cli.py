@@ -44,6 +44,7 @@ _CONFIRMATORY_FLAGS = {
     "--minimum-effect-bps": "0.0",
     "--minimum-primary-blocks": "5",
     "--minimum-execution-data-coverage-pct": "50.0",
+    "--minimum-research-data-coverage-pct": "50.0",
     "--confirmatory-decision-policy": "two_sided_block_bootstrap_ci_vs_minimum_effect_v1",
 }
 _SPEC_V3_FLAGS = {**_SPEC_V2_FLAGS, **_CONFIRMATORY_FLAGS}

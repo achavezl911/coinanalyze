@@ -34,7 +34,12 @@ from app.signal_execution import (
     SAMPLING_MODES,
     UTC_NONOVERLAP,
 )
-from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, OUTCOME_VERSION
+from app.signal_outcomes import (
+    OUTCOME_HORIZONS_MINUTES,
+    OUTCOME_SETTLEMENT_LAG,
+    OUTCOME_VERSION,
+    outcome_window,
+)
 from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
 
 # ---------------------------------------------------------------------------
@@ -1799,6 +1804,144 @@ def _all_periodic_evaluated(
     return [row for row in grid if row["usable"] and row["status"] == "evaluated"]
 
 
+_EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY: dict[str, int] = {
+    "eligible_sampled_periodic_n": 0,
+    "evaluated_periodic_n": 0,
+    "pending_periodic_n": 0,
+    "not_evaluable_periodic_n": 0,
+    "missing_or_wrong_version_n": 0,
+    "evaluated_actionable_n": 0,
+    "unresolved_actionable_n": 0,
+}
+
+
+def _confirmatory_outcome_integrity_for_fold(
+    sampled: list[dict[str, Any]],
+    *,
+    period_end: datetime,
+    outcome_version: int,
+) -> dict[str, int]:
+    """PR26 A4-08 outcome-completeness accounting: classifies every
+    ``utc_nonoverlap``-sampled row for one fold BEFORE any evaluated-only
+    filtering (``_actionable_evaluated``/``_all_periodic_evaluated``) ever
+    touches it -- so pending/not_evaluable/missing/wrong-version rows are
+    counted instead of silently vanishing from the confirmatory denominator.
+
+    Deterministic boundary-purged rows (``window_end`` beyond the frozen
+    ``test_end``) are excluded entirely -- their outcome window was never
+    going to fit inside the frozen OOS window, so they are not an expected
+    outcome and must not create false incompleteness.
+
+    Every remaining (boundary-eligible) row is bucketed into exactly one of
+    ``evaluated_periodic_n`` / ``pending_periodic_n`` / ``not_evaluable_periodic_n``
+    / ``missing_or_wrong_version_n``. ``evaluated_actionable_n`` and
+    ``unresolved_actionable_n`` are informational sub-counts restricted to
+    rows that would have been actionable primary rows -- always subsets of
+    the buckets above, never a separate gate.
+    """
+
+    counters = dict(_EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY)
+    for row in sampled:
+        window_end = row.get("window_end")
+        if window_end is None or window_end > period_end:
+            # Deterministic boundary-purged: never an expected outcome.
+            continue
+        counters["eligible_sampled_periodic_n"] += 1
+
+        status = row.get("status")
+        market_return_pct = row.get("market_return_pct")
+        correct_version = row.get("outcome_version") == outcome_version
+        is_actionable = bool(row.get("actionable")) and row.get("direction") in (
+            "long",
+            "short",
+        )
+
+        if (
+            status is None
+            or not correct_version
+            or (status == "evaluated" and market_return_pct is None)
+        ):
+            # Missing outcome row, wrong outcome_version, or (structurally
+            # unreachable per the signal_outcome CHECK constraint, guarded
+            # defensively anyway) an "evaluated" row without its required
+            # market_return_pct.
+            counters["missing_or_wrong_version_n"] += 1
+            if is_actionable:
+                counters["unresolved_actionable_n"] += 1
+            continue
+
+        if status == "evaluated":
+            counters["evaluated_periodic_n"] += 1
+            if is_actionable:
+                counters["evaluated_actionable_n"] += 1
+            continue
+
+        if status == "pending":
+            counters["pending_periodic_n"] += 1
+        elif status == "not_evaluable":
+            counters["not_evaluable_periodic_n"] += 1
+        if is_actionable:
+            counters["unresolved_actionable_n"] += 1
+
+    return counters
+
+
+def _merge_confirmatory_outcome_integrity(
+    accumulated: dict[str, int], fold_counters: dict[str, int]
+) -> dict[str, int]:
+    return {
+        key: accumulated[key] + fold_counters[key]
+        for key in _EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY
+    }
+
+
+def _expected_utc_nonoverlap_slot_count(
+    *,
+    test_start: datetime,
+    test_end: datetime,
+    horizon_minutes: int,
+) -> int:
+    """PR26 A4-08 deterministic expected-slot count: the number of
+    ``utc_nonoverlap`` epoch-aligned observation slots in ``[test_start,
+    test_end)`` whose ``horizon_minutes`` outcome window fits wholly inside
+    ``test_end`` -- using the exact same epoch-alignment rule as
+    ``_sample_grid`` (``minute_index % horizon_minutes == 0``), and the exact
+    same outcome-window formula as ``app.signal_outcomes.outcome_window``
+    (window start is one minute AFTER the observed minute, never the
+    observed minute itself) -- but computed purely from the frozen fold
+    window, never from any DB row. Deterministic boundary-purged slots
+    (``window_end`` beyond ``test_end``) are excluded, matching
+    ``_sample_grid``/``_fetch_period_grid_v2``'s own boundary rule exactly.
+    """
+
+    if horizon_minutes <= 0:
+        raise ValueError("horizon_minutes must be positive")
+
+    start_seconds = _aware_utc(test_start).timestamp()
+    end_seconds = _aware_utc(test_end).timestamp()
+    if end_seconds <= start_seconds:
+        return 0
+
+    # Observed_minute candidates are minute-of-epoch multiples of
+    # horizon_minutes with observed_at in [test_start, test_end) -- mirror
+    # _fetch_period_grid_v2's WHERE clause (>= period_start, < period_end).
+    first_minute_index = math.ceil(start_seconds / 60.0)
+    remainder = first_minute_index % horizon_minutes
+    if remainder:
+        first_minute_index += horizon_minutes - remainder
+
+    test_end_aware = _aware_utc(test_end)
+    count = 0
+    minute_index = first_minute_index
+    while minute_index * 60.0 < end_seconds:
+        observed_minute = datetime.fromtimestamp(minute_index * 60.0, tz=UTC)
+        window_end = outcome_window(observed_minute, horizon_minutes).end
+        if window_end <= test_end_aware:
+            count += 1
+        minute_index += horizon_minutes
+    return count
+
+
 def _build_gross_views(
     *,
     discovery_grid: list[dict[str, Any]],
@@ -2412,7 +2555,7 @@ async def _fetch_confirmatory_primary_rows(
     knowledge_cutoff: datetime,
     options: WalkForwardManifestOptions,
     contract: ConfirmatoryContract,
-) -> dict[str, list[dict[str, Any]]]:
+) -> dict[str, Any]:
     """OOS-only rows for one matured fold, scoped to exactly the confirmatory
     contract's single symbol/horizon (never discovery, never any other
     symbol/horizon), matching v2's certificate-gated knowledge-time
@@ -2436,7 +2579,11 @@ async def _fetch_confirmatory_primary_rows(
     same window, actionable or not) -- both built from the exact same
     ``test_grid``/``_sample_grid`` call, so both share the identical primary
     symbol/horizon/utc_nonoverlap-sampling/OOS-window/knowledge-cutoff
-    contract.
+    contract. Also returns ``outcome_integrity`` (A4-08): a classification of
+    every boundary-eligible ``sampled`` row computed BEFORE
+    ``_actionable_evaluated``/``_all_periodic_evaluated`` ever filter it, so
+    pending/not_evaluable/missing/wrong-version rows are counted rather than
+    silently dropped from the confirmatory denominator.
     """
 
     narrowed = replace(
@@ -2452,6 +2599,11 @@ async def _fetch_confirmatory_primary_rows(
         options=narrowed,
     )
     sampled = _sample_grid(test_grid, contract.primary_sampling_mode)
+    outcome_integrity = _confirmatory_outcome_integrity_for_fold(
+        sampled,
+        period_end=fold["test_end"],
+        outcome_version=options.outcome_version,
+    )
     actionable_rows = _actionable_evaluated(sampled)
     baseline_cohort_rows = _all_periodic_evaluated(sampled)
 
@@ -2500,7 +2652,11 @@ async def _fetch_confirmatory_primary_rows(
         if row.get("market_return_pct") is not None
     ]
 
-    return {"primary_rows": primary_rows, "baseline_rows": baseline_rows}
+    return {
+        "primary_rows": primary_rows,
+        "baseline_rows": baseline_rows,
+        "outcome_integrity": outcome_integrity,
+    }
 
 
 _EMPTY_COHORT_CHARACTERISTICS: dict[str, Any] = {
@@ -2587,6 +2743,15 @@ def _confirmatory_not_ready_result(contract: ConfirmatoryContract) -> dict[str, 
             "insufficient_depth": dict(_EMPTY_COHORT_CHARACTERISTICS),
             "snapshot_missing": dict(_EMPTY_COHORT_CHARACTERISTICS),
         },
+        "confirmatory_outcome_integrity": {
+            **_EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY,
+            "outcome_complete": False,
+        },
+        "research_data_coverage": {
+            "expected_sample_slots": 0,
+            "certified_visible_sample_slots": 0,
+            "research_data_coverage_pct": None,
+        },
         "primary_block_count": 0,
         "baseline_mean_bps": None,
         "primary_excess_mean_bps": None,
@@ -2598,6 +2763,9 @@ def _confirmatory_not_ready_result(contract: ConfirmatoryContract) -> dict[str, 
         "minimum_primary_blocks": contract.minimum_primary_blocks,
         "minimum_execution_data_coverage_pct": (
             contract.minimum_execution_data_coverage_pct
+        ),
+        "minimum_research_data_coverage_pct": (
+            contract.minimum_research_data_coverage_pct
         ),
     }
 
@@ -2630,6 +2798,19 @@ async def _compute_confirmatory_result(
     never see a row whose bundle/final-outcome visibility certificate lands
     after that cutoff, no matter how many times or how much later this
     function is called.
+
+    A4-08 (outcome/research-source missingness): before the block bootstrap
+    ever runs, this function also requires (a) ``confirmatory_outcome_integrity``
+    -- every eligible boundary-safe ``utc_nonoverlap`` row already visible
+    under the frozen cutoff to be ``status == "evaluated"`` with a real
+    ``market_return_pct`` (``outcome_complete``), and (b)
+    ``research_data_coverage`` -- the fraction of the deterministic expected
+    ``utc_nonoverlap`` slot grid whose research bundle is actually
+    certificate-visible by the cutoff to meet
+    ``contract.minimum_research_data_coverage_pct``. Either shortfall makes
+    the result ``inconclusive``, same as the pre-existing execution-coverage/
+    matured-block gate, and for the same reason: it is fetched with the one
+    frozen cutoff, so late recovery after that cutoff can never flip it.
     """
 
     result = _confirmatory_not_ready_result(contract)
@@ -2640,6 +2821,8 @@ async def _compute_confirmatory_result(
 
     primary_rows: list[dict[str, Any]] = []
     baseline_rows: list[dict[str, Any]] = []
+    outcome_integrity = dict(_EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY)
+    expected_sample_slots = 0
     for fold_spec in fold_specs:
         fetched = await _fetch_confirmatory_primary_rows(
             conn,
@@ -2650,6 +2833,44 @@ async def _compute_confirmatory_result(
         )
         primary_rows.extend(fetched["primary_rows"])
         baseline_rows.extend(fetched["baseline_rows"])
+        outcome_integrity = _merge_confirmatory_outcome_integrity(
+            outcome_integrity, fetched["outcome_integrity"]
+        )
+        expected_sample_slots += _expected_utc_nonoverlap_slot_count(
+            test_start=fold_spec["test_start"],
+            test_end=fold_spec["test_end"],
+            horizon_minutes=contract.primary_horizon_minutes,
+        )
+
+    outcome_complete = (
+        outcome_integrity["pending_periodic_n"] == 0
+        and outcome_integrity["not_evaluable_periodic_n"] == 0
+        and outcome_integrity["missing_or_wrong_version_n"] == 0
+    )
+    result["confirmatory_outcome_integrity"] = {
+        **outcome_integrity,
+        "outcome_complete": outcome_complete,
+    }
+
+    # certified_visible_sample_slots reuses the SAME boundary-eligible,
+    # certificate-gated population outcome_integrity already classified --
+    # both are the count of utc_nonoverlap slots whose research bundle is
+    # already visible under the frozen research-visibility cutoff. Never
+    # recomputed independently, so the two reported blocks can never diverge.
+    certified_visible_sample_slots = outcome_integrity["eligible_sampled_periodic_n"]
+    research_data_coverage_pct = (
+        100.0
+        if expected_sample_slots == 0
+        else certified_visible_sample_slots / expected_sample_slots * 100.0
+    )
+    result["research_data_coverage"] = {
+        "expected_sample_slots": expected_sample_slots,
+        "certified_visible_sample_slots": certified_visible_sample_slots,
+        "research_data_coverage_pct": research_data_coverage_pct,
+    }
+    research_coverage_ok = (
+        research_data_coverage_pct >= contract.minimum_research_data_coverage_pct
+    )
 
     n_evaluated_actionable = len(primary_rows)
     snapshot_missing_n = sum(1 for row in primary_rows if row["snapshot_missing"])
@@ -2737,7 +2958,15 @@ async def _compute_confirmatory_result(
         and coverage_pct >= contract.minimum_execution_data_coverage_pct
     )
     blocks_ok = len(block_values) >= contract.minimum_primary_blocks
-    if not (coverage_ok and blocks_ok):
+    # A4-08: outcome completeness and research-data coverage are checked
+    # here too, before the block bootstrap ever runs -- any eligible
+    # boundary-safe row that is still pending/not_evaluable/missing/wrong-
+    # version, or a research-source coverage shortfall (bundles never even
+    # visible), makes the result INCONCLUSIVE exactly like an execution-
+    # coverage or matured-block shortfall does today. Late recovery after
+    # the frozen confirmatory_knowledge_cutoff can never revisit this
+    # decision: every input above is fetched with that one frozen cutoff.
+    if not (outcome_complete and research_coverage_ok and coverage_ok and blocks_ok):
         result["confirmatory_state"] = CONFIRMATORY_STATE_INCONCLUSIVE
         return result
 
