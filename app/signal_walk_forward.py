@@ -27,11 +27,47 @@ from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
 # PR11 is a walk-forward / out-of-sample evaluation engine layered on top of
 # the immutable PR4-PR10 research corpus. It never recomputes PR4-PR10
 # results and never changes live scoring.
+#
+# PR25 adds a SECOND, explicit spec version (2) for the corrected,
+# certificate-gated knowledge-time contract (A3-01). Spec v1 is frozen
+# forever at its historical behavior: this file must never reinterpret an
+# existing v1 manifest, never add a field to its hashed spec, and never
+# change its hash. Spec v2 is additive: it requires the PR25 research
+# visibility contract and a fully explicit scientific version tuple. No
+# spec-v2 production manifest is created by this PR.
 # ---------------------------------------------------------------------------
 
 WALK_FORWARD_MANIFEST_VERSION = 1
 WALK_FORWARD_SPEC_VERSION = 1
 WALK_FORWARD_REPORT_VERSION = 1
+
+WALK_FORWARD_SPEC_VERSION_V2 = 2
+WALK_FORWARD_REPORT_VERSION_V2 = 2
+SUPPORTED_WALK_FORWARD_SPEC_VERSIONS = (
+    WALK_FORWARD_SPEC_VERSION,
+    WALK_FORWARD_SPEC_VERSION_V2,
+)
+
+# The only supported prospective spec-v2 scientific version tuple for PR25.
+# validate_manifest_options() fails closed unless every one of these values
+# is supplied exactly -- there is no "latest/current" fallback and spec v1 is
+# never silently mapped onto this tuple.
+#
+# Every value below is a LITERAL, pinned at the value the tuple had when
+# spec v2 was defined -- never imported/derived from each module's "current"
+# constant. If SCALP_SIGNAL_LOGIC_VERSION, REPLAY_CONTEXT_VERSION,
+# OUTCOME_VERSION, EXECUTION_SNAPSHOT_VERSION or RESEARCH_VISIBILITY_VERSION
+# ever advance in a future PR, this tuple -- and therefore how an
+# already-persisted spec-v2 manifest is interpreted -- must NOT change. A
+# future scientific semantics requires a new, explicit spec version instead
+# of silently inheriting whatever the live constants currently say.
+SPEC_V2_SUPPORTED_LOGIC_VERSION = "scalp-summary-v1"
+SPEC_V2_SUPPORTED_EVIDENCE_VERSION = 6
+SPEC_V2_SUPPORTED_SAMPLING_VERSION = 1
+SPEC_V2_SUPPORTED_CONTEXT_VERSION = 1
+SPEC_V2_SUPPORTED_OUTCOME_VERSION = 1
+SPEC_V2_SUPPORTED_EXECUTION_SNAPSHOT_VERSION = 1
+SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION = 1
 
 SELECTION_POLICY = "fixed_kernel_no_selection_v1"
 
@@ -80,6 +116,8 @@ class WalkForwardManifestOptions:
     context_version: int = REPLAY_CONTEXT_VERSION
     outcome_version: int = OUTCOME_VERSION
     execution_snapshot_version: int = EXECUTION_SNAPSHOT_VERSION
+    spec_version: int = WALK_FORWARD_SPEC_VERSION
+    research_visibility_version: int | None = None
 
 
 def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
@@ -88,7 +126,18 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
     No CLI option here can request a retroactive cutoff: the cutoff is always
     derived from the PostgreSQL clock at freeze time plus ``warmup_days``,
     never accepted as a caller-supplied timestamp.
+
+    Spec v1 keeps its exact historical validation, including checking
+    logic_version against the live SCALP_SIGNAL_LOGIC_VERSION. Spec v2
+    instead requires the exact PR25 supported prospective scientific version
+    tuple -- including logic_version -- against the literal, frozen
+    SPEC_V2_SUPPORTED_* constants: explicitly supplied, never inferred,
+    never defaulted, never mapped from spec v1, and never re-read from any
+    module's live "current" constant.
     """
+
+    if options.spec_version not in SUPPORTED_WALK_FORWARD_SPEC_VERSIONS:
+        raise ValueError(f"unsupported walk-forward spec_version: {options.spec_version}")
 
     if not _valid_manifest_name(options.name):
         raise ValueError(_NAME_PATTERN_MSG)
@@ -101,7 +150,10 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
     if not 1 <= options.min_group_n <= 1_000_000:
         raise ValueError("min_group_n must be between 1 and 1000000")
 
-    if options.logic_version != SCALP_SIGNAL_LOGIC_VERSION:
+    if (
+        options.spec_version == WALK_FORWARD_SPEC_VERSION
+        and options.logic_version != SCALP_SIGNAL_LOGIC_VERSION
+    ):
         raise ValueError(
             "unsupported walk-forward logic_version; register a version-specific kernel"
         )
@@ -115,6 +167,36 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
     ):
         if value <= 0:
             raise ValueError(f"{label} must be positive")
+
+    if options.spec_version == WALK_FORWARD_SPEC_VERSION:
+        if options.research_visibility_version is not None:
+            raise ValueError(
+                "walk-forward spec v1 must not set research_visibility_version"
+            )
+    else:
+        required_tuple = (
+            ("logic_version", options.logic_version, SPEC_V2_SUPPORTED_LOGIC_VERSION),
+            ("evidence_version", options.evidence_version, SPEC_V2_SUPPORTED_EVIDENCE_VERSION),
+            ("sampling_version", options.sampling_version, SPEC_V2_SUPPORTED_SAMPLING_VERSION),
+            ("context_version", options.context_version, SPEC_V2_SUPPORTED_CONTEXT_VERSION),
+            ("outcome_version", options.outcome_version, SPEC_V2_SUPPORTED_OUTCOME_VERSION),
+            (
+                "execution_snapshot_version",
+                options.execution_snapshot_version,
+                SPEC_V2_SUPPORTED_EXECUTION_SNAPSHOT_VERSION,
+            ),
+            (
+                "research_visibility_version",
+                options.research_visibility_version,
+                SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION,
+            ),
+        )
+        for label, actual, expected in required_tuple:
+            if actual != expected:
+                raise ValueError(
+                    "walk-forward spec v2 requires the exact supported prospective "
+                    f"scientific version tuple; {label}={actual!r} is not {expected!r}"
+                )
 
     if not options.horizons:
         raise ValueError("at least one horizon is required")
@@ -247,8 +329,21 @@ def _static_options_spec(options: WalkForwardManifestOptions) -> dict[str, Any]:
     between calls.
     """
 
+    versions: dict[str, Any] = {
+        "logic_version": options.logic_version,
+        "evidence_version": options.evidence_version,
+        "sampling_version": options.sampling_version,
+        "context_version": options.context_version,
+        "outcome_version": options.outcome_version,
+        "execution_snapshot_version": options.execution_snapshot_version,
+    }
+    # Spec v1's hashed shape must stay byte-for-byte what it always was: no
+    # new key is ever added here for spec_version == WALK_FORWARD_SPEC_VERSION.
+    if options.spec_version != WALK_FORWARD_SPEC_VERSION:
+        versions["research_visibility_version"] = options.research_visibility_version
+
     return {
-        "spec_version": WALK_FORWARD_SPEC_VERSION,
+        "spec_version": options.spec_version,
         "manifest_version": WALK_FORWARD_MANIFEST_VERSION,
         "warmup_days": options.warmup_days,
         "test_days": options.test_days,
@@ -263,14 +358,7 @@ def _static_options_spec(options: WalkForwardManifestOptions) -> dict[str, Any]:
         "execution_sizes_usd": sorted(options.sizes_usd),
         "fee_bps_per_side": dict(sorted(options.fee_bps_per_side)),
         "outcome_settlement_lag_seconds": OUTCOME_SETTLEMENT_LAG.total_seconds(),
-        "versions": {
-            "logic_version": options.logic_version,
-            "evidence_version": options.evidence_version,
-            "sampling_version": options.sampling_version,
-            "context_version": options.context_version,
-            "outcome_version": options.outcome_version,
-            "execution_snapshot_version": options.execution_snapshot_version,
-        },
+        "versions": versions,
     }
 
 
@@ -452,6 +540,19 @@ def _options_from_spec(
     if not isinstance(fees, dict):
         raise ValueError("walk-forward manifest fee_bps_per_side must be an object")
 
+    spec_version = int(spec.get("spec_version", 0))
+    if spec_version not in SUPPORTED_WALK_FORWARD_SPEC_VERSIONS:
+        raise ValueError(f"unsupported stored walk-forward spec_version: {spec_version}")
+
+    research_visibility_version: int | None = None
+    if spec_version != WALK_FORWARD_SPEC_VERSION:
+        raw_research_visibility_version = versions.get("research_visibility_version")
+        if raw_research_visibility_version is None:
+            raise ValueError(
+                "walk-forward manifest spec v2 is missing research_visibility_version"
+            )
+        research_visibility_version = int(raw_research_visibility_version)
+
     options = WalkForwardManifestOptions(
         name=manifest_name,
         warmup_days=int(spec["warmup_days"]),
@@ -472,6 +573,8 @@ def _options_from_spec(
         context_version=int(versions["context_version"]),
         outcome_version=int(versions["outcome_version"]),
         execution_snapshot_version=int(versions["execution_snapshot_version"]),
+        spec_version=spec_version,
+        research_visibility_version=research_visibility_version,
     )
     validate_manifest_options(options)
     return options
@@ -500,8 +603,9 @@ def _validate_manifest_row(
 
     if int(data["manifest_version"]) != WALK_FORWARD_MANIFEST_VERSION:
         raise ValueError("unsupported stored walk-forward manifest_version")
-    if int(spec.get("spec_version", 0)) != WALK_FORWARD_SPEC_VERSION:
-        raise ValueError("unsupported stored walk-forward spec_version")
+    stored_spec_version = int(spec.get("spec_version", 0))
+    if stored_spec_version not in SUPPORTED_WALK_FORWARD_SPEC_VERSIONS:
+        raise ValueError(f"unsupported stored walk-forward spec_version: {stored_spec_version}")
     if int(spec.get("manifest_version", 0)) != WALK_FORWARD_MANIFEST_VERSION:
         raise ValueError("manifest JSON version disagrees with table row")
     if spec.get("name") != data["manifest_name"]:
@@ -511,7 +615,7 @@ def _validate_manifest_row(
     if data["selection_policy"] != SELECTION_POLICY:
         raise ValueError("manifest row selection policy is not fixed-kernel")
     if sorted(spec.get("gross_views", [])) != sorted(GROSS_VIEWS):
-        raise ValueError("manifest gross views differ from the frozen v1 contract")
+        raise ValueError("manifest gross views differ from the frozen contract")
 
     options = _options_from_spec(str(data["manifest_name"]), spec)
     static_expected = _static_options_spec(options)
@@ -822,6 +926,165 @@ async def _fetch_period_grid(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Spec v2: certificate-gated knowledge time (A3-01).
+#
+# These mirror the v1 fetch/projection functions field-for-field so every
+# downstream helper (_integrity_counters, _fold_state_summary,
+# _build_gross_views, _build_execution_views, ...) is reused unchanged. The
+# only difference is WHAT proves knowledge-time eligibility: a
+# signal_research_bundle_visibility / signal_outcome_final_visibility
+# certificate, never obs.created_at/frame.created_at/out.created_at/
+# finalized_at. Those legacy columns remain present in the projected row as
+# provenance only; they are never read for the eligibility decision.
+# ---------------------------------------------------------------------------
+
+
+def _project_outcome_as_of_v2(
+    row: dict[str, Any], knowledge_cutoff: datetime
+) -> dict[str, Any]:
+    """Spec v2: project one row using the final-outcome visibility certificate.
+
+    A missing or not-yet-in-cutoff certificate projects the row back to
+    pending/null, exactly like v1's late-final projection -- but keyed on
+    the certificate's verified_visible_at, never on finalized_at directly.
+    """
+
+    projected = dict(row)
+    cutoff = _aware_utc(knowledge_cutoff)
+
+    status = projected.get("status")
+    final_verified_visible_at = projected.get("final_verified_visible_at")
+    if status in ("evaluated", "not_evaluable") and (
+        not isinstance(final_verified_visible_at, datetime)
+        or _aware_utc(final_verified_visible_at) > cutoff
+    ):
+        projected["status"] = "pending"
+        projected["finalized_at"] = None
+        for field in _OUTCOME_FINAL_VALUE_FIELDS:
+            projected[field] = None
+
+    return projected
+
+
+async def _fetch_period_grid_v2(
+    conn: asyncpg.Connection,
+    *,
+    period_start: datetime,
+    period_end: datetime,
+    knowledge_cutoff: datetime,
+    options: WalkForwardManifestOptions,
+) -> list[dict[str, Any]]:
+    """Spec v2 observation x horizon grid, gated by the visibility certificate.
+
+    An observation with no signal_research_bundle_visibility certificate (or
+    one whose verified_visible_at is after knowledge_cutoff) is absent from
+    the grid entirely -- not merely nulled -- because it is not proven to
+    have been historically knowledge-eligible at that cutoff.
+    """
+
+    rows = await conn.fetch(
+        """
+        WITH periodic AS (
+          SELECT
+            obs.observation_id,
+            obs.observed_at,
+            obs.observed_minute,
+            obs.symbol,
+            obs.state,
+            obs.direction,
+            obs.regime_label,
+            obs.actionable,
+            obs.reference_price,
+            obs.created_at AS observation_created_at,
+            frame.created_at AS replay_frame_created_at
+          FROM signal_observation AS obs
+          JOIN signal_replay_frame AS frame
+            ON frame.observation_id = obs.observation_id
+          JOIN signal_research_bundle_visibility AS bv
+            ON bv.observation_id = obs.observation_id
+           AND bv.visibility_version = $10
+          WHERE obs.signal_family='scalp'
+            AND obs.is_periodic
+            AND obs.logic_version=$4
+            AND obs.evidence_version=$5
+            AND obs.sampling_version=$6
+            AND frame.context_version=$7
+            AND obs.observed_at >= $1
+            AND obs.observed_at < $2
+            AND bv.verified_visible_at <= $9
+            AND (
+              cardinality($8::text[]) = 0
+              OR obs.symbol = ANY($8::text[])
+            )
+        ),
+        grid AS (
+          SELECT p.*, h.horizon_minutes
+          FROM periodic AS p
+          CROSS JOIN unnest($3::int[]) AS h(horizon_minutes)
+        )
+        SELECT
+          g.observation_id,
+          g.observed_at,
+          g.observed_minute,
+          g.symbol,
+          g.state,
+          g.direction,
+          g.regime_label,
+          g.actionable,
+          g.reference_price,
+          g.observation_created_at,
+          g.replay_frame_created_at,
+          g.horizon_minutes,
+          out.outcome_version,
+          out.status,
+          out.window_end,
+          out.due_at,
+          out.created_at AS outcome_created_at,
+          out.finalized_at,
+          out.end_price,
+          out.directional_return_pct,
+          out.mfe_pct,
+          out.mae_pct,
+          out.market_return_pct,
+          fv.verified_visible_at AS final_verified_visible_at
+        FROM grid AS g
+        LEFT JOIN signal_outcome AS out
+          ON out.observation_id = g.observation_id
+         AND out.horizon_minutes = g.horizon_minutes
+        LEFT JOIN signal_outcome_final_visibility AS fv
+          ON fv.outcome_id = out.outcome_id
+         AND fv.visibility_version = $10
+        """,
+        period_start,
+        period_end,
+        list(options.horizons),
+        options.logic_version,
+        options.evidence_version,
+        options.sampling_version,
+        options.context_version,
+        list(options.symbols),
+        knowledge_cutoff,
+        options.research_visibility_version,
+    )
+
+    result: list[dict[str, Any]] = []
+    for record in rows:
+        row = _project_outcome_as_of_v2(dict(record), knowledge_cutoff)
+        correct_version = row["outcome_version"] == options.outcome_version
+        usable = (
+            row["status"] is not None
+            and correct_version
+            and row["window_end"] is not None
+            and row["window_end"] <= period_end
+            and row["due_at"] is not None
+            and row["due_at"] <= knowledge_cutoff
+        )
+        row["usable"] = usable
+        result.append(row)
+    return result
+
+
 def _integrity_counters(
     grid: list[dict[str, Any]],
     *,
@@ -1063,6 +1326,193 @@ async def _fetch_execution_integrity(
         options.context_version,
         options.execution_snapshot_version,
         list(options.symbols),
+    )
+    return dict(row) if row else {}
+
+
+async def _fetch_execution_integrity_v2(
+    conn: asyncpg.Connection,
+    *,
+    period_start: datetime,
+    period_end: datetime,
+    knowledge_cutoff: datetime,
+    options: WalkForwardManifestOptions,
+) -> dict[str, Any]:
+    """Spec v2 execution integrity: identical accounting to v1, restricted to
+    the same certified research bundle (A3-01). An observation without an
+    in-cutoff signal_research_bundle_visibility certificate never enters the
+    ``compatible`` cohort here, so its execution snapshots (if any exist at
+    all) are never examined -- there is no path from an uncertified bundle
+    into a spec-v2 execution metric.
+    """
+
+    row = await conn.fetchrow(
+        """
+        WITH compatible AS (
+          SELECT
+            obs.observation_id,
+            obs.observed_at
+          FROM signal_observation AS obs
+          JOIN signal_replay_frame AS frame
+            ON frame.observation_id=obs.observation_id
+          JOIN signal_research_bundle_visibility AS bv
+            ON bv.observation_id=obs.observation_id
+           AND bv.visibility_version=$9
+          WHERE obs.signal_family='scalp'
+            AND obs.is_periodic
+            AND obs.observed_at >= $1
+            AND obs.observed_at < $2
+            AND obs.logic_version=$3
+            AND obs.evidence_version=$4
+            AND obs.sampling_version=$5
+            AND frame.context_version=$6
+            AND bv.verified_visible_at <= $10
+            AND (
+              cardinality($8::text[]) = 0
+              OR obs.symbol=ANY($8::text[])
+            )
+        ),
+        snapshot_counts AS (
+          SELECT
+            c.observation_id,
+            c.observed_at,
+            COUNT(s.execution_snapshot_id)::bigint AS snapshot_rows,
+            COUNT(s.execution_snapshot_id) FILTER (
+              WHERE s.snapshot_version=$7
+            )::bigint AS compatible_snapshot_rows,
+            COUNT(s.execution_snapshot_id) FILTER (
+              WHERE s.snapshot_version=$7 AND s.exchange='binance'
+            )::bigint AS binance_rows,
+            COUNT(s.execution_snapshot_id) FILTER (
+              WHERE s.snapshot_version=$7 AND s.exchange='bybit'
+            )::bigint AS bybit_rows,
+            COUNT(s.execution_snapshot_id) FILTER (
+              WHERE s.snapshot_version=$7
+                AND s.exchange NOT IN ('binance','bybit')
+            )::bigint AS unknown_rows
+          FROM compatible AS c
+          LEFT JOIN signal_execution_snapshot AS s
+            ON s.observation_id=c.observation_id
+          GROUP BY c.observation_id,c.observed_at
+        ),
+        execution_cohort AS (
+          SELECT *
+          FROM snapshot_counts
+          WHERE snapshot_rows=2
+            AND compatible_snapshot_rows=2
+            AND binance_rows=1
+            AND bybit_rows=1
+            AND unknown_rows=0
+        ),
+        first_execution AS (
+          SELECT MIN(c.observed_at) AS execution_era_start
+          FROM compatible AS c
+          JOIN signal_execution_snapshot AS s
+            ON s.observation_id=c.observation_id
+          WHERE s.snapshot_version=$7
+        )
+        SELECT
+          (SELECT COUNT(*) FROM compatible)::bigint
+            AS compatible_periodic_observations,
+
+          (SELECT COUNT(*) FROM snapshot_counts WHERE snapshot_rows=0)::bigint
+            AS periodic_without_execution_snapshot,
+
+          (SELECT COUNT(*) FROM execution_cohort)::bigint
+            AS execution_covered_periodic_observations,
+
+          (
+            SELECT COUNT(*)
+            FROM snapshot_counts
+            WHERE snapshot_rows > 0
+              AND (
+                snapshot_rows <> 2
+                OR compatible_snapshot_rows <> 2
+                OR binance_rows <> 1
+                OR bybit_rows <> 1
+                OR unknown_rows <> 0
+              )
+          )::bigint AS execution_snapshot_cardinality_or_version_anomalies,
+
+          (SELECT execution_era_start FROM first_execution)
+            AS execution_era_start,
+
+          (
+            SELECT COUNT(*)
+            FROM snapshot_counts, first_execution
+            WHERE first_execution.execution_era_start IS NOT NULL
+              AND snapshot_counts.observed_at >= first_execution.execution_era_start
+              AND (
+                snapshot_counts.snapshot_rows <> 2
+                OR snapshot_counts.compatible_snapshot_rows <> 2
+                OR snapshot_counts.binance_rows <> 1
+                OR snapshot_counts.bybit_rows <> 1
+                OR snapshot_counts.unknown_rows <> 0
+              )
+          )::bigint AS execution_era_observations_without_two_snapshots,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version <> $7
+          )::bigint AS execution_snapshot_version_excluded_rows,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version=$7
+              AND s.status='error'
+          )::bigint AS execution_snapshot_error_rows,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version=$7
+              AND s.reason='future_book_timestamp'
+          )::bigint AS future_book_timestamp_anomalies,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version=$7
+              AND s.status='valid'
+              AND (
+                s.source_book_hash IS NULL
+                OR length(s.source_book_hash) <> 64
+                OR (
+                  SELECT count(*)
+                  FROM jsonb_object_keys(s.cost_curve)
+                ) <> 4
+              )
+          )::bigint AS valid_snapshot_shape_anomalies,
+
+          (
+            SELECT COUNT(*)
+            FROM signal_execution_snapshot AS s
+            JOIN compatible AS c
+              ON c.observation_id=s.observation_id
+            WHERE s.snapshot_version=$7
+              AND s.exchange NOT IN ('binance','bybit')
+          )::bigint AS combined_or_unknown_exchange_rows
+        """,
+        period_start,
+        period_end,
+        options.logic_version,
+        options.evidence_version,
+        options.sampling_version,
+        options.context_version,
+        options.execution_snapshot_version,
+        list(options.symbols),
+        options.research_visibility_version,
+        knowledge_cutoff,
     )
     return dict(row) if row else {}
 
@@ -1737,15 +2187,18 @@ async def _evaluate_fold(
     generated_at: datetime,
     options: WalkForwardManifestOptions,
 ) -> dict[str, Any]:
+    is_spec_v1 = options.spec_version == WALK_FORWARD_SPEC_VERSION
+    fetch_period_grid = _fetch_period_grid if is_spec_v1 else _fetch_period_grid_v2
+
     discovery_end = fold["discovery_end"]
-    discovery_grid = await _fetch_period_grid(
+    discovery_grid = await fetch_period_grid(
         conn,
         period_start=fold["discovery_start"],
         period_end=discovery_end,
         knowledge_cutoff=min(generated_at, discovery_end),
         options=options,
     )
-    test_grid = await _fetch_period_grid(
+    test_grid = await fetch_period_grid(
         conn,
         period_start=fold["test_start"],
         period_end=fold["test_end"],
@@ -1765,12 +2218,21 @@ async def _evaluate_fold(
     )
 
     execution_end = min(generated_at, fold["test_end"])
-    execution_integrity = await _fetch_execution_integrity(
-        conn,
-        period_start=fold["discovery_start"],
-        period_end=execution_end,
-        options=options,
-    )
+    if is_spec_v1:
+        execution_integrity = await _fetch_execution_integrity(
+            conn,
+            period_start=fold["discovery_start"],
+            period_end=execution_end,
+            options=options,
+        )
+    else:
+        execution_integrity = await _fetch_execution_integrity_v2(
+            conn,
+            period_start=fold["discovery_start"],
+            period_end=execution_end,
+            knowledge_cutoff=execution_end,
+            options=options,
+        )
 
     summary = _fold_state_summary(
         fold=fold,
@@ -1897,22 +2359,36 @@ async def evaluate_walk_forward(
                 for row in rows
             )
 
+    is_spec_v1 = options.spec_version == WALK_FORWARD_SPEC_VERSION
     global_execution_end = min(
         generated_at,
         fold_specs[-1]["test_end"],
     )
-    execution_integrity = await _fetch_execution_integrity(
-        conn,
-        period_start=_parse_iso(manifest["spec"]["discovery_start"]),
-        period_end=global_execution_end,
-        options=options,
-    )
+    if is_spec_v1:
+        execution_integrity = await _fetch_execution_integrity(
+            conn,
+            period_start=_parse_iso(manifest["spec"]["discovery_start"]),
+            period_end=global_execution_end,
+            options=options,
+        )
+    else:
+        execution_integrity = await _fetch_execution_integrity_v2(
+            conn,
+            period_start=_parse_iso(manifest["spec"]["discovery_start"]),
+            period_end=global_execution_end,
+            knowledge_cutoff=global_execution_end,
+            options=options,
+        )
 
     first_oos_cutoff_in_future = _aware_utc(manifest["cutoff_at"]) > generated_at
 
-    return {
-        "report_version": WALK_FORWARD_REPORT_VERSION,
-        "walk_forward_spec_version": WALK_FORWARD_SPEC_VERSION,
+    report_version = (
+        WALK_FORWARD_REPORT_VERSION if is_spec_v1 else WALK_FORWARD_REPORT_VERSION_V2
+    )
+
+    report: dict[str, Any] = {
+        "report_version": report_version,
+        "walk_forward_spec_version": options.spec_version,
         "manifest_version": WALK_FORWARD_MANIFEST_VERSION,
         "generated_at": generated_at,
         "manifest": {
@@ -1964,3 +2440,16 @@ async def evaluate_walk_forward(
             "live_scoring_changes": False,
         },
     }
+
+    if not is_spec_v1:
+        # Additive-only metadata: never removes/changes a v1 field, and v1's
+        # output path above is untouched, so this branch cannot affect it.
+        report["knowledge_visibility_contract"] = {
+            "research_visibility_version": options.research_visibility_version,
+            "certificate_dominates_created_at_and_finalized_at": True,
+            "uncertified_observation_excluded_from_grid": True,
+            "final_outcome_requires_final_visibility_certificate": True,
+            "execution_snapshots_restricted_to_certified_bundle": True,
+        }
+
+    return report

@@ -251,7 +251,10 @@ async def test_macro_daily_query_excludes_sessions_after_cutoff() -> None:
 
 
 def test_pr24_versions_change_only_evidence_and_daily_logic() -> None:
-    assert SIGNAL_EVIDENCE_VERSION == 5
+    # PR25 advanced the live writer to evidence_version=6; see
+    # app/signal_visibility.py for the prospective research-visibility
+    # contract this cohort is eligible for.
+    assert SIGNAL_EVIDENCE_VERSION == 6
     assert DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v4"
     assert SCALP_SIGNAL_LOGIC_VERSION == "scalp-summary-v1"
     assert SIGNAL_SAMPLING_VERSION == 1

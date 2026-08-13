@@ -8,14 +8,26 @@ import pytest
 
 from app.signal_execution import DENSE_PERIODIC, UTC_NONOVERLAP
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG
+from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
 from app.signal_walk_forward import (
     DEFAULT_MANIFEST_NAME,
     SELECTION_POLICY,
+    SPEC_V2_SUPPORTED_CONTEXT_VERSION,
+    SPEC_V2_SUPPORTED_EVIDENCE_VERSION,
+    SPEC_V2_SUPPORTED_EXECUTION_SNAPSHOT_VERSION,
+    SPEC_V2_SUPPORTED_LOGIC_VERSION,
+    SPEC_V2_SUPPORTED_OUTCOME_VERSION,
+    SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION,
+    SPEC_V2_SUPPORTED_SAMPLING_VERSION,
+    SUPPORTED_WALK_FORWARD_SPEC_VERSIONS,
+    WALK_FORWARD_SPEC_VERSION,
+    WALK_FORWARD_SPEC_VERSION_V2,
     WalkForwardManifestOptions,
     _classify_generalization,
     _execution_measure,
     _group_stats,
     _next_minute_strictly_after,
+    _options_from_spec,
     _percentile,
     _sample_grid,
     _spec_hash,
@@ -243,6 +255,230 @@ def test_manifest_hash_changes_when_material_fields_change() -> None:
             _static_options_spec(WalkForwardManifestOptions(**kwargs))
         )
         assert other != base_hash, f"hash did not change for {kwargs}"
+
+
+# ---------------------------------------------------------------------------
+# PR25: spec v1 remains frozen; spec v2 dual support.
+# ---------------------------------------------------------------------------
+
+
+def test_default_options_are_spec_v1_with_no_research_visibility_version() -> None:
+    options = WalkForwardManifestOptions()
+    assert options.spec_version == WALK_FORWARD_SPEC_VERSION
+    assert options.research_visibility_version is None
+
+
+def test_spec_v1_static_spec_shape_has_no_new_keys() -> None:
+    spec = _static_options_spec(WalkForwardManifestOptions())
+    assert spec["spec_version"] == 1
+    assert set(spec.keys()) == {
+        "spec_version",
+        "manifest_version",
+        "warmup_days",
+        "test_days",
+        "fold_count",
+        "min_group_n",
+        "selection_policy",
+        "horizons_minutes",
+        "symbols",
+        "sampling_modes",
+        "gross_views",
+        "execution_exchanges",
+        "execution_sizes_usd",
+        "fee_bps_per_side",
+        "outcome_settlement_lag_seconds",
+        "versions",
+    }
+    assert set(spec["versions"].keys()) == {
+        "logic_version",
+        "evidence_version",
+        "sampling_version",
+        "context_version",
+        "outcome_version",
+        "execution_snapshot_version",
+    }
+    assert "research_visibility_version" not in spec["versions"]
+
+
+def test_spec_v1_hash_is_identical_before_and_after_pr25() -> None:
+    # A hand-computed hash of the exact pre-PR25 v1 static spec shape (the
+    # dataclass defaults are unchanged, and _static_options_spec's v1 branch
+    # never adds a key), pinned so any accidental future v1 shape drift is
+    # caught immediately.
+    spec = _static_options_spec(WalkForwardManifestOptions())
+    assert spec == {
+        "spec_version": 1,
+        "manifest_version": 1,
+        "warmup_days": 7,
+        "test_days": 7,
+        "fold_count": 4,
+        "min_group_n": 30,
+        "selection_policy": SELECTION_POLICY,
+        "horizons_minutes": sorted(OUTCOME_HORIZONS_MINUTES),
+        "symbols": [],
+        "sampling_modes": sorted((DENSE_PERIODIC, UTC_NONOVERLAP)),
+        "gross_views": ["overall", "regime", "state"],
+        "execution_exchanges": ["binance", "bybit"],
+        "execution_sizes_usd": [1_000.0, 10_000.0, 50_000.0, 100_000.0],
+        "fee_bps_per_side": {},
+        "outcome_settlement_lag_seconds": OUTCOME_SETTLEMENT_LAG.total_seconds(),
+        "versions": {
+            "logic_version": SCALP_SIGNAL_LOGIC_VERSION,
+            "evidence_version": 1,
+            "sampling_version": 1,
+            "context_version": 1,
+            "outcome_version": 1,
+            "execution_snapshot_version": 1,
+        },
+    }
+
+
+def test_spec_v1_rejects_a_set_research_visibility_version() -> None:
+    options = WalkForwardManifestOptions(research_visibility_version=1)
+    with pytest.raises(ValueError):
+        validate_manifest_options(options)
+
+
+def test_unknown_spec_version_fails_closed() -> None:
+    options = WalkForwardManifestOptions(spec_version=3)
+    with pytest.raises(ValueError):
+        validate_manifest_options(options)
+
+
+def test_supported_spec_versions_are_exactly_one_and_two() -> None:
+    assert SUPPORTED_WALK_FORWARD_SPEC_VERSIONS == (1, 2)
+    assert WALK_FORWARD_SPEC_VERSION == 1
+    assert WALK_FORWARD_SPEC_VERSION_V2 == 2
+
+
+def _spec_v2_kwargs() -> dict[str, object]:
+    return {
+        "spec_version": WALK_FORWARD_SPEC_VERSION_V2,
+        "logic_version": SPEC_V2_SUPPORTED_LOGIC_VERSION,
+        "evidence_version": SPEC_V2_SUPPORTED_EVIDENCE_VERSION,
+        "sampling_version": SPEC_V2_SUPPORTED_SAMPLING_VERSION,
+        "context_version": SPEC_V2_SUPPORTED_CONTEXT_VERSION,
+        "outcome_version": SPEC_V2_SUPPORTED_OUTCOME_VERSION,
+        "execution_snapshot_version": SPEC_V2_SUPPORTED_EXECUTION_SNAPSHOT_VERSION,
+        "research_visibility_version": SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION,
+    }
+
+
+def test_spec_v2_with_exact_supported_tuple_passes() -> None:
+    validate_manifest_options(WalkForwardManifestOptions(**_spec_v2_kwargs()))
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "logic_version",
+        "evidence_version",
+        "sampling_version",
+        "context_version",
+        "outcome_version",
+        "execution_snapshot_version",
+        "research_visibility_version",
+    ],
+)
+def test_spec_v2_requires_the_exact_supported_tuple(field: str) -> None:
+    kwargs = _spec_v2_kwargs()
+    original = kwargs[field]
+    kwargs[field] = f"{original}-mutated" if isinstance(original, str) else int(original) + 1
+    with pytest.raises(ValueError):
+        validate_manifest_options(WalkForwardManifestOptions(**kwargs))
+
+
+def test_spec_v2_missing_research_visibility_version_fails_closed() -> None:
+    kwargs = _spec_v2_kwargs()
+    kwargs["research_visibility_version"] = None
+    with pytest.raises(ValueError):
+        validate_manifest_options(WalkForwardManifestOptions(**kwargs))
+
+
+def test_spec_v2_static_spec_includes_research_visibility_version() -> None:
+    options = WalkForwardManifestOptions(**_spec_v2_kwargs())
+    spec = _static_options_spec(options)
+    assert spec["spec_version"] == 2
+    assert (
+        spec["versions"]["research_visibility_version"]
+        == SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION
+    )
+
+
+def test_options_from_spec_round_trips_spec_v2() -> None:
+    options = WalkForwardManifestOptions(**_spec_v2_kwargs())
+    spec = _static_options_spec(options)
+    restored = _options_from_spec("pr25-spec-v2-round-trip", spec)
+    assert restored.spec_version == 2
+    assert restored.research_visibility_version == SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION
+    assert restored.evidence_version == SPEC_V2_SUPPORTED_EVIDENCE_VERSION
+
+
+def test_options_from_spec_v2_missing_research_visibility_version_key_fails_closed() -> None:
+    options = WalkForwardManifestOptions(**_spec_v2_kwargs())
+    spec = _static_options_spec(options)
+    del spec["versions"]["research_visibility_version"]
+    with pytest.raises(ValueError):
+        _options_from_spec("pr25-spec-v2-missing-key", spec)
+
+
+def test_options_from_spec_unknown_spec_version_fails_closed() -> None:
+    spec = _static_options_spec(WalkForwardManifestOptions())
+    spec["spec_version"] = 99
+    with pytest.raises(ValueError):
+        _options_from_spec("pr25-unknown-spec-version", spec)
+
+
+def test_spec_v2_frozen_tuple_has_exact_literal_values() -> None:
+    # PR25 independent-review rework: the spec-v2 tuple must be pinned to
+    # explicit literals, not derived from any module's "current" constant.
+    assert SPEC_V2_SUPPORTED_LOGIC_VERSION == "scalp-summary-v1"
+    assert SPEC_V2_SUPPORTED_EVIDENCE_VERSION == 6
+    assert SPEC_V2_SUPPORTED_SAMPLING_VERSION == 1
+    assert SPEC_V2_SUPPORTED_CONTEXT_VERSION == 1
+    assert SPEC_V2_SUPPORTED_OUTCOME_VERSION == 1
+    assert SPEC_V2_SUPPORTED_EXECUTION_SNAPSHOT_VERSION == 1
+    assert SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION == 1
+
+
+def test_spec_v2_frozen_tuple_survives_live_constant_monkeypatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A simulated future/current bump of every live scientific version
+    constant must NOT reinterpret the already-frozen spec-v2 contract. The
+    SPEC_V2_SUPPORTED_* constants are literals bound at import time, never
+    re-read from app.signal_replay / app.signal_outcomes /
+    app.signal_execution / app.signal_visibility."""
+
+    import app.signal_execution as signal_execution_module
+    import app.signal_outcomes as signal_outcomes_module
+    import app.signal_replay as signal_replay_module
+    import app.signal_visibility as signal_visibility_module
+
+    monkeypatch.setattr(signal_replay_module, "SCALP_SIGNAL_LOGIC_VERSION", "scalp-summary-v2")
+    monkeypatch.setattr(signal_replay_module, "REPLAY_CONTEXT_VERSION", 99)
+    monkeypatch.setattr(signal_outcomes_module, "OUTCOME_VERSION", 99)
+    monkeypatch.setattr(signal_execution_module, "EXECUTION_SNAPSHOT_VERSION", 99)
+    monkeypatch.setattr(signal_visibility_module, "RESEARCH_VISIBILITY_VERSION", 99)
+
+    assert SPEC_V2_SUPPORTED_LOGIC_VERSION == "scalp-summary-v1"
+    assert SPEC_V2_SUPPORTED_CONTEXT_VERSION == 1
+    assert SPEC_V2_SUPPORTED_OUTCOME_VERSION == 1
+    assert SPEC_V2_SUPPORTED_EXECUTION_SNAPSHOT_VERSION == 1
+    assert SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION == 1
+
+    # An options object built with the historical frozen tuple still
+    # validates -- the live bump above must not have broken it.
+    validate_manifest_options(WalkForwardManifestOptions(**_spec_v2_kwargs()))
+
+    # An options object that adopted the NEW "live" values instead is
+    # rejected: the frozen spec-v2 contract pins the historical tuple, not
+    # whatever the live constants currently say.
+    kwargs = _spec_v2_kwargs()
+    kwargs["logic_version"] = "scalp-summary-v2"
+    kwargs["context_version"] = 99
+    with pytest.raises(ValueError):
+        validate_manifest_options(WalkForwardManifestOptions(**kwargs))
 
 
 def test_percentile_matches_known_values() -> None:

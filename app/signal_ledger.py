@@ -21,7 +21,11 @@ from app.signal_replay import (
 )
 
 SIGNAL_FAMILY = "scalp"
-SIGNAL_EVIDENCE_VERSION = 5
+# PR25: v6 is the first evidence cohort eligible for the post-commit research
+# visibility contract (app.signal_visibility.RESEARCH_VISIBILITY_VERSION=1).
+# v1-v5 remain historical under their original publication-time semantics;
+# this bump is prospective only, no existing row is reinterpreted.
+SIGNAL_EVIDENCE_VERSION = 6
 SIGNAL_SAMPLING_VERSION = 1
 
 _LONG_STATES = frozenset({"Long Momentum", "Long Pullback"})

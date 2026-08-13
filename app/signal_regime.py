@@ -6,7 +6,6 @@ from typing import Any
 
 import asyncpg
 
-from app.metrics import REGIME_LOGIC_VERSION
 from app.signal_attribution import (
     ATTRIBUTION_SPEC_VERSION,
     COMPONENT_WEIGHTS,
@@ -28,6 +27,22 @@ DEFAULT_LOOKBACK_DAYS = 30
 DEFAULT_MIN_GROUP_N = 30
 REGIME_DIRECTION_THRESHOLD = 20.0
 DEFAULT_EVIDENCE_VERSION = 1
+
+# A3-03 (PR25): historical evidence versions must be interpreted through an
+# explicit, frozen evidence_version -> regime_logic_version map, never
+# through the live app.metrics.REGIME_LOGIC_VERSION import. A future bump of
+# the live constant (new write-time regime logic) must NOT reinterpret
+# already-published evidence 3/4/5/6. Any evidence_version >= 3 ("modern",
+# i.e. regime-aware) that is absent from this map is unknown and fails
+# closed as unavailable rather than inheriting the current constant. Legacy
+# evidence 1/2 predate regime provenance and keep their existing semantics
+# below (no membership check against this map at all).
+FROZEN_EVIDENCE_REGIME_LOGIC_VERSION: dict[int, int] = {
+    3: 2,
+    4: 2,
+    5: 2,
+    6: 2,
+}
 
 STRONG_BEARISH = "strong_bearish"
 BEARISH = "bearish"
@@ -128,12 +143,45 @@ def _sampling_predicate(mode: str) -> str:
     raise ValueError(f"unsupported sampling mode: {mode}")
 
 
+def _frozen_regime_logic_version_sql(prefix: str) -> str:
+    """Historical evidence -> required regime_logic_version, frozen and explicit.
+
+    Every WHEN clause below is a literal baked from
+    FROZEN_EVIDENCE_REGIME_LOGIC_VERSION at query-build time. This is ordinary
+    Python SQL-string construction (the same pattern every query builder in
+    this file already uses for its CASE fragments), not dynamic DDL: no table
+    or constraint is created here. Crucially it never interpolates the live
+    app.metrics.REGIME_LOGIC_VERSION, so a future bump of that constant
+    cannot reinterpret already-published evidence 3/4/5/6. Any "modern"
+    (evidence_version >= 3) value absent from the frozen map -- including an
+    evidence version introduced by a later PR that this reader has not been
+    explicitly updated for -- fails closed as unavailable instead of
+    inheriting whatever the live constant happens to be.
+    """
+    known_versions = ",".join(
+        str(evidence) for evidence in sorted(FROZEN_EVIDENCE_REGIME_LOGIC_VERSION)
+    )
+    known_clauses = "\n      ".join(
+        f"WHEN {prefix}.evidence_version = {evidence} "
+        f"AND {prefix}.regime_logic_version IS DISTINCT FROM {regime_logic} "
+        "THEN 'unavailable'"
+        for evidence, regime_logic in sorted(
+            FROZEN_EVIDENCE_REGIME_LOGIC_VERSION.items()
+        )
+    )
+    return f"""
+      {known_clauses}
+      WHEN {prefix}.evidence_version >= 3
+        AND {prefix}.evidence_version NOT IN ({known_versions})
+      THEN 'unavailable'
+    """
+
+
 def _regime_status_sql(prefix: str = "obs") -> str:
+    frozen_regime_logic = _frozen_regime_logic_version_sql(prefix)
     return f"""
     CASE
-      WHEN {prefix}.evidence_version IN (3,4,5)
-        AND {prefix}.regime_logic_version IS DISTINCT FROM {REGIME_LOGIC_VERSION}
-      THEN 'unavailable'
+      {frozen_regime_logic}
       WHEN {prefix}.regime_score IS NULL
         OR {prefix}.regime_label IS NULL
         OR {prefix}.regime_label = 'Sin datos suficientes'

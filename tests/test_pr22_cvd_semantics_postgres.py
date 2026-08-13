@@ -253,9 +253,12 @@ async def test_pr22_fresh_schema_is_valid_and_idempotent() -> None:
             "SELECT count(*) FROM metrics_snapshot WHERE regime_logic_version IS NOT NULL"
         ) == 0
         for table, constraint in (
+            # PR25 superseded signal_observation's PR24 constraint with a
+            # widened pr25_ version (evidence 3/4/5/6); daily_verdict_snapshot
+            # is untouched by PR25 and keeps its PR24 constraint name.
             (
                 "signal_observation",
-                "signal_observation_pr24_regime_provenance_check",
+                "signal_observation_pr25_regime_provenance_check",
             ),
             (
                 "daily_verdict_snapshot",

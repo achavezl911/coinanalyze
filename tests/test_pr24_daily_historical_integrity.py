@@ -172,7 +172,10 @@ def test_pr24_version_boundaries_and_regime_guards() -> None:
     assert DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v4"
     assert DAILY_VERDICT_OUTCOME_VERSION == 1
     assert DAILY_VERDICT_OUTCOME_HORIZONS == (7, 14)
-    assert SIGNAL_EVIDENCE_VERSION == 5
+    # PR25 advanced the live writer to evidence_version=6; the historical
+    # PR24 constraint text below remains verbatim in schema.sql (superseded
+    # by the PR25 block appended after it, never rewritten in place).
+    assert SIGNAL_EVIDENCE_VERSION == 6
     assert "evidence_version NOT IN (3,4,5)" in schema
     assert "'daily-verdict-v2','daily-verdict-v3','daily-verdict-v4'" in schema
     assert SCALP_SIGNAL_LOGIC_VERSION == "scalp-summary-v1"
