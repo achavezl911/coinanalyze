@@ -4,12 +4,28 @@ import hashlib
 import json
 import math
 import statistics
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import asyncpg
 
+from app.signal_confirmatory import (
+    BLOCK_BOOTSTRAP_INFERENCE_NAME,
+    BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_NAME,
+    CONFIRMATORY_PRIMARY_ENDPOINT_NAME,
+    CONFIRMATORY_STATE_INCONCLUSIVE,
+    CONFIRMATORY_STATE_NOT_READY,
+    ConfirmatoryContract,
+    block_bootstrap_ci,
+    block_bootstrap_v1,
+    block_unconditional_direction_matched_baseline_bps,
+    confirmatory_block_key,
+    confirmatory_contract_from_dict,
+    confirmatory_contract_to_dict,
+    confirmatory_decision,
+    validate_confirmatory_contract,
+)
 from app.signal_execution import (
     DENSE_PERIODIC,
     EXECUTION_EXCHANGES,
@@ -18,7 +34,12 @@ from app.signal_execution import (
     SAMPLING_MODES,
     UTC_NONOVERLAP,
 )
-from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, OUTCOME_VERSION
+from app.signal_outcomes import (
+    OUTCOME_HORIZONS_MINUTES,
+    OUTCOME_SETTLEMENT_LAG,
+    OUTCOME_VERSION,
+    outcome_window,
+)
 from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
 
 # ---------------------------------------------------------------------------
@@ -43,9 +64,24 @@ WALK_FORWARD_REPORT_VERSION = 1
 
 WALK_FORWARD_SPEC_VERSION_V2 = 2
 WALK_FORWARD_REPORT_VERSION_V2 = 2
+
+# PR26 adds a THIRD, additive spec version (3) for the confirmatory
+# walk-forward contract (Audit-4). Spec v3 inherits spec v2's PR25
+# evidence6/research_visibility1 knowledge-time contract exactly (same
+# SPEC_V2_SUPPORTED_* tuple, same certificate-gated grid/execution-integrity
+# fetchers) and layers a single, pre-registered, block-bootstrapped
+# confirmatory primary hypothesis on top. Spec v1 and v2 are frozen exactly
+# as documented above and elsewhere in this file: this PR never reinterprets
+# an existing v1/v2 manifest, never adds a field to their hashed specs, and
+# never changes their hash. No spec-v3 production manifest is created by
+# this PR.
+WALK_FORWARD_SPEC_VERSION_V3 = 3
+WALK_FORWARD_REPORT_VERSION_V3 = 3
+
 SUPPORTED_WALK_FORWARD_SPEC_VERSIONS = (
     WALK_FORWARD_SPEC_VERSION,
     WALK_FORWARD_SPEC_VERSION_V2,
+    WALK_FORWARD_SPEC_VERSION_V3,
 )
 
 # The only supported prospective spec-v2 scientific version tuple for PR25.
@@ -118,6 +154,7 @@ class WalkForwardManifestOptions:
     execution_snapshot_version: int = EXECUTION_SNAPSHOT_VERSION
     spec_version: int = WALK_FORWARD_SPEC_VERSION
     research_visibility_version: int | None = None
+    confirmatory_contract: ConfirmatoryContract | None = None
 
 
 def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
@@ -128,12 +165,14 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
     never accepted as a caller-supplied timestamp.
 
     Spec v1 keeps its exact historical validation, including checking
-    logic_version against the live SCALP_SIGNAL_LOGIC_VERSION. Spec v2
-    instead requires the exact PR25 supported prospective scientific version
-    tuple -- including logic_version -- against the literal, frozen
+    logic_version against the live SCALP_SIGNAL_LOGIC_VERSION. Spec v2 and
+    v3 instead require the exact PR25 supported prospective scientific
+    version tuple -- including logic_version -- against the literal, frozen
     SPEC_V2_SUPPORTED_* constants: explicitly supplied, never inferred,
     never defaulted, never mapped from spec v1, and never re-read from any
-    module's live "current" constant.
+    module's live "current" constant. Spec v3 additionally requires an
+    explicit confirmatory_contract (see app.signal_confirmatory); it is
+    forbidden under spec v1/v2.
     """
 
     if options.spec_version not in SUPPORTED_WALK_FORWARD_SPEC_VERSIONS:
@@ -250,6 +289,26 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
                 f"fee_bps_per_side for {exchange} must be finite and between 0 and 100"
             )
 
+    if options.spec_version != WALK_FORWARD_SPEC_VERSION_V3:
+        if options.confirmatory_contract is not None:
+            raise ValueError(
+                "confirmatory_contract may only be set for walk-forward spec v3"
+            )
+    else:
+        if options.confirmatory_contract is None:
+            raise ValueError(
+                "walk-forward spec v3 requires an explicit confirmatory_contract"
+            )
+        validate_confirmatory_contract(
+            options.confirmatory_contract,
+            symbols=options.symbols,
+            horizons=options.horizons,
+            sampling_modes=options.sampling_modes,
+            exchanges=options.exchanges,
+            sizes_usd=options.sizes_usd,
+            fee_bps_per_side=options.fee_bps_per_side,
+        )
+
 
 def _aware_utc(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
@@ -342,7 +401,7 @@ def _static_options_spec(options: WalkForwardManifestOptions) -> dict[str, Any]:
     if options.spec_version != WALK_FORWARD_SPEC_VERSION:
         versions["research_visibility_version"] = options.research_visibility_version
 
-    return {
+    spec: dict[str, Any] = {
         "spec_version": options.spec_version,
         "manifest_version": WALK_FORWARD_MANIFEST_VERSION,
         "warmup_days": options.warmup_days,
@@ -360,6 +419,13 @@ def _static_options_spec(options: WalkForwardManifestOptions) -> dict[str, Any]:
         "outcome_settlement_lag_seconds": OUTCOME_SETTLEMENT_LAG.total_seconds(),
         "versions": versions,
     }
+    # Spec v1 and v2's hashed shape stay byte-for-byte what they always were:
+    # this key is only ever added for spec_version == WALK_FORWARD_SPEC_VERSION_V3.
+    if options.spec_version == WALK_FORWARD_SPEC_VERSION_V3:
+        spec["confirmatory_contract"] = confirmatory_contract_to_dict(
+            options.confirmatory_contract
+        )
+    return spec
 
 
 def _full_spec(
@@ -553,6 +619,19 @@ def _options_from_spec(
             )
         research_visibility_version = int(raw_research_visibility_version)
 
+    confirmatory_contract: ConfirmatoryContract | None = None
+    if spec_version == WALK_FORWARD_SPEC_VERSION_V3:
+        raw_confirmatory_contract = spec.get("confirmatory_contract")
+        if not isinstance(raw_confirmatory_contract, dict):
+            raise ValueError(
+                "walk-forward manifest spec v3 is missing confirmatory_contract"
+            )
+        confirmatory_contract = confirmatory_contract_from_dict(raw_confirmatory_contract)
+    elif "confirmatory_contract" in spec:
+        raise ValueError(
+            "confirmatory_contract must not be present outside walk-forward spec v3"
+        )
+
     options = WalkForwardManifestOptions(
         name=manifest_name,
         warmup_days=int(spec["warmup_days"]),
@@ -575,6 +654,7 @@ def _options_from_spec(
         execution_snapshot_version=int(versions["execution_snapshot_version"]),
         spec_version=spec_version,
         research_visibility_version=research_visibility_version,
+        confirmatory_contract=confirmatory_contract,
     )
     validate_manifest_options(options)
     return options
@@ -937,6 +1017,11 @@ async def _fetch_period_grid(
 # certificate, never obs.created_at/frame.created_at/out.created_at/
 # finalized_at. Those legacy columns remain present in the projected row as
 # provenance only; they are never read for the eligibility decision.
+#
+# PR26 spec v3 inherits this exact contract: it reuses these same two
+# fetchers unchanged (dispatched by the existing is_spec_v1 boolean, whose
+# `else` branch already covers v3 correctly) for its own confirmatory OOS
+# row fetch -- see _fetch_confirmatory_primary_rows below.
 # ---------------------------------------------------------------------------
 
 
@@ -1703,6 +1788,160 @@ def _actionable_evaluated(
     ]
 
 
+def _all_periodic_evaluated(
+    grid: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """PR26 confirmatory baseline cohort: every compatible periodic
+    observation that has an evaluated outcome, regardless of actionability,
+    direction, state or regime.
+
+    Deliberately broader than ``_actionable_evaluated`` (a strict superset of
+    it): the confirmatory baseline is an unconditional-on-the-signal control,
+    so it must never be narrowed by the same actionable/direction predicate
+    used to pick the primary signal rows themselves.
+    """
+
+    return [row for row in grid if row["usable"] and row["status"] == "evaluated"]
+
+
+_EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY: dict[str, int] = {
+    "eligible_sampled_periodic_n": 0,
+    "evaluated_periodic_n": 0,
+    "pending_periodic_n": 0,
+    "not_evaluable_periodic_n": 0,
+    "missing_or_wrong_version_n": 0,
+    "evaluated_actionable_n": 0,
+    "unresolved_actionable_n": 0,
+}
+
+
+def _confirmatory_outcome_integrity_for_fold(
+    sampled: list[dict[str, Any]],
+    *,
+    period_end: datetime,
+    outcome_version: int,
+) -> dict[str, int]:
+    """PR26 A4-08 outcome-completeness accounting: classifies every
+    ``utc_nonoverlap``-sampled row for one fold BEFORE any evaluated-only
+    filtering (``_actionable_evaluated``/``_all_periodic_evaluated``) ever
+    touches it -- so pending/not_evaluable/missing/wrong-version rows are
+    counted instead of silently vanishing from the confirmatory denominator.
+
+    Deterministic boundary-purged rows (``window_end`` beyond the frozen
+    ``test_end``) are excluded entirely -- their outcome window was never
+    going to fit inside the frozen OOS window, so they are not an expected
+    outcome and must not create false incompleteness.
+
+    Every remaining (boundary-eligible) row is bucketed into exactly one of
+    ``evaluated_periodic_n`` / ``pending_periodic_n`` / ``not_evaluable_periodic_n``
+    / ``missing_or_wrong_version_n``. ``evaluated_actionable_n`` and
+    ``unresolved_actionable_n`` are informational sub-counts restricted to
+    rows that would have been actionable primary rows -- always subsets of
+    the buckets above, never a separate gate.
+    """
+
+    counters = dict(_EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY)
+    for row in sampled:
+        window_end = row.get("window_end")
+        if window_end is None or window_end > period_end:
+            # Deterministic boundary-purged: never an expected outcome.
+            continue
+        counters["eligible_sampled_periodic_n"] += 1
+
+        status = row.get("status")
+        market_return_pct = row.get("market_return_pct")
+        correct_version = row.get("outcome_version") == outcome_version
+        is_actionable = bool(row.get("actionable")) and row.get("direction") in (
+            "long",
+            "short",
+        )
+
+        if (
+            status is None
+            or not correct_version
+            or (status == "evaluated" and market_return_pct is None)
+        ):
+            # Missing outcome row, wrong outcome_version, or (structurally
+            # unreachable per the signal_outcome CHECK constraint, guarded
+            # defensively anyway) an "evaluated" row without its required
+            # market_return_pct.
+            counters["missing_or_wrong_version_n"] += 1
+            if is_actionable:
+                counters["unresolved_actionable_n"] += 1
+            continue
+
+        if status == "evaluated":
+            counters["evaluated_periodic_n"] += 1
+            if is_actionable:
+                counters["evaluated_actionable_n"] += 1
+            continue
+
+        if status == "pending":
+            counters["pending_periodic_n"] += 1
+        elif status == "not_evaluable":
+            counters["not_evaluable_periodic_n"] += 1
+        if is_actionable:
+            counters["unresolved_actionable_n"] += 1
+
+    return counters
+
+
+def _merge_confirmatory_outcome_integrity(
+    accumulated: dict[str, int], fold_counters: dict[str, int]
+) -> dict[str, int]:
+    return {
+        key: accumulated[key] + fold_counters[key]
+        for key in _EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY
+    }
+
+
+def _expected_utc_nonoverlap_slot_count(
+    *,
+    test_start: datetime,
+    test_end: datetime,
+    horizon_minutes: int,
+) -> int:
+    """PR26 A4-08 deterministic expected-slot count: the number of
+    ``utc_nonoverlap`` epoch-aligned observation slots in ``[test_start,
+    test_end)`` whose ``horizon_minutes`` outcome window fits wholly inside
+    ``test_end`` -- using the exact same epoch-alignment rule as
+    ``_sample_grid`` (``minute_index % horizon_minutes == 0``), and the exact
+    same outcome-window formula as ``app.signal_outcomes.outcome_window``
+    (window start is one minute AFTER the observed minute, never the
+    observed minute itself) -- but computed purely from the frozen fold
+    window, never from any DB row. Deterministic boundary-purged slots
+    (``window_end`` beyond ``test_end``) are excluded, matching
+    ``_sample_grid``/``_fetch_period_grid_v2``'s own boundary rule exactly.
+    """
+
+    if horizon_minutes <= 0:
+        raise ValueError("horizon_minutes must be positive")
+
+    start_seconds = _aware_utc(test_start).timestamp()
+    end_seconds = _aware_utc(test_end).timestamp()
+    if end_seconds <= start_seconds:
+        return 0
+
+    # Observed_minute candidates are minute-of-epoch multiples of
+    # horizon_minutes with observed_at in [test_start, test_end) -- mirror
+    # _fetch_period_grid_v2's WHERE clause (>= period_start, < period_end).
+    first_minute_index = math.ceil(start_seconds / 60.0)
+    remainder = first_minute_index % horizon_minutes
+    if remainder:
+        first_minute_index += horizon_minutes - remainder
+
+    test_end_aware = _aware_utc(test_end)
+    count = 0
+    minute_index = first_minute_index
+    while minute_index * 60.0 < end_seconds:
+        observed_minute = datetime.fromtimestamp(minute_index * 60.0, tz=UTC)
+        window_end = outcome_window(observed_minute, horizon_minutes).end
+        if window_end <= test_end_aware:
+            count += 1
+        minute_index += horizon_minutes
+    return count
+
+
 def _build_gross_views(
     *,
     discovery_grid: list[dict[str, Any]],
@@ -2298,6 +2537,457 @@ async def _evaluate_fold(
     }
 
 
+# ---------------------------------------------------------------------------
+# Spec v3: confirmatory primary hypothesis (PR26).
+#
+# Deliberately a narrow, isolated re-fetch of one fold's test/OOS grid,
+# rather than widening _evaluate_fold's return shape -- this keeps the v1/v2
+# byte-for-byte report guarantee low-risk: nothing below is reachable unless
+# options.spec_version == WALK_FORWARD_SPEC_VERSION_V3, and it never mutates
+# anything _evaluate_fold already built.
+# ---------------------------------------------------------------------------
+
+
+async def _fetch_confirmatory_primary_rows(
+    conn: asyncpg.Connection,
+    *,
+    fold: dict[str, Any],
+    knowledge_cutoff: datetime,
+    options: WalkForwardManifestOptions,
+    contract: ConfirmatoryContract,
+) -> dict[str, Any]:
+    """OOS-only rows for one matured fold, scoped to exactly the confirmatory
+    contract's single symbol/horizon (never discovery, never any other
+    symbol/horizon), matching v2's certificate-gated knowledge-time
+    contract exactly.
+
+    "Prefer requiring one explicit primary symbol to avoid hidden pooling
+    semantics": regardless of how many symbols/horizons the manifest as a
+    whole allows for its exploratory views, this fetch is narrowed to
+    exactly one symbol and one horizon before any row ever reaches the
+    bootstrap.
+
+    ``knowledge_cutoff`` is the FROZEN ``confirmatory_knowledge_cutoff``
+    (last fold's ``test_maturity_at`` -- see ``_compute_confirmatory_result``),
+    never the live ``generated_at`` at call time: passing the same frozen
+    value on every call is what makes the certificate-gated grid fetch below
+    (and therefore the whole confirmatory sample) reproducible regardless of
+    how much later ``evaluate_walk_forward`` is re-run.
+
+    Returns both the actionable primary rows AND the broader, unconditional
+    baseline cohort (every compatible periodic evaluated observation in the
+    same window, actionable or not) -- both built from the exact same
+    ``test_grid``/``_sample_grid`` call, so both share the identical primary
+    symbol/horizon/utc_nonoverlap-sampling/OOS-window/knowledge-cutoff
+    contract. Also returns ``outcome_integrity`` (A4-08): a classification of
+    every boundary-eligible ``sampled`` row computed BEFORE
+    ``_actionable_evaluated``/``_all_periodic_evaluated`` ever filter it, so
+    pending/not_evaluable/missing/wrong-version rows are counted rather than
+    silently dropped from the confirmatory denominator.
+    """
+
+    narrowed = replace(
+        options,
+        symbols=(contract.primary_symbol,),
+        horizons=(contract.primary_horizon_minutes,),
+    )
+    test_grid = await _fetch_period_grid_v2(
+        conn,
+        period_start=fold["test_start"],
+        period_end=fold["test_end"],
+        knowledge_cutoff=knowledge_cutoff,
+        options=narrowed,
+    )
+    sampled = _sample_grid(test_grid, contract.primary_sampling_mode)
+    outcome_integrity = _confirmatory_outcome_integrity_for_fold(
+        sampled,
+        period_end=fold["test_end"],
+        outcome_version=options.outcome_version,
+    )
+    actionable_rows = _actionable_evaluated(sampled)
+    baseline_cohort_rows = _all_periodic_evaluated(sampled)
+
+    observation_ids = list({int(row["observation_id"]) for row in actionable_rows})
+    snapshots = await _fetch_execution_snapshots(
+        conn,
+        observation_ids,
+        execution_snapshot_version=options.execution_snapshot_version,
+    )
+
+    primary_rows: list[dict[str, Any]] = []
+    for row in actionable_rows:
+        snapshot_by_exchange = snapshots.get(int(row["observation_id"]), {})
+        snapshot = snapshot_by_exchange.get(contract.primary_exchange)
+        measure = _execution_measure(
+            row,
+            snapshot,
+            size_usd=contract.primary_size_usd,
+            fee_bps_per_side=contract.primary_taker_fee_bps,
+        )
+        market_return_pct = row.get("market_return_pct")
+        primary_rows.append(
+            {
+                "fold_index": fold["fold_index"],
+                "observation_id": row["observation_id"],
+                "observed_minute": row.get("observed_minute"),
+                "direction": row["direction"],
+                "snapshot_missing": measure["snapshot_missing"],
+                "snapshot_nonvalid": measure["snapshot_nonvalid"],
+                "insufficient_depth": measure["insufficient_depth"],
+                "cost_evaluable": measure["cost_evaluable"],
+                "gross_directional_return_bps": measure["gross_directional_return_bps"],
+                "market_return_bps": (
+                    None if market_return_pct is None else float(market_return_pct) * 100.0
+                ),
+                "modeled_net_after_fees_bps": measure["modeled_net_after_fees_bps"],
+            }
+        )
+
+    baseline_rows: list[dict[str, Any]] = [
+        {
+            "observed_minute": row.get("observed_minute"),
+            "market_return_bps": float(row["market_return_pct"]) * 100.0,
+        }
+        for row in baseline_cohort_rows
+        if row.get("market_return_pct") is not None
+    ]
+
+    return {
+        "primary_rows": primary_rows,
+        "baseline_rows": baseline_rows,
+        "outcome_integrity": outcome_integrity,
+    }
+
+
+_EMPTY_COHORT_CHARACTERISTICS: dict[str, Any] = {
+    "n": 0,
+    "gross_directional_mean_bps": None,
+    "gross_directional_median_bps": None,
+    "abs_market_return_mean_bps": None,
+}
+
+
+def _cohort_characteristics(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Diagnostics-only summary of one coverage cohort. Never read by the
+    PASS/FAIL/INCONCLUSIVE decision path -- see
+    ``_confirmatory_coverage_characteristics``."""
+
+    if not rows:
+        return dict(_EMPTY_COHORT_CHARACTERISTICS)
+
+    gross = [
+        row["gross_directional_return_bps"]
+        for row in rows
+        if row["gross_directional_return_bps"] is not None
+    ]
+    abs_market = [
+        abs(row["market_return_bps"]) for row in rows if row["market_return_bps"] is not None
+    ]
+    return {
+        "n": len(rows),
+        "gross_directional_mean_bps": statistics.fmean(gross) if gross else None,
+        "gross_directional_median_bps": statistics.median(gross) if gross else None,
+        "abs_market_return_mean_bps": statistics.fmean(abs_market) if abs_market else None,
+    }
+
+
+def _confirmatory_coverage_characteristics(
+    primary_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Audit-4 A4-07 coverage diagnostics: per-cohort ``n`` /
+    ``gross_directional_mean_bps`` / ``gross_directional_median_bps`` /
+    ``abs_market_return_mean_bps``, computed over ALL actionable-evaluated
+    primary rows (before the ``cost_evaluable`` filter), keeping
+    ``cost_evaluable``, ``snapshot_nonvalid``, ``insufficient_depth`` and
+    ``snapshot_missing`` as four distinct cohorts -- never conflated, never
+    relabeled. Diagnostics only: nothing here feeds the confirmatory
+    decision.
+    """
+
+    return {
+        "cost_evaluable": _cohort_characteristics(
+            [row for row in primary_rows if row["cost_evaluable"]]
+        ),
+        "snapshot_nonvalid": _cohort_characteristics(
+            [row for row in primary_rows if row["snapshot_nonvalid"]]
+        ),
+        "insufficient_depth": _cohort_characteristics(
+            [row for row in primary_rows if row["insufficient_depth"]]
+        ),
+        "snapshot_missing": _cohort_characteristics(
+            [row for row in primary_rows if row["snapshot_missing"]]
+        ),
+    }
+
+
+def _confirmatory_not_ready_result(contract: ConfirmatoryContract) -> dict[str, Any]:
+    return {
+        "confirmatory_state": CONFIRMATORY_STATE_NOT_READY,
+        "primary_endpoint_name": CONFIRMATORY_PRIMARY_ENDPOINT_NAME,
+        "baseline_name": BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_NAME,
+        "inference_name": BLOCK_BOOTSTRAP_INFERENCE_NAME,
+        "decision_policy": contract.confirmatory_decision_policy,
+        "confirmatory_knowledge_cutoff": None,
+        "n_evaluated_actionable": 0,
+        "coverage": {
+            "n_evaluated_actionable": 0,
+            "snapshot_missing_n": 0,
+            "snapshot_nonvalid_n": 0,
+            "insufficient_depth_n": 0,
+            "n_cost_evaluable": 0,
+            "cost_evaluable_pct": None,
+        },
+        "coverage_characteristics": {
+            "cost_evaluable": dict(_EMPTY_COHORT_CHARACTERISTICS),
+            "snapshot_nonvalid": dict(_EMPTY_COHORT_CHARACTERISTICS),
+            "insufficient_depth": dict(_EMPTY_COHORT_CHARACTERISTICS),
+            "snapshot_missing": dict(_EMPTY_COHORT_CHARACTERISTICS),
+        },
+        "confirmatory_outcome_integrity": {
+            **_EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY,
+            "outcome_complete": False,
+        },
+        "research_data_coverage": {
+            "expected_sample_slots": 0,
+            "certified_visible_sample_slots": 0,
+            "research_data_coverage_pct": None,
+        },
+        "primary_block_count": 0,
+        "baseline_mean_bps": None,
+        "primary_excess_mean_bps": None,
+        "bootstrap_repetitions": contract.bootstrap_repetitions,
+        "confidence_level": contract.confidence_level,
+        "ci_lower_bps": None,
+        "ci_upper_bps": None,
+        "minimum_effect_bps": contract.minimum_effect_bps,
+        "minimum_primary_blocks": contract.minimum_primary_blocks,
+        "minimum_execution_data_coverage_pct": (
+            contract.minimum_execution_data_coverage_pct
+        ),
+        "minimum_research_data_coverage_pct": (
+            contract.minimum_research_data_coverage_pct
+        ),
+    }
+
+
+async def _compute_confirmatory_result(
+    conn: asyncpg.Connection,
+    *,
+    options: WalkForwardManifestOptions,
+    contract: ConfirmatoryContract,
+    fold_specs: list[dict[str, Any]],
+    generated_at: datetime,
+) -> dict[str, Any]:
+    """PR26 spec v3 decision. No adaptive/optional stopping: this is a pure
+    function of already-committed, frozen state -- re-running it later for
+    the same matured schedule always returns the same result.
+
+    ``confirmatory_knowledge_cutoff`` is the last frozen fold's
+    ``test_maturity_at`` -- read directly off the manifest's own hashed fold
+    schedule, never derived from any live/dynamic per-fold state.
+    ``confirmatory_state`` stays "not_ready" purely on comparing the live
+    ``generated_at`` against that one frozen timestamp.
+
+    Once past that gate, EVERY fold in ``fold_specs`` is fetched -- there is
+    no per-fold ``evaluation_ready`` filter here (deliberately: that flag is
+    dynamic and can flip True on a later call as integrity issues or pending
+    outcomes resolve, which would let late-arriving data silently join an
+    already-computable confirmatory sample). Determinism instead comes from
+    always fetching with the SAME frozen ``confirmatory_knowledge_cutoff``:
+    ``_fetch_confirmatory_primary_rows``'s certificate-gated grid fetch can
+    never see a row whose bundle/final-outcome visibility certificate lands
+    after that cutoff, no matter how many times or how much later this
+    function is called.
+
+    A4-08 (outcome/research-source missingness): before the block bootstrap
+    ever runs, this function also requires (a) ``confirmatory_outcome_integrity``
+    -- every eligible boundary-safe ``utc_nonoverlap`` row already visible
+    under the frozen cutoff to be ``status == "evaluated"`` with a real
+    ``market_return_pct`` (``outcome_complete``), and (b)
+    ``research_data_coverage`` -- the fraction of the deterministic expected
+    ``utc_nonoverlap`` slot grid whose research bundle is actually
+    certificate-visible by the cutoff to meet
+    ``contract.minimum_research_data_coverage_pct``. Either shortfall makes
+    the result ``inconclusive``, same as the pre-existing execution-coverage/
+    matured-block gate, and for the same reason: it is fetched with the one
+    frozen cutoff, so late recovery after that cutoff can never flip it.
+    """
+
+    result = _confirmatory_not_ready_result(contract)
+    confirmatory_knowledge_cutoff = fold_specs[-1]["test_maturity_at"]
+    result["confirmatory_knowledge_cutoff"] = confirmatory_knowledge_cutoff
+    if generated_at < confirmatory_knowledge_cutoff:
+        return result
+
+    primary_rows: list[dict[str, Any]] = []
+    baseline_rows: list[dict[str, Any]] = []
+    outcome_integrity = dict(_EMPTY_CONFIRMATORY_OUTCOME_INTEGRITY)
+    expected_sample_slots = 0
+    for fold_spec in fold_specs:
+        fetched = await _fetch_confirmatory_primary_rows(
+            conn,
+            fold=fold_spec,
+            knowledge_cutoff=confirmatory_knowledge_cutoff,
+            options=options,
+            contract=contract,
+        )
+        primary_rows.extend(fetched["primary_rows"])
+        baseline_rows.extend(fetched["baseline_rows"])
+        outcome_integrity = _merge_confirmatory_outcome_integrity(
+            outcome_integrity, fetched["outcome_integrity"]
+        )
+        expected_sample_slots += _expected_utc_nonoverlap_slot_count(
+            test_start=fold_spec["test_start"],
+            test_end=fold_spec["test_end"],
+            horizon_minutes=contract.primary_horizon_minutes,
+        )
+
+    outcome_complete = (
+        outcome_integrity["pending_periodic_n"] == 0
+        and outcome_integrity["not_evaluable_periodic_n"] == 0
+        and outcome_integrity["missing_or_wrong_version_n"] == 0
+    )
+    result["confirmatory_outcome_integrity"] = {
+        **outcome_integrity,
+        "outcome_complete": outcome_complete,
+    }
+
+    # certified_visible_sample_slots reuses the SAME boundary-eligible,
+    # certificate-gated population outcome_integrity already classified --
+    # both are the count of utc_nonoverlap slots whose research bundle is
+    # already visible under the frozen research-visibility cutoff. Never
+    # recomputed independently, so the two reported blocks can never diverge.
+    certified_visible_sample_slots = outcome_integrity["eligible_sampled_periodic_n"]
+    research_data_coverage_pct = (
+        100.0
+        if expected_sample_slots == 0
+        else certified_visible_sample_slots / expected_sample_slots * 100.0
+    )
+    result["research_data_coverage"] = {
+        "expected_sample_slots": expected_sample_slots,
+        "certified_visible_sample_slots": certified_visible_sample_slots,
+        "research_data_coverage_pct": research_data_coverage_pct,
+    }
+    research_coverage_ok = (
+        research_data_coverage_pct >= contract.minimum_research_data_coverage_pct
+    )
+
+    n_evaluated_actionable = len(primary_rows)
+    snapshot_missing_n = sum(1 for row in primary_rows if row["snapshot_missing"])
+    snapshot_nonvalid_n = sum(1 for row in primary_rows if row["snapshot_nonvalid"])
+    insufficient_depth_n = sum(1 for row in primary_rows if row["insufficient_depth"])
+    cost_rows = [
+        row
+        for row in primary_rows
+        if row["cost_evaluable"] and row["modeled_net_after_fees_bps"] is not None
+    ]
+    n_cost_evaluable = len(cost_rows)
+    coverage_pct = (
+        None
+        if n_evaluated_actionable == 0
+        else n_cost_evaluable / n_evaluated_actionable * 100.0
+    )
+
+    result["n_evaluated_actionable"] = n_evaluated_actionable
+    result["coverage"] = {
+        "n_evaluated_actionable": n_evaluated_actionable,
+        "snapshot_missing_n": snapshot_missing_n,
+        "snapshot_nonvalid_n": snapshot_nonvalid_n,
+        "insufficient_depth_n": insufficient_depth_n,
+        "n_cost_evaluable": n_cost_evaluable,
+        "cost_evaluable_pct": coverage_pct,
+    }
+    result["coverage_characteristics"] = _confirmatory_coverage_characteristics(primary_rows)
+
+    # Per-block, direction-agnostic, unconditional control mean -- built from
+    # the BROADER baseline cohort (actionable or not), pooled across every
+    # fold exactly like cost_rows below. Every cost_row's own block is
+    # structurally guaranteed to appear here too, since the actionable rows
+    # are themselves a subset of the baseline cohort's source rows.
+    baseline_block_values: dict[str, list[float]] = {}
+    for row in baseline_rows:
+        key = confirmatory_block_key(
+            row["observed_minute"],
+            block_unit=contract.block_unit,
+            block_length=contract.block_length,
+        )
+        baseline_block_values.setdefault(key, []).append(row["market_return_bps"])
+    block_unconditional_market_mean_bps = {
+        key: statistics.fmean(values) for key, values in baseline_block_values.items()
+    }
+
+    block_values: dict[str, list[float]] = {}
+    baseline_values: list[float] = []
+    for row in cost_rows:
+        key = confirmatory_block_key(
+            row["observed_minute"],
+            block_unit=contract.block_unit,
+            block_length=contract.block_length,
+        )
+        block_mean = block_unconditional_market_mean_bps.get(key)
+        if block_mean is None:
+            # Structurally unreachable: every actionable+evaluated row is
+            # itself part of the broader baseline cohort (see
+            # _all_periodic_evaluated), so its own block always has at least
+            # one baseline observation -- itself, at minimum.
+            raise ValueError(
+                f"confirmatory block {key!r} has a primary row but no baseline "
+                "cohort observation; baseline cohort construction is broken"
+            )
+        baseline_bps = block_unconditional_direction_matched_baseline_bps(
+            block_mean, direction=row["direction"]
+        )
+        baseline_values.append(baseline_bps)
+        primary_excess_bps = (
+            row["modeled_net_after_fees_bps"]
+            - contract.unmodeled_execution_stress_bps
+            - baseline_bps
+        )
+        block_values.setdefault(key, []).append(primary_excess_bps)
+    result["primary_block_count"] = len(block_values)
+
+    if baseline_values:
+        result["baseline_mean_bps"] = statistics.fmean(baseline_values)
+    if block_values:
+        result["primary_excess_mean_bps"] = statistics.fmean(
+            value for values in block_values.values() for value in values
+        )
+
+    coverage_ok = (
+        coverage_pct is not None
+        and coverage_pct >= contract.minimum_execution_data_coverage_pct
+    )
+    blocks_ok = len(block_values) >= contract.minimum_primary_blocks
+    # A4-08: outcome completeness and research-data coverage are checked
+    # here too, before the block bootstrap ever runs -- any eligible
+    # boundary-safe row that is still pending/not_evaluable/missing/wrong-
+    # version, or a research-source coverage shortfall (bundles never even
+    # visible), makes the result INCONCLUSIVE exactly like an execution-
+    # coverage or matured-block shortfall does today. Late recovery after
+    # the frozen confirmatory_knowledge_cutoff can never revisit this
+    # decision: every input above is fetched with that one frozen cutoff.
+    if not (outcome_complete and research_coverage_ok and coverage_ok and blocks_ok):
+        result["confirmatory_state"] = CONFIRMATORY_STATE_INCONCLUSIVE
+        return result
+
+    bootstrap_means = block_bootstrap_v1(
+        block_values,
+        repetitions=contract.bootstrap_repetitions,
+        seed=contract.bootstrap_seed,
+    )
+    lower, upper = block_bootstrap_ci(
+        bootstrap_means, confidence_level=contract.confidence_level
+    )
+    result["ci_lower_bps"] = lower
+    result["ci_upper_bps"] = upper
+    result["confirmatory_state"] = confirmatory_decision(
+        lower_ci_bps=lower,
+        upper_ci_bps=upper,
+        minimum_effect_bps=contract.minimum_effect_bps,
+    )
+    return result
+
+
 def _parse_iso(value: Any) -> datetime:
     if isinstance(value, datetime):
         return _aware_utc(value)
@@ -2382,9 +3072,12 @@ async def evaluate_walk_forward(
 
     first_oos_cutoff_in_future = _aware_utc(manifest["cutoff_at"]) > generated_at
 
-    report_version = (
-        WALK_FORWARD_REPORT_VERSION if is_spec_v1 else WALK_FORWARD_REPORT_VERSION_V2
-    )
+    if is_spec_v1:
+        report_version = WALK_FORWARD_REPORT_VERSION
+    elif options.spec_version == WALK_FORWARD_SPEC_VERSION_V3:
+        report_version = WALK_FORWARD_REPORT_VERSION_V3
+    else:
+        report_version = WALK_FORWARD_REPORT_VERSION_V2
 
     report: dict[str, Any] = {
         "report_version": report_version,
@@ -2451,5 +3144,32 @@ async def evaluate_walk_forward(
             "final_outcome_requires_final_visibility_certificate": True,
             "execution_snapshots_restricted_to_certified_bundle": True,
         }
+
+    if options.spec_version == WALK_FORWARD_SPEC_VERSION_V3:
+        # Additive-only, and unreachable for v1 (is_spec_v1 path) and v2
+        # (spec_version == 2 != 3): v1/v2 report bytes are provably
+        # unaffected by everything below.
+        confirmatory_contract = options.confirmatory_contract
+        if confirmatory_contract is None:
+            # validate_manifest_options (run at freeze time and again on
+            # every load) already guarantees this can't happen; fail closed
+            # explicitly here too rather than relying on an assert that
+            # could be stripped under -O.
+            raise ValueError(
+                "walk-forward spec v3 manifest is missing its confirmatory_contract"
+            )
+        confirmatory_result = await _compute_confirmatory_result(
+            conn,
+            options=options,
+            contract=confirmatory_contract,
+            fold_specs=fold_specs,
+            generated_at=generated_at,
+        )
+        report["confirmatory_contract"] = confirmatory_contract_to_dict(confirmatory_contract)
+        report["confirmatory_state"] = confirmatory_result["confirmatory_state"]
+        report["confirmatory_knowledge_cutoff"] = confirmatory_result[
+            "confirmatory_knowledge_cutoff"
+        ]
+        report["confirmatory_result"] = confirmatory_result
 
     return report
