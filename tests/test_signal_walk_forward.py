@@ -8,7 +8,7 @@ import pytest
 
 from app.signal_confirmatory import (
     BLOCK_BOOTSTRAP_INFERENCE_VERSION,
-    CLOCK_DIRECTION_MATCHED_BASELINE_VERSION,
+    BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION,
     CONFIRMATORY_DECISION_POLICY_V1,
     CONFIRMATORY_PRIMARY_ENDPOINT_VERSION,
     CONFIRMATORY_STATE_NOT_READY,
@@ -35,6 +35,8 @@ from app.signal_walk_forward import (
     WALK_FORWARD_SPEC_VERSION_V2,
     WALK_FORWARD_SPEC_VERSION_V3,
     WalkForwardManifestOptions,
+    _actionable_evaluated,
+    _all_periodic_evaluated,
     _classify_generalization,
     _compute_confirmatory_result,
     _execution_measure,
@@ -735,7 +737,7 @@ def _confirmatory_contract_kwargs() -> dict[str, object]:
         "primary_exchange": "binance",
         "primary_size_usd": 1_000.0,
         "primary_taker_fee_bps": 2.0,
-        "baseline_version": CLOCK_DIRECTION_MATCHED_BASELINE_VERSION,
+        "baseline_version": BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION,
         "unmodeled_execution_stress_bps": 1.5,
         "inference_version": BLOCK_BOOTSTRAP_INFERENCE_VERSION,
         "block_unit": "day",
@@ -825,12 +827,16 @@ def test_confirmatory_contract_forbidden_under_spec_v2() -> None:
         {"block_unit": "week"},
         {"block_length": 0},
         {"bootstrap_repetitions": 0},
+        {"bootstrap_repetitions": 1},  # P2-01: degenerate, must be >= 2
         {"bootstrap_seed": 12345.5},  # not coercible to a stable int identity below
         {"confidence_level": 0.0},
         {"confidence_level": 1.0},
         {"minimum_effect_bps": float("inf")},
+        {"minimum_effect_bps": -100.0},  # P1-03: negative threshold rejected
         {"minimum_primary_blocks": 0},
+        {"minimum_primary_blocks": 1},  # P2-01: degenerate, must be >= 2
         {"minimum_execution_data_coverage_pct": -1.0},
+        {"minimum_execution_data_coverage_pct": 0.0},  # P2-01: must be > 0
         {"minimum_execution_data_coverage_pct": 101.0},
         {"confirmatory_decision_policy": "some_other_policy_v1"},
     ],
@@ -993,9 +999,12 @@ async def test_confirmatory_not_ready_before_final_fold_matures() -> None:
     contract = options.confirmatory_contract
     assert contract is not None
 
-    folds = [
-        {"clock_state": "ready_by_clock", "evaluation_ready": True},
-        {"clock_state": "test_settling", "evaluation_ready": False},
+    # confirmatory_knowledge_cutoff is the LAST fold's own test_maturity_at,
+    # read directly off fold_specs -- not derived from any live per-fold
+    # clock_state/evaluation_ready summary.
+    fold_specs = [
+        {"fold_index": 1, "test_maturity_at": datetime(2025, 12, 1, tzinfo=UTC)},
+        {"fold_index": 2, "test_maturity_at": datetime(2026, 2, 1, tzinfo=UTC)},
     ]
 
     class _UnusedConnection:
@@ -1006,11 +1015,11 @@ async def test_confirmatory_not_ready_before_final_fold_matures() -> None:
         _UnusedConnection(),  # type: ignore[arg-type]
         options=options,
         contract=contract,
-        folds=folds,
-        fold_specs=[{}, {}],
-        generated_at=datetime(2026, 1, 1, tzinfo=UTC),
+        fold_specs=fold_specs,
+        generated_at=datetime(2026, 1, 1, tzinfo=UTC),  # before fold_specs[-1]
     )
     assert result["confirmatory_state"] == CONFIRMATORY_STATE_NOT_READY
+    assert result["confirmatory_knowledge_cutoff"] == fold_specs[-1]["test_maturity_at"]
     assert result["ci_lower_bps"] is None
     assert result["ci_upper_bps"] is None
     assert result["primary_block_count"] == 0
@@ -1019,13 +1028,15 @@ async def test_confirmatory_not_ready_before_final_fold_matures() -> None:
 def test_compute_confirmatory_result_has_no_extension_parameters() -> None:
     # "No adaptive/optional stopping": there is no parameter here that could
     # request more repetitions, a longer wait, or any other after-the-fact
-    # extension of an already-frozen experiment.
+    # extension of an already-frozen experiment. Note "folds" (the live,
+    # dynamic per-fold clock_state/evaluation_ready summaries) is
+    # deliberately NOT a parameter here: the confirmatory gate/sample is a
+    # pure function of the frozen fold_specs schedule and generated_at only.
     signature = inspect.signature(_compute_confirmatory_result)
     assert list(signature.parameters) == [
         "conn",
         "options",
         "contract",
-        "folds",
         "fold_specs",
         "generated_at",
     ]
@@ -1072,15 +1083,15 @@ async def test_confirmatory_primary_rows_query_only_the_test_oos_window() -> Non
     contract = options.confirmatory_contract
     assert contract is not None
 
-    rows = await _fetch_confirmatory_primary_rows(
+    fetched = await _fetch_confirmatory_primary_rows(
         conn,  # type: ignore[arg-type]
         fold=fold,
-        generated_at=datetime(2026, 2, 20, tzinfo=UTC),
+        knowledge_cutoff=datetime(2026, 2, 20, tzinfo=UTC),
         options=options,
         contract=contract,
     )
 
-    assert rows == []
+    assert fetched == {"primary_rows": [], "baseline_rows": []}
     assert len(conn.calls) == 1
     query, args = conn.calls[0]
     assert "signal_research_bundle_visibility" in query
@@ -1089,3 +1100,36 @@ async def test_confirmatory_primary_rows_query_only_the_test_oos_window() -> Non
     assert args[1] == fold["test_end"]
     assert fold["discovery_start"] not in args
     assert fold["discovery_end"] not in args
+
+
+def _grid_row(*, usable: bool, status: str, actionable: bool, direction: str) -> dict[str, object]:
+    return {
+        "observation_id": 1,
+        "usable": usable,
+        "status": status,
+        "actionable": actionable,
+        "direction": direction,
+    }
+
+
+def test_all_periodic_evaluated_includes_non_actionable_and_neutral_rows() -> None:
+    # The P1-01 baseline cohort predicate: broader than _actionable_evaluated
+    # by construction -- no actionable/direction restriction at all.
+    grid = [
+        _grid_row(usable=True, status="evaluated", actionable=True, direction="long"),
+        _grid_row(usable=True, status="evaluated", actionable=True, direction="short"),
+        _grid_row(usable=True, status="evaluated", actionable=False, direction="neutral"),
+        _grid_row(usable=True, status="evaluated", actionable=False, direction="unavailable"),
+        _grid_row(usable=True, status="pending", actionable=True, direction="long"),
+        _grid_row(usable=False, status="evaluated", actionable=True, direction="long"),
+    ]
+
+    actionable_only = _actionable_evaluated(grid)
+    all_evaluated = _all_periodic_evaluated(grid)
+
+    assert len(actionable_only) == 2
+    assert all(row["direction"] in ("long", "short") for row in actionable_only)
+    assert len(all_evaluated) == 4
+    assert {row["direction"] for row in all_evaluated} == {"long", "short", "neutral", "unavailable"}
+    # Every actionable row is itself part of the broader cohort (superset).
+    assert all(row in all_evaluated for row in actionable_only)

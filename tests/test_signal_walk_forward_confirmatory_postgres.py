@@ -8,8 +8,10 @@ test, TEST_DATABASE_URL required (tests skip cleanly without it).
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
+import math
 import os
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -198,6 +200,13 @@ async def _insert_backdated_manifest(
     return folds
 
 
+_DIRECTION_STATE_DEFAULTS = {
+    "long": "Long Momentum",
+    "short": "Short Momentum",
+    "neutral": "Neutral Range",
+}
+
+
 async def _insert_observation(
     conn: asyncpg.Connection,
     *,
@@ -205,7 +214,22 @@ async def _insert_observation(
     direction: str,
     reference_price: float = 100.0,
     evidence_version: int = 6,
+    actionable: bool | None = None,
+    state: str | None = None,
+    regime_label: str = "trend_up",
 ) -> int:
+    """``direction`` may be ``"long"``/``"short"`` (actionable) or
+    ``"neutral"`` (non-actionable, periodic-only) -- the latter is how
+    PR26's confirmatory baseline cohort fixtures insert rows that must be
+    evaluated but must never become an actionable primary row. ``actionable``
+    and ``state`` default from ``direction`` but can be overridden
+    independently (e.g. to prove the baseline cohort is insensitive to
+    ``state``/``regime_label``)."""
+
+    if actionable is None:
+        actionable = direction in ("long", "short")
+    if state is None:
+        state = _DIRECTION_STATE_DEFAULTS.get(direction, "Neutral Range")
     return int(
         await conn.fetchval(
             """
@@ -224,10 +248,10 @@ async def _insert_observation(
               'BTCUSDT_PERP.A','scalp',
               true,false,
               'scalp-summary-v1',$3,1,
-              'evaluable',$2,true,'Long Momentum','media','test',
+              'evaluable',$2,$5,$6,'media','test',
               $4,'futures_realtime_combined',
               70,30,90,
-              'trend_up',
+              $7,
               0,1,
               repeat('a',64),'{}'::jsonb
             )
@@ -237,6 +261,9 @@ async def _insert_observation(
             direction,
             evidence_version,
             reference_price,
+            actionable,
+            state,
+            regime_label,
         )
     )
 
@@ -270,8 +297,14 @@ async def _insert_outcome(
     direction = observation["direction"]
     reference_price = float(observation["reference_price"])
 
+    # "long"/"neutral" apply no sign flip (a neutral row has no directional
+    # convention of its own, so its market_return_pct is just the supplied
+    # value directly); "short" flips it, matching the live sign convention
+    # PR5 applies for a short signal.
     market_return_pct = (
-        directional_return_pct if direction == "long" else -directional_return_pct
+        directional_return_pct
+        if direction in ("long", "neutral")
+        else -directional_return_pct
     )
     end_price = reference_price * (1.0 + market_return_pct / 100.0)
     window_end = window_start + timedelta(minutes=horizon_minutes)
@@ -392,13 +425,30 @@ async def _insert_confirmatory_bundle(
     primary_horizon: int = 15,
     both_venues: bool = True,
     snapshot_status: str = "valid",
+    direction: str = "long",
+    state: str | None = None,
+    regime_label: str = "trend_up",
 ) -> int:
     """A complete evidence_version=6 bundle: one observation, replay frame,
     all 8 outcome horizons (only ``primary_horizon`` evaluated with a real
     return; the rest pending placeholders, matching the certification
-    completeness requirement), and execution snapshots for both venues."""
+    completeness requirement), and execution snapshots for both venues.
 
-    observation_id = await _insert_observation(conn, observed_at=observed_at, direction="long")
+    ``direction`` defaults to ``"long"`` (an actionable primary row) but may
+    be ``"short"`` (actionable, opposite side) or ``"neutral"`` (a
+    non-actionable periodic row -- used to build a confirmatory baseline
+    cohort observation distinct from the actionable primary rows). For
+    ``"neutral"`` rows, ``directional_return_pct`` is applied with no sign
+    flip -- see ``_insert_outcome`` -- i.e. it directly sets that row's
+    ``market_return_pct``."""
+
+    observation_id = await _insert_observation(
+        conn,
+        observed_at=observed_at,
+        direction=direction,
+        state=state,
+        regime_label=regime_label,
+    )
     await _insert_frame(conn, observation_id, observed_at)
 
     window_start = observed_at + timedelta(minutes=1)
@@ -485,6 +535,88 @@ def _v3_options(*, name: str, contract: ConfirmatoryContract, **overrides: objec
     return WalkForwardManifestOptions(**fields)
 
 
+_TEST_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+
+
+async def _matured_v3_schedule(
+    conn: asyncpg.Connection,
+    *,
+    options: WalkForwardManifestOptions,
+    margin: timedelta = timedelta(seconds=2),
+) -> tuple[datetime, datetime]:
+    """(discovery_start, cutoff_at) for a v3 manifest whose LAST fold's
+    ``test_maturity_at`` -- i.e. ``confirmatory_knowledge_cutoff`` -- lands
+    ``margin`` after the real DB clock at call time.
+
+    Unlike v1/v2 fixtures, a confirmatory schedule CANNOT be backdated to an
+    arbitrary historical date (e.g. year 2020) if the test wants real,
+    present-day certification to actually count: ``certify_research_
+    bundles``/``certify_final_outcomes`` always stamp ``verified_visible_at``
+    with the real current wall clock, so a historically-backdated
+    ``confirmatory_knowledge_cutoff`` would exclude ANY real certification
+    performed *today*, no matter how "matured" the fold's own clock_state
+    otherwise looks -- that would be testing the exact adversarial late-
+    certificate scenario, not a normal matured-and-certified-on-time one.
+    Callers must insert and certify their data, then await real wall-clock
+    time past the returned schedule's maturity (see ``_wait_past``) before
+    evaluating.
+    """
+
+    now = await conn.fetchval("SELECT clock_timestamp()")
+    max_horizon = max(options.horizons)
+    total_test_span = timedelta(days=options.test_days) * options.fold_count
+    # _insert_backdated_manifest derives created_at from cutoff_at via
+    # _next_minute_strictly_after(created_at + warmup_days), which truncates
+    # to a whole MINUTE -- cutoff_at must already be minute-aligned for that
+    # round-trip to check out in _validate_manifest_row. Round UP (never
+    # down) so the result never falls short of the requested margin past
+    # "now" -- deliberately only minute-aligned here (not the coarser
+    # utc_nonoverlap epoch-multiple-of-horizon alignment a bundle's own
+    # observed_minute needs), so the wait this forces stays bounded to
+    # under a minute rather than under a full horizon: see _align_forward,
+    # used separately to place bundles within this window.
+    target = now + margin - timedelta(minutes=max_horizon) - OUTCOME_SETTLEMENT_LAG
+    last_test_end = target.replace(second=0, microsecond=0)
+    if last_test_end < target:
+        last_test_end += timedelta(minutes=1)
+    cutoff_at = last_test_end - total_test_span
+    discovery_start = cutoff_at - timedelta(days=5)
+    return discovery_start, cutoff_at
+
+
+def _align_forward(moment: datetime, *, minutes: int) -> datetime:
+    """Smallest multiple-of-``minutes``-since-epoch instant that is `>=
+    ``moment``.
+
+    ``_sample_grid``'s ``utc_nonoverlap`` mode keeps only rows whose
+    ``observed_minute`` is an exact multiple of the row's horizon in minutes
+    SINCE THE UNIX EPOCH. A schedule anchored to the real "now" (see
+    ``_matured_v3_schedule``) is essentially never on that grid, so bundles
+    placed at an arbitrary offset from its ``test_start`` would silently be
+    dropped by sampling. This never moves a fold's own maturity/cutoff --
+    only where WITHIN the already-frozen `[test_start, test_end)` window a
+    test places its bundles -- so it never risks the large (up-to-a-full-
+    horizon) real-time wait that aligning the schedule itself would force.
+    """
+
+    bucket_seconds = minutes * 60
+    elapsed = (moment - _TEST_EPOCH).total_seconds()
+    bucket_index = math.ceil(elapsed / bucket_seconds)
+    return _TEST_EPOCH + timedelta(seconds=bucket_index * bucket_seconds)
+
+
+async def _wait_past(conn: asyncpg.Connection, target: datetime) -> None:
+    """Block (real wall-clock sleep, polling the DB clock) until the DB's
+    own clock has passed ``target``."""
+
+    while True:
+        now = await conn.fetchval("SELECT clock_timestamp()")
+        remaining = (target - now).total_seconds()
+        if remaining <= 0:
+            return
+        await asyncio.sleep(min(remaining + 0.05, 1.0))
+
+
 # ---------------------------------------------------------------------------
 # Not-ready / final-maturity gating.
 # ---------------------------------------------------------------------------
@@ -502,7 +634,7 @@ async def test_confirmatory_not_ready_until_the_last_fold_matures(
     cutoff_at = (now - timedelta(days=1, hours=2)).replace(second=0, microsecond=0)
     discovery_start = cutoff_at - timedelta(days=5)
 
-    contract = _confirmatory_contract(minimum_primary_blocks=1)
+    contract = _confirmatory_contract(minimum_primary_blocks=2)
     options = _v3_options(
         name="pr26-not-ready-test",
         contract=contract,
@@ -533,6 +665,14 @@ async def test_confirmatory_not_ready_until_the_last_fold_matures(
     assert report["confirmatory_state"] == "not_ready"
     assert report["confirmatory_result"]["ci_lower_bps"] is None
     assert report["confirmatory_result"]["primary_block_count"] == 0
+    # confirmatory_knowledge_cutoff is exposed regardless of not_ready state,
+    # and is the LAST fold's own frozen test_maturity_at (fold2 here) --
+    # never derived from any live clock_state.
+    assert report["confirmatory_knowledge_cutoff"] == folds[1]["test_maturity_at"]
+    assert (
+        report["confirmatory_result"]["confirmatory_knowledge_cutoff"]
+        == folds[1]["test_maturity_at"]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -546,30 +686,77 @@ async def _insert_spread_bundles(
     test_start: datetime,
     directional_return_pct: float,
     day_count: int,
+    direction: str = "long",
 ) -> None:
     for day in range(day_count):
         observed_at = test_start + timedelta(days=day, hours=1)
         await _insert_confirmatory_bundle(
-            conn, observed_at=observed_at, directional_return_pct=directional_return_pct
+            conn,
+            observed_at=observed_at,
+            directional_return_pct=directional_return_pct,
+            direction=direction,
+        )
+
+
+async def _insert_diluted_spread_bundles(
+    conn: asyncpg.Connection,
+    *,
+    test_start: datetime,
+    actionable_direction: str,
+    actionable_directional_return_pct: float,
+    dilution_market_return_pct: float,
+    day_count: int,
+) -> None:
+    """Per calendar-day block: one actionable primary-eligible bundle AND one
+    non-actionable ("neutral") baseline-only bundle at a DIFFERENT
+    market_return_pct. This makes the block's unconditional baseline a real,
+    independent control instead of numerically collapsing onto the
+    actionable row's own return (which is what a single-row-per-block
+    fixture does -- see the P1-01 regression test above)."""
+
+    for day in range(day_count):
+        await _insert_confirmatory_bundle(
+            conn,
+            observed_at=test_start + timedelta(days=day, hours=1),
+            directional_return_pct=actionable_directional_return_pct,
+            direction=actionable_direction,
+        )
+        await _insert_confirmatory_bundle(
+            conn,
+            observed_at=test_start + timedelta(days=day, hours=2),
+            directional_return_pct=dilution_market_return_pct,
+            direction="neutral",
         )
 
 
 @pytest.mark.asyncio
-async def test_confirmatory_pass_at_final_maturity_with_consistent_positive_edge(
+async def test_confirmatory_positive_raw_expectancy_cannot_pass_once_baseline_is_subtracted(
     conn: asyncpg.Connection,
 ) -> None:
-    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
-    cutoff_at = discovery_start + timedelta(days=7)
+    """P1-01 canonical regression. Before the fix, this exact fixture (one
+    actionable row per calendar block, a strongly positive raw return) made
+    ``clock_direction_matched_baseline_bps`` numerically equal the row's own
+    return -- so the "baseline" was reported but never subtracted, and PASS
+    fired purely because raw modeled return was positive.
+
+    Under the corrected baseline, the block-unconditional cohort for a block
+    containing only that one actionable row is that row itself, so the
+    baseline still numerically cancels almost the entire raw edge -- leaving
+    only the entry/exit cost drag, which is negative. A strongly positive
+    raw signal must NOT produce PASS.
+    """
 
     contract = _confirmatory_contract(minimum_primary_blocks=5, minimum_effect_bps=100.0)
-    options = _v3_options(name="pr26-pass-test", contract=contract)
+    options = _v3_options(name="pr26-raw-positive-not-pass-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = folds[0]["test_start"]
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
 
-    # 6 distinct calendar-day blocks, each with a strongly positive return
-    # (~490bps net of the 5bps entry cost, at zero fee/stress).
+    # 6 distinct calendar-day blocks, each with a strongly positive raw
+    # return (~490bps net of the 5bps entry cost, at zero fee/stress) --
+    # this is the exact fixture shape that used to PASS before the fix.
     await _insert_spread_bundles(
         conn, test_start=test_start, directional_return_pct=5.0, day_count=6
     )
@@ -582,6 +769,7 @@ async def test_confirmatory_pass_at_final_maturity_with_consistent_positive_edge
 
     await certify_research_bundles(conn)
     await certify_final_outcomes(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
 
     async with conn.transaction(isolation="repeatable_read", readonly=True):
         report = await evaluate_walk_forward(conn, options.name)
@@ -589,37 +777,89 @@ async def test_confirmatory_pass_at_final_maturity_with_consistent_positive_edge
     assert report["report_version"] == WALK_FORWARD_REPORT_VERSION_V3
     assert report["walk_forward_spec_version"] == WALK_FORWARD_SPEC_VERSION_V3
     result = report["confirmatory_result"]
+    assert result["primary_block_count"] == 6
+    assert result["n_evaluated_actionable"] == 6
+    # Each block's baseline cohort is exactly the primary row itself (only
+    # one evaluated observation per block), so the block-unconditional
+    # market mean numerically equals that row's own 5.0% market return.
+    assert result["baseline_mean_bps"] == pytest.approx(500.0, abs=0.01)
+    # The pre-fix code reported this same raw quantity as ~489.75bps
+    # (baseline_mean_bps was diagnostic-only, never subtracted) and called
+    # it PASS. The corrected excess subtracts the baseline, leaving only the
+    # entry/exit cost drag -- negative, not PASS.
+    assert result["primary_excess_mean_bps"] == pytest.approx(489.75 - 500.0, abs=1.0)
+    assert result["primary_excess_mean_bps"] < 0
+    assert report["confirmatory_state"] != "pass"
+    assert report["confirmatory_state"] == "fail"
+
+    # Exploratory positive_oos_gate_count is 0 (n=1/day-group is below the
+    # default min_group_n reporting guardrail) while the confirmatory
+    # decision is a clean, deterministic FAIL -- proof the two are
+    # structurally decoupled.
+    assert report["gates"]["positive_oos_gate_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_confirmatory_pass_with_genuine_excess_over_diluted_baseline(
+    conn: asyncpg.Connection,
+) -> None:
+    """A genuine PASS is still reachable once the baseline cohort is a real,
+    independent control: each block also contains a non-actionable "neutral"
+    row whose market_return_pct is the exact negative of the actionable
+    row's own return, so the block-unconditional baseline is 0.0 and the
+    excess reduces to (approximately) the actionable row's own modeled net
+    return, comfortably above minimum_effect_bps."""
+
+    contract = _confirmatory_contract(minimum_primary_blocks=5, minimum_effect_bps=100.0)
+    options = _v3_options(name="pr26-pass-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
+    folds = await _insert_backdated_manifest(
+        conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
+    )
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
+
+    await _insert_diluted_spread_bundles(
+        conn,
+        test_start=test_start,
+        actionable_direction="long",
+        actionable_directional_return_pct=5.0,
+        dilution_market_return_pct=-5.0,
+        day_count=6,
+    )
+    await certify_research_bundles(conn)
+    await certify_final_outcomes(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        report = await evaluate_walk_forward(conn, options.name)
+
+    result = report["confirmatory_result"]
     assert report["confirmatory_state"] == "pass"
     assert result["primary_block_count"] == 6
     assert result["n_evaluated_actionable"] == 6
     assert result["ci_lower_bps"] > contract.minimum_effect_bps
-    assert result["primary_estimate_mean_bps"] == pytest.approx(489.75, abs=1.0)
-
-    # Exploratory positive_oos_gate_count is 0 (n=1/day-group is below the
-    # default min_group_n reporting guardrail) while the confirmatory
-    # decision is a clean PASS -- proof the two are structurally decoupled.
-    assert report["gates"]["positive_oos_gate_count"] == 0
+    assert result["baseline_mean_bps"] == pytest.approx(0.0, abs=0.5)
+    assert result["primary_excess_mean_bps"] == pytest.approx(489.75, abs=1.0)
 
 
 @pytest.mark.asyncio
 async def test_confirmatory_fail_at_final_maturity_with_consistent_negative_edge(
     conn: asyncpg.Connection,
 ) -> None:
-    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
-    cutoff_at = discovery_start + timedelta(days=7)
-
     contract = _confirmatory_contract(minimum_primary_blocks=5, minimum_effect_bps=100.0)
     options = _v3_options(name="pr26-fail-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = folds[0]["test_start"]
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
 
     await _insert_spread_bundles(
         conn, test_start=test_start, directional_return_pct=-5.0, day_count=6
     )
     await certify_research_bundles(conn)
     await certify_final_outcomes(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
 
     async with conn.transaction(isolation="repeatable_read", readonly=True):
         report = await evaluate_walk_forward(conn, options.name)
@@ -633,15 +873,13 @@ async def test_confirmatory_fail_at_final_maturity_with_consistent_negative_edge
 async def test_confirmatory_inconclusive_when_matured_blocks_below_minimum(
     conn: asyncpg.Connection,
 ) -> None:
-    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
-    cutoff_at = discovery_start + timedelta(days=7)
-
     contract = _confirmatory_contract(minimum_primary_blocks=5, minimum_effect_bps=100.0)
     options = _v3_options(name="pr26-inconclusive-blocks-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = folds[0]["test_start"]
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
 
     # Only 2 distinct calendar-day blocks -- strongly positive, but below
     # minimum_primary_blocks=5, so this must stay inconclusive regardless of
@@ -651,6 +889,7 @@ async def test_confirmatory_inconclusive_when_matured_blocks_below_minimum(
     )
     await certify_research_bundles(conn)
     await certify_final_outcomes(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
 
     async with conn.transaction(isolation="repeatable_read", readonly=True):
         report = await evaluate_walk_forward(conn, options.name)
@@ -661,19 +900,129 @@ async def test_confirmatory_inconclusive_when_matured_blocks_below_minimum(
     assert result["ci_lower_bps"] is None  # bootstrap never ran
 
 
+# ---------------------------------------------------------------------------
+# P1-01: the baseline sign convention and cohort membership.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_confirmatory_baseline_sign_flips_for_a_short_primary_row(
+    conn: asyncpg.Connection,
+) -> None:
+    """Mirror of the P1-01 regression test above, but for a SHORT primary
+    row: the single-row-per-block baseline cohort's own market_return_pct is
+    NEGATIVE (a winning short means price fell), and the baseline must be
+    negated -- not applied as-is -- to correctly compare a short signal
+    against the block's unconditional drift."""
+
+    contract = _confirmatory_contract(minimum_primary_blocks=2, minimum_effect_bps=0.0)
+    options = _v3_options(name="pr26-short-baseline-sign-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
+    folds = await _insert_backdated_manifest(
+        conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
+    )
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
+
+    # A "winning" short every day: price falls 5%, so market_return_pct is
+    # -5.0% (negative) for every block's lone (self-referential) baseline
+    # cohort row.
+    await _insert_spread_bundles(
+        conn,
+        test_start=test_start,
+        directional_return_pct=5.0,
+        day_count=2,
+        direction="short",
+    )
+    await certify_research_bundles(conn)
+    await certify_final_outcomes(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        report = await evaluate_walk_forward(conn, options.name)
+
+    result = report["confirmatory_result"]
+    assert result["n_evaluated_actionable"] == 2
+    # The cohort's own raw mean is -500bps (market fell 5%); sign-matched to
+    # this row's own "short" direction, the applied baseline must be +500bps
+    # -- the negation, never the raw -500bps unchanged.
+    assert result["baseline_mean_bps"] == pytest.approx(500.0, abs=0.5)
+    # Same cost-drag-only cancellation pattern as the long-direction
+    # regression test: never PASS from a self-referential cohort.
+    assert result["primary_excess_mean_bps"] < 0
+    assert report["confirmatory_state"] == "fail"
+
+
+@pytest.mark.asyncio
+async def test_confirmatory_baseline_cohort_includes_non_actionable_rows_regardless_of_state_or_regime(
+    conn: asyncpg.Connection,
+) -> None:
+    """P1-01: the baseline cohort for one block must include a non-actionable
+    ("neutral") row even though it is never itself a primary/actionable row,
+    and must include it regardless of that row's state/regime_label
+    differing from the actionable primary row's own state/regime_label."""
+
+    contract = _confirmatory_contract(minimum_primary_blocks=2, minimum_effect_bps=0.0)
+    options = _v3_options(name="pr26-baseline-cohort-membership-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
+    folds = await _insert_backdated_manifest(
+        conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
+    )
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
+
+    # Single calendar-day block: one actionable long row (default
+    # state/regime) plus one non-actionable neutral row with a DIFFERENT
+    # state/regime_label and a very different market_return_pct.
+    await _insert_confirmatory_bundle(
+        conn,
+        observed_at=test_start + timedelta(hours=1),
+        directional_return_pct=5.0,
+        direction="long",
+    )
+    await _insert_confirmatory_bundle(
+        conn,
+        observed_at=test_start + timedelta(hours=2),
+        directional_return_pct=-15.0,
+        direction="neutral",
+        state="Diagnostic Sweep State",
+        regime_label="unrelated_diagnostic_regime",
+    )
+    await certify_research_bundles(conn)
+    await certify_final_outcomes(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        report = await evaluate_walk_forward(conn, options.name)
+
+    result = report["confirmatory_result"]
+    # Only the long row is actionable -- the neutral row never becomes a
+    # primary row.
+    assert result["n_evaluated_actionable"] == 1
+    # If the baseline cohort were (incorrectly) restricted to the actionable
+    # row alone, the block's unconditional mean would be the row's own
+    # +5.0% (+500bps), and the sign-matched (long) baseline would be
+    # +500bps. Because the neutral row IS included, the block's true
+    # unconditional mean is (5.0 + -15.0) / 2 = -5.0% (-500bps), and the
+    # long-direction baseline is -500bps -- the opposite sign from what an
+    # actionable-only cohort would have produced.
+    assert result["baseline_mean_bps"] == pytest.approx(-500.0, abs=0.5)
+    assert result["primary_block_count"] == 1
+    # Below this contract's minimum_primary_blocks=2 -- inconclusive by
+    # construction, but the diagnostic baseline_mean_bps above is computed
+    # unconditionally, before that gate.
+    assert report["confirmatory_state"] == "inconclusive"
+
+
 @pytest.mark.asyncio
 async def test_confirmatory_missing_nonvalid_and_insufficient_depth_stay_distinct(
     conn: asyncpg.Connection,
 ) -> None:
-    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
-    cutoff_at = discovery_start + timedelta(days=7)
-
-    contract = _confirmatory_contract(minimum_primary_blocks=1, minimum_effect_bps=-1_000_000.0)
+    contract = _confirmatory_contract(minimum_primary_blocks=2, minimum_effect_bps=0.0)
     options = _v3_options(name="pr26-coverage-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = folds[0]["test_start"]
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
 
     # Day 0: valid snapshot, cost-evaluable.
     await _insert_confirmatory_bundle(
@@ -696,6 +1045,7 @@ async def test_confirmatory_missing_nonvalid_and_insufficient_depth_stay_distinc
 
     await certify_research_bundles(conn)
     await certify_final_outcomes(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
 
     async with conn.transaction(isolation="repeatable_read", readonly=True):
         report = await evaluate_walk_forward(conn, options.name)
@@ -708,6 +1058,23 @@ async def test_confirmatory_missing_nonvalid_and_insufficient_depth_stay_distinc
     assert coverage["n_cost_evaluable"] == 1
     assert coverage["cost_evaluable_pct"] == pytest.approx(50.0)
 
+    # P2-02: coverage_characteristics keeps the same 4 cohorts distinct, each
+    # with its own n and diagnostics -- computed from BOTH rows regardless of
+    # cost-evaluability (gross_directional_return_bps/market_return_bps are
+    # always derivable straight from the outcome row, independent of the
+    # execution snapshot).
+    characteristics = report["confirmatory_result"]["coverage_characteristics"]
+    assert characteristics["cost_evaluable"]["n"] == 1
+    assert characteristics["cost_evaluable"]["gross_directional_mean_bps"] == pytest.approx(100.0)
+    assert characteristics["cost_evaluable"]["gross_directional_median_bps"] == pytest.approx(100.0)
+    assert characteristics["cost_evaluable"]["abs_market_return_mean_bps"] == pytest.approx(100.0)
+    assert characteristics["snapshot_nonvalid"]["n"] == 1
+    assert characteristics["snapshot_nonvalid"]["gross_directional_mean_bps"] == pytest.approx(100.0)
+    assert characteristics["insufficient_depth"]["n"] == 0
+    assert characteristics["insufficient_depth"]["gross_directional_mean_bps"] is None
+    assert characteristics["snapshot_missing"]["n"] == 0
+    assert characteristics["snapshot_missing"]["gross_directional_mean_bps"] is None
+
 
 # ---------------------------------------------------------------------------
 # No adaptive/optional stopping: re-evaluating a matured manifest later must
@@ -719,20 +1086,28 @@ async def test_confirmatory_missing_nonvalid_and_insufficient_depth_stay_distinc
 async def test_confirmatory_result_is_identical_across_repeated_evaluations(
     conn: asyncpg.Connection,
 ) -> None:
-    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
-    cutoff_at = discovery_start + timedelta(days=7)
-
     contract = _confirmatory_contract(minimum_primary_blocks=3, minimum_effect_bps=100.0)
     options = _v3_options(name="pr26-repeatable-test", contract=contract)
+    discovery_start, cutoff_at = await _matured_v3_schedule(conn, options=options)
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = folds[0]["test_start"]
-    await _insert_spread_bundles(
-        conn, test_start=test_start, directional_return_pct=5.0, day_count=4
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
+    # Diluted baseline (see test_confirmatory_pass_with_genuine_excess_over_
+    # diluted_baseline) so this is a genuine, baseline-adjusted PASS -- not
+    # merely a positive raw return -- making the idempotence check below
+    # meaningful under the corrected baseline semantics.
+    await _insert_diluted_spread_bundles(
+        conn,
+        test_start=test_start,
+        actionable_direction="long",
+        actionable_directional_return_pct=5.0,
+        dilution_market_return_pct=-5.0,
+        day_count=4,
     )
     await certify_research_bundles(conn)
     await certify_final_outcomes(conn)
+    await _wait_past(conn, folds[-1]["test_maturity_at"])
 
     async with conn.transaction(isolation="repeatable_read", readonly=True):
         first = await evaluate_walk_forward(conn, options.name)
@@ -756,7 +1131,7 @@ async def test_v1_and_v2_reports_have_no_confirmatory_keys_alongside_a_v3_manife
     discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
     cutoff_at = discovery_start + timedelta(days=7)
 
-    contract = _confirmatory_contract(minimum_primary_blocks=1)
+    contract = _confirmatory_contract(minimum_primary_blocks=2)
     v3_options = _v3_options(name="pr26-coexist-v3-test", contract=contract)
     await _insert_backdated_manifest(
         conn,
@@ -804,8 +1179,113 @@ async def test_v1_and_v2_reports_have_no_confirmatory_keys_alongside_a_v3_manife
         assert "confirmatory_contract" not in report
         assert "confirmatory_state" not in report
         assert "confirmatory_result" not in report
+        assert "confirmatory_knowledge_cutoff" not in report
     assert v1_report["report_version"] == 1
     assert v2_report["report_version"] == 2
+
+
+# ---------------------------------------------------------------------------
+# P1-02: the confirmatory sample is fixed as of confirmatory_knowledge_cutoff
+# -- a source/certificate that becomes visible AFTER that frozen cutoff must
+# permanently stay outside the experiment, even after it is certified and
+# the manifest is re-evaluated.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_confirmatory_late_bundle_certificate_after_frozen_cutoff_never_enters_sample(
+    conn: asyncpg.Connection,
+) -> None:
+    """1. frozen final maturity is in the past (manifest backdated to 2020).
+    2. an eligible OOS source (a fully complete bundle) exists.
+    3. its bundle-visibility certificate is absent at the first evaluation.
+    4. evaluate -> a fixed (empty) result.
+    5. certify the bundle -- verified_visible_at is real "now" (2020s later),
+       necessarily AFTER the frozen confirmatory_knowledge_cutoff.
+    6. evaluate again later.
+    7. confirmatory_result must remain byte-identical: the late-certified
+    bundle must never enter the primary sample."""
+
+    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
+    cutoff_at = discovery_start + timedelta(days=7)
+
+    contract = _confirmatory_contract(minimum_primary_blocks=2, minimum_effect_bps=0.0)
+    options = _v3_options(name="pr26-late-bundle-cert-test", contract=contract)
+    folds = await _insert_backdated_manifest(
+        conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
+    )
+    test_start = folds[0]["test_start"]
+
+    # A fully complete, certifiable bundle inside the OOS window -- but left
+    # UNCERTIFIED for now.
+    await _insert_confirmatory_bundle(
+        conn, observed_at=test_start + timedelta(hours=1), directional_return_pct=5.0
+    )
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        first = await evaluate_walk_forward(conn, options.name)
+
+    # confirmatory_knowledge_cutoff (2020s) is already far in the past
+    # relative to the real DB clock, so this is already past the not_ready
+    # gate -- yet the uncertified bundle contributes nothing.
+    assert first["confirmatory_state"] == "inconclusive"
+    assert first["confirmatory_result"]["n_evaluated_actionable"] == 0
+
+    # Certify now -- verified_visible_at is real "now", necessarily after
+    # the frozen (2020s) confirmatory_knowledge_cutoff.
+    await certify_research_bundles(conn)
+    await certify_final_outcomes(conn)
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        second = await evaluate_walk_forward(conn, options.name)
+
+    assert second["confirmatory_result"] == first["confirmatory_result"]
+    assert second["confirmatory_result"]["n_evaluated_actionable"] == 0
+
+
+@pytest.mark.asyncio
+async def test_confirmatory_late_final_outcome_certificate_after_frozen_cutoff_never_enters_sample(
+    conn: asyncpg.Connection,
+) -> None:
+    """Same shape as the bundle-level adversarial test, but isolating the
+    final-OUTCOME visibility certificate specifically: the bundle itself is
+    certified early (so the observation is visible in the grid at all), but
+    the final outcome's own visibility certificate is only produced late --
+    the row's outcome must stay projected to "pending" (never enter the
+    primary sample) on both the first and the second evaluation."""
+
+    discovery_start = datetime(2020, 1, 1, tzinfo=UTC)
+    cutoff_at = discovery_start + timedelta(days=7)
+
+    contract = _confirmatory_contract(minimum_primary_blocks=2, minimum_effect_bps=0.0)
+    options = _v3_options(name="pr26-late-outcome-cert-test", contract=contract)
+    folds = await _insert_backdated_manifest(
+        conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
+    )
+    test_start = folds[0]["test_start"]
+
+    await _insert_confirmatory_bundle(
+        conn, observed_at=test_start + timedelta(hours=1), directional_return_pct=5.0
+    )
+    # Certify the BUNDLE right away -- the observation is now visible in the
+    # grid -- but do NOT certify the final outcome yet.
+    await certify_research_bundles(conn)
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        first = await evaluate_walk_forward(conn, options.name)
+
+    assert first["confirmatory_state"] == "inconclusive"
+    assert first["confirmatory_result"]["n_evaluated_actionable"] == 0
+
+    # Certify the final outcome now -- its verified_visible_at is real
+    # "now", after the frozen (2020s) confirmatory_knowledge_cutoff.
+    await certify_final_outcomes(conn)
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        second = await evaluate_walk_forward(conn, options.name)
+
+    assert second["confirmatory_result"] == first["confirmatory_result"]
+    assert second["confirmatory_result"]["n_evaluated_actionable"] == 0
 
 
 # ---------------------------------------------------------------------------

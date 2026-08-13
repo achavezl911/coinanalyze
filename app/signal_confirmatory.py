@@ -22,12 +22,21 @@ Confirmatory vs exploratory (do not blur this line):
   every ``primary_*`` field is a scalar, so there is no way to express more
   than one primary hypothesis in this shape.
 
-Baseline (``clock_direction_matched_baseline_v1``): a thin, versioned,
-documented wrapper around PR5's already-persisted
-``signal_outcome.directional_return_pct`` (see
-``app.signal_outcomes.compute_path_metrics``), converted from pct to bps.
-It is NEVER recomputed from raw OHLCV bars -- PR11/PR26 read PR4-PR10's
-immutable output only, they never re-derive it.
+Baseline (``block_unconditional_direction_matched_baseline_v1``): the mean of
+PR5's already-persisted, direction-agnostic ``signal_outcome.market_return_pct``
+(see ``app.signal_outcomes.compute_path_metrics``) across every compatible
+periodic *evaluated* observation in the same calendar block -- not merely the
+signal's own row, and not restricted to actionable/long/short rows. This is a
+real control: it is unconditional on the primary signal ever having fired at
+all in that block, and is deliberately frictionless (no trading costs applied
+to it), which makes comparing an actionable signal's modeled, cost-aware
+return against it a conservative test. PR11 (``app.signal_walk_forward``)
+computes the per-block mean from plain caller-supplied ``market_return_pct``
+values and passes it here only to be sign-matched to one primary row's own
+``direction`` (``+mean`` for ``long``, ``-mean`` for ``short``) -- this module
+never recomputes the mean itself and never reads a bar. It is NEVER recomputed
+from raw OHLCV bars -- PR11/PR26 read PR4-PR10's immutable output only, they
+never re-derive it.
 
 Block bootstrap (``block_bootstrap_v1``): rows are pre-grouped by caller into
 whole, non-overlapping, epoch-anchored calendar blocks
@@ -62,10 +71,14 @@ from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES
 # ---------------------------------------------------------------------------
 
 CONFIRMATORY_PRIMARY_ENDPOINT_VERSION = 1
-CONFIRMATORY_PRIMARY_ENDPOINT_NAME = "measured_entry_modeled_exit_net_of_fees_and_stress_v1"
+CONFIRMATORY_PRIMARY_ENDPOINT_NAME = (
+    "measured_entry_modeled_exit_net_of_fees_stress_and_baseline_excess_v1"
+)
 
-CLOCK_DIRECTION_MATCHED_BASELINE_VERSION = 1
-CLOCK_DIRECTION_MATCHED_BASELINE_NAME = "clock_direction_matched_baseline_v1"
+BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION = 1
+BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_NAME = (
+    "block_unconditional_direction_matched_baseline_v1"
+)
 
 BLOCK_BOOTSTRAP_INFERENCE_VERSION = 1
 BLOCK_BOOTSTRAP_INFERENCE_NAME = "block_bootstrap_v1"
@@ -250,10 +263,10 @@ def validate_confirmatory_contract(
             "actually applied and the fee the contract claims"
         )
 
-    if contract.baseline_version != CLOCK_DIRECTION_MATCHED_BASELINE_VERSION:
+    if contract.baseline_version != BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION:
         raise ValueError(
             f"confirmatory baseline_version={contract.baseline_version!r} is not "
-            f"{CLOCK_DIRECTION_MATCHED_BASELINE_VERSION!r}"
+            f"{BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION!r}"
         )
 
     if not math.isfinite(contract.unmodeled_execution_stress_bps) or (
@@ -272,21 +285,31 @@ def validate_confirmatory_contract(
     if contract.block_length < 1:
         raise ValueError("confirmatory block_length must be >= 1")
 
-    if contract.bootstrap_repetitions < 1:
-        raise ValueError("confirmatory bootstrap_repetitions must be >= 1")
+    if contract.bootstrap_repetitions < 2:
+        # A single repetition cannot produce a percentile CI with any actual
+        # spread -- structurally degenerate, never a real calibration value.
+        raise ValueError("confirmatory bootstrap_repetitions must be >= 2")
 
     if not 0.0 < contract.confidence_level < 1.0:
         raise ValueError("confirmatory confidence_level must be between 0 and 1 exclusive")
 
     if not math.isfinite(contract.minimum_effect_bps):
         raise ValueError("confirmatory minimum_effect_bps must be finite")
+    if contract.minimum_effect_bps < 0.0:
+        # A negative threshold would let a partially- or wholly-negative CI
+        # pass; economically-relevant effect sizes are never negative.
+        raise ValueError("confirmatory minimum_effect_bps must be >= 0")
 
-    if contract.minimum_primary_blocks < 1:
-        raise ValueError("confirmatory minimum_primary_blocks must be >= 1")
+    if contract.minimum_primary_blocks < 2:
+        # A single block can never be whole-block bootstrapped into a
+        # non-degenerate resample (every repetition would just redraw the
+        # same one block) -- structurally degenerate, never a real
+        # calibration value.
+        raise ValueError("confirmatory minimum_primary_blocks must be >= 2")
 
-    if not 0.0 <= contract.minimum_execution_data_coverage_pct <= 100.0:
+    if not 0.0 < contract.minimum_execution_data_coverage_pct <= 100.0:
         raise ValueError(
-            "confirmatory minimum_execution_data_coverage_pct must be between 0 and 100"
+            "confirmatory minimum_execution_data_coverage_pct must be > 0 and <= 100"
         )
 
     if contract.confirmatory_decision_policy != CONFIRMATORY_DECISION_POLICY_V1:
@@ -297,20 +320,31 @@ def validate_confirmatory_contract(
         )
 
 
-def clock_direction_matched_baseline_bps(directional_return_pct: float) -> float:
-    """``clock_direction_matched_baseline_v1``.
+def block_unconditional_direction_matched_baseline_bps(
+    block_unconditional_market_mean_bps: float,
+    *,
+    direction: str,
+) -> float:
+    """``block_unconditional_direction_matched_baseline_v1``.
 
-    PR5's ``directional_return_pct`` (``app.signal_outcomes.compute_path_metrics``)
-    is already the raw, cost-free price return over the observation's own
-    window, sign-flipped to match the signal's stated direction (positive
-    when the market moved in the signal's direction, negative otherwise) --
-    i.e. it is already both clock-matched (same window) and
-    direction-matched (same sign convention as the signal). This function
-    only names, versions and documents that quantity as the confirmatory
-    baseline reference point; it never recomputes it from bars.
+    Sign-matches an already-computed, per-block, direction-*agnostic* control
+    mean (``mean(market_return_pct * 100)`` over ALL compatible periodic
+    evaluated observations in one calendar block -- see
+    ``app.signal_walk_forward._compute_confirmatory_result``, which owns that
+    aggregation) to one primary row's own stated ``direction``: a "long" row
+    is compared against the block's unconditional market drift as-is (a
+    bullish block should look easy for a long signal to beat); a "short" row
+    is compared against the negated drift (a bearish block should look easy
+    for a short signal to beat). This function performs only that sign
+    matching -- it never computes the block mean itself, never restricts
+    which rows fed into it, and never reads a bar.
     """
 
-    return directional_return_pct * 100.0
+    if direction == "long":
+        return block_unconditional_market_mean_bps
+    if direction == "short":
+        return -block_unconditional_market_mean_bps
+    raise ValueError(f"unsupported confirmatory baseline direction: {direction!r}")
 
 
 def confirmatory_block_key(observed_minute: datetime, *, block_unit: str, block_length: int) -> str:
@@ -418,10 +452,18 @@ def confirmatory_decision(
     known to be satisfied (an inadequate-precision/sample/coverage case is
     ``inconclusive`` by construction, before this function is ever reached --
     see ``app.signal_walk_forward._compute_confirmatory_result``).
+
+    Defensive ordering: FAIL is checked before PASS. Combined with
+    ``validate_confirmatory_contract`` requiring ``minimum_effect_bps >= 0``,
+    a wholly non-positive CI (``upper_ci_bps <= 0.0``) can never reach the
+    PASS branch even if that validation were ever bypassed -- ``lower_ci_bps
+    <= upper_ci_bps <= 0.0`` can only satisfy ``lower_ci_bps >
+    minimum_effect_bps`` for a negative ``minimum_effect_bps``, and checking
+    FAIL first forecloses that path regardless.
     """
 
-    if lower_ci_bps > minimum_effect_bps:
-        return CONFIRMATORY_STATE_PASS
     if upper_ci_bps <= 0.0:
         return CONFIRMATORY_STATE_FAIL
+    if lower_ci_bps > minimum_effect_bps:
+        return CONFIRMATORY_STATE_PASS
     return CONFIRMATORY_STATE_INCONCLUSIVE

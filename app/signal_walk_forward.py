@@ -12,13 +12,14 @@ import asyncpg
 
 from app.signal_confirmatory import (
     BLOCK_BOOTSTRAP_INFERENCE_NAME,
-    CLOCK_DIRECTION_MATCHED_BASELINE_NAME,
+    BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_NAME,
     CONFIRMATORY_PRIMARY_ENDPOINT_NAME,
     CONFIRMATORY_STATE_INCONCLUSIVE,
     CONFIRMATORY_STATE_NOT_READY,
     ConfirmatoryContract,
     block_bootstrap_ci,
     block_bootstrap_v1,
+    block_unconditional_direction_matched_baseline_bps,
     confirmatory_block_key,
     confirmatory_contract_from_dict,
     confirmatory_contract_to_dict,
@@ -1782,6 +1783,22 @@ def _actionable_evaluated(
     ]
 
 
+def _all_periodic_evaluated(
+    grid: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """PR26 confirmatory baseline cohort: every compatible periodic
+    observation that has an evaluated outcome, regardless of actionability,
+    direction, state or regime.
+
+    Deliberately broader than ``_actionable_evaluated`` (a strict superset of
+    it): the confirmatory baseline is an unconditional-on-the-signal control,
+    so it must never be narrowed by the same actionable/direction predicate
+    used to pick the primary signal rows themselves.
+    """
+
+    return [row for row in grid if row["usable"] and row["status"] == "evaluated"]
+
+
 def _build_gross_views(
     *,
     discovery_grid: list[dict[str, Any]],
@@ -2392,10 +2409,10 @@ async def _fetch_confirmatory_primary_rows(
     conn: asyncpg.Connection,
     *,
     fold: dict[str, Any],
-    generated_at: datetime,
+    knowledge_cutoff: datetime,
     options: WalkForwardManifestOptions,
     contract: ConfirmatoryContract,
-) -> list[dict[str, Any]]:
+) -> dict[str, list[dict[str, Any]]]:
     """OOS-only rows for one matured fold, scoped to exactly the confirmatory
     contract's single symbol/horizon (never discovery, never any other
     symbol/horizon), matching v2's certificate-gated knowledge-time
@@ -2406,6 +2423,20 @@ async def _fetch_confirmatory_primary_rows(
     whole allows for its exploratory views, this fetch is narrowed to
     exactly one symbol and one horizon before any row ever reaches the
     bootstrap.
+
+    ``knowledge_cutoff`` is the FROZEN ``confirmatory_knowledge_cutoff``
+    (last fold's ``test_maturity_at`` -- see ``_compute_confirmatory_result``),
+    never the live ``generated_at`` at call time: passing the same frozen
+    value on every call is what makes the certificate-gated grid fetch below
+    (and therefore the whole confirmatory sample) reproducible regardless of
+    how much later ``evaluate_walk_forward`` is re-run.
+
+    Returns both the actionable primary rows AND the broader, unconditional
+    baseline cohort (every compatible periodic evaluated observation in the
+    same window, actionable or not) -- both built from the exact same
+    ``test_grid``/``_sample_grid`` call, so both share the identical primary
+    symbol/horizon/utc_nonoverlap-sampling/OOS-window/knowledge-cutoff
+    contract.
     """
 
     narrowed = replace(
@@ -2417,11 +2448,12 @@ async def _fetch_confirmatory_primary_rows(
         conn,
         period_start=fold["test_start"],
         period_end=fold["test_end"],
-        knowledge_cutoff=generated_at,
+        knowledge_cutoff=knowledge_cutoff,
         options=narrowed,
     )
     sampled = _sample_grid(test_grid, contract.primary_sampling_mode)
     actionable_rows = _actionable_evaluated(sampled)
+    baseline_cohort_rows = _all_periodic_evaluated(sampled)
 
     observation_ids = list({int(row["observation_id"]) for row in actionable_rows})
     snapshots = await _fetch_execution_snapshots(
@@ -2430,7 +2462,7 @@ async def _fetch_confirmatory_primary_rows(
         execution_snapshot_version=options.execution_snapshot_version,
     )
 
-    rows: list[dict[str, Any]] = []
+    primary_rows: list[dict[str, Any]] = []
     for row in actionable_rows:
         snapshot_by_exchange = snapshots.get(int(row["observation_id"]), {})
         snapshot = snapshot_by_exchange.get(contract.primary_exchange)
@@ -2440,29 +2472,106 @@ async def _fetch_confirmatory_primary_rows(
             size_usd=contract.primary_size_usd,
             fee_bps_per_side=contract.primary_taker_fee_bps,
         )
-        rows.append(
+        market_return_pct = row.get("market_return_pct")
+        primary_rows.append(
             {
                 "fold_index": fold["fold_index"],
                 "observation_id": row["observation_id"],
                 "observed_minute": row.get("observed_minute"),
+                "direction": row["direction"],
                 "snapshot_missing": measure["snapshot_missing"],
                 "snapshot_nonvalid": measure["snapshot_nonvalid"],
                 "insufficient_depth": measure["insufficient_depth"],
                 "cost_evaluable": measure["cost_evaluable"],
-                "baseline_bps": measure["gross_directional_return_bps"],
+                "gross_directional_return_bps": measure["gross_directional_return_bps"],
+                "market_return_bps": (
+                    None if market_return_pct is None else float(market_return_pct) * 100.0
+                ),
                 "modeled_net_after_fees_bps": measure["modeled_net_after_fees_bps"],
             }
         )
-    return rows
+
+    baseline_rows: list[dict[str, Any]] = [
+        {
+            "observed_minute": row.get("observed_minute"),
+            "market_return_bps": float(row["market_return_pct"]) * 100.0,
+        }
+        for row in baseline_cohort_rows
+        if row.get("market_return_pct") is not None
+    ]
+
+    return {"primary_rows": primary_rows, "baseline_rows": baseline_rows}
+
+
+_EMPTY_COHORT_CHARACTERISTICS: dict[str, Any] = {
+    "n": 0,
+    "gross_directional_mean_bps": None,
+    "gross_directional_median_bps": None,
+    "abs_market_return_mean_bps": None,
+}
+
+
+def _cohort_characteristics(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Diagnostics-only summary of one coverage cohort. Never read by the
+    PASS/FAIL/INCONCLUSIVE decision path -- see
+    ``_confirmatory_coverage_characteristics``."""
+
+    if not rows:
+        return dict(_EMPTY_COHORT_CHARACTERISTICS)
+
+    gross = [
+        row["gross_directional_return_bps"]
+        for row in rows
+        if row["gross_directional_return_bps"] is not None
+    ]
+    abs_market = [
+        abs(row["market_return_bps"]) for row in rows if row["market_return_bps"] is not None
+    ]
+    return {
+        "n": len(rows),
+        "gross_directional_mean_bps": statistics.fmean(gross) if gross else None,
+        "gross_directional_median_bps": statistics.median(gross) if gross else None,
+        "abs_market_return_mean_bps": statistics.fmean(abs_market) if abs_market else None,
+    }
+
+
+def _confirmatory_coverage_characteristics(
+    primary_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Audit-4 A4-07 coverage diagnostics: per-cohort ``n`` /
+    ``gross_directional_mean_bps`` / ``gross_directional_median_bps`` /
+    ``abs_market_return_mean_bps``, computed over ALL actionable-evaluated
+    primary rows (before the ``cost_evaluable`` filter), keeping
+    ``cost_evaluable``, ``snapshot_nonvalid``, ``insufficient_depth`` and
+    ``snapshot_missing`` as four distinct cohorts -- never conflated, never
+    relabeled. Diagnostics only: nothing here feeds the confirmatory
+    decision.
+    """
+
+    return {
+        "cost_evaluable": _cohort_characteristics(
+            [row for row in primary_rows if row["cost_evaluable"]]
+        ),
+        "snapshot_nonvalid": _cohort_characteristics(
+            [row for row in primary_rows if row["snapshot_nonvalid"]]
+        ),
+        "insufficient_depth": _cohort_characteristics(
+            [row for row in primary_rows if row["insufficient_depth"]]
+        ),
+        "snapshot_missing": _cohort_characteristics(
+            [row for row in primary_rows if row["snapshot_missing"]]
+        ),
+    }
 
 
 def _confirmatory_not_ready_result(contract: ConfirmatoryContract) -> dict[str, Any]:
     return {
         "confirmatory_state": CONFIRMATORY_STATE_NOT_READY,
         "primary_endpoint_name": CONFIRMATORY_PRIMARY_ENDPOINT_NAME,
-        "baseline_name": CLOCK_DIRECTION_MATCHED_BASELINE_NAME,
+        "baseline_name": BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_NAME,
         "inference_name": BLOCK_BOOTSTRAP_INFERENCE_NAME,
         "decision_policy": contract.confirmatory_decision_policy,
+        "confirmatory_knowledge_cutoff": None,
         "n_evaluated_actionable": 0,
         "coverage": {
             "n_evaluated_actionable": 0,
@@ -2472,9 +2581,15 @@ def _confirmatory_not_ready_result(contract: ConfirmatoryContract) -> dict[str, 
             "n_cost_evaluable": 0,
             "cost_evaluable_pct": None,
         },
+        "coverage_characteristics": {
+            "cost_evaluable": dict(_EMPTY_COHORT_CHARACTERISTICS),
+            "snapshot_nonvalid": dict(_EMPTY_COHORT_CHARACTERISTICS),
+            "insufficient_depth": dict(_EMPTY_COHORT_CHARACTERISTICS),
+            "snapshot_missing": dict(_EMPTY_COHORT_CHARACTERISTICS),
+        },
         "primary_block_count": 0,
         "baseline_mean_bps": None,
-        "primary_estimate_mean_bps": None,
+        "primary_excess_mean_bps": None,
         "bootstrap_repetitions": contract.bootstrap_repetitions,
         "confidence_level": contract.confidence_level,
         "ci_lower_bps": None,
@@ -2492,7 +2607,6 @@ async def _compute_confirmatory_result(
     *,
     options: WalkForwardManifestOptions,
     contract: ConfirmatoryContract,
-    folds: list[dict[str, Any]],
     fold_specs: list[dict[str, Any]],
     generated_at: datetime,
 ) -> dict[str, Any]:
@@ -2500,40 +2614,50 @@ async def _compute_confirmatory_result(
     function of already-committed, frozen state -- re-running it later for
     the same matured schedule always returns the same result.
 
-    confirmatory_state stays "not_ready" purely on the LAST frozen fold's
-    clock state (never on integrity), matching TASK.md's "final frozen OOS
-    maturity" language. An earlier fold being integrity_blocked or otherwise
-    not evaluation_ready simply contributes zero primary rows once past that
-    clock gate -- which can push the outcome toward inconclusive via
-    minimum_primary_blocks/minimum_execution_data_coverage_pct, but never
-    re-extends "not_ready".
+    ``confirmatory_knowledge_cutoff`` is the last frozen fold's
+    ``test_maturity_at`` -- read directly off the manifest's own hashed fold
+    schedule, never derived from any live/dynamic per-fold state.
+    ``confirmatory_state`` stays "not_ready" purely on comparing the live
+    ``generated_at`` against that one frozen timestamp.
+
+    Once past that gate, EVERY fold in ``fold_specs`` is fetched -- there is
+    no per-fold ``evaluation_ready`` filter here (deliberately: that flag is
+    dynamic and can flip True on a later call as integrity issues or pending
+    outcomes resolve, which would let late-arriving data silently join an
+    already-computable confirmatory sample). Determinism instead comes from
+    always fetching with the SAME frozen ``confirmatory_knowledge_cutoff``:
+    ``_fetch_confirmatory_primary_rows``'s certificate-gated grid fetch can
+    never see a row whose bundle/final-outcome visibility certificate lands
+    after that cutoff, no matter how many times or how much later this
+    function is called.
     """
 
     result = _confirmatory_not_ready_result(contract)
-    if folds[-1]["clock_state"] != "ready_by_clock":
+    confirmatory_knowledge_cutoff = fold_specs[-1]["test_maturity_at"]
+    result["confirmatory_knowledge_cutoff"] = confirmatory_knowledge_cutoff
+    if generated_at < confirmatory_knowledge_cutoff:
         return result
 
-    rows: list[dict[str, Any]] = []
-    for fold_summary, fold_spec in zip(folds, fold_specs, strict=True):
-        if not fold_summary["evaluation_ready"]:
-            continue
-        rows.extend(
-            await _fetch_confirmatory_primary_rows(
-                conn,
-                fold=fold_spec,
-                generated_at=generated_at,
-                options=options,
-                contract=contract,
-            )
+    primary_rows: list[dict[str, Any]] = []
+    baseline_rows: list[dict[str, Any]] = []
+    for fold_spec in fold_specs:
+        fetched = await _fetch_confirmatory_primary_rows(
+            conn,
+            fold=fold_spec,
+            knowledge_cutoff=confirmatory_knowledge_cutoff,
+            options=options,
+            contract=contract,
         )
+        primary_rows.extend(fetched["primary_rows"])
+        baseline_rows.extend(fetched["baseline_rows"])
 
-    n_evaluated_actionable = len(rows)
-    snapshot_missing_n = sum(1 for row in rows if row["snapshot_missing"])
-    snapshot_nonvalid_n = sum(1 for row in rows if row["snapshot_nonvalid"])
-    insufficient_depth_n = sum(1 for row in rows if row["insufficient_depth"])
+    n_evaluated_actionable = len(primary_rows)
+    snapshot_missing_n = sum(1 for row in primary_rows if row["snapshot_missing"])
+    snapshot_nonvalid_n = sum(1 for row in primary_rows if row["snapshot_nonvalid"])
+    insufficient_depth_n = sum(1 for row in primary_rows if row["insufficient_depth"])
     cost_rows = [
         row
-        for row in rows
+        for row in primary_rows
         if row["cost_evaluable"] and row["modeled_net_after_fees_bps"] is not None
     ]
     n_cost_evaluable = len(cost_rows)
@@ -2552,26 +2676,59 @@ async def _compute_confirmatory_result(
         "n_cost_evaluable": n_cost_evaluable,
         "cost_evaluable_pct": coverage_pct,
     }
+    result["coverage_characteristics"] = _confirmatory_coverage_characteristics(primary_rows)
+
+    # Per-block, direction-agnostic, unconditional control mean -- built from
+    # the BROADER baseline cohort (actionable or not), pooled across every
+    # fold exactly like cost_rows below. Every cost_row's own block is
+    # structurally guaranteed to appear here too, since the actionable rows
+    # are themselves a subset of the baseline cohort's source rows.
+    baseline_block_values: dict[str, list[float]] = {}
+    for row in baseline_rows:
+        key = confirmatory_block_key(
+            row["observed_minute"],
+            block_unit=contract.block_unit,
+            block_length=contract.block_length,
+        )
+        baseline_block_values.setdefault(key, []).append(row["market_return_bps"])
+    block_unconditional_market_mean_bps = {
+        key: statistics.fmean(values) for key, values in baseline_block_values.items()
+    }
 
     block_values: dict[str, list[float]] = {}
+    baseline_values: list[float] = []
     for row in cost_rows:
         key = confirmatory_block_key(
             row["observed_minute"],
             block_unit=contract.block_unit,
             block_length=contract.block_length,
         )
-        block_values.setdefault(key, []).append(
-            row["modeled_net_after_fees_bps"] - contract.unmodeled_execution_stress_bps
+        block_mean = block_unconditional_market_mean_bps.get(key)
+        if block_mean is None:
+            # Structurally unreachable: every actionable+evaluated row is
+            # itself part of the broader baseline cohort (see
+            # _all_periodic_evaluated), so its own block always has at least
+            # one baseline observation -- itself, at minimum.
+            raise ValueError(
+                f"confirmatory block {key!r} has a primary row but no baseline "
+                "cohort observation; baseline cohort construction is broken"
+            )
+        baseline_bps = block_unconditional_direction_matched_baseline_bps(
+            block_mean, direction=row["direction"]
         )
+        baseline_values.append(baseline_bps)
+        primary_excess_bps = (
+            row["modeled_net_after_fees_bps"]
+            - contract.unmodeled_execution_stress_bps
+            - baseline_bps
+        )
+        block_values.setdefault(key, []).append(primary_excess_bps)
     result["primary_block_count"] = len(block_values)
 
-    baseline_values = [
-        row["baseline_bps"] for row in cost_rows if row["baseline_bps"] is not None
-    ]
     if baseline_values:
         result["baseline_mean_bps"] = statistics.fmean(baseline_values)
     if block_values:
-        result["primary_estimate_mean_bps"] = statistics.fmean(
+        result["primary_excess_mean_bps"] = statistics.fmean(
             value for values in block_values.values() for value in values
         )
 
@@ -2776,12 +2933,14 @@ async def evaluate_walk_forward(
             conn,
             options=options,
             contract=confirmatory_contract,
-            folds=folds,
             fold_specs=fold_specs,
             generated_at=generated_at,
         )
         report["confirmatory_contract"] = confirmatory_contract_to_dict(confirmatory_contract)
         report["confirmatory_state"] = confirmatory_result["confirmatory_state"]
+        report["confirmatory_knowledge_cutoff"] = confirmatory_result[
+            "confirmatory_knowledge_cutoff"
+        ]
         report["confirmatory_result"] = confirmatory_result
 
     return report

@@ -7,7 +7,7 @@ import pytest
 
 from app.signal_confirmatory import (
     BLOCK_BOOTSTRAP_INFERENCE_VERSION,
-    CLOCK_DIRECTION_MATCHED_BASELINE_VERSION,
+    BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION,
     CONFIRMATORY_BLOCK_UNITS,
     CONFIRMATORY_DECISION_POLICY_V1,
     CONFIRMATORY_PRIMARY_ENDPOINT_VERSION,
@@ -17,7 +17,7 @@ from app.signal_confirmatory import (
     ConfirmatoryContract,
     block_bootstrap_ci,
     block_bootstrap_v1,
-    clock_direction_matched_baseline_bps,
+    block_unconditional_direction_matched_baseline_bps,
     confirmatory_block_key,
     confirmatory_decision,
     validate_confirmatory_contract,
@@ -59,7 +59,7 @@ def _contract_kwargs() -> dict[str, object]:
         "primary_exchange": "binance",
         "primary_size_usd": 1_000.0,
         "primary_taker_fee_bps": 2.0,
-        "baseline_version": CLOCK_DIRECTION_MATCHED_BASELINE_VERSION,
+        "baseline_version": BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION,
         "unmodeled_execution_stress_bps": 1.5,
         "inference_version": BLOCK_BOOTSTRAP_INFERENCE_VERSION,
         "block_unit": "day",
@@ -106,20 +106,38 @@ def test_validate_confirmatory_contract_allows_unrestricted_manifest_symbols() -
 
 
 # ---------------------------------------------------------------------------
-# Baseline: clock_direction_matched_baseline_v1.
+# Baseline: block_unconditional_direction_matched_baseline_v1.
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    ("directional_return_pct", "expected_bps"),
-    [(0.0, 0.0), (1.5, 150.0), (-2.02020202, -202.020202), (0.001, 0.1)],
+    ("block_unconditional_market_mean_bps", "expected_bps"),
+    [(0.0, 0.0), (150.0, 150.0), (-202.020202, -202.020202), (0.1, 0.1)],
 )
-def test_baseline_bps_is_directional_return_pct_times_100(
-    directional_return_pct: float, expected_bps: float
+def test_baseline_bps_matches_the_block_mean_unchanged_for_long(
+    block_unconditional_market_mean_bps: float, expected_bps: float
 ) -> None:
-    assert clock_direction_matched_baseline_bps(directional_return_pct) == pytest.approx(
-        expected_bps
-    )
+    assert block_unconditional_direction_matched_baseline_bps(
+        block_unconditional_market_mean_bps, direction="long"
+    ) == pytest.approx(expected_bps)
+
+
+@pytest.mark.parametrize(
+    ("block_unconditional_market_mean_bps", "expected_bps"),
+    [(0.0, 0.0), (150.0, -150.0), (-202.020202, 202.020202), (0.1, -0.1)],
+)
+def test_baseline_bps_negates_the_block_mean_for_short(
+    block_unconditional_market_mean_bps: float, expected_bps: float
+) -> None:
+    assert block_unconditional_direction_matched_baseline_bps(
+        block_unconditional_market_mean_bps, direction="short"
+    ) == pytest.approx(expected_bps)
+
+
+@pytest.mark.parametrize("direction", ["neutral", "unavailable", "", "LONG"])
+def test_baseline_bps_rejects_any_direction_other_than_long_or_short(direction: str) -> None:
+    with pytest.raises(ValueError):
+        block_unconditional_direction_matched_baseline_bps(100.0, direction=direction)
 
 
 # ---------------------------------------------------------------------------
@@ -323,6 +341,15 @@ def test_confirmatory_decision_boundary_upper_equal_to_zero_is_fail() -> None:
     assert state == CONFIRMATORY_STATE_FAIL
 
 
+def test_confirmatory_decision_wholly_negative_ci_is_never_pass_even_with_permissive_minimum() -> None:
+    # Defensive ordering (FAIL checked before PASS), independent of contract
+    # validation: this function itself takes raw floats, so it can still be
+    # called with a negative minimum_effect_bps directly, and must still
+    # never PASS a wholly-negative CI.
+    state = confirmatory_decision(lower_ci_bps=-50.0, upper_ci_bps=-10.0, minimum_effect_bps=-100.0)
+    assert state == CONFIRMATORY_STATE_FAIL
+
+
 # ---------------------------------------------------------------------------
 # Contract field validation: exhaustive per-field failure coverage
 # complementing tests/test_signal_walk_forward.py's manifest-level wiring
@@ -404,3 +431,58 @@ def test_finiteness_checks_reject_nan_and_inf() -> None:
                 sizes_usd=(1_000.0,),
                 fee_bps_per_side=(("binance", bad_value if field == "primary_taker_fee_bps" else 2.0),),
             )
+
+
+# ---------------------------------------------------------------------------
+# P1-03 / P2-01: negative minimum_effect_bps and degenerate structural
+# minimums are all rejected at contract-validation time, fail closed.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("field", "bad_value"),
+    [
+        ("minimum_effect_bps", -100.0),
+        ("minimum_effect_bps", -0.0000001),
+        ("bootstrap_repetitions", 1),
+        ("minimum_primary_blocks", 1),
+        ("minimum_execution_data_coverage_pct", 0.0),
+    ],
+)
+def test_validate_confirmatory_contract_rejects_degenerate_values(
+    field: str, bad_value: object
+) -> None:
+    kwargs = _contract_kwargs()
+    kwargs[field] = bad_value
+    contract = ConfirmatoryContract(**kwargs)
+    with pytest.raises(ValueError):
+        validate_confirmatory_contract(
+            contract,
+            symbols=("BTCUSDT_PERP.A",),
+            horizons=(15,),
+            sampling_modes=("utc_nonoverlap",),
+            exchanges=("binance",),
+            sizes_usd=(1_000.0,),
+            fee_bps_per_side=(("binance", 2.0),),
+        )
+
+
+def test_validate_confirmatory_contract_accepts_the_minimum_non_degenerate_values() -> None:
+    # The boundary values just above each newly-tightened bound must still
+    # be accepted -- these are not "recommended" values, just proof the
+    # bounds are exactly where P1-03/P2-01 specify, not off by one further.
+    kwargs = _contract_kwargs()
+    kwargs["minimum_effect_bps"] = 0.0
+    kwargs["bootstrap_repetitions"] = 2
+    kwargs["minimum_primary_blocks"] = 2
+    kwargs["minimum_execution_data_coverage_pct"] = 100.0
+    contract = ConfirmatoryContract(**kwargs)
+    validate_confirmatory_contract(
+        contract,
+        symbols=("BTCUSDT_PERP.A",),
+        horizons=(15,),
+        sampling_modes=("utc_nonoverlap",),
+        exchanges=("binance",),
+        sizes_usd=(1_000.0,),
+        fee_bps_per_side=(("binance", 2.0),),
+    )

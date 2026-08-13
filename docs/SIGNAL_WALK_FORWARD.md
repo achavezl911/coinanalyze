@@ -500,28 +500,48 @@ evidence6/research_visibility1 tuple unchanged (it reuses the same
 certificate-gated grid and execution-integrity fetchers), plus a fully hashed
 `confirmatory_contract` pinning exactly ONE primary hypothesis: one symbol,
 one horizon, one `utc_nonoverlap`-only sampling mode, one exchange, one size,
-an explicit taker fee, a versioned clock/direction-matched baseline
-(`clock_direction_matched_baseline_v1`), a frozen non-negative
-`unmodeled_execution_stress_bps`, a deterministic block-bootstrap inference
-engine (`block_bootstrap_v1`, Python stdlib only), and a fixed decision policy
-(`two_sided_block_bootstrap_ci_vs_minimum_effect_v1`). No field defaults from
-a current/live constant; every field is caller-required and fails closed if
-missing.
+an explicit taker fee, a versioned, per-block unconditional/direction-matched
+baseline (`block_unconditional_direction_matched_baseline_v1`), a frozen
+non-negative `unmodeled_execution_stress_bps`, a deterministic block-bootstrap
+inference engine (`block_bootstrap_v1`, Python stdlib only), and a fixed
+decision policy (`two_sided_block_bootstrap_ci_vs_minimum_effect_v1`). No
+field defaults from a current/live constant; every field is caller-required
+and fails closed if missing -- including a structural floor on
+`bootstrap_repetitions` (`>= 2`), `minimum_primary_blocks` (`>= 2`),
+`minimum_execution_data_coverage_pct` (`> 0`), and `minimum_effect_bps`
+(`>= 0`, so a wholly-negative CI can never PASS).
 
-`confirmatory_state` is `not_ready` until the manifest's LAST frozen fold
-reaches `ready_by_clock` (a pure clock gate); only then can `pass`/`fail`/
-`inconclusive` be computed, from OOS rows only, pooled across every matured
-fold's whole calendar blocks (never raw rows, never discovery). There is no
-adaptive/optional stopping: `evaluate_walk_forward(conn, manifest_name)`'s
-signature is unchanged, and re-evaluating a matured manifest later always
-returns the identical `confirmatory_result`. The existing exploratory
-gross/execution views, other horizons/exchanges/sizes, and
-`positive_oos_gate_count` remain exploratory and are structurally
-disconnected from the v3 decision -- see `app/signal_confirmatory.py`.
+The baseline is the mean of `market_return_pct` (PR5, direction-agnostic)
+across ALL compatible periodic evaluated observations in the same calendar
+block -- not merely the primary row's own return, and not restricted to
+actionable/long/short rows -- sign-matched to each primary row's own
+direction. `primary_excess_bps = modeled_net_after_fees_bps -
+unmodeled_execution_stress_bps - baseline_bps` is what the block bootstrap
+actually resamples and what the decision evaluates -- PASS therefore requires
+a real excess over an unconditional market control, not merely a positive raw
+modeled return.
 
-`WALK_FORWARD_REPORT_VERSION_V3 = 3` adds three additive report keys
-(`confirmatory_contract`, `confirmatory_state`, `confirmatory_result`), never
-touching any v1/v2 report key. No spec-v3 production manifest is created by
-this PR. See `docs/PR26_CONFIRMATORY_WALK_FORWARD.md` for the full contract
-field reference, the exact baseline/bootstrap/decision-policy algorithms, and
-the CLI flags needed to freeze one in the future.
+`confirmatory_state` is `not_ready` until `generated_at` reaches
+`confirmatory_knowledge_cutoff` (the manifest's LAST frozen fold's own
+`test_maturity_at`, read directly off the hashed fold schedule); only then
+can `pass`/`fail`/`inconclusive` be computed, from OOS rows only, pooled
+across every matured fold's whole calendar blocks (never raw rows, never
+discovery). Every confirmatory fetch always uses that same frozen
+`confirmatory_knowledge_cutoff` as its certificate-visibility cutoff, so a
+source or certificate that becomes visible after it is permanently excluded
+from the experiment, no matter how many times or how much later the manifest
+is re-evaluated. There is no adaptive/optional stopping:
+`evaluate_walk_forward(conn, manifest_name)`'s signature is unchanged, and
+re-evaluating a matured manifest later always returns the identical
+`confirmatory_result`. The existing exploratory gross/execution views, other
+horizons/exchanges/sizes, and `positive_oos_gate_count` remain exploratory
+and are structurally disconnected from the v3 decision -- see
+`app/signal_confirmatory.py`.
+
+`WALK_FORWARD_REPORT_VERSION_V3 = 3` adds four additive report keys
+(`confirmatory_contract`, `confirmatory_state`, `confirmatory_knowledge_cutoff`,
+`confirmatory_result`), never touching any v1/v2 report key. No spec-v3
+production manifest is created by this PR. See
+`docs/PR26_CONFIRMATORY_WALK_FORWARD.md` for the full contract field
+reference, the exact baseline/bootstrap/decision-policy algorithms, and the
+CLI flags needed to freeze one in the future.
