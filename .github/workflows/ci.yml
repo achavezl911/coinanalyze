@@ -32,6 +32,42 @@ jobs:
           pip install -r requirements.lock
           pip install -e '.[dev]'
 
+      - name: Start isolated PostgreSQL 17 test cluster
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_bin="$(pg_config --bindir)"
+          pg_version="$(${pg_bin}/postgres --version)"
+          case "${pg_version}" in
+            *" 17."*) ;;
+            *) echo "PostgreSQL 17 is required, found: ${pg_version}" >&2; exit 1 ;;
+          esac
+
+          pg_root="${RUNNER_TEMP}/coinanalyze-ci-pg-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          pg_data="${pg_root}/data"
+          pg_socket="${pg_root}/socket"
+          pg_user="$(id -un)"
+          pg_port="$(python3 - <<'PY'
+          import socket
+
+          with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as candidate:
+              candidate.bind(("127.0.0.1", 0))
+              print(candidate.getsockname()[1])
+          PY
+          )"
+          echo "CI_PG_BIN=${pg_bin}" >> "${GITHUB_ENV}"
+          echo "CI_PG_DATA=${pg_data}" >> "${GITHUB_ENV}"
+          umask 077
+          mkdir -p "${pg_root}" "${pg_socket}"
+          "${pg_bin}/initdb" -D "${pg_data}" --auth=trust --no-locale --encoding=UTF8
+          "${pg_bin}/pg_ctl" -D "${pg_data}" -l "${pg_root}/postgres.log" \
+            -o "-F -p ${pg_port} -k ${pg_socket} -c listen_addresses='127.0.0.1'" start
+          "${pg_bin}/createdb" -h "${pg_socket}" -p "${pg_port}" coinanalyze_ci_test
+          "${pg_bin}/psql" -X -v ON_ERROR_STOP=1 -h "${pg_socket}" \
+            -p "${pg_port}" -d coinanalyze_ci_test -f sql/schema.sql
+
+          echo "TEST_DATABASE_URL=postgresql://${pg_user}@127.0.0.1:${pg_port}/coinanalyze_ci_test?sslmode=disable" >> "${GITHUB_ENV}"
+
       - name: Ruff (lint)
         run: |
           . .venv/bin/activate
@@ -40,7 +76,7 @@ jobs:
       - name: Compile all (syntax check)
         run: |
           . .venv/bin/activate
-          python -m compileall -q app
+          python -m compileall -q app scripts tests
 
       - name: Pytest
         run: |
@@ -49,3 +85,11 @@ jobs:
 
       - name: JavaScript tests
         run: node --test tests/js/
+
+      - name: Stop isolated PostgreSQL test cluster
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${CI_PG_BIN:-}" && -n "${CI_PG_DATA:-}" ]]; then
+            "${CI_PG_BIN}/pg_ctl" -D "${CI_PG_DATA}" -m fast stop
+          fi

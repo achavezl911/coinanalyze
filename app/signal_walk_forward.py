@@ -26,6 +26,35 @@ from app.signal_confirmatory import (
     confirmatory_decision,
     validate_confirmatory_contract,
 )
+from app.signal_confirmatory_v2 import (
+    BLOCK_UNCONDITIONAL_VENUE_MID_BASELINE_NAME_V2,
+    CONFIRMATORY_AGGREGATION_SEMANTICS_V2,
+    CONFIRMATORY_FUNDING_SEMANTICS_EXCLUDED_V1,
+    CONFIRMATORY_OUTCOME_PRICE_SOURCE_V1,
+    CONFIRMATORY_PRIMARY_ENDPOINT_NAME_V2,
+    CONFIRMATORY_RESULT_CONTRACT_VERSION_V1,
+    CONJUNCTIVE_DECISION_POLICY_V2,
+    PAIRED_BLOCK_BOOTSTRAP_DRAW_GENERATOR_V2,
+    PAIRED_BLOCK_BOOTSTRAP_INFERENCE_NAME_V2,
+    ConfirmatoryContractV2,
+    canonical_scientific_result_json,
+    confirmatory_block_key_v2,
+    confirmatory_contract_v2_from_dict,
+    confirmatory_contract_v2_to_dict,
+    conjunctive_confirmatory_decision_v2,
+    deterministic_mean_v2,
+    direction_matched_venue_mid_baseline_bps_v2,
+    evaluation_not_before_v2,
+    expected_utc_nonoverlap_slot_count_v2,
+    paired_block_bootstrap_ci_v2,
+    paired_block_bootstrap_v2,
+    scientific_result_hash,
+    snapshot_matches_observation_time_v2,
+    utc_nonoverlap_selected_v2,
+    validate_confirmatory_contract_v2,
+    venue_consistent_execution_measure_v2,
+    venue_mid_market_return_bps_v2,
+)
 from app.signal_execution import (
     DENSE_PERIODIC,
     EXECUTION_EXCHANGES,
@@ -41,6 +70,10 @@ from app.signal_outcomes import (
     outcome_window,
 )
 from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
+from app.signal_scientific_identity import (
+    scientific_implementation_identity,
+    validate_scientific_implementation_identity,
+)
 
 # ---------------------------------------------------------------------------
 # Versions and fixed research policy.
@@ -78,10 +111,18 @@ WALK_FORWARD_REPORT_VERSION_V2 = 2
 WALK_FORWARD_SPEC_VERSION_V3 = 3
 WALK_FORWARD_REPORT_VERSION_V3 = 3
 
+# PR27 is additive.  Spec v4 alone receives corrected venue-consistent
+# economics, paired conjunctive inference, settlement grace, implementation
+# identity, and authoritative result persistence.  Published spec v3 remains
+# byte-for-byte frozen under PR26 semantics.
+WALK_FORWARD_SPEC_VERSION_V4 = 4
+WALK_FORWARD_REPORT_VERSION_V4 = 4
+
 SUPPORTED_WALK_FORWARD_SPEC_VERSIONS = (
     WALK_FORWARD_SPEC_VERSION,
     WALK_FORWARD_SPEC_VERSION_V2,
     WALK_FORWARD_SPEC_VERSION_V3,
+    WALK_FORWARD_SPEC_VERSION_V4,
 )
 
 # The only supported prospective spec-v2 scientific version tuple for PR25.
@@ -155,6 +196,7 @@ class WalkForwardManifestOptions:
     spec_version: int = WALK_FORWARD_SPEC_VERSION
     research_visibility_version: int | None = None
     confirmatory_contract: ConfirmatoryContract | None = None
+    confirmatory_contract_v2: ConfirmatoryContractV2 | None = None
 
 
 def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
@@ -165,14 +207,14 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
     never accepted as a caller-supplied timestamp.
 
     Spec v1 keeps its exact historical validation, including checking
-    logic_version against the live SCALP_SIGNAL_LOGIC_VERSION. Spec v2 and
-    v3 instead require the exact PR25 supported prospective scientific
+    logic_version against the live SCALP_SIGNAL_LOGIC_VERSION. Spec v2,
+    v3, and v4 instead require the exact PR25 supported prospective scientific
     version tuple -- including logic_version -- against the literal, frozen
     SPEC_V2_SUPPORTED_* constants: explicitly supplied, never inferred,
     never defaulted, never mapped from spec v1, and never re-read from any
-    module's live "current" constant. Spec v3 additionally requires an
-    explicit confirmatory_contract (see app.signal_confirmatory); it is
-    forbidden under spec v1/v2.
+    module's live "current" constant. Spec v3 requires its published PR26
+    contract; spec v4 requires the distinct corrected PR27 contract. Neither
+    contract may cross a spec boundary.
     """
 
     if options.spec_version not in SUPPORTED_WALK_FORWARD_SPEC_VERSIONS:
@@ -289,12 +331,7 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
                 f"fee_bps_per_side for {exchange} must be finite and between 0 and 100"
             )
 
-    if options.spec_version != WALK_FORWARD_SPEC_VERSION_V3:
-        if options.confirmatory_contract is not None:
-            raise ValueError(
-                "confirmatory_contract may only be set for walk-forward spec v3"
-            )
-    else:
+    if options.spec_version == WALK_FORWARD_SPEC_VERSION_V3:
         if options.confirmatory_contract is None:
             raise ValueError(
                 "walk-forward spec v3 requires an explicit confirmatory_contract"
@@ -308,6 +345,34 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
             sizes_usd=options.sizes_usd,
             fee_bps_per_side=options.fee_bps_per_side,
         )
+        if options.confirmatory_contract_v2 is not None:
+            raise ValueError("spec v3 must not set confirmatory_contract_v2")
+    elif options.spec_version == WALK_FORWARD_SPEC_VERSION_V4:
+        if options.confirmatory_contract is not None:
+            raise ValueError("spec v4 must not set the published spec-v3 contract")
+        if options.confirmatory_contract_v2 is None:
+            raise ValueError(
+                "walk-forward spec v4 requires an explicit corrected "
+                "confirmatory_contract_v2"
+            )
+        validate_confirmatory_contract_v2(
+            options.confirmatory_contract_v2,
+            symbols=options.symbols,
+            horizons=options.horizons,
+            sampling_modes=options.sampling_modes,
+            exchanges=options.exchanges,
+            sizes_usd=options.sizes_usd,
+            fee_bps_per_side=options.fee_bps_per_side,
+        )
+    else:
+        if options.confirmatory_contract is not None:
+            raise ValueError(
+                "confirmatory_contract may only be set for walk-forward spec v3"
+            )
+        if options.confirmatory_contract_v2 is not None:
+            raise ValueError(
+                "confirmatory_contract_v2 may only be set for walk-forward spec v4"
+            )
 
 
 def _aware_utc(value: datetime) -> datetime:
@@ -419,12 +484,20 @@ def _static_options_spec(options: WalkForwardManifestOptions) -> dict[str, Any]:
         "outcome_settlement_lag_seconds": OUTCOME_SETTLEMENT_LAG.total_seconds(),
         "versions": versions,
     }
-    # Spec v1 and v2's hashed shape stay byte-for-byte what they always were:
-    # this key is only ever added for spec_version == WALK_FORWARD_SPEC_VERSION_V3.
+    # Spec v1 and v2's hashed shape stay byte-for-byte what they always were.
+    # Spec v3 keeps exactly its published PR26 key and value shape.
     if options.spec_version == WALK_FORWARD_SPEC_VERSION_V3:
         spec["confirmatory_contract"] = confirmatory_contract_to_dict(
             options.confirmatory_contract
         )
+    elif options.spec_version == WALK_FORWARD_SPEC_VERSION_V4:
+        contract_v2 = options.confirmatory_contract_v2
+        if contract_v2 is None:
+            raise ValueError("spec v4 static options require confirmatory_contract_v2")
+        spec["confirmatory_contract"] = confirmatory_contract_v2_to_dict(
+            contract_v2
+        )
+        spec["scientific_implementation"] = scientific_implementation_identity()
     return spec
 
 
@@ -436,7 +509,7 @@ def _full_spec(
     cutoff_at: datetime,
     folds: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    return {
+    result = {
         **_static_options_spec(options),
         "name": options.name,
         "created_at": created_at,
@@ -444,6 +517,19 @@ def _full_spec(
         "cutoff_at": cutoff_at,
         "folds": folds,
     }
+    if options.spec_version == WALK_FORWARD_SPEC_VERSION_V4:
+        contract_v2 = options.confirmatory_contract_v2
+        if contract_v2 is None:
+            raise ValueError("spec v4 full spec requires confirmatory_contract_v2")
+        knowledge_cutoff = folds[-1]["test_maturity_at"]
+        result["confirmatory_knowledge_cutoff"] = knowledge_cutoff
+        result["evaluation_not_before"] = evaluation_not_before_v2(
+            knowledge_cutoff,
+            settlement_grace_seconds=(
+                contract_v2.evaluation_settlement_grace_seconds
+            ),
+        )
+    return result
 
 
 def _load_spec(raw: Any) -> dict[str, Any]:
@@ -620,6 +706,7 @@ def _options_from_spec(
         research_visibility_version = int(raw_research_visibility_version)
 
     confirmatory_contract: ConfirmatoryContract | None = None
+    confirmatory_contract_v2: ConfirmatoryContractV2 | None = None
     if spec_version == WALK_FORWARD_SPEC_VERSION_V3:
         raw_confirmatory_contract = spec.get("confirmatory_contract")
         if not isinstance(raw_confirmatory_contract, dict):
@@ -627,9 +714,28 @@ def _options_from_spec(
                 "walk-forward manifest spec v3 is missing confirmatory_contract"
             )
         confirmatory_contract = confirmatory_contract_from_dict(raw_confirmatory_contract)
+    elif spec_version == WALK_FORWARD_SPEC_VERSION_V4:
+        raw_confirmatory_contract = spec.get("confirmatory_contract")
+        if not isinstance(raw_confirmatory_contract, dict):
+            raise ValueError(
+                "walk-forward manifest spec v4 is missing confirmatory_contract"
+            )
+        validate_scientific_implementation_identity(
+            spec.get("scientific_implementation")
+        )
+        confirmatory_contract_v2 = confirmatory_contract_v2_from_dict(
+            raw_confirmatory_contract
+        )
     elif "confirmatory_contract" in spec:
         raise ValueError(
-            "confirmatory_contract must not be present outside walk-forward spec v3"
+            "confirmatory_contract must not be present outside walk-forward spec v3/v4"
+        )
+    if (
+        spec_version != WALK_FORWARD_SPEC_VERSION_V4
+        and "scientific_implementation" in spec
+    ):
+        raise ValueError(
+            "scientific_implementation must not be present outside walk-forward spec v4"
         )
 
     options = WalkForwardManifestOptions(
@@ -655,6 +761,7 @@ def _options_from_spec(
         spec_version=spec_version,
         research_visibility_version=research_visibility_version,
         confirmatory_contract=confirmatory_contract,
+        confirmatory_contract_v2=confirmatory_contract_v2,
     )
     validate_manifest_options(options)
     return options
@@ -747,6 +854,44 @@ def _validate_manifest_row(
     )
     if _canonical_json(spec.get("folds")) != _canonical_json(expected_folds):
         raise ValueError("manifest fold schedule does not match its frozen spec")
+
+    if options.spec_version == WALK_FORWARD_SPEC_VERSION_V4:
+        contract_v2 = options.confirmatory_contract_v2
+        if contract_v2 is None:
+            raise ValueError("spec v4 manifest is missing corrected contract")
+        stored_knowledge_cutoff = _parse_spec_timestamp(
+            spec.get("confirmatory_knowledge_cutoff"),
+            "confirmatory_knowledge_cutoff",
+        )
+        stored_evaluation_not_before = _parse_spec_timestamp(
+            spec.get("evaluation_not_before"),
+            "evaluation_not_before",
+        )
+        expected_knowledge_cutoff = _parse_spec_timestamp(
+            expected_folds[-1]["test_maturity_at"],
+            "folds[-1].test_maturity_at",
+        )
+        expected_evaluation_not_before = evaluation_not_before_v2(
+            expected_knowledge_cutoff,
+            settlement_grace_seconds=(
+                contract_v2.evaluation_settlement_grace_seconds
+            ),
+        )
+        if stored_knowledge_cutoff != expected_knowledge_cutoff:
+            raise ValueError(
+                "spec v4 confirmatory knowledge cutoff disagrees with frozen folds"
+            )
+        if stored_evaluation_not_before != expected_evaluation_not_before:
+            raise ValueError(
+                "spec v4 evaluation_not_before disagrees with frozen settlement policy"
+            )
+    elif (
+        "confirmatory_knowledge_cutoff" in spec
+        or "evaluation_not_before" in spec
+    ):
+        raise ValueError(
+            "settlement timestamps must not be present outside walk-forward spec v4"
+        )
 
     return spec, options
 
@@ -1025,6 +1170,13 @@ async def _fetch_period_grid(
 # ---------------------------------------------------------------------------
 
 
+# PR27_SCIENTIFIC_KNOWLEDGE_TIME_V1_BEGIN
+def _knowledge_aware_utc_v1(value: datetime) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("knowledge-time timestamp must be timezone-aware")
+    return value.astimezone(UTC)
+
+
 def _project_outcome_as_of_v2(
     row: dict[str, Any], knowledge_cutoff: datetime
 ) -> dict[str, Any]:
@@ -1036,17 +1188,23 @@ def _project_outcome_as_of_v2(
     """
 
     projected = dict(row)
-    cutoff = _aware_utc(knowledge_cutoff)
+    cutoff = _knowledge_aware_utc_v1(knowledge_cutoff)
 
     status = projected.get("status")
     final_verified_visible_at = projected.get("final_verified_visible_at")
     if status in ("evaluated", "not_evaluable") and (
         not isinstance(final_verified_visible_at, datetime)
-        or _aware_utc(final_verified_visible_at) > cutoff
+        or _knowledge_aware_utc_v1(final_verified_visible_at) > cutoff
     ):
         projected["status"] = "pending"
         projected["finalized_at"] = None
-        for field in _OUTCOME_FINAL_VALUE_FIELDS:
+        for field in (
+            "end_price",
+            "directional_return_pct",
+            "mfe_pct",
+            "mae_pct",
+            "market_return_pct",
+        ):
             projected[field] = None
 
     return projected
@@ -1168,6 +1326,9 @@ async def _fetch_period_grid_v2(
         row["usable"] = usable
         result.append(row)
     return result
+
+
+# PR27_SCIENTIFIC_KNOWLEDGE_TIME_V1_END
 
 
 def _integrity_counters(
@@ -2988,6 +3149,894 @@ async def _compute_confirmatory_result(
     return result
 
 
+# PR27_SCIENTIFIC_CONFIRMATORY_V4_IO_BEGIN
+
+_EMPTY_CONFIRMATORY_V4_OUTCOME_INTEGRITY = {
+    "eligible_sampled_periodic_n": 0,
+    "evaluated_periodic_n": 0,
+    "pending_periodic_n": 0,
+    "not_evaluable_periodic_n": 0,
+    "missing_or_wrong_version_n": 0,
+    "evaluated_actionable_n": 0,
+    "unresolved_actionable_n": 0,
+}
+
+_EMPTY_BASELINE_INPUT_INTEGRITY_V2 = {
+    "expected_evaluated_periodic_n": 0,
+    "baseline_evaluable_n": 0,
+    "snapshot_missing_n": 0,
+    "snapshot_nonvalid_n": 0,
+    "snapshot_time_mismatch_n": 0,
+    "snapshot_invalid_mid_n": 0,
+}
+
+
+class ConfirmatoryReproducibilityError(RuntimeError):
+    """A recomputation disagreed with immutable authoritative evidence."""
+
+
+def _confirmatory_aware_utc_v2(value: datetime) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("confirmatory result timestamp must be timezone-aware")
+    return value.astimezone(UTC)
+
+
+def _confirmatory_parse_timestamp_v2(value: object, field: str) -> datetime:
+    if isinstance(value, datetime):
+        return _confirmatory_aware_utc_v2(value)
+    if not isinstance(value, str):
+        raise ConfirmatoryReproducibilityError(
+            f"authoritative result {field} is not an ISO timestamp"
+        )
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return _confirmatory_aware_utc_v2(parsed)
+    except ValueError as exc:
+        raise ConfirmatoryReproducibilityError(
+            f"authoritative result {field} is not a valid ISO timestamp"
+        ) from exc
+
+
+def _confirmatory_v4_outcome_integrity_for_fold(
+    sampled: list[dict[str, Any]],
+    *,
+    period_end: datetime,
+    outcome_version: int,
+) -> dict[str, int]:
+    counters = dict(_EMPTY_CONFIRMATORY_V4_OUTCOME_INTEGRITY)
+    for row in sampled:
+        observed_minute = row.get("observed_minute")
+        if not isinstance(observed_minute, datetime):
+            raise ValueError("confirmatory v4 sampled row lacks observed_minute")
+        expected_window = outcome_window(
+            observed_minute, int(row["horizon_minutes"])
+        )
+        if expected_window.end > period_end:
+            continue
+
+        counters["eligible_sampled_periodic_n"] += 1
+        status = row.get("status")
+        correct_version = row.get("outcome_version") == outcome_version
+        window_shape_valid = (
+            row.get("window_end") == expected_window.end
+            and row.get("due_at") == expected_window.due_at
+        )
+        is_actionable = bool(row.get("actionable")) and row.get("direction") in (
+            "long",
+            "short",
+        )
+        evaluated_shape_valid = (
+            status == "evaluated"
+            and row.get("usable") is True
+            and row.get("market_return_pct") is not None
+            and row.get("end_price") is not None
+        )
+        if status is None or not correct_version or not window_shape_valid or (
+            status == "evaluated" and not evaluated_shape_valid
+        ):
+            counters["missing_or_wrong_version_n"] += 1
+            if is_actionable:
+                counters["unresolved_actionable_n"] += 1
+            continue
+        if status == "evaluated":
+            counters["evaluated_periodic_n"] += 1
+            if is_actionable:
+                counters["evaluated_actionable_n"] += 1
+            continue
+        if status == "pending":
+            counters["pending_periodic_n"] += 1
+        elif status == "not_evaluable":
+            counters["not_evaluable_periodic_n"] += 1
+        else:
+            counters["missing_or_wrong_version_n"] += 1
+        if is_actionable:
+            counters["unresolved_actionable_n"] += 1
+    return counters
+
+
+def _merge_count_dicts(left: dict[str, int], right: dict[str, int]) -> dict[str, int]:
+    if set(left) != set(right):
+        raise ValueError("confirmatory integrity counter shapes disagree")
+    return {key: int(left[key]) + int(right[key]) for key in left}
+
+
+def _sample_confirmatory_v4_grid(
+    grid: list[dict[str, Any]], *, horizon_minutes: int
+) -> list[dict[str, Any]]:
+    sampled: list[dict[str, Any]] = []
+    for row in grid:
+        observed_minute = row.get("observed_minute")
+        if not isinstance(observed_minute, datetime):
+            raise ValueError("confirmatory v4 grid row lacks observed_minute")
+        if utc_nonoverlap_selected_v2(
+            observed_minute, horizon_minutes=horizon_minutes
+        ):
+            sampled.append(row)
+    return sampled
+
+
+def _baseline_input_measure_v2(
+    row: dict[str, Any], snapshot: dict[str, Any] | None
+) -> dict[str, Any]:
+    status = None if snapshot is None else snapshot.get("status")
+    result = {
+        "snapshot_missing": snapshot is None,
+        "snapshot_nonvalid": snapshot is not None and status != "valid",
+        "snapshot_time_mismatch": False,
+        "snapshot_invalid_mid": False,
+        "baseline_evaluable": False,
+        "venue_mid_market_return_bps": None,
+    }
+    if snapshot is None or status != "valid":
+        return result
+    if not snapshot_matches_observation_time_v2(row, snapshot):
+        result["snapshot_time_mismatch"] = True
+        return result
+    try:
+        venue_mid = float(snapshot.get("mid_px"))
+        outcome_price = float(row.get("end_price"))
+    except (TypeError, ValueError, OverflowError):
+        result["snapshot_invalid_mid"] = True
+        return result
+    if not (
+        math.isfinite(venue_mid)
+        and venue_mid > 0.0
+        and math.isfinite(outcome_price)
+        and outcome_price > 0.0
+    ):
+        result["snapshot_invalid_mid"] = True
+        return result
+    result["baseline_evaluable"] = True
+    result["venue_mid_market_return_bps"] = venue_mid_market_return_bps_v2(
+        venue_mid=venue_mid,
+        outcome_price=outcome_price,
+    )
+    return result
+
+
+async def _fetch_confirmatory_execution_snapshots_v2(
+    conn: asyncpg.Connection,
+    observation_ids: list[int],
+    *,
+    execution_snapshot_version: int,
+) -> dict[int, dict[str, dict[str, Any]]]:
+    """Fetch the exact immutable snapshot fields consumed by endpoint-v2."""
+
+    if not observation_ids:
+        return {}
+    rows = await conn.fetch(
+        """
+        SELECT
+          observation_id,
+          exchange,
+          snapshot_version,
+          status,
+          reason,
+          captured_at,
+          mid_px,
+          cost_curve
+        FROM signal_execution_snapshot
+        WHERE observation_id = ANY($1::bigint[])
+          AND snapshot_version = $2
+        """,
+        observation_ids,
+        execution_snapshot_version,
+    )
+    result: dict[int, dict[str, dict[str, Any]]] = {}
+    for record in rows:
+        row = dict(record)
+        observation_id = int(row["observation_id"])
+        exchange = str(row["exchange"])
+        by_exchange = result.setdefault(observation_id, {})
+        if exchange in by_exchange:
+            raise ValueError(
+                "duplicate corrected confirmatory execution snapshot for "
+                f"observation_id={observation_id} exchange={exchange!r}"
+            )
+        by_exchange[exchange] = row
+    return result
+
+
+async def _fetch_confirmatory_v4_rows(
+    conn: asyncpg.Connection,
+    *,
+    fold: dict[str, Any],
+    knowledge_cutoff: datetime,
+    options: WalkForwardManifestOptions,
+    contract: ConfirmatoryContractV2,
+) -> dict[str, Any]:
+    narrowed = replace(
+        options,
+        symbols=(contract.primary_symbol,),
+        horizons=(contract.primary_horizon_minutes,),
+    )
+    test_grid = await _fetch_period_grid_v2(
+        conn,
+        period_start=fold["test_start"],
+        period_end=fold["test_end"],
+        knowledge_cutoff=knowledge_cutoff,
+        options=narrowed,
+    )
+    sampled = _sample_confirmatory_v4_grid(
+        test_grid,
+        horizon_minutes=contract.primary_horizon_minutes,
+    )
+    outcome_integrity = _confirmatory_v4_outcome_integrity_for_fold(
+        sampled,
+        period_end=fold["test_end"],
+        outcome_version=options.outcome_version,
+    )
+    evaluated_rows = [
+        row
+        for row in sampled
+        if row.get("usable")
+        and row.get("status") == "evaluated"
+        and row.get("end_price") is not None
+        and row.get("market_return_pct") is not None
+    ]
+    actionable_rows = [
+        row
+        for row in evaluated_rows
+        if row.get("actionable") and row.get("direction") in ("long", "short")
+    ]
+
+    observation_ids = sorted(
+        {int(row["observation_id"]) for row in evaluated_rows}
+    )
+    snapshots = await _fetch_confirmatory_execution_snapshots_v2(
+        conn,
+        observation_ids,
+        execution_snapshot_version=options.execution_snapshot_version,
+    )
+
+    baseline_rows: list[dict[str, Any]] = []
+    baseline_integrity = dict(_EMPTY_BASELINE_INPUT_INTEGRITY_V2)
+    baseline_integrity["expected_evaluated_periodic_n"] = len(evaluated_rows)
+    for row in evaluated_rows:
+        snapshot = snapshots.get(int(row["observation_id"]), {}).get(
+            contract.primary_exchange
+        )
+        measure = _baseline_input_measure_v2(row, snapshot)
+        if measure["snapshot_missing"]:
+            baseline_integrity["snapshot_missing_n"] += 1
+        elif measure["snapshot_nonvalid"]:
+            baseline_integrity["snapshot_nonvalid_n"] += 1
+        elif measure["snapshot_time_mismatch"]:
+            baseline_integrity["snapshot_time_mismatch_n"] += 1
+        elif measure["snapshot_invalid_mid"]:
+            baseline_integrity["snapshot_invalid_mid_n"] += 1
+        if measure["baseline_evaluable"]:
+            baseline_integrity["baseline_evaluable_n"] += 1
+            baseline_rows.append(
+                {
+                    "fold_index": fold["fold_index"],
+                    "observation_id": row["observation_id"],
+                    "observed_minute": row["observed_minute"],
+                    "venue_mid_market_return_bps": measure[
+                        "venue_mid_market_return_bps"
+                    ],
+                }
+            )
+
+    primary_rows: list[dict[str, Any]] = []
+    for row in actionable_rows:
+        snapshot = snapshots.get(int(row["observation_id"]), {}).get(
+            contract.primary_exchange
+        )
+        measure = venue_consistent_execution_measure_v2(
+            row,
+            snapshot,
+            size_usd=contract.primary_size_usd,
+            fee_bps_per_side=contract.primary_taker_fee_bps,
+            stress_bps=contract.unmodeled_execution_stress_bps,
+        )
+        market_return_pct = row.get("market_return_pct")
+        directional_return_pct = row.get("directional_return_pct")
+        primary_rows.append(
+            {
+                "fold_index": fold["fold_index"],
+                "observation_id": row["observation_id"],
+                "observed_minute": row["observed_minute"],
+                "direction": row["direction"],
+                "snapshot_missing": measure["snapshot_missing"],
+                "snapshot_nonvalid": measure["snapshot_nonvalid"],
+                "snapshot_time_mismatch": measure["snapshot_time_mismatch"],
+                "snapshot_invalid_shape": measure["snapshot_invalid_shape"],
+                "entry_insufficient_depth": measure[
+                    "entry_insufficient_depth"
+                ],
+                "exit_model_insufficient_depth": measure[
+                    "exit_model_insufficient_depth"
+                ],
+                "insufficient_depth": measure["insufficient_depth"],
+                "cost_evaluable": measure["cost_evaluable"],
+                "gross_directional_return_bps": (
+                    None
+                    if directional_return_pct is None
+                    else float(directional_return_pct) * 100.0
+                ),
+                "market_return_bps": (
+                    None
+                    if market_return_pct is None
+                    else float(market_return_pct) * 100.0
+                ),
+                "entry_market_impact_bps": measure[
+                    "entry_market_impact_bps"
+                ],
+                "modeled_exit_cost_bps": measure["modeled_exit_cost_bps"],
+                "modeled_fee_cost_bps": measure["modeled_fee_cost_bps"],
+                "modeled_net_after_fees_bps": measure[
+                    "modeled_net_after_fees_bps"
+                ],
+                "absolute_stressed_net_bps": measure[
+                    "absolute_stressed_net_bps"
+                ],
+            }
+        )
+
+    return {
+        "primary_rows": primary_rows,
+        "baseline_rows": baseline_rows,
+        "outcome_integrity": outcome_integrity,
+        "baseline_input_integrity": baseline_integrity,
+    }
+
+
+def _confirmatory_v4_not_ready_result(
+    contract: ConfirmatoryContractV2,
+    *,
+    scientific_implementation: dict[str, Any],
+    knowledge_cutoff: datetime,
+    evaluation_not_before: datetime,
+    generated_at: datetime,
+) -> dict[str, Any]:
+    if generated_at < knowledge_cutoff:
+        readiness_reason = "knowledge_cutoff_not_reached"
+    elif generated_at < evaluation_not_before:
+        readiness_reason = "certificate_settlement_grace"
+    else:
+        readiness_reason = None
+    return {
+        "confirmatory_state": CONFIRMATORY_STATE_NOT_READY,
+        "readiness_reason": readiness_reason,
+        "primary_endpoint_name": CONFIRMATORY_PRIMARY_ENDPOINT_NAME_V2,
+        "baseline_name": BLOCK_UNCONDITIONAL_VENUE_MID_BASELINE_NAME_V2,
+        "inference_name": PAIRED_BLOCK_BOOTSTRAP_INFERENCE_NAME_V2,
+        "bootstrap_draw_generator": PAIRED_BLOCK_BOOTSTRAP_DRAW_GENERATOR_V2,
+        "aggregation_semantics": CONFIRMATORY_AGGREGATION_SEMANTICS_V2,
+        "decision_policy": CONJUNCTIVE_DECISION_POLICY_V2,
+        "scientific_implementation": scientific_implementation,
+        "confirmatory_knowledge_cutoff": knowledge_cutoff,
+        "evaluation_not_before": evaluation_not_before,
+        "outcome_price_venue": contract.outcome_price_venue,
+        "outcome_price_source": CONFIRMATORY_OUTCOME_PRICE_SOURCE_V1,
+        "funding_semantics": CONFIRMATORY_FUNDING_SEMANTICS_EXCLUDED_V1,
+        "funding_modeled": False,
+        "n_evaluated_actionable": 0,
+        "coverage": {
+            "n_evaluated_actionable": 0,
+            "snapshot_missing_n": 0,
+            "snapshot_nonvalid_n": 0,
+            "snapshot_time_mismatch_n": 0,
+            "snapshot_invalid_shape_n": 0,
+            "entry_insufficient_depth_n": 0,
+            "exit_model_insufficient_depth_n": 0,
+            "insufficient_depth_n": 0,
+            "n_cost_evaluable": 0,
+            "cost_evaluable_pct": None,
+        },
+        "confirmatory_outcome_integrity": {
+            **_EMPTY_CONFIRMATORY_V4_OUTCOME_INTEGRITY,
+            "outcome_complete": False,
+        },
+        "research_data_coverage": {
+            "expected_sample_slots": 0,
+            "certified_visible_sample_slots": 0,
+            "research_data_coverage_pct": None,
+        },
+        "baseline_input_integrity": {
+            **_EMPTY_BASELINE_INPUT_INTEGRITY_V2,
+            "baseline_complete": False,
+        },
+        "primary_block_count": 0,
+        "absolute_stressed_mean_bps": None,
+        "baseline_mean_bps": None,
+        "excess_mean_bps": None,
+        "bootstrap_repetitions": contract.bootstrap_repetitions,
+        "confidence_level": contract.confidence_level,
+        "absolute_ci_lower_bps": None,
+        "absolute_ci_upper_bps": None,
+        "excess_ci_lower_bps": None,
+        "excess_ci_upper_bps": None,
+        "absolute_pass_threshold_bps": 0.0,
+        "minimum_effect_bps": contract.minimum_effect_bps,
+        "absolute_component_state": CONFIRMATORY_STATE_INCONCLUSIVE,
+        "excess_component_state": CONFIRMATORY_STATE_INCONCLUSIVE,
+        "minimum_primary_blocks": contract.minimum_primary_blocks,
+        "minimum_execution_data_coverage_pct": (
+            contract.minimum_execution_data_coverage_pct
+        ),
+        "minimum_research_data_coverage_pct": (
+            contract.minimum_research_data_coverage_pct
+        ),
+    }
+
+
+async def _compute_confirmatory_v4_result(
+    conn: asyncpg.Connection,
+    *,
+    options: WalkForwardManifestOptions,
+    contract: ConfirmatoryContractV2,
+    fold_specs: list[dict[str, Any]],
+    generated_at: datetime,
+    knowledge_cutoff: datetime,
+    evaluation_not_before: datetime,
+    scientific_implementation: dict[str, Any],
+) -> dict[str, Any]:
+    result = _confirmatory_v4_not_ready_result(
+        contract,
+        scientific_implementation=scientific_implementation,
+        knowledge_cutoff=knowledge_cutoff,
+        evaluation_not_before=evaluation_not_before,
+        generated_at=generated_at,
+    )
+    if generated_at < evaluation_not_before:
+        return result
+
+    primary_rows: list[dict[str, Any]] = []
+    baseline_rows: list[dict[str, Any]] = []
+    outcome_integrity = dict(_EMPTY_CONFIRMATORY_V4_OUTCOME_INTEGRITY)
+    baseline_integrity = dict(_EMPTY_BASELINE_INPUT_INTEGRITY_V2)
+    expected_sample_slots = 0
+    for fold_spec in fold_specs:
+        fetched = await _fetch_confirmatory_v4_rows(
+            conn,
+            fold=fold_spec,
+            knowledge_cutoff=knowledge_cutoff,
+            options=options,
+            contract=contract,
+        )
+        primary_rows.extend(fetched["primary_rows"])
+        baseline_rows.extend(fetched["baseline_rows"])
+        outcome_integrity = _merge_count_dicts(
+            outcome_integrity, fetched["outcome_integrity"]
+        )
+        baseline_integrity = _merge_count_dicts(
+            baseline_integrity, fetched["baseline_input_integrity"]
+        )
+        expected_sample_slots += expected_utc_nonoverlap_slot_count_v2(
+            test_start=fold_spec["test_start"],
+            test_end=fold_spec["test_end"],
+            horizon_minutes=contract.primary_horizon_minutes,
+        )
+
+    outcome_complete = (
+        outcome_integrity["pending_periodic_n"] == 0
+        and outcome_integrity["not_evaluable_periodic_n"] == 0
+        and outcome_integrity["missing_or_wrong_version_n"] == 0
+    )
+    result["confirmatory_outcome_integrity"] = {
+        **outcome_integrity,
+        "outcome_complete": outcome_complete,
+    }
+
+    certified_visible_slots = outcome_integrity["eligible_sampled_periodic_n"]
+    if certified_visible_slots > expected_sample_slots:
+        raise ValueError(
+            "confirmatory v4 certified slot count exceeds deterministic denominator"
+        )
+    research_coverage_pct = (
+        100.0
+        if expected_sample_slots == 0
+        else certified_visible_slots / expected_sample_slots * 100.0
+    )
+    result["research_data_coverage"] = {
+        "expected_sample_slots": expected_sample_slots,
+        "certified_visible_sample_slots": certified_visible_slots,
+        "research_data_coverage_pct": research_coverage_pct,
+    }
+    research_coverage_ok = (
+        research_coverage_pct >= contract.minimum_research_data_coverage_pct
+    )
+
+    baseline_complete = (
+        baseline_integrity["baseline_evaluable_n"]
+        == baseline_integrity["expected_evaluated_periodic_n"]
+    )
+    result["baseline_input_integrity"] = {
+        **baseline_integrity,
+        "baseline_complete": baseline_complete,
+    }
+
+    n_evaluated_actionable = len(primary_rows)
+    cost_rows = [
+        row
+        for row in primary_rows
+        if row["cost_evaluable"]
+        and row["absolute_stressed_net_bps"] is not None
+    ]
+    n_cost_evaluable = len(cost_rows)
+    coverage_pct = (
+        None
+        if n_evaluated_actionable == 0
+        else n_cost_evaluable / n_evaluated_actionable * 100.0
+    )
+    result["n_evaluated_actionable"] = n_evaluated_actionable
+    result["coverage"] = {
+        "n_evaluated_actionable": n_evaluated_actionable,
+        "snapshot_missing_n": sum(row["snapshot_missing"] for row in primary_rows),
+        "snapshot_nonvalid_n": sum(
+            row["snapshot_nonvalid"] for row in primary_rows
+        ),
+        "snapshot_time_mismatch_n": sum(
+            row["snapshot_time_mismatch"] for row in primary_rows
+        ),
+        "snapshot_invalid_shape_n": sum(
+            row["snapshot_invalid_shape"] for row in primary_rows
+        ),
+        "entry_insufficient_depth_n": sum(
+            row["entry_insufficient_depth"] for row in primary_rows
+        ),
+        "exit_model_insufficient_depth_n": sum(
+            row["exit_model_insufficient_depth"] for row in primary_rows
+        ),
+        "insufficient_depth_n": sum(
+            row["insufficient_depth"] for row in primary_rows
+        ),
+        "n_cost_evaluable": n_cost_evaluable,
+        "cost_evaluable_pct": coverage_pct,
+    }
+
+    baseline_block_values: dict[str, list[float]] = {}
+    for row in baseline_rows:
+        key = confirmatory_block_key_v2(
+            row["observed_minute"],
+            block_unit=contract.block_unit,
+            block_length=contract.block_length,
+        )
+        baseline_block_values.setdefault(key, []).append(
+            row["venue_mid_market_return_bps"]
+        )
+    baseline_block_means = {
+        key: deterministic_mean_v2(values)
+        for key, values in baseline_block_values.items()
+    }
+
+    block_pairs: dict[str, list[tuple[float, float]]] = {}
+    baseline_values: list[float] = []
+    for row in cost_rows:
+        key = confirmatory_block_key_v2(
+            row["observed_minute"],
+            block_unit=contract.block_unit,
+            block_length=contract.block_length,
+        )
+        block_mean = baseline_block_means.get(key)
+        if block_mean is None:
+            raise ValueError(
+                f"confirmatory v4 primary block {key!r} lacks its own baseline row"
+            )
+        baseline_bps = direction_matched_venue_mid_baseline_bps_v2(
+            block_mean,
+            direction=row["direction"],
+        )
+        absolute_bps = float(row["absolute_stressed_net_bps"])
+        excess_bps = absolute_bps - baseline_bps
+        baseline_values.append(baseline_bps)
+        block_pairs.setdefault(key, []).append((absolute_bps, excess_bps))
+
+    result["primary_block_count"] = len(block_pairs)
+    if block_pairs:
+        all_pairs = [pair for pairs in block_pairs.values() for pair in pairs]
+        result["absolute_stressed_mean_bps"] = deterministic_mean_v2(
+            [pair[0] for pair in all_pairs]
+        )
+        result["excess_mean_bps"] = deterministic_mean_v2(
+            [pair[1] for pair in all_pairs]
+        )
+    if baseline_values:
+        result["baseline_mean_bps"] = deterministic_mean_v2(baseline_values)
+
+    coverage_ok = (
+        coverage_pct is not None
+        and coverage_pct >= contract.minimum_execution_data_coverage_pct
+    )
+    blocks_ok = len(block_pairs) >= contract.minimum_primary_blocks
+    if not (
+        outcome_complete
+        and research_coverage_ok
+        and baseline_complete
+        and coverage_ok
+        and blocks_ok
+    ):
+        result["confirmatory_state"] = CONFIRMATORY_STATE_INCONCLUSIVE
+        result["readiness_reason"] = None
+        return result
+
+    paired_means = paired_block_bootstrap_v2(
+        block_pairs,
+        repetitions=contract.bootstrap_repetitions,
+        seed=contract.bootstrap_seed,
+    )
+    intervals = paired_block_bootstrap_ci_v2(
+        paired_means,
+        confidence_level=contract.confidence_level,
+    )
+    result.update(intervals)
+    decisions = conjunctive_confirmatory_decision_v2(
+        **intervals,
+        absolute_point_estimate_bps=result["absolute_stressed_mean_bps"],
+        excess_point_estimate_bps=result["excess_mean_bps"],
+        minimum_effect_bps=contract.minimum_effect_bps,
+    )
+    result.update(decisions)
+    result["readiness_reason"] = None
+    return result
+
+
+def _authoritative_result_payload_v1(report: dict[str, Any]) -> dict[str, Any]:
+    confirmatory_result = report.get("confirmatory_result")
+    if not isinstance(confirmatory_result, dict):
+        raise ValueError("spec v4 report lacks confirmatory_result")
+    if confirmatory_result.get("confirmatory_state") == CONFIRMATORY_STATE_NOT_READY:
+        raise ValueError("a not-ready confirmatory result is never authoritative")
+    manifest = report["manifest"]
+    return {
+        "result_contract_version": CONFIRMATORY_RESULT_CONTRACT_VERSION_V1,
+        "manifest_id": int(manifest["manifest_id"]),
+        "manifest_hash": str(manifest["manifest_hash"]),
+        "scientific_implementation": confirmatory_result[
+            "scientific_implementation"
+        ],
+        "confirmatory_knowledge_cutoff": report[
+            "confirmatory_knowledge_cutoff"
+        ],
+        "evaluation_not_before": report["evaluation_not_before"],
+        "confirmatory_contract": report["confirmatory_contract"],
+        "confirmatory_result": confirmatory_result,
+    }
+
+
+def _load_canonical_result(raw: object) -> dict[str, Any]:
+    loaded = json.loads(raw) if isinstance(raw, str) else raw
+    if not isinstance(loaded, dict):
+        raise ConfirmatoryReproducibilityError(
+            "persisted authoritative result is not a JSON object"
+        )
+    return loaded
+
+
+def _verify_authoritative_result_row(
+    row: asyncpg.Record | dict[str, Any],
+    *,
+    expected_payload: dict[str, Any],
+) -> dict[str, Any]:
+    stored = dict(row)
+    stored_json = str(stored["canonical_result_json"])
+    stored_payload = _load_canonical_result(stored_json)
+    canonical_stored_json = canonical_scientific_result_json(stored_payload)
+    if stored_json != canonical_stored_json:
+        raise ConfirmatoryReproducibilityError(
+            "persisted authoritative result is not canonical JSON"
+        )
+    stored_recomputed_hash = hashlib.sha256(stored_json.encode()).hexdigest()
+    if stored_recomputed_hash != stored["result_hash"]:
+        raise ConfirmatoryReproducibilityError(
+            "persisted authoritative result failed its own canonical hash"
+        )
+    expected_hash = scientific_result_hash(expected_payload)
+    metadata_matches = (
+        int(stored["manifest_id"]) == int(expected_payload["manifest_id"])
+        and stored["manifest_hash"] == expected_payload["manifest_hash"]
+        and stored["scientific_implementation_digest"]
+        == expected_payload["scientific_implementation"]["digest"]
+        and _confirmatory_aware_utc_v2(stored["confirmatory_knowledge_cutoff"])
+        == _confirmatory_parse_timestamp_v2(
+            expected_payload["confirmatory_knowledge_cutoff"],
+            "confirmatory_knowledge_cutoff",
+        )
+        and _confirmatory_aware_utc_v2(stored["evaluation_not_before"])
+        == _confirmatory_parse_timestamp_v2(
+            expected_payload["evaluation_not_before"],
+            "evaluation_not_before",
+        )
+    )
+    if not metadata_matches or stored["result_hash"] != expected_hash:
+        raise ConfirmatoryReproducibilityError(
+            "recomputed confirmatory result disagrees with the immutable "
+            "authoritative result"
+        )
+    if canonical_scientific_result_json(stored_payload) != (
+        canonical_scientific_result_json(expected_payload)
+    ):
+        raise ConfirmatoryReproducibilityError(
+            "canonical confirmatory payload differs despite matching metadata"
+        )
+    return stored
+
+
+async def _persist_or_verify_authoritative_result(
+    conn: asyncpg.Connection,
+    *,
+    report: dict[str, Any],
+) -> tuple[dict[str, Any], bool]:
+    payload = _authoritative_result_payload_v1(report)
+    manifest_id = int(payload["manifest_id"])
+    existing = await conn.fetchrow(
+        """
+        SELECT *
+        FROM signal_walk_forward_confirmatory_result
+        WHERE manifest_id=$1
+        """,
+        manifest_id,
+    )
+    if existing is not None:
+        return (
+            _verify_authoritative_result_row(
+                existing,
+                expected_payload=payload,
+            ),
+            True,
+        )
+
+    canonical_result = canonical_scientific_result_json(payload)
+    result_hash = scientific_result_hash(payload)
+    inserted = await conn.fetchrow(
+        """
+        INSERT INTO signal_walk_forward_confirmatory_result(
+          result_version,manifest_id,manifest_hash,
+          scientific_implementation_digest,
+          confirmatory_knowledge_cutoff,evaluation_not_before,
+          canonical_result_json,result_hash
+        ) VALUES(1,$1,$2,$3,$4,$5,$6,$7)
+        ON CONFLICT (manifest_id) DO NOTHING
+        RETURNING *
+        """,
+        manifest_id,
+        payload["manifest_hash"],
+        payload["scientific_implementation"]["digest"],
+        payload["confirmatory_knowledge_cutoff"],
+        payload["evaluation_not_before"],
+        canonical_result,
+        result_hash,
+    )
+    if inserted is not None:
+        return (
+            _verify_authoritative_result_row(
+                inserted,
+                expected_payload=payload,
+            ),
+            False,
+        )
+
+    raced = await conn.fetchrow(
+        """
+        SELECT *
+        FROM signal_walk_forward_confirmatory_result
+        WHERE manifest_id=$1
+        """,
+        manifest_id,
+    )
+    if raced is None:
+        raise ConfirmatoryReproducibilityError(
+            "authoritative result insert conflict left no visible row"
+        )
+    return (
+        _verify_authoritative_result_row(raced, expected_payload=payload),
+        True,
+    )
+
+
+async def _attach_confirmatory_v4_report_v2(
+    conn: asyncpg.Connection,
+    *,
+    report: dict[str, Any],
+    manifest: dict[str, Any],
+    options: WalkForwardManifestOptions,
+    generated_at: datetime,
+) -> None:
+    """Derive all v4 scientific inputs from the verified frozen manifest."""
+
+    contract = options.confirmatory_contract_v2
+    if contract is None:
+        raise ValueError("walk-forward spec v4 manifest is missing corrected contract")
+    frozen_spec = manifest.get("spec")
+    if not isinstance(frozen_spec, dict):
+        raise ValueError("walk-forward spec v4 manifest spec is not an object")
+
+    scientific_implementation = validate_scientific_implementation_identity(
+        frozen_spec.get("scientific_implementation")
+    )
+    knowledge_cutoff = _confirmatory_parse_timestamp_v2(
+        frozen_spec.get("confirmatory_knowledge_cutoff"),
+        "confirmatory_knowledge_cutoff",
+    )
+    evaluation_not_before = _confirmatory_parse_timestamp_v2(
+        frozen_spec.get("evaluation_not_before"),
+        "evaluation_not_before",
+    )
+
+    raw_folds = frozen_spec.get("folds")
+    if not isinstance(raw_folds, list) or not raw_folds:
+        raise ValueError("walk-forward spec v4 manifest has no frozen folds")
+    fold_specs: list[dict[str, Any]] = []
+    for raw_fold in raw_folds:
+        if not isinstance(raw_fold, dict):
+            raise ValueError("walk-forward spec v4 fold is not an object")
+        fold_specs.append(
+            {
+                "fold_index": int(raw_fold["fold_index"]),
+                "discovery_start": _confirmatory_parse_timestamp_v2(
+                    raw_fold["discovery_start"], "fold.discovery_start"
+                ),
+                "discovery_end": _confirmatory_parse_timestamp_v2(
+                    raw_fold["discovery_end"], "fold.discovery_end"
+                ),
+                "test_start": _confirmatory_parse_timestamp_v2(
+                    raw_fold["test_start"], "fold.test_start"
+                ),
+                "test_end": _confirmatory_parse_timestamp_v2(
+                    raw_fold["test_end"], "fold.test_end"
+                ),
+                "test_maturity_at": _confirmatory_parse_timestamp_v2(
+                    raw_fold["test_maturity_at"], "fold.test_maturity_at"
+                ),
+            }
+        )
+
+    confirmatory_result = await _compute_confirmatory_v4_result(
+        conn,
+        options=options,
+        contract=contract,
+        fold_specs=fold_specs,
+        generated_at=generated_at,
+        knowledge_cutoff=knowledge_cutoff,
+        evaluation_not_before=evaluation_not_before,
+        scientific_implementation=scientific_implementation,
+    )
+    report["confirmatory_contract"] = confirmatory_contract_v2_to_dict(contract)
+    report["scientific_implementation"] = scientific_implementation
+    report["confirmatory_state"] = confirmatory_result["confirmatory_state"]
+    report["confirmatory_knowledge_cutoff"] = knowledge_cutoff
+    report["evaluation_not_before"] = evaluation_not_before
+    report["confirmatory_result"] = confirmatory_result
+    report["corrected_execution_contract"] = {
+        "primary_exchange": contract.primary_exchange,
+        "outcome_price_venue": contract.outcome_price_venue,
+        "outcome_price_source": CONFIRMATORY_OUTCOME_PRICE_SOURCE_V1,
+        "baseline_entry": "primary_venue_decision_time_snapshot_mid",
+        "signal_entry": "primary_venue_directional_vwap",
+        "modeled_exit": "opposite_side_cost_from_same_entry_snapshot",
+        "fees": "exact_frozen_taker_fee_on_entry_and_exit_notional",
+        "stress": "frozen_nonfunding_execution_stress_once",
+        "funding_semantics": contract.funding_semantics,
+        "funding_modeled": False,
+        "reference_price_used_by_primary_endpoint": False,
+    }
+
+
+# PR27_SCIENTIFIC_CONFIRMATORY_V4_IO_END
+
+
 def _parse_iso(value: Any) -> datetime:
     if isinstance(value, datetime):
         return _aware_utc(value)
@@ -2996,11 +4045,11 @@ def _parse_iso(value: Any) -> datetime:
     return _aware_utc(datetime.fromisoformat(value.replace("Z", "+00:00")))
 
 
-async def evaluate_walk_forward(
+async def _evaluate_walk_forward_snapshot(
     conn: asyncpg.Connection,
     manifest_name: str,
 ) -> dict[str, Any]:
-    """Stage B: hash/schedule-verified read-only walk-forward evaluation."""
+    """Compute one report inside a caller-owned consistent transaction."""
 
     manifest, options = await load_walk_forward_manifest(conn, manifest_name)
     generated_at = _aware_utc(await conn.fetchval("SELECT clock_timestamp()"))
@@ -3076,6 +4125,8 @@ async def evaluate_walk_forward(
         report_version = WALK_FORWARD_REPORT_VERSION
     elif options.spec_version == WALK_FORWARD_SPEC_VERSION_V3:
         report_version = WALK_FORWARD_REPORT_VERSION_V3
+    elif options.spec_version == WALK_FORWARD_SPEC_VERSION_V4:
+        report_version = WALK_FORWARD_REPORT_VERSION_V4
     else:
         report_version = WALK_FORWARD_REPORT_VERSION_V2
 
@@ -3173,3 +4224,96 @@ async def evaluate_walk_forward(
         report["confirmatory_result"] = confirmatory_result
 
     return report
+
+
+# PR27_SCIENTIFIC_AUTHORITATIVE_EVALUATION_V1_BEGIN
+def _confirmatory_result_lock_key(manifest_name: str) -> int:
+    digest = hashlib.sha256(
+        f"coinanalyze:confirmatory-result:{manifest_name}".encode()
+    ).digest()
+    return int.from_bytes(digest[:8], byteorder="big", signed=True)
+
+
+async def evaluate_walk_forward(
+    conn: asyncpg.Connection,
+    manifest_name: str,
+) -> dict[str, Any]:
+    """Legacy v1-v3 evaluator retained with its historical read-only API.
+
+    Spec v4 cannot be computed through an unpersisted path.  Call
+    :func:`evaluate_walk_forward_authoritative`, which owns serialization,
+    snapshot isolation, persistence, and recomputation verification.
+    """
+
+    _, options = await load_walk_forward_manifest(conn, manifest_name)
+    if options.spec_version == WALK_FORWARD_SPEC_VERSION_V4:
+        raise RuntimeError(
+            "walk-forward spec v4 requires "
+            "evaluate_walk_forward_authoritative()"
+        )
+    return await _evaluate_walk_forward_snapshot(conn, manifest_name)
+
+
+async def evaluate_walk_forward_authoritative(
+    conn: asyncpg.Connection,
+    manifest_name: str,
+) -> dict[str, Any]:
+    """Evaluate with explicit transaction and v4 authoritative persistence.
+
+    A session advisory lock is acquired before the REPEATABLE READ snapshot
+    begins.  Concurrent first evaluators therefore serialize before taking
+    their scientific snapshots; the second sees and verifies the first
+    committed result.  The lock is session-scoped so a process/connection
+    failure releases it automatically.
+    """
+
+    if conn.is_in_transaction():
+        raise RuntimeError(
+            "authoritative evaluation must own its transaction; connection "
+            "is already in a transaction"
+        )
+    _, options = await load_walk_forward_manifest(conn, manifest_name)
+    if options.spec_version != WALK_FORWARD_SPEC_VERSION_V4:
+        async with conn.transaction(isolation="repeatable_read", readonly=True):
+            return await _evaluate_walk_forward_snapshot(conn, manifest_name)
+
+    lock_key = _confirmatory_result_lock_key(manifest_name)
+    await conn.fetchval("SELECT pg_advisory_lock($1::bigint)", lock_key)
+    try:
+        async with conn.transaction(isolation="repeatable_read"):
+            report = await _evaluate_walk_forward_snapshot(conn, manifest_name)
+            await _attach_confirmatory_v4_report_v2(
+                conn,
+                report=report,
+                manifest=report["manifest"],
+                options=options,
+                generated_at=_confirmatory_aware_utc_v2(report["generated_at"]),
+            )
+            if report["confirmatory_state"] == CONFIRMATORY_STATE_NOT_READY:
+                report["authoritative_result"] = {
+                    "persisted": False,
+                    "reason": report["confirmatory_result"]["readiness_reason"],
+                }
+                return report
+            result_row, reused_existing = (
+                await _persist_or_verify_authoritative_result(
+                    conn,
+                    report=report,
+                )
+            )
+            report["authoritative_result"] = {
+                "persisted": True,
+                "reused_existing": reused_existing,
+                "result_id": int(result_row["result_id"]),
+                "result_version": int(result_row["result_version"]),
+                "result_hash": str(result_row["result_hash"]),
+                "evaluated_at": result_row["evaluated_at"],
+            }
+            return report
+    finally:
+        unlocked = await conn.fetchval(
+            "SELECT pg_advisory_unlock($1::bigint)", lock_key
+        )
+        if unlocked is not True:
+            raise RuntimeError("failed to release confirmatory result advisory lock")
+# PR27_SCIENTIFIC_AUTHORITATIVE_EVALUATION_V1_END

@@ -545,3 +545,29 @@ production manifest is created by this PR. See
 `docs/PR26_CONFIRMATORY_WALK_FORWARD.md` for the full contract field
 reference, the exact baseline/bootstrap/decision-policy algorithms, and the
 CLI flags needed to freeze one in the future.
+
+## PR27 addendum: corrected confirmatory spec v4
+
+Spec v3 remains published exactly as described above. PR27 does not broaden
+or reinterpret it even though no production spec-v3 manifest exists. The
+corrected economics and reproducibility guarantees live only in additive
+`WALK_FORWARD_SPEC_VERSION_V4 = 4` / report v4.
+
+Spec v4 uses a Binance decision-time execution-snapshot mid as the
+frictionless control entry, the directional Binance VWAP as the executable
+signal entry, and the same Binance outcome close for both exits. It never
+uses `signal_observation.reference_price` in the primary calculation and it
+fails closed for Bybit until a venue-specific outcome series exists. The
+primary claim is a paired, block-resampled conjunction: the lower CI for
+absolute stressed return must exceed zero **and** the lower CI for excess
+over the direction-matched venue-mid control must exceed the frozen MES.
+
+The manifest also freezes an exact scientific implementation digest,
+`funding_semantics=excluded_v1`, a positive caller-supplied certificate
+settlement grace, the final knowledge cutoff, and `evaluation_not_before`.
+The first matured result is persisted once in an append-only PostgreSQL table;
+later evaluation must reproduce it exactly or fails closed. See
+`docs/PR27_CONFIRMATORY_ENDPOINT_INTEGRITY.md` for the complete long/short
+algebra, decision table, identity surface, persistence transaction and
+remaining calibration responsibilities. PR27 chooses no production values
+and creates no production manifest.

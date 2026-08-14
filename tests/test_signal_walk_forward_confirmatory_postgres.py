@@ -1,4 +1,4 @@
-"""PR26 spec v3 confirmatory contract: real PostgreSQL 17 end-to-end tests.
+"""PR26 spec v3 and PR27 spec v4: real PostgreSQL 17 end-to-end tests.
 
 Follows this project's established convention (see
 tests/test_signal_walk_forward_postgres.py, tests/test_pr25_research_knowledge_time_postgres.py):
@@ -21,22 +21,32 @@ import asyncpg
 import pytest
 
 from app.signal_confirmatory import ConfirmatoryContract, confirmatory_block_key
+from app.signal_confirmatory_v2 import (
+    CONJUNCTIVE_DECISION_POLICY_V2,
+    ConfirmatoryContractV2,
+)
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, outcome_window
 from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
 from app.signal_visibility import certify_final_outcomes, certify_research_bundles
 from app.signal_walk_forward import (
     WALK_FORWARD_REPORT_VERSION_V3,
     WALK_FORWARD_SPEC_VERSION_V3,
+    WALK_FORWARD_SPEC_VERSION_V4,
+    ConfirmatoryReproducibilityError,
     WalkForwardManifestOptions,
     _expected_utc_nonoverlap_slot_count,
-    _static_options_spec,
+    _full_spec,
     compute_folds,
     evaluate_walk_forward,
+    evaluate_walk_forward_authoritative,
     freeze_walk_forward_manifest,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_SQL = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
+PR27_MIGRATION_SQL = (
+    ROOT / "sql/migrations/20260816_pr27_confirmatory_integrity.sql"
+).read_text(encoding="utf-8")
 
 
 def _ddl(marker: str) -> str:
@@ -50,6 +60,7 @@ EXECUTION_DDL = _ddl("PR10_SIGNAL_EXECUTION")
 WALK_FORWARD_DDL = _ddl("PR11_SIGNAL_WALK_FORWARD")
 BUNDLE_VISIBILITY_DDL = _ddl("PR25_SIGNAL_RESEARCH_BUNDLE_VISIBILITY")
 FINAL_VISIBILITY_DDL = _ddl("PR25_SIGNAL_OUTCOME_FINAL_VISIBILITY")
+AUTHORITATIVE_RESULT_DDL = _ddl("PR27_SIGNAL_WALK_FORWARD_CONFIRMATORY_RESULT")
 
 BASE_SQL = """
 CREATE OR REPLACE FUNCTION finite_float8(value double precision)
@@ -117,6 +128,7 @@ async def _connect_schema(schema: str) -> asyncpg.Connection:
     await conn.execute(WALK_FORWARD_DDL)
     await conn.execute(BUNDLE_VISIBILITY_DDL)
     await conn.execute(FINAL_VISIBILITY_DDL)
+    await conn.execute(AUTHORITATIVE_RESULT_DDL)
     return conn
 
 
@@ -133,6 +145,56 @@ async def conn():
     connection = await _connect_schema(schema)
     try:
         yield connection
+    finally:
+        await _drop_schema(connection, schema)
+
+
+@pytest.mark.asyncio
+async def test_pr27_forward_migration_applies_idempotently_on_legacy_schema() -> None:
+    schema = _schema_name()
+    connection = await asyncpg.connect(_dsn())
+    try:
+        await connection.execute(f'CREATE SCHEMA "{schema}"')
+        await connection.execute(f'SET search_path TO "{schema}", public')
+        await connection.execute("SET TIME ZONE 'UTC'")
+        resolved_schema = await connection.fetchval("SELECT current_schema()")
+        await connection.execute(BASE_SQL)
+        await connection.execute(LEDGER_DDL)
+        await connection.execute(OUTCOME_DDL)
+        await connection.execute(REPLAY_DDL)
+        await connection.execute(EXECUTION_DDL)
+        await connection.execute(WALK_FORWARD_DDL)
+        await connection.execute(BUNDLE_VISIBILITY_DDL)
+        await connection.execute(FINAL_VISIBILITY_DDL)
+
+        assert await connection.fetchval(
+            "SELECT to_regclass($1)",
+            f"{resolved_schema}.signal_walk_forward_confirmatory_result",
+        ) is None
+        await connection.execute(PR27_MIGRATION_SQL)
+        await connection.execute(PR27_MIGRATION_SQL)
+        columns = await connection.fetch(
+            """
+            SELECT column_name,data_type
+            FROM information_schema.columns
+            WHERE table_schema=$1
+              AND table_name='signal_walk_forward_confirmatory_result'
+            ORDER BY ordinal_position
+            """,
+            resolved_schema,
+        )
+        assert [(row["column_name"], row["data_type"]) for row in columns] == [
+            ("result_id", "bigint"),
+            ("result_version", "smallint"),
+            ("manifest_id", "bigint"),
+            ("manifest_hash", "text"),
+            ("scientific_implementation_digest", "text"),
+            ("confirmatory_knowledge_cutoff", "timestamp with time zone"),
+            ("evaluation_not_before", "timestamp with time zone"),
+            ("evaluated_at", "timestamp with time zone"),
+            ("canonical_result_json", "text"),
+            ("result_hash", "text"),
+        ]
     finally:
         await _drop_schema(connection, schema)
 
@@ -168,14 +230,13 @@ async def _insert_backdated_manifest(
         fold_count=options.fold_count,
         horizons=options.horizons,
     )
-    spec = {
-        **_static_options_spec(options),
-        "name": name,
-        "created_at": created_at,
-        "discovery_start": discovery_start,
-        "cutoff_at": cutoff_at,
-        "folds": folds,
-    }
+    spec = _full_spec(
+        options,
+        created_at=created_at,
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+        folds=folds,
+    )
     manifest_hash = hashlib.sha256(_canonical_json(spec).encode("utf-8")).hexdigest()
 
     await conn.execute(
@@ -289,6 +350,7 @@ async def _insert_outcome(
     horizon_minutes: int,
     directional_return_pct: float,
     status: str = "evaluated",
+    outcome_end_price: float | None = None,
 ) -> None:
     observation = await conn.fetchrow(
         "SELECT direction,reference_price FROM signal_observation WHERE observation_id=$1",
@@ -307,7 +369,11 @@ async def _insert_outcome(
         if direction in ("long", "neutral")
         else -directional_return_pct
     )
-    end_price = reference_price * (1.0 + market_return_pct / 100.0)
+    end_price = (
+        reference_price * (1.0 + market_return_pct / 100.0)
+        if outcome_end_price is None
+        else outcome_end_price
+    )
     window_end = window_start + timedelta(minutes=horizon_minutes)
     due_at = window_end + OUTCOME_SETTLEMENT_LAG
     row_created_at = window_start - timedelta(minutes=1)
@@ -453,6 +519,9 @@ async def _insert_confirmatory_bundle(
     direction: str = "long",
     state: str | None = None,
     regime_label: str = "trend_up",
+    reference_price: float = 100.0,
+    snapshot_cost_bps: float = 5.0,
+    outcome_end_price: float | None = None,
 ) -> int:
     """A complete evidence_version=6 bundle: one observation, replay frame,
     all 8 outcome horizons (only ``primary_horizon`` evaluated with a real
@@ -473,6 +542,7 @@ async def _insert_confirmatory_bundle(
         direction=direction,
         state=state,
         regime_label=regime_label,
+        reference_price=reference_price,
     )
     await _insert_frame(conn, observation_id, observed_at)
 
@@ -485,6 +555,7 @@ async def _insert_confirmatory_bundle(
                 window_start=window_start,
                 horizon_minutes=horizon,
                 directional_return_pct=directional_return_pct,
+                outcome_end_price=outcome_end_price,
             )
         else:
             await _insert_outcome(
@@ -502,10 +573,15 @@ async def _insert_confirmatory_bundle(
         observed_at=observed_at,
         exchange="binance",
         status=snapshot_status,
+        cost_bps=snapshot_cost_bps,
     )
     if both_venues:
         await _insert_execution_snapshot(
-            conn, observation_id=observation_id, observed_at=observed_at, exchange="bybit"
+            conn,
+            observation_id=observation_id,
+            observed_at=observed_at,
+            exchange="bybit",
+            cost_bps=snapshot_cost_bps,
         )
     return observation_id
 
@@ -673,6 +749,65 @@ def _v3_options(*, name: str, contract: ConfirmatoryContract, **overrides: objec
     return WalkForwardManifestOptions(**fields)
 
 
+def _confirmatory_contract_v2(**overrides: object) -> ConfirmatoryContractV2:
+    fields: dict[str, object] = {
+        "primary_endpoint_version": 2,
+        "primary_symbol": "BTCUSDT_PERP.A",
+        "primary_horizon_minutes": 15,
+        "primary_sampling_mode": "utc_nonoverlap",
+        "primary_exchange": "binance",
+        "outcome_price_venue": "binance",
+        "primary_size_usd": 1_000.0,
+        "primary_taker_fee_bps": 0.0,
+        "baseline_version": 2,
+        "unmodeled_execution_stress_bps": 0.0,
+        "funding_semantics": "excluded_v1",
+        "inference_version": 2,
+        "block_unit": "day",
+        "block_length": 1,
+        "bootstrap_repetitions": 500,
+        "bootstrap_seed": 42,
+        "confidence_level": 0.95,
+        "minimum_effect_bps": 10.0,
+        "minimum_primary_blocks": 2,
+        "minimum_execution_data_coverage_pct": 50.0,
+        "minimum_research_data_coverage_pct": 0.0001,
+        "evaluation_settlement_grace_seconds": 1,
+        "confirmatory_decision_policy": CONJUNCTIVE_DECISION_POLICY_V2,
+    }
+    fields.update(overrides)
+    return ConfirmatoryContractV2(**fields)
+
+
+def _v4_options(
+    *,
+    name: str,
+    contract: ConfirmatoryContractV2,
+    **overrides: object,
+) -> WalkForwardManifestOptions:
+    fields: dict[str, object] = {
+        "name": name,
+        "warmup_days": 1,
+        "test_days": 10,
+        "fold_count": 1,
+        "min_group_n": 1,
+        "horizons": (15,),
+        "symbols": ("BTCUSDT_PERP.A",),
+        "logic_version": SCALP_SIGNAL_LOGIC_VERSION,
+        "evidence_version": 6,
+        "sampling_version": 1,
+        "context_version": 1,
+        "outcome_version": 1,
+        "execution_snapshot_version": 1,
+        "spec_version": WALK_FORWARD_SPEC_VERSION_V4,
+        "research_visibility_version": 1,
+        "fee_bps_per_side": (("binance", contract.primary_taker_fee_bps),),
+        "confirmatory_contract_v2": contract,
+    }
+    fields.update(overrides)
+    return WalkForwardManifestOptions(**fields)
+
+
 _TEST_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 
 
@@ -753,6 +888,62 @@ async def _wait_past(conn: asyncpg.Connection, target: datetime) -> None:
         if remaining <= 0:
             return
         await asyncio.sleep(min(remaining + 0.05, 1.0))
+
+
+async def _backdated_ready_schedule(
+    conn: asyncpg.Connection,
+    *,
+    options: WalkForwardManifestOptions,
+) -> tuple[datetime, datetime]:
+    now = await conn.fetchval("SELECT clock_timestamp()")
+    contract_v2 = options.confirmatory_contract_v2
+    grace_seconds = (
+        0
+        if contract_v2 is None
+        else contract_v2.evaluation_settlement_grace_seconds
+    )
+    last_test_end = (
+        now
+        - timedelta(minutes=max(options.horizons))
+        - OUTCOME_SETTLEMENT_LAG
+        - timedelta(seconds=grace_seconds + 5)
+    ).replace(second=0, microsecond=0)
+    cutoff_at = last_test_end - timedelta(days=options.test_days * options.fold_count)
+    return cutoff_at - timedelta(days=5), cutoff_at
+
+
+async def _insert_direct_visibility_certificates(
+    conn: asyncpg.Connection,
+    *,
+    observation_ids: list[int],
+    verified_visible_at: datetime,
+) -> None:
+    await conn.execute(
+        """
+        INSERT INTO signal_research_bundle_visibility(
+          observation_id,visibility_version,evidence_version,context_version,
+          outcome_version,execution_snapshot_version,verified_visible_at
+        )
+        SELECT observation_id,1,6,1,1,1,$2
+        FROM unnest($1::bigint[]) AS ids(observation_id)
+        """,
+        observation_ids,
+        verified_visible_at,
+    )
+    await conn.execute(
+        """
+        INSERT INTO signal_outcome_final_visibility(
+          outcome_id,visibility_version,outcome_version,source_status,
+          source_finalized_at,verified_visible_at
+        )
+        SELECT outcome_id,1,outcome_version,status,finalized_at,$2
+        FROM signal_outcome
+        WHERE observation_id=ANY($1::bigint[])
+          AND status IN ('evaluated','not_evaluable')
+        """,
+        observation_ids,
+        verified_visible_at,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -852,16 +1043,24 @@ async def _insert_diluted_spread_bundles(
     actionable row's own return (which is what a single-row-per-block
     fixture does -- see the P1-01 regression test above)."""
 
+    # Start on the next complete UTC calendar day. The real-clock schedule
+    # can place test_start near 23:00 UTC; adding one/two hours directly would
+    # split the intended pair across two block keys and make this fixture
+    # wall-clock dependent.
+    first_complete_day = (test_start + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
     for day in range(day_count):
+        day_start = first_complete_day + timedelta(days=day)
         await _insert_confirmatory_bundle(
             conn,
-            observed_at=test_start + timedelta(days=day, hours=1),
+            observed_at=day_start + timedelta(hours=1),
             directional_return_pct=actionable_directional_return_pct,
             direction=actionable_direction,
         )
         await _insert_confirmatory_bundle(
             conn,
-            observed_at=test_start + timedelta(days=day, hours=2),
+            observed_at=day_start + timedelta(hours=2),
             directional_return_pct=dilution_market_return_pct,
             direction="neutral",
         )
@@ -1110,15 +1309,18 @@ async def test_confirmatory_baseline_cohort_includes_non_actionable_rows_regardl
     # Single calendar-day block: one actionable long row (default
     # state/regime) plus one non-actionable neutral row with a DIFFERENT
     # state/regime_label and a very different market_return_pct.
+    complete_day = (test_start + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
     await _insert_confirmatory_bundle(
         conn,
-        observed_at=test_start + timedelta(hours=1),
+        observed_at=complete_day + timedelta(hours=1),
         directional_return_pct=5.0,
         direction="long",
     )
     await _insert_confirmatory_bundle(
         conn,
-        observed_at=test_start + timedelta(hours=2),
+        observed_at=complete_day + timedelta(hours=2),
         directional_return_pct=-15.0,
         direction="neutral",
         state="Diagnostic Sweep State",
@@ -1717,7 +1919,9 @@ async def test_confirmatory_full_research_coverage_allows_bootstrap(
     assert report["confirmatory_result"]["confirmatory_outcome_integrity"]["outcome_complete"] is True
     # Full coverage must reach the normal bootstrap path -- not gated.
     assert report["confirmatory_result"]["ci_lower_bps"] is not None
-    assert report["confirmatory_state"] in ("pass", "fail")
+    # Statistical ambiguity remains valid after bootstrap; this test is about
+    # reaching inference, not forcing a scientifically decisive interval.
+    assert report["confirmatory_state"] in ("pass", "fail", "inconclusive")
 
 
 # ---------------------------------------------------------------------------
@@ -1747,3 +1951,557 @@ async def test_freeze_spec_v3_without_confirmatory_contract_fails_closed(
 
     count = await conn.fetchval("SELECT count(*) FROM signal_walk_forward_manifest")
     assert count == 0
+
+
+# ---------------------------------------------------------------------------
+# PR27 spec v4: corrected economics and authoritative result evidence.
+# ---------------------------------------------------------------------------
+
+
+async def _prepare_ready_v4(
+    conn: asyncpg.Connection,
+    *,
+    name: str,
+    contract: ConfirmatoryContractV2 | None = None,
+    row_specs: list[dict[str, object]] | None = None,
+) -> tuple[WalkForwardManifestOptions, list[dict], list[int]]:
+    resolved_contract = contract or _confirmatory_contract_v2()
+    options = _v4_options(
+        name=name,
+        contract=resolved_contract,
+        test_days=4,
+    )
+    discovery_start, cutoff_at = await _backdated_ready_schedule(
+        conn, options=options
+    )
+    folds = await _insert_backdated_manifest(
+        conn,
+        name=name,
+        options=options,
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+    )
+    specs = row_specs or [
+        {"day": 0, "direction": "long", "return_pct": 2.0},
+        {"day": 1, "direction": "long", "return_pct": 2.0},
+    ]
+    observation_ids: list[int] = []
+    for index, spec in enumerate(specs):
+        slot = _align_forward(
+            folds[0]["test_start"]
+            + timedelta(days=int(spec.get("day", index)), hours=1)
+            + timedelta(minutes=int(spec.get("minute_offset", 0))),
+            minutes=resolved_contract.primary_horizon_minutes,
+        )
+        observation_ids.append(
+            await _insert_confirmatory_bundle(
+                conn,
+                observed_at=slot,
+                directional_return_pct=float(spec.get("return_pct", 2.0)),
+                primary_horizon=resolved_contract.primary_horizon_minutes,
+                direction=str(spec.get("direction", "long")),
+                reference_price=float(spec.get("reference_price", 100.0)),
+                snapshot_cost_bps=float(spec.get("snapshot_cost_bps", 0.0)),
+                snapshot_status=str(spec.get("snapshot_status", "valid")),
+                outcome_end_price=(
+                    None
+                    if spec.get("outcome_end_price") is None
+                    else float(spec["outcome_end_price"])
+                ),
+            )
+        )
+    await _insert_direct_visibility_certificates(
+        conn,
+        observation_ids=observation_ids,
+        verified_visible_at=(
+            folds[-1]["test_maturity_at"] - timedelta(seconds=1)
+        ),
+    )
+    return options, folds, observation_ids
+
+
+@pytest.mark.asyncio
+async def test_p1_01_old_v3_keeps_reference_offset_but_v4_cannot_pass_from_it(
+    conn: asyncpg.Connection,
+) -> None:
+    v4_contract = _confirmatory_contract_v2(
+        minimum_effect_bps=10.0,
+        minimum_primary_blocks=2,
+    )
+    v4_options = _v4_options(
+        name="pr27-reference-offset-v4",
+        contract=v4_contract,
+        test_days=4,
+    )
+    discovery_start, cutoff_at = await _backdated_ready_schedule(
+        conn, options=v4_options
+    )
+    v4_folds = await _insert_backdated_manifest(
+        conn,
+        name=v4_options.name,
+        options=v4_options,
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+    )
+
+    v3_contract = _confirmatory_contract(
+        minimum_effect_bps=10.0,
+        minimum_primary_blocks=2,
+        minimum_research_data_coverage_pct=0.0001,
+        primary_taker_fee_bps=0.0,
+    )
+    v3_options = _v3_options(
+        name="pr27-reference-offset-v3-control",
+        contract=v3_contract,
+        test_days=4,
+    )
+    await _insert_backdated_manifest(
+        conn,
+        name=v3_options.name,
+        options=v3_options,
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+    )
+
+    observation_ids: list[int] = []
+    stale_reference_by_direction = {"long": 101.0, "short": 99.0}
+    for day, direction in enumerate(("long", "short", "long", "short")):
+        slot = _align_forward(
+            v4_folds[0]["test_start"] + timedelta(days=day, hours=1),
+            minutes=15,
+        )
+        reference_price = stale_reference_by_direction[direction]
+        reference_feed_return_pct = (100.0 / reference_price - 1.0) * 100.0
+        directional_return_pct = (
+            reference_feed_return_pct
+            if direction == "long"
+            else -reference_feed_return_pct
+        )
+        observation_ids.append(
+            await _insert_confirmatory_bundle(
+                conn,
+                observed_at=slot,
+                direction=direction,
+                directional_return_pct=directional_return_pct,
+                reference_price=reference_price,
+                outcome_end_price=100.0,
+                snapshot_cost_bps=0.0,
+            )
+        )
+    await _insert_direct_visibility_certificates(
+        conn,
+        observation_ids=observation_ids,
+        verified_visible_at=(
+            v4_folds[-1]["test_maturity_at"] - timedelta(seconds=1)
+        ),
+    )
+
+    async with conn.transaction(isolation="repeatable_read", readonly=True):
+        legacy_report = await evaluate_walk_forward(conn, v3_options.name)
+    corrected_report = await evaluate_walk_forward_authoritative(
+        conn, v4_options.name
+    )
+
+    assert legacy_report["confirmatory_state"] == "pass"
+    assert legacy_report["confirmatory_result"]["primary_excess_mean_bps"] > 90.0
+    assert legacy_report["confirmatory_result"]["n_evaluated_actionable"] == 4
+    corrected = corrected_report["confirmatory_result"]
+    assert corrected_report["confirmatory_state"] != "pass"
+    assert corrected["absolute_stressed_mean_bps"] == pytest.approx(0.0)
+    assert corrected["baseline_mean_bps"] == pytest.approx(0.0)
+    assert corrected["excess_mean_bps"] == pytest.approx(0.0)
+    assert corrected_report["authoritative_result"]["persisted"] is True
+
+
+@pytest.mark.asyncio
+async def test_p1_02_absolute_loss_relative_alpha_is_joint_fail_in_postgres(
+    conn: asyncpg.Connection,
+) -> None:
+    rows: list[dict[str, object]] = []
+    for day in (0, 1, 2):
+        rows.extend(
+            [
+                {
+                    "day": day,
+                    "minute_offset": 0,
+                    "direction": "short",
+                    "return_pct": -1.0,
+                    "snapshot_cost_bps": 0.0,
+                },
+                {
+                    "day": day,
+                    "minute_offset": 15,
+                    "direction": "neutral",
+                    "return_pct": 5.0,
+                    "snapshot_cost_bps": 0.0,
+                },
+            ]
+        )
+    options, _, _ = await _prepare_ready_v4(
+        conn,
+        name="pr27-absolute-loss-relative-alpha",
+        contract=_confirmatory_contract_v2(
+            minimum_effect_bps=100.0,
+            minimum_primary_blocks=2,
+        ),
+        row_specs=rows,
+    )
+    report = await evaluate_walk_forward_authoritative(conn, options.name)
+    result = report["confirmatory_result"]
+    assert result["absolute_stressed_mean_bps"] < 0.0
+    assert result["excess_mean_bps"] > 100.0
+    assert result["absolute_component_state"] == "fail"
+    assert result["excess_component_state"] == "pass"
+    assert report["confirmatory_state"] == "fail"
+
+
+@pytest.mark.asyncio
+async def test_v4_pass_requires_both_absolute_and_excess_components_in_postgres(
+    conn: asyncpg.Connection,
+) -> None:
+    rows: list[dict[str, object]] = []
+    for day in (0, 1, 2):
+        rows.extend(
+            [
+                {
+                    "day": day,
+                    "minute_offset": 0,
+                    "direction": "long",
+                    "return_pct": 2.0,
+                    "snapshot_cost_bps": 0.0,
+                },
+                {
+                    "day": day,
+                    "minute_offset": 15,
+                    "direction": "neutral",
+                    "return_pct": -2.0,
+                    "snapshot_cost_bps": 0.0,
+                },
+            ]
+        )
+    options, _, _ = await _prepare_ready_v4(
+        conn,
+        name="pr27-joint-positive-pass",
+        contract=_confirmatory_contract_v2(
+            minimum_effect_bps=10.0,
+            minimum_primary_blocks=2,
+        ),
+        row_specs=rows,
+    )
+    report = await evaluate_walk_forward_authoritative(conn, options.name)
+    result = report["confirmatory_result"]
+    assert result["absolute_stressed_mean_bps"] > 0.0
+    assert result["excess_mean_bps"] > 10.0
+    assert result["absolute_ci_lower_bps"] > 0.0
+    assert result["excess_ci_lower_bps"] > 10.0
+    assert result["absolute_component_state"] == "pass"
+    assert result["excess_component_state"] == "pass"
+    assert report["confirmatory_state"] == "pass"
+
+
+@pytest.mark.asyncio
+async def test_baseline_snapshot_missingness_is_counted_and_forces_inconclusive(
+    conn: asyncpg.Connection,
+) -> None:
+    options, _, _ = await _prepare_ready_v4(
+        conn,
+        name="pr27-baseline-missingness",
+        row_specs=[
+            {"day": 0, "direction": "long", "return_pct": 2.0},
+            {
+                "day": 1,
+                "direction": "neutral",
+                "return_pct": -3.0,
+                "snapshot_status": "stale",
+            },
+            {"day": 2, "direction": "long", "return_pct": 2.0},
+        ],
+    )
+    report = await evaluate_walk_forward_authoritative(conn, options.name)
+    integrity = report["confirmatory_result"]["baseline_input_integrity"]
+    assert integrity["expected_evaluated_periodic_n"] == 3
+    assert integrity["baseline_evaluable_n"] == 2
+    assert integrity["snapshot_nonvalid_n"] == 1
+    assert integrity["baseline_complete"] is False
+    assert report["confirmatory_state"] == "inconclusive"
+
+
+@pytest.mark.asyncio
+async def test_first_authoritative_result_persists_and_identical_recompute_verifies(
+    conn: asyncpg.Connection,
+) -> None:
+    options, _, _ = await _prepare_ready_v4(
+        conn,
+        name="pr27-authoritative-idempotency",
+    )
+    first = await evaluate_walk_forward_authoritative(conn, options.name)
+    second = await evaluate_walk_forward_authoritative(conn, options.name)
+    assert first["confirmatory_result"] == second["confirmatory_result"]
+    assert first["authoritative_result"]["persisted"] is True
+    assert first["authoritative_result"]["reused_existing"] is False
+    assert second["authoritative_result"]["reused_existing"] is True
+    assert (
+        first["authoritative_result"]["result_hash"]
+        == second["authoritative_result"]["result_hash"]
+    )
+    assert await conn.fetchval(
+        "SELECT count(*) FROM signal_walk_forward_confirmatory_result"
+    ) == 1
+
+
+@pytest.mark.asyncio
+async def test_authoritative_result_update_delete_and_truncate_are_rejected(
+    conn: asyncpg.Connection,
+) -> None:
+    options, _, _ = await _prepare_ready_v4(
+        conn,
+        name="pr27-authoritative-immutable",
+    )
+    report = await evaluate_walk_forward_authoritative(conn, options.name)
+    result_id = report["authoritative_result"]["result_id"]
+
+    with pytest.raises(asyncpg.CheckViolationError):
+        await conn.execute(
+            """
+            INSERT INTO signal_walk_forward_confirmatory_result(
+              result_version,manifest_id,manifest_hash,
+              scientific_implementation_digest,
+              confirmatory_knowledge_cutoff,evaluation_not_before,
+              canonical_result_json,result_hash
+            )
+            SELECT
+              result_version,manifest_id,manifest_hash,
+              scientific_implementation_digest,
+              confirmatory_knowledge_cutoff,evaluation_not_before,
+              canonical_result_json,$2
+            FROM signal_walk_forward_confirmatory_result
+            WHERE result_id=$1
+            """,
+            result_id,
+            "0" * 64,
+        )
+    with pytest.raises(asyncpg.PostgresError) as update_error:
+        await conn.execute(
+            "UPDATE signal_walk_forward_confirmatory_result SET result_version=1 "
+            "WHERE result_id=$1",
+            result_id,
+        )
+    assert update_error.value.sqlstate == "55000"
+    with pytest.raises(asyncpg.PostgresError) as delete_error:
+        await conn.execute(
+            "DELETE FROM signal_walk_forward_confirmatory_result WHERE result_id=$1",
+            result_id,
+        )
+    assert delete_error.value.sqlstate == "55000"
+    with pytest.raises(asyncpg.PostgresError) as truncate_error:
+        await conn.execute("TRUNCATE signal_walk_forward_confirmatory_result")
+    assert truncate_error.value.sqlstate == "55000"
+    assert await conn.fetchval(
+        "SELECT count(*) FROM signal_walk_forward_confirmatory_result"
+    ) == 1
+
+
+@pytest.mark.asyncio
+async def test_artificial_recomputation_divergence_fails_closed(
+    conn: asyncpg.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    options, _, _ = await _prepare_ready_v4(
+        conn,
+        name="pr27-authoritative-divergence",
+    )
+    await evaluate_walk_forward_authoritative(conn, options.name)
+
+    import app.signal_walk_forward as walk_forward
+
+    original = walk_forward.paired_block_bootstrap_ci_v2
+
+    def divergent_ci(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return {
+            **result,
+            "absolute_ci_lower_bps": result["absolute_ci_lower_bps"] + 0.5,
+            "absolute_ci_upper_bps": result["absolute_ci_upper_bps"] + 0.5,
+        }
+
+    monkeypatch.setattr(walk_forward, "paired_block_bootstrap_ci_v2", divergent_ci)
+    with pytest.raises(
+        ConfirmatoryReproducibilityError,
+        match="disagrees",
+    ):
+        await evaluate_walk_forward_authoritative(conn, options.name)
+    assert await conn.fetchval(
+        "SELECT count(*) FROM signal_walk_forward_confirmatory_result"
+    ) == 1
+
+
+@pytest.mark.asyncio
+async def test_runtime_scientific_digest_mismatch_fails_before_result_is_trusted(
+    conn: asyncpg.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    options, _, _ = await _prepare_ready_v4(
+        conn,
+        name="pr27-implementation-mismatch",
+    )
+    import app.signal_scientific_identity as identity
+
+    monkeypatch.setitem(
+        identity.REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS,
+        1,
+        "0" * 64,
+    )
+    with pytest.raises(RuntimeError, match="does not match"):
+        await evaluate_walk_forward_authoritative(conn, options.name)
+    assert await conn.fetchval(
+        "SELECT count(*) FROM signal_walk_forward_confirmatory_result"
+    ) == 0
+
+
+@pytest.mark.asyncio
+async def test_concurrent_first_evaluations_serialize_to_one_result(
+    conn: asyncpg.Connection,
+) -> None:
+    options, _, _ = await _prepare_ready_v4(
+        conn,
+        name="pr27-authoritative-concurrency",
+    )
+    schema = await conn.fetchval("SELECT current_schema()")
+    second_conn = await asyncpg.connect(_dsn())
+    await second_conn.execute(f'SET search_path TO "{schema}", public')
+    await second_conn.execute("SET TIME ZONE 'UTC'")
+    try:
+        first, second = await asyncio.gather(
+            evaluate_walk_forward_authoritative(conn, options.name),
+            evaluate_walk_forward_authoritative(second_conn, options.name),
+        )
+    finally:
+        await second_conn.close()
+    assert first["confirmatory_result"] == second["confirmatory_result"]
+    assert (
+        first["authoritative_result"]["result_hash"]
+        == second["authoritative_result"]["result_hash"]
+    )
+    assert sorted(
+        [
+            first["authoritative_result"]["reused_existing"],
+            second["authoritative_result"]["reused_existing"],
+        ]
+    ) == [False, True]
+    assert await conn.fetchval(
+        "SELECT count(*) FROM signal_walk_forward_confirmatory_result"
+    ) == 1
+
+
+@pytest.mark.asyncio
+async def test_certificate_commit_during_settlement_is_deterministic_and_late_stamp_excluded(
+    conn: asyncpg.Connection,
+) -> None:
+    contract = _confirmatory_contract_v2(
+        evaluation_settlement_grace_seconds=3,
+        minimum_primary_blocks=2,
+    )
+    options = _v4_options(
+        name="pr27-certificate-settlement",
+        contract=contract,
+        test_days=4,
+    )
+    discovery_start, cutoff_at = await _matured_v3_schedule(
+        conn,
+        options=options,
+        margin=timedelta(seconds=2),
+    )
+    folds = await _insert_backdated_manifest(
+        conn,
+        name=options.name,
+        options=options,
+        discovery_start=discovery_start,
+        cutoff_at=cutoff_at,
+    )
+    knowledge_cutoff = folds[-1]["test_maturity_at"]
+    evaluation_not_before = knowledge_cutoff + timedelta(seconds=3)
+
+    visible_ids: list[int] = []
+    for day in (0, 1):
+        slot = _align_forward(
+            folds[0]["test_start"] + timedelta(days=day, hours=1),
+            minutes=15,
+        )
+        visible_ids.append(
+            await _insert_confirmatory_bundle(
+                conn,
+                observed_at=slot,
+                directional_return_pct=2.0,
+                snapshot_cost_bps=0.0,
+            )
+        )
+    late_slot = _align_forward(
+        folds[0]["test_start"] + timedelta(days=2, hours=1),
+        minutes=15,
+    )
+    late_id = await _insert_confirmatory_bundle(
+        conn,
+        observed_at=late_slot,
+        directional_return_pct=100.0,
+        snapshot_cost_bps=0.0,
+    )
+
+    schema = await conn.fetchval("SELECT current_schema()")
+    cert_conn = await asyncpg.connect(_dsn())
+    await cert_conn.execute(f'SET search_path TO "{schema}", public')
+    await cert_conn.execute("SET TIME ZONE 'UTC'")
+    transaction = cert_conn.transaction()
+    await transaction.start()
+    try:
+        # Read committed source first, then obtain the real DB clock, matching
+        # production certification order.  Keep the certificate transaction
+        # open across the frozen cutoff to reproduce the narrow commit window.
+        source_count = await cert_conn.fetchval(
+            "SELECT count(*) FROM signal_observation WHERE observation_id=ANY($1::bigint[])",
+            visible_ids,
+        )
+        assert source_count == len(visible_ids)
+        verified_visible_at = await cert_conn.fetchval("SELECT clock_timestamp()")
+        assert verified_visible_at <= knowledge_cutoff
+        await _insert_direct_visibility_certificates(
+            cert_conn,
+            observation_ids=visible_ids,
+            verified_visible_at=verified_visible_at,
+        )
+
+        await _wait_past(conn, knowledge_cutoff)
+        during_grace = await evaluate_walk_forward_authoritative(conn, options.name)
+        assert during_grace["confirmatory_state"] == "not_ready"
+        assert during_grace["confirmatory_result"]["readiness_reason"] == (
+            "certificate_settlement_grace"
+        )
+        assert during_grace["authoritative_result"]["persisted"] is False
+        await transaction.commit()
+    except BaseException:
+        if cert_conn.is_in_transaction():
+            await transaction.rollback()
+        raise
+    finally:
+        await cert_conn.close()
+
+    await _wait_past(conn, evaluation_not_before)
+    authoritative = await evaluate_walk_forward_authoritative(conn, options.name)
+    assert authoritative["authoritative_result"]["persisted"] is True
+    assert authoritative["confirmatory_result"]["n_evaluated_actionable"] == 2
+
+    # A certificate stamped after the knowledge cutoff remains excluded even
+    # though it commits before this later recomputation.
+    late_verified_at = await conn.fetchval("SELECT clock_timestamp()")
+    assert late_verified_at > knowledge_cutoff
+    await _insert_direct_visibility_certificates(
+        conn,
+        observation_ids=[late_id],
+        verified_visible_at=late_verified_at,
+    )
+    recomputed = await evaluate_walk_forward_authoritative(conn, options.name)
+    assert recomputed["authoritative_result"]["reused_existing"] is True
+    assert recomputed["confirmatory_result"]["n_evaluated_actionable"] == 2
+    assert (
+        recomputed["authoritative_result"]["result_hash"]
+        == authoritative["authoritative_result"]["result_hash"]
+    )

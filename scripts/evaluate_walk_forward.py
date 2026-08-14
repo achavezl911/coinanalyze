@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only PR11 walk-forward / out-of-sample report."""
+"""PR11 walk-forward report with authoritative spec-v4 persistence."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from typing import Any
 import asyncpg
 
 from app.config import get_settings
-from app.signal_walk_forward import evaluate_walk_forward
+from app.signal_walk_forward import evaluate_walk_forward_authoritative
 
 
 def _json_default(value: object) -> str:
@@ -164,11 +164,7 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
     settings = get_settings()
     conn = await asyncpg.connect(settings.pg_dsn)
     try:
-        async with conn.transaction(
-            isolation="repeatable_read",
-            readonly=True,
-        ):
-            return await evaluate_walk_forward(conn, args.manifest_name)
+        return await evaluate_walk_forward_authoritative(conn, args.manifest_name)
     finally:
         await conn.close()
 
@@ -176,8 +172,9 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Evaluate an immutable PR11 walk-forward manifest in a "
-            "REPEATABLE READ READ ONLY transaction."
+            "Evaluate an immutable PR11 walk-forward manifest. Legacy specs "
+            "run REPEATABLE READ READ ONLY; corrected spec v4 serializes and "
+            "persists/verifies its first authoritative matured result."
         )
     )
     parser.add_argument("--manifest-name", required=True)

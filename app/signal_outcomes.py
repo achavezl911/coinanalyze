@@ -8,17 +8,16 @@ from typing import Any
 
 import asyncpg
 
-from app.cutoffs import OHLCV_1M_REFRESH_LOOKBACK_SECONDS
 from app.data_gaps import GapRequirement, blocking_requirement_keys
+
+# PR27_SCIENTIFIC_OUTCOME_MATERIALIZATION_V1_BEGIN
 
 OUTCOME_HORIZONS_MINUTES = (1, 3, 5, 15, 30, 60, 120, 240)
 OUTCOME_VERSION = 1
 # ohlcv-history is re-fetched/upserted for the previous 40 minutes. Final
 # outcome rows are immutable, so settle only after that source revision
 # window has closed, plus the existing 2-minute ingest-delivery buffer.
-OUTCOME_SETTLEMENT_LAG = timedelta(
-    seconds=OHLCV_1M_REFRESH_LOOKBACK_SECONDS, minutes=2
-)
+OUTCOME_SETTLEMENT_LAG = timedelta(minutes=42)
 MISSING_DATA_FINAL_GRACE = timedelta(days=7)
 MISSING_DATA_RETRY = timedelta(minutes=15)
 DEFAULT_BATCH_LIMIT = 128
@@ -70,20 +69,32 @@ def _finite_positive(value: object) -> float | None:
     return parsed if math.isfinite(parsed) and parsed > 0 else None
 
 
+# PR27_SCIENTIFIC_OUTCOME_WINDOW_V1_BEGIN
+_OUTCOME_WINDOW_HORIZONS_V1 = (1, 3, 5, 15, 30, 60, 120, 240)
+_OUTCOME_WINDOW_SETTLEMENT_LAG_SECONDS_V1 = 42 * 60
+
+
+def _outcome_window_aware_utc_v1(value: datetime) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("timestamp must be timezone-aware")
+    return value.astimezone(UTC)
+
+
 def outcome_window(observed_at: datetime, horizon_minutes: int) -> OutcomeWindow:
-    if horizon_minutes not in OUTCOME_HORIZONS_MINUTES:
+    if horizon_minutes not in _OUTCOME_WINDOW_HORIZONS_V1:
         raise ValueError("unsupported signal outcome horizon")
-    observed_at = _aware_utc(observed_at)
+    observed_at = _outcome_window_aware_utc_v1(observed_at)
     minute_floor = observed_at.replace(second=0, microsecond=0)
     start = minute_floor + timedelta(minutes=1)
     end = start + timedelta(minutes=horizon_minutes)
     return OutcomeWindow(
         start=start,
         end=end,
-        due_at=end + OUTCOME_SETTLEMENT_LAG,
+        due_at=end + timedelta(seconds=_OUTCOME_WINDOW_SETTLEMENT_LAG_SECONDS_V1),
         horizon_minutes=horizon_minutes,
         start_delay_seconds=(start - observed_at).total_seconds(),
     )
+# PR27_SCIENTIFIC_OUTCOME_WINDOW_V1_END
 
 
 def expected_bar_timestamps(start: datetime, horizon_minutes: int) -> tuple[datetime, ...]:
@@ -431,3 +442,6 @@ async def materialize_due_signal_outcomes(
         finalized_not_evaluable=finalized_not_evaluable,
         deferred=deferred,
     )
+
+
+# PR27_SCIENTIFIC_OUTCOME_MATERIALIZATION_V1_END

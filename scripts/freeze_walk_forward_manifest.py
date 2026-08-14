@@ -12,6 +12,10 @@ and ``evidence_version=1`` for ``pr11-fixed-kernel-v1``. Creating a spec-v2
 manifest requires explicit operator intent -- every scientific version flag
 must be supplied by hand; there is no "latest/current" fallback and spec v1
 is never silently mapped onto the spec-v2 tuple.
+
+PR27 adds spec v4 without changing spec v3. Spec v4 also requires explicit
+corrected endpoint, venue, ex-funding, and settlement-policy fields; this CLI
+supplies no production calibration defaults.
 """
 from __future__ import annotations
 
@@ -25,6 +29,7 @@ import asyncpg
 
 from app.config import get_settings
 from app.signal_confirmatory import CONFIRMATORY_BLOCK_UNITS, ConfirmatoryContract
+from app.signal_confirmatory_v2 import ConfirmatoryContractV2
 from app.signal_execution import EXECUTION_EXCHANGES, EXECUTION_SIZES_USD, UTC_NONOVERLAP
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES
 from app.signal_walk_forward import (
@@ -37,6 +42,7 @@ from app.signal_walk_forward import (
     WALK_FORWARD_SPEC_VERSION,
     WALK_FORWARD_SPEC_VERSION_V2,
     WALK_FORWARD_SPEC_VERSION_V3,
+    WALK_FORWARD_SPEC_VERSION_V4,
     WalkForwardManifestOptions,
     freeze_walk_forward_manifest,
 )
@@ -93,18 +99,37 @@ _CONFIRMATORY_REQUIRED_FLAGS = (
 )
 _SPEC_V3_REQUIRED_FLAGS = _SPEC_V2_REQUIRED_FLAGS + _CONFIRMATORY_REQUIRED_FLAGS
 
+_CONFIRMATORY_V2_ADDITIONAL_REQUIRED_FLAGS = (
+    ("outcome_price_venue", "--outcome-price-venue"),
+    ("funding_semantics", "--funding-semantics"),
+    (
+        "evaluation_settlement_grace_seconds",
+        "--evaluation-settlement-grace-seconds",
+    ),
+)
+_SPEC_V4_REQUIRED_FLAGS = (
+    _SPEC_V2_REQUIRED_FLAGS
+    + _CONFIRMATORY_REQUIRED_FLAGS
+    + _CONFIRMATORY_V2_ADDITIONAL_REQUIRED_FLAGS
+)
 
-def _reject_confirmatory_flags_outside_v3(args: argparse.Namespace) -> None:
+
+def _reject_confirmatory_flags_outside_confirmatory_specs(
+    args: argparse.Namespace,
+) -> None:
     provided = [
         flag
-        for dest, flag in _CONFIRMATORY_REQUIRED_FLAGS
+        for dest, flag in (
+            _CONFIRMATORY_REQUIRED_FLAGS
+            + _CONFIRMATORY_V2_ADDITIONAL_REQUIRED_FLAGS
+        )
         if getattr(args, dest) is not None
     ]
     if args.acknowledge_confirmatory_primary_hypothesis:
         provided.append("--acknowledge-confirmatory-primary-hypothesis")
     if provided:
         raise SystemExit(
-            "confirmatory contract flags require --spec-version 3; unexpected: "
+            "confirmatory contract flags require --spec-version 3 or 4; unexpected: "
             f"{', '.join(provided)}"
         )
 
@@ -130,6 +155,7 @@ def _json_default(value: object) -> str:
 def _build_options(args: argparse.Namespace) -> WalkForwardManifestOptions:
     spec_version = args.spec_version
     confirmatory_contract: ConfirmatoryContract | None = None
+    confirmatory_contract_v2: ConfirmatoryContractV2 | None = None
 
     if spec_version == WALK_FORWARD_SPEC_VERSION:
         # Legacy/default path: an omitted flag falls back to the exact
@@ -162,10 +188,10 @@ def _build_options(args: argparse.Namespace) -> WalkForwardManifestOptions:
         )
         if args.research_visibility_version is not None:
             raise SystemExit(
-                "--research-visibility-version requires --spec-version 2 or 3"
+                "--research-visibility-version requires --spec-version 2, 3, or 4"
             )
         research_visibility_version = None
-        _reject_confirmatory_flags_outside_v3(args)
+        _reject_confirmatory_flags_outside_confirmatory_specs(args)
     elif spec_version == WALK_FORWARD_SPEC_VERSION_V2:
         # Spec v2: fail closed unless every scientific version flag was
         # explicitly supplied. No default, no inference, no mapping from v1.
@@ -186,9 +212,8 @@ def _build_options(args: argparse.Namespace) -> WalkForwardManifestOptions:
         outcome_version = args.outcome_version
         execution_snapshot_version = args.execution_snapshot_version
         research_visibility_version = args.research_visibility_version
-        _reject_confirmatory_flags_outside_v3(args)
-    else:
-        assert spec_version == WALK_FORWARD_SPEC_VERSION_V3
+        _reject_confirmatory_flags_outside_confirmatory_specs(args)
+    elif spec_version == WALK_FORWARD_SPEC_VERSION_V3:
         # Spec v3 (PR26): fail closed unless every v2 scientific-version flag
         # AND every confirmatory-contract flag was explicitly supplied, and
         # the operator affirmatively acknowledged the single primary
@@ -246,6 +271,75 @@ def _build_options(args: argparse.Namespace) -> WalkForwardManifestOptions:
             ),
             confirmatory_decision_policy=args.confirmatory_decision_policy,
         )
+        if any(
+            getattr(args, dest) is not None
+            for dest, _ in _CONFIRMATORY_V2_ADDITIONAL_REQUIRED_FLAGS
+        ):
+            raise SystemExit(
+                "spec v4-only outcome/funding/settlement flags must not be set "
+                "under --spec-version 3"
+            )
+    else:
+        assert spec_version == WALK_FORWARD_SPEC_VERSION_V4
+        missing = [
+            flag
+            for dest, flag in _SPEC_V4_REQUIRED_FLAGS
+            if getattr(args, dest) is None
+        ]
+        if missing:
+            raise SystemExit(
+                "--spec-version 4 requires explicit "
+                f"{', '.join(missing)}; refusing to infer a scientific version "
+                "tuple, corrected confirmatory contract, funding semantics, or "
+                "certificate settlement policy"
+            )
+        if not args.acknowledge_confirmatory_primary_hypothesis:
+            raise SystemExit(
+                "--spec-version 4 requires "
+                "--acknowledge-confirmatory-primary-hypothesis, naming the single "
+                f"primary hypothesis about to be frozen: symbol={args.primary_symbol!r} "
+                f"horizon_minutes={args.primary_horizon_minutes!r} "
+                f"sampling_mode={args.primary_sampling_mode!r} "
+                f"exchange={args.primary_exchange!r} size_usd={args.primary_size_usd!r}"
+            )
+        logic_version = args.logic_version
+        evidence_version = args.evidence_version
+        sampling_version = args.sampling_version
+        context_version = args.context_version
+        outcome_version = args.outcome_version
+        execution_snapshot_version = args.execution_snapshot_version
+        research_visibility_version = args.research_visibility_version
+        confirmatory_contract_v2 = ConfirmatoryContractV2(
+            primary_endpoint_version=args.primary_endpoint_version,
+            primary_symbol=args.primary_symbol,
+            primary_horizon_minutes=args.primary_horizon_minutes,
+            primary_sampling_mode=args.primary_sampling_mode,
+            primary_exchange=args.primary_exchange,
+            outcome_price_venue=args.outcome_price_venue,
+            primary_size_usd=args.primary_size_usd,
+            primary_taker_fee_bps=args.primary_taker_fee_bps,
+            baseline_version=args.baseline_version,
+            unmodeled_execution_stress_bps=args.unmodeled_execution_stress_bps,
+            funding_semantics=args.funding_semantics,
+            inference_version=args.inference_version,
+            block_unit=args.block_unit,
+            block_length=args.block_length,
+            bootstrap_repetitions=args.bootstrap_repetitions,
+            bootstrap_seed=args.bootstrap_seed,
+            confidence_level=args.confidence_level,
+            minimum_effect_bps=args.minimum_effect_bps,
+            minimum_primary_blocks=args.minimum_primary_blocks,
+            minimum_execution_data_coverage_pct=(
+                args.minimum_execution_data_coverage_pct
+            ),
+            minimum_research_data_coverage_pct=(
+                args.minimum_research_data_coverage_pct
+            ),
+            evaluation_settlement_grace_seconds=(
+                args.evaluation_settlement_grace_seconds
+            ),
+            confirmatory_decision_policy=args.confirmatory_decision_policy,
+        )
 
     return WalkForwardManifestOptions(
         name=args.name,
@@ -267,6 +361,7 @@ def _build_options(args: argparse.Namespace) -> WalkForwardManifestOptions:
         spec_version=spec_version,
         research_visibility_version=research_visibility_version,
         confirmatory_contract=confirmatory_contract,
+        confirmatory_contract_v2=confirmatory_contract_v2,
     )
 
 
@@ -323,7 +418,9 @@ def build_parser() -> argparse.ArgumentParser:
             "contract) requires every scientific version flag below to be "
             "supplied explicitly. Spec v3 (PR26, the confirmatory "
             "walk-forward contract) requires those same flags PLUS every "
-            "confirmatory-contract flag below, plus "
+            "published confirmatory-contract flag below. Spec v4 (PR27) "
+            "requires the corrected contract plus explicit outcome venue, "
+            "funding semantics, and settlement grace. Both require "
             "--acknowledge-confirmatory-primary-hypothesis."
         ),
     )
@@ -369,22 +466,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--research-visibility-version",
         type=int,
         default=None,
-        help="Required under --spec-version 2 or 3; must not be set under spec v1.",
+        help="Required under --spec-version 2, 3, or 4; forbidden under spec v1.",
     )
 
-    # PR26: spec v3 confirmatory contract. Every flag below is required
-    # under --spec-version 3 and forbidden under spec v1/v2 -- no default,
-    # no inference, no "latest/current" fallback.
+    # PR26/PR27 confirmatory contracts. Shared fields are required under
+    # spec v3 and v4 and forbidden under spec v1/v2 -- no defaults, inference,
+    # or "latest/current" fallback. V4-only fields say so explicitly.
     parser.add_argument(
         "--primary-endpoint-version",
         type=int,
         default=None,
-        help="Confirmatory primary economic endpoint version. Required under --spec-version 3.",
+        help="Confirmatory primary economic endpoint version. Required under spec v3 or v4.",
     )
     parser.add_argument(
         "--primary-symbol",
         default=None,
-        help="The single confirmatory primary symbol. Required under --spec-version 3.",
+        help="The single confirmatory primary symbol. Required under spec v3 or v4.",
     )
     parser.add_argument(
         "--primary-horizon",
@@ -392,7 +489,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=OUTCOME_HORIZONS_MINUTES,
         default=None,
         dest="primary_horizon_minutes",
-        help="The single confirmatory primary horizon. Required under --spec-version 3.",
+        help="The single confirmatory primary horizon. Required under spec v3 or v4.",
     )
     parser.add_argument(
         "--primary-sampling-mode",
@@ -401,21 +498,30 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "The single confirmatory primary sampling mode; must be "
             "utc_nonoverlap -- dense_periodic is descriptive only and can "
-            "never be primary. Required under --spec-version 3."
+            "never be primary. Required under spec v3 or v4."
         ),
     )
     parser.add_argument(
         "--primary-exchange",
         choices=EXECUTION_EXCHANGES,
         default=None,
-        help="The single confirmatory primary exchange. Required under --spec-version 3.",
+        help="The single confirmatory primary exchange. Required under spec v3 or v4.",
+    )
+    parser.add_argument(
+        "--outcome-price-venue",
+        choices=("binance",),
+        default=None,
+        help=(
+            "Corrected endpoint outcome-price venue. Required only under "
+            "--spec-version 4 and currently restricted to binance."
+        ),
     )
     parser.add_argument(
         "--primary-size-usd",
         type=float,
         choices=EXECUTION_SIZES_USD,
         default=None,
-        help="The single confirmatory primary execution size. Required under --spec-version 3.",
+        help="The single confirmatory primary execution size. Required under spec v3 or v4.",
     )
     parser.add_argument(
         "--primary-taker-fee-bps",
@@ -424,7 +530,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Explicit confirmatory taker fee in bps; must equal the "
             "--fee-bps-per-side value frozen for --primary-exchange. "
-            "Required under --spec-version 3."
+            "Required under spec v3 or v4."
         ),
     )
     parser.add_argument(
@@ -432,16 +538,25 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         dest="baseline_version",
-        help="Clock/direction-matched baseline algorithm version. Required under --spec-version 3.",
+        help="Confirmatory baseline algorithm version. Required under spec v3 or v4.",
     )
     parser.add_argument(
         "--unmodeled-execution-stress-bps",
         type=float,
         default=None,
         help=(
-            "Frozen non-negative bps stress for unmodeled exit/funding/latency "
-            "risk. PR26 does not choose this value -- the operator freezing "
-            "the manifest must supply it explicitly. Required under --spec-version 3."
+            "Frozen non-negative bps stress. Under spec v4 it is explicitly "
+            "non-funding stress because funding_semantics=excluded_v1. This "
+            "CLI chooses no value. Required under spec v3 or v4."
+        ),
+    )
+    parser.add_argument(
+        "--funding-semantics",
+        choices=("excluded_v1",),
+        default=None,
+        help=(
+            "Machine-visible funding treatment. Required only under spec v4; "
+            "PR27 supports excluded_v1 and makes no net-of-funding claim."
         ),
     )
     parser.add_argument(
@@ -518,14 +633,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--confirmatory-decision-policy",
         default=None,
-        help="Fixed confirmatory decision policy identifier. Required under --spec-version 3.",
+        help="Fixed confirmatory decision policy identifier. Required under spec v3 or v4.",
+    )
+    parser.add_argument(
+        "--evaluation-settlement-grace-seconds",
+        type=int,
+        default=None,
+        help=(
+            "Positive caller-selected certificate commit settlement grace. "
+            "Required only under spec v4; PR27 selects no production value."
+        ),
     )
     parser.add_argument(
         "--acknowledge-confirmatory-primary-hypothesis",
         action="store_true",
         default=False,
         help=(
-            "Required under --spec-version 3: explicit operator acknowledgement "
+            "Required under --spec-version 3 or 4: explicit operator acknowledgement "
             "of the single primary symbol/horizon/sampling-mode/exchange/size "
             "hypothesis about to be frozen. Forbidden under spec v1/v2."
         ),
