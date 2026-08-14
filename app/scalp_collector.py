@@ -34,9 +34,14 @@ from app.scalp_logic import compute_scalp_summary, scalp_context
 from app.sharding import assigned_symbols
 from app.signal_ledger import persist_signal_observations
 from app.signal_outcomes import materialize_due_signal_outcomes
+from app.signal_runtime_contract import attest_raw_market_producer
 from app.signal_visibility import run_certification_cycle
 
 LOGGER = logging.getLogger(__name__)
+# This service records whichever Binance/Bybit futures market FUTURES_PAIR_MAP
+# selects under the internal `symbol`, so an unregistered routing contaminates
+# tables the frozen kernel reads without leaving any trace in the rows.
+RAW_PRODUCER = "scalp_collector"
 SETTINGS = get_settings()
 configure_logging(SETTINGS.LOG_LEVEL)
 ACTIVE_SYMBOLS = assigned_symbols(
@@ -628,6 +633,9 @@ async def flush_trades(
 ) -> None:
     while True:
         await asyncio.sleep(SETTINGS.SCALP_FLUSH_SECONDS)
+        # Outside the try below on purpose: this must escape the process, not be
+        # logged and retried like a transient flush failure.
+        attest_raw_market_producer(RAW_PRODUCER)
         snapshots = await TRADE_STORE.realtime_snapshot()
         minute_snapshots = await TRADE_STORE.minute_snapshot()
         try:
@@ -766,6 +774,7 @@ async def flush_books(
 ) -> None:
     while True:
         await asyncio.sleep(SETTINGS.SCALP_ORDERBOOK_FLUSH_SECONDS)
+        attest_raw_market_producer(RAW_PRODUCER)
         rows = await BOOK_STORE.snapshot()
         if not rows:
             continue
@@ -911,6 +920,7 @@ async def flush_liquidations(
             pass
         if not buffer:
             continue
+        attest_raw_market_producer(RAW_PRODUCER)
         try:
             async with pool.acquire() as conn:
                 async with fenced_transaction(conn, ownership):
@@ -1496,6 +1506,11 @@ async def cleanup(
 
 
 async def main() -> None:
+    # Before the service lock, the pool or any subscription: a process that
+    # resolves an unregistered result-material routing must produce nothing.
+    # Exiting non-zero makes systemd retry every RestartSec until an operator
+    # restores or registers the routing -- degraded beats misrouted.
+    attest_raw_market_producer(RAW_PRODUCER)
     service_lock = await acquire_service_lock(
         SETTINGS,
         "scalp",

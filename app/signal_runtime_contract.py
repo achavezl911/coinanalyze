@@ -21,6 +21,13 @@ of the catalog that is absent was proven operational.  See
 The registered mapping is append-only by policy.  A legitimate change to
 result-material routing must register a new contract version; it must never
 replace the digest registered for an existing one.
+
+Freezing the contract is not the same as enforcing it early enough.  Gating only
+the scientific-evidence boundary leaves the raw producers free to write a foreign
+market's data under the internal key the kernel reads, so restoring the
+registered routing would make an observation stamped with the registered digest
+consume rows that were never produced under it.  ``attest_raw_market_producer``
+therefore moves the same gate to the raw producer boundary.
 """
 
 from __future__ import annotations
@@ -182,6 +189,75 @@ def scientific_runtime_contract(
             f"contract: expected {registered}, resolved {contract['digest']}"
         )
     return contract
+
+
+class RawMarketProducerContractError(RuntimeError):
+    """A result-material raw producer resolved an unregistered runtime contract."""
+
+
+# The producers whose routing can put a foreign market's data under the internal
+# key the frozen kernel reads, and the tables through which that happens.
+#
+# ``futures_pair`` and ``spot_pair`` never appear in a row key: the collector
+# records whatever market they select under ``symbol`` and ``base_asset``
+# respectively.  So routing B writes B's data under A's key, and restoring A
+# cannot distinguish it -- ``scalp_context`` still has it inside its realtime
+# windows.  Attesting the evidence boundary alone is therefore not enough: the
+# contamination is already committed by the time an observation is written.
+#
+# ``symbol`` and ``base_asset`` are keys as well as selectors, so changing one
+# relocates rows instead of contaminating them; they are still covered because
+# the contract hashes all four fields together.
+#
+# Deliberately absent, each proven rather than assumed:
+#
+#   ingest        -- ohlcv, open_interest, funding and the 5m liquidation
+#                    history route through ``{symbol: symbol}``: the upstream
+#                    market id *is* the row key, so no routing value can fill
+#                    A's key with B's data.  oi_bybit is a separate table with
+#                    no scientific reader.
+#   daily_agg     -- writes spot rows under the disjoint ``spot_history_symbol``
+#     backfills      namespace and derives daily/baseline aggregates from rows
+#                    already stored; it selects no external market.
+#   api           -- writes nothing.
+_RESULT_MATERIAL_RAW_PRODUCERS_V1 = {
+    "scalp_collector": (
+        "futures_trades_agg",
+        "futures_trades_realtime",
+        "liquidations_realtime",
+        "orderbook_depth",
+        "orderbook_snapshot",
+    ),
+    "ws_collector": (
+        "spot_trades_agg",
+        "spot_trades_realtime",
+    ),
+}
+
+
+def attest_raw_market_producer(
+    producer: str,
+    contract_version: int = SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+) -> dict[str, Any]:
+    """Gate a raw producer before it may route or write result-material data.
+
+    Correctness outranks availability here.  A service whose result-material
+    routing is not the registered one must produce nothing at all rather than
+    write scientifically misrouted rows that a later, legitimately registered
+    configuration would silently consume.
+    """
+
+    tables = _RESULT_MATERIAL_RAW_PRODUCERS_V1.get(producer)
+    if tables is None:
+        raise ValueError(f"unknown result-material raw producer: {producer!r}")
+    try:
+        return scientific_runtime_contract(contract_version)
+    except RuntimeError as exc:
+        raise RawMarketProducerContractError(
+            f"raw market producer {producer!r} may not subscribe to or write "
+            f"{', '.join(tables)} while the resolved scientific runtime "
+            f"configuration is unregistered: {exc}"
+        ) from exc
 
 
 def validate_scientific_runtime_contract(stored: object) -> dict[str, Any]:

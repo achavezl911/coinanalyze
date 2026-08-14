@@ -230,10 +230,15 @@ La identidad científica registrada por PR27 es:
 ```text
 identity_version = 1
 canonicalizer    = scientific_source_canonicalization_v1
-digest           = f696a268ee2e3154a596fecd5339086eee6e56cdaf1d918469ee9236fc4fec11
+digest           = 9749e643db19ccc2a6e41a72c8f3ed36621871d3ab29d090b4151d17702ce976
 ```
 
-Expandir identity-v1 en este rework no reinterpreta un artefacto publicado:
+R04 no añade componentes: la clausura sigue en 25. Lo que cambia es el contenido
+de `scientific_runtime_contract_mechanics`, que ahora incluye la guarda del
+productor crudo, y con él el digest agregado. Ver "Clausura del productor crudo".
+
+Expandir o recomputar identity-v1 en este rework no reinterpreta un artefacto
+publicado:
 PR27 sigue sin merge, el repositorio no contiene manifests spec-v4 ni
 resultados spec-v4 congelados, y el digest anterior sólo existía en el head
 revisado de esta misma PR. Una futura modificación posterior a la publicación
@@ -387,7 +392,7 @@ Consecuencia que debe conocer quien opere el sistema: cambiar `SYMBOLS` cambia e
 hash del contrato y detiene la producción de evidencia científica hasta registrar
 un digest nuevo, aunque el ruteo del símbolo primario v4 no haya cambiado.
 
-### Tres puntos de aplicación
+### Cuatro puntos de aplicación
 
 **Congelación.** `_static_options_spec()` añade `scientific_runtime_contract` sólo
 en la rama spec-v4, junto a `scientific_implementation`. Entra en el hash del
@@ -395,6 +400,12 @@ manifest y en la comparación de idempotencia. Los specs v1, v2 y v3 no lo lleva
 y sus hashes estáticos dorados quedan intactos por construcción. Al cargar, un
 manifest se revalida contra la resolución viva; nunca se reinterpreta con la
 configuración actual.
+
+**Producción cruda (R04).** Antes de suscribirse o de escribir dato crudo
+result-material, `scalp_collector` y `ws_collector` atestiguan el contrato con
+`attest_raw_market_producer()`. Es el punto que faltaba: sin él la aplicación
+empezaba *después* de que el dato crudo ya existiera. Detalle en
+"Clausura del productor crudo".
 
 **Producción.** Antes de escribir evidencia, `persist_signal_observations`,
 `materialize_due_signal_outcomes`, `certify_research_bundles` y
@@ -432,6 +443,122 @@ porque eso reinterpretaría `evidence-v6`. `context_version=1` y
 igual. La evidencia de calibración existente se conserva bajo sus caveats. Como
 el OOS spec-v4 empieza después de la congelación, exigir procedencia prospectiva
 no obliga a reescribir historia.
+
+## Clausura del productor crudo
+
+### Por qué R03 no cerraba A -> B -> A
+
+R03 impide escribir `signal_observation`, outcomes y evidencia de visibilidad
+mientras un contrato B está activo. La aplicación empieza, sin embargo, *después*
+de que el dato crudo result-material ya se produjo.
+
+`futures_pair` y `spot_pair` **no aparecen en la clave de la fila**: el colector
+graba el mercado que ellos seleccionan bajo `symbol` (`futures_trades_realtime`,
+`orderbook_snapshot`, `orderbook_depth`, `liquidations_realtime`) y bajo
+`base_asset` (`spot_trades_realtime`). Un colector bajo B escribe por tanto datos
+de otro mercado bajo la clave de A, sin dejar rastro en la fila.
+
+Al restaurar A, `scientific_runtime_contract()` vuelve a pasar y `scalp_context`
+todavía tiene esas filas dentro de sus ventanas de 1 m, 3 m y 5 m. La observación
+se sella con el digest de A, el replay pasa porque reproduce fielmente el
+contexto contaminado, y la procedencia por fila pasa porque la observación sí se
+creó bajo A. Los tres mecanismos de R03 son correctos y ninguno ve la
+contaminación.
+
+Nota de simetría: `symbol` y `base_asset` son a la vez selector y clave, así que
+cambiarlos **reubica** filas en vez de contaminarlas. Se cubren igualmente porque
+el contrato hashea los cuatro campos juntos.
+
+### Auditoría de escritores
+
+Se auditaron todos los escritores de insumos crudos que el kernel congelado
+consume. La pregunta es una sola: ¿puede un ruteo no registrado dejar datos que
+`scalp_context(A)` consuma bajo la clave de A?
+
+| Tabla | Escritor | Ruteo result-material | ¿Contamina? |
+|---|---|---|---|
+| `futures_trades_realtime`, `futures_trades_agg` | `scalp_collector.flush_trades` | `FUTURES_PAIR_MAP`, `PAIR_SYMBOL_MAP` | **Sí** |
+| `orderbook_snapshot`, `orderbook_depth` | `scalp_collector.flush_books` | igual | **Sí** (`orderbook_depth` alimenta el execution snapshot) |
+| `liquidations_realtime` | `scalp_collector.flush_liquidations` | igual | **Sí** |
+| `spot_trades_realtime`, `spot_trades_agg` | `ws_collector.flush_realtime` / `flush_minute` | `SPOT_PAIR_MAP` ∘ `WS_SYMBOL_MAP` | **Sí** |
+| `ohlcv`, `open_interest`, `funding_rate`, `predicted_funding_rate`, `liquidations`, `long_short_ratio` | `app/ingest.py` | ninguno: mapa identidad `{symbol: symbol}` | No: el id upstream **es** la clave, así que cambiar `symbol` reubica la fila, no rellena la clave de A con datos de B |
+| `oi_bybit` | `app/ingest.py` | `BYBIT_SYMBOL_MAP` | No: tabla separada sin lector científico (prueba de R03) |
+| `ohlcv` (filas spot), `daily_*` | `app/daily_agg.py`, `scripts/backfill_ohlcv_*.py` | `SPOT_HISTORY_MAP` | No: espacio de claves disjunto (`BTCUSD.A`), fuera de la superficie científica |
+| `metric_baseline` | `app/daily_agg._store_baseline` | ninguno | No: es **derivado**, se calcula sobre filas de `ohlcv` ya almacenadas y no selecciona ningún mercado externo |
+| `symbols`, `market_assets` | `app/db.sync_market_catalog` | catálogo directo | No: registra claves (`symbol`, `base_asset`, `spot_history_symbol`), nunca selectores |
+| — | `app/api.py` | — | No escribe nada |
+
+Sólo dos procesos quedan dentro: `coinalyze-scalp` y `coinalyze-ws`. No se añaden
+guardas a productores no afectados.
+
+### Dónde se atestigua, y por qué en dos sitios
+
+**Arranque.** Primera sentencia de `scalp_collector.main()` y de
+`ws_collector.run()`, antes del lock de servicio, del pool y de cualquier
+suscripción.
+
+**Límite de escritura.** Una llamada en cada bucle de flush, justo después del
+`await asyncio.sleep(...)` y **fuera** del `try` existente, para que escape del
+proceso en vez de registrarse y reintentarse como un fallo transitorio de flush.
+Ningún snapshot se consume si la atestación falla.
+
+¿Basta con el arranque? Probado desde el código: `MARKET_SYMBOL_CATALOG` se liga
+una vez en `app/config.py:120`, los mapas de ruteo se derivan en `:122-127`
+también al importar, y `get_settings()` es `@lru_cache(maxsize=1)`. No hay
+`cache_clear` ni `importlib.reload` en el repositorio. El contrato resuelto es
+**constante durante la vida del proceso**, así que el ruteo no puede cambiar
+dentro de un proceso vivo y la atestación de arranque es suficiente para él.
+
+Se conserva igualmente la del límite de escritura: es el último punto antes de
+que el dato pase a ser estado crudo científico, cuesta un sha256 sobre un payload
+diminuto por flush, y no depende de que la ligadura siga siendo de importación en
+el futuro. Los atributos de módulo son escribibles; la garantía no debe descansar
+en que nadie los reasigne nunca.
+
+### Consecuencia operativa
+
+Un servicio cuyo ruteo result-material no es el registrado **no produce nada**.
+Sale con código distinto de cero y `Restart=on-failure` + `RestartSec=5s`
+reintenta hasta que un operador restaure el ruteo o registre un contrato nuevo.
+Es deliberado: correctitud por encima de disponibilidad. Preferimos una ventana
+de datos ausente a filas científicamente mal ruteadas, porque la ausencia es
+visible para `data_gap` y la contaminación no lo es para nadie.
+
+### Superficie científica y clausura
+
+`attest_raw_market_producer()` y el registro
+`_RESULT_MATERIAL_RAW_PRODUCERS_V1` viven **dentro** de la región
+`PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1`, así que la política —qué productores y qué
+tablas son result-material— queda congelada por identity-v1: encoger el conjunto
+guardado cambia el digest.
+
+La clausura sigue teniendo **25 componentes**: no se añaden `scalp_collector.py`
+ni `ws_collector.py`. Es una decisión argumentada, no un olvido. Son procesos
+operativos de alta rotación (reconexión, sharding, health de feeds); congelar sus
+cuerpos haría que la identidad científica quedara rehén de ediciones sin
+contenido científico, y la presión para "actualizar el digest" en cada cambio
+operativo terminaría erosionando el propio mecanismo. Lo que protege los puntos
+de llamada es la regresión de R04, que falla en 12 tests si se eliminan.
+
+### Regresión
+
+`tests/test_pr27_r04_raw_producer_closure.py` fija la guarda, su cableado en los
+cinco bucles de flush (con un pool que registraría cualquier acceso a la base) y
+el arranque de ambos servicios en un intérprete nuevo con un catálogo B real —
+lo único que reproduce la ligadura de producción, porque los colectores importan
+los mapas con `from app.config import ...` y `monkeypatch` no los alcanza.
+
+`tests/test_pr27_r04_raw_producer_closure_postgres.py` ejecuta los caminos reales
+de flush contra PostgreSQL 17: A escribe, B falla cerrada sin escribir una sola
+fila, y al restaurar A `scalp_context` sólo ve insumos ruteados por A. Cubre las
+dos familias (`futures_pair` y `spot_pair`/`base_asset`) y termina con una
+observación cuya procedencia es A y cuyo replay pasa.
+
+`test_residual_b_row_inside_the_three_minute_window_reaches_scalp_context`
+**reproduce el defecto** en vez de afirmar la guarda: escribe exactamente lo que
+un colector sin guarda habría escrito bajo B y demuestra que `scalp_context(A)`
+lo consume. Sigue pasando aunque se elimine la guarda, que es justamente su
+función: prueba que el resto de la suite es portante.
 
 ## Settlement del certificado
 

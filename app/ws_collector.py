@@ -28,8 +28,12 @@ from app.db import (
 )
 from app.logging_setup import configure_logging
 from app.sharding import assigned_symbols
+from app.signal_runtime_contract import attest_raw_market_producer
 
 LOGGER = logging.getLogger(__name__)
+# This service records whichever Binance/Bybit spot market SPOT_PAIR_MAP selects
+# under the internal `base_asset`, which is $2 of the scalp_context query.
+RAW_PRODUCER = "ws_collector"
 BINANCE_STREAM_BASE = "wss://stream.binance.com:9443/stream?streams="
 BYBIT_URL = "wss://stream.bybit.com/v5/public/spot"
 MAX_NOTIONAL_USD = 1_000_000_000_000.0
@@ -215,6 +219,9 @@ async def flush_minute(
 ) -> None:
     while True:
         await asyncio.sleep(5)
+        # Outside the try below on purpose: this must escape the process, not be
+        # logged and retried like a transient flush failure.
+        attest_raw_market_producer(RAW_PRODUCER)
         snapshots = await STORE.minute_snapshot()
         if not snapshots:
             continue
@@ -296,6 +303,7 @@ async def flush_realtime(
 ) -> None:
     while True:
         await asyncio.sleep(2)
+        attest_raw_market_producer(RAW_PRODUCER)
         snapshots = await STORE.realtime_snapshot()
         if not snapshots:
             continue
@@ -517,6 +525,9 @@ async def heartbeat_loop(
 
 async def run() -> None:
     global STORE
+    # Before the service lock, the pool or any subscription: a process that
+    # resolves an unregistered result-material routing must produce nothing.
+    attest_raw_market_producer(RAW_PRODUCER)
     settings = get_settings()
     STORE = BucketStore(
         max_bucket_minutes=settings.TRADESTORE_MAX_BUCKET_MINUTES,
