@@ -34,6 +34,10 @@ from app.signal_replay import (
     classify_signal_observation,
     replay_context_as_of,
 )
+from app.signal_runtime_contract import (
+    SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+    scientific_runtime_contract,
+)
 from app.signal_visibility import certify_final_outcomes, certify_research_bundles
 from app.signal_walk_forward import (
     WALK_FORWARD_REPORT_VERSION_V3,
@@ -55,6 +59,12 @@ SCHEMA_SQL = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
 PR27_MIGRATION_SQL = (
     ROOT / "sql/migrations/20260816_pr27_confirmatory_integrity.sql"
 ).read_text(encoding="utf-8")
+PR27_R03_MIGRATION_SQL = (
+    ROOT / "sql/migrations/20260817_pr27_r03_runtime_contract.sql"
+).read_text(encoding="utf-8")
+# Evidence produced under the registered routing.  An adversarial test passes a
+# different digest, or None/None, to model evidence produced under routing B.
+_REGISTERED_RUNTIME_CONTRACT_DIGEST = scientific_runtime_contract()["digest"]
 
 
 def _ddl(marker: str) -> str:
@@ -181,6 +191,9 @@ async def test_pr27_forward_migration_applies_idempotently_on_legacy_schema() ->
         ) is None
         await connection.execute(PR27_MIGRATION_SQL)
         await connection.execute(PR27_MIGRATION_SQL)
+        # PR27-R03 stacks on top and must be a no-op on a schema the PR27
+        # migration already created with the runtime contract column.
+        await connection.execute(PR27_R03_MIGRATION_SQL)
         columns = await connection.fetch(
             """
             SELECT column_name,data_type
@@ -197,6 +210,7 @@ async def test_pr27_forward_migration_applies_idempotently_on_legacy_schema() ->
             ("manifest_id", "bigint"),
             ("manifest_hash", "text"),
             ("scientific_implementation_digest", "text"),
+            ("scientific_runtime_contract_digest", "text"),
             ("confirmatory_knowledge_cutoff", "timestamp with time zone"),
             ("evaluation_not_before", "timestamp with time zone"),
             ("evaluated_at", "timestamp with time zone"),
@@ -345,6 +359,8 @@ async def _insert_observation(
     regime_label: str = "trend_up",
     replay_direction: str | None = None,
     evidence_overrides: dict[str, object] | None = None,
+    runtime_contract_version: int | None = SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+    runtime_contract_digest: str | None = _REGISTERED_RUNTIME_CONTRACT_DIGEST,
 ) -> tuple[int, dict[str, object]]:
     """``direction`` may be ``"long"``/``"short"`` (actionable) or
     ``"neutral"`` (non-actionable, periodic-only) -- the latter is how
@@ -375,7 +391,8 @@ async def _insert_observation(
               long_score,short_score,evidence_coverage_pct,
               regime_label,
               collector_shard_index,collector_shard_count,
-              decision_fingerprint,evidence
+              decision_fingerprint,evidence,
+              runtime_contract_version,runtime_contract_digest
             ) VALUES(
               $1,date_trunc('minute',$1::timestamptz),$1,
               'BTCUSDT_PERP.A','scalp',
@@ -386,7 +403,8 @@ async def _insert_observation(
               $10,$11,$12,
               $7,
               0,1,
-              repeat('a',64),$13::jsonb
+              repeat('a',64),$13::jsonb,
+              $14,$15
             )
             RETURNING observation_id
             """,
@@ -403,6 +421,8 @@ async def _insert_observation(
             float(evidence["short_score"]),
             float(evidence["evidence_coverage_pct"]),
             canonical_json_object(evidence),
+            runtime_contract_version,
+            runtime_contract_digest,
         )
     )
     return observation_id, replay_context
@@ -611,6 +631,8 @@ async def _insert_confirmatory_bundle(
     replay_direction: str | None = None,
     evidence_overrides: dict[str, object] | None = None,
     actionable: bool | None = None,
+    runtime_contract_version: int | None = SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+    runtime_contract_digest: str | None = _REGISTERED_RUNTIME_CONTRACT_DIGEST,
 ) -> int:
     """A complete evidence_version=6 bundle: one observation, replay frame,
     all 8 outcome horizons (only ``primary_horizon`` evaluated with a real
@@ -635,6 +657,8 @@ async def _insert_confirmatory_bundle(
         replay_direction=replay_direction,
         evidence_overrides=evidence_overrides,
         actionable=actionable,
+        runtime_contract_version=runtime_contract_version,
+        runtime_contract_digest=runtime_contract_digest,
     )
     await _insert_frame(conn, observation_id, observed_at, replay_context)
 
@@ -2123,6 +2147,21 @@ async def _prepare_ready_v4(
                     if spec.get("outcome_end_price") is None
                     else float(spec["outcome_end_price"])
                 ),
+                # Absent keys mean "produced under the registered contract".
+                # A spec may pass None/None (no provenance at all) or a foreign
+                # digest to model evidence written while routing B was active.
+                **(
+                    {
+                        "runtime_contract_version": spec[
+                            "runtime_contract_version"
+                        ],
+                        "runtime_contract_digest": spec[
+                            "runtime_contract_digest"
+                        ],
+                    }
+                    if "runtime_contract_digest" in spec
+                    else {}
+                ),
             )
         )
     await _insert_direct_visibility_certificates(
@@ -2526,12 +2565,14 @@ async def test_authoritative_result_update_delete_and_truncate_are_rejected(
             INSERT INTO signal_walk_forward_confirmatory_result(
               result_version,manifest_id,manifest_hash,
               scientific_implementation_digest,
+              scientific_runtime_contract_digest,
               confirmatory_knowledge_cutoff,evaluation_not_before,
               canonical_result_json,result_hash
             )
             SELECT
               result_version,manifest_id,manifest_hash,
               scientific_implementation_digest,
+              scientific_runtime_contract_digest,
               confirmatory_knowledge_cutoff,evaluation_not_before,
               canonical_result_json,$2
             FROM signal_walk_forward_confirmatory_result

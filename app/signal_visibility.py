@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 import asyncpg
 
 from app.db import ServiceOwnership, fenced_transaction
+from app.signal_runtime_contract import scientific_runtime_contract
 from app.signal_scientific_identity import scientific_implementation_identity
 
 # ---------------------------------------------------------------------------
@@ -274,6 +275,7 @@ async def certify_research_bundles(
     _validate_batch_size(batch_size)
     _require_new_certification_transaction(conn)
     scientific_implementation_identity()
+    scientific_runtime_contract()
     async with fenced_transaction(conn, ownership):
         return await _certify_research_bundles_once(conn, batch_size=batch_size)
 
@@ -292,6 +294,7 @@ async def certify_final_outcomes(
     _validate_batch_size(batch_size)
     _require_new_certification_transaction(conn)
     scientific_implementation_identity()
+    scientific_runtime_contract()
     async with fenced_transaction(conn, ownership):
         return await _certify_final_outcomes_once(conn, batch_size=batch_size)
 

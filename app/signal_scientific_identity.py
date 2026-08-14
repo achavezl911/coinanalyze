@@ -47,6 +47,12 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
         end_marker="PR27_SCIENTIFIC_IDENTITY_MECHANICS_V1_END",
     ),
     ScientificSourceComponent(
+        name="scientific_runtime_contract_mechanics",
+        relative_path="app/signal_runtime_contract.py",
+        begin_marker="PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_END",
+    ),
+    ScientificSourceComponent(
         name="signal_summary_decision_kernel",
         relative_path="app/scalp_logic.py",
         begin_marker="PR27_SCIENTIFIC_SIGNAL_SUMMARY_KERNEL_V1_BEGIN",
@@ -200,7 +206,7 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
 # mutate an existing key: add a new identity version instead.
 REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS = {
     SCIENTIFIC_IDENTITY_VERSION_V1: (
-        "30825e7f5b9c5dbd11eac92fa8ab1b3f636bf67fc45c0218699dbd4b9a79f743"
+        "f696a268ee2e3154a596fecd5339086eee6e56cdaf1d918469ee9236fc4fec11"
     ),
 }
 

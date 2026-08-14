@@ -197,7 +197,7 @@ negativo pero exceso positivo nunca puede producir PASS.
 
 El manifest v4 congela `scientific_implementation`, que contiene una versión,
 el canonicalizador, la lista ordenada de componentes, el digest de cada uno y
-el digest agregado SHA-256. La identidad v1 cubre 24 regiones explícitas. La
+el digest agregado SHA-256. La identidad v1 cubre 25 regiones explícitas. La
 superficie comienza en la construcción del contexto y el kernel que genera la
 decisión, continúa por clasificación, persistencia y replay, e incluye la
 producción de certificados de visibilidad, el límite transaccional que
@@ -230,7 +230,7 @@ La identidad científica registrada por PR27 es:
 ```text
 identity_version = 1
 canonicalizer    = scientific_source_canonicalization_v1
-digest           = 30825e7f5b9c5dbd11eac92fa8ab1b3f636bf67fc45c0218699dbd4b9a79f743
+digest           = f696a268ee2e3154a596fecd5339086eee6e56cdaf1d918469ee9236fc4fec11
 ```
 
 Expandir identity-v1 en este rework no reinterpreta un artefacto publicado:
@@ -299,11 +299,139 @@ Cada dependencia material se asigna a exactamente una clase:
 | Transacción, lock, persistencia y recomputación autoritativa | A | `authoritative_transaction_and_serialization` más componentes SQL de resultado. |
 | Resultado autoritativo ya persistido | C | Único, append-only, FK restrictiva, payload canónico y SHA-256 recalculado por aplicación y PostgreSQL. |
 | Pooling, logging y transporte de errores fuera de las transacciones científicas | D | No transforman inputs ni ofrecen fallback semántico; un fallo sólo aborta/reintenta antes de crear evidencia. |
+| Derivación, registro y verificación del contrato de runtime | A | Componente `scientific_runtime_contract_mechanics`; registro append-only y comparación fail-closed. |
+| Ruteo de mercado resuelto (`symbol`, `base_asset`, `futures_pair`, `spot_pair`) | A | Valores congelados en `scientific_runtime_contract` dentro del manifest v4; attestation en productores y verificación por fila en evaluación. |
+| Procedencia de contrato ya persistida en `signal_observation` | C | Columnas append-only cubiertas por la identidad SQL; se comparan contra el manifest congelado antes de consumir la fila. |
+| Umbrales whale/large-trade, `bybit_oi_symbol`, `spot_history_symbol` | B | Operativos probados: no alteran ninguna columna que lea el contexto ni el endpoint v2. Ver "Excluido a propósito". |
+| Ruta del fichero de catálogo y ortografía de variables de entorno | D | El contrato proyecta valores resueltos; la ruta no puede cambiar el hash. |
 
 Las regiones SQL cubren además los boundaries de observación, replay, outcome,
 gaps, snapshots, certificados y resultado. Hashar todo el repositorio no es
 necesario: UI, rutas de presentación y documentación quedan fuera porque no
 pueden formar el payload autoritativo ni escribir evidencia científica.
+
+## Contrato científico de configuración en runtime
+
+### Identidad de fuente frente a identidad de runtime
+
+Hashear la fuente científica prueba **qué calcula el código**. No prueba **qué
+insumos crudos seleccionó**, porque la selección la deciden valores resueltos en
+runtime desde el entorno y desde el catálogo versionado de mercados.
+
+`scalp_context()` pasa `WS_SYMBOL_MAP[symbol]` como parámetro `$2` de su consulta,
+dentro de la región AST `PR27_SCIENTIFIC_SIGNAL_SUMMARY_KERNEL_V1`. El
+canonicalizador hashea la *expresión*, nunca su *valor resuelto*, y ese valor
+tampoco llega al `ctx` devuelto: no está en `signal_replay_frame.context` ni en
+`context_hash`.
+
+Por eso repuntar `BTCUSDT_PERP.A -> BTC` hacia otro activo spot produce el mismo
+digest de fuente, el mismo replay y un contexto inmutable distinto. El replay
+reproduce fielmente el contexto equivocado. R01 no cierra R03.
+
+### Valores congelados
+
+`app/signal_runtime_contract.py` deriva un contrato determinista, canonicalizable
+en JSON, versionado, no secreto, independiente de la ruta del fichero de catálogo
+y basado en valores resueltos. Por cada símbolo científicamente soportado congela
+exactamente cuatro campos:
+
+| Campo | Por qué es result-material |
+|---|---|
+| `symbol` | `$1` de la consulta de contexto y identificador de mercado upstream para `ohlcv`, `open_interest`, funding y liquidaciones. |
+| `base_asset` | `$2` de la consulta de contexto: selecciona `spot_trades_realtime` y por tanto `spot_price`, `spot_delta_3m` y `spot_volume_3m`. |
+| `futures_pair` | Decide qué mercado de futuros de Binance registra el colector bajo `symbol` (`futures_trades_realtime`, `orderbook_snapshot`). |
+| `spot_pair` | Decide qué mercado spot de Binance registra el colector bajo `base_asset`. |
+
+```text
+runtime_contract_version = 1
+canonicalizer            = scientific_runtime_contract_canonicalization_v1
+digest                   = c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00
+```
+
+Cambiar sólo la ruta del catálogo dejando el ruteo resuelto idéntico **no** crea
+diferencia científica. Cambiar un valor result-material **sí** cambia el hash.
+
+### Excluido a propósito
+
+No se hashea el entorno completo, ni secretos, ni configuración operativa, ni el
+repositorio entero. Cada exclusión está probada contra el código, no asumida:
+
+| Valor | Prueba de exclusión |
+|---|---|
+| `whale_threshold_usd` | `buy_vol_usd`/`sell_vol_usd` se acumulan **incondicionalmente antes** del test de umbral; el umbral sólo reparte las columnas `inst_`/`mid_`/`retail_`, que `scalp_context` nunca selecciona. Su único alcance es `regime_label`, diagnóstico: no aparece en la región del kernel ni en `signal_replay.py`, y no entra al endpoint ni al payload autoritativo v4. |
+| `large_trade_threshold_usd` | Misma estructura en `scalp_collector.TradeBucket.add`. |
+| `bybit_oi_symbol` | El OI de Bybit se escribe en la tabla separada `oi_bybit`. `scalp_context` sólo lee `open_interest`. Endpoint-v2 exige Binance explícitamente. |
+| `spot_history_symbol` | Sólo alcanza `spot_perp_flow()` y el agregado diario, ambos fuera de la superficie científica; su símbolo (`BTCUSD.A`) no colisiona con el `$1` de la consulta de contexto. |
+| Ruta del catálogo y ortografía de variables de entorno | El contrato proyecta valores resueltos, nunca rutas ni nombres de variables. |
+| `COLLECTOR_SHARD_INDEX` / `COLLECTOR_SHARD_COUNT` | Estrechan `ACTIVE_SYMBOLS`, no `Settings.SYMBOLS`. Si afectaran al contrato, cada shard resolvería un digest distinto y sólo uno podría coincidir con el registro. Hay test que lo fija. |
+| Resto de `Settings` (retención, flush, intervalo, `PG_*`, `API_*`, `LOG_LEVEL`) | Sólo afectan disponibilidad/cobertura. `compute_scalp_summary` no lee **ningún** símbolo de `app.config`. |
+
+Nota deliberada: `metrics.py` liga `WHALE_ACTIVITY_MIN = WHALE_THRESHOLD_MAP`
+dentro de la región `SIGNAL_SESSION_BOUNDARY`, aunque lo científico de esa región
+es `current_nyse_start`. Es una ligadura de nombre, no de valor, y su consumidor
+`whale_classification` queda fuera de la región.
+
+### Alcance por `Settings.SYMBOLS`
+
+El contrato cubre los símbolos de `Settings.SYMBOLS`, no el catálogo completo.
+Es una decisión explícita del operador y una desviación consciente de la
+propiedad "independiente de la ortografía de la variable de entorno": el hash
+depende del conjunto activo resuelto.
+
+Se mitiga hasta donde es posible: el alcance es `sorted(set(...))`, así que la
+ortografía (CSV o JSON), el orden, los duplicados y los espacios **no** cambian
+el hash; sólo lo cambia el conjunto resuelto. Y se usa `Settings.SYMBOLS`, nunca
+`assigned_symbols(...)`, para que el sharding sea neutral.
+
+Consecuencia que debe conocer quien opere el sistema: cambiar `SYMBOLS` cambia el
+hash del contrato y detiene la producción de evidencia científica hasta registrar
+un digest nuevo, aunque el ruteo del símbolo primario v4 no haya cambiado.
+
+### Tres puntos de aplicación
+
+**Congelación.** `_static_options_spec()` añade `scientific_runtime_contract` sólo
+en la rama spec-v4, junto a `scientific_implementation`. Entra en el hash del
+manifest y en la comparación de idempotencia. Los specs v1, v2 y v3 no lo llevan
+y sus hashes estáticos dorados quedan intactos por construcción. Al cargar, un
+manifest se revalida contra la resolución viva; nunca se reinterpreta con la
+configuración actual.
+
+**Producción.** Antes de escribir evidencia, `persist_signal_observations`,
+`materialize_due_signal_outcomes`, `certify_research_bundles` y
+`certify_final_outcomes` verifican que el contrato resuelto coincide con el
+registrado. Mientras un ruteo no registrado esté activo, la generación de
+evidencia de investigación falla cerrada. El snapshot operativo del dashboard
+sigue su política de aislamiento existente: vive en su propio savepoint.
+
+**Evaluación.** La v4 exige, por cada fila OOS muestreada, procedencia presente e
+igual a la del manifest congelado. Ausencia o divergencia levantan
+`ConfirmatoryScientificIntegrityError` dentro de la transacción autoritativa y
+antes del INSERT, así que no se persiste `PASS`, `FAIL` ni `INCONCLUSIVE`. No es
+filtrado de filas ni `INCONCLUSIVE`: filtrarlas encogería en silencio la
+población contra la que se calculó el denominador congelado. La fila autoritativa
+guarda además `scientific_runtime_contract_digest`, con `CHECK` de coherencia
+contra el JSON canónico y un trigger que lo contrasta con el manifest, de modo
+que ni un INSERT SQL directo puede declarar un contrato que el manifest no
+congeló.
+
+### Procedencia por fila y A -> B -> A
+
+No basta con el estado final del proceso. `signal_observation` gana dos columnas
+nullable, `runtime_contract_version` y `runtime_contract_digest`, escritas en el
+mismo INSERT que la observación y protegidas por los triggers append-only que ya
+existían.
+
+Así la secuencia peligrosa queda cerrada por dos mecanismos independientes: bajo
+el ruteo B el productor ni siquiera escribe, y si una fila B existiera igualmente
+llevaría el digest de B para siempre, por lo que restaurar A no puede blanquearla.
+
+La procedencia es **prospectiva y aditiva**. Las filas históricas quedan en NULL,
+no hay backfill y **ningún** `CHECK` ata las columnas nuevas a `evidence_version`,
+porque eso reinterpretaría `evidence-v6`. `context_version=1` y
+`visibility_version=1` tampoco cambian, y los lectores legacy v1-v3 siguen
+igual. La evidencia de calibración existente se conserva bajo sus caveats. Como
+el OOS spec-v4 empieza después de la congelación, exigir procedencia prospectiva
+no obliga a reescribir historia.
 
 ## Settlement del certificado
 

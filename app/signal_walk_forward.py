@@ -74,6 +74,10 @@ from app.signal_replay import (
     SCALP_SIGNAL_LOGIC_VERSION,
     replay_signal_observations,
 )
+from app.signal_runtime_contract import (
+    scientific_runtime_contract,
+    validate_scientific_runtime_contract,
+)
 from app.signal_scientific_identity import (
     scientific_implementation_identity,
     validate_scientific_implementation_identity,
@@ -502,6 +506,10 @@ def _static_options_spec(options: WalkForwardManifestOptions) -> dict[str, Any]:
             contract_v2
         )
         spec["scientific_implementation"] = scientific_implementation_identity()
+        # Frozen source semantics alone do not pin which market data the kernel
+        # selected.  Freeze the resolved routing values next to the source digest
+        # so both halves enter the manifest hash together.
+        spec["scientific_runtime_contract"] = scientific_runtime_contract()
     return spec
 
 
@@ -727,6 +735,9 @@ def _options_from_spec(
         validate_scientific_implementation_identity(
             spec.get("scientific_implementation")
         )
+        validate_scientific_runtime_contract(
+            spec.get("scientific_runtime_contract")
+        )
         confirmatory_contract_v2 = confirmatory_contract_v2_from_dict(
             raw_confirmatory_contract
         )
@@ -740,6 +751,13 @@ def _options_from_spec(
     ):
         raise ValueError(
             "scientific_implementation must not be present outside walk-forward spec v4"
+        )
+    if (
+        spec_version != WALK_FORWARD_SPEC_VERSION_V4
+        and "scientific_runtime_contract" in spec
+    ):
+        raise ValueError(
+            "scientific_runtime_contract must not be present outside walk-forward spec v4"
         )
 
     options = WalkForwardManifestOptions(
@@ -1243,6 +1261,8 @@ async def _fetch_period_grid_v2(
             obs.regime_label,
             obs.actionable,
             obs.reference_price,
+            obs.runtime_contract_version,
+            obs.runtime_contract_digest,
             obs.created_at AS observation_created_at,
             frame.created_at AS replay_frame_created_at
           FROM signal_observation AS obs
@@ -1280,6 +1300,8 @@ async def _fetch_period_grid_v2(
           g.regime_label,
           g.actionable,
           g.reference_price,
+          g.runtime_contract_version,
+          g.runtime_contract_digest,
           g.observation_created_at,
           g.replay_frame_created_at,
           g.horizon_minutes,
@@ -3343,6 +3365,66 @@ async def _assert_confirmatory_v4_replay_integrity(
     return len(replayed)
 
 
+def _assert_confirmatory_v4_runtime_contract_provenance(
+    rows: list[dict[str, Any]],
+    *,
+    observation_ids: list[int],
+    runtime_contract: dict[str, Any],
+) -> int:
+    """Prove every OOS row was produced under the frozen runtime contract.
+
+    Replay proves the kernel reproduces the stored context.  It cannot prove the
+    stored context was built from the right market data, because the routing that
+    selected it is a runtime value the context never captured.  This is the check
+    that survives an A -> B -> A history: rows written while B was active carry
+    B's digest forever, so restoring A cannot launder them.
+
+    Missing provenance is a hard failure, not a filter: dropping such rows would
+    silently shrink the population the frozen denominator was computed against.
+    """
+
+    expected_version = runtime_contract["runtime_contract_version"]
+    expected_digest = runtime_contract["digest"]
+    wanted = set(observation_ids)
+
+    missing: list[int] = []
+    divergent: list[str] = []
+    seen: set[int] = set()
+    for row in rows:
+        observation_id = int(row["observation_id"])
+        if observation_id not in wanted or observation_id in seen:
+            continue
+        seen.add(observation_id)
+        stored_version = row.get("runtime_contract_version")
+        stored_digest = row.get("runtime_contract_digest")
+        if stored_version is None or stored_digest is None:
+            missing.append(observation_id)
+            continue
+        if int(stored_version) != int(expected_version) or (
+            str(stored_digest) != str(expected_digest)
+        ):
+            divergent.append(
+                f"observation_id={observation_id} "
+                f"runtime_contract_version={stored_version} "
+                f"runtime_contract_digest={stored_digest}"
+            )
+
+    if missing:
+        raise ConfirmatoryScientificIntegrityError(
+            "spec-v4 OOS observations lack the scientific runtime contract "
+            "provenance required by the frozen manifest: "
+            f"{','.join(str(item) for item in sorted(missing))}"
+        )
+    if divergent:
+        raise ConfirmatoryScientificIntegrityError(
+            "spec-v4 OOS observations were produced under a different scientific "
+            f"runtime contract than the frozen manifest "
+            f"(expected version={expected_version} digest={expected_digest}): "
+            f"{'; '.join(divergent)}"
+        )
+    return len(seen)
+
+
 def _baseline_input_measure_v2(
     row: dict[str, Any], snapshot: dict[str, Any] | None
 ) -> dict[str, Any]:
@@ -3432,6 +3514,7 @@ async def _fetch_confirmatory_v4_rows(
     knowledge_cutoff: datetime,
     options: WalkForwardManifestOptions,
     contract: ConfirmatoryContractV2,
+    runtime_contract: dict[str, Any],
 ) -> dict[str, Any]:
     narrowed = replace(
         options,
@@ -3456,6 +3539,11 @@ async def _fetch_confirmatory_v4_rows(
     replay_integrity_checked_n = await _assert_confirmatory_v4_replay_integrity(
         conn,
         replay_population_ids,
+    )
+    runtime_contract_checked_n = _assert_confirmatory_v4_runtime_contract_provenance(
+        sampled,
+        observation_ids=replay_population_ids,
+        runtime_contract=runtime_contract,
     )
     outcome_integrity = _confirmatory_v4_outcome_integrity_for_fold(
         sampled,
@@ -3576,6 +3664,7 @@ async def _fetch_confirmatory_v4_rows(
         "outcome_integrity": outcome_integrity,
         "baseline_input_integrity": baseline_integrity,
         "replay_integrity_checked_n": replay_integrity_checked_n,
+        "runtime_contract_checked_n": runtime_contract_checked_n,
     }
 
 
@@ -3677,6 +3766,7 @@ async def _compute_confirmatory_v4_result(
     knowledge_cutoff: datetime,
     evaluation_not_before: datetime,
     scientific_implementation: dict[str, Any],
+    runtime_contract: dict[str, Any],
 ) -> dict[str, Any]:
     result = _confirmatory_v4_not_ready_result(
         contract,
@@ -3694,6 +3784,7 @@ async def _compute_confirmatory_v4_result(
     baseline_integrity = dict(_EMPTY_BASELINE_INPUT_INTEGRITY_V2)
     expected_sample_slots = 0
     replay_integrity_checked_n = 0
+    runtime_contract_checked_n = 0
     for fold_spec in fold_specs:
         fetched = await _fetch_confirmatory_v4_rows(
             conn,
@@ -3701,6 +3792,7 @@ async def _compute_confirmatory_v4_result(
             knowledge_cutoff=knowledge_cutoff,
             options=options,
             contract=contract,
+            runtime_contract=runtime_contract,
         )
         primary_rows.extend(fetched["primary_rows"])
         baseline_rows.extend(fetched["baseline_rows"])
@@ -3712,6 +3804,9 @@ async def _compute_confirmatory_v4_result(
         )
         replay_integrity_checked_n += int(
             fetched["replay_integrity_checked_n"]
+        )
+        runtime_contract_checked_n += int(
+            fetched["runtime_contract_checked_n"]
         )
         expected_sample_slots += expected_utc_nonoverlap_slot_count_v2(
             test_start=fold_spec["test_start"],
@@ -3725,6 +3820,12 @@ async def _compute_confirmatory_v4_result(
             "outcome_window_complete_periodic_v1"
         ),
         "checked_observation_n": replay_integrity_checked_n,
+        "complete": True,
+    }
+    result["scientific_runtime_contract_integrity"] = {
+        "runtime_contract_version": runtime_contract["runtime_contract_version"],
+        "runtime_contract_digest": runtime_contract["digest"],
+        "checked_observation_n": runtime_contract_checked_n,
         "complete": True,
     }
 
@@ -3905,6 +4006,7 @@ def _authoritative_result_payload_v1(report: dict[str, Any]) -> dict[str, Any]:
         "scientific_implementation": confirmatory_result[
             "scientific_implementation"
         ],
+        "scientific_runtime_contract": report["scientific_runtime_contract"],
         "confirmatory_knowledge_cutoff": report[
             "confirmatory_knowledge_cutoff"
         ],
@@ -3947,6 +4049,8 @@ def _verify_authoritative_result_row(
         and stored["manifest_hash"] == expected_payload["manifest_hash"]
         and stored["scientific_implementation_digest"]
         == expected_payload["scientific_implementation"]["digest"]
+        and stored["scientific_runtime_contract_digest"]
+        == expected_payload["scientific_runtime_contract"]["digest"]
         and _confirmatory_aware_utc_v2(stored["confirmatory_knowledge_cutoff"])
         == _confirmatory_parse_timestamp_v2(
             expected_payload["confirmatory_knowledge_cutoff"],
@@ -4003,15 +4107,17 @@ async def _persist_or_verify_authoritative_result(
         INSERT INTO signal_walk_forward_confirmatory_result(
           result_version,manifest_id,manifest_hash,
           scientific_implementation_digest,
+          scientific_runtime_contract_digest,
           confirmatory_knowledge_cutoff,evaluation_not_before,
           canonical_result_json,result_hash
-        ) VALUES(1,$1,$2,$3,$4,$5,$6,$7)
+        ) VALUES(1,$1,$2,$3,$4,$5,$6,$7,$8)
         ON CONFLICT (manifest_id) DO NOTHING
         RETURNING *
         """,
         manifest_id,
         payload["manifest_hash"],
         payload["scientific_implementation"]["digest"],
+        payload["scientific_runtime_contract"]["digest"],
         payload["confirmatory_knowledge_cutoff"],
         payload["evaluation_not_before"],
         canonical_result,
@@ -4064,6 +4170,11 @@ async def _attach_confirmatory_v4_report_v2(
     scientific_implementation = validate_scientific_implementation_identity(
         frozen_spec.get("scientific_implementation")
     )
+    # The frozen runtime contract is re-verified against live resolution before
+    # any row is trusted, and never re-derived from current configuration.
+    frozen_runtime_contract = validate_scientific_runtime_contract(
+        frozen_spec.get("scientific_runtime_contract")
+    )
     knowledge_cutoff = _confirmatory_parse_timestamp_v2(
         frozen_spec.get("confirmatory_knowledge_cutoff"),
         "confirmatory_knowledge_cutoff",
@@ -4110,9 +4221,11 @@ async def _attach_confirmatory_v4_report_v2(
         knowledge_cutoff=knowledge_cutoff,
         evaluation_not_before=evaluation_not_before,
         scientific_implementation=scientific_implementation,
+        runtime_contract=frozen_runtime_contract,
     )
     report["confirmatory_contract"] = confirmatory_contract_v2_to_dict(contract)
     report["scientific_implementation"] = scientific_implementation
+    report["scientific_runtime_contract"] = frozen_runtime_contract
     report["confirmatory_state"] = confirmatory_result["confirmatory_state"]
     report["confirmatory_knowledge_cutoff"] = knowledge_cutoff
     report["evaluation_not_before"] = evaluation_not_before

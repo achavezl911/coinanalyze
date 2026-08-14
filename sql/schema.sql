@@ -427,7 +427,20 @@ CREATE TABLE IF NOT EXISTS signal_observation (
     collector_shard_count integer NOT NULL CHECK (collector_shard_count > 0),
     decision_fingerprint text NOT NULL CHECK (length(decision_fingerprint) = 64),
     evidence jsonb NOT NULL CHECK (jsonb_typeof(evidence) = 'object'),
+    -- PR27-R03: qué configuración científica en runtime seleccionó los insumos
+    -- de esta observación. Prospectivo y nullable a propósito: las filas legacy
+    -- quedan NULL, no se reescribe historia y NINGUN check lo ata a
+    -- evidence_version, porque eso reinterpretaría evidence-v6. La exigencia es
+    -- del evaluador spec-v4, que falla cerrado si falta.
+    runtime_contract_version smallint
+        CHECK (runtime_contract_version IS NULL OR runtime_contract_version >= 1),
+    runtime_contract_digest text
+        CHECK (runtime_contract_digest IS NULL
+               OR runtime_contract_digest ~ '^[0-9a-f]{64}$'),
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT signal_observation_runtime_contract_pairing_check CHECK (
+        (runtime_contract_version IS NULL) = (runtime_contract_digest IS NULL)
+    ),
     CHECK (is_periodic OR is_transition),
     CHECK (collector_shard_index < collector_shard_count),
     CHECK (
@@ -489,6 +502,44 @@ BEGIN
           AND metrics_cutoff_at IS NULL
         )
       );
+  END IF;
+END $$;
+-- PR27-R03: procedencia aditiva del contrato científico de runtime. Idempotente
+-- y sin backfill: una base existente gana dos columnas nullable y sus filas
+-- históricas se quedan en NULL.
+ALTER TABLE signal_observation
+    ADD COLUMN IF NOT EXISTS runtime_contract_version smallint;
+ALTER TABLE signal_observation
+    ADD COLUMN IF NOT EXISTS runtime_contract_digest text;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='signal_observation'::regclass
+      AND conname='signal_observation_runtime_contract_version_check'
+  ) THEN
+    ALTER TABLE signal_observation
+      ADD CONSTRAINT signal_observation_runtime_contract_version_check
+      CHECK (runtime_contract_version IS NULL OR runtime_contract_version >= 1);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='signal_observation'::regclass
+      AND conname='signal_observation_runtime_contract_digest_check'
+  ) THEN
+    ALTER TABLE signal_observation
+      ADD CONSTRAINT signal_observation_runtime_contract_digest_check
+      CHECK (runtime_contract_digest IS NULL
+             OR runtime_contract_digest ~ '^[0-9a-f]{64}$');
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid='signal_observation'::regclass
+      AND conname='signal_observation_runtime_contract_pairing_check'
+  ) THEN
+    ALTER TABLE signal_observation
+      ADD CONSTRAINT signal_observation_runtime_contract_pairing_check
+      CHECK ((runtime_contract_version IS NULL) = (runtime_contract_digest IS NULL));
   END IF;
 END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS signal_observation_periodic_slot_uidx
@@ -919,6 +970,10 @@ CREATE TABLE IF NOT EXISTS signal_walk_forward_confirmatory_result (
     manifest_hash text NOT NULL CHECK (manifest_hash ~ '^[0-9a-f]{64}$'),
     scientific_implementation_digest text NOT NULL
         CHECK (scientific_implementation_digest ~ '^[0-9a-f]{64}$'),
+    -- PR27-R03: fuente científica congelada y configuración de runtime congelada
+    -- son dos mitades de la misma clausura. Ambas quedan en la fila autoritativa.
+    scientific_runtime_contract_digest text NOT NULL
+        CHECK (scientific_runtime_contract_digest ~ '^[0-9a-f]{64}$'),
     confirmatory_knowledge_cutoff timestamptz NOT NULL,
     evaluation_not_before timestamptz NOT NULL,
     evaluated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -948,6 +1003,12 @@ CREATE TABLE IF NOT EXISTS signal_walk_forward_confirmatory_result (
       (
         canonical_result_json::jsonb->'scientific_implementation'->>'digest'
         = scientific_implementation_digest
+      ) IS TRUE
+    ),
+    CHECK (
+      (
+        canonical_result_json::jsonb->'scientific_runtime_contract'->>'digest'
+        = scientific_runtime_contract_digest
       ) IS TRUE
     ),
     CHECK (
@@ -1001,6 +1062,11 @@ BEGIN
     IF NEW.scientific_implementation_digest IS DISTINCT FROM
        frozen_spec->'scientific_implementation'->>'digest' THEN
         RAISE EXCEPTION 'authoritative result implementation digest disagrees with manifest'
+            USING ERRCODE = '55000';
+    END IF;
+    IF NEW.scientific_runtime_contract_digest IS DISTINCT FROM
+       frozen_spec->'scientific_runtime_contract'->>'digest' THEN
+        RAISE EXCEPTION 'authoritative result runtime contract digest disagrees with manifest'
             USING ERRCODE = '55000';
     END IF;
     IF NEW.confirmatory_knowledge_cutoff IS DISTINCT FROM
