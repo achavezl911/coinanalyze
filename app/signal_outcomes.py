@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# PR27_SCIENTIFIC_OUTCOME_MATERIALIZATION_V1_BEGIN
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -9,8 +10,7 @@ from typing import Any
 import asyncpg
 
 from app.data_gaps import GapRequirement, blocking_requirement_keys
-
-# PR27_SCIENTIFIC_OUTCOME_MATERIALIZATION_V1_BEGIN
+from app.signal_scientific_identity import scientific_implementation_identity
 
 OUTCOME_HORIZONS_MINUTES = (1, 3, 5, 15, 30, 60, 120, 240)
 OUTCOME_VERSION = 1
@@ -21,6 +21,7 @@ OUTCOME_SETTLEMENT_LAG = timedelta(minutes=42)
 MISSING_DATA_FINAL_GRACE = timedelta(days=7)
 MISSING_DATA_RETRY = timedelta(minutes=15)
 DEFAULT_BATCH_LIMIT = 128
+_SCIENTIFIC_EVIDENCE_VERSION_V1 = 6
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,7 +322,7 @@ async def materialize_due_signal_outcomes(
         SELECT
           out.outcome_id,out.horizon_minutes,out.window_start,out.window_end,
           out.due_at,out.bars_expected,
-          obs.symbol,obs.direction,obs.reference_price
+          obs.symbol,obs.direction,obs.reference_price,obs.evidence_version
         FROM signal_outcome AS out
         JOIN signal_observation AS obs
           ON obs.observation_id=out.observation_id
@@ -339,6 +340,14 @@ async def materialize_due_signal_outcomes(
     evaluated = 0
     finalized_not_evaluable = 0
     deferred = 0
+
+    # Outcome-v1 is immutable once final. Attest the registered producer
+    # before any evidence-v6 row can be materialized under a transient kernel.
+    if any(
+        int(job["evidence_version"]) == _SCIENTIFIC_EVIDENCE_VERSION_V1
+        for job in jobs
+    ):
+        scientific_implementation_identity()
 
     for job in jobs:
         outcome_id = int(job["outcome_id"])

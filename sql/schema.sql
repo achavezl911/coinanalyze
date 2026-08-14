@@ -1504,6 +1504,7 @@ COMMENT ON COLUMN orderbook_snapshot.venue_count IS
 -- exactly when a metric window starts does not overlap it, while one starting exactly at
 -- the window start does. Event streams may only use positive loss evidence; silence is
 -- deliberately absent from the allowed evidence values.
+-- PR27_SCIENTIFIC_OUTCOME_DATA_GAP_V1_BEGIN
 CREATE TABLE IF NOT EXISTS data_gap (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     feed text NOT NULL CHECK (length(feed) BETWEEN 1 AND 80),
@@ -1558,6 +1559,7 @@ CREATE INDEX IF NOT EXISTS data_gap_overlap_idx
     WHERE status IN ('unresolved','unrecoverable');
 CREATE INDEX IF NOT EXISTS data_gap_status_detected_idx
     ON data_gap(status, detected_at DESC);
+-- PR27_SCIENTIFIC_OUTCOME_DATA_GAP_V1_END
 
 -- Daily UTC partitions balance the realtime retention horizons with a small, predictable
 -- object count. Startup calls this function; the advisory transaction lock makes concurrent

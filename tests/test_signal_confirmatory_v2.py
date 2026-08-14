@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import dataclasses
 import math
+import shutil
 from datetime import UTC, datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
@@ -36,8 +38,10 @@ from app.signal_confirmatory_v2 import (
 from app.signal_scientific_identity import (
     REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS,
     SCIENTIFIC_IDENTITY_VERSION_V1,
+    SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS,
     canonical_python_ast,
     canonical_sql_source_v1,
+    compute_scientific_implementation_identity,
     scientific_implementation_identity,
     validate_scientific_implementation_identity,
 )
@@ -562,20 +566,97 @@ def test_sql_canonicalizer_preserves_line_comment_termination_semantics() -> Non
 def test_scientific_identity_is_registered_and_names_every_critical_component() -> None:
     identity = scientific_implementation_identity()
     assert identity["digest"] == (
-        "bb60f57a587fc8e44b5b60ab529ecbfe37dfb1a9f559a3c72888f7f5fef689da"
+        "30825e7f5b9c5dbd11eac92fa8ab1b3f636bf67fc45c0218699dbd4b9a79f743"
     )
     assert identity["digest"] == REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS[
         SCIENTIFIC_IDENTITY_VERSION_V1
     ]
     assert {component["name"] for component in identity["components"]} == {
+        "scientific_identity_mechanics",
+        "signal_summary_decision_kernel",
+        "signal_summary_oi_helpers",
+        "signal_context_session_boundary",
+        "signal_context_cutoff",
+        "signal_observation_generation",
+        "signal_replay_integrity",
+        "visibility_transaction_boundary",
+        "visibility_certificate_production",
+        "outcome_data_gap_blocking",
         "knowledge_time_projection_and_grid",
         "outcome_materialization_semantics",
         "execution_snapshot_semantics",
         "corrected_endpoint_and_paired_inference",
         "confirmatory_v4_fetch_coverage_and_persistence",
         "authoritative_transaction_and_serialization",
+        "signal_observation_database_boundary",
+        "signal_outcome_database_boundary",
+        "signal_replay_database_boundary",
+        "signal_execution_database_boundary",
+        "outcome_data_gap_database_boundary",
+        "research_bundle_visibility_database_boundary",
+        "outcome_final_visibility_database_boundary",
         "authoritative_result_database_boundary",
     }
+
+
+def _copy_scientific_identity_surface(destination: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    for relative_path in {
+        component.relative_path
+        for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS
+    }:
+        target = destination / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(root / relative_path, target)
+
+
+def test_scientific_dependency_mutation_changes_aggregate_identity(
+    tmp_path: Path,
+) -> None:
+    _copy_scientific_identity_surface(tmp_path)
+    baseline = compute_scientific_implementation_identity(root=tmp_path)
+    dependency = tmp_path / "app/data_gaps.py"
+    source = dependency.read_text(encoding="utf-8")
+    original = "gap.start_ts < required.end_ts"
+    changed = "gap.start_ts <= required.end_ts"
+    assert original in source
+    dependency.write_text(source.replace(original, changed, 1), encoding="utf-8")
+
+    mutated = compute_scientific_implementation_identity(root=tmp_path)
+    assert mutated["digest"] != baseline["digest"]
+    baseline_components = {
+        component["name"]: component["digest"]
+        for component in baseline["components"]
+    }
+    mutated_components = {
+        component["name"]: component["digest"]
+        for component in mutated["components"]
+    }
+    assert mutated_components["outcome_data_gap_blocking"] != (
+        baseline_components["outcome_data_gap_blocking"]
+    )
+
+
+def test_scientific_identity_ignores_allowed_python_comment_change(
+    tmp_path: Path,
+) -> None:
+    _copy_scientific_identity_surface(tmp_path)
+    baseline = compute_scientific_implementation_identity(root=tmp_path)
+    dependency = tmp_path / "app/data_gaps.py"
+    source = dependency.read_text(encoding="utf-8")
+    marker = "# PR27_SCIENTIFIC_OUTCOME_GAP_BLOCKING_V1_BEGIN\n"
+    assert marker in source
+    dependency.write_text(
+        source.replace(
+            marker,
+            marker + "# Formatting-only audit note; no executable semantics.\n\n",
+            1,
+        ),
+        encoding="utf-8",
+    )
+
+    reformatted = compute_scientific_implementation_identity(root=tmp_path)
+    assert reformatted == baseline
 
 
 def test_scientific_identity_rejects_boolean_version_coercion() -> None:

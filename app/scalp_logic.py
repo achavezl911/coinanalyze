@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# PR27_SCIENTIFIC_SIGNAL_SUMMARY_KERNEL_V1_BEGIN
 import json
 import math
 from datetime import UTC, date, datetime, timedelta
@@ -924,6 +925,9 @@ def as_float(value: object) -> float | None:
     except (TypeError, ValueError, OverflowError):
         return None
     return result if math.isfinite(result) else None
+
+
+# PR27_SCIENTIFIC_SIGNAL_SUMMARY_KERNEL_V1_END
 
 
 # ---------------- estructura de mercado (micro / mid / macro) ----------------
@@ -2386,6 +2390,7 @@ _CVD_WINDOWS = (
 )
 
 
+# PR27_SCIENTIFIC_SIGNAL_CONTEXT_CUTOFF_V1_BEGIN
 def _explicit_as_of(as_of: datetime) -> datetime:
     if as_of.tzinfo is None or as_of.utcoffset() is None:
         raise ValueError("as_of must be timezone-aware")
@@ -2402,6 +2407,9 @@ async def resolve_matrix_as_of(
     if not isinstance(resolved, datetime):
         raise RuntimeError("PostgreSQL did not return a matrix cutoff timestamp")
     return _explicit_as_of(resolved)
+
+
+# PR27_SCIENTIFIC_SIGNAL_CONTEXT_CUTOFF_V1_END
 
 
 def _flow_imbalance(net: object, gross: object) -> float | None:

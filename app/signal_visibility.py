@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+# PR27_SCIENTIFIC_VISIBILITY_CERTIFICATION_V1_BEGIN
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import asyncpg
 
 from app.db import ServiceOwnership, fenced_transaction
+from app.signal_scientific_identity import scientific_implementation_identity
 
 # ---------------------------------------------------------------------------
 # PR25: research knowledge-time visibility certification.
@@ -77,6 +79,13 @@ def _aware_utc(value: datetime) -> datetime:
 def _validate_batch_size(batch_size: int) -> None:
     if not 1 <= batch_size <= 10_000:
         raise ValueError("batch_size must be between 1 and 10000")
+
+
+def _require_new_certification_transaction(conn: asyncpg.Connection) -> None:
+    if conn.is_in_transaction():
+        raise RuntimeError(
+            "research visibility certification must own a new transaction"
+        )
 
 
 async def _certify_research_bundles_once(
@@ -263,6 +272,8 @@ async def certify_research_bundles(
     """
 
     _validate_batch_size(batch_size)
+    _require_new_certification_transaction(conn)
+    scientific_implementation_identity()
     async with fenced_transaction(conn, ownership):
         return await _certify_research_bundles_once(conn, batch_size=batch_size)
 
@@ -279,6 +290,8 @@ async def certify_final_outcomes(
     """
 
     _validate_batch_size(batch_size)
+    _require_new_certification_transaction(conn)
+    scientific_implementation_identity()
     async with fenced_transaction(conn, ownership):
         return await _certify_final_outcomes_once(conn, batch_size=batch_size)
 
@@ -307,3 +320,6 @@ async def run_certification_cycle(
         bundles_certified=bundles,
         final_outcomes_certified=final_outcomes,
     )
+
+
+# PR27_SCIENTIFIC_VISIBILITY_CERTIFICATION_V1_END

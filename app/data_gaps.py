@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# PR27_SCIENTIFIC_OUTCOME_GAP_BLOCKING_V1_BEGIN
 import json
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -113,6 +114,9 @@ async def blocking_requirement_keys(
         [item.end for item in normalized],
     )
     return {str(row["key"]) for row in rows}
+
+
+# PR27_SCIENTIFIC_OUTCOME_GAP_BLOCKING_V1_END
 
 
 async def record_data_gap(

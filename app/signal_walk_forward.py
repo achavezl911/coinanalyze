@@ -69,7 +69,11 @@ from app.signal_outcomes import (
     OUTCOME_VERSION,
     outcome_window,
 )
-from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
+from app.signal_replay import (
+    REPLAY_CONTEXT_VERSION,
+    SCALP_SIGNAL_LOGIC_VERSION,
+    replay_signal_observations,
+)
 from app.signal_scientific_identity import (
     scientific_implementation_identity,
     validate_scientific_implementation_identity,
@@ -3175,6 +3179,10 @@ class ConfirmatoryReproducibilityError(RuntimeError):
     """A recomputation disagreed with immutable authoritative evidence."""
 
 
+class ConfirmatoryScientificIntegrityError(RuntimeError):
+    """Frozen spec-v4 scientific evidence failed integrity verification."""
+
+
 def _confirmatory_aware_utc_v2(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("confirmatory result timestamp must be timezone-aware")
@@ -3273,6 +3281,66 @@ def _sample_confirmatory_v4_grid(
         ):
             sampled.append(row)
     return sampled
+
+
+def _confirmatory_v4_replay_population_ids(
+    sampled: list[dict[str, Any]],
+    *,
+    period_end: datetime,
+) -> list[int]:
+    """Return every sampled observation whose outcome can affect the fold."""
+
+    observation_ids: set[int] = set()
+    for row in sampled:
+        observed_minute = row.get("observed_minute")
+        if not isinstance(observed_minute, datetime):
+            raise ConfirmatoryScientificIntegrityError(
+                "confirmatory replay population row lacks observed_minute"
+            )
+        expected_window = outcome_window(
+            observed_minute,
+            int(row["horizon_minutes"]),
+        )
+        if expected_window.end <= period_end:
+            observation_ids.add(int(row["observation_id"]))
+    return sorted(observation_ids)
+
+
+async def _assert_confirmatory_v4_replay_integrity(
+    conn: asyncpg.Connection,
+    observation_ids: list[int],
+) -> int:
+    """Batch-prove evidence and population fields under the frozen kernel."""
+
+    try:
+        replayed = await replay_signal_observations(conn, observation_ids)
+    except asyncpg.PostgresError:
+        raise
+    except Exception as exc:
+        raise ConfirmatoryScientificIntegrityError(
+            "spec-v4 signal replay integrity could not be established"
+        ) from exc
+
+    mismatches = [
+        result
+        for result in replayed
+        if not result.evidence_match or not result.observation_fields_match
+    ]
+    if mismatches:
+        detail = "; ".join(
+            (
+                f"observation_id={result.observation_id} "
+                f"evidence_match={result.evidence_match} "
+                "field_mismatches="
+                f"{','.join(result.mismatched_observation_fields) or 'none'}"
+            )
+            for result in mismatches
+        )
+        raise ConfirmatoryScientificIntegrityError(
+            "spec-v4 frozen signal evidence does not reproduce under the "
+            f"registered kernel: {detail}"
+        )
+    return len(replayed)
 
 
 def _baseline_input_measure_v2(
@@ -3380,6 +3448,14 @@ async def _fetch_confirmatory_v4_rows(
     sampled = _sample_confirmatory_v4_grid(
         test_grid,
         horizon_minutes=contract.primary_horizon_minutes,
+    )
+    replay_population_ids = _confirmatory_v4_replay_population_ids(
+        sampled,
+        period_end=fold["test_end"],
+    )
+    replay_integrity_checked_n = await _assert_confirmatory_v4_replay_integrity(
+        conn,
+        replay_population_ids,
     )
     outcome_integrity = _confirmatory_v4_outcome_integrity_for_fold(
         sampled,
@@ -3499,6 +3575,7 @@ async def _fetch_confirmatory_v4_rows(
         "baseline_rows": baseline_rows,
         "outcome_integrity": outcome_integrity,
         "baseline_input_integrity": baseline_integrity,
+        "replay_integrity_checked_n": replay_integrity_checked_n,
     }
 
 
@@ -3558,6 +3635,14 @@ def _confirmatory_v4_not_ready_result(
             **_EMPTY_BASELINE_INPUT_INTEGRITY_V2,
             "baseline_complete": False,
         },
+        "signal_replay_integrity": {
+            "population": (
+                "certified_visible_utc_nonoverlap_"
+                "outcome_window_complete_periodic_v1"
+            ),
+            "checked_observation_n": 0,
+            "complete": False,
+        },
         "primary_block_count": 0,
         "absolute_stressed_mean_bps": None,
         "baseline_mean_bps": None,
@@ -3608,6 +3693,7 @@ async def _compute_confirmatory_v4_result(
     outcome_integrity = dict(_EMPTY_CONFIRMATORY_V4_OUTCOME_INTEGRITY)
     baseline_integrity = dict(_EMPTY_BASELINE_INPUT_INTEGRITY_V2)
     expected_sample_slots = 0
+    replay_integrity_checked_n = 0
     for fold_spec in fold_specs:
         fetched = await _fetch_confirmatory_v4_rows(
             conn,
@@ -3624,11 +3710,23 @@ async def _compute_confirmatory_v4_result(
         baseline_integrity = _merge_count_dicts(
             baseline_integrity, fetched["baseline_input_integrity"]
         )
+        replay_integrity_checked_n += int(
+            fetched["replay_integrity_checked_n"]
+        )
         expected_sample_slots += expected_utc_nonoverlap_slot_count_v2(
             test_start=fold_spec["test_start"],
             test_end=fold_spec["test_end"],
             horizon_minutes=contract.primary_horizon_minutes,
         )
+
+    result["signal_replay_integrity"] = {
+        "population": (
+            "certified_visible_utc_nonoverlap_"
+            "outcome_window_complete_periodic_v1"
+        ),
+        "checked_observation_n": replay_integrity_checked_n,
+        "complete": True,
+    }
 
     outcome_complete = (
         outcome_integrity["pending_periodic_n"] == 0

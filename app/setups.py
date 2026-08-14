@@ -92,6 +92,7 @@ def split_hypothesis(value: str | None) -> tuple[str, str]:
     return ("neutral", "ninguno")
 
 
+# PR27_SCIENTIFIC_SIGNAL_OI_HELPERS_V1_BEGIN
 def _sign(value: float | None) -> int | None:
     if value is None:
         return None
@@ -319,6 +320,9 @@ def oi_price_reading(
         "reading": lectura,
         "caveat": aviso,
     }
+
+
+# PR27_SCIENTIFIC_SIGNAL_OI_HELPERS_V1_END
 
 
 def _oi_check(nombre: str, ctx: dict[str, Any], signo: int) -> dict[str, Any]:

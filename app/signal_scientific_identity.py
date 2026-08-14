@@ -41,6 +41,66 @@ class ScientificSourceComponent:
 # verifiable without relying on a historical Git checkout.
 SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
     ScientificSourceComponent(
+        name="scientific_identity_mechanics",
+        relative_path="app/signal_scientific_identity.py",
+        begin_marker="PR27_SCIENTIFIC_IDENTITY_MECHANICS_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_IDENTITY_MECHANICS_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="signal_summary_decision_kernel",
+        relative_path="app/scalp_logic.py",
+        begin_marker="PR27_SCIENTIFIC_SIGNAL_SUMMARY_KERNEL_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_SIGNAL_SUMMARY_KERNEL_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="signal_summary_oi_helpers",
+        relative_path="app/setups.py",
+        begin_marker="PR27_SCIENTIFIC_SIGNAL_OI_HELPERS_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_SIGNAL_OI_HELPERS_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="signal_context_session_boundary",
+        relative_path="app/metrics.py",
+        begin_marker="PR27_SCIENTIFIC_SIGNAL_SESSION_BOUNDARY_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_SIGNAL_SESSION_BOUNDARY_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="signal_context_cutoff",
+        relative_path="app/scalp_logic.py",
+        begin_marker="PR27_SCIENTIFIC_SIGNAL_CONTEXT_CUTOFF_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_SIGNAL_CONTEXT_CUTOFF_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="signal_observation_generation",
+        relative_path="app/signal_ledger.py",
+        begin_marker="PR27_SCIENTIFIC_SIGNAL_OBSERVATION_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_SIGNAL_OBSERVATION_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="signal_replay_integrity",
+        relative_path="app/signal_replay.py",
+        begin_marker="PR27_SCIENTIFIC_SIGNAL_REPLAY_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_SIGNAL_REPLAY_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="visibility_transaction_boundary",
+        relative_path="app/db.py",
+        begin_marker="PR27_SCIENTIFIC_VISIBILITY_TRANSACTION_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_VISIBILITY_TRANSACTION_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="visibility_certificate_production",
+        relative_path="app/signal_visibility.py",
+        begin_marker="PR27_SCIENTIFIC_VISIBILITY_CERTIFICATION_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_VISIBILITY_CERTIFICATION_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="outcome_data_gap_blocking",
+        relative_path="app/data_gaps.py",
+        begin_marker="PR27_SCIENTIFIC_OUTCOME_GAP_BLOCKING_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_OUTCOME_GAP_BLOCKING_V1_END",
+    ),
+    ScientificSourceComponent(
         name="knowledge_time_projection_and_grid",
         relative_path="app/signal_walk_forward.py",
         begin_marker="PR27_SCIENTIFIC_KNOWLEDGE_TIME_V1_BEGIN",
@@ -77,6 +137,55 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
         end_marker="PR27_SCIENTIFIC_AUTHORITATIVE_EVALUATION_V1_END",
     ),
     ScientificSourceComponent(
+        name="signal_observation_database_boundary",
+        relative_path="sql/schema.sql",
+        begin_marker="PR4_SIGNAL_OBSERVATION_LEDGER_BEGIN",
+        end_marker="PR4_SIGNAL_OBSERVATION_LEDGER_END",
+        language="sql",
+    ),
+    ScientificSourceComponent(
+        name="signal_outcome_database_boundary",
+        relative_path="sql/schema.sql",
+        begin_marker="PR5_SIGNAL_OUTCOMES_BEGIN",
+        end_marker="PR5_SIGNAL_OUTCOMES_END",
+        language="sql",
+    ),
+    ScientificSourceComponent(
+        name="signal_replay_database_boundary",
+        relative_path="sql/schema.sql",
+        begin_marker="PR6_SIGNAL_REPLAY_BEGIN",
+        end_marker="PR6_SIGNAL_REPLAY_END",
+        language="sql",
+    ),
+    ScientificSourceComponent(
+        name="signal_execution_database_boundary",
+        relative_path="sql/schema.sql",
+        begin_marker="PR10_SIGNAL_EXECUTION_BEGIN",
+        end_marker="PR10_SIGNAL_EXECUTION_END",
+        language="sql",
+    ),
+    ScientificSourceComponent(
+        name="outcome_data_gap_database_boundary",
+        relative_path="sql/schema.sql",
+        begin_marker="PR27_SCIENTIFIC_OUTCOME_DATA_GAP_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_OUTCOME_DATA_GAP_V1_END",
+        language="sql",
+    ),
+    ScientificSourceComponent(
+        name="research_bundle_visibility_database_boundary",
+        relative_path="sql/schema.sql",
+        begin_marker="PR25_SIGNAL_RESEARCH_BUNDLE_VISIBILITY_BEGIN",
+        end_marker="PR25_SIGNAL_RESEARCH_BUNDLE_VISIBILITY_END",
+        language="sql",
+    ),
+    ScientificSourceComponent(
+        name="outcome_final_visibility_database_boundary",
+        relative_path="sql/schema.sql",
+        begin_marker="PR25_SIGNAL_OUTCOME_FINAL_VISIBILITY_BEGIN",
+        end_marker="PR25_SIGNAL_OUTCOME_FINAL_VISIBILITY_END",
+        language="sql",
+    ),
+    ScientificSourceComponent(
         name="authoritative_result_database_boundary",
         relative_path="sql/schema.sql",
         begin_marker="PR27_SIGNAL_WALK_FORWARD_CONFIRMATORY_RESULT_BEGIN",
@@ -91,9 +200,11 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
 # mutate an existing key: add a new identity version instead.
 REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS = {
     SCIENTIFIC_IDENTITY_VERSION_V1: (
-        "bb60f57a587fc8e44b5b60ab529ecbfe37dfb1a9f559a3c72888f7f5fef689da"
+        "30825e7f5b9c5dbd11eac92fa8ab1b3f636bf67fc45c0218699dbd4b9a79f743"
     ),
 }
+
+# PR27_SCIENTIFIC_IDENTITY_MECHANICS_V1_BEGIN
 
 _IGNORED_AST_FIELDS = frozenset(
     {
@@ -383,3 +494,6 @@ def validate_scientific_implementation_identity(stored: object) -> dict[str, Any
             "frozen scientific implementation identity does not match runtime semantics"
         )
     return runtime
+
+
+# PR27_SCIENTIFIC_IDENTITY_MECHANICS_V1_END

@@ -824,6 +824,46 @@ async def test_migration_down_fails_closed_on_research_visibility_version_refere
     )
 
 
+@pytest.mark.asyncio
+async def test_visibility_certificate_producers_require_a_new_transaction(
+    conn: asyncpg.Connection,
+) -> None:
+    async with conn.transaction():
+        with pytest.raises(RuntimeError, match="must own a new transaction"):
+            await certify_research_bundles(conn)
+        with pytest.raises(RuntimeError, match="must own a new transaction"):
+            await certify_final_outcomes(conn)
+
+
+@pytest.mark.asyncio
+async def test_visibility_producers_fail_before_certificate_on_identity_mismatch(
+    conn: asyncpg.Connection,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    await _insert_complete_bundle(
+        conn,
+        observed_at=datetime(2023, 7, 1, 0, 0, tzinfo=UTC),
+    )
+    import app.signal_scientific_identity as identity
+
+    monkeypatch.setitem(
+        identity.REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS,
+        1,
+        "0" * 64,
+    )
+    with pytest.raises(RuntimeError, match="does not match"):
+        await certify_research_bundles(conn)
+    with pytest.raises(RuntimeError, match="does not match"):
+        await certify_final_outcomes(conn)
+
+    assert await conn.fetchval(
+        "SELECT count(*) FROM signal_research_bundle_visibility"
+    ) == 0
+    assert await conn.fetchval(
+        "SELECT count(*) FROM signal_outcome_final_visibility"
+    ) == 0
+
+
 def test_visibility_v1_frozen_horizons_are_exact() -> None:
     assert _CERTIFIED_OUTCOME_HORIZONS == (1, 3, 5, 15, 30, 60, 120, 240)
 

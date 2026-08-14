@@ -197,21 +197,24 @@ negativo pero exceso positivo nunca puede producir PASS.
 
 El manifest v4 congela `scientific_implementation`, que contiene una versión,
 el canonicalizador, la lista ordenada de componentes, el digest de cada uno y
-el digest agregado SHA-256. La identidad v1 cubre regiones explícitas de:
+el digest agregado SHA-256. La identidad v1 cubre 24 regiones explícitas. La
+superficie comienza en la construcción del contexto y el kernel que genera la
+decisión, continúa por clasificación, persistencia y replay, e incluye la
+producción de certificados de visibilidad, el límite transaccional que
+garantiza su orden, materialización de outcomes y `data_gap`, snapshots de
+ejecución, proyección knowledge-time, denominador UTC, endpoint, baseline,
+bloques, medias, bootstrap, decisión, persistencia autoritativa y todos sus
+límites SQL append-only.
 
-- `app/signal_walk_forward.py`: proyección knowledge-time y grid certificado;
-- `app/signal_outcomes.py`: ventana, selección exacta de barras,
-  missingness/finalización y materialización de `end_price` outcome-v1;
-- `app/signal_execution.py`: fetch, construcción y persistencia del snapshot
-  decision-time y sus curvas;
-- `app/signal_confirmatory_v2.py`: contrato, álgebra, bloques, draws,
-  percentiles, decisión y canonicalización del resultado;
-- `app/signal_walk_forward.py`: fetch exacto del snapshot, sampling,
-  missingness/cobertura, agregación, persistencia y verificación v4;
-- `app/signal_walk_forward.py`: transacción autoritativa, advisory lock,
-  aislamiento y serialización de la primera evaluación;
-- `sql/schema.sql`: unicidad, validación SHA-256, FK y guards append-only del
-  resultado autoritativo (la migración debe conservar DDL idéntico).
+La cobertura no se limita al digest final del evaluador. Los productores de
+observaciones evidence-v6, outcomes-v1 evidence-v6 y certificados
+visibility-v1 verifican la identidad registrada antes de escribir. Así una
+implementación transitoria no registrada no puede producir evidencia nueva.
+Además, la evaluación v4 vuelve a ejecutar el kernel sobre cada frame
+inmutable de su población OOS y compara tanto el objeto completo de evidencia
+como los campos escalares que definen la población. Esta segunda prueba
+histórica es la que detecta el caso A -> B -> A aunque al evaluar el source
+actual haya regresado exactamente a A.
 
 Los componentes Python usan AST canónico y no dependen de comentarios,
 docstrings, posiciones o formato. El bloque SQL sólo normaliza finales de
@@ -227,8 +230,80 @@ La identidad científica registrada por PR27 es:
 ```text
 identity_version = 1
 canonicalizer    = scientific_source_canonicalization_v1
-digest           = bb60f57a587fc8e44b5b60ab529ecbfe37dfb1a9f559a3c72888f7f5fef689da
+digest           = 30825e7f5b9c5dbd11eac92fa8ab1b3f636bf67fc45c0218699dbd4b9a79f743
 ```
+
+Expandir identity-v1 en este rework no reinterpreta un artefacto publicado:
+PR27 sigue sin merge, el repositorio no contiene manifests spec-v4 ni
+resultados spec-v4 congelados, y el digest anterior sólo existía en el head
+revisado de esta misma PR. Una futura modificación posterior a la publicación
+de esta identidad deberá ser aditiva y usar otra versión; nunca podrá cambiar
+el registro de la versión 1.
+
+### Integridad de replay OOS
+
+Antes de filtrar por outcome evaluado, `actionable`, `direction`, estado o
+disponibilidad de ejecución, v4 forma por fold esta población:
+
+```text
+observación periódica certificada y visible al cutoff
+-> seleccionada por utc_nonoverlap
+-> cuya ventana outcome esperada termina dentro del fold OOS
+```
+
+Los ids se cargan y reproducen en un solo fetch batch, no con N+1 queries. Por
+cada id se exige: frame presente; `context_version` y `logic_version`
+soportados; hash canónico del contexto exacto; evidencia JSON completa igual
+a `compute_scalp_summary(context)`; y reproducción exacta de
+`decision_status`, `direction`, `actionable`, `state`, `confidence`, `reason`,
+scores y cobertura. `regime_label` no selecciona ni entra al endpoint o al
+payload autoritativo v4; conserva su uso diagnóstico legacy sin redefinirlo.
+
+Cualquier ausencia, versión no soportada, hash inválido, evidencia distinta o
+campo de población distinto levanta `ConfirmatoryScientificIntegrityError`.
+No se convierte en cero, execution-missing ni `INCONCLUSIVE`, y no se elimina
+del denominador. La excepción ocurre dentro de la transacción autoritativa,
+antes del INSERT, por lo que no puede persistirse `PASS`, `FAIL` ni
+`INCONCLUSIVE` después de una violación.
+
+### Auditoría explícita de clausura de dependencias
+
+Cada dependencia material se asigna a exactamente una clase:
+
+| Componente | Clase | Mecanismo de protección |
+|---|---:|---|
+| Canonicalizador, extracción de regiones y verificación runtime | A | Componente `scientific_identity_mechanics`; registro append-only y comparación fail-closed. |
+| Construcción de contexto, `compute_scalp_summary` y helpers puros locales | A | Componente AST `signal_summary_decision_kernel`, incluida la consulta SQL de contexto. |
+| `classify_oi`, `oi_price_reading` y `_sign` usados por el kernel | A | Componente AST `signal_summary_oi_helpers`. |
+| Cutoff PostgreSQL y límite de sesión usados al construir el contexto | A | Componentes AST `signal_context_cutoff` y `signal_context_session_boundary`. |
+| Clasificación, fingerprint, serialización y persistencia de la observación | A | Componente AST `signal_observation_generation` y attestation antes de evidence-v6. |
+| Replay, canonicalización de contexto/evidencia y comparación de campos | A | Componente AST `signal_replay_integrity` y replay batch obligatorio en v4. |
+| Observación, evidence JSON y replay frame ya persistidos | C | Tablas append-only cubiertas por identidad SQL; hash canónico de frame y replay independiente antes de consumirlos. |
+| Literales `scalp-summary-v1`, evidence-v6 y context-v1 | B | Contrato versionado congelado; una versión no soportada falla cerrada. |
+| Productor de certificados y orden read-committed -> clock -> INSERT | A | `visibility_certificate_production`; exige transacción nueva, attestation y clock PostgreSQL sólo después del SELECT. |
+| `fenced_transaction` y verificación de ownership usados al certificar | A | Componente `visibility_transaction_boundary`. |
+| Tupla de visibility-v1 (evidence/context/outcome/snapshot, horizontes y exchanges) | B | Literales locales congelados, sin imports de constantes “current”. |
+| Certificados y `verified_visible_at` ya emitidos | C | Filas append-only; cutoff usa exclusivamente el timestamp certificado, sin backdating ni fallback a `created_at`/`finalized_at`. |
+| Momento real de invocación o retraso operativo del certificador | C | Su único efecto científico queda capturado conservadoramente en el `verified_visible_at` inmutable; nunca cambia la regla de selección. |
+| Ventana outcome, barras exactas, missingness y finalización | A | `outcome_materialization_semantics`; attestation antes de materializar evidence-v6. |
+| Predicado half-open de gaps bloqueantes | A | `outcome_data_gap_blocking`, incluida la consulta SQL ejecutable. |
+| Horizontes, outcome-v1 y grace/retry de finalización | B | Literales versionados dentro de las regiones cubiertas; no hay extensión adaptativa. |
+| Outcome final ya persistido | C | Input inmutable/append-only verificado por constraints, versión, ventana y certificado final; cambios posteriores del estado operativo de gaps no lo reescriben. |
+| Productor de snapshot decision-time y curva de costos | A | `execution_snapshot_semantics`. |
+| Snapshot-v1 y conjunto de venues certificado | B | Contratos literales congelados; endpoint-v2 exige Binance de forma explícita. |
+| Snapshots de ejecución ya persistidos | C | Tabla append-only cubierta por identidad SQL; v4 valida versión, instante, forma, profundidad y álgebra. |
+| Proyección knowledge-time, grid certificado y denominador UTC non-overlap | A | `knowledge_time_projection_and_grid` y `confirmatory_v4_fetch_coverage_and_persistence`. |
+| Baseline, endpoint-v2, bloques, media determinista, draws, CI y conjunción | A | `corrected_endpoint_and_paired_inference`; una sola región AST incluye todos los helpers result-material. |
+| Manifest, folds, cutoffs y parámetros confirmatorios congelados | C | Input persistido append-only con JSON canónico/hash y validación completa al cargar; PR27 no elige valores. |
+| Nombres/versiones de endpoint, baseline, bootstrap y decisión | B | Identificadores literales preregistrados dentro del contrato spec-v4. |
+| Transacción, lock, persistencia y recomputación autoritativa | A | `authoritative_transaction_and_serialization` más componentes SQL de resultado. |
+| Resultado autoritativo ya persistido | C | Único, append-only, FK restrictiva, payload canónico y SHA-256 recalculado por aplicación y PostgreSQL. |
+| Pooling, logging y transporte de errores fuera de las transacciones científicas | D | No transforman inputs ni ofrecen fallback semántico; un fallo sólo aborta/reintenta antes de crear evidencia. |
+
+Las regiones SQL cubren además los boundaries de observación, replay, outcome,
+gaps, snapshots, certificados y resultado. Hashar todo el repositorio no es
+necesario: UI, rutas de presentación y documentación quedan fuera porque no
+pueden formar el payload autoritativo ni escribir evidencia científica.
 
 ## Settlement del certificado
 

@@ -20,19 +20,27 @@ from pathlib import Path
 import asyncpg
 import pytest
 
+from app.scalp_logic import compute_scalp_summary
 from app.signal_confirmatory import ConfirmatoryContract, confirmatory_block_key
 from app.signal_confirmatory_v2 import (
     CONJUNCTIVE_DECISION_POLICY_V2,
     ConfirmatoryContractV2,
 )
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, outcome_window
-from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
+from app.signal_replay import (
+    SCALP_SIGNAL_LOGIC_VERSION,
+    canonical_json_hash,
+    canonical_json_object,
+    classify_signal_observation,
+    replay_context_as_of,
+)
 from app.signal_visibility import certify_final_outcomes, certify_research_bundles
 from app.signal_walk_forward import (
     WALK_FORWARD_REPORT_VERSION_V3,
     WALK_FORWARD_SPEC_VERSION_V3,
     WALK_FORWARD_SPEC_VERSION_V4,
     ConfirmatoryReproducibilityError,
+    ConfirmatoryScientificIntegrityError,
     WalkForwardManifestOptions,
     _expected_utc_nonoverlap_slot_count,
     _full_spec,
@@ -262,11 +270,67 @@ async def _insert_backdated_manifest(
     return folds
 
 
-_DIRECTION_STATE_DEFAULTS = {
-    "long": "Long Momentum",
-    "short": "Short Momentum",
-    "neutral": "Neutral Range",
-}
+def _decision_replay_fixture(
+    observed_at: datetime,
+    direction: str,
+) -> tuple[dict[str, object], dict[str, object]]:
+    now_ms = observed_at.timestamp() * 1000.0
+    context: dict[str, object] = {
+        "now_ms": now_ms,
+        "price": 100.0,
+        "ohlcv_price": 99.9,
+        "fut_price": 100.0,
+        "spot_price": 99.9,
+        "fut_event_ms": now_ms - 1_000.0,
+        "spot_event_ms": now_ms - 1_200.0,
+        "fut_delta_1m": 100.0,
+        "fut_volume_1m": 1_000.0,
+        "fut_delta_3m": 150.0,
+        "fut_volume_3m": 3_000.0,
+        "spot_delta_3m": 50.0,
+        "spot_volume_3m": 2_000.0,
+        "imbalance_l1": 0.05,
+        "imbalance_l5": 0.10,
+        "imbalance_l10": 0.08,
+        "spread_bps": 1.5,
+        "book_status": "ok",
+        "book_lag_seconds": 1.0,
+        "first_px_3m": 99.8,
+        "last_px_3m": 100.0,
+        "bars_15m": 0,
+        "price_move_15m_coverage": "none",
+        "oi_window_status": "unavailable",
+        "optional": None,
+    }
+    if direction == "long":
+        context.update(
+            {
+                "fut_delta_1m": -100.0,
+                "fut_delta_3m": -150.0,
+                "spot_delta_3m": 100.0,
+                "imbalance_l5": 0.9,
+                "first_px_3m": 100.2,
+                "last_px_3m": 100.0,
+            }
+        )
+    elif direction == "neutral":
+        context.update(
+            {
+                "fut_delta_1m": 0.0,
+                "fut_delta_3m": 0.0,
+                "spot_delta_3m": 0.0,
+                "imbalance_l5": 0.5,
+                "first_px_3m": 100.0,
+                "last_px_3m": 100.0,
+            }
+        )
+    elif direction != "short":
+        raise ValueError(f"unsupported fixture replay direction: {direction}")
+
+    summary = compute_scalp_summary(context)
+    _, replayed_direction, _ = classify_signal_observation(summary)
+    assert replayed_direction == direction
+    return context, summary
 
 
 async def _insert_observation(
@@ -279,7 +343,9 @@ async def _insert_observation(
     actionable: bool | None = None,
     state: str | None = None,
     regime_label: str = "trend_up",
-) -> int:
+    replay_direction: str | None = None,
+    evidence_overrides: dict[str, object] | None = None,
+) -> tuple[int, dict[str, object]]:
     """``direction`` may be ``"long"``/``"short"`` (actionable) or
     ``"neutral"`` (non-actionable, periodic-only) -- the latter is how
     PR26's confirmatory baseline cohort fixtures insert rows that must be
@@ -288,11 +354,16 @@ async def _insert_observation(
     independently (e.g. to prove the baseline cohort is insensitive to
     ``state``/``regime_label``)."""
 
+    replay_context, replayed_summary = _decision_replay_fixture(
+        observed_at,
+        replay_direction or direction,
+    )
+    evidence = {**replayed_summary, **(evidence_overrides or {})}
     if actionable is None:
         actionable = direction in ("long", "short")
     if state is None:
-        state = _DIRECTION_STATE_DEFAULTS.get(direction, "Neutral Range")
-    return int(
+        state = str(evidence["state"])
+    observation_id = int(
         await conn.fetchval(
             """
             INSERT INTO signal_observation(
@@ -310,12 +381,12 @@ async def _insert_observation(
               'BTCUSDT_PERP.A','scalp',
               true,false,
               'scalp-summary-v1',$3,1,
-              'evaluable',$2,$5,$6,'media','test',
+              'evaluable',$2,$5,$6,$8,$9,
               $4,'futures_realtime_combined',
-              70,30,90,
+              $10,$11,$12,
               $7,
               0,1,
-              repeat('a',64),'{}'::jsonb
+              repeat('a',64),$13::jsonb
             )
             RETURNING observation_id
             """,
@@ -326,18 +397,33 @@ async def _insert_observation(
             actionable,
             state,
             regime_label,
+            str(evidence["confidence"]),
+            str(evidence["reason"]),
+            float(evidence["long_score"]),
+            float(evidence["short_score"]),
+            float(evidence["evidence_coverage_pct"]),
+            canonical_json_object(evidence),
         )
     )
+    return observation_id, replay_context
 
 
-async def _insert_frame(conn: asyncpg.Connection, observation_id: int, observed_at: datetime) -> None:
+async def _insert_frame(
+    conn: asyncpg.Connection,
+    observation_id: int,
+    observed_at: datetime,
+    context: dict[str, object],
+) -> None:
     await conn.execute(
         """
         INSERT INTO signal_replay_frame(
           observation_id,context_version,context_as_of,context_hash,context,created_at
-        ) VALUES($1,1,$2,repeat('b',64),'{"now_ms":1}'::jsonb,$2)
+        ) VALUES($1,1,$2,$3,$4::jsonb,$5)
         """,
         observation_id,
+        replay_context_as_of(context),
+        canonical_json_hash(context),
+        canonical_json_object(context),
         observed_at,
     )
 
@@ -522,6 +608,9 @@ async def _insert_confirmatory_bundle(
     reference_price: float = 100.0,
     snapshot_cost_bps: float = 5.0,
     outcome_end_price: float | None = None,
+    replay_direction: str | None = None,
+    evidence_overrides: dict[str, object] | None = None,
+    actionable: bool | None = None,
 ) -> int:
     """A complete evidence_version=6 bundle: one observation, replay frame,
     all 8 outcome horizons (only ``primary_horizon`` evaluated with a real
@@ -536,15 +625,18 @@ async def _insert_confirmatory_bundle(
     flip -- see ``_insert_outcome`` -- i.e. it directly sets that row's
     ``market_return_pct``."""
 
-    observation_id = await _insert_observation(
+    observation_id, replay_context = await _insert_observation(
         conn,
         observed_at=observed_at,
         direction=direction,
         state=state,
         regime_label=regime_label,
         reference_price=reference_price,
+        replay_direction=replay_direction,
+        evidence_overrides=evidence_overrides,
+        actionable=actionable,
     )
-    await _insert_frame(conn, observation_id, observed_at)
+    await _insert_frame(conn, observation_id, observed_at, replay_context)
 
     window_start = observed_at + timedelta(minutes=1)
     for horizon in OUTCOME_HORIZONS_MINUTES:
@@ -603,8 +695,12 @@ async def _insert_confirmatory_bundle_with_primary_status(
     ``_finalize_pending_outcome``.
     """
 
-    observation_id = await _insert_observation(conn, observed_at=observed_at, direction=direction)
-    await _insert_frame(conn, observation_id, observed_at)
+    observation_id, replay_context = await _insert_observation(
+        conn,
+        observed_at=observed_at,
+        direction=direction,
+    )
+    await _insert_frame(conn, observation_id, observed_at, replay_context)
 
     window_start = observed_at + timedelta(minutes=1)
     for horizon in OUTCOME_HORIZONS_MINUTES:
@@ -2003,6 +2099,25 @@ async def _prepare_ready_v4(
                 reference_price=float(spec.get("reference_price", 100.0)),
                 snapshot_cost_bps=float(spec.get("snapshot_cost_bps", 0.0)),
                 snapshot_status=str(spec.get("snapshot_status", "valid")),
+                state=(
+                    None if spec.get("state") is None else str(spec["state"])
+                ),
+                regime_label=str(spec.get("regime_label", "trend_up")),
+                replay_direction=(
+                    None
+                    if spec.get("replay_direction") is None
+                    else str(spec["replay_direction"])
+                ),
+                evidence_overrides=(
+                    dict(spec["evidence_overrides"])
+                    if isinstance(spec.get("evidence_overrides"), dict)
+                    else None
+                ),
+                actionable=(
+                    None
+                    if spec.get("actionable") is None
+                    else bool(spec["actionable"])
+                ),
                 outcome_end_price=(
                     None
                     if spec.get("outcome_end_price") is None
@@ -2197,6 +2312,151 @@ async def test_v4_pass_requires_both_absolute_and_excess_components_in_postgres(
     assert result["absolute_component_state"] == "pass"
     assert result["excess_component_state"] == "pass"
     assert report["confirmatory_state"] == "pass"
+    assert result["signal_replay_integrity"] == {
+        "population": (
+            "certified_visible_utc_nonoverlap_"
+            "outcome_window_complete_periodic_v1"
+        ),
+        "checked_observation_n": 6,
+        "complete": True,
+    }
+
+
+def _favorable_replay_integrity_rows(
+    mismatching_row: dict[str, object],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "day": 0,
+            "minute_offset": 0,
+            "direction": "long",
+            "return_pct": 2.0,
+            **mismatching_row,
+        },
+        {
+            "day": 0,
+            "minute_offset": 15,
+            "direction": "neutral",
+            "return_pct": -2.0,
+        },
+        {
+            "day": 1,
+            "minute_offset": 0,
+            "direction": "long",
+            "return_pct": 2.0,
+        },
+        {
+            "day": 1,
+            "minute_offset": 15,
+            "direction": "neutral",
+            "return_pct": -2.0,
+        },
+    ]
+
+
+async def _assert_replay_integrity_failure_without_result(
+    conn: asyncpg.Connection,
+    *,
+    name: str,
+    mismatching_row: dict[str, object],
+    error_match: str,
+) -> None:
+    options, _, _ = await _prepare_ready_v4(
+        conn,
+        name=name,
+        row_specs=_favorable_replay_integrity_rows(mismatching_row),
+    )
+    with pytest.raises(ConfirmatoryScientificIntegrityError, match=error_match):
+        await evaluate_walk_forward_authoritative(conn, options.name)
+    assert await conn.fetchval(
+        "SELECT count(*) FROM signal_walk_forward_confirmatory_result"
+    ) == 0
+
+
+@pytest.mark.asyncio
+async def test_v4_favorable_stored_evidence_mismatch_fails_before_persistence(
+    conn: asyncpg.Connection,
+) -> None:
+    """A -> B -> A: B-only evidence can never turn the favorable sample PASS."""
+
+    await _assert_replay_integrity_failure_without_result(
+        conn,
+        name="pr27-replay-evidence-mismatch",
+        mismatching_row={"evidence_overrides": {"kernel_b_only": True}},
+        error_match="evidence_match=False",
+    )
+
+
+@pytest.mark.asyncio
+async def test_v4_actionability_population_mismatch_cannot_be_silently_excluded(
+    conn: asyncpg.Connection,
+) -> None:
+    # Frozen evidence/context replay as actionable long, while the stored row
+    # claims neutral/non-actionable and would otherwise disappear from primary_rows.
+    await _assert_replay_integrity_failure_without_result(
+        conn,
+        name="pr27-replay-actionability-mismatch",
+        mismatching_row={"direction": "neutral", "replay_direction": "long"},
+        error_match="field_mismatches=direction,actionable",
+    )
+
+
+@pytest.mark.asyncio
+async def test_v4_direction_changing_replay_mismatch_fails_closed(
+    conn: asyncpg.Connection,
+) -> None:
+    await _assert_replay_integrity_failure_without_result(
+        conn,
+        name="pr27-replay-direction-mismatch",
+        mismatching_row={"direction": "short", "replay_direction": "long"},
+        error_match="field_mismatches=direction",
+    )
+
+
+@pytest.mark.asyncio
+async def test_valid_evidence_v6_replay_is_usable_without_backfill_or_mutation(
+    conn: asyncpg.Connection,
+) -> None:
+    options, _, observation_ids = await _prepare_ready_v4(
+        conn,
+        name="pr27-valid-evidence-v6-replay",
+    )
+    before = [
+        dict(row)
+        for row in await conn.fetch(
+            """
+            SELECT obs.observation_id,obs.evidence::text,
+                   frame.context_hash,frame.context::text
+            FROM signal_observation AS obs
+            JOIN signal_replay_frame AS frame USING(observation_id)
+            WHERE obs.observation_id=ANY($1::bigint[])
+            ORDER BY obs.observation_id
+            """,
+            observation_ids,
+        )
+    ]
+
+    report = await evaluate_walk_forward_authoritative(conn, options.name)
+
+    after = [
+        dict(row)
+        for row in await conn.fetch(
+            """
+            SELECT obs.observation_id,obs.evidence::text,
+                   frame.context_hash,frame.context::text
+            FROM signal_observation AS obs
+            JOIN signal_replay_frame AS frame USING(observation_id)
+            WHERE obs.observation_id=ANY($1::bigint[])
+            ORDER BY obs.observation_id
+            """,
+            observation_ids,
+        )
+    ]
+    assert after == before
+    assert report["confirmatory_result"]["signal_replay_integrity"][
+        "checked_observation_n"
+    ] == len(observation_ids)
+    assert report["authoritative_result"]["persisted"] is True
 
 
 @pytest.mark.asyncio
