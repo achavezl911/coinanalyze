@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+# PR27_SCIENTIFIC_SIGNAL_OBSERVATION_V1_BEGIN
 import hashlib
 import json
 import math
@@ -16,9 +17,12 @@ from app.signal_execution import (
 from app.signal_outcomes import schedule_signal_outcomes
 from app.signal_replay import (
     SCALP_SIGNAL_LOGIC_VERSION,
+    classify_signal_observation,
     persist_signal_replay_frame,
     replay_context_as_of,
+    validated_signal_observation_fields,
 )
+from app.signal_scientific_identity import scientific_implementation_identity
 
 SIGNAL_FAMILY = "scalp"
 # PR25: v6 is the first evidence cohort eligible for the post-commit research
@@ -28,11 +32,6 @@ SIGNAL_FAMILY = "scalp"
 SIGNAL_EVIDENCE_VERSION = 6
 SIGNAL_SAMPLING_VERSION = 1
 
-_LONG_STATES = frozenset({"Long Momentum", "Long Pullback"})
-_SHORT_STATES = frozenset({"Short Momentum", "Short Rejection"})
-_NEUTRAL_STATES = frozenset({"No Trade"})
-
-
 def _finite(value: object) -> float | None:
     try:
         if value is None:
@@ -41,39 +40,6 @@ def _finite(value: object) -> float | None:
     except (TypeError, ValueError, OverflowError):
         return None
     return parsed if math.isfinite(parsed) else None
-
-
-def classify_signal_observation(
-    summary: dict[str, Any],
-) -> tuple[str, str, bool]:
-    """Map the live verdict to explicit research semantics.
-
-    ``No Trade`` is not always a measured neutral decision: the current scalp
-    logic also uses it as a fail-closed result when the order book is stale or
-    missing. Research must keep those cases separate.
-    """
-
-    state = str(summary.get("state") or "").strip()
-    book_status = str(summary.get("book_status") or "missing").strip()
-    coverage = _finite(summary.get("evidence_coverage_pct"))
-
-    if (
-        state == "Sin datos suficientes"
-        or book_status != "ok"
-        or coverage is None
-        or coverage < 50.0
-    ):
-        return "not_evaluable", "unavailable", False
-
-    if state in _LONG_STATES:
-        return "evaluable", "long", True
-    if state in _SHORT_STATES:
-        return "evaluable", "short", True
-    if state in _NEUTRAL_STATES:
-        return "evaluable", "neutral", False
-
-    # Future states must never silently become neutral training labels.
-    return "not_evaluable", "unavailable", False
 
 
 def select_reference_price(
@@ -185,27 +151,7 @@ def decision_fingerprint(
 def _validated_required_fields(
     summary: dict[str, Any],
 ) -> tuple[str, str, str, float, float, float]:
-    state = str(summary.get("state") or "").strip()
-    confidence = str(summary.get("confidence") or "").strip()
-    reason = str(summary.get("reason") or "").strip()
-    long_score = _finite(summary.get("long_score"))
-    short_score = _finite(summary.get("short_score"))
-    coverage = _finite(summary.get("evidence_coverage_pct"))
-
-    if not state or len(state) > 80:
-        raise ValueError("signal state is missing or too long")
-    if confidence not in {"baja", "media", "alta"}:
-        raise ValueError("signal confidence is invalid")
-    if not reason or len(reason) > 500:
-        raise ValueError("signal reason is missing or too long")
-    if long_score is None or not 0 <= long_score <= 100:
-        raise ValueError("long_score is invalid")
-    if short_score is None or not 0 <= short_score <= 100:
-        raise ValueError("short_score is invalid")
-    if coverage is None or not 0 <= coverage <= 100:
-        raise ValueError("evidence_coverage_pct is invalid")
-
-    return state, confidence, reason, long_score, short_score, coverage
+    return validated_signal_observation_fields(summary)
 
 
 async def persist_signal_observations(
@@ -237,6 +183,10 @@ async def persist_signal_observations(
         raise ValueError("collector shard index must be below shard count")
     if collector_generation is not None and collector_generation <= 0:
         raise ValueError("collector generation must be positive")
+
+    # Producer-time attestation prevents an unregistered A -> B -> A kernel
+    # deployment from writing new evidence-v6 rows under identity-v1.
+    scientific_implementation_identity()
 
     state, confidence, reason, long_score, short_score, coverage = (
         _validated_required_fields(summary)
@@ -397,3 +347,6 @@ async def persist_signal_observations(
     if write_periodic or (write_transition and actionable):
         await schedule_signal_outcomes(conn, observation_id, observed_at)
     return 1
+
+
+# PR27_SCIENTIFIC_SIGNAL_OBSERVATION_V1_END

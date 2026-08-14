@@ -13,6 +13,7 @@ from app.cutoffs import ClosedCutoff
 from app.data_gaps import GapRequirement, blocking_requirement_keys
 from app.db import INGEST_COMPONENT_MAX_AGES
 
+# PR27_SCIENTIFIC_SIGNAL_SESSION_BOUNDARY_V1_BEGIN
 NY = ZoneInfo("America/New_York")
 WHALE_ACTIVITY_MIN = WHALE_THRESHOLD_MAP
 
@@ -26,6 +27,9 @@ def current_nyse_start(now_utc: datetime | None = None) -> datetime:
     # Crypto opera 24/7 y daily_session_agg conserva una fila por dia natural. Saltar
     # sabado/domingo hacia el viernes convertia la "sesion" del fin de semana en 48-72 h.
     return candidate.astimezone(UTC)
+
+
+# PR27_SCIENTIFIC_SIGNAL_SESSION_BOUNDARY_V1_END
 
 
 def session_bounds(session_date: date) -> tuple[datetime, datetime]:

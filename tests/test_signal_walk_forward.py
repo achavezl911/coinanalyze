@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import inspect
+import json
 import math
 from datetime import UTC, datetime, timedelta
 
@@ -15,6 +17,11 @@ from app.signal_confirmatory import (
     ConfirmatoryContract,
     confirmatory_contract_from_dict,
     confirmatory_contract_to_dict,
+)
+from app.signal_confirmatory_v2 import (
+    CONJUNCTIVE_DECISION_POLICY_V2,
+    ConfirmatoryContractV2,
+    confirmatory_contract_v2_to_dict,
 )
 from app.signal_execution import DENSE_PERIODIC, UTC_NONOVERLAP
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, outcome_window
@@ -31,9 +38,11 @@ from app.signal_walk_forward import (
     SPEC_V2_SUPPORTED_SAMPLING_VERSION,
     SUPPORTED_WALK_FORWARD_SPEC_VERSIONS,
     WALK_FORWARD_REPORT_VERSION_V3,
+    WALK_FORWARD_REPORT_VERSION_V4,
     WALK_FORWARD_SPEC_VERSION,
     WALK_FORWARD_SPEC_VERSION_V2,
     WALK_FORWARD_SPEC_VERSION_V3,
+    WALK_FORWARD_SPEC_VERSION_V4,
     WalkForwardManifestOptions,
     _actionable_evaluated,
     _all_periodic_evaluated,
@@ -363,11 +372,12 @@ def test_unknown_spec_version_fails_closed() -> None:
         validate_manifest_options(options)
 
 
-def test_supported_spec_versions_are_exactly_one_two_and_three() -> None:
-    assert SUPPORTED_WALK_FORWARD_SPEC_VERSIONS == (1, 2, 3)
+def test_supported_spec_versions_are_exactly_one_through_four() -> None:
+    assert SUPPORTED_WALK_FORWARD_SPEC_VERSIONS == (1, 2, 3, 4)
     assert WALK_FORWARD_SPEC_VERSION == 1
     assert WALK_FORWARD_SPEC_VERSION_V2 == 2
     assert WALK_FORWARD_SPEC_VERSION_V3 == 3
+    assert WALK_FORWARD_SPEC_VERSION_V4 == 4
 
 
 def _spec_v2_kwargs() -> dict[str, object]:
@@ -929,6 +939,96 @@ def _spec_v3_kwargs() -> dict[str, object]:
     kwargs["fee_bps_per_side"] = (("binance", 2.0),)
     kwargs["confirmatory_contract"] = ConfirmatoryContract(**_confirmatory_contract_kwargs())
     return kwargs
+
+
+def _confirmatory_contract_v2_kwargs() -> dict[str, object]:
+    return {
+        "primary_endpoint_version": 2,
+        "primary_symbol": "BTCUSDT_PERP.A",
+        "primary_horizon_minutes": 15,
+        "primary_sampling_mode": UTC_NONOVERLAP,
+        "primary_exchange": "binance",
+        "outcome_price_venue": "binance",
+        "primary_size_usd": 1_000.0,
+        "primary_taker_fee_bps": 2.0,
+        "baseline_version": 2,
+        "unmodeled_execution_stress_bps": 1.5,
+        "funding_semantics": "excluded_v1",
+        "inference_version": 2,
+        "block_unit": "day",
+        "block_length": 1,
+        "bootstrap_repetitions": 200,
+        "bootstrap_seed": 12345,
+        "confidence_level": 0.95,
+        "minimum_effect_bps": 0.0,
+        "minimum_primary_blocks": 5,
+        "minimum_execution_data_coverage_pct": 50.0,
+        "minimum_research_data_coverage_pct": 50.0,
+        "evaluation_settlement_grace_seconds": 30,
+        "confirmatory_decision_policy": CONJUNCTIVE_DECISION_POLICY_V2,
+    }
+
+
+def _spec_v4_kwargs() -> dict[str, object]:
+    kwargs = _spec_v2_kwargs()
+    kwargs["spec_version"] = WALK_FORWARD_SPEC_VERSION_V4
+    kwargs["symbols"] = ("BTCUSDT_PERP.A",)
+    kwargs["fee_bps_per_side"] = (("binance", 2.0),)
+    kwargs["confirmatory_contract_v2"] = ConfirmatoryContractV2(
+        **_confirmatory_contract_v2_kwargs()
+    )
+    return kwargs
+
+
+def test_spec_v4_requires_distinct_corrected_contract_and_identity() -> None:
+    options = WalkForwardManifestOptions(**_spec_v4_kwargs())
+    validate_manifest_options(options)
+    spec = _static_options_spec(options)
+    assert spec["spec_version"] == 4
+    assert spec["confirmatory_contract"] == confirmatory_contract_v2_to_dict(
+        options.confirmatory_contract_v2
+    )
+    assert spec["scientific_implementation"]["identity_version"] == 1
+    assert len(spec["scientific_implementation"]["digest"]) == 64
+    assert WALK_FORWARD_REPORT_VERSION_V4 == 4
+
+
+def test_corrected_contract_cannot_contaminate_published_specs() -> None:
+    contract = ConfirmatoryContractV2(**_confirmatory_contract_v2_kwargs())
+    for spec_version in (1, 2, 3):
+        kwargs: dict[str, object] = {}
+        if spec_version == 2:
+            kwargs.update(_spec_v2_kwargs())
+        elif spec_version == 3:
+            kwargs.update(_spec_v3_kwargs())
+        kwargs["confirmatory_contract_v2"] = contract
+        with pytest.raises(ValueError):
+            validate_manifest_options(WalkForwardManifestOptions(**kwargs))
+
+
+def test_legacy_static_spec_hashes_are_byte_stable() -> None:
+    specs = (
+        _static_options_spec(WalkForwardManifestOptions()),
+        _static_options_spec(WalkForwardManifestOptions(**_spec_v2_kwargs())),
+        _static_options_spec(WalkForwardManifestOptions(**_spec_v3_kwargs())),
+    )
+    hashes = tuple(
+        hashlib.sha256(
+            json.dumps(
+                spec,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            ).encode()
+        ).hexdigest()
+        for spec in specs
+    )
+    assert hashes == (
+        "e2f967bb8f62aee8101a65e442f57aafe518eccbae6b3ac597a545c75ad44380",
+        "2f21afe9567580f2d9d0dd6ee0288fbfa3c247e5cf5af55eb9c13fe9fdadcd89",
+        "7fd50764e0b66b6c2d6b65e09acaa1dabca8085d24f39818ff4629178c52eb76",
+    )
 
 
 def test_spec_v3_with_exact_supported_tuple_and_contract_passes() -> None:

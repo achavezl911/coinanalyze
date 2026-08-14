@@ -281,6 +281,7 @@ async def test_pr22_postgres_cvd_cutoff_excludes_later_trade_from_all_windows() 
     try:
         await conn.execute(SCHEMA_SQL)
         cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+        await conn.fetchval("SELECT ensure_temporal_partitions($1,0,0)", cutoff)
         await conn.executemany(
             """
             INSERT INTO futures_trades_realtime(
@@ -320,6 +321,7 @@ async def test_pr22_market_structure_query_excludes_trade_after_as_of() -> None:
     try:
         await conn.execute(SCHEMA_SQL)
         cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+        await conn.fetchval("SELECT ensure_temporal_partitions($1,0,0)", cutoff)
         await conn.executemany(
             """
             INSERT INTO futures_trades_realtime(

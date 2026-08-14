@@ -49,6 +49,20 @@ _CONFIRMATORY_FLAGS = {
 }
 _SPEC_V3_FLAGS = {**_SPEC_V2_FLAGS, **_CONFIRMATORY_FLAGS}
 
+_CONFIRMATORY_V2_FLAGS = {
+    **_CONFIRMATORY_FLAGS,
+    "--primary-endpoint-version": "2",
+    "--confirmatory-baseline-version": "2",
+    "--confirmatory-inference-version": "2",
+    "--confirmatory-decision-policy": (
+        "conjunctive_absolute_positive_and_excess_ci_v2"
+    ),
+    "--outcome-price-venue": "binance",
+    "--funding-semantics": "excluded_v1",
+    "--evaluation-settlement-grace-seconds": "30",
+}
+_SPEC_V4_FLAGS = {**_SPEC_V2_FLAGS, **_CONFIRMATORY_V2_FLAGS}
+
 
 def _spec_v3_args(
     *, name: str, output: Path, omit_flag: str | None = None, acknowledge: bool = True
@@ -71,6 +85,29 @@ def _spec_v3_args(
         if flag == omit_flag:
             continue
         args += [flag, value]
+    return args
+
+
+def _spec_v4_args(
+    *, name: str, output: Path, omit_flag: str | None = None, acknowledge: bool = True
+) -> list[str]:
+    args = [
+        "--name",
+        name,
+        "--spec-version",
+        "4",
+        "--symbol",
+        "BTCUSDT_PERP.A",
+        "--fee-bps-per-side",
+        "binance=2.0",
+        "--output",
+        str(output),
+    ]
+    if acknowledge:
+        args.append("--acknowledge-confirmatory-primary-hypothesis")
+    for flag, value in _SPEC_V4_FLAGS.items():
+        if flag != omit_flag:
+            args += [flag, value]
     return args
 
 
@@ -360,3 +397,73 @@ def test_no_production_manifest_name_is_used_by_confirmatory_cli_tests() -> None
     ):
         assert name != DEFAULT_MANIFEST_NAME
         assert not name.startswith("pr11-fixed-kernel")
+
+
+# ---------------------------------------------------------------------------
+# PR27: corrected spec-v4 contract CLI. Values below are disposable fixtures,
+# never production calibration choices or production manifests.
+# ---------------------------------------------------------------------------
+
+
+def test_explicit_spec_v4_invocation_freezes_identity_and_settlement_policy(
+    dsn: str, tmp_path: Path
+) -> None:
+    output = tmp_path / "spec_v4.json"
+    cli.main(_spec_v4_args(name="cli-spec-v4-explicit-test", output=output))
+
+    manifest = json.loads(output.read_text(encoding="utf-8"))
+    spec = manifest["spec"]
+    assert spec["spec_version"] == 4
+    assert spec["scientific_implementation"]["identity_version"] == 1
+    assert len(spec["scientific_implementation"]["digest"]) == 64
+    contract = spec["confirmatory_contract"]
+    assert contract["primary_endpoint_version"] == 2
+    assert contract["baseline_version"] == 2
+    assert contract["inference_version"] == 2
+    assert contract["primary_exchange"] == "binance"
+    assert contract["outcome_price_venue"] == "binance"
+    assert contract["funding_semantics"] == "excluded_v1"
+    assert contract["evaluation_settlement_grace_seconds"] == 30
+    assert spec["evaluation_not_before"] > spec["confirmatory_knowledge_cutoff"]
+
+    row = asyncio.run(_manifest_row(dsn, "cli-spec-v4-explicit-test"))
+    assert row is not None
+
+
+@pytest.mark.parametrize(
+    "omit_flag",
+    [
+        "--outcome-price-venue",
+        "--funding-semantics",
+        "--evaluation-settlement-grace-seconds",
+    ],
+)
+def test_spec_v4_missing_new_scientific_flag_fails_closed(
+    dsn: str, tmp_path: Path, omit_flag: str
+) -> None:
+    manifest_name = f"cli-spec-v4-missing-{omit_flag.strip('-').replace('-', '_')}"
+    output = tmp_path / "should-not-be-written-v4.json"
+    with pytest.raises(SystemExit):
+        cli.main(
+            _spec_v4_args(
+                name=manifest_name,
+                output=output,
+                omit_flag=omit_flag,
+            )
+        )
+    assert not output.exists()
+    assert asyncio.run(_manifest_row(dsn, manifest_name)) is None
+
+
+def test_spec_v4_bybit_primary_fails_closed_before_insert(
+    dsn: str, tmp_path: Path
+) -> None:
+    manifest_name = "cli-spec-v4-bybit-rejected"
+    output = tmp_path / "should-not-be-written-v4-bybit.json"
+    args = _spec_v4_args(name=manifest_name, output=output)
+    primary_exchange_index = args.index("--primary-exchange") + 1
+    args[primary_exchange_index] = "bybit"
+    with pytest.raises(ValueError, match="must be binance"):
+        cli.main(args)
+    assert not output.exists()
+    assert asyncio.run(_manifest_row(dsn, manifest_name)) is None

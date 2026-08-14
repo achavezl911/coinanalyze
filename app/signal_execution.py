@@ -9,12 +9,6 @@ from typing import Any
 
 import asyncpg
 
-from app.scalp_logic import (
-    CLOCK_TOLERANCE_SECONDS,
-    REALTIME_STALE_SECONDS,
-    as_float,
-    walk_book,
-)
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_VERSION
 from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
 
@@ -124,6 +118,23 @@ def validate_execution_cost_options(options: ExecutionCostOptions) -> None:
             )
 
 
+# PR27_SCIENTIFIC_EXECUTION_SNAPSHOT_V1_BEGIN
+
+# Snapshot-v1 producer inputs are frozen locally.  A future public execution
+# configuration change must not silently alter evidence generated under
+# snapshot_version=1.
+_EXECUTION_SNAPSHOT_EXCHANGES_V1 = ("binance", "bybit")
+_EXECUTION_SNAPSHOT_VERSION_V1 = 1
+_EXECUTION_SNAPSHOT_SIZES_USD_V1 = (
+    1_000.0,
+    10_000.0,
+    50_000.0,
+    100_000.0,
+)
+_EXECUTION_SNAPSHOT_CLOCK_TOLERANCE_SECONDS_V1 = 0.5
+_EXECUTION_SNAPSHOT_REALTIME_STALE_SECONDS_V1 = 30.0
+
+
 def _aware_utc(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("timestamp must be timezone-aware")
@@ -145,6 +156,63 @@ def _canonical_json(value: object) -> str:
         allow_nan=False,
         default=_json_default,
     )
+
+
+def _snapshot_finite_float_v1(value: object) -> float | None:
+    try:
+        if value is None:
+            return None
+        result = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return result if math.isfinite(result) else None
+
+
+def _snapshot_walk_book_v1(
+    levels: list[list[float]], size_usd: float
+) -> dict[str, Any]:
+    if size_usd <= 0:
+        raise ValueError("size_usd must be positive")
+    valid = [
+        (price, quantity)
+        for price, quantity in levels
+        if _snapshot_finite_float_v1(price) is not None
+        and _snapshot_finite_float_v1(quantity) is not None
+        and price > 0
+        and quantity > 0
+    ]
+    best = valid[0][0] if valid else None
+    remaining = size_usd
+    base_quantity = 0.0
+    used = 0
+    for price, quantity in valid:
+        available = price * quantity
+        take = min(remaining, available)
+        base_quantity += take / price
+        used += 1
+        remaining -= take
+        if remaining <= 1e-6:
+            remaining = 0.0
+            break
+    filled = size_usd - remaining
+    average_price = filled / base_quantity if base_quantity > 0 else None
+    slippage_bps = (
+        (average_price - best) / best * 10_000
+        if average_price is not None and best
+        else None
+    )
+    return {
+        "size_usd": size_usd,
+        "best_price": best,
+        "avg_price": average_price,
+        "levels_used": used,
+        "levels_available": len(valid),
+        "levels_discarded": len(levels) - len(valid),
+        "filled_usd": round(filled, 2),
+        "shortfall_usd": round(remaining, 2),
+        "insufficient_depth": remaining > 0,
+        "slippage_bps": abs(slippage_bps) if slippage_bps is not None else None,
+    }
 
 
 def _hash_book_payload(
@@ -177,8 +245,8 @@ def _decode_depth_levels(raw: object) -> tuple[list[list[float]], int]:
         if not isinstance(item, (list, tuple)) or len(item) < 2:
             discarded += 1
             continue
-        price = as_float(item[0])
-        qty = as_float(item[1])
+        price = _snapshot_finite_float_v1(item[0])
+        qty = _snapshot_finite_float_v1(item[1])
         if price is None or qty is None or price <= 0 or qty <= 0:
             discarded += 1
             continue
@@ -236,7 +304,7 @@ def _compact_walk(
         "market_cost_bps_vs_mid": _market_cost_bps(
             side=side,
             mid_price=mid_price,
-            avg_price=as_float(walk["avg_price"]),
+            avg_price=_snapshot_finite_float_v1(walk["avg_price"]),
             insufficient_depth=insufficient,
         ),
     }
@@ -249,9 +317,9 @@ def _cost_curve(
     mid_price: float,
 ) -> dict[str, Any]:
     curve: dict[str, Any] = {}
-    for size in EXECUTION_SIZES_USD:
-        buy = walk_book(asks, size)
-        sell = walk_book(bids, size)
+    for size in _EXECUTION_SNAPSHOT_SIZES_USD_V1:
+        buy = _snapshot_walk_book_v1(asks, size)
+        sell = _snapshot_walk_book_v1(bids, size)
         key = str(int(size))
         curve[key] = {
             "buy": _compact_walk(buy, side="buy", mid_price=mid_price),
@@ -268,7 +336,7 @@ def execution_snapshot_record(
 ) -> dict[str, Any]:
     """Freeze one venue's decision-time taker-cost evidence."""
 
-    if exchange not in EXECUTION_EXCHANGES:
+    if exchange not in _EXECUTION_SNAPSHOT_EXCHANGES_V1:
         raise ValueError(f"unsupported execution exchange: {exchange}")
 
     observed_at = _aware_utc(observed_at)
@@ -346,13 +414,13 @@ def execution_snapshot_record(
         "source_book_hash": source_hash,
     }
 
-    if age < -CLOCK_TOLERANCE_SECONDS:
+    if age < -_EXECUTION_SNAPSHOT_CLOCK_TOLERANCE_SECONDS_V1:
         return {
             **enriched,
             "status": "error",
             "reason": "future_book_timestamp",
         }
-    if age > REALTIME_STALE_SECONDS:
+    if age > _EXECUTION_SNAPSHOT_REALTIME_STALE_SECONDS_V1:
         return {
             **enriched,
             "status": "stale",
@@ -421,7 +489,7 @@ async def load_signal_execution_inputs(
         ORDER BY exchange
         """,
         symbol,
-        list(EXECUTION_EXCHANGES),
+        list(_EXECUTION_SNAPSHOT_EXCHANGES_V1),
     )
     return {str(row["exchange"]): dict(row) for row in rows}
 
@@ -441,7 +509,7 @@ async def persist_signal_execution_snapshots(
     )
 
     inserted = 0
-    for exchange in EXECUTION_EXCHANGES:
+    for exchange in _EXECUTION_SNAPSHOT_EXCHANGES_V1:
         snapshot = execution_snapshot_record(
             exchange=exchange,
             observed_at=observed_at,
@@ -467,7 +535,7 @@ async def persist_signal_execution_snapshots(
             ON CONFLICT(observation_id,exchange) DO NOTHING
             """,
             observation_id,
-            EXECUTION_SNAPSHOT_VERSION,
+            _EXECUTION_SNAPSHOT_VERSION_V1,
             exchange,
             snapshot["captured_at"],
             snapshot["book_ts"],
@@ -489,6 +557,9 @@ async def persist_signal_execution_snapshots(
         if result.endswith("1"):
             inserted += 1
     return inserted
+
+
+# PR27_SCIENTIFIC_EXECUTION_SNAPSHOT_V1_END
 
 
 def _sampling_predicate(mode: str) -> str:

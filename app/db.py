@@ -163,6 +163,7 @@ async def acquire_service_lock(
     return ServiceOwnership(conn, service, shard_index, shard_count, int(generation))
 
 
+# PR27_SCIENTIFIC_VISIBILITY_TRANSACTION_V1_BEGIN
 async def assert_service_ownership(
     conn: asyncpg.Connection,
     ownership: ServiceOwnership,
@@ -203,6 +204,7 @@ async def fenced_transaction(
         if ownership is not None:
             await assert_service_ownership(conn, ownership)
         yield
+# PR27_SCIENTIFIC_VISIBILITY_TRANSACTION_V1_END
 
 
 async def monitor_service_lock(

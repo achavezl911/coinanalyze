@@ -12,8 +12,11 @@ from app.signal_replay import (
     ReplayUnsupportedLogicVersion,
     canonical_json_hash,
     canonical_json_object,
+    classify_signal_observation,
     replay_context_as_of,
     replay_summary_for_logic,
+    validate_replay_observation_record,
+    validated_signal_observation_fields,
 )
 
 
@@ -93,3 +96,58 @@ def test_current_logic_replay_is_exact_pure_function() -> None:
 def test_unknown_logic_version_fails_closed() -> None:
     with pytest.raises(ReplayUnsupportedLogicVersion):
         replay_summary_for_logic("scalp-summary-v999", _ctx())
+
+
+def _replay_record(**overrides: object) -> dict[str, object]:
+    context = _ctx()
+    summary = compute_scalp_summary(context)
+    decision_status, direction, actionable = classify_signal_observation(summary)
+    state, confidence, reason, long_score, short_score, coverage = (
+        validated_signal_observation_fields(summary)
+    )
+    record: dict[str, object] = {
+        "observation_id": 7,
+        "logic_version": SCALP_SIGNAL_LOGIC_VERSION,
+        "decision_status": decision_status,
+        "direction": direction,
+        "actionable": actionable,
+        "state": state,
+        "confidence": confidence,
+        "reason": reason,
+        "long_score": long_score,
+        "short_score": short_score,
+        "evidence_coverage_pct": coverage,
+        "evidence": canonical_json_object(summary),
+        "frame_id": 9,
+        "context_version": REPLAY_CONTEXT_VERSION,
+        "context_hash": canonical_json_hash(context),
+        "context": canonical_json_object(context),
+    }
+    record.update(overrides)
+    return record
+
+
+def test_pure_replay_record_validates_evidence_and_population_fields() -> None:
+    result = validate_replay_observation_record(_replay_record())
+    assert result.evidence_match is True
+    assert result.observation_fields_match is True
+    assert result.mismatched_observation_fields == ()
+
+
+def test_pure_replay_record_detects_direction_population_mismatch() -> None:
+    result = validate_replay_observation_record(
+        _replay_record(direction="long", actionable=True)
+    )
+    assert result.evidence_match is True
+    assert result.observation_fields_match is False
+    assert result.mismatched_observation_fields == ("direction",)
+
+
+def test_pure_replay_record_detects_stored_evidence_mismatch() -> None:
+    expected = json.loads(str(_replay_record()["evidence"]))
+    expected["kernel_b_only"] = True
+    result = validate_replay_observation_record(
+        _replay_record(evidence=canonical_json_object(expected))
+    )
+    assert result.evidence_match is False
+    assert result.observation_fields_match is True
