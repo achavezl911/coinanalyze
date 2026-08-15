@@ -52,6 +52,44 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
         begin_marker="PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_BEGIN",
         end_marker="PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_END",
     ),
+    # R05: the routing the raw producers actually apply.  Construction covers
+    # the catalog and the four derived module-level maps; the application and
+    # delivery regions cover subscription creation, external-pair -> internal
+    # key conversion and the only SQL paths into the raw tables.  They are
+    # deliberately compact: reconnection, sharding and feed-health plumbing in
+    # both collectors stays outside so the identity is not hostage to
+    # operational edits, while a bypass of these regions cannot reach the
+    # existing raw write path.
+    ScientificSourceComponent(
+        name="market_routing_construction",
+        relative_path="app/config.py",
+        begin_marker="PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="scalp_routing_application",
+        relative_path="app/scalp_collector.py",
+        begin_marker="PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="scalp_raw_delivery",
+        relative_path="app/scalp_collector.py",
+        begin_marker="PR27_SCIENTIFIC_SCALP_RAW_DELIVERY_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_SCALP_RAW_DELIVERY_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="ws_routing_application",
+        relative_path="app/ws_collector.py",
+        begin_marker="PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="ws_raw_delivery",
+        relative_path="app/ws_collector.py",
+        begin_marker="PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_END",
+    ),
     ScientificSourceComponent(
         name="signal_summary_decision_kernel",
         relative_path="app/scalp_logic.py",
@@ -204,9 +242,15 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
 # Filled only after the exact components above have been implemented and the
 # deterministic digest has been independently reproduced by tests.  Never
 # mutate an existing key: add a new identity version instead.
+#
+# R05 recomputed the v1 digest one final time while expanding the surface to
+# routing construction and application (no spec-v4 manifest or authoritative
+# result exists that could have frozen the previous value).  The substitution
+# window closes before the first spec-v4 manifest: from that point on, any
+# change registers a new identity version and the v1 digest is never replaced.
 REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS = {
     SCIENTIFIC_IDENTITY_VERSION_V1: (
-        "9749e643db19ccc2a6e41a72c8f3ed36621871d3ab29d090b4151d17702ce976"
+        "25f6c2e541f9e0f5d467be1e600810809890d95f7263f2433f0639de85ac53e2"
     ),
 }
 

@@ -19,8 +19,10 @@ from app.signal_execution import EXECUTION_SNAPSHOT_VERSION
 from app.signal_ledger import SIGNAL_EVIDENCE_VERSION, SIGNAL_SAMPLING_VERSION
 from app.signal_outcomes import OUTCOME_VERSION
 from app.signal_replay import REPLAY_CONTEXT_VERSION, SCALP_SIGNAL_LOGIC_VERSION
+from app.signal_runtime_contract import attest_raw_market_producer
 
 SYMBOL = "BTCUSDT_PERP.A"
+PR27_INDEX = attest_raw_market_producer("scalp_collector").futures_index((SYMBOL,))
 
 
 def test_future_trade_is_rejected_at_reception_time(
@@ -63,7 +65,8 @@ async def test_future_binance_book_is_dropped_and_requests_resync(
                     "b": [["100", "2"]],
                     "a": [["101", "2"]],
                 },
-            }
+            },
+            PR27_INDEX,
         )
 
     assert (SYMBOL, "binance") not in books.books
@@ -98,7 +101,8 @@ async def test_future_bybit_book_is_dropped_and_requests_resync(
                     "b": [["100", "2"]],
                     "a": [["101", "2"]],
                 },
-            }
+            },
+            PR27_INDEX,
         )
 
     assert (SYMBOL, "bybit") not in books.books

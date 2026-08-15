@@ -197,14 +197,17 @@ negativo pero exceso positivo nunca puede producir PASS.
 
 El manifest v4 congela `scientific_implementation`, que contiene una versión,
 el canonicalizador, la lista ordenada de componentes, el digest de cada uno y
-el digest agregado SHA-256. La identidad v1 cubre 25 regiones explícitas. La
-superficie comienza en la construcción del contexto y el kernel que genera la
-decisión, continúa por clasificación, persistencia y replay, e incluye la
+el digest agregado SHA-256. La identidad v1 cubre 30 regiones explícitas. La
+superficie comienza en la construcción del catálogo de mercados y del ruteo
+efectivo (R05), sigue con la construcción del contexto y el kernel que genera
+la decisión, continúa por clasificación, persistencia y replay, e incluye la
 producción de certificados de visibilidad, el límite transaccional que
 garantiza su orden, materialización de outcomes y `data_gap`, snapshots de
 ejecución, proyección knowledge-time, denominador UTC, endpoint, baseline,
-bloques, medias, bootstrap, decisión, persistencia autoritativa y todos sus
-límites SQL append-only.
+bloques, medias, bootstrap, decisión, persistencia autoritativa, la creación
+de suscripciones y la conversión par-externo -> clave-interna en ambos
+colectores, las rutas de entrega a las tablas crudas y todos sus límites SQL
+append-only.
 
 La cobertura no se limita al digest final del evaluador. Los productores de
 observaciones evidence-v6, outcomes-v1 evidence-v6 y certificados
@@ -230,20 +233,23 @@ La identidad científica registrada por PR27 es:
 ```text
 identity_version = 1
 canonicalizer    = scientific_source_canonicalization_v1
-digest           = 9749e643db19ccc2a6e41a72c8f3ed36621871d3ab29d090b4151d17702ce976
+digest           = 25f6c2e541f9e0f5d467be1e600810809890d95f7263f2433f0639de85ac53e2
 ```
 
-R04 no añade componentes: la clausura sigue en 25. Lo que cambia es el contenido
-de `scientific_runtime_contract_mechanics`, que ahora incluye la guarda del
-productor crudo, y con él el digest agregado. Ver "Clausura del productor crudo".
+Historial de digests v1 dentro de esta PR sin mergear: R03 registró
+`f696a268…`; R04 no añadió componentes (seguía en 25) pero amplió
+`scientific_runtime_contract_mechanics` con la guarda del productor crudo y
+registró `9749e643db19ccc2a6e41a72c8f3ed36621871d3ab29d090b4151d17702ce976`;
+R05 añade cinco componentes de ruteo (construcción, aplicación y entrega, ver
+"Cierre R05") y registra el valor vigente `25f6c2e5…`.
 
-Expandir o recomputar identity-v1 en este rework no reinterpreta un artefacto
-publicado:
-PR27 sigue sin merge, el repositorio no contiene manifests spec-v4 ni
-resultados spec-v4 congelados, y el digest anterior sólo existía en el head
-revisado de esta misma PR. Una futura modificación posterior a la publicación
-de esta identidad deberá ser aditiva y usar otra versión; nunca podrá cambiar
-el registro de la versión 1.
+Expandir o recomputar identity-v1 en estos reworks no reinterpreta un artefacto
+publicado: PR27 sigue sin merge, el repositorio no contiene manifests spec-v4
+ni resultados spec-v4 autoritativos, y los digests anteriores sólo existieron
+en heads revisados de esta misma PR. **La ventana de sustitución se cierra
+antes del primer manifest spec-v4**: desde ese momento cualquier cambio del
+source cubierto requiere registrar una nueva versión de identidad y el digest
+v1 no volverá a reemplazarse.
 
 ### Integridad de replay OOS
 
@@ -304,8 +310,12 @@ Cada dependencia material se asigna a exactamente una clase:
 | Transacción, lock, persistencia y recomputación autoritativa | A | `authoritative_transaction_and_serialization` más componentes SQL de resultado. |
 | Resultado autoritativo ya persistido | C | Único, append-only, FK restrictiva, payload canónico y SHA-256 recalculado por aplicación y PostgreSQL. |
 | Pooling, logging y transporte de errores fuera de las transacciones científicas | D | No transforman inputs ni ofrecen fallback semántico; un fallo sólo aborta/reintenta antes de crear evidencia. |
-| Derivación, registro y verificación del contrato de runtime | A | Componente `scientific_runtime_contract_mechanics`; registro append-only y comparación fail-closed. |
+| Derivación, registro y verificación del contrato de runtime | A | Componente `scientific_runtime_contract_mechanics`; registro append-only (ahora dentro de la región hasheada) y comparación fail-closed. |
 | Ruteo de mercado resuelto (`symbol`, `base_asset`, `futures_pair`, `spot_pair`) | A | Valores congelados en `scientific_runtime_contract` dentro del manifest v4; attestation en productores y verificación por fila en evaluación. |
+| Construcción del catálogo y de los cuatro mapas efectivos (`WS_SYMBOL_MAP`, `FUTURES_PAIR_MAP`, `SPOT_PAIR_MAP`, `PAIR_SYMBOL_MAP`) | A | Componente `market_routing_construction` (R05); además la atestación exige que los mapas coincidan con la proyección del contrato validado. |
+| Objeto de ruteo efectivo aplicado por los productores | A | `EffectiveMarketRouting` congelado, derivado del contrato validado, devuelto por `attest_raw_market_producer()` y pasado explícitamente; `expected=` re-atestigua el mismo objeto en cada flush. |
+| Creación de suscripciones y conversión par-externo -> clave-interna en los colectores | A | Componentes `scalp_routing_application` y `ws_routing_application` (R05). |
+| Entrega a persistencia cruda (`deliver_*`, SQL de las siete tablas crudas) | A | Componentes `scalp_raw_delivery` y `ws_raw_delivery` (R05); la guarda y `require_routed_internal_keys` viven dentro de la función que ejecuta el INSERT. |
 | Procedencia de contrato ya persistida en `signal_observation` | C | Columnas append-only cubiertas por la identidad SQL; se comparan contra el manifest congelado antes de consumir la fila. |
 | Umbrales whale/large-trade, `bybit_oi_symbol`, `spot_history_symbol` | B | Operativos probados: no alteran ninguna columna que lea el contexto ni el endpoint v2. Ver "Excluido a propósito". |
 | Ruta del fichero de catálogo y ortografía de variables de entorno | D | El contrato proyecta valores resueltos; la ruta no puede cambiar el hash. |
@@ -401,11 +411,15 @@ y sus hashes estáticos dorados quedan intactos por construcción. Al cargar, un
 manifest se revalida contra la resolución viva; nunca se reinterpreta con la
 configuración actual.
 
-**Producción cruda (R04).** Antes de suscribirse o de escribir dato crudo
-result-material, `scalp_collector` y `ws_collector` atestiguan el contrato con
-`attest_raw_market_producer()`. Es el punto que faltaba: sin él la aplicación
-empezaba *después* de que el dato crudo ya existiera. Detalle en
-"Clausura del productor crudo".
+**Producción cruda (R04, cerrada por R05).** Antes de suscribirse o de escribir
+dato crudo result-material, `scalp_collector` y `ws_collector` atestiguan con
+`attest_raw_market_producer()`, que desde R05 valida además los cuatro mapas
+efectivos contra la proyección del contrato y devuelve el objeto congelado
+`EffectiveMarketRouting` que el productor aplica y re-atestigua en cada flush y
+en cada entrega. Es el punto que faltaba: sin él la aplicación empezaba
+*después* de que el dato crudo ya existiera, y con solo R04 el gate miraba el
+catálogo mientras los productores aplicaban los mapas. Detalle en "Clausura del
+productor crudo" y "Cierre R05".
 
 **Producción.** Antes de escribir evidencia, `persist_signal_observations`,
 `materialize_due_signal_outcomes`, `certify_research_bundles` y
@@ -502,18 +516,22 @@ suscripción.
 proceso en vez de registrarse y reintentarse como un fallo transitorio de flush.
 Ningún snapshot se consume si la atestación falla.
 
-¿Basta con el arranque? Probado desde el código: `MARKET_SYMBOL_CATALOG` se liga
-una vez en `app/config.py:120`, los mapas de ruteo se derivan en `:122-127`
-también al importar, y `get_settings()` es `@lru_cache(maxsize=1)`. No hay
-`cache_clear` ni `importlib.reload` en el repositorio. El contrato resuelto es
-**constante durante la vida del proceso**, así que el ruteo no puede cambiar
-dentro de un proceso vivo y la atestación de arranque es suficiente para él.
+¿Basta con el arranque? El argumento original de R04 ("el contrato resuelto es
+constante durante la vida del proceso") era cierto para el catálogo pero **no
+para el ruteo efectivo**: los cuatro mapas derivados son dicts mutables a nivel
+de módulo, y la atestación de R04 ni siquiera los miraba (hallazgo A-01, ver
+"Cierre R05"). R05 cambia ambas mitades:
 
-Se conserva igualmente la del límite de escritura: es el último punto antes de
-que el dato pase a ser estado crudo científico, cuesta un sha256 sobre un payload
-diminuto por flush, y no depende de que la ligadura siga siendo de importación en
-el futuro. Los atributos de módulo son escribibles; la garantía no debe descansar
-en que nadie los reasigne nunca.
+- La atestación valida también los mapas efectivos contra la proyección del
+  contrato validado, y devuelve el objeto congelado `EffectiveMarketRouting`
+  que el productor aplica. Una mutación posterior de los mapas no puede cambiar
+  ese objeto; sólo puede hacer que la siguiente atestación falle.
+- La del límite de escritura se conserva y se refuerza: cada bucle de flush
+  re-atestigua con `expected=routing` fuera del `try` (para escapar del
+  proceso), y además la propia función de entrega que ejecuta el INSERT vuelve
+  a atestiguar y valida con `require_routed_internal_keys` que cada clave
+  interna escrita pertenece al ruteo atestiguado. La guarda vive dentro del
+  camino de escritura, no solo alrededor.
 
 ### Consecuencia operativa
 
@@ -526,19 +544,30 @@ visible para `data_gap` y la contaminación no lo es para nadie.
 
 ### Superficie científica y clausura
 
-`attest_raw_market_producer()` y el registro
-`_RESULT_MATERIAL_RAW_PRODUCERS_V1` viven **dentro** de la región
-`PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1`, así que la política —qué productores y qué
-tablas son result-material— queda congelada por identity-v1: encoger el conjunto
-guardado cambia el digest.
+`attest_raw_market_producer()`, `require_routed_internal_keys()`,
+`EffectiveMarketRouting` y el registro `_RESULT_MATERIAL_RAW_PRODUCERS_V1` viven
+**dentro** de la región `PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1`, así que la
+política —qué productores y qué tablas son result-material, y qué objeto de
+ruteo se valida— queda congelada por identity-v1: encoger el conjunto guardado
+o debilitar la guarda cambia el digest. Desde R05 el registro
+`REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS` también está dentro de la
+región: repuntar el digest de contrato aceptado ya no es invisible para la
+identidad.
 
-La clausura sigue teniendo **25 componentes**: no se añaden `scalp_collector.py`
-ni `ws_collector.py`. Es una decisión argumentada, no un olvido. Son procesos
-operativos de alta rotación (reconexión, sharding, health de feeds); congelar sus
-cuerpos haría que la identidad científica quedara rehén de ediciones sin
-contenido científico, y la presión para "actualizar el digest" en cada cambio
-operativo terminaría erosionando el propio mecanismo. Lo que protege los puntos
-de llamada es la regresión de R04, que falla en 12 tests si se eliminan.
+R04 decidió **no** añadir `scalp_collector.py` ni `ws_collector.py` para no
+hacer a la identidad rehén de ediciones operativas (reconexión, sharding,
+health de feeds). El hallazgo A-02 mostró el precio: un cambio semántico en la
+construcción o aplicación del ruteo no movía el digest. R05 resuelve la tensión
+sin hashear los ficheros enteros: la clausura pasa a **30 componentes** con
+regiones compactas y estables — `market_routing_construction` en `config.py`,
+`scalp_routing_application` / `ws_routing_application` (builders de suscripción
+y handlers de conversión) y `scalp_raw_delivery` / `ws_raw_delivery` (las
+únicas funciones con SQL hacia las tablas crudas, con la guarda dentro). La
+plomería de reconexión y backoff queda fuera a propósito y hay tests que fijan
+esa estabilidad. Un cambio material en esos caminos mueve el digest; un bypass
+que evite las regiones no puede alcanzar la ruta de escritura existente sin
+editarlas, y un escritor nuevo desde cero seguiría bloqueado por la atestación
+en el límite de entrega.
 
 ### Regresión
 
@@ -559,6 +588,99 @@ observación cuya procedencia es A y cuyo replay pasa.
 un colector sin guarda habría escrito bajo B y demuestra que `scalp_context(A)`
 lo consume. Sigue pasando aunque se elimine la guarda, que es justamente su
 función: prueba que el resto de la suite es portante.
+
+## Cierre R05: integridad del ruteo efectivo
+
+### Hallazgos
+
+**A-01 — la atestación validaba el objeto equivocado.** La guarda de R04
+recomputa el contrato desde `MARKET_SYMBOL_CATALOG`, pero los productores
+aplican `WS_SYMBOL_MAP`, `FUTURES_PAIR_MAP`, `SPOT_PAIR_MAP` y
+`PAIR_SYMBOL_MAP`, cuatro dicts mutables derivados del catálogo al importar.
+Con cualquiera de los cuatro divergido, el contrato del catálogo seguía
+coincidiendo con su digest registrado, `attest_raw_market_producer()` pasaba
+para ambos productores y `scientific_runtime_contract()` pasaba en la frontera
+de evidencia — mientras los colectores se suscribían, convertían y escribían
+bajo el ruteo divergente. `A -> B -> A` seguía alcanzable en el límite crudo.
+La prueba roja sobre `ee3792ca` (12 casos `DID NOT RAISE`) está en
+`tests/test_pr27_r05_routing_closure.py`.
+
+**A-02 — construcción y aplicación del ruteo fuera de la identidad.**
+`config.py` (catálogo + mapas), y en ambos colectores la creación de
+suscripciones, la conversión par-externo -> clave-interna y la entrega cruda,
+no pertenecían a ninguna región de identidad: un cambio semántico allí no movía
+el digest.
+
+Los dos hallazgos son el mismo problema — el ruteo *efectivo* no era un objeto
+científico — y se cierran juntos.
+
+### Arquitectura del cierre
+
+`EffectiveMarketRouting` (frozen dataclass, en la región
+`PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1`) es la única representación tipada e
+inmutable del ruteo efectivo:
+
+- se deriva **exclusivamente** del contrato de runtime ya validado
+  (`effective_market_routing_from_contract`);
+- contiene los pares externos y claves internas realmente usados, con
+  proyecciones `futures_index()` / `spot_index()` por alcance asignado;
+- se construye **una sola vez** al arrancar cada productor: es el valor de
+  retorno de `attest_raw_market_producer()`, exactamente el objeto validado;
+- se pasa **explícitamente** a suscripciones, handlers, flushes y entregas
+  (`routing=` keyword-only obligatorio, sin default): no existe fallback que
+  lo reconstruya desde variables globales;
+- una mutación posterior de los mapas no puede alterarlo (frozen +
+  `MappingProxyType`); la siguiente atestación con `expected=routing` la
+  detecta y mata el proceso.
+
+Los cuatro mapas de `config.py` se conservan por compatibilidad operacional
+(los leen `scalp_logic`, `metrics`, `ingest`, `daily_agg`), pero **ya no son
+autoritativos** y ningún camino científico de los colectores los lee
+(`co_names` fijado por test). La atestación — compartida por productores y
+frontera de evidencia — exige que coincidan con la proyección inmutable:
+entrada registrada ausente o distinta en cualquiera de los cuatro, o un alias
+de `PAIR_SYMBOL_MAP` que apunte un par extranjero a un símbolo configurado,
+bloquean ambos productores antes de suscribirse o escribir. Entradas extra para
+símbolos fuera del alcance configurado (catálogo extendido con `SYMBOLS`
+estrechado) son inertes por construcción y no bloquean; hay tests que fijan
+ambas direcciones.
+
+### Regresión R05
+
+`tests/test_pr27_r05_routing_closure.py` fija: divergencia de cada mapa (in
+situ, reasignación y borrado) bloqueando ambos productores y la frontera de
+evidencia; el alias extranjero; los extras inertes; la congelación e
+insensibilidad a mutación posterior del objeto atestiguado; la re-atestación
+con `expected`; suscripciones y conversión derivadas del routing y no de los
+mapas (con el mapa envenenado tras atestiguar); firmas keyword-only sin
+fallback; el gate dentro de las funciones de entrega; y que una modificación
+semántica en construcción, suscripción, conversión o entrega mueve el digest de
+identidad mientras el backoff operativo no lo mueve.
+`tests/test_pr27_r05_routing_closure_postgres.py` ejecuta los flush reales
+contra PostgreSQL 17 bajo divergencia de mapa (cero filas nuevas) y el rechazo
+de claves internas fuera del ruteo atestiguado.
+
+### Nomenclatura de la serie de reworks
+
+| Rework | Commit |
+|---|---|
+| Implementación inicial | `5a99ab5371eca057afc7374ed8cbf544e558113e` |
+| R01 | `e58f1fab2b8ebfd158608805fafc87fc559211c7` |
+| R02 | **no existe commit identificable**; se declara explícitamente y no se inventa |
+| R03 | `0496819a15699bae3b80fc92e803a50adf40df54` |
+| R04 | `ee3792ca9f26b1cc20f354e9eaf35332b8ce266e` |
+| R05 | el commit que introduce esta sección |
+
+### Admisibilidad de observaciones anteriores
+
+Las observaciones producidas antes de la procedencia de contrato (columnas
+`runtime_contract_*` en NULL) **no son admisibles como evidencia confirmatoria
+spec-v4**: no puede demostrarse bajo qué ruteo efectivo se produjeron sus
+insumos crudos. No se realizará ningún backfill inventado de procedencia.
+Pueden conservarse únicamente como información histórica o diagnóstica,
+claramente identificada como tal por sus columnas de procedencia en NULL y por
+quedar fuera de cualquier población OOS spec-v4, cuyo muestreo exige
+procedencia presente e igual a la del manifest congelado.
 
 ## Settlement del certificado
 

@@ -36,6 +36,7 @@ from app.signal_runtime_contract import (
     RawMarketProducerContractError,
     attest_raw_market_producer,
     compute_scientific_runtime_contract,
+    effective_market_routing_from_contract,
     scientific_runtime_contract,
 )
 from app.signal_scientific_identity import SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS
@@ -97,7 +98,11 @@ def _catalog_file(tmp_path, field: str) -> str:
 
 @pytest.mark.parametrize("producer", PRODUCERS)
 def test_registered_routing_lets_a_raw_producer_run(producer: str) -> None:
-    assert attest_raw_market_producer(producer) == scientific_runtime_contract()
+    # R05: the attestation returns the frozen routing derived from the
+    # validated contract -- exactly the object the producer must apply.
+    assert attest_raw_market_producer(producer) == (
+        effective_market_routing_from_contract(scientific_runtime_contract())
+    )
 
 
 @pytest.mark.parametrize("producer", PRODUCERS)
@@ -218,12 +223,14 @@ SLEEPING_FLUSHES = (
 async def test_flush_loop_writes_nothing_under_an_unregistered_routing(
     module, name: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # The routing was attested while A was active; then the catalog resolves B.
+    routing = attest_raw_market_producer(module.RAW_PRODUCER)
     _bounded_sleep(module, monkeypatch)
     _activate_routing_b(monkeypatch)
     pool = _RecordingPool()
 
     with pytest.raises(RawMarketProducerContractError):
-        await getattr(module, name)(pool)
+        await getattr(module, name)(pool, routing=routing)
 
     assert pool.acquired == 0
 
@@ -239,17 +246,19 @@ async def test_flush_loop_survives_the_guard_under_the_registered_routing(
 ) -> None:
     # Control: the guard is not a blanket stop.  Under routing A the loop runs
     # past the attestation and only the bounded sleep ends it.
+    routing = attest_raw_market_producer(module.RAW_PRODUCER)
     _bounded_sleep(module, monkeypatch)
     pool = _RecordingPool()
 
     with pytest.raises(asyncio.CancelledError):
-        await getattr(module, name)(pool)
+        await getattr(module, name)(pool, routing=routing)
 
 
 @pytest.mark.asyncio
 async def test_liquidation_flush_writes_nothing_under_an_unregistered_routing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    routing = attest_raw_market_producer(scalp.RAW_PRODUCER)
     queue: asyncio.Queue = asyncio.Queue()
     queue.put_nowait(("ts", "BTCUSDT_PERP.A", "binance", "long", 1.0, 2.0, 3.0, "e1"))
     monkeypatch.setattr(scalp, "LIQ_QUEUE", queue)
@@ -257,7 +266,7 @@ async def test_liquidation_flush_writes_nothing_under_an_unregistered_routing(
     pool = _RecordingPool()
 
     with pytest.raises(RawMarketProducerContractError):
-        await scalp.flush_liquidations(pool)
+        await scalp.flush_liquidations(pool, routing=routing)
 
     assert pool.acquired == 0
 
@@ -266,13 +275,14 @@ async def test_liquidation_flush_writes_nothing_under_an_unregistered_routing(
 async def test_liquidation_flush_survives_the_guard_under_the_registered_routing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    routing = attest_raw_market_producer(scalp.RAW_PRODUCER)
     queue: asyncio.Queue = asyncio.Queue()
     queue.put_nowait(("ts", "BTCUSDT_PERP.A", "binance", "long", 1.0, 2.0, 3.0, "e1"))
     monkeypatch.setattr(scalp, "LIQ_QUEUE", queue)
     pool = _RecordingPool()
 
     with pytest.raises(asyncio.CancelledError):
-        await scalp.flush_liquidations(pool)
+        await scalp.flush_liquidations(pool, routing=routing)
 
     assert pool.acquired == 1
 
@@ -330,7 +340,6 @@ def test_ws_collector_start_is_blocked_by_a_real_routing_b_catalog(tmp_path) -> 
         from app.signal_runtime_contract import RawMarketProducerContractError
 
         assert SPOT_PAIR_MAP["BTC"] == "ETHUSDT", SPOT_PAIR_MAP
-        assert ws.spot_pairs(("BTCUSDT_PERP.A",)) == ("ETHUSDT",)
         try:
             ws.attest_raw_market_producer(ws.RAW_PRODUCER)
         except RawMarketProducerContractError as exc:

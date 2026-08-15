@@ -36,6 +36,7 @@ from app.signal_replay import replay_signal_observation
 from app.signal_runtime_contract import (
     SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
     RawMarketProducerContractError,
+    attest_raw_market_producer,
     scientific_runtime_contract,
 )
 from app.ws_collector import BucketStore, RtBucket
@@ -109,10 +110,10 @@ def _bounded_sleep(module, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(module.asyncio, "sleep", sleep)
 
 
-async def _run_once(module, name: str, pool: _Pool, monkeypatch) -> None:
+async def _run_once(module, name: str, pool: _Pool, monkeypatch, routing) -> None:
     _bounded_sleep(module, monkeypatch)
     with pytest.raises(asyncio.CancelledError):
-        await getattr(module, name)(pool)
+        await getattr(module, name)(pool, routing=routing)
 
 
 def _activate_routing_b(monkeypatch: pytest.MonkeyPatch, field: str) -> None:
@@ -222,9 +223,11 @@ async def test_futures_producer_writes_under_a_and_fails_closed_under_b(
 ) -> None:
     conn, schema = await _connect("test_pr27_r04_futures")
     try:
+        routing = attest_raw_market_producer("scalp_collector")
+
         # --- A: the raw producer is permitted and its rows are readable.
         monkeypatch.setattr(scalp, "TRADE_STORE", _seed_futures(A_FUT_PX))
-        await _run_once(scalp, "flush_trades", _Pool(conn), monkeypatch)
+        await _run_once(scalp, "flush_trades", _Pool(conn), monkeypatch, routing)
         written_under_a = await _count(conn, "futures_trades_realtime")
         assert written_under_a > 0
 
@@ -234,7 +237,7 @@ async def test_futures_producer_writes_under_a_and_fails_closed_under_b(
         _activate_routing_b(monkeypatch, "futures_pair")
         _bounded_sleep(scalp, monkeypatch)
         with pytest.raises(RawMarketProducerContractError):
-            await scalp.flush_trades(_Pool(conn))
+            await scalp.flush_trades(_Pool(conn), routing=routing)
         assert await _count(conn, "futures_trades_realtime") == written_under_a
 
         # --- restore A: no B row exists for scalp_context to consume.
@@ -254,8 +257,10 @@ async def test_orderbook_producer_fails_closed_under_b(
 ) -> None:
     conn, schema = await _connect("test_pr27_r04_books")
     try:
+        routing = attest_raw_market_producer("scalp_collector")
+
         monkeypatch.setattr(scalp, "BOOK_STORE", _BookStore(_book(A_FUT_PX)))
-        await _run_once(scalp, "flush_books", _Pool(conn), monkeypatch)
+        await _run_once(scalp, "flush_books", _Pool(conn), monkeypatch, routing)
         snapshots = await _count(conn, "orderbook_snapshot")
         depth = await _count(conn, "orderbook_depth")
         assert snapshots > 0 and depth > 0
@@ -264,7 +269,7 @@ async def test_orderbook_producer_fails_closed_under_b(
         _activate_routing_b(monkeypatch, "futures_pair")
         _bounded_sleep(scalp, monkeypatch)
         with pytest.raises(RawMarketProducerContractError):
-            await scalp.flush_books(_Pool(conn))
+            await scalp.flush_books(_Pool(conn), routing=routing)
 
         assert await _count(conn, "orderbook_snapshot") == snapshots
         assert await _count(conn, "orderbook_depth") == depth
@@ -284,13 +289,14 @@ async def test_liquidation_producer_fails_closed_under_b(
 ) -> None:
     conn, schema = await _connect("test_pr27_r04_liquidations")
     try:
+        routing = attest_raw_market_producer("scalp_collector")
         now = await conn.fetchval("SELECT clock_timestamp()")
 
         queue = _DrainOnceQueue()
         queue.put_nowait((now, SYMBOL, "binance", "long", 500.0, A_FUT_PX, 0.1, "a-1"))
         monkeypatch.setattr(scalp, "LIQ_QUEUE", queue)
         with pytest.raises(asyncio.CancelledError):
-            await scalp.flush_liquidations(_Pool(conn))
+            await scalp.flush_liquidations(_Pool(conn), routing=routing)
         assert await _count(conn, "liquidations_realtime") == 1
 
         queue_b = _DrainOnceQueue()
@@ -298,7 +304,7 @@ async def test_liquidation_producer_fails_closed_under_b(
         monkeypatch.setattr(scalp, "LIQ_QUEUE", queue_b)
         _activate_routing_b(monkeypatch, "futures_pair")
         with pytest.raises(RawMarketProducerContractError):
-            await scalp.flush_liquidations(_Pool(conn))
+            await scalp.flush_liquidations(_Pool(conn), routing=routing)
 
         assert await _count(conn, "liquidations_realtime") == 1
         assert await conn.fetchval(
@@ -319,8 +325,10 @@ async def test_spot_producer_writes_under_a_and_fails_closed_under_b(
 ) -> None:
     conn, schema = await _connect("test_pr27_r04_spot")
     try:
+        routing = attest_raw_market_producer("ws_collector")
+
         monkeypatch.setattr(ws, "STORE", _seed_spot(A_SPOT_PX))
-        await _run_once(ws, "flush_realtime", _Pool(conn), monkeypatch)
+        await _run_once(ws, "flush_realtime", _Pool(conn), monkeypatch, routing)
         written_under_a = await _count(conn, "spot_trades_realtime")
         assert written_under_a > 0
 
@@ -328,7 +336,7 @@ async def test_spot_producer_writes_under_a_and_fails_closed_under_b(
         _activate_routing_b(monkeypatch, "spot_pair")
         _bounded_sleep(ws, monkeypatch)
         with pytest.raises(RawMarketProducerContractError):
-            await ws.flush_realtime(_Pool(conn))
+            await ws.flush_realtime(_Pool(conn), routing=routing)
         assert await _count(conn, "spot_trades_realtime") == written_under_a
 
         _restore_routing_a(monkeypatch)
@@ -402,11 +410,14 @@ async def test_observation_after_a_b_a_is_built_only_from_a_routed_raw_inputs(
 ) -> None:
     conn, schema = await _connect("test_pr27_r04_end_to_end")
     try:
+        scalp_routing = attest_raw_market_producer("scalp_collector")
+        ws_routing = attest_raw_market_producer("ws_collector")
+
         # A: both raw producers write.
         monkeypatch.setattr(scalp, "TRADE_STORE", _seed_futures(A_FUT_PX))
-        await _run_once(scalp, "flush_trades", _Pool(conn), monkeypatch)
+        await _run_once(scalp, "flush_trades", _Pool(conn), monkeypatch, scalp_routing)
         monkeypatch.setattr(ws, "STORE", _seed_spot(A_SPOT_PX))
-        await _run_once(ws, "flush_realtime", _Pool(conn), monkeypatch)
+        await _run_once(ws, "flush_realtime", _Pool(conn), monkeypatch, ws_routing)
 
         # B: both raw producers refuse, on both routing families.
         monkeypatch.setattr(scalp, "TRADE_STORE", _seed_futures(B_FUT_PX, age_seconds=15))
@@ -414,11 +425,11 @@ async def test_observation_after_a_b_a_is_built_only_from_a_routed_raw_inputs(
         _activate_routing_b(monkeypatch, "futures_pair")
         _bounded_sleep(scalp, monkeypatch)
         with pytest.raises(RawMarketProducerContractError):
-            await scalp.flush_trades(_Pool(conn))
+            await scalp.flush_trades(_Pool(conn), routing=scalp_routing)
         _activate_routing_b(monkeypatch, "spot_pair")
         _bounded_sleep(ws, monkeypatch)
         with pytest.raises(RawMarketProducerContractError):
-            await ws.flush_realtime(_Pool(conn))
+            await ws.flush_realtime(_Pool(conn), routing=ws_routing)
 
         # restore A.
         _restore_routing_a(monkeypatch)

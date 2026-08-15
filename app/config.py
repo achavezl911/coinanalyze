@@ -12,6 +12,7 @@ from typing import Annotated
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+# PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1_BEGIN
 
 @dataclass(frozen=True, slots=True)
 class MarketSymbol:
@@ -131,6 +132,8 @@ WHALE_THRESHOLD_MAP = {
 LARGE_TRADE_THRESHOLD_MAP = {
     item.symbol: item.large_trade_threshold_usd for item in MARKET_SYMBOL_CATALOG
 }
+
+# PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1_END
 
 
 class Settings(BaseSettings):

@@ -15,6 +15,10 @@ from app.scalp_collector import (
     handle_binance,
     mark_exchange_disconnected,
 )
+from app.signal_runtime_contract import attest_raw_market_producer
+
+PR27_ROUTING = attest_raw_market_producer("scalp_collector")
+PR27_INDEX = PR27_ROUTING.futures_index(("BTCUSDT_PERP.A",))
 
 
 @pytest.mark.asyncio
@@ -73,7 +77,7 @@ async def test_binance_late_orderbook_event_forces_stale(monkeypatch: pytest.Mon
         "data": {"s": "BTCUSDT", "E": 1_000, "b": [["100", "1"]], "a": [["101", "1"]]},
     }
     with pytest.raises(BookResyncRequired):
-        await handle_binance(message)
+        await handle_binance(message, PR27_INDEX)
     assert scalp.BINANCE_BOOK_STALE_TOTAL == 1
 
 
@@ -113,7 +117,7 @@ async def test_bybit_disconnect_drops_book_and_uses_backoff(
     monkeypatch.setattr(scalp.asyncio, "sleep", stop_after_delay)
 
     with pytest.raises(asyncio.CancelledError):
-        await scalp.bybit_loop()
+        await scalp.bybit_loop(routing=PR27_ROUTING)
 
     assert await books.symbol_exchange_lags() == {}
     assert timestamps[("BTCUSDT_PERP.A", "bybit")] == 0.0
@@ -131,7 +135,7 @@ async def test_binance_trade_event_is_recorded(monkeypatch: pytest.MonkeyPatch) 
         "data": {"e": "trade", "s": "BTCUSDT", "p": "100", "q": "2", "T": event_ms, "m": False},
     }
 
-    await handle_binance(message)
+    await handle_binance(message, PR27_INDEX)
 
     assert len(trade_store.minute) == 1
     (symbol, exchange, _), bucket = next(iter(trade_store.minute.items()))

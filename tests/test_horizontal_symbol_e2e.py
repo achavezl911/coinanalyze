@@ -35,6 +35,10 @@ def test_fourth_versioned_asset_flows_through_config_sharding_persistence_and_ap
         from app.config import MARKET_SYMBOL_CATALOG, SUPPORTED_SYMBOLS, Settings
         from app.db import sync_market_catalog
         from app.sharding import assigned_symbols
+        from app.signal_runtime_contract import (
+            compute_scientific_runtime_contract,
+            effective_market_routing_from_contract,
+        )
         from app.ws_collector import binance_url
 
         configured = Settings().SYMBOLS
@@ -44,7 +48,12 @@ def test_fourth_versioned_asset_flows_through_config_sharding_persistence_and_ap
         assert {row["symbol"] for row in asyncio.run(api_symbols())} == set(configured)
         shards = [assigned_symbols(configured, index, 3) for index in range(3)]
         assert set().union(*(set(shard) for shard in shards)) == set(configured)
-        assert "xrpusdt@aggTrade" in binance_url(("XRPUSDT_PERP.A",))
+        # An extended catalog resolves an unregistered contract, so the routing
+        # here is built from the computed projection, never from the gate.
+        routing = effective_market_routing_from_contract(
+            compute_scientific_runtime_contract()
+        )
+        assert "xrpusdt@aggTrade" in binance_url(("XRPUSDT_PERP.A",), routing)
 
         class Conn:
             def __init__(self):

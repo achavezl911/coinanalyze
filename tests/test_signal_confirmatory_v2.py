@@ -566,7 +566,7 @@ def test_sql_canonicalizer_preserves_line_comment_termination_semantics() -> Non
 def test_scientific_identity_is_registered_and_names_every_critical_component() -> None:
     identity = scientific_implementation_identity()
     assert identity["digest"] == (
-        "9749e643db19ccc2a6e41a72c8f3ed36621871d3ab29d090b4151d17702ce976"
+        "25f6c2e541f9e0f5d467be1e600810809890d95f7263f2433f0639de85ac53e2"
     )
     assert identity["digest"] == REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS[
         SCIENTIFIC_IDENTITY_VERSION_V1
@@ -574,6 +574,11 @@ def test_scientific_identity_is_registered_and_names_every_critical_component() 
     assert {component["name"] for component in identity["components"]} == {
         "scientific_identity_mechanics",
         "scientific_runtime_contract_mechanics",
+        "market_routing_construction",
+        "scalp_routing_application",
+        "scalp_raw_delivery",
+        "ws_routing_application",
+        "ws_raw_delivery",
         "signal_summary_decision_kernel",
         "signal_summary_oi_helpers",
         "signal_context_session_boundary",

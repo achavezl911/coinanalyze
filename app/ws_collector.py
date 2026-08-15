@@ -13,7 +13,7 @@ import asyncpg
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosed
 
-from app.config import SPOT_PAIR_MAP, WHALE_THRESHOLD_MAP, WS_SYMBOL_MAP, get_settings
+from app.config import WHALE_THRESHOLD_MAP, get_settings
 from app.db import (
     ServiceOwnership,
     ServiceOwnershipLost,
@@ -28,7 +28,13 @@ from app.db import (
 )
 from app.logging_setup import configure_logging
 from app.sharding import assigned_symbols
-from app.signal_runtime_contract import attest_raw_market_producer
+from app.signal_runtime_contract import (
+    EffectiveMarketRouting,
+    RawMarketProducerContractError,
+    SpotRoutingIndex,
+    attest_raw_market_producer,
+    require_routed_internal_keys,
+)
 
 LOGGER = logging.getLogger(__name__)
 # This service records whichever Binance/Bybit spot market SPOT_PAIR_MAP selects
@@ -187,13 +193,69 @@ STORE = BucketStore()
 LAST_EVENT_MONOTONIC = {"binance": 0.0, "bybit": 0.0}
 
 
-def spot_pairs(symbols: tuple[str, ...]) -> tuple[str, ...]:
-    return tuple(SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]] for symbol in symbols)
+# PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_BEGIN
+
+def spot_pairs(
+    symbols: tuple[str, ...], routing: EffectiveMarketRouting
+) -> tuple[str, ...]:
+    return tuple(routing.spot_pair_by_symbol[symbol] for symbol in symbols)
 
 
-def binance_url(symbols: tuple[str, ...]) -> str:
-    streams = "/".join(f"{pair.lower()}@aggTrade" for pair in spot_pairs(symbols))
+def binance_url(symbols: tuple[str, ...], routing: EffectiveMarketRouting) -> str:
+    streams = "/".join(
+        pair.lower() + "@aggTrade" for pair in spot_pairs(symbols, routing)
+    )
     return BINANCE_STREAM_BASE + streams
+
+
+def bybit_subscription_args(index: SpotRoutingIndex) -> tuple[str, ...]:
+    return tuple("publicTrade." + pair for pair in index.pairs)
+
+
+async def handle_binance_spot(message: object, index: SpotRoutingIndex) -> None:
+    if not isinstance(message, dict):
+        return
+    data = message.get("data", {})
+    if not isinstance(data, dict):
+        return
+    pair = str(data.get("s", ""))
+    symbol = index.base_asset_by_pair.get(pair)
+    if symbol is None:
+        return
+    trade = valid_trade(data.get("p"), data.get("q"), data.get("T"))
+    if trade is None:
+        return
+    price, qty, ts_ms = trade
+    is_buy = not bool(data.get("m"))  # buyer-is-maker => aggressive sell
+    await STORE.add(symbol, "binance", ts_ms, price, qty, is_buy)
+    LAST_EVENT_MONOTONIC["binance"] = time.monotonic()
+
+
+async def handle_bybit_spot(message: object, index: SpotRoutingIndex) -> None:
+    if not isinstance(message, dict):
+        return
+    if not str(message.get("topic", "")).startswith("publicTrade."):
+        return
+    trades = message.get("data", [])
+    if not isinstance(trades, list) or len(trades) > MAX_MESSAGE_TRADES:
+        return
+    default_ts = message.get("ts")
+    for data in trades:
+        if not isinstance(data, dict):
+            continue
+        pair = str(data.get("s", ""))
+        symbol = index.base_asset_by_pair.get(pair)
+        if symbol is None:
+            continue
+        trade = valid_trade(data.get("p"), data.get("v"), data.get("T", default_ts))
+        if trade is None:
+            continue
+        price, qty, ts_ms = trade
+        is_buy = str(data.get("S", "")).lower() == "buy"
+        await STORE.add(symbol, "bybit", ts_ms, price, qty, is_buy)
+        LAST_EVENT_MONOTONIC["bybit"] = time.monotonic()
+
+# PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_END
 
 
 def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[float, float, int] | None:
@@ -213,85 +275,177 @@ def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[flo
     return price, qty, ts_ms
 
 
+# PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_BEGIN
+
+async def deliver_spot_minute(
+    conn: asyncpg.Connection,
+    routing: EffectiveMarketRouting,
+    snapshots: list[tuple[tuple[str, str, int], Bucket]],
+) -> None:
+    """The only path from minute buckets to raw persistence, gated in place."""
+
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    require_routed_internal_keys(
+        routing, RAW_PRODUCER, {key[0] for key, _bucket in snapshots}
+    )
+    records = []
+    touched: set[tuple[str, int]] = set()
+    for (symbol, exchange, ts), bucket in snapshots:
+        touched.add((symbol, ts))
+        records.append(
+            (
+                datetime.fromtimestamp(ts, UTC), symbol, exchange, 1, "1min",
+                bucket.buy_vol_usd, bucket.sell_vol_usd,
+                bucket.inst_buy_usd, bucket.inst_sell_usd,
+                bucket.mid_buy_usd, bucket.mid_sell_usd,
+                bucket.retail_buy_usd, bucket.retail_sell_usd, bucket.trade_count,
+            )
+        )
+    await conn.executemany(
+        """
+        INSERT INTO spot_trades_agg(
+          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
+          inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
+          retail_buy_usd,retail_sell_usd,trade_count
+        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
+          buy_vol_usd=EXCLUDED.buy_vol_usd,
+          sell_vol_usd=EXCLUDED.sell_vol_usd,
+          inst_buy_usd=EXCLUDED.inst_buy_usd,
+          inst_sell_usd=EXCLUDED.inst_sell_usd,
+          mid_buy_usd=EXCLUDED.mid_buy_usd,
+          mid_sell_usd=EXCLUDED.mid_sell_usd,
+          retail_buy_usd=EXCLUDED.retail_buy_usd,
+          retail_sell_usd=EXCLUDED.retail_sell_usd,
+          trade_count=EXCLUDED.trade_count
+        """,
+        records,
+    )
+    await conn.executemany(
+        """
+        INSERT INTO spot_trades_agg(
+          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
+          inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
+          retail_buy_usd,retail_sell_usd,trade_count
+        )
+        SELECT ts,symbol,'combined',2,'1min',
+          SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(inst_buy_usd),SUM(inst_sell_usd),
+          SUM(mid_buy_usd),SUM(mid_sell_usd),SUM(retail_buy_usd),SUM(retail_sell_usd),
+          SUM(trade_count)::integer
+        FROM spot_trades_agg
+        WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
+        GROUP BY ts,symbol
+        HAVING COUNT(DISTINCT exchange)=2
+        ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
+          venue_count=EXCLUDED.venue_count,
+          buy_vol_usd=EXCLUDED.buy_vol_usd,
+          sell_vol_usd=EXCLUDED.sell_vol_usd,
+          inst_buy_usd=EXCLUDED.inst_buy_usd,
+          inst_sell_usd=EXCLUDED.inst_sell_usd,
+          mid_buy_usd=EXCLUDED.mid_buy_usd,
+          mid_sell_usd=EXCLUDED.mid_sell_usd,
+          retail_buy_usd=EXCLUDED.retail_buy_usd,
+          retail_sell_usd=EXCLUDED.retail_sell_usd,
+          trade_count=EXCLUDED.trade_count
+        """,
+        [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
+    )
+
+
+async def deliver_spot_realtime(
+    conn: asyncpg.Connection,
+    routing: EffectiveMarketRouting,
+    snapshots: list[tuple[tuple[str, str, int], RtBucket]],
+) -> None:
+    """The only path from realtime buckets to raw persistence, gated in place."""
+
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    require_routed_internal_keys(
+        routing, RAW_PRODUCER, {key[0] for key, _bucket in snapshots}
+    )
+    records = []
+    touched: set[tuple[str, int]] = set()
+    for (symbol, exchange, ts), bucket in snapshots:
+        touched.add((symbol, ts))
+        records.append(
+            (
+                datetime.fromtimestamp(ts, UTC), symbol, exchange, 1,
+                bucket.buy_vol_usd, bucket.sell_vol_usd,
+                bucket.inst_buy_usd, bucket.inst_sell_usd,
+                bucket.trade_count, bucket.last_px, bucket.last_event_ms,
+            )
+        )
+    await conn.executemany(
+        """
+        INSERT INTO spot_trades_realtime(
+          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
+          inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
+        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
+          buy_vol_usd=EXCLUDED.buy_vol_usd,
+          sell_vol_usd=EXCLUDED.sell_vol_usd,
+          inst_buy_usd=EXCLUDED.inst_buy_usd,
+          inst_sell_usd=EXCLUDED.inst_sell_usd,
+          trade_count=EXCLUDED.trade_count,
+          last_px=EXCLUDED.last_px,
+          last_event_ms=EXCLUDED.last_event_ms
+        """,
+        records,
+    )
+    await conn.executemany(
+        """
+        INSERT INTO spot_trades_realtime(
+          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
+          inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
+        )
+        SELECT ts,symbol,'combined',2,SUM(buy_vol_usd),SUM(sell_vol_usd),
+          SUM(inst_buy_usd),SUM(inst_sell_usd),SUM(trade_count)::integer,
+          (array_agg(last_px ORDER BY last_event_ms DESC, exchange))[1],
+          MAX(last_event_ms)
+        FROM spot_trades_realtime
+        WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
+        GROUP BY ts,symbol
+        HAVING COUNT(DISTINCT exchange)=2
+        ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
+          venue_count=EXCLUDED.venue_count,
+          buy_vol_usd=EXCLUDED.buy_vol_usd,
+          sell_vol_usd=EXCLUDED.sell_vol_usd,
+          inst_buy_usd=EXCLUDED.inst_buy_usd,
+          inst_sell_usd=EXCLUDED.inst_sell_usd,
+          trade_count=EXCLUDED.trade_count,
+          last_px=EXCLUDED.last_px,
+          last_event_ms=EXCLUDED.last_event_ms
+        """,
+        [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
+    )
+
+# PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_END
+
+
 async def flush_minute(
     pool: asyncpg.Pool,
     ownership: ServiceOwnership | None = None,
+    *,
+    routing: EffectiveMarketRouting,
 ) -> None:
     while True:
         await asyncio.sleep(5)
         # Outside the try below on purpose: this must escape the process, not be
         # logged and retried like a transient flush failure.
-        attest_raw_market_producer(RAW_PRODUCER)
+        attest_raw_market_producer(RAW_PRODUCER, expected=routing)
         snapshots = await STORE.minute_snapshot()
         if not snapshots:
             continue
-        records = []
-        touched: set[tuple[str, int]] = set()
-        for (symbol, exchange, ts), bucket in snapshots:
-            touched.add((symbol, ts))
-            records.append(
-                (
-                    datetime.fromtimestamp(ts, UTC), symbol, exchange, 1, "1min",
-                    bucket.buy_vol_usd, bucket.sell_vol_usd,
-                    bucket.inst_buy_usd, bucket.inst_sell_usd,
-                    bucket.mid_buy_usd, bucket.mid_sell_usd,
-                    bucket.retail_buy_usd, bucket.retail_sell_usd, bucket.trade_count,
-                )
-            )
         try:
             async with pool.acquire() as conn:
                 async with fenced_transaction(conn, ownership):
-                    await conn.executemany(
-                        """
-                        INSERT INTO spot_trades_agg(
-                          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
-                          inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
-                          retail_buy_usd,retail_sell_usd,trade_count
-                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-                        ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
-                          buy_vol_usd=EXCLUDED.buy_vol_usd,
-                          sell_vol_usd=EXCLUDED.sell_vol_usd,
-                          inst_buy_usd=EXCLUDED.inst_buy_usd,
-                          inst_sell_usd=EXCLUDED.inst_sell_usd,
-                          mid_buy_usd=EXCLUDED.mid_buy_usd,
-                          mid_sell_usd=EXCLUDED.mid_sell_usd,
-                          retail_buy_usd=EXCLUDED.retail_buy_usd,
-                          retail_sell_usd=EXCLUDED.retail_sell_usd,
-                          trade_count=EXCLUDED.trade_count
-                        """,
-                        records,
-                    )
-                    await conn.executemany(
-                        """
-                        INSERT INTO spot_trades_agg(
-                          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
-                          inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
-                          retail_buy_usd,retail_sell_usd,trade_count
-                        )
-                        SELECT ts,symbol,'combined',2,'1min',
-                          SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(inst_buy_usd),SUM(inst_sell_usd),
-                          SUM(mid_buy_usd),SUM(mid_sell_usd),SUM(retail_buy_usd),SUM(retail_sell_usd),
-                          SUM(trade_count)::integer
-                        FROM spot_trades_agg
-                        WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
-                        GROUP BY ts,symbol
-                        HAVING COUNT(DISTINCT exchange)=2
-                        ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
-                          venue_count=EXCLUDED.venue_count,
-                          buy_vol_usd=EXCLUDED.buy_vol_usd,
-                          sell_vol_usd=EXCLUDED.sell_vol_usd,
-                          inst_buy_usd=EXCLUDED.inst_buy_usd,
-                          inst_sell_usd=EXCLUDED.inst_sell_usd,
-                          mid_buy_usd=EXCLUDED.mid_buy_usd,
-                          mid_sell_usd=EXCLUDED.mid_sell_usd,
-                          retail_buy_usd=EXCLUDED.retail_buy_usd,
-                          retail_sell_usd=EXCLUDED.retail_sell_usd,
-                          trade_count=EXCLUDED.trade_count
-                        """,
-                        [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
-                    )
+                    await deliver_spot_minute(conn, routing, snapshots)
             await STORE.ack_minute(snapshots)
         except ServiceOwnershipLost:
+            raise
+        except RawMarketProducerContractError:
+            # The in-delivery gate found a divergence: escape the process, never
+            # retry it as a transient flush failure.
             raise
         except Exception:
             LOGGER.exception("minute_flush_failed retained_buckets=%d", len(snapshots))
@@ -300,82 +454,33 @@ async def flush_minute(
 async def flush_realtime(
     pool: asyncpg.Pool,
     ownership: ServiceOwnership | None = None,
+    *,
+    routing: EffectiveMarketRouting,
 ) -> None:
     while True:
         await asyncio.sleep(2)
-        attest_raw_market_producer(RAW_PRODUCER)
+        attest_raw_market_producer(RAW_PRODUCER, expected=routing)
         snapshots = await STORE.realtime_snapshot()
         if not snapshots:
             continue
-        records = []
-        touched: set[tuple[str, int]] = set()
-        for (symbol, exchange, ts), bucket in snapshots:
-            touched.add((symbol, ts))
-            records.append(
-                (
-                    datetime.fromtimestamp(ts, UTC), symbol, exchange, 1,
-                    bucket.buy_vol_usd, bucket.sell_vol_usd,
-                    bucket.inst_buy_usd, bucket.inst_sell_usd,
-                    bucket.trade_count, bucket.last_px, bucket.last_event_ms,
-                )
-            )
         try:
             async with pool.acquire() as conn:
                 async with fenced_transaction(conn, ownership):
-                    await conn.executemany(
-                        """
-                        INSERT INTO spot_trades_realtime(
-                          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
-                          inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
-                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-                        ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
-                          buy_vol_usd=EXCLUDED.buy_vol_usd,
-                          sell_vol_usd=EXCLUDED.sell_vol_usd,
-                          inst_buy_usd=EXCLUDED.inst_buy_usd,
-                          inst_sell_usd=EXCLUDED.inst_sell_usd,
-                          trade_count=EXCLUDED.trade_count,
-                          last_px=EXCLUDED.last_px,
-                          last_event_ms=EXCLUDED.last_event_ms
-                        """,
-                        records,
-                    )
-                    await conn.executemany(
-                        """
-                        INSERT INTO spot_trades_realtime(
-                          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
-                          inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
-                        )
-                        SELECT ts,symbol,'combined',2,SUM(buy_vol_usd),SUM(sell_vol_usd),
-                          SUM(inst_buy_usd),SUM(inst_sell_usd),SUM(trade_count)::integer,
-                          (array_agg(last_px ORDER BY last_event_ms DESC, exchange))[1],
-                          MAX(last_event_ms)
-                        FROM spot_trades_realtime
-                        WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
-                        GROUP BY ts,symbol
-                        HAVING COUNT(DISTINCT exchange)=2
-                        ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
-                          venue_count=EXCLUDED.venue_count,
-                          buy_vol_usd=EXCLUDED.buy_vol_usd,
-                          sell_vol_usd=EXCLUDED.sell_vol_usd,
-                          inst_buy_usd=EXCLUDED.inst_buy_usd,
-                          inst_sell_usd=EXCLUDED.inst_sell_usd,
-                          trade_count=EXCLUDED.trade_count,
-                          last_px=EXCLUDED.last_px,
-                          last_event_ms=EXCLUDED.last_event_ms
-                        """,
-                        [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
-                    )
+                    await deliver_spot_realtime(conn, routing, snapshots)
             await STORE.ack_realtime(snapshots)
         except ServiceOwnershipLost:
+            raise
+        except RawMarketProducerContractError:
             raise
         except Exception:
             LOGGER.exception("realtime_flush_failed retained_buckets=%d", len(snapshots))
 
 
-async def binance_consumer(symbols: tuple[str, ...]) -> None:
-    pairs = spot_pairs(symbols)
-    pair_symbol_map = {SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]]: WS_SYMBOL_MAP[symbol] for symbol in symbols}
-    url = binance_url(symbols)
+async def binance_consumer(
+    symbols: tuple[str, ...], routing: EffectiveMarketRouting
+) -> None:
+    index = routing.spot_index(symbols)
+    url = binance_url(symbols, routing)
     backoff = 1.0
     while True:
         try:
@@ -387,23 +492,7 @@ async def binance_consumer(symbols: tuple[str, ...]) -> None:
                 backoff = 1.0
                 while True:
                     raw = await asyncio.wait_for(websocket.recv(), timeout=60)
-                    message = json.loads(raw)
-                    if not isinstance(message, dict):
-                        continue
-                    data = message.get("data", {})
-                    if not isinstance(data, dict):
-                        continue
-                    pair = str(data.get("s", ""))
-                    symbol = pair_symbol_map.get(pair)
-                    if symbol is None or pair not in pairs:
-                        continue
-                    trade = valid_trade(data.get("p"), data.get("q"), data.get("T"))
-                    if trade is None:
-                        continue
-                    price, qty, ts_ms = trade
-                    is_buy = not bool(data.get("m"))  # buyer-is-maker => aggressive sell
-                    await STORE.add(symbol, "binance", ts_ms, price, qty, is_buy)
-                    LAST_EVENT_MONOTONIC["binance"] = time.monotonic()
+                    await handle_binance_spot(json.loads(raw), index)
         except asyncio.CancelledError:
             raise
         except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError):
@@ -414,11 +503,12 @@ async def binance_consumer(symbols: tuple[str, ...]) -> None:
         backoff = min(backoff * 2, 60.0)
 
 
-async def bybit_consumer(symbols: tuple[str, ...]) -> None:
+async def bybit_consumer(
+    symbols: tuple[str, ...], routing: EffectiveMarketRouting
+) -> None:
     backoff = 1.0
-    pairs = spot_pairs(symbols)
-    pair_symbol_map = {SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]]: WS_SYMBOL_MAP[symbol] for symbol in symbols}
-    args = [f"publicTrade.{pair}" for pair in pairs]
+    index = routing.spot_index(symbols)
+    args = list(bybit_subscription_args(index))
     while True:
         try:
             async with connect(
@@ -430,29 +520,7 @@ async def bybit_consumer(symbols: tuple[str, ...]) -> None:
                 backoff = 1.0
                 while True:
                     raw = await asyncio.wait_for(websocket.recv(), timeout=60)
-                    message = json.loads(raw)
-                    if not isinstance(message, dict):
-                        continue
-                    if not str(message.get("topic", "")).startswith("publicTrade."):
-                        continue
-                    trades = message.get("data", [])
-                    if not isinstance(trades, list) or len(trades) > MAX_MESSAGE_TRADES:
-                        continue
-                    default_ts = message.get("ts")
-                    for data in trades:
-                        if not isinstance(data, dict):
-                            continue
-                        pair = str(data.get("s", ""))
-                        symbol = pair_symbol_map.get(pair)
-                        if symbol is None:
-                            continue
-                        trade = valid_trade(data.get("p"), data.get("v"), data.get("T", default_ts))
-                        if trade is None:
-                            continue
-                        price, qty, ts_ms = trade
-                        is_buy = str(data.get("S", "")).lower() == "buy"
-                        await STORE.add(symbol, "bybit", ts_ms, price, qty, is_buy)
-                        LAST_EVENT_MONOTONIC["bybit"] = time.monotonic()
+                    await handle_bybit_spot(json.loads(raw), index)
         except asyncio.CancelledError:
             raise
         except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError):
@@ -527,7 +595,8 @@ async def run() -> None:
     global STORE
     # Before the service lock, the pool or any subscription: a process that
     # resolves an unregistered result-material routing must produce nothing.
-    attest_raw_market_producer(RAW_PRODUCER)
+    # The returned frozen routing is the only routing this process applies.
+    routing = attest_raw_market_producer(RAW_PRODUCER)
     settings = get_settings()
     STORE = BucketStore(
         max_bucket_minutes=settings.TRADESTORE_MAX_BUCKET_MINUTES,
@@ -568,8 +637,12 @@ async def run() -> None:
     )
 
     tasks = [
-        asyncio.create_task(flush_minute(pool, service_lock), name="flush-minute"),
-        asyncio.create_task(flush_realtime(pool, service_lock), name="flush-realtime"),
+        asyncio.create_task(
+            flush_minute(pool, service_lock, routing=routing), name="flush-minute"
+        ),
+        asyncio.create_task(
+            flush_realtime(pool, service_lock, routing=routing), name="flush-realtime"
+        ),
         asyncio.create_task(
             heartbeat_loop(
                 pool,
@@ -584,8 +657,8 @@ async def run() -> None:
     if symbols:
         tasks.extend(
             (
-                asyncio.create_task(binance_consumer(symbols), name="binance"),
-                asyncio.create_task(bybit_consumer(symbols), name="bybit"),
+                asyncio.create_task(binance_consumer(symbols, routing), name="binance"),
+                asyncio.create_task(bybit_consumer(symbols, routing), name="bybit"),
             )
         )
     try:

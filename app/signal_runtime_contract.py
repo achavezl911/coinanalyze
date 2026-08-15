@@ -34,7 +34,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any
 
 from app import config
@@ -46,16 +48,18 @@ SCIENTIFIC_RUNTIME_CONTRACT_CANONICALIZER = (
 )
 
 
+# PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_BEGIN
+
 # Filled only after the resolved projection below has been implemented and the
 # deterministic digest independently reproduced by tests.  Never mutate an
-# existing key: register a new contract version instead.
+# existing key: register a new contract version instead.  The registry lives
+# inside the identity region on purpose: repointing a registered digest is a
+# semantic change to what the gate accepts, so it must move the identity.
 REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS = {
     SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1: (
         "c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00"
     ),
 }
-
-# PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_BEGIN
 
 # The exact result-material projection of one resolved market catalog row.
 #
@@ -139,14 +143,14 @@ def compute_scientific_runtime_contract(
     for symbol in scoped_symbols:
         item = by_symbol[symbol]
         routing: dict[str, str] = {}
-        for field in _SCIENTIFIC_ROUTING_FIELDS_V1:
-            value = getattr(item, field)
+        for routing_field in _SCIENTIFIC_ROUTING_FIELDS_V1:
+            value = getattr(item, routing_field)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(
-                    f"scientific runtime routing field {field!r} for symbol "
+                    f"scientific runtime routing field {routing_field!r} for symbol "
                     f"{symbol!r} must be a non-empty string"
                 )
-            routing[field] = value
+            routing[routing_field] = value
         market_routing.append(routing)
 
     payload = {
@@ -167,6 +171,195 @@ def compute_scientific_runtime_contract(
     }
 
 
+@dataclass(frozen=True, slots=True)
+class MarketRoute:
+    """One resolved result-material routing row of the validated contract."""
+
+    symbol: str
+    base_asset: str
+    futures_pair: str
+    spot_pair: str
+
+
+@dataclass(frozen=True, slots=True)
+class FuturesRoutingIndex:
+    """The futures projection a scalp producer applies for its assigned scope."""
+
+    pairs: tuple[str, ...]
+    symbol_by_pair: Mapping[str, str]
+
+
+@dataclass(frozen=True, slots=True)
+class SpotRoutingIndex:
+    """The spot projection a ws producer applies for its assigned scope."""
+
+    pairs: tuple[str, ...]
+    base_asset_by_pair: Mapping[str, str]
+
+
+@dataclass(frozen=True, slots=True)
+class EffectiveMarketRouting:
+    """The single typed, immutable representation of the effective routing.
+
+    Built from an already-validated contract, once per producer start, and
+    passed explicitly to subscriptions, handlers, flushes and writes.  It never
+    reads the module-level routing dicts, so a later mutation of those dicts
+    cannot change routing that was already validated and is in use.
+    """
+
+    contract_version: int
+    contract_digest: str
+    routes: tuple[MarketRoute, ...]
+    symbols: tuple[str, ...] = field(init=False, repr=False, compare=False)
+    base_assets: tuple[str, ...] = field(init=False, repr=False, compare=False)
+    base_asset_by_symbol: Mapping[str, str] = field(init=False, repr=False, compare=False)
+    futures_pair_by_symbol: Mapping[str, str] = field(init=False, repr=False, compare=False)
+    spot_pair_by_symbol: Mapping[str, str] = field(init=False, repr=False, compare=False)
+    symbol_by_futures_pair: Mapping[str, str] = field(init=False, repr=False, compare=False)
+    base_asset_by_spot_pair: Mapping[str, str] = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        routes = tuple(self.routes)
+        object.__setattr__(self, "routes", routes)
+        if not routes or not all(isinstance(route, MarketRoute) for route in routes):
+            raise ValueError("effective market routing requires MarketRoute rows")
+        for route_field in ("symbol", "base_asset", "futures_pair", "spot_pair"):
+            values = [getattr(route, route_field) for route in routes]
+            if len(values) != len(set(values)):
+                raise ValueError(
+                    f"effective market routing has duplicate {route_field} values"
+                )
+        object.__setattr__(self, "symbols", tuple(route.symbol for route in routes))
+        object.__setattr__(
+            self, "base_assets", tuple(route.base_asset for route in routes)
+        )
+        object.__setattr__(
+            self,
+            "base_asset_by_symbol",
+            MappingProxyType({route.symbol: route.base_asset for route in routes}),
+        )
+        object.__setattr__(
+            self,
+            "futures_pair_by_symbol",
+            MappingProxyType({route.symbol: route.futures_pair for route in routes}),
+        )
+        object.__setattr__(
+            self,
+            "spot_pair_by_symbol",
+            MappingProxyType({route.symbol: route.spot_pair for route in routes}),
+        )
+        object.__setattr__(
+            self,
+            "symbol_by_futures_pair",
+            MappingProxyType({route.futures_pair: route.symbol for route in routes}),
+        )
+        object.__setattr__(
+            self,
+            "base_asset_by_spot_pair",
+            MappingProxyType({route.spot_pair: route.base_asset for route in routes}),
+        )
+
+    def _require_symbols(self, symbols: Sequence[str]) -> tuple[str, ...]:
+        scoped = tuple(symbols)
+        missing = sorted(set(scoped) - set(self.symbols))
+        if missing:
+            raise ValueError(
+                "symbols outside the validated effective routing: "
+                + ", ".join(missing)
+            )
+        return scoped
+
+    def futures_index(self, symbols: Sequence[str]) -> FuturesRoutingIndex:
+        scoped = self._require_symbols(symbols)
+        return FuturesRoutingIndex(
+            pairs=tuple(self.futures_pair_by_symbol[symbol] for symbol in scoped),
+            symbol_by_pair=MappingProxyType(
+                {self.futures_pair_by_symbol[symbol]: symbol for symbol in scoped}
+            ),
+        )
+
+    def spot_index(self, symbols: Sequence[str]) -> SpotRoutingIndex:
+        scoped = self._require_symbols(symbols)
+        return SpotRoutingIndex(
+            pairs=tuple(self.spot_pair_by_symbol[symbol] for symbol in scoped),
+            base_asset_by_pair=MappingProxyType(
+                {
+                    self.spot_pair_by_symbol[symbol]: self.base_asset_by_symbol[symbol]
+                    for symbol in scoped
+                }
+            ),
+        )
+
+
+def effective_market_routing_from_contract(
+    contract: Mapping[str, Any],
+) -> EffectiveMarketRouting:
+    """Project a contract into the frozen routing the producers must apply."""
+
+    routes = tuple(MarketRoute(**route) for route in contract["market_routing"])
+    return EffectiveMarketRouting(
+        contract_version=contract["runtime_contract_version"],
+        contract_digest=contract["digest"],
+        routes=routes,
+    )
+
+
+# The four module-level dicts in ``app.config`` are the projection the legacy
+# consumers still import.  They are kept for operational compatibility only and
+# are never authoritative: the attestation requires them to agree with the
+# validated contract, in both directions that can reach a configured internal
+# key.  Entries for symbols outside the configured scope arise naturally from
+# an extended catalog under a narrowed SYMBOLS and cannot reach a configured
+# key, so they do not block.
+def _assert_effective_maps_match_contract(contract: Mapping[str, Any]) -> None:
+    routes = contract["market_routing"]
+    ws_symbol_map = config.WS_SYMBOL_MAP
+    futures_pair_map = config.FUTURES_PAIR_MAP
+    spot_pair_map = config.SPOT_PAIR_MAP
+    pair_symbol_map = config.PAIR_SYMBOL_MAP
+
+    failures: list[str] = []
+    registered_pair_by_symbol: dict[str, str] = {}
+    for route in routes:
+        symbol = route["symbol"]
+        base_asset = route["base_asset"]
+        futures_pair = route["futures_pair"]
+        spot_pair = route["spot_pair"]
+        registered_pair_by_symbol[symbol] = futures_pair
+        if ws_symbol_map.get(symbol) != base_asset:
+            failures.append(
+                f"WS_SYMBOL_MAP[{symbol!r}] is {ws_symbol_map.get(symbol)!r}, "
+                f"contract says {base_asset!r}"
+            )
+        if futures_pair_map.get(symbol) != futures_pair:
+            failures.append(
+                f"FUTURES_PAIR_MAP[{symbol!r}] is {futures_pair_map.get(symbol)!r}, "
+                f"contract says {futures_pair!r}"
+            )
+        if spot_pair_map.get(base_asset) != spot_pair:
+            failures.append(
+                f"SPOT_PAIR_MAP[{base_asset!r}] is {spot_pair_map.get(base_asset)!r}, "
+                f"contract says {spot_pair!r}"
+            )
+        if pair_symbol_map.get(futures_pair) != symbol:
+            failures.append(
+                f"PAIR_SYMBOL_MAP[{futures_pair!r}] is "
+                f"{pair_symbol_map.get(futures_pair)!r}, contract says {symbol!r}"
+            )
+    for pair, symbol in pair_symbol_map.items():
+        registered_pair = registered_pair_by_symbol.get(symbol)
+        if registered_pair is not None and pair != registered_pair:
+            failures.append(
+                f"PAIR_SYMBOL_MAP[{pair!r}] aliases a foreign pair onto the "
+                f"configured symbol {symbol!r} (registered pair {registered_pair!r})"
+            )
+    if failures:
+        raise RuntimeError(
+            "effective routing maps diverge from the validated runtime contract: "
+            + "; ".join(sorted(failures))
+        )
+
+
 def scientific_runtime_contract(
     contract_version: int = SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
 ) -> dict[str, Any]:
@@ -175,6 +368,10 @@ def scientific_runtime_contract(
     This is the producer-time gate.  While a non-registered routing is active no
     new scientific evidence may be written, so an A -> B -> A history cannot
     leave behind B rows that later pass as valid A evidence.
+
+    A registered catalog is not enough: the producers and ``scalp_context``
+    apply the derived module-level dicts, so the gate additionally requires
+    those effective maps to agree with the validated contract.
     """
 
     contract = compute_scientific_runtime_contract(contract_version=contract_version)
@@ -188,6 +385,7 @@ def scientific_runtime_contract(
             "runtime scientific configuration does not match its registered "
             f"contract: expected {registered}, resolved {contract['digest']}"
         )
+    _assert_effective_maps_match_contract(contract)
     return contract
 
 
@@ -234,30 +432,74 @@ _RESULT_MATERIAL_RAW_PRODUCERS_V1 = {
     ),
 }
 
+# The internal key namespace each producer writes under: ``symbol`` for the
+# futures family, ``base_asset`` for the spot family.  A delivery keyed outside
+# it can only be a bug or tampering, and must fail closed.
+_RAW_PRODUCER_INTERNAL_KEY_FIELDS_V1 = {
+    "scalp_collector": "symbol",
+    "ws_collector": "base_asset",
+}
+
 
 def attest_raw_market_producer(
     producer: str,
     contract_version: int = SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
-) -> dict[str, Any]:
+    *,
+    expected: EffectiveMarketRouting | None = None,
+) -> EffectiveMarketRouting:
     """Gate a raw producer before it may route or write result-material data.
 
     Correctness outranks availability here.  A service whose result-material
     routing is not the registered one must produce nothing at all rather than
     write scientifically misrouted rows that a later, legitimately registered
     configuration would silently consume.
+
+    Returns the frozen effective routing derived from the validated contract:
+    exactly the object the producer must apply.  ``expected`` re-attests a
+    routing already in use; a runtime that no longer resolves to it blocks.
     """
 
     tables = _RESULT_MATERIAL_RAW_PRODUCERS_V1.get(producer)
     if tables is None:
         raise ValueError(f"unknown result-material raw producer: {producer!r}")
     try:
-        return scientific_runtime_contract(contract_version)
+        contract = scientific_runtime_contract(contract_version)
     except RuntimeError as exc:
         raise RawMarketProducerContractError(
             f"raw market producer {producer!r} may not subscribe to or write "
             f"{', '.join(tables)} while the resolved scientific runtime "
-            f"configuration is unregistered: {exc}"
+            f"configuration is unregistered or diverges from the effective "
+            f"routing maps: {exc}"
         ) from exc
+    routing = effective_market_routing_from_contract(contract)
+    if expected is not None and routing != expected:
+        raise RawMarketProducerContractError(
+            f"raw market producer {producer!r} resolved a routing that no "
+            f"longer matches the attested routing in use; refusing "
+            f"{', '.join(tables)}"
+        )
+    return routing
+
+
+def require_routed_internal_keys(
+    routing: EffectiveMarketRouting,
+    producer: str,
+    keys: Iterable[str],
+) -> None:
+    """Refuse a raw delivery keyed outside the attested routing's namespace."""
+
+    key_field = _RAW_PRODUCER_INTERNAL_KEY_FIELDS_V1.get(producer)
+    if key_field is None:
+        raise ValueError(f"unknown result-material raw producer: {producer!r}")
+    routed = {getattr(route, key_field) for route in routing.routes}
+    foreign = sorted(set(keys) - routed)
+    if foreign:
+        tables = _RESULT_MATERIAL_RAW_PRODUCERS_V1[producer]
+        raise RawMarketProducerContractError(
+            f"raw market producer {producer!r} may not write "
+            f"{', '.join(tables)} rows keyed outside its attested routing: "
+            f"{', '.join(foreign)}"
+        )
 
 
 def validate_scientific_runtime_contract(stored: object) -> dict[str, Any]:
