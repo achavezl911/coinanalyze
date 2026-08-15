@@ -116,6 +116,13 @@ jobs:
           . .venv/bin/activate
           python -m tests.identity_mutation.runner --target HEAD
 
+      - name: The registry must be the one the tree computes
+        run: |
+          . .venv/bin/activate
+          # A stale registry would make every row of the matrix reject for the
+          # same uninteresting reason, which reads as a very effective guard.
+          python scripts/register_identity.py --check
+
       - name: Red path -- an absent anchor must fail the run, not pass it
         env:
           IDENTITY_MUTATION_INTERPRETERS: ${{ runner.temp }}/py311/bin/python

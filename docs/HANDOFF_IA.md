@@ -121,6 +121,28 @@ El primero es el commit de código, tests e identidad; el segundo es documentaci
 cita el SHA del primero. Esta corrección **no es R06**: sigue siendo el cierre del mismo R05,
 en su **cuarto** intento.
 
+### 3.1 Serie de identidad científica — bitácora
+
+`CONFIRMED` — una entrada por commit, con el recuento de escapes medido, no declarado. La
+reescritura completa de este documento corresponde al commit 4 de la serie.
+
+| Fecha | Commit | Alcance | Escapes al cierre |
+|---|---|---|---|
+| 2026-08-15 | `de80d856` | Matriz de mutación permanente y evidencia roja sobre `c60e2ee6`. No toca `app/`. | 12 (vocabulario antiguo, 23 mutaciones, 1 `SKIPPED`) |
+| 2026-08-15 | `e874927` | Corrección del instrumento: `MUST_MOVE_AND_REJECT`, M-07 por `file_create`, M-16 sin `skip`, M-24..M-31, canal de ancla externo. No toca `app/`. | 30 de 31 |
+| 2026-08-15 | **este commit** | **Primer commit que toca `app/`.** Superficie descubierta (`app/**/*.py`, `sql/schema.sql`, `pyproject.toml`, `requirements.lock`, `config/**/*.json`), rechazo de symlinks, canonicalización por lista explícita de campos AST, docstrings materiales, entorno con intérprete y `Settings` de cobertura, registro declarativo `identity/registry.json` con perfiles enumerados, punto de entrada combinado `validate_scientific_identity()`. Repara H-1 y H-2. M-32, M-33. | **8 de 33** |
+
+Los ocho que quedan abiertos, con lo que debe cerrarlos: `M-01`, `M-05`, `M-31` (C.2, hash del
+objeto enlazado) y `M-06`, `M-27` (C.1, verificación de `sys.modules`) en el commit 3.2;
+`M-02`, `M-28`, `M-29` (D, ancla del registro) en el commit 3.3. Ninguno es cerrable sin firma
+o sin verificación post-import, y ninguno se ha declarado cerrado por adelantado.
+
+Consecuencia operativa introducida aquí, que el commit 4 documenta en detalle: cualquier
+cambio a `app/**/*.py`, `sql/schema.sql`, `pyproject.toml`, `requirements.lock` o
+`config/**/*.json` — **incluido un docstring** — obliga a regenerar el registro con
+`python scripts/register_identity.py` y a commitear `identity/registry.json`. El CI lo
+verifica con `--check`, así que un registro obsoleto es rojo, no un aviso.
+
 ## 4. Arquitectura científica vigente
 
 `CONFIRMED`

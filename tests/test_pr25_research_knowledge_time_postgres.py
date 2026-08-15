@@ -846,11 +846,9 @@ async def test_visibility_producers_fail_before_certificate_on_identity_mismatch
     )
     import app.signal_scientific_identity as identity
 
-    monkeypatch.setitem(
-        identity.REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS,
-        1,
-        "0" * 64,
-    )
+    registry = dict(identity.load_identity_registry())
+    registry["code_digest"] = "0" * 64
+    monkeypatch.setattr(identity, "load_identity_registry", lambda *a, **k: registry)
     with pytest.raises(RuntimeError, match="does not match"):
         await certify_research_bundles(conn)
     with pytest.raises(RuntimeError, match="does not match"):

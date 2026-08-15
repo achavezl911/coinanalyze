@@ -161,6 +161,28 @@ class DeleteFile:
 
 
 @dataclass(frozen=True, slots=True)
+class DeleteTree:
+    """Remove a whole directory from the target tree."""
+
+    path: str
+
+
+@dataclass(frozen=True, slots=True)
+class ProductionLaunchProtocol:
+    """Measure under the launch protocol the services actually use.
+
+    The harness runs the probe with ``PYTHONSAFEPATH=1`` and an explicit
+    ``PYTHONPATH`` so that resolution order is stated rather than inherited.
+    Production does neither: the systemd units run ``python -m app.<mod>`` with
+    ``WorkingDirectory=/opt/coinalyze``.  If the two disagree about the identity
+    or the verdict, the instrument is auditing a system that is not the one that
+    ships, and that is worse news than anything else in the catalog.
+    """
+
+    reason: str = "the harness launch protocol must not change what is measured"
+
+
+@dataclass(frozen=True, slots=True)
 class SymlinkOutOfTree:
     """Replace a tracked file with a symlink to a byte-identical copy outside.
 
@@ -179,10 +201,21 @@ class ReregisterIdentityDigest:
     This is the forger's move: change the code, then move the goalpost.  It can
     only be carried out after the code edit, so the harness computes the digest
     in a throw-away subprocess between the two steps.
+
+    The forger modelled here is competent, so *where* the registry lives is not
+    part of the mutation.  When the tree carries a registration script, the step
+    runs it and the whole registry -- digest, per-component manifest, authorized
+    profiles -- is regenerated exactly as a maintainer would.  Rewriting one
+    literal and leaving a manifest that contradicts it would test whether the
+    forger is careless, which is not a property of the system under audit.  When
+    the tree has no such script, the step falls back to replacing ``needle`` in
+    ``path``, which is how the registry was expressed before it moved out of the
+    code.
     """
 
     path: str
     needle: str
+    script: str = "scripts/register_identity.py"
 
 
 @dataclass(frozen=True, slots=True)
@@ -454,7 +487,12 @@ CATALOG: tuple[Mutation, ...] = (
         summary="alter the docstring of a material symbol in app/ws_collector.py",
         mechanism="file_edit",
         expected_effect=MUST_MOVE_AND_REJECT,
-        mandated_class=ESCAPE,
+        # The mandate is gone because the escape is: commit 3.1 makes docstrings
+        # material and this row closes.  What replaced it is stronger than a
+        # mandate, not weaker -- the suite names M-03 among the rows that must
+        # be observed GUARD, so the harness cannot pass by failing to measure
+        # it, and the frozen evidence over c60e2ee6 still records the ESCAPE the
+        # independent audit demonstrated.
         steps=(
             AstEdit(
                 path=_WS,
@@ -1027,6 +1065,48 @@ CATALOG: tuple[Mutation, ...] = (
             "the first time anybody sees it.  The probe reports whether "
             "sitecustomize actually ran, so an inert file fails the mutation "
             "instead of being reported as a finding."
+        ),
+    ),
+    Mutation(
+        id="M-32",
+        summary="delete the config/ directory and measure which root the catalog resolves against",
+        mechanism="file_delete",
+        expected_effect=MUST_REJECT_ONLY,
+        steps=(DeleteTree(path="config"),),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "the root the raw inputs are selected from is part of the environment "
+            "half; resolving it against an absolute path elsewhere must stop the "
+            "process, not proceed quietly"
+        ),
+        anchor_rationale=(
+            "Written against the finding that resolve_project_root() fell back to "
+            "/opt/coinalyze whenever <root>/config was absent, at import time and "
+            "without saying so.  A source tree without config/ is a broken "
+            "deployment, and the mutation measures which root it resolves.  On the "
+            "baseline revision the fallback is silent and nothing refuses; the "
+            "measurement there depends on the auditing machine not carrying a "
+            "populated /opt/coinalyze, which is recorded in the report."
+        ),
+    ),
+    Mutation(
+        id="M-33",
+        summary="run the probe under the production launch protocol, with no mutation at all",
+        mechanism="launch_protocol",
+        expected_effect=MUST_NOT_MOVE_AND_ACCEPT,
+        requires_probe_flag="production_launch_protocol",
+        steps=(ProductionLaunchProtocol(),),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "control of the instrument itself: it closes when the combined "
+            "validator exists, exactly like the other negative controls"
+        ),
+        anchor_rationale=(
+            "The one row that audits the auditor.  Every other row is measured "
+            "under PYTHONSAFEPATH=1 with an explicit PYTHONPATH, which is what "
+            "makes M-27 and M-31 able to bite; production runs neither.  If the "
+            "identity or the verdict differed between the two, every other row "
+            "would be a statement about a system nobody deploys."
         ),
     ),
 )

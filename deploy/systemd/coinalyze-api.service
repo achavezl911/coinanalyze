@@ -10,6 +10,7 @@ Group=coinalyze
 WorkingDirectory=/opt/coinalyze
 EnvironmentFile=/etc/coinalyze/coinalyze.env
 Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=COINALYZE_PROJECT_ROOT=/opt/coinalyze
 ExecStart=/opt/coinalyze/.venv/bin/uvicorn app.api:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips=127.0.0.1 --timeout-graceful-shutdown 10
 Restart=on-failure
 RestartSec=5s

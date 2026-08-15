@@ -183,10 +183,18 @@ def render_table(evidence: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+AUDIT_BASELINE_REV = "c60e2ee6"
+
+
 def emit_known_escapes(evidence: dict[str, Any], revision_label: str) -> str:
     escapes, skipped = observed_sets(evidence)
     body = {
-        "baseline_rev": revision_label,
+        # The revision the frozen evidence measures, and the revision every
+        # escape in this series was first demonstrated on.
+        "baseline_rev": AUDIT_BASELINE_REV,
+        # What this file declares is still open, which stopped being the same
+        # thing as the baseline the moment escapes started closing.
+        "declares_rev": revision_label,
         "escapes": {
             mutation_id: {
                 "closes_with": cat.CATALOG_BY_ID[mutation_id].closes_with,
@@ -273,7 +281,14 @@ def main(argv: list[str] | None = None) -> int:
 
     problems = mandated_class_violations(evidence)
 
+    declared = load_known_escapes()
     if args.compare_evidence:
+        # The frozen file *is* the declaration for the revision it froze, and a
+        # byte comparison is strictly stronger than comparing escape sets: it
+        # pins every field of every row.  known_escapes.json describes the
+        # branch, which since the escapes started closing is a different set --
+        # comparing the historical baseline against it would fail for the one
+        # reason that is not a defect.
         expected = Path(args.compare_evidence)
         if not expected.is_file():
             problems.append(f"evidence file {expected} does not exist")
@@ -282,9 +297,8 @@ def main(argv: list[str] | None = None) -> int:
                 f"regenerated evidence differs from {expected} -- the matrix is not "
                 "reproducible or the tree changed"
             )
-
-    declared = load_known_escapes()
-    problems.extend(compare_with_declaration(evidence, declared, selected))
+    else:
+        problems.extend(compare_with_declaration(evidence, declared, selected))
     problems.extend(closes_with_violations(evidence, declared))
 
     if problems:

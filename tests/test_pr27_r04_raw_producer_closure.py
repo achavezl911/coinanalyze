@@ -32,15 +32,17 @@ from app import config
 from app.config import DEFAULT_MARKET_CATALOG, MarketSymbol
 from app.signal_runtime_contract import (
     _RESULT_MATERIAL_RAW_PRODUCERS_V1,
-    REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS,
-    SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
     RawMarketProducerContractError,
     attest_raw_market_producer,
+    authorized_environment_digests,
     compute_scientific_runtime_contract,
     effective_market_routing_from_contract,
     scientific_runtime_contract,
 )
-from app.signal_scientific_identity import SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS
+from app.signal_scientific_identity import (
+    CANONICALIZER_PYTHON_MODULE,
+    discover_scientific_surface,
+)
 
 PRODUCERS = ("scalp_collector", "ws_collector")
 
@@ -112,11 +114,8 @@ def test_unregistered_routing_blocks_every_raw_producer(
     producer: str, field: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _activate_routing_b(monkeypatch, field)
-    assert (
-        compute_scientific_runtime_contract()["digest"]
-        != REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS[
-            SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1
-        ]
+    assert compute_scientific_runtime_contract()["digest"] not in (
+        authorized_environment_digests()
     )
     with pytest.raises(RawMarketProducerContractError) as excinfo:
         attest_raw_market_producer(producer)
@@ -166,11 +165,10 @@ def test_guard_is_frozen_by_the_scientific_identity() -> None:
 
     component = next(
         item
-        for item in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS
-        if item.name == "scientific_runtime_contract_module"
+        for item in discover_scientific_surface()
+        if item.relative_path == "app/signal_runtime_contract.py"
     )
-    assert component.relative_path == "app/signal_runtime_contract.py"
-    assert component.language == "python_module"
+    assert component.canonicalizer == CANONICALIZER_PYTHON_MODULE
     root = Path(__file__).resolve().parents[1]
     covered = (root / component.relative_path).read_text(encoding="utf-8")
     # Deleting or narrowing the guard changes the identity digest.

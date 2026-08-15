@@ -41,11 +41,41 @@ def _row(evidence: dict[str, Any], mutation_id: str) -> dict[str, Any]:
     return next(row for row in evidence["mutations"] if row["id"] == mutation_id)
 
 
+# The escapes commit 3.1 leaves open, written out here on purpose.  Reading them
+# from known_escapes.json would be circular: that file is generated from the
+# same run it is compared against, which was harmless while nothing closed and
+# stops being harmless the moment something does.  Three of C.2, two of C.1 and
+# three of D -- the in-memory escapes and the anchor, which commits 3.2 and 3.3
+# close.
+EXPECTED_OPEN_ESCAPES = frozenset(
+    {"M-01", "M-02", "M-05", "M-06", "M-27", "M-28", "M-29", "M-31"}
+)
+
+# Reasons that mean "this runner could not measure the row", as opposed to
+# "this row is an escape".  A row that failed closed for one of these has not
+# been audited, and comparing it against a declaration would be comparing
+# nothing.
+UNMEASURED_REASONS = frozenset(
+    {
+        harness.REASON_ANCHOR_NOT_SUPPLIED,
+        harness.REASON_ALT_INTERPRETER_UNAVAILABLE,
+    }
+)
+
+
+def _measured_ids(evidence: dict[str, Any]) -> set[str]:
+    return {
+        row["id"]
+        for row in evidence["mutations"]
+        if row["failure_reason"] not in UNMEASURED_REASONS
+    }
+
+
 def test_catalog_holds_every_mutation_exactly_once():
     ids = [mutation.id for mutation in cat.CATALOG]
     assert ids == sorted(ids)
     assert len(ids) == len(set(ids))
-    assert ids == [f"M-{index:02d}" for index in range(1, 32)]
+    assert ids == [f"M-{index:02d}" for index in range(1, 34)]
 
 
 def test_catalog_never_declares_an_unknown_effect():
@@ -162,6 +192,7 @@ def test_every_row_carries_the_full_probe_schema(evidence):
         "anchor_mechanism_absent",
         "sitecustomize_active",
         "pythonpath_shadow_active",
+        "production_launch_protocol",
         "exception",
         "failure_reason",
         "observed_class",
@@ -288,12 +319,101 @@ def test_the_anchor_rows_are_measured_whenever_an_anchor_is_supplied(evidence):
 
 
 def test_observed_escapes_match_the_declaration_in_both_directions(evidence, declared):
+    """Compared among the rows this runner could actually measure.
+
+    An unprovisioned runner fails the anchor and interpreter rows closed, which
+    is honest but is not a measurement, so those rows are excluded here and
+    reported by the provisioning tests instead.  The runner CLI -- the audit
+    gate -- refuses such a run outright; this wrapper is the regression net and
+    has to stay usable on a laptop.
+    """
+
     observed, _ = runner.observed_sets(evidence)
-    assert observed == set(declared["escapes"]), (
+    measured = _measured_ids(evidence)
+    expected = set(declared["escapes"]) & measured
+    assert observed & measured == expected, (
         "known_escapes.json is out of date: "
-        f"undeclared={sorted(observed - set(declared['escapes']))} "
-        f"declared_but_absent={sorted(set(declared['escapes']) - observed)}"
+        f"undeclared={sorted((observed & measured) - expected)} "
+        f"declared_but_absent={sorted(expected - observed)}"
     )
+
+
+def test_the_declared_escape_set_is_exactly_the_expected_one_for_this_commit(evidence):
+    """The anti-circularity check, with the set written by hand.
+
+    If this disagrees with the measurement, the measurement wins and the
+    disagreement is the finding.  Rewriting the constant to match a run would
+    turn the one test that cannot be generated from the run into one that can.
+    """
+
+    observed, _ = runner.observed_sets(evidence)
+    measured = _measured_ids(evidence)
+    assert observed & measured == EXPECTED_OPEN_ESCAPES & measured, (
+        f"unexpected_open={sorted((observed & measured) - EXPECTED_OPEN_ESCAPES)} "
+        f"unexpectedly_closed={sorted((EXPECTED_OPEN_ESCAPES & measured) - observed)}"
+    )
+
+
+def test_the_rows_that_closed_in_this_commit_are_guards(evidence):
+    """Every row outside the expected eight must be a guard, not merely absent."""
+
+    measured = _measured_ids(evidence)
+    for row in evidence["mutations"]:
+        if row["id"] in EXPECTED_OPEN_ESCAPES or row["id"] not in measured:
+            continue
+        assert row["observed_class"] == cat.GUARD, (
+            f"{row['id']}: {row['failure_reason']} -- this commit closes it"
+        )
+
+
+def test_the_negative_controls_recovered_their_meaning(evidence):
+    """The seven MUST_NOT_MOVE_AND_ACCEPT rows must be guards again.
+
+    While the combined entry point did not exist, "the validator accepts" was
+    unprovable and every one of them failed closed.  That is what made the
+    matrix unable to detect a validator that rejects on noise, and it is what
+    this commit is required to give back.
+    """
+
+    controls = [
+        mutation.id
+        for mutation in cat.CATALOG
+        if mutation.expected_effect == cat.MUST_NOT_MOVE_AND_ACCEPT
+    ]
+    # Seven since commit 2, eight since M-33 joined them: the row that audits
+    # the auditor is a negative control like the others.
+    assert len(controls) == 8
+    for mutation_id in controls:
+        row = _row(evidence, mutation_id)
+        assert row["observed_class"] == cat.GUARD, mutation_id
+        assert row["combined_validation_accepted"] is True, mutation_id
+        assert row["combined_validator_absent"] is False, mutation_id
+
+
+def test_deleting_a_material_module_is_still_refused(evidence):
+    """H-4 must not regress: the structural control the matrix found."""
+
+    row = _row(evidence, "M-26")
+    assert row["observed_class"] == cat.GUARD
+    assert row["rejection_kind"] is not None
+
+
+def test_the_harness_launch_protocol_does_not_change_what_is_measured(evidence):
+    """M-33.  If this fails, every other row describes a system nobody ships."""
+
+    row = _row(evidence, "M-33")
+    assert row["production_launch_protocol"] is True, (
+        "M-33 did not actually run under the production launch protocol"
+    )
+    assert row["observed_class"] == cat.GUARD, (
+        "the identity or the verdict differs between the harness launch protocol "
+        "and the one the systemd units use; the instrument is auditing a system "
+        "that is not the one that ships"
+    )
+    baseline = evidence["baseline"]
+    assert row["code_digest"] == baseline["code_digest"]
+    assert row["environment_digest"] == baseline["environment_digest"]
+    assert row["combined_validation_accepted"] is True
 
 
 def test_every_observed_escape_names_what_closes_it(evidence, declared):
@@ -304,8 +424,16 @@ def test_the_declaration_records_no_skip(declared):
     assert declared["skipped"] == []
 
 
-def test_frozen_evidence_is_wellformed_and_agrees_with_the_declaration():
-    """Read-only cross-check of the committed artefacts, no subprocess needed."""
+def test_frozen_evidence_is_wellformed_and_contains_the_declaration():
+    """Read-only cross-check of the committed artefacts, no subprocess needed.
+
+    The two files stopped describing the same revision the moment escapes began
+    to close: the frozen evidence is the measurement over ``c60e2ee6``, and the
+    declaration is what is still open on the branch.  The relation between them
+    is containment, and it is the direction that matters -- an escape open on
+    the branch that was never open at the baseline would be a defect this
+    series introduced.
+    """
 
     body = json.loads(
         (runner.EVIDENCE_DIR / "c60e2ee6.json").read_text(encoding="utf-8")
@@ -314,10 +442,13 @@ def test_frozen_evidence_is_wellformed_and_agrees_with_the_declaration():
     assert [row["id"] for row in body["mutations"]] == [m.id for m in cat.CATALOG]
     frozen_escapes, frozen_skipped = runner.observed_sets(body)
     declaration = runner.load_known_escapes()
-    assert frozen_escapes == set(declaration["escapes"])
+    assert set(declaration["escapes"]) <= frozen_escapes, sorted(
+        set(declaration["escapes"]) - frozen_escapes
+    )
     assert frozen_skipped == set()
     assert declaration["skipped"] == []
-    assert declaration["baseline_rev"] == "c60e2ee6"
+    assert declaration["baseline_rev"] == runner.AUDIT_BASELINE_REV
+    assert set(declaration["escapes"]) == EXPECTED_OPEN_ESCAPES
 
 
 def test_frozen_declaration_ties_every_escape_to_what_closes_it():

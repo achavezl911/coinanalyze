@@ -94,12 +94,56 @@ def load_market_catalog(path: str | os.PathLike[str] | None = None) -> tuple[Mar
     return items
 
 
+PROJECT_ROOT_ENV = "COINALYZE_PROJECT_ROOT"
+DEPLOYMENT_ROOT = "/opt/coinalyze"
+
+
 def resolve_project_root(
     module_file: str | os.PathLike[str] = __file__,
-    deployment_root: str | os.PathLike[str] = "/opt/coinalyze",
+    deployment_root: str | os.PathLike[str] | None = None,
 ) -> Path:
+    """Locate the tree that carries config/, sql/ and the identity registry.
+
+    Two shapes are legitimate and are told apart *positively*, by looking for
+    ``pyproject.toml`` next to the package:
+
+    * A source tree -- what the services run, because the units set
+      ``WorkingDirectory=/opt/coinalyze`` and ``python -m app.<mod>`` puts the
+      working directory ahead of site-packages.  The root is that tree and there
+      is no fallback: a source tree without ``config/`` is a broken deployment,
+      and resolving it against an absolute path somewhere else would make the
+      process read a *different* deployment's routing catalog while looking
+      perfectly healthy.  That silent fallback is what this replaces.
+    * An installed package -- ``scripts/*.py`` run by path resolve ``app`` from
+      site-packages, where no ``config/`` exists by construction.  The root then
+      comes from ``COINALYZE_PROJECT_ROOT`` or from the packaged deployment
+      root, and it must actually carry ``config/`` or resolution fails closed.
+
+    Failing closed here is not a preference.  Every raw input the science reads
+    is selected from this root; a wrong one produces results that look valid and
+    describe another machine's data.
+    """
+
     source_root = Path(module_file).resolve().parents[1]
-    return source_root if (source_root / "config").is_dir() else Path(deployment_root)
+    if (source_root / "pyproject.toml").is_file():
+        if not (source_root / "config").is_dir():
+            raise RuntimeError(
+                f"project root {source_root} carries pyproject.toml but no config/ "
+                "directory; refusing to resolve raw inputs against any other path"
+            )
+        return source_root
+
+    declared = deployment_root
+    if declared is None:
+        declared = os.environ.get(PROJECT_ROOT_ENV, "").strip() or DEPLOYMENT_ROOT
+    root = Path(declared)
+    if not (root / "config").is_dir():
+        raise RuntimeError(
+            f"app is installed outside a source tree and the configured project "
+            f"root {root} has no config/ directory; set {PROJECT_ROOT_ENV} to the "
+            "deployment root"
+        )
+    return root
 
 
 _PROJECT_ROOT = resolve_project_root()

@@ -100,10 +100,25 @@ def test_versioned_catalog_auto_detection_is_independent_of_working_directory(
 
 
 def test_installed_package_uses_stable_deployment_root_for_catalog(tmp_path):
+    """Stricter than before: the declared root has to actually carry config/.
+
+    ``scripts/*.py`` run by path import ``app`` from site-packages, so the
+    installed shape genuinely needs a deployment root and this is the branch
+    that provides it.  What it may no longer do is *assume* one: returning a
+    path that carries no config/ is what let a broken tree read another
+    deployment's routing catalog while looking healthy.
+    """
+
     installed_module = tmp_path / "venv" / "site-packages" / "app" / "config.py"
     deployment_root = tmp_path / "deployment"
+    (deployment_root / "config").mkdir(parents=True)
 
     assert resolve_project_root(installed_module, deployment_root) == deployment_root
+
+    unpopulated = tmp_path / "not-a-deployment"
+    unpopulated.mkdir()
+    with pytest.raises(RuntimeError, match="no config/ directory"):
+        resolve_project_root(installed_module, unpopulated)
 
 
 def test_invalid_shard_settings_are_rejected():

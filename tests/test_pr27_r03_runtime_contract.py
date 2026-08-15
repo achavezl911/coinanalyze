@@ -15,16 +15,17 @@ import pytest
 
 from app.config import DEFAULT_MARKET_CATALOG, MarketSymbol, load_market_catalog
 from app.signal_runtime_contract import (
-    REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS,
     SCIENTIFIC_RUNTIME_CONTRACT_CANONICALIZER,
     SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+    authorized_environment_digests,
     compute_scientific_runtime_contract,
     scientific_runtime_contract,
     validate_scientific_runtime_contract,
 )
 from app.signal_scientific_identity import (
-    SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS,
+    CANONICALIZER_PYTHON_MODULE,
     compute_scientific_implementation_identity,
+    discover_scientific_surface,
 )
 from app.signal_walk_forward import (
     WALK_FORWARD_SPEC_VERSION_V4,
@@ -101,11 +102,19 @@ def test_contract_freezes_only_the_result_material_routing_fields() -> None:
         }
 
 
-def test_runtime_contract_matches_its_registered_digest() -> None:
+def test_runtime_contract_matches_an_authorized_environment_profile() -> None:
+    """Membership, not equality.
+
+    A sharded deployment resolves one environment digest per shard, so the
+    registry enumerates the authorized profiles and the gate asks whether this
+    process resolved one of them.  Requiring equality to a single constant is
+    what used to make every shard other than 0 unable to validate.
+    """
+
     contract = scientific_runtime_contract()
-    assert contract["digest"] == REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS[
-        SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1
-    ]
+    authorized = authorized_environment_digests()
+    assert authorized, "the registry must authorize at least one environment profile"
+    assert contract["digest"] in authorized
 
 
 def test_unregistered_contract_version_fails_closed() -> None:
@@ -153,7 +162,7 @@ def test_producer_attestation_fails_while_a_foreign_routing_is_active(
     )
     monkeypatch.setattr(config, "MARKET_SYMBOL_CATALOG", repointed)
 
-    with pytest.raises(RuntimeError, match="registered contract"):
+    with pytest.raises(RuntimeError, match="not an authorized environment profile"):
         scientific_runtime_contract()
 
 
@@ -162,9 +171,21 @@ def test_producer_attestation_fails_while_a_foreign_routing_is_active(
 # --------------------------------------------------------------------------
 
 
-def test_two_catalog_paths_with_identical_routing_share_one_contract(
+def test_two_catalog_paths_with_identical_routing_share_one_routing_projection(
     tmp_path,
 ) -> None:
+    """The routing projection is about resolved values; the contract is not.
+
+    Both halves of that sentence are now load-bearing.  Two files with the same
+    rows project the same routing, so a catalog renamed or moved without
+    changing a value does not pretend to be a different science.  But the
+    contract also records *which file was read*, because a deployment that
+    starts resolving a versioned catalog instead of the built-in default has
+    changed which inputs it selects even when today's rows happen to agree --
+    that is the hole M-08 walked through, and it stays closed only while the
+    source is part of the digest.
+    """
+
     rows = [_row(item) for item in DEFAULT_MARKET_CATALOG]
     first = tmp_path / "a" / "market_symbols.json"
     second = tmp_path / "b" / "different_name.json"
@@ -174,8 +195,14 @@ def test_two_catalog_paths_with_identical_routing_share_one_contract(
 
     assert first != second
     assert _digest(load_market_catalog(first)) == _digest(load_market_catalog(second))
-    # And identical to the in-source default: only resolved values matter.
     assert _digest(load_market_catalog(first)) == _digest(DEFAULT_MARKET_CATALOG)
+
+    from_default = compute_scientific_runtime_contract(catalog_source="default")
+    from_versioned = compute_scientific_runtime_contract(
+        catalog_source="config/market_symbols.json"
+    )
+    assert from_default["market_routing"] == from_versioned["market_routing"]
+    assert from_default["digest"] != from_versioned["digest"]
 
 
 @pytest.mark.parametrize(
@@ -311,22 +338,18 @@ def test_validate_rejects_malformed_frozen_contracts(stored: object) -> None:
 def test_contract_mechanics_are_covered_by_the_scientific_identity() -> None:
     """Stricter since the third R05 correction: the whole file, not a region."""
 
-    names = {component.name for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS}
-    assert "scientific_runtime_contract_module" in names
     covering = [
         item
-        for item in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS
+        for item in discover_scientific_surface()
         if item.relative_path == "app/signal_runtime_contract.py"
     ]
     assert len(covering) == 1, "the contract module must be covered exactly once"
     component = covering[0]
-    assert component.name == "scientific_runtime_contract_module"
-    assert component.language == "python_module"
-    # No markers: the imports and the constants above the old BEGIN marker are
-    # inside the identity now, so the coverage cannot be narrowed by moving
-    # code above a marker.
-    assert component.begin_marker == ""
-    assert component.end_marker == ""
+    # Stricter again since the surface became discovery-based: the module is not
+    # covered because somebody listed it, it is covered because it exists.  No
+    # markers and no allowlist entry can narrow it, and deleting its declaration
+    # is not a thing that can be done any more.
+    assert component.canonicalizer == CANONICALIZER_PYTHON_MODULE
 
 
 def test_only_spec_v4_freezes_the_runtime_contract() -> None:

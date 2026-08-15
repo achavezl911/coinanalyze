@@ -243,6 +243,18 @@ def anchor_state(identity_module: object) -> tuple[bool, str]:
     return absent, ""
 
 
+def _production_launch_protocol() -> bool:
+    """Was this process started the way the services are?
+
+    The systemd units set neither ``PYTHONSAFEPATH`` nor ``PYTHONPATH``; the
+    harness sets both.  M-33 exists to prove the difference does not change what
+    is measured, and it can only prove it if the probe reports which of the two
+    it actually ran under.
+    """
+
+    return not os.environ.get("PYTHONSAFEPATH") and not os.environ.get("PYTHONPATH")
+
+
 def _shadow_is_active() -> bool:
     """Did the declared module resolve from outside the tree?
 
@@ -370,6 +382,7 @@ def measure() -> dict[str, object]:
         "anchor_mechanism_absent": True,
         "sitecustomize_active": False,
         "pythonpath_shadow_active": False,
+        "production_launch_protocol": _production_launch_protocol(),
         "exception": None,
         "identity_object": None,
         "interpreter": f"{sys.version_info.major}.{sys.version_info.minor}",

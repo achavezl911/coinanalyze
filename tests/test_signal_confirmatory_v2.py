@@ -36,12 +36,12 @@ from app.signal_confirmatory_v2 import (
     venue_mid_market_return_bps_v2,
 )
 from app.signal_scientific_identity import (
-    REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS,
-    SCIENTIFIC_IDENTITY_VERSION_V1,
-    SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS,
+    CANONICALIZER_PYTHON_MODULE,
     canonical_python_ast,
     canonical_sql_source_v1,
     compute_scientific_implementation_identity,
+    discover_scientific_surface,
+    load_identity_registry,
     scientific_implementation_identity,
     validate_scientific_implementation_identity,
 )
@@ -516,23 +516,36 @@ def test_expected_slot_count_uses_epoch_alignment_and_boundary_safe_windows() ->
     assert count == 3
 
 
-def test_canonical_ast_ignores_comments_docstrings_and_formatting() -> None:
+def test_canonical_ast_ignores_comments_and_formatting_but_not_documentation() -> None:
+    """Docstrings moved sides, and the split is the point.
+
+    Spacing, indentation width and ``#`` comments are how a file is written.  A
+    docstring is what a symbol claims to do, which is a statement about the
+    science, so it belongs on the material side of the line.
+    """
+
     first = '''
 def f(value):
     """documentation"""
     # comment
     return value + 1
 '''
-    second = '''
+    reformatted = '''
 def f( value ):
-  """changed docs"""
+  """documentation"""
   return value+1  # changed comment
+'''
+    redocumented = '''
+def f(value):
+    """changed docs"""
+    return value + 1
 '''
     changed = '''
 def f(value):
     return value - 1
 '''
-    assert canonical_python_ast(first) == canonical_python_ast(second)
+    assert canonical_python_ast(first) == canonical_python_ast(reformatted)
+    assert canonical_python_ast(first) != canonical_python_ast(redocumented)
     assert canonical_python_ast(first) != canonical_python_ast(changed)
 
 
@@ -563,73 +576,72 @@ def test_sql_canonicalizer_preserves_line_comment_termination_semantics() -> Non
     )
 
 
-def test_scientific_identity_is_registered_and_names_every_critical_component() -> None:
+def test_scientific_identity_is_registered_and_covers_every_critical_file() -> None:
+    """The surface is discovered, so the question changed shape.
+
+    It used to be "are these 28 enumerated components present", which is a
+    question about a list somebody maintains.  It is now "is every file that can
+    change what the science computes covered", which is a question about the
+    tree -- and the files below are named only to prove the discovery reaches
+    the ones the enumeration used to carry.  Nothing can be dropped from the
+    surface by editing a declaration, because there is no declaration.
+    """
+
     identity = scientific_implementation_identity()
-    assert identity["digest"] == (
-        "c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04"
-    )
-    assert identity["digest"] == REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS[
-        SCIENTIFIC_IDENTITY_VERSION_V1
-    ]
-    assert {component["name"] for component in identity["components"]} == {
-        "scientific_identity_mechanics",
-        # The three whole-module components replaced seven region components
-        # (the runtime contract mechanics plus three regions in each
-        # collector).  See ADR-012.
-        "scientific_runtime_contract_module",
-        "scalp_collector_module",
-        "ws_collector_module",
-        "market_routing_construction",
-        "signal_summary_decision_kernel",
-        "signal_summary_oi_helpers",
-        "signal_context_session_boundary",
-        "signal_context_cutoff",
-        "signal_observation_generation",
-        "signal_replay_integrity",
-        "visibility_transaction_boundary",
-        "visibility_certificate_production",
-        "outcome_data_gap_blocking",
-        "knowledge_time_projection_and_grid",
-        "outcome_materialization_semantics",
-        "execution_snapshot_semantics",
-        "corrected_endpoint_and_paired_inference",
-        "confirmatory_v4_fetch_coverage_and_persistence",
-        "authoritative_transaction_and_serialization",
-        "signal_observation_database_boundary",
-        "signal_outcome_database_boundary",
-        "signal_replay_database_boundary",
-        "signal_execution_database_boundary",
-        "outcome_data_gap_database_boundary",
-        "research_bundle_visibility_database_boundary",
-        "outcome_final_visibility_database_boundary",
-        "authoritative_result_database_boundary",
+    assert identity["digest"] == load_identity_registry()["code_digest"]
+
+    covered = {component["source"] for component in identity["components"]}
+    critical = {
+        "app/signal_scientific_identity.py",
+        "app/signal_runtime_contract.py",
+        "app/scalp_collector.py",
+        "app/ws_collector.py",
+        "app/config.py",
+        "app/scalp_logic.py",
+        "app/setups.py",
+        "app/metrics.py",
+        "app/signal_ledger.py",
+        "app/signal_replay.py",
+        "app/db.py",
+        "app/signal_visibility.py",
+        "app/data_gaps.py",
+        "app/signal_walk_forward.py",
+        "app/signal_outcomes.py",
+        "app/signal_execution.py",
+        "app/signal_confirmatory_v2.py",
+        "sql/schema.sql",
+        # Neither of these was covered before, and both decide what runs:
+        # the pins choose the library code, the versioned catalog chooses the
+        # market.
+        "pyproject.toml",
+        "requirements.lock",
+        "config/market_symbols.example.json",
     }
-    assert len(identity["components"]) == 28, "a component was added or duplicated"
-    # The three modules that decide what the raw collectors observe are hashed
-    # whole, and nothing may slice them alongside.
+    assert critical <= covered, sorted(critical - covered)
+
+    root = Path(__file__).resolve().parents[1]
+    on_disk = {
+        path.relative_to(root).as_posix()
+        for path in (root / "app").rglob("*.py")
+        if "__pycache__" not in path.parts
+    }
+    assert on_disk <= covered, sorted(on_disk - covered)
+
     whole_modules = {
         component["source"]
         for component in identity["components"]
-        if component["canonicalizer"] == "canonical_python_module_v1"
+        if component["canonicalizer"] == CANONICALIZER_PYTHON_MODULE
     }
-    assert whole_modules == {
-        "app/scalp_collector.py",
-        "app/signal_runtime_contract.py",
-        "app/ws_collector.py",
-    }
-    assert not [
-        component
-        for component in identity["components"]
-        if component["source"].split("#")[0] in whole_modules
-        and component["canonicalizer"] != "canonical_python_module_v1"
-    ]
+    assert whole_modules == on_disk
+    # No component may slice a file that is also covered whole: partial and full
+    # coverage of the same file would hash the same lines twice.
+    assert len(covered) == len(identity["components"])
 
 
 def _copy_scientific_identity_surface(destination: Path) -> None:
     root = Path(__file__).resolve().parents[1]
     for relative_path in {
-        component.relative_path
-        for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS
+        component.relative_path for component in discover_scientific_surface()
     }:
         target = destination / relative_path
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -658,9 +670,17 @@ def test_scientific_dependency_mutation_changes_aggregate_identity(
         component["name"]: component["digest"]
         for component in mutated["components"]
     }
-    assert mutated_components["outcome_data_gap_blocking"] != (
-        baseline_components["outcome_data_gap_blocking"]
+    assert mutated_components["app/data_gaps.py"] != (
+        baseline_components["app/data_gaps.py"]
     )
+    # Exactly one component moved: the mutation is local, and a surface that
+    # reported half the tree as changed would not be able to say what changed.
+    moved = [
+        source
+        for source, digest in mutated_components.items()
+        if baseline_components.get(source) != digest
+    ]
+    assert moved == ["app/data_gaps.py"]
 
 
 def test_scientific_identity_ignores_allowed_python_comment_change(

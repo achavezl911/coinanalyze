@@ -46,19 +46,21 @@ while the executed code stayed unprotected.
 from __future__ import annotations
 
 import ast
+import hashlib
+import json
 import shutil
 from pathlib import Path
 
 import pytest
 
 from app.signal_runtime_contract import (
-    REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS,
-    SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
     compute_scientific_runtime_contract,
 )
 from app.signal_scientific_identity import (
-    SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS,
+    CANONICALIZER_PYTHON_MODULE,
     compute_scientific_implementation_identity,
+    discover_scientific_surface,
+    load_identity_registry,
 )
 from tests.test_pr27_r05_routing_closure import IDENTITY_FILES
 
@@ -474,7 +476,7 @@ def test_adjacent_module_mutation_moves_the_scientific_identity(
 
 def test_the_three_modules_are_covered_as_whole_python_modules() -> None:
     by_path: dict[str, list[object]] = {}
-    for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS:
+    for component in discover_scientific_surface():
         by_path.setdefault(component.relative_path, []).append(component)
     for relative in FULL_MODULE_FILES:
         components = by_path.get(relative, [])
@@ -482,24 +484,30 @@ def test_the_three_modules_are_covered_as_whole_python_modules() -> None:
             f"{relative} must be covered by exactly one component, "
             f"found {len(components)}"
         )
-        component = components[0]
-        assert component.language == "python_module", (
+        assert components[0].canonicalizer == CANONICALIZER_PYTHON_MODULE, (
             f"{relative} must be covered as a whole module, not as a region"
         )
-        assert component.begin_marker == "", f"{relative} must not carry a begin marker"
-        assert component.end_marker == "", f"{relative} must not carry an end marker"
 
 
-def test_no_marker_region_component_overlaps_a_full_module_file() -> None:
-    for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS:
-        if component.relative_path not in FULL_MODULE_FILES:
-            continue
-        assert component.language == "python_module", (
-            f"{component.name} still extracts a region from "
-            f"{component.relative_path}; partial and full coverage of the same "
-            "file would hash the same lines twice and reintroduce the "
-            "enumeration the correction removes"
-        )
+def test_every_python_module_of_app_is_covered_whole() -> None:
+    """Stricter than the three files this test file was written for.
+
+    The surface is discovered, so the question is no longer whether the three
+    collectors are covered as modules: it is whether anything under app/ is
+    covered any other way.  Nothing can be, which is what removes the
+    enumeration the R05 correction was still living with.
+    """
+
+    covered = {item.relative_path: item for item in discover_scientific_surface()}
+    on_disk = {
+        path.relative_to(ROOT).as_posix()
+        for path in (ROOT / "app").rglob("*.py")
+        if "__pycache__" not in path.parts
+    }
+    assert on_disk, "app/ must contain Python modules"
+    assert on_disk <= set(covered)
+    for relative in on_disk:
+        assert covered[relative].canonicalizer == CANONICALIZER_PYTHON_MODULE
 
 
 def test_full_module_component_covers_code_outside_every_marker() -> None:
@@ -509,13 +517,13 @@ def test_full_module_component_covers_code_outside_every_marker() -> None:
     covered = {
         component["source"]
         for component in identity["components"]
-        if component["canonicalizer"] == "canonical_python_module_v1"
+        if component["canonicalizer"] == CANONICALIZER_PYTHON_MODULE
     }
-    assert covered == {relative for relative in FULL_MODULE_FILES}
+    assert covered >= {relative for relative in FULL_MODULE_FILES}
 
 
 # --------------------------------------------------------------------------
-# Neutrality: documentation and layout must not move the digest
+# Neutrality: layout must not move the digest -- documentation now must
 # --------------------------------------------------------------------------
 
 
@@ -527,12 +535,21 @@ def test_comment_and_blank_line_changes_do_not_move_the_identity(
     baseline = _digest(root)
     source = _read(root, relative)
     lines = source.splitlines(keepends=True)
-    # A comment on top, a comment at the end, and blank lines in between.
+
+    # Blank lines go *between top-level statements*, never at whatever line
+    # happened to be blank.  Since docstrings became material, a blank line
+    # inserted at an arbitrary offset can land inside a triple-quoted string,
+    # which changes the documented contract rather than the layout -- a real
+    # difference, and one this test must not confuse with formatting.
+    safe_offsets = sorted(
+        {node.end_lineno for node in ast.parse(source).body if node.end_lineno}
+    )
     rewritten = ["# identity neutrality probe: a comment is not semantics\n"]
-    for index, line in enumerate(lines):
+    for number, line in enumerate(lines, start=1):
         rewritten.append(line)
-        if line.strip() == "" and index % 7 == 0:
+        if number in safe_offsets:
             rewritten.append("\n")
+            rewritten.append("        # an indented comment between statements\n")
     rewritten.append("\n# trailing commentary, equally irrelevant\n")
     _write(root, relative, "".join(rewritten))
     assert _digest(root) == baseline, (
@@ -542,9 +559,18 @@ def test_comment_and_blank_line_changes_do_not_move_the_identity(
 
 
 @pytest.mark.parametrize("relative", FULL_MODULE_FILES)
-def test_docstring_changes_do_not_move_the_identity(
+def test_docstring_changes_move_the_identity(
     tmp_path: Path, relative: str
 ) -> None:
+    """Inverted deliberately: a docstring is a claim about the contract.
+
+    It used to be neutral, and M-03 is the mutation that showed what that
+    bought: rewriting ``deliver_spot_minute``'s docstring to say the buckets
+    "may also be persisted by any other path" left the identity untouched while
+    reversing what the symbol promises.  A surface that lets the claim change
+    silently is not describing the system it audits.
+    """
+
     root = _identity_tree(tmp_path)
     baseline = _digest(root)
     source = _read(root, relative)
@@ -574,8 +600,9 @@ def test_docstring_changes_do_not_move_the_identity(
         relative,
         _replace_span(source, docstring.lineno, docstring.end_lineno, replacement),
     )
-    assert _digest(root) == baseline, (
-        f"{relative}: rewriting a docstring moved the identity"
+    assert _digest(root) != baseline, (
+        f"{relative}: rewriting a docstring left the identity unmoved; the "
+        "documented contract is part of what the surface covers"
     )
 
 
@@ -591,27 +618,36 @@ def test_the_identity_is_deterministic(tmp_path: Path) -> None:
     assert digests == {_digest(ROOT)}
 
 
-def test_the_runtime_contract_digest_is_unchanged() -> None:
-    registered = REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS[
-        SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1
-    ]
-    assert registered == (
+def test_the_routing_projection_is_unchanged_by_the_environment_component() -> None:
+    """Continuity across the environment half, isolated from it.
+
+    The contract digest necessarily moved when the environment component gained
+    the interpreter, the coverage settings and the resolved catalog source.  The
+    routing projection did not, and that is the part R05 registered: hashing it
+    on its own must still reproduce the digest that was frozen then, or the
+    environment work quietly changed which markets are read.
+    """
+
+    legacy_payload = {
+        "runtime_contract_version": 1,
+        "canonicalizer": "scientific_runtime_contract_canonicalization_v1",
+        "market_routing": compute_scientific_runtime_contract()["market_routing"],
+    }
+    canonical = json.dumps(
+        legacy_payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+    assert hashlib.sha256(canonical.encode("utf-8")).hexdigest() == (
         "c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00"
     )
-    assert compute_scientific_runtime_contract()["digest"] == registered
 
 
 def test_the_identity_matches_its_registry() -> None:
-    from app.signal_scientific_identity import (
-        REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS,
-        SCIENTIFIC_IDENTITY_VERSION_V1,
-    )
-
     computed = compute_scientific_implementation_identity()["digest"]
-    assert (
-        computed
-        == REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS[SCIENTIFIC_IDENTITY_VERSION_V1]
-    )
+    assert computed == load_identity_registry()["code_digest"]
     assert computed != REFUTED_UNMOVED_DIGEST, (
         "the correction changes what the identity covers, so it must not "
         "reproduce the digest the review refuted"

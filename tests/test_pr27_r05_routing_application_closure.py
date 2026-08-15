@@ -528,14 +528,55 @@ NON_MATERIAL_CATALOG_MUTATIONS = (
     NON_MATERIAL_CATALOG_MUTATIONS,
     ids=[case[0] for case in NON_MATERIAL_CATALOG_MUTATIONS],
 )
-def test_non_material_catalog_values_stay_outside_the_identity(
+def test_non_material_catalog_values_stay_outside_the_runtime_contract(
     tmp_path: Path, label: str, old: str, new: str
 ) -> None:
-    """Red on c879bdec: whale_threshold_usd moved 25f6c2e5... to 06da5f1f...."""
+    """Red on c879bdec: whale_threshold_usd moved 25f6c2e5... to 06da5f1f....
+
+    The finding R05 made is about *result materiality*, and it is intact: none
+    of these four fields reaches the confirmatory result, so none of them may
+    change the runtime contract.  That half is asserted here directly.
+
+    What changed with the discovered surface is the other half.  app/config.py
+    used to be covered by a region narrowed to the four routing projections, so
+    editing a threshold literal beside them moved nothing.  The whole file is
+    covered now, so it does move the *code* digest -- not because the value
+    became result-material, but because the source changed and the surface no
+    longer has a fence somebody has to keep drawing in the right place.  The
+    cost is a re-registration for an operational edit; the thing it buys is that
+    no future edit can be placed outside the fence.
+    """
+
+    from dataclasses import replace
+
+    from app.config import DEFAULT_MARKET_CATALOG
+    from app.signal_runtime_contract import compute_scientific_runtime_contract
+
+    field = {
+        "whale-threshold": ("whale_threshold_usd", 5_000_001.0),
+        "large-trade-threshold": ("large_trade_threshold_usd", 1_000_001.0),
+        "bybit-oi-symbol": ("bybit_oi_symbol", "BTCUSDT.7"),
+        "spot-history-symbol": ("spot_history_symbol", "BTCUSD.B"),
+    }[label]
+    mutated_catalog = tuple(
+        replace(item, **{field[0]: field[1]})
+        if item.symbol == "BTCUSDT_PERP.A"
+        else item
+        for item in DEFAULT_MARKET_CATALOG
+    )
+    symbols = tuple(item.symbol for item in DEFAULT_MARKET_CATALOG)
+    assert compute_scientific_runtime_contract(
+        catalog=mutated_catalog, symbols=symbols
+    )["digest"] == compute_scientific_runtime_contract(
+        catalog=DEFAULT_MARKET_CATALOG, symbols=symbols
+    )["digest"], label
 
     root = _identity_tree(tmp_path)
     baseline = compute_scientific_implementation_identity(root=root)["digest"]
-    assert _mutate(root, "app/config.py", old, new) == baseline, label
+    assert _mutate(root, "app/config.py", old, new) != baseline, (
+        f"{label}: editing app/config.py must move the code digest now that the "
+        "file is covered whole"
+    )
 
 
 OPERATIONAL_MUTATIONS = (

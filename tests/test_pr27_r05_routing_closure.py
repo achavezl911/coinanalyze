@@ -23,7 +23,9 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import hashlib
 import inspect
+import json
 import shutil
 import textwrap
 import time
@@ -37,19 +39,21 @@ import app.scalp_collector as scalp
 import app.ws_collector as ws
 from app import config
 from app.signal_runtime_contract import (
-    REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS,
     SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
     EffectiveMarketRouting,
     RawMarketProducerContractError,
     attest_raw_market_producer,
+    authorized_environment_digests,
     compute_scientific_runtime_contract,
     effective_market_routing_from_contract,
     require_routed_internal_keys,
     scientific_runtime_contract,
 )
 from app.signal_scientific_identity import (
-    SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS,
+    CANONICALIZER_PYTHON_MODULE,
     compute_scientific_implementation_identity,
+    discover_scientific_surface,
+    load_identity_registry,
 )
 from tests.test_pr27_r04_raw_producer_closure import (
     _bound_cycle,
@@ -64,9 +68,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COLLECTOR_MODULES = ("app/scalp_collector.py", "app/ws_collector.py")
 PRODUCERS = ("scalp_collector", "ws_collector")
 FOUR_MAPS = ("WS_SYMBOL_MAP", "FUTURES_PAIR_MAP", "SPOT_PAIR_MAP", "PAIR_SYMBOL_MAP")
-REGISTERED_CONTRACT_DIGEST = REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS[
-    SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1
-]
+AUTHORIZED_CONTRACT_DIGESTS = authorized_environment_digests()
 
 # One in-place divergence per effective map.  Values swap BTC's routing onto
 # ETH's markets, the same maximal misrouting the R04 catalog tests use, except
@@ -100,7 +102,7 @@ def test_effective_map_divergence_blocks_every_raw_producer(
     # The catalog-derived contract still matches its registered digest: this is
     # exactly why R04 cannot see the divergence.
     assert (
-        compute_scientific_runtime_contract()["digest"] == REGISTERED_CONTRACT_DIGEST
+        compute_scientific_runtime_contract()["digest"] in AUTHORIZED_CONTRACT_DIGESTS
     )
 
     with pytest.raises(RawMarketProducerContractError) as excinfo:
@@ -666,7 +668,7 @@ def test_routing_regions_are_covered_by_the_identity() -> None:
     """
 
     by_path: dict[str, list[object]] = {}
-    for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS:
+    for component in discover_scientific_surface():
         by_path.setdefault(component.relative_path, []).append(component)
 
     for name, (path, begin, end) in ROUTING_IDENTITY_COMPONENTS.items():
@@ -677,17 +679,12 @@ def test_routing_regions_are_covered_by_the_identity() -> None:
 
         components = by_path[path]
         assert len(components) == 1, f"{path} must be covered exactly once"
-        component = components[0]
-        if path in COLLECTOR_MODULES:
-            assert component.language == "python_module"
-            assert component.begin_marker == ""
-            assert component.end_marker == ""
-        else:
-            # app/config.py keeps region coverage: its scientific part is the
-            # four projections, and the thresholds beside them are frozen by
-            # the runtime contract instead.
-            assert component.language == "python"
-            assert (component.begin_marker, component.end_marker) == (begin, end)
+        # Every file of the surface is now covered whole, app/config.py
+        # included: the region that used to fence off "the scientific part" of
+        # it is gone, so the thresholds beside the four projections are inside
+        # the identity too.  The markers survive as inert comments because the
+        # structural sweeps above still read them.
+        assert components[0].canonicalizer == CANONICALIZER_PYTHON_MODULE
 
 
 def _region(relative_path: str, begin: str, end: str) -> str:
@@ -808,15 +805,28 @@ def test_identity_regions_contain_the_routing_material_code() -> None:
         assert needle in ws_delivery
 
 
-def test_contract_registry_is_inside_the_identity_region() -> None:
-    """Swapping the registered contract digest must move the identity."""
+def test_the_authorized_profile_axes_are_inside_the_identity_region() -> None:
+    """Widening what the gate accepts must move the identity.
+
+    The registered digest constant this used to guard is gone: the environment
+    half is a set now, enumerated in identity/registry.json, and that file is
+    deliberately outside the surface -- a file that declares what the surface
+    must be cannot also be one of the things it declares.  What stayed inside is
+    what the set is *generated from*, so authorizing a new shard profile or a
+    second interpreter is still a change that re-registers the identity.  The
+    registry alone is not: that is exactly what M-02 walks through, and only the
+    external anchor of commit 3.3 closes it.
+    """
 
     region = _region(
         "app/signal_runtime_contract.py",
         "PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_BEGIN",
         "PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_END",
     )
-    assert "REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS" in region
+    assert "AUTHORIZED_COLLECTOR_SHARD_PROFILES" in region
+    assert "AUTHORIZED_INTERPRETERS" in region
+    assert "AUTHORIZED_ENVIRONMENT_FIXED" in region
+    assert "enumerate_authorized_environment_profiles" in region
     assert "EffectiveMarketRouting" in region
     assert "effective_market_routing_from_contract" in region
     assert "require_routed_internal_keys" in region
@@ -829,7 +839,7 @@ def test_contract_registry_is_inside_the_identity_region() -> None:
 
 
 IDENTITY_FILES = sorted(
-    {component.relative_path for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS}
+    {item.relative_path for item in discover_scientific_surface()}
     | {"app/config.py", "app/scalp_collector.py", "app/ws_collector.py"}
 )
 
@@ -973,20 +983,31 @@ def test_operational_collector_plumbing_now_moves_the_identity(
 # --------------------------------------------------------------------------
 
 
-def test_runtime_contract_digest_is_unchanged_by_r05() -> None:
-    assert (
-        scientific_runtime_contract()["digest"]
-        == "c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00"
+def test_the_routing_projection_is_unchanged_by_r05() -> None:
+    """R05's guarantee, isolated from the environment component added later.
+
+    The contract digest moved when the environment half gained the interpreter,
+    the coverage settings and the resolved catalog source.  What R05 froze was
+    the routing projection, and hashing that on its own must still reproduce it.
+    """
+
+    legacy_payload = {
+        "runtime_contract_version": 1,
+        "canonicalizer": "scientific_runtime_contract_canonicalization_v1",
+        "market_routing": scientific_runtime_contract()["market_routing"],
+    }
+    canonical = json.dumps(
+        legacy_payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+    assert hashlib.sha256(canonical.encode("utf-8")).hexdigest() == (
+        "c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00"
     )
 
 
 def test_recomputed_identity_matches_its_registry() -> None:
     identity = compute_scientific_implementation_identity()
-    from app.signal_scientific_identity import (
-        REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS,
-        SCIENTIFIC_IDENTITY_VERSION_V1,
-    )
-
-    assert identity["digest"] == REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS[
-        SCIENTIFIC_IDENTITY_VERSION_V1
-    ]
+    assert identity["digest"] == load_identity_registry()["code_digest"]

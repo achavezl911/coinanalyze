@@ -218,7 +218,7 @@ async def test_a_then_b_then_a_leaves_no_b_evidence(monkeypatch) -> None:
             compute_scientific_runtime_contract()["digest"]
             != _REGISTERED_RUNTIME_CONTRACT_DIGEST
         )
-        with pytest.raises(RuntimeError, match="registered contract"):
+        with pytest.raises(RuntimeError, match="not an authorized environment profile"):
             await _persist_once(connection)
         assert await connection.fetchval(
             "SELECT count(*) FROM signal_observation"

@@ -24,13 +24,41 @@ jobs:
         with:
           node-version: 20
 
+      - name: Provision Python 3.13
+        id: py313
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Provision Python 3.11
+        id: py311
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Create venv and install dependencies
         run: |
-          python3 -m venv .venv
+          set -euo pipefail
+          # Pinned, not "whatever python3 resolves to": identity/registry.json
+          # authorizes one interpreter, so a suite run under any other one is a
+          # run of a configuration that refuses to operate.
+          "${{ steps.py313.outputs.python-path }}" -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements.lock
           pip install -e '.[dev]'
+
+      - name: Provision the second interpreter the mutation matrix measures with
+        run: |
+          set -euo pipefail
+          # M-16 compares the same tree under two interpreters, and the anchor
+          # rows need a fingerprint.  Without both, four rows of the matrix fail
+          # closed into escapes that are *declared* escapes, so the suite would
+          # pass without having measured them -- and would keep passing after
+          # commit 3.3 closes them.
+          "${{ steps.py311.outputs.python-path }}" -m venv "${RUNNER_TEMP}/py311"
+          "${RUNNER_TEMP}/py311/bin/python" -m pip install --upgrade pip
+          "${RUNNER_TEMP}/py311/bin/pip" install -r requirements.lock
 
       - name: Start isolated PostgreSQL 17 test cluster
         shell: bash
@@ -78,7 +106,15 @@ jobs:
           . .venv/bin/activate
           python -m compileall -q app scripts tests
 
+      - name: Identity registry is not stale
+        run: |
+          . .venv/bin/activate
+          python scripts/register_identity.py --check
+
       - name: Pytest
+        env:
+          IDENTITY_MUTATION_INTERPRETERS: ${{ runner.temp }}/py311/bin/python
+          IDENTITY_ANCHOR_FINGERPRINT: "${{ vars.IDENTITY_ANCHOR_FINGERPRINT || '0000000000000000000000000000000000000000000000000000000000000000' }}"
         run: |
           . .venv/bin/activate
           pytest -q

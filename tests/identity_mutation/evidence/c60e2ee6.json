@@ -14,6 +14,7 @@
     "anchor_mechanism_absent": true,
     "sitecustomize_active": false,
     "pythonpath_shadow_active": false,
+    "production_launch_protocol": false,
     "exception": null
   },
   "mutations": [
@@ -32,6 +33,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -51,6 +53,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "anchor_mechanism_absent",
       "observed_class": "ESCAPE"
@@ -70,6 +73,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "digest_did_not_move",
       "observed_class": "ESCAPE"
@@ -89,6 +93,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -108,6 +113,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -127,6 +133,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -146,6 +153,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -165,6 +173,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -184,6 +193,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "digest_did_not_move",
       "observed_class": "ESCAPE"
@@ -203,6 +213,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "digest_did_not_move",
       "observed_class": "ESCAPE"
@@ -222,6 +233,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "digest_did_not_move",
       "observed_class": "ESCAPE"
@@ -241,6 +253,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "digest_did_not_move",
       "observed_class": "ESCAPE"
@@ -260,6 +273,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -279,6 +293,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -298,6 +313,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "digest_did_not_move",
       "observed_class": "ESCAPE"
@@ -317,6 +333,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "environment_digest_did_not_move",
       "observed_class": "ESCAPE"
@@ -336,6 +353,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -355,6 +373,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -374,6 +393,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -393,6 +413,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -412,6 +433,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -431,6 +453,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -450,6 +473,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -469,6 +493,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "digest_did_not_move",
       "observed_class": "ESCAPE"
@@ -488,6 +513,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -507,6 +533,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": "code digest failed -> FileNotFoundError: [Errno 2] No such file or directory: '<TREE>/app/signal_replay.py'",
       "failure_reason": "",
       "observed_class": "GUARD"
@@ -526,6 +553,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": true,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -545,6 +573,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "anchor_mechanism_absent",
       "observed_class": "ESCAPE"
@@ -564,6 +593,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "anchor_mechanism_absent",
       "observed_class": "ESCAPE"
@@ -583,6 +613,7 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": false,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"
@@ -602,6 +633,47 @@
       "anchor_mechanism_absent": true,
       "sitecustomize_active": true,
       "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
+      "exception": null,
+      "failure_reason": "combined_validator_absent",
+      "observed_class": "ESCAPE"
+    },
+    {
+      "id": "M-32",
+      "expected_effect": "MUST_REJECT_ONLY",
+      "code_digest": "c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04",
+      "environment_digest": "c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00",
+      "total_digest": "1f48649760e68500b22b95ee60b9a503786e027b0022031d979fbeeaa930672b",
+      "validation_accepted": true,
+      "validation_error": null,
+      "forged_object_accepted": true,
+      "combined_validation_accepted": false,
+      "combined_validator_absent": true,
+      "rejection_kind": null,
+      "anchor_mechanism_absent": true,
+      "sitecustomize_active": false,
+      "pythonpath_shadow_active": false,
+      "production_launch_protocol": false,
+      "exception": null,
+      "failure_reason": "combined_validator_absent",
+      "observed_class": "ESCAPE"
+    },
+    {
+      "id": "M-33",
+      "expected_effect": "MUST_NOT_MOVE_AND_ACCEPT",
+      "code_digest": "c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04",
+      "environment_digest": "c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00",
+      "total_digest": "1f48649760e68500b22b95ee60b9a503786e027b0022031d979fbeeaa930672b",
+      "validation_accepted": true,
+      "validation_error": null,
+      "forged_object_accepted": true,
+      "combined_validation_accepted": false,
+      "combined_validator_absent": true,
+      "rejection_kind": null,
+      "anchor_mechanism_absent": true,
+      "sitecustomize_active": false,
+      "pythonpath_shadow_active": false,
+      "production_launch_protocol": true,
       "exception": null,
       "failure_reason": "combined_validator_absent",
       "observed_class": "ESCAPE"

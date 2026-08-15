@@ -50,8 +50,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import sys
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
@@ -60,22 +63,30 @@ from app.config import MarketSymbol
 
 SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1 = 1
 SCIENTIFIC_RUNTIME_CONTRACT_CANONICALIZER = (
-    "scientific_runtime_contract_canonicalization_v1"
+    "scientific_runtime_contract_canonicalization_v2"
 )
 
 
 # PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_BEGIN
 
-# Filled only after the resolved projection below has been implemented and the
-# deterministic digest independently reproduced by tests.  Never mutate an
-# existing key: register a new contract version instead.  The registry lives
-# inside the identity region on purpose: repointing a registered digest is a
-# semantic change to what the gate accepts, so it must move the identity.
-REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS = {
-    SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1: (
-        "c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00"
-    ),
-}
+# There is no registered digest constant here any more, and its absence is the
+# design.  A sharded deployment resolves a *different* environment digest per
+# instance, so a single registered value would mean no shard other than 0 could
+# ever validate.  ``identity/registry.json`` enumerates the authorized profiles
+# instead, generated from declared axes, and validation is membership in that
+# set.  See ``authorized_environment_digests``.
+
+# The settings whose effective values decide what the science covers, how long
+# it is kept, and which slice of the symbol set this instance observes.  Listed
+# one by one rather than projected from ``vars(settings)``: a field added to
+# Settings tomorrow must not enter the identity because somebody forgot that it
+# would.
+_SCIENTIFIC_ENVIRONMENT_SETTINGS_V1 = (
+    "COLLECTOR_SHARD_INDEX",
+    "COLLECTOR_SHARD_COUNT",
+    "HARD_DATA_RETENTION_DAYS",
+    "SCALP_MINUTE_RETENTION_HOURS",
+)
 
 # The exact result-material projection of one resolved market catalog row.
 #
@@ -110,20 +121,149 @@ _SCIENTIFIC_ROUTING_FIELDS_V1 = (
 )
 
 
+# --- the authorized environment profiles ------------------------------------
+#
+# Declared here, inside the scientific surface, so that authorizing a new
+# deployment profile is itself a material change that has to be re-registered.
+# The set is generated from these axes, never written by hand.
+
+AUTHORIZED_COLLECTOR_SHARD_PROFILES: tuple[Mapping[str, int], ...] = (
+    MappingProxyType({"COLLECTOR_SHARD_INDEX": 0, "COLLECTOR_SHARD_COUNT": 1}),
+)
+
+# One interpreter, deliberately.  The interpreter is an axis of the profile, and
+# every value enumerated here is a runtime the science is certified to produce
+# the same results under.  Certifying a second one is a decision with evidence
+# behind it -- the same walk-forward run, reproduced -- not a consequence of
+# `requires-python` being permissive.  Until that evidence exists, a process on
+# any other interpreter refuses to operate rather than quietly producing results
+# nobody validated.
+AUTHORIZED_INTERPRETERS: tuple[Mapping[str, str], ...] = (
+    MappingProxyType({"python": "3.13", "implementation": "cpython"}),
+)
+
+# The environment settings that are not axes: one authorized value each.
+AUTHORIZED_ENVIRONMENT_FIXED: Mapping[str, int] = MappingProxyType(
+    {
+        "HARD_DATA_RETENTION_DAYS": 14,
+        "SCALP_MINUTE_RETENTION_HOURS": 36,
+    }
+)
+
+
+def enumerate_authorized_environment_profiles(
+    *,
+    shard_profiles: Sequence[Mapping[str, int]] | None = None,
+    interpreters: Sequence[Mapping[str, str]] | None = None,
+    fixed: Mapping[str, int] | None = None,
+    contract_version: int = SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+) -> tuple[dict[str, Any], ...]:
+    """The cartesian product of the declared axes, with its digests.
+
+    The routing half of each profile is whatever this tree resolves now, so
+    re-registering after adding a versioned catalog registers that catalog.  The
+    settings half is declarative and does not depend on the environment of
+    whoever runs the generator: a stray ``HARD_DATA_RETENTION_DAYS`` in the
+    shell must not be able to authorize itself.
+    """
+
+    profiles: list[dict[str, Any]] = []
+    for shard in shard_profiles or AUTHORIZED_COLLECTOR_SHARD_PROFILES:
+        for interpreter in interpreters or AUTHORIZED_INTERPRETERS:
+            settings = {**dict(fixed or AUTHORIZED_ENVIRONMENT_FIXED), **dict(shard)}
+            contract = compute_scientific_runtime_contract(
+                environment_settings=settings,
+                interpreter=interpreter,
+                contract_version=contract_version,
+            )
+            profiles.append(
+                {
+                    "environment_settings": settings,
+                    "interpreter": dict(interpreter),
+                    "market_catalog_source": contract["market_catalog_source"],
+                    "digest": contract["digest"],
+                }
+            )
+    return tuple(profiles)
+
+
+def authorized_environment_digests() -> frozenset[str]:
+    """The enumerated environment profiles the registry authorizes.
+
+    Read through the identity module so there is exactly one reader of the
+    registry, and imported here rather than at module scope because the identity
+    module imports this one back when it validates both halves together.
+    """
+
+    from app.signal_scientific_identity import load_identity_registry
+
+    registry = load_identity_registry()
+    return frozenset(
+        str(item["digest"])
+        for item in registry["authorized_environment_digests"]
+        if isinstance(item, dict) and isinstance(item.get("digest"), str)
+    )
+
+
+def resolved_market_catalog_source(root: Path | None = None) -> str:
+    """Where the routing catalog was actually read from, relative to the root.
+
+    Relative on purpose: an absolute path would make the digest depend on which
+    directory the tree happens to sit in, and the question this answers is
+    *which file inside the deployment was read*, not where the deployment is
+    installed.  A catalog configured outside the root keeps its absolute path,
+    because that is a materially different -- and unauthorized -- deployment.
+    """
+
+    configured = config.MARKET_SYMBOL_CATALOG_FILE
+    if not configured:
+        return "default"
+    source_root = Path(os.path.realpath(root or config.resolve_project_root()))
+    path = Path(os.path.realpath(configured))
+    if path.is_relative_to(source_root):
+        return path.relative_to(source_root).as_posix()
+    return path.as_posix()
+
+
+def _resolved_environment_settings() -> dict[str, int]:
+    settings = config.get_settings()
+    return {name: int(getattr(settings, name)) for name in _SCIENTIFIC_ENVIRONMENT_SETTINGS_V1}
+
+
+def _resolved_interpreter() -> dict[str, str]:
+    return {
+        "python": f"{sys.version_info.major}.{sys.version_info.minor}",
+        "implementation": sys.implementation.name,
+    }
+
+
 def compute_scientific_runtime_contract(
     *,
     catalog: Sequence[MarketSymbol] | None = None,
     symbols: Sequence[str] | None = None,
+    catalog_source: str | None = None,
+    environment_settings: Mapping[str, int] | None = None,
+    interpreter: Mapping[str, str] | None = None,
     contract_version: int = SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
 ) -> dict[str, Any]:
     """Compute, without trusting the registry, one deterministic contract.
 
-    Both defaults resolve at call time, never at import time, because the whole
-    point is that runtime resolution can differ from what the source suggests.
+    Every default is looked up when this function runs, not when the module is
+    imported, so a caller always sees what the process resolved rather than what
+    the source suggests.  One caveat that used to be stated the other way round
+    and was simply false: ``config.MARKET_SYMBOL_CATALOG`` is itself built at
+    *import* time, so what resolves at call time is the module attribute, not a
+    re-read of the catalog file.  A catalog file edited after the process
+    started is invisible until it restarts.
 
     The scope is the configured symbol set, not the shard-assigned subset: every
-    collector shard must resolve the same contract or only one shard could ever
-    match the registry.
+    collector shard must resolve the same routing or the routing half would
+    differ for a reason that is not routing.  What the shard *does* change --
+    which slice it observes -- is projected separately, through the environment
+    settings, and the registry enumerates one authorized profile per shard.
+
+    The overrides exist so the registry generator can enumerate the authorized
+    profiles without booting one process per shard and interpreter.
     """
 
     if contract_version != SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1:
@@ -173,6 +313,17 @@ def compute_scientific_runtime_contract(
         "runtime_contract_version": contract_version,
         "canonicalizer": SCIENTIFIC_RUNTIME_CONTRACT_CANONICALIZER,
         "market_routing": market_routing,
+        "market_catalog_source": (
+            resolved_market_catalog_source() if catalog_source is None else catalog_source
+        ),
+        "interpreter": dict(
+            _resolved_interpreter() if interpreter is None else interpreter
+        ),
+        "environment_settings": dict(
+            _resolved_environment_settings()
+            if environment_settings is None
+            else environment_settings
+        ),
     }
     canonical_payload = json.dumps(
         payload,
@@ -436,15 +587,12 @@ def scientific_runtime_contract(
     """
 
     contract = compute_scientific_runtime_contract(contract_version=contract_version)
-    registered = REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS.get(contract_version)
-    if registered is None:
+    authorized = authorized_environment_digests()
+    if contract["digest"] not in authorized:
         raise RuntimeError(
-            f"scientific runtime contract version {contract_version} is not registered"
-        )
-    if contract["digest"] != registered:
-        raise RuntimeError(
-            "runtime scientific configuration does not match its registered "
-            f"contract: expected {registered}, resolved {contract['digest']}"
+            "runtime scientific configuration is not an authorized environment "
+            f"profile: resolved {contract['digest']}, which is none of the "
+            f"{len(authorized)} enumerated in the identity registry"
         )
     _assert_effective_maps_match_contract(contract)
     return contract

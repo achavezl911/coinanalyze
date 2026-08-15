@@ -155,6 +155,7 @@ class Measurement:
     exception: str | None
     sitecustomize_active: bool = False
     pythonpath_shadow_active: bool = False
+    production_launch_protocol: bool = False
     identity_object: dict[str, Any] | None = None
 
     def as_evidence(self) -> dict[str, Any]:
@@ -175,6 +176,7 @@ class Measurement:
             # re-running anything.
             "sitecustomize_active": self.sitecustomize_active,
             "pythonpath_shadow_active": self.pythonpath_shadow_active,
+            "production_launch_protocol": self.production_launch_protocol,
             "exception": self.exception,
         }
 
@@ -221,6 +223,7 @@ class StepOutcome:
     interpreter: str = ""
     pythonpath_prefix: list[str] = field(default_factory=list)
     shadowed_module: str = ""
+    production_launch: bool = False
 
 
 # --- byte-accurate AST spans ------------------------------------------------
@@ -400,6 +403,13 @@ def _apply_delete_file(tree: Path, step: cat.DeleteFile) -> None:
     path.unlink()
 
 
+def _apply_delete_tree(tree: Path, step: cat.DeleteTree) -> None:
+    path = tree / step.path
+    if not path.is_dir() or path.is_symlink():
+        raise AnchorError(f"{step.path!r} is not a directory in the tree")
+    shutil.rmtree(path)
+
+
 def _apply_symlink(tree: Path, step: cat.SymlinkOutOfTree, outside: Path) -> None:
     source = tree / step.path
     if not source.is_file() or source.is_symlink():
@@ -426,6 +436,12 @@ def _apply_reregister(
     measurement = run_probe(tree, python=python, extra_env={}, stored=None, outside=outside)
     if measurement.code_digest is None:
         raise AnchorError("cannot re-register: the mutated tree produced no code digest")
+
+    script = tree / step.script
+    if script.is_file():
+        _reregister_through_script(tree, step, python, before=measurement.code_digest)
+        return
+
     if measurement.code_digest == step.needle:
         raise AnchorError(
             "cannot re-register: the preceding edit left the digest unchanged, so "
@@ -440,6 +456,43 @@ def _apply_reregister(
     _write_bytes(
         tree, step.path, data.replace(needle, measurement.code_digest.encode("utf-8"))
     )
+
+
+def _reregister_through_script(
+    tree: Path, step: cat.ReregisterIdentityDigest, python: str, *, before: str
+) -> None:
+    """Re-register by running the tree's own registration script.
+
+    Whatever the registry records -- the digest, the per-component manifest, the
+    authorized profiles -- is regenerated together, because a forger with write
+    access to the tree runs the same command a maintainer does.
+    """
+
+    registry_path = tree / "identity" / "registry.json"
+    previous = registry_path.read_text(encoding="utf-8") if registry_path.is_file() else ""
+    completed = subprocess.run(
+        [python, step.script],
+        cwd=str(tree),
+        capture_output=True,
+        text=True,
+        timeout=PROBE_TIMEOUT_SECONDS,
+    )
+    if completed.returncode != 0:
+        raise AnchorError(
+            f"re-registration script {step.script!r} failed: {completed.stderr[-300:]}"
+        )
+    if not registry_path.is_file():
+        raise AnchorError(f"{step.script!r} produced no identity/registry.json")
+    current = registry_path.read_text(encoding="utf-8")
+    if current == previous:
+        raise AnchorError(
+            "cannot re-register: the preceding edit left the registry unchanged, so "
+            "this step would be a no-op dressed up as a forgery"
+        )
+    if before not in current:
+        raise AnchorError(
+            "re-registration did not record the digest the mutated tree computes"
+        )
 
 
 def _apply_pythonpath_shadow(
@@ -559,6 +612,10 @@ def apply_steps(
             _apply_create_file(tree, step)
         elif isinstance(step, cat.DeleteFile):
             _apply_delete_file(tree, step)
+        elif isinstance(step, cat.DeleteTree):
+            _apply_delete_tree(tree, step)
+        elif isinstance(step, cat.ProductionLaunchProtocol):
+            outcome.production_launch = True
         elif isinstance(step, cat.SymlinkOutOfTree):
             _apply_symlink(tree, step, outside)
         elif isinstance(step, cat.ReregisterIdentityDigest):
@@ -694,7 +751,13 @@ def _probe_source() -> Path:
     return Path(__file__).resolve().parent / "probe.py"
 
 
-def _base_environment(tree: Path, outside: Path, pythonpath_prefix: list[str]) -> dict[str, str]:
+def _base_environment(
+    tree: Path,
+    outside: Path,
+    pythonpath_prefix: list[str],
+    *,
+    production_launch: bool = False,
+) -> dict[str, str]:
     """A fixed environment, not the ambient one.
 
     Inheriting ``os.environ`` would let an operator's ``COLLECTOR_SHARD_INDEX``
@@ -705,16 +768,24 @@ def _base_environment(tree: Path, outside: Path, pythonpath_prefix: list[str]) -
     sanitize = json.dumps(
         [[str(tree), "<TREE>"], [str(outside), "<OUTSIDE>"], [str(tree.parent), "<TMP>"]]
     )
-    return {
+    environment = {
         "PATH": "/usr/local/bin:/usr/bin:/bin",
         "PYTHONHASHSEED": "0",
+        # Production sets exactly this and nothing else about imports; see the
+        # systemd units.
         "PYTHONDONTWRITEBYTECODE": "1",
-        # Resolution order is stated, never inherited.  See the module docstring.
-        "PYTHONSAFEPATH": "1",
-        "PYTHONPATH": os.pathsep.join([*pythonpath_prefix, str(tree)]),
         SANITIZE_ENV: sanitize,
         OUTSIDE_ENV: str(outside),
     }
+    if production_launch:
+        # M-33 only.  The probe resolves ``app`` the way the services do, from
+        # the working directory, so that the instrument can be compared against
+        # the system that actually ships.
+        return environment
+    # Resolution order is stated, never inherited.  See the module docstring.
+    environment["PYTHONSAFEPATH"] = "1"
+    environment["PYTHONPATH"] = os.pathsep.join([*pythonpath_prefix, str(tree)])
+    return environment
 
 
 def _parse_probe_output(stdout: bytes) -> dict[str, Any]:
@@ -743,6 +814,7 @@ def run_probe(
     pythonpath_prefix: list[str] | None = None,
     shadowed_module: str = "",
     anchor: str = "",
+    production_launch: bool = False,
 ) -> Measurement:
     shutil.copy2(_probe_source(), tree / PROBE_FILENAME)
     stored_path = tree / STORED_IDENTITY_FILE
@@ -753,7 +825,9 @@ def run_probe(
             json.dumps(stored, sort_keys=True, separators=(",", ":")), encoding="utf-8"
         )
 
-    env = _base_environment(tree, outside, pythonpath_prefix or [])
+    env = _base_environment(
+        tree, outside, pythonpath_prefix or [], production_launch=production_launch
+    )
     if runtime_patch:
         env[RUNTIME_PATCH_ENV] = runtime_patch
     if shadowed_module:
@@ -791,6 +865,7 @@ def run_probe(
         exception=parsed.get("exception"),
         sitecustomize_active=bool(parsed.get("sitecustomize_active")),
         pythonpath_shadow_active=bool(parsed.get("pythonpath_shadow_active")),
+        production_launch_protocol=bool(parsed.get("production_launch_protocol")),
         identity_object=parsed.get("identity_object"),
     )
 
@@ -1036,6 +1111,7 @@ def _run_one(
             pythonpath_prefix=outcome.pythonpath_prefix,
             shadowed_module=outcome.shadowed_module,
             anchor=anchor,
+            production_launch=outcome.production_launch,
         )
     except AnchorError as exc:
         return _failed_row(mutation, REASON_ANCHOR_NOT_FOUND, _scrub(str(exc), workspace))

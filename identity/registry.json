@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "identity_version": 1,
+  "canonicalizer": "scientific_source_canonicalization_v2",
+  "code_digest": "5aa72d835592d46900693d5ed2a42e49b0952bcc2d9ba48659313357dda90a49",
+  "runtime_contract_version": 1,
+  "runtime_contract_canonicalizer": "scientific_runtime_contract_canonicalization_v2",
+  "supported_interpreters": [
+    {
+      "python": "3.13",
+      "implementation": "cpython"
+    }
+  ],
+  "environment_profile_axes": {
+    "collector_shard": [
+      {
+        "COLLECTOR_SHARD_INDEX": 0,
+        "COLLECTOR_SHARD_COUNT": 1
+      }
+    ],
+    "interpreter": [
+      {
+        "python": "3.13",
+        "implementation": "cpython"
+      }
+    ],
+    "fixed": {
+      "HARD_DATA_RETENTION_DAYS": 14,
+      "SCALP_MINUTE_RETENTION_HOURS": 36
+    }
+  },
+  "authorized_environment_digests": [
+    {
+      "environment_settings": {
+        "HARD_DATA_RETENTION_DAYS": 14,
+        "SCALP_MINUTE_RETENTION_HOURS": 36,
+        "COLLECTOR_SHARD_INDEX": 0,
+        "COLLECTOR_SHARD_COUNT": 1
+      },
+      "interpreter": {
+        "python": "3.13",
+        "implementation": "cpython"
+      },
+      "market_catalog_source": "default",
+      "digest": "874551881889d7485c1d55042838bec14805980b43f720b530ef6961e1a76c51"
+    }
+  ],
+  "surface_manifest": [
+    {
+      "source": "app/__init__.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "3b5bd04d431ba79b5650dc634b2e9c2ba0830c113b717ce21d94ebf86cd08b8e"
+    },
+    {
+      "source": "app/ai_context.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "e5c4516453cd8f2988b502bcca82a700db147acdf9168a70c6261e4d0101b998"
+    },
+    {
+      "source": "app/analysis_prompt.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "f976d952d043cade3c6b356e0054ffc7924e9af83270ad2c835b6b6a1b7c9f77"
+    },
+    {
+      "source": "app/api.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "9958a1c3f7272f4aabc1c257fdad74794edaa66ed8a2938950f05daf2e7435fa"
+    },
+    {
+      "source": "app/breakout.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "a010b7c9b7b1ac9d7ffdc5f8ccb11ba34005e7a02ee049706fb31b1fee1c8757"
+    },
+    {
+      "source": "app/coinalyze.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "8cb32c4d681671f044fca67a21bb6eb5800a2134953fbc9bdb0d2709b14583b8"
+    },
+    {
+      "source": "app/config.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "81043e58a16cfbb2e4ff91d0d370908c2fe79092aa8730078d3663b8cfd1ee36"
+    },
+    {
+      "source": "app/cutoffs.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "f611fd4a83da0f99ba08a00c05c8fbc12dbe710c7a3ec5d3509a6e9930694179"
+    },
+    {
+      "source": "app/daily_agg.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "c61e3f41bcc7e14095784a4eda7c6c7a20eae798dcdf965e5abf692bf8ba5cf6"
+    },
+    {
+      "source": "app/data_gaps.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "84cd2a78db3cbc3202b3a8842a87e6eda03d6602a12792a8d389ad883dd75ec9"
+    },
+    {
+      "source": "app/db.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "c2e921d96dfeb12a0d1f3f635a5aad83065ab3935ec4fd3cd059ebab5e6960b0"
+    },
+    {
+      "source": "app/delta_profile.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "4b522967bb7b34e64de193e194da8ea3ae8596619c80bbf0e1f4d9ef3e3ebe67"
+    },
+    {
+      "source": "app/external_macro.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "cee4f6bf1a84eded0aeb280ee4f5c08bd17479bb0a14de216fb4c962d2c5b2d7"
+    },
+    {
+      "source": "app/ingest.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "cbb37a6deb031cfbec41d0f539768a112f526e160c257f33257e643f5fc5fe6b"
+    },
+    {
+      "source": "app/interpretation.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "ce263cc0ee604d9dc59cb935d5fe4910642c063bf4bbac673b6f2e62cc4f3505"
+    },
+    {
+      "source": "app/logging_setup.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "15d2c5e97a1cf4cf7990861d01a333f16b57b7c46f6cc6c11d64c3eae8f7ef32"
+    },
+    {
+      "source": "app/metrics.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "20ef7083fec2a0e1a9c4de931583c653e28adc37e159c24e3b100a0bbac48918"
+    },
+    {
+      "source": "app/partitioning.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "6a55f1b036f67a04dd78c0ff07bad999b162c1b9abfa71836d20202401ac07f7"
+    },
+    {
+      "source": "app/scalp_collector.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "7d1a1ec3094e662b7162b630a9714788e2d879a8dc5e2d0ef28fad1519c1bbb1"
+    },
+    {
+      "source": "app/scalp_logic.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "317b7459c0b4521fc5b8d0f8bb0b77be45ed5bb8ae6cc1e4e4f8335dcd22c47a"
+    },
+    {
+      "source": "app/setups.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "e2f124cf5279d48408d40a47da03c8c036b6bc59d6526e7e9a33846a8e3d26d2"
+    },
+    {
+      "source": "app/sharding.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "6a03ba9326af2a994d9a3b62f64c7f58952a46c305580f398be961f844dd84cc"
+    },
+    {
+      "source": "app/signal_attribution.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "21bd1175f86406d088278fe343662adb2f7f54424308256b3826f1b4bfec372e"
+    },
+    {
+      "source": "app/signal_backtest.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "d1f0724aaee8744b225fdc44b0b2cfb5842e57043cbedc1b9dff4bea87c9ce25"
+    },
+    {
+      "source": "app/signal_confirmatory.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "f30c9051f0159617846de6e1b28d50966365f6a69d3bc78233acce0e4700434f"
+    },
+    {
+      "source": "app/signal_confirmatory_v2.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "00f59995afffde41600ce3313721699650862ee0c3047ecda4b35b230f6430cc"
+    },
+    {
+      "source": "app/signal_execution.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "f0dd72f71c883ca63e16fe957e9695728aefce3b6c06b0b5238bf302e19b6866"
+    },
+    {
+      "source": "app/signal_ledger.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "97166a6a9ae83fd69e21c0010d5ea392e511cc637b4c610098ed79e244290151"
+    },
+    {
+      "source": "app/signal_outcomes.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "4d2ba77979c542cd8135f9543375cc26dd82a8716819eaf8a2c5098c774e51a2"
+    },
+    {
+      "source": "app/signal_regime.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "ca87b03438bb34e579d4110471699a127ad11dfa2a97ea1d97aa8444b2f9c7da"
+    },
+    {
+      "source": "app/signal_replay.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "cbb6b675b3cc59a0817af1b369c6aca73d1a8e68c7a7129acb99cbea4eb31801"
+    },
+    {
+      "source": "app/signal_runtime_contract.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "ad8f2c3cebc30b3336b0ef21a38319dd8ac5b2472652fddf0b36f58ea576d55c"
+    },
+    {
+      "source": "app/signal_scientific_identity.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "a51e25e56f2ed067f42e7a562662fc5cb3ec7696029080839a3213be0efc607c"
+    },
+    {
+      "source": "app/signal_visibility.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "e6c22c6197a0ec3f916c79db56f5b7c2708d9e42c2af8079259a9ba9116eb7ff"
+    },
+    {
+      "source": "app/signal_walk_forward.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "4d2ba32098ab513afd11f3e8b98edcb9287197cd766f40a0999836706a30646a"
+    },
+    {
+      "source": "app/ws_collector.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "c525a17ab1126a0192805a657bd0c9e564e0aa5828d96498298753d0b4c5d620"
+    },
+    {
+      "source": "app/wyckoff.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "bd70d552212d72405ab32ab2cb9588f75cf6073969385ed4c7c686688ae1ed00"
+    },
+    {
+      "source": "app/zones.py",
+      "canonicalizer": "canonical_python_module_v2",
+      "digest": "fe65a1a78a3296b9c6d1ce7519879de75d699951aba73f16c00dda254805ce97"
+    },
+    {
+      "source": "config/market_symbols.example.json",
+      "canonicalizer": "canonical_text_source_v1",
+      "digest": "12ffd765058ddf12d50db16287bf2e773a9e2d72a215076cf8192d826e7673b5"
+    },
+    {
+      "source": "pyproject.toml",
+      "canonicalizer": "canonical_text_source_v1",
+      "digest": "9fd0923f6af8a2341a8a47142262bde523cb569d05bc79837b93e603e5b07b31"
+    },
+    {
+      "source": "requirements.lock",
+      "canonicalizer": "canonical_text_source_v1",
+      "digest": "ac4c85dd80ad1b3077a8490df68296cf75c0a2a8c7f961c2352d365c91960179"
+    },
+    {
+      "source": "sql/schema.sql",
+      "canonicalizer": "canonical_sql_source_v1",
+      "digest": "702c28e5597cdb93f5c6923db7097d1a51c0746722a576427c815214ca5231d5"
+    }
+  ]
+}

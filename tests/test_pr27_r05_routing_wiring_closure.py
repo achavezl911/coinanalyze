@@ -43,14 +43,13 @@ from pathlib import Path
 import pytest
 
 from app.signal_runtime_contract import (
-    REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS,
-    SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
     EffectiveMarketRouting,
     FuturesRoutingIndex,
     MarketRoute,
     RawMarketProducerContractError,
     SpotRoutingIndex,
     attest_raw_market_producer,
+    compute_scientific_runtime_contract,
     require_routed_internal_keys,
 )
 from app.signal_scientific_identity import (
@@ -69,9 +68,7 @@ REVIEWED_UNMOVED_DIGEST = (
     "5a5cb09f80ce17903409daf8fc90e7d05e060a578183aed629d680f37280f05f"
 )
 
-REGISTERED_CONTRACT_DIGEST = REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS[
-    SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1
-]
+REGISTERED_CONTRACT_DIGEST = compute_scientific_runtime_contract()["digest"]
 
 
 # --------------------------------------------------------------------------

@@ -2647,11 +2647,9 @@ async def test_runtime_scientific_digest_mismatch_fails_before_result_is_trusted
     )
     import app.signal_scientific_identity as identity
 
-    monkeypatch.setitem(
-        identity.REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS,
-        1,
-        "0" * 64,
-    )
+    registry = dict(identity.load_identity_registry())
+    registry["code_digest"] = "0" * 64
+    monkeypatch.setattr(identity, "load_identity_registry", lambda *a, **k: registry)
     with pytest.raises(RuntimeError, match="does not match"):
         await evaluate_walk_forward_authoritative(conn, options.name)
     assert await conn.fetchval(
