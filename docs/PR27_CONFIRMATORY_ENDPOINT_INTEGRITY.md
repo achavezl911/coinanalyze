@@ -233,15 +233,22 @@ La identidad científica registrada por PR27 es:
 ```text
 identity_version = 1
 canonicalizer    = scientific_source_canonicalization_v1
-digest           = 25f6c2e541f9e0f5d467be1e600810809890d95f7263f2433f0639de85ac53e2
+digest           = 5a5cb09f80ce17903409daf8fc90e7d05e060a578183aed629d680f37280f05f
 ```
 
 Historial de digests v1 dentro de esta PR sin mergear: R03 registró
 `f696a268…`; R04 no añadió componentes (seguía en 25) pero amplió
 `scientific_runtime_contract_mechanics` con la guarda del productor crudo y
 registró `9749e643db19ccc2a6e41a72c8f3ed36621871d3ab29d090b4151d17702ce976`;
-R05 añade cinco componentes de ruteo (construcción, aplicación y entrega, ver
-"Cierre R05") y registra el valor vigente `25f6c2e5…`.
+R05 añadió cinco componentes de ruteo y registró `25f6c2e5…` en `c879bdec`;
+la corrección de cierre R05 amplía las regiones hasta los puntos de aplicación,
+reduce la de `config.py` a las cuatro proyecciones, sube a 32 componentes y
+registra el valor vigente `5a5cb09f…`.
+
+Ese valor es **candidato**, no definitivo: se registra para que las pruebas y
+el runtime sean coherentes, y sólo queda firme si la superficie corregida
+supera revisión independiente. Después de esa aprobación y antes del primer
+manifest spec-v4, identity-v1 queda congelada.
 
 Expandir o recomputar identity-v1 en estos reworks no reinterpreta un artefacto
 publicado: PR27 sigue sin merge, el repositorio no contiene manifests spec-v4
@@ -312,10 +319,14 @@ Cada dependencia material se asigna a exactamente una clase:
 | Pooling, logging y transporte de errores fuera de las transacciones científicas | D | No transforman inputs ni ofrecen fallback semántico; un fallo sólo aborta/reintenta antes de crear evidencia. |
 | Derivación, registro y verificación del contrato de runtime | A | Componente `scientific_runtime_contract_mechanics`; registro append-only (ahora dentro de la región hasheada) y comparación fail-closed. |
 | Ruteo de mercado resuelto (`symbol`, `base_asset`, `futures_pair`, `spot_pair`) | A | Valores congelados en `scientific_runtime_contract` dentro del manifest v4; attestation en productores y verificación por fila en evaluación. |
-| Construcción del catálogo y de los cuatro mapas efectivos (`WS_SYMBOL_MAP`, `FUTURES_PAIR_MAP`, `SPOT_PAIR_MAP`, `PAIR_SYMBOL_MAP`) | A | Componente `market_routing_construction` (R05); además la atestación exige que los mapas coincidan con la proyección del contrato validado. |
+| Lógica de las cuatro proyecciones de ruteo (`symbol -> base_asset`, `symbol -> futures_pair`, `base_asset -> spot_pair`, `futures_pair -> symbol`) | A | Componente `market_routing_construction`, reducido a esas cuatro líneas; además la atestación exige que los mapas coincidan con la proyección del contrato validado. |
 | Objeto de ruteo efectivo aplicado por los productores | A | `EffectiveMarketRouting` congelado, derivado del contrato validado, devuelto por `attest_raw_market_producer()` y pasado explícitamente; `expected=` re-atestigua el mismo objeto en cada flush. |
-| Creación de suscripciones y conversión par-externo -> clave-interna en los colectores | A | Componentes `scalp_routing_application` y `ws_routing_application` (R05). |
-| Entrega a persistencia cruda (`deliver_*`, SQL de las siete tablas crudas) | A | Componentes `scalp_raw_delivery` y `ws_raw_delivery` (R05); la guarda y `require_routed_internal_keys` viven dentro de la función que ejecuta el INSERT. |
+| Índice de ruteo que convierte par externo -> clave interna | A | `FuturesRoutingIndex`/`SpotRoutingIndex` sólo se construyen desde un `EffectiveMarketRouting` atestiguado y validan cada conversión en `__post_init__` con `require_routed_pair_origins`; un índice forjado falla cerrado antes de suscribirse. |
+| Endpoints de venue, construcción de URL/topics, conexión y despacho al handler | A | Componentes `scalp_routing_application` y `ws_routing_application`: las sesiones conectadas construyen el índice, derivan URL/topics, abren la conexión y despachan cada mensaje sin exponer el índice al bucle. |
+| Inyección del ruteo desde `main()` / `run()` a cada tarea productora | A | Componentes `scalp_routing_entrypoint` y `ws_routing_entrypoint`: una sola función recibe un ruteo y devuelve todas las tareas ligadas a él. |
+| Traspaso desde los stores en memoria a la entrega cruda | A | `flush_*_cycle()` dentro de `scalp_raw_delivery` / `ws_raw_delivery`: atestación, snapshot, entrega y acknowledgement. |
+| Entrega a persistencia cruda (`deliver_*`, SQL de las siete tablas crudas) | A | Componentes `scalp_raw_delivery` y `ws_raw_delivery`; la guarda y `require_routed_internal_keys` viven dentro de la función que ejecuta el INSERT. |
+| Reconexión, backoff, logging, health de feeds y parámetros de transporte WS | D | Fuera de las regiones a propósito y fijado por test: no seleccionan mercado ni transforman insumos. |
 | Procedencia de contrato ya persistida en `signal_observation` | C | Columnas append-only cubiertas por la identidad SQL; se comparan contra el manifest congelado antes de consumir la fila. |
 | Umbrales whale/large-trade, `bybit_oi_symbol`, `spot_history_symbol` | B | Operativos probados: no alteran ninguna columna que lea el contexto ni el endpoint v2. Ver "Excluido a propósito". |
 | Ruta del fichero de catálogo y ortografía de variables de entorno | D | El contrato proyecta valores resueltos; la ruta no puede cambiar el hash. |
@@ -557,17 +568,17 @@ identidad.
 R04 decidió **no** añadir `scalp_collector.py` ni `ws_collector.py` para no
 hacer a la identidad rehén de ediciones operativas (reconexión, sharding,
 health de feeds). El hallazgo A-02 mostró el precio: un cambio semántico en la
-construcción o aplicación del ruteo no movía el digest. R05 resuelve la tensión
-sin hashear los ficheros enteros: la clausura pasa a **30 componentes** con
-regiones compactas y estables — `market_routing_construction` en `config.py`,
-`scalp_routing_application` / `ws_routing_application` (builders de suscripción
-y handlers de conversión) y `scalp_raw_delivery` / `ws_raw_delivery` (las
-únicas funciones con SQL hacia las tablas crudas, con la guarda dentro). La
-plomería de reconexión y backoff queda fuera a propósito y hay tests que fijan
-esa estabilidad. Un cambio material en esos caminos mueve el digest; un bypass
-que evite las regiones no puede alcanzar la ruta de escritura existente sin
-editarlas, y un escritor nuevo desde cero seguiría bloqueado por la atestación
-en el límite de entrega.
+construcción o aplicación del ruteo no movía el digest. R05 intentó resolver la
+tensión sin hashear los ficheros enteros, con regiones compactas sobre los
+builders de suscripción, los handlers de conversión y las funciones de entrega.
+
+**Esa primera versión no cerró A-02, y la afirmación de que un bypass no podía
+alcanzar la ruta de escritura era falsa.** Una revisión independiente la
+refutó con dos mutaciones ejecutadas fuera de toda región protegida (ver
+"Corrección de cierre R05"). La clausura vigente amplía las regiones hasta los
+puntos donde el ruteo se aplica de verdad y hace el índice de ruteo
+inconstruible fuera del ruteo atestiguado; la plomería de reconexión, backoff,
+logging y health sigue fuera y hay tests que fijan ambas direcciones.
 
 ### Regresión
 
@@ -660,16 +671,112 @@ identidad mientras el backoff operativo no lo mueve.
 contra PostgreSQL 17 bajo divergencia de mapa (cero filas nuevas) y el rechazo
 de claves internas fuera del ruteo atestiguado.
 
+## Corrección de cierre R05: los puntos de aplicación del ruteo
+
+`c879bdec` cerró A-01 de forma razonable, pero **no cerró A-02**. Una revisión
+independiente lo demostró con evidencia reproducible, no con un argumento.
+
+### Lo que la revisión probó
+
+Las regiones de identidad de `c879bdec` cubrían los *builders* de suscripción y
+los *handlers* de conversión, pero no los puntos donde el ruteo se aplica
+realmente: `scalp_collector.binance_loop`, `binance_market_loop`, `bybit_loop`,
+`ws_collector.binance_consumer`, `bybit_consumer`, `scalp_collector.main` y
+`ws_collector.run`.
+
+Sustituyendo, **fuera** de toda región protegida:
+
+```python
+index = routing.futures_index(ACTIVE_SYMBOLS)
+```
+
+por un índice equivalente a
+`FuturesRoutingIndex(pairs=("ETHUSDT",), symbol_by_pair={"ETHUSDT": "BTCUSDT_PERP.A"})`
+—y la mutación análoga con `SpotRoutingIndex` en el lado spot— el digest
+científico permanecía en `25f6c2e5…`. El handler convertía datos ETH en la
+clave interna BTC, y como la entrega sólo validaba la *clave interna* —que es
+legítima— el bypass alcanzaba el store y la escritura sin dejar rastro en la
+identidad.
+
+La revisión encontró además que la región `PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1`
+era demasiado amplia: cambiar `whale_threshold_usd` de `5_000_000` a
+`5_000_001` movía el digest de `25f6c2e5…` a `06da5f1f…`, contradiciendo la
+exclusión documentada de esos umbrales como valores no materiales.
+
+Ambas observaciones se reprodujeron antes de tocar código, con pruebas rojas
+sobre `c879bdec` (`tests/test_pr27_r05_routing_application_closure.py`:
+31 fallos, 11 pasos).
+
+### Lo que cierra el hallazgo
+
+**1. Regiones sobre los puntos de aplicación, no sólo sobre los helpers.** Cada
+colector expone ahora *sesiones* conectadas dentro de la región de identidad:
+construyen el índice desde el ruteo atestiguado, derivan URL y topics, abren la
+conexión y despachan cada mensaje al handler. El índice nunca sale de la
+región, así que un bucle no puede sustituirlo: no llega a tenerlo. Los bucles
+conservan sólo reconexión, backoff, logging y health de feeds.
+
+**2. Inyección única del ruteo.** `scalp_routing_producers()` y
+`ws_routing_producers()` —ambas dentro de la identidad— reciben **un** ruteo
+atestiguado y devuelven todas las tareas productoras ya ligadas a él. El
+entrypoint no puede elegir por tarea, que es exactamente como un store mal
+ruteado sobrevivía a una entrega correcta.
+
+**3. Entrega desde el store dentro de la identidad.** El traspaso completo
+—atestación, snapshot que sale del store, entrega guardada y acknowledgement—
+vive en `flush_*_cycle()` dentro de las regiones de entrega cruda.
+
+**4. Índice de ruteo inconstruible.** `FuturesRoutingIndex` y `SpotRoutingIndex`
+exigen el `EffectiveMarketRouting` atestiguado y validan en `__post_init__`
+cada conversión par-externo -> clave-interna contra él
+(`require_routed_pair_origins`). La mutación exacta de la revisión ya no
+compila un objeto válido: falla cerrada antes de suscribirse. Es la respuesta a
+que **la validación de claves internas no detecta por sí sola una procedencia
+externa incorrecta**: la clave `BTCUSDT_PERP.A` es legítima; lo que no lo es
+es que la haya producido `ETHUSDT`.
+
+**5. Endpoints dentro de la identidad.** Qué venue se lee decide qué mercado
+acaba bajo la clave interna, igual que el par. `BINANCE_STREAM_BASE`,
+`BINANCE_MARKET_STREAM_BASE`, `BYBIT_LINEAR_WS` y `BYBIT_URL` pasan a las
+regiones; los parámetros de transporte (`ping_interval`, `max_size`, timeouts)
+quedan fuera en `WS_CONNECT_KWARGS`.
+
+**6. Región de `config.py` reducida.** `PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1`
+cubre ahora **sólo** las cuatro proyecciones —`symbol -> base_asset`,
+`symbol -> futures_pair`, `base_asset -> spot_pair`, `futures_pair -> symbol`—.
+El catálogo, su loader, los dos umbrales, `bybit_oi_symbol` y
+`spot_history_symbol` quedan fuera: sus *valores resueltos* siguen congelados
+por el runtime contract, que es donde corresponde.
+
+La clausura pasa de 30 a **32 componentes**: se añaden
+`scalp_routing_entrypoint` y `ws_routing_entrypoint`.
+
+### Regresión de la corrección
+
+`tests/test_pr27_r05_routing_application_closure.py` fija: 18 mutaciones sobre
+las líneas exactas de aplicación (índice, streams/topics, despacho, inyección
+en `main`/`run`, y el traspaso store -> entrega en los cinco flush) que deben
+mover el digest; que ninguna llamada result-material queda fuera de una región
+en ninguno de los dos colectores (barrido AST del fichero completo); que los
+endpoints están dentro; que un índice forjado —o sin ruteo— no se construye;
+que la validación de clave interna acepta lo que la de procedencia externa
+rechaza; que cambiar cualquiera de las cuatro proyecciones mueve la identidad;
+y que umbrales, `bybit_oi_symbol`, `spot_history_symbol`, backoff, logging y
+health **no** la mueven.
+
 ### Nomenclatura de la serie de reworks
 
-| Rework | Commit |
-|---|---|
-| Implementación inicial | `5a99ab5371eca057afc7374ed8cbf544e558113e` |
-| R01 | `e58f1fab2b8ebfd158608805fafc87fc559211c7` |
-| R02 | **no existe commit identificable**; se declara explícitamente y no se inventa |
-| R03 | `0496819a15699bae3b80fc92e803a50adf40df54` |
-| R04 | `ee3792ca9f26b1cc20f354e9eaf35332b8ce266e` |
-| R05 | el commit que introduce esta sección |
+| Rework | Commit | Estado |
+|---|---|---|
+| Implementación inicial | `5a99ab5371eca057afc7374ed8cbf544e558113e` | landed |
+| R01 | `e58f1fab2b8ebfd158608805fafc87fc559211c7` | landed |
+| R02 | **no existe commit identificable**; se declara explícitamente y no se inventa | — |
+| R03 | `0496819a15699bae3b80fc92e803a50adf40df54` | landed |
+| R04 | `ee3792ca9f26b1cc20f354e9eaf35332b8ce266e` | landed, incompleto |
+| R05 (candidato parcial) | `c879bdecf5eb453b5a91853e917be79d3df9042d` | **no superó revisión: A-02 abierto** |
+| R05 (candidato de cierre) | `700f7695f97c1d094a2180b7a6916686429abda3` | candidato, pendiente de revisión independiente |
+
+Esta corrección **no es R06**: es el cierre del mismo R05.
 
 ### Admisibilidad de observaciones anteriores
 

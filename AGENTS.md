@@ -3,6 +3,22 @@
 **Antes de hacer cualquier cosa, lee y cumple [`docs/AI_ENGINEERING_RULES.md`](docs/AI_ENGINEERING_RULES.md).**
 Ese es el documento maestro compartido entre Codex y Claude Code; estas notas no lo sustituyen.
 
+**Después, lee [`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md)**: estado exacto del proyecto, SHAs
+relevantes, qué está bloqueado y cuál es la próxima acción.
+
+## Documentación canónica
+
+| Documento | Cuándo |
+|---|---|
+| [`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md) | Siempre, al empezar. |
+| [`docs/SCIENTIFIC_ARCHITECTURE.md`](docs/SCIENTIFIC_ARCHITECTURE.md) | Antes de tocar ruteo, identidad, contrato, observaciones o walk-forward. |
+| [`docs/ARCHITECTURE_DECISIONS.md`](docs/ARCHITECTURE_DECISIONS.md) | Antes de proponer un cambio de diseño. |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Para saber qué bloquea qué. |
+| [`docs/README.md`](docs/README.md) | Índice del resto. |
+
+Si tu cambio altera el estado del proyecto, actualizar el handoff, el roadmap y el ADR es
+parte del entregable.
+
 ## Dónde trabajas
 
 - Tu área de trabajo es un **worktree propio** bajo `/srv/coinanalyze/worktrees/codex/<tarea>`.
@@ -30,8 +46,18 @@ pytest -q
 git diff            # revisa lo que vas a commitear
 ```
 
+Para la capa científica, `pytest -q` debe correr contra **PostgreSQL 17** con
+`TEST_DATABASE_URL` exportada (clúster aislado como en `.github/workflows/ci.yml`) y terminar
+con **0 failed y 0 skipped**.
+
 Al terminar, informa: archivos modificados, tests ejecutados y su resultado. El merge a `main`
 lo hace un humano tras la review y con CI en verde. Tú **no** mergeas.
+
+## Cómo se cierra un hallazgo
+
+Reproduce el defecto con un test rojo y guarda su salida exacta; corrige la arquitectura;
+demuestra que la mutación mueve la identidad científica o queda estructuralmente impedida
+antes de escribir; no debilites tests existentes. Una afirmación documental no cierra nada.
 
 ## graphify
 

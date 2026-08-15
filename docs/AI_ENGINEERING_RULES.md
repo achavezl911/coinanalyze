@@ -4,6 +4,13 @@
 > Claude Code (ver [`CLAUDE.md`](../CLAUDE.md)) DEBEN leer y cumplir este documento antes de
 > tocar el código. Si una instrucción de este archivo entra en conflicto con una petición
 > puntual, gana este archivo salvo que el humano responsable lo autorice explícitamente.
+>
+> **Segundo documento obligatorio: [`HANDOFF_IA.md`](HANDOFF_IA.md)** — estado exacto del
+> proyecto, SHAs, qué está bloqueado y próxima acción. Índice completo en
+> [`README.md`](README.md); arquitectura científica en
+> [`SCIENTIFIC_ARCHITECTURE.md`](SCIENTIFIC_ARCHITECTURE.md); decisiones vinculantes en
+> [`ARCHITECTURE_DECISIONS.md`](ARCHITECTURE_DECISIONS.md); orden de trabajo en
+> [`ROADMAP.md`](ROADMAP.md).
 
 ## Contexto de la plataforma
 
@@ -44,6 +51,35 @@
     se versiona; añade pruebas de contrato.
 19. **Añadir pruebas de regresión cuando se arregle un bug** (reproducir primero, luego corregir).
 20. **Informar exactamente**: archivos modificados, tests ejecutados y sus resultados.
+
+## Cómo se cierra un hallazgo
+
+Las reglas 5 y 19 no se cumplen con documentación. El orden es obligatorio:
+
+1. **Reproduce el defecto** con un test que falle sobre el commit señalado, y conserva su
+   salida exacta. Sin evidencia roja no hay cierre.
+2. **Corrige la arquitectura**, no el síntoma.
+3. **Demuéstralo**: la mutación que causaba el defecto debe mover la identidad científica o
+   quedar estructuralmente impedida antes de escribir. Añade mutation tests sobre las líneas
+   exactas.
+4. **No debilites un test existente** para que pase el tuyo. Si un test debe cambiar porque
+   la estructura cambió, hazlo más estricto, no más laxo.
+5. **Si falta evidencia, decláralo** con `MISSING_EXTERNAL_EVIDENCE`. Nunca la sustituyas por
+   una afirmación.
+
+Precedente: `c879bdec` declaró cerrado un hallazgo (A-02) que seguía abierto, apoyándose en
+una afirmación documental. Una revisión independiente lo refutó con dos mutaciones. Ver
+[`HANDOFF_IA.md`](HANDOFF_IA.md) §6 y ADR-008.
+
+## Continuidad
+
+Si un cambio altera el estado del proyecto, actualizar [`HANDOFF_IA.md`](HANDOFF_IA.md),
+[`ROADMAP.md`](ROADMAP.md) y [`ARCHITECTURE_DECISIONS.md`](ARCHITECTURE_DECISIONS.md) **es
+parte del entregable**. `ARCHITECTURE_DECISIONS.md` es append-only: una decisión no se edita,
+se supersede.
+
+Usa estados explícitos —`CONFIRMED`, `DECIDED`, `PLANNED`, `BLOCKED`, `EXTERNAL_UNVERIFIED`,
+`MISSING_EXTERNAL_EVIDENCE`— en vez de prosa ambigua.
 
 ## Restricciones específicas de Git para agentes
 
