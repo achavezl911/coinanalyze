@@ -2,7 +2,13 @@
 Antes de abrir la PR, lee docs/AI_ENGINEERING_RULES.md.
 Si eres una IA: no mergeas, no despliegas, no tocas producción. Ver ADR-007.
 Borra las secciones que no apliquen, pero NO borres "Validación" ni "Límites".
+No dejes trailing whitespace: `git diff --check` debe salir limpio.
 -->
+
+> **Esta PR no está aprobada por estar abierta, ni por tener el CI en verde, ni por que
+> GitHub diga `mergeable=true`.** `mergeable` sólo afirma que no hay conflicto de texto.
+> ChatGPT Work cuestiona y valida el código de forma independiente; la aprobación es una
+> revisión adversarial con **P0=0 y P1=0**. Ver `docs/HANDOFF_IA.md` §2.1.
 
 ## Qué cambia y por qué
 
@@ -47,7 +53,9 @@ Marca sólo lo que aplique y **pega los valores**, no los describas.
 - [ ] Hashes legacy spec v1/v2/v3 **sin cambios**: `e2f967bb…`, `2f21afe9…`, `7fd50764…`
 - [ ] Componentes de identidad añadidos/eliminados: <!-- listar -->
 - [ ] Nuevas mutation tests para las líneas exactas que este PR toca
-- [ ] No se ha debilitado ningún test existente
+- [ ] Las mutaciones anclan por **AST en el punto de llamada real**, no en la primera
+      aparición textual de la expresión
+- [ ] No se ha debilitado ningún test existente; los que cambiaron son **más** estrictos
 
 ## Contratos y esquema
 
@@ -61,12 +69,12 @@ Marca sólo lo que aplique y **pega los valores**, no los describas.
 
 Pega números, no adjetivos.
 
-- `ruff check .` → 
-- `python -m compileall -q app scripts tests` → 
+- `ruff check .` →
+- `python -m compileall -q app scripts tests` →
 - `pytest -q` con PostgreSQL 17 → `N passed, N failed, N skipped` (**skipped debe ser 0**)
-- `node --test tests/js/` → 
-- `git diff --check` → 
-- `graphify update .` → 
+- `node --test tests/js/` →
+- `git diff --check` →
+- `graphify update .` →
 - GitHub Actions: <!-- URL del run y su conclusión real -->
 
 ## Límites — confirmación explícita
@@ -84,7 +92,8 @@ Pega números, no adjetivos.
 
 ## Continuidad
 
-- Documentación actualizada: <!-- ficheros --> 
-- Si esto cambia el estado del proyecto, ¿está reflejado en `docs/HANDOFF_IA.md`,
-  `docs/ROADMAP.md` y `docs/ARCHITECTURE_DECISIONS.md`? sí / no / no aplica
+- [ ] **`docs/HANDOFF_IA.md` actualizado, commiteado y pusheado** — obligatorio, sin excepción
+- Documentación actualizada: <!-- ficheros -->
+- Si esto cambia el estado del proyecto, ¿está reflejado en `docs/ROADMAP.md` y
+  `docs/ARCHITECTURE_DECISIONS.md` (append-only)? sí / no / no aplica
 - **Próxima acción exacta** para quien retome esto:

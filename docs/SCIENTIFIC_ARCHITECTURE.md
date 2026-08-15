@@ -74,7 +74,9 @@ flowchart LR
     MAPS -->|"deben coincidir"| GATE
     GATE -->|"falla"| STOP["el proceso no produce nada"]
     GATE -->|"pasa"| ROUTING["EffectiveMarketRouting<br/>frozen, una vez por proceso"]
-    ROUTING --> IDX["FuturesRoutingIndex<br/>SpotRoutingIndex<br/>valida cada conversión"]
+    ROUTING --> PROV{"require_attested_routing<br/>re-deriva el registro"}
+    PROV -->|"no lo reproduce"| STOP
+    PROV -->|"lo reproduce"| IDX["FuturesRoutingIndex<br/>SpotRoutingIndex<br/>valida cada conversión"]
     IDX --> SUB["URL / topics<br/>conexión"]
     IDX --> CONV["par externo → clave interna"]
     CONV --> STORE["stores en memoria"]
@@ -82,20 +84,41 @@ flowchart LR
     DEL --> RAWT[("tablas crudas")]
 ```
 
-Cuatro barreras, cada una fail-closed:
+Cinco barreras, cada una fail-closed:
 
 | Barrera | Qué impide |
 |---|---|
 | Contrato registrado | Que el catálogo resuelto sea distinto del congelado. |
 | Mapas vs. contrato | Que los dicts derivados diverjan del catálogo (hallazgo A-01). |
+| Procedencia del ruteo | Que un `EffectiveMarketRouting` construido a mano —autoconsistente y portando el digest registrado como texto— llegue a producir un índice. |
 | Índice ligado al ruteo | Que un índice forjado convierta un par externo en una clave interna ajena (hallazgo A-02). |
 | `deliver_*` | Que una fila llegue al SQL con una clave fuera del ruteo atestiguado. |
 
+La tercera barrera existe porque las dos primeras miran el *catálogo* y la cuarta mira la
+*clave interna*, y ninguna de las dos cosas delata una sustitución del propio objeto de
+ruteo. `require_attested_routing()` no compara el objeto consigo mismo: recomputa el contrato
+desde la configuración viva y exige que reproduzca esas filas exactas. Eso también convierte
+la barrera en un guardia continuo — un ruteo atestiguado al arrancar que después diverge
+falla al construir el siguiente índice, antes de suscribirse.
+
 **Qué está dentro de la identidad científica**: las cuatro proyecciones, los endpoints de
 venue, la construcción del índice, URL/topics, la conexión, el despacho al handler, la
-conversión, la inyección del ruteo desde `main()`/`run()` y el traspaso store → entrega.
-**Qué queda fuera**: reconexión, backoff, logging, health de feeds y parámetros de
+conversión, la selección y llamada de cada sesión, la inyección del único ruteo, la creación
+de las tareas materiales y el traspaso store → entrega.
+**Qué queda fuera**: reconexión, backoff, logging, health de feeds, sleeps y parámetros de
 transporte WS. Ambas direcciones están fijadas por tests de mutación.
+
+El invariante, enunciado sin rodeos:
+
+> Todo cambio capaz de alterar venue, suscripción, sesión, par externo, conversión a clave
+> interna, entrada al store, ruteo por tarea o entrega raw debe **mover la identidad
+> científica** o quedar **estructuralmente impedido** antes de suscribirse o escribir.
+
+La segunda mitad es literal, no retórica: los bucles de reconexión y de flush reciben un
+`connect`/`cycle` ya ligado dentro de la región, y `main()`/`run()` no sostienen ningún
+`EffectiveMarketRouting`. Fuera de las regiones no se lee **ningún** símbolo material en
+ninguno de los dos colectores, y un barrido AST lo exige. No queda nada material fuera que
+una mutación pueda sustituir.
 
 ## 4. De observación a outcome
 
@@ -192,6 +215,10 @@ Reglas que sostienen la separación:
 - Un cambio en OP **no debe** mover la identidad científica. Si la mueve, o está mal
   clasificado o la región es demasiado ancha (fue exactamente el caso de
   `whale_threshold_usd`).
+- Y al revés: un cambio material **no debe** poder ocurrir en OP. Si la única defensa es que
+  nadie edite esa línea, la clasificación es aspiracional. Fue exactamente el caso de la
+  selección de sesión dentro de los bucles de reconexión, que dos revisiones seguidas
+  encontraron editable sin mover el digest.
 - RES nunca escribe en las tablas de CONF. Sus parámetros entran sólo congelándolos en un
   manifest **antes** de que exista el periodo OOS.
 - CONF no elige parámetros. PR27 instala la maquinaria; no selecciona símbolo, horizonte,

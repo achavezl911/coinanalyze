@@ -19,9 +19,16 @@ construcción del índice hasta la escritura cruda.
 
 - A-01 (mapas efectivos divergentes) — cerrado en `c879bdec`.
 - A-02 (aplicación del ruteo fuera de la identidad) — **no** cerrado en `c879bdec`;
-  cerrado en `700f7695f97c1d094a2180b7a6916686429abda3`.
+  intentado en `700f7695`/`450cf2fb` y **refutado**; cerrado en
+  `e84ebe8140c8393ea2ef3447d8c165d32b594917`.
 - Región de `config.py` reducida a las cuatro proyecciones.
-- Identity-v1 recomputada: `5a5cb09f…` (candidato).
+- Identity-v1 recomputada: `c939add3…` (candidato).
+
+Tres intentos, dos refutaciones. `c879bdec` dejó A-02 abierto. `700f7695`/`450cf2fb` mutaban
+la **primera aparición textual** de cada expresión, que tras esa corrección siempre caía
+dentro de una región, así que la suite se ponía verde mientras los puntos de llamada reales
+—la selección de sesión en los bucles y el wiring invocado por `main()`/`run()`— seguían
+fuera. Detalle en [`HANDOFF_IA.md`](HANDOFF_IA.md) §6.1.
 
 Bloquea: todo lo demás.
 
@@ -29,13 +36,15 @@ Bloquea: todo lo demás.
 
 `ESTADO: PLANNED · BLOCKED por la etapa 1`
 
-La etapa 1 ya falló una revisión una vez. No se declara cerrada por autoafirmación: hace
-falta una revisión adversarial externa que intente reproducir el bypass y no lo consiga.
+La etapa 1 ya falló **dos** revisiones. No se declara cerrada por autoafirmación ni por CI en
+verde: hace falta una revisión adversarial externa que intente reproducir el bypass con
+mutaciones propias y no lo consiga.
 
 Criterio de salida: cero hallazgos P0 y P1 sobre
-`700f7695f97c1d094a2180b7a6916686429abda3`.
+`e84ebe8140c8393ea2ef3447d8c165d32b594917`. Vectores obligatorios en
+[`HANDOFF_IA.md`](HANDOFF_IA.md) §11.
 
-Sólo tras esta aprobación el digest `5a5cb09f…` deja de ser candidato, y sólo entonces se
+Sólo tras esta aprobación el digest `c939add3…` deja de ser candidato, y sólo entonces se
 congela identity-v1 (antes del primer manifest spec-v4). Cualquier cambio posterior exige
 identity-v2.
 
@@ -72,6 +81,9 @@ PR #28 está apilada sobre `codex/pr27-confirmatory-endpoint-integrity`, no sobr
 Orden obligatorio: primero PR #27 → `main`; después PR #28.
 
 **Ninguna IA mergea.** El merge lo hace una persona tras la review y con CI en verde.
+
+**`mergeable=true` en GitHub no significa aprobado**: sólo dice que no hay conflicto de
+texto. PR #28 sigue marcada **DO NOT MERGE** hasta que se cumplan las etapas 2-4.
 
 ## 6. Verificación autorizada de producción
 

@@ -49,6 +49,29 @@ El detalle de arquitectura, con diagramas, está en
 | **Claude Code** | Implementador: analizar, implementar, tests, commit, push de **su** rama, crear/revisar PRs | Mergear, desplegar, tocar producción, `push --force`, crear otra rama o PR para esta tarea |
 | **Humano** | Review, merge, deploy y producción | — |
 
+### 2.1 Protocolo de validación adversarial
+
+`DECIDED` — vinculante. Esta serie ya produjo **tres** cierres autoafirmados y refutados
+(`c879bdec`, `700f7695`, `450cf2fb`); el protocolo existe porque la autoafirmación falló.
+
+- **ChatGPT Work siempre cuestiona y valida de forma independiente el código de Claude.** No
+  revisa el informe: revisa el árbol, ejecuta sus propias mutaciones e intenta reproducir el
+  bypass con vectores que **no** estén ya en la suite.
+- **Un informe de Claude no es una aprobación. Un CI en verde tampoco.** Ambos son insumos de
+  la revisión, no su resultado. Una suite verde sólo demuestra que las mutaciones *escritas*
+  se detectan; el trabajo de Work es encontrar las que faltan.
+- **Si Work refuta a Claude, entrega el veredicto y el prompt correctivo juntos**, en el mismo
+  mensaje: hallazgos con severidad (P0/P1/P2), evidencia reproducible y el prompt completo que
+  corrige. Un veredicto sin prompt correctivo bloquea el trabajo sin desbloquearlo.
+- **Cada prompt futuro a Claude exige actualizar [`HANDOFF_IA.md`](HANDOFF_IA.md) en GitHub,
+  sin excepción**, commiteado y pusheado en la misma rama. No es un extra ni una fase
+  opcional: un entregable sin handoff actualizado está incompleto.
+- **Todo prompt a Claude incluye, explícitamente**: HEAD esperado · alcance · invariantes ·
+  pruebas rojas a reproducir primero · criterios de aceptación · validación exigida ·
+  evidencia a entregar · prohibiciones.
+- Este documento debe poder leerse **sin contexto de ningún chat**: propósito (§1), alcance y
+  límites (§9), arquitectura (§4), estado (§3, §8) y siguiente paso (§11) viven aquí.
+
 ## 3. Estado exacto de PR27 y PR28
 
 ### PR #27 — `codex/pr27-confirmatory-endpoint-integrity` → `main`
@@ -63,8 +86,13 @@ Remediación de integridad del endpoint confirmatorio. Es la **base** de PR #28.
 
 <https://github.com/achavezl911/coinanalyze/pull/28>
 
-**Base: `codex/pr27-confirmatory-endpoint-integrity`, no `main`. Do not merge.** Orden
+**Base: `codex/pr27-confirmatory-endpoint-integrity`, no `main`. DO NOT MERGE.** Orden
 obligatorio: primero PR #27 → `main`, después PR #28.
+
+**`mergeable=true` en GitHub no significa aprobado.** Es una afirmación sobre conflictos de
+texto, no sobre revisión: dice que Git sabría fusionar, no que alguien haya validado nada. PR
+#28 sigue marcada **DO NOT MERGE** hasta que (a) PR #27 entre en `main` y (b) exista una
+revisión independiente con P0=0 y P1=0.
 
 ### SHAs de la serie
 
@@ -75,12 +103,14 @@ obligatorio: primero PR #27 → `main`, después PR #28.
 | R02 | **no existe commit identificable** | declarado, no inventado |
 | R03 | `0496819a15699bae3b80fc92e803a50adf40df54` | landed |
 | R04 | `ee3792ca9f26b1cc20f354e9eaf35332b8ce266e` | landed, incompleto |
-| **R05 candidato parcial** | `c879bdecf5eb453b5a91853e917be79d3df9042d` | **no superó revisión: A-02 abierto** |
-| **R05 candidato de cierre (código)** | `700f7695f97c1d094a2180b7a6916686429abda3` | candidato, pendiente de revisión |
-| **Continuidad documental** | el commit inmediatamente posterior a `700f7695` | HEAD de PR #28 |
+| **R05 candidato parcial** | `c879bdecf5eb453b5a91853e917be79d3df9042d` | **REFUTADO: A-02 abierto** |
+| **R05 candidato de cierre** | `700f7695f97c1d094a2180b7a6916686429abda3` | **REFUTADO: mutaciones por primera aparición textual** |
+| **R05 continuidad documental** | `450cf2fb5633779755f3d7db4069fc86a800eb8b` | **REFUTADO junto con `700f7695`** |
+| **R05 cierre de wiring (código)** | `e84ebe8140c8393ea2ef3447d8c165d32b594917` | **CANDIDATO**, pendiente de revisión |
+| **Continuidad documental** | el commit inmediatamente posterior a `e84ebe81` | HEAD de PR #28 |
 
-`700f7695` es el commit de código, tests e identidad; el siguiente es documentación y handoff.
-Esta corrección **no es R06**: es el cierre del mismo R05.
+`e84ebe81` es el commit de código, tests e identidad; el siguiente es documentación y handoff.
+Esta corrección **no es R06**: sigue siendo el cierre del mismo R05, en su tercer intento.
 
 ## 4. Arquitectura científica vigente
 
@@ -91,17 +121,26 @@ Dos identidades independientes, ambas con registro append-only:
 | | Identidad científica | Contrato de runtime |
 |---|---|---|
 | Responde | qué calcula el código | qué insumos crudos seleccionó |
-| Digest vigente | `5a5cb09f80ce17903409daf8fc90e7d05e060a578183aed629d680f37280f05f` (**candidato**) | `c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00` (sin cambios) |
+| Digest vigente | `c939add3055ea2a8b0edd1ea93630682043a2b98b4ac33425bc49acc47cf156c` (**candidato**) | `c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00` (sin cambios) |
 | Componentes | 32 regiones AST/SQL | 4 campos resueltos por símbolo |
 
 Hashes legacy spec v1/v2/v3, `CONFIRMED` sin cambios: `e2f967bb…`, `2f21afe9…`, `7fd50764…`.
 
 **El ruteo atestiguado** es la parte que ha concentrado el trabajo. Cadena completa, toda
 dentro de la identidad: cuatro proyecciones → contrato registrado → atestación (que además
-exige que los mapas efectivos coincidan) → `EffectiveMarketRouting` congelado → índice de
-ruteo que valida cada conversión → URL/topics → conexión → handler → store → entrega
-guardada → SQL. Fuera de la identidad, a propósito y fijado por test: reconexión, backoff,
-logging, health de feeds y parámetros de transporte WS.
+exige que los mapas efectivos coincidan) → `EffectiveMarketRouting` congelado → **reatestación
+de procedencia al construir el índice** → índice de ruteo que valida cada conversión →
+URL/topics → conexión → handler → store → entrega guardada → SQL. La inyección de ese único
+ruteo y la **creación de las tareas materiales** también viven dentro de la identidad. Fuera
+de la identidad, a propósito y fijado por test en ambas direcciones: reconexión, backoff,
+logging, health de feeds, sleeps y parámetros de transporte WS.
+
+El invariante que sostiene todo esto, y que las tres iteraciones anteriores enunciaron sin
+hacerlo cumplir:
+
+> Todo cambio capaz de alterar venue, suscripción, sesión, par externo, conversión a clave
+> interna, entrada al store, ruteo por tarea o entrega raw debe **mover la identidad
+> científica** o quedar **estructuralmente impedido** antes de suscribirse o escribir.
 
 ## 5. Qué resolvió R05 (`c879bdec`) — y qué no
 
@@ -148,40 +187,103 @@ Eliminada.
 Evidencia roja: `tests/test_pr27_r05_routing_application_closure.py` sobre `c879bdec` →
 **31 fallos, 11 pasos**.
 
-## 7. Qué cierra la corrección
+Lo que `700f7695`/`450cf2fb` hicieron con estos hallazgos fue **insuficiente**, y por eso una
+segunda revisión los refutó. Ver §6.1.
+
+## 6.1 Hallazgos de la segunda revisión, sobre `700f7695`/`450cf2fb`
+
+`CONFIRMED — reproducidos aquí antes de tocar código`
+
+La causa raíz es metodológica: el helper `_mutate` de
+`test_pr27_r05_routing_application_closure.py` reescribe la **primera aparición textual** de
+cada expresión. Tras aquella corrección, la primera aparición siempre quedaba *dentro* de una
+región —`routing.futures_index(ACTIVE_SYMBOLS)` en `scalp_futures_index()`,
+`binance_loop(routing=routing)` en `scalp_routing_producers()`— así que el digest se movía, la
+suite se ponía verde y **los puntos de llamada reales seguían desprotegidos**.
+
+**Hallazgo P1-1 — la inyección real del ruteo estaba fuera de la identidad.** Las invocaciones
+reales son `scalp_routing_producers(pool, service_lock, routing)` en `main()` y
+`ws_routing_producers(pool, service_lock, symbols, routing)` en `run()`. Sustituirlas por
+wiring directo con un ruteo falso para el productor y el correcto para el flusher dejaba el
+digest en `5a5cb09f…`.
+
+**Hallazgo P1-2 — la selección real de sesión estaba fuera de la identidad.**
+`binance_futures_session → binance_market_session` dentro de `binance_loop()`, y
+`binance_spot_session → bybit_spot_session` dentro de `binance_consumer()`: ambas mutaciones
+dejaban el digest en `5a5cb09f…`.
+
+**Hallazgo P1-3 — `EffectiveMarketRouting` es construible a mano.** Un ruteo forjado con
+`symbol="BTCUSDT_PERP.A", futures_pair="ETHUSDT"` es autoconsistente y puede llevar el digest
+registrado como simple cadena de texto, así que producía `FuturesRoutingIndex`/`SpotRoutingIndex`
+ETHUSDT→BTC sin objeción. La entrega, sosteniendo el ruteo **correcto**, aceptaba la clave
+resultante porque esa clave sí está ruteada.
+
+**Hallazgo P2-4 — trailing whitespace.** El rango `700f7695..450cf2fb` introdujo trailing
+whitespace en `.github/pull_request_template.md` (líneas 64, 65, 67, 68, 69 y 87) pese a que el
+informe anterior afirmó que `git diff --check` estaba limpio.
+
+Evidencia roja: `tests/test_pr27_r05_routing_wiring_closure.py` sobre `450cf2fb` →
+**25 failed, 6 passed**.
+
+## 7. Qué cierra esta corrección (`e84ebe81`)
 
 `CONFIRMED en esta rama · pendiente de revisión independiente`
 
-1. **Sesiones conectadas dentro de la identidad.** Cada colector construye el índice desde
-   el ruteo atestiguado, deriva URL/topics, abre la conexión y despacha al handler **dentro**
-   de la región. El índice nunca sale: un bucle no puede sustituirlo porque no lo tiene.
-2. **Inyección única del ruteo.** `scalp_routing_producers()` / `ws_routing_producers()`,
-   dentro de la identidad, reciben un ruteo y devuelven todas las tareas ligadas a él. El
-   entrypoint no elige por tarea.
-3. **Traspaso store → entrega dentro de la identidad**: `flush_*_cycle()`.
-4. **Índice inconstruible.** `FuturesRoutingIndex`/`SpotRoutingIndex` exigen el ruteo
-   atestiguado y validan cada conversión en `__post_init__`
-   (`require_routed_pair_origins`). La mutación de la revisión falla cerrada.
-5. **Endpoints de venue dentro de la identidad**; transporte fuera.
-6. **Región de `config.py` reducida** a las cuatro proyecciones.
+Tres capas, porque ninguna basta sola.
 
-Identidad recomputada: `25f6c2e5…` → `5a5cb09f…`. 30 → 32 componentes.
+**1. Procedencia — el índice sólo existe donde el registro está de acuerdo.**
+`require_attested_routing()` **re-deriva** el contrato desde el catálogo, los settings y los
+mapas efectivos vivos, y exige que reproduzca exactamente las filas del ruteo en uso. Ambos
+índices lo llaman en `__post_init__`. Un ruteo forjado —o uno atestiguado que después haya
+divergido— falla cerrado **antes** de suscribirse, antes del store y antes de escribir. La
+autoconsistencia y una cadena de digest dejan de ser evidencia.
+
+**2. Estructura — no queda nada material fuera que mutar.** Los bucles de reconexión y los de
+flush reciben un `connect`/`cycle` **ya ligado**, construido dentro de la identidad: no nombran
+venue, ni sesión, ni store, ni entrega, ni ruteo. `main()`/`run()` llaman
+`require_attested_*_routing()` y `start_*_routing_producers()`; esta última atestigua, cablea y
+**crea las tareas materiales** dentro de la identidad, de modo que el entrypoint nunca sostiene
+un `EffectiveMarketRouting` que pudiera redirigir. Un barrido AST endurecido exige que
+**ningún símbolo material se lea fuera de una región** en ninguno de los dos colectores.
+
+**3. Anclaje — las mutaciones apuntan al sitio real.** Las nuevas localizan cada referencia por
+AST, no por desplazamiento textual, así que una expresión duplicada dentro de una región ya no
+puede hacerse pasar por la real.
+
+Se conserva de la iteración anterior: sesiones, endpoints de venue, construcción del índice,
+URL/topics, conexión, despacho y traspaso store → entrega dentro de la identidad; región de
+`config.py` reducida a las cuatro proyecciones.
+
+Identidad recomputada: `5a5cb09f…` → `c939add3…`. Siguen siendo **32** componentes: la
+corrección es estructural, no añade superficie.
 
 ## 8. Confirmado / pendiente / bloqueado / no verificado
 
 ### CONFIRMED
 
-- Suite completa con PostgreSQL 17.10: **1510 passed, 0 failed, 0 skipped** (15:13). Antes de
-  la corrección eran 1468; los 42 nuevos son la suite de aplicación de ruteo.
+- Línea base sobre `450cf2fb` con PostgreSQL 17.10, árbol limpio: **1510 passed, 0 failed,
+  0 skipped**.
+- Suite completa sobre esta corrección con PostgreSQL 17.10: **1545 passed, 0 failed,
+  0 skipped** (919 s). Los 35 nuevos son `test_pr27_r05_routing_wiring_closure.py`.
 - `ruff check .` limpio · `compileall` OK · `node --test tests/js/` 49 pass 0 skip ·
-  `git diff --check` limpio.
-- Runtime contract digest sin cambios; hashes legacy sin cambios.
-- Los dos hallazgos de la revisión reproducidos y cerrados con tests que pasan de rojo a
-  verde sin debilitar ninguno existente.
+  `git diff --check` limpio en cada commit y en el rango completo.
+- Runtime contract digest sin cambios; hashes legacy spec v1/v2/v3 sin cambios.
+- Los tres hallazgos P1 reproducidos en rojo **antes** de tocar código y cerrados con tests
+  que pasan de rojo a verde. Ningún test existente se debilitó: los que cambiaron se volvieron
+  **más** estrictos (el entrypoint ya no puede sostener un ruteo; los bucles de flush ya no
+  reciben uno).
+- Neutralidad fijada en ambas direcciones: umbrales, `bybit_oi_symbol`, `spot_history_symbol`,
+  backoff, logging, health, sleeps y la invocación opaca `connect`/`cycle` no mueven la
+  identidad.
+- Trailing whitespace corregido en `.github/pull_request_template.md` (el que introdujo
+  `700f7695..450cf2fb`) y en `scripts/configure_secrets.sh:107`. Barrido del árbol rastreado:
+  queda **una** línea, `deploy/ai-bridge/v1.3.4-preview-max.patch:8`, y se deja
+  deliberadamente — es un espacio único que en formato *unified diff* representa la línea de
+  contexto en blanco del hunk. Quitarlo corrompería el parche.
 
 ### PLANNED / BLOCKED
 
-- Revisión independiente P0=0/P1=0 sobre `700f7695` — **bloquea todo lo demás**.
+- Revisión independiente P0=0/P1=0 sobre `e84ebe81` — **bloquea todo lo demás**.
 - Deuda spec-v1, cohorte legacy y pivotes.
 - Merge humano de PR #27 y luego PR #28.
 - Calibración pre-OOS, congelación spec-v4, recolección y evaluación autoritativa.
@@ -248,22 +350,37 @@ prácticamente vacía, no la uses.
 | Trade Tape/Footprint | Fuera de PR27 (ADR-006). |
 | Sustituir evidencia ausente por afirmaciones | Usa `MISSING_EXTERNAL_EVIDENCE`. |
 | Debilitar un test para que pase | Reproduce el defecto primero (regla 19). |
+| Declarar un cierre por informe propio o CI verde | No son aprobación. Sólo lo es una revisión independiente P0=0/P1=0 (§2.1). |
+| Entregar sin actualizar `HANDOFF_IA.md` en GitHub | Obligatorio en todo prompt, sin excepción (§2.1). |
 
 ## 11. Próxima acción exacta
 
 `BLOCKED — no la ejecuta una IA`
 
-> **Solicitar una revisión independiente y adversarial de `700f7695f97c1d094a2180b7a6916686429abda3`** que intente reproducir
-> el bypass de A-02 con mutaciones propias —no con las que ya están en la suite— y verificar
-> que la región de `config.py` no arrastra valores no materiales. Criterio de salida:
-> **P0=0 y P1=0**.
+> **Solicitar a ChatGPT Work una revisión independiente y adversarial de
+> `e84ebe8140c8393ea2ef3447d8c165d32b594917`.** Debe intentar el bypass con mutaciones
+> **propias**, no con las que ya están en la suite. Vectores obligatorios, porque son los que
+> fallaron antes:
+>
+> 1. Mutar el **punto de llamada real** de cada símbolo, localizado por AST, nunca su primera
+>    aparición textual.
+> 2. Intentar construir un `EffectiveMarketRouting`, un `FuturesRoutingIndex` o un
+>    `SpotRoutingIndex` que alcance el store o la escritura sin pasar por
+>    `require_attested_routing()`.
+> 3. Intentar introducir wiring material fuera de las regiones —en un bucle, un consumer, una
+>    factory o un flusher raw— sin que el barrido AST lo detecte.
+> 4. Verificar la neutralidad en la otra dirección: que umbrales, `bybit_oi_symbol`,
+>    `spot_history_symbol`, backoff, logging, health y transporte **sigan** sin mover el digest.
+>
+> Criterio de salida: **P0=0 y P1=0**. Si refuta, entregar veredicto y prompt correctivo
+> juntos (§2.1).
 
 Hasta que eso ocurra:
 
-- El digest `5a5cb09f…` es **candidato**, no definitivo. No lo describas como final ni
+- El digest `c939add3…` es **candidato**, no definitivo. No lo describas como final ni
   inmutable.
 - No se congela identity-v1.
-- No se mergea nada.
+- No se mergea nada. `mergeable=true` en GitHub no es una aprobación.
 
 ## 12. Checklist para retomar el proyecto
 
@@ -292,5 +409,8 @@ Si acabas de llegar, en este orden:
    exacta. Un cierre no se declara con documentación.
 10. Antes de cada push: `ruff check .`, `pytest -q`, `git diff`. Informa ficheros
     modificados, tests ejecutados y resultado real.
-11. Actualiza este documento, `ROADMAP.md` y `ARCHITECTURE_DECISIONS.md` si cambia el estado
-    del proyecto. La continuidad es parte del entregable, no un extra.
+11. **Actualiza este documento en GitHub, sin excepción**, y con él `ROADMAP.md` y
+    `ARCHITECTURE_DECISIONS.md` si cambia el estado del proyecto. La continuidad es parte del
+    entregable, no un extra: una entrega sin handoff commiteado y pusheado está incompleta.
+12. No declares cerrado nada por tu propio informe. Entrega la evidencia y espera la revisión
+    independiente (§2.1).

@@ -16,8 +16,13 @@ relevantes, qué está bloqueado y cuál es la próxima acción.
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Para saber qué bloquea qué. |
 | [`docs/README.md`](docs/README.md) | Índice del resto. |
 
-Si tu cambio altera el estado del proyecto, actualizar el handoff, el roadmap y el ADR es
-parte del entregable.
+**Actualizar [`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md) en GitHub es obligatorio en todo
+entregable, sin excepción**, commiteado y pusheado en tu rama. Si además tu cambio altera el
+estado del proyecto, el roadmap y el ADR entran también en el entregable. La continuidad no es
+un extra: un entregable sin handoff actualizado está incompleto.
+
+El handoff debe dejar comprensibles, sin contexto de ningún chat: propósito, alcance,
+limitaciones, arquitectura, estado y siguiente paso.
 
 ## Dónde trabajas
 
@@ -57,7 +62,17 @@ lo hace un humano tras la review y con CI en verde. Tú **no** mergeas.
 
 Reproduce el defecto con un test rojo y guarda su salida exacta; corrige la arquitectura;
 demuestra que la mutación mueve la identidad científica o queda estructuralmente impedida
-antes de escribir; no debilites tests existentes. Una afirmación documental no cierra nada.
+antes de escribir; ancla la mutación por AST en el **punto de llamada real**, nunca en la
+primera aparición textual; no debilites tests existentes. Una afirmación documental no cierra
+nada.
+
+## Qué constituye una aprobación
+
+**ChatGPT Work siempre cuestiona y valida de forma independiente el código de Claude**, y lo
+mismo aplica a tus PRs. Un informe propio no es una aprobación; **un CI en verde tampoco**.
+Sólo lo es una revisión independiente y adversarial con **P0=0 y P1=0**. Si Work refuta,
+entrega veredicto y prompt correctivo juntos. `mergeable=true` en GitHub no significa
+aprobado. Detalle en [`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md) §2.1.
 
 ## graphify
 

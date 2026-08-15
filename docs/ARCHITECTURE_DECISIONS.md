@@ -62,7 +62,8 @@ cierran juntos y no se dan por cerrados por separado.
 ## ADR-003 — Política de identity-v1 y ventana de sustitución
 
 - **Fecha**: 2026-08-14
-- **Estado**: `DECIDED`
+- **Estado**: `DECIDED` · la política sigue vigente; el **valor** del digest queda
+  `SUPERSEDED por ADR-011`
 - **SHA**: `700f7695f97c1d094a2180b7a6916686429abda3`
 
 **Decisión.** El digest de identity-v1 puede recomputarse **sólo mientras** no exista ningún
@@ -188,7 +189,7 @@ ruta de escritura. Esa afirmación se ha eliminado.
 ## ADR-009 — El commit de código de la corrección es el SHA de cierre candidato
 
 - **Fecha**: 2026-08-14
-- **Estado**: `DECIDED` · pendiente de revisión independiente (`BLOCKED` para promoción)
+- **Estado**: `SUPERSEDED por ADR-011`
 - **SHA**: `700f7695f97c1d094a2180b7a6916686429abda3` (código) y el commit documental inmediatamente posterior
 
 **Decisión.** `700f7695f97c1d094a2180b7a6916686429abda3` es el **candidato de cierre R05**. El commit
@@ -200,3 +201,75 @@ documental posterior registra ese SHA exacto y es el HEAD de PR #28.
 - El commit siguiente: continuidad documental y handoff; HEAD de PR #28.
 - El candidato sólo se promueve a cierre efectivo con una revisión independiente P0=0/P1=0
   ([`ROADMAP.md`](ROADMAP.md) §2).
+
+**Superseded.** Una segunda revisión independiente refutó `700f7695` y su commit documental
+`450cf2fb`. Ver ADR-010 y ADR-011.
+
+---
+
+## ADR-010 — Una mutación vale por su punto de llamada, no por su primera aparición textual
+
+- **Fecha**: 2026-08-14
+- **Estado**: `CONFIRMED`
+- **SHA**: `700f7695f97c1d094a2180b7a6916686429abda3`, `450cf2fb5633779755f3d7db4069fc86a800eb8b`
+
+**Decisión.** Un mutation test que reescribe la **primera aparición textual** de una expresión
+no prueba nada sobre el código que de verdad se ejecuta. Toda mutación de identidad debe
+localizar sus objetivos por **AST**, sobre los sitios reales de lectura del símbolo.
+
+**Motivo.** El helper `_mutate` de `test_pr27_r05_routing_application_closure.py` usa
+`source.replace(old, new, 1)`. Tras la corrección de `700f7695`, la primera aparición de cada
+expresión de ruteo quedó siempre *dentro* de una región —`routing.futures_index(ACTIVE_SYMBOLS)`
+en `scalp_futures_index()`, `binance_loop(routing=routing)` en `scalp_routing_producers()`— de
+modo que el digest se movía y la suite pasaba, mientras los puntos de llamada reales seguían
+desprotegidos. Una segunda revisión independiente lo demostró con tres hallazgos P1:
+
+- Sustituir la invocación real de `scalp_routing_producers()` en `main()` y de
+  `ws_routing_producers()` en `run()` por wiring directo —ruteo falso para el productor,
+  correcto para el flusher— dejaba el digest en `5a5cb09f…`.
+- `binance_futures_session → binance_market_session` dentro de `binance_loop()`, y
+  `binance_spot_session → bybit_spot_session` dentro de `binance_consumer()`, dejaban el
+  digest en `5a5cb09f…`.
+- Un `EffectiveMarketRouting` construido a mano, autoconsistente y portando el digest
+  registrado como texto, producía índices ETHUSDT→BTC que la entrega aceptaba.
+
+**Consecuencias.**
+- `700f7695` y `450cf2fb` quedan registrados como **candidatos refutados**, igual que
+  `c879bdec`.
+- Las mutaciones nuevas viven en `tests/test_pr27_r05_routing_wiring_closure.py` y anclan por
+  AST. El fichero anterior se conserva, con su limitación documentada en su docstring.
+- Un cierre no se declara con un informe propio ni con CI en verde
+  ([`HANDOFF_IA.md`](HANDOFF_IA.md) §2.1).
+
+---
+
+## ADR-011 — La procedencia del ruteo se prueba re-derivando el registro, no comparando el objeto consigo mismo
+
+- **Fecha**: 2026-08-14
+- **Estado**: `DECIDED` · pendiente de revisión independiente (`BLOCKED` para promoción)
+- **SHA**: `e84ebe8140c8393ea2ef3447d8c165d32b594917` (código) y el commit documental inmediatamente posterior
+
+**Decisión.** `FuturesRoutingIndex` y `SpotRoutingIndex` sólo aceptan un
+`EffectiveMarketRouting` **reatestiguado contra el contrato registrado**:
+`require_attested_routing()` recomputa el contrato desde el catálogo, los settings y los mapas
+efectivos vivos y exige que reproduzca exactamente las filas del ruteo en uso. La
+autoconsistencia del objeto y una cadena de digest **no** son evidencia de procedencia.
+
+Complementariamente, se cierra la vía estructural: los bucles de reconexión y de flush reciben
+un `connect`/`cycle` ya ligado dentro de la identidad; `main()`/`run()` no sostienen ningún
+ruteo y sólo pueden llamar a dos funciones exportadas por la región, que atestiguan, cablean y
+**crean las tareas materiales** dentro de la identidad. Un barrido AST endurecido exige que
+ningún símbolo material se lea fuera de una región en ninguno de los dos colectores.
+
+**Consecuencias.**
+- Un ruteo forjado, o uno atestiguado que después haya divergido, falla cerrado **antes** de
+  suscribirse, antes del store y antes de escribir.
+- Las sustituciones que la revisión ejecutó ya no tienen forma expresable fuera de la
+  identidad: el código externo no nombra venue, sesión, store, entrega ni ruteo.
+- Se mantiene la neutralidad en la otra dirección, fijada por test: umbrales,
+  `bybit_oi_symbol`, `spot_history_symbol`, backoff, logging, health, sleeps y la invocación
+  opaca `connect`/`cycle` no mueven la identidad.
+- Identity-v1 recomputada: `5a5cb09f…` → `c939add3…`, 32 componentes. Contrato de runtime y
+  hashes legacy spec v1/v2/v3 **sin cambios**.
+- `e84ebe81` es un **candidato**. Sólo se promueve a cierre efectivo con una revisión
+  independiente P0=0/P1=0 ([`ROADMAP.md`](ROADMAP.md) §2).

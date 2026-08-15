@@ -233,7 +233,7 @@ La identidad científica registrada por PR27 es:
 ```text
 identity_version = 1
 canonicalizer    = scientific_source_canonicalization_v1
-digest           = 5a5cb09f80ce17903409daf8fc90e7d05e060a578183aed629d680f37280f05f
+digest           = c939add3055ea2a8b0edd1ea93630682043a2b98b4ac33425bc49acc47cf156c
 ```
 
 Historial de digests v1 dentro de esta PR sin mergear: R03 registró
@@ -241,14 +241,17 @@ Historial de digests v1 dentro de esta PR sin mergear: R03 registró
 `scientific_runtime_contract_mechanics` con la guarda del productor crudo y
 registró `9749e643db19ccc2a6e41a72c8f3ed36621871d3ab29d090b4151d17702ce976`;
 R05 añadió cinco componentes de ruteo y registró `25f6c2e5…` en `c879bdec`;
-la corrección de cierre R05 amplía las regiones hasta los puntos de aplicación,
-reduce la de `config.py` a las cuatro proyecciones, sube a 32 componentes y
-registra el valor vigente `5a5cb09f…`.
+el primer intento de cierre amplió las regiones hasta los puntos de aplicación,
+redujo la de `config.py` a las cuatro proyecciones, subió a 32 componentes y
+registró `5a5cb09f…` en `700f7695`/`450cf2fb`; una segunda revisión lo refutó y
+el cierre de wiring registra el valor vigente `c939add3…` en `e84ebe81`, con
+los mismos 32 componentes —la corrección es estructural, no añade superficie.
 
 Ese valor es **candidato**, no definitivo: se registra para que las pruebas y
 el runtime sean coherentes, y sólo queda firme si la superficie corregida
-supera revisión independiente. Después de esa aprobación y antes del primer
-manifest spec-v4, identity-v1 queda congelada.
+supera una revisión independiente con P0=0 y P1=0. Ni un informe del
+implementador ni un CI en verde constituyen esa aprobación. Después de ella y
+antes del primer manifest spec-v4, identity-v1 queda congelada.
 
 Expandir o recomputar identity-v1 en estos reworks no reinterpreta un artefacto
 publicado: PR27 sigue sin merge, el repositorio no contiene manifests spec-v4
@@ -755,14 +758,93 @@ La clausura pasa de 30 a **32 componentes**: se añaden
 
 `tests/test_pr27_r05_routing_application_closure.py` fija: 18 mutaciones sobre
 las líneas exactas de aplicación (índice, streams/topics, despacho, inyección
-en `main`/`run`, y el traspaso store -> entrega en los cinco flush) que deben
-mover el digest; que ninguna llamada result-material queda fuera de una región
-en ninguno de los dos colectores (barrido AST del fichero completo); que los
+del ruteo y el traspaso store -> entrega en los cinco flush) que deben mover el
+digest; que ninguna llamada result-material queda fuera de una región en
+ninguno de los dos colectores (barrido AST del fichero completo); que los
 endpoints están dentro; que un índice forjado —o sin ruteo— no se construye;
 que la validación de clave interna acepta lo que la de procedencia externa
 rechaza; que cambiar cualquiera de las cuatro proyecciones mueve la identidad;
 y que umbrales, `bybit_oi_symbol`, `spot_history_symbol`, backoff, logging y
 health **no** la mueven.
+
+**Esa suite resultó insuficiente**, y su docstring lo declara. Ver el apartado
+siguiente.
+
+## Segunda refutación: la mutación miraba el sitio equivocado
+
+`CONFIRMED — hallazgos P1 reproducidos sobre 450cf2fb antes de tocar código`
+
+El helper `_mutate` de esa suite reescribe la **primera aparición textual** de
+cada expresión (`source.replace(old, new, 1)`). Tras la corrección anterior, la
+primera aparición siempre quedaba *dentro* de una región —
+`routing.futures_index(ACTIVE_SYMBOLS)` en `scalp_futures_index()`,
+`binance_loop(routing=routing)` en `scalp_routing_producers()`— de modo que el
+digest se movía, la suite pasaba y **los puntos de llamada reales seguían
+desprotegidos**. Una segunda revisión independiente lo demostró:
+
+**P1-1 — la inyección real del ruteo estaba fuera de la identidad.** Las
+invocaciones reales son `scalp_routing_producers(pool, service_lock, routing)`
+en `main()` y `ws_routing_producers(pool, service_lock, symbols, routing)` en
+`run()`. Sustituirlas por wiring directo —ruteo falso para el productor,
+correcto para el flusher— dejaba el digest en `5a5cb09f…`.
+
+**P1-2 — la selección real de sesión estaba fuera de la identidad.**
+`binance_futures_session → binance_market_session` dentro de `binance_loop()`,
+y `binance_spot_session → bybit_spot_session` dentro de `binance_consumer()`:
+ambas dejaban el digest en `5a5cb09f…`.
+
+**P1-3 — `EffectiveMarketRouting` es construible a mano.** Un ruteo forjado con
+`symbol="BTCUSDT_PERP.A", futures_pair="ETHUSDT"` es autoconsistente y puede
+llevar el digest registrado como simple cadena, así que
+`require_routed_pair_origins` lo aceptaba: comparaba el índice con el ruteo que
+venía con él. Producía `FuturesRoutingIndex`/`SpotRoutingIndex` ETHUSDT→BTC, y
+la entrega —sosteniendo el ruteo correcto— aceptaba la clave resultante porque
+esa clave sí está ruteada.
+
+**P2-4 — trailing whitespace** en `.github/pull_request_template.md` (líneas 64,
+65, 67, 68, 69 y 87) pese a que el informe anterior afirmó `git diff --check`
+limpio. Corregido.
+
+Evidencia roja: `tests/test_pr27_r05_routing_wiring_closure.py` sobre
+`450cf2fb` → **25 failed, 6 passed**.
+
+### Lo que cierra el hallazgo, en tres capas
+
+**A. Procedencia.** `require_attested_routing()` **re-deriva** el contrato desde
+el catálogo, los settings y los mapas efectivos vivos y exige que reproduzca
+exactamente las filas del ruteo en uso. Ambos índices lo llaman en
+`__post_init__`, antes de las validaciones de forma. La autoconsistencia del
+objeto y una cadena de digest dejan de contar como evidencia de procedencia.
+Como el chequeo recomputa en cada construcción, también convierte la barrera en
+un guardia continuo: un ruteo atestiguado al arrancar que después diverge falla
+al construir el siguiente índice, **antes** de suscribirse, del store y de
+escribir.
+
+**B. Estructura.** Los bucles de reconexión (`binance_loop`,
+`binance_market_loop`, `bybit_loop`, `binance_consumer`, `bybit_consumer`) y los
+de flush (`flush_trades`, `flush_books`, `flush_liquidations`, `flush_minute`,
+`flush_realtime`) reciben un `connect`/`cycle` **ya ligado**, construido dentro
+de la identidad con `functools.partial`. No nombran venue, ni sesión, ni store,
+ni entrega, ni ruteo: la sustitución que la revisión ejecutó no tiene forma
+expresable ahí. `main()`/`run()` llaman `require_attested_*_routing()` y
+`start_*_routing_producers()`; esta última atestigua, cablea y **crea las tareas
+materiales** dentro de la identidad, así que el entrypoint nunca sostiene un
+`EffectiveMarketRouting`. Un barrido AST endurecido exige que **ningún símbolo
+material se lea fuera de una región** en ninguno de los dos colectores, cubriendo
+bucles, consumers, factories y flushers raw.
+
+**C. Anclaje.** Las mutaciones nuevas localizan cada referencia por AST —sobre
+los sitios reales de lectura del símbolo, byte a byte— en vez de por
+desplazamiento textual. Una expresión duplicada dentro de una región ya no puede
+hacerse pasar por la real.
+
+`tests/test_pr27_r05_routing_wiring_closure.py` fija además la neutralidad en la
+otra dirección: la invocación opaca `connect(...)`/`cycle()`, los sleeps, el
+backoff, el logging y el health **no** mueven la identidad. Romperlos sólo puede
+costar datos —un `data_gap` visible—, nunca archivar el mercado de un símbolo
+bajo la clave de otro.
+
+Identidad recomputada: `5a5cb09f…` → `c939add3…`, con los mismos 32 componentes.
 
 ### Nomenclatura de la serie de reworks
 
@@ -773,10 +855,13 @@ health **no** la mueven.
 | R02 | **no existe commit identificable**; se declara explícitamente y no se inventa | — |
 | R03 | `0496819a15699bae3b80fc92e803a50adf40df54` | landed |
 | R04 | `ee3792ca9f26b1cc20f354e9eaf35332b8ce266e` | landed, incompleto |
-| R05 (candidato parcial) | `c879bdecf5eb453b5a91853e917be79d3df9042d` | **no superó revisión: A-02 abierto** |
-| R05 (candidato de cierre) | `700f7695f97c1d094a2180b7a6916686429abda3` | candidato, pendiente de revisión independiente |
+| R05 (candidato parcial) | `c879bdecf5eb453b5a91853e917be79d3df9042d` | **REFUTADO: A-02 abierto** |
+| R05 (primer cierre) | `700f7695f97c1d094a2180b7a6916686429abda3` | **REFUTADO: mutaciones por primera aparición textual** |
+| R05 (continuidad documental) | `450cf2fb5633779755f3d7db4069fc86a800eb8b` | **REFUTADO junto con `700f7695`** |
+| R05 (cierre de wiring) | `e84ebe8140c8393ea2ef3447d8c165d32b594917` | **CANDIDATO**, pendiente de revisión independiente P0=0/P1=0 |
 
-Esta corrección **no es R06**: es el cierre del mismo R05.
+Esta corrección **no es R06**: sigue siendo el cierre del mismo R05, en su
+tercer intento.
 
 ### Admisibilidad de observaciones anteriores
 

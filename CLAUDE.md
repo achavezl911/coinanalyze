@@ -20,8 +20,13 @@ merge, el deploy y la producción son del humano. Ver `docs/HANDOFF_IA.md` §2 y
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Para saber qué bloquea qué. |
 | [`docs/README.md`](docs/README.md) | Índice del resto. |
 
-Si tu cambio altera el estado del proyecto, **actualizar el handoff, el roadmap y el ADR es
-parte del entregable**, no un extra.
+**Actualizar [`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md) en GitHub es obligatorio en todo
+prompt, sin excepción**, commiteado y pusheado en tu rama. Si además tu cambio altera el
+estado del proyecto, el roadmap y el ADR entran también en el entregable. Un entregable sin
+handoff actualizado está incompleto.
+
+El handoff debe dejar comprensibles, sin contexto de ningún chat: propósito, alcance,
+limitaciones, arquitectura, estado y siguiente paso.
 
 ## Dónde trabajas
 
@@ -65,10 +70,26 @@ Un hallazgo no se cierra con documentación. El orden es:
 2. Corrige la arquitectura, no el síntoma.
 3. Demuestra que la mutación que lo causaba ahora mueve la identidad científica **o** queda
    estructuralmente impedida antes de escribir.
-4. No debilites tests existentes para que pase el tuyo.
+4. **Ancla la mutación por AST, en el punto de llamada real.** Reescribir la primera aparición
+   textual de una expresión no prueba nada si la que se ejecuta está en otro sitio.
+5. No debilites tests existentes para que pase el tuyo. Si la estructura cambió y un test debe
+   cambiar, hazlo **más** estricto.
 
-`c879bdec` afirmó un cierre que no existía y no superó la revisión. No repitas el patrón:
-si no puedes demostrarlo, dilo y marca `MISSING_EXTERNAL_EVIDENCE`.
+Tres precedentes, todos de esta misma serie: `c879bdec` afirmó un cierre que no existía;
+`700f7695` y `450cf2fb` lo afirmaron con una suite verde cuyas mutaciones no tocaban el código
+que se ejecuta. Los tres fueron refutados. No repitas el patrón: si no puedes demostrarlo,
+dilo y marca `MISSING_EXTERNAL_EVIDENCE`.
+
+## Qué constituye una aprobación
+
+**ChatGPT Work siempre cuestiona y valida de forma independiente tu código**: revisa el árbol
+y ejecuta sus propias mutaciones, no tu informe. **Tu informe no es una aprobación. Un CI en
+verde tampoco.** Sólo lo es una revisión independiente y adversarial con **P0=0 y P1=0**. Si
+Work te refuta, recibirás el veredicto y el prompt correctivo juntos. `mergeable=true` en
+GitHub no significa aprobado: PR #28 sigue **DO NOT MERGE**.
+
+Todo prompt que recibas incluye HEAD, alcance, invariantes, pruebas rojas, aceptación,
+validación, evidencia y prohibiciones. Si falta algo de eso, pídelo antes de empezar.
 
 ## Comportamiento como reviewer
 

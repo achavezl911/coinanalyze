@@ -8,7 +8,7 @@ es la siguiente acción.
 
 | Documento | Para qué |
 |---|---|
-| [`HANDOFF_IA.md`](HANDOFF_IA.md) | Estado exacto, SHAs, qué está confirmado/pendiente/bloqueado, próxima acción, roles y prohibiciones. **Léelo primero.** |
+| [`HANDOFF_IA.md`](HANDOFF_IA.md) | Estado exacto, SHAs, qué está confirmado/pendiente/bloqueado, próxima acción, roles, protocolo de validación adversarial (§2.1) y prohibiciones. **Léelo primero.** Actualizarlo es obligatorio en todo entregable, sin excepción. |
 | [`AI_ENGINEERING_RULES.md`](AI_ENGINEERING_RULES.md) | Documento maestro compartido por Codex y Claude Code. Las 20 reglas. Gana sobre cualquier otra instrucción. |
 | [`SCIENTIFIC_ARCHITECTURE.md`](SCIENTIFIC_ARCHITECTURE.md) | Cómo encaja el sistema científico, con diagramas: exchanges, colectores, ruteo atestiguado, crudo, observaciones, replay, outcomes, visibilidad, contrato, identidad, walk-forward, manifest, resultado autoritativo. |
 | [`ROADMAP.md`](ROADMAP.md) | Las etapas hasta el resultado autoritativo, en orden, con lo que bloquea cada una. |
@@ -56,6 +56,18 @@ es la siguiente acción.
 
 `CHANGES_v*.md`, `VALIDATION*.md`, `PATCHES_APPLIED*.md` y `AUDIT_v1.3.8.md` son registros de
 versiones anteriores. No describen el estado actual; consúltalos sólo para arqueología.
+
+---
+
+## Qué constituye una aprobación
+
+Ni un informe de Claude ni un CI en verde. Sólo una revisión independiente y adversarial de
+ChatGPT Work con **P0=0 y P1=0**, que cuestione el código en el árbol y ejecute sus propias
+mutaciones. Si Work refuta, entrega veredicto y prompt correctivo juntos. Detalle en
+[`HANDOFF_IA.md`](HANDOFF_IA.md) §2.1 y [`AI_ENGINEERING_RULES.md`](AI_ENGINEERING_RULES.md).
+
+**`mergeable=true` en GitHub tampoco es una aprobación**: sólo dice que no hay conflicto de
+texto. PR #28 sigue **DO NOT MERGE**.
 
 ---
 
