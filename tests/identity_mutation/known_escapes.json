@@ -1,20 +1,126 @@
 {
   "baseline_rev": "c60e2ee6",
-  "escapes": [
-    "M-01",
-    "M-02",
-    "M-03",
-    "M-05",
-    "M-06",
-    "M-07",
-    "M-09",
-    "M-10",
-    "M-11",
-    "M-12",
-    "M-13",
-    "M-15"
-  ],
-  "skipped": [
-    "M-16"
-  ]
+  "escapes": {
+    "M-01": {
+      "closes_with": "C.2",
+      "note": "the validator that runs must be hashed as a bound object, not resolved by name at call time"
+    },
+    "M-02": {
+      "closes_with": "D",
+      "note": "a tree whose code and registry were rewritten together is self-consistent; only an anchor the mutator does not control can tell it from a legitimate new version"
+    },
+    "M-03": {
+      "closes_with": "B",
+      "note": "the canonicalizer drops docstrings wholesale; an explicit field list is what decides that a documented contract is material"
+    },
+    "M-04": {
+      "closes_with": "A",
+      "note": "the digest already moves; nothing refuses to operate on it"
+    },
+    "M-05": {
+      "closes_with": "C.2",
+      "note": "the file is untouched, so only a hash of the object actually bound at runtime can see the transplant"
+    },
+    "M-06": {
+      "closes_with": "C.1",
+      "note": "sys.modules must be checked against the hashed surface"
+    },
+    "M-07": {
+      "closes_with": "A",
+      "note": "the presence and content of the versioned routing catalog is part of the environment half of the surface"
+    },
+    "M-08": {
+      "closes_with": "A",
+      "note": "the environment digest moves and no combined validation looks at it, so the runtime resolution is recorded and never enforced"
+    },
+    "M-09": {
+      "closes_with": "A",
+      "note": "the environment half must be part of what is validated"
+    },
+    "M-10": {
+      "closes_with": "A",
+      "note": "the environment half must be part of what is validated"
+    },
+    "M-11": {
+      "closes_with": "A",
+      "note": "the environment half must be part of what is validated"
+    },
+    "M-12": {
+      "closes_with": "A",
+      "note": "the surface enumerates components; a module nobody enumerated is outside it by construction"
+    },
+    "M-13": {
+      "closes_with": "A",
+      "note": "the surface must be defined over resolved paths, not over names that may leave it"
+    },
+    "M-14": {
+      "closes_with": "A",
+      "note": "the digest already moves; nothing refuses to operate on it"
+    },
+    "M-15": {
+      "closes_with": "A",
+      "note": "the resolved dependency set is part of the environment half and is projected nowhere today"
+    },
+    "M-16": {
+      "closes_with": "A",
+      "note": "the interpreter is an environment component and the runtime contract projects four routing fields per symbol and nothing else"
+    },
+    "M-17": {
+      "closes_with": "A",
+      "note": "negative control: the digest is already stable, and acceptance cannot be demonstrated until the combined entry point exists"
+    },
+    "M-18": {
+      "closes_with": "A",
+      "note": "negative control: the digest is already stable, and acceptance cannot be demonstrated until the combined entry point exists"
+    },
+    "M-19": {
+      "closes_with": "A",
+      "note": "the digest already moves; nothing refuses to operate on it"
+    },
+    "M-20": {
+      "closes_with": "A",
+      "note": "negative control: the digest is already stable, and acceptance cannot be demonstrated until the combined entry point exists"
+    },
+    "M-21": {
+      "closes_with": "A",
+      "note": "negative control: the digest is already stable, and acceptance cannot be demonstrated until the combined entry point exists"
+    },
+    "M-22": {
+      "closes_with": "A",
+      "note": "negative control: the digest is already stable, and acceptance cannot be demonstrated until the combined entry point exists"
+    },
+    "M-23": {
+      "closes_with": "A",
+      "note": "negative control: the digest is already stable, and acceptance cannot be demonstrated until the combined entry point exists"
+    },
+    "M-24": {
+      "closes_with": "A",
+      "note": "the versioned config directory is part of the environment half; whether an example is material is a boundary the surface must state, not one it may leave undecided"
+    },
+    "M-25": {
+      "closes_with": "A",
+      "note": "the digest already moves; nothing refuses to operate on it"
+    },
+    "M-27": {
+      "closes_with": "C.1",
+      "note": "the file on disk is untouched, so only checking where the loaded module actually came from can see it"
+    },
+    "M-28": {
+      "closes_with": "D",
+      "note": "an anchor that can be deleted from the tree it certifies is not an anchor; its absence must stop the system"
+    },
+    "M-29": {
+      "closes_with": "D",
+      "note": "the trusted key must arrive from outside the tree; a versioned key the mutator may replace anchors nothing"
+    },
+    "M-30": {
+      "closes_with": "A",
+      "note": "negative control: the digest is already stable, and acceptance cannot be demonstrated until the combined entry point exists"
+    },
+    "M-31": {
+      "closes_with": "C.2",
+      "note": "the neutralization is installed before any reference exists, so resolving the validator by name cannot help; the object that runs must itself be hashed"
+    }
+  },
+  "skipped": []
 }

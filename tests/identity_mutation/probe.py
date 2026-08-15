@@ -1,9 +1,18 @@
 """One identity measurement, executed inside a mutated tree.
 
-The harness copies this file to the root of the tree under test and runs it as
-a standalone script with ``cwd`` set to that root, so ``import app`` resolves to
-the mutated sources and nothing else.  It must therefore not import anything
+The harness copies this file to the root of the tree under test and runs it
+with ``PYTHONSAFEPATH=1`` and ``PYTHONPATH`` pointing at that root, so ``import
+app`` resolves through an explicitly configured path rather than through the
+directory the script happens to live in.  It must therefore not import anything
 from :mod:`tests.identity_mutation`.
+
+The explicit path configuration is not a detail.  Under the implicit one --
+``python probe.py`` with the tree as the script directory -- ``sys.path[0]``
+precedes every ``PYTHONPATH`` entry and ``site`` runs before ``sys.path[0]``
+exists at all, so a ``PYTHONPATH`` shadow can never win and a ``sitecustomize``
+dropped in the tree is never imported.  Both mutations would have been applied,
+measured and reported without ever having had an effect, which is the exact
+failure mode this instrument exists to detect.
 
 Output protocol: arbitrary library logging on stdout, then the sentinel line
 ``===PROBE_JSON===``, then exactly one JSON object.  Everything before the
@@ -28,21 +37,53 @@ What is measured
 ``validation_accepted``
     Whether a *previously frozen* identity object -- the one measured on the
     pristine baseline tree, handed to this process as a file -- is still
-    accepted here.  After a material mutation it must not be.
+    accepted by ``validate_scientific_implementation_identity()``.  Diagnostic:
+    it is what the harness uses to prove an untouched tree can validate itself,
+    and it is half of the code, so it decides nothing on its own.
 
 ``forged_object_accepted``
-    Whether an identity object recomputed *in this tree* is accepted.  It is
-    self-consistent by construction, so this is the question a digest chain
-    cannot answer: is there anything anchoring the registry outside the tree it
-    describes?
+    Whether an identity object recomputed *in this tree* is accepted by that
+    same half validator.  The object is self-consistent by construction, so
+    this is the question a digest chain cannot answer.
+
+``combined_validation_accepted`` / ``combined_validator_absent`` / ``rejection_kind``
+    The same forged object, put to ``validate_scientific_identity()`` -- the
+    single entry point that validates code and environment at once, with the
+    external anchor available through the environment.  This is what decides
+    every effect in the catalog.  The entry point does not exist at the
+    baseline revision; when it is missing the probe says so and the effect is
+    not met.  Substituting the half validator here would manufacture exactly
+    the empty green this instrument exists to refuse.
+
+``anchor_mechanism_absent``
+    Whether the tree exposes any way of consuming an anchor it does not itself
+    contain.  See ``_ANCHOR_ENTRY_POINTS``.
 
 Exceptions are reported as data.  A crashed measurement is a result, not a
 silent zero.
+
+The contract commit 3 has to meet
+---------------------------------
+
+* ``app.signal_scientific_identity.validate_scientific_identity`` exists and
+  validates both halves in one call.  It takes the presented identity as its
+  first positional parameter, or no parameters at all if it resolves everything
+  itself; the probe inspects the signature rather than guessing by exception.
+* It signals refusal by raising, or by returning a falsy value.  Returning
+  ``None`` on success is not admitted: section 3 of the prompt defines a falsy
+  return as a rejection.
+* It reads the external anchor from the environment variable named by
+  ``IDENTITY_ANCHOR_ENV_VAR``, and/or exposes ``verify_identity_anchor``.  If it
+  declares a variable this harness does not set, the probe reports the mismatch
+  and fails the anchor closed rather than letting a validator that refused for
+  want of an anchor pass for one that detected the mutation.
 """
 
 from __future__ import annotations
 
 import hashlib
+import importlib
+import inspect
 import json
 import os
 import sys
@@ -53,6 +94,22 @@ SENTINEL = "===PROBE_JSON==="
 STORED_IDENTITY_FILE = "_identity_mutation_stored.json"
 RUNTIME_PATCH_ENV = "IDENTITY_MUTATION_RUNTIME_PATCH"
 SANITIZE_ENV = "IDENTITY_MUTATION_SANITIZE"
+SHADOWED_MODULE_ENV = "IDENTITY_MUTATION_SHADOWED_MODULE"
+SITECUSTOMIZE_MARKER_ENV = "IDENTITY_MUTATION_SITECUSTOMIZE_ACTIVE"
+ANCHOR_ENV = "IDENTITY_ANCHOR_FINGERPRINT"
+
+IDENTITY_MODULE = "app.signal_scientific_identity"
+COMBINED_VALIDATOR = "validate_scientific_identity"
+
+# Either name is enough to say the tree has *some* way of consuming an anchor it
+# does not contain.  The probe deliberately does not care which mechanism sits
+# behind them -- signature, transparency log, attestation -- only that the
+# question is asked of something outside the tree.
+_ANCHOR_ENTRY_POINTS = ("verify_identity_anchor", "IDENTITY_ANCHOR_ENV_VAR")
+
+REJECTION_FALSE = "false"
+REJECTION_EXCEPTION = "exception"
+REJECTION_IMPORT_ERROR = "import_error"
 
 
 # --- deterministic reporting ------------------------------------------------
@@ -104,6 +161,8 @@ def _patch_neutralize_identity_validator() -> None:
     import app.signal_scientific_identity as identity_module
 
     identity_module.validate_scientific_implementation_identity = lambda stored: stored
+    if hasattr(identity_module, COMBINED_VALIDATOR):
+        setattr(identity_module, COMBINED_VALIDATOR, lambda *args, **kwargs: True)
 
     sentinel = {"identity_version": "not-an-integer"}
     if identity_module.validate_scientific_implementation_identity(sentinel) is not sentinel:
@@ -137,8 +196,6 @@ def _patch_inject_synthetic_module() -> None:
     not merely that a dictionary key was set.
     """
 
-    import importlib
-
     outside = Path(os.environ.get("IDENTITY_MUTATION_OUTSIDE", "/nonexistent"))
     synthetic = types.ModuleType("app.ws_collector")
     synthetic.__file__ = str(outside / "ws_collector.py")
@@ -159,6 +216,53 @@ _RUNTIME_PATCHES = {
 }
 
 
+# --- effectiveness flags ----------------------------------------------------
+
+
+def anchor_state(identity_module: object) -> tuple[bool, str]:
+    """Return ``(anchor_mechanism_absent, failure_note)``.
+
+    Absent means the tree exposes no way of consuming an anchor it does not
+    itself contain.  A tree that declares a *different* environment variable is
+    also treated as absent, and says so: nobody would be setting the variable it
+    reads, so a validator that fails closed would refuse for want of an anchor
+    and be indistinguishable from one that detected the mutation.  That is a
+    false green -- the escape would be reported as closed -- and it is the one
+    mistake this instrument may never make.
+    """
+
+    if identity_module is None:
+        return True, ""
+    absent = not any(hasattr(identity_module, name) for name in _ANCHOR_ENTRY_POINTS)
+    declared = getattr(identity_module, "IDENTITY_ANCHOR_ENV_VAR", None)
+    if declared is not None and declared != ANCHOR_ENV:
+        return True, (
+            f"anchor channel mismatch -> the tree reads {declared!r} and the "
+            f"harness supplies {ANCHOR_ENV!r}"
+        )
+    return absent, ""
+
+
+def _shadow_is_active() -> bool:
+    """Did the declared module resolve from outside the tree?
+
+    A shadow that lost the path race is an inert mutation, and the harness
+    fails the row rather than crediting the tree with a guard it never had.
+    """
+
+    module_name = os.environ.get(SHADOWED_MODULE_ENV) or ""
+    if not module_name:
+        return False
+    try:
+        module = importlib.import_module(module_name)
+    except Exception:
+        return False
+    origin = getattr(module, "__file__", None)
+    if not origin:
+        return False
+    return not Path(origin).resolve().is_relative_to(Path.cwd().resolve())
+
+
 # --- measurement ------------------------------------------------------------
 
 
@@ -173,6 +277,85 @@ def _total_digest(code_digest: str | None, environment_digest: str | None) -> st
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def _call_combined_validator(validator: object, presented: dict[str, object]) -> object:
+    """Call the combined entry point without guessing by exception.
+
+    A ``TypeError`` from a signature mismatch and a ``TypeError`` raised inside
+    a correct call are indistinguishable after the fact, and reading the second
+    one as the first would turn a rejection into an accident.  The signature is
+    inspected instead.
+    """
+
+    try:
+        signature = inspect.signature(validator)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return validator(presented)  # type: ignore[operator]
+    positional = [
+        parameter
+        for parameter in signature.parameters.values()
+        if parameter.kind
+        in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD, parameter.VAR_POSITIONAL)
+    ]
+    if positional:
+        return validator(presented)  # type: ignore[operator]
+    return validator()  # type: ignore[operator]
+
+
+def _combined_validation(
+    identity_module: types.ModuleType | None,
+    import_failure: bool,
+    presented: dict[str, object] | None,
+) -> dict[str, object]:
+    """Decide whether the system, as mutated, refuses to operate.
+
+    Three shapes of refusal are admitted (section 3): a falsy return, a
+    propagated exception, and an import failure caused by the mutation itself.
+    A tree that cannot produce its own identity has already refused -- there is
+    nothing to hand a validator -- and that outcome takes precedence over the
+    absence of the combined entry point, which could not have been consulted
+    either way.
+    """
+
+    if import_failure or identity_module is None:
+        return {
+            "combined_validation_accepted": False,
+            "combined_validator_absent": False,
+            "rejection_kind": REJECTION_IMPORT_ERROR,
+        }
+    if presented is None:
+        return {
+            "combined_validation_accepted": False,
+            "combined_validator_absent": False,
+            "rejection_kind": REJECTION_EXCEPTION,
+        }
+    validator = getattr(identity_module, COMBINED_VALIDATOR, None)
+    if validator is None:
+        return {
+            "combined_validation_accepted": False,
+            "combined_validator_absent": True,
+            "rejection_kind": None,
+        }
+    try:
+        outcome = _call_combined_validator(validator, presented)
+    except Exception:
+        return {
+            "combined_validation_accepted": False,
+            "combined_validator_absent": False,
+            "rejection_kind": REJECTION_EXCEPTION,
+        }
+    if not outcome:
+        return {
+            "combined_validation_accepted": False,
+            "combined_validator_absent": False,
+            "rejection_kind": REJECTION_FALSE,
+        }
+    return {
+        "combined_validation_accepted": True,
+        "combined_validator_absent": False,
+        "rejection_kind": None,
+    }
+
+
 def measure() -> dict[str, object]:
     result: dict[str, object] = {
         "code_digest": None,
@@ -181,11 +364,21 @@ def measure() -> dict[str, object]:
         "validation_accepted": False,
         "validation_error": None,
         "forged_object_accepted": False,
+        "combined_validation_accepted": False,
+        "combined_validator_absent": False,
+        "rejection_kind": None,
+        "anchor_mechanism_absent": True,
+        "sitecustomize_active": False,
+        "pythonpath_shadow_active": False,
         "exception": None,
         "identity_object": None,
         "interpreter": f"{sys.version_info.major}.{sys.version_info.minor}",
     }
     failures: list[str] = []
+
+    # Read before anything else imports app: the marker is set by the injected
+    # sitecustomize while the interpreter is still starting up.
+    result["sitecustomize_active"] = os.environ.get(SITECUSTOMIZE_MARKER_ENV) == "1"
 
     patch_name = os.environ.get(RUNTIME_PATCH_ENV) or ""
     if patch_name:
@@ -194,21 +387,35 @@ def measure() -> dict[str, object]:
         except Exception as exc:  # pragma: no cover - reported, never raised
             failures.append(f"runtime_patch {patch_name} failed -> {_describe(exc)}")
 
-    identity_module = None
-    identity: dict[str, object] | None = None
-    try:
-        import app.signal_scientific_identity as identity_module
+    result["pythonpath_shadow_active"] = _shadow_is_active()
 
-        identity = identity_module.compute_scientific_implementation_identity()
-        result["code_digest"] = identity["digest"]
-        result["identity_object"] = identity
+    identity_module: types.ModuleType | None = None
+    import_failure = False
+    identity: dict[str, object] | None = None
+    contract: dict[str, object] | None = None
+    try:
+        identity_module = importlib.import_module(IDENTITY_MODULE)
     except Exception as exc:  # pragma: no cover - reported, never raised
-        failures.append(f"code digest failed -> {_describe(exc)}")
+        import_failure = True
+        failures.append(f"identity module import failed -> {_describe(exc)}")
+
+    if identity_module is not None:
+        absent, anchor_note = anchor_state(identity_module)
+        result["anchor_mechanism_absent"] = absent
+        if anchor_note:
+            failures.append(anchor_note)
+        try:
+            identity = identity_module.compute_scientific_implementation_identity()
+            result["code_digest"] = identity["digest"]
+            result["identity_object"] = identity
+        except Exception as exc:  # pragma: no cover - reported, never raised
+            failures.append(f"code digest failed -> {_describe(exc)}")
 
     try:
         from app.signal_runtime_contract import compute_scientific_runtime_contract
 
-        result["environment_digest"] = compute_scientific_runtime_contract()["digest"]
+        contract = compute_scientific_runtime_contract()
+        result["environment_digest"] = contract["digest"]
     except Exception as exc:  # pragma: no cover - reported, never raised
         failures.append(f"environment digest failed -> {_describe(exc)}")
 
@@ -232,15 +439,29 @@ def measure() -> dict[str, object]:
             result["validation_accepted"] = False
             result["validation_error"] = _describe(exc)
 
-    if identity_module is not None and identity is not None:
+    presented: dict[str, object] | None = None
+    if identity is not None and contract is not None:
         # The forger's object: recomputed here, internally consistent, and
-        # carrying whatever digest this tree happens to produce.
+        # carrying whatever digests this tree happens to produce.  Both halves,
+        # because the entry point under test is the one that validates both.
+        presented = json.loads(
+            json.dumps(
+                {
+                    "scientific_implementation": identity,
+                    "scientific_runtime_contract": contract,
+                }
+            )
+        )
+
+    if identity_module is not None and identity is not None:
         validator = identity_module.validate_scientific_implementation_identity
         try:
             validator(json.loads(json.dumps(identity)))
             result["forged_object_accepted"] = True
         except Exception:
             result["forged_object_accepted"] = False
+
+    result.update(_combined_validation(identity_module, import_failure, presented))
 
     if failures:
         result["exception"] = _sanitize(" | ".join(failures))
@@ -258,6 +479,12 @@ def main() -> int:
             "validation_accepted": False,
             "validation_error": None,
             "forged_object_accepted": False,
+            "combined_validation_accepted": False,
+            "combined_validator_absent": False,
+            "rejection_kind": None,
+            "anchor_mechanism_absent": True,
+            "sitecustomize_active": False,
+            "pythonpath_shadow_active": False,
             "exception": _describe(exc),
             "identity_object": None,
             "interpreter": f"{sys.version_info.major}.{sys.version_info.minor}",

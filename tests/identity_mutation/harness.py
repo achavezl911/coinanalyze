@@ -7,13 +7,27 @@ Contract
   --detach``.  Every mutation then works on its own ``shutil.copytree`` of that
   base.  The base worktree is never mutated and the user's working tree is
   never touched.
-* Every measurement runs in its own subprocess.  Environment mutations and
-  runtime patches contaminate an interpreter in ways that cannot be reliably
-  undone in process, so sharing one would silently couple the rows.
+* Every measurement runs in its own subprocess, launched with
+  ``PYTHONSAFEPATH=1`` and an explicit ``PYTHONPATH``.  Environment mutations
+  and runtime patches contaminate an interpreter in ways that cannot be
+  reliably undone in process, so sharing one would silently couple the rows.
 * The harness fails closed.  A missing anchor, a subprocess that never emitted
-  the sentinel, unparseable JSON, a null digest on both sides or a timeout are
-  all a FAIL of that mutation -- never a skip.  The only admitted skip is a
-  ``skip_if`` declared in the catalog.
+  the sentinel, unparseable JSON, a null digest where the effect needs one, a
+  timeout, an unprovisioned second interpreter, an anchor that was never
+  supplied and a mutation that turned out to be inert are all a FAIL of that
+  mutation -- never a skip.  The catalog declares no skip condition and this
+  module can emit none.
+
+Why the path configuration is explicit
+--------------------------------------
+
+``python probe.py`` puts the script's directory at ``sys.path[0]``, ahead of
+every ``PYTHONPATH`` entry, and runs ``site`` before that entry exists at all.
+Under that invocation M-27 could never win the path race and the
+``sitecustomize`` of M-31 would never be imported: both mutations would be
+applied, measured and filed as findings without having had any effect.  Running
+the probe with ``PYTHONSAFEPATH=1`` and ``PYTHONPATH`` naming the tree makes
+resolution order a thing the harness states rather than a thing it inherits.
 """
 
 from __future__ import annotations
@@ -26,6 +40,7 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass, field
+from functools import cache
 from pathlib import Path
 from shutil import ignore_patterns
 from typing import Any
@@ -38,10 +53,19 @@ SENTINEL = "===PROBE_JSON==="
 RUNTIME_PATCH_ENV = "IDENTITY_MUTATION_RUNTIME_PATCH"
 SANITIZE_ENV = "IDENTITY_MUTATION_SANITIZE"
 OUTSIDE_ENV = "IDENTITY_MUTATION_OUTSIDE"
+SHADOWED_MODULE_ENV = "IDENTITY_MUTATION_SHADOWED_MODULE"
+ANCHOR_ENV = "IDENTITY_ANCHOR_FINGERPRINT"
+INTERPRETERS_ENV = "IDENTITY_MUTATION_INTERPRETERS"
 PROBE_TIMEOUT_SECONDS = 180
 
-# Supported interpreters per pyproject's requires-python.
-CANDIDATE_INTERPRETERS = ("python3.11", "python3.12", "python3.13")
+# Variables the harness owns.  A catalog step that set one of them would be
+# rewriting the instrument rather than the tree.
+RESERVED_ENV = frozenset({"PYTHONPATH", "PYTHONSAFEPATH", ANCHOR_ENV})
+
+# Supported runtimes per pyproject's requires-python.  A declared interpreter
+# outside this set is ignored: measuring under a runtime the project does not
+# support would answer a question nobody asked.
+SUPPORTED_INTERPRETER_VERSIONS = ("3.11", "3.12", "3.13")
 
 # Failure reasons.  Kept as a closed vocabulary so evidence stays diffable.
 REASON_EFFECT_NOT_MET = "effect_not_met"
@@ -50,14 +74,56 @@ REASON_NO_SENTINEL = "probe_emitted_no_sentinel"
 REASON_BAD_JSON = "probe_json_unparseable"
 REASON_TIMEOUT = "probe_timeout"
 REASON_DIGEST_UNAVAILABLE = "digest_unavailable"
-REASON_BOTH_DIGESTS_NULL = "baseline_and_mutant_digest_both_null"
 REASON_PATCH_INEFFECTIVE = "runtime_patch_ineffective"
+REASON_MUTATION_INEFFECTIVE = "mutation_ineffective"
+REASON_DIGEST_DID_NOT_MOVE = "digest_did_not_move"
+REASON_DIGEST_MOVED = "digest_moved"
+REASON_CODE_DIGEST_MOVED = "code_digest_moved"
+REASON_ENV_DIGEST_DID_NOT_MOVE = "environment_digest_did_not_move"
+REASON_COMBINED_VALIDATOR_ABSENT = "combined_validator_absent"
+REASON_ANCHOR_MECHANISM_ABSENT = "anchor_mechanism_absent"
+REASON_ANCHOR_NOT_SUPPLIED = "anchor_not_supplied"
+REASON_FORGED_OBJECT_ACCEPTED = "forged_object_accepted"
+REASON_ALT_INTERPRETER_UNAVAILABLE = "alternative_interpreter_unavailable"
+REASON_ALT_INTERPRETER_UNUSABLE = "alternative_interpreter_unusable"
+
+FAILURE_REASONS = frozenset(
+    {
+        "",
+        REASON_EFFECT_NOT_MET,
+        REASON_ANCHOR_NOT_FOUND,
+        REASON_NO_SENTINEL,
+        REASON_BAD_JSON,
+        REASON_TIMEOUT,
+        REASON_DIGEST_UNAVAILABLE,
+        REASON_PATCH_INEFFECTIVE,
+        REASON_MUTATION_INEFFECTIVE,
+        REASON_DIGEST_DID_NOT_MOVE,
+        REASON_DIGEST_MOVED,
+        REASON_CODE_DIGEST_MOVED,
+        REASON_ENV_DIGEST_DID_NOT_MOVE,
+        REASON_COMBINED_VALIDATOR_ABSENT,
+        REASON_ANCHOR_MECHANISM_ABSENT,
+        REASON_ANCHOR_NOT_SUPPLIED,
+        REASON_FORGED_OBJECT_ACCEPTED,
+        REASON_ALT_INTERPRETER_UNAVAILABLE,
+        REASON_ALT_INTERPRETER_UNUSABLE,
+    }
+)
 
 # The probe formats an ineffective runtime patch with this prefix.  A patch that
 # silently did nothing must never be reported as a finding: that is the exact
 # failure mode -- a green result over code that was never actually touched --
 # that refuted three earlier closures in this series.
 PATCH_FAILURE_PREFIX = "runtime_patch "
+
+# The key a mutator would install if the anchor's trust root lived in the tree.
+_MUTATOR_PUBLIC_KEY = """\
+-----BEGIN PUBLIC KEY-----
+aWRlbnRpdHktbXV0YXRpb24tbWF0cml4LW11dGF0b3Ita2V5LW5vdC1hLXJlYWwt
+a2V5LXVzZWQtb25seS10by1hc2std2hldGhlci10aGUtdHJlZS10cnVzdHMtaXQ=
+-----END PUBLIC KEY-----
+"""
 
 
 class AnchorError(RuntimeError):
@@ -82,7 +148,13 @@ class Measurement:
     validation_accepted: bool
     validation_error: str | None
     forged_object_accepted: bool
+    combined_validation_accepted: bool
+    combined_validator_absent: bool
+    rejection_kind: str | None
+    anchor_mechanism_absent: bool
     exception: str | None
+    sitecustomize_active: bool = False
+    pythonpath_shadow_active: bool = False
     identity_object: dict[str, Any] | None = None
 
     def as_evidence(self) -> dict[str, Any]:
@@ -93,8 +165,51 @@ class Measurement:
             "validation_accepted": self.validation_accepted,
             "validation_error": self.validation_error,
             "forged_object_accepted": self.forged_object_accepted,
+            "combined_validation_accepted": self.combined_validation_accepted,
+            "combined_validator_absent": self.combined_validator_absent,
+            "rejection_kind": self.rejection_kind,
+            "anchor_mechanism_absent": self.anchor_mechanism_absent,
+            # Recorded, not merely checked: these are the only fields that say a
+            # mutation actually took effect, and a reader of the frozen evidence
+            # must be able to tell an escape from an inert mutation without
+            # re-running anything.
+            "sitecustomize_active": self.sitecustomize_active,
+            "pythonpath_shadow_active": self.pythonpath_shadow_active,
             "exception": self.exception,
         }
+
+    def probe_flag(self, name: str) -> bool:
+        return bool(getattr(self, name, False))
+
+    @property
+    def rejected(self) -> bool:
+        """Did the system, as mutated, refuse to operate?
+
+        Three shapes count, all decided by the probe: a falsy return from the
+        combined validator, an exception propagated out of it, and a failure
+        caused by the mutation that stops the tree from producing an identity
+        at all.  An absent combined validator is not one of them.
+        """
+
+        return self.rejection_kind is not None
+
+
+def _unavailable_measurement(exception: str | None) -> Measurement:
+    """What a row carries when no measurement could be taken at all."""
+
+    return Measurement(
+        code_digest=None,
+        environment_digest=None,
+        total_digest=None,
+        validation_accepted=False,
+        validation_error=None,
+        forged_object_accepted=False,
+        combined_validation_accepted=False,
+        combined_validator_absent=False,
+        rejection_kind=None,
+        anchor_mechanism_absent=True,
+        exception=exception,
+    )
 
 
 @dataclass(slots=True)
@@ -104,6 +219,8 @@ class StepOutcome:
     env: dict[str, str] = field(default_factory=dict)
     runtime_patch: str = ""
     interpreter: str = ""
+    pythonpath_prefix: list[str] = field(default_factory=list)
+    shadowed_module: str = ""
 
 
 # --- byte-accurate AST spans ------------------------------------------------
@@ -159,9 +276,9 @@ def _read_bytes(tree: Path, relative: str) -> bytes:
 def _write_bytes(tree: Path, relative: str, data: bytes) -> None:
     """Write a mutated file, refusing a no-op or a broken parse.
 
-    A step that changes nothing would turn a ``MUST_NOT_MOVE`` row into a
-    vacuous green -- the digest would hold because nothing was mutated, not
-    because the canonicalizer is neutral about what was.
+    A step that changes nothing would turn a ``MUST_NOT_MOVE_AND_ACCEPT`` row
+    into a vacuous green -- the digest would hold because nothing was mutated,
+    not because the canonicalizer is neutral about what was.
     """
 
     path = tree / relative
@@ -186,31 +303,36 @@ def _apply_text_edit(tree: Path, step: cat.TextEdit) -> None:
     _write_bytes(tree, step.path, data.replace(needle, step.replacement.encode("utf-8")))
 
 
-def _apply_ast_edit(tree: Path, step: cat.AstEdit) -> None:
-    data = _read_bytes(tree, step.path)
+def _ast_edited_source(data: bytes, symbol: str, part: str, replacement: str, label: str) -> bytes:
     source = data.decode("utf-8")
     offsets = _line_offsets(data)
-    node = _top_level_symbol(ast.parse(source), step.symbol)
+    node = _top_level_symbol(ast.parse(source), symbol)
     body = getattr(node, "body", [])
-    if step.part == "docstring":
+    if part == "docstring":
         if not _has_docstring(node):
-            raise AnchorError(f"{step.symbol!r} in {step.path!r} has no docstring")
+            raise AnchorError(f"{symbol!r} in {label!r} has no docstring")
         literal = body[0].value
         start = _position(offsets, literal.lineno, literal.col_offset)
         end = _position(offsets, literal.end_lineno, literal.end_col_offset)
-    elif step.part == "body":
+    elif part == "body":
         first = body[1] if _has_docstring(node) else body[0]
         if first is None:
-            raise AnchorError(f"{step.symbol!r} in {step.path!r} has an empty body")
+            raise AnchorError(f"{symbol!r} in {label!r} has an empty body")
         # Start at the beginning of the line so the replacement carries its own
         # indentation instead of inheriting a partial one.
         start = offsets[first.lineno - 1]
         end = _position(offsets, body[-1].end_lineno, body[-1].end_col_offset)
     else:
-        raise AnchorError(f"unsupported AST edit part: {step.part!r}")
-    mutated = data[:start] + step.replacement.encode("utf-8") + data[end:]
+        raise AnchorError(f"unsupported AST edit part: {part!r}")
+    mutated = data[:start] + replacement.encode("utf-8") + data[end:]
     if mutated == data:
-        raise AnchorError(f"AST edit on {step.symbol!r} in {step.path!r} changed nothing")
+        raise AnchorError(f"AST edit on {symbol!r} in {label!r} changed nothing")
+    return mutated
+
+
+def _apply_ast_edit(tree: Path, step: cat.AstEdit) -> None:
+    data = _read_bytes(tree, step.path)
+    mutated = _ast_edited_source(data, step.symbol, step.part, step.replacement, step.path)
     _write_bytes(tree, step.path, mutated)
 
 
@@ -271,6 +393,13 @@ def _apply_create_file(tree: Path, step: cat.CreateFile) -> None:
     path.write_text(step.content, encoding="utf-8")
 
 
+def _apply_delete_file(tree: Path, step: cat.DeleteFile) -> None:
+    path = tree / step.path
+    if not path.is_file() or path.is_symlink():
+        raise AnchorError(f"{step.path!r} is not a regular file in the tree")
+    path.unlink()
+
+
 def _apply_symlink(tree: Path, step: cat.SymlinkOutOfTree, outside: Path) -> None:
     source = tree / step.path
     if not source.is_file() or source.is_symlink():
@@ -313,6 +442,106 @@ def _apply_reregister(
     )
 
 
+def _apply_pythonpath_shadow(
+    tree: Path, step: cat.PythonPathShadow, outcome: StepOutcome, outside: Path
+) -> None:
+    """Put an altered copy of one module ahead of the tree's own.
+
+    The shadow package re-exports the real ``app`` directory on ``__path__``,
+    so exactly one module resolves from outside and every other one -- the
+    identity module included, whose ``__file__`` decides which tree gets hashed
+    -- still comes from the tree under test.
+    """
+
+    shadow_root = outside / "pythonpath_shadow"
+    package, _, module_name = step.module.rpartition(".")
+    if not package or not module_name:
+        raise AnchorError(f"{step.module!r} is not a submodule of a package")
+    package_dir = shadow_root / Path(*package.split("."))
+    package_dir.mkdir(parents=True, exist_ok=True)
+
+    real_package_dir = tree / Path(*package.split("."))
+    real_init = real_package_dir / "__init__.py"
+    if not real_init.is_file():
+        raise AnchorError(f"{package!r} is not a regular package in the tree")
+    (package_dir / "__init__.py").write_text(
+        real_init.read_text(encoding="utf-8")
+        + f"\n__path__.append({str(real_package_dir)!r})\n",
+        encoding="utf-8",
+    )
+
+    altered = _ast_edited_source(
+        _read_bytes(tree, step.relative_path),
+        step.symbol,
+        "body",
+        step.replacement,
+        step.relative_path,
+    )
+    (package_dir / f"{module_name}.py").write_bytes(altered)
+
+    outcome.pythonpath_prefix.append(str(shadow_root))
+    outcome.shadowed_module = step.module
+
+
+def _existing_paths(tree: Path, paths: tuple[str, ...]) -> list[str]:
+    return [relative for relative in paths if (tree / relative).is_file()]
+
+
+def _apply_remove_anchor_artifact(tree: Path, step: cat.RemoveAnchorArtifact) -> None:
+    """Delete the anchor artefact, if the tree carries one at all.
+
+    Absence is not an error here and must not be reported as a missing edit
+    anchor: a tree with nothing to delete is a tree with no anchor, which the
+    probe reports as ``anchor_mechanism_absent``.  Reporting it as
+    ``anchor_not_found`` would blame the instrument for the finding.
+    """
+
+    for relative in _existing_paths(tree, step.paths):
+        (tree / relative).unlink()
+
+
+def _apply_reanchor_with_own_key(
+    tree: Path, step: cat.ReanchorWithOwnKey, python: str, outside: Path
+) -> None:
+    """Install the mutator's own key and re-anchor the registry with it.
+
+    The re-anchoring reuses the re-registration machinery: whatever digest the
+    artefact pins is replaced by the one this tree now computes.  When commit 3
+    defines the artefact's real format, this step is where that format has to
+    be taught -- and if it is not, the artefact keeps its old digest and the row
+    goes red instead of quietly passing.
+    """
+
+    for relative in _existing_paths(tree, step.key_paths):
+        (tree / relative).write_text(_MUTATOR_PUBLIC_KEY, encoding="utf-8")
+    for relative in _existing_paths(tree, step.artifact_paths):
+        registered = _registered_digest(tree)
+        if registered and registered.encode("utf-8") in (tree / relative).read_bytes():
+            _apply_reregister(
+                tree,
+                cat.ReregisterIdentityDigest(path=relative, needle=registered),
+                python,
+                outside,
+            )
+
+
+def _registered_digest(tree: Path) -> str:
+    """The digest literal the tree registers, read without importing it."""
+
+    source = (tree / "app" / "signal_scientific_identity.py").read_text(encoding="utf-8")
+    module = ast.parse(source)
+    for node in ast.walk(module):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name)
+            and target.id == "REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS"
+            for target in node.targets
+        ):
+            for value in getattr(node.value, "values", []):
+                if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                    return value.value
+    return ""
+
+
 def apply_steps(
     tree: Path, mutation: cat.Mutation, *, python: str, outside: Path
 ) -> StepOutcome:
@@ -328,18 +557,31 @@ def apply_steps(
             _apply_whitespace_edit(tree, step)
         elif isinstance(step, cat.CreateFile):
             _apply_create_file(tree, step)
+        elif isinstance(step, cat.DeleteFile):
+            _apply_delete_file(tree, step)
         elif isinstance(step, cat.SymlinkOutOfTree):
             _apply_symlink(tree, step, outside)
         elif isinstance(step, cat.ReregisterIdentityDigest):
             _apply_reregister(tree, step, python, outside)
+        elif isinstance(step, cat.PythonPathShadow):
+            _apply_pythonpath_shadow(tree, step, outcome, outside)
+        elif isinstance(step, cat.RemoveAnchorArtifact):
+            _apply_remove_anchor_artifact(tree, step)
+        elif isinstance(step, cat.ReanchorWithOwnKey):
+            _apply_reanchor_with_own_key(tree, step, python, outside)
         elif isinstance(step, cat.EnvChange):
+            reserved = RESERVED_ENV & {name for name, _ in step.values}
+            if reserved:
+                raise AnchorError(
+                    f"catalog step may not set harness-owned variables: {sorted(reserved)}"
+                )
             outcome.env.update(dict(step.values))
         elif isinstance(step, cat.RuntimePatch):
             outcome.runtime_patch = step.name
         elif isinstance(step, cat.AlternateInterpreter):
             alternative = find_alternate_interpreter()
             if alternative is None:
-                raise AnchorError("no alternative interpreter is installed")
+                raise ProbeError(REASON_ALT_INTERPRETER_UNAVAILABLE)
             outcome.interpreter = alternative
         else:  # pragma: no cover - the catalog is a closed vocabulary
             raise AnchorError(f"unsupported catalog step: {type(step).__name__}")
@@ -349,16 +591,55 @@ def apply_steps(
 # --- interpreters -----------------------------------------------------------
 
 
-def find_alternate_interpreter() -> str | None:
-    """A supported interpreter whose minor version differs from the current one."""
+@cache
+def interpreter_version(executable: str) -> str:
+    """``major.minor`` of an interpreter, or an empty string if it will not run."""
 
-    current = f"python{sys.version_info.major}.{sys.version_info.minor}"
-    for name in CANDIDATE_INTERPRETERS:
-        if name == current:
-            continue
-        resolved = shutil.which(name)
-        if resolved:
-            return resolved
+    try:
+        completed = subprocess.run(
+            [
+                executable,
+                "-c",
+                "import sys;print(f'{sys.version_info.major}.{sys.version_info.minor}')",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return completed.stdout.strip() if completed.returncode == 0 else ""
+
+
+def configured_interpreters() -> tuple[str, ...]:
+    """Interpreters named by explicit path, in the order they were declared.
+
+    Explicit paths are the whole contract: a runner that resolved ``python3.11``
+    to whatever happened to be first on ``PATH`` would be a runner whose M-16
+    measurement meant something different every time it was provisioned.
+    """
+
+    raw = os.environ.get(INTERPRETERS_ENV, "")
+    return tuple(part for part in raw.split(os.pathsep) if part.strip())
+
+
+def find_alternate_interpreter() -> str | None:
+    """A declared, supported interpreter whose minor differs from the current one.
+
+    There is no ``PATH`` fallback, and its absence is the point.  An interpreter
+    that merely happens to be installed is not one anybody chose: it may be a
+    shim with none of the project's dependencies, in which case it imports
+    nothing, measures nothing, and turns M-16 red for a reason that has no
+    relation to the code under audit -- which is what it did here before this
+    was removed.  An interpreter nobody declared does not exist for this matrix,
+    and the row fails closed with ``alternative_interpreter_unavailable``.
+    """
+
+    current = f"{sys.version_info.major}.{sys.version_info.minor}"
+    for candidate in configured_interpreters():
+        version = interpreter_version(candidate)
+        if version in SUPPORTED_INTERPRETER_VERSIONS and version != current:
+            return candidate
     return None
 
 
@@ -413,7 +694,7 @@ def _probe_source() -> Path:
     return Path(__file__).resolve().parent / "probe.py"
 
 
-def _base_environment(tree: Path, outside: Path) -> dict[str, str]:
+def _base_environment(tree: Path, outside: Path, pythonpath_prefix: list[str]) -> dict[str, str]:
     """A fixed environment, not the ambient one.
 
     Inheriting ``os.environ`` would let an operator's ``COLLECTOR_SHARD_INDEX``
@@ -428,6 +709,9 @@ def _base_environment(tree: Path, outside: Path) -> dict[str, str]:
         "PATH": "/usr/local/bin:/usr/bin:/bin",
         "PYTHONHASHSEED": "0",
         "PYTHONDONTWRITEBYTECODE": "1",
+        # Resolution order is stated, never inherited.  See the module docstring.
+        "PYTHONSAFEPATH": "1",
+        "PYTHONPATH": os.pathsep.join([*pythonpath_prefix, str(tree)]),
         SANITIZE_ENV: sanitize,
         OUTSIDE_ENV: str(outside),
     }
@@ -456,6 +740,9 @@ def run_probe(
     stored: dict[str, Any] | None,
     outside: Path,
     runtime_patch: str = "",
+    pythonpath_prefix: list[str] | None = None,
+    shadowed_module: str = "",
+    anchor: str = "",
 ) -> Measurement:
     shutil.copy2(_probe_source(), tree / PROBE_FILENAME)
     stored_path = tree / STORED_IDENTITY_FILE
@@ -466,9 +753,16 @@ def run_probe(
             json.dumps(stored, sort_keys=True, separators=(",", ":")), encoding="utf-8"
         )
 
-    env = _base_environment(tree, outside)
+    env = _base_environment(tree, outside, pythonpath_prefix or [])
     if runtime_patch:
         env[RUNTIME_PATCH_ENV] = runtime_patch
+    if shadowed_module:
+        env[SHADOWED_MODULE_ENV] = shadowed_module
+    if anchor:
+        # The anchor reaches the tree only through the environment of the
+        # auditing process.  No file of the target tree is ever consulted for
+        # it: a fingerprint the mutator can rewrite anchors nothing.
+        env[ANCHOR_ENV] = anchor
     env.update(extra_env)
 
     try:
@@ -490,7 +784,13 @@ def run_probe(
         validation_accepted=bool(parsed.get("validation_accepted")),
         validation_error=parsed.get("validation_error"),
         forged_object_accepted=bool(parsed.get("forged_object_accepted")),
+        combined_validation_accepted=bool(parsed.get("combined_validation_accepted")),
+        combined_validator_absent=bool(parsed.get("combined_validator_absent")),
+        rejection_kind=parsed.get("rejection_kind"),
+        anchor_mechanism_absent=bool(parsed.get("anchor_mechanism_absent")),
         exception=parsed.get("exception"),
+        sitecustomize_active=bool(parsed.get("sitecustomize_active")),
+        pythonpath_shadow_active=bool(parsed.get("pythonpath_shadow_active")),
         identity_object=parsed.get("identity_object"),
     )
 
@@ -498,49 +798,75 @@ def run_probe(
 # --- evaluation -------------------------------------------------------------
 
 
+def _rejection_reason(mutation: cat.Mutation, observed: Measurement) -> str:
+    """Why nothing refused to operate.
+
+    The three answers are different findings and commit 3 closes them by
+    different means, so they are not collapsed into ``effect_not_met``.
+    """
+
+    if mutation.requires_anchor and observed.anchor_mechanism_absent:
+        return REASON_ANCHOR_MECHANISM_ABSENT
+    if observed.combined_validator_absent:
+        return REASON_COMBINED_VALIDATOR_ABSENT
+    return REASON_EFFECT_NOT_MET
+
+
 def evaluate(
     mutation: cat.Mutation, baseline: Measurement, observed: Measurement
 ) -> tuple[str, str]:
     """Return ``(observed_class, failure_reason)``.
 
-    ``failure_reason`` is empty when the required effect is met.
+    ``failure_reason`` is empty when the required effect is met.  Each effect is
+    checked in the order it states its conjuncts, so the reason names the first
+    thing that failed rather than the last thing that was looked at.
     """
 
-    if baseline.total_digest is None and observed.total_digest is None:
-        return cat.ESCAPE, REASON_BOTH_DIGESTS_NULL
-
     effect = mutation.expected_effect
-    if observed.code_digest is None:
-        # A collapsed measurement is not a rejection and not a movement.  Every
-        # effect in the vocabulary is a statement about a digest that exists, so
-        # reporting one without it would be inventing the result.
-        return cat.ESCAPE, REASON_DIGEST_UNAVAILABLE
-    if effect == cat.MUST_MOVE:
-        if observed.total_digest is None:
+    digests_available = (
+        observed.code_digest is not None and observed.environment_digest is not None
+    )
+
+    if effect == cat.MUST_MOVE_AND_REJECT:
+        if not digests_available:
+            # A collapsed measurement is not movement.  Claiming one without a
+            # digest would be inventing the result.
             return cat.ESCAPE, REASON_DIGEST_UNAVAILABLE
-        met = observed.total_digest != baseline.total_digest
-    elif effect == cat.MUST_NOT_MOVE:
-        if observed.total_digest is None:
+        if observed.total_digest == baseline.total_digest:
+            return cat.ESCAPE, REASON_DIGEST_DID_NOT_MOVE
+        if not observed.rejected:
+            return cat.ESCAPE, _rejection_reason(mutation, observed)
+    elif effect == cat.MUST_REJECT_ONLY:
+        if not observed.rejected:
+            return cat.ESCAPE, _rejection_reason(mutation, observed)
+    elif effect == cat.MUST_NOT_MOVE_AND_ACCEPT:
+        if not digests_available:
             return cat.ESCAPE, REASON_DIGEST_UNAVAILABLE
-        met = observed.total_digest == baseline.total_digest
-    elif effect == cat.MUST_REJECT:
-        # Moving the digest is not enough: the question is whether a
-        # self-consistent object recomputed inside the mutated tree is refused.
-        met = observed.forged_object_accepted is False
+        if observed.total_digest != baseline.total_digest:
+            return cat.ESCAPE, REASON_DIGEST_MOVED
+        if not observed.combined_validation_accepted:
+            if observed.combined_validator_absent:
+                return cat.ESCAPE, REASON_COMBINED_VALIDATOR_ABSENT
+            return cat.ESCAPE, REASON_EFFECT_NOT_MET
     elif effect == cat.MUST_NOT_MOVE_CODE_MUST_MOVE_ENV:
-        if observed.code_digest is None or observed.environment_digest is None:
+        if not digests_available:
             return cat.ESCAPE, REASON_DIGEST_UNAVAILABLE
-        met = (
-            observed.code_digest == baseline.code_digest
-            and observed.environment_digest != baseline.environment_digest
-        )
+        if observed.code_digest != baseline.code_digest:
+            return cat.ESCAPE, REASON_CODE_DIGEST_MOVED
+        if observed.environment_digest == baseline.environment_digest:
+            return cat.ESCAPE, REASON_ENV_DIGEST_DID_NOT_MOVE
+        if not observed.rejected:
+            return cat.ESCAPE, _rejection_reason(mutation, observed)
     else:  # pragma: no cover - the vocabulary is closed
         raise ValueError(f"unsupported expected effect: {effect!r}")
 
-    if met and cat.REQUIRE_FORGED_REJECTED in mutation.also_requires:
-        met = observed.forged_object_accepted is False
+    if (
+        cat.REQUIRE_FORGED_REJECTED in mutation.also_requires
+        and observed.forged_object_accepted
+    ):
+        return cat.ESCAPE, REASON_FORGED_OBJECT_ACCEPTED
 
-    return (cat.GUARD, "") if met else (cat.ESCAPE, REASON_EFFECT_NOT_MET)
+    return cat.GUARD, ""
 
 
 # --- orchestration ----------------------------------------------------------
@@ -559,23 +885,17 @@ class Row:
             "id": self.id,
             "expected_effect": self.expected_effect,
         }
-        if self.measurement is None:
-            body.update(
-                {
-                    "code_digest": None,
-                    "environment_digest": None,
-                    "total_digest": None,
-                    "validation_accepted": False,
-                    "validation_error": None,
-                    "forged_object_accepted": False,
-                    "exception": None,
-                }
-            )
-        else:
-            body.update(self.measurement.as_evidence())
+        measurement = self.measurement or _unavailable_measurement(None)
+        body.update(measurement.as_evidence())
         body["failure_reason"] = self.failure_reason
         body["observed_class"] = self.observed_class
         return body
+
+
+def resolve_anchor(anchor: str | None = None) -> str:
+    """The external anchor, from the auditing process -- never from the tree."""
+
+    return (anchor if anchor is not None else os.environ.get(ANCHOR_ENV, "")).strip()
 
 
 def run_matrix(
@@ -584,11 +904,13 @@ def run_matrix(
     only: tuple[str, ...] = (),
     repo: Path | None = None,
     python: str | None = None,
+    anchor: str | None = None,
 ) -> dict[str, Any]:
     """Materialize, mutate, measure and classify.  Returns the evidence body."""
 
     repo_root = repo or resolve_repo_root()
     interpreter = python or sys.executable
+    resolved_anchor = resolve_anchor(anchor)
     resolved = resolve_revision(repo_root, revision)
     selected = [m for m in cat.CATALOG if not only or m.id in only]
     unknown = sorted(set(only) - {m.id for m in cat.CATALOG})
@@ -613,6 +935,7 @@ def run_matrix(
             extra_env={},
             stored=None,
             outside=outside_root / "bootstrap",
+            anchor=resolved_anchor,
         )
         frozen_identity = bootstrap.identity_object
         if frozen_identity is None or bootstrap.total_digest is None:
@@ -629,7 +952,13 @@ def run_matrix(
             extra_env={},
             stored=frozen_identity,
             outside=outside_root / "baseline",
+            anchor=resolved_anchor,
         )
+        # The control is stated on the half validator on purpose: an untouched
+        # tree must be able to validate its own frozen identity with what it
+        # has today, and the combined entry point does not exist yet.  Asserting
+        # the combined one here would make the whole matrix unrunnable until
+        # commit 3 lands.
         if baseline.total_digest is None or not baseline.validation_accepted:
             raise RuntimeError(
                 "the baseline measurement is unusable -- an untouched tree must "
@@ -648,6 +977,7 @@ def run_matrix(
                     interpreter=interpreter,
                     frozen_identity=frozen_identity,
                     baseline=baseline,
+                    anchor=resolved_anchor,
                 )
             )
     finally:
@@ -664,6 +994,16 @@ def run_matrix(
     }
 
 
+def _failed_row(mutation: cat.Mutation, reason: str, detail: str | None = None) -> Row:
+    return Row(
+        id=mutation.id,
+        expected_effect=mutation.expected_effect,
+        observed_class=cat.ESCAPE,
+        failure_reason=reason,
+        measurement=_unavailable_measurement(detail if detail is not None else reason),
+    )
+
+
 def _run_one(
     mutation: cat.Mutation,
     *,
@@ -673,18 +1013,13 @@ def _run_one(
     interpreter: str,
     frozen_identity: dict[str, Any] | None,
     baseline: Measurement,
+    anchor: str,
 ) -> Row:
-    if (
-        mutation.skip_if == "alternative_interpreter_unavailable"
-        and find_alternate_interpreter() is None
-    ):
-        return Row(
-            id=mutation.id,
-            expected_effect=mutation.expected_effect,
-            observed_class=cat.SKIPPED,
-            failure_reason=mutation.skip_if,
-            measurement=None,
-        )
+    if mutation.requires_anchor and not anchor:
+        # Fails closed, never skipped: a mutation that interrogates the anchor
+        # and is not given one has not been measured, and saying nothing about
+        # it would be indistinguishable from saying it passed.
+        return _failed_row(mutation, REASON_ANCHOR_NOT_SUPPLIED)
 
     tree = workspace / mutation.id
     outside = outside_root / mutation.id
@@ -698,39 +1033,14 @@ def _run_one(
             stored=frozen_identity,
             outside=outside,
             runtime_patch=outcome.runtime_patch,
+            pythonpath_prefix=outcome.pythonpath_prefix,
+            shadowed_module=outcome.shadowed_module,
+            anchor=anchor,
         )
     except AnchorError as exc:
-        return Row(
-            id=mutation.id,
-            expected_effect=mutation.expected_effect,
-            observed_class=cat.ESCAPE,
-            failure_reason=REASON_ANCHOR_NOT_FOUND,
-            measurement=Measurement(
-                code_digest=None,
-                environment_digest=None,
-                total_digest=None,
-                validation_accepted=False,
-                validation_error=None,
-                forged_object_accepted=False,
-                exception=_scrub(str(exc), workspace),
-            ),
-        )
+        return _failed_row(mutation, REASON_ANCHOR_NOT_FOUND, _scrub(str(exc), workspace))
     except ProbeError as exc:
-        return Row(
-            id=mutation.id,
-            expected_effect=mutation.expected_effect,
-            observed_class=cat.ESCAPE,
-            failure_reason=exc.reason,
-            measurement=Measurement(
-                code_digest=None,
-                environment_digest=None,
-                total_digest=None,
-                validation_accepted=False,
-                validation_error=None,
-                forged_object_accepted=False,
-                exception=exc.reason,
-            ),
-        )
+        return _failed_row(mutation, exc.reason)
 
     if (measurement.exception or "").startswith(PATCH_FAILURE_PREFIX):
         return Row(
@@ -738,6 +1048,33 @@ def _run_one(
             expected_effect=mutation.expected_effect,
             observed_class=cat.ESCAPE,
             failure_reason=REASON_PATCH_INEFFECTIVE,
+            measurement=measurement,
+        )
+
+    if mutation.requires_probe_flag and not measurement.probe_flag(
+        mutation.requires_probe_flag
+    ):
+        # The mutation was applied and had no effect.  Filing that as a finding
+        # would credit the tree with a guard it never exercised, which is the
+        # error that refuted three earlier closures in this series.
+        return Row(
+            id=mutation.id,
+            expected_effect=mutation.expected_effect,
+            observed_class=cat.ESCAPE,
+            failure_reason=REASON_MUTATION_INEFFECTIVE,
+            measurement=measurement,
+        )
+
+    if outcome.interpreter and (
+        measurement.code_digest is None or measurement.environment_digest is None
+    ):
+        # A second interpreter that cannot import the tree measures nothing.
+        # That is an unprovisioned runner, not a property of the code.
+        return Row(
+            id=mutation.id,
+            expected_effect=mutation.expected_effect,
+            observed_class=cat.ESCAPE,
+            failure_reason=REASON_ALT_INTERPRETER_UNUSABLE,
             measurement=measurement,
         )
 

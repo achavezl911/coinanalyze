@@ -14,9 +14,21 @@ name: Identity mutation matrix
 #      undeclared escape is a regression or an unrecorded finding; a declared
 #      escape that no longer reproduces is a closure nobody wrote down.
 #
+# Two things must be provisioned for the catalog to be measurable whole, and the
+# runner exits non-zero before measuring anything if either is missing:
+#
+#   * Both supported interpreters, reachable by explicit path.  M-16 compares
+#     the same tree under two of them and must execute, not be skipped; a PATH
+#     lookup would make it compare whatever happened to be installed first.
+#   * The external anchor.  It arrives from the workflow configuration, never
+#     from a file of the tree under audit: a fingerprint the mutator can rewrite
+#     anchors nothing.  The value is a placeholder until commit 3 implements
+#     signing; what is proved here is that the channel exists and that its
+#     absence turns the run red.
+#
 # The registry anchor job (recomputation in a clean checkout plus verification
 # of the associated ADR) and CODEOWNERS are deliberately absent: they depend on
-# the declarative file that commit 2 introduces.
+# the declarative file that commit 3 introduces.
 
 on:
   pull_request:
@@ -30,6 +42,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Repository configuration, not a tracked artefact of the audited tree.  Set
+  # the repository variable to rotate it without touching the workflow.
+  IDENTITY_ANCHOR_FINGERPRINT: "${{ vars.IDENTITY_ANCHOR_FINGERPRINT || '0000000000000000000000000000000000000000000000000000000000000000' }}"
+
 jobs:
   mutation-matrix:
     runs-on: [self-hosted, linux, coinanalyze]
@@ -41,15 +58,50 @@ jobs:
           # shallow checkout the main CI uses is not enough here.
           fetch-depth: 0
 
+      - name: Provision Python 3.13
+        id: py313
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Provision Python 3.11
+        id: py311
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Create venv and install dependencies
         run: |
-          python3 -m venv .venv
+          set -euo pipefail
+          # The harness runs under 3.13 and M-16 measures the same tree under
+          # 3.11, so the pair is fixed by construction instead of depending on
+          # which interpreter happens to be first on PATH.
+          "${{ steps.py313.outputs.python-path }}" -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements.lock
           pip install -e '.[dev]'
 
+      - name: Provision the second interpreter for M-16
+        run: |
+          set -euo pipefail
+          # Dependencies too: an interpreter that cannot import the tree measures
+          # nothing, and the harness reports that as
+          # alternative_interpreter_unusable rather than as a property of the
+          # code.
+          "${{ steps.py311.outputs.python-path }}" -m venv "${RUNNER_TEMP}/py311"
+          "${RUNNER_TEMP}/py311/bin/python" -m pip install --upgrade pip
+          "${RUNNER_TEMP}/py311/bin/pip" install -r requirements.lock
+
+      - name: Show the interpreter pair the matrix will compare
+        run: |
+          set -euo pipefail
+          .venv/bin/python -V
+          "${RUNNER_TEMP}/py311/bin/python" -V
+
       - name: Regenerate the red evidence over c60e2ee6 and compare byte for byte
+        env:
+          IDENTITY_MUTATION_INTERPRETERS: ${{ runner.temp }}/py311/bin/python
         run: |
           . .venv/bin/activate
           python -m tests.identity_mutation.runner \
@@ -58,9 +110,63 @@ jobs:
             --compare-evidence tests/identity_mutation/evidence/c60e2ee6.json
 
       - name: Contrast HEAD against known_escapes.json
+        env:
+          IDENTITY_MUTATION_INTERPRETERS: ${{ runner.temp }}/py311/bin/python
         run: |
           . .venv/bin/activate
           python -m tests.identity_mutation.runner --target HEAD
+
+      - name: Red path -- an absent anchor must fail the run, not pass it
+        env:
+          IDENTITY_MUTATION_INTERPRETERS: ${{ runner.temp }}/py311/bin/python
+          IDENTITY_ANCHOR_FINGERPRINT: ''
+        run: |
+          set -euo pipefail
+          . .venv/bin/activate
+          # M-02 is a declared escape, so a runner that only classified rows
+          # would exit 0 here without having measured the anchor at all.
+          if python -m tests.identity_mutation.runner --target HEAD --only M-02; then
+            echo "the runner accepted a run with no external anchor" >&2
+            exit 1
+          fi
+
+      - name: Red path -- an absent second interpreter must fail the run
+        env:
+          # There is no PATH fallback, so this is red even on a runner that
+          # happens to carry a third interpreter.  Nothing measures against an
+          # interpreter nobody declared.
+          IDENTITY_MUTATION_INTERPRETERS: /nonexistent/python
+        run: |
+          set -euo pipefail
+          . .venv/bin/activate
+          if python -m tests.identity_mutation.runner --target HEAD --only M-16; then
+            echo "the runner accepted a run that could not measure M-16" >&2
+            exit 1
+          fi
+
+      - name: Red path -- a softened catalog must break the frozen evidence
+        env:
+          IDENTITY_MUTATION_INTERPRETERS: ${{ runner.temp }}/py311/bin/python
+        run: |
+          set -euo pipefail
+          . .venv/bin/activate
+          # The byte comparison is the whole reason the frozen evidence is
+          # committed.  If weakening a required effect still matched it, the
+          # comparison would be decorative.
+          cp tests/identity_mutation/catalog.py "${RUNNER_TEMP}/catalog.py.bak"
+          trap 'cp "${RUNNER_TEMP}/catalog.py.bak" tests/identity_mutation/catalog.py' EXIT
+          sed -i '0,/expected_effect=MUST_MOVE_AND_REJECT,/s//expected_effect=MUST_REJECT_ONLY,/' \
+            tests/identity_mutation/catalog.py
+          if git diff --quiet -- tests/identity_mutation/catalog.py; then
+            echo "the softening edit found no anchor, so it proved nothing" >&2
+            exit 1
+          fi
+          if python -m tests.identity_mutation.runner \
+              --target c60e2ee6 \
+              --compare-evidence tests/identity_mutation/evidence/c60e2ee6.json; then
+            echo "a softened catalog still matched the frozen evidence" >&2
+            exit 1
+          fi
 
       - name: Fail if the run left a temporary worktree behind
         if: always()
@@ -73,5 +179,15 @@ jobs:
           if git worktree list --porcelain | grep -Eq 'identity-mutation-[^/]+/base$'; then
             git worktree list
             echo "the matrix left a temporary worktree registered" >&2
+            exit 1
+          fi
+
+      - name: Fail if a red path left the tree dirty
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain -- tests app sql config)" ]; then
+            git status --porcelain -- tests app sql config
+            echo "a step modified tracked files and did not restore them" >&2
             exit 1
           fi

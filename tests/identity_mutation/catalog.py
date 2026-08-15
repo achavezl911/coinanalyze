@@ -10,6 +10,19 @@ that carry ``mandated_class``: those were demonstrated by the independent audit
 and a harness that classifies them as ``GUARD`` is a harness that is measuring
 the wrong thing.  For every other entry the first run over the baseline
 revision decides, and the answer is frozen in ``known_escapes.json``.
+
+Vocabulary
+----------
+
+Moving the digest is necessary and **not sufficient**.  A digest that moves
+without anyone refusing to operate is not a control, so every material mutation
+demands rejection as well as movement.  ``MUST_MOVE`` and ``MUST_REJECT`` are
+therefore gone; the four effects below replace them.
+
+Rejection is decided by the *combined* validator -- the single entry point that
+validates both halves at once.  Until that entry point exists, the acceptance
+half of every effect is unprovable and the row fails closed; ``closes_with``
+records which addendum item is expected to close it.
 """
 
 from __future__ import annotations
@@ -18,20 +31,61 @@ from dataclasses import dataclass
 
 # --- required effects -------------------------------------------------------
 
-MUST_MOVE = "MUST_MOVE"
-MUST_NOT_MOVE = "MUST_NOT_MOVE"
-MUST_REJECT = "MUST_REJECT"
+MUST_MOVE_AND_REJECT = "MUST_MOVE_AND_REJECT"
+MUST_REJECT_ONLY = "MUST_REJECT_ONLY"
+MUST_NOT_MOVE_AND_ACCEPT = "MUST_NOT_MOVE_AND_ACCEPT"
 MUST_NOT_MOVE_CODE_MUST_MOVE_ENV = "MUST_NOT_MOVE_CODE_MUST_MOVE_ENV"
+
+REQUIRED_EFFECTS = frozenset(
+    {
+        MUST_MOVE_AND_REJECT,
+        MUST_REJECT_ONLY,
+        MUST_NOT_MOVE_AND_ACCEPT,
+        MUST_NOT_MOVE_CODE_MUST_MOVE_ENV,
+    }
+)
 
 # --- observed classes -------------------------------------------------------
 
 GUARD = "GUARD"
 ESCAPE = "ESCAPE"
+
+# Retained as a *forbidden* value, not as an outcome.  The catalog declares no
+# skip condition and the harness never emits one, so ``skipped`` in the
+# declaration is empty by construction; keeping the constant is what lets the
+# suite assert that instead of assuming it.
 SKIPPED = "SKIPPED"
 
 # --- additional requirements, ANDed with the required effect ----------------
 
 REQUIRE_FORGED_REJECTED = "forged_object_rejected"
+
+# --- addendum items a declared escape can be closed by ----------------------
+#
+# ``closes_with`` ties an escape to the thing that must close it, so a closure
+# claim in commit 3 is checkable against the row it claims to close.
+
+CLOSES_A = "A"  # surface and environment
+CLOSES_B = "B"  # canonicalization by an explicit list of fields
+CLOSES_C1 = "C.1"  # verification of sys.modules
+CLOSES_C2 = "C.2"  # hash of the bound object
+CLOSES_D = "D"  # registry anchor
+
+CLOSES_WITH_VALUES = frozenset({CLOSES_A, CLOSES_B, CLOSES_C1, CLOSES_C2, CLOSES_D})
+
+# --- the anchor layout the anchor mutations interrogate ---------------------
+#
+# Neither artefact exists at the baseline revision, which is the whole point:
+# M-28 and M-29 ask what happens when the thing that anchors the registry from
+# outside the tree is removed or swapped, and on ``c60e2ee6`` the answer is that
+# there is nothing to remove.  Commit 3 must place its anchor at one of these
+# paths, or extend this tuple as part of the same change.
+
+ANCHOR_ARTIFACT_PATHS: tuple[str, ...] = (
+    "identity/anchor.json",
+    "identity/anchor.sig",
+)
+ANCHOR_PUBLIC_KEY_PATHS: tuple[str, ...] = ("identity/anchor_public_key.pem",)
 
 
 # --- mutation steps ---------------------------------------------------------
@@ -100,6 +154,13 @@ class CreateFile:
 
 
 @dataclass(frozen=True, slots=True)
+class DeleteFile:
+    """Remove a tracked file from the target tree."""
+
+    path: str
+
+
+@dataclass(frozen=True, slots=True)
 class SymlinkOutOfTree:
     """Replace a tracked file with a symlink to a byte-identical copy outside.
 
@@ -122,6 +183,48 @@ class ReregisterIdentityDigest:
 
     path: str
     needle: str
+
+
+@dataclass(frozen=True, slots=True)
+class PythonPathShadow:
+    """Put an altered copy of one ``app.*`` module ahead of the real one.
+
+    The shadow directory carries its own ``app/__init__.py`` which re-exports
+    the real package directory on ``__path__``, so exactly one module resolves
+    from outside the tree and every other one still comes from it.  A wholesale
+    copy of ``app/`` would test a different thing -- that the entire package
+    moved -- and would drag the identity computation's own root along with it.
+    """
+
+    module: str
+    relative_path: str
+    symbol: str
+    replacement: str
+
+
+@dataclass(frozen=True, slots=True)
+class RemoveAnchorArtifact:
+    """Delete whichever declared anchor artefact the tree carries.
+
+    A tree with no anchor artefact at all is not an anchor that survived the
+    deletion: it is a tree that never had one, and the probe reports it as
+    ``anchor_mechanism_absent`` rather than as a resolved anchor.
+    """
+
+    paths: tuple[str, ...] = ANCHOR_ARTIFACT_PATHS
+
+
+@dataclass(frozen=True, slots=True)
+class ReanchorWithOwnKey:
+    """Swap the versioned public key and re-anchor the registry with it.
+
+    Two edits, one meaning: an anchor whose key the mutator may replace is an
+    anchor the mutator controls, so it cannot decide anything about the tree it
+    is supposed to certify.
+    """
+
+    key_paths: tuple[str, ...] = ANCHOR_PUBLIC_KEY_PATHS
+    artifact_paths: tuple[str, ...] = ANCHOR_ARTIFACT_PATHS
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,7 +260,10 @@ class Mutation:
     steps: tuple[object, ...] = ()
     also_requires: tuple[str, ...] = ()
     mandated_class: str | None = None
-    skip_if: str | None = None
+    requires_anchor: bool = False
+    requires_probe_flag: str = ""
+    closes_with: str = ""
+    closes_note: str = ""
     anchor_rationale: str = ""
 
 
@@ -203,6 +309,28 @@ _FORGED_CATALOG = """\
 }
 """
 
+# M-07 creates the versioned catalog the baseline revision does not carry.  It
+# has to differ from DEFAULT_MARKET_CATALOG in a projected routing field, or
+# resolving it would be indistinguishable from not resolving it at all.
+_VERSIONED_CATALOG = """\
+{
+  "version": 1,
+  "mode": "extend",
+  "symbols": [
+    {
+      "symbol": "SOLUSDT_PERP.A",
+      "base_asset": "SOL",
+      "futures_pair": "SOLUSDC",
+      "bybit_oi_symbol": "SOLUSDT.6",
+      "spot_pair": "SOLUSDC",
+      "spot_history_symbol": "SOLUSD.A",
+      "whale_threshold_usd": 200000.0,
+      "large_trade_threshold_usd": 150000.0
+    }
+  ]
+}
+"""
+
 _NEW_PARTICIPANT = '''\
 """A participant nobody enumerated, on the raw write path."""
 
@@ -216,6 +344,49 @@ def divert_realtime_buckets(symbol: str) -> None:
     scalp_collector.TRADE_STORE.buckets.pop(symbol, None)
 '''
 
+# M-31: neutralization installed from the tree *before* the identity module is
+# executed, by wrapping the loader rather than by reassigning an attribute
+# afterwards.  Anything that captured the validator at import time captured the
+# replacement, which is what makes it a different question from M-01.
+_SITECUSTOMIZE = '''\
+"""Neutralize the identity validators before the module exists in memory."""
+
+import importlib.util
+import os
+import sys
+
+_TARGET = "app.signal_scientific_identity"
+
+
+class _PreImportNeutralizer:
+    """A meta path finder that patches the module as it is executed."""
+
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname != _TARGET:
+            return None
+        sys.meta_path.remove(self)
+        try:
+            spec = importlib.util.find_spec(fullname)
+        finally:
+            sys.meta_path.insert(0, self)
+        if spec is None or spec.loader is None:
+            return None
+        original_exec_module = spec.loader.exec_module
+
+        def exec_module(module, _original=original_exec_module):
+            _original(module)
+            module.validate_scientific_implementation_identity = lambda stored: stored
+            if hasattr(module, "validate_scientific_identity"):
+                module.validate_scientific_identity = lambda *args, **kwargs: True
+
+        spec.loader.exec_module = exec_module
+        return spec
+
+
+sys.meta_path.insert(0, _PreImportNeutralizer())
+os.environ["IDENTITY_MUTATION_SITECUSTOMIZE_ACTIVE"] = "1"
+'''
+
 
 # --- the catalog ------------------------------------------------------------
 
@@ -227,10 +398,15 @@ CATALOG: tuple[Mutation, ...] = (
             "`lambda stored: stored` at runtime"
         ),
         mechanism="runtime_patch",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_REJECT_ONLY,
         also_requires=(REQUIRE_FORGED_REJECTED,),
         mandated_class=ESCAPE,
         steps=(RuntimePatch(name="neutralize_identity_validator"),),
+        closes_with=CLOSES_C2,
+        closes_note=(
+            "the validator that runs must be hashed as a bound object, not "
+            "resolved by name at call time"
+        ),
         anchor_rationale=(
             "The probe resolves the validator through the module attribute at "
             "call time, so the reassignment is on the executed path, not on a "
@@ -244,8 +420,9 @@ CATALOG: tuple[Mutation, ...] = (
             "the new value"
         ),
         mechanism="file_edit x2",
-        expected_effect=MUST_REJECT,
+        expected_effect=MUST_REJECT_ONLY,
         mandated_class=ESCAPE,
+        requires_anchor=True,
         steps=(
             AstEdit(
                 path=_WS,
@@ -260,6 +437,12 @@ CATALOG: tuple[Mutation, ...] = (
                 ),
             ),
         ),
+        closes_with=CLOSES_D,
+        closes_note=(
+            "a tree whose code and registry were rewritten together is "
+            "self-consistent; only an anchor the mutator does not control can "
+            "tell it from a legitimate new version"
+        ),
         anchor_rationale=(
             "spot_pairs() is the routing conversion every Binance spot "
             "subscription is built from; the registry literal is the only "
@@ -270,7 +453,7 @@ CATALOG: tuple[Mutation, ...] = (
         id="M-03",
         summary="alter the docstring of a material symbol in app/ws_collector.py",
         mechanism="file_edit",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         mandated_class=ESCAPE,
         steps=(
             AstEdit(
@@ -283,6 +466,11 @@ CATALOG: tuple[Mutation, ...] = (
                 ),
             ),
         ),
+        closes_with=CLOSES_B,
+        closes_note=(
+            "the canonicalizer drops docstrings wholesale; an explicit field "
+            "list is what decides that a documented contract is material"
+        ),
         anchor_rationale=(
             "deliver_spot_minute is the only path from minute buckets to raw "
             "persistence, so its documented contract is material even though "
@@ -293,7 +481,7 @@ CATALOG: tuple[Mutation, ...] = (
         id="M-04",
         summary="alter the body of a material function in app/ws_collector.py",
         mechanism="file_edit",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(
             AstEdit(
                 path=_WS,
@@ -302,6 +490,8 @@ CATALOG: tuple[Mutation, ...] = (
                 replacement=_VALID_TRADE_BODY,
             ),
         ),
+        closes_with=CLOSES_A,
+        closes_note="the digest already moves; nothing refuses to operate on it",
         anchor_rationale=(
             "valid_trade decides which trades reach the buckets at all; the "
             "staleness window moves from 120s to 900s."
@@ -311,8 +501,13 @@ CATALOG: tuple[Mutation, ...] = (
         id="M-05",
         summary="reassign __code__ of a material symbol to another function's",
         mechanism="runtime_patch",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_REJECT_ONLY,
         steps=(RuntimePatch(name="swap_code_object"),),
+        closes_with=CLOSES_C2,
+        closes_note=(
+            "the file is untouched, so only a hash of the object actually bound "
+            "at runtime can see the transplant"
+        ),
         anchor_rationale=(
             "Same target as M-02 (spot_pairs) but performed in memory, so the "
             "two differ only in whether the escape touches the filesystem."
@@ -325,8 +520,10 @@ CATALOG: tuple[Mutation, ...] = (
             "outside the surface"
         ),
         mechanism="runtime_patch",
-        expected_effect=MUST_REJECT,
+        expected_effect=MUST_REJECT_ONLY,
         steps=(RuntimePatch(name="inject_synthetic_module"),),
+        closes_with=CLOSES_C1,
+        closes_note="sys.modules must be checked against the hashed surface",
         anchor_rationale=(
             "app.ws_collector is a whole-module component, so a synthetic "
             "stand-in for it is the sharpest form of the escape."
@@ -334,21 +531,28 @@ CATALOG: tuple[Mutation, ...] = (
     ),
     Mutation(
         id="M-07",
-        summary="mutate config/market_symbols.json",
-        mechanism="file_edit",
-        expected_effect=MUST_MOVE,
+        summary="create the versioned catalog config/market_symbols.json",
+        mechanism="file_create",
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(
-            TextEdit(
+            CreateFile(
                 path="config/market_symbols.json",
-                needle='"futures_pair": "ETHUSDT"',
-                replacement='"futures_pair": "BNBUSDT"',
+                content=_VERSIONED_CATALOG,
             ),
         ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "the presence and content of the versioned routing catalog is part "
+            "of the environment half of the surface"
+        ),
         anchor_rationale=(
-            "The versioned catalog path config/market_symbols.json does not "
-            "exist at the baseline revision; the mutation is kept verbatim and "
-            "fails closed on the missing anchor rather than being silently "
-            "replaced by an approximation."
+            "resolve_market_catalog_path() returns the versioned path as soon "
+            "as config/market_symbols.json exists, so creating it is what makes "
+            "load_market_catalog() read it.  The row it adds overrides "
+            "SOLUSDT_PERP.A's futures_pair and spot_pair, both projected "
+            "routing fields, so the substitution is result-material rather than "
+            "decorative.  A file_edit could never have an anchor here: the "
+            "baseline revision does not carry the file at all."
         ),
     ),
     Mutation(
@@ -358,7 +562,7 @@ CATALOG: tuple[Mutation, ...] = (
             "content"
         ),
         mechanism="env + file_create",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(
             CreateFile(
                 path="config/mutation_matrix_catalog.json",
@@ -373,6 +577,11 @@ CATALOG: tuple[Mutation, ...] = (
                 )
             ),
         ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "the environment digest moves and no combined validation looks at "
+            "it, so the runtime resolution is recorded and never enforced"
+        ),
         anchor_rationale=(
             "futures_pair for ETHUSDT_PERP.A is one of the four projected "
             "routing fields, so the substitution is result-material by "
@@ -383,7 +592,7 @@ CATALOG: tuple[Mutation, ...] = (
         id="M-09",
         summary="change COLLECTOR_SHARD_INDEX / COLLECTOR_SHARD_COUNT",
         mechanism="env",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(
             EnvChange(
                 values=(
@@ -392,31 +601,42 @@ CATALOG: tuple[Mutation, ...] = (
                 )
             ),
         ),
+        closes_with=CLOSES_A,
+        closes_note="the environment half must be part of what is validated",
     ),
     Mutation(
         id="M-10",
         summary="change HARD_DATA_RETENTION_DAYS",
         mechanism="env",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(EnvChange(values=(("HARD_DATA_RETENTION_DAYS", "21"),)),),
+        closes_with=CLOSES_A,
+        closes_note="the environment half must be part of what is validated",
     ),
     Mutation(
         id="M-11",
         summary="change SCALP_MINUTE_RETENTION_HOURS",
         mechanism="env",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(EnvChange(values=(("SCALP_MINUTE_RETENTION_HOURS", "48"),)),),
+        closes_with=CLOSES_A,
+        closes_note="the environment half must be part of what is validated",
     ),
     Mutation(
         id="M-12",
         summary="add app/nuevo_participante.py with material content",
         mechanism="file_create",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(
             CreateFile(
                 path="app/nuevo_participante.py",
                 content=_NEW_PARTICIPANT,
             ),
+        ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "the surface enumerates components; a module nobody enumerated is "
+            "outside it by construction"
         ),
         anchor_rationale=(
             "The new module reaches TRADE_STORE, which is the store the raw "
@@ -429,8 +649,13 @@ CATALOG: tuple[Mutation, ...] = (
             "replace an app/ file with a symlink to a copy outside the tree"
         ),
         mechanism="symlink",
-        expected_effect=MUST_REJECT,
+        expected_effect=MUST_REJECT_ONLY,
         steps=(SymlinkOutOfTree(path=_WS),),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "the surface must be defined over resolved paths, not over names "
+            "that may leave it"
+        ),
         anchor_rationale=(
             "app/ws_collector.py is a whole-module component and the copy is "
             "byte-identical, so the only thing under test is whether a "
@@ -441,7 +666,7 @@ CATALOG: tuple[Mutation, ...] = (
         id="M-14",
         summary="mutate sql/schema.sql",
         mechanism="file_edit",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(
             TextEdit(
                 path="sql/schema.sql",
@@ -449,6 +674,8 @@ CATALOG: tuple[Mutation, ...] = (
                 replacement="evidence_coverage_pct BETWEEN -1 AND 100",
             ),
         ),
+        closes_with=CLOSES_A,
+        closes_note="the digest already moves; nothing refuses to operate on it",
         anchor_rationale=(
             "Anchored inside PR4_SIGNAL_OBSERVATION_LEDGER, a declared "
             "scientific boundary, so the measurement tests the guard where the "
@@ -464,7 +691,7 @@ CATALOG: tuple[Mutation, ...] = (
         id="M-15",
         summary="mutate pyproject.toml (a dependency version) and the lock file",
         mechanism="file_edit",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(
             TextEdit(
                 path="pyproject.toml",
@@ -477,6 +704,11 @@ CATALOG: tuple[Mutation, ...] = (
                 replacement="httpx==0.28.0",
             ),
         ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "the resolved dependency set is part of the environment half and is "
+            "projected nowhere today"
+        ),
     ),
     Mutation(
         id="M-16",
@@ -484,28 +716,49 @@ CATALOG: tuple[Mutation, ...] = (
         mechanism="interpreter",
         expected_effect=MUST_NOT_MOVE_CODE_MUST_MOVE_ENV,
         steps=(AlternateInterpreter(),),
-        skip_if="alternative_interpreter_unavailable",
+        closes_with=CLOSES_A,
+        closes_note=(
+            "the interpreter is an environment component and the runtime "
+            "contract projects four routing fields per symbol and nothing else"
+        ),
+        anchor_rationale=(
+            "No skip: an interpreter the runner does not carry is a runner that "
+            "was not provisioned, which fails the mutation closed with "
+            "alternative_interpreter_unavailable instead of hiding it."
+        ),
     ),
     Mutation(
         id="M-17",
         summary="vary PYTHONHASHSEED (0 -> 12345)",
         mechanism="env",
-        expected_effect=MUST_NOT_MOVE,
+        expected_effect=MUST_NOT_MOVE_AND_ACCEPT,
         steps=(EnvChange(values=(("PYTHONHASHSEED", "12345"),)),),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "negative control: the digest is already stable, and acceptance "
+            "cannot be demonstrated until the combined entry point exists"
+        ),
     ),
     Mutation(
         id="M-18",
         summary="two consecutive runs with no mutation",
         mechanism="none",
-        expected_effect=MUST_NOT_MOVE,
+        expected_effect=MUST_NOT_MOVE_AND_ACCEPT,
         steps=(),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "negative control: the digest is already stable, and acceptance "
+            "cannot be demonstrated until the combined entry point exists"
+        ),
     ),
     Mutation(
         id="M-19",
         summary="reorder two top-level functions in a material file",
         mechanism="file_edit",
-        expected_effect=MUST_MOVE,
+        expected_effect=MUST_MOVE_AND_REJECT,
         steps=(AstReorder(path=_WS, first="spot_pairs", second="binance_url"),),
+        closes_with=CLOSES_A,
+        closes_note="the digest already moves; nothing refuses to operate on it",
         anchor_rationale=(
             "Both are top level and neither is called at definition time, so "
             "the swap is behaviour-preserving at runtime and isolates whether "
@@ -516,7 +769,7 @@ CATALOG: tuple[Mutation, ...] = (
         id="M-20",
         summary="alter a # comment (not a docstring)",
         mechanism="file_edit",
-        expected_effect=MUST_NOT_MOVE,
+        expected_effect=MUST_NOT_MOVE_AND_ACCEPT,
         steps=(
             TextEdit(
                 path=_WS,
@@ -530,12 +783,17 @@ CATALOG: tuple[Mutation, ...] = (
                 ),
             ),
         ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "negative control: the digest is already stable, and acceptance "
+            "cannot be demonstrated until the combined entry point exists"
+        ),
     ),
     Mutation(
         id="M-21",
         summary="alter spacing and line breaks without altering the AST",
         mechanism="file_edit",
-        expected_effect=MUST_NOT_MOVE,
+        expected_effect=MUST_NOT_MOVE_AND_ACCEPT,
         steps=(
             WhitespaceEdit(
                 path=_WS,
@@ -544,12 +802,17 @@ CATALOG: tuple[Mutation, ...] = (
                 trailing_spaces=4,
             ),
         ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "negative control: the digest is already stable, and acceptance "
+            "cannot be demonstrated until the combined entry point exists"
+        ),
     ),
     Mutation(
         id="M-22",
         summary="edit a file under tests/",
         mechanism="file_edit",
-        expected_effect=MUST_NOT_MOVE,
+        expected_effect=MUST_NOT_MOVE_AND_ACCEPT,
         steps=(
             TextEdit(
                 path="tests/test_ws_collector.py",
@@ -557,18 +820,213 @@ CATALOG: tuple[Mutation, ...] = (
                 replacement="def test_valid_trade_rejects_bad_values_renamed(monkeypatch):",
             ),
         ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "negative control: the digest is already stable, and acceptance "
+            "cannot be demonstrated until the combined entry point exists"
+        ),
     ),
     Mutation(
         id="M-23",
         summary="edit README.md",
         mechanism="file_edit",
-        expected_effect=MUST_NOT_MOVE,
+        expected_effect=MUST_NOT_MOVE_AND_ACCEPT,
         steps=(
             TextEdit(
                 path="README.md",
                 needle="# Coinalyze Operator Dashboard v1.5.0",
                 replacement="# Coinalyze Operator Dashboard v1.5.0 (mutated)",
             ),
+        ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "negative control: the digest is already stable, and acceptance "
+            "cannot be demonstrated until the combined entry point exists"
+        ),
+    ),
+    Mutation(
+        id="M-24",
+        summary="mutate config/market_symbols.example.json",
+        mechanism="file_edit",
+        expected_effect=MUST_MOVE_AND_REJECT,
+        steps=(
+            TextEdit(
+                path="config/market_symbols.example.json",
+                needle='"futures_pair": "XRPUSDT"',
+                replacement='"futures_pair": "XRPUSDC"',
+            ),
+        ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "the versioned config directory is part of the environment half; "
+            "whether an example is material is a boundary the surface must "
+            "state, not one it may leave undecided"
+        ),
+        anchor_rationale=(
+            "The example is the documented shape of the versioned catalog and "
+            "the only routing configuration the repository carries at the "
+            "baseline revision.  It is mutated in a projected routing field so "
+            "that, if anything read it, the environment digest would move."
+        ),
+    ),
+    Mutation(
+        id="M-25",
+        summary="mutate DEFAULT_MARKET_CATALOG in app/config.py",
+        mechanism="file_edit",
+        expected_effect=MUST_MOVE_AND_REJECT,
+        steps=(
+            TextEdit(
+                path="app/config.py",
+                needle='"BTCUSDT_PERP.A", "BTC", "BTCUSDT", "BTCUSDT.6", "BTCUSDT", "BTCUSD.A",',
+                replacement=(
+                    '"BTCUSDT_PERP.A", "BTC", "BTCUSDC", "BTCUSDT.6", "BTCUSDC", "BTCUSD.A",'
+                ),
+            ),
+        ),
+        closes_with=CLOSES_A,
+        closes_note="the digest already moves; nothing refuses to operate on it",
+        anchor_rationale=(
+            "The needle is the full BTC row of the default catalog and is "
+            "unique in the file.  futures_pair and spot_pair are two of the "
+            "four projected routing fields, so the default routing every "
+            "deployment without a versioned catalog resolves is what moves."
+        ),
+    ),
+    Mutation(
+        id="M-26",
+        summary="delete a material app/ file from the tree",
+        mechanism="file_delete",
+        expected_effect=MUST_REJECT_ONLY,
+        steps=(DeleteFile(path="app/signal_replay.py"),),
+        anchor_rationale=(
+            "app/signal_replay.py is the signal_replay_integrity component and "
+            "is imported by neither app.signal_scientific_identity nor "
+            "app.signal_runtime_contract, so the probe still starts and reaches "
+            "the evaluation instead of dying at import.  Every material file is "
+            "a hashed component, so its absence necessarily stops the identity "
+            "from being computed at all; per section 3 that propagated "
+            "exception is a valid rejection and is recorded as one."
+        ),
+    ),
+    Mutation(
+        id="M-27",
+        summary=(
+            "PYTHONPATH pointing at a directory with an altered copy of an "
+            "app.* module that resolves before the real one"
+        ),
+        mechanism="env + file_create",
+        expected_effect=MUST_REJECT_ONLY,
+        requires_probe_flag="pythonpath_shadow_active",
+        steps=(
+            PythonPathShadow(
+                module="app.ws_collector",
+                relative_path=_WS,
+                symbol="spot_pairs",
+                replacement=_SPOT_PAIRS_BODY,
+            ),
+        ),
+        closes_with=CLOSES_C1,
+        closes_note=(
+            "the file on disk is untouched, so only checking where the loaded "
+            "module actually came from can see it"
+        ),
+        anchor_rationale=(
+            "Same symbol as M-02 and M-05, reached by a third route: the file "
+            "in the tree keeps its original bytes and the module that executes "
+            "is a different file entirely.  The probe imports the shadowed "
+            "module and reports whether it resolved outside the tree, so an "
+            "inert shadow fails the mutation instead of being reported as a "
+            "finding."
+        ),
+    ),
+    Mutation(
+        id="M-28",
+        summary="delete the anchor artefact from the tree",
+        mechanism="file_delete",
+        expected_effect=MUST_REJECT_ONLY,
+        requires_anchor=True,
+        steps=(RemoveAnchorArtifact(),),
+        closes_with=CLOSES_D,
+        closes_note=(
+            "an anchor that can be deleted from the tree it certifies is not "
+            "an anchor; its absence must stop the system"
+        ),
+        anchor_rationale=(
+            "The baseline revision carries no anchor artefact at any declared "
+            "path, so the mutation reports anchor_mechanism_absent rather than "
+            "pretending to have removed something."
+        ),
+    ),
+    Mutation(
+        id="M-29",
+        summary=(
+            "replace the versioned public key with one of the mutator's own and "
+            "re-anchor the registry with it"
+        ),
+        mechanism="file_edit x2",
+        expected_effect=MUST_REJECT_ONLY,
+        requires_anchor=True,
+        steps=(ReanchorWithOwnKey(),),
+        closes_with=CLOSES_D,
+        closes_note=(
+            "the trusted key must arrive from outside the tree; a versioned key "
+            "the mutator may replace anchors nothing"
+        ),
+        anchor_rationale=(
+            "The baseline revision carries neither a versioned public key nor "
+            "an anchored registry record, so the mutation reports "
+            "anchor_mechanism_absent instead of a resolved anchor."
+        ),
+    ),
+    Mutation(
+        id="M-30",
+        summary="mutate .github/workflows/ci.yml",
+        mechanism="file_edit",
+        expected_effect=MUST_NOT_MOVE_AND_ACCEPT,
+        steps=(
+            TextEdit(
+                path=".github/workflows/ci.yml",
+                needle="pytest -q",
+                replacement="pytest -q --deselect tests/test_ws_collector.py || true",
+            ),
+        ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "negative control: the digest is already stable, and acceptance "
+            "cannot be demonstrated until the combined entry point exists"
+        ),
+        anchor_rationale=(
+            "A deliberate boundary decision, declared rather than discovered: "
+            "the integrity of the workflow is repository governance -- branch "
+            "protection and CODEOWNERS -- and not scientific identity.  The "
+            "anchor of section 4.2 arrives from outside the tree precisely so "
+            "that a mutator who can rewrite the workflow still cannot rewrite "
+            "what the workflow is checked against."
+        ),
+    ),
+    Mutation(
+        id="M-31",
+        summary=(
+            "inject sitecustomize.py into the tree, neutralizing the validator "
+            "before the identity module is imported"
+        ),
+        mechanism="file_create",
+        expected_effect=MUST_REJECT_ONLY,
+        requires_probe_flag="sitecustomize_active",
+        steps=(CreateFile(path="sitecustomize.py", content=_SITECUSTOMIZE),),
+        closes_with=CLOSES_C2,
+        closes_note=(
+            "the neutralization is installed before any reference exists, so "
+            "resolving the validator by name cannot help; the object that runs "
+            "must itself be hashed"
+        ),
+        anchor_rationale=(
+            "Distinct from M-01: M-01 reassigns an attribute after the module "
+            "is in memory, so a validator captured at import would survive it.  "
+            "This one wraps the loader, so the module is already neutralized "
+            "the first time anybody sees it.  The probe reports whether "
+            "sitecustomize actually ran, so an inert file fails the mutation "
+            "instead of being reported as a finding."
         ),
     ),
 )
@@ -579,6 +1037,10 @@ MANDATED_ESCAPES: tuple[str, ...] = tuple(
     mutation.id for mutation in CATALOG if mutation.mandated_class == ESCAPE
 )
 
+ANCHOR_DEPENDENT_IDS: tuple[str, ...] = tuple(
+    mutation.id for mutation in CATALOG if mutation.requires_anchor
+)
+
 # Kept out of ``Mutation`` on purpose: the boundary decisions are a property of
 # the catalog as a whole, and commit 3 documents them from here.
-MATERIALITY_BOUNDARY_IDS: tuple[str, ...] = ("M-19", "M-20", "M-21")
+MATERIALITY_BOUNDARY_IDS: tuple[str, ...] = ("M-19", "M-20", "M-21", "M-30")
