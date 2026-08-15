@@ -1,0 +1,77 @@
+name: Identity mutation matrix
+
+# Permanent audit instrument for the confirmatory scientific identity.
+#
+# Two invocations, both blocking.  Neither warns: a difference between what the
+# matrix observes and what the repository declares is a failure of the
+# pipeline, in either direction.
+#
+#   1. --target c60e2ee6  regenerates the red evidence and requires it to match
+#      tests/identity_mutation/evidence/c60e2ee6.json byte for byte.  A drift
+#      here means the matrix stopped being reproducible, which invalidates
+#      every conclusion drawn from it.
+#   2. --target HEAD      contrasts the branch against known_escapes.json.  An
+#      undeclared escape is a regression or an unrecorded finding; a declared
+#      escape that no longer reproduces is a closure nobody wrote down.
+#
+# The registry anchor job (recomputation in a clean checkout plus verification
+# of the associated ADR) and CODEOWNERS are deliberately absent: they depend on
+# the declarative file that commit 2 introduces.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: identity-mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mutation-matrix:
+    runs-on: [self-hosted, linux, coinanalyze]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The matrix materializes c60e2ee6 with `git worktree add`, so the
+          # shallow checkout the main CI uses is not enough here.
+          fetch-depth: 0
+
+      - name: Create venv and install dependencies
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.lock
+          pip install -e '.[dev]'
+
+      - name: Regenerate the red evidence over c60e2ee6 and compare byte for byte
+        run: |
+          . .venv/bin/activate
+          python -m tests.identity_mutation.runner \
+            --target c60e2ee6 \
+            --json "${RUNNER_TEMP}/c60e2ee6.regenerated.json" \
+            --compare-evidence tests/identity_mutation/evidence/c60e2ee6.json
+
+      - name: Contrast HEAD against known_escapes.json
+        run: |
+          . .venv/bin/activate
+          python -m tests.identity_mutation.runner --target HEAD
+
+      - name: Fail if the run left a temporary worktree behind
+        if: always()
+        run: |
+          set -euo pipefail
+          # Match the harness's own temporary layout -- mkdtemp prefix plus the
+          # "base" worktree it creates inside it -- and nothing else.  A bare
+          # 'identity-mutation-' would also match a checkout directory named
+          # after this feature and fail for no reason.
+          if git worktree list --porcelain | grep -Eq 'identity-mutation-[^/]+/base$'; then
+            git worktree list
+            echo "the matrix left a temporary worktree registered" >&2
+            exit 1
+          fi
