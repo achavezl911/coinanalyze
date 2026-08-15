@@ -101,12 +101,18 @@ desde la configuración viva y exige que reproduzca esas filas exactas. Eso tamb
 la barrera en un guardia continuo — un ruteo atestiguado al arrancar que después diverge
 falla al construir el siguiente índice, antes de suscribirse.
 
-**Qué está dentro de la identidad científica**: las cuatro proyecciones, los endpoints de
-venue, la construcción del índice, URL/topics, la conexión, el despacho al handler, la
-conversión, la selección y llamada de cada sesión, la inyección del único ruteo, la creación
-de las tareas materiales y el traspaso store → entrega.
-**Qué queda fuera**: reconexión, backoff, logging, health de feeds, sleeps y parámetros de
-transporte WS. Ambas direcciones están fijadas por tests de mutación.
+**Qué está dentro de la identidad científica**: desde la corrección de ADR-012, los tres
+módulos que deciden qué observan los colectores crudos están cubiertos **enteros** —
+`app/scalp_collector.py`, `app/ws_collector.py` y `app/signal_runtime_contract.py`—, así que
+la lista no hay que enumerarla: incluye por construcción imports, parsing, clasificación de
+agresión, buckets, stores, colas, sesiones, loops, flush, delivery, creación de tareas y
+entrypoints, además de las cuatro proyecciones de `app/config.py`, que sigue cubierto por
+región.
+**Qué queda fuera**: nada ejecutable de esos tres módulos. Reconexión, backoff, logging,
+health de feeds, sleeps y parámetros de transporte WS **ya no son neutrales**: es el coste
+aceptado y documentado de dejar de enumerar. Lo único insensible es la documentación —
+comentarios, docstrings, líneas en blanco y formato—, por canonicalización AST. Ambas
+direcciones están fijadas por tests de mutación.
 
 El invariante, enunciado sin rodeos:
 
@@ -114,11 +120,13 @@ El invariante, enunciado sin rodeos:
 > interna, entrada al store, ruteo por tarea o entrega raw debe **mover la identidad
 > científica** o quedar **estructuralmente impedido** antes de suscribirse o escribir.
 
-La segunda mitad es literal, no retórica: los bucles de reconexión y de flush reciben un
-`connect`/`cycle` ya ligado dentro de la región, y `main()`/`run()` no sostienen ningún
-`EffectiveMarketRouting`. Fuera de las regiones no se lee **ningún** símbolo material en
-ninguno de los dos colectores, y un barrido AST lo exige. No queda nada material fuera que
-una mutación pueda sustituir.
+Las dos mitades son literales. La primera lo es por cobertura: los dos colectores se hashean
+enteros, así que no existe «fuera» dentro de ellos. La segunda lo sigue siendo por estructura:
+los bucles de reconexión y de flush reciben un `connect`/`cycle` ya ligado, `main()`/`run()`
+no sostienen ningún `EffectiveMarketRouting`, y `require_attested_routing()` re-deriva el
+contrato antes de construir cualquier índice. El barrido AST sobre `MATERIAL_SYMBOLS` se
+conserva como **defensa adicional**, no como base de la propiedad: tres iteraciones
+demostraron que una enumeración no puede sostenerla.
 
 ## 4. De observación a outcome
 
@@ -169,7 +177,7 @@ ni un INSERT SQL directo puede declarar un hash falso.
 
 ```mermaid
 flowchart LR
-    SRC["regiones de código<br/>marcadas por comentario"] -->|"AST canónico<br/>sin comentarios ni formato"| IDENT["scientific identity v1<br/>digest"]
+    SRC["3 módulos Python completos<br/>+ 17 regiones AST + 8 regiones SQL"] -->|"AST canónico<br/>sin comentarios ni formato"| IDENT["scientific identity v1<br/>digest"]
     RESOLVED["symbol · base_asset<br/>futures_pair · spot_pair"] -->|"JSON canónico"| CONTRACT["runtime contract v1<br/>digest"]
     IDENT --> MANIFEST["manifest spec-v4"]
     CONTRACT --> MANIFEST
@@ -179,7 +187,7 @@ flowchart LR
 | | Identidad científica | Contrato de runtime |
 |---|---|---|
 | Responde | qué calcula el código | qué insumos seleccionó |
-| Se calcula de | AST de regiones marcadas | valores resueltos del catálogo |
+| Se calcula de | AST de 3 módulos completos + 25 regiones marcadas | valores resueltos del catálogo |
 | Insensible a | comentarios, formato, docstrings, ubicación | orden y ortografía de `SYMBOLS` |
 | Cambia si | cambia la semántica cubierta | cambia el ruteo resuelto |
 | Registro | append-only por versión | append-only por versión |
@@ -214,7 +222,10 @@ Reglas que sostienen la separación:
 
 - Un cambio en OP **no debe** mover la identidad científica. Si la mueve, o está mal
   clasificado o la región es demasiado ancha (fue exactamente el caso de
-  `whale_threshold_usd`).
+  `whale_threshold_usd`). **Excepción vigente y deliberada (ADR-012)**: dentro de los tres
+  módulos cubiertos enteros, la regla se suspende — backoff, logging y health sí mueven la
+  identidad. Se aceptó porque la alternativa, mantener una superficie enumerada, fue refutada
+  tres veces. Es una deuda a resolver antes de congelar identity-v1, no un estado final.
 - Y al revés: un cambio material **no debe** poder ocurrir en OP. Si la única defensa es que
   nadie edite esa línea, la clasificación es aspiracional. Fue exactamente el caso de la
   selección de sesión dentro de los bucles de reconexión, que dos revisiones seguidas

@@ -273,3 +273,76 @@ ningún símbolo material se lea fuera de una región en ninguno de los dos cole
   hashes legacy spec v1/v2/v3 **sin cambios**.
 - `e84ebe81` es un **candidato**. Sólo se promueve a cierre efectivo con una revisión
   independiente P0=0/P1=0 ([`ROADMAP.md`](ROADMAP.md) §2).
+
+---
+
+## ADR-012 — La identidad científica cubre módulos Python completos, no regiones enumeradas
+
+- **Fecha**: 2026-08-15
+- **Estado**: `DECIDED` · pendiente de revisión independiente (`BLOCKED` para promoción)
+- **SHA**: `f83a468a2d30854f4cad5f96d4b85d0ad50daaf6` (código, pruebas e identidad) y el commit documental inmediatamente posterior
+- **Supersede parcialmente**: ADR-008 y ADR-011 en cuanto al *método* de cobertura de
+  `app/scalp_collector.py`, `app/ws_collector.py` y `app/signal_runtime_contract.py`. Las
+  decisiones de procedencia y atestación de ADR-011 siguen vigentes sin cambios.
+
+**Decisión.** La identidad científica incorpora un tipo de componente nuevo,
+`python_module`, que canonicaliza el **AST completo de un fichero** sin marcadores
+`BEGIN/END` y sin lista de símbolos. Se aplica a los tres módulos que deciden qué observan
+los colectores crudos:
+
+- `app/scalp_collector.py`
+- `app/ws_collector.py`
+- `app/signal_runtime_contract.py`
+
+Los **siete** componentes parciales que se solapaban con esos ficheros —el de mecánica del
+contrato y tres regiones en cada colector— quedan **sustituidos** por los tres componentes de
+módulo. La identidad pasa de **32 a 28 componentes**.
+
+**Motivo.** Una región más una lista de símbolos sólo puede sostener la propiedad «lo
+enumerado no cambió», y una enumeración es exactamente lo que rodean tanto un ataque como un
+error honesto. Tres cierres consecutivos —`c879bdec`, `700f7695`/`450cf2fb` y
+`e84ebe81`/`9b2e082c`— fueron refutados por ese mismo motivo. Sobre `9b2e082c` se
+reprodujeron cinco mutaciones que **conservaban el digest** `c939add3…`:
+
+1. Escritura directa en `TRADE_STORE` desde código fuera de toda región
+   (`TRADE_STORE` se define en `app/scalp_collector.py:442`; `monitor()` está fuera).
+2. Un helper nuevo que escribe en el store y se lanza como tarea desde `main()`
+   (`app/scalp_collector.py:1817`, íntegramente fuera de la identidad).
+3. Invertir la clasificación buy/sell en `TradeBucket.add` (`app/scalp_collector.py:125`).
+4. Ampliar el bucket realtime de 5 a 10 segundos (`app/scalp_collector.py:149`).
+5. Sustituir `from functools import partial` (`app/scalp_collector.py:12`) por una
+   implementación que descarta silenciosamente el último argumento ligado —que es el
+   `routing` atestiguado en cada binding de productor.
+
+Ninguna se corrige añadiendo nombres a `MATERIAL_SYMBOLS`: dos son código nuevo, dos son
+aritmética dentro de código existente y una sustituye un builtin del lenguaje.
+
+**Consecuencias.**
+
+- La propiedad de cierre pasa de **curada** a **estructural**: cualquier cambio ejecutable en
+  esos tres módulos mueve identity-v1, sin superficie que enumerar y sin nada que olvidar.
+- **Coste aceptado y provisional**: backoff, logging, health de feeds, sleeps y parámetros de
+  transporte WS en los dos colectores **dejan de ser neutrales**. Los tests que fijaban esa
+  neutralidad se **invierten** en vez de borrarse —`test_operational_collector_plumbing_now_moves_the_identity`,
+  `test_operational_plumbing_now_moves_the_identity`,
+  `test_the_plumbing_left_outside_now_moves_the_identity`— para que el precio quede medido y
+  no supuesto. Recuperar esa neutralidad exigiría reintroducir una enumeración, que es lo
+  refutado tres veces; si alguna corrección futura la recupera, deberá declarar qué
+  enumeración compra.
+- Comentarios, docstrings, líneas en blanco, ancho de indentación y posiciones de origen
+  **siguen siendo neutrales**: la canonicalización es la misma AST que usan las regiones.
+- `MATERIAL_SYMBOLS` y los barridos estructurales **se conservan como defensa adicional**, no
+  como base de la propiedad. Los marcadores `BEGIN/END` permanecen en el código como
+  comentarios inertes para que esos barridos sigan funcionando; ya no deciden qué se hashea.
+  Los helpers de spans se re-anclaron a los marcadores del **fichero** en lugar de al registro
+  de componentes, de modo que ya no se pueden desactivar editando la lista de componentes.
+- `require_attested_routing()` y toda la cadena de procedencia de ADR-011 **se mantienen sin
+  cambios**.
+- Identity-v1 recomputada: `c939add3…` → `c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04`,
+  **28** componentes. Contrato de runtime (`c9cbe967…`) y hashes legacy spec v1/v2/v3
+  (`e2f967bb…`, `2f21afe9…`, `7fd50764…`) **sin cambios**.
+- La ventana de sustitución de identity-v1 sigue abierta: no existe manifest spec-v4 ni
+  resultado autoritativo que hubiera congelado un valor anterior, así que recomputar no
+  invalida evidencia.
+- Este commit es un **candidato**. Sólo se promueve a cierre efectivo con una revisión
+  independiente P0=0/P1=0. No se declara R05 cerrado.

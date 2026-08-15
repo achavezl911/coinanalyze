@@ -197,7 +197,9 @@ negativo pero exceso positivo nunca puede producir PASS.
 
 El manifest v4 congela `scientific_implementation`, que contiene una versión,
 el canonicalizador, la lista ordenada de componentes, el digest de cada uno y
-el digest agregado SHA-256. La identidad v1 cubre 30 regiones explícitas. La
+el digest agregado SHA-256. La identidad v1 cubre **28 componentes**: tres
+módulos Python completos (`app/scalp_collector.py`, `app/ws_collector.py`,
+`app/signal_runtime_contract.py`) más 17 regiones AST y 8 regiones SQL. La
 superficie comienza en la construcción del catálogo de mercados y del ruteo
 efectivo (R05), sigue con la construcción del contexto y el kernel que genera
 la decisión, continúa por clasificación, persistencia y replay, e incluye la
@@ -233,7 +235,7 @@ La identidad científica registrada por PR27 es:
 ```text
 identity_version = 1
 canonicalizer    = scientific_source_canonicalization_v1
-digest           = c939add3055ea2a8b0edd1ea93630682043a2b98b4ac33425bc49acc47cf156c
+digest           = c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04
 ```
 
 Historial de digests v1 dentro de esta PR sin mergear: R03 registró
@@ -244,8 +246,11 @@ R05 añadió cinco componentes de ruteo y registró `25f6c2e5…` en `c879bdec`;
 el primer intento de cierre amplió las regiones hasta los puntos de aplicación,
 redujo la de `config.py` a las cuatro proyecciones, subió a 32 componentes y
 registró `5a5cb09f…` en `700f7695`/`450cf2fb`; una segunda revisión lo refutó y
-el cierre de wiring registra el valor vigente `c939add3…` en `e84ebe81`, con
-los mismos 32 componentes —la corrección es estructural, no añade superficie.
+el cierre de wiring registró `c939add3…` en `e84ebe81`/`9b2e082c`, con los
+mismos 32 componentes; una **tercera** revisión refutó también ese valor —cinco
+mutaciones lo conservaban— y el cierre por módulo completo registra el valor
+vigente `c7bf8e5b…`, bajando a **28** componentes al sustituir siete regiones
+parciales por tres módulos enteros (ADR-012).
 
 Ese valor es **candidato**, no definitivo: se registra para que las pruebas y
 el runtime sean coherentes, y sólo queda firme si la superficie corregida
@@ -751,8 +756,9 @@ El catálogo, su loader, los dos umbrales, `bybit_oi_symbol` y
 `spot_history_symbol` quedan fuera: sus *valores resueltos* siguen congelados
 por el runtime contract, que es donde corresponde.
 
-La clausura pasa de 30 a **32 componentes**: se añaden
-`scalp_routing_entrypoint` y `ws_routing_entrypoint`.
+La clausura pasó de 30 a **32 componentes** en aquel intento, añadiendo
+`scalp_routing_entrypoint` y `ws_routing_entrypoint`. La corrección posterior
+por módulo completo las sustituye: ver «Cierre por módulo completo» más abajo.
 
 ### Regresión de la corrección
 
@@ -838,13 +844,53 @@ los sitios reales de lectura del símbolo, byte a byte— en vez de por
 desplazamiento textual. Una expresión duplicada dentro de una región ya no puede
 hacerse pasar por la real.
 
-`tests/test_pr27_r05_routing_wiring_closure.py` fija además la neutralidad en la
-otra dirección: la invocación opaca `connect(...)`/`cycle()`, los sleeps, el
-backoff, el logging y el health **no** mueven la identidad. Romperlos sólo puede
-costar datos —un `data_gap` visible—, nunca archivar el mercado de un símbolo
-bajo la clave de otro.
+`tests/test_pr27_r05_routing_wiring_closure.py` fijaba además la neutralidad en
+la otra dirección: la invocación opaca `connect(...)`/`cycle()`, los sleeps, el
+backoff, el logging y el health **no** movían la identidad.
 
-Identidad recomputada: `5a5cb09f…` → `c939add3…`, con los mismos 32 componentes.
+Identidad recomputada en aquel intento: `5a5cb09f…` → `c939add3…`, con los
+mismos 32 componentes.
+
+## Cierre por módulo completo (corrección vigente, ADR-012)
+
+Una tercera revisión independiente refutó `e84ebe81`/`9b2e082c`. El defecto no
+era un símbolo olvidado sino la **forma** de la propiedad: mientras la identidad
+se construya con regiones parciales más `MATERIAL_SYMBOLS`, lo único que puede
+afirmar es «lo enumerado no cambió». Cinco mutaciones conservaban `c939add3…`:
+
+1. Escritura directa en `TRADE_STORE` desde código fuera de toda región.
+2. Un helper nuevo que escribe en el store, lanzado como tarea desde `main()`.
+3. Invertir la clasificación buy/sell en `TradeBucket.add`.
+4. Ampliar el bucket realtime de 5 a 10 segundos.
+5. Sustituir `from functools import partial` por una implementación que descarta
+   el último argumento ligado —el `routing` atestiguado.
+
+La corrección añade el tipo de componente `python_module`, que canonicaliza el
+**AST completo** de un fichero sin marcadores y sin lista de símbolos, y lo
+aplica a `app/scalp_collector.py`, `app/ws_collector.py` y
+`app/signal_runtime_contract.py`. Los siete componentes parciales que se
+solapaban con esos ficheros quedan sustituidos: 32 → **28** componentes.
+
+La cobertura incluye por construcción imports, parsing, clasificación de
+agresión, cálculo de buckets, stores, colas, sesiones, loops, flush, delivery,
+creación de tareas y entrypoints.
+
+**Coste aceptado y documentado**: backoff, logging, health y sleeps en los dos
+colectores **dejan de ser neutrales**. Los tests que fijaban esa neutralidad se
+invierten en vez de borrarse. Comentarios, docstrings y formato **siguen**
+siendo neutrales, por canonicalización AST.
+
+`MATERIAL_SYMBOLS`, los marcadores `BEGIN/END` y los barridos estructurales se
+conservan **sólo como defensa adicional**; los helpers de spans se re-anclaron a
+los marcadores del fichero en vez de al registro de componentes, de modo que ya
+no se pueden desactivar editando la lista.
+
+Regresión: `tests/test_pr27_r05_module_identity_closure.py` — 20 tests. Las
+cinco mutaciones anclan por AST en el nodo real y reescriben en sus propios
+desplazamientos de byte.
+
+Identidad recomputada: `c939add3…` → `c7bf8e5b…`, 28 componentes. Contrato de
+runtime y hashes legacy spec v1/v2/v3 **sin cambios**.
 
 ### Nomenclatura de la serie de reworks
 

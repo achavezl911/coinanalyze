@@ -19,10 +19,14 @@ construcción del índice hasta la escritura cruda.
 
 - A-01 (mapas efectivos divergentes) — cerrado en `c879bdec`.
 - A-02 (aplicación del ruteo fuera de la identidad) — **no** cerrado en `c879bdec`;
-  intentado en `700f7695`/`450cf2fb` y **refutado**; cerrado en
-  `e84ebe8140c8393ea2ef3447d8c165d32b594917`.
-- Región de `config.py` reducida a las cuatro proyecciones.
-- Identity-v1 recomputada: `c939add3…` (candidato).
+  intentado en `700f7695`/`450cf2fb` y **refutado**; intentado en `e84ebe81`/`9b2e082c` y
+  **refutado también**; cuarto intento en esta corrección.
+- A-03 (la identidad se apoyaba en una enumeración: regiones parciales más
+  `MATERIAL_SYMBOLS`) — cinco mutaciones conservaban el digest sobre `9b2e082c`. Cerrado por
+  cobertura de **módulo Python completo** en `app/scalp_collector.py`, `app/ws_collector.py`
+  y `app/signal_runtime_contract.py` (ADR-012).
+- Región de `config.py` reducida a las cuatro proyecciones; sigue siendo región, no módulo.
+- Identity-v1 recomputada: `c7bf8e5b…` (candidato), 28 componentes.
 
 Tres intentos, dos refutaciones. `c879bdec` dejó A-02 abierto. `700f7695`/`450cf2fb` mutaban
 la **primera aparición textual** de cada expresión, que tras esa corrección siempre caía
@@ -40,13 +44,17 @@ La etapa 1 ya falló **dos** revisiones. No se declara cerrada por autoafirmaci�
 verde: hace falta una revisión adversarial externa que intente reproducir el bypass con
 mutaciones propias y no lo consiga.
 
-Criterio de salida: cero hallazgos P0 y P1 sobre
-`e84ebe8140c8393ea2ef3447d8c165d32b594917`. Vectores obligatorios en
-[`HANDOFF_IA.md`](HANDOFF_IA.md) §11.
+Criterio de salida: cero hallazgos P0 y P1 sobre `f83a468a2d30854f4cad5f96d4b85d0ad50daaf6`.
+Vectores obligatorios en [`HANDOFF_IA.md`](HANDOFF_IA.md) §11.
 
-Sólo tras esta aprobación el digest `c939add3…` deja de ser candidato, y sólo entonces se
+Sólo tras esta aprobación el digest `c7bf8e5b…` deja de ser candidato, y sólo entonces se
 congela identity-v1 (antes del primer manifest spec-v4). Cualquier cambio posterior exige
 identity-v2.
+
+**Antes de congelar hay que decidir el coste de ADR-012**: con cobertura de módulo completo,
+un cambio de backoff o de nivel de log en los colectores obliga a recomputar identity-v1
+mientras la ventana siga abierta, y a una identidad nueva una vez cerrada. Es una decisión de
+planificación, no un detalle de implementación.
 
 ## 3. PostgreSQL 17 en el CI de `main`
 

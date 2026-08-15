@@ -15,7 +15,7 @@ Toda afirmación lleva estado explícito. Donde falta evidencia, se dice — no 
 | `EXTERNAL_UNVERIFIED` | Depende de un sistema fuera del repo; no verificado desde aquí. |
 | `MISSING_EXTERNAL_EVIDENCE` | Se esperaría un artefacto externo y **no existe**. |
 
-Revisión de este documento: **2026-08-14**. Supersede al handoff v1.3.7, cuyo contenido de
+Revisión de este documento: **2026-08-15**. Supersede al handoff v1.3.7, cuyo contenido de
 producto se conserva en §9.
 
 ---
@@ -51,8 +51,10 @@ El detalle de arquitectura, con diagramas, está en
 
 ### 2.1 Protocolo de validación adversarial
 
-`DECIDED` — vinculante. Esta serie ya produjo **tres** cierres autoafirmados y refutados
-(`c879bdec`, `700f7695`, `450cf2fb`); el protocolo existe porque la autoafirmación falló.
+`DECIDED` — vinculante. Esta serie ya produjo **tres intentos de cierre autoafirmados y
+refutados**, en cinco commits: `c879bdec`; `700f7695` + `450cf2fb`; `e84ebe81` + `9b2e082c`.
+El protocolo existe porque la autoafirmación falló, y falló las tres veces con la suite en
+verde.
 
 - **ChatGPT Work siempre cuestiona y valida de forma independiente el código de Claude.** No
   revisa el informe: revisa el árbol, ejecuta sus propias mutaciones e intenta reproducir el
@@ -94,6 +96,10 @@ texto, no sobre revisión: dice que Git sabría fusionar, no que alguien haya va
 #28 sigue marcada **DO NOT MERGE** hasta que (a) PR #27 entre en `main` y (b) exista una
 revisión independiente con P0=0 y P1=0.
 
+`CONFIRMED 2026-08-15` — consultado con `gh pr view 28`: `state=OPEN`,
+`mergeable=MERGEABLE`, `mergeStateStatus=CLEAN`. Es decir: **técnicamente mergeable, pero
+bloqueado — DO NOT MERGE.**
+
 ### SHAs de la serie
 
 | Rework | SHA | Estado |
@@ -106,11 +112,14 @@ revisión independiente con P0=0 y P1=0.
 | **R05 candidato parcial** | `c879bdecf5eb453b5a91853e917be79d3df9042d` | **REFUTADO: A-02 abierto** |
 | **R05 candidato de cierre** | `700f7695f97c1d094a2180b7a6916686429abda3` | **REFUTADO: mutaciones por primera aparición textual** |
 | **R05 continuidad documental** | `450cf2fb5633779755f3d7db4069fc86a800eb8b` | **REFUTADO junto con `700f7695`** |
-| **R05 cierre de wiring (código)** | `e84ebe8140c8393ea2ef3447d8c165d32b594917` | **CANDIDATO**, pendiente de revisión |
-| **Continuidad documental** | el commit inmediatamente posterior a `e84ebe81` | HEAD de PR #28 |
+| **R05 cierre de wiring (código)** | `e84ebe8140c8393ea2ef3447d8c165d32b594917` | **REFUTADO: cinco mutaciones conservaban el digest** |
+| **R05 continuidad documental** | `9b2e082c46d432ee4e4727fb5e9e18feba414b63` | **REFUTADO junto con `e84ebe81`** |
+| **R05 cierre por módulo (código)** | `f83a468a2d30854f4cad5f96d4b85d0ad50daaf6` | **CANDIDATO**, pendiente de revisión |
+| **Continuidad documental** | el commit inmediatamente posterior a `f83a468a` | HEAD de PR #28 |
 
-`e84ebe81` es el commit de código, tests e identidad; el siguiente es documentación y handoff.
-Esta corrección **no es R06**: sigue siendo el cierre del mismo R05, en su tercer intento.
+El primero es el commit de código, tests e identidad; el segundo es documentación y handoff y
+cita el SHA del primero. Esta corrección **no es R06**: sigue siendo el cierre del mismo R05,
+en su **cuarto** intento.
 
 ## 4. Arquitectura científica vigente
 
@@ -121,8 +130,20 @@ Dos identidades independientes, ambas con registro append-only:
 | | Identidad científica | Contrato de runtime |
 |---|---|---|
 | Responde | qué calcula el código | qué insumos crudos seleccionó |
-| Digest vigente | `c939add3055ea2a8b0edd1ea93630682043a2b98b4ac33425bc49acc47cf156c` (**candidato**) | `c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00` (sin cambios) |
-| Componentes | 32 regiones AST/SQL | 4 campos resueltos por símbolo |
+| Digest vigente | `c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04` (**candidato**) | `c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00` (sin cambios) |
+| Componentes | 28: 3 **módulos Python completos** + 17 regiones AST + 8 regiones SQL | 4 campos resueltos por símbolo |
+
+Desde esta corrección la identidad tiene **dos formas de componente** (ADR-012):
+
+- **Región** (`python` / `sql`) — hashea el texto entre dos marcadores `BEGIN/END`. Es la
+  forma correcta para un fichero grande cuya parte científica es una minoría bien delimitada.
+- **Módulo** (`python_module`) — hashea el **AST completo del fichero**, sin marcadores y sin
+  lista de símbolos. Se aplica a `app/scalp_collector.py`, `app/ws_collector.py` y
+  `app/signal_runtime_contract.py`, los tres ficheros donde cualquier cosa ejecutable puede
+  cambiar lo que observan los colectores crudos.
+
+En ambas formas la canonicalización es la misma: comentarios, docstrings, líneas en blanco,
+ancho de indentación y posiciones de origen **no** mueven el digest; lo ejecutable sí.
 
 Hashes legacy spec v1/v2/v3, `CONFIRMED` sin cambios: `e2f967bb…`, `2f21afe9…`, `7fd50764…`.
 
@@ -225,11 +246,70 @@ informe anterior afirmó que `git diff --check` estaba limpio.
 Evidencia roja: `tests/test_pr27_r05_routing_wiring_closure.py` sobre `450cf2fb` →
 **25 failed, 6 passed**.
 
-## 7. Qué cierra esta corrección (`e84ebe81`)
+## 6.2 Hallazgos de la tercera revisión, sobre `e84ebe81`/`9b2e082c`
+
+`CONFIRMED — reproducidos aquí en rojo antes de tocar código`
+
+La causa raíz vuelve a ser metodológica, un nivel más arriba: la identidad seguía apoyándose
+en **regiones parciales más `MATERIAL_SYMBOLS`**, es decir en una **enumeración**. Una
+enumeración sólo puede sostener la propiedad «lo enumerado no cambió», y eso es lo que rodean
+tanto un ataque como un error honesto. Cinco mutaciones conservaron indebidamente el digest
+`c939add3…`:
+
+1. **Escritura directa en `TRADE_STORE` fuera de toda región protegida.** `TRADE_STORE` se
+   define en `app/scalp_collector.py:442` y `monitor()` está fuera de las tres regiones, así
+   que fabricar buckets ahí no llega al digest.
+2. **Un helper nuevo que escribe en el store, lanzado desde `main()`.** `main()`
+   (`app/scalp_collector.py:1817`) está íntegramente fuera de la identidad, de modo que tanto
+   el helper como su `create_task` son invisibles.
+3. **Invertir la clasificación buy/sell en `TradeBucket.add`** (`app/scalp_collector.py:125`).
+   La agresión es de donde sale todo el resultado de microestructura.
+4. **Ampliar el bucket realtime de 5 a 10 segundos** (`app/scalp_collector.py:149`). Cambia la
+   rejilla de observación sin mover el digest.
+5. **Sustituir `from functools import partial`** (`app/scalp_collector.py:12`) por una
+   implementación que descarta el último argumento ligado — que es el `routing` atestiguado
+   en cada binding de productor.
+
+Ninguna se corrige añadiendo nombres a `MATERIAL_SYMBOLS`: 1 y 2 son código nuevo, 3 y 4 son
+aritmética dentro de código existente, y 5 sustituye un builtin del lenguaje.
+
+Evidencia roja: `tests/test_pr27_r05_module_identity_closure.py` sobre `9b2e082c` →
+**12 failed, 8 passed**. Las cinco mutaciones canónicas fallan con el mensaje «the mutation
+left the scientific identity at c939add3…»; las pruebas de neutralidad y determinismo ya
+pasaban en rojo, que es lo que se espera de un control negativo.
+
+## 7. Qué cierra esta corrección (cierre por módulo completo)
 
 `CONFIRMED en esta rama · pendiente de revisión independiente`
 
-Tres capas, porque ninguna basta sola.
+**La decisión de fondo: dejar de enumerar.** Se añade a la identidad un tipo de componente
+`python_module` que canonicaliza el **AST completo** de un fichero, sin marcadores `BEGIN/END`
+y sin lista de símbolos, y se aplica a los tres módulos que deciden qué observan los
+colectores crudos — `app/scalp_collector.py`, `app/ws_collector.py` y
+`app/signal_runtime_contract.py`. Los **siete** componentes parciales que se solapaban con
+esos ficheros quedan **sustituidos** por los tres de módulo: 32 → **28** componentes.
+
+La cobertura de módulo incluye, por construcción y sin tener que enumerarlo: imports, parsing,
+clasificación de agresión, cálculo de buckets, stores, colas, sesiones, loops, flush, delivery,
+creación de tareas y entrypoints. No hay superficie que recordar y por tanto no hay superficie
+que olvidar.
+
+**Coste aceptado, explícito y provisional.** Backoff, logging, health de feeds, sleeps y
+parámetros de transporte WS en los dos colectores **dejan de ser neutrales**: cualquier cambio
+ejecutable en esos tres módulos mueve identity-v1. Los tests que fijaban esa neutralidad se
+**invierten** en vez de borrarse, para que el precio quede medido y no supuesto. Recuperar la
+neutralidad exigiría reintroducir una enumeración, que es justo lo refutado tres veces.
+
+**Lo que se conserva de la iteración anterior**, sin cambios: `require_attested_routing()` y
+toda la cadena de procedencia de ADR-011; `MATERIAL_SYMBOLS` y los barridos estructurales,
+ahora **sólo como defensa adicional**; los marcadores `BEGIN/END` en el código, como
+comentarios inertes que esos barridos siguen leyendo. Los helpers de spans se re-anclaron a
+los marcadores del **fichero** en vez de al registro de componentes, así que ya no se pueden
+desactivar editando la lista de componentes — es más estricto que antes, no menos.
+
+Identidad recomputada: `c939add3…` → `c7bf8e5b…`, 28 componentes.
+
+Lo que sigue, del cierre de wiring anterior, y que esta corrección no toca:
 
 **1. Procedencia — el índice sólo existe donde el registro está de acuerdo.**
 `require_attested_routing()` **re-deriva** el contrato desde el catálogo, los settings y los
@@ -246,44 +326,77 @@ venue, ni sesión, ni store, ni entrega, ni ruteo. `main()`/`run()` llaman
 un `EffectiveMarketRouting` que pudiera redirigir. Un barrido AST endurecido exige que
 **ningún símbolo material se lea fuera de una región** en ninguno de los dos colectores.
 
-**3. Anclaje — las mutaciones apuntan al sitio real.** Las nuevas localizan cada referencia por
-AST, no por desplazamiento textual, así que una expresión duplicada dentro de una región ya no
-puede hacerse pasar por la real.
+**3. Anclaje — las mutaciones apuntan al sitio real.** Localizan cada referencia por AST, no
+por desplazamiento textual, así que una expresión duplicada dentro de una región no puede
+hacerse pasar por la real. Las cinco mutaciones nuevas siguen la misma regla: se anclan en el
+nodo (`ast.If` dentro de `TradeBucket.add`, `ast.Constant` dentro de la asignación de `rt_ts`,
+el propio `ast.ImportFrom`) y reescriben en los desplazamientos de byte de ese nodo.
 
-Se conserva de la iteración anterior: sesiones, endpoints de venue, construcción del índice,
-URL/topics, conexión, despacho y traspaso store → entrega dentro de la identidad; región de
-`config.py` reducida a las cuatro proyecciones.
-
-Identidad recomputada: `5a5cb09f…` → `c939add3…`. Siguen siendo **32** componentes: la
-corrección es estructural, no añade superficie.
+Se conserva también: sesiones, endpoints de venue, construcción del índice, URL/topics,
+conexión, despacho y traspaso store → entrega dentro de la identidad; región de `config.py`
+reducida a las cuatro proyecciones.
 
 ## 8. Confirmado / pendiente / bloqueado / no verificado
 
 ### CONFIRMED
 
-- Línea base sobre `450cf2fb` con PostgreSQL 17.10, árbol limpio: **1510 passed, 0 failed,
-  0 skipped**.
-- Suite completa sobre esta corrección con PostgreSQL 17.10: **1545 passed, 0 failed,
-  0 skipped** (919 s). Los 35 nuevos son `test_pr27_r05_routing_wiring_closure.py`.
+- Línea base sobre `9b2e082c` con PostgreSQL 17.10: **1545 passed, 0 failed, 0 skipped**.
+- Suite completa sobre esta corrección con PostgreSQL 17.10 (`TEST_DATABASE_URL` exportada,
+  clúster aislado como el del CI): **1565 passed, 0 failed, 0 skipped** (959 s). Los 20 nuevos
+  son `tests/test_pr27_r05_module_identity_closure.py`; la línea base eran 1545.
 - `ruff check .` limpio · `compileall` OK · `node --test tests/js/` 49 pass 0 skip ·
-  `git diff --check` limpio en cada commit y en el rango completo.
-- Runtime contract digest sin cambios; hashes legacy spec v1/v2/v3 sin cambios.
-- Los tres hallazgos P1 reproducidos en rojo **antes** de tocar código y cerrados con tests
-  que pasan de rojo a verde. Ningún test existente se debilitó: los que cambiaron se volvieron
-  **más** estrictos (el entrypoint ya no puede sostener un ruteo; los bucles de flush ya no
-  reciben uno).
-- Neutralidad fijada en ambas direcciones: umbrales, `bybit_oi_symbol`, `spot_history_symbol`,
-  backoff, logging, health, sleeps y la invocación opaca `connect`/`cycle` no mueven la
-  identidad.
+  `git diff --check` limpio.
+- Runtime contract digest `c9cbe967…` **sin cambios**; hashes legacy spec v1/v2/v3
+  (`e2f967bb…`, `2f21afe9…`, `7fd50764…`) **sin cambios**. Sólo se mueve identity-v1, que es
+  precisamente lo que la corrección amplía.
+- Las cinco mutaciones reproducidas en rojo **antes** de tocar código (§6.2) y cerradas con
+  tests que pasan de rojo a verde.
+- **Ningún test se debilitó.** Los que cambiaron lo hicieron en una de dos direcciones, ambas
+  declaradas:
+  - **Más estrictos**: los barridos estructurales leen ahora los marcadores del fichero en vez
+    del registro de componentes, así que no se pueden desactivar editando la lista;
+    `test_contract_mechanics_are_covered_by_the_scientific_identity` y
+    `test_guard_is_frozen_by_the_scientific_identity` exigen cobertura de módulo completo en
+    lugar de una región.
+  - **Invertidos a propósito**: los tres tests de neutralidad operativa
+    (`test_operational_collector_plumbing_now_moves_the_identity`,
+    `test_operational_plumbing_now_moves_the_identity`,
+    `test_the_plumbing_left_outside_now_moves_the_identity`) ahora **exigen** que backoff,
+    logging, health y sleeps muevan el digest. Se invierten en vez de borrarse para que el
+    coste quede medido.
+- Neutralidad que **sí** se conserva y está fijada por test: comentarios, docstrings, líneas en
+  blanco y formato en los tres módulos; y en el contrato de runtime, umbrales,
+  `bybit_oi_symbol` y `spot_history_symbol`.
 - Trailing whitespace corregido en `.github/pull_request_template.md` (el que introdujo
   `700f7695..450cf2fb`) y en `scripts/configure_secrets.sh:107`. Barrido del árbol rastreado:
   queda **una** línea, `deploy/ai-bridge/v1.3.4-preview-max.patch:8`, y se deja
   deliberadamente — es un espacio único que en formato *unified diff* representa la línea de
   contexto en blanco del hunk. Quitarlo corrompería el parche.
 
+### 8.1 Riesgos y limitaciones que quedan abiertos
+
+`CONFIRMED` — declarados, no resueltos.
+
+- **La identidad es ahora sensible a edits operativos** en los tres módulos cubiertos. Un
+  cambio de backoff o de nivel de log obliga a recomputar y re-registrar identity-v1 mientras
+  la ventana de sustitución siga abierta; después de la congelación spec-v4 obligaría a una
+  **identidad nueva**. Es el precio explícito de ADR-012 y hay que planificarlo antes de
+  congelar.
+- **La cobertura por módulo no dice nada sobre el resto del árbol.** Sigue siendo enumerada
+  para los otros 15 ficheros con regiones. Esta corrección no afirma que ahí no exista el
+  mismo defecto; sólo cierra los tres módulos que el hallazgo señaló.
+- **`app/config.py` sigue cubierto por región**, deliberadamente: su parte científica son las
+  cuatro proyecciones y los umbrales de al lado los congela el contrato de runtime. Es una
+  enumeración que sobrevive, y por tanto una superficie a revisar.
+- **`MATERIAL_SYMBOLS` y los marcadores permanecen** como defensa adicional. No sostienen la
+  propiedad de cierre, pero si alguien los borra los barridos dejan de proteger sin que el
+  digest lo note.
+- La ventana de sustitución de identity-v1 sigue abierta **sólo** porque no existe manifest
+  spec-v4 ni resultado autoritativo. En cuanto exista uno, esta libertad desaparece.
+
 ### PLANNED / BLOCKED
 
-- Revisión independiente P0=0/P1=0 sobre `e84ebe81` — **bloquea todo lo demás**.
+- Revisión independiente P0=0/P1=0 sobre `f83a468a2d30854f4cad5f96d4b85d0ad50daaf6` — **bloquea todo lo demás**.
 - Deuda spec-v1, cohorte legacy y pivotes.
 - Merge humano de PR #27 y luego PR #28.
 - Calibración pre-OOS, congelación spec-v4, recolección y evaluación autoritativa.
@@ -358,27 +471,35 @@ prácticamente vacía, no la uses.
 `BLOCKED — no la ejecuta una IA`
 
 > **Solicitar a ChatGPT Work una revisión independiente y adversarial de
-> `e84ebe8140c8393ea2ef3447d8c165d32b594917`.** Debe intentar el bypass con mutaciones
-> **propias**, no con las que ya están en la suite. Vectores obligatorios, porque son los que
-> fallaron antes:
+> `f83a468a2d30854f4cad5f96d4b85d0ad50daaf6`.** Debe intentar el bypass con mutaciones **propias**, no con las que ya
+> están en la suite. Vectores obligatorios, porque son los que fallaron antes:
 >
-> 1. Mutar el **punto de llamada real** de cada símbolo, localizado por AST, nunca su primera
+> 1. Intentar cambiar algo ejecutable en `app/scalp_collector.py`, `app/ws_collector.py` o
+>    `app/signal_runtime_contract.py` **sin** mover identity-v1. La cobertura de módulo dice
+>    que es imposible; el trabajo de la revisión es demostrar lo contrario. Vectores obvios:
+>    código generado en `exec`/`eval`, un `.pth`, un `sitecustomize`, monkeypatching desde
+>    otro módulo, o un fichero nuevo que los colectores importen.
+> 2. Buscar el mismo defecto **fuera** de los tres módulos cubiertos: cualquier ruta que
+>    alcance el store, la clasificación o la entrega desde uno de los 15 ficheros que siguen
+>    cubiertos por región, o desde uno que no está cubierto en absoluto.
+> 3. Mutar el **punto de llamada real** de cada símbolo, localizado por AST, nunca su primera
 >    aparición textual.
-> 2. Intentar construir un `EffectiveMarketRouting`, un `FuturesRoutingIndex` o un
+> 4. Intentar construir un `EffectiveMarketRouting`, un `FuturesRoutingIndex` o un
 >    `SpotRoutingIndex` que alcance el store o la escritura sin pasar por
 >    `require_attested_routing()`.
-> 3. Intentar introducir wiring material fuera de las regiones —en un bucle, un consumer, una
->    factory o un flusher raw— sin que el barrido AST lo detecte.
-> 4. Verificar la neutralidad en la otra dirección: que umbrales, `bybit_oi_symbol`,
->    `spot_history_symbol`, backoff, logging, health y transporte **sigan** sin mover el digest.
+> 5. Verificar la neutralidad que **sí** se afirma: que comentarios, docstrings y formato en
+>    los tres módulos sigan sin mover el digest, y que el contrato de runtime y los hashes
+>    legacy sigan quietos.
 >
 > Criterio de salida: **P0=0 y P1=0**. Si refuta, entregar veredicto y prompt correctivo
 > juntos (§2.1).
 
 Hasta que eso ocurra:
 
-- El digest `c939add3…` es **candidato**, no definitivo. No lo describas como final ni
+- El digest `c7bf8e5b…` es **candidato**, no definitivo. No lo describas como final ni
   inmutable.
+- **R05 no está cerrado.** Esta es su cuarta iteración y las tres anteriores también se
+  presentaron con la suite en verde.
 - No se congela identity-v1.
 - No se mergea nada. `mergeable=true` en GitHub no es una aprobación.
 
