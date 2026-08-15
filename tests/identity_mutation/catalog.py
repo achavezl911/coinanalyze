@@ -50,6 +50,17 @@ REQUIRED_EFFECTS = frozenset(
 GUARD = "GUARD"
 ESCAPE = "ESCAPE"
 
+# A finding that **no in-process control can close**, because the attacker who
+# performs it already controls the process that would have to detect it.  It is
+# not a forgiven escape and must never be read as one: it is an escape whose
+# closure lives outside the process, in the compensating controls of section 4,
+# and growing this set is a regression exactly like growing the escape set.
+#
+# The distinction is structural, not a matter of degree.  ``ESCAPE`` means "this
+# tree does not detect it yet"; ``RESIDUAL`` means "nothing running inside this
+# tree ever could, so the mitigation is elsewhere and is named".
+RESIDUAL = "RESIDUAL"
+
 # Retained as a *forbidden* value, not as an outcome.  The catalog declares no
 # skip condition and the harness never emits one, so ``skipped`` in the
 # declaration is empty by construction; keeping the constant is what lets the
@@ -70,8 +81,11 @@ CLOSES_B = "B"  # canonicalization by an explicit list of fields
 CLOSES_C1 = "C.1"  # verification of sys.modules
 CLOSES_C2 = "C.2"  # hash of the bound object
 CLOSES_D = "D"  # registry anchor
+CLOSES_NOTHING = "RESIDUAL"  # nothing in process closes it; section 4 mitigates it
 
-CLOSES_WITH_VALUES = frozenset({CLOSES_A, CLOSES_B, CLOSES_C1, CLOSES_C2, CLOSES_D})
+CLOSES_WITH_VALUES = frozenset(
+    {CLOSES_A, CLOSES_B, CLOSES_C1, CLOSES_C2, CLOSES_D, CLOSES_NOTHING}
+)
 
 # --- the anchor layout the anchor mutations interrogate ---------------------
 #
@@ -298,6 +312,13 @@ class Mutation:
     closes_with: str = ""
     closes_note: str = ""
     anchor_rationale: str = ""
+    # Set only on a row that no in-process control can close.  Both fields are
+    # mandatory when it is set and the suite asserts that: a residual without a
+    # written argument is an escape somebody decided to stop counting, and a
+    # residual without compensating controls is a risk nobody mitigated.
+    residual: bool = False
+    residual_argument: str = ""
+    compensating_controls: tuple[str, ...] = ()
 
 
 # --- shared mutation payloads ----------------------------------------------
@@ -377,12 +398,27 @@ def divert_realtime_buckets(symbol: str) -> None:
     scalp_collector.TRADE_STORE.buckets.pop(symbol, None)
 '''
 
-# M-31: neutralization installed from the tree *before* the identity module is
-# executed, by wrapping the loader rather than by reassigning an attribute
-# afterwards.  Anything that captured the validator at import time captured the
-# replacement, which is what makes it a different question from M-01.
-_SITECUSTOMIZE = '''\
-"""Neutralize the identity validators before the module exists in memory."""
+# M-31 and M-38: neutralization installed from the tree *before* the identity
+# module is executed, by wrapping the loader rather than by reassigning an
+# attribute afterwards.  Anything that captured the validator at import time
+# captured the replacement, which is what makes it a different question from
+# M-01.
+#
+# The two rows differ in exactly one line, and that one line is the whole
+# argument of section 4.  M-31 neutralizes
+# ``validate_scientific_implementation_identity`` -- a symbol the combined
+# validator does not consult when it decides, so C.2 can see that the object is
+# not the one the source describes, and the row closes.  M-38 neutralizes
+# ``validate_scientific_identity`` itself, and no control that runs inside this
+# process can detect that: the thing that would report the divergence is the
+# thing that was replaced.  Splitting them is why M-31 is closable at all --
+# while one file did both, the closable half was hidden behind the unclosable
+# one and the row could only ever be an escape.
+
+
+def _sitecustomize(body: str) -> str:
+    return f'''\
+"""Neutralize an identity validator before the module exists in memory."""
 
 import importlib.util
 import os
@@ -408,9 +444,7 @@ class _PreImportNeutralizer:
 
         def exec_module(module, _original=original_exec_module):
             _original(module)
-            module.validate_scientific_implementation_identity = lambda stored: stored
-            if hasattr(module, "validate_scientific_identity"):
-                module.validate_scientific_identity = lambda *args, **kwargs: True
+{body}
 
         spec.loader.exec_module = exec_module
         return spec
@@ -419,6 +453,58 @@ class _PreImportNeutralizer:
 sys.meta_path.insert(0, _PreImportNeutralizer())
 os.environ["IDENTITY_MUTATION_SITECUSTOMIZE_ACTIVE"] = "1"
 '''
+
+
+# M-31: the compatibility half validator only.
+_SITECUSTOMIZE = _sitecustomize(
+    "            module.validate_scientific_implementation_identity = lambda stored: stored"
+)
+
+# M-38: the combined entry point -- the one that decides.
+_SITECUSTOMIZE_COMBINED = _sitecustomize(
+    "            module.validate_scientific_identity = lambda *args, **kwargs: True"
+)
+
+# M-35: registry generation that records something other than what the tree
+# computes.  Anchored on the function that now lives in app/, so the forgery has
+# to survive the digest its own edit moves.
+_BUILD_REGISTRY_BODY = '''\
+    from app.signal_runtime_contract import (
+        AUTHORIZED_COLLECTOR_SHARD_PROFILES,
+        AUTHORIZED_ENVIRONMENT_FIXED,
+        AUTHORIZED_INTERPRETERS,
+        SCIENTIFIC_RUNTIME_CONTRACT_CANONICALIZER,
+        SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+        enumerate_authorized_environment_profiles,
+    )
+
+    identity = compute_scientific_implementation_identity()
+    profiles = enumerate_authorized_environment_profiles()
+    return {
+        "schema_version": IDENTITY_REGISTRY_SCHEMA_VERSION,
+        "identity_version": SCIENTIFIC_IDENTITY_VERSION_V1,
+        "canonicalizer": SCIENTIFIC_IDENTITY_CANONICALIZER,
+        "code_digest": "0" * 64,
+        "runtime_contract_version": SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+        "runtime_contract_canonicalizer": SCIENTIFIC_RUNTIME_CONTRACT_CANONICALIZER,
+        "supported_interpreters": [dict(item) for item in AUTHORIZED_INTERPRETERS],
+        "environment_profile_axes": {
+            "collector_shard": [
+                dict(item) for item in AUTHORIZED_COLLECTOR_SHARD_PROFILES
+            ],
+            "interpreter": [dict(item) for item in AUTHORIZED_INTERPRETERS],
+            "fixed": dict(AUTHORIZED_ENVIRONMENT_FIXED),
+        },
+        "authorized_environment_digests": list(profiles),
+        "surface_manifest": [
+            {
+                "source": component["source"],
+                "canonicalizer": component["canonicalizer"],
+                "digest": component["digest"],
+            }
+            for component in identity["components"]
+        ],
+    }'''
 
 
 # --- the catalog ------------------------------------------------------------
@@ -433,7 +519,12 @@ CATALOG: tuple[Mutation, ...] = (
         mechanism="runtime_patch",
         expected_effect=MUST_REJECT_ONLY,
         also_requires=(REQUIRE_FORGED_REJECTED,),
-        mandated_class=ESCAPE,
+        # The mandate is gone for the same reason M-03's was: the escape is what
+        # C.2 closes, and a row that is required to stay an escape cannot record
+        # its own closure.  What replaced it is stronger, not weaker -- the suite
+        # names M-01 among the rows that must be observed GUARD, so the harness
+        # cannot pass by failing to measure it, and the frozen evidence over
+        # c60e2ee6 still records the ESCAPE the independent audit demonstrated.
         steps=(RuntimePatch(name="neutralize_identity_validator"),),
         closes_with=CLOSES_C2,
         closes_note=(
@@ -1064,7 +1155,12 @@ CATALOG: tuple[Mutation, ...] = (
             "This one wraps the loader, so the module is already neutralized "
             "the first time anybody sees it.  The probe reports whether "
             "sitecustomize actually ran, so an inert file fails the mutation "
-            "instead of being reported as a finding."
+            "instead of being reported as a finding.  Distinct from M-38 in the "
+            "one line that matters: this row neutralizes the compatibility half "
+            "validator, which the combined entry point does not consult when it "
+            "decides, so C.2 can see the binding is not the one the source "
+            "describes.  M-38 neutralizes the entry point itself and nothing in "
+            "process can see that."
         ),
     ),
     Mutation(
@@ -1109,9 +1205,161 @@ CATALOG: tuple[Mutation, ...] = (
             "would be a statement about a system nobody deploys."
         ),
     ),
+    Mutation(
+        id="M-34",
+        summary=(
+            "poison the component cache at runtime: insert the benign canonical "
+            "digest under the mutated content's hash"
+        ),
+        mechanism="file_edit + runtime_patch",
+        expected_effect=MUST_REJECT_ONLY,
+        requires_probe_flag="component_cache_poisoned",
+        steps=(
+            AstEdit(
+                path=_WS,
+                symbol="spot_pairs",
+                part="body",
+                replacement=_SPOT_PAIRS_BODY,
+            ),
+            RuntimePatch(name="poison_component_cache"),
+        ),
+        closes_with=CLOSES_NOTHING,
+        closes_note=(
+            "an in-process cache the authoritative path must consult can always "
+            "be poisoned by an attacker already executing in that process, and "
+            "the measurement says the authoritative path cannot afford to run "
+            "without one"
+        ),
+        residual=True,
+        residual_argument=(
+            "The cache is not a design preference, it is a measured necessity.  "
+            "Canonicalizing the forty-two components of the surface costs 744 ms; "
+            "an authoritative evaluation performs three identity computations, so "
+            "running uncached costs 2232 ms against the 990 ms ceiling of section "
+            "2.3 -- 2.25x over, and the ceiling is the cost the system already "
+            "had before this series began.  With the cache the same three cost "
+            "173 ms.  Removing it would close this row by making the product "
+            "undeployable, which is not closing it.\n"
+            "Nothing in process can close it either.  A cache entry is data, not "
+            "a bound object, so C.2 does not reach it; and any verification of "
+            "the entry would have to redo the work the entry exists to avoid.  "
+            "The attacker who can insert an entry is already executing code in "
+            "the process that would have to notice -- the same structural "
+            "condition as M-38, reached by a different door."
+        ),
+        compensating_controls=(
+            "systemd: the deployed tree and the venv are read-only to the service "
+            "user, so the file edit this row performs first cannot be made by the "
+            "process that would exploit it",
+            "systemd: NoNewPrivileges and a service user distinct from the owner "
+            "of the deployed tree",
+            "systemd: PYTHONNOUSERSITE=1, so no user site directory can introduce "
+            "the code that would do the poisoning",
+            "the cache is bounded to the current surface, so a poisoned entry for "
+            "a component that leaves the surface cannot persist",
+        ),
+        anchor_rationale=(
+            "The edit is the same spot_pairs body as M-02 and M-27, so the three "
+            "differ only in how the tree is made to accept it.  The probe "
+            "recomputes the identity after poisoning and requires it to equal the "
+            "registered digest over the edited tree; a poisoning that failed to "
+            "do that is an inert mutation and fails the row rather than becoming "
+            "a finding."
+        ),
+    ),
+    Mutation(
+        id="M-35",
+        summary=(
+            "alter the registry generation logic so it records something other "
+            "than what the tree computes"
+        ),
+        mechanism="file_edit",
+        expected_effect=MUST_MOVE_AND_REJECT,
+        steps=(
+            AstEdit(
+                path="app/signal_scientific_identity.py",
+                symbol="build_identity_registry",
+                part="body",
+                replacement=_BUILD_REGISTRY_BODY,
+            ),
+        ),
+        closes_with=CLOSES_A,
+        closes_note=(
+            "the generator and its --check moved into the scientific surface, so "
+            "rewriting either of them moves the code digest"
+        ),
+        anchor_rationale=(
+            "Written against H-7.  While build_registry lived in "
+            "scripts/register_identity.py, whoever could edit that file "
+            "controlled the generator and the --check that compares against it, "
+            "and the result was self-consistent -- M-02's failure mode one "
+            "directory across.  The mutation is anchored by AST on "
+            "build_identity_registry in app/, so the edit is inside a hashed "
+            "component and has to survive the digest it moves."
+        ),
+    ),
+    Mutation(
+        id="M-38",
+        summary=(
+            "inject sitecustomize.py that neutralizes the combined validator "
+            "validate_scientific_identity before the identity module is imported"
+        ),
+        mechanism="file_create",
+        expected_effect=MUST_REJECT_ONLY,
+        requires_probe_flag="sitecustomize_active",
+        steps=(
+            CreateFile(path="sitecustomize.py", content=_SITECUSTOMIZE_COMBINED),
+        ),
+        closes_with=CLOSES_NOTHING,
+        closes_note=(
+            "the attacker owns both the question and the answer; no control "
+            "executing inside this process can report that the thing which "
+            "reports was replaced"
+        ),
+        residual=True,
+        residual_argument=(
+            "validate_scientific_identity is the single entry point that decides "
+            "whether the system may operate.  This row replaces it before the "
+            "module exists in memory, so every later reference -- including one "
+            "captured at import by a caller that never resolves it by name -- is "
+            "the replacement.  C.1 and C.2 would both detect the substitution, "
+            "and neither gets to say so: the code that would compare the bound "
+            "object against the source is reached only through the validator "
+            "that was replaced.  This is not a gap in the implementation that a "
+            "better in-process check would close.  It is the definition of "
+            "pre-import code execution: an attacker who can run code before the "
+            "interpreter imports the guard controls the guard.  Any claim that "
+            "in-process verification defeats an in-process attacker is false, "
+            "and the product is sold with this stated rather than with that "
+            "impression."
+        ),
+        compensating_controls=(
+            "systemd: PYTHONNOUSERSITE=1 in every unit that starts python or "
+            "uvicorn, so no user site directory can supply a sitecustomize",
+            "systemd: the deployed tree and the venv are read-only to the service "
+            "user, so the service cannot create sitecustomize.py where it would "
+            "be imported",
+            "systemd: NoNewPrivileges, and the owner of the deployed tree is not "
+            "the user the service runs as, so writing the file requires an "
+            "account the service does not have",
+            "the anchor of commit 3.3, which certifies the tree from outside it "
+            "and is therefore not reachable by anything this row can do",
+        ),
+        anchor_rationale=(
+            "The probe reports whether sitecustomize actually ran, so an inert "
+            "file fails the row instead of being recorded as a residual.  A "
+            "residual nobody demonstrated is worse than an escape nobody "
+            "demonstrated: it is a risk accepted on paper without evidence that "
+            "it exists."
+        ),
+    ),
 )
 
 CATALOG_BY_ID: dict[str, Mutation] = {mutation.id: mutation for mutation in CATALOG}
+
+RESIDUAL_IDS: tuple[str, ...] = tuple(
+    mutation.id for mutation in CATALOG if mutation.residual
+)
 
 MANDATED_ESCAPES: tuple[str, ...] = tuple(
     mutation.id for mutation in CATALOG if mutation.mandated_class == ESCAPE

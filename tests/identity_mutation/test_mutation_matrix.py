@@ -41,14 +41,41 @@ def _row(evidence: dict[str, Any], mutation_id: str) -> dict[str, Any]:
     return next(row for row in evidence["mutations"] if row["id"] == mutation_id)
 
 
-# The escapes commit 3.1 leaves open, written out here on purpose.  Reading them
+# The escapes commit 3.2 leaves open, written out here on purpose.  Reading them
 # from known_escapes.json would be circular: that file is generated from the
 # same run it is compared against, which was harmless while nothing closed and
-# stops being harmless the moment something does.  Three of C.2, two of C.1 and
-# three of D -- the in-memory escapes and the anchor, which commits 3.2 and 3.3
-# close.
-EXPECTED_OPEN_ESCAPES = frozenset(
-    {"M-01", "M-02", "M-05", "M-06", "M-27", "M-28", "M-29", "M-31"}
+# stops being harmless the moment something does.  All three are D -- the
+# registry anchor, which commit 3.3 closes.  C.1 closed M-06 and M-27; C.2
+# closed M-01, M-05 and M-31; moving the registry generator into the surface
+# closed M-35.
+EXPECTED_OPEN_ESCAPES = frozenset({"M-02", "M-28", "M-29"})
+
+# The rows no in-process control can close, fixed by hand exactly like the
+# escapes.  **A residual is not a forgiven escape**: it is an escape whose
+# closure lives outside the process, and growing this set is a regression.
+#
+# M-38 is structural: an attacker who replaces the combined validator before
+# import owns both the question and the answer.  M-34 is here because the
+# measurement of B-7 put it here and not because it was convenient -- 744 ms per
+# uncached identity computation, three per authoritative evaluation, against a
+# 990 ms ceiling.  If that measurement ever changes, M-34 leaves this set.
+EXPECTED_RESIDUAL = frozenset({"M-34", "M-38"})
+
+# Rows this commit is required to close, named individually.  A count would pass
+# while the wrong rows closed, and this series has already produced three
+# closures that were green for the wrong reason.
+EXPECTED_CLOSED_BY_THIS_COMMIT = frozenset(
+    {"M-01", "M-05", "M-06", "M-27", "M-31", "M-35"}
+)
+
+# The 25 rows commit 3.1 closed.  They must still be guards: a commit that
+# closes five findings by reopening twenty-five has not closed anything.
+EXPECTED_STILL_CLOSED_FROM_3_1 = frozenset(
+    {
+        "M-03", "M-04", "M-07", "M-08", "M-09", "M-10", "M-11", "M-12", "M-13",
+        "M-14", "M-15", "M-17", "M-18", "M-19", "M-20", "M-21", "M-22", "M-23",
+        "M-24", "M-25", "M-26", "M-30", "M-32", "M-33",
+    }
 )
 
 # Reasons that mean "this runner could not measure the row", as opposed to
@@ -75,7 +102,11 @@ def test_catalog_holds_every_mutation_exactly_once():
     ids = [mutation.id for mutation in cat.CATALOG]
     assert ids == sorted(ids)
     assert len(ids) == len(set(ids))
-    assert ids == [f"M-{index:02d}" for index in range(1, 34)]
+    # Not a contiguous range any more.  M-36 and M-37 are deliberately unused:
+    # the ids of this catalog are cited by SHA in the handoff and in the frozen
+    # evidence, so renumbering to close a gap would silently repoint every
+    # reference written before the gap existed.
+    assert ids == [f"M-{index:02d}" for index in range(1, 36)] + ["M-38"]
 
 
 def test_catalog_never_declares_an_unknown_effect():
@@ -192,6 +223,7 @@ def test_every_row_carries_the_full_probe_schema(evidence):
         "anchor_mechanism_absent",
         "sitecustomize_active",
         "pythonpath_shadow_active",
+        "component_cache_poisoned",
         "production_launch_protocol",
         "exception",
         "failure_reason",
@@ -199,7 +231,7 @@ def test_every_row_carries_the_full_probe_schema(evidence):
     }
     for row in evidence["mutations"]:
         assert required <= set(row), row["id"]
-        assert row["observed_class"] in {cat.GUARD, cat.ESCAPE}, row["id"]
+        assert row["observed_class"] in {cat.GUARD, cat.ESCAPE, cat.RESIDUAL}, row["id"]
         assert row["failure_reason"] in harness.FAILURE_REASONS, row["id"]
         assert row["rejection_kind"] in {None, "false", "exception", "import_error"}, row["id"]
 
@@ -240,10 +272,14 @@ def test_the_untouched_baseline_is_accepted_by_the_combined_validator(evidence):
 
 @pytest.mark.parametrize("mutation_id", cat.MANDATED_ESCAPES)
 def test_mandated_escapes_are_observed_as_escapes(evidence, mutation_id):
-    """M-01, M-02 and M-03 were demonstrated by the independent audit.
+    """What is left of the mandates the independent audit demonstrated.
 
-    Observing any of them as ``GUARD`` does not mean the defect was closed; it
-    means this harness is measuring the wrong thing.
+    M-03's mandate went when commit 3.1 made docstrings material and M-01's
+    went when C.2 closed it; both were replaced by being named among the rows
+    that must be observed GUARD, which is stricter than a mandate, not weaker.
+    M-02 keeps its mandate because only the anchor of commit 3.3 can close it,
+    and observing it as ``GUARD`` before that anchor exists would mean this
+    harness is measuring the wrong thing.
     """
 
     row = _row(evidence, mutation_id)
@@ -355,15 +391,111 @@ def test_the_declared_escape_set_is_exactly_the_expected_one_for_this_commit(evi
 
 
 def test_the_rows_that_closed_in_this_commit_are_guards(evidence):
-    """Every row outside the expected eight must be a guard, not merely absent."""
+    """Every measured row outside the escapes and the residual must be a guard."""
 
     measured = _measured_ids(evidence)
     for row in evidence["mutations"]:
-        if row["id"] in EXPECTED_OPEN_ESCAPES or row["id"] not in measured:
+        if row["id"] in EXPECTED_OPEN_ESCAPES or row["id"] in EXPECTED_RESIDUAL:
+            continue
+        if row["id"] not in measured:
             continue
         assert row["observed_class"] == cat.GUARD, (
             f"{row['id']}: {row['failure_reason']} -- this commit closes it"
         )
+
+
+@pytest.mark.parametrize("mutation_id", sorted(EXPECTED_CLOSED_BY_THIS_COMMIT))
+def test_the_findings_this_commit_closes_are_guards_by_name(evidence, mutation_id):
+    """Named one by one, so a count cannot pass while the wrong rows closed.
+
+    C.1 closes M-06 and M-27, C.2 closes M-01, M-05 and M-31, and moving the
+    registry generator into the surface closes M-35.  A parametrized assertion
+    per id also means the failure report names which closure did not happen.
+    """
+
+    row = _row(evidence, mutation_id)
+    assert row["observed_class"] == cat.GUARD, (
+        f"{mutation_id} did not close: {row['failure_reason']} "
+        f"(rejection_kind={row['rejection_kind']}, exception={row['exception']})"
+    )
+    assert row["rejection_kind"] is not None, (
+        f"{mutation_id} is a guard without anything having refused to operate"
+    )
+
+
+@pytest.mark.parametrize("mutation_id", sorted(EXPECTED_STILL_CLOSED_FROM_3_1))
+def test_the_rows_closed_in_3_1_did_not_regress(evidence, mutation_id):
+    """M-26, M-32 and M-33 among them, named in the acceptance criteria."""
+
+    row = _row(evidence, mutation_id)
+    if row["failure_reason"] in UNMEASURED_REASONS:
+        return
+    assert row["observed_class"] == cat.GUARD, (
+        f"{mutation_id} regressed: {row['failure_reason']}"
+    )
+
+
+def test_the_residual_set_is_exactly_the_expected_one_and_has_not_grown(evidence):
+    """A residual is an escape closed outside the process, never a forgiven one.
+
+    Fixed by hand for the same reason the escape set is: generating it from the
+    run it is compared against would let the set grow by being measured.
+    """
+
+    observed = runner.observed_residual(evidence)
+    measured = _measured_ids(evidence)
+    assert observed & measured == EXPECTED_RESIDUAL & measured, (
+        f"unexpected_residual={sorted((observed & measured) - EXPECTED_RESIDUAL)} "
+        f"unexpectedly_closed={sorted((EXPECTED_RESIDUAL & measured) - observed)}"
+    )
+
+
+def test_no_row_is_both_an_escape_and_a_residual(evidence):
+    observed_escapes, _ = runner.observed_sets(evidence)
+    assert not (observed_escapes & runner.observed_residual(evidence))
+    assert not (EXPECTED_OPEN_ESCAPES & EXPECTED_RESIDUAL)
+
+
+@pytest.mark.parametrize("mutation_id", sorted(EXPECTED_RESIDUAL))
+def test_every_residual_carries_an_argument_and_compensating_controls(mutation_id):
+    """A residual without either is a risk somebody stopped counting."""
+
+    mutation = cat.CATALOG_BY_ID[mutation_id]
+    assert mutation.residual, f"{mutation_id} is expected residual but is not declared one"
+    assert len(mutation.residual_argument) > 200, (
+        f"{mutation_id}: the argument must say why *no* in-process control closes it"
+    )
+    assert mutation.compensating_controls, mutation_id
+    assert mutation.closes_with == cat.CLOSES_NOTHING, mutation_id
+
+
+def test_the_declared_residual_set_is_what_the_catalog_marks_residual():
+    assert set(cat.RESIDUAL_IDS) == EXPECTED_RESIDUAL
+
+
+def test_a_residual_declaration_cannot_turn_a_detected_row_into_a_pass():
+    """The declaration renames a failure; it never manufactures a success.
+
+    If it could, marking a row residual would be a way of closing it, and the
+    set would grow every time something was inconvenient.
+    """
+
+    detected = harness.Measurement(
+        code_digest="a",
+        environment_digest="b",
+        total_digest="c",
+        validation_accepted=False,
+        validation_error=None,
+        forged_object_accepted=False,
+        combined_validation_accepted=False,
+        combined_validator_absent=False,
+        rejection_kind="exception",
+        anchor_mechanism_absent=False,
+        exception=None,
+    )
+    residual_mutation = cat.CATALOG_BY_ID["M-38"]
+    observed_class, reason = harness.evaluate(residual_mutation, detected, detected)
+    assert observed_class == cat.GUARD and reason == ""
 
 
 def test_the_negative_controls_recovered_their_meaning(evidence):
@@ -449,6 +581,28 @@ def test_frozen_evidence_is_wellformed_and_contains_the_declaration():
     assert declaration["skipped"] == []
     assert declaration["baseline_rev"] == runner.AUDIT_BASELINE_REV
     assert set(declaration["escapes"]) == EXPECTED_OPEN_ESCAPES
+    assert set(declaration["residual"]) == EXPECTED_RESIDUAL
+
+
+def test_the_declaration_justifies_every_residual_it_records():
+    """The file, not only the catalog: this is what an auditor reads first."""
+
+    declaration = runner.load_known_escapes()
+    for mutation_id, entry in declaration["residual"].items():
+        assert entry["argument"], mutation_id
+        assert entry["compensating_controls"], mutation_id
+        assert entry["argument"] == cat.CATALOG_BY_ID[mutation_id].residual_argument
+        assert entry["compensating_controls"] == list(
+            cat.CATALOG_BY_ID[mutation_id].compensating_controls
+        )
+
+
+def test_the_escapes_and_the_residual_are_separate_sections():
+    """Merging them is how a residual quietly becomes a forgiven escape."""
+
+    declaration = runner.load_known_escapes()
+    assert "escapes" in declaration and "residual" in declaration
+    assert not set(declaration["escapes"]) & set(declaration["residual"])
 
 
 def test_frozen_declaration_ties_every_escape_to_what_closes_it():

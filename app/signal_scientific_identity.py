@@ -42,7 +42,9 @@ import hashlib
 import json
 import math
 import os
+import sys
 import textwrap
+import types
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -495,15 +497,70 @@ def _canonical_payload(source: str, entry: ScientificSurfaceEntry) -> str:
     )
 
 
-# Canonicalizing forty-odd modules costs about a second, and the identity is
-# validated on the hot path of every authoritative evaluation.  The cache is
-# keyed by the **content hash** of the file, never by its mtime or size: a
-# mutator who edits a component and restores its timestamp would defeat an mtime
-# key, and this guard exists precisely against a mutator with write access.
-# Re-reading and hashing every component still happens on every call, so a file
-# that changes is recanonicalized; what is reused is only the parse of bytes
-# already seen.
-_COMPONENT_DIGEST_CACHE: dict[tuple[str, str], str] = {}
+# Canonicalizing forty-odd modules costs about three quarters of a second, and
+# the identity is validated on the hot path of every authoritative evaluation.
+# The cache is keyed by the **content hash** of the file, never by its mtime or
+# size: a mutator who edits a component and restores its timestamp would defeat
+# an mtime key, and this guard exists precisely against a mutator with write
+# access.  Re-reading and hashing every component still happens on every call,
+# so a file that changes is recanonicalized; what is reused is only the parse of
+# bytes already seen.
+#
+# It is **bounded**, which an unbounded dict keyed by content hash is not: in a
+# long-lived collector every edit to a component would add an entry that nothing
+# ever removes.  The bound is the surface itself -- one live entry per component
+# path -- so the cache can never hold more than the tree it describes.
+#
+# What the bound does *not* buy is authenticity.  Any in-process cache consulted
+# by the authoritative path can be poisoned by an attacker who already executes
+# code in that process, and the measurement in the report says the authoritative
+# path cannot afford to run without one: 744 ms per uncached computation against
+# a 990 ms ceiling for the three an authoritative evaluation performs.  That is
+# M-34, and it is declared RESIDUAL rather than pretended closed.
+_CACHE_ENTRIES_PER_COMPONENT = 2
+
+
+class _BoundedContentCache:
+    """A content-addressed cache that cannot outgrow the surface it describes.
+
+    Kept as an object rather than a module-level ``dict`` so that the mapping is
+    reached through one place with one insertion policy.  It is not a security
+    boundary and does not pretend to be one -- see M-34.
+    """
+
+    __slots__ = ("_entries",)
+
+    def __init__(self) -> None:
+        self._entries: dict[str, dict[str, Any]] = {}
+
+    def get(self, path: str, content_sha: str, kind: str) -> Any | None:
+        return self._entries.get(path, {}).get(f"{kind}:{content_sha}")
+
+    def put(self, path: str, content_sha: str, kind: str, value: Any) -> None:
+        slot = self._entries.setdefault(path, {})
+        slot[f"{kind}:{content_sha}"] = value
+        # One component keeps at most the current bytes and the ones it just
+        # replaced; anything older is a generation nobody will ask about again.
+        while len(slot) > _CACHE_ENTRIES_PER_COMPONENT:
+            slot.pop(next(iter(slot)))
+
+    def retain(self, paths: frozenset[str]) -> None:
+        """Drop every component that is no longer part of the surface."""
+
+        for path in [name for name in self._entries if name not in paths]:
+            del self._entries[path]
+
+    def clear(self) -> None:
+        self._entries.clear()
+
+    def __len__(self) -> int:
+        return sum(len(slot) for slot in self._entries.values())
+
+
+_COMPONENT_CACHE = _BoundedContentCache()
+
+_CACHE_KIND_COMPONENT = "component"
+_CACHE_KIND_BINDINGS = "bindings"
 
 
 def _component_digest(root: Path, entry: ScientificSurfaceEntry) -> str:
@@ -514,10 +571,10 @@ def _component_digest(root: Path, entry: ScientificSurfaceEntry) -> str:
         raise ScientificIdentityError(
             f"scientific surface component {entry.relative_path!r} cannot be read: {exc}"
         ) from exc
-    key = (entry.relative_path, hashlib.sha256(raw).hexdigest())
-    cached = _COMPONENT_DIGEST_CACHE.get(key)
+    content_sha = hashlib.sha256(raw).hexdigest()
+    cached = _COMPONENT_CACHE.get(entry.relative_path, content_sha, _CACHE_KIND_COMPONENT)
     if cached is not None:
-        return cached
+        return str(cached)
     try:
         source = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
@@ -526,8 +583,367 @@ def _component_digest(root: Path, entry: ScientificSurfaceEntry) -> str:
         ) from exc
     canonical = _canonical_payload(source, entry)
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-    _COMPONENT_DIGEST_CACHE[key] = digest
+    _COMPONENT_CACHE.put(entry.relative_path, content_sha, _CACHE_KIND_COMPONENT, digest)
     return digest
+
+
+# --- post-import verification ------------------------------------------------
+#
+# The AST on disk does not describe what runs.  Two things can diverge from it
+# after import and neither touches a byte of the surface: the module a name
+# resolves to (C.1) and the object a symbol is bound to (C.2).
+#
+# Both are computed **at evaluation time**, never at import.  A fingerprint
+# taken while importing cannot see a reassignment performed afterwards, which is
+# exactly M-01, and a provenance check performed at import cannot see a module
+# swapped into ``sys.modules`` later.
+#
+# Both are computed against the root the process actually imports from --
+# ``resolve_surface_root()`` -- and not against the ``root`` argument used to
+# hash components.  The question they answer is "where did *this process* get
+# its code", which is a property of the process and not of whichever tree a
+# caller asked to have hashed.
+#
+# What enters the digest is the list of **anomalies**, not the membership.  The
+# set of loaded ``app.*`` modules differs legitimately between the API, the
+# collectors and a script, so hashing it would give every process a different
+# identity and no registry could hold one value.  The anomaly list is empty
+# whenever the process is honest, so it is constant across deployments -- and
+# the moment anything diverges it becomes non-empty, which moves the identity
+# *and* makes it stop matching the registry.  Divergence therefore both moves
+# the identity and refuses to operate, which is what section 2.1 requires.
+
+SURFACE_PACKAGE = "app"
+
+PROVENANCE_NO_FILE = "no_file"
+PROVENANCE_OUTSIDE_SURFACE = "outside_surface"
+PROVENANCE_PATH_MISMATCH = "path_mismatch"
+
+BINDING_MISSING = "missing"
+BINDING_NOT_A_FUNCTION = "not_a_function"
+BINDING_CODE_MISMATCH = "code_mismatch"
+BINDING_SOURCE_UNAVAILABLE = "source_unavailable"
+
+# How deep ``__wrapped__`` is followed for a symbol the source shows decorated.
+_MAX_WRAPPER_DEPTH = 8
+
+
+def _loaded_surface_modules() -> tuple[tuple[str, types.ModuleType], ...]:
+    """Every ``app.*`` module currently in ``sys.modules``, name-ordered.
+
+    Snapshotted before iterating: importing anything while walking
+    ``sys.modules`` would mutate it underneath us.
+    """
+
+    snapshot = list(sys.modules.items())
+    return tuple(
+        sorted(
+            (
+                (name, module)
+                for name, module in snapshot
+                if module is not None
+                and (name == SURFACE_PACKAGE or name.startswith(f"{SURFACE_PACKAGE}."))
+            ),
+            key=lambda item: item[0],
+        )
+    )
+
+
+def _candidate_relative_paths(module_name: str) -> tuple[str, ...]:
+    joined = "/".join(module_name.split("."))
+    return (f"{joined}.py", f"{joined}/__init__.py")
+
+
+def verify_loaded_module_provenance(root: Path | None = None) -> tuple[list[str], ...]:
+    """C.1 -- where every loaded ``app.*`` module was really loaded from.
+
+    A module with no ``__file__``, one whose file resolves outside the root, and
+    one whose file is not the file its own name denotes are all anomalies.
+    There are **no exemptions by name**: a module that would like to be excused
+    is exactly the module an attacker would name.
+
+    The anomaly carries the module name and the reason, never the offending
+    path.  A path would be machine-specific, and the digest this feeds must be
+    reproducible on the auditor's machine as well as on the one that wrote it.
+    """
+
+    source_root = Path(os.path.realpath(root or resolve_surface_root()))
+    anomalies: list[list[str]] = []
+    for name, module in _loaded_surface_modules():
+        origin = getattr(module, "__file__", None)
+        if not origin:
+            anomalies.append([name, PROVENANCE_NO_FILE])
+            continue
+        resolved = Path(os.path.realpath(origin))
+        if not resolved.is_relative_to(source_root):
+            anomalies.append([name, PROVENANCE_OUTSIDE_SURFACE])
+            continue
+        if resolved.relative_to(source_root).as_posix() not in _candidate_relative_paths(
+            name
+        ):
+            anomalies.append([name, PROVENANCE_PATH_MISMATCH])
+    return tuple(sorted(anomalies))
+
+
+def _canonical_code_const(value: object) -> Any:
+    """A constant of a code object, canonicalized by structure rather than repr.
+
+    ``repr`` is not usable here and the reason is a real defect this check hit
+    before it was written this way: the peephole optimizer turns ``x in {"a",
+    "b"}`` into a ``frozenset`` constant, and two frozensets carrying the same
+    elements iterate in an order that depends on their build history and on the
+    process's hash seed.  Fingerprinting their ``repr`` made C.2 report a
+    different innocent function on every run.  Sets are therefore compared as
+    sorted element canonicalizations, and every other type carries a tag so that
+    ``1``, ``True`` and ``1.0`` cannot collide.
+    """
+
+    if isinstance(value, types.CodeType):
+        return {"code": _code_fingerprint(value)}
+    if isinstance(value, tuple):
+        return {"tuple": [_canonical_code_const(item) for item in value]}
+    if isinstance(value, frozenset | set):
+        return {
+            "set": sorted(
+                json.dumps(
+                    _canonical_code_const(item),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                )
+                for item in value
+            )
+        }
+    if value is None:
+        return {"none": True}
+    if value is Ellipsis:
+        return {"ellipsis": True}
+    if isinstance(value, bool):
+        return {"bool": value}
+    if isinstance(value, int):
+        return {"int": str(value)}
+    if isinstance(value, float):
+        return {"float": value.hex() if math.isfinite(value) else repr(value)}
+    if isinstance(value, complex):
+        return {"complex": [repr(value.real), repr(value.imag)]}
+    if isinstance(value, str):
+        return {"str": value}
+    if isinstance(value, bytes):
+        return {"bytes": value.hex()}
+    return {"repr": repr(value)}
+
+
+def _code_fingerprint(code: types.CodeType) -> list[Any]:
+    """The parts of a code object that decide what it computes.
+
+    ``co_code``, ``co_consts``, ``co_names`` and ``co_varnames`` -- bytecode,
+    literals, the globals it reaches for and its locals.  Nested code objects
+    are fingerprinted recursively, so a lambda or a comprehension inside the
+    function is inside the fingerprint too.  Positions, filenames and line
+    tables are left out: they are the same metadata the canonical AST already
+    refuses to hash.
+    """
+
+    return [
+        {"co_code": code.co_code.hex()},
+        {"co_consts": [_canonical_code_const(const) for const in code.co_consts]},
+        {"co_names": list(code.co_names)},
+        {"co_varnames": list(code.co_varnames)},
+    ]
+
+
+def _symbol_fingerprint(module: str, qualname: str, code: list[Any]) -> str:
+    """One fingerprint, built identically for the live side and the source side.
+
+    The module and the qualname are hashed alongside the code so that a function
+    transplanted from somewhere else is caught even in the case where it happens
+    to compile to the same bytes as the one it replaced.
+    """
+
+    payload = json.dumps(
+        {"module": module, "qualname": qualname, "code": code},
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _bound_object_fingerprint(function: types.FunctionType) -> str:
+    return _symbol_fingerprint(
+        function.__module__,
+        function.__qualname__,
+        _code_fingerprint(function.__code__),
+    )
+
+
+def _material_symbols(source: str) -> tuple[tuple[str, bool], ...]:
+    """Every addressable function the source defines, and whether it is decorated.
+
+    Derived from the surface, never from a hand-written list: a symbol added to
+    a module participates by existing, exactly as a module added to ``app/``
+    participates by existing.  Functions nested inside functions are skipped --
+    they carry ``<locals>`` in their qualname, are not reachable as attributes
+    and cannot be reassigned independently of the function that closes over
+    them, whose own fingerprint already contains them.
+    """
+
+    def walk(body: list[ast.stmt], prefix: str) -> list[tuple[str, bool]]:
+        found: list[tuple[str, bool]] = []
+        for node in body:
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+                found.append((f"{prefix}{node.name}", bool(node.decorator_list)))
+            elif isinstance(node, ast.ClassDef):
+                found.extend(walk(node.body, f"{prefix}{node.name}."))
+        return found
+
+    return tuple(sorted(set(walk(ast.parse(source).body, ""))))
+
+
+def _expected_fingerprints(source: str, filename: str, module: str) -> dict[str, str]:
+    """What the surface source compiles to, in *this* interpreter.
+
+    Compiled here rather than recorded in the registry, and that is not an
+    implementation detail.  Bytecode differs between 3.11 and 3.13; a registry
+    carrying fingerprints from one of them would make the code digest disagree
+    with itself under the other, which is the invariant M-16 exists to defend.
+    Comparing live objects against source compiled in the same process is the
+    only form of this check that is interpreter-independent.
+    """
+
+    fingerprints: dict[str, str] = {}
+    pending = [compile(source, filename, "exec")]
+    while pending:
+        code = pending.pop()
+        for const in code.co_consts:
+            if isinstance(const, types.CodeType):
+                fingerprints[const.co_qualname] = _symbol_fingerprint(
+                    module, const.co_qualname, _code_fingerprint(const)
+                )
+                pending.append(const)
+    return fingerprints
+
+
+def _resolve_attribute(module: types.ModuleType, qualname: str) -> Any:
+    current: Any = module
+    for part in qualname.split("."):
+        try:
+            current = getattr(current, part)
+        except AttributeError:
+            return None
+    return current
+
+
+def _undescribe(candidate: Any) -> Any:
+    """Step through the descriptor protocols that wrap a plain function."""
+
+    if isinstance(candidate, property):
+        return candidate.fget
+    if isinstance(candidate, staticmethod | classmethod):
+        return candidate.__func__
+    if isinstance(candidate, types.MethodType):
+        # ``getattr(Cls, name)`` on a classmethod hands back a bound method.
+        return candidate.__func__
+    return candidate
+
+
+def _unwrap(candidate: Any, decorated: bool) -> types.FunctionType | None:
+    """The plain function behind a binding, if the source says one is expected.
+
+    ``__wrapped__`` is followed **only** for symbols the source shows carrying a
+    decorator, and for those it is followed *first*.  ``@asynccontextmanager``
+    replaces the attribute with a plain function of its own that
+    ``functools.wraps`` has given the original's name and module, so stopping at
+    "it is already a function" would compare the decorator's body against the
+    source and call the difference an attack.
+
+    An *undecorated* symbol gets no such courtesy: following ``__wrapped__``
+    there would let a mutator hide a replacement by pointing it back at the
+    original, which is the whole trick.  Nothing can make a symbol look
+    decorated without editing the decorator list in the source, and that is
+    hashed by the canonical AST.
+    """
+
+    candidate = _undescribe(candidate)
+    if decorated:
+        for _ in range(_MAX_WRAPPER_DEPTH):
+            unwrapped = getattr(candidate, "__wrapped__", None)
+            if unwrapped is None:
+                break
+            candidate = _undescribe(unwrapped)
+    if isinstance(candidate, types.FunctionType):
+        return candidate
+    return None
+
+
+def verify_bound_objects(root: Path | None = None) -> tuple[list[str], ...]:
+    """C.2 -- what every material symbol of a loaded module is bound to now.
+
+    For each loaded ``app.*`` module the surface source is compiled and each
+    addressable function it defines is compared against the object the live
+    module actually exposes under that name.  A missing symbol, one bound to
+    something that is not a function, and one whose code fingerprint differs
+    from what the source compiles to are all anomalies.
+
+    This is what an attribute reassignment, a ``__code__`` transplant and a
+    loader wrapped before the module ever existed in memory all have in common:
+    the file is untouched and the object is not the one the file describes.
+    """
+
+    source_root = Path(os.path.realpath(root or resolve_surface_root()))
+    anomalies: list[list[str]] = []
+    for name, module in _loaded_surface_modules():
+        relative = next(
+            (
+                candidate
+                for candidate in _candidate_relative_paths(name)
+                if (source_root / candidate).is_file()
+            ),
+            None,
+        )
+        if relative is None:
+            # Provenance already reports this module; adding a second anomaly
+            # for the same fact would double-count one divergence.
+            continue
+        raw = (source_root / relative).read_bytes()
+        content_sha = hashlib.sha256(raw).hexdigest()
+        cached = _COMPONENT_CACHE.get(relative, content_sha, _CACHE_KIND_BINDINGS)
+        if cached is None:
+            source = raw.decode("utf-8")
+            cached = {
+                "symbols": _material_symbols(source),
+                "expected": _expected_fingerprints(source, relative, name),
+            }
+            _COMPONENT_CACHE.put(relative, content_sha, _CACHE_KIND_BINDINGS, cached)
+        expected: dict[str, str] = cached["expected"]
+        for qualname, decorated in cached["symbols"]:
+            if qualname not in expected:
+                anomalies.append([name, qualname, BINDING_SOURCE_UNAVAILABLE])
+                continue
+            target = _resolve_attribute(module, qualname)
+            bound = _unwrap(target, decorated)
+            if bound is None:
+                if decorated and target is not None:
+                    # A decorator may legitimately replace the binding with an
+                    # object that keeps no reference to the compiled function --
+                    # a pydantic validator proxy is one.  Those symbols are
+                    # outside what C.2 can compare, and saying so is honest;
+                    # calling them attacks would make the check unusable.  They
+                    # are not thereby unprotected: the decorator list is part of
+                    # the canonical AST, so nothing can move a symbol into this
+                    # bucket without moving the code digest.
+                    continue
+                anomalies.append(
+                    [
+                        name,
+                        qualname,
+                        BINDING_MISSING if target is None else BINDING_NOT_A_FUNCTION,
+                    ]
+                )
+                continue
+            if _bound_object_fingerprint(bound) != expected[qualname]:
+                anomalies.append([name, qualname, BINDING_CODE_MISMATCH])
+    return tuple(sorted(anomalies))
 
 
 def compute_scientific_implementation_identity(
@@ -542,7 +958,8 @@ def compute_scientific_implementation_identity(
     source_root = root or resolve_surface_root()
 
     component_records: list[dict[str, str]] = []
-    for entry in discover_scientific_surface(source_root):
+    surface = discover_scientific_surface(source_root)
+    for entry in surface:
         component_records.append(
             {
                 "name": entry.name,
@@ -551,11 +968,17 @@ def compute_scientific_implementation_identity(
                 "digest": _component_digest(source_root, entry),
             }
         )
+    _COMPONENT_CACHE.retain(frozenset(entry.relative_path for entry in surface))
 
     payload = {
         "identity_version": identity_version,
         "canonicalizer": SCIENTIFIC_IDENTITY_CANONICALIZER,
         "components": component_records,
+        # C.1 and C.2.  Empty on an honest process, and part of the payload
+        # rather than a check beside it, so that a divergence moves the identity
+        # instead of only being reported.
+        "module_provenance": [list(item) for item in verify_loaded_module_provenance()],
+        "bound_objects": [list(item) for item in verify_bound_objects()],
     }
     canonical_payload = json.dumps(
         payload,
@@ -694,6 +1117,92 @@ def _require_presented_matches(presented: object, runtime: dict[str, Any]) -> No
             raise ValueError(
                 f"frozen scientific identity does not match runtime semantics: {half}"
             )
+
+
+# --- generating the registry -------------------------------------------------
+#
+# This lives in ``app/`` -- inside the scientific surface -- and not in
+# ``scripts/``, which is outside it.  With both the generator and its ``--check``
+# in an unhashed script, whoever could edit the script controlled both sides of
+# the comparison and the result was self-consistent by construction: the same
+# failure mode as M-02, one directory across.  Here, altering what gets
+# registered or what ``--check`` compares moves the code digest, so the forgery
+# has to survive the very check it is trying to subvert.
+#
+# ``scripts/register_identity.py`` stays as an entry point that parses two
+# arguments and decides nothing.
+
+
+def build_identity_registry() -> dict[str, Any]:
+    """The registry this tree computes, in the shape the runtime validates."""
+
+    from app.signal_runtime_contract import (
+        AUTHORIZED_COLLECTOR_SHARD_PROFILES,
+        AUTHORIZED_ENVIRONMENT_FIXED,
+        AUTHORIZED_INTERPRETERS,
+        SCIENTIFIC_RUNTIME_CONTRACT_CANONICALIZER,
+        SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+        enumerate_authorized_environment_profiles,
+    )
+
+    identity = compute_scientific_implementation_identity()
+    profiles = enumerate_authorized_environment_profiles()
+    return {
+        "schema_version": IDENTITY_REGISTRY_SCHEMA_VERSION,
+        "identity_version": SCIENTIFIC_IDENTITY_VERSION_V1,
+        "canonicalizer": SCIENTIFIC_IDENTITY_CANONICALIZER,
+        "code_digest": identity["digest"],
+        "runtime_contract_version": SCIENTIFIC_RUNTIME_CONTRACT_VERSION_V1,
+        "runtime_contract_canonicalizer": SCIENTIFIC_RUNTIME_CONTRACT_CANONICALIZER,
+        "supported_interpreters": [dict(item) for item in AUTHORIZED_INTERPRETERS],
+        "environment_profile_axes": {
+            "collector_shard": [dict(item) for item in AUTHORIZED_COLLECTOR_SHARD_PROFILES],
+            "interpreter": [dict(item) for item in AUTHORIZED_INTERPRETERS],
+            "fixed": dict(AUTHORIZED_ENVIRONMENT_FIXED),
+        },
+        "authorized_environment_digests": list(profiles),
+        "surface_manifest": [
+            {
+                "source": component["source"],
+                "canonicalizer": component["canonicalizer"],
+                "digest": component["digest"],
+            }
+            for component in identity["components"]
+        ],
+    }
+
+
+def serialize_identity_registry(registry: dict[str, Any]) -> str:
+    return json.dumps(registry, indent=2, ensure_ascii=False) + "\n"
+
+
+def write_identity_registry(root: Path | None = None) -> Path:
+    """Rewrite the registry from what this tree computes now."""
+
+    path = identity_registry_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(serialize_identity_registry(build_identity_registry()), encoding="utf-8")
+    return path
+
+
+def check_identity_registry(root: Path | None = None) -> tuple[bool, str]:
+    """Is the committed registry the one this tree computes?
+
+    Returns ``(ok, message)`` rather than printing or exiting, so that the entry
+    point stays free of decisions and the suite can assert on the outcome
+    without capturing a subprocess.
+    """
+
+    path = identity_registry_path(root)
+    if not path.is_file():
+        return False, f"{path} does not exist"
+    expected = serialize_identity_registry(build_identity_registry())
+    if path.read_text(encoding="utf-8") != expected:
+        return False, (
+            f"{path} is stale: the tree no longer computes the registered "
+            "identity.  Run scripts/register_identity.py and review the diff."
+        )
+    return True, f"{path} matches the tree"
 
 
 def validate_scientific_identity(presented: object = None) -> dict[str, Any]:

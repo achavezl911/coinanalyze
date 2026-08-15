@@ -130,12 +130,52 @@ reescritura completa de este documento corresponde al commit 4 de la serie.
 |---|---|---|---|
 | 2026-08-15 | `de80d856` | Matriz de mutación permanente y evidencia roja sobre `c60e2ee6`. No toca `app/`. | 12 (vocabulario antiguo, 23 mutaciones, 1 `SKIPPED`) |
 | 2026-08-15 | `e874927` | Corrección del instrumento: `MUST_MOVE_AND_REJECT`, M-07 por `file_create`, M-16 sin `skip`, M-24..M-31, canal de ancla externo. No toca `app/`. | 30 de 31 |
-| 2026-08-15 | **este commit** | **Primer commit que toca `app/`.** Superficie descubierta (`app/**/*.py`, `sql/schema.sql`, `pyproject.toml`, `requirements.lock`, `config/**/*.json`), rechazo de symlinks, canonicalización por lista explícita de campos AST, docstrings materiales, entorno con intérprete y `Settings` de cobertura, registro declarativo `identity/registry.json` con perfiles enumerados, punto de entrada combinado `validate_scientific_identity()`. Repara H-1 y H-2. M-32, M-33. | **8 de 33** |
+| 2026-08-15 | `a5893c7` (3.1) | **Primer commit que toca `app/`.** Superficie descubierta (`app/**/*.py`, `sql/schema.sql`, `pyproject.toml`, `requirements.lock`, `config/**/*.json`), rechazo de symlinks, canonicalización por lista explícita de campos AST, docstrings materiales, entorno con intérprete y `Settings` de cobertura, registro declarativo `identity/registry.json` con perfiles enumerados, punto de entrada combinado `validate_scientific_identity()`. Repara H-1 y H-2. M-32, M-33. | 8 de 33 |
+| 2026-08-15 | **este commit (3.2)** | **Verificación post-import.** C.1 procedencia de `sys.modules`; C.2 hash del objeto enlazado en tiempo de evaluación; lógica del registro movida a `app/` (B-8); `requires-python` estrechado a `>=3.13,<3.14` (B-6); caché de componentes acotada (B-7); `provisioning_problems()` falla cerrado si el árbol alcanza un fallback poblado (B-10); clase `RESIDUAL`; M-34, M-35, M-38; manifiesto de marcadores (D-1). | **4 de 36, más 2 `RESIDUAL`** |
 
-Los ocho que quedan abiertos, con lo que debe cerrarlos: `M-01`, `M-05`, `M-31` (C.2, hash del
-objeto enlazado) y `M-06`, `M-27` (C.1, verificación de `sys.modules`) en el commit 3.2;
-`M-02`, `M-28`, `M-29` (D, ancla del registro) en el commit 3.3. Ninguno es cerrable sin firma
-o sin verificación post-import, y ninguno se ha declarado cerrado por adelantado.
+Estado medido al cierre de 3.2, **no declarado**:
+
+- **`GUARD` (30).** C.1 cerró `M-06` y `M-27`; C.2 cerró `M-05` y `M-31`; mover el generador del
+  registro a `app/` cerró `M-35`. Las 25 filas cerradas en 3.1 siguen `GUARD`; `M-26`, `M-32` y
+  `M-33` no regresan.
+- **`ESCAPE` (4): `M-02`, `M-28`, `M-29`** — los tres de D, que cierra el ancla del commit 3.3 —
+  **y `M-01`**, que **no** cerró. Ver §6.3: la mutación es detectada, y lo que mantiene la fila
+  abierta es una conjunción del instrumento, no un fallo del código.
+- **`RESIDUAL` (2): `M-34`, `M-38`.** No son escapes perdonados: son escapes que se cierran
+  **fuera** del proceso. Argumento escrito y controles compensatorios en
+  `tests/identity_mutation/known_escapes.json`, sección `residual`, y exigidos por test sobre
+  `deploy/systemd/*.service`.
+
+## 6.3 Hallazgo abierto de este commit: `M-01` no cierra, y la causa es el instrumento
+
+`CONFIRMED — medido, no argumentado`
+
+C.2 **sí** detecta M-01. La prueba es una comparación controlada dentro de la misma corrida:
+
+| Fila | Mutación | `code_digest` | `rejection_kind` | `combined_validation_accepted` | Clase |
+|---|---|---|---|---|---|
+| `M-01` | reasigna `validate_scientific_implementation_identity` en runtime | `c9e9b5a5…` | `exception` | `False` | **ESCAPE** |
+| `M-31` | lo mismo, instalado por `sitecustomize` antes del import | `c9e9b5a5…` | `exception` | `False` | **GUARD** |
+
+Las dos filas producen **la misma medición**: el mismo digest, el mismo rechazo. Difieren en una
+sola cosa: `M-01` lleva `REQUIRE_FORGED_REJECTED` en `also_requires`, y esa conjunción pregunta
+**al medio validador que la propia mutación reemplazó** si acepta un objeto forjado. Un `lambda
+stored: stored` escrito para aceptar cualquier cosa, acepta. La conjunción es por tanto
+insatisfacible para cualquier mutación cuyo payload sea reemplazar ese símbolo, y ninguna
+cantidad de ingeniería sobre `app/` la puede cerrar.
+
+Es una inconsistencia interna del instrumento, introducida en 3.1 y no migrada entonces: el
+propio `probe.py` documenta que el medio validador «decide nada por sí solo» y que **el validador
+combinado es lo que decide cada efecto del catálogo**, pero `REQUIRE_FORGED_REJECTED` sigue
+interrogando al medio validador.
+
+**No se ha tocado.** El prompt de este commit prohíbe explícitamente ajustar el test al
+resultado, así que `EXPECTED_OPEN_ESCAPES` conserva el conjunto mandado `{M-02, M-28, M-29}` y la
+divergencia queda **roja y visible** en `test_the_declared_escape_set_is_exactly_the_expected_one_for_this_commit`
+y en `test_the_findings_this_commit_closes_are_guards_by_name[M-01]`. La corrección propuesta —
+que `REQUIRE_FORGED_REJECTED` interrogue al validador combinado, que es donde ya vive la pregunta
+— es de una línea y **requiere autorización de la revisión independiente**, no de quien
+implementa.
 
 Consecuencia operativa introducida aquí, que el commit 4 documenta en detalle: cualquier
 cambio a `app/**/*.py`, `sql/schema.sql`, `pyproject.toml`, `requirements.lock` o
@@ -152,8 +192,13 @@ Dos identidades independientes, ambas con registro append-only:
 | | Identidad científica | Contrato de runtime |
 |---|---|---|
 | Responde | qué calcula el código | qué insumos crudos seleccionó |
-| Digest vigente | `c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04` (**candidato**) | `c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00` (sin cambios) |
-| Componentes | 28: 3 **módulos Python completos** + 17 regiones AST + 8 regiones SQL | 4 campos resueltos por símbolo |
+| Digest vigente | `451f49552b732bd829a72c10fb2a615cd9d74e0a2a471f677cbd7642975ac378` (**candidato**) | `c9cbe967b1f256644c0caf1ec851ea5a73d67029286afe0bb04461f582a21b00` (sin cambios) |
+| Componentes | 42: la superficie **descubierta** entera (`app/**/*.py`, `sql/schema.sql`, `pyproject.toml`, `requirements.lock`, `config/**/*.json`) | 4 campos resueltos por símbolo |
+
+**El valor autoritativo es `identity/registry.json`, no esta tabla.** Cualquier digest citado en
+prosa es una instantánea de un commit y envejece; el registro es lo que el runtime compara. Desde
+3.2 el digest lleva además dos bloques de verificación post-import, `module_provenance` y
+`bound_objects`, vacíos en un proceso honesto y por tanto constantes entre despliegues.
 
 Desde esta corrección la identidad tiene **dos formas de componente** (ADR-012):
 
@@ -416,6 +461,29 @@ reducida a las cuatro proyecciones.
 - La ventana de sustitución de identity-v1 sigue abierta **sólo** porque no existe manifest
   spec-v4 ni resultado autoritativo. En cuanto exista uno, esta libertad desaparece.
 
+Añadidos por el commit 3.2, todos declarados y ninguno resuelto:
+
+- **La verificación en proceso no derrota a un atacante en proceso.** M-38 es `RESIDUAL` y lo
+  seguirá siendo: quien ejecuta código antes de que el intérprete importe el guardián controla
+  al guardián. Se mitiga fuera del proceso — `PYTHONNOUSERSITE=1`, árbol y venv de sólo lectura
+  para el usuario del servicio, `NoNewPrivileges`, propietario del árbol distinto del ejecutor —
+  y el commit 4 lo documenta en la ADR. **Que el producto se venda con este riesgo declarado y
+  mitigado es defendible; que se venda con la impresión contraria, no.**
+- **La caché de componentes es necesaria y envenenable.** M-34 es `RESIDUAL` por medición, no
+  por comodidad: 744 ms por cómputo sin caché contra un techo de 990 ms para los tres que hace
+  una evaluación autoritativa. Está acotada a la superficie vigente. Si algún día el techo o el
+  tamaño de la superficie cambian, esta fila debe reevaluarse — no heredarse.
+- **C.2 cubre los módulos cargados, y sólo ésos.** Es correcto por construcción —no se puede
+  fingerprintear el objeto enlazado de un módulo que nadie importó— pero significa que la
+  cobertura de C.2 en un proceso es la de su working set. Lo no importado sigue cubierto por el
+  hash de su fuente.
+- **Símbolos decorados cuyo binding no resuelve a una función plana quedan fuera de C.2.** Son
+  los validadores de pydantic en `app/config.py`. No quedan desprotegidos: la lista de
+  decoradores es parte del AST canónico, así que nada puede meter un símbolo en ese cubo sin
+  mover el digest de código. Es un hueco acotado y nombrado, no un descuido.
+- **El coste en frío del primer cómputo de identidad subió a ~1,4 s** (antes ~0,79 s). No afecta
+  al camino autoritativo, que va caliente; afecta al arranque de los colectores.
+
 ### PLANNED / BLOCKED
 
 - Revisión independiente P0=0/P1=0 sobre `f83a468a2d30854f4cad5f96d4b85d0ad50daaf6` — **bloquea todo lo demás**.
@@ -492,9 +560,27 @@ prácticamente vacía, no la uses.
 
 `BLOCKED — no la ejecuta una IA`
 
-> **Solicitar a ChatGPT Work una revisión independiente y adversarial de
-> `f83a468a2d30854f4cad5f96d4b85d0ad50daaf6`.** Debe intentar el bypass con mutaciones **propias**, no con las que ya
-> están en la suite. Vectores obligatorios, porque son los que fallaron antes:
+> **Decisión requerida sobre `M-01` antes que ninguna otra cosa.** Ver §6.3. La medición
+> demuestra que C.2 detecta la mutación —`M-01` y `M-31` producen la misma medición exacta y
+> `M-31` es `GUARD`— y lo que mantiene la fila abierta es que `REQUIRE_FORGED_REJECTED`
+> interroga al símbolo que la propia mutación reemplaza. La corrección propuesta es de una
+> línea y **no se ha aplicado**, porque aplicarla es ajustar el test al resultado y eso lo
+> decide la revisión, no quien implementa. La suite tiene 4 fallos, todos de esa fila.
+>
+> Autorizar la corrección, o rechazarla y declarar `M-01` un residual del instrumento. Las dos
+> respuestas son defendibles; lo que no lo es es dejarla en rojo sin decidir.
+
+Después de eso, y sólo después:
+
+> **Solicitar a ChatGPT Work una revisión independiente y adversarial del commit 3.2.** Debe
+> intentar el bypass con mutaciones **propias**, no con las que ya están en la suite. Vectores
+> obligatorios, porque son los que fallaron antes:
+>
+> 0. **Nuevos de 3.2**: intentar que un módulo `app.*` cargado desde fuera de la superficie no
+>    aparezca en `module_provenance`; intentar reemplazar un símbolo material sin que
+>    `bound_objects` lo note (los símbolos decorados cuyo binding no resuelve a una función
+>    plana son el hueco declarado, ver §8.1); y envenenar la caché por una vía distinta de
+>    M-34.
 >
 > 1. Intentar cambiar algo ejecutable en `app/scalp_collector.py`, `app/ws_collector.py` o
 >    `app/signal_runtime_contract.py` **sin** mover identity-v1. La cobertura de módulo dice

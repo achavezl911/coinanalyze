@@ -26,7 +26,7 @@ construcción del índice hasta la escritura cruda.
   cobertura de **módulo Python completo** en `app/scalp_collector.py`, `app/ws_collector.py`
   y `app/signal_runtime_contract.py` (ADR-012).
 - Región de `config.py` reducida a las cuatro proyecciones; sigue siendo región, no módulo.
-- Identity-v1 recomputada: `c7bf8e5b…` (candidato), 28 componentes.
+- Identity-v1 recomputada: `c7bf8e5b…` → `451f4955…` (candidato), 42 componentes tras 3.1 y 3.2.
 
 Tres intentos, dos refutaciones. `c879bdec` dejó A-02 abierto. `700f7695`/`450cf2fb` mutaban
 la **primera aparición textual** de cada expresión, que tras esa corrección siempre caía
@@ -47,7 +47,7 @@ mutaciones propias y no lo consiga.
 Criterio de salida: cero hallazgos P0 y P1 sobre `f83a468a2d30854f4cad5f96d4b85d0ad50daaf6`.
 Vectores obligatorios en [`HANDOFF_IA.md`](HANDOFF_IA.md) §11.
 
-Sólo tras esta aprobación el digest `c7bf8e5b…` deja de ser candidato, y sólo entonces se
+Sólo tras esta aprobación el digest `451f4955…` deja de ser candidato, y sólo entonces se
 congela identity-v1 (antes del primer manifest spec-v4). Cualquier cambio posterior exige
 identity-v2.
 
@@ -80,6 +80,32 @@ salud del runner self-hosted. Se declara `EXTERNAL_UNVERIFIED`, no se asume verd
   histórico/diagnóstico. No habrá backfill de procedencia.
 - **Pivotes**: decidir explícitamente qué series históricas entran y cuáles no, con criterio
   escrito, antes de que exista el manifest.
+
+### 4.1 Identificador de dataset en la evidencia (D-2)
+
+`ESTADO: PLANNED · nombrado en el commit 3.2, no implementado en él · BLOCKED por la etapa 2`
+
+**Trabajo**: registrar un identificador estable del dataset junto a cada observación
+persistida — **no** la URL de la base de datos, **no** credenciales — de modo que evidencia
+procedente de dos datasets distintos no pueda agregarse en silencio.
+
+**Por qué es trabajo pendiente y no un descuido** (R-8, decidido): `DATABASE_URL` se queda
+**fuera** del digest de entorno. Si el identificador del dataset entrara en el perfil de
+entorno, el registro versionado tendría que enumerar la base de datos de cada despliegue, y eso
+hace el producto no desplegable. La separación correcta es:
+
+| | Responde | Dónde vive |
+|---|---|---|
+| **Identidad** | qué código y qué configuración | `identity/registry.json`, las dos mitades |
+| **Procedencia** | sobre qué dataset se produjo la evidencia | junto a cada observación persistida — **esto es D-2** |
+
+La consecuencia de no haberlo hecho todavía está declarada, no oculta: hoy la identidad valida
+qué código corre y bajo qué configuración, y **no dice nada** sobre contra qué base de datos se
+escribió. Dos despliegues con la misma identidad producen evidencia indistinguible en ese eje.
+Mientras D-2 no exista, agregar evidencia de dos despliegues es responsabilidad del operador y
+no hay control que lo impida.
+
+El commit 4 lo documenta en la ADR. Es una decisión tomada con su razonamiento, no un hueco.
 
 ## 5. Review y merge humanos
 

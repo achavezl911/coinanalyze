@@ -10,12 +10,21 @@ Group=coinalyze
 WorkingDirectory=/opt/coinalyze
 EnvironmentFile=/etc/coinalyze/coinalyze.env
 Environment=PYTHONDONTWRITEBYTECODE=1
+# M-38, compensating control: no user site directory may supply a
+# sitecustomize that runs before app.signal_scientific_identity is imported.
+Environment=PYTHONNOUSERSITE=1
 Environment=COINALYZE_PROJECT_ROOT=/opt/coinalyze
 ExecStart=/opt/coinalyze/.venv/bin/python -m app.ingest
 Restart=on-failure
 RestartSec=5s
 TimeoutStopSec=30s
 NoNewPrivileges=true
+ProtectHome=true
+# M-34 and M-38, compensating control: the deployed tree and the venv are
+# read-only to the service user.  update.sh installs them as root:coinalyze
+# and the unit runs as coinalyze, so the process that would exploit either
+# finding cannot create or edit the files it would need.
+ReadOnlyPaths=/opt/coinalyze
 PrivateTmp=true
 ProtectSystem=strict
 ProtectKernelTunables=true

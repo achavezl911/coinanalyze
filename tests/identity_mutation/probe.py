@@ -96,6 +96,7 @@ RUNTIME_PATCH_ENV = "IDENTITY_MUTATION_RUNTIME_PATCH"
 SANITIZE_ENV = "IDENTITY_MUTATION_SANITIZE"
 SHADOWED_MODULE_ENV = "IDENTITY_MUTATION_SHADOWED_MODULE"
 SITECUSTOMIZE_MARKER_ENV = "IDENTITY_MUTATION_SITECUSTOMIZE_ACTIVE"
+CACHE_POISON_MARKER_ENV = "IDENTITY_MUTATION_CACHE_POISONED"
 ANCHOR_ENV = "IDENTITY_ANCHOR_FINGERPRINT"
 
 IDENTITY_MODULE = "app.signal_scientific_identity"
@@ -151,7 +152,15 @@ def _describe(exc: BaseException) -> str:
 
 
 def _patch_neutralize_identity_validator() -> None:
-    """M-01: replace the validator with a function that accepts anything.
+    """M-01: replace the compatibility validator with one that accepts anything.
+
+    Scoped to ``validate_scientific_implementation_identity`` and nothing else,
+    which is what this row's summary always said it did.  It used to reassign
+    the *combined* validator as well, and that made it two mutations wearing one
+    id: neutralizing the combined entry point is the case no in-process control
+    can detect, because the attacker then owns both the asker and the answerer.
+    That case now has its own row -- M-38 -- and is declared RESIDUAL there
+    instead of being smuggled into a row whose closure C.2 is supposed to prove.
 
     The post-condition is behavioural, not an attribute comparison: the
     untouched validator raises ``ValueError`` on this input, so getting the
@@ -161,12 +170,52 @@ def _patch_neutralize_identity_validator() -> None:
     import app.signal_scientific_identity as identity_module
 
     identity_module.validate_scientific_implementation_identity = lambda stored: stored
-    if hasattr(identity_module, COMBINED_VALIDATOR):
-        setattr(identity_module, COMBINED_VALIDATOR, lambda *args, **kwargs: True)
 
     sentinel = {"identity_version": "not-an-integer"}
     if identity_module.validate_scientific_implementation_identity(sentinel) is not sentinel:
         raise RuntimeError("validator reassignment did not take effect")
+
+
+def _patch_poison_component_cache() -> None:
+    """M-34: hand the canonicalizer a benign answer for mutated bytes.
+
+    The catalog step edits ``app/ws_collector.py`` first.  This inserts, under
+    the *mutated* file's content hash, the component digest the registry
+    declares for the *benign* file -- so the cache answers a question about
+    bytes it never saw with the answer for bytes that are no longer there.
+    Every layer above it then agrees: the recomputed code digest equals the
+    registered one over a tree that has been edited.
+
+    The post-condition is the whole finding: the identity is recomputed here
+    and must come back equal to the registered digest despite the edit.  A
+    poisoning that failed to do that would be an inert mutation, and the harness
+    fails such a row rather than filing it as a finding.
+    """
+
+    import hashlib
+
+    import app.signal_scientific_identity as identity_module
+
+    registry = json.loads(Path("identity/registry.json").read_text(encoding="utf-8"))
+    manifest = {
+        str(item["source"]): str(item["digest"]) for item in registry["surface_manifest"]
+    }
+    relative = "app/ws_collector.py"
+    mutated_sha = hashlib.sha256(Path(relative).read_bytes()).hexdigest()
+    identity_module._COMPONENT_CACHE.put(
+        relative,
+        mutated_sha,
+        identity_module._CACHE_KIND_COMPONENT,
+        manifest[relative],
+    )
+
+    recomputed = identity_module.compute_scientific_implementation_identity()["digest"]
+    if recomputed != registry["code_digest"]:
+        raise RuntimeError(
+            "cache poisoning did not restore the registered digest over the "
+            "mutated tree, so the mutation is inert"
+        )
+    os.environ[CACHE_POISON_MARKER_ENV] = "1"
 
 
 def _patch_swap_code_object() -> None:
@@ -213,6 +262,7 @@ _RUNTIME_PATCHES = {
     "neutralize_identity_validator": _patch_neutralize_identity_validator,
     "swap_code_object": _patch_swap_code_object,
     "inject_synthetic_module": _patch_inject_synthetic_module,
+    "poison_component_cache": _patch_poison_component_cache,
 }
 
 
@@ -382,6 +432,7 @@ def measure() -> dict[str, object]:
         "anchor_mechanism_absent": True,
         "sitecustomize_active": False,
         "pythonpath_shadow_active": False,
+        "component_cache_poisoned": False,
         "production_launch_protocol": _production_launch_protocol(),
         "exception": None,
         "identity_object": None,
@@ -401,6 +452,7 @@ def measure() -> dict[str, object]:
             failures.append(f"runtime_patch {patch_name} failed -> {_describe(exc)}")
 
     result["pythonpath_shadow_active"] = _shadow_is_active()
+    result["component_cache_poisoned"] = os.environ.get(CACHE_POISON_MARKER_ENV) == "1"
 
     identity_module: types.ModuleType | None = None
     import_failure = False
@@ -498,6 +550,7 @@ def main() -> int:
             "anchor_mechanism_absent": True,
             "sitecustomize_active": False,
             "pythonpath_shadow_active": False,
+            "component_cache_poisoned": False,
             "exception": _describe(exc),
             "identity_object": None,
             "interpreter": f"{sys.version_info.major}.{sys.version_info.minor}",

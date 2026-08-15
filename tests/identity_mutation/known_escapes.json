@@ -10,18 +10,6 @@
       "closes_with": "D",
       "note": "a tree whose code and registry were rewritten together is self-consistent; only an anchor the mutator does not control can tell it from a legitimate new version"
     },
-    "M-05": {
-      "closes_with": "C.2",
-      "note": "the file is untouched, so only a hash of the object actually bound at runtime can see the transplant"
-    },
-    "M-06": {
-      "closes_with": "C.1",
-      "note": "sys.modules must be checked against the hashed surface"
-    },
-    "M-27": {
-      "closes_with": "C.1",
-      "note": "the file on disk is untouched, so only checking where the loaded module actually came from can see it"
-    },
     "M-28": {
       "closes_with": "D",
       "note": "an anchor that can be deleted from the tree it certifies is not an anchor; its absence must stop the system"
@@ -29,10 +17,26 @@
     "M-29": {
       "closes_with": "D",
       "note": "the trusted key must arrive from outside the tree; a versioned key the mutator may replace anchors nothing"
+    }
+  },
+  "residual": {
+    "M-34": {
+      "argument": "The cache is not a design preference, it is a measured necessity.  Canonicalizing the forty-two components of the surface costs 744 ms; an authoritative evaluation performs three identity computations, so running uncached costs 2232 ms against the 990 ms ceiling of section 2.3 -- 2.25x over, and the ceiling is the cost the system already had before this series began.  With the cache the same three cost 173 ms.  Removing it would close this row by making the product undeployable, which is not closing it.\nNothing in process can close it either.  A cache entry is data, not a bound object, so C.2 does not reach it; and any verification of the entry would have to redo the work the entry exists to avoid.  The attacker who can insert an entry is already executing code in the process that would have to notice -- the same structural condition as M-38, reached by a different door.",
+      "compensating_controls": [
+        "systemd: the deployed tree and the venv are read-only to the service user, so the file edit this row performs first cannot be made by the process that would exploit it",
+        "systemd: NoNewPrivileges and a service user distinct from the owner of the deployed tree",
+        "systemd: PYTHONNOUSERSITE=1, so no user site directory can introduce the code that would do the poisoning",
+        "the cache is bounded to the current surface, so a poisoned entry for a component that leaves the surface cannot persist"
+      ]
     },
-    "M-31": {
-      "closes_with": "C.2",
-      "note": "the neutralization is installed before any reference exists, so resolving the validator by name cannot help; the object that runs must itself be hashed"
+    "M-38": {
+      "argument": "validate_scientific_identity is the single entry point that decides whether the system may operate.  This row replaces it before the module exists in memory, so every later reference -- including one captured at import by a caller that never resolves it by name -- is the replacement.  C.1 and C.2 would both detect the substitution, and neither gets to say so: the code that would compare the bound object against the source is reached only through the validator that was replaced.  This is not a gap in the implementation that a better in-process check would close.  It is the definition of pre-import code execution: an attacker who can run code before the interpreter imports the guard controls the guard.  Any claim that in-process verification defeats an in-process attacker is false, and the product is sold with this stated rather than with that impression.",
+      "compensating_controls": [
+        "systemd: PYTHONNOUSERSITE=1 in every unit that starts python or uvicorn, so no user site directory can supply a sitecustomize",
+        "systemd: the deployed tree and the venv are read-only to the service user, so the service cannot create sitecustomize.py where it would be imported",
+        "systemd: NoNewPrivileges, and the owner of the deployed tree is not the user the service runs as, so writing the file requires an account the service does not have",
+        "the anchor of commit 3.3, which certifies the tree from outside it and is therefore not reachable by anything this row can do"
+      ]
     }
   },
   "skipped": []

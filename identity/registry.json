@@ -2,7 +2,7 @@
   "schema_version": 1,
   "identity_version": 1,
   "canonicalizer": "scientific_source_canonicalization_v2",
-  "code_digest": "5aa72d835592d46900693d5ed2a42e49b0952bcc2d9ba48659313357dda90a49",
+  "code_digest": "451f49552b732bd829a72c10fb2a615cd9d74e0a2a471f677cbd7642975ac378",
   "runtime_contract_version": 1,
   "runtime_contract_canonicalizer": "scientific_runtime_contract_canonicalization_v2",
   "supported_interpreters": [
@@ -209,7 +209,7 @@
     {
       "source": "app/signal_scientific_identity.py",
       "canonicalizer": "canonical_python_module_v2",
-      "digest": "a51e25e56f2ed067f42e7a562662fc5cb3ec7696029080839a3213be0efc607c"
+      "digest": "865debdde54ccd8affeae52dfedcc74aeac4e9657b82c3cf5ae9e6ede22efe8b"
     },
     {
       "source": "app/signal_visibility.py",
@@ -244,7 +244,7 @@
     {
       "source": "pyproject.toml",
       "canonicalizer": "canonical_text_source_v1",
-      "digest": "9fd0923f6af8a2341a8a47142262bde523cb569d05bc79837b93e603e5b07b31"
+      "digest": "62dc2346b29afd163122ef9f42a824bdd010c8a894e29f451e346d195c9f51e7"
     },
     {
       "source": "requirements.lock",

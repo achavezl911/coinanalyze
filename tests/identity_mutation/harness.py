@@ -155,6 +155,7 @@ class Measurement:
     exception: str | None
     sitecustomize_active: bool = False
     pythonpath_shadow_active: bool = False
+    component_cache_poisoned: bool = False
     production_launch_protocol: bool = False
     identity_object: dict[str, Any] | None = None
 
@@ -176,6 +177,7 @@ class Measurement:
             # re-running anything.
             "sitecustomize_active": self.sitecustomize_active,
             "pythonpath_shadow_active": self.pythonpath_shadow_active,
+            "component_cache_poisoned": self.component_cache_poisoned,
             "production_launch_protocol": self.production_launch_protocol,
             "exception": self.exception,
         }
@@ -865,6 +867,7 @@ def run_probe(
         exception=parsed.get("exception"),
         sitecustomize_active=bool(parsed.get("sitecustomize_active")),
         pythonpath_shadow_active=bool(parsed.get("pythonpath_shadow_active")),
+        component_cache_poisoned=bool(parsed.get("component_cache_poisoned")),
         production_launch_protocol=bool(parsed.get("production_launch_protocol")),
         identity_object=parsed.get("identity_object"),
     )
@@ -895,8 +898,23 @@ def evaluate(
     ``failure_reason`` is empty when the required effect is met.  Each effect is
     checked in the order it states its conjuncts, so the reason names the first
     thing that failed rather than the last thing that was looked at.
+
+    A row the catalog declares ``residual`` is classified ``RESIDUAL`` instead
+    of ``ESCAPE`` when it is not detected -- and ``GUARD``, exactly like any
+    other row, when it is.  The declaration cannot manufacture a pass: it
+    changes the *name* of a failure whose cause is structural, never whether the
+    effect was met.
     """
 
+    observed_class, reason = _evaluate_effect(mutation, baseline, observed)
+    if observed_class == cat.ESCAPE and mutation.residual:
+        return cat.RESIDUAL, reason
+    return observed_class, reason
+
+
+def _evaluate_effect(
+    mutation: cat.Mutation, baseline: Measurement, observed: Measurement
+) -> tuple[str, str]:
     effect = mutation.expected_effect
     digests_available = (
         observed.code_digest is not None and observed.environment_digest is not None

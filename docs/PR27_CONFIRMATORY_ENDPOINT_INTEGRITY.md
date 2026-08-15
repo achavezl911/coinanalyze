@@ -235,7 +235,7 @@ La identidad científica registrada por PR27 es:
 ```text
 identity_version = 1
 canonicalizer    = scientific_source_canonicalization_v1
-digest           = c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04
+digest           = 451f49552b732bd829a72c10fb2a615cd9d74e0a2a471f677cbd7642975ac378
 ```
 
 Historial de digests v1 dentro de esta PR sin mergear: R03 registró
@@ -248,9 +248,12 @@ redujo la de `config.py` a las cuatro proyecciones, subió a 32 componentes y
 registró `5a5cb09f…` en `700f7695`/`450cf2fb`; una segunda revisión lo refutó y
 el cierre de wiring registró `c939add3…` en `e84ebe81`/`9b2e082c`, con los
 mismos 32 componentes; una **tercera** revisión refutó también ese valor —cinco
-mutaciones lo conservaban— y el cierre por módulo completo registra el valor
-vigente `c7bf8e5b…`, bajando a **28** componentes al sustituir siete regiones
-parciales por tres módulos enteros (ADR-012).
+mutaciones lo conservaban— y el cierre por módulo completo registró
+`c7bf8e5b…`, bajando a **28** componentes al sustituir siete regiones parciales
+por tres módulos enteros (ADR-012).  Los commits 3.1 y 3.2 lo desplazaron dos
+veces más -- superficie descubierta, y después verificación post-import -- hasta
+el valor vigente `451f4955…` sobre **42** componentes.  El valor autoritativo
+es siempre `identity/registry.json`; cualquier cita en prosa es una instantánea.
 
 Ese valor es **candidato**, no definitivo: se registra para que las pruebas y
 el runtime sean coherentes, y sólo queda firme si la superficie corregida
@@ -889,7 +892,7 @@ Regresión: `tests/test_pr27_r05_module_identity_closure.py` — 20 tests. Las
 cinco mutaciones anclan por AST en el nodo real y reescriben en sus propios
 desplazamientos de byte.
 
-Identidad recomputada: `c939add3…` → `c7bf8e5b…`, 28 componentes. Contrato de
+Identidad recomputada: `c939add3…` → `c7bf8e5b…`, 28 componentes (después `451f4955…`, 42). Contrato de
 runtime y hashes legacy spec v1/v2/v3 **sin cambios**.
 
 ### Nomenclatura de la serie de reworks

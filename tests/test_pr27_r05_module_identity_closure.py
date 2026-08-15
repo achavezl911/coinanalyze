@@ -559,6 +559,64 @@ def test_comment_and_blank_line_changes_do_not_move_the_identity(
 
 
 @pytest.mark.parametrize("relative", FULL_MODULE_FILES)
+def test_a_blank_line_inside_a_docstring_does_move_the_identity(
+    tmp_path: Path, relative: str
+) -> None:
+    """D-3.  The positive the test above deliberately stopped asserting.
+
+    ``test_comment_and_blank_line_changes_do_not_move_the_identity`` stopped
+    inserting blank lines at arbitrary offsets for a good reason: an offset that
+    lands inside a triple-quoted string is not a layout change.  Retreating from
+    those offsets without asserting what happens *at* them would have left the
+    boundary undefended from the other side -- nothing said the digest still
+    moves there.  A blank line inside a docstring changes the documented
+    contract, so it is material, and this is where that is stated.
+    """
+
+    root = _identity_tree(tmp_path)
+    baseline = _digest(root)
+    source = _read(root, relative)
+    tree = ast.parse(source)
+
+    # A docstring spanning at least two lines, so the blank line can go strictly
+    # inside it.  A single-line one has no inside.
+    documented = next(
+        (
+            node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef)
+            and ast.get_docstring(node) is not None
+            and node.body[0].value.end_lineno > node.body[0].value.lineno
+        ),
+        None,
+    )
+    assert documented is not None, f"{relative}: nothing multi-line documented to probe"
+    literal = documented.body[0].value
+    assert isinstance(literal, ast.Constant) and isinstance(literal.value, str)
+
+    lines = source.splitlines(keepends=True)
+    insert_at = literal.lineno  # 0-based index of the line after the opening
+    mutated = lines[:insert_at] + ["\n"] + lines[insert_at:]
+    mutated_source = "".join(mutated)
+
+    assert ast.get_docstring(
+        next(
+            node
+            for node in ast.parse(mutated_source).body
+            if getattr(node, "name", None) == documented.name
+        )
+    ) != ast.get_docstring(documented), (
+        f"{relative}: the blank line did not land inside the docstring"
+    )
+
+    _write(root, relative, mutated_source)
+    assert _digest(root) != baseline, (
+        f"{relative}: a blank line inserted inside a docstring left the identity "
+        "unchanged; the documented contract must be material wherever it is written"
+    )
+
+
+@pytest.mark.parametrize("relative", FULL_MODULE_FILES)
 def test_docstring_changes_move_the_identity(
     tmp_path: Path, relative: str
 ) -> None:

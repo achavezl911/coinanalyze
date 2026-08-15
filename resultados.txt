@@ -1,0 +1,692 @@
+================================================================================
+COMMIT 3.2 DE 3.3 — VERIFICACIÓN POST-IMPORT Y REPARACIONES
+Rama: claude/pr27-identity-mutation-matrix
+Base:  a5893c7   HEAD de este trabajo: 376bf1f (+ artefactos regenerados)
+Fecha: 2026-08-15
+================================================================================
+
+RESUMEN EJECUTIVO — LÉASE ANTES QUE NADA
+
+  Escapes 8 -> 4.  El objetivo era 3.  M-01 NO cerró.
+
+  C.2 **sí detecta** M-01: la medición lo demuestra.  Lo que mantiene la fila
+  abierta es una conjunción del propio instrumento que interroga al símbolo que
+  la mutación acaba de reemplazar.  No es corregible desde `app/`.
+
+  **No he tocado el instrumento para cerrarla.**  El prompt (§7) prohíbe ajustar
+  el test al resultado, así que `EXPECTED_OPEN_ESCAPES` conserva el conjunto
+  mandado `{M-02, M-28, M-29}` y la divergencia queda ROJA y visible.  La
+  corrección propuesta es de una línea y la detallo en §2; **requiere
+  autorización de la revisión independiente, no de quien implementa.**
+
+  Criterios de aceptación: 1 y 3 NO cumplidos (por M-01, misma causa).
+  9 no cumplido en consecuencia (la suite tiene fallos, todos de esa fila).
+  Los ocho restantes, cumplidos y medidos.
+
+================================================================================
+1. TABLA COMPLETA — ID | EFECTO | CLASE | REJECTION_KIND | MOTIVO | CLOSES_WITH
+================================================================================
+
+Medido sobre HEAD, con ancla externa suministrada y segundo intérprete (3.11)
+aprovisionado.  36 filas: 30 GUARD, 4 ESCAPE, 2 RESIDUAL, 0 SKIPPED.
+
+ID     EFECTO EXIGIDO                   CLASE    REJECTION    MOTIVO                    CIERRA CON
+--------------------------------------------------------------------------------------------------
+M-01   MUST_REJECT_ONLY                 ESCAPE   exception    forged_object_accepted    C.2
+M-02   MUST_REJECT_ONLY                 ESCAPE   -            anchor_mechanism_absent   D
+M-03   MUST_MOVE_AND_REJECT             GUARD    exception    -                         B
+M-04   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-05   MUST_REJECT_ONLY                 GUARD    exception    -                         C.2
+M-06   MUST_REJECT_ONLY                 GUARD    exception    -                         C.1
+M-07   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-08   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-09   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-10   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-11   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-12   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-13   MUST_REJECT_ONLY                 GUARD    exception    -                         A
+M-14   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-15   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-16   MUST_NOT_MOVE_CODE_MUST_MOVE_ENV GUARD    exception    -                         A
+M-17   MUST_NOT_MOVE_AND_ACCEPT         GUARD    -            -                         A
+M-18   MUST_NOT_MOVE_AND_ACCEPT         GUARD    -            -                         A
+M-19   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-20   MUST_NOT_MOVE_AND_ACCEPT         GUARD    -            -                         A
+M-21   MUST_NOT_MOVE_AND_ACCEPT         GUARD    -            -                         A
+M-22   MUST_NOT_MOVE_AND_ACCEPT         GUARD    -            -                         A
+M-23   MUST_NOT_MOVE_AND_ACCEPT         GUARD    -            -                         A
+M-24   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-25   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+M-26   MUST_REJECT_ONLY                 GUARD    exception    -                         -
+M-27   MUST_REJECT_ONLY                 GUARD    exception    -                         C.1
+M-28   MUST_REJECT_ONLY                 ESCAPE   -            anchor_mechanism_absent   D
+M-29   MUST_REJECT_ONLY                 ESCAPE   -            anchor_mechanism_absent   D
+M-30   MUST_NOT_MOVE_AND_ACCEPT         GUARD    -            -                         A
+M-31   MUST_REJECT_ONLY                 GUARD    exception    -                         C.2
+M-32   MUST_REJECT_ONLY                 GUARD    import_error -                         A
+M-33   MUST_NOT_MOVE_AND_ACCEPT         GUARD    -            -                         A
+M-35   MUST_MOVE_AND_REJECT             GUARD    exception    -                         A
+
+--- SECCIÓN RESIDUAL (separada, como exige §10.1) ---------------------------------
+
+ID     EFECTO EXIGIDO                   CLASE    REJECTION    MOTIVO                    CIERRA CON
+--------------------------------------------------------------------------------------------------
+M-34   MUST_REJECT_ONLY                 RESIDUAL -            effect_not_met            RESIDUAL
+M-38   MUST_REJECT_ONLY                 RESIDUAL -            effect_not_met            RESIDUAL
+
+Cerradas en este commit (todas con test por nombre, no por recuento):
+  C.1 (procedencia de sys.modules) ....... M-06, M-27
+  C.2 (hash del objeto enlazado) ......... M-05, M-31        [M-01 NO — ver §2]
+  B-8 (registro dentro de la superficie) . M-35
+
+Las 25 filas cerradas en 3.1 siguen GUARD.  M-26, M-32 y M-33 no regresan
+(`test_the_rows_closed_in_3_1_did_not_regress`, 24 filas parametrizadas).
+
+================================================================================
+2. QUÉ SÍMBOLO NEUTRALIZA M-31 EXACTAMENTE — Y POR QUÉ M-01 NO CIERRA
+================================================================================
+
+2.1 M-31 neutraliza `validate_scientific_implementation_identity`, y sólo eso.
+
+El código de la mutación, tal y como queda en `tests/identity_mutation/catalog.py`
+(`_SITECUSTOMIZE`, generado por `_sitecustomize()`), en el cuerpo de `exec_module`:
+
+    def exec_module(module, _original=original_exec_module):
+        _original(module)
+        module.validate_scientific_implementation_identity = lambda stored: stored
+
+Es decir: **el medio validador de compatibilidad**, no el punto de entrada
+combinado.  Por eso es cerrable, y cierra: C.2 compara el objeto enlazado contra
+lo que la fuente compila y ve que no es el mismo.  Medido: GUARD,
+`rejection_kind=exception`.
+
+  CAMBIO DECLARADO: antes de este commit, `_SITECUSTOMIZE` hacía **las dos
+  cosas** — también reemplazaba `validate_scientific_identity`.  Una sola fila
+  llevaba dos vectores, y el no cerrable escondía al cerrable, de modo que M-31
+  sólo podía ser escape.  Los he separado: M-31 se queda con el medio validador
+  y **M-38 es el combinado**.  La cobertura conjunta es estrictamente MAYOR, no
+  menor: antes un vector se medía y el otro no se distinguía; ahora los dos se
+  miden por separado y el difícil se declara RESIDUAL con controles.
+
+2.2 M-38 neutraliza `validate_scientific_identity` — el punto de entrada combinado.
+
+    def exec_module(module, _original=original_exec_module):
+        _original(module)
+        module.validate_scientific_identity = lambda *args, **kwargs: True
+
+Clase esperada y medida: RESIDUAL.  No cerrable.  Argumento en §3.
+
+2.3 M-01 — LA FILA QUE NO CERRÓ.  Comparación controlada dentro de la misma corrida:
+
+  FILA   MUTACIÓN                              code_digest   rejection  combined_ok  CLASE
+  -----  ------------------------------------  ------------  ---------  -----------  ------
+  M-01   reasigna el medio validador (runtime)  c9e9b5a5…    exception  False        ESCAPE
+  M-31   lo mismo, vía sitecustomize            c9e9b5a5…    exception  False        GUARD
+
+  **Misma medición exacta.**  Mismo digest, mismo rechazo, mismo veredicto del
+  validador combinado.  El sistema, mutado, SE NIEGA A OPERAR en ambos casos.
+
+  Difieren en una sola cosa: M-01 lleva `REQUIRE_FORGED_REJECTED` en
+  `also_requires`.  Esa conjunción se evalúa contra `forged_object_accepted`, que
+  el probe mide llamando a:
+
+      identity_module.validate_scientific_implementation_identity(identity)
+
+  …es decir, **al símbolo que la propia mutación acaba de reemplazar por
+  `lambda stored: stored`**.  Un lambda escrito para aceptar cualquier cosa,
+  acepta.  La conjunción es por tanto insatisfacible para cualquier mutación cuyo
+  payload sea reemplazar ese símbolo, y NINGUNA cantidad de ingeniería sobre
+  `app/` la puede cerrar.  No mide el sistema: mide la mutación.
+
+  Es una inconsistencia interna del instrumento, introducida en 3.1 y no migrada
+  entonces.  El propio `probe.py` lo documenta en su docstring: el medio
+  validador «decide nada por sí solo», y **«el validador combinado … es lo que
+  decide cada efecto del catálogo»**.  Pero `REQUIRE_FORGED_REJECTED` sigue
+  interrogando al medio validador.
+
+  CORRECCIÓN PROPUESTA (una línea, NO aplicada):
+      En `tests/identity_mutation/catalog.py`, quitar `REQUIRE_FORGED_REJECTED`
+      de `also_requires` de M-01 — o, equivalente y preferible, hacer que la
+      conjunción interrogue al validador combinado, donde la pregunta «¿acepta un
+      objeto forjado?» ya vive como `combined_validation_accepted`.
+
+  POR QUÉ NO LA HE APLICADO: §7 del prompt dice literalmente «Si la medición no
+  coincide, **no ajustes el test al resultado**.  Repórtalo por fila.»  Esta
+  serie lleva tres cierres refutados que se presentaron en verde.  Un revisor que
+  ve M-01 en rojo con esta explicación está mejor servido que uno que ve verde
+  después de que yo editara la conjunción por mi cuenta.  La decisión es de la
+  revisión independiente.
+
+================================================================================
+3. RESIDUALES — ARGUMENTO ESCRITO Y CONTROLES COMPENSATORIOS IMPLEMENTADOS
+================================================================================
+
+Clase nueva `RESIDUAL` en el vocabulario.  Reglas implementadas:
+  · `known_escapes.json` gana la sección `residual`, SEPARADA de `escapes`
+    (`test_the_escapes_and_the_residual_are_separate_sections`).
+  · Cada entrada exige argumento escrito Y controles compensatorios; el runner
+    falla si falta cualquiera de los dos.
+  · El conjunto está FIJADO A MANO en el test (`EXPECTED_RESIDUAL = {M-34,
+    M-38}`), igual que `EXPECTED_OPEN_ESCAPES`.  CI falla si crece.
+  · `harness.evaluate()` sólo renombra un fallo: nunca convierte una fila
+    detectada en un pase.  Fijado por
+    `test_a_residual_declaration_cannot_turn_a_detected_row_into_a_pass`.
+
+--- M-38: sitecustomize que neutraliza el validador combinado ------------------
+
+ARGUMENTO.  `validate_scientific_identity` es el punto de entrada único que
+decide si el sistema puede operar.  M-38 lo reemplaza **antes de que el módulo
+exista en memoria**, de modo que toda referencia posterior —incluida una
+capturada en el import por un llamante que nunca lo resuelve por nombre— es el
+reemplazo.  C.1 y C.2 detectarían la sustitución, y ninguna de las dos llega a
+decirlo: el código que compararía el objeto enlazado contra la fuente sólo se
+alcanza a través del validador que fue reemplazado.
+
+Esto NO es un hueco de implementación que un control en proceso mejor cerraría.
+Es la definición de ejecución de código pre-import: quien puede ejecutar código
+antes de que el intérprete importe el guardián, controla al guardián.  Cualquier
+afirmación de que la verificación en proceso derrota a un atacante en proceso es
+falsa, y el producto se vende con esto declarado y no con esa impresión.
+
+CONTROLES COMPENSATORIOS, IMPLEMENTADOS Y PROBADOS (no enumerados en un documento):
+  1. `Environment=PYTHONNOUSERSITE=1` en los 7 units que arrancan python/uvicorn.
+  2. `ReadOnlyPaths=/opt/coinalyze` — el árbol desplegado y el venv son de sólo
+     lectura para el usuario del servicio.
+  3. `NoNewPrivileges=true` y `ProtectSystem=strict` en todos ellos.
+  4. Separación propietario/ejecutor: `scripts/update.sh` instala
+     `chown -R root:coinalyze /opt/coinalyze` y los units corren `User=coinalyze`.
+     El servicio no puede escribir el árbol que lee.
+  5. El ancla del commit 3.3, que certifica el árbol desde fuera.
+
+  Tests que lo exigen (mismo patrón que el de `COINALYZE_PROJECT_ROOT`):
+    · test_every_unit_that_starts_an_interpreter_carries_the_compensating_controls
+    · test_the_service_user_is_not_the_owner_of_the_tree_it_runs
+    · test_the_deployment_root_the_controls_protect_is_the_one_the_code_resolves
+
+--- M-34: envenenamiento de la caché de componentes ----------------------------
+
+ARGUMENTO.  La caché no es una preferencia de diseño: es una necesidad medida.
+Ver §4 para los números.  Correr sin caché cuesta 2 232 ms por evaluación
+autoritativa contra un techo de 990 ms — 2,25x por encima.  Quitarla cerraría la
+fila haciendo el producto no desplegable, que no es cerrarla.
+
+Y nada en proceso la cierra tampoco.  Una entrada de caché es DATO, no un objeto
+enlazado, así que C.2 no la alcanza; y cualquier verificación de la entrada
+tendría que rehacer el trabajo que la entrada existe para evitar.  Quien puede
+insertar una entrada ya está ejecutando código en el proceso que tendría que
+notarlo: la misma condición estructural que M-38, por otra puerta.
+
+CONTROLES COMPENSATORIOS: los mismos 1–4 de M-38 (el edit de fichero que M-34
+hace primero es imposible desde el proceso que lo explotaría), más:
+  5. La caché está ACOTADA a la superficie vigente — un envenenamiento de un
+     componente que sale de la superficie no persiste.
+
+================================================================================
+4. LATENCIA — MEDICIÓN ANTES Y DESPUÉS, Y LA DECISIÓN DE B-7
+================================================================================
+
+Techo declarado (§2.3): 0,330 s x 3 = **990 ms por evaluación autoritativa**.
+Una evaluación autoritativa realiza 3 cómputos de identidad (call sites en
+`signal_walk_forward.py:735`, `signal_walk_forward.py:4170` y los de
+`signal_ledger` / `signal_visibility` / `signal_outcomes`, que no comparten
+estado entre sí).
+
+  ANTES de C.1/C.2 (a5893c7), 42 componentes:
+    · con caché caliente ............  7,4 ms / cómputo     ->  22 ms x3
+    · SIN caché ..................... 744,4 ms / cómputo    -> 2 233 ms x3
+      desglose: leer 2,2 ms · sha256 0,9 ms · CANONICALIZAR 731,1 ms · digest 10,2 ms
+
+  DESPUÉS de C.1/C.2 (este commit), 35 módulos `app.*` cargados:
+    · primera llamada, caché vacía .. 1 399,6 ms  (arranque del proceso, una vez)
+    · con caché caliente ............ 57,7 ms / cómputo (min 56,8 max 65,2)
+    · POR EVALUACIÓN AUTORITATIVA ... **173,1 ms**  vs techo 990 ms
+
+  MARGEN: 5,7x por debajo del techo.  No he compensado cacheando más: la caché
+  ya existía y lo que he hecho es ACOTARLA (B-7.3).  El coste añadido por C.1/C.2
+  es 50,3 ms por cómputo, y es el fingerprint de los objetos vivos.
+
+  Coste de `compile()`, que decide el diseño de C.2:
+    · los 38 módulos python de la superficie ... 343,0 ms
+    · el subconjunto realmente CARGADO en un proceso mínimo (3) ... 9,2 ms
+  C.2 sólo compila lo cargado, y cachea el resultado por hash de contenido.
+
+DECISIÓN DE B-7, Y EL DATO QUE LA SOSTIENE:
+
+  1. Frecuencia de evaluación autoritativa en operación real: el camino
+     autoritativo pasa por `validate_scientific_implementation_identity` en la
+     carga del manifest y en la derivación v4, y por
+     `scientific_implementation_identity()` en el ledger, la visibilidad (x2) y
+     los outcomes.  Son 3+ cómputos por evaluación, en call sites que no
+     comparten estado.
+  2. ¿Puede el camino autoritativo permitirse computar sin caché?  **NO.**
+     744 ms x 3 = 2 233 ms contra 990 ms.  2,25x por encima del techo, y el techo
+     es el coste que el sistema YA tenía antes de esta serie.
+  3. Por tanto: la caché SE QUEDA y **M-34 pasa al conjunto residual** con
+     argumento escrito (§3), exactamente como prevé B-7.2.
+  4. En ambos casos la caché debe estar acotada, y lo está: `_BoundedContentCache`
+     guarda como mucho `_CACHE_ENTRIES_PER_COMPONENT` generaciones por ruta de
+     componente y descarta toda ruta que ya no esté en la superficie
+     (`retain()`), llamado en cada cómputo.  Fijado por
+     `test_the_component_cache_cannot_outgrow_the_surface`.  La clave sigue
+     siendo `(ruta, sha256 del contenido)` — nunca mtime ni tamaño — y eso se
+     fija sobre la fuente en
+     `test_the_cache_is_still_keyed_by_content_and_not_by_timestamp`.
+
+MARGEN DE `test_certificate_commit_during_settlement_is_deterministic_and_late_stamp_excluded`:
+
+  El test declara `evaluation_settlement_grace_seconds=3` y mantiene la
+  transacción del certificado abierta a través del cutoff congelado.  La ventana
+  relevante es por tanto de **3 000 ms**, y lo que hay que medir es cuánto se
+  come dentro de ella la evaluación autoritativa.
+
+  Medido en un proceso con el working set real del camino de liquidación
+  (23 módulos `app.*` cargados: `signal_walk_forward`, `signal_ledger`,
+  `signal_visibility`, `signal_outcomes` y sus dependencias), llamando a
+  `validate_scientific_implementation_identity`, que es la llamada que ese
+  camino hace:
+
+      por llamada ............... 37,9 ms   (mediana de 9; min 36,4 max 41,9)
+      x3 por evaluación ......... 113,7 ms
+      ventana de liquidación .... 3 000 ms
+      MARGEN .................... 2 886,3 ms libres  = **96,2 % de la ventana**
+      contra el techo de §2.3 ... 113,7 / 990 ms     = **11,5 % del presupuesto**
+
+  No pasa por los pelos: pasa usando la novena parte del presupuesto declarado y
+  una vigesimosexta parte de la ventana de liquidación.
+
+  El test se ejecutó además 3 veces sobre HEAD, verde las tres (34,5 s / 41,9 s /
+  59,1 s de reloj).  Esa varianza es de las esperas de maduración propias del
+  test y de la carga de la máquina, no de la ventana de gracia: el trabajo de
+  identidad dentro de la ventana es el de la tabla de arriba.
+
+================================================================================
+5. INVENTARIO DE B-9 — REFERENCIAS AL DIGEST ANTIGUO
+================================================================================
+
+Barrido: `grep -rEoh "\b[0-9a-f]{64}\b"` sobre `*.py`, `*.md`, `*.json`, `*.sql`,
+`*.yml` en todo el repositorio, más inspección de `sql/` y de las migraciones.
+
+PRIMERO, UNA CORRECCIÓN AL ENUNCIADO DE B-9:
+
+  El prompt dice que el digest registrado pasó de `c7bf8e5b4f52…` a
+  `effa10b07a1c…`.  **`effa10b07a1c…` no existe en el repositorio.**  Aparece
+  únicamente en `TASK.md`, es decir en el propio enunciado.  El valor realmente
+  registrado en `identity/registry.json` en `a5893c7` era
+  `5aa72d835592d46900693d5ed2a42e49b0952bcc2d9ba48659313357dda90a49`.
+  Verificado con `git show a5893c7:identity/registry.json`.
+  Tras este commit es `451f49552b732bd829a72c10fb2a615cd9d74e0a2a471f677cbd7642975ac378`.
+
+INVENTARIO FILA A FILA:
+
+REF                     UBICACIÓN                                   QUÉ ES                                          ACCIÓN
+----------------------  ------------------------------------------  ----------------------------------------------  ------------------
+c7bf8e5b… (x34)         tests/identity_mutation/evidence/            Medición CONGELADA sobre c60e2ee6, revisión     CONSERVAR.
+                        c60e2ee6.json                               en la que ése ERA el digest registrado          Migrarlo falsificaría
+                                                                                                                    la medición.
+c7bf8e5b… (x1)          tests/identity_mutation/catalog.py           needle de `ReregisterIdentityDigest` de M-02    CONSERVAR — NO es
+                        (M-02)                                      El camino de fallback se usa SÓLO cuando el     una referencia
+                                                                    árbol no lleva script de registro, que es       colgada.  Verificado
+                                                                    exactamente el caso de c60e2ee6.                idéntico al literal
+                                                                                                                    de `git show
+                                                                                                                    c60e2ee6:app/signal_
+                                                                                                                    scientific_identity.py`
+c7bf8e5b… (x3)          docs/PR27_CONFIRMATORY_ENDPOINT_            Prosa: «digest = …», «valor vigente»,           MIGRADO al valor
+                        INTEGRITY.md:238,252,892                     «identidad recomputada»                         nuevo + nota de que
+                                                                                                                    el registro es lo
+                                                                                                                    autoritativo
+c7bf8e5b… (x2)          docs/ROADMAP.md:29,50                       Prosa: «identity-v1 recomputada», «deja de      MIGRADO
+                                                                    ser candidato»
+c7bf8e5b… (x1)          docs/HANDOFF_IA.md:155                      Tabla «Digest vigente»                          MIGRADO a
+                                                                                                                    451f4955… + nota
+c7bf8e5b… (resto)       docs/*.md, narrativa histórica              Relato de cómo evolucionó el digest             CONSERVAR — es
+                        (ARCHITECTURE_DECISIONS.md, etc.)                                                           historia correcta
+effa10b0…               SÓLO TASK.md                                Afirmación del enunciado                        DECLARADO INVÁLIDO
+                                                                                                                    (ver arriba)
+1f486497…               evidence/c60e2ee6.json                      environment/total digest congelados             CONSERVAR
+5a5cb09f…, 25f6c2e5…    tests/test_pr27_r05_routing_*.py,           Digests de revisiones REFUTADAS, citados        CONSERVAR — evidencia
+                        docs/ARCHITECTURE_DECISIONS.md              como evidencia histórica                        de lo que se midió
+c9cbe967…               contrato de runtime                         Sin cambios en este commit                      CONSERVAR
+e2f967bb…, 2f21afe9…,   hashes legacy spec v1/v2/v3                 Sin cambios                                     CONSERVAR
+7fd50764…
+
+BASE DE DATOS: `sql/schema.sql` guarda `scientific_implementation_digest` como
+COLUMNA, con `CHECK (… ~ '^[0-9a-f]{64}$')` y un trigger que la contrasta contra
+`frozen_spec->'scientific_implementation'->>'digest'`.  **No hay ningún digest
+literal congelado en el esquema ni en las migraciones.**  Nada que migrar.
+
+ESPECIFICACIONES WALK-FORWARD CONGELADAS: no existe ningún manifest spec-v4 (es
+`MISSING_EXTERNAL_EVIDENCE` declarado en el handoff), así que no hay ninguna
+especificación congelada citando un digest que ya no valide.
+
+================================================================================
+6. B-6 — EL VENV 3.11 DEL CI SIGUE FUNCIONANDO
+================================================================================
+
+`requires-python` estrechado de `">=3.11,<3.14"` a `">=3.13,<3.14"`.
+
+VERIFICADO ANTES DE HACERLO, leyendo `.github/workflows/ci.yml`:
+
+  · Línea 45-49: el venv PRINCIPAL se crea con `steps.py313.outputs.python-path`
+    y es ahí donde corre `pip install -e '.[dev]'`.  **El único `pip install .`
+    del CI ocurre bajo 3.13.**  Estrecharlo no lo afecta.
+  · Línea 59-61: el venv de 3.11 se crea aparte y hace ÚNICAMENTE
+    `pip install -r requirements.lock`.  No instala el paquete.
+  · `.github/workflows/identity-mutation.yml` líneas 81-94: el mismo patrón.
+  · El probe importa `app` desde el árbol (`PYTHONPATH`), no desde site-packages.
+
+  Nada hace `pip install .` bajo 3.11.  No he tenido que forzar nada.
+
+VERIFICADO DESPUÉS, empíricamente: creé un venv 3.11 real
+(`/tmp/claude-py311-venv`) con `pip install -r requirements.lock`, sin instalar
+el paquete, y medí la identidad:
+
+    3.13: 451f49552b732bd829a72c10fb2a615cd9d74e0a2a471f677cbd7642975ac378
+    3.11: 451f49552b732bd829a72c10fb2a615cd9d74e0a2a471f677cbd7642975ac378
+          module_provenance = []   bound_objects = []
+
+  **Idéntico bajo ambos, con las tres capas intactas** (criterio 7).  M-16 se
+  midió con ese intérprete y salió GUARD.
+
+  Ése era el riesgo real de C.2: el bytecode difiere entre 3.11 y 3.13, así que
+  registrar fingerprints en `identity/registry.json` habría hecho que el digest
+  se contradijera a sí mismo entre runtimes.  Por eso C.2 compila la fuente EN EL
+  PROCESO y lo que entra en el digest es sólo la lista de anomalías, vacía bajo
+  ambos.  Fijado por
+  `test_post_import_verification_did_not_make_the_digest_interpreter_dependent`.
+
+  Estrechar `pyproject.toml` movió el digest de código, como estaba previsto, y
+  este commit re-registra.  La coherencia entre los dos documentos queda fijada
+  por `test_pyproject_declares_only_interpreters_the_registry_will_operate_under`,
+  que deriva el rango esperado de `AUTHORIZED_INTERPRETERS` en vez de repetirlo.
+
+================================================================================
+7. DIFERENCIAS FILA A FILA DE LA EVIDENCIA CONGELADA, CON CAUSA
+================================================================================
+
+`tests/identity_mutation/evidence/c60e2ee6.json` regenerado.  33 filas -> 36.
+
+7.1 LAS 33 FILAS PREEXISTENTES CONSERVAN SUS TRES DIGESTS BYTE A BYTE.
+
+    Comparación programática de `code_digest`, `environment_digest` y
+    `total_digest` de las 33 filas más el bloque `baseline`:
+
+        divergencias: 0
+
+    Ninguna.  No hay defecto del instrumento que reportar en este eje.
+
+7.2 ÚNICO CAMBIO EN LAS FILAS PREEXISTENTES: un campo nuevo.
+
+    FILAS         CAMPO AÑADIDO               VALOR   CAUSA
+    ------------  --------------------------  ------  --------------------------------
+    M-01..M-33    `component_cache_poisoned`  false   Ampliación del esquema del probe
+    (las 33)                                          para M-34.  Ningún valor
+                                                      preexistente cambia.
+
+    Cero campos con valor modificado.  Verificado campo a campo.
+
+7.3 FILAS NUEVAS (3), y qué miden sobre c60e2ee6:
+
+    ID     CLASE     MOTIVO                      CAUSA
+    -----  --------  --------------------------  ------------------------------------------
+    M-34   ESCAPE    runtime_patch_ineffective   c60e2ee6 no lleva `identity/registry.json`,
+                                                 así que el envenenamiento no puede
+                                                 ejecutarse.  Honesto: la mutación no era
+                                                 realizable en esa revisión, y el harness
+                                                 lo dice en vez de fingir un hallazgo.
+    M-35   ESCAPE    anchor_not_found            `build_identity_registry` no existe en
+                                                 c60e2ee6 — la lógica aún vivía en
+                                                 `scripts/`.  El ancla AST no resuelve y la
+                                                 fila falla cerrada.
+    M-38   RESIDUAL  effect_not_met              El validador combinado tampoco existe en
+                                                 c60e2ee6, así que nada rechaza.
+
+7.4 DETERMINISMO REVALIDADO: tres ejecuciones completas sobre c60e2ee6,
+    byte a byte idénticas.
+
+        96bf17b53345ebfe4d3e47ec0faae3a7  c60-run1.json
+        96bf17b53345ebfe4d3e47ec0faae3a7  c60-run2.json
+        96bf17b53345ebfe4d3e47ec0faae3a7  c60-run3.json
+
+7.5 INDEPENDENCIA DE LA MÁQUINA (B-10), ahora explícita y no supuesta.
+
+    `runner.reachable_fallback_roots()` comprueba, ANTES de medir, si el árbol
+    medido puede alcanzar un fallback poblado fuera del workspace del arnés
+    (`/opt/coinalyze` con `config/`).  Si lo alcanza, `provisioning_problems()`
+    devuelve un problema con mensaje explícito y el run sale en rojo sin medir
+    nada, en vez de producir una evidencia que sólo vale en esa máquina.
+
+    En esta máquina: `/opt/coinalyze` ausente -> `reachable_fallback_roots() == []`.
+    La fila de M-32 se midió con la garantía comprobada, no con la suposición.
+
+    Barrido de datos específicos de máquina en el fichero congelado: 0 ocurrencias
+    de `/tmp/`, `identity-mutation-`, `/srv/`, `duration`, `pid`, `site-packages`,
+    `python3.1`, y de los nombres de usuario y de sesión de esta máquina.
+
+================================================================================
+8. DELTA DE TESTS ITEMIZADO — 1623 -> 1687
+================================================================================
+
+Línea base medida en `a5893c7` con `pytest --collect-only -q`: **1623**.  Coincide
+con la cifra del prompt.  (El informe anterior no cuadraba 1593 -> 1623; esta vez
+la itemización se obtiene diffando los ids recolectados, no restando totales.)
+
+HEAD: **1687**.  Delta neto **+64** = 65 añadidos - 1 eliminado.
+
+AÑADIDOS (65):
+
+  +24  tests/identity_mutation/test_mutation_matrix.py
+       ::test_the_rows_closed_in_3_1_did_not_regress[M-03..M-33]
+       Parametrizado sobre las 24 filas que 3.1 cerró.  Criterio 6.
+  + 6  ::test_the_findings_this_commit_closes_are_guards_by_name[M-01,05,06,27,31,35]
+       Criterio 3, "con test por nombre".  Es el que deja M-01 en rojo.
+  + 3  tests/test_pr27_r05_module_identity_closure.py
+       ::test_a_blank_line_inside_a_docstring_does_move_the_identity[3 módulos]
+       D-3, el positivo que faltaba.
+  + 2  ::test_every_residual_carries_an_argument_and_compensating_controls[M-34,M-38]
+  + 1  ::test_the_residual_set_is_exactly_the_expected_one_and_has_not_grown
+  + 1  ::test_no_row_is_both_an_escape_and_a_residual
+  + 1  ::test_the_declared_residual_set_is_what_the_catalog_marks_residual
+  + 1  ::test_a_residual_declaration_cannot_turn_a_detected_row_into_a_pass
+  + 1  ::test_the_declaration_justifies_every_residual_it_records
+  + 1  ::test_the_escapes_and_the_residual_are_separate_sections
+  +24  tests/test_pr27_post_import_verification.py  (fichero nuevo, 24 tests)
+        C.1 (5): honest_process_no_provenance_anomaly · module_file_outside_surface ·
+                 module_with_no_file · module_from_another_surface_file ·
+                 provenance_exempts_no_module_by_name
+        C.2 (8): honest_process_no_binding_anomaly · reassigning_a_validator ·
+                 transplanting_a_code_object · replacing_with_non_function ·
+                 deleting_a_symbol · material_symbols_from_the_surface ·
+                 nested_function_not_addressed · survives_randomized_hash_seed
+        B-6 (1): pyproject_declares_only_authorized_interpreters
+        B-7 (2): cache_cannot_outgrow_the_surface · cache_keyed_by_content
+        B-8 (2): registry_generator_in_a_hashed_component · committed_registry_matches
+        D-1 (2): markers_match_their_manifest · every_marker_balanced
+        §4  (3): units_carry_compensating_controls · service_user_not_owner ·
+                 deployment_root_is_the_one_the_code_resolves
+        M-16(1): post_import_verification_not_interpreter_dependent
+  -----
+  = 65
+
+ELIMINADO (1):
+
+  - 1  ::test_mandated_escapes_are_observed_as_escapes[M-01]
+       Causa: M-01 perdió `mandated_class=ESCAPE`, porque una fila obligada a
+       SEGUIR siendo escape no puede registrar su propio cierre.  Es exactamente
+       lo que se hizo con M-03 en 3.1, y con el mismo reemplazo: M-01 pasa a estar
+       nombrado en `test_the_findings_this_commit_closes_are_guards_by_name`, que
+       exige GUARD.  **Es más estricto, no menos** — y de hecho es el test que
+       ahora está en rojo por M-01, así que el cambio no ha ocultado nada.
+
+NINGÚN TEST DEBILITADO.  Los que cambiaron lo hicieron en una sola dirección
+—más estrictos— y están declarados aquí:
+  · `test_catalog_holds_every_mutation_exactly_once`: acepta el hueco M-36/M-37,
+    porque renumerar repuntaría en silencio toda cita por id anterior al hueco.
+  · `test_every_row_carries_the_full_probe_schema`: exige el campo nuevo y admite
+    la clase `RESIDUAL`.
+  · `test_the_rows_that_closed_in_this_commit_are_guards`: excluye los residuales,
+    que tienen su propio test más estricto (conjunto fijado + argumento +
+    controles).
+
+================================================================================
+9. HALLAZGOS NUEVOS SOBRE app/, AUNQUE NO CORRESPONDAN A NINGUNA ENTRADA
+================================================================================
+
+H-12.  `repr()` NO ES UN FINGERPRINT ESTABLE DE UNA CONSTANTE DE CODE OBJECT.
+       Severidad: alta si no se hubiera detectado — habría hecho la identidad
+       dependiente de la semilla de hash del proceso.
+
+       La primera implementación de C.2 fingerprinteaba `co_consts` con `repr()`.
+       El optimizador convierte `x in {"a","b"}` en una constante `frozenset`, y
+       dos frozensets con los MISMOS elementos iteran en un orden que depende de
+       su historia de construcción y de `PYTHONHASHSEED`.  Resultado: C.2
+       acusaba a una función inocente DISTINTA en cada ejecución
+       (`Settings.validate_pg_sslmode`, luego `validated_signal_observation_fields`,
+       luego `compute_scalp_summary`).
+       Corregido: `_canonical_code_const()` compara por estructura, ordena los
+       conjuntos y etiqueta el tipo, para que `1`, `True` y `1.0` no colisionen.
+       Fijado por `test_the_bound_object_check_survives_a_randomized_hash_seed`,
+       que corre con tres semillas y exige un único resultado.
+
+H-13.  DECORADORES QUE SUSTITUYEN EL BINDING: LÍMITE DECLARADO DE C.2.
+       `@asynccontextmanager` (`app/api.py:133`, `app/db.py:198`) reemplaza el
+       atributo por una función propia a la que `functools.wraps` copia nombre y
+       módulo; `@lru_cache` (`app/config.py:335`) y los validadores de pydantic lo
+       reemplazan por objetos que no son funciones.
+       C.2 sigue `__wrapped__` **sólo** para símbolos que la fuente muestra
+       decorados, y sólo para ésos.  Un símbolo NO decorado no recibe esa cortesía:
+       seguir `__wrapped__` ahí permitiría a un mutador esconder un reemplazo
+       apuntándolo de vuelta al original, que es justamente el truco.
+       LÍMITE RESIDUAL, declarado: un símbolo decorado cuyo binding no se puede
+       resolver a una función plana (los validadores de pydantic) queda fuera de
+       lo que C.2 compara.  No queda por ello desprotegido: la lista de
+       decoradores es parte del AST canónico, así que nada puede meter un símbolo
+       en ese cubo sin mover el digest de código.  Son 3 símbolos en `app/` y
+       ninguno es un validador de identidad.
+
+H-14.  EL COSTE EN FRÍO DE LA EVALUACIÓN SUBIÓ A 1,4 s.
+       No viola el techo, que es por evaluación autoritativa y con el proceso ya
+       caliente (173 ms), pero es un dato operativo que conviene tener escrito: el
+       PRIMER cómputo de identidad de un proceso recién arrancado cuesta ahora
+       1 399,6 ms frente a 788,6 ms antes.  Afecta al arranque de los colectores,
+       no al camino autoritativo.  Si algún día importa, lo que hay que reducir es
+       la superficie, no la caché.
+
+H-15.  `verify_bound_objects()` SÓLO CUBRE LOS MÓDULOS CARGADOS.
+       Es correcto por construcción — no se puede fingerprintear el objeto
+       enlazado de un módulo que nadie importó — pero tiene una consecuencia que
+       merece estar escrita: la cobertura de C.2 en un proceso concreto es la de
+       SU working set.  Un módulo de `app/` que ese proceso no importa está
+       cubierto por el hash de su fuente (la superficie) y no por C.2.  Eso es
+       suficiente, porque para ejecutar código de ese módulo hay que importarlo, y
+       en cuanto se importa entra en C.1 y C.2.
+
+H-16.  DISCREPANCIA DOCUMENTAL EN EL PROPIO ENUNCIADO.  Ver §5: el digest
+       `effa10b07a1c…` que B-9 manda inventariar no existe en el repositorio.
+
+================================================================================
+10. VALIDACIÓN EJECUTADA
+================================================================================
+
+  ruff check .                          -> All checks passed
+  python -m compileall -q app scripts tests  -> OK
+  python scripts/register_identity.py --check -> matches the tree
+  git diff --check                      -> limpio
+  graphify update .                     -> 5179 nodos, 13304 aristas, 255 comunidades
+
+  pytest -q -rs contra PostgreSQL 17.10 (clúster aislado, TEST_DATABASE_URL
+  exportada, IDENTITY_MUTATION_INTERPRETERS y IDENTITY_ANCHOR_FINGERPRINT
+  suministrados):
+
+      4 failed, 1683 passed in 922.34s (0:15:22)
+      **0 skipped.**
+
+  LOS 4 FALLOS SON LA MISMA FILA — M-01 — Y SÓLO ELLA:
+
+    1. test_the_declared_escape_set_is_exactly_the_expected_one_for_this_commit
+       observado {M-01,M-02,M-28,M-29} vs mandado {M-02,M-28,M-29}
+    2. test_the_findings_this_commit_closes_are_guards_by_name[M-01]
+       "- GUARD  + ESCAPE"
+    3. test_the_rows_that_closed_in_this_commit_are_guards   (por M-01)
+    4. test_frozen_evidence_is_wellformed_and_contains_the_declaration
+       la declaración registra M-01, que es la MEDICIÓN; el conjunto mandado no.
+
+  Los cuatro son la consecuencia mecánica de §2.3.  Están rojos **a propósito**:
+  `EXPECTED_OPEN_ESCAPES` conserva el conjunto que el prompt manda escribir a
+  mano, y `known_escapes.json` registra lo que realmente se midió.  La distancia
+  entre ambos ES el hallazgo, y hacerla desaparecer editando cualquiera de los
+  dos sería exactamente el patrón que refutó tres cierres anteriores.
+
+  Ningún otro test falla.  Ninguno se saltó.
+
+  Matriz de mutación sobre HEAD, ejecutada aparte con el runner:
+      escapes observed : 4 -> M-01, M-02, M-28, M-29
+      residual observed: 2 -> M-34, M-38
+      skipped          : 0
+      guards           : 30
+      anchor supplied  : yes
+
+================================================================================
+11. CRITERIOS DE ACEPTACIÓN — ESTADO HONESTO
+================================================================================
+
+  1. Escapes = exactamente {M-02, M-28, M-29}      NO CUMPLIDO — son 4, con M-01.
+                                                    Causa y corrección en §2.3.
+  2. residual = {M-38} y como mucho {M-34},         CUMPLIDO.  Los dos, cada uno
+     con argumento y controles implementados        con argumento escrito y 4-5
+                                                    controles implementados y
+                                                    probados sobre los units.
+  3. M-01,05,06,27,31,35 -> GUARD con test          PARCIAL — 5 de 6.  M-01 no.
+     por nombre                                     El test por nombre existe y
+                                                    está en rojo para M-01.
+  4. Coste medido, reportado, < 0,99 s;             CUMPLIDO — 113,7 ms en el
+     margen del test de liquidación                 camino de liquidación
+                                                    (11,5 % del techo); margen
+                                                    del test 2 886 ms de 3 000.
+  5. B-6..B-10 cerrados; inventario B-9 completo    CUMPLIDO — §5, §6, §7.5, y
+                                                    B-7/B-8 en §4 y §1.
+  6. Las 25 de 3.1 siguen GUARD; M-26/32/33 no      CUMPLIDO — 24 filas
+     regresan                                       parametrizadas, todas verdes.
+  7. code_digest idéntico bajo 3.11 y 3.13, tres    CUMPLIDO — §6.
+     capas intactas
+  8. Evidencia: 33 filas byte a byte; tres          CUMPLIDO — 0 divergencias;
+     regeneraciones idénticas; sin dependencia      md5 idéntico x3; B-10 con
+     de la máquina                                  comprobación explícita.
+  9. Suite verde, 0 failed 0 skipped, línea base    PARCIAL — 4 failed, 1683
+     1623, delta itemizado, ningún test debilitado  passed, **0 skipped**.  Los
+                                                    4 fallos son M-01 y sólo
+                                                    M-01.  Línea base 1623
+                                                    confirmada.  Delta itemizado
+                                                    en §8.  Ningún test
+                                                    debilitado.
+ 10. graphify update + entrada fechada en           CUMPLIDO.
+     HANDOFF_IA.md
+ 11. Sin residuos de worktree; ningún archivo       CUMPLIDO — ver §12.
+     rastreado modificado tras el commit
+
+================================================================================
+12. FICHEROS MODIFICADOS
+================================================================================
+
+  app/signal_scientific_identity.py       C.1, C.2, caché acotada, lógica del
+                                          registro (B-8)
+  scripts/register_identity.py            reducido a entry point sin decisiones
+  pyproject.toml                          requires-python >=3.13,<3.14 (B-6)
+  identity/registry.json                  re-registrado: 451f4955…
+  deploy/systemd/*.service  (7)           PYTHONNOUSERSITE, ReadOnlyPaths,
+                                          ProtectHome (controles compensatorios)
+  tests/identity_mutation/catalog.py      RESIDUAL, M-34/35/38, M-31 acotado
+  tests/identity_mutation/probe.py        M-01 acotado, patch de M-34, flag nuevo
+  tests/identity_mutation/harness.py      clasificación RESIDUAL, flag nuevo
+  tests/identity_mutation/runner.py       sección residual, B-10
+  tests/identity_mutation/test_mutation_matrix.py   conjuntos fijados a mano
+  tests/identity_mutation/known_escapes.json        regenerado + sección residual
+  tests/identity_mutation/evidence/c60e2ee6.json    regenerado, 36 filas
+  tests/pr27_marker_manifest.json         NUEVO — manifiesto de marcadores (D-1)
+  tests/test_pr27_post_import_verification.py       NUEVO — 24 tests
+  tests/test_pr27_r05_module_identity_closure.py    D-3
+  docs/HANDOFF_IA.md                      bitácora, §6.3 (M-01), digest vigente
+  docs/ROADMAP.md                         §4.1 D-2, digest
+  docs/PR27_CONFIRMATORY_ENDPOINT_INTEGRITY.md      digest (B-9)
+
+  NO he mergeado, NO he pusheado, NO he tocado producción.
+================================================================================
