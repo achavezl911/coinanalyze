@@ -28,6 +28,14 @@ market's data under the internal key the kernel reads, so restoring the
 registered routing would make an observation stamped with the registered digest
 consume rows that were never produced under it.  ``attest_raw_market_producer``
 therefore moves the same gate to the raw producer boundary.
+
+Attesting the routing is in turn not the same as proving the producer applied
+it.  The R05 review showed that a routing index built by hand -- one that maps
+ETH's external pair onto BTC's internal key -- passes every gate that inspects
+only the internal key, because the key it produces is genuinely routed.  The
+two routing indexes are therefore constructible only from an attested
+``EffectiveMarketRouting``, which validates each conversion at construction, and
+``require_routed_pair_origins`` states the same invariant as a reusable gate.
 """
 
 from __future__ import annotations
@@ -183,18 +191,59 @@ class MarketRoute:
 
 @dataclass(frozen=True, slots=True)
 class FuturesRoutingIndex:
-    """The futures projection a scalp producer applies for its assigned scope."""
+    """The futures projection a scalp producer applies for its assigned scope.
+
+    The index is the only object that converts an external pair into the
+    internal key the frozen kernel reads, so a hand-built one *is* the A-02
+    bypass: it can file ETH's trades under BTC's key, and a delivery gate that
+    validates only the internal key has nothing to object to.  Construction
+    therefore requires the attested routing and replays every conversion the
+    index would perform through it.
+    """
 
     pairs: tuple[str, ...]
     symbol_by_pair: Mapping[str, str]
+    routing: EffectiveMarketRouting
+
+    def __post_init__(self) -> None:
+        _require_indexed_pairs(self.pairs, self.symbol_by_pair)
+        require_routed_pair_origins(
+            self.routing, "scalp_collector", self.symbol_by_pair.items()
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class SpotRoutingIndex:
-    """The spot projection a ws producer applies for its assigned scope."""
+    """The spot projection a ws producer applies for its assigned scope.
+
+    Bound to its attested routing for the same reason as
+    ``FuturesRoutingIndex``: ``base_asset`` is $2 of the ``scalp_context``
+    query, so a forged spot pair -> base asset entry contaminates the endpoint
+    just as effectively.
+    """
 
     pairs: tuple[str, ...]
     base_asset_by_pair: Mapping[str, str]
+    routing: EffectiveMarketRouting
+
+    def __post_init__(self) -> None:
+        _require_indexed_pairs(self.pairs, self.base_asset_by_pair)
+        require_routed_pair_origins(
+            self.routing, "ws_collector", self.base_asset_by_pair.items()
+        )
+
+
+def _require_indexed_pairs(
+    pairs: Sequence[str], internal_key_by_pair: Mapping[str, str]
+) -> None:
+    """Refuse a subscription list the conversion table cannot resolve."""
+
+    unresolvable = sorted(set(pairs) - set(internal_key_by_pair))
+    if unresolvable:
+        raise RawMarketProducerContractError(
+            "routing index subscribes to external pairs it cannot convert: "
+            + ", ".join(unresolvable)
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -276,6 +325,7 @@ class EffectiveMarketRouting:
             symbol_by_pair=MappingProxyType(
                 {self.futures_pair_by_symbol[symbol]: symbol for symbol in scoped}
             ),
+            routing=self,
         )
 
     def spot_index(self, symbols: Sequence[str]) -> SpotRoutingIndex:
@@ -288,6 +338,7 @@ class EffectiveMarketRouting:
                     for symbol in scoped
                 }
             ),
+            routing=self,
         )
 
 
@@ -439,6 +490,49 @@ _RAW_PRODUCER_INTERNAL_KEY_FIELDS_V1 = {
     "scalp_collector": "symbol",
     "ws_collector": "base_asset",
 }
+
+# The external market each producer is allowed to record under each internal
+# key: ``futures_pair -> symbol`` for the futures family, ``spot_pair ->
+# base_asset`` for the spot family.
+#
+# Validating the internal key alone cannot see a misrouting, because a
+# misrouted row is keyed *correctly*: an index that maps ``ETHUSDT`` onto
+# ``BTCUSDT_PERP.A`` produces rows whose key is genuinely routed, and only the
+# external pair that produced them reveals the substitution.  This is the
+# second question the R05 review found missing.
+_RAW_PRODUCER_EXTERNAL_PAIR_FIELDS_V1 = {
+    "scalp_collector": ("futures_pair", "symbol"),
+    "ws_collector": ("spot_pair", "base_asset"),
+}
+
+
+def require_routed_pair_origins(
+    routing: EffectiveMarketRouting,
+    producer: str,
+    origins: Iterable[tuple[str, str]],
+) -> None:
+    """Refuse an external pair -> internal key conversion the routing denies."""
+
+    fields = _RAW_PRODUCER_EXTERNAL_PAIR_FIELDS_V1.get(producer)
+    if fields is None:
+        raise ValueError(f"unknown result-material raw producer: {producer!r}")
+    external_field, internal_field = fields
+    authorized = {
+        getattr(route, external_field): getattr(route, internal_field)
+        for route in routing.routes
+    }
+    forged = sorted(
+        f"{pair}->{internal_key}"
+        for pair, internal_key in origins
+        if authorized.get(pair) != internal_key
+    )
+    if forged:
+        tables = _RESULT_MATERIAL_RAW_PRODUCERS_V1[producer]
+        raise RawMarketProducerContractError(
+            f"raw market producer {producer!r} may not record {', '.join(tables)} "
+            f"under an internal key its attested routing does not assign to the "
+            f"external market that produced them: {', '.join(forged)}"
+        )
 
 
 def attest_raw_market_producer(

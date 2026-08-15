@@ -484,10 +484,28 @@ def test_collectors_no_longer_import_the_mutable_maps() -> None:
 
 
 def test_entrypoints_bind_and_explicitly_pass_the_attested_routing() -> None:
-    for entrypoint in (scalp.main, ws.run):
-        source = inspect.getsource(entrypoint)
-        assert "routing = attest_raw_market_producer(RAW_PRODUCER)" in source
-        assert "routing=routing" in source
+    """One attestation per process, and no per-task choice of routing.
+
+    The R05 review showed that wiring the subscriptions from one routing and
+    the flushes from another produces a misrouted store behind a delivery gate
+    that sees nothing wrong.  The entrypoints therefore bind exactly one
+    attested routing and hand it whole to the identity-covered wiring, which is
+    the only place that decides which producer receives it.
+    """
+
+    for entrypoint, wiring in (
+        (scalp.main, scalp.scalp_routing_producers),
+        (ws.run, ws.ws_routing_producers),
+    ):
+        entrypoint_source = inspect.getsource(entrypoint)
+        assert "routing = attest_raw_market_producer(RAW_PRODUCER)" in entrypoint_source
+        assert entrypoint_source.count("attest_raw_market_producer") == 1
+        assert f"{wiring.__name__}(" in entrypoint_source
+
+        wiring_source = inspect.getsource(wiring)
+        assert "routing=routing" in wiring_source
+        # The wiring receives one routing and may not resolve another itself.
+        assert "attest_raw_market_producer" not in wiring_source
 
 
 @pytest.mark.parametrize(
@@ -548,6 +566,11 @@ ROUTING_IDENTITY_COMPONENTS = {
         "PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_BEGIN",
         "PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_END",
     ),
+    "scalp_routing_entrypoint": (
+        "app/scalp_collector.py",
+        "PR27_SCIENTIFIC_SCALP_ROUTING_ENTRYPOINT_V1_BEGIN",
+        "PR27_SCIENTIFIC_SCALP_ROUTING_ENTRYPOINT_V1_END",
+    ),
     "scalp_raw_delivery": (
         "app/scalp_collector.py",
         "PR27_SCIENTIFIC_SCALP_RAW_DELIVERY_V1_BEGIN",
@@ -557,6 +580,11 @@ ROUTING_IDENTITY_COMPONENTS = {
         "app/ws_collector.py",
         "PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_BEGIN",
         "PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_END",
+    ),
+    "ws_routing_entrypoint": (
+        "app/ws_collector.py",
+        "PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_BEGIN",
+        "PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_END",
     ),
     "ws_raw_delivery": (
         "app/ws_collector.py",
@@ -584,16 +612,54 @@ def _region(relative_path: str, begin: str, end: str) -> str:
     return text[text.index(begin) : text.index(end)]
 
 
+# Catalog fields the runtime contract does not project.  R05's review proved
+# these were dragged into the identity by the original wide region: bumping
+# whale_threshold_usd moved the digest, contradicting their exclusion.
+NON_SCIENTIFIC_CATALOG_FIELDS = (
+    "whale_threshold_usd",
+    "large_trade_threshold_usd",
+    "bybit_oi_symbol",
+    "spot_history_symbol",
+)
+
+
 def test_identity_regions_contain_the_routing_material_code() -> None:
     construction = _region(*ROUTING_IDENTITY_COMPONENTS["market_routing_construction"])
-    for name in (*FOUR_MAPS, "MARKET_SYMBOL_CATALOG", "load_market_catalog"):
+    for name in (*FOUR_MAPS, "MARKET_SYMBOL_CATALOG"):
         assert name in construction
+    # Narrowed to the four projections: the catalog rows, their loader and the
+    # non-scientific fields alongside them are frozen by the runtime contract
+    # instead, so an operational edit there cannot move the identity.
+    for name in ("load_market_catalog", "DEFAULT_MARKET_CATALOG"):
+        assert name not in construction
+    for field in NON_SCIENTIFIC_CATALOG_FIELDS:
+        assert field not in construction
 
     scalp_application = _region(
         *ROUTING_IDENTITY_COMPONENTS["scalp_routing_application"]
     )
-    for needle in ("symbol_by_pair", "@trade", "@forceOrder", "publicTrade.", "orderbook.50."):
+    for needle in (
+        "symbol_by_pair",
+        "@trade",
+        "@forceOrder",
+        "publicTrade.",
+        "orderbook.50.",
+        # The index construction, the venue endpoints, the connection that
+        # carries the routed streams and the handler each message reaches.
+        "routing.futures_index(ACTIVE_SYMBOLS)",
+        "wss://fstream.binance.com",
+        "wss://stream.bybit.com",
+        "websockets.connect(",
+        "handle_binance(json.loads(raw), index)",
+        "handle_bybit(message, index)",
+    ):
         assert needle in scalp_application
+
+    scalp_entrypoint = _region(
+        *ROUTING_IDENTITY_COMPONENTS["scalp_routing_entrypoint"]
+    )
+    for needle in ("binance_loop(routing=routing)", "flush_trades(pool, ownership, routing=routing)"):
+        assert needle in scalp_entrypoint
 
     scalp_delivery = _region(*ROUTING_IDENTITY_COMPONENTS["scalp_raw_delivery"])
     for needle in (
@@ -602,15 +668,44 @@ def test_identity_regions_contain_the_routing_material_code() -> None:
         "orderbook_snapshot",
         "orderbook_depth",
         "liquidations_realtime",
+        # The handoff from each store to the gated delivery.
+        "TRADE_STORE.realtime_snapshot()",
+        "BOOK_STORE.snapshot()",
+        "deliver_futures_trades(conn, routing, snapshots, minute_snapshots)",
+        "deliver_orderbook_state(conn, routing, rows, ladders)",
+        "deliver_liquidations(conn, routing, buffer)",
     ):
         assert needle in scalp_delivery
 
     ws_application = _region(*ROUTING_IDENTITY_COMPONENTS["ws_routing_application"])
-    for needle in ("base_asset_by_pair", "@aggTrade", "publicTrade."):
+    for needle in (
+        "base_asset_by_pair",
+        "@aggTrade",
+        "publicTrade.",
+        "routing.spot_index(symbols)",
+        "wss://stream.binance.com",
+        "wss://stream.bybit.com",
+        "connect(url, **WS_CONNECT_KWARGS)",
+        "handle_binance_spot(json.loads(raw), index)",
+        "handle_bybit_spot(json.loads(raw), index)",
+    ):
         assert needle in ws_application
 
+    ws_entrypoint = _region(*ROUTING_IDENTITY_COMPONENTS["ws_routing_entrypoint"])
+    for needle in (
+        "binance_consumer(symbols, routing)",
+        "flush_minute(pool, ownership, routing=routing)",
+    ):
+        assert needle in ws_entrypoint
+
     ws_delivery = _region(*ROUTING_IDENTITY_COMPONENTS["ws_raw_delivery"])
-    for needle in ("INSERT INTO spot_trades_agg", "INSERT INTO spot_trades_realtime"):
+    for needle in (
+        "INSERT INTO spot_trades_agg",
+        "INSERT INTO spot_trades_realtime",
+        "STORE.minute_snapshot()",
+        "deliver_spot_minute(conn, routing, snapshots)",
+        "deliver_spot_realtime(conn, routing, snapshots)",
+    ):
         assert needle in ws_delivery
 
 

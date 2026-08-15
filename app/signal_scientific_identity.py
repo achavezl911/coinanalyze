@@ -52,14 +52,25 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
         begin_marker="PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_BEGIN",
         end_marker="PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_END",
     ),
-    # R05: the routing the raw producers actually apply.  Construction covers
-    # the catalog and the four derived module-level maps; the application and
-    # delivery regions cover subscription creation, external-pair -> internal
-    # key conversion and the only SQL paths into the raw tables.  They are
-    # deliberately compact: reconnection, sharding and feed-health plumbing in
-    # both collectors stays outside so the identity is not hostage to
-    # operational edits, while a bypass of these regions cannot reach the
-    # existing raw write path.
+    # R05, corrected: the routing the raw producers actually apply, end to end.
+    #
+    # Construction covers only the four projections that decide which external
+    # market answers for an internal key -- symbol -> base_asset, symbol ->
+    # futures_pair, base_asset -> spot_pair and futures_pair -> symbol.  The
+    # catalog rows themselves are excluded: their *resolved values* are frozen
+    # by the runtime contract, so the thresholds and the two non-scientific
+    # identifiers alongside them no longer drag the identity with them.
+    #
+    # The application regions cover the venue endpoints, the construction of
+    # the routing index from the attested routing, the streams and topics it
+    # produces, the connection that carries them, the external-pair ->
+    # internal-key conversion, and the injection of a single routing into every
+    # producer task.  The delivery regions cover the handoff from each store to
+    # the only SQL paths into the raw tables.
+    #
+    # Reconnection, backoff, feed health, monitoring timestamps and logging in
+    # both collectors stay outside: those are the edits operations makes, and
+    # the identity must not be hostage to them.
     ScientificSourceComponent(
         name="market_routing_construction",
         relative_path="app/config.py",
@@ -73,6 +84,12 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
         end_marker="PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_END",
     ),
     ScientificSourceComponent(
+        name="scalp_routing_entrypoint",
+        relative_path="app/scalp_collector.py",
+        begin_marker="PR27_SCIENTIFIC_SCALP_ROUTING_ENTRYPOINT_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_SCALP_ROUTING_ENTRYPOINT_V1_END",
+    ),
+    ScientificSourceComponent(
         name="scalp_raw_delivery",
         relative_path="app/scalp_collector.py",
         begin_marker="PR27_SCIENTIFIC_SCALP_RAW_DELIVERY_V1_BEGIN",
@@ -83,6 +100,12 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
         relative_path="app/ws_collector.py",
         begin_marker="PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_BEGIN",
         end_marker="PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_END",
+    ),
+    ScientificSourceComponent(
+        name="ws_routing_entrypoint",
+        relative_path="app/ws_collector.py",
+        begin_marker="PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_BEGIN",
+        end_marker="PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_END",
     ),
     ScientificSourceComponent(
         name="ws_raw_delivery",
@@ -243,14 +266,21 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
 # deterministic digest has been independently reproduced by tests.  Never
 # mutate an existing key: add a new identity version instead.
 #
-# R05 recomputed the v1 digest one final time while expanding the surface to
-# routing construction and application (no spec-v4 manifest or authoritative
-# result exists that could have frozen the previous value).  The substitution
-# window closes before the first spec-v4 manifest: from that point on, any
-# change registers a new identity version and the v1 digest is never replaced.
+# The v1 digest has been recomputed while the substitution window is open --
+# no spec-v4 manifest and no authoritative result exist that could have frozen
+# a previous value, so no evidence is invalidated by the change.  R05's first
+# attempt registered 25f6c2e5...; an independent review then showed that the
+# surface it froze excluded the points where the routing is actually applied
+# and included catalog values documented as non-material, so the surface was
+# corrected and the digest recomputed.
+#
+# This value is a candidate, not a frozen result: it stands only if the
+# corrected surface survives independent review.  The window closes before the
+# first spec-v4 manifest; from that point on any change registers a new
+# identity version and the v1 digest is never replaced.
 REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS = {
     SCIENTIFIC_IDENTITY_VERSION_V1: (
-        "25f6c2e541f9e0f5d467be1e600810809890d95f7263f2433f0639de85ac53e2"
+        "5a5cb09f80ce17903409daf8fc90e7d05e060a578183aed629d680f37280f05f"
     ),
 }
 

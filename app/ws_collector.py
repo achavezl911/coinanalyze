@@ -6,8 +6,10 @@ import logging
 import math
 import signal
 import time
+from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from typing import Any
 
 import asyncpg
 from websockets.asyncio.client import connect
@@ -40,8 +42,17 @@ LOGGER = logging.getLogger(__name__)
 # This service records whichever Binance/Bybit spot market SPOT_PAIR_MAP selects
 # under the internal `base_asset`, which is $2 of the scalp_context query.
 RAW_PRODUCER = "ws_collector"
-BINANCE_STREAM_BASE = "wss://stream.binance.com:9443/stream?streams="
-BYBIT_URL = "wss://stream.bybit.com/v5/public/spot"
+# Transport tuning, not routing: which venue is read is result-material and
+# lives inside the identity region below; how the socket is kept alive is not.
+WS_CONNECT_KWARGS = {
+    "open_timeout": 10,
+    "close_timeout": 5,
+    "ping_interval": 20,
+    "ping_timeout": 20,
+    "max_size": 1_048_576,
+    "max_queue": 64,
+}
+WS_RECV_TIMEOUT_SECONDS = 60
 MAX_NOTIONAL_USD = 1_000_000_000_000.0
 MAX_MESSAGE_TRADES = 1_000
 WHALE_TRADE_THRESHOLD = WHALE_THRESHOLD_MAP
@@ -195,6 +206,21 @@ LAST_EVENT_MONOTONIC = {"binance": 0.0, "bybit": 0.0}
 
 # PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_BEGIN
 
+# Which venue the routed pairs are read from decides which market's data ends
+# up under the internal base_asset -- $2 of the scalp_context query -- exactly
+# like the pairs themselves, so the endpoints are part of the identity.
+BINANCE_STREAM_BASE = "wss://stream.binance.com:9443/stream?streams="
+BYBIT_URL = "wss://stream.bybit.com/v5/public/spot"
+
+
+def ws_spot_index(
+    symbols: tuple[str, ...], routing: EffectiveMarketRouting
+) -> SpotRoutingIndex:
+    """The only spot index this producer applies, for its assigned shard."""
+
+    return routing.spot_index(symbols)
+
+
 def spot_pairs(
     symbols: tuple[str, ...], routing: EffectiveMarketRouting
 ) -> tuple[str, ...]:
@@ -255,6 +281,52 @@ async def handle_bybit_spot(message: object, index: SpotRoutingIndex) -> None:
         await STORE.add(symbol, "bybit", ts_ms, price, qty, is_buy)
         LAST_EVENT_MONOTONIC["bybit"] = time.monotonic()
 
+
+# One connected session per feed.  The index never leaves this region: it is
+# built here from the attested routing, it decides the URL or the topics, and
+# it is the same object every message is converted through.  Reconnection,
+# backoff and logging stay with the callers, so operational edits do not move
+# the scientific identity.
+
+
+async def binance_spot_session(
+    symbols: tuple[str, ...],
+    routing: EffectiveMarketRouting,
+    *,
+    on_connected: Callable[[], Awaitable[None]],
+    on_message: Callable[[], Awaitable[None]],
+) -> None:
+    index = ws_spot_index(symbols, routing)
+    url = binance_url(symbols, routing)
+    async with connect(url, **WS_CONNECT_KWARGS) as websocket:
+        await on_connected()
+        while True:
+            raw = await asyncio.wait_for(
+                websocket.recv(), timeout=WS_RECV_TIMEOUT_SECONDS
+            )
+            await on_message()
+            await handle_binance_spot(json.loads(raw), index)
+
+
+async def bybit_spot_session(
+    symbols: tuple[str, ...],
+    routing: EffectiveMarketRouting,
+    *,
+    on_connected: Callable[[], Awaitable[None]],
+    on_message: Callable[[], Awaitable[None]],
+) -> None:
+    index = ws_spot_index(symbols, routing)
+    args = list(bybit_subscription_args(index))
+    async with connect(BYBIT_URL, **WS_CONNECT_KWARGS) as websocket:
+        await websocket.send(json.dumps({"op": "subscribe", "args": args}))
+        await on_connected()
+        while True:
+            raw = await asyncio.wait_for(
+                websocket.recv(), timeout=WS_RECV_TIMEOUT_SECONDS
+            )
+            await on_message()
+            await handle_bybit_spot(json.loads(raw), index)
+
 # PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_END
 
 
@@ -276,6 +348,42 @@ def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[flo
 
 
 # PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_BEGIN
+
+# The whole handoff from the in-memory store to a raw table lives here: the
+# attestation that re-checks the routing in use, the snapshot that leaves the
+# store, the gated delivery and the acknowledgement that drops the rows.  The
+# surrounding loops keep only their sleep and their retry policy.
+
+
+async def flush_minute_cycle(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None,
+    routing: EffectiveMarketRouting,
+) -> None:
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    snapshots = await STORE.minute_snapshot()
+    if not snapshots:
+        return
+    async with pool.acquire() as conn:
+        async with fenced_transaction(conn, ownership):
+            await deliver_spot_minute(conn, routing, snapshots)
+    await STORE.ack_minute(snapshots)
+
+
+async def flush_realtime_cycle(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None,
+    routing: EffectiveMarketRouting,
+) -> None:
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    snapshots = await STORE.realtime_snapshot()
+    if not snapshots:
+        return
+    async with pool.acquire() as conn:
+        async with fenced_transaction(conn, ownership):
+            await deliver_spot_realtime(conn, routing, snapshots)
+    await STORE.ack_realtime(snapshots)
+
 
 async def deliver_spot_minute(
     conn: asyncpg.Connection,
@@ -430,25 +538,16 @@ async def flush_minute(
 ) -> None:
     while True:
         await asyncio.sleep(5)
-        # Outside the try below on purpose: this must escape the process, not be
-        # logged and retried like a transient flush failure.
-        attest_raw_market_producer(RAW_PRODUCER, expected=routing)
-        snapshots = await STORE.minute_snapshot()
-        if not snapshots:
-            continue
         try:
-            async with pool.acquire() as conn:
-                async with fenced_transaction(conn, ownership):
-                    await deliver_spot_minute(conn, routing, snapshots)
-            await STORE.ack_minute(snapshots)
+            await flush_minute_cycle(pool, ownership, routing)
         except ServiceOwnershipLost:
             raise
         except RawMarketProducerContractError:
-            # The in-delivery gate found a divergence: escape the process, never
+            # The in-cycle gate found a divergence: escape the process, never
             # retry it as a transient flush failure.
             raise
         except Exception:
-            LOGGER.exception("minute_flush_failed retained_buckets=%d", len(snapshots))
+            LOGGER.exception("minute_flush_failed buckets=%d", len(STORE.minute))
 
 
 async def flush_realtime(
@@ -459,41 +558,37 @@ async def flush_realtime(
 ) -> None:
     while True:
         await asyncio.sleep(2)
-        attest_raw_market_producer(RAW_PRODUCER, expected=routing)
-        snapshots = await STORE.realtime_snapshot()
-        if not snapshots:
-            continue
         try:
-            async with pool.acquire() as conn:
-                async with fenced_transaction(conn, ownership):
-                    await deliver_spot_realtime(conn, routing, snapshots)
-            await STORE.ack_realtime(snapshots)
+            await flush_realtime_cycle(pool, ownership, routing)
         except ServiceOwnershipLost:
             raise
         except RawMarketProducerContractError:
             raise
         except Exception:
-            LOGGER.exception("realtime_flush_failed retained_buckets=%d", len(snapshots))
+            LOGGER.exception("realtime_flush_failed buckets=%d", len(STORE.realtime))
 
 
 async def binance_consumer(
     symbols: tuple[str, ...], routing: EffectiveMarketRouting
 ) -> None:
-    index = routing.spot_index(symbols)
-    url = binance_url(symbols, routing)
     backoff = 1.0
     while True:
+
+        async def on_connected() -> None:
+            nonlocal backoff
+            LOGGER.info("binance_connected")
+            backoff = 1.0
+
+        async def on_message() -> None:
+            return None
+
         try:
-            async with connect(
-                url, open_timeout=10, close_timeout=5, ping_interval=20,
-                ping_timeout=20, max_size=1_048_576, max_queue=64,
-            ) as websocket:
-                LOGGER.info("binance_connected")
-                backoff = 1.0
-                while True:
-                    raw = await asyncio.wait_for(websocket.recv(), timeout=60)
-                    await handle_binance_spot(json.loads(raw), index)
+            await binance_spot_session(
+                symbols, routing, on_connected=on_connected, on_message=on_message
+            )
         except asyncio.CancelledError:
+            raise
+        except RawMarketProducerContractError:
             raise
         except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError):
             LOGGER.warning("binance_disconnected retry=%.1fs", backoff)
@@ -507,21 +602,23 @@ async def bybit_consumer(
     symbols: tuple[str, ...], routing: EffectiveMarketRouting
 ) -> None:
     backoff = 1.0
-    index = routing.spot_index(symbols)
-    args = list(bybit_subscription_args(index))
     while True:
+
+        async def on_connected() -> None:
+            nonlocal backoff
+            LOGGER.info("bybit_connected")
+            backoff = 1.0
+
+        async def on_message() -> None:
+            return None
+
         try:
-            async with connect(
-                BYBIT_URL, open_timeout=10, close_timeout=5, ping_interval=20,
-                ping_timeout=20, max_size=1_048_576, max_queue=64,
-            ) as websocket:
-                await websocket.send(json.dumps({"op": "subscribe", "args": args}))
-                LOGGER.info("bybit_connected")
-                backoff = 1.0
-                while True:
-                    raw = await asyncio.wait_for(websocket.recv(), timeout=60)
-                    await handle_bybit_spot(json.loads(raw), index)
+            await bybit_spot_session(
+                symbols, routing, on_connected=on_connected, on_message=on_message
+            )
         except asyncio.CancelledError:
+            raise
+        except RawMarketProducerContractError:
             raise
         except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError):
             LOGGER.warning("bybit_disconnected retry=%.1fs", backoff)
@@ -591,6 +688,35 @@ async def heartbeat_loop(
             LOGGER.exception("ws_heartbeat_failed")
 
 
+# PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_BEGIN
+
+def ws_routing_producers(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership,
+    symbols: tuple[str, ...],
+    routing: EffectiveMarketRouting,
+) -> tuple[tuple[str, Coroutine[Any, Any, None]], ...]:
+    """The single injection of one attested routing into every producer task.
+
+    Wiring the subscriptions from one routing and the flushes from another is
+    exactly how a misrouted store survives a correct delivery gate, so the
+    entrypoint may not choose per task.
+    """
+
+    producers: tuple[tuple[str, Coroutine[Any, Any, None]], ...] = (
+        ("flush-minute", flush_minute(pool, ownership, routing=routing)),
+        ("flush-realtime", flush_realtime(pool, ownership, routing=routing)),
+    )
+    if symbols:
+        producers += (
+            ("binance", binance_consumer(symbols, routing)),
+            ("bybit", bybit_consumer(symbols, routing)),
+        )
+    return producers
+
+# PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_END
+
+
 async def run() -> None:
     global STORE
     # Before the service lock, the pool or any subscription: a process that
@@ -637,12 +763,12 @@ async def run() -> None:
     )
 
     tasks = [
-        asyncio.create_task(
-            flush_minute(pool, service_lock, routing=routing), name="flush-minute"
-        ),
-        asyncio.create_task(
-            flush_realtime(pool, service_lock, routing=routing), name="flush-realtime"
-        ),
+        asyncio.create_task(producer, name=name)
+        for name, producer in ws_routing_producers(
+            pool, service_lock, symbols, routing
+        )
+    ]
+    tasks.append(
         asyncio.create_task(
             heartbeat_loop(
                 pool,
@@ -652,15 +778,8 @@ async def run() -> None:
                 service_lock,
             ),
             name="heartbeat",
-        ),
-    ]
-    if symbols:
-        tasks.extend(
-            (
-                asyncio.create_task(binance_consumer(symbols, routing), name="binance"),
-                asyncio.create_task(bybit_consumer(symbols, routing), name="bybit"),
-            )
         )
+    )
     try:
         await wait_for_stop_or_lock_loss(
             stop,
