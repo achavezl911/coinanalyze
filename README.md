@@ -1,5 +1,28 @@
 # Coinalyze Operator Dashboard v1.5.0
 
+## Por dónde empezar
+
+| Si eres… | Lee primero |
+|---|---|
+| Persona o IA que retoma el proyecto | [`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md) — estado exacto, SHAs, qué está bloqueado y la próxima acción |
+| Codex o Claude Code | [`docs/AI_ENGINEERING_RULES.md`](docs/AI_ENGINEERING_RULES.md) (documento maestro) y luego [`AGENTS.md`](AGENTS.md) o [`CLAUDE.md`](CLAUDE.md) |
+| Alguien que quiere entender la capa científica | [`docs/SCIENTIFIC_ARCHITECTURE.md`](docs/SCIENTIFIC_ARCHITECTURE.md) |
+| Alguien que quiere saber qué falta | [`docs/ROADMAP.md`](docs/ROADMAP.md) y [`docs/ARCHITECTURE_DECISIONS.md`](docs/ARCHITECTURE_DECISIONS.md) |
+
+Índice completo de documentación: [`docs/README.md`](docs/README.md).
+
+**Cómo se aprueba el trabajo.** ChatGPT Work es el arquitecto y revisor: cuestiona y valida
+de forma independiente el código de Claude Code, sobre el árbol y con sus propias mutaciones.
+Un informe del implementador **no** es una aprobación, **un CI en verde tampoco**, y
+`mergeable=true` en GitHub sólo dice que no hay conflicto de texto. La aprobación es una
+revisión adversarial con **P0=0 y P1=0**; si Work refuta, entrega el veredicto y el prompt
+correctivo juntos. El merge, el deploy y producción son del humano. Detalle en
+[`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md) §2.1.
+
+El resto de este archivo es el **historial de versiones del producto**, de la más reciente a
+la más antigua, seguido de instalación, API y operación. No describe el estado del trabajo en
+curso: para eso está el handoff.
+
 ## v1.5.0 — reorganización en 8 pestañas, fail-closed y separación dirección/setup
 
 Detalle completo en [`docs/CHANGES_v1.5.0.md`](docs/CHANGES_v1.5.0.md).
@@ -336,7 +359,7 @@ mecánicas. El motor de setups clasifica contexto probabilístico e invalidacion
 Coinalyze REST ──> ingest (60 s) ───────────┐
                                              │
 Binance spot WS ─┐                           v
-                 ├─> ws collector ──> PostgreSQL 15 <── daily aggregator
+                 ├─> ws collector ──> PostgreSQL 17 <── daily aggregator
 Bybit spot WS ───┘          │                ^
                             └─ 5 s live       │
                                              │
@@ -353,7 +376,8 @@ Procesos independientes:
 
 ## Decisiones de consumo
 
-- PostgreSQL 15 estándar; no requiere TimescaleDB.
+- PostgreSQL 17 estándar; no requiere TimescaleDB. Es la referencia actual en producción
+  (LXC 140) y en CI, y la capa científica se prueba contra un clúster 17 aislado.
 - HTML, CSS y JavaScript sin framework.
 - Lightweight Charts vendorizado localmente.
 - Despliegue directo con systemd; no requiere Docker ni Kubernetes.

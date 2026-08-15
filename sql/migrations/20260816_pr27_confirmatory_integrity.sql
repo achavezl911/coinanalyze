@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS signal_walk_forward_confirmatory_result (
     manifest_hash text NOT NULL CHECK (manifest_hash ~ '^[0-9a-f]{64}$'),
     scientific_implementation_digest text NOT NULL
         CHECK (scientific_implementation_digest ~ '^[0-9a-f]{64}$'),
+    -- PR27-R03: fuente científica congelada y configuración de runtime congelada
+    -- son dos mitades de la misma clausura. Ambas quedan en la fila autoritativa.
+    scientific_runtime_contract_digest text NOT NULL
+        CHECK (scientific_runtime_contract_digest ~ '^[0-9a-f]{64}$'),
     confirmatory_knowledge_cutoff timestamptz NOT NULL,
     evaluation_not_before timestamptz NOT NULL,
     evaluated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -43,6 +47,12 @@ CREATE TABLE IF NOT EXISTS signal_walk_forward_confirmatory_result (
       (
         canonical_result_json::jsonb->'scientific_implementation'->>'digest'
         = scientific_implementation_digest
+      ) IS TRUE
+    ),
+    CHECK (
+      (
+        canonical_result_json::jsonb->'scientific_runtime_contract'->>'digest'
+        = scientific_runtime_contract_digest
       ) IS TRUE
     ),
     CHECK (
@@ -96,6 +106,11 @@ BEGIN
     IF NEW.scientific_implementation_digest IS DISTINCT FROM
        frozen_spec->'scientific_implementation'->>'digest' THEN
         RAISE EXCEPTION 'authoritative result implementation digest disagrees with manifest'
+            USING ERRCODE = '55000';
+    END IF;
+    IF NEW.scientific_runtime_contract_digest IS DISTINCT FROM
+       frozen_spec->'scientific_runtime_contract'->>'digest' THEN
+        RAISE EXCEPTION 'authoritative result runtime contract digest disagrees with manifest'
             USING ERRCODE = '55000';
     END IF;
     IF NEW.confirmatory_knowledge_cutoff IS DISTINCT FROM

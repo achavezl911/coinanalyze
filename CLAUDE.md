@@ -3,6 +3,31 @@
 **Antes de hacer cualquier cosa, lee y cumple [`docs/AI_ENGINEERING_RULES.md`](docs/AI_ENGINEERING_RULES.md).**
 Ese es el documento maestro compartido entre Claude Code y Codex; estas notas no lo sustituyen.
 
+**Después, lee [`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md)**: dice en qué estado exacto está el
+proyecto, qué SHAs importan, qué está bloqueado y cuál es la próxima acción. Sin eso vas a
+re-derivar contexto que ya está escrito, o peor, a rehacer algo que ya falló una revisión.
+
+Tu rol en este proyecto es **implementador**. El arquitecto y revisor es ChatGPT Work; el
+merge, el deploy y la producción son del humano. Ver `docs/HANDOFF_IA.md` §2 y §10.
+
+## Documentación canónica
+
+| Documento | Cuándo |
+|---|---|
+| [`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md) | Siempre, al empezar. Estado, SHAs, próxima acción. |
+| [`docs/SCIENTIFIC_ARCHITECTURE.md`](docs/SCIENTIFIC_ARCHITECTURE.md) | Antes de tocar ruteo, identidad, contrato, observaciones o walk-forward. |
+| [`docs/ARCHITECTURE_DECISIONS.md`](docs/ARCHITECTURE_DECISIONS.md) | Antes de proponer un cambio de diseño: las decisiones tomadas no se re-litigan sin una entrada nueva. |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Para saber qué bloquea qué. |
+| [`docs/README.md`](docs/README.md) | Índice del resto. |
+
+**Actualizar [`docs/HANDOFF_IA.md`](docs/HANDOFF_IA.md) en GitHub es obligatorio en todo
+prompt, sin excepción**, commiteado y pusheado en tu rama. Si además tu cambio altera el
+estado del proyecto, el roadmap y el ADR entran también en el entregable. Un entregable sin
+handoff actualizado está incompleto.
+
+El handoff debe dejar comprensibles, sin contexto de ningún chat: propósito, alcance,
+limitaciones, arquitectura, estado y siguiente paso.
+
 ## Dónde trabajas
 
 - Tu área de trabajo es un **worktree propio** bajo `/srv/coinanalyze/worktrees/claude/<tarea>`.
@@ -30,8 +55,41 @@ pytest -q
 git diff            # revisa lo que vas a commitear
 ```
 
+Para la capa científica, `pytest -q` debe correr contra **PostgreSQL 17** con
+`TEST_DATABASE_URL` exportada (levanta un clúster aislado como hace `.github/workflows/ci.yml`)
+y terminar con **0 failed y 0 skipped**. Un test saltado no es un test verde.
+
 Al terminar, informa: archivos modificados, tests ejecutados y su resultado. El merge a `main`
 lo hace un humano tras la review y con CI en verde. Tú **no** mergeas.
+
+## Cómo se cierra un hallazgo
+
+Un hallazgo no se cierra con documentación. El orden es:
+
+1. **Reproduce el defecto** con un test que falle, y guarda su salida exacta.
+2. Corrige la arquitectura, no el síntoma.
+3. Demuestra que la mutación que lo causaba ahora mueve la identidad científica **o** queda
+   estructuralmente impedida antes de escribir.
+4. **Ancla la mutación por AST, en el punto de llamada real.** Reescribir la primera aparición
+   textual de una expresión no prueba nada si la que se ejecuta está en otro sitio.
+5. No debilites tests existentes para que pase el tuyo. Si la estructura cambió y un test debe
+   cambiar, hazlo **más** estricto.
+
+Tres precedentes, todos de esta misma serie: `c879bdec` afirmó un cierre que no existía;
+`700f7695` y `450cf2fb` lo afirmaron con una suite verde cuyas mutaciones no tocaban el código
+que se ejecuta. Los tres fueron refutados. No repitas el patrón: si no puedes demostrarlo,
+dilo y marca `MISSING_EXTERNAL_EVIDENCE`.
+
+## Qué constituye una aprobación
+
+**ChatGPT Work siempre cuestiona y valida de forma independiente tu código**: revisa el árbol
+y ejecuta sus propias mutaciones, no tu informe. **Tu informe no es una aprobación. Un CI en
+verde tampoco.** Sólo lo es una revisión independiente y adversarial con **P0=0 y P1=0**. Si
+Work te refuta, recibirás el veredicto y el prompt correctivo juntos. `mergeable=true` en
+GitHub no significa aprobado: PR #28 sigue **DO NOT MERGE**.
+
+Todo prompt que recibas incluye HEAD, alcance, invariantes, pruebas rojas, aceptación,
+validación, evidencia y prohibiciones. Si falta algo de eso, pídelo antes de empezar.
 
 ## Comportamiento como reviewer
 

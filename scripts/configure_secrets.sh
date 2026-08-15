@@ -104,7 +104,7 @@ ask_value() {
   local key="$1"
   local prompt="$2"
   local default="${3:-}"
-  local current="${default:-$(current_value "$key")}" 
+  local current="${default:-$(current_value "$key")}"
   local value
   read -rp "$prompt${current:+ [$current]}: " value
   [[ -z "$value" ]] && value="$current"

@@ -22,6 +22,7 @@ from app.signal_replay import (
     replay_context_as_of,
     validated_signal_observation_fields,
 )
+from app.signal_runtime_contract import scientific_runtime_contract
 from app.signal_scientific_identity import scientific_implementation_identity
 
 SIGNAL_FAMILY = "scalp"
@@ -187,6 +188,11 @@ async def persist_signal_observations(
     # Producer-time attestation prevents an unregistered A -> B -> A kernel
     # deployment from writing new evidence-v6 rows under identity-v1.
     scientific_implementation_identity()
+    # Frozen source is only half the closure: routing resolved at runtime decides
+    # which raw rows the context selected.  Attest it too, and stamp the resolved
+    # digest on the row so an A -> B -> A history stays visible afterwards even
+    # if the process later returns to A.
+    runtime_contract = scientific_runtime_contract()
 
     state, confidence, reason, long_score, short_score, coverage = (
         _validated_required_fields(summary)
@@ -311,7 +317,8 @@ async def persist_signal_observations(
           metrics_snapshot_ts,regime_score,regime_label,regime_logic_version,
           price_cutoff_at,metrics_cutoff_at,
           collector_generation,collector_shard_index,collector_shard_count,
-          decision_fingerprint,evidence
+          decision_fingerprint,evidence,
+          runtime_contract_version,runtime_contract_digest
         ) VALUES(
           $1,$2,$3,$4,$30,$31,
           $5,$6,$7,
@@ -319,7 +326,8 @@ async def persist_signal_observations(
           $14,$15,$16,
           $17,$18,$19,
           $20,$21,$22,$23,$24,$25,
-          $26,$27,$28,$29,$32::jsonb
+          $26,$27,$28,$29,$32::jsonb,
+          $33,$34
         )
         ON CONFLICT DO NOTHING
         RETURNING observation_id
@@ -328,6 +336,8 @@ async def persist_signal_observations(
         write_periodic,
         write_transition,
         evidence,
+        runtime_contract["runtime_contract_version"],
+        runtime_contract["digest"],
     )
     if row is None:
         return 0

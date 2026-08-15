@@ -10,6 +10,7 @@ from typing import Any
 import asyncpg
 
 from app.data_gaps import GapRequirement, blocking_requirement_keys
+from app.signal_runtime_contract import scientific_runtime_contract
 from app.signal_scientific_identity import scientific_implementation_identity
 
 OUTCOME_HORIZONS_MINUTES = (1, 3, 5, 15, 30, 60, 120, 240)
@@ -348,6 +349,9 @@ async def materialize_due_signal_outcomes(
         for job in jobs
     ):
         scientific_implementation_identity()
+        # Outcome bars are selected by the same runtime routing that produced
+        # the observation, so the runtime contract is attested here too.
+        scientific_runtime_contract()
 
     for job in jobs:
         outcome_id = int(job["outcome_id"])

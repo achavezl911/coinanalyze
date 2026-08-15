@@ -6,15 +6,17 @@ import json
 import logging
 import math
 import time
+from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
+from functools import partial
 from typing import Any
 
 import asyncpg
 import websockets
 from websockets.exceptions import ConnectionClosed
 
-from app.config import FUTURES_PAIR_MAP, LARGE_TRADE_THRESHOLD_MAP, PAIR_SYMBOL_MAP, get_settings
+from app.config import LARGE_TRADE_THRESHOLD_MAP, get_settings
 from app.data_gaps import record_event_stream_loss
 from app.db import (
     ServiceOwnership,
@@ -34,9 +36,20 @@ from app.scalp_logic import compute_scalp_summary, scalp_context
 from app.sharding import assigned_symbols
 from app.signal_ledger import persist_signal_observations
 from app.signal_outcomes import materialize_due_signal_outcomes
+from app.signal_runtime_contract import (
+    EffectiveMarketRouting,
+    FuturesRoutingIndex,
+    RawMarketProducerContractError,
+    attest_raw_market_producer,
+    require_routed_internal_keys,
+)
 from app.signal_visibility import run_certification_cycle
 
 LOGGER = logging.getLogger(__name__)
+# This service records whichever Binance/Bybit futures market FUTURES_PAIR_MAP
+# selects under the internal `symbol`, so an unregistered routing contaminates
+# tables the frozen kernel reads without leaving any trace in the rows.
+RAW_PRODUCER = "scalp_collector"
 SETTINGS = get_settings()
 configure_logging(SETTINGS.LOG_LEVEL)
 ACTIVE_SYMBOLS = assigned_symbols(
@@ -44,7 +57,6 @@ ACTIVE_SYMBOLS = assigned_symbols(
     SETTINGS.COLLECTOR_SHARD_INDEX,
     SETTINGS.COLLECTOR_SHARD_COUNT,
 )
-ACTIVE_SYMBOL_SET = frozenset(ACTIVE_SYMBOLS)
 LIQUIDATION_HEALTH_SHARDS = tuple(
     shard_index
     for shard_index in range(SETTINGS.COLLECTOR_SHARD_COUNT)
@@ -55,9 +67,9 @@ LIQUIDATION_HEALTH_SHARDS = tuple(
     )
 )
 
-BINANCE_STREAM_BASE = "wss://fstream.binance.com/stream?streams="
-BINANCE_MARKET_STREAM_BASE = "wss://fstream.binance.com/market/stream?streams="
-BYBIT_LINEAR_WS = "wss://stream.bybit.com/v5/public/linear"
+# Transport tuning, not routing: which venue is read is result-material and
+# lives inside the identity region below; how the socket is kept alive is not.
+WS_CONNECT_KWARGS = {"ping_interval": 20, "ping_timeout": 20, "max_size": 2_000_000}
 MAX_NOTIONAL_USD = 10_000_000_000.0
 LARGE_TRADE_THRESHOLD = LARGE_TRADE_THRESHOLD_MAP
 REALTIME_MAX_EVENT_AGE_SECONDS = 15.0
@@ -68,12 +80,6 @@ BINANCE_BOOK_STALE_TOTAL = 0
 BINANCE_BOOK_RECONNECT_TOTAL = 0
 WS_RECONNECT_INITIAL_SECONDS = 5.0
 WS_RECONNECT_MAX_SECONDS = 60.0
-
-LIQUIDATION_INSERT_SQL = """
-INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8)
-ON CONFLICT(exchange,event_id,ts) DO NOTHING
-"""
 
 
 class BookResyncRequired(RuntimeError):
@@ -622,34 +628,77 @@ def all_expected_fresh(
     return bool(expected) and all(0 <= lags.get(key, -1) < max_lag for key in expected)
 
 
-async def flush_trades(
-    pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
-) -> None:
+# The flush loops keep their sleep, their retry policy and their monitoring
+# timestamp, and nothing else.  ``cycle`` arrives already bound to the pool, the
+# ownership fence and the one attested routing, so a loop cannot pick a store,
+# cannot pick a routing and cannot pick a delivery: it can only run the cycle it
+# was given, or stop.
+async def flush_trades(*, cycle: Callable[[], Awaitable[bool]]) -> None:
     while True:
         await asyncio.sleep(SETTINGS.SCALP_FLUSH_SECONDS)
-        snapshots = await TRADE_STORE.realtime_snapshot()
-        minute_snapshots = await TRADE_STORE.minute_snapshot()
         try:
-            async with pool.acquire() as conn:
-                async with fenced_transaction(conn, ownership):
-                    if snapshots:
-                        await _write_trade_rows(conn, "futures_trades_realtime", snapshots, realtime=True)
-                        await _write_combined_realtime(conn, snapshots)
-                    if minute_snapshots:
-                        await _write_trade_rows(conn, "futures_trades_agg", minute_snapshots, realtime=False)
-                        await _write_combined_minute(conn, minute_snapshots)
-                    if snapshots or minute_snapshots:
-                        LAST_FLUSH["trades"] = time.monotonic()
-            if snapshots:
-                await TRADE_STORE.ack_realtime(snapshots)
-            if minute_snapshots:
-                await TRADE_STORE.ack_minute(minute_snapshots)
+            if await cycle():
+                LAST_FLUSH["trades"] = time.monotonic()
         except ServiceOwnershipLost:
+            raise
+        except RawMarketProducerContractError:
+            # The in-cycle gate found a divergence: escape the process, never
+            # retry it as a transient flush failure.
             raise
         except Exception:
             LOGGER.exception("scalp_trade_flush_failed")
             await TRADE_STORE.prune()
+
+
+# PR27_SCIENTIFIC_SCALP_RAW_DELIVERY_V1_BEGIN
+
+# The whole handoff from an in-memory store to a raw table lives here: the
+# attestation that re-checks the routing in use, the snapshot that leaves the
+# store, the gated delivery and the acknowledgement that drops the rows.  The
+# surrounding loops keep only their sleep, their retry policy and the
+# monitoring timestamp, so an operational edit cannot move the identity and a
+# routing edit cannot avoid moving it.
+
+
+async def flush_trades_cycle(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None,
+    routing: EffectiveMarketRouting,
+) -> bool:
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    snapshots = await TRADE_STORE.realtime_snapshot()
+    minute_snapshots = await TRADE_STORE.minute_snapshot()
+    async with pool.acquire() as conn:
+        async with fenced_transaction(conn, ownership):
+            await deliver_futures_trades(conn, routing, snapshots, minute_snapshots)
+    if snapshots:
+        await TRADE_STORE.ack_realtime(snapshots)
+    if minute_snapshots:
+        await TRADE_STORE.ack_minute(minute_snapshots)
+    return bool(snapshots or minute_snapshots)
+
+
+async def deliver_futures_trades(
+    conn: asyncpg.Connection,
+    routing: EffectiveMarketRouting,
+    snapshots: list[tuple[tuple[str, str, int], TradeBucket]],
+    minute_snapshots: list[tuple[tuple[str, str, int], TradeBucket]],
+) -> None:
+    """The only path from trade buckets to raw persistence, gated in place."""
+
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    require_routed_internal_keys(
+        routing,
+        RAW_PRODUCER,
+        {key[0] for key, _bucket in snapshots}
+        | {key[0] for key, _bucket in minute_snapshots},
+    )
+    if snapshots:
+        await _write_trade_rows(conn, "futures_trades_realtime", snapshots, realtime=True)
+        await _write_combined_realtime(conn, snapshots)
+    if minute_snapshots:
+        await _write_trade_rows(conn, "futures_trades_agg", minute_snapshots, realtime=False)
+        await _write_combined_minute(conn, minute_snapshots)
 
 
 async def _write_trade_rows(
@@ -760,50 +809,66 @@ async def _write_combined_minute(
     )
 
 
-async def flush_books(
+async def flush_books_cycle(
     pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
+    ownership: ServiceOwnership | None,
+    routing: EffectiveMarketRouting,
+) -> bool:
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    rows = await BOOK_STORE.snapshot()
+    if not rows:
+        return False
+    ladders = await BOOK_STORE.ladders()
+    async with pool.acquire() as conn:
+        async with fenced_transaction(conn, ownership):
+            await deliver_orderbook_state(conn, routing, rows, ladders)
+    return True
+
+
+async def deliver_orderbook_state(
+    conn: asyncpg.Connection,
+    routing: EffectiveMarketRouting,
+    rows: list[BookStats],
+    ladders: list[tuple[str, str, int, list[list[float]], list[list[float]]]],
 ) -> None:
-    while True:
-        await asyncio.sleep(SETTINGS.SCALP_ORDERBOOK_FLUSH_SECONDS)
-        rows = await BOOK_STORE.snapshot()
-        if not rows:
-            continue
-        records = [
-            (
-                datetime.fromtimestamp(item.ts_ms / 1000, UTC), item.symbol, item.exchange, 1,
-                item.bid_px, item.ask_px, item.mid_px, item.spread_bps,
-                item.bid_notional_l1, item.ask_notional_l1, item.bid_notional_l5, item.ask_notional_l5,
-                item.bid_notional_l10, item.ask_notional_l10, item.imbalance_l1, item.imbalance_l5,
-                item.imbalance_l10, item.wall_up_pct, item.wall_down_pct,
-            )
-            for item in rows
-        ]
-        try:
-            async with pool.acquire() as conn:
-                async with fenced_transaction(conn, ownership):
-                    await conn.executemany(
-                        """
-                        INSERT INTO orderbook_snapshot(
-                          ts,symbol,exchange,venue_count,bid_px,ask_px,mid_px,spread_bps,
-                          bid_notional_l1,ask_notional_l1,bid_notional_l5,ask_notional_l5,
-                          bid_notional_l10,ask_notional_l10,imbalance_l1,imbalance_l5,imbalance_l10,
-                          wall_up_pct,wall_down_pct
-                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
-                        ON CONFLICT(symbol,exchange,ts) DO NOTHING
-                        """,
-                        records,
-                    )
-                    await _write_combined_books(conn, rows)
-                    await _write_ladders(conn)
-                    LAST_FLUSH["books"] = time.monotonic()
-        except ServiceOwnershipLost:
-            raise
-        except Exception:
-            LOGGER.exception("orderbook_flush_failed")
+    """The only path from book state to raw persistence, gated in place."""
+
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    require_routed_internal_keys(
+        routing,
+        RAW_PRODUCER,
+        {item.symbol for item in rows} | {ladder[0] for ladder in ladders},
+    )
+    records = [
+        (
+            datetime.fromtimestamp(item.ts_ms / 1000, UTC), item.symbol, item.exchange, 1,
+            item.bid_px, item.ask_px, item.mid_px, item.spread_bps,
+            item.bid_notional_l1, item.ask_notional_l1, item.bid_notional_l5, item.ask_notional_l5,
+            item.bid_notional_l10, item.ask_notional_l10, item.imbalance_l1, item.imbalance_l5,
+            item.imbalance_l10, item.wall_up_pct, item.wall_down_pct,
+        )
+        for item in rows
+    ]
+    await conn.executemany(
+        """
+        INSERT INTO orderbook_snapshot(
+          ts,symbol,exchange,venue_count,bid_px,ask_px,mid_px,spread_bps,
+          bid_notional_l1,ask_notional_l1,bid_notional_l5,ask_notional_l5,
+          bid_notional_l10,ask_notional_l10,imbalance_l1,imbalance_l5,imbalance_l10,
+          wall_up_pct,wall_down_pct
+        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+        ON CONFLICT(symbol,exchange,ts) DO NOTHING
+        """,
+        records,
+    )
+    await _write_combined_books(conn, rows)
+    await _write_ladders(conn, ladders)
 
 
-async def _write_ladders(conn: asyncpg.Connection) -> None:
+async def _write_ladders(
+    conn: asyncpg.Connection,
+    ladders: list[tuple[str, str, int, list[list[float]], list[list[float]]]],
+) -> None:
     """Estado ACTUAL del libro por venue: una fila por (symbol,exchange), sobrescrita.
 
     Sin historial a proposito. `orderbook_snapshot` ya guarda la serie de agregados y pesa
@@ -811,7 +876,6 @@ async def _write_ladders(conn: asyncpg.Connection) -> None:
     que solo se hace sobre el ahora ("cuanto me cuesta ejecutar este tamanio"). La
     persistencia de paredes es P3 y necesitaria su propio diseno de muestreo.
     """
-    ladders = await BOOK_STORE.ladders()
     if not ladders:
         return
     await conn.executemany(
@@ -893,9 +957,62 @@ async def _write_combined_books(conn: asyncpg.Connection, rows: list[BookStats])
         )
 
 
-async def flush_liquidations(
+LIQUIDATION_INSERT_SQL = """
+INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+ON CONFLICT(exchange,event_id,ts) DO NOTHING
+"""
+
+
+async def flush_liquidations_cycle(
     pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
+    ownership: ServiceOwnership | None,
+    routing: EffectiveMarketRouting,
+    buffer: list[tuple[datetime, str, str, str, float, float, float, str]],
+) -> None:
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    async with pool.acquire() as conn:
+        async with fenced_transaction(conn, ownership):
+            await deliver_liquidations(conn, routing, buffer)
+
+
+async def deliver_liquidations(
+    conn: asyncpg.Connection,
+    routing: EffectiveMarketRouting,
+    buffer: list[tuple[datetime, str, str, str, float, float, float, str]],
+) -> None:
+    """The only path from liquidation events to raw persistence, gated in place."""
+
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    require_routed_internal_keys(routing, RAW_PRODUCER, {item[1] for item in buffer})
+    await conn.executemany(
+        LIQUIDATION_INSERT_SQL,
+        buffer,
+    )
+
+# PR27_SCIENTIFIC_SCALP_RAW_DELIVERY_V1_END
+
+
+async def flush_books(*, cycle: Callable[[], Awaitable[bool]]) -> None:
+    while True:
+        await asyncio.sleep(SETTINGS.SCALP_ORDERBOOK_FLUSH_SECONDS)
+        try:
+            if await cycle():
+                LAST_FLUSH["books"] = time.monotonic()
+        except ServiceOwnershipLost:
+            raise
+        except RawMarketProducerContractError:
+            raise
+        except Exception:
+            LOGGER.exception("orderbook_flush_failed")
+
+
+async def flush_liquidations(
+    *,
+    cycle: Callable[
+        [list[tuple[datetime, str, str, str, float, float, float, str]]],
+        Awaitable[None],
+    ],
 ) -> None:
     buffer: list[tuple[datetime, str, str, str, float, float, float, str]] = []
     while True:
@@ -912,65 +1029,68 @@ async def flush_liquidations(
         if not buffer:
             continue
         try:
-            async with pool.acquire() as conn:
-                async with fenced_transaction(conn, ownership):
-                    await conn.executemany(
-                        LIQUIDATION_INSERT_SQL,
-                        buffer,
-                    )
-                    LAST_FLUSH["liquidations"] = time.monotonic()
+            await cycle(buffer)
+            LAST_FLUSH["liquidations"] = time.monotonic()
             buffer.clear()
         except ServiceOwnershipLost:
+            raise
+        except RawMarketProducerContractError:
             raise
         except Exception:
             LOGGER.exception("liquidation_flush_failed retained=%d", len(buffer))
             await asyncio.sleep(2)
 
 
-async def binance_loop() -> None:
-    global BINANCE_BOOK_RECONNECT_TOTAL
-    pairs = [FUTURES_PAIR_MAP[s].lower() for s in ACTIVE_SYMBOLS]
+# PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_BEGIN
+
+# Which venue the routed pairs are read from decides which market's data ends
+# up under the internal key, exactly like the pairs themselves.  Binance
+# decommissioned the legacy forceOrder URL on 2026-04-23; a change of that kind
+# is a scientific event, so the endpoints are part of the identity.
+BINANCE_STREAM_BASE = "wss://fstream.binance.com/stream?streams="
+BINANCE_MARKET_STREAM_BASE = "wss://fstream.binance.com/market/stream?streams="
+BYBIT_LINEAR_WS = "wss://stream.bybit.com/v5/public/linear"
+
+
+def scalp_futures_index(routing: EffectiveMarketRouting) -> FuturesRoutingIndex:
+    """The only futures index this producer applies, for its assigned shard."""
+
+    return routing.futures_index(ACTIVE_SYMBOLS)
+
+
+def binance_futures_streams(index: FuturesRoutingIndex) -> tuple[str, ...]:
     streams: list[str] = []
-    for pair in pairs:
+    for pair in index.pairs:
+        lowered = pair.lower()
         # forceOrder queda suscrito aqui A PROPOSITO aunque binance_market_loop() ya
         # lo cubre en el endpoint /market: si el legacy vuelve a emitir no perdemos
         # liquidaciones, y si emiten los dos el INSERT deduplica por (exchange,event_id).
-        streams.extend([f"{pair}@trade", f"{pair}@depth10@100ms", f"{pair}@forceOrder"])
-    url = BINANCE_STREAM_BASE + "/".join(streams)
-    backoff = WS_RECONNECT_INITIAL_SECONDS
-    while True:
-        started = time.monotonic()
-        try:
-            async with websockets.connect(url, ping_interval=20, ping_timeout=20, max_size=2_000_000) as ws:
-                LOGGER.info("binance_futures_connected streams=%d", len(streams))
-                async for raw in ws:
-                    if time.monotonic() - started > SETTINGS.BINANCE_BOOK_FORCE_RECONNECT_SECONDS:
-                        BINANCE_BOOK_RECONNECT_TOTAL += 1
-                        await BOOK_STORE.drop_exchange("binance")
-                        raise BookResyncRequired("scheduled Binance book reconnect/resync")
-                    backoff = WS_RECONNECT_INITIAL_SECONDS
-                    await handle_binance(json.loads(raw))
-        except asyncio.CancelledError:
-            raise
-        except BookResyncRequired as exc:
-            LOGGER.warning("binance_futures_resync reason=%s retry=%.1fs", exc, backoff)
-        except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError) as exc:
-            LOGGER.warning("binance_futures_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
-        except Exception:
-            LOGGER.exception("binance_futures_ws_error retry=%.1fs", backoff)
-        await BOOK_STORE.drop_exchange("binance")
-        mark_exchange_disconnected("binance")
-        await asyncio.sleep(backoff)
-        backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
+        streams.extend(
+            (lowered + "@trade", lowered + "@depth10@100ms", lowered + "@forceOrder")
+        )
+    return tuple(streams)
 
 
-async def handle_binance(message: dict[str, Any]) -> None:
+def binance_force_order_streams(index: FuturesRoutingIndex) -> tuple[str, ...]:
+    return tuple(pair.lower() + "@forceOrder" for pair in index.pairs)
+
+
+def bybit_linear_topics(index: FuturesRoutingIndex) -> tuple[str, ...]:
+    topics: list[str] = []
+    for pair in index.pairs:
+        topics.extend(
+            ("publicTrade." + pair, "orderbook.50." + pair, "allLiquidation." + pair)
+        )
+    return tuple(topics)
+
+
+async def handle_binance(message: dict[str, Any], index: FuturesRoutingIndex) -> None:
     data = message.get("data", {})
     stream = str(message.get("stream", ""))
     event_type = data.get("e")
     pair = str(data.get("s") or stream.split("@")[0]).upper()
-    symbol = PAIR_SYMBOL_MAP.get(pair)
-    if not symbol or symbol not in ACTIVE_SYMBOL_SET:
+    symbol = index.symbol_by_pair.get(pair)
+    if not symbol:
         return
     if event_type in {"aggTrade", "trade"}:
         parsed = valid_trade(data.get("p"), data.get("q"), data.get("T") or data.get("E"))
@@ -1018,152 +1138,14 @@ async def handle_binance(message: dict[str, Any]) -> None:
         await safe_liq_put((datetime.fromtimestamp(event_ms / 1000, UTC), symbol, "binance", side, price * qty, price, qty, event_id))
 
 
-async def binance_market_loop(
-    pool: asyncpg.Pool | None = None,
-    ownership: ServiceOwnership | None = None,
-) -> None:
-    """Liquidaciones Binance. Las URLs legacy se decomisaron el 2026-04-23: forceOrder
-    solo emite en el endpoint /market nuevo; trade/depth siguen en la conexion legacy."""
-    pairs = [FUTURES_PAIR_MAP[s].lower() for s in ACTIVE_SYMBOLS]
-    url = BINANCE_MARKET_STREAM_BASE + "/".join(f"{p}@forceOrder" for p in pairs)
-    backoff = WS_RECONNECT_INITIAL_SECONDS
-    while True:
-        try:
-            async with websockets.connect(url, ping_interval=20, ping_timeout=20, max_size=2_000_000) as ws:
-                LIQ_FEED_CONNECTED["binance"] = True
-                await persist_liquidation_feed_state(
-                    pool,
-                    "binance",
-                    "ok",
-                    "forceOrder connection open",
-                    ownership=ownership,
-                )
-                LOGGER.info("binance_market_connected streams=%d", len(pairs))
-                async for raw in ws:
-                    backoff = WS_RECONNECT_INITIAL_SECONDS
-                    await handle_binance(json.loads(raw))
-        except asyncio.CancelledError:
-            LIQ_FEED_CONNECTED["binance"] = False
-            await persist_liquidation_feed_state(
-                pool,
-                "binance",
-                "degraded",
-                "forceOrder connection closed",
-                ownership=ownership,
-            )
-            raise
-        except ServiceOwnershipLost:
-            raise
-        except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError) as exc:
-            LOGGER.warning("binance_market_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
-        except Exception:
-            LOGGER.exception("binance_market_ws_error retry=%.1fs", backoff)
-        LIQ_FEED_CONNECTED["binance"] = False
-        await persist_liquidation_feed_state(
-            pool,
-            "binance",
-            "degraded",
-            "forceOrder connection closed",
-            ownership=ownership,
-        )
-        await asyncio.sleep(backoff)
-        backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
-
-
-async def bybit_loop(
-    pool: asyncpg.Pool | None = None,
-    ownership: ServiceOwnership | None = None,
-) -> None:
-    pairs = [FUTURES_PAIR_MAP[s] for s in ACTIVE_SYMBOLS]
-    args = []
-    for pair in pairs:
-        args.extend([f"publicTrade.{pair}", f"orderbook.50.{pair}", f"allLiquidation.{pair}"])
-    backoff = WS_RECONNECT_INITIAL_SECONDS
-    while True:
-        try:
-            async with websockets.connect(BYBIT_LINEAR_WS, ping_interval=20, ping_timeout=20, max_size=2_000_000) as ws:
-                await ws.send(json.dumps({"op": "subscribe", "args": args}))
-                LOGGER.info("bybit_linear_connected topics=%d", len(args))
-                async for raw in ws:
-                    backoff = WS_RECONNECT_INITIAL_SECONDS
-                    message = json.loads(raw)
-                    if message.get("op") == "subscribe":
-                        if message.get("success") is True:
-                            LIQ_FEED_CONNECTED["bybit"] = True
-                            await persist_liquidation_feed_state(
-                                pool,
-                                "bybit",
-                                "ok",
-                                "allLiquidation subscription confirmed",
-                                ownership=ownership,
-                            )
-                        else:
-                            LIQ_FEED_CONNECTED["bybit"] = False
-                            await persist_liquidation_feed_state(
-                                pool,
-                                "bybit",
-                                "error",
-                                f"subscription rejected: {message.get('ret_msg')!s}"[:500],
-                                ownership=ownership,
-                            )
-                        continue
-                    await handle_bybit(message)
-        except asyncio.CancelledError:
-            LIQ_FEED_CONNECTED["bybit"] = False
-            await persist_liquidation_feed_state(
-                pool,
-                "bybit",
-                "degraded",
-                "allLiquidation connection closed",
-                ownership=ownership,
-            )
-            raise
-        except ServiceOwnershipLost:
-            raise
-        except BookResyncRequired as exc:
-            LOGGER.warning("bybit_linear_resync reason=%s retry=%.1fs", exc, backoff)
-        except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError) as exc:
-            LOGGER.warning("bybit_linear_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
-        except Exception:
-            LOGGER.exception("bybit_linear_ws_error retry=%.1fs", backoff)
-        LIQ_FEED_CONNECTED["bybit"] = False
-        await persist_liquidation_feed_state(
-            pool,
-            "bybit",
-            "degraded",
-            "allLiquidation connection closed",
-            ownership=ownership,
-        )
-        await BOOK_STORE.drop_exchange("bybit")
-        mark_exchange_disconnected("bybit")
-        await asyncio.sleep(backoff)
-        backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
-
-
-def parse_sequence(value: object) -> int | None:
-    try:
-        return int(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError, OverflowError):
-        return None
-
-
-def bybit_liquidated_position_side(raw_side: object) -> str | None:
-    side = str(raw_side or "").strip().upper()
-    if side == "BUY":
-        return "long"
-    if side == "SELL":
-        return "short"
-    return None
-
-
-async def handle_bybit(message: dict[str, Any]) -> None:
+async def handle_bybit(message: dict[str, Any], index: FuturesRoutingIndex) -> None:
     topic = str(message.get("topic", ""))
     if not topic:
         return
     parts = topic.split(".")
     pair = parts[-1].upper()
-    symbol = PAIR_SYMBOL_MAP.get(pair)
-    if not symbol or symbol not in ACTIVE_SYMBOL_SET:
+    symbol = index.symbol_by_pair.get(pair)
+    if not symbol:
         return
     data = message.get("data") or []
     if topic.startswith("publicTrade"):
@@ -1247,6 +1229,259 @@ async def handle_bybit(message: dict[str, Any]) -> None:
             raw_side = str(liq.get("S", "")).upper()
             event_id = str(liq.get("id") or f"{symbol}:{event_ms}:{raw_side}:{price}:{qty}")
             await safe_liq_put((datetime.fromtimestamp(event_ms / 1000, UTC), symbol, "bybit", side, price * qty, price, qty, event_id))
+
+
+# One connected session per feed.  The index never leaves this region: it is
+# built here from the attested routing, it decides the URL or the topics, and
+# it is the same object every message is converted through.  A caller cannot
+# substitute a routing index because it never holds one.  Reconnection,
+# backoff, feed health and logging stay with the callers, so operational edits
+# do not move the scientific identity.
+
+
+async def binance_futures_session(
+    routing: EffectiveMarketRouting,
+    *,
+    on_connected: Callable[[int], Awaitable[None]],
+    on_message: Callable[[], Awaitable[None]],
+) -> None:
+    index = scalp_futures_index(routing)
+    streams = binance_futures_streams(index)
+    url = BINANCE_STREAM_BASE + "/".join(streams)
+    async with websockets.connect(url, **WS_CONNECT_KWARGS) as ws:
+        await on_connected(len(streams))
+        async for raw in ws:
+            await on_message()
+            await handle_binance(json.loads(raw), index)
+
+
+async def binance_market_session(
+    routing: EffectiveMarketRouting,
+    *,
+    on_connected: Callable[[int], Awaitable[None]],
+    on_message: Callable[[], Awaitable[None]],
+) -> None:
+    index = scalp_futures_index(routing)
+    streams = binance_force_order_streams(index)
+    url = BINANCE_MARKET_STREAM_BASE + "/".join(streams)
+    async with websockets.connect(url, **WS_CONNECT_KWARGS) as ws:
+        await on_connected(len(streams))
+        async for raw in ws:
+            await on_message()
+            await handle_binance(json.loads(raw), index)
+
+
+async def bybit_linear_session(
+    routing: EffectiveMarketRouting,
+    *,
+    on_connected: Callable[[int], Awaitable[None]],
+    on_subscription_reply: Callable[[dict[str, Any]], Awaitable[None]],
+    on_message: Callable[[], Awaitable[None]],
+) -> None:
+    index = scalp_futures_index(routing)
+    topics = bybit_linear_topics(index)
+    async with websockets.connect(BYBIT_LINEAR_WS, **WS_CONNECT_KWARGS) as ws:
+        await ws.send(json.dumps({"op": "subscribe", "args": list(topics)}))
+        await on_connected(len(topics))
+        async for raw in ws:
+            await on_message()
+            message = json.loads(raw)
+            if message.get("op") == "subscribe":
+                await on_subscription_reply(message)
+                continue
+            await handle_bybit(message, index)
+
+# PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_END
+
+
+# The reconnect loops keep backoff, logging, feed health and sleeps, and
+# nothing else.  ``connect`` arrives already bound to one session function and
+# one attested routing, so a loop names no venue, no session and no routing: the
+# substitutions the R05 review performed here have no expressible form left.
+async def binance_loop(*, connect: Callable[..., Awaitable[None]]) -> None:
+    backoff = WS_RECONNECT_INITIAL_SECONDS
+    while True:
+        resync_at = time.monotonic() + SETTINGS.BINANCE_BOOK_FORCE_RECONNECT_SECONDS
+
+        async def on_connected(stream_count: int) -> None:
+            LOGGER.info("binance_futures_connected streams=%d", stream_count)
+
+        # resync_at is bound per connection attempt, not read from the loop.
+        async def on_message(resync_at: float = resync_at) -> None:
+            nonlocal backoff
+            global BINANCE_BOOK_RECONNECT_TOTAL
+            if time.monotonic() > resync_at:
+                BINANCE_BOOK_RECONNECT_TOTAL += 1
+                await BOOK_STORE.drop_exchange("binance")
+                raise BookResyncRequired("scheduled Binance book reconnect/resync")
+            backoff = WS_RECONNECT_INITIAL_SECONDS
+
+        try:
+            await connect(on_connected=on_connected, on_message=on_message)
+        except asyncio.CancelledError:
+            raise
+        except BookResyncRequired as exc:
+            LOGGER.warning("binance_futures_resync reason=%s retry=%.1fs", exc, backoff)
+        except RawMarketProducerContractError:
+            raise
+        except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError) as exc:
+            LOGGER.warning("binance_futures_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
+        except Exception:
+            LOGGER.exception("binance_futures_ws_error retry=%.1fs", backoff)
+        await BOOK_STORE.drop_exchange("binance")
+        mark_exchange_disconnected("binance")
+        await asyncio.sleep(backoff)
+        backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
+
+
+async def binance_market_loop(
+    pool: asyncpg.Pool | None = None,
+    ownership: ServiceOwnership | None = None,
+    *,
+    connect: Callable[..., Awaitable[None]],
+) -> None:
+    """Liquidaciones Binance. Las URLs legacy se decomisaron el 2026-04-23: forceOrder
+    solo emite en el endpoint /market nuevo; trade/depth siguen en la conexion legacy."""
+    backoff = WS_RECONNECT_INITIAL_SECONDS
+    while True:
+
+        async def on_connected(stream_count: int) -> None:
+            LIQ_FEED_CONNECTED["binance"] = True
+            await persist_liquidation_feed_state(
+                pool,
+                "binance",
+                "ok",
+                "forceOrder connection open",
+                ownership=ownership,
+            )
+            LOGGER.info("binance_market_connected streams=%d", stream_count)
+
+        async def on_message() -> None:
+            nonlocal backoff
+            backoff = WS_RECONNECT_INITIAL_SECONDS
+
+        try:
+            await connect(on_connected=on_connected, on_message=on_message)
+        except asyncio.CancelledError:
+            LIQ_FEED_CONNECTED["binance"] = False
+            await persist_liquidation_feed_state(
+                pool,
+                "binance",
+                "degraded",
+                "forceOrder connection closed",
+                ownership=ownership,
+            )
+            raise
+        except ServiceOwnershipLost:
+            raise
+        except RawMarketProducerContractError:
+            raise
+        except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError) as exc:
+            LOGGER.warning("binance_market_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
+        except Exception:
+            LOGGER.exception("binance_market_ws_error retry=%.1fs", backoff)
+        LIQ_FEED_CONNECTED["binance"] = False
+        await persist_liquidation_feed_state(
+            pool,
+            "binance",
+            "degraded",
+            "forceOrder connection closed",
+            ownership=ownership,
+        )
+        await asyncio.sleep(backoff)
+        backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
+
+
+async def bybit_loop(
+    pool: asyncpg.Pool | None = None,
+    ownership: ServiceOwnership | None = None,
+    *,
+    connect: Callable[..., Awaitable[None]],
+) -> None:
+    backoff = WS_RECONNECT_INITIAL_SECONDS
+    while True:
+
+        async def on_connected(topic_count: int) -> None:
+            LOGGER.info("bybit_linear_connected topics=%d", topic_count)
+
+        async def on_message() -> None:
+            nonlocal backoff
+            backoff = WS_RECONNECT_INITIAL_SECONDS
+
+        async def on_subscription_reply(message: dict[str, Any]) -> None:
+            if message.get("success") is True:
+                LIQ_FEED_CONNECTED["bybit"] = True
+                await persist_liquidation_feed_state(
+                    pool,
+                    "bybit",
+                    "ok",
+                    "allLiquidation subscription confirmed",
+                    ownership=ownership,
+                )
+            else:
+                LIQ_FEED_CONNECTED["bybit"] = False
+                await persist_liquidation_feed_state(
+                    pool,
+                    "bybit",
+                    "error",
+                    f"subscription rejected: {message.get('ret_msg')!s}"[:500],
+                    ownership=ownership,
+                )
+
+        try:
+            await connect(
+                on_connected=on_connected,
+                on_subscription_reply=on_subscription_reply,
+                on_message=on_message,
+            )
+        except asyncio.CancelledError:
+            LIQ_FEED_CONNECTED["bybit"] = False
+            await persist_liquidation_feed_state(
+                pool,
+                "bybit",
+                "degraded",
+                "allLiquidation connection closed",
+                ownership=ownership,
+            )
+            raise
+        except ServiceOwnershipLost:
+            raise
+        except RawMarketProducerContractError:
+            raise
+        except BookResyncRequired as exc:
+            LOGGER.warning("bybit_linear_resync reason=%s retry=%.1fs", exc, backoff)
+        except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError) as exc:
+            LOGGER.warning("bybit_linear_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
+        except Exception:
+            LOGGER.exception("bybit_linear_ws_error retry=%.1fs", backoff)
+        LIQ_FEED_CONNECTED["bybit"] = False
+        await persist_liquidation_feed_state(
+            pool,
+            "bybit",
+            "degraded",
+            "allLiquidation connection closed",
+            ownership=ownership,
+        )
+        await BOOK_STORE.drop_exchange("bybit")
+        mark_exchange_disconnected("bybit")
+        await asyncio.sleep(backoff)
+        backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
+
+
+def parse_sequence(value: object) -> int | None:
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def bybit_liquidated_position_side(raw_side: object) -> str | None:
+    side = str(raw_side or "").strip().upper()
+    if side == "BUY":
+        return "long"
+    if side == "SELL":
+        return "short"
+    return None
 
 
 async def safe_liq_put(item: tuple[datetime, str, str, str, float, float, float, str]) -> None:
@@ -1495,7 +1730,92 @@ async def cleanup(
             LOGGER.exception("scalp_cleanup_failed")
 
 
+# PR27_SCIENTIFIC_SCALP_ROUTING_ENTRYPOINT_V1_BEGIN
+
+def scalp_routing_producers(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership,
+    routing: EffectiveMarketRouting,
+) -> tuple[tuple[str, Coroutine[Any, Any, None]], ...]:
+    """The single injection of one attested routing into every producer task.
+
+    Wiring the subscriptions from one routing and the flushes from another is
+    exactly how a misrouted store survives a correct delivery gate, so nothing
+    outside this function may choose per task.  Each producer is handed a
+    callable that already carries this routing *and* the exact session or
+    delivery cycle it must run, so the loops that surround them hold only
+    backoff, logging, feed health and sleeps.
+    """
+
+    return (
+        (
+            "binance-futures",
+            binance_loop(connect=partial(binance_futures_session, routing)),
+        ),
+        (
+            "binance-market",
+            binance_market_loop(
+                pool, ownership, connect=partial(binance_market_session, routing)
+            ),
+        ),
+        (
+            "bybit-linear",
+            bybit_loop(pool, ownership, connect=partial(bybit_linear_session, routing)),
+        ),
+        (
+            "flush-trades",
+            flush_trades(cycle=partial(flush_trades_cycle, pool, ownership, routing)),
+        ),
+        (
+            "flush-books",
+            flush_books(cycle=partial(flush_books_cycle, pool, ownership, routing)),
+        ),
+        (
+            "flush-liquidations",
+            flush_liquidations(
+                cycle=partial(flush_liquidations_cycle, pool, ownership, routing)
+            ),
+        ),
+    )
+
+
+def require_attested_scalp_routing() -> None:
+    """Fail closed before the service lock, the pool or any subscription.
+
+    A process that resolves an unregistered result-material routing must
+    produce nothing.  Exiting non-zero makes systemd retry every RestartSec
+    until an operator restores or registers the routing -- degraded beats
+    misrouted.  Nothing is returned on purpose: the entrypoint must not end up
+    holding a routing it could hand to anything.
+    """
+
+    attest_raw_market_producer(RAW_PRODUCER)
+
+
+def start_scalp_routing_producers(
+    pool: asyncpg.Pool, ownership: ServiceOwnership
+) -> tuple[asyncio.Task[None], ...]:
+    """Attest, wire and create every result-material producer task, in one place.
+
+    The entrypoint never holds an ``EffectiveMarketRouting``.  It cannot forge
+    one, cannot pick a session, cannot pick a store and cannot pick a delivery,
+    because the routing is resolved, applied and consumed without ever leaving
+    the scientific identity.  Creating the tasks here is deliberate: the task is
+    the moment a producer becomes real, and that decision belongs inside the
+    identity with the rest of the wiring.
+    """
+
+    routing = attest_raw_market_producer(RAW_PRODUCER)
+    return tuple(
+        asyncio.create_task(producer, name=name)
+        for name, producer in scalp_routing_producers(pool, ownership, routing)
+    )
+
+# PR27_SCIENTIFIC_SCALP_ROUTING_ENTRYPOINT_V1_END
+
+
 async def main() -> None:
+    require_attested_scalp_routing()
     service_lock = await acquire_service_lock(
         SETTINGS,
         "scalp",
@@ -1527,17 +1847,8 @@ async def main() -> None:
     if ACTIVE_SYMBOLS:
         async with pool.acquire() as conn:
             await reset_liquidation_feed_health(conn, service_lock)
-        tasks.extend(
-            (
-                asyncio.create_task(binance_loop()),
-                asyncio.create_task(binance_market_loop(pool, service_lock)),
-                asyncio.create_task(bybit_loop(pool, service_lock)),
-                asyncio.create_task(flush_trades(pool, service_lock)),
-                asyncio.create_task(flush_books(pool, service_lock)),
-                asyncio.create_task(flush_liquidations(pool, service_lock)),
-                asyncio.create_task(persist_scalp_signals(pool, service_lock)),
-            )
-        )
+        tasks.extend(start_scalp_routing_producers(pool, service_lock))
+        tasks.append(asyncio.create_task(persist_scalp_signals(pool, service_lock)))
     try:
         await asyncio.gather(*tasks)
     finally:

@@ -6,14 +6,17 @@ import logging
 import math
 import signal
 import time
+from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from functools import partial
+from typing import Any
 
 import asyncpg
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosed
 
-from app.config import SPOT_PAIR_MAP, WHALE_THRESHOLD_MAP, WS_SYMBOL_MAP, get_settings
+from app.config import WHALE_THRESHOLD_MAP, get_settings
 from app.db import (
     ServiceOwnership,
     ServiceOwnershipLost,
@@ -28,10 +31,29 @@ from app.db import (
 )
 from app.logging_setup import configure_logging
 from app.sharding import assigned_symbols
+from app.signal_runtime_contract import (
+    EffectiveMarketRouting,
+    RawMarketProducerContractError,
+    SpotRoutingIndex,
+    attest_raw_market_producer,
+    require_routed_internal_keys,
+)
 
 LOGGER = logging.getLogger(__name__)
-BINANCE_STREAM_BASE = "wss://stream.binance.com:9443/stream?streams="
-BYBIT_URL = "wss://stream.bybit.com/v5/public/spot"
+# This service records whichever Binance/Bybit spot market SPOT_PAIR_MAP selects
+# under the internal `base_asset`, which is $2 of the scalp_context query.
+RAW_PRODUCER = "ws_collector"
+# Transport tuning, not routing: which venue is read is result-material and
+# lives inside the identity region below; how the socket is kept alive is not.
+WS_CONNECT_KWARGS = {
+    "open_timeout": 10,
+    "close_timeout": 5,
+    "ping_interval": 20,
+    "ping_timeout": 20,
+    "max_size": 1_048_576,
+    "max_queue": 64,
+}
+WS_RECV_TIMEOUT_SECONDS = 60
 MAX_NOTIONAL_USD = 1_000_000_000_000.0
 MAX_MESSAGE_TRADES = 1_000
 WHALE_TRADE_THRESHOLD = WHALE_THRESHOLD_MAP
@@ -183,13 +205,130 @@ STORE = BucketStore()
 LAST_EVENT_MONOTONIC = {"binance": 0.0, "bybit": 0.0}
 
 
-def spot_pairs(symbols: tuple[str, ...]) -> tuple[str, ...]:
-    return tuple(SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]] for symbol in symbols)
+# PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_BEGIN
+
+# Which venue the routed pairs are read from decides which market's data ends
+# up under the internal base_asset -- $2 of the scalp_context query -- exactly
+# like the pairs themselves, so the endpoints are part of the identity.
+BINANCE_STREAM_BASE = "wss://stream.binance.com:9443/stream?streams="
+BYBIT_URL = "wss://stream.bybit.com/v5/public/spot"
 
 
-def binance_url(symbols: tuple[str, ...]) -> str:
-    streams = "/".join(f"{pair.lower()}@aggTrade" for pair in spot_pairs(symbols))
+def ws_spot_index(
+    symbols: tuple[str, ...], routing: EffectiveMarketRouting
+) -> SpotRoutingIndex:
+    """The only spot index this producer applies, for its assigned shard."""
+
+    return routing.spot_index(symbols)
+
+
+def spot_pairs(
+    symbols: tuple[str, ...], routing: EffectiveMarketRouting
+) -> tuple[str, ...]:
+    return tuple(routing.spot_pair_by_symbol[symbol] for symbol in symbols)
+
+
+def binance_url(symbols: tuple[str, ...], routing: EffectiveMarketRouting) -> str:
+    streams = "/".join(
+        pair.lower() + "@aggTrade" for pair in spot_pairs(symbols, routing)
+    )
     return BINANCE_STREAM_BASE + streams
+
+
+def bybit_subscription_args(index: SpotRoutingIndex) -> tuple[str, ...]:
+    return tuple("publicTrade." + pair for pair in index.pairs)
+
+
+async def handle_binance_spot(message: object, index: SpotRoutingIndex) -> None:
+    if not isinstance(message, dict):
+        return
+    data = message.get("data", {})
+    if not isinstance(data, dict):
+        return
+    pair = str(data.get("s", ""))
+    symbol = index.base_asset_by_pair.get(pair)
+    if symbol is None:
+        return
+    trade = valid_trade(data.get("p"), data.get("q"), data.get("T"))
+    if trade is None:
+        return
+    price, qty, ts_ms = trade
+    is_buy = not bool(data.get("m"))  # buyer-is-maker => aggressive sell
+    await STORE.add(symbol, "binance", ts_ms, price, qty, is_buy)
+    LAST_EVENT_MONOTONIC["binance"] = time.monotonic()
+
+
+async def handle_bybit_spot(message: object, index: SpotRoutingIndex) -> None:
+    if not isinstance(message, dict):
+        return
+    if not str(message.get("topic", "")).startswith("publicTrade."):
+        return
+    trades = message.get("data", [])
+    if not isinstance(trades, list) or len(trades) > MAX_MESSAGE_TRADES:
+        return
+    default_ts = message.get("ts")
+    for data in trades:
+        if not isinstance(data, dict):
+            continue
+        pair = str(data.get("s", ""))
+        symbol = index.base_asset_by_pair.get(pair)
+        if symbol is None:
+            continue
+        trade = valid_trade(data.get("p"), data.get("v"), data.get("T", default_ts))
+        if trade is None:
+            continue
+        price, qty, ts_ms = trade
+        is_buy = str(data.get("S", "")).lower() == "buy"
+        await STORE.add(symbol, "bybit", ts_ms, price, qty, is_buy)
+        LAST_EVENT_MONOTONIC["bybit"] = time.monotonic()
+
+
+# One connected session per feed.  The index never leaves this region: it is
+# built here from the attested routing, it decides the URL or the topics, and
+# it is the same object every message is converted through.  Reconnection,
+# backoff and logging stay with the callers, so operational edits do not move
+# the scientific identity.
+
+
+async def binance_spot_session(
+    symbols: tuple[str, ...],
+    routing: EffectiveMarketRouting,
+    *,
+    on_connected: Callable[[], Awaitable[None]],
+    on_message: Callable[[], Awaitable[None]],
+) -> None:
+    index = ws_spot_index(symbols, routing)
+    url = binance_url(symbols, routing)
+    async with connect(url, **WS_CONNECT_KWARGS) as websocket:
+        await on_connected()
+        while True:
+            raw = await asyncio.wait_for(
+                websocket.recv(), timeout=WS_RECV_TIMEOUT_SECONDS
+            )
+            await on_message()
+            await handle_binance_spot(json.loads(raw), index)
+
+
+async def bybit_spot_session(
+    symbols: tuple[str, ...],
+    routing: EffectiveMarketRouting,
+    *,
+    on_connected: Callable[[], Awaitable[None]],
+    on_message: Callable[[], Awaitable[None]],
+) -> None:
+    index = ws_spot_index(symbols, routing)
+    args = list(bybit_subscription_args(index))
+    async with connect(BYBIT_URL, **WS_CONNECT_KWARGS) as websocket:
+        await websocket.send(json.dumps({"op": "subscribe", "args": args}))
+        await on_connected()
+        while True:
+            raw = await asyncio.wait_for(
+                websocket.recv(), timeout=WS_RECV_TIMEOUT_SECONDS
+            )
+            await on_message()
+            await handle_bybit_spot(json.loads(raw), index)
+
+# PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_END
 
 
 def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[float, float, int] | None:
@@ -209,194 +348,241 @@ def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[flo
     return price, qty, ts_ms
 
 
-async def flush_minute(
+# PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_BEGIN
+
+# The whole handoff from the in-memory store to a raw table lives here: the
+# attestation that re-checks the routing in use, the snapshot that leaves the
+# store, the gated delivery and the acknowledgement that drops the rows.  The
+# surrounding loops keep only their sleep and their retry policy.
+
+
+async def flush_minute_cycle(
     pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
+    ownership: ServiceOwnership | None,
+    routing: EffectiveMarketRouting,
 ) -> None:
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    snapshots = await STORE.minute_snapshot()
+    if not snapshots:
+        return
+    async with pool.acquire() as conn:
+        async with fenced_transaction(conn, ownership):
+            await deliver_spot_minute(conn, routing, snapshots)
+    await STORE.ack_minute(snapshots)
+
+
+async def flush_realtime_cycle(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None,
+    routing: EffectiveMarketRouting,
+) -> None:
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    snapshots = await STORE.realtime_snapshot()
+    if not snapshots:
+        return
+    async with pool.acquire() as conn:
+        async with fenced_transaction(conn, ownership):
+            await deliver_spot_realtime(conn, routing, snapshots)
+    await STORE.ack_realtime(snapshots)
+
+
+async def deliver_spot_minute(
+    conn: asyncpg.Connection,
+    routing: EffectiveMarketRouting,
+    snapshots: list[tuple[tuple[str, str, int], Bucket]],
+) -> None:
+    """The only path from minute buckets to raw persistence, gated in place."""
+
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    require_routed_internal_keys(
+        routing, RAW_PRODUCER, {key[0] for key, _bucket in snapshots}
+    )
+    records = []
+    touched: set[tuple[str, int]] = set()
+    for (symbol, exchange, ts), bucket in snapshots:
+        touched.add((symbol, ts))
+        records.append(
+            (
+                datetime.fromtimestamp(ts, UTC), symbol, exchange, 1, "1min",
+                bucket.buy_vol_usd, bucket.sell_vol_usd,
+                bucket.inst_buy_usd, bucket.inst_sell_usd,
+                bucket.mid_buy_usd, bucket.mid_sell_usd,
+                bucket.retail_buy_usd, bucket.retail_sell_usd, bucket.trade_count,
+            )
+        )
+    await conn.executemany(
+        """
+        INSERT INTO spot_trades_agg(
+          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
+          inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
+          retail_buy_usd,retail_sell_usd,trade_count
+        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
+          buy_vol_usd=EXCLUDED.buy_vol_usd,
+          sell_vol_usd=EXCLUDED.sell_vol_usd,
+          inst_buy_usd=EXCLUDED.inst_buy_usd,
+          inst_sell_usd=EXCLUDED.inst_sell_usd,
+          mid_buy_usd=EXCLUDED.mid_buy_usd,
+          mid_sell_usd=EXCLUDED.mid_sell_usd,
+          retail_buy_usd=EXCLUDED.retail_buy_usd,
+          retail_sell_usd=EXCLUDED.retail_sell_usd,
+          trade_count=EXCLUDED.trade_count
+        """,
+        records,
+    )
+    await conn.executemany(
+        """
+        INSERT INTO spot_trades_agg(
+          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
+          inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
+          retail_buy_usd,retail_sell_usd,trade_count
+        )
+        SELECT ts,symbol,'combined',2,'1min',
+          SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(inst_buy_usd),SUM(inst_sell_usd),
+          SUM(mid_buy_usd),SUM(mid_sell_usd),SUM(retail_buy_usd),SUM(retail_sell_usd),
+          SUM(trade_count)::integer
+        FROM spot_trades_agg
+        WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
+        GROUP BY ts,symbol
+        HAVING COUNT(DISTINCT exchange)=2
+        ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
+          venue_count=EXCLUDED.venue_count,
+          buy_vol_usd=EXCLUDED.buy_vol_usd,
+          sell_vol_usd=EXCLUDED.sell_vol_usd,
+          inst_buy_usd=EXCLUDED.inst_buy_usd,
+          inst_sell_usd=EXCLUDED.inst_sell_usd,
+          mid_buy_usd=EXCLUDED.mid_buy_usd,
+          mid_sell_usd=EXCLUDED.mid_sell_usd,
+          retail_buy_usd=EXCLUDED.retail_buy_usd,
+          retail_sell_usd=EXCLUDED.retail_sell_usd,
+          trade_count=EXCLUDED.trade_count
+        """,
+        [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
+    )
+
+
+async def deliver_spot_realtime(
+    conn: asyncpg.Connection,
+    routing: EffectiveMarketRouting,
+    snapshots: list[tuple[tuple[str, str, int], RtBucket]],
+) -> None:
+    """The only path from realtime buckets to raw persistence, gated in place."""
+
+    attest_raw_market_producer(RAW_PRODUCER, expected=routing)
+    require_routed_internal_keys(
+        routing, RAW_PRODUCER, {key[0] for key, _bucket in snapshots}
+    )
+    records = []
+    touched: set[tuple[str, int]] = set()
+    for (symbol, exchange, ts), bucket in snapshots:
+        touched.add((symbol, ts))
+        records.append(
+            (
+                datetime.fromtimestamp(ts, UTC), symbol, exchange, 1,
+                bucket.buy_vol_usd, bucket.sell_vol_usd,
+                bucket.inst_buy_usd, bucket.inst_sell_usd,
+                bucket.trade_count, bucket.last_px, bucket.last_event_ms,
+            )
+        )
+    await conn.executemany(
+        """
+        INSERT INTO spot_trades_realtime(
+          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
+          inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
+        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
+          buy_vol_usd=EXCLUDED.buy_vol_usd,
+          sell_vol_usd=EXCLUDED.sell_vol_usd,
+          inst_buy_usd=EXCLUDED.inst_buy_usd,
+          inst_sell_usd=EXCLUDED.inst_sell_usd,
+          trade_count=EXCLUDED.trade_count,
+          last_px=EXCLUDED.last_px,
+          last_event_ms=EXCLUDED.last_event_ms
+        """,
+        records,
+    )
+    await conn.executemany(
+        """
+        INSERT INTO spot_trades_realtime(
+          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
+          inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
+        )
+        SELECT ts,symbol,'combined',2,SUM(buy_vol_usd),SUM(sell_vol_usd),
+          SUM(inst_buy_usd),SUM(inst_sell_usd),SUM(trade_count)::integer,
+          (array_agg(last_px ORDER BY last_event_ms DESC, exchange))[1],
+          MAX(last_event_ms)
+        FROM spot_trades_realtime
+        WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
+        GROUP BY ts,symbol
+        HAVING COUNT(DISTINCT exchange)=2
+        ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
+          venue_count=EXCLUDED.venue_count,
+          buy_vol_usd=EXCLUDED.buy_vol_usd,
+          sell_vol_usd=EXCLUDED.sell_vol_usd,
+          inst_buy_usd=EXCLUDED.inst_buy_usd,
+          inst_sell_usd=EXCLUDED.inst_sell_usd,
+          trade_count=EXCLUDED.trade_count,
+          last_px=EXCLUDED.last_px,
+          last_event_ms=EXCLUDED.last_event_ms
+        """,
+        [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
+    )
+
+# PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_END
+
+
+# The flush loops keep their sleep, their retry policy and their logging, and
+# nothing else.  ``cycle`` arrives already bound to the pool, the ownership
+# fence and the one attested routing, so a loop cannot pick a store, a routing
+# or a delivery: it can only run the cycle it was given, or stop.
+async def flush_minute(*, cycle: Callable[[], Awaitable[None]]) -> None:
     while True:
         await asyncio.sleep(5)
-        snapshots = await STORE.minute_snapshot()
-        if not snapshots:
-            continue
-        records = []
-        touched: set[tuple[str, int]] = set()
-        for (symbol, exchange, ts), bucket in snapshots:
-            touched.add((symbol, ts))
-            records.append(
-                (
-                    datetime.fromtimestamp(ts, UTC), symbol, exchange, 1, "1min",
-                    bucket.buy_vol_usd, bucket.sell_vol_usd,
-                    bucket.inst_buy_usd, bucket.inst_sell_usd,
-                    bucket.mid_buy_usd, bucket.mid_sell_usd,
-                    bucket.retail_buy_usd, bucket.retail_sell_usd, bucket.trade_count,
-                )
-            )
         try:
-            async with pool.acquire() as conn:
-                async with fenced_transaction(conn, ownership):
-                    await conn.executemany(
-                        """
-                        INSERT INTO spot_trades_agg(
-                          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
-                          inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
-                          retail_buy_usd,retail_sell_usd,trade_count
-                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-                        ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
-                          buy_vol_usd=EXCLUDED.buy_vol_usd,
-                          sell_vol_usd=EXCLUDED.sell_vol_usd,
-                          inst_buy_usd=EXCLUDED.inst_buy_usd,
-                          inst_sell_usd=EXCLUDED.inst_sell_usd,
-                          mid_buy_usd=EXCLUDED.mid_buy_usd,
-                          mid_sell_usd=EXCLUDED.mid_sell_usd,
-                          retail_buy_usd=EXCLUDED.retail_buy_usd,
-                          retail_sell_usd=EXCLUDED.retail_sell_usd,
-                          trade_count=EXCLUDED.trade_count
-                        """,
-                        records,
-                    )
-                    await conn.executemany(
-                        """
-                        INSERT INTO spot_trades_agg(
-                          ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
-                          inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
-                          retail_buy_usd,retail_sell_usd,trade_count
-                        )
-                        SELECT ts,symbol,'combined',2,'1min',
-                          SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(inst_buy_usd),SUM(inst_sell_usd),
-                          SUM(mid_buy_usd),SUM(mid_sell_usd),SUM(retail_buy_usd),SUM(retail_sell_usd),
-                          SUM(trade_count)::integer
-                        FROM spot_trades_agg
-                        WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
-                        GROUP BY ts,symbol
-                        HAVING COUNT(DISTINCT exchange)=2
-                        ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
-                          venue_count=EXCLUDED.venue_count,
-                          buy_vol_usd=EXCLUDED.buy_vol_usd,
-                          sell_vol_usd=EXCLUDED.sell_vol_usd,
-                          inst_buy_usd=EXCLUDED.inst_buy_usd,
-                          inst_sell_usd=EXCLUDED.inst_sell_usd,
-                          mid_buy_usd=EXCLUDED.mid_buy_usd,
-                          mid_sell_usd=EXCLUDED.mid_sell_usd,
-                          retail_buy_usd=EXCLUDED.retail_buy_usd,
-                          retail_sell_usd=EXCLUDED.retail_sell_usd,
-                          trade_count=EXCLUDED.trade_count
-                        """,
-                        [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
-                    )
-            await STORE.ack_minute(snapshots)
+            await cycle()
         except ServiceOwnershipLost:
             raise
+        except RawMarketProducerContractError:
+            # The in-cycle gate found a divergence: escape the process, never
+            # retry it as a transient flush failure.
+            raise
         except Exception:
-            LOGGER.exception("minute_flush_failed retained_buckets=%d", len(snapshots))
+            LOGGER.exception("minute_flush_failed buckets=%d", len(STORE.minute))
 
 
-async def flush_realtime(
-    pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
-) -> None:
+async def flush_realtime(*, cycle: Callable[[], Awaitable[None]]) -> None:
     while True:
         await asyncio.sleep(2)
-        snapshots = await STORE.realtime_snapshot()
-        if not snapshots:
-            continue
-        records = []
-        touched: set[tuple[str, int]] = set()
-        for (symbol, exchange, ts), bucket in snapshots:
-            touched.add((symbol, ts))
-            records.append(
-                (
-                    datetime.fromtimestamp(ts, UTC), symbol, exchange, 1,
-                    bucket.buy_vol_usd, bucket.sell_vol_usd,
-                    bucket.inst_buy_usd, bucket.inst_sell_usd,
-                    bucket.trade_count, bucket.last_px, bucket.last_event_ms,
-                )
-            )
         try:
-            async with pool.acquire() as conn:
-                async with fenced_transaction(conn, ownership):
-                    await conn.executemany(
-                        """
-                        INSERT INTO spot_trades_realtime(
-                          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
-                          inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
-                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-                        ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
-                          buy_vol_usd=EXCLUDED.buy_vol_usd,
-                          sell_vol_usd=EXCLUDED.sell_vol_usd,
-                          inst_buy_usd=EXCLUDED.inst_buy_usd,
-                          inst_sell_usd=EXCLUDED.inst_sell_usd,
-                          trade_count=EXCLUDED.trade_count,
-                          last_px=EXCLUDED.last_px,
-                          last_event_ms=EXCLUDED.last_event_ms
-                        """,
-                        records,
-                    )
-                    await conn.executemany(
-                        """
-                        INSERT INTO spot_trades_realtime(
-                          ts,symbol,exchange,venue_count,buy_vol_usd,sell_vol_usd,
-                          inst_buy_usd,inst_sell_usd,trade_count,last_px,last_event_ms
-                        )
-                        SELECT ts,symbol,'combined',2,SUM(buy_vol_usd),SUM(sell_vol_usd),
-                          SUM(inst_buy_usd),SUM(inst_sell_usd),SUM(trade_count)::integer,
-                          (array_agg(last_px ORDER BY last_event_ms DESC, exchange))[1],
-                          MAX(last_event_ms)
-                        FROM spot_trades_realtime
-                        WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
-                        GROUP BY ts,symbol
-                        HAVING COUNT(DISTINCT exchange)=2
-                        ON CONFLICT(symbol,exchange,ts) DO UPDATE SET
-                          venue_count=EXCLUDED.venue_count,
-                          buy_vol_usd=EXCLUDED.buy_vol_usd,
-                          sell_vol_usd=EXCLUDED.sell_vol_usd,
-                          inst_buy_usd=EXCLUDED.inst_buy_usd,
-                          inst_sell_usd=EXCLUDED.inst_sell_usd,
-                          trade_count=EXCLUDED.trade_count,
-                          last_px=EXCLUDED.last_px,
-                          last_event_ms=EXCLUDED.last_event_ms
-                        """,
-                        [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
-                    )
-            await STORE.ack_realtime(snapshots)
+            await cycle()
         except ServiceOwnershipLost:
             raise
+        except RawMarketProducerContractError:
+            raise
         except Exception:
-            LOGGER.exception("realtime_flush_failed retained_buckets=%d", len(snapshots))
+            LOGGER.exception("realtime_flush_failed buckets=%d", len(STORE.realtime))
 
 
-async def binance_consumer(symbols: tuple[str, ...]) -> None:
-    pairs = spot_pairs(symbols)
-    pair_symbol_map = {SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]]: WS_SYMBOL_MAP[symbol] for symbol in symbols}
-    url = binance_url(symbols)
+# The reconnect loops keep backoff and logging, and nothing else.  ``connect``
+# arrives already bound to one session function, one symbol scope and one
+# attested routing, so a consumer names no venue, no session and no routing.
+async def binance_consumer(*, connect: Callable[..., Awaitable[None]]) -> None:
     backoff = 1.0
     while True:
+
+        async def on_connected() -> None:
+            nonlocal backoff
+            LOGGER.info("binance_connected")
+            backoff = 1.0
+
+        async def on_message() -> None:
+            return None
+
         try:
-            async with connect(
-                url, open_timeout=10, close_timeout=5, ping_interval=20,
-                ping_timeout=20, max_size=1_048_576, max_queue=64,
-            ) as websocket:
-                LOGGER.info("binance_connected")
-                backoff = 1.0
-                while True:
-                    raw = await asyncio.wait_for(websocket.recv(), timeout=60)
-                    message = json.loads(raw)
-                    if not isinstance(message, dict):
-                        continue
-                    data = message.get("data", {})
-                    if not isinstance(data, dict):
-                        continue
-                    pair = str(data.get("s", ""))
-                    symbol = pair_symbol_map.get(pair)
-                    if symbol is None or pair not in pairs:
-                        continue
-                    trade = valid_trade(data.get("p"), data.get("q"), data.get("T"))
-                    if trade is None:
-                        continue
-                    price, qty, ts_ms = trade
-                    is_buy = not bool(data.get("m"))  # buyer-is-maker => aggressive sell
-                    await STORE.add(symbol, "binance", ts_ms, price, qty, is_buy)
-                    LAST_EVENT_MONOTONIC["binance"] = time.monotonic()
+            await connect(on_connected=on_connected, on_message=on_message)
         except asyncio.CancelledError:
+            raise
+        except RawMarketProducerContractError:
             raise
         except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError):
             LOGGER.warning("binance_disconnected retry=%.1fs", backoff)
@@ -406,46 +592,23 @@ async def binance_consumer(symbols: tuple[str, ...]) -> None:
         backoff = min(backoff * 2, 60.0)
 
 
-async def bybit_consumer(symbols: tuple[str, ...]) -> None:
+async def bybit_consumer(*, connect: Callable[..., Awaitable[None]]) -> None:
     backoff = 1.0
-    pairs = spot_pairs(symbols)
-    pair_symbol_map = {SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]]: WS_SYMBOL_MAP[symbol] for symbol in symbols}
-    args = [f"publicTrade.{pair}" for pair in pairs]
     while True:
+
+        async def on_connected() -> None:
+            nonlocal backoff
+            LOGGER.info("bybit_connected")
+            backoff = 1.0
+
+        async def on_message() -> None:
+            return None
+
         try:
-            async with connect(
-                BYBIT_URL, open_timeout=10, close_timeout=5, ping_interval=20,
-                ping_timeout=20, max_size=1_048_576, max_queue=64,
-            ) as websocket:
-                await websocket.send(json.dumps({"op": "subscribe", "args": args}))
-                LOGGER.info("bybit_connected")
-                backoff = 1.0
-                while True:
-                    raw = await asyncio.wait_for(websocket.recv(), timeout=60)
-                    message = json.loads(raw)
-                    if not isinstance(message, dict):
-                        continue
-                    if not str(message.get("topic", "")).startswith("publicTrade."):
-                        continue
-                    trades = message.get("data", [])
-                    if not isinstance(trades, list) or len(trades) > MAX_MESSAGE_TRADES:
-                        continue
-                    default_ts = message.get("ts")
-                    for data in trades:
-                        if not isinstance(data, dict):
-                            continue
-                        pair = str(data.get("s", ""))
-                        symbol = pair_symbol_map.get(pair)
-                        if symbol is None:
-                            continue
-                        trade = valid_trade(data.get("p"), data.get("v"), data.get("T", default_ts))
-                        if trade is None:
-                            continue
-                        price, qty, ts_ms = trade
-                        is_buy = str(data.get("S", "")).lower() == "buy"
-                        await STORE.add(symbol, "bybit", ts_ms, price, qty, is_buy)
-                        LAST_EVENT_MONOTONIC["bybit"] = time.monotonic()
+            await connect(on_connected=on_connected, on_message=on_message)
         except asyncio.CancelledError:
+            raise
+        except RawMarketProducerContractError:
             raise
         except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError):
             LOGGER.warning("bybit_disconnected retry=%.1fs", backoff)
@@ -515,8 +678,85 @@ async def heartbeat_loop(
             LOGGER.exception("ws_heartbeat_failed")
 
 
+# PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_BEGIN
+
+def ws_routing_producers(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership,
+    symbols: tuple[str, ...],
+    routing: EffectiveMarketRouting,
+) -> tuple[tuple[str, Coroutine[Any, Any, None]], ...]:
+    """The single injection of one attested routing into every producer task.
+
+    Wiring the subscriptions from one routing and the flushes from another is
+    exactly how a misrouted store survives a correct delivery gate, so nothing
+    outside this function may choose per task.  Each producer is handed a
+    callable that already carries this routing *and* the exact session or
+    delivery cycle it must run.
+    """
+
+    producers: tuple[tuple[str, Coroutine[Any, Any, None]], ...] = (
+        (
+            "flush-minute",
+            flush_minute(cycle=partial(flush_minute_cycle, pool, ownership, routing)),
+        ),
+        (
+            "flush-realtime",
+            flush_realtime(
+                cycle=partial(flush_realtime_cycle, pool, ownership, routing)
+            ),
+        ),
+    )
+    if symbols:
+        producers += (
+            (
+                "binance",
+                binance_consumer(
+                    connect=partial(binance_spot_session, symbols, routing)
+                ),
+            ),
+            (
+                "bybit",
+                bybit_consumer(connect=partial(bybit_spot_session, symbols, routing)),
+            ),
+        )
+    return producers
+
+
+def require_attested_ws_routing() -> None:
+    """Fail closed before the service lock, the pool or any subscription.
+
+    Nothing is returned on purpose: the entrypoint must not end up holding a
+    routing it could hand to anything.
+    """
+
+    attest_raw_market_producer(RAW_PRODUCER)
+
+
+def start_ws_routing_producers(
+    pool: asyncpg.Pool, ownership: ServiceOwnership, symbols: tuple[str, ...]
+) -> tuple[asyncio.Task[None], ...]:
+    """Attest, wire and create every result-material producer task, in one place.
+
+    ``run()`` never holds an ``EffectiveMarketRouting``: the routing is
+    resolved, applied and consumed without ever leaving the scientific
+    identity.  ``symbols`` is the shard assignment and stays outside, because
+    ``spot_index`` refuses any symbol the attested routing does not carry: a
+    narrowed scope can only produce a visible ``data_gap``, never a misroute.
+    """
+
+    routing = attest_raw_market_producer(RAW_PRODUCER)
+    return tuple(
+        asyncio.create_task(producer, name=name)
+        for name, producer in ws_routing_producers(pool, ownership, symbols, routing)
+    )
+
+# PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_END
+
+
 async def run() -> None:
     global STORE
+    require_attested_ws_routing()
     settings = get_settings()
     STORE = BucketStore(
         max_bucket_minutes=settings.TRADESTORE_MAX_BUCKET_MINUTES,
@@ -556,9 +796,8 @@ async def run() -> None:
         name="service-lock",
     )
 
-    tasks = [
-        asyncio.create_task(flush_minute(pool, service_lock), name="flush-minute"),
-        asyncio.create_task(flush_realtime(pool, service_lock), name="flush-realtime"),
+    tasks = list(start_ws_routing_producers(pool, service_lock, symbols))
+    tasks.append(
         asyncio.create_task(
             heartbeat_loop(
                 pool,
@@ -568,15 +807,8 @@ async def run() -> None:
                 service_lock,
             ),
             name="heartbeat",
-        ),
-    ]
-    if symbols:
-        tasks.extend(
-            (
-                asyncio.create_task(binance_consumer(symbols), name="binance"),
-                asyncio.create_task(bybit_consumer(symbols), name="bybit"),
-            )
         )
+    )
     try:
         await wait_for_stop_or_lock_loss(
             stop,

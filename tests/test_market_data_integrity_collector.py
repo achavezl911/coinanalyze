@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import UTC, datetime
+from functools import partial
 from typing import Any
 
 import pytest
@@ -18,9 +19,12 @@ from app.scalp_collector import (
     persist_liquidation_health_snapshot,
     reset_liquidation_feed_health,
 )
+from app.signal_runtime_contract import attest_raw_market_producer
 
 SYMBOL = "BTCUSDT_PERP.A"
 EVENT_MS = 1_786_056_654_685
+ROUTING = attest_raw_market_producer("scalp_collector")
+INDEX = ROUTING.futures_index((SYMBOL,))
 
 
 def test_bybit_liquidated_position_side_uses_position_semantics() -> None:
@@ -46,7 +50,8 @@ async def test_handle_bybit_persists_liquidated_position_side(
                 {"id": "buy", "T": EVENT_MS, "S": "Buy", "p": "100", "v": "2"},
                 {"id": "sell", "T": EVENT_MS, "S": "Sell", "p": "101", "v": "3"},
             ],
-        }
+        },
+        INDEX,
     )
 
     rows = [queue.get_nowait(), queue.get_nowait()]
@@ -73,7 +78,8 @@ async def test_binance_force_order_semantics_remain_order_side_based(
                     "E": EVENT_MS,
                     "o": {"s": "BTCUSDT", "S": order_side, "p": "100", "q": "1"},
                 },
-            }
+            },
+            INDEX,
         )
 
     rows = [queue.get_nowait(), queue.get_nowait()]
@@ -124,7 +130,8 @@ async def test_bybit_snapshot_delta_and_u_one_restart(
             "type": "snapshot",
             "ts": 1_000,
             "data": {"u": 10, "seq": 100, "b": [["100", "1"]], "a": [["101", "1"]]},
-        }
+        },
+        INDEX,
     )
     await handle_bybit(
         {
@@ -132,7 +139,8 @@ async def test_bybit_snapshot_delta_and_u_one_restart(
             "type": "delta",
             "ts": 1_001,
             "data": {"u": 11, "seq": 101, "b": [["100", "2"]], "a": []},
-        }
+        },
+        INDEX,
     )
     book = books.books[(SYMBOL, "bybit")]
     assert book.bids[100.0] == 2.0
@@ -144,7 +152,8 @@ async def test_bybit_snapshot_delta_and_u_one_restart(
             "type": "delta",
             "ts": 1_002,
             "data": {"u": 1, "seq": 1, "b": [["99", "3"]], "a": [["102", "4"]]},
-        }
+        },
+        INDEX,
     )
     restarted = books.books[(SYMBOL, "bybit")]
     assert restarted.update_id == 1
@@ -164,7 +173,7 @@ async def test_bybit_gap_removes_book_until_a_new_snapshot(
         "ts": 1_000,
         "data": {"u": 10, "seq": 100, "b": [["100", "1"]], "a": [["101", "1"]]},
     }
-    await handle_bybit(snapshot)
+    await handle_bybit(snapshot, INDEX)
 
     with pytest.raises(BookResyncRequired):
         await handle_bybit(
@@ -173,7 +182,8 @@ async def test_bybit_gap_removes_book_until_a_new_snapshot(
                 "type": "delta",
                 "ts": 1_001,
                 "data": {"u": 12, "seq": 102, "b": [["100", "2"]], "a": []},
-            }
+            },
+            INDEX,
         )
     assert (SYMBOL, "bybit") not in books.books
 
@@ -184,11 +194,12 @@ async def test_bybit_gap_removes_book_until_a_new_snapshot(
                 "type": "delta",
                 "ts": 1_002,
                 "data": {"u": 13, "seq": 103, "b": [["100", "3"]], "a": []},
-            }
+            },
+            INDEX,
         )
     assert await books.snapshot() == []
 
-    await handle_bybit(snapshot)
+    await handle_bybit(snapshot, INDEX)
     assert len(await books.snapshot()) == 1
 
 
@@ -235,7 +246,10 @@ async def test_bybit_health_waits_for_positive_subscription_confirmation(
     monkeypatch.setattr(scalp, "persist_liquidation_feed_state", record_state)
 
     with pytest.raises(asyncio.CancelledError):
-        await scalp.bybit_loop(object())  # type: ignore[arg-type]
+        await scalp.bybit_loop(
+            object(),  # type: ignore[arg-type]
+            connect=partial(scalp.bybit_linear_session, ROUTING),
+        )
 
     assert persisted == [("bybit", "ok"), ("bybit", "degraded")]
 

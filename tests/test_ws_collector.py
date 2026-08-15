@@ -2,6 +2,7 @@ import time
 
 import pytest
 
+from app.signal_runtime_contract import attest_raw_market_producer
 from app.ws_collector import (
     WHALE_TRADE_THRESHOLD,
     Bucket,
@@ -10,6 +11,8 @@ from app.ws_collector import (
     spot_pairs,
     valid_trade,
 )
+
+PR27_ROUTING = attest_raw_market_producer("ws_collector")
 
 
 def test_valid_trade_rejects_bad_values(monkeypatch):
@@ -67,7 +70,7 @@ def test_heartbeat_publishes_each_spot_venue() -> None:
 def test_websocket_topics_are_generated_only_for_assigned_symbols():
     symbols = ("ETHUSDT_PERP.A",)
 
-    assert spot_pairs(symbols) == ("ETHUSDT",)
-    assert binance_url(symbols).endswith("ethusdt@aggTrade")
-    assert "btcusdt" not in binance_url(symbols)
-    assert "solusdt" not in binance_url(symbols)
+    assert spot_pairs(symbols, PR27_ROUTING) == ("ETHUSDT",)
+    assert binance_url(symbols, PR27_ROUTING).endswith("ethusdt@aggTrade")
+    assert "btcusdt" not in binance_url(symbols, PR27_ROUTING)
+    assert "solusdt" not in binance_url(symbols, PR27_ROUTING)

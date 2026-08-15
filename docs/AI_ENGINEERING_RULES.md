@@ -4,6 +4,13 @@
 > Claude Code (ver [`CLAUDE.md`](../CLAUDE.md)) DEBEN leer y cumplir este documento antes de
 > tocar el código. Si una instrucción de este archivo entra en conflicto con una petición
 > puntual, gana este archivo salvo que el humano responsable lo autorice explícitamente.
+>
+> **Segundo documento obligatorio: [`HANDOFF_IA.md`](HANDOFF_IA.md)** — estado exacto del
+> proyecto, SHAs, qué está bloqueado y próxima acción. Índice completo en
+> [`README.md`](README.md); arquitectura científica en
+> [`SCIENTIFIC_ARCHITECTURE.md`](SCIENTIFIC_ARCHITECTURE.md); decisiones vinculantes en
+> [`ARCHITECTURE_DECISIONS.md`](ARCHITECTURE_DECISIONS.md); orden de trabajo en
+> [`ROADMAP.md`](ROADMAP.md).
 
 ## Contexto de la plataforma
 
@@ -45,6 +52,55 @@
 19. **Añadir pruebas de regresión cuando se arregle un bug** (reproducir primero, luego corregir).
 20. **Informar exactamente**: archivos modificados, tests ejecutados y sus resultados.
 
+## Cómo se cierra un hallazgo
+
+Las reglas 5 y 19 no se cumplen con documentación. El orden es obligatorio:
+
+1. **Reproduce el defecto** con un test que falle sobre el commit señalado, y conserva su
+   salida exacta. Sin evidencia roja no hay cierre.
+2. **Corrige la arquitectura**, no el síntoma.
+3. **Demuéstralo**: la mutación que causaba el defecto debe mover la identidad científica o
+   quedar estructuralmente impedida antes de escribir. Añade mutation tests sobre las líneas
+   exactas.
+4. **Ancla la mutación por AST, en el punto de llamada real.** Reescribir la primera aparición
+   textual de una expresión no prueba nada: si esa aparición está dentro de una región y la
+   ejecutada está fuera, el digest se mueve y el defecto sigue vivo.
+5. **No debilites un test existente** para que pase el tuyo. Si un test debe cambiar porque
+   la estructura cambió, hazlo más estricto, no más laxo.
+6. **Si falta evidencia, decláralo** con `MISSING_EXTERNAL_EVIDENCE`. Nunca la sustituyas por
+   una afirmación.
+
+Precedentes, los tres de la misma serie:
+
+- `c879bdec` declaró cerrado un hallazgo (A-02) que seguía abierto, apoyándose en una
+  afirmación documental. Refutado con dos mutaciones. Ver ADR-008.
+- `700f7695` y `450cf2fb` declararon el cierre con una suite verde cuyas mutaciones tocaban la
+  primera aparición textual, no el punto de llamada real. Refutados con tres hallazgos P1. Ver
+  [`HANDOFF_IA.md`](HANDOFF_IA.md) §6.1 y ADR-010.
+
+## Aprobación: qué la constituye y qué no
+
+`DECIDED` — ver [`HANDOFF_IA.md`](HANDOFF_IA.md) §2.1, que es la fuente completa.
+
+- **ChatGPT Work siempre cuestiona y valida de forma independiente el código de Claude.**
+  Revisa el árbol y ejecuta sus propias mutaciones; no revisa el informe.
+- **Un informe de Claude no es una aprobación. Un CI en verde tampoco.** Una suite verde sólo
+  demuestra que las mutaciones ya escritas se detectan.
+- **Si Work refuta, entrega veredicto y prompt correctivo juntos**, en el mismo mensaje.
+- **Todo prompt a Claude exige actualizar [`HANDOFF_IA.md`](HANDOFF_IA.md) en GitHub, sin
+  excepción**, e incluye HEAD, alcance, invariantes, pruebas rojas, aceptación, validación,
+  evidencia y prohibiciones.
+
+## Continuidad
+
+Si un cambio altera el estado del proyecto, actualizar [`HANDOFF_IA.md`](HANDOFF_IA.md),
+[`ROADMAP.md`](ROADMAP.md) y [`ARCHITECTURE_DECISIONS.md`](ARCHITECTURE_DECISIONS.md) **es
+parte del entregable**. `ARCHITECTURE_DECISIONS.md` es append-only: una decisión no se edita,
+se supersede.
+
+Usa estados explícitos —`CONFIRMED`, `DECIDED`, `PLANNED`, `BLOCKED`, `EXTERNAL_UNVERIFIED`,
+`MISSING_EXTERNAL_EVIDENCE`— en vez de prosa ambigua.
+
 ## Restricciones específicas de Git para agentes
 
 Permitido: leer/modificar código en el worktree propio, ejecutar tests y ruff, `git add/commit`,
@@ -76,6 +132,9 @@ Detalle completo en [`DEVELOPMENT_WORKFLOW.md`](DEVELOPMENT_WORKFLOW.md).
 
 - Python `>=3.11,<3.14` (producción usa 3.13). Dependencias runtime en `requirements.lock`;
   herramientas dev (`pytest`, `pytest-asyncio`, `ruff`) en el extra `[dev]` de `pyproject.toml`.
+- **PostgreSQL 17 es la referencia actual**, en producción y en CI. La capa científica se
+  prueba contra un clúster 17 aislado con `TEST_DATABASE_URL` exportada, como hace
+  `.github/workflows/ci.yml`, y debe terminar con **0 failed y 0 skipped**.
 - Preparar entorno local:
   ```bash
   python3 -m venv .venv && . .venv/bin/activate

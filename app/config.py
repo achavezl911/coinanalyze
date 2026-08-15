@@ -119,18 +119,37 @@ MARKET_SYMBOL_CATALOG_FILE = resolve_market_catalog_path(
 )
 MARKET_SYMBOL_CATALOG = load_market_catalog(MARKET_SYMBOL_CATALOG_FILE or None)
 SUPPORTED_SYMBOLS = tuple(item.symbol for item in MARKET_SYMBOL_CATALOG)
-WS_SYMBOL_MAP = {item.symbol: item.base_asset for item in MARKET_SYMBOL_CATALOG}
+
+# Non-scientific projections.  bybit_oi_symbol reaches only oi_bybit and
+# spot_history_symbol only spot_perp_flow and the daily aggregate, none of which
+# a scientific region reads.  The two thresholds only partition the
+# inst_/mid_/retail_ columns the context never selects.  They are deliberately
+# outside the identity region below: the R05 review showed that including the
+# catalog rows made whale_threshold_usd move the scientific digest, which
+# contradicted their documented exclusion.
 BYBIT_SYMBOL_MAP = {item.symbol: item.bybit_oi_symbol for item in MARKET_SYMBOL_CATALOG}
-SPOT_PAIR_MAP = {item.base_asset: item.spot_pair for item in MARKET_SYMBOL_CATALOG}
 SPOT_HISTORY_MAP = {item.symbol: item.spot_history_symbol for item in MARKET_SYMBOL_CATALOG}
-FUTURES_PAIR_MAP = {item.symbol: item.futures_pair for item in MARKET_SYMBOL_CATALOG}
-PAIR_SYMBOL_MAP = {item.futures_pair: item.symbol for item in MARKET_SYMBOL_CATALOG}
 WHALE_THRESHOLD_MAP = {
     item.base_asset: item.whale_threshold_usd for item in MARKET_SYMBOL_CATALOG
 }
 LARGE_TRADE_THRESHOLD_MAP = {
     item.symbol: item.large_trade_threshold_usd for item in MARKET_SYMBOL_CATALOG
 }
+
+# PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1_BEGIN
+
+# Exactly the four projections that decide which external market answers for an
+# internal key, and nothing else.  The resolved *values* they produce are frozen
+# separately by the runtime contract, which is what keeps a repointed catalog
+# from passing; this region freezes the logic that derives them, which is what
+# keeps a projection rewritten to read a different catalog column from passing
+# under an unchanged digest.
+WS_SYMBOL_MAP = {item.symbol: item.base_asset for item in MARKET_SYMBOL_CATALOG}
+SPOT_PAIR_MAP = {item.base_asset: item.spot_pair for item in MARKET_SYMBOL_CATALOG}
+FUTURES_PAIR_MAP = {item.symbol: item.futures_pair for item in MARKET_SYMBOL_CATALOG}
+PAIR_SYMBOL_MAP = {item.futures_pair: item.symbol for item in MARKET_SYMBOL_CATALOG}
+
+# PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1_END
 
 
 class Settings(BaseSettings):
