@@ -9,6 +9,7 @@ import time
 from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
+from functools import partial
 from typing import Any
 
 import asyncpg
@@ -627,16 +628,16 @@ def all_expected_fresh(
     return bool(expected) and all(0 <= lags.get(key, -1) < max_lag for key in expected)
 
 
-async def flush_trades(
-    pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
-    *,
-    routing: EffectiveMarketRouting,
-) -> None:
+# The flush loops keep their sleep, their retry policy and their monitoring
+# timestamp, and nothing else.  ``cycle`` arrives already bound to the pool, the
+# ownership fence and the one attested routing, so a loop cannot pick a store,
+# cannot pick a routing and cannot pick a delivery: it can only run the cycle it
+# was given, or stop.
+async def flush_trades(*, cycle: Callable[[], Awaitable[bool]]) -> None:
     while True:
         await asyncio.sleep(SETTINGS.SCALP_FLUSH_SECONDS)
         try:
-            if await flush_trades_cycle(pool, ownership, routing):
+            if await cycle():
                 LAST_FLUSH["trades"] = time.monotonic()
         except ServiceOwnershipLost:
             raise
@@ -992,16 +993,11 @@ async def deliver_liquidations(
 # PR27_SCIENTIFIC_SCALP_RAW_DELIVERY_V1_END
 
 
-async def flush_books(
-    pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
-    *,
-    routing: EffectiveMarketRouting,
-) -> None:
+async def flush_books(*, cycle: Callable[[], Awaitable[bool]]) -> None:
     while True:
         await asyncio.sleep(SETTINGS.SCALP_ORDERBOOK_FLUSH_SECONDS)
         try:
-            if await flush_books_cycle(pool, ownership, routing):
+            if await cycle():
                 LAST_FLUSH["books"] = time.monotonic()
         except ServiceOwnershipLost:
             raise
@@ -1012,10 +1008,11 @@ async def flush_books(
 
 
 async def flush_liquidations(
-    pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
     *,
-    routing: EffectiveMarketRouting,
+    cycle: Callable[
+        [list[tuple[datetime, str, str, str, float, float, float, str]]],
+        Awaitable[None],
+    ],
 ) -> None:
     buffer: list[tuple[datetime, str, str, str, float, float, float, str]] = []
     while True:
@@ -1032,7 +1029,7 @@ async def flush_liquidations(
         if not buffer:
             continue
         try:
-            await flush_liquidations_cycle(pool, ownership, routing, buffer)
+            await cycle(buffer)
             LAST_FLUSH["liquidations"] = time.monotonic()
             buffer.clear()
         except ServiceOwnershipLost:
@@ -1297,7 +1294,11 @@ async def bybit_linear_session(
 # PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_END
 
 
-async def binance_loop(*, routing: EffectiveMarketRouting) -> None:
+# The reconnect loops keep backoff, logging, feed health and sleeps, and
+# nothing else.  ``connect`` arrives already bound to one session function and
+# one attested routing, so a loop names no venue, no session and no routing: the
+# substitutions the R05 review performed here have no expressible form left.
+async def binance_loop(*, connect: Callable[..., Awaitable[None]]) -> None:
     backoff = WS_RECONNECT_INITIAL_SECONDS
     while True:
         resync_at = time.monotonic() + SETTINGS.BINANCE_BOOK_FORCE_RECONNECT_SECONDS
@@ -1316,9 +1317,7 @@ async def binance_loop(*, routing: EffectiveMarketRouting) -> None:
             backoff = WS_RECONNECT_INITIAL_SECONDS
 
         try:
-            await binance_futures_session(
-                routing, on_connected=on_connected, on_message=on_message
-            )
+            await connect(on_connected=on_connected, on_message=on_message)
         except asyncio.CancelledError:
             raise
         except BookResyncRequired as exc:
@@ -1339,7 +1338,7 @@ async def binance_market_loop(
     pool: asyncpg.Pool | None = None,
     ownership: ServiceOwnership | None = None,
     *,
-    routing: EffectiveMarketRouting,
+    connect: Callable[..., Awaitable[None]],
 ) -> None:
     """Liquidaciones Binance. Las URLs legacy se decomisaron el 2026-04-23: forceOrder
     solo emite en el endpoint /market nuevo; trade/depth siguen en la conexion legacy."""
@@ -1362,9 +1361,7 @@ async def binance_market_loop(
             backoff = WS_RECONNECT_INITIAL_SECONDS
 
         try:
-            await binance_market_session(
-                routing, on_connected=on_connected, on_message=on_message
-            )
+            await connect(on_connected=on_connected, on_message=on_message)
         except asyncio.CancelledError:
             LIQ_FEED_CONNECTED["binance"] = False
             await persist_liquidation_feed_state(
@@ -1399,7 +1396,7 @@ async def bybit_loop(
     pool: asyncpg.Pool | None = None,
     ownership: ServiceOwnership | None = None,
     *,
-    routing: EffectiveMarketRouting,
+    connect: Callable[..., Awaitable[None]],
 ) -> None:
     backoff = WS_RECONNECT_INITIAL_SECONDS
     while True:
@@ -1432,8 +1429,7 @@ async def bybit_loop(
                 )
 
         try:
-            await bybit_linear_session(
-                routing,
+            await connect(
                 on_connected=on_connected,
                 on_subscription_reply=on_subscription_reply,
                 on_message=on_message,
@@ -1744,30 +1740,82 @@ def scalp_routing_producers(
     """The single injection of one attested routing into every producer task.
 
     Wiring the subscriptions from one routing and the flushes from another is
-    exactly how a misrouted store survives a correct delivery gate, so the
-    entrypoint may not choose per task: it hands this function one routing and
-    receives every producer already bound to it.
+    exactly how a misrouted store survives a correct delivery gate, so nothing
+    outside this function may choose per task.  Each producer is handed a
+    callable that already carries this routing *and* the exact session or
+    delivery cycle it must run, so the loops that surround them hold only
+    backoff, logging, feed health and sleeps.
     """
 
     return (
-        ("binance-futures", binance_loop(routing=routing)),
-        ("binance-market", binance_market_loop(pool, ownership, routing=routing)),
-        ("bybit-linear", bybit_loop(pool, ownership, routing=routing)),
-        ("flush-trades", flush_trades(pool, ownership, routing=routing)),
-        ("flush-books", flush_books(pool, ownership, routing=routing)),
-        ("flush-liquidations", flush_liquidations(pool, ownership, routing=routing)),
+        (
+            "binance-futures",
+            binance_loop(connect=partial(binance_futures_session, routing)),
+        ),
+        (
+            "binance-market",
+            binance_market_loop(
+                pool, ownership, connect=partial(binance_market_session, routing)
+            ),
+        ),
+        (
+            "bybit-linear",
+            bybit_loop(pool, ownership, connect=partial(bybit_linear_session, routing)),
+        ),
+        (
+            "flush-trades",
+            flush_trades(cycle=partial(flush_trades_cycle, pool, ownership, routing)),
+        ),
+        (
+            "flush-books",
+            flush_books(cycle=partial(flush_books_cycle, pool, ownership, routing)),
+        ),
+        (
+            "flush-liquidations",
+            flush_liquidations(
+                cycle=partial(flush_liquidations_cycle, pool, ownership, routing)
+            ),
+        ),
+    )
+
+
+def require_attested_scalp_routing() -> None:
+    """Fail closed before the service lock, the pool or any subscription.
+
+    A process that resolves an unregistered result-material routing must
+    produce nothing.  Exiting non-zero makes systemd retry every RestartSec
+    until an operator restores or registers the routing -- degraded beats
+    misrouted.  Nothing is returned on purpose: the entrypoint must not end up
+    holding a routing it could hand to anything.
+    """
+
+    attest_raw_market_producer(RAW_PRODUCER)
+
+
+def start_scalp_routing_producers(
+    pool: asyncpg.Pool, ownership: ServiceOwnership
+) -> tuple[asyncio.Task[None], ...]:
+    """Attest, wire and create every result-material producer task, in one place.
+
+    The entrypoint never holds an ``EffectiveMarketRouting``.  It cannot forge
+    one, cannot pick a session, cannot pick a store and cannot pick a delivery,
+    because the routing is resolved, applied and consumed without ever leaving
+    the scientific identity.  Creating the tasks here is deliberate: the task is
+    the moment a producer becomes real, and that decision belongs inside the
+    identity with the rest of the wiring.
+    """
+
+    routing = attest_raw_market_producer(RAW_PRODUCER)
+    return tuple(
+        asyncio.create_task(producer, name=name)
+        for name, producer in scalp_routing_producers(pool, ownership, routing)
     )
 
 # PR27_SCIENTIFIC_SCALP_ROUTING_ENTRYPOINT_V1_END
 
 
 async def main() -> None:
-    # Before the service lock, the pool or any subscription: a process that
-    # resolves an unregistered result-material routing must produce nothing.
-    # Exiting non-zero makes systemd retry every RestartSec until an operator
-    # restores or registers the routing -- degraded beats misrouted.
-    # The returned frozen routing is the only routing this process applies.
-    routing = attest_raw_market_producer(RAW_PRODUCER)
+    require_attested_scalp_routing()
     service_lock = await acquire_service_lock(
         SETTINGS,
         "scalp",
@@ -1799,10 +1847,7 @@ async def main() -> None:
     if ACTIVE_SYMBOLS:
         async with pool.acquire() as conn:
             await reset_liquidation_feed_health(conn, service_lock)
-        tasks.extend(
-            asyncio.create_task(producer, name=name)
-            for name, producer in scalp_routing_producers(pool, service_lock, routing)
-        )
+        tasks.extend(start_scalp_routing_producers(pool, service_lock))
         tasks.append(asyncio.create_task(persist_scalp_signals(pool, service_lock)))
     try:
         await asyncio.gather(*tasks)

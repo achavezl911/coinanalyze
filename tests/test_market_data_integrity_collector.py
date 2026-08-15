@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import UTC, datetime
+from functools import partial
 from typing import Any
 
 import pytest
@@ -245,7 +246,10 @@ async def test_bybit_health_waits_for_positive_subscription_confirmation(
     monkeypatch.setattr(scalp, "persist_liquidation_feed_state", record_state)
 
     with pytest.raises(asyncio.CancelledError):
-        await scalp.bybit_loop(object(), routing=ROUTING)  # type: ignore[arg-type]
+        await scalp.bybit_loop(
+            object(),  # type: ignore[arg-type]
+            connect=partial(scalp.bybit_linear_session, ROUTING),
+        )
 
     assert persisted == [("bybit", "ok"), ("bybit", "degraded")]
 

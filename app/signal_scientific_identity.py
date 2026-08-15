@@ -268,19 +268,26 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
 #
 # The v1 digest has been recomputed while the substitution window is open --
 # no spec-v4 manifest and no authoritative result exist that could have frozen
-# a previous value, so no evidence is invalidated by the change.  R05's first
-# attempt registered 25f6c2e5...; an independent review then showed that the
-# surface it froze excluded the points where the routing is actually applied
-# and included catalog values documented as non-material, so the surface was
-# corrected and the digest recomputed.
+# a previous value, so no evidence is invalidated by the change.  History
+# inside PR27: f696a268... (R03) -> 9749e643... (R04) -> 25f6c2e5...
+# (c879bdec) -> 5a5cb09f... (700f7695 / 450cf2fb) -> this value.
+#
+# 25f6c2e5... was refuted because the surface excluded the points where the
+# routing is applied and included catalog values documented as non-material.
+# 5a5cb09f... was refuted in turn: its mutation suite rewrote the *first
+# textual occurrence* of each routing expression, which after that correction
+# always landed inside a region, while the real call sites -- the session
+# selection in the reconnect loops and the wiring invoked by main()/run() --
+# stayed outside.  The surface now covers those call sites, and nothing
+# routing-material is reachable outside a region at all.
 #
 # This value is a candidate, not a frozen result: it stands only if the
-# corrected surface survives independent review.  The window closes before the
-# first spec-v4 manifest; from that point on any change registers a new
-# identity version and the v1 digest is never replaced.
+# corrected surface survives an independent review with P0=0 and P1=0.  The
+# window closes before the first spec-v4 manifest; from that point on any
+# change registers a new identity version and the v1 digest is never replaced.
 REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS = {
     SCIENTIFIC_IDENTITY_VERSION_V1: (
-        "5a5cb09f80ce17903409daf8fc90e7d05e060a578183aed629d680f37280f05f"
+        "c939add3055ea2a8b0edd1ea93630682043a2b98b4ac33425bc49acc47cf156c"
     ),
 }
 

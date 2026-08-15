@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from functools import partial
 
 import pytest
 
@@ -117,7 +118,9 @@ async def test_bybit_disconnect_drops_book_and_uses_backoff(
     monkeypatch.setattr(scalp.asyncio, "sleep", stop_after_delay)
 
     with pytest.raises(asyncio.CancelledError):
-        await scalp.bybit_loop(routing=PR27_ROUTING)
+        await scalp.bybit_loop(
+            connect=partial(scalp.bybit_linear_session, PR27_ROUTING)
+        )
 
     assert await books.symbol_exchange_lags() == {}
     assert timestamps[("BTCUSDT_PERP.A", "bybit")] == 0.0

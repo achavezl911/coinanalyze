@@ -36,6 +36,14 @@ only the internal key, because the key it produces is genuinely routed.  The
 two routing indexes are therefore constructible only from an attested
 ``EffectiveMarketRouting``, which validates each conversion at construction, and
 ``require_routed_pair_origins`` states the same invariant as a reusable gate.
+
+Requiring *an* ``EffectiveMarketRouting`` is still not enough, which is what the
+second review demonstrated: the class is constructible by hand, a forged row set
+is self-consistent, and the registered digest is only a string it can carry.
+``require_attested_routing`` closes that last door by re-deriving the contract
+from the live configuration and requiring it to reproduce the routing being
+used, so an index can exist only where the registry agrees -- before a
+subscription, before a store and before a write.
 """
 
 from __future__ import annotations
@@ -206,6 +214,7 @@ class FuturesRoutingIndex:
     routing: EffectiveMarketRouting
 
     def __post_init__(self) -> None:
+        require_attested_routing(self.routing, "scalp_collector")
         _require_indexed_pairs(self.pairs, self.symbol_by_pair)
         require_routed_pair_origins(
             self.routing, "scalp_collector", self.symbol_by_pair.items()
@@ -227,6 +236,7 @@ class SpotRoutingIndex:
     routing: EffectiveMarketRouting
 
     def __post_init__(self) -> None:
+        require_attested_routing(self.routing, "ws_collector")
         _require_indexed_pairs(self.pairs, self.base_asset_by_pair)
         require_routed_pair_origins(
             self.routing, "ws_collector", self.base_asset_by_pair.items()
@@ -504,6 +514,33 @@ _RAW_PRODUCER_EXTERNAL_PAIR_FIELDS_V1 = {
     "scalp_collector": ("futures_pair", "symbol"),
     "ws_collector": ("spot_pair", "base_asset"),
 }
+
+
+def require_attested_routing(routing: EffectiveMarketRouting, producer: str) -> None:
+    """Refuse a routing the registry does not reproduce *now*.
+
+    Self-consistency is not provenance.  The second R05 review built an
+    ``EffectiveMarketRouting`` by hand whose single row read ``symbol =
+    BTCUSDT_PERP.A, futures_pair = ETHUSDT``: internally consistent, carrying
+    the registered digest verbatim as a plain string, and therefore accepted by
+    every check that compares the object with itself or with a text.  It then
+    produced an index that filed ETH's market under BTC's internal key, and the
+    delivery gate -- holding the *correct* routing -- had nothing to object to,
+    because the key it saw was genuinely routed.
+
+    The only evidence a forgery cannot manufacture is the registry itself:
+    recompute the contract from the live catalog, settings and effective maps,
+    and require it to reproduce these very rows.  A routing that was attested
+    and has since drifted fails here too, which is what makes this a gate
+    rather than a constructor check.
+    """
+
+    if not isinstance(routing, EffectiveMarketRouting):
+        raise RawMarketProducerContractError(
+            f"raw market producer {producer!r} requires an attested "
+            f"EffectiveMarketRouting, not {type(routing).__name__}"
+        )
+    attest_raw_market_producer(producer, routing.contract_version, expected=routing)
 
 
 def require_routed_pair_origins(

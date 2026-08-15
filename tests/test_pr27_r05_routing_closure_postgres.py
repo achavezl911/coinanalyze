@@ -25,6 +25,7 @@ from tests.test_pr27_r04_raw_producer_closure_postgres import (
     A_SPOT_PX,
     B_FUT_PX,
     B_SPOT_PX,
+    _bound_cycle,
     _bounded_sleep,
     _connect,
     _count,
@@ -47,7 +48,9 @@ async def test_scalp_flush_delivers_nothing_under_a_divergent_futures_map(
         monkeypatch.setattr(scalp, "TRADE_STORE", _seed_futures(A_FUT_PX))
         _bounded_sleep(scalp, monkeypatch)
         with pytest.raises(asyncio.CancelledError):
-            await scalp.flush_trades(_Pool(conn), routing=routing)
+            await scalp.flush_trades(
+                cycle=_bound_cycle(scalp, "flush_trades", _Pool(conn), routing)
+            )
         written_under_a = await _count(conn, "futures_trades_realtime")
         assert written_under_a > 0
 
@@ -56,7 +59,9 @@ async def test_scalp_flush_delivers_nothing_under_a_divergent_futures_map(
         monkeypatch.setitem(config.FUTURES_PAIR_MAP, "BTCUSDT_PERP.A", "ETHUSDT")
         _bounded_sleep(scalp, monkeypatch)
         with pytest.raises(RawMarketProducerContractError):
-            await scalp.flush_trades(_Pool(conn), routing=routing)
+            await scalp.flush_trades(
+                cycle=_bound_cycle(scalp, "flush_trades", _Pool(conn), routing)
+            )
 
         assert await _count(conn, "futures_trades_realtime") == written_under_a
         assert await conn.fetchval(
@@ -77,7 +82,9 @@ async def test_ws_flush_delivers_nothing_under_a_divergent_spot_map(
         monkeypatch.setattr(ws, "STORE", _seed_spot(A_SPOT_PX))
         _bounded_sleep(ws, monkeypatch)
         with pytest.raises(asyncio.CancelledError):
-            await ws.flush_realtime(_Pool(conn), routing=routing)
+            await ws.flush_realtime(
+                cycle=_bound_cycle(ws, "flush_realtime", _Pool(conn), routing)
+            )
         written_under_a = await _count(conn, "spot_trades_realtime")
         assert written_under_a > 0
 
@@ -85,7 +92,9 @@ async def test_ws_flush_delivers_nothing_under_a_divergent_spot_map(
         monkeypatch.setitem(config.SPOT_PAIR_MAP, "BTC", "ETHUSDT")
         _bounded_sleep(ws, monkeypatch)
         with pytest.raises(RawMarketProducerContractError):
-            await ws.flush_realtime(_Pool(conn), routing=routing)
+            await ws.flush_realtime(
+                cycle=_bound_cycle(ws, "flush_realtime", _Pool(conn), routing)
+            )
 
         assert await _count(conn, "spot_trades_realtime") == written_under_a
         assert await conn.fetchval(
@@ -111,7 +120,9 @@ async def test_delivery_refuses_internal_keys_outside_the_attested_routing(
         _bounded_sleep(scalp, monkeypatch)
 
         with pytest.raises(RawMarketProducerContractError):
-            await scalp.flush_trades(_Pool(conn), routing=routing)
+            await scalp.flush_trades(
+                cycle=_bound_cycle(scalp, "flush_trades", _Pool(conn), routing)
+            )
         assert await _count(conn, "futures_trades_realtime") == 0
     finally:
         await _drop(conn, schema)

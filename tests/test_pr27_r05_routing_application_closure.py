@@ -31,6 +31,16 @@ These tests were written red against ``c879bdec``.  They force two things at
 once: every line that applies the routing must live inside a scientific
 identity region, and an index that a routing did not produce must be
 structurally impossible rather than merely undocumented.
+
+**They were not sufficient.**  ``_mutate`` below rewrites the *first textual
+occurrence* of each expression, and after ``700f7695``/``450cf2fb`` that first
+occurrence is always the one already inside a region -- so the suite went green
+while the real call sites in ``binance_loop``, ``binance_consumer``, ``main``
+and ``run`` stayed unprotected.  A second independent review reproduced the
+bypass through exactly that gap.  The mutations here are kept, and
+``test_pr27_r05_routing_wiring_closure.py`` adds the anchored ones: it locates
+every reference through the AST, so a duplicate expression inside a region can
+no longer stand in for the real one.
 """
 
 from __future__ import annotations
@@ -117,11 +127,11 @@ SCALP_APPLICATION_MUTATIONS = (
         "handle_binance(message, index)",
     ),
     (
-        "scalp-main-routing-injection",
-        "main",
+        "scalp-routing-injection",
+        "scalp_routing_producers",
         "app/scalp_collector.py",
-        "binance_loop(routing=routing)",
-        "binance_loop(routing=UNATTESTED_ROUTING)",
+        "binance_loop(connect=partial(binance_futures_session, routing))",
+        "binance_loop(connect=partial(binance_futures_session, UNATTESTED_ROUTING))",
     ),
     (
         "scalp-trade-store-handoff",
@@ -183,11 +193,11 @@ WS_APPLICATION_MUTATIONS = (
         "handle_binance_spot(json.loads(raw), index)",
     ),
     (
-        "ws-run-routing-injection",
-        "run",
+        "ws-routing-injection",
+        "ws_routing_producers",
         "app/ws_collector.py",
-        "binance_consumer(symbols, routing)",
-        "binance_consumer(symbols, UNATTESTED_ROUTING)",
+        "connect=partial(binance_spot_session, symbols, routing)",
+        "connect=partial(binance_spot_session, symbols, UNATTESTED_ROUTING)",
     ),
     (
         "ws-minute-store-handoff",

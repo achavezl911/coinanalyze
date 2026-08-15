@@ -21,6 +21,7 @@ import subprocess
 import sys
 import textwrap
 from dataclasses import replace
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -214,6 +215,19 @@ SLEEPING_FLUSHES = (
 )
 
 
+def _bound_cycle(module, name: str, pool, routing):
+    """The delivery cycle the entrypoint binds, exactly as it binds it.
+
+    Since the R05 wiring closure the flush loops receive a bound cycle instead
+    of a routing: a loop that cannot name a store, a routing or a delivery
+    cannot substitute one.  The gate under test is unchanged -- it lives in the
+    cycle -- so these tests bind the cycle the same way ``*_routing_producers``
+    does and keep asserting that nothing reaches the pool.
+    """
+
+    return partial(getattr(module, f"{name}_cycle"), pool, None, routing)
+
+
 @pytest.mark.parametrize(
     ("module", "name"),
     SLEEPING_FLUSHES,
@@ -230,7 +244,7 @@ async def test_flush_loop_writes_nothing_under_an_unregistered_routing(
     pool = _RecordingPool()
 
     with pytest.raises(RawMarketProducerContractError):
-        await getattr(module, name)(pool, routing=routing)
+        await getattr(module, name)(cycle=_bound_cycle(module, name, pool, routing))
 
     assert pool.acquired == 0
 
@@ -251,7 +265,7 @@ async def test_flush_loop_survives_the_guard_under_the_registered_routing(
     pool = _RecordingPool()
 
     with pytest.raises(asyncio.CancelledError):
-        await getattr(module, name)(pool, routing=routing)
+        await getattr(module, name)(cycle=_bound_cycle(module, name, pool, routing))
 
 
 @pytest.mark.asyncio
@@ -266,7 +280,9 @@ async def test_liquidation_flush_writes_nothing_under_an_unregistered_routing(
     pool = _RecordingPool()
 
     with pytest.raises(RawMarketProducerContractError):
-        await scalp.flush_liquidations(pool, routing=routing)
+        await scalp.flush_liquidations(
+            cycle=partial(scalp.flush_liquidations_cycle, pool, None, routing)
+        )
 
     assert pool.acquired == 0
 
@@ -282,7 +298,9 @@ async def test_liquidation_flush_survives_the_guard_under_the_registered_routing
     pool = _RecordingPool()
 
     with pytest.raises(asyncio.CancelledError):
-        await scalp.flush_liquidations(pool, routing=routing)
+        await scalp.flush_liquidations(
+            cycle=partial(scalp.flush_liquidations_cycle, pool, None, routing)
+        )
 
     assert pool.acquired == 1
 
@@ -353,15 +371,32 @@ def test_ws_collector_start_is_blocked_by_a_real_routing_b_catalog(tmp_path) -> 
 
 
 @pytest.mark.parametrize(
-    ("module", "field"), [(scalp, "futures_pair"), (ws, "spot_pair")]
+    ("module", "field", "gate"),
+    [
+        (scalp, "futures_pair", "require_attested_scalp_routing"),
+        (ws, "spot_pair", "require_attested_ws_routing"),
+    ],
 )
 def test_collector_entrypoint_attests_before_any_lock_pool_or_subscription(
-    module, field: str
+    module, field: str, gate: str
 ) -> None:
+    """Stricter since the R05 wiring closure.
+
+    The entrypoint used to bind the attested routing itself, which is what let
+    the review inject a forged one per task.  It now calls a gate that lives
+    inside the scientific identity and returns nothing, so the ordering claim
+    survives *and* the entrypoint provably holds no routing at all.
+    """
+
     import inspect
 
     entrypoint = module.main if module is scalp else module.run
     body = inspect.getsource(entrypoint)
-    attested = body.index("attest_raw_market_producer")
+    gated = body.index(f"{gate}()")
     for later in ("acquire_service_lock", "create_pool"):
-        assert attested < body.index(later), later
+        assert gated < body.index(later), later
+
+    # The gate must really attest, and the entrypoint must not attest by hand.
+    assert "attest_raw_market_producer" in inspect.getsource(getattr(module, gate))
+    assert "attest_raw_market_producer" not in body
+    assert inspect.signature(getattr(module, gate)).return_annotation == "None"

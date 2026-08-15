@@ -21,11 +21,14 @@ over routing construction and its application points in both collectors.
 
 from __future__ import annotations
 
+import ast
 import asyncio
 import inspect
 import shutil
+import textwrap
 import time
 from dataclasses import FrozenInstanceError
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -49,6 +52,7 @@ from app.signal_scientific_identity import (
     compute_scientific_implementation_identity,
 )
 from tests.test_pr27_r04_raw_producer_closure import (
+    _bound_cycle,
     _bounded_sleep,
     _RecordingPool,
     _swapped,
@@ -327,7 +331,9 @@ async def test_scalp_flush_loops_write_nothing_under_divergent_effective_maps(
             patch.setitem(config.FUTURES_PAIR_MAP, "BTCUSDT_PERP.A", "ETHUSDT")
             pool = _RecordingPool()
             with pytest.raises(RawMarketProducerContractError):
-                await getattr(scalp, name)(pool, routing=routing)
+                await getattr(scalp, name)(
+                    cycle=_bound_cycle(scalp, name, pool, routing)
+                )
             assert pool.acquired == 0
 
 
@@ -343,7 +349,9 @@ async def test_scalp_liquidation_flush_writes_nothing_under_divergent_maps(
     pool = _RecordingPool()
 
     with pytest.raises(RawMarketProducerContractError):
-        await scalp.flush_liquidations(pool, routing=routing)
+        await scalp.flush_liquidations(
+            cycle=partial(scalp.flush_liquidations_cycle, pool, None, routing)
+        )
     assert pool.acquired == 0
 
 
@@ -411,7 +419,9 @@ async def test_ws_flush_loops_write_nothing_under_divergent_effective_maps(
             patch.setitem(config.WS_SYMBOL_MAP, "BTCUSDT_PERP.A", "ETH")
             pool = _RecordingPool()
             with pytest.raises(RawMarketProducerContractError):
-                await getattr(ws, name)(pool, routing=routing)
+                await getattr(ws, name)(
+                    cycle=_bound_cycle(ws, name, pool, routing)
+                )
             assert pool.acquired == 0
 
 
@@ -483,29 +493,59 @@ def test_collectors_no_longer_import_the_mutable_maps() -> None:
             assert not hasattr(module, name), (module.__name__, name)
 
 
-def test_entrypoints_bind_and_explicitly_pass_the_attested_routing() -> None:
+def test_entrypoints_never_hold_the_attested_routing_at_all() -> None:
     """One attestation per process, and no per-task choice of routing.
 
-    The R05 review showed that wiring the subscriptions from one routing and
-    the flushes from another produces a misrouted store behind a delivery gate
-    that sees nothing wrong.  The entrypoints therefore bind exactly one
-    attested routing and hand it whole to the identity-covered wiring, which is
-    the only place that decides which producer receives it.
+    Stricter than the R05 version of this test, which required the entrypoint
+    to *bind* the attested routing.  The second review showed that binding it
+    is precisely the capability that has to be removed: an entrypoint holding a
+    routing can wire the subscriptions from a forged one and the flushes from
+    the attested one, and the delivery gate sees nothing wrong.  The entrypoint
+    now calls a starter that attests, wires and creates the tasks inside the
+    scientific identity, and never receives a routing it could redirect.
     """
 
-    for entrypoint, wiring in (
-        (scalp.main, scalp.scalp_routing_producers),
-        (ws.run, ws.ws_routing_producers),
+    for entrypoint, starter, wiring in (
+        (scalp.main, scalp.start_scalp_routing_producers, scalp.scalp_routing_producers),
+        (ws.run, ws.start_ws_routing_producers, ws.ws_routing_producers),
     ):
         entrypoint_source = inspect.getsource(entrypoint)
-        assert "routing = attest_raw_market_producer(RAW_PRODUCER)" in entrypoint_source
-        assert entrypoint_source.count("attest_raw_market_producer") == 1
-        assert f"{wiring.__name__}(" in entrypoint_source
+        assert "attest_raw_market_producer" not in entrypoint_source
+        # No local named `routing`, and no `routing=` handed to anything: the
+        # entrypoint has nothing of the kind to redirect.
+        entrypoint_ast = ast.parse(textwrap.dedent(entrypoint_source))
+        assert not [
+            node
+            for node in ast.walk(entrypoint_ast)
+            if isinstance(node, ast.Name) and node.id == "routing"
+        ]
+        assert not [
+            keyword
+            for node in ast.walk(entrypoint_ast)
+            if isinstance(node, ast.Call)
+            for keyword in node.keywords
+            if keyword.arg == "routing"
+        ]
+        called = {
+            node.func.id
+            for node in ast.walk(entrypoint_ast)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        assert starter.__name__ in called
+        assert wiring.__name__ not in called
+
+        starter_source = inspect.getsource(starter)
+        assert starter_source.count("attest_raw_market_producer(RAW_PRODUCER)") == 1
+        assert f"{wiring.__name__}(" in starter_source
+        # The starter creates the tasks itself: the entrypoint receives tasks,
+        # never coroutines it could rewire.
+        assert "asyncio.create_task(" in starter_source
 
         wiring_source = inspect.getsource(wiring)
-        assert "routing=routing" in wiring_source
-        # The wiring receives one routing and may not resolve another itself.
+        # Every producer is bound to the same routing, and the wiring may not
+        # resolve another one itself.
         assert "attest_raw_market_producer" not in wiring_source
+        assert wiring_source.count("routing)") == wiring_source.count("partial(")
 
 
 @pytest.mark.parametrize(
@@ -519,10 +559,25 @@ def test_entrypoints_bind_and_explicitly_pass_the_attested_routing() -> None:
     ],
     ids=lambda value: getattr(value, "__name__", value),
 )
-def test_flush_loops_require_an_explicit_routing_with_no_fallback(module, name) -> None:
-    parameter = inspect.signature(getattr(module, name)).parameters["routing"]
+def test_flush_loops_require_an_explicit_bound_cycle_with_no_fallback(
+    module, name
+) -> None:
+    """Stricter than requiring an explicit ``routing`` parameter.
+
+    A loop that receives a routing can still choose which delivery to hand it
+    to.  Since the wiring closure a loop receives only the bound cycle, so it
+    holds no routing, names no store and names no delivery: the only thing it
+    can do with what it was given is run it.
+    """
+
+    signature = inspect.signature(getattr(module, name))
+    assert "routing" not in signature.parameters
+    parameter = signature.parameters["cycle"]
     assert parameter.kind is inspect.Parameter.KEYWORD_ONLY
     assert parameter.default is inspect.Parameter.empty
+    source = inspect.getsource(getattr(module, name))
+    assert "_cycle(" not in source
+    assert "routing" not in source
 
 
 def test_raw_delivery_functions_gate_inside_the_write_path() -> None:
@@ -658,7 +713,19 @@ def test_identity_regions_contain_the_routing_material_code() -> None:
     scalp_entrypoint = _region(
         *ROUTING_IDENTITY_COMPONENTS["scalp_routing_entrypoint"]
     )
-    for needle in ("binance_loop(routing=routing)", "flush_trades(pool, ownership, routing=routing)"):
+    for needle in (
+        # The session each feed opens, bound to the one attested routing.
+        "binance_loop(connect=partial(binance_futures_session, routing))",
+        "connect=partial(binance_market_session, routing)",
+        "connect=partial(bybit_linear_session, routing)",
+        # The store each flush delivers, bound to the same routing.
+        "flush_trades(cycle=partial(flush_trades_cycle, pool, ownership, routing))",
+        "cycle=partial(flush_books_cycle, pool, ownership, routing)",
+        "cycle=partial(flush_liquidations_cycle, pool, ownership, routing)",
+        # The attestation and the creation of the material tasks.
+        "attest_raw_market_producer(RAW_PRODUCER)",
+        "asyncio.create_task(producer, name=name)",
+    ):
         assert needle in scalp_entrypoint
 
     scalp_delivery = _region(*ROUTING_IDENTITY_COMPONENTS["scalp_raw_delivery"])
@@ -693,8 +760,12 @@ def test_identity_regions_contain_the_routing_material_code() -> None:
 
     ws_entrypoint = _region(*ROUTING_IDENTITY_COMPONENTS["ws_routing_entrypoint"])
     for needle in (
-        "binance_consumer(symbols, routing)",
-        "flush_minute(pool, ownership, routing=routing)",
+        "connect=partial(binance_spot_session, symbols, routing)",
+        "connect=partial(bybit_spot_session, symbols, routing)",
+        "cycle=partial(flush_minute_cycle, pool, ownership, routing)",
+        "cycle=partial(flush_realtime_cycle, pool, ownership, routing)",
+        "attest_raw_market_producer(RAW_PRODUCER)",
+        "asyncio.create_task(producer, name=name)",
     ):
         assert needle in ws_entrypoint
 

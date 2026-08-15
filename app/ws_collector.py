@@ -9,6 +9,7 @@ import time
 from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from functools import partial
 from typing import Any
 
 import asyncpg
@@ -530,16 +531,15 @@ async def deliver_spot_realtime(
 # PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_END
 
 
-async def flush_minute(
-    pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
-    *,
-    routing: EffectiveMarketRouting,
-) -> None:
+# The flush loops keep their sleep, their retry policy and their logging, and
+# nothing else.  ``cycle`` arrives already bound to the pool, the ownership
+# fence and the one attested routing, so a loop cannot pick a store, a routing
+# or a delivery: it can only run the cycle it was given, or stop.
+async def flush_minute(*, cycle: Callable[[], Awaitable[None]]) -> None:
     while True:
         await asyncio.sleep(5)
         try:
-            await flush_minute_cycle(pool, ownership, routing)
+            await cycle()
         except ServiceOwnershipLost:
             raise
         except RawMarketProducerContractError:
@@ -550,16 +550,11 @@ async def flush_minute(
             LOGGER.exception("minute_flush_failed buckets=%d", len(STORE.minute))
 
 
-async def flush_realtime(
-    pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
-    *,
-    routing: EffectiveMarketRouting,
-) -> None:
+async def flush_realtime(*, cycle: Callable[[], Awaitable[None]]) -> None:
     while True:
         await asyncio.sleep(2)
         try:
-            await flush_realtime_cycle(pool, ownership, routing)
+            await cycle()
         except ServiceOwnershipLost:
             raise
         except RawMarketProducerContractError:
@@ -568,9 +563,10 @@ async def flush_realtime(
             LOGGER.exception("realtime_flush_failed buckets=%d", len(STORE.realtime))
 
 
-async def binance_consumer(
-    symbols: tuple[str, ...], routing: EffectiveMarketRouting
-) -> None:
+# The reconnect loops keep backoff and logging, and nothing else.  ``connect``
+# arrives already bound to one session function, one symbol scope and one
+# attested routing, so a consumer names no venue, no session and no routing.
+async def binance_consumer(*, connect: Callable[..., Awaitable[None]]) -> None:
     backoff = 1.0
     while True:
 
@@ -583,9 +579,7 @@ async def binance_consumer(
             return None
 
         try:
-            await binance_spot_session(
-                symbols, routing, on_connected=on_connected, on_message=on_message
-            )
+            await connect(on_connected=on_connected, on_message=on_message)
         except asyncio.CancelledError:
             raise
         except RawMarketProducerContractError:
@@ -598,9 +592,7 @@ async def binance_consumer(
         backoff = min(backoff * 2, 60.0)
 
 
-async def bybit_consumer(
-    symbols: tuple[str, ...], routing: EffectiveMarketRouting
-) -> None:
+async def bybit_consumer(*, connect: Callable[..., Awaitable[None]]) -> None:
     backoff = 1.0
     while True:
 
@@ -613,9 +605,7 @@ async def bybit_consumer(
             return None
 
         try:
-            await bybit_spot_session(
-                symbols, routing, on_connected=on_connected, on_message=on_message
-            )
+            await connect(on_connected=on_connected, on_message=on_message)
         except asyncio.CancelledError:
             raise
         except RawMarketProducerContractError:
@@ -699,30 +689,74 @@ def ws_routing_producers(
     """The single injection of one attested routing into every producer task.
 
     Wiring the subscriptions from one routing and the flushes from another is
-    exactly how a misrouted store survives a correct delivery gate, so the
-    entrypoint may not choose per task.
+    exactly how a misrouted store survives a correct delivery gate, so nothing
+    outside this function may choose per task.  Each producer is handed a
+    callable that already carries this routing *and* the exact session or
+    delivery cycle it must run.
     """
 
     producers: tuple[tuple[str, Coroutine[Any, Any, None]], ...] = (
-        ("flush-minute", flush_minute(pool, ownership, routing=routing)),
-        ("flush-realtime", flush_realtime(pool, ownership, routing=routing)),
+        (
+            "flush-minute",
+            flush_minute(cycle=partial(flush_minute_cycle, pool, ownership, routing)),
+        ),
+        (
+            "flush-realtime",
+            flush_realtime(
+                cycle=partial(flush_realtime_cycle, pool, ownership, routing)
+            ),
+        ),
     )
     if symbols:
         producers += (
-            ("binance", binance_consumer(symbols, routing)),
-            ("bybit", bybit_consumer(symbols, routing)),
+            (
+                "binance",
+                binance_consumer(
+                    connect=partial(binance_spot_session, symbols, routing)
+                ),
+            ),
+            (
+                "bybit",
+                bybit_consumer(connect=partial(bybit_spot_session, symbols, routing)),
+            ),
         )
     return producers
+
+
+def require_attested_ws_routing() -> None:
+    """Fail closed before the service lock, the pool or any subscription.
+
+    Nothing is returned on purpose: the entrypoint must not end up holding a
+    routing it could hand to anything.
+    """
+
+    attest_raw_market_producer(RAW_PRODUCER)
+
+
+def start_ws_routing_producers(
+    pool: asyncpg.Pool, ownership: ServiceOwnership, symbols: tuple[str, ...]
+) -> tuple[asyncio.Task[None], ...]:
+    """Attest, wire and create every result-material producer task, in one place.
+
+    ``run()`` never holds an ``EffectiveMarketRouting``: the routing is
+    resolved, applied and consumed without ever leaving the scientific
+    identity.  ``symbols`` is the shard assignment and stays outside, because
+    ``spot_index`` refuses any symbol the attested routing does not carry: a
+    narrowed scope can only produce a visible ``data_gap``, never a misroute.
+    """
+
+    routing = attest_raw_market_producer(RAW_PRODUCER)
+    return tuple(
+        asyncio.create_task(producer, name=name)
+        for name, producer in ws_routing_producers(pool, ownership, symbols, routing)
+    )
 
 # PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_END
 
 
 async def run() -> None:
     global STORE
-    # Before the service lock, the pool or any subscription: a process that
-    # resolves an unregistered result-material routing must produce nothing.
-    # The returned frozen routing is the only routing this process applies.
-    routing = attest_raw_market_producer(RAW_PRODUCER)
+    require_attested_ws_routing()
     settings = get_settings()
     STORE = BucketStore(
         max_bucket_minutes=settings.TRADESTORE_MAX_BUCKET_MINUTES,
@@ -762,12 +796,7 @@ async def run() -> None:
         name="service-lock",
     )
 
-    tasks = [
-        asyncio.create_task(producer, name=name)
-        for name, producer in ws_routing_producers(
-            pool, service_lock, symbols, routing
-        )
-    ]
+    tasks = list(start_ws_routing_producers(pool, service_lock, symbols))
     tasks.append(
         asyncio.create_task(
             heartbeat_loop(

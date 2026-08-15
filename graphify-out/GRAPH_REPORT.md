@@ -1,21 +1,21 @@
 # Graph Report - pr27-r03-runtime-config-closure  (2026-08-14)
 
 ## Corpus Check
-- 255 files · ~339,136 words
+- 256 files · ~342,562 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4609 nodes · 12062 edges · 238 communities (220 shown, 18 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 371 edges (avg confidence: 0.62)
+- 4662 nodes · 12199 edges · 257 communities (233 shown, 24 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 389 edges (avg confidence: 0.62)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c879bdec`
+- Built from commit: `450cf2fb`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- Settings
+- test_ingest.py
 - api.py
 - evaluate_setup
 - range_validate_read
@@ -24,7 +24,7 @@
 - test_pr25_research_knowledge_time_postgres.py
 - app.js
 - test_v150_ejecucion.py
-- ServiceOwnershipLost
+- test_db.py
 - setups.py
 - test_breakout.py
 - test_pr27_r03_runtime_contract.py
@@ -32,22 +32,22 @@
 - test_flow_semantics.py
 - test_v150_setups.py
 - signal_execution.py
-- _Connection
+- WalkForwardManifestOptions
 - test_pr27_r04_raw_producer_closure_postgres.py
 - signal_regime.py
 - build_setup_context
 - ai_context.py
 - test_setup_breakout_boundary.py
-- TradeStore
+- ServiceOwnershipLost
 - number
 - signal_outcomes.py
 - Graphify — knowledge graph del repositorio
-- signal_walk_forward.py
+- ValueError
 - metrics.py
 - Auditoría v1.3.8 — semántica de flujo, componentes muertos y cobertura declarada
 - Collectors horizontales
 - Signal Regime Analysis
-- EffectiveMarketRouting
+- ws_collector.py
 - Signal Backtesting
 - profile_read
 - test_v150_calidad.py
@@ -60,7 +60,7 @@
 - asNumber
 - test_signal_confirmatory.py
 - test_daily_semantics.py
-- ingest.py
+- config.py
 - test_signal_walk_forward.py
 - test_partitioning_postgres.py
 - test_pr19_source_truth.py
@@ -74,24 +74,24 @@
 - Manual — Coinalyze Operator Dashboard v1.2.5 final
 - Manual — Coinalyze Operator Dashboard v1.2.5 final
 - 20260809_temporal_partitioning.sql
-- test_signal_walk_forward_confirmatory_postgres.py
+- evaluate_walk_forward
 - renderDeltaProfile
 - RecordingConnection
 - Deterministic Signal Replay
 - test_p3_impact_and_alerts.py
-- data_confidence_row
+- test_ingest_health.py
 - response_headers
 - Particionado temporal realtime
 - basis_quality
 - Signal Execution Costs
 - zone_character_read
 - signal_attribution.py
-- ValueError
+- test_signal_confirmatory_v2.py
 - hypothesis_evidence
 - Parte VII — Modo Scalping / Ejecución rápida
 - test_dashboard_presentation.py
 - scalp_collector.py
-- test_pr21_point_in_time_postgres.py
+- _Connection
 - signal_ledger.py
 - v1.5.0 — corrección de la reorganización
 - Coinalyze Derivatives Operator
@@ -101,7 +101,7 @@
 - Node
 - test_pr22_cvd_semantics.py
 - test_pr23_temporal_integrity_postgres.py
-- test_pr27_r04_raw_producer_closure.py
+- test_pr27_r05_routing_wiring_closure.py
 - RawMarketProducerContractError
 - test_p0_regresion_auditoria.py
 - test_v150_topbar.py
@@ -114,7 +114,7 @@
 - test_pr27_r05_routing_application_closure.py
 - schema.sql
 - test_v150_version_docs.py
-- test_coinalyze_rate_limit.py
+- test_signal_walk_forward_confirmatory_postgres.py
 - Brief técnico para IA — Coinalyze Operator Dashboard y AI Telegram Bridge
 - Patches aplicados — v1.1.2
 - test_signal_attribution_postgres.py
@@ -137,7 +137,7 @@
 - update.sh
 - test_pr23_temporal_integrity.py
 - test_pr22_cvd_semantics_postgres.py
-- test_ohlcv_4h.py
+- ingest.py
 - navegacion.test.js
 - zones.py
 - AGENTS.md — instrucciones para Codex CLI
@@ -149,14 +149,14 @@
 - signal_replay.py
 - PR23 temporal integrity
 - Parche del bridge de Telegram — v1.3.4
-- test_data_gaps_postgres.py
+- data_gaps.py
 - Traspaso — coinanalyze
 - Coinalyze v1.4.8 — lectura rápida del flujo
 - attest_raw_market_producer
 - attribute_signals.py
 - flujo_sesion_precio.test.js
 - Coinalyze v1.4.4 — Wyckoff automático y auditoría de v1.4.3
-- daily_history
+- _MultiHorizonConnection
 - Despliegue a producción
 - Patches aplicados — v1.2.0
 - Patches aplicados — v1.2.1
@@ -165,7 +165,7 @@
 - Rollback
 - backup.sh
 - ServiceOwnership
-- test_config.py
+- Settings
 - evaluate_walk_forward.py
 - test_p1_timeframes_and_spot.py
 - refreshOverview
@@ -177,9 +177,8 @@
 - Patches applied v1.2.3
 - Prometheus scraping
 - Validación v1.1.2
-- signal_visibility.py
-- TASK.md
-- _execution_measure
+- certify_research_bundles
+- test_data_gaps.py
 - test_v150_oi_scoring.py
 - Validación v1.2.1
 - app/__init__.py
@@ -202,39 +201,58 @@
 - liquidations_realtime_event_unique_trigger
 - test_p2_baselines.py
 - Registro de decisiones de arquitectura
-- _compute_confirmatory_result
-- apply_temporal_retention
+- test_data_gaps_postgres.py
+- daily_agg.py
 - assigned_symbols
 - _closed_window_move_pct
 - pull_request_template.md
 - Arquitectura científica
 - test_signal_ledger_postgres.py
 - test_scalp_hardening.py
-- scientific_implementation_identity
+- outcome_window
 - renderDeltaMatrix
 - test_freeze_walk_forward_manifest_cli.py
 - Índice de documentación — coinanalyze
 - _PoolContext
+- test_metrics_endpoint.py
 - PR27 — integridad del endpoint confirmatorio
 - test_pr27_r03_runtime_contract_postgres.py
+- asyncio
+- divergence_scan
+- FakePool
+- signal_scientific_identity.py
 - test_signal_replay_postgres.py
+- datetime
+- compute_swing_score
+- compute_scientific_implementation_identity
 - test_pr27_integrity_contract.py
+- test_flow_continuity.py
 - _ScalpContextConnection
+- test_a_scalp_session_fails_closed_before_it_connects
+- _forged_routing
+- freeze_walk_forward_manifest.py
+- _DailyProjectionConnection
 - reject_signal_walk_forward_confirmatory_result_mutation
 - signal_walk_forward_manifest
+- test_forward_returns
+- test_daily_history_only_ships_on_the_expensive_profiles
 - signal_walk_forward_confirmatory_result_validate_insert
+- test_no_module_still_claims_the_futures_leg_is_a_multi_venue_aggregate
+- test_daily_chart_axis_shows_dates_without_a_meaningless_hour
+- test_session_bars_never_build_markup_from_api_strings
+- test_partial_sessions_preserve_only_previously_verified_two_venue_evidence
 
 ## God Nodes (most connected - your core abstractions)
 1. `_Connection` - 383 edges
 2. `WalkForwardManifestOptions` - 96 edges
-3. `compute_scalp_summary()` - 77 edges
-4. `ServiceOwnership` - 75 edges
-5. `_get()` - 72 edges
-6. `attest_raw_market_producer()` - 65 edges
+3. `attest_raw_market_producer()` - 78 edges
+4. `compute_scalp_summary()` - 77 edges
+5. `ServiceOwnership` - 72 edges
+6. `_get()` - 72 edges
 7. `Settings` - 62 edges
 8. `as_float()` - 60 edges
 9. `validate_symbol()` - 58 edges
-10. `EffectiveMarketRouting` - 54 edges
+10. `build_ai_symbol_context()` - 50 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `test_evaluator_has_no_external_options_override()` --indirect_call--> `evaluate_walk_forward()`  [INFERRED]
@@ -251,15 +269,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (238 total, 18 thin omitted)
+## Communities (257 total, 24 thin omitted)
 
-### Community 0 - "Settings"
+### Community 0 - "test_ingest.py"
 Cohesion: 0.06
-Nodes (35): Settings, ClosedCutoff, datetime, Upper bounds for history whose buckets are fully closed. Coinalyze's ``to``…, Inclusive history-API upper bound, one second before the open bucket., Start timestamp of the newest bucket that is fully closed., Build recent 5-minute candles locally without spending API quota., rollup_ohlcv_5m() (+27 more)
+Nodes (32): ClosedCutoff, datetime, Upper bounds for history whose buckets are fully closed. Coinalyze's ``to``…, Inclusive history-API upper bound, one second before the open bucket., Start timestamp of the newest bucket that is fully closed., Build recent 5-minute candles locally without spending API quota., rollup_ohlcv_5m(), seconds_until_aligned_run() (+24 more)
 
 ### Community 1 - "api.py"
-Cohesion: 0.07
-Nodes (99): ai_context(), ai_context_bundle(), ai_profiles(), context_metadata_endpoint(), cross_asset_endpoint(), cvd(), cvd_divergence(), cvd_matrix_endpoint() (+91 more)
+Cohesion: 0.08
+Nodes (95): ai_context(), ai_context_bundle(), ai_profiles(), context_metadata_endpoint(), cross_asset_endpoint(), cvd(), cvd_divergence(), cvd_matrix_endpoint() (+87 more)
 
 ### Community 2 - "evaluate_setup"
 Cohesion: 0.11
@@ -279,7 +297,7 @@ Nodes (12): SamplingMode, fetch_rows(), main(), pct(), Any, sample_key(), select
 
 ### Community 6 - "test_pr25_research_knowledge_time_postgres.py"
 Cohesion: 0.13
-Nodes (42): certify_research_bundles(), Certify a bounded batch of complete v6 research bundles. Opens exactly one NEW…, conn(), _constraint_exists(), _drop_schema(), _dsn(), _finalize_outcome(), _insert_complete_bundle() (+34 more)
+Nodes (39): conn(), _constraint_exists(), _drop_schema(), _dsn(), _finalize_outcome(), _insert_complete_bundle(), _insert_execution_snapshot(), _insert_frame() (+31 more)
 
 ### Community 7 - "app.js"
 Cohesion: 0.06
@@ -289,9 +307,9 @@ Nodes (46): ANALYZER_INPUTS, ANALYZER_TABS, axisMoney(), axisPrice(), chartOptio
 Cohesion: 0.10
 Nodes (31): _banda(), _bps(), execution_assessment(), Etiqueta de sesgo por BALANCE DE EVIDENCIA, sin mirar el coste de ejecucion. Ya…, Distancia entre dos precios en puntos basicos, o None si falta alguno., ¿Cuanto se come la ejecucion del objetivo y del riesgo de ESTA operacion? PURA.…, scalp_bias_label(), _codigo_sin_prosa() (+23 more)
 
-### Community 9 - "ServiceOwnershipLost"
+### Community 9 - "test_db.py"
 Cohesion: 0.08
-Nodes (24): MarketSymbol, Pool, The process no longer owns the persistent fencing generation for its shard., ServiceOwnershipLost, sync_market_catalog(), _CatalogConnection, _CatalogPool, _HeartbeatConnection (+16 more)
+Nodes (19): _CatalogConnection, _CatalogPool, _HeartbeatConnection, _LockConnection, _LostLockConnection, _PausedAggregateConnection, _prepare_fencing_schema(), asyncio (+11 more)
 
 ### Community 10 - "setups.py"
 Cohesion: 0.10
@@ -303,15 +321,15 @@ Nodes (48): _atr(), attempt_features(), breakout_read(), build_corpus(), classif
 
 ### Community 12 - "test_pr27_r03_runtime_contract.py"
 Cohesion: 0.11
-Nodes (34): _assert_effective_maps_match_contract(), compute_scientific_runtime_contract(), MarketRoute, Any, RuntimeError, Deterministic contract for result-material runtime scientific configuration.…, Compute, without trusting the registry, one deterministic contract. Both…, One resolved result-material routing row of the validated contract. (+26 more)
+Nodes (34): load_market_catalog(), MarketSymbol, _assert_effective_maps_match_contract(), compute_scientific_runtime_contract(), MarketRoute, Any, RuntimeError, Deterministic contract for result-material runtime scientific configuration.… (+26 more)
 
 ### Community 13 - "setup_observables"
 Cohesion: 0.23
 Nodes (26): Mide los cinco observables reales desde velas CERRADAS y estructura. Devuelve,…, setup_observables(), _bars(), _bundle(), Observables MEDIDOS sobre velas cerradas: bars_closed_beyond, returned_inside,…, Velas cerradas ascendentes; high/low se derivan del cierre salvo override por…, test_build_setup_context_con_bundle_mide_los_observables(), test_bundle_ausente_deja_bars_en_none() (+18 more)
 
 ### Community 14 - "test_flow_semantics.py"
-Cohesion: 0.09
-Nodes (32): _classify_passive(), compute_swing_score(), Detecta absorcion por limites pasivos y la mapea a…, Puro: lee los bloques ya calculados y sintetiza sesgo largo plazo. NO es…, _bars(), _blocks(), Regresiones de la auditoria v1.3.8. Cada test fija una conclusion que se…, Medido en vivo (BTC): score 45 con 4 de 7 componentes mudos se publicaba como… (+24 more)
+Cohesion: 0.11
+Nodes (21): _classify_passive(), Detecta absorcion por limites pasivos y la mapea a…, _bars(), Regresiones de la auditoria v1.3.8. Cada test fija una conclusion que se…, Onda triangular con deriva: produce maximos y minimos locales estrictos, que es…, Verificado en vivo: la resistencia BTC daba exactamente 77.7 = 35+25+7.73+0+10,…, Medido en vivo (BTC, 2026-08-04): spot +10 047 y futuros +8 152 135, ambas…, El panel usaba 48 barras de 4h (7.8 dias de ohlcv 5min) presentandolas como el… (+13 more)
 
 ### Community 15 - "test_v150_setups.py"
 Cohesion: 0.14
@@ -321,13 +339,13 @@ Nodes (21): ctx_rico(), parametrize, v1.5.0 — direccion y setup son cosas dist
 Cohesion: 0.08
 Nodes (72): _aware_utc(), build_execution_cost_report(), _canonical_json(), _compact_walk(), _compatible_observations_cte(), _cost_curve(), _decode_depth_levels(), _execution_outcome_query() (+64 more)
 
-### Community 17 - "_Connection"
+### Community 17 - "WalkForwardManifestOptions"
 Cohesion: 0.12
-Nodes (57): evaluate_walk_forward(), Legacy v1-v3 evaluator retained with its historical read-only API. Spec v4…, _Connection, _canonical_json(), conn(), _connect_schema(), _drop_schema(), _dsn() (+49 more)
+Nodes (59): _fetch_discovery_start(), freeze_walk_forward_manifest(), Earliest compatible periodic observation with a replay frame. Freeze may read…, Stage A (Freeze): create or idempotently reuse an immutable manifest. Freeze…, WalkForwardManifestOptions, _canonical_json(), conn(), _connect_schema() (+51 more)
 
 ### Community 18 - "test_pr27_r04_raw_producer_closure_postgres.py"
-Cohesion: 0.15
-Nodes (37): flush_trades(), flush_realtime(), _activate_routing_b(), _book(), _bounded_sleep(), _bucket_ts(), _connect(), _count() (+29 more)
+Cohesion: 0.16
+Nodes (37): flush_trades(), flush_realtime(), _bound_cycle(), _activate_routing_b(), _book(), _bounded_sleep(), _bucket_ts(), _connect() (+29 more)
 
 ### Community 19 - "signal_regime.py"
 Cohesion: 0.07
@@ -338,36 +356,36 @@ Cohesion: 0.21
 Nodes (18): build_setup_context(), Traduce los bloques ya publicados a los observables que pide cada setup. Solo…, test_build_setup_context_ruptura_long_frontera_es_resistance_high(), test_build_setup_context_ruptura_short_frontera_es_support_low(), test_build_setup_context_sin_bundle_mantiene_none(), _bars(), _bundle(), El camino REAL de produccion: datos OHLCV/barreras -> build_setup_context ->… (+10 more)
 
 ### Community 21 - "ai_context.py"
-Cohesion: 0.09
-Nodes (39): AIProfile, build_ai_context(), build_ai_symbol_context(), build_operator_read(), compact_dict(), compact_value(), latest_orderbook(), latest_snapshot() (+31 more)
+Cohesion: 0.07
+Nodes (56): AIProfile, build_ai_context(), build_ai_symbol_context(), build_operator_read(), compact_dict(), compact_value(), daily_data(), daily_history() (+48 more)
 
 ### Community 22 - "test_setup_breakout_boundary.py"
 Cohesion: 0.27
 Nodes (10): _bundle(), _estado_cierre(), La ruptura se decide contra la FRONTERA de la zona (breakout_boundary), nunca…, Estado del requisito critico 'cierre mas alla de la barrera'., test_hypothesis_evidence_publica_setup_zone_y_observables(), test_hypothesis_evidence_sin_setup_context_no_rompe(), test_ruptura_long_dentro_de_la_zona_queda_pendiente(), test_ruptura_long_por_encima_de_la_frontera_cumple() (+2 more)
 
-### Community 23 - "TradeStore"
-Cohesion: 0.18
-Nodes (10): deliver_futures_trades(), floor_ts_seconds(), flush_trades_cycle(), The only path from trade buckets to raw persistence, gated in place., TradeBucket, TradeStore, _write_combined_minute(), _write_combined_realtime() (+2 more)
+### Community 23 - "ServiceOwnershipLost"
+Cohesion: 0.09
+Nodes (26): The process no longer owns the persistent fencing generation for its shard., ServiceOwnershipLost, all_expected_fresh(), BookStore, deliver_futures_trades(), floor_ts_seconds(), flush_trades_cycle(), Escalera completa por venue, para calcular slippage de cualquier tamanio.… (+18 more)
 
 ### Community 24 - "number"
 Cohesion: 0.15
 Nodes (42): dailySeries(), dateTime(), executionClass(), externalClass(), externalMetricValue(), imbalanceCell(), loadSection(), nd() (+34 more)
 
 ### Community 25 - "signal_outcomes.py"
-Cohesion: 0.14
-Nodes (40): _aware_utc(), compute_path_metrics(), _defer_missing_path(), expected_bar_timestamps(), _finalize_evaluated(), _finalize_not_evaluable(), _finite_positive(), MaterializationResult (+32 more)
+Cohesion: 0.13
+Nodes (27): blocking_requirement_keys(), GapRequirement, One exact source required by a metric over a half-open ``[start,end)`` window., Return requirements overlapped by unresolved or unrecoverable gaps. Both the…, _aware_utc(), compute_path_metrics(), _defer_missing_path(), expected_bar_timestamps() (+19 more)
 
 ### Community 26 - "Graphify — knowledge graph del repositorio"
 Cohesion: 0.17
 Nodes (12): Consultar (query-first), Freshness en CI, Generar / actualizar el grafo, Graphify — knowledge graph del repositorio, Hooks y worktrees (decisión de diseño), Merge driver para `graph.json`, Política de actualización, Qué se versiona y qué no (+4 more)
 
-### Community 27 - "signal_walk_forward.py"
+### Community 27 - "ValueError"
 Cohesion: 0.06
-Nodes (90): canonical_scientific_result_json(), confirmatory_contract_v2_to_dict(), scientific_result_hash(), _actionable_evaluated(), _all_periodic_evaluated(), _assert_confirmatory_v4_replay_integrity(), _assert_confirmatory_v4_runtime_contract_provenance(), _attach_confirmatory_v4_report_v2() (+82 more)
+Nodes (92): confirmatory_block_key_v2(), evaluation_not_before_v2(), datetime, utc_nonoverlap_selected_v2(), Fail closed when a frozen contract differs from runtime configuration., validate_scientific_runtime_contract(), _actionable_evaluated(), _all_periodic_evaluated() (+84 more)
 
 ### Community 28 - "metrics.py"
 Cohesion: 0.08
-Nodes (37): compute_and_store_all(), compute_regime(), compute_snapshot(), insert_snapshot(), liquidation_history_observation(), _liquidation_history_observed(), LiquidationHistoryObservation, normalized_cvd_imbalance() (+29 more)
+Nodes (38): compute_and_store_all(), compute_regime(), compute_snapshot(), insert_snapshot(), liquidation_history_observation(), _liquidation_history_observed(), LiquidationHistoryObservation, normalized_cvd_imbalance() (+30 more)
 
 ### Community 29 - "Auditoría v1.3.8 — semántica de flujo, componentes muertos y cobertura declarada"
 Cohesion: 0.06
@@ -381,9 +399,9 @@ Nodes (6): Catálogo, Collectors horizontales, Dos shards, Migración y rollback
 Cohesion: 0.07
 Nodes (27): Alignment view, Component behavior by regime, Continuous alignment-strength view, `dense_periodic`, Frozen regime availability, Integrity counters, Interpretation rules, Minimum group size (+19 more)
 
-### Community 32 - "EffectiveMarketRouting"
-Cohesion: 0.08
-Nodes (41): deliver_liquidations(), deliver_orderbook_state(), The only path from book state to raw persistence, gated in place., Estado ACTUAL del libro por venue: una fila por (symbol,exchange), sobrescrita.…, The only path from liquidation events to raw persistence, gated in place., _write_ladders(), EffectiveMarketRouting, The spot projection a ws producer applies for its assigned scope. Bound to its… (+33 more)
+### Community 32 - "ws_collector.py"
+Cohesion: 0.07
+Nodes (44): EffectiveMarketRouting, The spot projection a ws producer applies for its assigned scope. Bound to its…, The single typed, immutable representation of the effective routing. Built from…, Refuse a raw delivery keyed outside the attested routing's namespace., require_routed_internal_keys(), SpotRoutingIndex, binance_consumer(), binance_spot_session() (+36 more)
 
 ### Community 33 - "Signal Backtesting"
 Cohesion: 0.11
@@ -394,8 +412,8 @@ Cohesion: 0.17
 Nodes (23): bucket_index(), bucket_size(), _floor_log10(), profile_read(), Any, Perfil de volumen y delta por nivel de precio. Responde a "en esta zona, ¿hubo…, Construye el perfil. `bars` necesita low, high, volume, buy_volume y close., Ancho de cubo redondeado a 1/2/5 x 10^n, para que las etiquetas de precio sean… (+15 more)
 
 ### Community 35 - "test_v150_calidad.py"
-Cohesion: 0.09
-Nodes (19): _feed_status(), metric_quality(), Estado del feed y su ultimo error, sin confundir calma con caida. Las…, Calidad POR METRICA publicada, no por feed ni por proceso. PURA: recibe bloques…, _hb(), metricas(), fixture, v1.5.0 — la pestaña Calidad separa servicios, feeds y métricas. (+11 more)
+Cohesion: 0.10
+Nodes (17): _feed_status(), Estado del feed y su ultimo error, sin confundir calma con caida. Las…, _hb(), metricas(), fixture, v1.5.0 — la pestaña Calidad separa servicios, feeds y métricas., Liquidaciones: colector vivo y cero eventos es CALMA, no fallo., Su estado depende de la EDAD de cada pata, no de que las dos existan. (+9 more)
 
 ### Community 36 - "test_pr20_semantics.py"
 Cohesion: 0.09
@@ -426,20 +444,20 @@ Cohesion: 0.16
 Nodes (18): appendSessionColumnGuides(), asNumber(), card(), flowQuadrant(), fundingClass(), lastEndpointError(), priceDirection1h(), rate() (+10 more)
 
 ### Community 43 - "test_signal_confirmatory.py"
-Cohesion: 0.07
-Nodes (63): block_bootstrap_ci(), block_bootstrap_v1(), block_unconditional_direction_matched_baseline_bps(), confirmatory_block_key(), confirmatory_contract_from_dict(), confirmatory_contract_to_dict(), confirmatory_decision(), ConfirmatoryContract (+55 more)
+Cohesion: 0.06
+Nodes (59): block_bootstrap_ci(), block_bootstrap_v1(), block_unconditional_direction_matched_baseline_bps(), confirmatory_block_key(), confirmatory_decision(), _percentile(), datetime, PR26: confirmatory walk-forward spec v3 -- primary contract, clock/ direction-… (+51 more)
 
 ### Community 44 - "test_daily_semantics.py"
-Cohesion: 0.04
-Nodes (59): _conditional_outcome(), divergence_scan(), _forward_returns(), _intraday_divergences(), closes en orden ascendente; devuelve el retorno % a `horizon` sesiones, o None., Que paso historicamente las veces anteriores que la metrica estuvo donde esta…, Pendiente por minimos cuadrados, normalizada por la escala de la serie., Mismo contraste que en sesiones, pero sobre velas de 1 minuto. Precio desde… (+51 more)
+Cohesion: 0.08
+Nodes (12): Pendiente por minimos cuadrados, normalizada por la escala de la serie., _slope_pct(), El CVD por sesión describe agresión ejecutada, no inventario institucional.…, El formateador del motor solo pone fecha al cambiar de dia: 48 h de velas de 5…, refresh() repinta cada 15 s: quien solo hace append apila una copia por ciclo.…, Sin grid-column caia a span 1 de 12 y la tabla salia aplastada., test_conditional_outcome_needs_a_real_sample(), test_divergence_panel_spans_the_full_grid_width() (+4 more)
 
-### Community 45 - "ingest.py"
-Cohesion: 0.10
-Nodes (46): AdapterResolver, CoinalyzeClient, CoinalyzeError, PostgresSlidingWindowRateLimiter, Any, Protocol, RuntimeError, RateLimiter (+38 more)
+### Community 45 - "config.py"
+Cohesion: 0.07
+Nodes (37): CoinalyzeClient, CoinalyzeError, CoinalyzeRateBudget, PostgresSlidingWindowRateLimiter, Any, Protocol, RuntimeError, RateLimiter (+29 more)
 
 ### Community 46 - "test_signal_walk_forward.py"
-Cohesion: 0.07
-Nodes (70): _classify_generalization(), _confirmatory_outcome_integrity_for_fold(), _group_stats(), _options_from_spec(), _percentile(), PR26 A4-08 outcome-completeness accounting: classifies every…, Fail closed on any invalid or out-of-contract manifest option. No CLI option…, The caller-controlled configuration portion of the manifest spec. Deliberately… (+62 more)
+Cohesion: 0.06
+Nodes (82): confirmatory_contract_from_dict(), confirmatory_contract_to_dict(), ConfirmatoryContract, Any, PR26 spec v3's fully hashed confirmatory contract. Every field is caller-…, Fail closed on any unknown OR missing key -- the key set must match…, _classify_generalization(), _execution_measure() (+74 more)
 
 ### Community 47 - "test_partitioning_postgres.py"
 Cohesion: 0.46
@@ -481,9 +499,9 @@ Nodes (21): 10. Configuración del Bridge, 11. Validación del Bridge, 12. Coman
 Cohesion: 0.09
 Nodes (21): 10. Configuración del Bridge, 11. Validación del Bridge, 12. Comandos Telegram, 13. Operación diaria, 14. Actualización controlada, 15. Rotación de secretos antes de producción, 16. Controles de seguridad finales, 17. Troubleshooting mínimo (+13 more)
 
-### Community 61 - "test_signal_walk_forward_confirmatory_postgres.py"
+### Community 61 - "evaluate_walk_forward"
 Cohesion: 0.12
-Nodes (64): certify_final_outcomes(), Certify a bounded batch of final (evaluated/not_evaluable) v6 outcomes. Same…, _align_forward(), _backdated_ready_schedule(), _canonical_json(), _confirmatory_contract(), _decision_replay_fixture(), _enumerate_expected_slots() (+56 more)
+Nodes (55): evaluate_walk_forward(), Legacy v1-v3 evaluator retained with its historical read-only API. Spec v4…, _align_forward(), _backdated_ready_schedule(), _confirmatory_contract(), _decision_replay_fixture(), _enumerate_expected_slots(), _insert_backdated_manifest() (+47 more)
 
 ### Community 62 - "renderDeltaProfile"
 Cohesion: 0.16
@@ -501,9 +519,9 @@ Nodes (14): Atomic write, Deterministic Signal Replay, Frozen context, Immutabil
 Cohesion: 0.13
 Nodes (17): Avisos que solo tienen sentido contra la distribucion historica, no contra un…, statistical_alerts(), impacto(), parametrize, P3: impacto de mercado realizado y alertas contra la distribucion, no contra un…, El feed no da profundidad que abarque precio: no se puede sostener esa…, alto' aparece por definicion el 5-10% del tiempo: alertarlo seria ruido…, Menos minutos = menos flujo, y el ratio sale inflado por construccion. (+9 more)
 
-### Community 66 - "data_confidence_row"
+### Community 66 - "test_ingest_health.py"
 Cohesion: 0.14
-Nodes (14): data_confidence_row(), health(), datetime, Return missing, unhealthy, or stale required services (fail closed)., required_heartbeat_failures(), _ContextConnection, _HealthConnection, _heartbeat_rows() (+6 more)
+Nodes (13): health(), datetime, Return missing, unhealthy, or stale required services (fail closed)., required_heartbeat_failures(), _ContextConnection, _HealthConnection, _heartbeat_rows(), _Pool (+5 more)
 
 ### Community 67 - "response_headers"
 Cohesion: 0.23
@@ -529,9 +547,9 @@ Nodes (29): Veredicto de una visita a la zona. Nunca usa datos posteriores a la 
 Cohesion: 0.17
 Nodes (26): _aggregate_query(), _attribution_cte(), AttributionOptions, _aware_utc(), build_signal_attribution_report(), _clamp(), _component_values_sql(), _coverage_band_sql() (+18 more)
 
-### Community 73 - "ValueError"
-Cohesion: 0.08
-Nodes (60): _canonical_scientific_result_value_v1(), _component_decision_v2(), confirmatory_block_key_v2(), confirmatory_contract_v2_from_dict(), ConfirmatoryContractV2, conjunctive_confirmatory_decision_v2(), _curve_at_frozen_size(), _deterministic_block_index_v2() (+52 more)
+### Community 73 - "test_signal_confirmatory_v2.py"
+Cohesion: 0.06
+Nodes (63): canonical_scientific_result_json(), _canonical_scientific_result_value_v1(), _component_decision_v2(), confirmatory_contract_v2_from_dict(), confirmatory_contract_v2_to_dict(), ConfirmatoryContractV2, conjunctive_confirmatory_decision_v2(), _curve_at_frozen_size() (+55 more)
 
 ### Community 74 - "hypothesis_evidence"
 Cohesion: 0.09
@@ -546,12 +564,12 @@ Cohesion: 0.21
 Nodes (12): Contratos de presentacion introducidos en v1.4.5. Cubren lo que la vista…, slice_js(), test_absent_whale_activity_is_counted_not_drawn_as_zero(), test_analyzer_prefill_never_overwrites_a_typed_value(), test_delta_profile_offers_the_windows_that_have_coverage(), test_delta_profile_panel_is_svg_and_declares_its_limits(), test_liquidation_profile_is_dom_safe_and_declares_realized_density(), test_liquidation_profile_orders_by_price_and_marks_the_current_one() (+4 more)
 
 ### Community 79 - "scalp_collector.py"
-Cohesion: 0.05
-Nodes (69): all_expected_fresh(), binance_force_order_streams(), binance_futures_session(), binance_futures_streams(), binance_loop(), binance_market_loop(), binance_market_session(), BookResyncRequired (+61 more)
+Cohesion: 0.06
+Nodes (58): binance_force_order_streams(), binance_futures_session(), binance_futures_streams(), binance_loop(), binance_market_loop(), binance_market_session(), BookResyncRequired, bybit_linear_session() (+50 more)
 
-### Community 80 - "test_pr21_point_in_time_postgres.py"
-Cohesion: 0.22
-Nodes (19): conn(), _connect_schema(), _drop_schema(), _dsn(), _insert_snapshot(), asyncio, date, fixture (+11 more)
+### Community 80 - "_Connection"
+Cohesion: 0.17
+Nodes (23): _Connection, conn(), _connect_schema(), _drop_schema(), _dsn(), _insert_snapshot(), asyncio, date (+15 more)
 
 ### Community 81 - "signal_ledger.py"
 Cohesion: 0.16
@@ -579,19 +597,19 @@ Nodes (10): _connect_schema(), _drop_schema(), _dsn(), _primary_key_columns(), a
 
 ### Community 89 - "test_pr22_cvd_semantics.py"
 Cohesion: 0.15
-Nodes (34): daily_data(), _BundlePool, _delta_rows(), _NoopConnection, _patch_api_bundle(), _patch_multi_horizon_helpers(), asyncio, datetime (+26 more)
+Nodes (33): _BundlePool, _delta_rows(), _NoopConnection, _patch_api_bundle(), _patch_multi_horizon_helpers(), asyncio, datetime, MonkeyPatch (+25 more)
 
 ### Community 90 - "test_pr23_temporal_integrity_postgres.py"
 Cohesion: 0.41
-Nodes (11): _write_combined_books(), _connect(), _drop(), _dsn(), _insert_book(), asyncio, datetime, test_future_venue_book_cannot_contaminate_combined() (+3 more)
+Nodes (11): _binned(), _connect(), _drop(), _dsn(), _insert_book(), asyncio, datetime, test_future_venue_book_cannot_contaminate_combined() (+3 more)
 
-### Community 91 - "test_pr27_r04_raw_producer_closure.py"
-Cohesion: 0.12
-Nodes (23): CompletedProcess, _activate_routing_b(), _bounded_sleep(), _catalog_file(), asyncio, MonkeyPatch, parametrize, PR27-R04: the runtime contract at the raw producer boundary. R03 attests the… (+15 more)
+### Community 91 - "test_pr27_r05_routing_wiring_closure.py"
+Cohesion: 0.10
+Nodes (35): _annotation_nodes(), _create_task_lines(), _identity_spans(), _identity_tree(), _inside_identity(), _load_positions(), _material_escapes(), _mutate_real_uses() (+27 more)
 
 ### Community 92 - "RawMarketProducerContractError"
 Cohesion: 0.10
-Nodes (17): BookStats, Refuse a subscription list the conversion table cannot resolve., A result-material raw producer resolved an unregistered runtime contract., Refuse an external pair -> internal key conversion the routing denies., RawMarketProducerContractError, _require_indexed_pairs(), require_routed_pair_origins(), BucketStore (+9 more)
+Nodes (19): BookStats, deliver_orderbook_state(), The only path from book state to raw persistence, gated in place., Estado ACTUAL del libro por venue: una fila por (symbol,exchange), sobrescrita.…, _write_combined_books(), _write_ladders(), Refuse a subscription list the conversion table cannot resolve., A result-material raw producer resolved an unregistered runtime contract. (+11 more)
 
 ### Community 94 - "test_p0_regresion_auditoria.py"
 Cohesion: 0.12
@@ -610,8 +628,8 @@ Cohesion: 0.21
 Nodes (17): gapCaption(), liqProfileMark(), liqProfileRow(), money(), renderBarriers(), renderBarrierZone(), renderDaily(), renderFlowCharts() (+9 more)
 
 ### Community 99 - "walk_book"
-Cohesion: 0.16
-Nodes (17): Consume la escalera hasta cubrir size_usd y devuelve el precio medio de…, walk_book(), test_walk_book_uses_first_valid_level_as_best_price(), parametrize, P1: coste de ejecucion recorriendo la escalera real del libro. Bybit entrega 50…, Ejecutar 201 USD toma los 100 del primer nivel y 101 del segundo = 1 unidad a…, Pedir mas de lo publicado devuelve el faltante, no un precio inventado., En el bid se recorre hacia abajo: el signo se reporta positivo, es coste igual. (+9 more)
+Cohesion: 0.18
+Nodes (16): Consume la escalera hasta cubrir size_usd y devuelve el precio medio de…, walk_book(), parametrize, P1: coste de ejecucion recorriendo la escalera real del libro. Bybit entrega 50…, Ejecutar 201 USD toma los 100 del primer nivel y 101 del segundo = 1 unidad a…, Pedir mas de lo publicado devuelve el faltante, no un precio inventado., En el bid se recorre hacia abajo: el signo se reporta positivo, es coste igual., Monotonia: el precio medio de compra no puede mejorar al crecer el tamanio. (+8 more)
 
 ### Community 100 - "Despliegue en Proxmox VE"
 Cohesion: 0.25
@@ -626,8 +644,8 @@ Cohesion: 0.33
 Nodes (10): ask_secret(), ask_value(), generate_if_empty(), NGINX_ALLOWED_CIDRS, remove_key(), render_nginx_allowlist(), set_kv(), set_raw_kv() (+2 more)
 
 ### Community 104 - "test_pr27_r05_routing_application_closure.py"
-Cohesion: 0.07
-Nodes (49): _canonical_ast_value(), _canonical_constant(), canonical_python_ast(), canonical_sql_source_v1(), compute_scientific_implementation_identity(), _extract_component_source(), _normalize_sql_whitespace_v1(), Path (+41 more)
+Cohesion: 0.16
+Nodes (24): Call, _called_name(), _identity_line_spans(), _inside_identity(), _mutate(), parametrize, Path, PR27-R05 correction: the points where the routing is *actually applied*.… (+16 more)
 
 ### Community 105 - "schema.sql"
 Cohesion: 0.05
@@ -637,9 +655,9 @@ Nodes (26): daily_session_agg, daily_verdict, daily_verdict_snapshot, data_gap, 
 Cohesion: 0.22
 Nodes (3): v1.5.0 — la versión declarada y lo que la documentación promete., El User-Agent tambien identifica la version: si no se actualiza, miente., test_no_queda_ninguna_referencia_a_la_version_anterior_en_el_codigo()
 
-### Community 107 - "test_coinalyze_rate_limit.py"
-Cohesion: 0.11
-Nodes (14): CoinalyzeRateBudget, validate_rate_budget(), _Pool, asyncio, A reserves; B takes over the shard; A's next acquire() must be fenced instead…, _RecordingLimiter, _Response, _RetryingHttpClient (+6 more)
+### Community 107 - "test_signal_walk_forward_confirmatory_postgres.py"
+Cohesion: 0.17
+Nodes (29): _confirmatory_result_lock_key(), evaluate_walk_forward_authoritative(), Evaluate with explicit transaction and v4 authoritative persistence. A session…, _assert_replay_integrity_failure_without_result(), _canonical_json(), _confirmatory_contract_v2(), _dsn(), _insert_direct_visibility_certificates() (+21 more)
 
 ### Community 108 - "Brief técnico para IA — Coinalyze Operator Dashboard y AI Telegram Bridge"
 Cohesion: 0.20
@@ -679,7 +697,7 @@ Nodes (13): FastAPI, CaptureConnection, PoolContext, Any, asyncio, MonkeyPatch, 
 
 ### Community 119 - "scalp_logic.py"
 Cohesion: 0.05
-Nodes (118): desk_state(), hypothesis(), quality_feeds(), Clasifica la evidencia disponible frente a la tesis del operador. `direction` y…, Evaluacion de Mesa con un cutoff de tiempo de evento compartido. La Mesa pedia…, Calidad de los FEEDS de mercado y de cada METRICA publicada. La pestana de…, blocking_requirement_keys(), GapRequirement (+110 more)
+Nodes (105): desk_state(), hypothesis(), quality_feeds(), Clasifica la evidencia disponible frente a la tesis del operador. `direction` y…, Evaluacion de Mesa con un cutoff de tiempo de evento compartido. La Mesa pedia…, Calidad de los FEEDS de mercado y de cada METRICA publicada. La pestana de…, current_nyse_start(), _as_utc_datetime() (+97 more)
 
 ### Community 120 - "ejecucion.test.js"
 Cohesion: 0.22
@@ -726,12 +744,12 @@ Cohesion: 0.30
 Nodes (10): asyncio, MonkeyPatch, test_combined_book_materializer_bounds_latest_venues_by_db_clock(), test_future_binance_book_is_dropped_and_requests_resync(), test_future_bybit_book_is_dropped_and_requests_resync(), test_future_trade_is_rejected_at_reception_time(), test_macro_daily_query_excludes_sessions_after_cutoff(), test_scalp_context_uses_one_injected_cutoff_for_every_window() (+2 more)
 
 ### Community 133 - "test_pr22_cvd_semantics_postgres.py"
-Cohesion: 0.44
-Nodes (13): _connect(), _drop(), _dsn(), asyncio, test_pr22_database_guards_reject_mixed_provenance(), test_pr22_down_migration_fails_closed_with_new_research_evidence(), test_pr22_existing_daily_verdict_v1_snapshot_remains_immutable(), test_pr22_existing_signal_observations_remain_unchanged() (+5 more)
+Cohesion: 0.33
+Nodes (16): _cvd_fut_window(), _cvd_src(), Net/gross flow per exchange, bounded by one explicit event-time cutoff., _connect(), _drop(), _dsn(), asyncio, test_pr22_database_guards_reject_mixed_provenance() (+8 more)
 
-### Community 134 - "test_ohlcv_4h.py"
+### Community 134 - "ingest.py"
 Cohesion: 0.12
-Nodes (13): asyncio, v1.3.9 — velas 4h nativas como fuente de los pivotes de barreras. Medido contra…, Una vela se etiqueta con el inicio de su bucket. Con la tolerancia fija de 300…, Sin regla propia las velas 4h crecerian sin limite., El backfill las trae una vez; el borde necesita reescribirse cada ciclo., 5min solo llega a ~8-9 dias; preferirlo dejaba los pivotes en el 6.7% del…, Pedir 365 dias devuelve chunks vacios que se leen como un backfill exitoso., test_backfill_script_caps_at_the_measured_horizon() (+5 more)
+Nodes (35): CadenceCoverage, Coverage proof for one exact cadence identity and half-open window., _coverage_heartbeat_detail(), finite(), ingest_cycle(), ingest_metrics_cycle(), ingest_ohlcv_cycle(), publish_snapshot() (+27 more)
 
 ### Community 135 - "navegacion.test.js"
 Cohesion: 0.25
@@ -762,8 +780,8 @@ Cohesion: 0.10
 Nodes (20): Component values, `dense_periodic`, Grouping, Interpretation rules, Lens 1 — standalone component association, Lens 2 — agreement with the final actionable decision, Minimum sample guardrails, Missingness remains first-class (+12 more)
 
 ### Community 143 - "signal_replay.py"
-Cohesion: 0.13
-Nodes (38): canonical_json_hash(), canonical_json_object(), _decision_finite(), _decode_json_object(), _json_default(), persist_signal_replay_frame(), Any, datetime (+30 more)
+Cohesion: 0.14
+Nodes (36): canonical_json_hash(), canonical_json_object(), _decision_finite(), _decode_json_object(), _json_default(), persist_signal_replay_frame(), Any, datetime (+28 more)
 
 ### Community 144 - "PR23 temporal integrity"
 Cohesion: 0.50
@@ -773,9 +791,9 @@ Nodes (3): Alcance histórico de swing, PR23 temporal integrity, Versiones
 Cohesion: 0.33
 Nodes (5): Aplicar, Dependencia, Parche del bridge de Telegram — v1.3.4, Qué hace, Verificar sin publicar en el canal
 
-### Community 146 - "test_data_gaps_postgres.py"
-Cohesion: 0.08
-Nodes (59): _aware_utc(), DataGap, _load_gap(), _mark_unrecoverable(), missing_cadence_windows(), datetime, Protocol, Record (+51 more)
+### Community 146 - "data_gaps.py"
+Cohesion: 0.15
+Nodes (25): AdapterResolver, _aware_utc(), _load_gap(), _mark_unrecoverable(), missing_cadence_windows(), datetime, Protocol, Record (+17 more)
 
 ### Community 147 - "Traspaso — coinanalyze"
 Cohesion: 0.09
@@ -786,8 +804,8 @@ Cohesion: 0.33
 Nodes (5): Coinalyze v1.4.8 — lectura rápida del flujo, Método, Objetivo, Presentación, Replay sin información futura
 
 ### Community 149 - "attest_raw_market_producer"
-Cohesion: 0.09
-Nodes (41): attest_raw_market_producer(), effective_market_routing_from_contract(), Project a contract into the frozen routing the producers must apply., Gate a raw producer before it may route or write result-material data.…, _global_names(), _mutated_digest(), _now_ms(), asyncio (+33 more)
+Cohesion: 0.05
+Nodes (72): Fail closed before the service lock, the pool or any subscription. A process…, require_attested_scalp_routing(), attest_raw_market_producer(), effective_market_routing_from_contract(), Project a contract into the frozen routing the producers must apply., Gate a raw producer before it may route or write result-material data.…, Fail closed before the service lock, the pool or any subscription. Nothing is…, require_attested_ws_routing() (+64 more)
 
 ### Community 150 - "attribute_signals.py"
 Cohesion: 0.33
@@ -801,9 +819,9 @@ Nodes (10): app, assert, { cargarApp }, test, appConDailyBars(), assert, { carga
 Cohesion: 0.40
 Nodes (4): Coinalyze v1.4.4 — Wyckoff automático y auditoría de v1.4.3, Defecto corregido durante la auditoría, Verificación, Wyckoff automático
 
-### Community 154 - "daily_history"
-Cohesion: 0.22
-Nodes (10): daily_history(), Serie sesion a sesion para que el modelo vea estructura y no solo la foto de…, _daily_row(), _DailyConnection, _MultiHorizonConnection, Any, test_pr22_ai_daily_missing_cvd_is_not_zero(), test_pr22_ai_daily_missing_spot_is_not_selling() (+2 more)
+### Community 154 - "_MultiHorizonConnection"
+Cohesion: 0.24
+Nodes (8): _daily_row(), _DailyConnection, _MultiHorizonConnection, Any, test_pr22_ai_daily_missing_cvd_is_not_zero(), test_pr22_ai_daily_missing_spot_is_not_selling(), test_pr22_ai_daily_real_zero_is_neutral(), test_pr22_ai_daily_window_total_fails_closed_on_missing_session()
 
 ### Community 155 - "Despliegue a producción"
 Cohesion: 0.40
@@ -834,12 +852,12 @@ Cohesion: 0.60
 Nodes (4): copy_path(), copy_tree(), PGPASSWORD, backup.sh script
 
 ### Community 162 - "ServiceOwnership"
-Cohesion: 0.09
-Nodes (43): lifespan(), Pool, apply_retention(), backfill(), cycle(), _expected_session_samples(), latest_closed_session_date(), datetime (+35 more)
+Cohesion: 0.12
+Nodes (32): lifespan(), Pool, cycle(), Pool, acquire_service_lock(), assert_service_ownership(), fenced_transaction(), heartbeat() (+24 more)
 
-### Community 163 - "test_config.py"
-Cohesion: 0.23
-Nodes (11): load_market_catalog(), Path, resolve_market_catalog_path(), resolve_project_root(), PathLike, test_csv_settings_parsing(), test_installed_package_uses_stable_deployment_root_for_catalog(), test_invalid_shard_settings_are_rejected() (+3 more)
+### Community 163 - "Settings"
+Cohesion: 0.13
+Nodes (14): Path, resolve_market_catalog_path(), resolve_project_root(), Settings, BaseSettings, field_validator, model_validator, PathLike (+6 more)
 
 ### Community 164 - "evaluate_walk_forward.py"
 Cohesion: 0.42
@@ -885,21 +903,17 @@ Nodes (3): Opción A — Scrape vía Nginx, Opción B — Scrape directo con hea
 Cohesion: 0.50
 Nodes (3): Alcance de fixes, Resultado, Validación v1.1.2
 
-### Community 176 - "signal_visibility.py"
-Cohesion: 0.23
-Nodes (11): _aware_utc(), CertificationCycleResult, _certify_final_outcomes_once(), _certify_research_bundles_once(), datetime, One bounded, idempotent pass. Caller must already hold a NEW transaction. Only…, Run one bundle-certification pass and one final-outcome-certification pass.…, One bounded, idempotent pass. Caller must already hold a NEW transaction.… (+3 more)
+### Community 176 - "certify_research_bundles"
+Cohesion: 0.20
+Nodes (17): _aware_utc(), CertificationCycleResult, certify_final_outcomes(), _certify_final_outcomes_once(), certify_research_bundles(), _certify_research_bundles_once(), datetime, One bounded, idempotent pass. Caller must already hold a NEW transaction. Only… (+9 more)
 
-### Community 177 - "TASK.md"
-Cohesion: 0.11
-Nodes (18): Actualización de PR #28, docs/ARCHITECTURE_DECISIONS.md, docs/HANDOFF_IA.md, docs/ROADMAP.md, docs/SCIENTIFIC_ARCHITECTURE.md, Estado inicial obligatorio, Fase 1 — Pruebas rojas obligatorias, Fase 2 — Cierre real de A-02 (+10 more)
-
-### Community 178 - "_execution_measure"
-Cohesion: 0.48
-Nodes (7): _curve_leg(), _execution_measure(), _execution_row(), _snapshot(), test_execution_math_uses_venue_fill_not_gross_minus_cost(), test_frozen_fee_is_applied_only_when_present(), test_missing_nonvalid_and_insufficient_depth_are_distinct()
+### Community 178 - "test_data_gaps.py"
+Cohesion: 0.17
+Nodes (16): DataGap, Validate exact source identity, coverage, timestamps, cadence and duplicates., RecoveryObservation, RecoveryValidationError, validate_recovery(), CoinalyzeOhlcv1mAdapter, exact_adapter_for(), Exact Binance perpetual 1-minute OHLCV recovery from the existing provider. (+8 more)
 
 ### Community 179 - "test_v150_oi_scoring.py"
-Cohesion: 0.23
-Nodes (21): _closed_1m_window_bounds(), Ventana exacta formada exclusivamente por velas 1m ya cerradas. Ejemplo: now =…, ctx(), _oi(), _px15(), Open Interest en `compute_scalp_summary()`: ya NO vota direccion por el signo…, Contexto minimo y NEUTRO salvo el OI y su ventana de 15 m, para aislar la…, oi_now/oi_start que producen un Δ% dado. (+13 more)
+Cohesion: 0.25
+Nodes (20): _closed_1m_window_bounds(), Ventana exacta formada exclusivamente por velas 1m ya cerradas. Ejemplo: now =…, ctx(), _oi(), _px15(), Open Interest en `compute_scalp_summary()`: ya NO vota direccion por el signo…, Contexto minimo y NEUTRO salvo el OI y su ventana de 15 m, para aislar la…, oi_now/oi_start que producen un Δ% dado. (+12 more)
 
 ### Community 185 - "signal_observation"
 Cohesion: 0.50
@@ -927,23 +941,23 @@ Nodes (3): reject_signal_walk_forward_manifest_mutation(), signal_walk_forward_m
 
 ### Community 206 - "_RemoveDocstrings"
 Cohesion: 0.24
-Nodes (8): Remove non-executable documentation before canonical serialization., _RemoveDocstrings, AST, AsyncFunctionDef, ClassDef, FunctionDef, Module, stmt
+Nodes (8): AST, Remove non-executable documentation before canonical serialization., _RemoveDocstrings, AsyncFunctionDef, ClassDef, FunctionDef, Module, stmt
 
 ### Community 210 - "test_p2_baselines.py"
-Cohesion: 0.04
-Nodes (49): baseline_band(), classify_absorption(), Situa un valor en su distribucion historica: banda + z-score robusto. Robusto =…, Clasifica absorcion desde el delta agresivo y el movimiento de precio. Fuente…, dict, FakeConnection, FakePool, FakeRecord (+41 more)
+Cohesion: 0.09
+Nodes (24): baseline_band(), classify_absorption(), Situa un valor en su distribucion historica: banda + z-score robusto. Robusto =…, Clasifica absorcion desde el delta agresivo y el movimiento de precio. Fuente…, parametrize, P2: los umbrales salen de la distribucion medida, no de una constante. Medicion…, Una muestra corta no es una distribucion: mejor sin baseline que con una…, El ratio long/short reparte CUENTAS: leerlo como dinero es el error tipico. (+16 more)
 
 ### Community 211 - "Registro de decisiones de arquitectura"
 Cohesion: 0.20
 Nodes (10): ADR-001 — Fuente única e inmutable de ruteo de mercado, ADR-002 — A-01 y A-02 son un solo problema y se cierran como una unidad, ADR-003 — Política de identity-v1 y ventana de sustitución, ADR-004 — La región de identidad protege lógica, no valores operativos, ADR-005 — Evidencia legacy sin procedencia queda excluida, sin backfill, ADR-006 — Trade Tape / Footprint es una iniciativa posterior y separada, ADR-007 — Ninguna IA mergea, despliega ni toca producción, ADR-008 — `c879bdec` es una implementación R05 parcial que no superó revisión (+2 more)
 
-### Community 212 - "_compute_confirmatory_result"
-Cohesion: 0.13
-Nodes (15): _cohort_characteristics(), _compute_confirmatory_result(), _confirmatory_coverage_characteristics(), _confirmatory_not_ready_result(), _expected_utc_nonoverlap_slot_count(), _merge_confirmatory_outcome_integrity(), PR26 A4-08 deterministic expected-slot count: the number of ``utc_nonoverlap``…, Diagnostics-only summary of one coverage cohort. Never read by the… (+7 more)
+### Community 212 - "test_data_gaps_postgres.py"
+Cohesion: 0.28
+Nodes (22): persist_liquidation_event_loss(), persist_liquidation_health_snapshot(), Flush connection and loss flags from memory without doing DB I/O per event., Fence the collector generation in the transaction that records event loss., _cadence_gap(), _chart_rows(), _connect(), _mask_chart() (+14 more)
 
-### Community 213 - "apply_temporal_retention"
-Cohesion: 0.29
-Nodes (8): apply_temporal_retention(), ensure_temporal_partitions(), _ExecuteConnection, Protocol, Create the current and next UTC daily partitions under one DB lock., Drop complete expired partitions, then trim the one boundary partition., cleanup_expired_rows(), test_designated_shard_cleans_expired_rows_for_removed_symbols()
+### Community 213 - "daily_agg.py"
+Cohesion: 0.14
+Nodes (18): apply_retention(), backfill(), _expected_session_samples(), latest_closed_session_date(), datetime, Mide distribuciones usando exclusivamente buckets historicos ya cerrados., refresh_baselines(), _store_baseline() (+10 more)
 
 ### Community 214 - "assigned_symbols"
 Cohesion: 0.62
@@ -967,43 +981,95 @@ Nodes (16): _connect_schema(), _drop_schema(), _dsn(), _persist(), asyncio, _sch
 
 ### Community 220 - "test_scalp_hardening.py"
 Cohesion: 0.14
-Nodes (12): _CleanupConnection, asyncio, parametrize, El basis ya no llega calculado desde SQL: lo decide basis_quality con la edad., Sin reloj no hay forma de saber si las patas siguen vivas: no se inventa un…, test_liquidation_queue_overflow_is_counted(), test_local_book_rejects_non_monotonic_sequence(), test_scalp_score_uses_spot_futures_divergence() (+4 more)
+Nodes (14): cleanup_expired_rows(), _CleanupConnection, asyncio, parametrize, El basis ya no llega calculado desde SQL: lo decide basis_quality con la edad., Sin reloj no hay forma de saber si las patas siguen vivas: no se inventa un…, test_designated_shard_cleans_expired_rows_for_removed_symbols(), test_liquidation_queue_overflow_is_counted() (+6 more)
 
-### Community 221 - "scientific_implementation_identity"
-Cohesion: 0.38
-Nodes (7): Any, Return the identity only when source matches its immutable registry., Fail closed when a frozen identity differs from runtime semantics., scientific_implementation_identity(), validate_scientific_implementation_identity(), test_scientific_identity_is_registered_and_names_every_critical_component(), test_scientific_identity_rejects_boolean_version_coercion()
+### Community 221 - "outcome_window"
+Cohesion: 0.41
+Nodes (17): outcome_window(), Create all deterministic pending horizon jobs idempotently., schedule_signal_outcomes(), _bars(), _dsn(), _gap(), _obs(), asyncio (+9 more)
 
 ### Community 222 - "renderDeltaMatrix"
 Cohesion: 0.40
 Nodes (5): deltaFlowQuadrant(), deltaShare(), markProfileLayer(), profileLayerOf(), renderDeltaMatrix()
 
 ### Community 223 - "test_freeze_walk_forward_manifest_cli.py"
-Cohesion: 0.14
-Nodes (35): ArgumentParser, _build_options(), build_parser(), _json_default(), main(), _parse_fee(), Any, Namespace (+27 more)
+Cohesion: 0.17
+Nodes (29): ArgumentParser, build_parser(), main(), _parse_fee(), _dsn(), _manifest_row(), fixture, MonkeyPatch (+21 more)
 
 ### Community 224 - "Índice de documentación — coinanalyze"
 Cohesion: 0.29
 Nodes (7): Capa científica (referencia por tema), Empezar aquí, Histórico, Operación, Producto y uso, Trabajo en curso (PR27 / PR28), Índice de documentación — coinanalyze
+
+### Community 226 - "test_metrics_endpoint.py"
+Cohesion: 0.12
+Nodes (15): parametrize, Regresiones de la auditoria v1.3.1. /metrics devolvia 500 (KeyError: 'detail')…, 1 USD de delta neto sobre 10M de volumen es ruido de redondeo, no absorcion.…, El endpoint y el resumen de scalp usaban umbrales distintos (0.02 vs 0.04).…, 1d/3d median el OI sobre n sesiones, no sobre toda la ventana cargada., rsync --delete con un paquete solo-app borraba sql/, scripts/ y deploy/., SHA256SUMS traia la ruta absoluta de la maquina de build; no verificaba nada., EXTRACT(EPOCH ...) devuelve numeric -> asyncpg da Decimal -> el JSON sale como… (+7 more)
 
 ### Community 228 - "PR27 — integridad del endpoint confirmatorio"
 Cohesion: 0.05
 Nodes (39): Admisibilidad de observaciones anteriores, Alcance por `Settings.SYMBOLS`, Alcance y responsabilidades futuras, Arquitectura del cierre, Auditoría de escritores, Auditoría explícita de clausura de dependencias, Cierre R05: integridad del ruteo efectivo, Clausura del productor crudo (+31 more)
 
 ### Community 229 - "test_pr27_r03_runtime_contract_postgres.py"
-Cohesion: 0.10
-Nodes (46): evaluate_walk_forward_authoritative(), Evaluate with explicit transaction and v4 authoritative persistence. A session…, conn(), _persist_once(), asyncio, fixture, PR27-R03 adversarial PostgreSQL suite: A -> B -> A must stay detectable. Replay…, The row is economically favorable; it still cannot become a result. (+38 more)
+Cohesion: 0.18
+Nodes (25): conn(), _persist_once(), asyncio, fixture, PR27-R03 adversarial PostgreSQL suite: A -> B -> A must stay detectable. Replay…, The row is economically favorable; it still cannot become a result., Evidence-v6 is not reinterpreted: no CHECK ties it to the new columns., Even a direct SQL INSERT cannot declare a foreign runtime contract. (+17 more)
+
+### Community 231 - "asyncio"
+Cohesion: 0.19
+Nodes (13): _DivergenceConnection, asyncio, Solo sesiones: la consulta intradia (spot_trades_agg) devuelve vacio., La ventana de n sesiones compara el cierre actual contra n sesiones atras., BTC marcaba 'bajista' en 1d con el precio en +0.0003%: cruzar el cero no basta., test_divergence_flags_price_up_with_spot_cvd_down(), test_divergence_reports_unavailable_without_history(), test_divergence_uses_spot_cvd_not_the_mixed_diff() (+5 more)
+
+### Community 232 - "divergence_scan"
+Cohesion: 0.22
+Nodes (12): divergence_scan(), Precio subiendo mientras el CVD spot acumulado baja (o al reves), sostenido.…, _bar(), _IntradayConnection, fetch() distingue la consulta intradia de la de sesiones por su texto., 4 min de retraso son media ventana en 9m e irrelevantes en 16h., Precio plano con ruido: no hay movimiento que divergir aunque la pendiente…, test_intraday_block_can_be_omitted_for_cheap_ai_profiles() (+4 more)
+
+### Community 233 - "FakePool"
+Cohesion: 0.14
+Nodes (10): dict, FakeConnection, FakePool, FakeRecord, asyncio, MonkeyPatch, dict lanza KeyError igual que asyncpg.Record ante una columna no pedida., test_prometheus_metrics_renders_scalp_runtime_values() (+2 more)
+
+### Community 234 - "signal_scientific_identity.py"
+Cohesion: 0.21
+Nodes (12): _canonical_ast_value(), _canonical_constant(), canonical_python_ast(), _extract_component_source(), _normalize_sql_whitespace_v1(), Path, Deterministic identity for versioned confirmatory scientific mechanics. The…, Collapse layout whitespace while preserving quoted SQL contents. (+4 more)
 
 ### Community 235 - "test_signal_replay_postgres.py"
-Cohesion: 0.47
-Nodes (11): _connect_schema(), _ctx(), _drop_schema(), _dsn(), _persist_consistent(), asyncio, _schema_name(), test_frame_is_ordinary_one_to_one_and_schema_is_idempotent() (+3 more)
+Cohesion: 0.38
+Nodes (13): Recompute one historical live decision from its frozen input frame., replay_signal_observation(), _connect_schema(), _ctx(), _drop_schema(), _dsn(), _persist_consistent(), asyncio (+5 more)
+
+### Community 236 - "datetime"
+Cohesion: 0.23
+Nodes (12): _confirmatory_outcome_integrity_for_fold(), _next_minute_strictly_after(), PR26 A4-08 outcome-completeness accounting: classifies every…, _integrity_row(), asyncio, datetime, test_compute_folds_are_expanding_discovery_contiguous_nonoverlapping_test(), test_confirmatory_not_ready_before_final_fold_matures() (+4 more)
+
+### Community 237 - "compute_swing_score"
+Cohesion: 0.25
+Nodes (11): compute_swing_score(), Puro: lee los bloques ya calculados y sintetiza sesgo largo plazo. NO es…, _blocks(), Medido en vivo (BTC): score 45 con 4 de 7 componentes mudos se publicaba como…, HH_HL en 1d y LH_LL en 3d se promediaban a 0 y quedaban indistinguibles de 'sin…, Para BTC, cross_asset.relative_strength_vs_base_pct es null en todas las…, test_component_without_data_is_unavailable_not_neutral(), test_contradictory_substructure_is_flagged_as_conflict() (+3 more)
+
+### Community 238 - "compute_scientific_implementation_identity"
+Cohesion: 0.31
+Nodes (11): compute_scientific_implementation_identity(), Compute, without trusting the registry, one deterministic identity., _mutated_digest(), Path, test_operational_collector_plumbing_stays_outside_the_identity(), test_recomputed_identity_matches_its_registry(), test_semantic_routing_change_moves_the_scientific_identity(), _copy_scientific_identity_surface() (+3 more)
 
 ### Community 239 - "test_pr27_integrity_contract.py"
 Cohesion: 0.23
 Nodes (5): _marked_ddl(), _marked_ddl_for(), test_pr27_r03_observation_provenance_is_additive_and_never_backfilled(), test_pr27_result_evidence_has_database_boundary_guards(), test_pr27_schema_and_forward_migration_have_identical_ddl()
 
+### Community 240 - "test_flow_continuity.py"
+Cohesion: 0.29
+Nodes (6): FlowConnection, asyncio, test_explicit_spot_gap_overrides_apparent_span_completeness(), test_long_spot_windows_stitch_history_and_live_tail_without_overlap(), test_oi_change_is_anchored_to_latest_sample_instead_of_wall_clock(), test_oi_change_is_unavailable_below_five_minute_source_resolution()
+
 ### Community 241 - "_ScalpContextConnection"
 Cohesion: 0.33
 Nodes (3): asyncio, _ScalpContextConnection, test_consulta_alinea_oi_y_precio_a_114937_sin_velas_abiertas()
+
+### Community 242 - "test_a_scalp_session_fails_closed_before_it_connects"
+Cohesion: 0.25
+Nodes (9): asyncio, MonkeyPatch, A routing attested a minute ago is not a routing attested now. The producer…, No socket may open under a routing the registry no longer reproduces., Fail closed before a single producer task exists., test_a_scalp_session_fails_closed_before_it_connects(), test_a_ws_session_fails_closed_before_it_connects(), test_an_index_cannot_be_built_once_the_runtime_stops_matching() (+1 more)
+
+### Community 243 - "_forged_routing"
+Cohesion: 0.25
+Nodes (8): _forged_routing(), BTC's internal keys pointed at ETH's external markets. Self-consistent by…, Red on 450cf2fb: this returned ETHUSDT -> BTCUSDT_PERP.A happily., The dataclass constructor is the same door, and must be shut too., A routing that merely *says* it matches the contract proves nothing. The forged…, test_a_forged_routing_cannot_be_handed_to_an_index_directly(), test_a_forged_routing_cannot_produce_a_futures_index(), test_a_registered_digest_string_is_not_provenance()
+
+### Community 244 - "freeze_walk_forward_manifest.py"
+Cohesion: 0.48
+Nodes (6): _build_options(), _json_default(), Any, Namespace, _reject_confirmatory_flags_outside_confirmatory_specs(), _run()
+
+### Community 245 - "_DailyProjectionConnection"
+Cohesion: 0.40
+Nodes (3): _DailyProjectionConnection, The date limit constrains every view of the mutable current projection., test_daily_date_limit_applies_to_current_projection_only()
 
 ### Community 246 - "reject_signal_walk_forward_confirmatory_result_mutation"
 Cohesion: 0.67
@@ -1014,24 +1080,24 @@ Cohesion: 0.29
 Nodes (5): validate_signal_walk_forward_confirmatory_result_insert(), validate_signal_walk_forward_confirmatory_result_insert(), signal_walk_forward_confirmatory_result, signal_walk_forward_manifest, validate_signal_walk_forward_confirmatory_result_insert()
 
 ## Knowledge Gaps
-- **678 isolated node(s):** `Condition`, `LANG`, `LC_ALL`, `DEBIAN_FRONTEND`, `PGPASSWORD` (+673 more)
+- **662 isolated node(s):** `Condition`, `LANG`, `LC_ALL`, `DEBIAN_FRONTEND`, `PGPASSWORD` (+657 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **24 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `_Connection` connect `_Connection` to `Settings`, `api.py`, `signal_backtest.py`, `calibrate_signals.py`, `test_pr25_research_knowledge_time_postgres.py`, `test_pr22_cvd_semantics_postgres.py`, `ServiceOwnershipLost`, `signal_replay.py`, `signal_execution.py`, `test_data_gaps_postgres.py`, `signal_regime.py`, `test_pr27_r04_raw_producer_closure_postgres.py`, `ai_context.py`, `TradeStore`, `signal_outcomes.py`, `daily_history`, `signal_walk_forward.py`, `metrics.py`, `EffectiveMarketRouting`, `ServiceOwnership`, `external_macro.py`, `test_daily_semantics.py`, `ingest.py`, `test_partitioning_postgres.py`, `signal_visibility.py`, `test_pr21_point_in_time.py`, `test_pr24_daily_historical_integrity_postgres.py`, `test_signal_walk_forward_confirmatory_postgres.py`, `RecordingConnection`, `data_confidence_row`, `signal_attribution.py`, `ValueError`, `scalp_collector.py`, `test_pr21_point_in_time_postgres.py`, `signal_ledger.py`, `_compute_confirmatory_result`, `apply_temporal_retention`, `test_partition_compatibility_bridge.py`, `test_pr22_cvd_semantics.py`, `test_pr23_temporal_integrity_postgres.py`, `test_signal_ledger_postgres.py`, `_PoolContext`, `test_pr27_r03_runtime_contract_postgres.py`, `test_coinalyze_rate_limit.py`, `test_signal_replay_postgres.py`, `test_signal_attribution_postgres.py`, `test_signal_backtest_postgres.py`, `scalp_logic.py`?**
-  _High betweenness centrality (0.151) - this node is a cross-community bridge._
-- **Why does `Settings` connect `Settings` to `ServiceOwnership`, `test_config.py`, `external_macro.py`, `ValueError`, `ServiceOwnershipLost`, `test_coinalyze_rate_limit.py`, `test_daily_semantics.py`, `ingest.py`, `_Connection`, `test_data_gaps_postgres.py`?**
-  _High betweenness centrality (0.030) - this node is a cross-community bridge._
-- **Why does `evaluate_setup()` connect `evaluate_setup` to `ValueError`, `hypothesis_evidence`, `setups.py`, `test_v150_setups.py`, `build_setup_context`, `test_setup_breakout_boundary.py`, `scalp_logic.py`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
+- **Why does `_Connection` connect `_Connection` to `test_ingest.py`, `api.py`, `signal_backtest.py`, `test_pr22_cvd_semantics_postgres.py`, `ingest.py`, `calibrate_signals.py`, `test_pr25_research_knowledge_time_postgres.py`, `test_db.py`, `signal_replay.py`, `signal_execution.py`, `WalkForwardManifestOptions`, `data_gaps.py`, `signal_regime.py`, `test_pr27_r04_raw_producer_closure_postgres.py`, `ai_context.py`, `ServiceOwnershipLost`, `signal_outcomes.py`, `ValueError`, `metrics.py`, `ws_collector.py`, `ServiceOwnership`, `Settings`, `external_macro.py`, `test_signal_confirmatory.py`, `config.py`, `test_partitioning_postgres.py`, `certify_research_bundles`, `test_pr21_point_in_time.py`, `test_pr24_daily_historical_integrity_postgres.py`, `evaluate_walk_forward`, `RecordingConnection`, `signal_attribution.py`, `scalp_collector.py`, `signal_ledger.py`, `test_data_gaps_postgres.py`, `daily_agg.py`, `test_partition_compatibility_bridge.py`, `test_pr23_temporal_integrity_postgres.py`, `test_signal_ledger_postgres.py`, `RawMarketProducerContractError`, `test_scalp_hardening.py`, `outcome_window`, `_PoolContext`, `test_pr27_r03_runtime_contract_postgres.py`, `divergence_scan`, `test_signal_replay_postgres.py`, `test_signal_walk_forward_confirmatory_postgres.py`, `test_signal_attribution_postgres.py`, `test_signal_backtest_postgres.py`, `scalp_logic.py`?**
+  _High betweenness centrality (0.125) - this node is a cross-community bridge._
+- **Why does `compute_scalp_summary()` connect `compute_scalp_summary` to `api.py`, `evaluate_setup`, `test_v150_ejecucion.py`, `signal_replay.py`, `test_pr27_r04_raw_producer_closure_postgres.py`, `ai_context.py`, `ServiceOwnership`, `test_v150_oi_scoring.py`, `evaluate_walk_forward`, `basis_quality`, `scalp_collector.py`, `test_p2_baselines.py`, `_closed_window_move_pct`, `test_scalp_hardening.py`, `test_p0_regresion_auditoria.py`, `test_pr27_r03_runtime_contract_postgres.py`, `test_signal_replay_postgres.py`, `test_signal_walk_forward_confirmatory_postgres.py`, `scalp_logic.py`?**
+  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+- **Why does `Settings` connect `Settings` to `test_ingest.py`, `ServiceOwnership`, `ingest.py`, `external_macro.py`, `asyncio`, `divergence_scan`, `test_db.py`, `test_daily_semantics.py`, `config.py`, `_Connection`, `test_data_gaps.py`, `test_data_gaps_postgres.py`, `_DailyProjectionConnection`, `ServiceOwnershipLost`?**
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **Are the 4 inferred relationships involving `_Connection` (e.g. with `CoinalyzeClient` and `PostgresSlidingWindowRateLimiter`) actually correct?**
   _`_Connection` has 4 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 129 inferred relationships involving `ValueError` (e.g. with `normalize_profile()` and `.acquire()`) actually correct?**
   _`ValueError` has 129 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 2 inferred relationships involving `WalkForwardManifestOptions` (e.g. with `ConfirmatoryContract` and `ConfirmatoryContractV2`) actually correct?**
   _`WalkForwardManifestOptions` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 17 inferred relationships involving `ServiceOwnership` (e.g. with `CoinalyzeClient` and `CoinalyzeError`) actually correct?**
-  _`ServiceOwnership` has 17 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `Condition`, `LANG`, `LC_ALL` to the rest of the system?**
+  _662 weakly-connected nodes found - possible documentation gaps or missing edges._

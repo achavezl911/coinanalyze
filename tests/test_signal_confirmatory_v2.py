@@ -566,7 +566,7 @@ def test_sql_canonicalizer_preserves_line_comment_termination_semantics() -> Non
 def test_scientific_identity_is_registered_and_names_every_critical_component() -> None:
     identity = scientific_implementation_identity()
     assert identity["digest"] == (
-        "5a5cb09f80ce17903409daf8fc90e7d05e060a578183aed629d680f37280f05f"
+        "c939add3055ea2a8b0edd1ea93630682043a2b98b4ac33425bc49acc47cf156c"
     )
     assert identity["digest"] == REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS[
         SCIENTIFIC_IDENTITY_VERSION_V1
