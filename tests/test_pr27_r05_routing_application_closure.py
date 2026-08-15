@@ -58,7 +58,6 @@ from app.signal_runtime_contract import (
     require_routed_internal_keys,
 )
 from app.signal_scientific_identity import (
-    SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS,
     compute_scientific_implementation_identity,
 )
 from tests.test_pr27_r05_routing_closure import IDENTITY_FILES, _identity_tree
@@ -296,19 +295,29 @@ ROUTING_MATERIAL_ENDPOINTS = {
 
 
 def _identity_line_spans(relative: str) -> list[tuple[int, int]]:
-    source = (ROOT / relative).read_text(encoding="utf-8")
-    lines = source.splitlines()
+    """Marker spans, read from the file itself rather than from the registry.
+
+    Both collectors are covered as whole ``python_module`` components since the
+    third R05 correction, so they contribute no *region* components.  Keying
+    this sweep on the component list would therefore find nothing and pass
+    vacuously; reading the markers from the source keeps it load-bearing.
+    """
+
+    lines = (ROOT / relative).read_text(encoding="utf-8").splitlines()
     spans: list[tuple[int, int]] = []
-    for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS:
-        if component.relative_path != relative:
+    begin: int | None = None
+    for index, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped.startswith("# PR27_SCIENTIFIC_"):
             continue
-        begin = next(
-            index for index, line in enumerate(lines, 1) if component.begin_marker in line
-        )
-        end = next(
-            index for index, line in enumerate(lines, 1) if component.end_marker in line
-        )
-        spans.append((begin, end))
+        if stripped.endswith("_BEGIN"):
+            assert begin is None, f"{relative}:{index} opens a region inside a region"
+            begin = index
+        elif stripped.endswith("_END"):
+            assert begin is not None, f"{relative}:{index} closes an unopened region"
+            spans.append((begin, index))
+            begin = None
+    assert begin is None, f"{relative} leaves a scientific region unclosed"
     assert spans, f"{relative} declares no scientific identity region"
     return spans
 
@@ -574,12 +583,22 @@ OPERATIONAL_MUTATIONS = (
     OPERATIONAL_MUTATIONS,
     ids=[case[0] for case in OPERATIONAL_MUTATIONS],
 )
-def test_operational_plumbing_never_moves_the_identity(
+def test_operational_plumbing_now_moves_the_identity(
     tmp_path: Path, label: str, relative: str, old: str, new: str
 ) -> None:
+    """Reversed deliberately by the third R05 correction -- see ADR-012.
+
+    Backoff, logging level, feed-health flags and heartbeat thresholds used to
+    be neutral, and that neutrality is what required the collectors' scientific
+    surface to be an enumerated set of regions.  Three reviews walked around
+    that enumeration.  Both collectors are hashed whole now, so every
+    executable edit to them is material -- this suite states the cost instead
+    of hiding it.
+    """
+
     root = _identity_tree(tmp_path)
     baseline = compute_scientific_implementation_identity(root=root)["digest"]
-    assert _mutate(root, relative, old, new) == baseline, label
+    assert _mutate(root, relative, old, new) != baseline, label
 
 
 def test_the_mutation_tree_covers_every_file_the_mutations_touch() -> None:

@@ -156,18 +156,26 @@ def test_guarded_tables_are_exactly_the_routed_raw_inputs_of_the_frozen_kernel()
 
 
 def test_guard_is_frozen_by_the_scientific_identity() -> None:
+    """Stricter since the third R05 correction: coverage is the whole file.
+
+    The guard used to be inside a marked region, which meant "the guard is
+    frozen" was really "the guard is frozen *while it stays between these two
+    comments*".  The module component removes that qualifier: the covered text
+    is the file, so the guard cannot be moved out of coverage at all.
+    """
+
     component = next(
         item
         for item in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS
-        if item.name == "scientific_runtime_contract_mechanics"
+        if item.name == "scientific_runtime_contract_module"
     )
     assert component.relative_path == "app/signal_runtime_contract.py"
+    assert component.language == "python_module"
     root = Path(__file__).resolve().parents[1]
-    text = (root / component.relative_path).read_text(encoding="utf-8")
-    region = text[text.index(component.begin_marker) : text.index(component.end_marker)]
+    covered = (root / component.relative_path).read_text(encoding="utf-8")
     # Deleting or narrowing the guard changes the identity digest.
-    assert "def attest_raw_market_producer" in region
-    assert "_RESULT_MATERIAL_RAW_PRODUCERS_V1" in region
+    assert "def attest_raw_market_producer" in covered
+    assert "_RESULT_MATERIAL_RAW_PRODUCERS_V1" in covered
 
 
 # --------------------------------------------------------------------------

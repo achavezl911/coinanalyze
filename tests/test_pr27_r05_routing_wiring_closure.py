@@ -54,7 +54,6 @@ from app.signal_runtime_contract import (
     require_routed_internal_keys,
 )
 from app.signal_scientific_identity import (
-    SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS,
     compute_scientific_implementation_identity,
 )
 from tests.test_pr27_r05_routing_closure import IDENTITY_FILES
@@ -344,18 +343,32 @@ ALLOWED_OUTSIDE = frozenset(
 
 
 def _identity_spans(root: Path, relative: str) -> list[tuple[int, int]]:
+    """Marker spans, read from the file itself rather than from the registry.
+
+    The third R05 correction covers both collectors as whole ``python_module``
+    components, so they no longer contribute *region* components and a sweep
+    keyed on the component list would find no spans at all and silently pass.
+    Reading the markers straight from the source keeps this sweep alive as
+    defence in depth and makes it stronger than it was: it can no longer be
+    switched off by editing the component registry, only by deleting the
+    markers -- which the marker-presence test below forbids.
+    """
+
     lines = (root / relative).read_text(encoding="utf-8").splitlines()
     spans: list[tuple[int, int]] = []
-    for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS:
-        if component.relative_path != relative:
+    begin: int | None = None
+    for index, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped.startswith("# PR27_SCIENTIFIC_"):
             continue
-        begin = next(
-            index for index, line in enumerate(lines, 1) if component.begin_marker in line
-        )
-        end = next(
-            index for index, line in enumerate(lines, 1) if component.end_marker in line
-        )
-        spans.append((begin, end))
+        if stripped.endswith("_BEGIN"):
+            assert begin is None, f"{relative}:{index} opens a region inside a region"
+            begin = index
+        elif stripped.endswith("_END"):
+            assert begin is not None, f"{relative}:{index} closes an unopened region"
+            spans.append((begin, index))
+            begin = None
+    assert begin is None, f"{relative} leaves a scientific region unclosed"
     assert spans, f"{relative} declares no scientific identity region"
     return spans
 
@@ -778,7 +791,7 @@ def test_an_attested_routing_still_builds_its_own_indexes() -> None:
 # market's data under another's key.  It must therefore stay out of the
 # identity, exactly like backoff, logging and feed health already are.
 
-WIRING_NEUTRAL_MUTATIONS = (
+WIRING_PLUMBING_MUTATIONS = (
     (
         "scalp-feed-invocation",
         "app/scalp_collector.py",
@@ -808,18 +821,30 @@ WIRING_NEUTRAL_MUTATIONS = (
 
 @pytest.mark.parametrize(
     ("label", "relative", "old", "new"),
-    WIRING_NEUTRAL_MUTATIONS,
-    ids=[case[0] for case in WIRING_NEUTRAL_MUTATIONS],
+    WIRING_PLUMBING_MUTATIONS,
+    ids=[case[0] for case in WIRING_PLUMBING_MUTATIONS],
 )
-def test_the_plumbing_left_outside_never_moves_the_identity(
+def test_the_plumbing_left_outside_now_moves_the_identity(
     tmp_path: Path, label: str, relative: str, old: str, new: str
 ) -> None:
+    """Reversed deliberately by the third R05 correction -- see ADR-012.
+
+    These four edits -- a keyword reorder on an opaque ``connect``, an added
+    ``+ 0.0``, a flush sleep of 6 seconds instead of 5 -- were the proof that
+    the identity was not hostage to operations.  Keeping them neutral required
+    the collectors to expose an enumerated scientific surface, which is exactly
+    what was refuted three times.  Whole-module coverage buys the closure
+    property at their expense, and the reversal is asserted rather than dropped
+    so the price stays visible.
+    """
+
     root = _identity_tree(tmp_path)
     baseline = compute_scientific_implementation_identity(root=root)["digest"]
     path = root / relative
     source = path.read_text(encoding="utf-8")
     assert source.count(old) >= 1, f"{label}: missing plumbing {old!r}"
     path.write_text(source.replace(old, new, 1), encoding="utf-8")
-    assert compute_scientific_implementation_identity(root=root)["digest"] == baseline, (
-        f"{label}: an operational edit moved the scientific identity"
+    assert compute_scientific_implementation_identity(root=root)["digest"] != baseline, (
+        f"{label}: whole-module coverage must make every executable edit to the "
+        "collectors material"
     )

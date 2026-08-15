@@ -59,6 +59,9 @@ from tests.test_pr27_r04_raw_producer_closure import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# Hashed whole since the third R05 correction; app/config.py is not.
+COLLECTOR_MODULES = ("app/scalp_collector.py", "app/ws_collector.py")
 PRODUCERS = ("scalp_collector", "ws_collector")
 FOUR_MAPS = ("WS_SYMBOL_MAP", "FUTURES_PAIR_MAP", "SPOT_PAIR_MAP", "PAIR_SYMBOL_MAP")
 REGISTERED_CONTRACT_DIGEST = REGISTERED_SCIENTIFIC_RUNTIME_CONTRACT_DIGESTS[
@@ -649,17 +652,42 @@ ROUTING_IDENTITY_COMPONENTS = {
 }
 
 
-def test_routing_regions_are_registered_identity_components() -> None:
-    by_name = {
-        component.name: component
-        for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS
-    }
+def test_routing_regions_are_covered_by_the_identity() -> None:
+    """Stricter since the third R05 correction -- see ADR-012.
+
+    Every routing region used to be its own identity component, so this test
+    checked the registry entries matched the markers.  The two collectors are
+    now hashed whole, which *contains* those regions rather than enumerating
+    them, so the check becomes: the marker pair still exists in the source (the
+    structural sweeps read it), and the file it belongs to is covered by a
+    single ``python_module`` component with no markers of its own.  A region
+    that quietly stopped being covered would now have to delete its markers
+    *and* remove the module component.
+    """
+
+    by_path: dict[str, list[object]] = {}
+    for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS:
+        by_path.setdefault(component.relative_path, []).append(component)
+
     for name, (path, begin, end) in ROUTING_IDENTITY_COMPONENTS.items():
-        component = by_name[name]
-        assert component.relative_path == path
-        assert component.begin_marker == begin
-        assert component.end_marker == end
-        assert component.language == "python"
+        text = (ROOT / path).read_text(encoding="utf-8")
+        assert text.count(f"# {begin}") == 1, f"{name}: missing begin marker"
+        assert text.count(f"# {end}") == 1, f"{name}: missing end marker"
+        assert text.index(begin) < text.index(end), f"{name}: markers are inverted"
+
+        components = by_path[path]
+        assert len(components) == 1, f"{path} must be covered exactly once"
+        component = components[0]
+        if path in COLLECTOR_MODULES:
+            assert component.language == "python_module"
+            assert component.begin_marker == ""
+            assert component.end_marker == ""
+        else:
+            # app/config.py keeps region coverage: its scientific part is the
+            # four projections, and the thresholds beside them are frozen by
+            # the runtime contract instead.
+            assert component.language == "python"
+            assert (component.begin_marker, component.end_marker) == (begin, end)
 
 
 def _region(relative_path: str, begin: str, end: str) -> str:
@@ -909,15 +937,35 @@ def test_semantic_routing_change_moves_the_scientific_identity(
     ],
     ids=["scalp-reconnect-backoff", "ws-reconnect-backoff"],
 )
-def test_operational_collector_plumbing_stays_outside_the_identity(
+def test_operational_collector_plumbing_now_moves_the_identity(
     tmp_path: Path, label: str, relative: str, old: str, new: str
 ) -> None:
+    """Reversed deliberately by the third R05 correction -- see ADR-012.
+
+    Until ``9b2e082c`` this asserted the opposite: reconnect backoff was
+    operational plumbing and had to leave the digest alone.  That neutrality
+    was only obtainable by keeping the collectors' scientific surface to an
+    enumerated set of regions, and an enumeration is what three consecutive
+    reviews walked around -- most recently with a direct ``TRADE_STORE`` write,
+    a store-writing helper started from ``main()``, an inverted aggression
+    branch, a widened realtime bucket and a substituted ``functools.partial``.
+
+    Both collectors are now hashed whole, so *any* executable edit to them
+    moves identity-v1, backoff included.  The assertion is inverted rather than
+    deleted so the trade-off stays measured rather than assumed: if a future
+    correction restores neutrality here, it must say which enumeration it
+    reintroduced to buy it.
+    """
+
     root = _identity_tree(tmp_path)
     baseline = compute_scientific_implementation_identity(root=root)["digest"]
 
     source = (root / relative).read_text(encoding="utf-8")
     assert old in source, label
-    assert _mutated_digest(root, relative, old, new) == baseline
+    assert _mutated_digest(root, relative, old, new) != baseline, (
+        f"{label}: whole-module coverage must make every executable edit to the "
+        "collectors material"
+    )
 
 
 # --------------------------------------------------------------------------

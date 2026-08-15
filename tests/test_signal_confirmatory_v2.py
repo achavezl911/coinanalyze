@@ -566,21 +566,20 @@ def test_sql_canonicalizer_preserves_line_comment_termination_semantics() -> Non
 def test_scientific_identity_is_registered_and_names_every_critical_component() -> None:
     identity = scientific_implementation_identity()
     assert identity["digest"] == (
-        "c939add3055ea2a8b0edd1ea93630682043a2b98b4ac33425bc49acc47cf156c"
+        "c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04"
     )
     assert identity["digest"] == REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS[
         SCIENTIFIC_IDENTITY_VERSION_V1
     ]
     assert {component["name"] for component in identity["components"]} == {
         "scientific_identity_mechanics",
-        "scientific_runtime_contract_mechanics",
+        # The three whole-module components replaced seven region components
+        # (the runtime contract mechanics plus three regions in each
+        # collector).  See ADR-012.
+        "scientific_runtime_contract_module",
+        "scalp_collector_module",
+        "ws_collector_module",
         "market_routing_construction",
-        "scalp_routing_application",
-        "scalp_routing_entrypoint",
-        "scalp_raw_delivery",
-        "ws_routing_application",
-        "ws_routing_entrypoint",
-        "ws_raw_delivery",
         "signal_summary_decision_kernel",
         "signal_summary_oi_helpers",
         "signal_context_session_boundary",
@@ -605,6 +604,25 @@ def test_scientific_identity_is_registered_and_names_every_critical_component() 
         "outcome_final_visibility_database_boundary",
         "authoritative_result_database_boundary",
     }
+    assert len(identity["components"]) == 28, "a component was added or duplicated"
+    # The three modules that decide what the raw collectors observe are hashed
+    # whole, and nothing may slice them alongside.
+    whole_modules = {
+        component["source"]
+        for component in identity["components"]
+        if component["canonicalizer"] == "canonical_python_module_v1"
+    }
+    assert whole_modules == {
+        "app/scalp_collector.py",
+        "app/signal_runtime_contract.py",
+        "app/ws_collector.py",
+    }
+    assert not [
+        component
+        for component in identity["components"]
+        if component["source"].split("#")[0] in whole_modules
+        and component["canonicalizer"] != "canonical_python_module_v1"
+    ]
 
 
 def _copy_scientific_identity_surface(destination: Path) -> None:

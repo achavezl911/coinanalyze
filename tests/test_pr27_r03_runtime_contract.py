@@ -309,14 +309,24 @@ def test_validate_rejects_malformed_frozen_contracts(stored: object) -> None:
 
 
 def test_contract_mechanics_are_covered_by_the_scientific_identity() -> None:
+    """Stricter since the third R05 correction: the whole file, not a region."""
+
     names = {component.name for component in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS}
-    assert "scientific_runtime_contract_mechanics" in names
-    component = next(
+    assert "scientific_runtime_contract_module" in names
+    covering = [
         item
         for item in SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS
-        if item.name == "scientific_runtime_contract_mechanics"
-    )
-    assert component.relative_path == "app/signal_runtime_contract.py"
+        if item.relative_path == "app/signal_runtime_contract.py"
+    ]
+    assert len(covering) == 1, "the contract module must be covered exactly once"
+    component = covering[0]
+    assert component.name == "scientific_runtime_contract_module"
+    assert component.language == "python_module"
+    # No markers: the imports and the constants above the old BEGIN marker are
+    # inside the identity now, so the coverage cannot be narrowed by moving
+    # code above a marker.
+    assert component.begin_marker == ""
+    assert component.end_marker == ""
 
 
 def test_only_spec_v4_freezes_the_runtime_contract() -> None:

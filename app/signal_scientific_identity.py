@@ -1,10 +1,13 @@
 """Deterministic identity for versioned confirmatory scientific mechanics.
 
 The identity is deliberately narrower than a Git commit and stronger than a
-human-maintained version label.  It hashes canonical ASTs from explicit source
-regions that implement the scientific result.  Comments, docstrings, source
-locations, indentation width, and other formatting do not affect the digest;
-executable changes do.
+human-maintained version label.  It hashes canonical ASTs of the source that
+implements the scientific result, in two shapes: marker-delimited *regions* for
+files whose scientific part is a well-delimited minority, and whole *modules*
+for the three files where anything executable can change what the raw
+collectors observe.  Comments, docstrings, source locations, indentation width,
+and other formatting do not affect the digest in either shape; executable
+changes do.
 
 The registered mapping is append-only by policy.  A legitimate future change
 must add a new identity version and a new prospective walk-forward spec.  It
@@ -28,11 +31,31 @@ SCIENTIFIC_IDENTITY_CANONICALIZER = "scientific_source_canonicalization_v1"
 
 @dataclass(frozen=True, slots=True)
 class ScientificSourceComponent:
+    """One hashed unit of the scientific surface.
+
+    Two kinds exist.  A *region* component (``language`` ``python`` or ``sql``)
+    hashes the text between two markers; it is the right shape for a large file
+    whose scientific part is a well-delimited minority.  A *module* component
+    (``language`` ``python_module``) hashes the complete AST of a file and
+    carries no markers at all; it is the right shape for a file where anything
+    executable can change what the science observes.  See ADR-012.
+    """
+
     name: str
     relative_path: str
-    begin_marker: str
-    end_marker: str
+    begin_marker: str = ""
+    end_marker: str = ""
     language: str = "python"
+
+    def __post_init__(self) -> None:
+        if self.language == "python_module":
+            if self.begin_marker or self.end_marker:
+                raise ValueError(
+                    f"module component {self.name!r} must not carry markers: "
+                    "whole-file coverage is what makes it unescapable"
+                )
+        elif not self.begin_marker or not self.end_marker:
+            raise ValueError(f"region component {self.name!r} requires both markers")
 
 
 # Exact scientific surface for PR27's corrected endpoint.  The marker names
@@ -46,11 +69,42 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
         begin_marker="PR27_SCIENTIFIC_IDENTITY_MECHANICS_V1_BEGIN",
         end_marker="PR27_SCIENTIFIC_IDENTITY_MECHANICS_V1_END",
     ),
+    # R05, third correction: whole-module coverage.  See ADR-012.
+    #
+    # A region plus a list of material symbol names can only ever support the
+    # property "the enumerated things did not change", and an enumeration is
+    # what both an attacker and an honest mistake walk around.  Five mutations
+    # demonstrated it on 9b2e082c while the digest stood still: a direct write
+    # into TRADE_STORE from unmarked code, a new store-writing helper started
+    # from main(), an inverted buy/sell branch in TradeBucket.add, a realtime
+    # bucket widened from 5 to 10 seconds, and a look-alike substituted for
+    # functools.partial that silently drops the attested routing.  None of them
+    # is reachable by adding names to a symbol list: two are new code, two are
+    # arithmetic inside existing code, one replaces a language builtin.
+    #
+    # These three files are hashed whole instead.  Everything that decides what
+    # the raw collectors observe, classify, bucket, store, deliver or attest
+    # lives in one of them, so the closure property becomes structural: any
+    # executable change to any of them moves identity-v1, with no surface left
+    # to enumerate.  The cost is accepted deliberately and documented -- backoff,
+    # logging, feed health, sleeps and transport parameters in the two
+    # collectors are no longer neutral.  Restoring their neutrality would mean
+    # re-introducing an enumeration, and that is exactly what was refuted three
+    # times.
     ScientificSourceComponent(
-        name="scientific_runtime_contract_mechanics",
+        name="scientific_runtime_contract_module",
         relative_path="app/signal_runtime_contract.py",
-        begin_marker="PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_BEGIN",
-        end_marker="PR27_SCIENTIFIC_RUNTIME_CONTRACT_V1_END",
+        language="python_module",
+    ),
+    ScientificSourceComponent(
+        name="scalp_collector_module",
+        relative_path="app/scalp_collector.py",
+        language="python_module",
+    ),
+    ScientificSourceComponent(
+        name="ws_collector_module",
+        relative_path="app/ws_collector.py",
+        language="python_module",
     ),
     # R05, corrected: the routing the raw producers actually apply, end to end.
     #
@@ -61,57 +115,16 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
     # by the runtime contract, so the thresholds and the two non-scientific
     # identifiers alongside them no longer drag the identity with them.
     #
-    # The application regions cover the venue endpoints, the construction of
-    # the routing index from the attested routing, the streams and topics it
-    # produces, the connection that carries them, the external-pair ->
-    # internal-key conversion, and the injection of a single routing into every
-    # producer task.  The delivery regions cover the handoff from each store to
-    # the only SQL paths into the raw tables.
-    #
-    # Reconnection, backoff, feed health, monitoring timestamps and logging in
-    # both collectors stay outside: those are the edits operations makes, and
-    # the identity must not be hostage to them.
+    # The two collectors and the contract module are no longer covered by
+    # regions at all -- they are the three ``python_module`` components above.
+    # The marker comments remain in their source only so the structural sweeps
+    # that read them keep working as defence in depth; they no longer decide
+    # what the identity hashes.
     ScientificSourceComponent(
         name="market_routing_construction",
         relative_path="app/config.py",
         begin_marker="PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1_BEGIN",
         end_marker="PR27_SCIENTIFIC_MARKET_ROUTING_SOURCE_V1_END",
-    ),
-    ScientificSourceComponent(
-        name="scalp_routing_application",
-        relative_path="app/scalp_collector.py",
-        begin_marker="PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_BEGIN",
-        end_marker="PR27_SCIENTIFIC_SCALP_ROUTING_APPLICATION_V1_END",
-    ),
-    ScientificSourceComponent(
-        name="scalp_routing_entrypoint",
-        relative_path="app/scalp_collector.py",
-        begin_marker="PR27_SCIENTIFIC_SCALP_ROUTING_ENTRYPOINT_V1_BEGIN",
-        end_marker="PR27_SCIENTIFIC_SCALP_ROUTING_ENTRYPOINT_V1_END",
-    ),
-    ScientificSourceComponent(
-        name="scalp_raw_delivery",
-        relative_path="app/scalp_collector.py",
-        begin_marker="PR27_SCIENTIFIC_SCALP_RAW_DELIVERY_V1_BEGIN",
-        end_marker="PR27_SCIENTIFIC_SCALP_RAW_DELIVERY_V1_END",
-    ),
-    ScientificSourceComponent(
-        name="ws_routing_application",
-        relative_path="app/ws_collector.py",
-        begin_marker="PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_BEGIN",
-        end_marker="PR27_SCIENTIFIC_WS_ROUTING_APPLICATION_V1_END",
-    ),
-    ScientificSourceComponent(
-        name="ws_routing_entrypoint",
-        relative_path="app/ws_collector.py",
-        begin_marker="PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_BEGIN",
-        end_marker="PR27_SCIENTIFIC_WS_ROUTING_ENTRYPOINT_V1_END",
-    ),
-    ScientificSourceComponent(
-        name="ws_raw_delivery",
-        relative_path="app/ws_collector.py",
-        begin_marker="PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_BEGIN",
-        end_marker="PR27_SCIENTIFIC_WS_RAW_DELIVERY_V1_END",
     ),
     ScientificSourceComponent(
         name="signal_summary_decision_kernel",
@@ -270,24 +283,28 @@ SCIENTIFIC_IMPLEMENTATION_V1_COMPONENTS = (
 # no spec-v4 manifest and no authoritative result exist that could have frozen
 # a previous value, so no evidence is invalidated by the change.  History
 # inside PR27: f696a268... (R03) -> 9749e643... (R04) -> 25f6c2e5...
-# (c879bdec) -> 5a5cb09f... (700f7695 / 450cf2fb) -> this value.
+# (c879bdec) -> 5a5cb09f... (700f7695 / 450cf2fb) -> c939add3... (e84ebe81 /
+# 9b2e082c) -> this value.
 #
-# 25f6c2e5... was refuted because the surface excluded the points where the
-# routing is applied and included catalog values documented as non-material.
-# 5a5cb09f... was refuted in turn: its mutation suite rewrote the *first
-# textual occurrence* of each routing expression, which after that correction
-# always landed inside a region, while the real call sites -- the session
-# selection in the reconnect loops and the wiring invoked by main()/run() --
-# stayed outside.  The surface now covers those call sites, and nothing
-# routing-material is reachable outside a region at all.
+# Every one of those was refuted, and always the same way: the surface was an
+# enumeration, and the review found something material outside it.  25f6c2e5...
+# excluded the points where the routing is applied.  5a5cb09f... was anchored
+# by first textual occurrence, so the suite went green while the executed call
+# sites stayed outside.  c939add3... closed the routing wiring but still rested
+# on regions plus a symbol list, and five mutations -- a direct TRADE_STORE
+# write, a store-writing helper started from main(), an inverted buy/sell
+# branch in TradeBucket.add, a realtime bucket widened from 5 to 10 seconds and
+# a substituted functools.partial -- left it standing.
 #
-# This value is a candidate, not a frozen result: it stands only if the
-# corrected surface survives an independent review with P0=0 and P1=0.  The
-# window closes before the first spec-v4 manifest; from that point on any
-# change registers a new identity version and the v1 digest is never replaced.
+# This value stops enumerating.  The three modules that decide what the raw
+# collectors observe are hashed whole, so the property is structural rather
+# than curated.  It is still a candidate, not a frozen result: it stands only
+# if it survives an independent review with P0=0 and P1=0.  The window closes
+# before the first spec-v4 manifest; from that point on any change registers a
+# new identity version and the v1 digest is never replaced.
 REGISTERED_SCIENTIFIC_IMPLEMENTATION_DIGESTS = {
     SCIENTIFIC_IDENTITY_VERSION_V1: (
-        "c939add3055ea2a8b0edd1ea93630682043a2b98b4ac33425bc49acc47cf156c"
+        "c7bf8e5b4f5280ff767e4e07e573b4c9a51e18011ebcaf8bc4b26a04c4b49c04"
     ),
 }
 
@@ -469,9 +486,29 @@ def canonical_python_ast(source: str) -> str:
     )
 
 
+def canonical_python_module_v1(source: str) -> str:
+    """Canonicalize a complete Python file, markers and symbol lists aside.
+
+    The whole module is parsed, so imports, module constants, class bodies,
+    helper functions, entrypoints and anything added later are all inside the
+    payload by construction.  There is nothing to enumerate and therefore
+    nothing to forget: coverage is the file.
+
+    Canonicalization is the same one the region components use, so the same
+    things stay neutral -- comments, docstrings, blank lines, indentation width
+    and source positions.  Everything executable is material.
+    """
+
+    return canonical_python_ast(source)
+
+
 def _extract_component_source(root: Path, component: ScientificSourceComponent) -> str:
     path = root / component.relative_path
     source = path.read_text(encoding="utf-8")
+    if component.language == "python_module":
+        # No markers: the component *is* the file.  A module component that
+        # sliced anything would reopen the gap it exists to close.
+        return source
     comment_prefix = "#" if component.language == "python" else "--"
     begin = f"{comment_prefix} {component.begin_marker}"
     end = f"{comment_prefix} {component.end_marker}"
@@ -503,8 +540,17 @@ def compute_scientific_implementation_identity(
         component_source = _extract_component_source(source_root, component)
         if component.language == "python":
             canonical = canonical_python_ast(component_source)
+            canonicalizer = "canonical_python_ast_v1"
+            source_label = f"{component.relative_path}#{component.begin_marker}"
+        elif component.language == "python_module":
+            canonical = canonical_python_module_v1(component_source)
+            canonicalizer = "canonical_python_module_v1"
+            # No marker suffix: the label must not imply a slice.
+            source_label = component.relative_path
         elif component.language == "sql":
             canonical = canonical_sql_source_v1(component_source)
+            canonicalizer = "canonical_sql_source_v1"
+            source_label = f"{component.relative_path}#{component.begin_marker}"
         else:
             raise ValueError(
                 f"unsupported scientific component language: {component.language}"
@@ -512,12 +558,8 @@ def compute_scientific_implementation_identity(
         component_records.append(
             {
                 "name": component.name,
-                "source": f"{component.relative_path}#{component.begin_marker}",
-                "canonicalizer": (
-                    "canonical_python_ast_v1"
-                    if component.language == "python"
-                    else "canonical_sql_source_v1"
-                ),
+                "source": source_label,
+                "canonicalizer": canonicalizer,
                 "digest": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
             }
         )
