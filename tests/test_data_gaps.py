@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
@@ -12,6 +12,7 @@ from app.data_gaps import (
     record_data_gap,
     validate_recovery,
 )
+from app.metrics import session_bounds
 
 
 def test_missing_cadence_windows_use_the_supplied_feed_cadence() -> None:
@@ -115,3 +116,101 @@ async def test_chart_gap_nulls_the_bucket_and_all_later_cumulative_values(
         {"bucket": start + timedelta(minutes=1), "delta": None, "cvd": None},
         {"bucket": start + timedelta(minutes=2), "delta": 1.0, "cvd": None},
     ]
+
+
+# --------------------------------------------------------------------------------
+# LA VENTANA DE /api/daily NO ES UN DIA UTC, y enmascararla como si lo fuera es peor
+# que no enmascararla: pondria a null un dia sano y dejaria intacto el roto.
+# session_bounds (app/metrics.py:31) define la sesion de 09:30 a 09:30 de Nueva York,
+# asi que ni empieza a medianoche ni mide siempre 24 h -en los cambios de horario mide
+# 23 o 25-. Estos tests fijan que la ventana que se le pide a data_gap es ESA.
+# --------------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_la_ventana_de_una_sesion_diaria_es_la_de_nueva_york(monkeypatch) -> None:
+    from app.api import _session_window
+
+    filas = [{"session_date": date(2026, 8, 14), "price_close": 62956.0}]
+    pedidas: list[tuple[datetime, datetime]] = []
+
+    async def blocked(_conn, requirements):
+        pedidas.extend((r.start, r.end) for r in requirements)
+        return set()
+
+    monkeypatch.setattr(api, "blocking_requirement_keys", blocked)
+    await mask_gapped_series_rows(
+        object(),  # type: ignore[arg-type]
+        filas,
+        bucket=timedelta(days=1),
+        feed="ohlcv_1min",
+        exchanges=("binance",),
+        market="perpetual",
+        symbol="BTCUSDT_PERP.A",
+        value_keys=("price_close",),
+        row_window=_session_window,
+    )
+
+    assert pedidas == [session_bounds(date(2026, 8, 14))]
+    inicio, fin = pedidas[0]
+    # Lo que este test existe para impedir: que alguien "simplifique" a medianoche UTC.
+    assert (inicio.hour, inicio.minute) != (0, 0), "la sesion no empieza a medianoche UTC"
+    assert fin - inicio == timedelta(days=1)
+
+
+@pytest.mark.asyncio
+async def test_el_cambio_de_horario_no_dura_24_h_y_la_ventana_lo_respeta(monkeypatch) -> None:
+    """La sesion que CONTIENE el cambio de hora no mide 24 h. Comprobado: la del
+    2026-03-08 mide 23 h y la del 2026-11-01 mide 25. Un bucket fijo de 24 h pediria
+    una ventana falsa en las dos."""
+    from app.api import _session_window
+
+    filas = [{"session_date": date(2026, 3, 8), "price_close": 1.0}]
+    pedidas: list[tuple[datetime, datetime]] = []
+
+    async def blocked(_conn, requirements):
+        pedidas.extend((r.start, r.end) for r in requirements)
+        return set()
+
+    monkeypatch.setattr(api, "blocking_requirement_keys", blocked)
+    await mask_gapped_series_rows(
+        object(),  # type: ignore[arg-type]
+        filas,
+        bucket=timedelta(days=1),
+        feed="ohlcv_1min",
+        exchanges=("binance",),
+        market="perpetual",
+        symbol="BTCUSDT_PERP.A",
+        value_keys=("price_close",),
+        row_window=_session_window,
+    )
+
+    inicio, fin = pedidas[0]
+    assert fin - inicio == timedelta(hours=23), (
+        "con bucket fijo de 24 h esta ventana seria falsa, y por eso se pide fila a fila"
+    )
+
+
+@pytest.mark.asyncio
+async def test_una_fila_sin_sesion_resoluble_no_se_enmascara(monkeypatch) -> None:
+    """Antes que inventar una ventana, no enmascarar: un null falso tambien miente."""
+    from app.api import _session_window
+
+    filas = [{"session_date": "no-es-una-fecha", "price_close": 7.0}]
+
+    async def blocked(_conn, requirements):
+        raise AssertionError("no se puede pedir nada sin ventana resoluble")
+
+    monkeypatch.setattr(api, "blocking_requirement_keys", blocked)
+    await mask_gapped_series_rows(
+        object(),  # type: ignore[arg-type]
+        filas,
+        bucket=timedelta(days=1),
+        feed="ohlcv_1min",
+        exchanges=("binance",),
+        market="perpetual",
+        symbol="BTCUSDT_PERP.A",
+        value_keys=("price_close",),
+        row_window=_session_window,
+    )
+    assert filas[0]["price_close"] == 7.0
