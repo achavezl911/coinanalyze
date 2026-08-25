@@ -3804,7 +3804,7 @@ async def max_internal_gap(
                 AND ($2 <> 'combined' OR venue_count=2)
                 AND ts >= $4::timestamptz-($3::int*interval '1 second')
                 AND ts <= $4
-              UNION ALL SELECT $4-($3::int*interval '1 second')
+              UNION ALL SELECT $4::timestamptz-($3::int*interval '1 second')
             )
             SELECT MAX(EXTRACT(EPOCH FROM ts-prev))::float8
             FROM (SELECT ts,lag(ts) OVER (ORDER BY ts) AS prev FROM edges) d
@@ -3840,11 +3840,11 @@ async def _realtime_flow(
           SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,
                  SUM(buy_vol_usd+sell_vol_usd) AS volume,
                  SUM(trade_count) AS trades,COUNT(*)::bigint AS source_rows
-          FROM source WHERE ts >= $3-($2::int*interval '1 second')
+          FROM source WHERE ts >= $3::timestamptz-($2::int*interval '1 second')
         )
         SELECT flow.*,span.lo,span.hi,
                COALESCE(
-                 span.lo <= $3-($2::int*interval '1 second')
+                 span.lo <= $3::timestamptz-($2::int*interval '1 second')
                  AND span.hi >= $3-interval '30 seconds',false
                ) AS span_ok,
                CASE WHEN span.hi IS NOT NULL
@@ -4980,12 +4980,12 @@ async def spot_perp_flow(
         WITH p AS (
           SELECT ts,close,delta*close AS delta_usd,volume*close AS volume_usd
           FROM ohlcv WHERE symbol=$1 AND interval=$3
-            AND ts >= $5-($4::int*interval '1 day')
+            AND ts >= $5::timestamptz-($4::int*interval '1 day')
             AND ts + CASE WHEN $3='4hour' THEN interval '4 hours' ELSE interval '1 day' END <= $5
         ), s AS (
           SELECT ts,delta*close AS delta_usd,volume*close AS volume_usd
           FROM ohlcv WHERE symbol=$2 AND interval=$3
-            AND ts >= $5-($4::int*interval '1 day')
+            AND ts >= $5::timestamptz-($4::int*interval '1 day')
             AND ts + CASE WHEN $3='4hour' THEN interval '4 hours' ELSE interval '1 day' END <= $5
         )
         -- LEFT JOIN a proposito: un bucket sin spot debe verse como hueco, no desaparecer.

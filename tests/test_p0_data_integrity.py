@@ -108,5 +108,10 @@ def test_el_borde_de_entrada_cuenta_como_hueco() -> None:
     """Un collector caido al PRINCIPIO de la ventana no lo ve un lag() a secas."""
     source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
     consulta = source.split("async def max_internal_gap")[1].split("async def ")[0]
-    assert "UNION ALL SELECT $4-($3::int*interval '1 second')" in consulta
+    # El ::timestamptz no es adorno: sin el, PostgreSQL resuelve "$4 - interval" como
+    # interval-interval, fija $4 como interval y la consulta entera revienta con
+    # "operator does not exist: timestamp with time zone >= interval". Reproducido en
+    # el espejo el 2026-08-25 con un PREPARE a pelo. Esta misma linea, sin la marca,
+    # es la que tumbaba /api/flow/spot-vs-perp, /api/range/validate y /api/zone/analysis.
+    assert "UNION ALL SELECT $4::timestamptz-($3::int*interval '1 second')" in consulta
     assert "AND ts <= $4" in consulta

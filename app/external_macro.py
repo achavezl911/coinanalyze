@@ -316,7 +316,14 @@ def build_external_macro_context(
     flow_20d = sum(etf_values[-20:]) if etf_values else None
     rolling_abs = [abs(sum(etf_values[max(0, index - 4) : index + 1])) for index in range(len(etf_values))]
     significant = max(100_000_000.0, median(rolling_abs[-60:]) if rolling_abs else 0.0)
-    btc_values = [float(row["price_close"]) for row in btc_closes]
+    # price_close puede venir NULL: hay sesiones en daily_session_agg sin cierre. Hasta
+    # el 2026-08-25 esto era float(None) y tumbaba la peticion entera con un 500 -1712
+    # de 1712 en el access.log de 140, ni un solo 200-. Un hueco se DECLARA, que para
+    # eso esta btc_closes_ausentes ahi abajo; no se convierte en excepcion.
+    btc_closes_ausentes = sum(1 for row in btc_closes if row["price_close"] is None)
+    btc_values = [
+        float(row["price_close"]) for row in btc_closes if row["price_close"] is not None
+    ]
     btc_5d = _pct_change(btc_values, 5)
     if not etf_values:
         etf_interpretation = "Flujo ETF no conectado; no se usa para el régimen."
@@ -386,6 +393,8 @@ def build_external_macro_context(
             "flow_5d_usd": flow_5d,
             "flow_20d_usd": flow_20d,
             "btc_return_5d_pct": btc_5d,
+            "btc_closes_usados": len(btc_values),
+            "btc_closes_ausentes": btc_closes_ausentes,
             "materiality_threshold_usd": significant,
             "observed_on": etf_dates[-1].isoformat() if etf_dates else None,
             "interpretation": etf_interpretation,
