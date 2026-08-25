@@ -1,0 +1,12 @@
+#!/bin/sh
+# filtro de corte. Ninguna herramienta del arnes escupe mas de MAX_BYTES.
+. /srv/coinanalyze/harness/env
+[ "${TODO:-0}" = "1" ] && exec cat
+tmp=$(mktemp); cat > "$tmp"
+n=$(wc -c < "$tmp")
+head -c "${MAX_BYTES:-8000}" "$tmp"
+if [ "$n" -gt "${MAX_BYTES:-8000}" ]; then
+  printf '\n[CORTADO: %s bytes de %s. Acota la consulta; no pongas TODO=1 por inercia]\n' \
+    "${MAX_BYTES:-8000}" "$n"
+fi
+rm -f "$tmp"

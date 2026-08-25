@@ -1,0 +1,15 @@
+#!/bin/sh
+# leer <fichero> <patron>       -> lineas que casan, con 3 de contexto, acotado
+# leer <fichero> <ini> <fin>    -> ese rango exacto
+# Existe para que app.js (182 KB), scalp_logic.py (5524 lin), api.py y schema.sql NO
+# entren enteros en el contexto. Si intentas leer uno de esos entero, te para.
+set -eu
+B=/srv/coinanalyze/harness; . "$B/env"
+f=${1:?uso: leer <fichero> <patron | ini fin>}
+case "$(basename "$f")" in
+  app.js|app.css|scalp_logic.py|api.py|schema.sql|index.html)
+    [ $# -ge 2 ] || { echo "ese fichero NO se lee entero (regla C1). Da patron o rango." >&2; exit 3; } ;;
+esac
+if   [ $# -eq 3 ]; then sed -n "$2,$3p" "$f" | "$B/bin/_corta"
+elif [ $# -eq 2 ]; then grep -n -C3 -- "$2" "$f" | "$B/bin/_corta"
+else                    "$B/bin/_corta" < "$f"; fi

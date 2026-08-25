@@ -1,0 +1,71 @@
+#!/bin/sh
+# traspaso  ->  el paquete que se pega en un chat NUEVO del arquitecto.
+#
+#   Instalar:  guardar como /srv/coinanalyze/harness/bin/traspaso  y chmod +x
+#   Usar:      pct exec 143 -- /srv/coinanalyze/harness/bin/traspaso
+#              copiar la salida entera y pegarla como primer mensaje del chat nuevo.
+#
+# No es un documento: se genera cada vez. Por eso no se queda viejo y no hay nada
+# que mantener. Si algo aqui no cuadra con el 143, manda el 143.
+set -u
+B=/srv/coinanalyze/harness
+. "$B/env" 2>/dev/null || true
+R=${REPO:-/srv/coinanalyze/repo}
+
+cat <<'CAB'
+=== TRASPASO COINALYZE ===
+
+Eres el arquitecto de este proyecto. No implementas: eso lo hace una instancia de
+Claude Code que vive en el LXC 143. Tu decides criterios, orden y que preguntas se
+hacen. Lo de abajo es una foto generada ahora mismo desde el 143; el 143 manda
+sobre este texto.
+
+Si necesitas mas fondo, pide UNO de estos y solo uno:
+  /srv/coinanalyze/CLAUDE.md          las reglas del implementador
+  /srv/coinanalyze/harness/COLA.md    el trabajo entero, con criterios
+  /srv/coinanalyze/BRIEF.md           el documento fundacional (lleva nota de que
+                                      cuatro de sus afirmaciones quedaron refutadas)
+  /srv/coinanalyze/harness/hechos.tsv las cifras medidas, con cita y fecha
+
+Advertencia aprendida a base de golpes: varios criterios de check nacieron
+TAUTOLOGICOS, comparando una fuente contra si misma. Antes de aceptar un VERDE,
+pregunta contra que se compara.
+CAB
+
+echo
+echo "--- CHECKS (la unica metrica) ---"
+"$B/bin/verify" 2>&1 | tail -14
+
+echo
+echo "--- COLA ---"
+grep -E '^K[0-9]+[a-z]?[ ]' "$B/COLA.md" 2>/dev/null | cut -c1-95 | head -60
+
+echo
+echo "--- ARREGLADO (ultimas 8 lineas de CAMBIOS.md) ---"
+tail -8 /srv/coinanalyze/CAMBIOS.md 2>/dev/null || echo "(vacio)"
+
+echo
+echo "--- PRs ABIERTOS ---"
+(cd "$R" 2>/dev/null && gh pr list --limit 5 2>/dev/null) || echo "(gh no respondio)"
+
+echo
+echo "--- ULTIMOS COMMITS ---"
+git -C "$R" log --oneline -5 2>/dev/null || true
+echo "rama: $(git -C "$R" branch --show-current 2>/dev/null)"
+
+echo
+echo "--- SESION EN CURSO ---"
+grep -E '^(CHECK|RAMA|BLOQUEO|SIGUIENTE|ACTUALIZADO)' "$B/ESTADO.md" 2>/dev/null \
+  || echo "(sin ESTADO)"
+
+echo
+echo "--- CI ---"
+(cd "$R" 2>/dev/null && gh run list --limit 3 2>/dev/null) || echo "(gh no respondio)"
+
+echo
+echo "--- ESPERANDO A ALEJANDRO ---"
+grep -nE 'PUERTA [12]' "$B/COLA.md" 2>/dev/null | cut -c1-95 | head -5 \
+  || echo "(nada pendiente)"
+
+echo
+echo "=== FIN DEL TRASPASO ==="

@@ -1,0 +1,22 @@
+#!/bin/sh
+# ctx  ->  el paquete de reanudacion. Primera orden de cada sesion, y primera orden
+# despues de cualquier compactacion. Cuesta ~1.5k tokens y te devuelve al sitio.
+set -u
+B=/srv/coinanalyze/harness; . "$B/env" 2>/dev/null || true
+echo "=== ESTADO ==="
+[ -f "$B/ESTADO.md" ] && cat "$B/ESTADO.md" || echo "(sin ESTADO: es la primera sesion)"
+echo
+echo "=== CHECKS ==="
+"$B/bin/verify" 2>&1 | tail -20
+echo
+echo "=== PRIMER ROJO EN COLA ==="
+grep -m1 -E '^K[0-9]+[a-z]? .*ROJO' "$B/COLA.md" 2>/dev/null || echo "(sin COLA o sin ROJO)"
+echo
+echo "=== ULTIMOS ARREGLOS ==="
+tail -5 /srv/coinanalyze/CAMBIOS.md 2>/dev/null || true
+echo
+echo "=== RAMA ==="
+git -C "${REPO:-/srv/coinanalyze/repo}" branch --show-current 2>/dev/null || true
+git -C "${REPO:-/srv/coinanalyze/repo}" diff --stat 2>/dev/null | tail -5 || true
+echo
+echo "Regla C3: lo que no puedas citar de ESTA sesion no es un hecho. Si dudas, re-ejecuta."

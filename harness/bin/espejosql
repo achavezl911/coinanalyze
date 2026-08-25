@@ -1,0 +1,6 @@
+#!/bin/sh
+# espejosql "<SQL>"  ->  contra el espejo de 143. AQUI SI SE PUEDE ESCRIBIR.
+set -eu
+B=/srv/coinanalyze/harness; . "$B/env"
+[ -n "${1:-}" ] || { echo 'uso: espejosql "SELECT ..."' >&2; exit 2; }
+psql -X -A -F'|' -t -v ON_ERROR_STOP=1 -q -d "$ESPEJO_DB" -c "$*" 2>&1 | "$B/bin/_corta"

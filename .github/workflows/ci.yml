@@ -42,10 +42,55 @@ jobs:
           . .venv/bin/activate
           python -m compileall -q app
 
+      # K07 · hasta el 2026-08-25 los 16 tests/*_postgres.py -167 tests, o sea TODA la
+      # persistencia- se saltaban en cada ejecucion porque nadie definia
+      # TEST_DATABASE_URL. El runner corre en 143, que tiene PostgreSQL local, y
+      # pg_hba usa peer para conexiones por socket: el rol se llama igual que el
+      # usuario del runner, asi que NO hace falta ninguna credencial en este fichero.
+      # Cada fichero de test crea su propio schema con uuid y lo tira al terminar.
       - name: Pytest
+        env:
+          TEST_DATABASE_URL: postgresql:///coinalyze_test?host=/var/run/postgresql
         run: |
           . .venv/bin/activate
           pytest -q
 
       - name: JavaScript tests
         run: node --test tests/js/
+
+      # K15 · que un VERDE no vuelva a ROJO en silencio.
+      #
+      # NO se corre el verify entero, y el motivo no es comodidad: este runner ejecuta
+      # el codigo de cualquier PR, y los checks de produccion necesitan la clave ssh de
+      # 140 y el netrc de la API. Darle esas credenciales a un job que corre codigo sin
+      # revisar seria regalar produccion. Ademas un PR no debe fallar porque 140 tuviera
+      # una incidencia: eso no lo ha roto el PR.
+      # Asi que aqui solo corren los checks cuyo SUJETO es el arbol, y corren contra el
+      # arbol DEL PR (REPO=$GITHUB_WORKSPACE), no contra el checkout del servidor.
+      # Los de produccion los mide el arnes en 143, fuera de este gate.
+      #
+      # Dos condiciones, y la segunda es la que hoy tiene dientes: que el numero de
+      # VERDE no baje respecto de main -el suelo se lee de main, no de la rama, para
+      # que un PR no pueda relajarlo cambiando su propia copia- y que NINGUN check
+      # quede en NOMED, que es lo que pasa cuando un PR renombra algo y el check deja
+      # de poder medir. Un check que no puede medir no es un check que pasa.
+      - name: Checks del arnes (K15)
+        run: |
+          set -u
+          git fetch --depth=1 origin main >/dev/null 2>&1 || true
+          suelo=$(git show origin/main:harness/verde-suelo.txt 2>/dev/null | tr -dc '0-9')
+          suelo=${suelo:-0}
+          verde=0; nomed=0
+          for c in harness/checks/K02-cobertura-hueco.sh harness/checks/K31-eslabon5.sh; do
+            salida=$(REPO="$GITHUB_WORKSPACE" bash "$c" 2>&1); rc=$?
+            printf '%-28s rc=%s %s\n' "$(basename "$c" .sh)" "$rc" "$(printf '%s' "$salida" | head -1 | cut -c1-90)"
+            [ "$rc" -eq 0 ] && verde=$((verde+1))
+            [ "$rc" -eq 2 ] && nomed=$((nomed+1))
+          done
+          echo "VERDE=$verde suelo(main)=$suelo NOMED=$nomed"
+          if [ "$nomed" -gt 0 ]; then
+            echo "::error::$nomed check(s) en NOMED: el PR ha roto la capacidad de medir"; exit 1
+          fi
+          if [ "$verde" -lt "$suelo" ]; then
+            echo "::error::los VERDE bajan de $suelo a $verde respecto de main"; exit 1
+          fi
