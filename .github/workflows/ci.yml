@@ -110,8 +110,13 @@ jobs:
             local arbol="$1" etiqueta="$2" verde=0 nomed=0 rc salida
             for c in $CHECKS; do
               salida=$(REPO="$arbol" VENV_PY="$VENV" bash "$GITHUB_WORKSPACE/$c" 2>&1); rc=$?
+              # El detalle va a stderr A PROPOSITO: esta funcion se captura con $(...) y
+              # su stdout tiene que ser SOLO el numero. Mezclarlos hacia que la
+              # comparacion recibiera texto multilinea, fallara con "integer expression
+              # expected" y, sin set -e, el if no entrara: pasaba en silencio. Fallo
+              # abierto otra vez, el mismo que este gate existe para castigar.
               printf '  %-22s %-4s rc=%s %s\n' "$(basename "$c" .sh)" "$etiqueta" "$rc" \
-                     "$(printf '%s' "$salida" | head -1 | cut -c1-80)"
+                     "$(printf '%s' "$salida" | head -1 | cut -c1-80)" >&2
               [ "$rc" -eq 0 ] && verde=$((verde+1))
               [ "$rc" -eq 2 ] && nomed=$((nomed+1))
             done
@@ -123,6 +128,9 @@ jobs:
           verde=$(contar "$GITHUB_WORKSPACE" PR)
           echo "VERDE: main=$suelo  PR=$verde"
 
+          case "$suelo$verde" in
+            *[!0-9]*) echo "::error::el conteo no es numerico (main='$suelo' PR='$verde')"; exit 1 ;;
+          esac
           if [ "$suelo" = "99" ] || [ "$verde" = "99" ]; then
             echo "::error::algun check quedo en NOMED: el PR ha roto la capacidad de medir"; exit 1
           fi
