@@ -21,7 +21,29 @@ _REPO_LLAMANTE=${REPO:-}
 B=/srv/coinanalyze/harness; . "$B/env"
 REPO=${_REPO_LLAMANTE:-${REPO:-/srv/coinanalyze/repo}}
 API="$REPO/app/api.py"
-SERIE="/api/ohlcv /api/oi /api/liquidations /api/whale/delta /api/daily /api/cvd /api/cvd/spot /api/funding-context /api/oi-context"
+# SUJETO CORREGIDO el 2026-08-25: de nueve a siete. /api/funding-context y
+# /api/oi-context NO devuelven serie. Medido en el arbol: funding_context devuelve
+# current_pct, annualized_pct e history_avg_pct{8h,24h,7d} (scalp_logic.py:3166) y
+# oi_context devuelve oi_total_usd y windows{5m,15m,1h,4h,24h} (scalp_logic.py:2908).
+# Ningun array de filas con bucket, o sea que mask_gapped_series_rows no tiene sobre
+# que operar: meterles la llamada seria una llamada hueca puesta para que pase el grep
+# de este mismo check.
+#
+# ESTO NO ES AFLOJAR EL CHECK, y se demuestra con la cuenta en vez de con la palabra:
+# quitar dos del denominador NO sube el numerador. Medido justo antes del cambio:
+#     sujeto de 9 -> "5 de 9", rc=1
+#     sujeto de 7 -> "5 de 7", rc=1
+# Un criterio aflojado sube la cuenta de VERDE. Este no la sube: sigue ROJO con dos
+# huecos reales (/api/whale/delta y /api/daily), y ninguno de ellos es de criterio.
+#
+# Y LA OBLIGACION NO DESAPARECE: los dos escalares YA ESTAN en el sujeto de
+# K03-hueco-declarado.sh, que es donde tienen que estar, porque su pregunta no es "por
+# donde pasan" sino "que declaran". K03 crece a la vez para exigirles lo que un
+# agregado tiene que decir: la COMPLETITUD DE LA VENTANA que agrego. Un promedio de 7d
+# calculado sobre una ventana con huecos es PEOR que una serie con huecos, porque la
+# serie ensena sus agujeros y el promedio los esconde detras de un numero con
+# decimales. Mover sin eso seria aparcarlos donde no se pueden probar.
+SERIE="/api/ohlcv /api/oi /api/liquidations /api/whale/delta /api/daily /api/cvd /api/cvd/spot"
 
 [ -r "$API" ] || { echo "NO MEDIDO: no se puede leer app/api.py"; exit 2; }
 
@@ -46,7 +68,7 @@ for ruta in $SERIE; do
 done
 
 [ -z "${faltan// /}" ] || {
-  echo "$n de 9 endpoints de serie pasan por el enmascarado; sin cubrir:$faltan" | cut -c1-220
+  echo "$n de 7 endpoints de serie pasan por el enmascarado; sin cubrir:$faltan" | cut -c1-220
   exit 1
 }
-echo "los 9 endpoints de serie pasan por mask_gapped_series_rows"
+echo "los 7 endpoints de serie pasan por mask_gapped_series_rows"
