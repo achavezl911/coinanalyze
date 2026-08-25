@@ -97,6 +97,15 @@ jobs:
           CHECKS="harness/checks/K02-cobertura-hueco.sh harness/checks/K31-eslabon5.sh"
           VENV="$GITHUB_WORKSPACE/.venv/bin/python"
 
+          # GUARDIA 1 · el instrumento tiene que existir ANTES de contar. Un check
+          # borrado devuelve 127, y como los DOS conteos ejecutan los scripts del PR,
+          # romperlo baja suelo y verde por igual: la comparacion no se entera y un PR
+          # que borre un check VERDE pasaria. Se comprueba antes, y se para.
+          for c in $CHECKS; do
+            [ -r "$GITHUB_WORKSPACE/$c" ] \
+              || { echo "::error::falta o no se puede leer $c: el gate no tiene instrumento"; exit 1; }
+          done
+
           git fetch --no-tags --depth=1 origin main \
             || { echo "::error::no se pudo traer origin/main: el gate no puede medir"; exit 1; }
           base=$(mktemp -d)
@@ -117,8 +126,15 @@ jobs:
               # abierto otra vez, el mismo que este gate existe para castigar.
               printf '  %-22s %-4s rc=%s %s\n' "$(basename "$c" .sh)" "$etiqueta" "$rc" \
                      "$(printf '%s' "$salida" | head -1 | cut -c1-80)" >&2
-              [ "$rc" -eq 0 ] && verde=$((verde+1))
-              [ "$rc" -eq 2 ] && nomed=$((nomed+1))
+              # GUARDIA 2 · solo 0/1/2 son veredictos. Cualquier otro rc -127 si el
+              # script no existe, 126 si no es ejecutable, 1xx por senal- significa que
+              # el check NO ARRANCO, y un check que no arranca no puede medir: cuenta
+              # como NOMED, nunca como ROJO.
+              case "$rc" in
+                0) verde=$((verde+1)) ;;
+                1) ;;
+                *) nomed=$((nomed+1)) ;;
+              esac
             done
             [ "$nomed" -gt 0 ] && { echo "  $etiqueta: $nomed en NOMED" >&2; echo 99; return; }
             echo "$verde"
