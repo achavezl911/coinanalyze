@@ -58,8 +58,15 @@ try:
          base + "/api/ohlcv?symbol=BTCUSDT_PERP.A"],
         capture_output=True, text=True,
     ).stdout
-    barras = json.loads(crudo)
-    cierre = float(barras[-1]["close"])
+    cuerpo = json.loads(crudo)
+    # K03 · la serie ya no es un array pelado sino un sobre {rows, coverage, data_gaps}.
+    # Y se coge el ultimo cierre NO NULO: desde K02 la ultima barra puede venir
+    # enmascarada, y un null aqui dejaria este check en NOMED por un motivo que no es
+    # el suyo -aqui solo se necesita un precio plausible para construir peticiones-.
+    barras = cuerpo["rows"] if isinstance(cuerpo, dict) else cuerpo
+    cierre = next(
+        float(b["close"]) for b in reversed(barras) if b.get("close") is not None
+    )
 except Exception:
     cierre = None
 if not cierre:
