@@ -1,0 +1,10 @@
+#!/bin/sh
+# api <ruta>           GET a PRODUCCION (nginx 8443 + netrc; nginx pone el token).
+# api --espejo <ruta>  GET al ESPEJO de 143.
+set -eu
+B=/srv/coinanalyze/harness; . "$B/env"
+if [ "${1:-}" = "--espejo" ]; then
+  shift; curl -sS --max-time 20 "$API_ESPEJO$1" | "$B/bin/_corta"; exit
+fi
+[ -r "$NETRC" ] || { echo "falta $NETRC (auth_basic de nginx, modo 600)" >&2; exit 4; }
+curl -sS -k --netrc-file "$NETRC" --max-time 20 "$API_PROD$1" | "$B/bin/_corta"

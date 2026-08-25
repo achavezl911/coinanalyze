@@ -1,0 +1,31 @@
+#!/bin/sh
+# prod <comando>  ->  LECTURA dentro del LXC 140, por ssh directo.
+# Freno, no frontera: al otro lado mandan los permisos del usuario. Sirve para que un
+# despiste no borre nada, no para autorizarte a intentarlo.
+set -eu
+B=/srv/coinanalyze/harness; . "$B/env"
+cmd="$*"
+[ -n "$cmd" ] || { echo "uso: prod <comando de lectura>" >&2; exit 2; }
+case " $cmd " in
+  *" rm "*|*" rmdir "*|*" mv "*|*" dd "*|*" truncate "*|*" chmod "*|*" chown "*|\
+  *" ln "*|*" sed -i"*|*" tee "*|*" systemctl restart"*|*" systemctl stop"*|\
+  *" systemctl start"*|*" apt"*|*" pip "*|*" psql "*|*" dropdb "*|*" createdb "*|\
+  *" update.sh"*|*" configure_secrets.sh"*|*" backup.sh"*|*" rsync "*)
+    echo "DENEGADO por el arnes: $cmd" >&2
+    echo "lectura: ls cat grep find stat sha256sum wc head tail journalctl -n" >&2
+    echo "SQL: prodsql.  API: api.  Mutar datos: puerta 1 del CLAUDE.md." >&2
+    exit 3 ;;
+esac
+# Un '>' solo se deniega si es redireccion a FICHERO. Se descartan antes las
+# inocuas: N>&M y cualquier cosa hacia /dev/null.
+_limpio=$(printf '%s' "$cmd" | sed -e 's/[0-9]*>>*&[0-9-]*//g' -e 's|[0-9]*>>*[[:space:]]*/dev/null||g')
+case "$_limpio" in
+  *">"*)
+    echo "DENEGADO por el arnes: redireccion a fichero en: $cmd" >&2
+    exit 3 ;;
+esac
+
+enc=$(printf '%s' "$cmd" | base64 | tr -d '\n')
+ssh -n -o BatchMode=yes -o ConnectTimeout=8 \
+  -i "$PROD_SSH_KEY" -o UserKnownHostsFile="$PROD_KNOWN_HOSTS" \
+  "$PROD_SSH_USER@$PROD_HOST" "printf %s $enc | base64 -d | sh" 2>&1 | "$B/bin/_corta"

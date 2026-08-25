@@ -1,0 +1,23 @@
+#!/bin/sh
+# radar  ->  cifras vivas de 140 y el delta desde la ultima vez. No juzga.
+set -eu
+B=/srv/coinanalyze/harness
+ANT="$B/estado/radar.tsv"; NUE=$(mktemp)
+"$B/bin/prodsql" "
+SELECT 'gaps_unresolved',      count(*)::text FROM data_gap WHERE status='unresolved'
+UNION ALL SELECT 'gaps_total',  count(*)::text FROM data_gap
+UNION ALL SELECT 'heartbeats',  count(*)::text FROM pipeline_heartbeat
+UNION ALL SELECT 'hb_mas_viejo',max(now()-updated_at)::text FROM pipeline_heartbeat
+UNION ALL SELECT 'signal_obs',  count(*)::text FROM signal_observation
+UNION ALL SELECT 'signal_out',  count(*)::text FROM signal_outcome
+UNION ALL SELECT 'vis_final',   max(source_finalized_at)::text FROM signal_outcome_final_visibility
+UNION ALL SELECT 'vis_bundle',  max(verified_visible_at)::text FROM signal_research_bundle_visibility
+UNION ALL SELECT 'db_size',     pg_size_pretty(pg_database_size(current_database()))
+ORDER BY 1" | sed 's/^ *//; s/ *|/|/' | grep -v '^$' | grep -v CORTADO > "$NUE"
+echo "clave|ahora|antes"
+while IFS='|' read -r k v; do
+  a=$(grep "^$k|" "$ANT" 2>/dev/null | cut -d'|' -f2 || true)
+  [ "$a" = "$v" ] && a="="; [ -z "$a" ] && a="-"
+  printf '%s|%s|%s\n' "$k" "$v" "$a"
+done < "$NUE"
+cp "$NUE" "$ANT"; rm -f "$NUE"

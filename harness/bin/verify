@@ -1,0 +1,23 @@
+#!/bin/sh
+# verify  ->  corre todos los checks. Es la unica metrica del proyecto.
+# TRES estados, no dos. El tercero existe porque un check que no pudo medir NO es un
+# fallo medido: confundirlos es como se actua sin fundamento.
+#   salida 0 = VERDE    salida 1 = ROJO (medido)    salida 2 = NOMED (no se pudo medir)
+set -u
+B=/srv/coinanalyze/harness
+rojo=0; verde=0; nomed=0
+for c in "$B"/checks/*.sh; do
+  [ -x "$c" ] || continue
+  id=$(basename "$c" .sh)
+  out=$("$c" 2>&1); rc=$?
+  case "$rc" in
+    0) estado=VERDE; verde=$((verde+1)) ;;
+    2) estado=NOMED; nomed=$((nomed+1)) ;;
+    *) estado=ROJO;  rojo=$((rojo+1))  ;;
+  esac
+  printf '%-22s %-5s %s\n' "$id" "$estado" "$(printf '%s' "$out" | head -1 | cut -c1-70)"
+done
+printf '\n%d VERDE   %d ROJO   %d NOMED\n' "$verde" "$rojo" "$nomed"
+[ "$nomed" -gt 0 ] && printf 'NOMED no es ROJO. Arregla el canal antes de tocar el codigo.\n'
+printf '%s\t%d\t%d\t%d\n' "$(date -u +%FT%TZ)" "$verde" "$rojo" "$nomed" >> "$B/estado/verify.tsv"
+[ "$rojo" -eq 0 ] && [ "$nomed" -eq 0 ]

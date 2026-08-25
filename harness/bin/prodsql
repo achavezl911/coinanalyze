@@ -1,0 +1,25 @@
+#!/bin/sh
+# prodsql "<SQL>"  ->  SELECT en 140, sesion de SOLO LECTURA. La contrasena no viaja
+# por la linea de comandos: sale del coinalyze.env del propio 140, dentro de 140.
+set -eu
+B=/srv/coinanalyze/harness; . "$B/env"
+q="$*"
+[ -n "$q" ] || { echo 'uso: prodsql "SELECT ..."' >&2; exit 2; }
+case "$q" in
+  *[Ss][Ee][Ll][Ee][Cc][Tt]*) ;;
+  *) echo "prodsql solo acepta consultas. Para escribir esta el espejo." >&2; exit 3 ;;
+esac
+enc=$(printf '%s' "$q" | base64 | tr -d '\n')
+payload=$(cat <<PAYLOAD
+if [ -r /etc/coinalyze/coinalyze.env ]; then set -a; . /etc/coinalyze/coinalyze.env; set +a; fi
+export PGHOST=\${PG_HOST:-127.0.0.1} PGPORT=\${PG_PORT:-5432}
+export PGUSER=${PROD_PG_USER} PGDATABASE=${PROD_PG_DB}
+[ -n "\${PG_PASSWORD:-}" ] && export PGPASSWORD="\$PG_PASSWORD"
+export PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=60000'
+printf %s '$enc' | base64 -d | psql -X -A -F'|' -t -v ON_ERROR_STOP=1 -q -f -
+PAYLOAD
+)
+penc=$(printf '%s' "$payload" | base64 | tr -d '\n')
+ssh -n -o BatchMode=yes -o ConnectTimeout=8 \
+  -i "$PROD_SSH_KEY" -o UserKnownHostsFile="$PROD_KNOWN_HOSTS" \
+  "$PROD_SSH_USER@$PROD_HOST" "printf %s $penc | base64 -d | sh" 2>&1 | "$B/bin/_corta"
