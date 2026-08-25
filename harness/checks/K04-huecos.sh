@@ -24,13 +24,37 @@
 # dato. No dice que el dato no exista: dice que no sabemos ir a buscarlo. Eso no
 # resuelve nada, solo lo hace invisible.
 #
+# v3, 2026-08-25: SE DEJA DE JUZGAR LA CADENA Y SE VERIFICA LA PRUEBA.
+#
+# La v2 contaba como excusa el motivo que casara con una lista negra
+# ("no exact historical source|no adapter|sin adaptador|unsupported"). Ese diseno
+# tiene el defecto que su propio comentario admitia: una lista escrita a mano
+# envejece sin avisar, y "not supported" o "adapter missing" no casaban. Ademas
+# juzgaba la PROSA del archivado, que es lo mas facil de maquillar: basta escribir
+# otro motivo para pasar.
+#
+# Ahora se exige EVIDENCIA RE-DERIVABLE. Cada fila archivada guarda en
+# recovery_metadata como se comprobo, y el check rehace esa comprobacion desde la
+# propia fila. Un archivado sin prueba, o con una prueba que no se sostiene, es un
+# archivado en falso, se llame como se llame. Esto tapa la lista negra entera: el
+# _mark_unrecoverable de app/data_gaps.py escribe recovery_metadata='{}', asi que
+# se queda sin method y cae por "sin prueba" sin necesidad de mirar su texto.
+#
+# Metodos que este check sabe re-derivar, y que tiene que cumplir cada fila:
+#   source_response_absence      la fuente CUBRIO el hueco y no lo mando.
+#                                response_first_bucket < start_ts
+#                                AND response_last_bucket >= end_ts
+#   provider_horizon_exhausted   la fuente ya no sirve esa ventana, y no es que
+#                                este caida: window_returned_rows = 0
+#                                AND control_returned_rows > 0 (control reciente)
+# Un method desconocido es "sin prueba" A PROPOSITO: el dia que alguien invente un
+# tercer camino de archivado, este check lo para hasta que se le ensene a
+# verificarlo. Es lo contrario de la lista negra, que dejaba pasar lo que no conocia.
+#
 # Se cuentan tres cosas y cualquiera lo pone ROJO:
 #   1. huecos 'unresolved' de mas de 24 h
 #   2. huecos archivados SIN resolution_reason escrito
-#   3. huecos archivados con un motivo que habla de nuestra limitacion en vez de
-#      del dato. Para archivar honradamente hace falta haber COMPROBADO contra el
-#      proveedor que el dato no esta -"fuera del horizonte del proveedor", "la
-#      fuente no publica ese bucket"-, y eso es una comprobacion, no un default.
+#   3. huecos archivados cuya prueba no se sostiene al re-derivarla
 set -uo pipefail
 B=/srv/coinanalyze/harness
 
@@ -53,20 +77,32 @@ viejos=$(leer viejos "SELECT count(*) FROM data_gap
 mudos=$(leer mudos "SELECT count(*) FROM data_gap
          WHERE status IN ('unrecoverable','recovered')
            AND (resolution_reason IS NULL OR btrim(resolution_reason)='')") || exit 2
-# LISTA NEGRA A PROPOSITO, y hay que saberlo: cubre el unico motivo que el motor
-# escribe hoy (app/data_gaps.py:568) y sus variantes obvias, pero "not supported" o
-# "adapter missing" NO casarian. La forma que no envejece es la inversa -lista BLANCA
-# de motivos que afirman algo sobre EL DATO y exigen comprobacion contra el
-# proveedor-, y es la misma leccion que costo K05. Se deja negra por ahora porque hoy
-# hay UN solo emisor de motivos; el dia que haya dos, hay que darle la vuelta.
-excusas=$(leer excusas "SELECT count(*) FROM data_gap
-          WHERE status='unrecoverable'
-            AND resolution_reason ~* '(no exact historical source|no adapter|sin adaptador|unsupported)'") || exit 2
+# LA PRUEBA, RE-DERIVADA DESDE LA PROPIA FILA. El CASE fija el orden de evaluacion
+# por method; el coalesce(...,false) es obligatorio porque NOT NULL es NULL y la fila
+# no se contaria, o sea que un metadata a medias se colaria como bueno. Si algun dia
+# hay un metadata con basura donde va una fecha, el cast revienta, la consulta no
+# devuelve numero y `leer` saca NOMED: "no pude medir" no es "no hay problema".
+sin_prueba=$(leer sin_prueba "SELECT count(*) FROM data_gap
+  WHERE status='unrecoverable'
+    AND NOT coalesce(
+      CASE recovery_metadata->>'method'
+        WHEN 'source_response_absence' THEN
+              recovery_metadata->>'response_first_bucket' IS NOT NULL
+          AND recovery_metadata->>'response_last_bucket'  IS NOT NULL
+          AND (recovery_metadata->>'response_first_bucket')::timestamptz <  start_ts
+          AND (recovery_metadata->>'response_last_bucket')::timestamptz  >= end_ts
+        WHEN 'provider_horizon_exhausted' THEN
+              recovery_metadata->>'window_returned_rows'  IS NOT NULL
+          AND recovery_metadata->>'control_returned_rows' IS NOT NULL
+          AND (recovery_metadata->>'window_returned_rows')::int  =  0
+          AND (recovery_metadata->>'control_returned_rows')::int >  0
+        ELSE false
+      END, false)") || exit 2
 
 fallos=""
 [ "$viejos" -eq 0 ] || fallos="$viejos sin resolver de mas de 24 h"
 [ "$mudos" -eq 0 ] || fallos="${fallos:+$fallos; }$mudos archivados SIN motivo escrito"
-[ "$excusas" -eq 0 ] || fallos="${fallos:+$fallos; }$excusas archivados por falta de adaptador, que no es un motivo sobre el dato"
+[ "$sin_prueba" -eq 0 ] || fallos="${fallos:+$fallos; }$sin_prueba archivados cuya prueba no se sostiene al re-derivarla"
 
 [ -z "$fallos" ] || { echo "$fallos"; exit 1; }
-echo "0 sin resolver de mas de 24 h, 0 archivados mudos y 0 archivados por falta de adaptador"
+echo "0 sin resolver de mas de 24 h, 0 archivados mudos y 0 archivados sin prueba re-derivable"

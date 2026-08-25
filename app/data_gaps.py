@@ -39,6 +39,17 @@ SOURCE_ABSENCE_REASON = (
     "source does not publish this bucket: absent from a source response covering it"
 )
 
+# OTRO hecho distinto, y por eso otro motivo: aqui la fuente no se salta un bucket,
+# es que ya no sirve esa ventana entera. Medido el 2026-08-25: long_short_ratio 5min
+# se sirve hasta 200 h atras y ni un bucket mas. La trampa es que "ya no lo sirve" y
+# "esta caida" devuelven las dos lo mismo -vacio-, asi que archivar por respuesta
+# vacia a secas convertiria una caida del proveedor en un barrido silencioso del
+# atraso. Por eso hace falta un CONTROL reciente que SI devuelva serie.
+PROVIDER_HORIZON_REASON = (
+    "source no longer serves this window: it came back empty while a recent control "
+    "window returned data"
+)
+
 
 def _aware_utc(value: datetime, name: str) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
@@ -461,6 +472,76 @@ async def reconcile_cadence_coverage(
         missing_windows=missing_windows,
         recovered_gaps=recovered,
     )
+
+
+async def archive_beyond_source_horizon(
+    conn: asyncpg.Connection,
+    *,
+    feed: str,
+    exchange: str,
+    market: str,
+    symbol: str,
+    granularity: str,
+    window_start: datetime,
+    window_end: datetime,
+    control_start: datetime,
+    control_end: datetime,
+    control_returned_rows: int,
+) -> int:
+    """Archive a window the source no longer serves, proving the source is not merely down.
+
+    ``reconcile_cadence_coverage`` deliberately abstains when the source answers nothing:
+    no answer is not evidence of absence. That leaves gaps older than the source's horizon
+    with no honest path out, so this is the other path, and it needs the other evidence.
+
+    An exhausted horizon and an outage both come back empty. The only thing that tells them
+    apart is a CONTROL: a recent window of the SAME identity that does return data. Without
+    a positive control this refuses to touch anything, which is what stops a provider outage
+    from silently sweeping the whole backlog into 'unrecoverable'.
+
+    The proof is written to ``recovery_metadata`` so it can be re-derived from the row alone
+    months later; harness/checks/K04-huecos.sh does exactly that.
+    """
+    window_start, window_end = _validated_window(window_start, window_end)
+    control_start, control_end = _validated_window(control_start, control_end)
+    if not all((feed, exchange, market, symbol, granularity)):
+        raise ValueError("gap identity cannot be empty")
+    if control_returned_rows <= 0:
+        raise ValueError(
+            "a silent source is not proof of an exhausted horizon: "
+            "the control window must return rows"
+        )
+    if control_end <= window_end:
+        raise ValueError("the control window must be more recent than the archived window")
+
+    result = await conn.execute(
+        """
+        UPDATE data_gap
+        SET status='unrecoverable',
+            resolved_at=clock_timestamp(), recovered_at=NULL,
+            recovery_attempts=recovery_attempts+1,
+            last_recovery_attempt_at=clock_timestamp(),
+            resolution_reason=$8,
+            recovery_metadata=jsonb_build_object(
+                'method','provider_horizon_exhausted',
+                'window_start',$6::timestamptz,
+                'window_end',$7::timestamptz,
+                'window_returned_rows',0,
+                'control_start',$9::timestamptz,
+                'control_end',$10::timestamptz,
+                'control_returned_rows',$11::int,
+                'checked_at',clock_timestamp()
+            )
+        WHERE feed=$1 AND feed_class='cadence'
+          AND exchange=$2 AND market=$3 AND symbol=$4 AND granularity=$5
+          AND status='unresolved'
+          AND start_ts >= $6 AND end_ts <= $7
+        """,
+        feed, exchange, market, symbol, granularity,
+        window_start, window_end, PROVIDER_HORIZON_REASON,
+        control_start, control_end, int(control_returned_rows),
+    )
+    return int(result.rsplit(" ", 1)[-1]) if result.startswith("UPDATE ") else 0
 
 
 @dataclass(frozen=True, slots=True)
