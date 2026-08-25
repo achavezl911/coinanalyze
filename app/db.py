@@ -13,6 +13,22 @@ from app.partitioning import ensure_temporal_partitions
 
 INGEST_COMPONENT_MAX_AGES = {"ohlcv_1m": 180.0, "metrics_5m": 420.0}
 
+# Umbral para un latido que no aparece en la lista de servicios requeridos. Existe
+# para que un colector nuevo quede vigilado el dia que empieza a latir, sin que
+# nadie tenga que acordarse de anadirlo a mano.
+DEFAULT_HEARTBEAT_MAX_AGE = 900.0
+
+
+def heartbeat_max_age(service: str, required: Mapping[str, float]) -> float:
+    """Umbral de un latido. Hereda del prefijo antes de ':' (los shards del estilo
+    'ws:0/1' o 'scalp:0/1' usan el de su servicio base) y si no, el por defecto."""
+    if service in required:
+        return required[service]
+    base = service.split(":", 1)[0]
+    if base in required:
+        return required[base]
+    return DEFAULT_HEARTBEAT_MAX_AGE
+
 
 class ServiceOwnershipLost(RuntimeError):
     """The process no longer owns the persistent fencing generation for its shard."""
