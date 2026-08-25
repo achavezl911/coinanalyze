@@ -7,7 +7,12 @@ import pytest
 import app.ai_context as ai_context
 import app.api as api
 from app.ai_context import data_confidence_row
-from app.db import INGEST_COMPONENT_MAX_AGES, required_heartbeat_failures
+from app.db import (
+    DEFAULT_HEARTBEAT_MAX_AGE,
+    INGEST_COMPONENT_MAX_AGES,
+    heartbeat_max_age,
+    required_heartbeat_failures,
+)
 
 
 def _heartbeat_rows(failed_component: str) -> list[dict[str, object]]:
@@ -218,3 +223,64 @@ async def test_healthz_and_data_confidence_degrade_the_same_heartbeat_from_db_cl
     assert health["status"] == "degraded"
     assert confidence["collectors_stale"] is True
     assert confidence["status"] == "degraded"
+
+
+async def test_healthz_governs_every_heartbeat_not_only_the_hand_written_list(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Caso real medido en 140 el 2026-08-25: 'ws-bybit' llevaba 1303034 s (15 dias)
+    sin latir, con status 'ok', y /api/healthz decia lo mismo que si estuviera vivo.
+
+    La causa era que required_heartbeat_failures solo itera sobre los umbrales, y esos
+    umbrales eran 7 claves escritas a mano (ingest, ws, scalp, daily, api y las dos de
+    INGEST_COMPONENT_MAX_AGES) frente a las 14 filas de pipeline_heartbeat. Un servicio
+    que no estuviera en la lista no podia poner degraded ni aunque llevara semanas
+    muerto. Ahora los umbrales se derivan de la tabla, asi que el latido desconocido se
+    vigila solo, y healthz declara en 'governed_services' que es lo que mira.
+    """
+    now = datetime.now(UTC)
+    muerto = 15 * 24 * 3600.0
+    rows: list[dict[str, object]] = [
+        {"service": "api", "status": "ok", "updated_at": now, "lag_seconds": 0.0},
+        {"service": "daily", "status": "ok", "updated_at": now, "lag_seconds": 0.0},
+        {"service": "ws", "status": "ok", "updated_at": now, "lag_seconds": 0.0},
+        {"service": "scalp", "status": "ok", "updated_at": now, "lag_seconds": 0.0},
+        {"service": "ingest", "status": "ok", "updated_at": now, "lag_seconds": 0.0},
+        # Ni este ni el siguiente aparecen en la lista escrita a mano.
+        {"service": "ws:0/1", "status": "ok", "updated_at": now, "lag_seconds": 0.0},
+        {"service": "ws-bybit", "status": "ok", "updated_at": now, "lag_seconds": muerto},
+    ]
+    for component in INGEST_COMPONENT_MAX_AGES:
+        rows.append(
+            {
+                "service": f"ingest:{component}",
+                "status": "ok",
+                "updated_at": now,
+                "lag_seconds": 0.0,
+            }
+        )
+
+    monkeypatch.setattr(api.app.state, "pool", _Pool(_HealthConnection(rows)), raising=False)
+
+    async def heartbeat_noop(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(api, "heartbeat", heartbeat_noop)
+    health = await api.health()
+
+    # 1. healthz declara que vigila, y cubre TODA la tabla. Es lo que comprueba K05.
+    gobernados = set(health["governed_services"])
+    assert {str(row["service"]) for row in rows} <= gobernados
+    assert "ws-bybit" in gobernados
+    # 2. y el latido muerto que no estaba en la lista degrada de verdad.
+    assert health["status"] == "degraded"
+    # 3. el shard hereda el umbral de su servicio base, no el por defecto.
+    assert heartbeat_max_age("ws:0/1", {"ws": 90.0}) == 90.0
+    assert heartbeat_max_age("desconocido", {"ws": 90.0}) == DEFAULT_HEARTBEAT_MAX_AGE
+    # 4. missing_services sigue siendo "lo que TIENE que existir y no esta", asi que
+    #    derivar de la tabla no puede vaciarlo por construccion.
+    sin_ingest = [row for row in rows if row["service"] != "ingest"]
+    monkeypatch.setattr(
+        api.app.state, "pool", _Pool(_HealthConnection(sin_ingest)), raising=False
+    )
+    assert "ingest" in (await api.health())["missing_services"]

@@ -34,6 +34,7 @@ from app.db import (
     INGEST_COMPONENT_MAX_AGES,
     create_pool,
     heartbeat,
+    heartbeat_max_age,
     required_heartbeat_failures,
 )
 from app.delta_profile import delta_profile
@@ -1989,7 +1990,10 @@ async def prometheus_metrics() -> Response:
 
 @app.get("/api/healthz")
 async def health() -> dict[str, Any]:
-    thresholds = {
+    # 'required' dice que servicios tienen que EXISTIR. No dice cuales se vigilan:
+    # eso se deriva de pipeline_heartbeat mas abajo, porque un latido que no esta
+    # en esta lista es exactamente un colector que puede morir en silencio.
+    required = {
         "ingest": max(INGEST_COMPONENT_MAX_AGES.values()),
         **{
             f"ingest:{component}": max_age
@@ -2016,7 +2020,12 @@ async def health() -> dict[str, Any]:
             """
         )
     by_service = {str(row["service"]): row for row in heartbeats}
-    missing_services = sorted(set(thresholds) - set(by_service))
+    # Todo lo que late se vigila; ademas, lo de 'required' tiene que estar.
+    thresholds = {
+        service: heartbeat_max_age(service, required) for service in by_service
+    }
+    thresholds.update(required)
+    missing_services = sorted(set(required) - set(by_service))
     degraded = bool(required_heartbeat_failures(heartbeats, thresholds))
     latest_by_symbol = {str(row["symbol"]): row for row in latest}
     missing_symbols = sorted(set(SETTINGS.SYMBOLS) - set(latest_by_symbol))
@@ -2026,6 +2035,7 @@ async def health() -> dict[str, Any]:
         "status": "degraded" if degraded else "ok",
         "missing_services": missing_services,
         "missing_symbols": missing_symbols,
+        "governed_services": sorted(thresholds),
         "services": records(heartbeats),
         "symbols": records(latest),
     }
