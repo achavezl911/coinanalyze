@@ -2869,6 +2869,13 @@ _OI_WINDOWS = (("5m", 300), ("15m", 900), ("1h", 3600), ("4h", 14400), ("24h", 8
 OI_CADENCE = timedelta(minutes=5)
 PRICE_CADENCE = timedelta(minutes=1)
 FUNDING_CADENCE = timedelta(minutes=5)
+# Historia de mas que se pide por debajo de la ventana mayor. La barra de referencia de
+# la ventana de 24 h esta 86400 s antes de la ULTIMA BARRA, no antes de fin, y la ultima
+# barra llega con retraso: medido el 2026-08-25T23:39Z contra 140, open_interest 5min iba
+# 556 s por detras de now(). Pidiendo desde fin-86400 esa referencia caeria fuera de la
+# consulta y el cambio de 24 h seria null SIEMPRE. Son 12 filas de OI y 60 de precio de
+# mas, y no tocan la cobertura, que cuenta sobre [fin-sec, fin).
+MARGEN_REFERENCIA = timedelta(hours=1)
 
 
 def _buckets_observados(
@@ -2921,46 +2928,68 @@ async def oi_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     # estimacion. Se pierden como mucho 59 s del precio mas reciente.
     fin = align_down(datetime.now(UTC), PRICE_CADENCE)
     inicio_24h = fin - timedelta(seconds=86400)
+    inicio_consulta = inicio_24h - MARGEN_REFERENCIA
     oi_rows = await conn.fetch(
         "SELECT ts, oi_close FROM open_interest WHERE symbol=$1 AND interval='5min' "
         "AND ts >= $2 AND ts < $3 ORDER BY ts",
         symbol,
-        inicio_24h,
+        inicio_consulta,
         fin,
     )
     px_rows = await conn.fetch(
         "SELECT ts, close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
         "AND ts >= $2 AND ts < $3 ORDER BY ts",
         symbol,
-        inicio_24h,
+        inicio_consulta,
         fin,
     )
-    px = [as_float(r["close"]) for r in px_rows]
+    oi_por_ts = {r["ts"]: as_float(r["oi_close"]) for r in oi_rows}
+    px_por_ts = {r["ts"]: as_float(r["close"]) for r in px_rows}
     oi_ts = [r["ts"] for r in oi_rows if r["oi_close"] is not None]
     px_ts = [r["ts"] for r in px_rows if r["close"] is not None]
     oi_coverage = _oi_coverage(oi_ts, px_ts, fin)
-    if not oi_rows or not px:
+    if not oi_rows or not px_rows:
         return {"symbol": symbol, "available": False, "coverage": oi_coverage}
-    oi = [as_float(r["oi_close"]) for r in oi_rows]
-    oi_latest, px_latest = oi[-1], px[-1]
+    oi_latest_ts, px_latest_ts = oi_rows[-1]["ts"], px_rows[-1]["ts"]
+    oi_latest, px_latest = oi_por_ts[oi_latest_ts], px_por_ts[px_latest_ts]
 
-    def back(series, per_bar_s, sec):
-        return series[max(0, len(series) - 1 - round(sec / per_bar_s))]
+    def referencia(por_ts, ultima_ts, sec):
+        """La barra que esta EXACTAMENTE ``sec`` segundos antes de la ultima, o None.
+
+        POR TIEMPO Y NO POR POSICION. series[len-1-round(sec/cadencia)] solo cae donde
+        debe si la serie es contigua; con un hueco devuelve una barra mas vieja sin
+        decirlo, y el "cambio de 5m" pasa a medir 20m conservando la etiqueta de 5m. Los
+        cinco `sec` son multiplos enteros de las dos cadencias, asi que sobre una serie
+        completa esta barra existe siempre. Si no existe, la respuesta honrada es null:
+        NO la barra que hubiera mas atras, que es de otra ventana.
+
+        El ancla es la ultima barra y no ``fin``: el feed llega con retraso (556 s
+        medidos el 2026-08-25) y anclar en fin-300 devolveria la propia ultima barra, o
+        sea un cambio de 5m constante de 0.000 %. Lo que se anuncia es el INTERVALO entre
+        las dos barras; lo vieja que sea la ultima ya lo dice coverage.
+        """
+        ts = ultima_ts - timedelta(seconds=sec)
+        return ts, por_ts.get(ts)
 
     windows = {}
     for lab, sec in _OI_WINDOWS:
-        oi0, px0 = back(oi, 300, sec), back(px, 60, sec)
+        oi_ref_ts, oi0 = referencia(oi_por_ts, oi_latest_ts, sec)
+        px_ref_ts, px0 = referencia(px_por_ts, px_latest_ts, sec)
         oi_chg = (oi_latest / oi0 - 1) * 100 if (oi0 and oi_latest) else None
         px_chg = (px_latest / px0 - 1) * 100 if (px0 and px_latest) else None
         windows[lab] = {
             "oi_change_pct": round(oi_chg, 3) if oi_chg is not None else None,
             "price_change_pct": round(px_chg, 3) if px_chg is not None else None,
             "quadrant": _oi_quadrant(px_chg, oi_chg),
+            # Cada cifra viaja con la barra sobre la que se calculo. Restandola de
+            # oi_latest_ts / price_latest_ts tiene que salir `sec` al segundo, y eso se
+            # comprueba desde fuera sin creerse la etiqueta.
+            "oi_reference_ts": oi_ref_ts.isoformat() if oi_chg is not None else None,
+            "price_reference_ts": px_ref_ts.isoformat() if px_chg is not None else None,
         }
         # Un cambio de OI entre dos puntos necesita que EXISTAN los dos y todo lo que hay
-        # entre medias: si la ventana esta agujereada, el "cambio de 5m" puede estar
-        # midiendo otra cosa. La cifra se sigue devolviendo; lo que ya no se puede es
-        # leerla sin saber sobre cuantas muestras se calculo (oi_coverage[lab]).
+        # entre medias: los extremos los fija `referencia`, y de lo de en medio responde
+        # oi_coverage[lab], que dice sobre cuantas muestras se calculo.
 
     daily = [
         as_float(r["oi_close"])
@@ -2986,6 +3015,11 @@ async def oi_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
         "symbol": symbol,
         "available": True,
         "oi_total_usd": oi_latest,
+        # Las dos anclas, una por pata. Sin ellas, *_reference_ts no se puede comprobar y
+        # ademas no se sabria lo vieja que es la cifra "de ahora": oi_latest_ts puede ir
+        # varios minutos por detras de la ventana que declara coverage.
+        "oi_latest_ts": oi_latest_ts.isoformat(),
+        "price_latest_ts": px_latest_ts.isoformat(),
         "windows": windows,
         "coverage": oi_coverage,
         "percentile_1y": _pct_rank(clean, oi_latest),
