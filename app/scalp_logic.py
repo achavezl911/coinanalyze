@@ -1376,7 +1376,7 @@ async def zone_analysis(
         SELECT ts, open, high, low, close, volume, buy_volume
         FROM ohlcv
         WHERE symbol=$1 AND interval='4hour'
-          AND ts >= $5 - make_interval(days => $2)
+          AND ts >= $5::timestamptz - make_interval(days => $2)
           AND ts + interval '4 hours' <= $5
           AND low <= $4 AND high >= $3
         ORDER BY ts
@@ -1394,7 +1394,7 @@ async def zone_analysis(
              FROM daily_session_agg WHERE symbol=$1) AS median_abs_cvd_spot,
           (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY volume*close)
              FROM ohlcv WHERE symbol=$1 AND interval='4hour'
-               AND ts >= $2 - interval '90 days'
+               AND ts >= $2::timestamptz - interval '90 days'
                AND ts + interval '4 hours' <= $2) AS median_bar_volume_usd,
           -- Escala de esfuerzo POR SIMBOLO: mediana de la fraccion direccional de UNA vela.
           -- El modelo A*n^-0.292 la extiende a ventanas de n velas; medido, la mediana
@@ -1559,8 +1559,8 @@ async def range_validate(
             for r in await conn.fetch(
                 "SELECT ts, open, high, low, close FROM ohlcv "
                 "WHERE symbol=$1 AND interval='daily' "
-                "  AND ts >= $4 - make_interval(days => $2) "
-                "  AND ts <  $4 - make_interval(days => $3) "
+                "  AND ts >= $4::timestamptz - make_interval(days => $2) "
+                "  AND ts <  $4::timestamptz - make_interval(days => $3) "
                 "  AND ts + interval '1 day' <= $4 ORDER BY ts",
                 symbol,
                 start_days,
@@ -1573,8 +1573,8 @@ async def range_validate(
             for r in await conn.fetch(
                 "SELECT ts, open, high, low, close FROM ohlcv "
                 "WHERE symbol=$1 AND interval='daily' "
-                "  AND ts <  $3 - make_interval(days => $2) "
-                "  AND ts >= $3 - make_interval(days => $2 + 90) "
+                "  AND ts <  $3::timestamptz - make_interval(days => $2) "
+                "  AND ts >= $3::timestamptz - make_interval(days => $2 + 90) "
                 "  AND ts + interval '1 day' <= $3 ORDER BY ts",
                 symbol,
                 start_days,
