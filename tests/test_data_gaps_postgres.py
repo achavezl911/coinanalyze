@@ -19,9 +19,9 @@ from app.data_gaps import (
     RecoveryObservation,
     RecoveryValidationError,
     blocking_requirement_keys,
+    reconcile_cadence_coverage,
     record_data_gap,
     recover_gap,
-    reconcile_cadence_coverage,
 )
 from app.db import ServiceOwnershipLost, acquire_service_lock
 from app.metrics import compute_snapshot
