@@ -9,7 +9,13 @@ import asyncpg
 
 from app.breakout import breakout_read
 from app.config import SPOT_HISTORY_MAP, WS_SYMBOL_MAP, get_settings
-from app.data_gaps import GapRequirement, blocking_requirement_keys
+from app.data_gaps import (
+    GapRequirement,
+    align_down,
+    blocking_requirement_keys,
+    coverage_entry,
+    expected_buckets,
+)
 from app.interpretation import (
     BARRIER_INTRADAY_TARGET_BARS,
     MARKET_MEMORY_DAYS,
@@ -2857,17 +2863,84 @@ def _oi_quadrant(px_chg, oi_chg):
 
 
 _OI_WINDOWS = (("5m", 300), ("15m", 900), ("1h", 3600), ("4h", 14400), ("24h", 86400))
+# Las dos cadencias de las que salen estas cifras. open_interest se sirve cada 5 min y el
+# precio se lee del ohlcv de 1 min: una ventana de OI-vs-precio necesita las DOS patas, y
+# por eso su cobertura las suma y las separa en `sources`.
+OI_CADENCE = timedelta(minutes=5)
+PRICE_CADENCE = timedelta(minutes=1)
+FUNDING_CADENCE = timedelta(minutes=5)
+
+
+def _buckets_observados(
+    stamps: list[datetime], inicio: datetime, fin: datetime, cadencia: timedelta
+) -> int:
+    """Buckets DISTINTOS de ``cadencia`` con dato dentro de ``[inicio,fin)``.
+
+    Se cuentan buckets y no filas a proposito: dos filas del mismo minuto son un minuto,
+    y contarlas como dos daria una cobertura mayor que la esperada, que es justo la cifra
+    que nadie podria interpretar.
+    """
+    return len({align_down(t, cadencia) for t in stamps if inicio <= t < fin})
+
+
+def _oi_coverage(
+    oi_ts: list[datetime], px_ts: list[datetime], fin: datetime
+) -> dict[str, Any]:
+    """La cobertura de cada ventana de /api/oi-context, con sus dos patas separadas.
+
+    Se calcula tambien cuando el endpoint sale con available:false. "No hay datos" es
+    una respuesta valida, pero sin la cuenta no se distingue de "no lo hemos mirado", y
+    esa es exactamente la confusion que esta unidad existe para quitar.
+    """
+    salida: dict[str, Any] = {}
+    for lab, sec in _OI_WINDOWS:
+        inicio = fin - timedelta(seconds=sec)
+        salida[lab] = coverage_entry(
+            inicio,
+            fin,
+            sources=(
+                (
+                    "open_interest_5min",
+                    expected_buckets(inicio, fin, OI_CADENCE),
+                    _buckets_observados(oi_ts, inicio, fin, OI_CADENCE),
+                ),
+                (
+                    "ohlcv_1min",
+                    expected_buckets(inicio, fin, PRICE_CADENCE),
+                    _buckets_observados(px_ts, inicio, fin, PRICE_CADENCE),
+                ),
+            ),
+        )
+    return salida
 
 
 async def oi_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+    # La ventana acaba en el ultimo MINUTO cerrado, no en now(): asi cada ventana de
+    # _OI_WINDOWS mide un numero entero de buckets de las dos patas (300, 900, 3600,
+    # 14400 y 86400 son multiplos de 60 y de 300) y "esperados" es una cuenta, no una
+    # estimacion. Se pierden como mucho 59 s del precio mas reciente.
+    fin = align_down(datetime.now(UTC), PRICE_CADENCE)
+    inicio_24h = fin - timedelta(seconds=86400)
     oi_rows = await conn.fetch(
-        "SELECT oi_close FROM open_interest WHERE symbol=$1 AND interval='5min' "
-        "AND ts >= now()-interval '24 hours' ORDER BY ts",
+        "SELECT ts, oi_close FROM open_interest WHERE symbol=$1 AND interval='5min' "
+        "AND ts >= $2 AND ts < $3 ORDER BY ts",
         symbol,
+        inicio_24h,
+        fin,
     )
-    px = await _closes_1min(conn, symbol, 86400)
+    px_rows = await conn.fetch(
+        "SELECT ts, close FROM ohlcv WHERE symbol=$1 AND interval='1min' "
+        "AND ts >= $2 AND ts < $3 ORDER BY ts",
+        symbol,
+        inicio_24h,
+        fin,
+    )
+    px = [as_float(r["close"]) for r in px_rows]
+    oi_ts = [r["ts"] for r in oi_rows if r["oi_close"] is not None]
+    px_ts = [r["ts"] for r in px_rows if r["close"] is not None]
+    oi_coverage = _oi_coverage(oi_ts, px_ts, fin)
     if not oi_rows or not px:
-        return {"symbol": symbol, "available": False}
+        return {"symbol": symbol, "available": False, "coverage": oi_coverage}
     oi = [as_float(r["oi_close"]) for r in oi_rows]
     oi_latest, px_latest = oi[-1], px[-1]
 
@@ -2884,6 +2957,10 @@ async def oi_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
             "price_change_pct": round(px_chg, 3) if px_chg is not None else None,
             "quadrant": _oi_quadrant(px_chg, oi_chg),
         }
+        # Un cambio de OI entre dos puntos necesita que EXISTAN los dos y todo lo que hay
+        # entre medias: si la ventana esta agujereada, el "cambio de 5m" puede estar
+        # midiendo otra cosa. La cifra se sigue devolviendo; lo que ya no se puede es
+        # leerla sin saber sobre cuantas muestras se calculo (oi_coverage[lab]).
 
     daily = [
         as_float(r["oi_close"])
@@ -2910,6 +2987,7 @@ async def oi_context(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
         "available": True,
         "oi_total_usd": oi_latest,
         "windows": windows,
+        "coverage": oi_coverage,
         "percentile_1y": _pct_rank(clean, oi_latest),
         "zscore_1y": z,
         "by_venue": {
@@ -3148,17 +3226,40 @@ async def funding_context(conn: asyncpg.Connection, symbol: str) -> dict[str, An
             symbol,
         )
     )
+    # UN PROMEDIO ESCONDE SUS HUECOS. La serie con agujeros los ensena -falta la barra-;
+    # history_avg_pct sale con seis decimales tanto si promedio 2016 muestras como si
+    # promedio 300, y no habia forma de distinguirlo. Por eso cada ventana viaja con su
+    # cobertura. Y por eso la ventana se ALINEA a la cadencia en vez de acabar en now():
+    # con un final arbitrario, "esperados" no es un entero y la cifra seria una opinion.
+    # El promedio se calcula sobre la MISMA ventana que se declara, no sobre otra.
+    fin = align_down(datetime.now(UTC), FUNDING_CADENCE)
     hist = {}
+    funding_coverage: dict[str, Any] = {}
     for lab, sec in (("8h", 28800), ("24h", 86400), ("7d", 604800)):
-        v = as_float(
-            await conn.fetchval(
-                "SELECT avg(fr_close) FROM funding_rate WHERE symbol=$1 AND interval='5min' "
-                "AND ts >= now()-($2::int * interval '1 second')",
-                symbol,
-                sec,
-            )
+        inicio = fin - timedelta(seconds=sec)
+        fila = await conn.fetchrow(
+            "SELECT avg(fr_close) AS media, "
+            " count(DISTINCT date_bin($4::interval, ts, '1970-01-01'::timestamptz)) "
+            "   FILTER (WHERE fr_close IS NOT NULL) AS observados "
+            "FROM funding_rate WHERE symbol=$1 AND interval='5min' AND ts >= $2 AND ts < $3",
+            symbol,
+            inicio,
+            fin,
+            FUNDING_CADENCE,
         )
+        v = as_float(fila["media"]) if fila else None
         hist[lab] = round(v, 6) if v is not None else None
+        funding_coverage[lab] = coverage_entry(
+            inicio,
+            fin,
+            sources=(
+                (
+                    "funding_rate_5min",
+                    expected_buckets(inicio, fin, FUNDING_CADENCE),
+                    int(fila["observados"]) if fila else 0,
+                ),
+            ),
+        )
     now = datetime.now(UTC)
     cands = [now.replace(hour=h, minute=0, second=0, microsecond=0) for h in (0, 8, 16)]
     cands.append(cands[0] + timedelta(days=1))
@@ -3172,6 +3273,7 @@ async def funding_context(conn: asyncpg.Connection, symbol: str) -> dict[str, An
         else None,
         "annualized_pct": round(cur * 3 * 365, 3) if cur is not None else None,
         "history_avg_pct": hist,
+        "coverage": funding_coverage,
         "next_funding_time_utc": nxt.isoformat(),
         "regime": (
             "longs pagan (sesgo largo apalancado)"

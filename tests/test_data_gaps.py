@@ -8,6 +8,9 @@ from app.data_gaps import (
     DataGap,
     RecoveryObservation,
     RecoveryValidationError,
+    align_down,
+    coverage_entry,
+    expected_buckets,
     missing_cadence_windows,
     record_data_gap,
     validate_recovery,
@@ -214,3 +217,180 @@ async def test_una_fila_sin_sesion_resoluble_no_se_enmascara(monkeypatch) -> Non
         row_window=_session_window,
     )
     assert filas[0]["price_close"] == 7.0
+
+
+# --- K03 · el hueco declarado ----------------------------------------------------
+# Lo que estos tests sostienen: (1) la ventana servida se cuenta, y por eso aparece el
+# bucket que NO ESTA -el que no deja fila que poner a null-, (2) "no hay huecos
+# declarados" y "no falta nada" son dos respuestas distintas, y (3) la cobertura de un
+# agregado es la conjuncion de sus patas, no la de la que mejor salio.
+
+
+def test_align_down_usa_la_rejilla_de_la_epoca() -> None:
+    """La misma rejilla que date_bin con origen 1970-01-01, o las cuentas no cuadran."""
+    momento = datetime(2026, 8, 25, 12, 3, 47, 512000, tzinfo=UTC)
+    assert align_down(momento, timedelta(minutes=5)) == datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
+    assert align_down(momento, timedelta(minutes=1)) == datetime(2026, 8, 25, 12, 3, tzinfo=UTC)
+    ya_alineado = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
+    assert align_down(ya_alineado, timedelta(minutes=5)) == ya_alineado
+
+
+def test_expected_buckets_exige_cadencia_positiva_y_ventana_valida() -> None:
+    inicio = datetime(2026, 8, 25, tzinfo=UTC)
+    assert expected_buckets(inicio, inicio + timedelta(hours=1), timedelta(minutes=5)) == 12
+    with pytest.raises(ValueError):
+        expected_buckets(inicio, inicio + timedelta(hours=1), timedelta(0))
+    with pytest.raises(ValueError):
+        expected_buckets(inicio, inicio, timedelta(minutes=5))
+
+
+def test_coverage_entry_suma_las_patas_y_complete_es_la_conjuncion() -> None:
+    inicio = datetime(2026, 8, 25, tzinfo=UTC)
+    entrada = coverage_entry(
+        inicio,
+        inicio + timedelta(hours=1),
+        sources=(("open_interest_5min", 12, 12), ("ohlcv_1min", 60, 47)),
+    )
+    assert entrada["expected_buckets"] == 72
+    assert entrada["observed_buckets"] == 59
+    # Una pata completa no salva la ventana: el numero se calculo con 47 de 60 minutos.
+    assert entrada["complete"] is False
+    assert entrada["sources"]["open_interest_5min"] == {
+        "expected_buckets": 12,
+        "observed_buckets": 12,
+    }
+
+
+def test_coverage_entry_no_recorta_un_observado_imposible() -> None:
+    """Si observado > esperado la cadencia declarada esta mal, y eso hay que VERLO."""
+    inicio = datetime(2026, 8, 25, tzinfo=UTC)
+    entrada = coverage_entry(
+        inicio, inicio + timedelta(hours=1), sources=(("funding_rate_5min", 12, 13),)
+    )
+    assert entrada["observed_buckets"] == 13
+    assert entrada["complete"] is False
+
+
+@pytest.mark.asyncio
+async def test_el_bucket_ausente_sale_en_la_cobertura_aunque_no_deje_fila(monkeypatch) -> None:
+    """El caso medido en 140: 16:00 y 18:00 existen, las 17:00 NO, y nadie lo decia.
+
+    Un null no puede ensenar esta perdida porque no hay fila que anular. La unica forma
+    de verla es contar los buckets servidos contra los esperados de la ventana.
+    """
+    inicio = datetime(2026, 8, 14, 15, tzinfo=UTC)
+    filas = [
+        {"bucket": inicio, "close": 1.0},
+        {"bucket": inicio + timedelta(hours=1), "close": None},
+        {"bucket": inicio + timedelta(hours=3), "close": None},
+        {"bucket": inicio + timedelta(hours=4), "close": 2.0},
+    ]
+
+    async def declarados(_conn, **_kwargs):
+        return [
+            {
+                "start": (inicio + timedelta(hours=1, minutes=47)).isoformat(),
+                "end": (inicio + timedelta(hours=3, minutes=13)).isoformat(),
+                "status": "unrecoverable",
+                "declarations": 86,
+            }
+        ]
+
+    monkeypatch.setattr(api, "declared_gap_windows", declarados)
+    sobre = await api.declared_series_response(
+        object(),  # type: ignore[arg-type]
+        filas,
+        interval="1hour",
+        bucket=timedelta(hours=1),
+        feed="ohlcv_1min",
+        exchanges=("binance",),
+        market="perpetual",
+        symbol="BTCUSDT_PERP.A",
+    )
+    cobertura = sobre["coverage"]["served_window"]
+    assert (cobertura["expected_buckets"], cobertura["observed_buckets"]) == (5, 4)
+    assert cobertura["complete"] is False
+    # El bucket ausente cae dentro del hueco declarado, asi que esta EXPLICADO.
+    assert sobre["data_gaps"]["status"] == "declared"
+    assert sobre["data_gaps"]["undeclared_buckets"] == 0
+    assert sobre["data_gaps"]["declared"][0]["declarations"] == 86
+    assert sobre["rows"] is filas
+
+
+@pytest.mark.asyncio
+async def test_faltar_sin_detector_no_es_lo_mismo_que_no_faltar(monkeypatch) -> None:
+    """/api/whale/delta: spot_trades_agg pierde buckets y NADIE los apunta.
+
+    Sin esta distincion, un feed sin detector se lee igual que un feed sano, que es la
+    forma mas barata de que una perdida no la vea nunca nadie.
+    """
+    inicio = datetime(2026, 8, 14, 12, tzinfo=UTC)
+    filas = [
+        {"bucket": inicio, "whale_delta": 1.0},
+        {"bucket": inicio + timedelta(minutes=30), "whale_delta": 2.0},
+    ]
+
+    async def declarados(_conn, **_kwargs):
+        return []
+
+    monkeypatch.setattr(api, "declared_gap_windows", declarados)
+    sobre = await api.declared_series_response(
+        object(),  # type: ignore[arg-type]
+        filas,
+        interval="15min",
+        bucket=timedelta(minutes=15),
+        feed="spot_trades",
+        exchanges=("binance", "bybit", "combined"),
+        market="spot",
+        symbol="BTCUSDT_PERP.A",
+        gap_symbol="BTCUSDT",
+    )
+    assert sobre["data_gaps"]["status"] == "undeclared"
+    assert sobre["data_gaps"]["undeclared_buckets"] == 1
+    # La identidad del hueco es la del websocket, no la del simbolo pedido.
+    assert sobre["data_gaps"]["symbol"] == "BTCUSDT"
+    assert sobre["symbol"] == "BTCUSDT_PERP.A"
+
+
+@pytest.mark.asyncio
+async def test_una_serie_completa_y_sin_huecos_se_declara_limpia(monkeypatch) -> None:
+    inicio = datetime(2026, 8, 14, 12, tzinfo=UTC)
+    filas = [{"bucket": inicio + timedelta(minutes=15 * i)} for i in range(4)]
+
+    async def declarados(_conn, **_kwargs):
+        return []
+
+    monkeypatch.setattr(api, "declared_gap_windows", declarados)
+    sobre = await api.declared_series_response(
+        object(),  # type: ignore[arg-type]
+        filas,
+        interval="15min",
+        bucket=timedelta(minutes=15),
+        feed="open_interest_5min",
+        exchanges=("binance",),
+        market="perpetual",
+        symbol="BTCUSDT_PERP.A",
+    )
+    assert sobre["data_gaps"]["status"] == "clean"
+    assert sobre["coverage"]["served_window"]["complete"] is True
+
+
+@pytest.mark.asyncio
+async def test_una_serie_vacia_dice_no_data_y_no_inventa_ventana(monkeypatch) -> None:
+    async def declarados(_conn, **_kwargs):
+        raise AssertionError("sin filas no hay ventana que consultar")
+
+    monkeypatch.setattr(api, "declared_gap_windows", declarados)
+    sobre = await api.declared_series_response(
+        object(),  # type: ignore[arg-type]
+        [],
+        interval="5min",
+        bucket=timedelta(minutes=5),
+        feed="ohlcv_1min",
+        exchanges=("binance",),
+        market="perpetual",
+        symbol="BTCUSDT_PERP.A",
+    )
+    assert sobre["data_gaps"]["status"] == "no_data"
+    assert sobre["data_gaps"]["window_start"] is None
+    assert sobre["coverage"]["served_window"] is None

@@ -56,6 +56,14 @@ vivo=$(pide /api/healthz | head -c 40)
 [ -n "$vivo" ] || { echo "NO MEDIDO: la API no responde"; exit 2; }
 
 # Un bloque de hueco de verdad: una clave que lo nombre, y dentro ventana y estado.
+#
+# QUE CUENTA COMO "RELLENO", corregido el 2026-08-25 antes de implementar nada. La
+# version anterior daba por relleno cualquier valor que no fuera None/[]/{} , y con eso
+# la comprobacion (2) -la unica que impide un campo que existe y siempre viene vacio- se
+# volvia hueca en cuanto el bloque fuera un objeto: un dict con la ventana dentro nunca
+# esta vacio, asi que (2) habria pasado sola. Relleno = hay AL MENOS UNA ENTRADA DE
+# HUECO, o sea un elemento de lista que trae su propia ventana y su propio estado. Es
+# mas estricto que antes, no mas laxo: sigue siendo ROJO donde lo era.
 tiene_bloque() {
   printf '%s' "$1" | python3 -c '
 import sys, json
@@ -63,13 +71,24 @@ try:
     d = json.load(sys.stdin)
 except Exception:
     print("nojson"); raise SystemExit(0)
+def entradas(v):
+    if isinstance(v, list):
+        return [x for x in v if isinstance(x, dict)
+                and any(k in x for k in ("start", "start_ts", "from", "window_start"))
+                and "status" in x]
+    if isinstance(v, dict):
+        total = []
+        for w in v.values():
+            total += entradas(w)
+        return total
+    return []
 def busca(o):
     if isinstance(o, dict):
         for k, v in o.items():
             if any(t in k.lower() for t in ("data_gap", "gaps", "gap_windows", "coverage_windows")):
                 texto = json.dumps(v).lower()
                 if ("start" in texto or "from" in texto) and "status" in texto:
-                    return "relleno" if v not in (None, [], {}) else "vacio"
+                    return "relleno" if entradas(v) else "vacio"
                 return "incompleto"
             r = busca(v)
             if r: return r
@@ -132,8 +151,13 @@ for ruta in $AGREGADO; do
 done
 
 # (2) /api/daily es el UNICO que acepta ventana historica. El 2026-08-14 hay un
-# data_gap de ohlcv_1min de 10:47 a 12:13 en los tres simbolos: ahi el bloque tiene
-# que venir RELLENO, no solo existir.
+# data_gap de ohlcv_1min de 16:47 a 18:13 UTC (86 minutos) en los tres simbolos: ahi el
+# bloque tiene que venir RELLENO, no solo existir. La sesion de psql de 140 responde en
+# CST, asi que ese mismo hueco se lee "10:47 a 12:13" si no se pide UTC explicito; es la
+# misma trampa que dio 7.99 en vez de 7.74 en K37. Se comprueba con:
+#   prodsql "SELECT min(start_ts) AT TIME ZONE 'UTC', max(end_ts) AT TIME ZONE 'UTC',
+#            count(*) FROM data_gap WHERE symbol='BTCUSDT_PERP.A' AND feed='ohlcv_1min'
+#            AND start_ts >= '2026-08-14T00:00:00Z' AND start_ts < '2026-08-15T00:00:00Z'"
 cuerpo=$(pide "/api/daily?symbol=$SIM&through_session_date=2026-08-15&days=3")
 case "$(tiene_bloque "$cuerpo")" in
   relleno) ;;

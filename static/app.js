@@ -144,6 +144,11 @@ function pct(value, digits = 2) { const n = asNumber(value); return n === null ?
 function rate(value) { const n = asNumber(value); return n === null ? '—' : `${n.toFixed(4)}%`; }
 function dateTime(value) { return value ? new Date(value).toLocaleString('es-MX', { hour12: false }) : '—'; }
 function safeArray(value) { return Array.isArray(value) ? value : []; }
+// Las series ya no llegan como un array pelado: vienen en un sobre {rows, coverage,
+// data_gaps} porque el hueco viaja CON el dato (K03). Sin esta funcion, safeArray veria
+// un objeto y devolveria [] -un panel vacio sin decir por que-, que es la peor de las
+// respuestas posibles. Se sigue aceptando el array por si queda algun consumidor viejo.
+function filasDe(sobre) { return Array.isArray(sobre) ? sobre : safeArray(sobre && sobre.rows); }
 // "N/D" explicito para las metricas que ANTES fabricaban un cero. El guion largo sigue
 // usandose en las tablas densas, pero donde el cero mentia hace falta decir por que no hay
 // numero, no dejar un simbolo mudo.
@@ -1450,7 +1455,7 @@ async function refreshOverview(forceContext = false) {
   ]) : null;
   const [dashboard, ohlcv, confidence, health] = await Promise.all([
     maybe(`/api/dashboard/state?symbol=${q}`, { snapshot: null, scalp: {}, setup: { setups: [] } }),
-    maybe(`/api/ohlcv?symbol=${q}&interval=5min&limit=576`, []),
+    maybe(`/api/ohlcv?symbol=${q}&interval=5min&limit=576`, { rows: [] }),
     maybe(`/api/data-confidence?symbol=${q}`, { rows: [] }),
     maybe('/api/healthz', { status: 'degraded', services: [] }),
   ]);
@@ -1487,7 +1492,7 @@ async function refreshOverview(forceContext = false) {
   renderQuickRead(state.daily);
   renderWyckoff(state.wyckoff);
   renderMarketMemory(dashboard.market_memory || {});
-  renderPriceChart(ohlcv);
+  renderPriceChart(filasDe(ohlcv));
   renderStructureLevels(state.structureDetail, dashboard.barriers || {}, state.wyckoff);
   const wyckoffButton = $('price-mode-wyckoff');
   if (wyckoffButton) wyckoffButton.disabled = !state.wyckoff.available;
@@ -1504,14 +1509,14 @@ async function loadSection(id, force = false) {
   if (id === 'flujo') {
     const [cvd, oi, whale, daily, delta, absorption] = await Promise.all([
       maybe(`/api/cvd/divergence?symbol=${q}&interval=5min&limit=576`, []),
-      maybe(`/api/oi?symbol=${q}&interval=15min&limit=384`, []),
-      maybe(`/api/whale/delta?symbol=${q}&interval=15min&limit=384`, []),
+      maybe(`/api/oi?symbol=${q}&interval=15min&limit=384`, { rows: [] }),
+      maybe(`/api/whale/delta?symbol=${q}&interval=15min&limit=384`, { rows: [] }),
       maybe(`/api/daily?symbol=${q}&days=60`, { rows: [], streak: 0 }),
       maybe(`/api/scalp/delta-matrix?symbol=${q}`, []),
       maybe(`/api/scalp/absorption?symbol=${q}`, []),
     ]);
     if (symbol !== state.symbol) return;
-    renderFlowCharts(cvd, null, whale);
+    renderFlowCharts(cvd, null, filasDe(whale));
     renderDailyBars(daily);
     renderDeltaMatrix(delta);
     renderAbsorption(absorption);
@@ -1556,7 +1561,7 @@ async function loadSection(id, force = false) {
     renderDecisionBoard(state.dashboard, trend, swing, structureDetail, state.confidence, state.externalMacro);
   } else if (id === 'derivados') {
     const [oi, basis, liq, liqLevels, funding, positioning] = await Promise.all([
-      maybe(`/api/oi?symbol=${q}&interval=15min&limit=384`, []),
+      maybe(`/api/oi?symbol=${q}&interval=15min&limit=384`, { rows: [] }),
       maybe(`/api/scalp/basis?symbol=${q}`, {}),
       maybe(`/api/scalp/liquidations?symbol=${q}`, { matrix: [] }),
       maybe(`/api/scalp/liquidation-levels?symbol=${q}&minutes=60&bucket_bps=10&limit=50`, { rows: [] }),
@@ -1564,7 +1569,7 @@ async function loadSection(id, force = false) {
       maybe(`/api/positioning?symbol=${q}`, {}),
     ]);
     if (symbol !== state.symbol) return;
-    renderOiChart(oi);
+    renderOiChart(filasDe(oi));
     renderBasisDetails(basis);
     renderLiquidations(liq);
     renderLiquidationLevels(liqLevels, (state.dashboard.snapshot || {}).price);

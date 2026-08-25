@@ -135,6 +135,142 @@ async def blocking_requirement_keys(
     return {str(row["key"]) for row in rows}
 
 
+# --- LO QUE EL SISTEMA YA SABE, DICHO EN VOZ ALTA -------------------------------
+# blocking_requirement_keys responde "si o no" y con eso basta para poner un valor a
+# null (K02). No basta para DECLARAR el hueco: para eso hay que devolver la ventana,
+# su estado y de donde salio. Y hay una trampa medida el 2026-08-25 contra 140: el
+# hueco NO esta guardado como una ventana. El del 2026-08-14 en ohlcv_1min de BTC son
+# 86 FILAS ANIDADAS (16:47->18:13, 16:48->18:13, 16:49->18:13 ... todas acabando en el
+# mismo punto), una por cada minuto que el barrido volvio a echar en falta. Devolverlas
+# tal cual seria un bloque ilegible que ademas sugiere 86 incidentes donde hubo uno.
+# Por eso se FUNDEN en islas. Se funden dentro de la misma identidad y el mismo estado
+# -(feed, exchange, market, symbol, status)- y nunca entre estados distintos: que un
+# tramo sea irrecuperable y el de al lado siga pendiente son dos hechos, no uno.
+# Se conserva `declarations` para no perder cuantas filas lo sostienen.
+GAP_ISLANDS_SQL = """
+WITH solapan AS (
+  SELECT feed, exchange, market, symbol, granularity, status,
+         start_ts, end_ts, detection_source, resolution_reason
+  FROM data_gap
+  WHERE feed = $1 AND exchange = ANY($2::text[]) AND market = $3 AND symbol = $4
+    AND status IN ('unresolved','unrecoverable')
+    AND start_ts < $6 AND end_ts > $5
+), marcado AS (
+  SELECT *, CASE WHEN start_ts <= MAX(end_ts) OVER (
+              PARTITION BY feed, exchange, market, symbol, status
+              ORDER BY start_ts, end_ts
+              ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
+            THEN 0 ELSE 1 END AS abre_isla
+  FROM solapan
+), islas AS (
+  SELECT *, SUM(abre_isla) OVER (
+              PARTITION BY feed, exchange, market, symbol, status
+              ORDER BY start_ts, end_ts
+              ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS isla
+  FROM marcado
+)
+SELECT feed, exchange, market, symbol, status,
+       MIN(start_ts) AS start_ts, MAX(end_ts) AS end_ts,
+       MIN(granularity) AS granularity,
+       COUNT(*)::int AS declarations,
+       array_agg(DISTINCT detection_source) AS detection_sources,
+       MIN(resolution_reason) AS resolution_reason
+FROM islas
+GROUP BY feed, exchange, market, symbol, status, isla
+ORDER BY MIN(start_ts)
+"""
+
+
+async def declared_gap_windows(
+    conn: asyncpg.Connection,
+    *,
+    feed: str,
+    exchanges: Sequence[str],
+    market: str,
+    symbol: str,
+    start: datetime,
+    end: datetime,
+) -> list[dict[str, Any]]:
+    """Ventanas de hueco que BLOQUEAN dentro de ``[start,end)``, ya fundidas en islas.
+
+    Solo 'unresolved' y 'unrecoverable', las mismas que bloquean una evaluacion: un
+    hueco 'recovered' ya no le falta a nadie y anunciarlo seria ruido.
+    """
+    start, end = _validated_window(start, end)
+    rows = await conn.fetch(GAP_ISLANDS_SQL, feed, list(exchanges), market, symbol, start, end)
+    return [
+        {
+            "feed": row["feed"],
+            "exchange": row["exchange"],
+            "market": row["market"],
+            "symbol": row["symbol"],
+            "granularity": row["granularity"],
+            "start": row["start_ts"].astimezone(UTC).isoformat(),
+            "end": row["end_ts"].astimezone(UTC).isoformat(),
+            "status": row["status"],
+            "declarations": row["declarations"],
+            "detection_sources": sorted(row["detection_sources"] or ()),
+            "reason": row["resolution_reason"],
+        }
+        for row in rows
+    ]
+
+
+def align_down(moment: datetime, cadence: timedelta) -> datetime:
+    """El ultimo bucket cerrado de ``cadence`` en o antes de ``moment``, sobre la epoca.
+
+    Sin esto, una ventana que acaba en ``now()`` no tiene un numero entero de buckets y
+    "esperados" seria una opinion. Es la misma rejilla que usa date_bin con origen
+    1970-01-01, asi que la cuenta cuadra con lo que hay en la tabla.
+    """
+    moment = _aware_utc(moment, "moment")
+    if cadence <= timedelta(0):
+        raise ValueError("cadence must be positive")
+    return moment - (moment - datetime(1970, 1, 1, tzinfo=UTC)) % cadence
+
+
+def expected_buckets(start: datetime, end: datetime, cadence: timedelta) -> int:
+    """Cuantos buckets de ``cadence`` caben en ``[start,end)``. Sin cadencia no hay cuenta."""
+    start, end = _validated_window(start, end)
+    if cadence <= timedelta(0):
+        raise ValueError("cadence must be positive")
+    return int((end - start) / cadence)
+
+
+def coverage_entry(
+    start: datetime,
+    end: datetime,
+    *,
+    sources: Sequence[tuple[str, int, int]],
+) -> dict[str, Any]:
+    """La cobertura de UNA ventana agregada, con sus patas separadas.
+
+    ``sources`` son tripletas (etiqueta, esperados, observados). expected_buckets y
+    observed_buckets son la SUMA de las patas, porque un promedio que necesita dos
+    fuentes no esta completo si le falta una: complete es la conjuncion, no la de la
+    pata mas afortunada. `sources` queda dentro para poder decir CUAL fallo.
+
+    Los observados que reciba tienen que ser BUCKETS DISTINTOS, no filas. No se recorta
+    observados a esperados a proposito: si sale mayor, la cadencia declarada no es la
+    que tiene la tabla, y taparlo con un min() convertiria ese fallo en un numero
+    tranquilizador.
+    """
+    start, end = _validated_window(start, end)
+    esperados = sum(item[1] for item in sources)
+    observados = sum(item[2] for item in sources)
+    return {
+        "window_start": start.isoformat(),
+        "window_end": end.isoformat(),
+        "expected_buckets": esperados,
+        "observed_buckets": observados,
+        "complete": observados == esperados,
+        "sources": {
+            etiqueta: {"expected_buckets": esperados_i, "observed_buckets": obs_i}
+            for etiqueta, esperados_i, obs_i in sources
+        },
+    }
+
+
 async def record_data_gap(
     conn: asyncpg.Connection,
     *,
