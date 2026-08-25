@@ -20,6 +20,7 @@ from app.data_gaps import (
     RecoveryValidationError,
     archive_beyond_source_horizon,
     blocking_requirement_keys,
+    declared_gap_windows,
     reconcile_cadence_coverage,
     record_data_gap,
     recover_gap,
@@ -792,6 +793,107 @@ async def test_postgres_una_fuente_callada_no_archiva_nada() -> None:
         assert await conn.fetchval(
             "SELECT status FROM data_gap WHERE id=$1", gap_id
         ) == "unresolved"
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_las_filas_anidadas_se_funden_en_una_ventana() -> None:
+    """El hueco NO esta guardado como una ventana, y declararlo tal cual seria ilegible.
+
+    Medido en 140 el 2026-08-25: el hueco del 2026-08-14 en ohlcv_1min de BTC son 86
+    filas anidadas (16:47->18:13, 16:48->18:13, ...), una por cada minuto que el barrido
+    volvio a echar en falta, mas las que anade un SEGUNDO detector sobre la misma
+    ventana. Declararlas una a una sugeriria decenas de incidentes donde hubo uno. Se
+    funden por identidad y estado, y se conserva cuantas filas lo sostienen.
+    """
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 14, 16, 47, tzinfo=UTC)
+        fin = datetime(2026, 8, 14, 18, 13, tzinfo=UTC)
+        for minuto in range(86):
+            await _cadence_gap(conn, start=inicio + timedelta(minutes=minuto), end=fin)
+        # El segundo detector apuntando la MISMA ventana: no es otro hueco.
+        await record_data_gap(
+            conn,
+            feed="ohlcv_1min",
+            feed_class="cadence",
+            exchange="binance",
+            market="perpetual",
+            symbol="BTCUSDT_PERP.A",
+            granularity="1min",
+            start=inicio + timedelta(minutes=13),
+            end=inicio + timedelta(minutes=40),
+            expected_cadence=timedelta(minutes=1),
+            evidence_type="missing_interval",
+            detection_reason="configured cadence bucket absent",
+            detection_source="otro detector",
+        )
+        # Un hueco de OTRO exchange y otro que ya se recupero no pueden colarse.
+        await _cadence_gap(conn, start=inicio, end=fin, exchange="bybit")
+
+        ventanas = await declared_gap_windows(
+            conn,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol="BTCUSDT_PERP.A",
+            start=datetime(2026, 8, 14, tzinfo=UTC),
+            end=datetime(2026, 8, 15, tzinfo=UTC),
+        )
+        assert len(ventanas) == 1
+        assert ventanas[0]["start"] == inicio.isoformat()
+        assert ventanas[0]["end"] == fin.isoformat()
+        assert ventanas[0]["declarations"] == 87
+        assert ventanas[0]["detection_sources"] == ["otro detector", "test cadence detector"]
+        assert ventanas[0]["status"] == "unresolved"
+
+        # Fuera de la ventana pedida no se declara nada, y la identidad manda.
+        assert await declared_gap_windows(
+            conn,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol="BTCUSDT_PERP.A",
+            start=datetime(2026, 8, 13, tzinfo=UTC),
+            end=datetime(2026, 8, 14, tzinfo=UTC),
+        ) == []
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_dos_tramos_separados_no_se_funden_en_uno() -> None:
+    """Fundir es juntar lo que se toca, no barrer lo que hay en medio."""
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 14, 10, tzinfo=UTC)
+        await _cadence_gap(conn, start=inicio, end=inicio + timedelta(minutes=5))
+        await _cadence_gap(
+            conn, start=inicio + timedelta(minutes=30), end=inicio + timedelta(minutes=35)
+        )
+        ventanas = await declared_gap_windows(
+            conn,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol="BTCUSDT_PERP.A",
+            start=inicio,
+            end=inicio + timedelta(hours=1),
+        )
+        assert [(v["start"], v["end"]) for v in ventanas] == [
+            (inicio.isoformat(), (inicio + timedelta(minutes=5)).isoformat()),
+            (
+                (inicio + timedelta(minutes=30)).isoformat(),
+                (inicio + timedelta(minutes=35)).isoformat(),
+            ),
+        ]
     finally:
         await tx.rollback()
         await conn.close()

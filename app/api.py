@@ -5,7 +5,7 @@ import hmac
 import logging
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from ipaddress import ip_address, ip_network
 from pathlib import Path
 from typing import Annotated, Any
@@ -29,7 +29,13 @@ from app.daily_agg import (
     DAILY_VERDICT_LOGIC_VERSION,
     DAILY_VERDICT_OUTCOME_VERSION,
 )
-from app.data_gaps import GapRequirement, blocking_requirement_keys
+from app.data_gaps import (
+    GapRequirement,
+    blocking_requirement_keys,
+    coverage_entry,
+    declared_gap_windows,
+    expected_buckets,
+)
 from app.db import (
     INGEST_COMPONENT_MAX_AGES,
     create_pool,
@@ -311,6 +317,132 @@ async def mask_gapped_series_rows(
             row[cumulative_key] = None
 
 
+# --- EL HUECO SE DECLARA, NO SE ADIVINA ------------------------------------------
+# K02 puso a null lo que no se sabe. Un null es honrado pero es MUDO: no dice de cuando
+# a cuando, ni si volvera, ni quien lo apunto. Y hay una perdida que el null ni siquiera
+# puede ensenar, medida en 140 el 2026-08-25: en /api/ohlcv de BTC con interval=1hour,
+# las 15:00 del 2026-08-14 traen 60 barras, las 16:00 traen 47, las 18:00 traen 47, las
+# 19:00 traen 60 y LAS 17:00 NO APARECEN. La serie salta de 16 a 18 sin una fila que
+# poner a null, asi que el panel dibuja una linea continua sobre una hora que no existe.
+# Lo unico que lo destapa es comparar los buckets servidos contra los esperados.
+#
+# Asi que la respuesta lleva dos bloques, y son dos preguntas distintas:
+#   coverage.served_window  cuantos buckets deberia haber en la ventana que te sirvo y
+#                           cuantos hay. Aqui sale el bucket AUSENTE.
+#   data_gaps               que ventanas estan declaradas como hueco, con su estado y
+#                           quien las apunto. Aqui sale el POR QUE.
+# El sistema ya sabia las dos cosas: data_gap las tiene desde el ingest. K03 no detecta
+# nada nuevo; deja de esconderlo.
+GAP_STATUS_NO_DATA = "no_data"
+GAP_STATUS_CLEAN = "clean"
+GAP_STATUS_DECLARED = "declared"
+GAP_STATUS_UNDECLARED = "undeclared"
+# Tope de la comprobacion bucket a bucket. Con los limites de los endpoints la ventana
+# mas larga son 3000 buckets; si alguna vez sale de aqui es que una fila trae un bucket
+# absurdo, y entonces se devuelven las cuentas sin el detalle en vez de barrer un millon
+# de instantes.
+MAX_BUCKET_SWEEP = 20000
+
+
+async def declared_series_response(
+    conn: asyncpg.Connection,
+    rows: list[dict[str, Any]],
+    *,
+    interval: str,
+    bucket: timedelta,
+    feed: str,
+    exchanges: tuple[str, ...],
+    market: str,
+    symbol: str,
+    gap_symbol: str | None = None,
+) -> dict[str, Any]:
+    """El sobre de una serie: las filas, la cobertura de su ventana y sus huecos.
+
+    ``gap_symbol`` es la identidad con la que se apunto el hueco cuando no coincide con
+    el simbolo pedido: las series de spot se guardan con el simbolo de websocket.
+    """
+    identidad = gap_symbol or symbol
+    starts = sorted(
+        row["bucket"].astimezone(UTC) for row in rows if isinstance(row.get("bucket"), datetime)
+    )
+    if not starts:
+        return {
+            "symbol": symbol,
+            "interval": interval,
+            "rows": rows,
+            "coverage": {"served_window": None},
+            "data_gaps": {
+                "feed": feed,
+                "exchanges": list(exchanges),
+                "market": market,
+                "symbol": identidad,
+                "window_start": None,
+                "window_end": None,
+                "status": GAP_STATUS_NO_DATA,
+                "declared": [],
+                "undeclared_buckets": None,
+            },
+        }
+    window_start, window_end = starts[0], starts[-1] + bucket
+    esperados = expected_buckets(window_start, window_end, bucket)
+    declared = await declared_gap_windows(
+        conn,
+        feed=feed,
+        exchanges=exchanges,
+        market=market,
+        symbol=identidad,
+        start=window_start,
+        end=window_end,
+    )
+    ventanas = [
+        (datetime.fromisoformat(item["start"]), datetime.fromisoformat(item["end"]))
+        for item in declared
+    ]
+    presentes = set(starts)
+    undeclared: int | None = 0
+    if esperados > MAX_BUCKET_SWEEP:
+        undeclared = None
+    else:
+        instante = window_start
+        while instante < window_end:
+            fin = instante + bucket
+            if instante not in presentes and not any(
+                inicio < fin and final > instante for inicio, final in ventanas
+            ):
+                undeclared += 1
+            instante = fin
+    if undeclared:
+        # Faltan buckets que NADIE apunto. Es el caso de /api/whale/delta: spot_trades_agg
+        # pierde minutos y no hay detector que los escriba en data_gap, asi que "no hay
+        # huecos declarados" no significa "no falta nada" y aqui se dice cual de las dos.
+        status = GAP_STATUS_UNDECLARED
+    elif declared:
+        status = GAP_STATUS_DECLARED
+    else:
+        status = GAP_STATUS_CLEAN
+    return {
+        "symbol": symbol,
+        "interval": interval,
+        "rows": rows,
+        "coverage": {
+            "served_window": coverage_entry(
+                window_start, window_end, sources=((feed, esperados, len(starts)),)
+            )
+        },
+        "data_gaps": {
+            "feed": feed,
+            "exchanges": list(exchanges),
+            "market": market,
+            "symbol": identidad,
+            "window_start": window_start.isoformat(),
+            "window_end": window_end.isoformat(),
+            "status": status,
+            "declared": declared,
+            "undeclared_buckets": undeclared,
+        },
+    }
+
+
 def _session_window(row: dict[str, Any]) -> tuple[datetime, datetime] | None:
     """La ventana REAL de una fila de /api/daily: la sesion de Nueva York que agrego.
 
@@ -502,7 +634,7 @@ async def ohlcv(
     symbol: str,
     interval: str = "5min",
     limit: Annotated[int, Query(ge=10, le=2000)] = 288,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     bucket = historical_interval_value(interval)
     async with app.state.pool.acquire() as conn:
@@ -549,7 +681,16 @@ async def ohlcv(
             symbol=selected,
             value_keys=("open", "high", "low", "close", "volume_usd"),
         )
-    return result
+        return await declared_series_response(
+            conn,
+            result,
+            interval=interval,
+            bucket=bucket,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+        )
 
 
 @app.get("/api/cvd")
@@ -557,7 +698,7 @@ async def cvd(
     symbol: str,
     interval: str = "5min",
     limit: Annotated[int, Query(ge=10, le=3000)] = 576,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     bucket = historical_interval_value(interval)
     async with app.state.pool.acquire() as conn:
@@ -588,7 +729,16 @@ async def cvd(
             value_keys=("delta_usd",),
             cumulative_keys=("cvd",),
         )
-    return result
+        return await declared_series_response(
+            conn,
+            result,
+            interval=interval,
+            bucket=bucket,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+        )
 
 
 @app.get("/api/cvd/spot")
@@ -596,7 +746,7 @@ async def cvd_spot(
     symbol: str,
     interval: str = "5min",
     limit: Annotated[int, Query(ge=10, le=3000)] = 576,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     ws_symbol = WS_SYMBOL_MAP[selected]
     bucket = historical_interval_value(interval)
@@ -629,7 +779,17 @@ async def cvd_spot(
             value_keys=("delta_usd",),
             cumulative_keys=("cvd",),
         )
-    return result
+        return await declared_series_response(
+            conn,
+            result,
+            interval=interval,
+            bucket=bucket,
+            feed="spot_trades",
+            exchanges=("binance", "bybit", "combined"),
+            market="spot",
+            symbol=selected,
+            gap_symbol=ws_symbol,
+        )
 
 
 @app.get("/api/cvd/divergence")
@@ -710,7 +870,7 @@ async def oi(
     symbol: str,
     interval: str = "15min",
     limit: Annotated[int, Query(ge=10, le=2000)] = 384,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     bucket = historical_interval_value(interval)
     async with app.state.pool.acquire() as conn:
@@ -742,7 +902,16 @@ async def oi(
             symbol=selected,
             value_keys=("oi",),
         )
-    return result
+        return await declared_series_response(
+            conn,
+            result,
+            interval=interval,
+            bucket=bucket,
+            feed="open_interest_5min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+        )
 
 
 @app.get("/api/liquidations")
@@ -750,7 +919,7 @@ async def liquidation_series(
     symbol: str,
     interval: str = "1hour",
     limit: Annotated[int, Query(ge=10, le=1000)] = 336,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     bucket = historical_interval_value(interval)
     async with app.state.pool.acquire() as conn:
@@ -783,7 +952,16 @@ async def liquidation_series(
             symbol=selected,
             value_keys=("long_liq", "short_liq"),
         )
-    return result
+        return await declared_series_response(
+            conn,
+            result,
+            interval=interval,
+            bucket=bucket,
+            feed="liquidations",
+            exchanges=("binance", "bybit"),
+            market="perpetual",
+            symbol=selected,
+        )
 
 
 @app.get("/api/whale/delta")
@@ -791,7 +969,7 @@ async def whale_delta(
     symbol: str,
     interval: str = "15min",
     limit: Annotated[int, Query(ge=10, le=2000)] = 384,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     ws_symbol = WS_SYMBOL_MAP[selected]
     bucket = historical_interval_value(interval)
@@ -810,7 +988,23 @@ async def whale_delta(
             bucket,
             limit,
         )
-    return records(rows)
+        # Aqui NO se enmascara -y es deliberado-: spot_trades_agg no tiene detector que
+        # escriba sus huecos en data_gap (COLA.md), asi que no hay identidad de hueco que
+        # consultar y llamar a mask_gapped_series_rows seria una llamada hueca. Pero la
+        # cobertura SI se puede medir contra la cadencia, y por eso este endpoint es el que
+        # sale con status "undeclared": faltan buckets y nadie los ha apuntado. Es la
+        # diferencia entre "no falta nada" y "no lo estamos mirando".
+        return await declared_series_response(
+            conn,
+            records(rows),
+            interval=interval,
+            bucket=bucket,
+            feed="spot_trades",
+            exchanges=("binance", "bybit", "combined"),
+            market="spot",
+            symbol=selected,
+            gap_symbol=ws_symbol,
+        )
 
 
 @app.get("/api/scalp/summary")
@@ -1789,6 +1983,44 @@ async def daily(
             cumulative_keys=("cumulative_diff",),
             row_window=_session_window,
         )
+        # El hueco declarado, sobre la union de las sesiones servidas. Aqui NO se anade
+        # coverage por bucket: la fila de /api/daily ya trae futures_ohlcv_minutes contra
+        # session_expected_minutes, que es su propia cuenta de cobertura y esta medida
+        # sobre la sesion de verdad. Inventar un "expected de sesiones" a partir de days
+        # daria falsos incompletos cada vez que el historico es mas corto que lo pedido.
+        ventanas = [v for v in (_session_window(row) for row in result["rows"]) if v]
+        inicio = min((v[0] for v in ventanas), default=None)
+        fin = max((v[1] for v in ventanas), default=None)
+        declarados = (
+            await declared_gap_windows(
+                conn,
+                feed="ohlcv_1min",
+                exchanges=("binance",),
+                market="perpetual",
+                symbol=selected,
+                start=inicio,
+                end=fin,
+            )
+            if inicio and fin
+            else []
+        )
+        result["data_gaps"] = {
+            "feed": "ohlcv_1min",
+            "exchanges": ["binance"],
+            "market": "perpetual",
+            "symbol": selected,
+            "window_start": inicio.astimezone(UTC).isoformat() if inicio else None,
+            "window_end": fin.astimezone(UTC).isoformat() if fin else None,
+            "status": (
+                GAP_STATUS_NO_DATA
+                if not ventanas
+                else GAP_STATUS_DECLARED
+                if declarados
+                else GAP_STATUS_CLEAN
+            ),
+            "declared": declarados,
+            "undeclared_buckets": None,
+        }
     return result
 
 
