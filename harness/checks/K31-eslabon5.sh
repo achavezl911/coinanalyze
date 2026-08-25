@@ -25,7 +25,10 @@ _REPO_LLAMANTE=${REPO:-}
 B=/srv/coinanalyze/harness; . "$B/env"
 REPO=${_REPO_LLAMANTE:-${REPO:-/srv/coinanalyze/repo}}
 PANEL="$REPO/static/app.js"
-PY="$REPO/.venv/bin/python"
+# El interprete puede venir de fuera: el gate de K15 corre estos checks contra el
+# arbol de origin/main, que no tiene .venv propio. El venv solo aporta dependencias;
+# el arbol que se mide lo fija REPO.
+PY="${VENV_PY:-$REPO/.venv/bin/python}"
 EXCEPCIONES="/api/ai/context /api/ai/context/bundle /api/ai/profiles"
 
 [ -r "$PANEL" ] || { echo "NO MEDIDO: no se puede leer static/app.js"; exit 2; }

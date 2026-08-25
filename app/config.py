@@ -263,6 +263,19 @@ class Settings(BaseSettings):
     def pg_dsn(self) -> str:
         # Keep disable as the local-LXC default, but allow encrypted PostgreSQL traffic
         # when the DB is moved to another container/node.
+        #
+        # Un PG_HOST que empieza por "/" es un directorio de socket unix, no un host.
+        # La forma user:pass@host:port NO SABE EXPRESARLO: el socket viaja en la query
+        # y la contrasena sobra, porque pg_hba usa peer. Sin esta rama, apuntar la
+        # configuracion a un socket acababa conectando por TCP a 127.0.0.1 con el
+        # usuario equivocado. Es lo que impedia que el CI ejecutase los
+        # tests/*_postgres.py sin inventarse una contrasena que no hace falta.
+        if self.PG_HOST.startswith("/"):
+            usuario = f"{self.PG_USER}@" if self.PG_USER else ""
+            return (
+                f"postgresql://{usuario}/{self.PG_DB}"
+                f"?host={self.PG_HOST}&port={self.PG_PORT}"
+            )
         return (
             f"postgresql://{self.PG_USER}:{self.PG_PASSWORD}@"
             f"{self.PG_HOST}:{self.PG_PORT}/{self.PG_DB}?sslmode={self.PG_SSLMODE}"

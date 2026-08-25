@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import getpass
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -76,10 +77,15 @@ def _test_settings(dsn: str) -> Settings:
     parsed = urlparse(dsn)
     query = parse_qs(parsed.query)
     return Settings(
-        PG_HOST=parsed.hostname or "127.0.0.1",
+        # El directorio del socket viaja en la QUERY (?host=/var/run/postgresql),
+        # no en el authority, asi que parsed.hostname es None y sin esta linea se
+        # perdia el parametro y se conectaba por TCP a 127.0.0.1.
+        PG_HOST=query.get("host", [""])[0] or parsed.hostname or "127.0.0.1",
         PG_PORT=parsed.port or 5432,
         PG_DB=parsed.path.lstrip("/"),
-        PG_USER=unquote(parsed.username or "postgres"),
+        # Sin usuario en el DSN NO se inventa "postgres": con auth peer el usuario
+        # correcto es el del proceso, y "postgres" daba InvalidPasswordError.
+        PG_USER=unquote(parsed.username or "") or getpass.getuser(),
         PG_PASSWORD=unquote(parsed.password or ""),
         PG_SSLMODE=query.get("sslmode", ["disable"])[0],
     )

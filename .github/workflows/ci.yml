@@ -42,15 +42,28 @@ jobs:
           . .venv/bin/activate
           python -m compileall -q app
 
-      # K07 · hasta el 2026-08-25 los 16 tests/*_postgres.py -167 tests, o sea TODA la
-      # persistencia- se saltaban en cada ejecucion porque nadie definia
-      # TEST_DATABASE_URL. El runner corre en 143, que tiene PostgreSQL local, y
-      # pg_hba usa peer para conexiones por socket: el rol se llama igual que el
-      # usuario del runner, asi que NO hace falta ninguna credencial en este fichero.
-      # Cada fichero de test crea su propio schema con uuid y lo tira al terminar.
+      # K07 · TODAVIA SIN CABLEAR, y aqui esta por que, con las cifras.
+      #
+      # Los 16 tests/*_postgres.py -167 tests, o sea toda la persistencia- se saltan
+      # porque no se define TEST_DATABASE_URL. Definirla es una linea y ya esta
+      # probado que funciona sin ningun secreto: el runner corre en 143, pg_hba usa
+      # peer por socket, existe el rol "github-runner" y la base coinalyze_test con
+      # schema.sql aplicado. Con eso corren.
+      #
+      # No se cablea AUN porque al ejecutarlos por primera vez el 2026-08-25 salieron
+      # dos cosas que dejarian este CI rojo o colgado para todo el mundo:
+      #   8 fallos de 151 en los 15 ficheros sanos (35.7 s): 6 en
+      #     test_partitioning_postgres.py, todos UndefinedObjectError por el
+      #     constraint orderbook_snapshot_non_crossed_check -deriva entre schema.sql
+      #     y lo que espera app/partitioning.py, o sea sujeto de K16-, y 2 en
+      #     test_pr22_cvd_semantics_postgres.py.
+      #   test_signal_walk_forward_confirmatory_postgres.py CUELGA: espera al reloj
+      #     de pared, no a la base (epoll_wait, cero conexiones TCP, cero locks).
+      #     Hay que inyectarle el tiempo.
+      #
+      # Cablearlo ahora seria comprar un CI verde a base de excluir lo que falla, que
+      # es justo lo que K33 prohibe. Se cablea cuando esos dos frentes esten cerrados.
       - name: Pytest
-        env:
-          TEST_DATABASE_URL: postgresql:///coinalyze_test?host=/var/run/postgresql
         run: |
           . .venv/bin/activate
           pytest -q
@@ -60,37 +73,59 @@ jobs:
 
       # K15 · que un VERDE no vuelva a ROJO en silencio.
       #
-      # NO se corre el verify entero, y el motivo no es comodidad: este runner ejecuta
-      # el codigo de cualquier PR, y los checks de produccion necesitan la clave ssh de
-      # 140 y el netrc de la API. Darle esas credenciales a un job que corre codigo sin
-      # revisar seria regalar produccion. Ademas un PR no debe fallar porque 140 tuviera
-      # una incidencia: eso no lo ha roto el PR.
-      # Asi que aqui solo corren los checks cuyo SUJETO es el arbol, y corren contra el
-      # arbol DEL PR (REPO=$GITHUB_WORKSPACE), no contra el checkout del servidor.
-      # Los de produccion los mide el arnes en 143, fuera de este gate.
+      # NO se corre el verify entero, y no es comodidad: este runner ejecuta el codigo
+      # de cualquier PR, y los checks de produccion necesitan la clave ssh de 140 y el
+      # netrc de la API. Ademas un PR no debe fallar porque 140 tuviera una incidencia,
+      # porque eso no lo ha roto el PR. Aqui solo corren los checks cuyo SUJETO es el
+      # arbol. Los de produccion los mide el arnes en 143, fuera de este gate.
       #
-      # Dos condiciones, y la segunda es la que hoy tiene dientes: que el numero de
-      # VERDE no baje respecto de main -el suelo se lee de main, no de la rama, para
-      # que un PR no pueda relajarlo cambiando su propia copia- y que NINGUN check
-      # quede en NOMED, que es lo que pasa cuando un PR renombra algo y el check deja
-      # de poder medir. Un check que no puede medir no es un check que pasa.
+      # EL SUELO SE DERIVA, NO SE ESCRIBE. La primera version leia un fichero
+      # verde-suelo.txt de origin/main con `|| true` y `${suelo:-0}`: ese fichero no
+      # existia en main, nadie comprobaba el codigo de retorno, y el gate se apuntaba
+      # un suelo de 0 y pasaba EN SILENCIO. Era exactamente el fallo que K15 castiga en
+      # los demas -no poder medir y decir que si- y ademas un numero escrito a mano que
+      # nada subia, el mismo defecto del que avisa K02. Ahora los dos lados se MIDEN:
+      # los mismos checks corren contra el arbol de origin/main y contra el del PR, y
+      # se comparan. Dos fuentes distintas, imposible de oxidar.
+      #
+      # FALLA CERRADO en todos los caminos: si no se puede traer main, si no se puede
+      # crear el worktree, o si cualquier check queda en NOMED, el job falla. Un gate
+      # que no puede medir no es un gate que pasa.
       - name: Checks del arnes (K15)
         run: |
-          set -u
-          git fetch --depth=1 origin main >/dev/null 2>&1 || true
-          suelo=$(git show origin/main:harness/verde-suelo.txt 2>/dev/null | tr -dc '0-9')
-          suelo=${suelo:-0}
-          verde=0; nomed=0
-          for c in harness/checks/K02-cobertura-hueco.sh harness/checks/K31-eslabon5.sh; do
-            salida=$(REPO="$GITHUB_WORKSPACE" bash "$c" 2>&1); rc=$?
-            printf '%-28s rc=%s %s\n' "$(basename "$c" .sh)" "$rc" "$(printf '%s' "$salida" | head -1 | cut -c1-90)"
-            [ "$rc" -eq 0 ] && verde=$((verde+1))
-            [ "$rc" -eq 2 ] && nomed=$((nomed+1))
-          done
-          echo "VERDE=$verde suelo(main)=$suelo NOMED=$nomed"
-          if [ "$nomed" -gt 0 ]; then
-            echo "::error::$nomed check(s) en NOMED: el PR ha roto la capacidad de medir"; exit 1
+          set -uo pipefail
+          CHECKS="harness/checks/K02-cobertura-hueco.sh harness/checks/K31-eslabon5.sh"
+          VENV="$GITHUB_WORKSPACE/.venv/bin/python"
+
+          git fetch --no-tags --depth=1 origin main \
+            || { echo "::error::no se pudo traer origin/main: el gate no puede medir"; exit 1; }
+          base=$(mktemp -d)
+          git worktree add --detach --force "$base" FETCH_HEAD \
+            || { echo "::error::no se pudo crear el worktree de main: el gate no puede medir"; exit 1; }
+          trap 'git worktree remove --force "$base" >/dev/null 2>&1 || true' EXIT
+
+          # Cuenta los VERDE de un arbol. Si un check queda en NOMED devuelve 99, que
+          # ninguna comparacion puede tomar por buena.
+          contar() {
+            local arbol="$1" etiqueta="$2" verde=0 nomed=0 rc salida
+            for c in $CHECKS; do
+              salida=$(REPO="$arbol" VENV_PY="$VENV" bash "$GITHUB_WORKSPACE/$c" 2>&1); rc=$?
+              printf '  %-22s %-4s rc=%s %s\n' "$(basename "$c" .sh)" "$etiqueta" "$rc" \
+                     "$(printf '%s' "$salida" | head -1 | cut -c1-80)"
+              [ "$rc" -eq 0 ] && verde=$((verde+1))
+              [ "$rc" -eq 2 ] && nomed=$((nomed+1))
+            done
+            [ "$nomed" -gt 0 ] && { echo "  $etiqueta: $nomed en NOMED" >&2; echo 99; return; }
+            echo "$verde"
+          }
+
+          suelo=$(contar "$base" main)
+          verde=$(contar "$GITHUB_WORKSPACE" PR)
+          echo "VERDE: main=$suelo  PR=$verde"
+
+          if [ "$suelo" = "99" ] || [ "$verde" = "99" ]; then
+            echo "::error::algun check quedo en NOMED: el PR ha roto la capacidad de medir"; exit 1
           fi
           if [ "$verde" -lt "$suelo" ]; then
-            echo "::error::los VERDE bajan de $suelo a $verde respecto de main"; exit 1
+            echo "::error::los VERDE bajan de $suelo (main) a $verde (PR)"; exit 1
           fi
