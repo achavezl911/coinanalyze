@@ -355,13 +355,17 @@ def test_el_repaso_trocea_sin_dejar_agujeros_ni_solapar() -> None:
 
     desde = datetime(2026, 8, 10, tzinfo=UTC)
     hasta = datetime(2026, 8, 12, 6, tzinfo=UTC)
-    ventanas = _windows(desde, hasta, timedelta(hours=24))
+    cadencia = timedelta(minutes=5)
+    ventanas = _windows(desde, hasta, timedelta(hours=24), cadencia)
 
-    assert ventanas[0][0] == desde
+    assert ventanas[0][0] == desde, "la primera no puede empezar antes del atraso"
     assert ventanas[-1][1] == hasta, "la ultima ventana no puede pasarse del final"
     assert len(ventanas) == 3  # 24h + 24h + 6h
     for (_, fin_previa), (ini_siguiente, _) in zip(ventanas[:-1], ventanas[1:], strict=True):
-        assert fin_previa == ini_siguiente, "ni agujero ni solape entre ventanas"
+        # SOLAPE hacia atras, no corte limpio: un hueco pegado al principio de su ventana
+        # no se puede probar, y sin solape ninguna pasada lo clasificaria nunca.
+        assert ini_siguiente == fin_previa - cadencia * 2
+        assert ini_siguiente < fin_previa, "sin solape queda un residuo permanente"
 
 
 def test_el_repaso_conoce_los_dos_feeds_con_atraso_y_sus_cadencias() -> None:

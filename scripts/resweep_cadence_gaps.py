@@ -107,12 +107,27 @@ async def _identities(conn: asyncpg.Connection, feed: str | None) -> list[asyncp
     )
 
 
-def _windows(desde: datetime, hasta: datetime, chunk: timedelta) -> list[tuple[datetime, datetime]]:
+def _windows(
+    desde: datetime, hasta: datetime, chunk: timedelta, cadence: timedelta
+) -> list[tuple[datetime, datetime]]:
+    """Trocea con SOLAPE hacia atras, y el solape no es un detalle.
+
+    Un hueco pegado al principio de su ventana no se puede probar: para archivarlo hace
+    falta que la fuente haya contestado ANTES de el, y no hay nada antes del principio.
+    Sin solape, cada corte deja un hueco que ninguna pasada podra clasificar jamas, o
+    sea un residuo permanente del troceado. Medido en 140 el 2026-08-25: la pasada con
+    ventanas contiguas dejo 12 asi.
+
+    Con dos buckets de solape, ese hueco cae dentro de la ventana anterior y queda
+    probado. El unico que se sigue absteniendo es el del borde inicial del atraso
+    entero, y ese se abstiene con razon: no tenemos nada antes.
+    """
+    solape = cadence * 2
     ventanas: list[tuple[datetime, datetime]] = []
     cursor = desde
     while cursor < hasta:
         fin = min(cursor + chunk, hasta)
-        ventanas.append((cursor, fin))
+        ventanas.append((max(desde, cursor - solape), fin))
         cursor = fin
     return ventanas
 
@@ -167,7 +182,9 @@ async def run(feed: str | None, limit: int, dry_run: bool, archive_exhausted: bo
                     resumen["identidades"] += 1
                     mapa = {ident["symbol"]: ident["symbol"]}
 
-                    for inicio, fin in _windows(ident["desde"], ident["hasta"], plan.chunk):
+                    for inicio, fin in _windows(
+                        ident["desde"], ident["hasta"], plan.chunk, plan.cadence
+                    ):
                         if resumen["ventanas_pedidas"] >= limit:
                             break
                         if await _pendientes_en(conn, ident, inicio, fin) == 0:
