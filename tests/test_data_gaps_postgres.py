@@ -21,6 +21,7 @@ from app.data_gaps import (
     blocking_requirement_keys,
     record_data_gap,
     recover_gap,
+    reconcile_cadence_coverage,
 )
 from app.db import ServiceOwnershipLost, acquire_service_lock
 from app.metrics import compute_snapshot
@@ -618,4 +619,79 @@ async def test_postgres_takeover_fences_event_loss_gap_in_the_insert_transaction
         cleanup = await asyncpg.connect(dsn)
         await cleanup.execute("DELETE FROM service_ownership WHERE service=$1", service)
         await cleanup.close()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_source_absence_is_archived_against_the_real_constraint() -> None:
+    """El SQL de verdad: la maquina de estados de data_gap tiene que aceptar el archivado.
+
+    Los tests de tests/test_cobertura_proveedor.py fijan la REGLA con una conexion falsa.
+    Este fija que la escritura pasa por data_gap_check2 y deja el motivo y la prueba
+    guardados, que es lo que no se puede comprobar sin Postgres.
+    """
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 9, 12, tzinfo=UTC)
+        fin = inicio + timedelta(minutes=30)
+        cadencia = timedelta(minutes=5)
+        rejilla = [inicio + cadencia * i for i in range(6)]
+        saltado = inicio + timedelta(minutes=10)
+        devueltos = [t for t in rejilla if t != saltado]
+
+        cobertura = await reconcile_cadence_coverage(
+            conn,
+            observations=devueltos,
+            feed="long_short_ratio",
+            exchange="binance",
+            market="perpetual",
+            symbol="SOLUSDT_PERP.A",
+            granularity="5min",
+            start=inicio,
+            end=fin,
+            cadence=cadencia,
+            detection_source="historical_ingest_response_cadence_v2",
+            source_response_buckets=devueltos,
+        )
+        assert cobertura.missing_buckets == 1
+
+        fila = await conn.fetchrow(
+            """
+            SELECT status,resolved_at,recovered_at,resolution_reason,recovery_metadata
+            FROM data_gap
+            WHERE feed='long_short_ratio' AND symbol='SOLUSDT_PERP.A' AND start_ts=$1
+            """,
+            saltado,
+        )
+        assert fila["status"] == "unrecoverable"
+        assert fila["resolved_at"] is not None
+        assert fila["recovered_at"] is None
+        assert "source does not publish this bucket" in fila["resolution_reason"]
+        assert '"method": "source_response_absence"' in fila["recovery_metadata"]
+
+        # Segunda pasada: lo ya archivado no se reescribe ni se vuelve a contar.
+        antes = fila["resolved_at"]
+        await reconcile_cadence_coverage(
+            conn,
+            observations=devueltos,
+            feed="long_short_ratio",
+            exchange="binance",
+            market="perpetual",
+            symbol="SOLUSDT_PERP.A",
+            granularity="5min",
+            start=inicio,
+            end=fin,
+            cadence=cadencia,
+            detection_source="historical_ingest_response_cadence_v2",
+            source_response_buckets=devueltos,
+        )
+        despues = await conn.fetchval(
+            "SELECT resolved_at FROM data_gap WHERE start_ts=$1 AND symbol='SOLUSDT_PERP.A'",
+            saltado,
+        )
+        assert despues == antes, "una clasificacion no se reescribe en la pasada siguiente"
+    finally:
+        await tx.rollback()
         await conn.close()

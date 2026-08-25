@@ -63,6 +63,29 @@ def valid_ts(value: object, start_ts: int, end_ts: int, tolerance: int = 300) ->
     return datetime.fromtimestamp(ts, tz=UTC)
 
 
+def source_response_buckets(
+    payload: dict[str, list[dict[str, Any]]],
+    symbol_map: dict[str, str],
+    start_ts: int,
+    end_ts: int,
+) -> dict[str, set[datetime]]:
+    """Los buckets que la FUENTE devolvio, antes de que validemos nada.
+
+    No es lo mismo que el `observed` de los upsert_*, que son los que ACEPTAMOS: los
+    upsert descartan la fila incoherente y no la apuntan. La diferencia entre los dos
+    conjuntos es exactamente la fila que tiramos nosotros, y esa nunca es culpa de la
+    fuente. Sin esta distincion, un descarte nuestro se archivaria como "la fuente no
+    lo publica", que es la mentira contraria a la que arreglamos.
+    """
+    devueltos: dict[str, set[datetime]] = {}
+    for symbol, row in rows_for(payload, symbol_map):
+        try:
+            devueltos.setdefault(symbol, set()).add(valid_ts(row["t"], start_ts, end_ts))
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+    return devueltos
+
+
 def rows_for(
     payload: dict[str, list[dict[str, Any]]],
     symbol_map: dict[str, str],
@@ -417,6 +440,7 @@ async def _reconcile_response_cadence(
     start: datetime,
     end: datetime,
     cadence: timedelta,
+    devueltos: dict[str, set[datetime]] | None = None,
 ) -> CadenceCoverage:
     return await reconcile_cadence_coverage(
         conn,
@@ -430,6 +454,7 @@ async def _reconcile_response_cadence(
         end=end,
         cadence=cadence,
         detection_source=RESPONSE_CADENCE_DETECTION_SOURCE,
+        source_response_buckets=None if devueltos is None else devueltos.get(symbol),
     )
 
 
@@ -697,6 +722,24 @@ async def ingest_metrics_cycle(
                 ("predicted", "predicted_funding_rate", "binance"),
                 ("long_short", "long_short_ratio", "binance"),
             )
+            # Lo que la fuente DEVOLVIO, por fuente y por simbolo. Es la prueba con la que
+            # se puede afirmar que un bucket no lo publica ella: si contesto antes y
+            # despues del hueco y no lo mando, la ausencia es suya y el hueco se archiva
+            # diciendo eso. Si se calla, si trunca, o si el bucket vino y lo descartamos
+            # nosotros, no hay prueba y el hueco se queda pendiente.
+            devueltos_por_fuente = {
+                "oi": source_response_buckets(oi, identity, start_history, end_ts),
+                "oi_bybit": source_response_buckets(
+                    oi_bybit, bybit_inverse, start_history, end_ts
+                ),
+                "funding": source_response_buckets(funding, identity, start_history, end_ts),
+                "predicted": source_response_buckets(
+                    predicted, identity, start_history, end_ts
+                ),
+                "long_short": source_response_buckets(
+                    long_short, identity, start_history, end_ts
+                ),
+            }
             for observation_key, feed, exchange in cadence_sources:
                 for symbol in symbols:
                     proof = await _reconcile_response_cadence(
@@ -704,6 +747,7 @@ async def ingest_metrics_cycle(
                         feed=feed, exchange=exchange, market="perpetual", symbol=symbol,
                         interval="5min", start=coverage_start, end=cutoff.exclusive_boundary,
                         cadence=timedelta(minutes=5),
+                        devueltos=devueltos_por_fuente[observation_key],
                     )
                     metrics_coverages.append((f"{feed}@{exchange}:response24h", proof))
             # Cuantas filas mando la fuente frente a cuantas aceptamos. Si sobran,
