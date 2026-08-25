@@ -19,7 +19,32 @@
 # check aceptaria un campo que existe y siempre viene vacio.
 set -uo pipefail
 B=/srv/coinanalyze/harness; . "$B/env"
-SERIE="/api/ohlcv /api/oi /api/liquidations /api/whale/delta /api/cvd /api/cvd/spot /api/funding-context /api/oi-context"
+# DOS FAMILIAS, y la distincion es del 2026-08-25. Los ocho de antes no se pedian lo
+# mismo porque no devuelven lo mismo:
+#
+#   SERIE     devuelve filas. Se le exige el bloque de hueco con ventana y estado.
+#   AGREGADO  devuelve escalares CALCULADOS SOBRE UNA SERIE. A este se le exige otra
+#             cosa, y mas dura: que declare la COMPLETITUD DE LA VENTANA que agrego.
+#
+# Por que mas dura. history_avg_pct{8h,24h,7d} de /api/funding-context es un promedio
+# sobre filas de funding_rate; windows{5m,15m,1h,4h,24h} de /api/oi-context es un
+# cambio calculado sobre open_interest. Si esa ventana tiene huecos, el escalar sale de
+# datos incompletos y no lo dice. Eso es PEOR que una serie con huecos: la serie ensena
+# sus agujeros y el promedio los esconde detras de un numero con decimales. Un hueco
+# que se puede ver es un hueco; un hueco promediado es una cifra falsa.
+#
+# EL CONTRATO que se exige aqui, y se escribe entero porque K34 va a reabrirlo:
+#   "coverage": {
+#      "<etiqueta de ventana>": {
+#          "window_start": "...", "window_end": "...",
+#          "expected_buckets": N, "observed_buckets": M, "complete": bool
+#      }, ...
+#   }
+# K34 (BLOQUE 10 de COLA.md) pedira anadir a cada entrada su nivel de evidencia de la
+# taxonomia del par.17 (LIVE_OBSERVATION, HISTORICAL, BACKTEST, ...). Es EL MISMO
+# CONTRATO DE RESPUESTA, asi que se deja el hueco previsto y no se abre dos veces.
+SERIE="/api/ohlcv /api/oi /api/liquidations /api/whale/delta /api/cvd /api/cvd/spot"
+AGREGADO="/api/funding-context /api/oi-context"
 SIM=BTCUSDT_PERP.A
 
 # curl directo y NO bin/api: bin/api pasa por _corta, que trunca a 8 KB y parte el
@@ -57,6 +82,33 @@ print(busca(d) or "ausente")
 ' 2>/dev/null
 }
 
+# Un agregado honrado: coverage con al menos una ventana, y cada ventana con sus dos
+# cuentas y sus dos limites. Se comprueban ademas expected>0 y 0<=observed<=expected,
+# que no prueba que la cifra sea derivada pero descarta el relleno perezoso.
+declara_completitud() {
+  printf '%s' "$1" | python3 -c '
+import sys, json
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    print("nojson"); raise SystemExit(0)
+cov = d.get("coverage") if isinstance(d, dict) else None
+if not isinstance(cov, dict) or not cov:
+    print("ausente"); raise SystemExit(0)
+for etiqueta, v in cov.items():
+    if not isinstance(v, dict):
+        print("incompleto"); raise SystemExit(0)
+    esp, obs = v.get("expected_buckets"), v.get("observed_buckets")
+    if not isinstance(esp, int) or not isinstance(obs, int):
+        print("incompleto"); raise SystemExit(0)
+    if not v.get("window_start") or not v.get("window_end"):
+        print("incompleto"); raise SystemExit(0)
+    if esp <= 0 or obs < 0 or obs > esp:
+        print("absurdo"); raise SystemExit(0)
+print("ok")
+' 2>/dev/null
+}
+
 fallos=""
 for ruta in $SERIE; do
   cuerpo=$(pide "$ruta?symbol=$SIM")
@@ -65,6 +117,17 @@ for ruta in $SERIE; do
     incompleto) fallos="$fallos $ruta(bloque_sin_ventana_o_estado)" ;;
     nojson)     fallos="$fallos $ruta(sin_json)" ;;
     *)          fallos="$fallos $ruta(sin_bloque_de_hueco)" ;;
+  esac
+done
+
+for ruta in $AGREGADO; do
+  cuerpo=$(pide "$ruta?symbol=$SIM")
+  case "$(declara_completitud "$cuerpo")" in
+    ok) ;;
+    incompleto) fallos="$fallos $ruta(coverage_sin_cuentas_o_sin_ventana)" ;;
+    absurdo)    fallos="$fallos $ruta(coverage_con_cuentas_imposibles)" ;;
+    nojson)     fallos="$fallos $ruta(sin_json)" ;;
+    *)          fallos="$fallos $ruta(agregado_sin_declarar_completitud)" ;;
   esac
 done
 
@@ -80,8 +143,12 @@ esac
 
 if [ -n "${fallos# }" ]; then
   n=$(printf '%s' "$fallos" | grep -o 'sin_bloque_de_hueco' | wc -l)
-  otros=$(printf '%s' "$fallos" | tr ';' '\n' | grep -v 'sin_bloque_de_hueco' | tr -d '\n' | sed 's/^ *//')
-  echo "$n de 8 endpoints de serie sin bloque de hueco; ${otros:-sin mas}" | cut -c1-200
+  m=$(printf '%s' "$fallos" | grep -o 'agregado_sin_declarar_completitud' | wc -l)
+  otros=$(printf '%s' "$fallos" | tr ';' '\n' \
+          | grep -v 'sin_bloque_de_hueco\|agregado_sin_declarar_completitud' \
+          | tr -d '\n' | sed 's/^ *//')
+  echo "$n de 6 de serie sin bloque de hueco y $m de 2 agregados sin declarar completitud; ${otros:-sin mas}" \
+    | cut -c1-200
   exit 1
 fi
-echo "los 9 endpoints de serie declaran el hueco con ventana y estado"
+echo "los 6 de serie declaran el hueco y los 2 agregados declaran su completitud"
