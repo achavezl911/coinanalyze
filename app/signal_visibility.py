@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 import asyncpg
 
-from app.db import ServiceOwnership, fenced_transaction
+from app.db import ServiceOwnership, ServiceOwnershipLost, fenced_transaction
 
 # ---------------------------------------------------------------------------
 # PR25: research knowledge-time visibility certification.
@@ -61,6 +61,16 @@ _CERTIFIED_EXECUTION_EXCHANGES: tuple[str, ...] = ("binance", "bybit")
 
 DEFAULT_CERTIFICATION_BATCH_SIZE = 500
 
+# La ventana que se escanea buscando pendientes antes de mirar si el bundle esta
+# completo. Existe porque filtrar la completitud en el mismo WHERE que el anti-join
+# es lo que paro la certificacion: el planificador no sabe estimar la selectividad de
+# las dos subconsultas COUNT(DISTINCT), calculaba rows=1 donde habia 17982, y elegia
+# un nested loop con Join Filter contra signal_replay_frame. Medido en 140 el
+# 2026-08-25: coste 4091158 y TimeoutError cada 40 s sin certificar ni una fila.
+# Sacando primero los pendientes por indice y mirando la completitud solo sobre esta
+# ventana, el trabajo por pasada deja de depender del tamano de las tablas.
+_CERTIFICATION_SCAN_MULTIPLIER = 4
+
 
 @dataclass(frozen=True, slots=True)
 class CertificationCycleResult:
@@ -95,37 +105,43 @@ async def _certify_research_bundles_once(
 
     candidates = await conn.fetch(
         """
-        SELECT obs.observation_id
-        FROM signal_observation AS obs
-        WHERE obs.signal_family='scalp'
-          AND obs.is_periodic
-          AND obs.evidence_version=$1
-          AND NOT EXISTS (
-            SELECT 1 FROM signal_research_bundle_visibility AS v
-            WHERE v.observation_id=obs.observation_id
-              AND v.visibility_version=$2
-          )
-          AND EXISTS (
+        WITH pendientes AS MATERIALIZED (
+          SELECT obs.observation_id
+          FROM signal_observation AS obs
+          WHERE obs.signal_family='scalp'
+            AND obs.is_periodic
+            AND obs.evidence_version=$1
+            AND NOT EXISTS (
+              SELECT 1 FROM signal_research_bundle_visibility AS v
+              WHERE v.observation_id=obs.observation_id
+                AND v.visibility_version=$2
+            )
+          ORDER BY obs.observation_id
+          LIMIT $10
+        )
+        SELECT p.observation_id
+        FROM pendientes AS p
+        WHERE EXISTS (
             SELECT 1 FROM signal_replay_frame AS frame
-            WHERE frame.observation_id=obs.observation_id
+            WHERE frame.observation_id=p.observation_id
               AND frame.context_version=$3
           )
           AND (
             SELECT COUNT(DISTINCT out.horizon_minutes)
             FROM signal_outcome AS out
-            WHERE out.observation_id=obs.observation_id
+            WHERE out.observation_id=p.observation_id
               AND out.outcome_version=$4
               AND out.horizon_minutes=ANY($5::integer[])
           ) = $6
           AND (
             SELECT COUNT(DISTINCT snap.exchange)
             FROM signal_execution_snapshot AS snap
-            WHERE snap.observation_id=obs.observation_id
+            WHERE snap.observation_id=p.observation_id
               AND snap.snapshot_version=$7
               AND snap.exchange=ANY($8::text[])
           ) = $9
-        ORDER BY obs.observation_id
-        LIMIT $10
+        ORDER BY p.observation_id
+        LIMIT $11
         """,
         _CERTIFIED_EVIDENCE_VERSION,
         RESEARCH_VISIBILITY_VERSION,
@@ -136,6 +152,7 @@ async def _certify_research_bundles_once(
         _CERTIFIED_EXECUTION_SNAPSHOT_VERSION,
         list(_CERTIFIED_EXECUTION_EXCHANGES),
         len(_CERTIFIED_EXECUTION_EXCHANGES),
+        batch_size * _CERTIFICATION_SCAN_MULTIPLIER,
         batch_size,
     )
     if not candidates:
@@ -297,12 +314,30 @@ async def run_certification_cycle(
     only this module's own append-only certificate tables.
     """
 
-    bundles = await certify_research_bundles(
-        conn, ownership=ownership, batch_size=batch_size
-    )
+    # Las dos pasadas se aislan de verdad, no solo de palabra. Hasta el 2026-08-25
+    # esto eran dos await seguidos: cuando la primera empezo a lanzar TimeoutError,
+    # la segunda dejo de ejecutarse y las DOS tablas se pararon a la vez, con 206884
+    # outcomes certificables esperando detras de un fallo que no era suyo. Que una
+    # pasada falle no puede dejar a la otra sin correr; el error se sigue propagando
+    # al final para que el que llama lo registre.
+    bundles = 0
+    bundles_error: Exception | None = None
+    try:
+        bundles = await certify_research_bundles(
+            conn, ownership=ownership, batch_size=batch_size
+        )
+    except ServiceOwnershipLost:
+        raise
+    except Exception as exc:  # noqa: BLE001 - se re-lanza mas abajo
+        bundles_error = exc
+
     final_outcomes = await certify_final_outcomes(
         conn, ownership=ownership, batch_size=batch_size
     )
+
+    if bundles_error is not None:
+        raise bundles_error
+
     return CertificationCycleResult(
         bundles_certified=bundles,
         final_outcomes_certified=final_outcomes,
