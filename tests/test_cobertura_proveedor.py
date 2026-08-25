@@ -265,3 +265,101 @@ async def test_la_ausencia_en_NUESTRO_almacen_no_dice_nada_de_la_fuente() -> Non
 
     assert apuntados == [SALTADO]
     assert conn.archivados() == [], "nuestro propio hueco sigue siendo deuda nuestra"
+
+
+# --------------------------------------------------------------------------------
+# TERCERA PIEZA: LO QUE LA FUENTE YA NO SIRVE, medido el 2026-08-25.
+#
+# reconcile_cadence_coverage se ABSTIENE cuando la fuente no contesta, y eso esta
+# bien: ausencia de respuesta no es ausencia en la fuente. Pero deja un techo. Medido
+# el 2026-08-25 20:32Z sondeando long-short-ratio-history 5min en tramos de 3 h: la
+# fuente sirve hasta 2026-08-17 12:30Z -200 h justas, 2400 buckets de 5 min- y ni uno
+# mas atras. De los 502 huecos unresolved, 179 caen dentro de ese horizonte y 323 no
+# (65 de long_short_ratio del 08-11 al 08-17, y los 258 de ohlcv_1min del 08-14, cuyo
+# horizonte son 24-48 h). Esos 323 no los puede clasificar la re-peticion NUNCA.
+#
+# Para archivarlos hace falta OTRA prueba, y la clave es distinguir "la fuente ya no
+# sirve esa ventana" de "la fuente esta caida", porque las dos devuelven vacio. Por eso
+# se exige un CONTROL: una ventana reciente de la MISMA identidad que SI devuelve
+# serie. Sin control positivo no se archiva nada, y eso es lo que impide que una caida
+# del proveedor se convierta en un barrido silencioso de todo el atraso.
+# --------------------------------------------------------------------------------
+
+VENTANA_INI = datetime(2026, 8, 14, 0, 0, tzinfo=UTC)
+VENTANA_FIN = datetime(2026, 8, 15, 0, 0, tzinfo=UTC)
+CONTROL_INI = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
+CONTROL_FIN = datetime(2026, 8, 25, 18, 0, tzinfo=UTC)
+
+
+async def _archivar(conn, *, filas_de_control: int):
+    return await data_gaps.archive_beyond_source_horizon(
+        conn,
+        feed="ohlcv_1min", exchange="binance", market="perpetual",
+        symbol="BTCUSDT_PERP.A", granularity="1min",
+        window_start=VENTANA_INI, window_end=VENTANA_FIN,
+        control_start=CONTROL_INI, control_end=CONTROL_FIN,
+        control_returned_rows=filas_de_control,
+    )
+
+
+@pytest.mark.asyncio
+async def test_una_fuente_CALLADA_no_prueba_un_horizonte_agotado() -> None:
+    """El guardia que impide que una caida del proveedor barra el atraso entero."""
+    conn = ConnEspia()
+
+    with pytest.raises(ValueError, match="control"):
+        await _archivar(conn, filas_de_control=0)
+
+    assert conn.ejecutado == [], "sin control positivo no se toca ni una fila"
+
+
+@pytest.mark.asyncio
+async def test_el_horizonte_agotado_se_archiva_con_su_propia_prueba() -> None:
+    conn = ConnEspia()
+
+    await _archivar(conn, filas_de_control=71)
+
+    assert len(conn.archivados()) == 1
+    query, args = conn.archivados()[0]
+    assert "status='unresolved'" in query, "no reescribe lo ya clasificado"
+    assert "'provider_horizon_exhausted'" in query
+    assert "'window_returned_rows',0" in query.replace(" ", "")
+    assert 71 in args, "el numero de filas del control se guarda, no se da por bueno"
+
+
+@pytest.mark.asyncio
+async def test_el_motivo_del_horizonte_es_OTRO_hecho_que_el_de_la_ausencia() -> None:
+    """Son dos hechos distintos sobre el dato y no se pueden confundir en la auditoria."""
+    assert data_gaps.PROVIDER_HORIZON_REASON != data_gaps.SOURCE_ABSENCE_REASON
+    for motivo in (data_gaps.PROVIDER_HORIZON_REASON, data_gaps.SOURCE_ABSENCE_REASON):
+        assert not EXCUSAS_K04.search(motivo), f"motivo que K04 cuenta como excusa: {motivo}"
+    # El del horizonte habla de la VENTANA; el de la ausencia, del BUCKET.
+    assert "window" in data_gaps.PROVIDER_HORIZON_REASON
+    assert "bucket" in data_gaps.SOURCE_ABSENCE_REASON
+
+
+# --- El troceado del repaso. Es logica del script, y se equivoca en silencio: una
+# ventana de mas es una peticion tirada, y una de menos es un hueco que nadie repasa.
+
+
+def test_el_repaso_trocea_sin_dejar_agujeros_ni_solapar() -> None:
+    from scripts.resweep_cadence_gaps import _windows
+
+    desde = datetime(2026, 8, 10, tzinfo=UTC)
+    hasta = datetime(2026, 8, 12, 6, tzinfo=UTC)
+    ventanas = _windows(desde, hasta, timedelta(hours=24))
+
+    assert ventanas[0][0] == desde
+    assert ventanas[-1][1] == hasta, "la ultima ventana no puede pasarse del final"
+    assert len(ventanas) == 3  # 24h + 24h + 6h
+    for (_, fin_previa), (ini_siguiente, _) in zip(ventanas[:-1], ventanas[1:], strict=True):
+        assert fin_previa == ini_siguiente, "ni agujero ni solape entre ventanas"
+
+
+def test_el_repaso_conoce_los_dos_feeds_con_atraso_y_sus_cadencias() -> None:
+    """Un feed sin plan NO se toca: se apunta en 'sin_plan' y se deja como estaba."""
+    from scripts.resweep_cadence_gaps import PLANS
+
+    assert PLANS[("long_short_ratio", "5min")].cadence == timedelta(minutes=5)
+    assert PLANS[("ohlcv_1min", "1min")].cadence == timedelta(minutes=1)
+    assert ("orderbook", "1min") not in PLANS

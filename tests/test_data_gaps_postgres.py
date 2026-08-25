@@ -18,6 +18,7 @@ from app.data_gaps import (
     GapRequirement,
     RecoveryObservation,
     RecoveryValidationError,
+    archive_beyond_source_horizon,
     blocking_requirement_keys,
     reconcile_cadence_coverage,
     record_data_gap,
@@ -692,6 +693,105 @@ async def test_postgres_source_absence_is_archived_against_the_real_constraint()
             saltado,
         )
         assert despues == antes, "una clasificacion no se reescribe en la pasada siguiente"
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+# El predicado de harness/checks/K04-huecos.sh, copiado a proposito. Es duplicacion y
+# se sabe: si el check cambia y esto no, el test deja de decir la verdad. Se acepta
+# porque lo que fija es lo unico que no se puede fijar de otra forma -que QUIEN ESCRIBE
+# la prueba y QUIEN LA VERIFICA sigan de acuerdo-, y un desacuerdo ahi es justo el
+# fallo que nadie ve: el check se pondria VERDE sobre filas que no prueban nada.
+K04_PRUEBA_SE_SOSTIENE = """
+    coalesce(
+      CASE recovery_metadata->>'method'
+        WHEN 'source_response_absence' THEN
+              recovery_metadata->>'response_first_bucket' IS NOT NULL
+          AND recovery_metadata->>'response_last_bucket'  IS NOT NULL
+          AND (recovery_metadata->>'response_first_bucket')::timestamptz <  start_ts
+          AND (recovery_metadata->>'response_last_bucket')::timestamptz  >= end_ts
+        WHEN 'provider_horizon_exhausted' THEN
+              recovery_metadata->>'window_returned_rows'  IS NOT NULL
+          AND recovery_metadata->>'control_returned_rows' IS NOT NULL
+          AND (recovery_metadata->>'window_returned_rows')::int  =  0
+          AND (recovery_metadata->>'control_returned_rows')::int >  0
+        ELSE false
+      END, false)
+"""
+
+
+@pytest.mark.asyncio
+async def test_postgres_lo_que_archiva_la_app_pasa_la_re_derivacion_de_K04() -> None:
+    """Escritor y verificador tienen que estar de acuerdo, y eso solo se ve en Postgres."""
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 14, 3, tzinfo=UTC)
+        gap_id = await _cadence_gap(conn, start=inicio, end=inicio + timedelta(minutes=2))
+        huerfano = await _cadence_gap(
+            conn, start=inicio + timedelta(hours=1), end=inicio + timedelta(hours=1, minutes=2)
+        )
+
+        # El camino honrado: ventana vacia MAS control reciente que si devuelve serie.
+        tocadas = await archive_beyond_source_horizon(
+            conn,
+            feed="ohlcv_1min", exchange="binance", market="perpetual",
+            symbol="BTCUSDT_PERP.A", granularity="1min",
+            window_start=datetime(2026, 8, 14, tzinfo=UTC),
+            window_end=datetime(2026, 8, 15, tzinfo=UTC),
+            control_start=datetime(2026, 8, 25, 12, tzinfo=UTC),
+            control_end=datetime(2026, 8, 25, 18, tzinfo=UTC),
+            control_returned_rows=71,
+        )
+        assert tocadas == 2
+
+        # El camino que K04 tiene que seguir cazando: archivado sin prueba ninguna.
+        await conn.execute(
+            "UPDATE data_gap SET recovery_metadata='{}'::jsonb WHERE id=$1", huerfano
+        )
+
+        sin_prueba = await conn.fetch(
+            f"SELECT id FROM data_gap WHERE status='unrecoverable' AND NOT {K04_PRUEBA_SE_SOSTIENE}"
+        )
+        assert [r["id"] for r in sin_prueba] == [huerfano], (
+            "K04 tiene que aceptar lo que escribe la app y rechazar el archivado mudo"
+        )
+
+        fila = await conn.fetchrow(
+            "SELECT resolution_reason,recovery_metadata FROM data_gap WHERE id=$1", gap_id
+        )
+        assert "no longer serves this window" in fila["resolution_reason"]
+        assert '"control_returned_rows": 71' in fila["recovery_metadata"]
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_una_fuente_callada_no_archiva_nada() -> None:
+    """Si el proveedor esta caido, el control sale a 0 y no se puede barrer el atraso."""
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 14, 3, tzinfo=UTC)
+        gap_id = await _cadence_gap(conn, start=inicio, end=inicio + timedelta(minutes=2))
+        with pytest.raises(ValueError, match="control"):
+            await archive_beyond_source_horizon(
+                conn,
+                feed="ohlcv_1min", exchange="binance", market="perpetual",
+                symbol="BTCUSDT_PERP.A", granularity="1min",
+                window_start=datetime(2026, 8, 14, tzinfo=UTC),
+                window_end=datetime(2026, 8, 15, tzinfo=UTC),
+                control_start=datetime(2026, 8, 25, 12, tzinfo=UTC),
+                control_end=datetime(2026, 8, 25, 18, tzinfo=UTC),
+                control_returned_rows=0,
+            )
+        assert await conn.fetchval(
+            "SELECT status FROM data_gap WHERE id=$1", gap_id
+        ) == "unresolved"
     finally:
         await tx.rollback()
         await conn.close()
