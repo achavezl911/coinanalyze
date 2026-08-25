@@ -478,6 +478,7 @@ def _coverage_heartbeat_detail(
     rows: int | dict[str, int],
     coverages: list[tuple[str, CadenceCoverage]],
     extra: str | None = None,
+    rejected: int | None = None,
 ) -> tuple[str, str]:
     expected = sum(item.expected_buckets for _, item in coverages)
     observed = sum(item.observed_buckets for _, item in coverages)
@@ -495,9 +496,28 @@ def _coverage_heartbeat_detail(
         f"feed={feed},source_cutoff={cutoff.isoformat()},coverage={observed}/{expected},"
         f"missing={missing},sources={source_text},rows={rows}"
     )
+    if rejected is not None:
+        detail += f",rejected={rejected}"
     if extra:
         detail += f",{extra}"
-    return ("ok" if missing == 0 else "degraded"), detail[:500]
+    if rejected is None:
+        return ("ok" if missing == 0 else "degraded"), detail[:500]
+    # Un bucket que el proveedor no publica NO es un fallo nuestro; una fila que el
+    # proveedor SI mando y nosotros tiramos, si. Es la misma distincion que ya hace
+    # _liquidation_history_observation con returned_rows/accepted_rows.
+    #
+    # Medido el 2026-08-25: en 24 h la fuente devolvio 261 de 289 buckets de
+    # long_short_ratio para SOL y 285 de 289 para BTC, y nuestra base tenia
+    # EXACTAMENTE 261 y 285. O sea que el 'missing=29' que mantenia a
+    # ingest:metrics_5m -y con el a healthz entero- en degraded desde hace semanas
+    # estaba midiendo la completitud del PROVEEDOR como si fuera un defecto nuestro,
+    # y por algo que nadie puede arreglar. Un indicador que no se puede apagar deja
+    # de ser un indicador.
+    #
+    # Sigue degradando lo que si importa: filas rechazadas por nosotros, y una fuente
+    # que se calla del todo (observed==0), que es una caida de verdad.
+    nuestro = rejected > 0 or (expected > 0 and observed == 0)
+    return ("degraded" if nuestro else "ok"), detail[:500]
 
 
 async def ingest_cycle(
@@ -686,10 +706,25 @@ async def ingest_metrics_cycle(
                         cadence=timedelta(minutes=5),
                     )
                     metrics_coverages.append((f"{feed}@{exchange}:response24h", proof))
+            # Cuantas filas mando la fuente frente a cuantas aceptamos. Si sobran,
+            # las tiramos nosotros y eso SI es nuestro. Se cuenta aqui y no dentro de
+            # cada upsert_* para no cambiarles la firma.
+            cadence_payloads = (
+                ("oi", oi, symbols),
+                ("oi_bybit", oi_bybit, bybit_symbols),
+                ("funding", funding, symbols),
+                ("predicted", predicted, symbols),
+                ("long_short", long_short, symbols),
+            )
+            rechazadas = 0
+            for clave, payload, simbolos in cadence_payloads:
+                devueltas = sum(len(payload[s]) for s in simbolos if s in payload)
+                rechazadas += max(0, devueltas - counts.get(clave, 0))
             dense_status, metrics_detail = _coverage_heartbeat_detail(
                 feed="metrics_5m", cutoff=cutoff.exclusive_boundary,
                 rows=counts, coverages=metrics_coverages,
                 extra=f"liquidations_history={liq_status}",
+                rejected=rechazadas,
             )
             metrics_status = (
                 "ok" if dense_status == "ok" and liq_status == "ok" else "degraded"
