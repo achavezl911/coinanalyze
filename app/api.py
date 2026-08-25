@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import hmac
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 from ipaddress import ip_address, ip_network
@@ -41,6 +41,7 @@ from app.delta_profile import delta_profile
 from app.external_macro import align_with_internal, external_macro_context
 from app.interpretation import cvd_swing_read, daily_flow_read, evaluate_setups
 from app.logging_setup import configure_logging
+from app.metrics import session_bounds
 from app.scalp_logic import (
     ABSORPTION_MIN_RATIO,
     EXECUTION_PROFILES,
@@ -238,18 +239,35 @@ async def mask_gapped_series_rows(
     symbol: str,
     value_keys: tuple[str, ...] = (),
     cumulative_keys: tuple[str, ...] = (),
+    row_window: Callable[[dict[str, Any]], tuple[datetime, datetime] | None] | None = None,
 ) -> None:
-    """Expose gap buckets as null and never continue an incomplete cumulative value."""
-    indexed_starts = [
-        (index, start)
-        for index, row in enumerate(rows)
-        if isinstance((start := row.get("bucket")), datetime)
-    ]
+    """Expose gap buckets as null and never continue an incomplete cumulative value.
+
+    ``row_window`` resolves each row's real window when it is not ``[bucket, bucket+size)``.
+    /api/daily lo necesita: su fila NO es un dia UTC sino una sesion de Nueva York, de
+    09:30 a 09:30 ET (app/metrics.py:31), que ademas no siempre dura 24 h por los cambios
+    de horario. Enmascararla con medianoche UTC y un tamano fijo taparia el DIA
+    EQUIVOCADO, que es peor que no enmascarar: pondria a null un dia sano y dejaria
+    intacto el roto.
+    """
+    indexed_starts: list[tuple[int, datetime, datetime]] = []
+    for index, row in enumerate(rows):
+        if row_window is not None:
+            ventana = row_window(row)
+            if ventana is None:
+                continue
+            inicio, fin = ventana
+        else:
+            candidato = row.get("bucket")
+            if not isinstance(candidato, datetime):
+                continue
+            inicio, fin = candidato, candidato + bucket
+        indexed_starts.append((index, inicio, fin))
     if not indexed_starts:
         return
-    source_window_start = min(start for _, start in indexed_starts)
+    source_window_start = min(inicio for _, inicio, _ in indexed_starts)
     requirements: list[GapRequirement] = []
-    for index, start in indexed_starts:
+    for index, inicio, fin in indexed_starts:
         for exchange in exchanges:
             requirements.append(
                 GapRequirement(
@@ -258,8 +276,8 @@ async def mask_gapped_series_rows(
                     exchange,
                     market,
                     symbol,
-                    start,
-                    start + bucket,
+                    inicio,
+                    fin,
                 )
             )
             if cumulative_keys:
@@ -271,7 +289,7 @@ async def mask_gapped_series_rows(
                         market,
                         symbol,
                         source_window_start,
-                        start + bucket,
+                        fin,
                     )
                 )
     blocked = await blocking_requirement_keys(conn, requirements)
@@ -291,6 +309,25 @@ async def mask_gapped_series_rows(
         row = rows[index]
         for cumulative_key in cumulative_keys:
             row[cumulative_key] = None
+
+
+def _session_window(row: dict[str, Any]) -> tuple[datetime, datetime] | None:
+    """La ventana REAL de una fila de /api/daily: la sesion de Nueva York que agrego.
+
+    session_bounds la define de 09:30 a 09:30 ET, asi que no empieza a medianoche y no
+    siempre mide 24 h. La fila puede traer session_date como date o como str segun por
+    donde haya pasado; si no se puede resolver, se devuelve None y esa fila no se
+    enmascara, que es preferible a enmascarar una ventana inventada.
+    """
+    valor = row.get("session_date")
+    if isinstance(valor, str):
+        try:
+            valor = date.fromisoformat(valor)
+        except ValueError:
+            return None
+    if not isinstance(valor, date) or isinstance(valor, datetime):
+        return None
+    return session_bounds(valor)
 
 
 async def latest_snapshot(conn: asyncpg.Connection, symbol: str) -> dict[str, Any] | None:
@@ -1725,7 +1762,34 @@ async def daily(
         )
     selected = validate_symbol(symbol)
     async with app.state.pool.acquire() as conn:
-        return await daily_data(conn, selected, days, through_session_date)
+        result = await daily_data(conn, selected, days, through_session_date)
+        # La sesion NO es un dia UTC: va de 09:30 a 09:30 de Nueva York
+        # (app/metrics.py:31 session_bounds), y por los cambios de horario ni siquiera
+        # dura siempre 24 h. Por eso la ventana se pide FILA A FILA en vez de derivarla
+        # de un tamano fijo: con medianoche UTC se enmascararia el dia equivocado, que
+        # es peor que no enmascarar -pondria a null un dia sano y dejaria intacto el
+        # roto-.
+        # Solo se anulan las claves que dependen del ohlcv de FUTUROS. Las de spot
+        # (cvd_spot_usd, cumulative_spot, inst_delta_usd) y las de otros feeds (oi_*,
+        # fr_avg, *_liq_usd) tienen su propia identidad de hueco y no las invalida esto.
+        await mask_gapped_series_rows(
+            conn,
+            result["rows"],
+            bucket=timedelta(days=1),  # inerte: manda row_window
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+            value_keys=(
+                "price_open", "price_high", "price_low", "price_close",
+                "price_chg_pct", "price_response", "volume_usd",
+                "cvd_fut_usd", "cvd_fut_2v_usd",
+                "cvd_diff_usd", "cvd_diff_2v_usd", "cvd_diff_percentile",
+            ),
+            cumulative_keys=("cumulative_diff",),
+            row_window=_session_window,
+        )
+    return result
 
 
 @app.get("/api/setup")
