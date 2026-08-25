@@ -31,7 +31,10 @@ id_ed25519*
 .DS_Store
 *.swp
 
-# --- Graphify: versionar SOLO el grafo consultable y el reporte; el resto es local/regenerable ---
-graphify-out/*
-!graphify-out/graph.json
-!graphify-out/GRAPH_REPORT.md
+# --- Graphify: NADA. El grafo es un derivado y se regenera; versionarlo solo miente.
+# Medido el 2026-08-25: graph.json son 5.5 MB versionados cuyo ultimo commit es del
+# 2026-08-13 (6d07ead). Conoce reconcile_cadence_coverage pero no source_response_buckets,
+# ni SOURCE_ABSENCE_REASON, ni archive_beyond_source_horizon. Doce dias rancio, y un
+# derivado rancio es peor que no tenerlo porque se consulta como si fuera cierto.
+# Ademas inflaba los diffs: un cambio de 6000 lineas aparentaba 25000.
+graphify-out/
