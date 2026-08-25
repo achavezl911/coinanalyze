@@ -497,7 +497,22 @@ async def ohlcv(
             limit,
             int(bucket.total_seconds() // 60),
         )
-    return records(rows)
+        result = records(rows)
+        # Un bucket con hueco declarado no puede seguir devolviendo precios como si
+        # nada: sample_count y coverage_pct son material para ADIVINAR la cobertura,
+        # y adivinar es justo lo que el panel no debe tener que hacer. Aqui la vela
+        # entera se pone a null, que es una afirmacion y no una pista.
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="ohlcv_1min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+            value_keys=("open", "high", "low", "close", "volume_usd"),
+        )
+    return result
 
 
 @app.get("/api/cvd")
@@ -675,7 +690,22 @@ async def oi(
             bucket,
             limit,
         )
-    return records(rows)
+        result = records(rows)
+        # open_interest sale de la fuente binance (upsert_ohlc_metric con la clave
+        # "oi"); la de bybit va a su propia tabla y no la sirve este endpoint, asi
+        # que enmascarar por bybit aqui bloquearia por un hueco que no afecta al dato
+        # que se esta devolviendo.
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="open_interest_5min",
+            exchanges=("binance",),
+            market="perpetual",
+            symbol=selected,
+            value_keys=("oi",),
+        )
+    return result
 
 
 @app.get("/api/liquidations")
@@ -700,7 +730,23 @@ async def liquidation_series(
             bucket,
             limit,
         )
-    return records(rows)
+        result = records(rows)
+        # Las liquidaciones son un flujo de EVENTOS, y su hueco se apunta como
+        # event_stream desde scalp_collector.safe_liq_put (queue_full) en binance y
+        # bybit. Una suma a la que le falta un evento no es una suma menor: es una
+        # suma que no se sabe. Los dos exchanges cuentan porque el endpoint suma los
+        # dos, asi que perder uno ya invalida el bucket.
+        await mask_gapped_series_rows(
+            conn,
+            result,
+            bucket=bucket,
+            feed="liquidations",
+            exchanges=("binance", "bybit"),
+            market="perpetual",
+            symbol=selected,
+            value_keys=("long_liq", "short_liq"),
+        )
+    return result
 
 
 @app.get("/api/whale/delta")
