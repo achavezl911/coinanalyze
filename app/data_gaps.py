@@ -30,6 +30,15 @@ EVENT_LOSS_EVIDENCE = frozenset(
     }
 )
 
+# Motivo de archivado que afirma algo sobre EL DATO, no sobre nuestra herramienta. La
+# diferencia no es de estilo: "no exact historical source available" (_mark_unrecoverable)
+# dice que NOSOTROS no sabemos ir a buscarlo, y eso no cierra nada, solo lo esconde.
+# Esto otro dice que el bucket no existe en la fuente, y ademas solo se escribe cuando
+# la respuesta de la fuente lo cubria y lo salto. Es una comprobacion, no un default.
+SOURCE_ABSENCE_REASON = (
+    "source does not publish this bucket: absent from a source response covering it"
+)
+
 
 def _aware_utc(value: datetime, name: str) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
@@ -272,12 +281,20 @@ async def reconcile_cadence_coverage(
     end: datetime,
     cadence: timedelta,
     detection_source: str,
+    source_response_buckets: Iterable[datetime] | None = None,
 ) -> CadenceCoverage:
     """Record missing cadence and recover only when every expected bucket is proven.
 
     ``observations`` are explicit proof supplied by the caller. They may come from accepted
     rows in the current provider response or from canonical persisted storage. Event feeds
     are deliberately excluded: silence in an event feed is never missing-cadence evidence.
+
+    ``source_response_buckets`` are the buckets the SOURCE returned, before we validated
+    anything. They are not the same as ``observations``: the difference between the two is
+    exactly the row we dropped ourselves, and that one is never the source's fault. Given
+    them, a bucket the source skipped inside a span it did answer is archived as absent at
+    the source; everything else stays unresolved. Absence in our own storage proves nothing
+    about the source, so callers reading persisted rows pass nothing here.
     """
     start, end = _validated_window(start, end)
     if cadence <= timedelta(0):
@@ -300,6 +317,18 @@ async def reconcile_cadence_coverage(
     missing_windows = tuple(
         missing_cadence_windows(present, start=start, end=end, cadence=cadence)
     )
+
+    # Hasta donde llego la respuesta de la fuente. Solo lo que cae ESTRICTAMENTE dentro
+    # de ese tramo esta probado como ausencia suya: si contesto antes del hueco y volvio
+    # a contestar en cuanto acabo, lo salto ella. Silencio total, corte por delante o
+    # respuesta truncada por detras no prueban nada, y ahi el hueco sigue siendo nuestro.
+    returned: set[datetime] = set()
+    for item in source_response_buckets or ():
+        normalized = _aware_utc(item, "source response bucket")
+        if start <= normalized < end:
+            returned.add(normalized)
+    first_returned = min(returned) if returned else None
+    last_returned = max(returned) if returned else None
 
     for gap_start, gap_end in missing_windows:
         gap_id = await record_data_gap(
@@ -327,6 +356,46 @@ async def reconcile_cadence_coverage(
             WHERE id=$1 AND status='recovered'
             """,
             gap_id,
+        )
+
+        if first_returned is None:
+            continue
+        if not (first_returned < gap_start and last_returned >= gap_end):
+            continue
+        # Si la fuente SI mando alguno de estos buckets, el que falta lo tiramos nosotros
+        # al validar. Ese hueco es nuestro y se queda pendiente, que es justo la
+        # distincion returned/accepted que _liquidation_history_observation ya hacia.
+        cursor = gap_start
+        nuestro = False
+        while cursor < gap_end:
+            if cursor in returned:
+                nuestro = True
+                break
+            cursor += cadence
+        if nuestro:
+            continue
+        # La fuente cubrio este bucket y no lo publica. Eso no es una tarea pendiente
+        # nuestra: es un hecho sobre el dato, y se archiva diciendo eso mismo. Medido el
+        # 2026-08-25 sobre 7 dias de long_short_ratio: la peticion de HOY devuelve los
+        # mismos huecos que apuntamos hace dias, o sea que la fuente no rellena despues.
+        # El WHERE deja intacto lo ya clasificado: una clasificacion no se reescribe.
+        await conn.execute(
+            """
+            UPDATE data_gap
+            SET status='unrecoverable',
+                resolved_at=clock_timestamp(), recovered_at=NULL,
+                recovery_attempts=recovery_attempts+1,
+                last_recovery_attempt_at=clock_timestamp(),
+                resolution_reason=$2,
+                recovery_metadata=jsonb_build_object(
+                    'method','source_response_absence',
+                    'proof_source',$3::text,
+                    'response_first_bucket',$4::timestamptz,
+                    'response_last_bucket',$5::timestamptz
+                )
+            WHERE id=$1 AND status='unresolved'
+            """,
+            gap_id, SOURCE_ABSENCE_REASON, detection_source, first_returned, last_returned,
         )
 
     # Any exact cadence proof may recover an unresolved cadence gap for this source identity,
