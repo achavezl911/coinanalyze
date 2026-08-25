@@ -223,6 +223,7 @@ async def run(feed: str | None, limit: int, dry_run: bool, archive_exhausted: bo
                             source_response_buckets=devueltos,
                         )
                         resumen["huecos_recuperados"] += cobertura.recovered_gaps
+                        resumen["huecos_archivados_ausencia"] += cobertura.archived_gaps
 
             async with pool.acquire() as conn:
                 resumen["unresolved_restantes"] = await conn.fetchval(

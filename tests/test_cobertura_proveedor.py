@@ -135,11 +135,15 @@ SALTADO = INICIO + timedelta(minutes=25)
 class ConnEspia:
     """Conexion falsa que solo apunta lo que se ejecuta."""
 
-    def __init__(self) -> None:
+    def __init__(self, pendientes=None) -> None:
         self.ejecutado: list[tuple[str, tuple]] = []
+        # Las filas que ya estan en data_gap sin resolver, las haya apuntado el detector
+        # que sea. Modelarlas importa: el archivado tiene que alcanzar tambien las de OTRO
+        # detection_source, que es donde vive el atraso.
+        self.pendientes = list(pendientes or [])
 
     async def fetch(self, _query: str, *_args):
-        return []
+        return self.pendientes
 
     async def execute(self, query: str, *args):
         self.ejecutado.append((query, args))
@@ -147,6 +151,10 @@ class ConnEspia:
 
     def archivados(self) -> list[tuple[str, tuple]]:
         return [(q, a) for q, a in self.ejecutado if "unrecoverable" in q]
+
+
+def _pendiente(idx: int, inicio: datetime, fin: datetime) -> dict:
+    return {"id": idx, "start_ts": inicio, "end_ts": fin}
 
 
 async def _reconciliar(conn, observaciones, *, devueltos=None):
@@ -179,7 +187,7 @@ async def _reconciliar(conn, observaciones, *, devueltos=None):
 @pytest.mark.asyncio
 async def test_un_bucket_que_la_fuente_salta_no_queda_como_deuda_nuestra() -> None:
     """El caso real de SOL: la respuesta cubre la ventana y se salta un bucket."""
-    conn = ConnEspia()
+    conn = ConnEspia([_pendiente(1, SALTADO, SALTADO + CADENCIA)])
     sin_el = [t for t in REJILLA if t != SALTADO]
 
     cobertura, apuntados = await _reconciliar(conn, sin_el, devueltos=sin_el)
@@ -198,7 +206,7 @@ async def test_un_bucket_que_la_fuente_salta_no_queda_como_deuda_nuestra() -> No
 @pytest.mark.asyncio
 async def test_el_motivo_habla_del_dato_y_no_de_nuestra_limitacion() -> None:
     """La trampa que K04 cierra: 'no tenemos adaptador' no es un motivo sobre el dato."""
-    conn = ConnEspia()
+    conn = ConnEspia([_pendiente(1, SALTADO, SALTADO + CADENCIA)])
     sin_el = [t for t in REJILLA if t != SALTADO]
 
     await _reconciliar(conn, sin_el, devueltos=sin_el)
@@ -212,7 +220,7 @@ async def test_el_motivo_habla_del_dato_y_no_de_nuestra_limitacion() -> None:
 @pytest.mark.asyncio
 async def test_la_fila_que_TIRAMOS_NOSOTROS_no_se_le_carga_a_la_fuente() -> None:
     """La fuente SI mando ese bucket y lo descartamos al validar: el hueco es nuestro."""
-    conn = ConnEspia()
+    conn = ConnEspia([_pendiente(1, SALTADO, SALTADO + CADENCIA)])
     aceptados = [t for t in REJILLA if t != SALTADO]
 
     _cobertura, apuntados = await _reconciliar(conn, aceptados, devueltos=REJILLA)
@@ -236,7 +244,7 @@ async def test_una_fuente_que_se_calla_deja_el_hueco_pendiente() -> None:
 @pytest.mark.asyncio
 async def test_una_respuesta_truncada_no_prueba_la_ausencia_de_la_cola() -> None:
     """Si la fuente corta a mitad, lo que falta detras puede ser suyo o nuestro."""
-    conn = ConnEspia()
+    conn = ConnEspia([_pendiente(1, INICIO + timedelta(minutes=30), FIN)])
     media = [t for t in REJILLA if t < INICIO + timedelta(minutes=30)]
 
     _cobertura, apuntados = await _reconciliar(conn, media, devueltos=media)
@@ -248,7 +256,7 @@ async def test_una_respuesta_truncada_no_prueba_la_ausencia_de_la_cola() -> None
 @pytest.mark.asyncio
 async def test_un_hueco_al_principio_tampoco_esta_probado() -> None:
     """Nada demuestra que la fuente cubriera un bucket anterior a su primera fila."""
-    conn = ConnEspia()
+    conn = ConnEspia([_pendiente(1, INICIO, INICIO + CADENCIA)])
 
     await _reconciliar(conn, REJILLA[1:], devueltos=REJILLA[1:])
 
@@ -258,7 +266,7 @@ async def test_un_hueco_al_principio_tampoco_esta_probado() -> None:
 @pytest.mark.asyncio
 async def test_la_ausencia_en_NUESTRO_almacen_no_dice_nada_de_la_fuente() -> None:
     """_reconcile_persisted_cadence mira nuestras filas: ahi el hueco SI puede ser nuestro."""
-    conn = ConnEspia()
+    conn = ConnEspia([_pendiente(1, SALTADO, SALTADO + CADENCIA)])
     sin_el = [t for t in REJILLA if t != SALTADO]
 
     _cobertura, apuntados = await _reconciliar(conn, sin_el, devueltos=None)
@@ -363,3 +371,22 @@ def test_el_repaso_conoce_los_dos_feeds_con_atraso_y_sus_cadencias() -> None:
     assert PLANS[("long_short_ratio", "5min")].cadence == timedelta(minutes=5)
     assert PLANS[("ohlcv_1min", "1min")].cadence == timedelta(minutes=1)
     assert ("orderbook", "1min") not in PLANS
+
+
+@pytest.mark.asyncio
+async def test_el_archivado_alcanza_el_hueco_QUE_APUNTO_OTRO_DETECTOR() -> None:
+    """MEDIDO EN 140 EL 2026-08-25, y es el fallo que este test existe para que no vuelva.
+
+    record_data_gap lleva detection_source en la clave de conflicto, asi que el mismo
+    bucket visto por dos detectores son DOS filas. La primera pasada del repaso archivo
+    172 filas RECIEN CREADAS por el y dejo las 244 originales intactas: se archivo a si
+    mismo. El atraso vive en filas de otro detection_source, asi que el archivado tiene
+    que ser ENTRE DETECTORES, igual que ya lo era la recuperacion.
+    """
+    conn = ConnEspia([_pendiente(77, SALTADO, SALTADO + CADENCIA)])
+    sin_el = [t for t in REJILLA if t != SALTADO]
+
+    await _reconciliar(conn, sin_el, devueltos=sin_el)
+
+    ids = [args[0] for _q, args in conn.archivados()]
+    assert 77 in ids, "el archivado no alcanza la fila que apunto otro detector"
