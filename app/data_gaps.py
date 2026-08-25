@@ -273,6 +273,10 @@ class CadenceCoverage:
     missing_buckets: int
     missing_windows: tuple[tuple[datetime, datetime], ...]
     recovered_gaps: int
+    # Cuantos huecos se archivaron como ausencia probada de la fuente en esta pasada.
+    # Sin esto el repaso no puede decir lo que hizo, y un contador que no se incrementa
+    # nunca es peor que no tenerlo: parece que no paso nada.
+    archived_gaps: int = 0
 
     @property
     def complete(self) -> bool:
@@ -369,45 +373,25 @@ async def reconcile_cadence_coverage(
             gap_id,
         )
 
+    def _source_skipped(gap_start: datetime, gap_end: datetime) -> bool:
+        """La fuente cubrio este tramo entero y no mando ni uno de sus buckets.
+
+        Las dos mitades importan. El straddle prueba que la respuesta LLEGABA hasta aqui:
+        contesto antes del tramo y volvio a contestar en cuanto acabo. Y que ningun bucket
+        del tramo este en lo devuelto descarta que el que falta lo tirasemos NOSOTROS al
+        validar, que es la distincion returned/accepted de
+        _liquidation_history_observation. Sin las dos, no hay prueba.
+        """
         if first_returned is None:
-            continue
+            return False
         if not (first_returned < gap_start and last_returned >= gap_end):
-            continue
-        # Si la fuente SI mando alguno de estos buckets, el que falta lo tiramos nosotros
-        # al validar. Ese hueco es nuestro y se queda pendiente, que es justo la
-        # distincion returned/accepted que _liquidation_history_observation ya hacia.
+            return False
         cursor = gap_start
-        nuestro = False
         while cursor < gap_end:
             if cursor in returned:
-                nuestro = True
-                break
+                return False
             cursor += cadence
-        if nuestro:
-            continue
-        # La fuente cubrio este bucket y no lo publica. Eso no es una tarea pendiente
-        # nuestra: es un hecho sobre el dato, y se archiva diciendo eso mismo. Medido el
-        # 2026-08-25 sobre 7 dias de long_short_ratio: la peticion de HOY devuelve los
-        # mismos huecos que apuntamos hace dias, o sea que la fuente no rellena despues.
-        # El WHERE deja intacto lo ya clasificado: una clasificacion no se reescribe.
-        await conn.execute(
-            """
-            UPDATE data_gap
-            SET status='unrecoverable',
-                resolved_at=clock_timestamp(), recovered_at=NULL,
-                recovery_attempts=recovery_attempts+1,
-                last_recovery_attempt_at=clock_timestamp(),
-                resolution_reason=$2,
-                recovery_metadata=jsonb_build_object(
-                    'method','source_response_absence',
-                    'proof_source',$3::text,
-                    'response_first_bucket',$4::timestamptz,
-                    'response_last_bucket',$5::timestamptz
-                )
-            WHERE id=$1 AND status='unresolved'
-            """,
-            gap_id, SOURCE_ABSENCE_REASON, detection_source, first_returned, last_returned,
-        )
+        return True
 
     # Any exact cadence proof may recover an unresolved cadence gap for this source identity,
     # regardless of which detector originally found it. This lets a later canonical scan
@@ -427,6 +411,7 @@ async def reconcile_cadence_coverage(
     )
 
     recovered = 0
+    archived = 0
     for row in rows:
         gap_start = _aware_utc(row["start_ts"], "gap_start")
         gap_end = _aware_utc(row["end_ts"], "gap_end")
@@ -438,6 +423,38 @@ async def reconcile_cadence_coverage(
                 break
             bucket += cadence
         if not proven:
+            # Un tramo que la fuente cubrio y se salto no es una tarea pendiente nuestra:
+            # es un hecho sobre el dato. Se archiva AQUI, en el mismo barrido que la
+            # recuperacion y por el mismo motivo: el atraso vive en filas apuntadas por
+            # OTRO detection_source, y record_data_gap lleva detection_source en la clave
+            # de conflicto, asi que el mismo bucket visto por dos detectores son dos filas.
+            # Archivar solo la fila que este detector acaba de apuntar dejaria el atraso
+            # intacto: medido en 140 el 2026-08-25, la primera pasada del repaso archivo
+            # 172 filas recien creadas por el y dejo las 244 originales sin tocar.
+            # Recuperar y archivar son excluyentes: una exige todos los buckets, la otra
+            # ninguno.
+            if _source_skipped(gap_start, gap_end):
+                resultado = await conn.execute(
+                    """
+                    UPDATE data_gap
+                    SET status='unrecoverable',
+                        resolved_at=clock_timestamp(), recovered_at=NULL,
+                        recovery_attempts=recovery_attempts+1,
+                        last_recovery_attempt_at=clock_timestamp(),
+                        resolution_reason=$2,
+                        recovery_metadata=jsonb_build_object(
+                            'method','source_response_absence',
+                            'proof_source',$3::text,
+                            'response_first_bucket',$4::timestamptz,
+                            'response_last_bucket',$5::timestamptz
+                        )
+                    WHERE id=$1 AND status='unresolved'
+                    """,
+                    int(row["id"]), SOURCE_ABSENCE_REASON, detection_source,
+                    first_returned, last_returned,
+                )
+                if resultado == "UPDATE 1":
+                    archived += 1
             continue
         result = await conn.execute(
             """
@@ -471,6 +488,7 @@ async def reconcile_cadence_coverage(
         missing_buckets=len(expected) - observed,
         missing_windows=missing_windows,
         recovered_gaps=recovered,
+        archived_gaps=archived,
     )
 
 
