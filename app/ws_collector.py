@@ -146,8 +146,12 @@ class BucketStore:
         async with self.lock:
             self._prune_locked()
 
-    async def minute_snapshot(self) -> list[tuple[tuple[str, str, int], Bucket]]:
-        cutoff = time.time() - LATE_TRADE_GRACE_SECONDS
+    async def minute_snapshot(
+        self,
+        *,
+        grace: float = LATE_TRADE_GRACE_SECONDS,
+    ) -> list[tuple[tuple[str, str, int], Bucket]]:
+        cutoff = time.time() - grace
         async with self.lock:
             return [
                 (key, replace(bucket))
@@ -209,15 +213,11 @@ def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[flo
     return price, qty, ts_ms
 
 
-async def flush_minute(
+async def _write_minute(
     pool: asyncpg.Pool,
-    ownership: ServiceOwnership | None = None,
+    ownership: ServiceOwnership | None,
+    snapshots: list[tuple[tuple[str, str, int], Bucket]],
 ) -> None:
-    while True:
-        await asyncio.sleep(5)
-        snapshots = await STORE.minute_snapshot()
-        if not snapshots:
-            continue
         records = []
         touched: set[tuple[str, int]] = set()
         for (symbol, exchange, ts), bucket in snapshots:
@@ -288,6 +288,45 @@ async def flush_minute(
             raise
         except Exception:
             LOGGER.exception("minute_flush_failed retained_buckets=%d", len(snapshots))
+
+
+async def flush_minute(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> None:
+    while True:
+        await asyncio.sleep(5)
+        snapshots = await STORE.minute_snapshot()
+        if not snapshots:
+            continue
+        await _write_minute(pool, ownership, snapshots)
+
+
+async def drain_closed_minutes(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> int:
+    """Vaciado final al apagar. Devuelve cuantos minutos se salvaron.
+
+    Los minutos viven en memoria y flush_minute solo escribe los que cerraron hace mas
+    de LATE_TRADE_GRACE_SECONDS, que es lo que tarda en no poder llegar un trade tardio.
+    Al recibir SIGTERM se cancelaban las tareas y se cerraba el pool sin escribirlos, asi
+    que cada reinicio se llevaba el minuto en curso MAS los dos que esperaban la gracia.
+    Medido en 140: 25 reinicios en 24 h -uno por despliegue- y ~60 minutos perdidos por
+    simbolo, todos con vela de perp con volumen, o sea dato real y no mercado quieto.
+
+    Se vacian SOLO los minutos YA CERRADOS (grace=0 deja fuera el que esta en curso).
+    Esa frontera no es comodidad: un minuto cerrado esta completo salvo que llegara un
+    trade con mas de 60 s de retraso, mientras que el minuto en curso esta incompleto POR
+    DEFINICION y escribirlo seria publicar como completa una fila a la que le faltan
+    segundos. Antes que inventar un volumen se prefiere que ese minuto siga ausente.
+    """
+
+    snapshots = await STORE.minute_snapshot(grace=0.0)
+    if not snapshots:
+        return 0
+    await _write_minute(pool, ownership, snapshots)
+    return len(snapshots)
 
 
 async def flush_realtime(
@@ -588,6 +627,13 @@ async def run() -> None:
             task.cancel()
         lock_monitor.cancel()
         await asyncio.gather(*tasks, lock_monitor, return_exceptions=True)
+        # ANTES de cerrar el pool: lo que quede en memoria muere con el proceso.
+        try:
+            salvados = await drain_closed_minutes(pool, service_lock)
+            if salvados:
+                LOGGER.info("minute_drain_on_shutdown saved_buckets=%d", salvados)
+        except Exception:
+            LOGGER.exception("minute_drain_on_shutdown_failed")
         await pool.close()
         await service_lock.close()
 
