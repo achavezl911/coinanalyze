@@ -151,7 +151,16 @@ for f in filas:
             notional = float(tamano)
             avg, filled = v.get("avg_price"), v.get("filled_usd")
             falta, insuf = v.get("shortfall_usd"), v.get("insufficient_depth")
-            if not casi(filled + falta, notional):
+            # UN CENTIMO, no 1e-6: filled_usd y shortfall_usd se guardan a dos
+            # decimales -medido, scale<=2 en los cuatro tamanos- y dos numeros
+            # redondeados a centimos pueden sumar un centimo de mas. Exigir 1e-6 sobre
+            # cantidades de 1e5 era pedirle a la representacion una precision que no
+            # tiene, y hacia el check INTERMITENTE: paso un dia entero y salto solo
+            # cuando el caso raro cayo dentro de la ventana. Medido en 140 sobre 184800
+            # puntos de 24 h: UN solo punto no cuadra exacto y se desvia 0.0100, o sea
+            # 0.0005%. Un fallo de verdad -un nivel del libro que falte- mueve dolares,
+            # no centimos, y sigue saltando.
+            if not casi(filled + falta, notional, 0.011):
                 fallos.append(f"punto {tamano}/{lado}: filled+shortfall {filled+falta} != {notional}")
             if insuf != (falta > 0):
                 fallos.append(f"punto {tamano}/{lado}: insufficient_depth={insuf} con shortfall={falta}")
