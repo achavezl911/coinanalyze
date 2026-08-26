@@ -93,12 +93,39 @@ if ! ( cd "$TMP/copia" && sha256sum --quiet -c SHA256SUMS >/dev/null 2>&1 ); the
   echo "lo restaurado del remoto NO cuadra con su propio manifiesto: $malas (copia de hace $horas h)"; exit 1
 fi
 
-sha_vivo=$(sha256sum "${VIVAS[hechos.tsv]}" | cut -d' ' -f1)
+# EL MANIFIESTO TIENE UN HUECO Y ESTE ES EL PARCHE. sha256sum -c prueba que lo que llego
+# llego INTACTO, no que sea FIEL: si respalda-libretas escribiera un hechos.tsv truncado
+# y calculara el manifiesto sobre ESE fichero, cuadraria y el check pasaria.
+#
+# hechos.tsv es append-only POR REGLA, asi que la copia tiene que ser un PREFIJO EXACTO
+# del vivo. Eso caza un origen truncado o reordenado Y TOLERA el desfase, que es lo que
+# rompia la comparacion por igualdad.
+#
+# NO SE GENERALIZA A LAS OTRAS TRES, medido: ESTADO.md se reescribe entero cada sesion y
+# COLA.md se edita en medio, asi que ninguna es prefijo de nada. Vale para hechos.tsv y
+# solo para hechos.tsv.
+#
+# EFECTO SECUNDARIO, que es lo mejor de la idea: convierte el append-only de hechos.tsv
+# en un INVARIANTE COMPROBADO. Si alguien borra una linea, la copia deja de ser prefijo y
+# esto lo caza. Hasta hoy esa regla la sostenia la disciplina de quien escribe, y una
+# regla que solo sostiene la disciplina de alguien no es una regla: es una costumbre.
 sha_copia=$(sha256sum "$TMP/copia/hechos.tsv" | cut -d' ' -f1)
-if [ "$sha_vivo" = "$sha_copia" ]; then
+bytes_copia=$(wc -c < "$TMP/copia/hechos.tsv")
+bytes_vivo=$(wc -c < "${VIVAS[hechos.tsv]}")
+
+if [ "$bytes_copia" -gt "$bytes_vivo" ]; then
+  echo "el hechos.tsv VIVO es mas corto que la copia ($bytes_vivo B < $bytes_copia B): o se trunco el vivo, o dejo de ser append-only"; exit 1
+fi
+
+sha_prefijo=$(head -c "$bytes_copia" "${VIVAS[hechos.tsv]}" | sha256sum | cut -d' ' -f1)
+if [ "$sha_prefijo" != "$sha_copia" ]; then
+  echo "la copia de hechos.tsv NO es prefijo del vivo: los primeros $bytes_copia B del vivo dan ${sha_prefijo:0:12} y la copia ${sha_copia:0:12}. hechos.tsv se reescribio en medio, o el respaldo salio de un origen distinto"; exit 1
+fi
+
+if [ "$bytes_copia" -eq "$bytes_vivo" ]; then
   desfase="hechos.tsv identico al vivo"
 else
-  desfase="hechos.tsv $(( $(wc -c < "${VIVAS[hechos.tsv]}") - $(wc -c < "$TMP/copia/hechos.tsv") )) B por detras del vivo, dentro del techo de ${MAX_HORAS} h"
+  desfase="hechos.tsv es PREFIJO EXACTO del vivo, $(( bytes_vivo - bytes_copia )) B por detras (append-only intacto)"
 fi
 
 total=$(( $(wc -c < "${VIVAS[hechos.tsv]}") + $(wc -c < "${VIVAS[COLA.md]}") \
