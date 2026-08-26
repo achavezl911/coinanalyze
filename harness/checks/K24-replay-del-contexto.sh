@@ -160,6 +160,21 @@ from app.signal_replay import canonical_json_hash, replay_summary_for_logic
 from app.signal_replay import ReplayUnsupportedLogicVersion
 from app.signal_ledger import classify_signal_observation, select_reference_price
 
+def sin_cero_negativo(v):
+    # jsonb guarda los numeros como numeric y numeric NO TIENE cero negativo: un -0.0 que
+    # el nucleo produce vuelve de la base como 0.0. Exigir el byte exacto seria exigirle
+    # al almacenamiento algo que no puede representar, igual que exigir bars(hoy)==bars a
+    # un ohlcv que se rellena. Se normaliza en LOS DOS lados y el resto sigue siendo
+    # byte a byte. Cazado el 2026-08-26 en absorption_context.robust_z, frames 127477 y
+    # 127638: los campos comparaban iguales con == y el hash no, porque -0.0 == 0.0.
+    if isinstance(v, float) and v == 0.0:
+        return 0.0
+    if isinstance(v, dict):
+        return {k: sin_cero_negativo(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [sin_cero_negativo(x) for x in v]
+    return v
+
 ref = sys.argv[1].split("|")
 simbolo, desde, esperadas, ruta = sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5]
 camino_cuerpo, camino_origen, camino_libro = sys.argv[6], sys.argv[7], sys.argv[8]
@@ -228,9 +243,19 @@ for f in filas:
     except ReplayUnsupportedLogicVersion:
         print(f"NO MEDIDO: la fila {oid} declara logic_version={f["logic_version"]}, que este arbol no sabe replicar"); sys.exit(2)
     replicados += 1
-    if canonical_json_hash(rep) != canonical_json_hash(ev):
-        distintos = sorted({k for k in set(rep) | set(ev) if rep.get(k) != ev.get(k)})
-        fallos.append(f"frame {oid}: replicar el context NO devuelve la evidence guardada, difieren {distintos[:4]}")
+    rep_n, ev_n = sin_cero_negativo(rep), sin_cero_negativo(ev)
+    if canonical_json_hash(rep_n) != canonical_json_hash(ev_n):
+        distintos = sorted({k for k in set(rep_n) | set(ev_n) if rep_n.get(k) != ev_n.get(k)})
+        if not distintos:
+            # Si esto salta, hay una diferencia de SERIALIZACION que == no ve. Decirlo
+            # con el campo y las dos formas, porque un "difieren []" no lo caza nadie.
+            import json as _j
+            pistas = [f"{k}: guardado {_j.dumps(ev_n.get(k))[:40]} vs replay {_j.dumps(rep_n.get(k))[:40]}"
+                      for k in sorted(set(rep_n) | set(ev_n))
+                      if _j.dumps(ev_n.get(k), sort_keys=True) != _j.dumps(rep_n.get(k), sort_keys=True)]
+            fallos.append(f"frame {oid}: el hash difiere pero los campos comparan iguales -> {pistas[:2]}")
+        else:
+            fallos.append(f"frame {oid}: replicar el context NO devuelve la evidence guardada, difieren {distintos[:4]}")
         continue
 
     # --- CAPA 2b: y contra el ledger, que es otra tabla y otro endpoint -----------------
