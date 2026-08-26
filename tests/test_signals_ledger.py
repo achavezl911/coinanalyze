@@ -18,6 +18,13 @@ DESDE = "2026-08-12T12:00:00Z"
 HASTA = "2026-08-12T13:00:00Z"
 
 
+class _Peticion:
+    """Lo unico que la ruta usa de Request es query_params."""
+
+    def __init__(self, **params):
+        self.query_params = params
+
+
 def _fila(observation_id: int, minuto: int) -> dict[str, object]:
     return {
         "observation_id": observation_id,
@@ -77,8 +84,9 @@ async def _llamar(filas, **kwargs):
     original = getattr(api_module.app.state, "pool", None)
     api_module.app.state.pool = pool
     try:
+        peticion = _Peticion(symbol=SUPPORTED_SYMBOLS[0], since=DESDE, until=HASTA)
         return await signals_ledger(
-            symbol=SUPPORTED_SYMBOLS[0], since=DESDE, until=HASTA, **kwargs
+            request=peticion, symbol=SUPPORTED_SYMBOLS[0], since=DESDE, until=HASTA, **kwargs
         ), pool
     finally:
         api_module.app.state.pool = original
@@ -137,7 +145,12 @@ async def test_la_ventana_invalida_se_rechaza(since, until, motivo) -> None:
     api_module.app.state.pool = _Pool([])
     try:
         with pytest.raises(HTTPException) as error:
-            await signals_ledger(symbol=SUPPORTED_SYMBOLS[0], since=since, until=until)
+            await signals_ledger(
+                request=_Peticion(symbol=SUPPORTED_SYMBOLS[0], since=since, until=until),
+                symbol=SUPPORTED_SYMBOLS[0],
+                since=since,
+                until=until,
+            )
     finally:
         api_module.app.state.pool = original
     assert error.value.status_code == 422, motivo

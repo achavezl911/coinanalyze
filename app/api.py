@@ -2041,8 +2041,24 @@ LEDGER_TIMESTAMPS = (
 )
 
 
+def rechaza_parametros_desconocidos(request: Request, conocidos: tuple[str, ...]) -> None:
+    """Un filtro que nadie reconoce no puede parecer un filtro que se honra.
+
+    FastAPI ignora en silencio lo que no declara, asi que ?hour=15 se cae por el desague
+    y la ruta devuelve OTRA ventana sin decir nada. Lo unico que salvaba al llamante era
+    leerse el since/until que la respuesta declara. Aqui se le dice.
+    """
+    sobran = sorted(set(request.query_params) - set(conocidos))
+    if sobran:
+        raise HTTPException(
+            status_code=422,
+            detail=f"parametros no reconocidos: {', '.join(sobran)}. Admitidos: {', '.join(conocidos)}",
+        )
+
+
 @app.get("/api/signals/ledger")
 async def signals_ledger(
+    request: Request,
     symbol: str,
     since: str | None = None,
     until: str | None = None,
@@ -2054,6 +2070,7 @@ async def signals_ledger(
     guarda como NULL se sirve como null: la clave no se borra nunca, porque "no lo se"
     y "esta metrica no existe" no pueden ser la misma respuesta.
     """
+    rechaza_parametros_desconocidos(request, ("symbol", "since", "until", "limit"))
     selected = validate_symbol(symbol)
     try:
         end = datetime.fromisoformat(until) if until else datetime.now(UTC)
@@ -2102,6 +2119,102 @@ async def signals_ledger(
         "count": len(observations),
         "truncated": truncated,
         "observations": observations,
+    }
+
+
+OUTCOME_COLUMNS = """
+    so.outcome_id, so.observation_id, o.symbol, o.direction, o.observed_at,
+    so.horizon_minutes, so.window_start, so.window_end, so.due_at,
+    so.status, so.outcome_version, so.attempts, so.bars_expected, so.bars_found,
+    so.finalized_at, so.final_reason,
+    so.entry_reference_price, so.end_price, so.max_high, so.min_low,
+    so.market_return_pct, so.up_excursion_pct, so.down_excursion_pct,
+    so.directional_return_pct, so.mfe_pct, so.mae_pct, so.created_at
+"""
+OUTCOME_TIMESTAMPS = (
+    "observed_at",
+    "window_start",
+    "window_end",
+    "due_at",
+    "finalized_at",
+    "created_at",
+)
+HORIZONS = (1, 3, 5, 15, 30, 60, 120, 240)
+
+
+@app.get("/api/signals/outcomes")
+async def signals_outcomes(
+    request: Request,
+    symbol: str,
+    since: str | None = None,
+    until: str | None = None,
+    horizon: Annotated[int | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=5000)] = 1000,
+) -> dict[str, Any]:
+    """signal_outcome: que paso a 1, 3, 5, 15, 30, 60, 120 y 240 minutos de cada senal.
+
+    La ventana filtra por window_start, que es lo que define el periodo del resultado, y
+    no por observed_at: dos observaciones del mismo minuto tienen ventanas distintas
+    segun el horizonte. La direccion viaja en cada fila porque sin ella las cifras
+    direccionales -directional_return_pct, mfe_pct, mae_pct- no se pueden ni leer ni
+    recalcular. Lo que la base guarda como NULL se sirve como null.
+    """
+    rechaza_parametros_desconocidos(
+        request, ("symbol", "since", "until", "horizon", "limit")
+    )
+    selected = validate_symbol(symbol)
+    if horizon is not None and horizon not in HORIZONS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"horizon tiene que ser uno de {list(HORIZONS)}",
+        )
+    try:
+        end = datetime.fromisoformat(until) if until else datetime.now(UTC)
+        start = datetime.fromisoformat(since) if since else end - timedelta(hours=1)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"since/until no son ISO-8601: {exc}") from exc
+    if start.tzinfo is None or end.tzinfo is None:
+        raise HTTPException(status_code=422, detail="since/until necesitan zona horaria explicita")
+    if end <= start:
+        raise HTTPException(status_code=422, detail="until tiene que ser posterior a since")
+    if end - start > LEDGER_MAX_WINDOW:
+        raise HTTPException(
+            status_code=422,
+            detail=f"la ventana maxima es {int(LEDGER_MAX_WINDOW.total_seconds() // 3600)} h",
+        )
+
+    async with app.state.pool.acquire() as conn:
+        rows = await conn.fetch(
+            f"""
+            SELECT {OUTCOME_COLUMNS}
+            FROM signal_outcome so
+            JOIN signal_observation o USING (observation_id)
+            WHERE o.symbol=$1 AND so.window_start >= $2 AND so.window_start < $3
+              AND ($4::int IS NULL OR so.horizon_minutes = $4)
+            ORDER BY so.window_start, so.observation_id, so.horizon_minutes
+            LIMIT $5
+            """,
+            selected,
+            start,
+            end,
+            horizon,
+            limit + 1,
+        )
+    truncated = len(rows) > limit
+    outcomes = records(rows[:limit])
+    for outcome in outcomes:
+        for column in OUTCOME_TIMESTAMPS:
+            outcome[column] = _utc_iso(outcome[column])
+
+    return {
+        "symbol": selected,
+        "since": _utc_iso(start),
+        "until": _utc_iso(end),
+        "horizon": horizon,
+        "limit": limit,
+        "count": len(outcomes),
+        "truncated": truncated,
+        "outcomes": outcomes,
     }
 
 
