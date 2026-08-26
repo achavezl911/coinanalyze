@@ -65,6 +65,35 @@ ref=$("$B/bin/prodsql" "
     AND so.window_start <  timestamptz '$hasta'" 2>/dev/null | grep -E '^[0-9]+\|' | head -1)
 [ -n "$ref" ] || { echo "NO MEDIDO: la consulta de referencia contra signal_outcome no devolvio nada"; exit 2; }
 
+# --- LA CAPA DE ABAJO: los cuatro precios contra su ORIGEN, no contra si mismos --------
+# Sin esto el check afirma "dados los cuatro precios que guardamos, las seis derivadas son
+# correctas", que es consistencia interna y no fidelidad: un max_high mal escrito al
+# capturar pasaria, porque las seis serian consistentes con el. Es la misma forma que el
+# manifiesto de K49. Aqui se recalculan max_high, min_low, end_price y bars_found desde
+# ohlcv 1min, con el window_start/window_end que declara CADA fila, y se comparan contra
+# lo que sirve la RUTA -no contra la tabla, que seria SQL contra SQL y dejaria al endpoint
+# fuera del bucle-.
+# El borde es [window_start, window_end): confirmado porque con el bars_found cuadra
+# 600/600. El LATERAL tarda 0.48 s sobre 600 filas, muy por debajo del statement_timeout.
+ORIGEN=$(mktemp) || { echo "NO MEDIDO: no se pudo crear el fichero de origen"; exit 2; }
+trap 'rm -f "$ORIGEN"' EXIT
+TODO=1 "$B/bin/prodsql" "
+  SELECT so.outcome_id, v.barras, v.hi, v.lo, v.cierre
+  FROM signal_outcome so
+  JOIN signal_observation o USING (observation_id)
+  CROSS JOIN LATERAL (
+    SELECT count(DISTINCT c.ts) AS barras, max(c.high) AS hi, min(c.low) AS lo,
+           (SELECT c2.close FROM ohlcv c2 WHERE c2.symbol=o.symbol AND c2.interval='1min'
+              AND c2.ts >= so.window_start AND c2.ts < so.window_end
+            ORDER BY c2.ts DESC LIMIT 1) AS cierre
+    FROM ohlcv c WHERE c.symbol=o.symbol AND c.interval='1min'
+      AND c.ts >= so.window_start AND c.ts < so.window_end
+  ) v
+  WHERE o.symbol='$simbolo' AND so.status='evaluated'
+    AND so.window_start >= timestamptz '$desde'
+    AND so.window_start <  timestamptz '$hasta'" 2>/dev/null | grep -E '^[0-9]+\|' > "$ORIGEN"
+[ -s "$ORIGEN" ] || { echo "NO MEDIDO: no se pudo recalcular ningun precio desde ohlcv para $simbolo $desde"; exit 2; }
+
 # TODO=1: se verifica que estan TODAS las filas y que cada una recalcula, asi que un corte
 # de salida recortaria justo la afirmacion. Los frenos son TOPE_FILAS y el conteo de abajo.
 cuerpo=$(TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta" 2>/dev/null)
@@ -97,12 +126,46 @@ faltan = sorted({k for k in CLAVES for f in filas if k not in f})
 if faltan:
     print(f"{ruta} sirve resultados sin las claves {faltan[:6]}"); sys.exit(1)
 
-# --- ESLABON 6: las seis derivadas, fila a fila, desde los precios crudos --------------
-def casi(a, b):
+def casi(a, b, tol=1e-6):
     if a is None and b is None: return True
     if a is None or b is None: return False
-    return abs(a - b) < 1e-6
+    return abs(a - b) < tol
 
+# --- CAPA 1: los precios que sirve la ruta contra ohlcv, su origen ---------------------
+origen = {}
+with open(sys.argv[6]) as fh:
+    for linea in fh:
+        oid, barras, hi, lo, cierre = linea.rstrip("\n").split("|")
+        origen[int(oid)] = (int(barras), float(hi), float(lo), float(cierre))
+
+infieles, comparadas = [], 0
+for f in filas:
+    if f["status"] != "evaluated":
+        continue
+    o = origen.get(f["outcome_id"])
+    if o is None:
+        infieles.append(f"outcome {f['outcome_id']} evaluado y ohlcv no da ni una vela en su ventana")
+        continue
+    barras, hi, lo, cierre = o
+    for nombre, desde_ohlcv, servido in (("bars_found", barras, f["bars_found"]),
+                                         ("max_high", hi, f["max_high"]),
+                                         ("min_low", lo, f["min_low"]),
+                                         ("end_price", cierre, f["end_price"])):
+        comparadas += 1
+        if not casi(float(desde_ohlcv), None if servido is None else float(servido), 1e-9):
+            infieles.append(f"outcome {f['outcome_id']} {nombre}: sirve {servido} y de ohlcv sale {desde_ohlcv}")
+    # Un max_high correcto sobre una ventana INCOMPLETA es un numero correcto sobre datos
+    # que faltan. Medido en 140: las 147260 filas evaluated de tres dias tienen
+    # bars_found = bars_expected, o sea que es invariante para ese estado -no para
+    # pending, que aun no se evaluo-. Conecta con K02, K03 y K04.
+    if f["bars_found"] != f["bars_expected"]:
+        infieles.append(f"outcome {f['outcome_id']} evaluado con {f['bars_found']} de {f['bars_expected']} velas: hueco dentro del horizonte")
+if infieles:
+    print(f"{len(infieles)} de {comparadas} comparaciones contra ohlcv fallan: " + " · ".join(infieles[:3])); sys.exit(1)
+if comparadas == 0:
+    print(f"NO MEDIDO: la ventana {desde} de {simbolo} no trae ni un resultado evaluado que comparar contra ohlcv"); sys.exit(2)
+
+# --- CAPA 2 (ESLABON 6): las seis derivadas, fila a fila, desde los precios crudos -----
 malas = []
 recalculadas = 0
 for f in filas:
@@ -159,6 +222,6 @@ if descuadres:
 if len(filas) != esperadas:
     print(f"la ruta sirve {len(filas)} resultados y la hora tiene {esperadas}"); sys.exit(1)
 
-print(f"{recalculadas} cifras derivadas recalculadas desde los precios crudos cuadran a 1e-6, y los {len(NOMBRES)} conteos contra signal_outcome: {simbolo} {desde}, {len(filas)} resultados enteros")
-' "$ref" "$simbolo" "$desde" "$esperadas" "$RUTA"
+print(f"{comparadas} precios contra ohlcv + {recalculadas} derivadas desde esos precios + {len(NOMBRES)} conteos, todo cuadra: {simbolo} {desde}, {len(filas)} resultados enteros, sin una vela ausente dentro de ningun horizonte")
+' "$ref" "$simbolo" "$desde" "$esperadas" "$RUTA" "$ORIGEN"
 exit $?
