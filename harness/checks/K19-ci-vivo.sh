@@ -63,5 +63,29 @@ estado=${ultimo%% *}; cuando=${ultimo##* }
 edad=$(( ( $(date -u +%s) - $(date -u -d "$cuando" +%s) ) / 86400 ))
 [ "$edad" -le "$DIAS_MAX" ] || fallos="$fallos; el ultimo CI de main es de hace $edad dias (limite $DIAS_MAX)"
 
+# UN JOB QUE NUNCA ARRANCA NO ES UN JOB QUE FALLA, y hasta el 2026-08-26 este check no lo
+# veia: sus cuatro afirmaciones -1 listener, unit activa, NRestarts sin crecer, ultimo CI
+# completado en success- eran CIERTAS mientras el CI de e0d3c96 llevaba nueve minutos en
+# cola sin arrancar, o sea con produccion corriendo codigo cuyos tests no se ejecutaron y
+# con el siguiente PR sin poder mergear. El instrumento miraba lo que TERMINO y no lo que
+# se quedo parado. Lo cazo el operador.
+# El tope es de 10 minutos porque el CI entero tarda entre 32 y 58 s medidos, y un solo
+# runner puede tener que esperar a que acabe un despliegue: 10 min es un orden de magnitud
+# por encima de la espera legitima mas larga que se ha visto, y sigue siendo mucho menos
+# que el "para siempre" que produce un job huerfano.
+COLA_MAX=${K19_COLA_MAX_MIN:-10}
+ahora_s=$(date -u +%s)
+parados=$(cd "$REPO" && gh run list --limit 20 \
+          --json databaseId,status,createdAt,workflowName \
+          --jq '.[] | select(.status=="queued" or .status=="waiting" or .status=="pending")
+                | "\(.databaseId) \(.createdAt) \(.workflowName)"' 2>/dev/null)
+while read -r rid creado flujo; do
+  [ -n "$rid" ] || continue
+  mins=$(( (ahora_s - $(date -u -d "$creado" +%s)) / 60 ))
+  [ "$mins" -le "$COLA_MAX" ] || fallos="$fallos; el run $rid ($flujo) lleva $mins min en cola sin arrancar (tope $COLA_MAX)"
+done <<EOF
+$parados
+EOF
+
 [ -z "${fallos# }" ] || { echo "${fallos#; }" | sed 's/^ //'; exit 1; }
-echo "1 listener, unit active, NRestarts=$ahora sin crecer, ultimo CI de main success hace $edad dias"
+echo "1 listener, unit active, NRestarts=$ahora sin crecer, ultimo CI de main success hace $edad dias, ningun run en cola por encima de $COLA_MAX min"
