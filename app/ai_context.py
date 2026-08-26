@@ -62,8 +62,13 @@ PROFILE_LIMITS: dict[AIProfile, dict[str, Any]] = {
         "delta_windows": [("1m", 60), ("3m", 180), ("15m", 900)],
         "include_setup": False,
         "include_recent_signals": True,
-        # El bloque intradia de divergencias cuesta ~1.9k tokens y solapa con delta_matrix
-        # y cvd_matrix, que el modelo ya recibe. Solo se manda bajo demanda explicita.
+        # El bloque intradia de divergencias solapa con delta_matrix y cvd_matrix, que el
+        # modelo ya recibe, y por eso solo se manda bajo demanda explicita. OJO A LA CIFRA:
+        # aqui ponia "~1.9k tokens" y esta MEDIDO el 2026-08-26 contra 140 con el mismo
+        # rough_token_estimate que usa el sobre: son 797 tokens -de 652 a 1449 en la
+        # seccion-, o sea el 2.3 % de los 35032 que ya cuesta la foto por defecto. La
+        # estimacion vieja pesaba 2.4 veces de mas y es la que sostiene esta decision, asi
+        # que conviene decidirla con la buena.
         "include_intraday_divergences": False,
     },
     "default": {
