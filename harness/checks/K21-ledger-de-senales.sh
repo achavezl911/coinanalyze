@@ -83,19 +83,29 @@ ref=$("$B/bin/prodsql" "
 # --- la ruta. TODO=1 porque se verifica que estan TODAS las filas (ver cabecera) ----
 cuerpo=$(TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta" 2>/dev/null)
 
-case "$cuerpo" in
-  ''|*'404'*|*'Not Found'*)
-    echo "la capacidad no tiene API: $RUTA no responde en 140 (signal_observation lleva $esperadas observaciones solo en $desde de $simbolo)"; exit 1 ;;
-esac
+# NO SE OLFATEA EL CUERPO. Este guardia decia case "$cuerpo" in *'404'*) y afirmaba "la
+# capacidad no tiene API" en cuanto la cadena 404 aparecia EN CUALQUIER SITIO del JSON.
+# El 2026-08-26, con la ruta ya desplegada y sirviendo 189 observaciones correctas, salio
+# ROJO porque un observation_id valia 124404. Un check que dice "no responde" sobre una
+# respuesta buena es peor que no tenerlo. Lo cazo la contradiccion con K20, que barrio esa
+# misma ruta sin un solo 4xx.
+# La ausencia de la ruta se decide abajo, sobre el JSON ya parseado: FastAPI contesta un
+# 404 con {"detail":"Not Found"}, que es una forma concreta y no una subcadena.
+[ -n "$cuerpo" ] || { echo "NO MEDIDO: $RUTA no devolvio nada (canal)"; exit 2; }
 
 printf '%s' "$cuerpo" | python3 -c '
 import json,sys
 ref = sys.argv[1].split("|")
 simbolo, desde, hasta, esperadas = sys.argv[2], sys.argv[3], sys.argv[4], int(sys.argv[5])
+crudo = sys.stdin.read()
 try:
-    d = json.load(sys.stdin)
+    d = json.loads(crudo)
 except Exception as e:
-    print(f"NO MEDIDO: {sys.argv[6]} no devolvio JSON ({e})"); sys.exit(2)
+    print(f"NO MEDIDO: {sys.argv[6]} no devolvio JSON ({e}): {crudo[:80]!r}"); sys.exit(2)
+# FastAPI contesta el 404 con exactamente {"detail":"Not Found"}. Es una FORMA, no una
+# subcadena: un JSON valido sin observations pero con detail es la ruta ausente.
+if isinstance(d, dict) and "observations" not in d and set(d) <= {"detail"}:
+    print(f"la capacidad no tiene API: {sys.argv[6]} devuelve {d} en 140 ({esperadas} observaciones solo en {desde} de {simbolo})"); sys.exit(1)
 if not isinstance(d, dict) or "observations" not in d:
     print(f"{sys.argv[6]} responde pero no sirve el ledger: sin clave observations (claves: {sorted(d)[:8] if isinstance(d,dict) else type(d).__name__})"); sys.exit(1)
 obs = d["observations"]
