@@ -36,15 +36,47 @@
 #   ohlcv_price contra ohlcv en ohlcv_price_at-1min   0 descuadres de 1800
 #   first_px_15m contra el open de la primera vela    0 descuadres de 1800
 #   last_px_15m y bars_15m                            0 descuadres en los 1435 que
-#     declaran price_move_15m_coverage=complete; y 11 de 65 en los que declaran partial.
-#   ESO NO ES UN FALLO y por poco lo cuento como tal: son los frames capturados 2-5 s
-#   DESPUES de cerrar la ventana, que vieron 14 velas porque la ultima aun no estaba
-#   escrita. Lo DECLARAN ellos mismos (bars_15m=14, coverage=partial). Los capturados a
-#   partir de 6 s vieron las 15 y cuadran 288/288. Es la misma familia que bars_found en
-#   K22. Por eso last_px_15m/bars_15m se exigen SOLO a los completos, y a los parciales
-#   se les exige lo que si es invariante: bars(hoy) >= bars_15m(congelado), porque ohlcv
-#   solo se rellena hacia adelante. Un frame que hubiera visto MAS velas de las que hoy
-#   existen seria perdida de datos: 0 casos de 1800.
+#     declaran price_move_15m_coverage=complete; y 11 de 65 en los que no.
+#
+# SON TRES CLASES, NO DOS, y el ancla es bars_15m, NO EL RELOJ. Contadas sobre la tabla
+# entera, 126019 frames, en una sola pasada (2026-08-26T20:20Z):
+#   complete  121272   bars_15m=15 SIEMPRE     2026-08-10 17:22 .. 2026-08-26 20:19
+#   partial     4516   4513 con 14 y 3 con 13: parcial es "menos de 15", no "14"
+#   none         231   bars_15m=0, y las 231 son del 2026-08-14 entre 17:36 y 18:52Z,
+#                      dentro del hueco de ohlcv_1min de esa tarde: durante 86 minutos
+#                      sin velas, 231 frames registraron "no tengo velas" en vez de
+#                      inventarse un precio, y ahi siguen doce dias despues. El hueco
+#                      esta medido aparte: los buckets de 15 min de 17:00 a 17:45 traen
+#                      0 velas, el de 18:00 trae 2 y desde 18:15 vuelven 15 de 15.
+#
+# Y AHI ESTA LA RAZON DE QUE EL INVARIANTE SEA >= Y NO ==: de esos 231, los 114 que se
+# capturaron desde las 18:15Z tienen HOY hasta 15 velas en su ventana -ohlcv se relleno
+# despues- y el frame sigue diciendo bars_15m=0. El context NO se reescribio con el dato
+# recuperado, que es exactamente lo que promete sql/schema.sql:713. Si el check exigiera
+# bars(hoy)==bars_15m a todos, esos 114 saldrian ROJO contra un sistema que se comporto
+# bien.
+#   El bicondicional es EXACTO en las dos direcciones: complete con bars<>15 son CERO y
+#   partial con bars=15 son CERO.
+#
+# LA PRIMERA VERSION DE ESTA CABECERA EXPLICABA LOS PARCIALES POR EL RETRASO -"capturados
+# 2-5 s tras cerrar la ventana"- Y ESO ES CIERTO EN LA MEDIANA Y FALSO EN LAS COLAS. Lo
+# midio el operador sobre 5753 frames de 12 h: complete va de 5.5 s a 300 s con p50 145.2,
+# partial de 0.0 s a 60.5 s con p50 2.9. Un guardia con umbral de 6 s clasificaria mal 23
+# de 5753, un 0.4%. Por eso el check NO mira el reloj en ningun sitio: mira bars_15m, que
+# es lo que si es exacto. El mecanismo -la ultima vela aun no escrita- explica el caso
+# tipico, no define la frontera.
+#
+# QUE SE LE EXIGE A CADA CLASE:
+#   A LAS TRES, el invariante universal: bars(hoy) >= bars_15m(congelado), porque ohlcv
+#     solo se rellena hacia adelante. Un frame que hubiera visto MAS velas de las que hoy
+#     existen seria perdida de datos: 0 casos de 1800. En none es TRIVIAL (bars_15m=0),
+#     asi que de esos 231 el check no afirma nada sobre velas; si afirma todo lo demas,
+#     que es hash, replay, cruce con el ledger y ohlcv_price.
+#   SOLO A complete, lo estricto: bars(hoy)==bars_15m, first_px_15m y last_px_15m.
+#   Y LA VALVULA QUE IMPIDE QUE ESTO AFLOJE EL CRITERIO: si NINGUN frame de la ventana
+#     declara complete, el check sale NO MEDIDO, no VERDE. Un escritor que marcase todo
+#     parcial no consigue un verde, consigue un no-medido. Igual con cero replicados y
+#     con menos del 90% de frames con fila en el ledger.
 #
 # EL NUCLEO SALE DEL REPO DE 143 (HEAD). Hoy HEAD es exactamente lo que corre 140. Si
 # alguien cambia compute_scalp_summary sin subir logic_version, esta comparacion sale
