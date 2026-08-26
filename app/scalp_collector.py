@@ -5,6 +5,7 @@ import contextlib
 import json
 import logging
 import math
+import signal
 import time
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
@@ -189,8 +190,19 @@ class TradeStore:
             self._prune_locked()
             return [(k, replace(v)) for k, v in self.realtime.items() if k[2] + 5 <= cutoff]
 
-    async def minute_snapshot(self) -> list[tuple[tuple[str, str, int], TradeBucket]]:
-        cutoff = time.time() - LATE_TRADE_GRACE_SECONDS
+    async def minute_snapshot(
+        self, grace: float = LATE_TRADE_GRACE_SECONDS
+    ) -> list[tuple[tuple[str, str, int], TradeBucket]]:
+        """Los buckets de minuto listos para escribir.
+
+        ``grace`` es el colchon que se le da a un minuto ya cerrado para que lleguen sus
+        operaciones tardias; con el valor por defecto un bucket no sale de aqui hasta
+        M+185 s. Al apagar se llama con grace=0 para llevarse los minutos CERRADOS que
+        aun estan en RAM, que estan completos y solo les faltaba esperar. El minuto en
+        curso no sale nunca: sigue estando a medias y escribirlo lo convertiria de
+        ausencia declarable en cifra silenciosamente incompleta.
+        """
+        cutoff = time.time() - grace
         async with self.lock:
             self._prune_locked()
             return [(k, replace(v)) for k, v in self.minute.items() if k[2] + 60 <= cutoff]
@@ -650,6 +662,34 @@ async def flush_trades(
         except Exception:
             LOGGER.exception("scalp_trade_flush_failed")
             await TRADE_STORE.prune()
+
+
+async def drenar_minutos(
+    pool: asyncpg.Pool,
+    ownership: ServiceOwnership | None = None,
+) -> int:
+    """Vacia a la base los minutos YA CERRADOS antes de que muera el proceso.
+
+    Sin esto, apagar el colector cuesta TRES minutos de futures_trades_agg en todos los
+    simbolos y todos los exchanges a la vez: un bucket no es elegible hasta M+185 s
+    (60 s de minuto + LATE_TRADE_GRACE_SECONDS), vive solo en RAM hasta entonces, y
+    systemd manda SIGTERM. Medido el 2026-08-25 en 140: 19 despliegues, 33 minutos
+    ausentes en 14 rachas, una por despliegue.
+
+    Se llevan solo los minutos CERRADOS. El que estaba en curso al recibir la senal se
+    queda fuera a proposito: esta a medias, y escribirlo lo pasaria de ausencia -que se
+    ve y se puede declarar- a cifra silenciosamente incompleta.
+    """
+    pendientes = await TRADE_STORE.minute_snapshot(grace=0.0)
+    if not pendientes:
+        return 0
+    async with pool.acquire() as conn:
+        async with fenced_transaction(conn, ownership):
+            await _write_trade_rows(conn, "futures_trades_agg", pendientes, realtime=False)
+            await _write_combined_minute(conn, pendientes)
+    await TRADE_STORE.ack_minute(pendientes)
+    LOGGER.info("scalp_drain_minutes buckets=%d", len(pendientes))
+    return len(pendientes)
 
 
 async def _write_trade_rows(
@@ -1538,11 +1578,37 @@ async def main() -> None:
                 asyncio.create_task(persist_scalp_signals(pool, service_lock)),
             )
         )
+    # SIGTERM sin manejador mata el proceso en el acto y este `finally` no llega a
+    # correr: por eso cada parada se llevaba por delante los minutos que seguian en RAM.
+    # Con el Event, la senal solo despierta a main() y el apagado pasa por el drenaje.
+    parada = asyncio.Event()
+    bucle = asyncio.get_running_loop()
+    for senal in (signal.SIGTERM, signal.SIGINT):
+        with contextlib.suppress(NotImplementedError):
+            bucle.add_signal_handler(senal, parada.set)
+    trabajo = asyncio.gather(*tasks)
+    espera = asyncio.create_task(parada.wait(), name="parada")
     try:
-        await asyncio.gather(*tasks)
+        await asyncio.wait({trabajo, espera}, return_when=asyncio.FIRST_COMPLETED)
+        if trabajo.done():
+            # Se murio solo: la excepcion tiene que salir para que systemd lo vea, pero
+            # despues del drenaje del finally.
+            await trabajo
     finally:
+        espera.cancel()
         for task in tasks:
             task.cancel()
+        trabajo.cancel()
+        # Con tope: dos de los lazos escriben en la base dentro de su except
+        # CancelledError, y el drenaje importa mas que un desmontaje limpio. Si en 10 s
+        # no han cedido, se sigue igualmente; escribir dos veces el mismo bucket es un
+        # upsert con los mismos valores, y perderlo no se arregla luego.
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await asyncio.wait_for(trabajo, timeout=10)
+        try:
+            await drenar_minutos(pool, service_lock)
+        except Exception:
+            LOGGER.exception("scalp_drain_failed")
         await pool.close()
         await service_lock.close()
 
