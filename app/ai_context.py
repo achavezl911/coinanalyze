@@ -62,13 +62,11 @@ PROFILE_LIMITS: dict[AIProfile, dict[str, Any]] = {
         "delta_windows": [("1m", 60), ("3m", 180), ("15m", 900)],
         "include_setup": False,
         "include_recent_signals": True,
-        # El bloque intradia de divergencias solapa con delta_matrix y cvd_matrix, que el
-        # modelo ya recibe, y por eso solo se manda bajo demanda explicita. OJO A LA CIFRA:
-        # aqui ponia "~1.9k tokens" y esta MEDIDO el 2026-08-26 contra 140 con el mismo
-        # rough_token_estimate que usa el sobre: son 797 tokens -de 652 a 1449 en la
-        # seccion-, o sea el 2.3 % de los 35032 que ya cuesta la foto por defecto. La
-        # estimacion vieja pesaba 2.4 veces de mas y es la que sostiene esta decision, asi
-        # que conviene decidirla con la buena.
+        # lite es el unico perfil que sigue SIN el bloque intradia, y para eso existe: es
+        # el que se pide cuando el presupuesto de tokens manda. Cuesta 797 tokens medidos
+        # -de 652 a 1449 en la seccion-, el 2.3 % de la foto. Antes aqui ponia "~1.9k
+        # tokens", que estaba 2.4 veces alto y era la cifra que sostenia dejarlo fuera de
+        # todos los perfiles baratos.
         "include_intraday_divergences": False,
     },
     "default": {
@@ -78,7 +76,21 @@ PROFILE_LIMITS: dict[AIProfile, dict[str, Any]] = {
         "delta_windows": [("15s", 15), ("1m", 60), ("3m", 180), ("5m", 300), ("15m", 900)],
         "include_setup": True,
         "include_recent_signals": True,
-        "include_intraday_divergences": False,
+        # PUERTA ABIERTA POR ALEJANDRO el 2026-08-26, con las dos salidas medidas delante.
+        # El panel tiene que pintar las divergencias intradia (K43: la foto trae lo que la
+        # ruta trae) y habia dos formas de conseguirlo:
+        #   (a) meterlo aqui: 797 tokens por ENVIO al modelo, y los envios del ai-bridge son
+        #       CINCO en dos meses -12365 skip_no_structural_change frente a 5 analisis, el
+        #       ultimo el 2026-07-16-, o sea unos 4000 tokens cada dos meses;
+        #   (b) que el panel pidiese profile=pro: 24454 B de mas por refresco a razon de
+        #       ~4000 refrescos diarios, unos 98 MB/dia, todos los dias.
+        # Los tokens de (b) no cuentan -el panel no es un modelo- y los bytes de (a) tampoco
+        # -el modelo no paga bytes-, asi que por lo que cada una paga de verdad hay seis
+        # ordenes de magnitud entre las dos. Eligio (a).
+        # EL RIESGO, dicho y no escondido: si algun dia se abre la cadencia de analisis,
+        # estos 797 tokens pasan a pagarse en CADA llamada. Sigue siendo el 2.3 % de la
+        # foto, pero deja de ser gratis y entonces toca volver a mirar esto.
+        "include_intraday_divergences": True,
     },
     "pro": {
         "signals": 12,

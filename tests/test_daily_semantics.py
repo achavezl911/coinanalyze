@@ -286,11 +286,19 @@ async def test_intraday_block_can_be_omitted_for_cheap_ai_profiles() -> None:
     assert "omitted" in result["intraday"]
 
 
-def test_only_the_pro_profile_pays_for_intraday_divergences() -> None:
+def test_solo_lite_se_queda_sin_las_divergencias_intradia() -> None:
+    """Antes solo pro y max lo llevaban. El 2026-08-26 ALEJANDRO abrio la puerta y entro
+    tambien en el perfil por defecto, que es el que sirve la foto sin argumentos.
+
+    No es una relajacion del test para que pase el codigo: es una decision tomada con las
+    dos salidas medidas -797 tokens por envio al modelo, con cinco envios en dos meses,
+    frente a 98 MB/dia si el panel tuviera que pedir profile=pro para conseguir lo mismo-.
+    lite se queda fuera a proposito: es el perfil que se pide cuando el presupuesto manda.
+    """
     from app.ai_context import PROFILE_LIMITS
 
     assert PROFILE_LIMITS["lite"]["include_intraday_divergences"] is False
-    assert PROFILE_LIMITS["default"]["include_intraday_divergences"] is False
+    assert PROFILE_LIMITS["default"]["include_intraday_divergences"] is True
     assert PROFILE_LIMITS["pro"]["include_intraday_divergences"] is True
     assert PROFILE_LIMITS["max"]["include_intraday_divergences"] is True
 
