@@ -2389,6 +2389,95 @@ async def signals_replay(
     }
 
 
+VISIBILITY_COLUMNS = """
+    v.final_visibility_id, v.outcome_id, so.observation_id, o.symbol,
+    so.horizon_minutes, v.visibility_version, v.outcome_version,
+    v.source_status, v.source_finalized_at, v.verified_visible_at, v.created_at
+"""
+VISIBILITY_TIMESTAMPS = ("source_finalized_at", "verified_visible_at", "created_at")
+
+
+@app.get("/api/signals/visibility")
+async def signals_visibility(
+    request: Request,
+    symbol: str,
+    since: str | None = None,
+    until: str | None = None,
+    status: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=5000)] = 1000,
+) -> dict[str, Any]:
+    """signal_outcome_final_visibility: la prueba de que un resultado ya era visible.
+
+    Cada fila certifica que el estado final de un signal_outcome estaba escrito y se
+    podia leer desde fuera no mas tarde de verified_visible_at. Ese instante NO es el
+    commit timestamp de PostgreSQL y no se puede leer como tal: el productor abre una
+    transaccion nueva, lee el estado ya comprometido y solo DESPUES pide el reloj, asi
+    que es una cota SUPERIOR conservadora (app/signal_visibility.py:20).
+
+    La ventana filtra por verified_visible_at, que es el instante que la capacidad
+    afirma, y no por cuando se finalizo el outcome: preguntar "que era demostrablemente
+    final a las 19:00" es justo lo que esta tabla contesta.
+    """
+    rechaza_parametros_desconocidos(
+        request, ("symbol", "since", "until", "status", "limit")
+    )
+    selected = validate_symbol(symbol)
+    if status is not None and status not in ("evaluated", "not_evaluable"):
+        raise HTTPException(
+            status_code=422,
+            detail="status tiene que ser evaluated o not_evaluable",
+        )
+    try:
+        end = datetime.fromisoformat(until) if until else datetime.now(UTC)
+        start = datetime.fromisoformat(since) if since else end - timedelta(hours=1)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"since/until no son ISO-8601: {exc}") from exc
+    if start.tzinfo is None or end.tzinfo is None:
+        raise HTTPException(status_code=422, detail="since/until necesitan zona horaria explicita")
+    if end <= start:
+        raise HTTPException(status_code=422, detail="until tiene que ser posterior a since")
+    if end - start > LEDGER_MAX_WINDOW:
+        raise HTTPException(
+            status_code=422,
+            detail=f"la ventana maxima es {int(LEDGER_MAX_WINDOW.total_seconds() // 3600)} h",
+        )
+
+    async with app.state.pool.acquire() as conn:
+        rows = await conn.fetch(
+            f"""
+            SELECT {VISIBILITY_COLUMNS}
+            FROM signal_outcome_final_visibility v
+            JOIN signal_outcome so USING (outcome_id)
+            JOIN signal_observation o USING (observation_id)
+            WHERE o.symbol=$1 AND v.verified_visible_at >= $2 AND v.verified_visible_at < $3
+              AND ($4::text IS NULL OR v.source_status = $4)
+            ORDER BY v.verified_visible_at, v.final_visibility_id
+            LIMIT $5
+            """,
+            selected,
+            start,
+            end,
+            status,
+            limit + 1,
+        )
+    truncated = len(rows) > limit
+    certificates = records(rows[:limit])
+    for certificate in certificates:
+        for column in VISIBILITY_TIMESTAMPS:
+            certificate[column] = _utc_iso(certificate[column])
+
+    return {
+        "symbol": selected,
+        "since": _utc_iso(start),
+        "until": _utc_iso(end),
+        "status": status,
+        "limit": limit,
+        "count": len(certificates),
+        "truncated": truncated,
+        "certificates": certificates,
+    }
+
+
 @app.get("/api/scalp/basis")
 async def scalp_basis(symbol: str) -> dict[str, Any]:
     selected = validate_symbol(symbol)
