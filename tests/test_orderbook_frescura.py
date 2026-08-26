@@ -12,6 +12,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+import app.ai_context as ai_context
 import app.api as api
 from app.api import ORDERBOOK_MAX_AGE_SECONDS, scalp_orderbook
 
@@ -108,3 +109,26 @@ async def test_la_edad_se_pregunta_SIN_el_filtro_de_30s(monkeypatch) -> None:
     edad = next(q for q in conn.consultas if "ORDER BY ts DESC LIMIT 1" in q)
     assert "make_interval" not in edad
     assert "venue_count=2" in edad
+
+
+@pytest.mark.skipif(SIM not in api.SETTINGS.SYMBOLS, reason="el simbolo no esta configurado")
+async def test_la_foto_sirve_el_MISMO_libro_y_tambien_dice_la_edad() -> None:
+    """K43/K45 · la seccion orderbook de /api/ai/context es la otra puerta al mismo dato.
+
+    Hasta el 2026-08-26 esa puerta no tenia el filtro de 30 s ni declaraba frescura: servia
+    "lo ultimo que hubiera". Un panel que dejara de pedir /api/scalp/orderbook para beber de
+    la foto (K44) perderia K13 sin que nada lo dijera, que es peor que no haberlo tenido.
+    """
+    viejo = datetime.now(UTC) - timedelta(seconds=300)
+    conn = _Conexion([], viejo)
+
+    salida = await ai_context.latest_orderbook(conn, SIM)
+
+    assert salida["freshness"]["status"] == "stale"
+    assert salida["freshness"]["age_seconds"] >= 290
+    assert salida["freshness"]["max_age_seconds"] == ORDERBOOK_MAX_AGE_SECONDS
+    assert salida["combined"] is None
+    # El mismo predicado que el endpoint, y por eso mismo: si se separan, la foto vuelve a
+    # servir libro viejo callando.
+    assert "make_interval" in conn.consultas[0]
+    assert "venue_count=2" in conn.consultas[0]

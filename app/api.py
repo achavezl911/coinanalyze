@@ -19,10 +19,14 @@ from fastapi.responses import FileResponse, JSONResponse, Response, StreamingRes
 from fastapi.staticfiles import StaticFiles
 
 from app.ai_context import (
+    ORDERBOOK_EDAD_SQL,
+    ORDERBOOK_FRESCAS_SQL,
+    ORDERBOOK_MAX_AGE_SECONDS,
     build_ai_context,
     build_ai_symbol_context,
     data_confidence_row,
     normalize_profile,
+    orderbook_freshness,
 )
 from app.config import SUPPORTED_SYMBOLS, WS_SYMBOL_MAP, get_settings
 from app.daily_agg import (
@@ -1400,49 +1404,19 @@ async def flow_spot_vs_perp(
         return await spot_perp_flow(conn, selected, interval, days)
 
 
-ORDERBOOK_MAX_AGE_SECONDS = 30
-
-
 @app.get("/api/scalp/orderbook")
 async def scalp_orderbook(symbol: str) -> dict[str, Any]:
+    # Las dos consultas y los tres estados viven en ai_context y los comparte con la
+    # seccion orderbook de la foto: si se separan, la foto vuelve a servir libro viejo
+    # sin declararlo y K13 se pierde para quien beba de ella.
     selected = validate_symbol(symbol)
     async with app.state.pool.acquire() as conn:
-        rows = await conn.fetch(
-            """
-            SELECT DISTINCT ON (exchange) * FROM orderbook_snapshot
-            WHERE symbol=$1 AND ts >= now()-make_interval(secs => $2)
-              AND (exchange <> 'combined' OR venue_count=2)
-            ORDER BY exchange,ts DESC
-            """,
-            selected,
-            ORDERBOOK_MAX_AGE_SECONDS,
-        )
-        # La edad se pregunta SIN el filtro de 30 s, que es justo lo que el filtro
-        # esconde. Va en su propia consulta y no quitando el filtro de la de arriba:
-        # medido en 140 el 2026-08-26, un DISTINCT ON sin acotar tarda 97.8 ms sobre
-        # esta tabla y este LIMIT 1 tarda 0.165 ms. El predicado de venue es el mismo,
-        # o sea que "lo mas nuevo que serviria" y no "lo mas nuevo que hay".
-        as_of = await conn.fetchval(
-            """
-            SELECT ts FROM orderbook_snapshot
-            WHERE symbol=$1 AND (exchange <> 'combined' OR venue_count=2)
-            ORDER BY ts DESC LIMIT 1
-            """,
-            selected,
-        )
-    # TRES estados, no dos. "No hay libro" y "el libro es viejo" son hechos distintos y
-    # el que decide es quien mira: con cero filas y sin esto, los dos se ven igual.
-    edad = (datetime.now(UTC) - as_of).total_seconds() if as_of is not None else None
-    estado = "fresh" if rows else ("empty" if as_of is None else "stale")
+        rows = await conn.fetch(ORDERBOOK_FRESCAS_SQL, selected, ORDERBOOK_MAX_AGE_SECONDS)
+        as_of = await conn.fetchval(ORDERBOOK_EDAD_SQL, selected)
     return {
         "symbol": selected,
         "rows": records(rows),
-        "freshness": {
-            "status": estado,
-            "as_of": as_of.isoformat() if as_of is not None else None,
-            "age_seconds": round(edad, 1) if edad is not None else None,
-            "max_age_seconds": ORDERBOOK_MAX_AGE_SECONDS,
-        },
+        "freshness": orderbook_freshness(as_of, bool(rows)),
     }
 
 
