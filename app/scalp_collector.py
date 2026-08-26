@@ -1599,12 +1599,16 @@ async def main() -> None:
         for task in tasks:
             task.cancel()
         trabajo.cancel()
-        # Con tope: dos de los lazos escriben en la base dentro de su except
-        # CancelledError, y el drenaje importa mas que un desmontaje limpio. Si en 10 s
-        # no han cedido, se sigue igualmente; escribir dos veces el mismo bucket es un
-        # upsert con los mismos valores, y perderlo no se arregla luego.
+        # Se espera a TODAS las tareas, no a la primera que caiga. `trabajo` es un
+        # gather sin return_exceptions: termina en cuanto una hija lanza, y si se
+        # continuara ahi el pool se cerraria mientras las demas aun se desmontan. Dos de
+        # los lazos escriben en la base dentro de su except CancelledError, y con el
+        # gather a secas fallaban con "pool is closed" en cada parada. Con tope de 10 s
+        # porque el drenaje importa mas que un desmontaje limpio.
         with contextlib.suppress(asyncio.CancelledError, Exception):
-            await asyncio.wait_for(trabajo, timeout=10)
+            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=10)
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await trabajo
         try:
             await drenar_minutos(pool, service_lock)
         except Exception:
