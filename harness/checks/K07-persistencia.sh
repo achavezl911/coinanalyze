@@ -34,7 +34,13 @@ fallos=""
 [ "$(grep -c 'TEST_DATABASE_URL' "$REPO/.github/workflows/ci.yml")" -ge 1 ] \
   || fallos="$fallos ci.yml no define TEST_DATABASE_URL"
 
-rid=$(cd "$REPO" && gh run list --workflow=ci.yml --branch main --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
+# --status completed y no "el ultimo a secas": justo despues de un merge el run de CI esta
+# en cola o corriendo y todavia no tiene log, asi que el check salia NO MEDIDO por el
+# CANAL durante unos minutos y se comia su propia medicion. Lo que se quiere leer es el
+# ultimo CI que YA termino, haya ido bien o mal: el numero de tests que ejecuto existe en
+# los dos casos.
+rid=$(cd "$REPO" && gh run list --workflow=ci.yml --branch main --status completed --limit 1 \
+      --json databaseId --jq '.[0].databaseId' 2>/dev/null)
 [ -n "$rid" ] || { echo "NO MEDIDO: gh no devolvio ningun run de ci.yml en main"; exit 2; }
 resumen=$(cd "$REPO" && gh run view "$rid" --log 2>/dev/null | grep -oE '[0-9]+ passed(, [0-9]+ skipped)?' | tail -1)
 [ -n "$resumen" ] || { echo "NO MEDIDO: el log del run $rid no trae resumen de pytest"; exit 2; }

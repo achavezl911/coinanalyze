@@ -49,7 +49,13 @@ else
   fallos="$fallos; no se pudo leer NRestarts"
 fi
 
-ultimo=$(cd "$REPO" && gh run list --workflow=ci.yml --branch main --limit 1 \
+# --status completed: un run EN COLA no es un run fallido. Sin este filtro, durante los
+# minutos que van del merge al final del CI el ultimo run no tiene conclusion y esto
+# imprimia "el ultimo CI de main acabo en ''" y ponia el check en ROJO. Es un ROJO FALSO y
+# del canal, y ademas es el peor tipo: K07 tiene el mismo selector y ahi el mismo hueco
+# sale como NO MEDIDO -falla abierto y se nota-, mientras que aqui fallaba CERRADO y se
+# leia como una regresion del CI. Medido el 2026-08-26 con el run 32983804997 en cola.
+ultimo=$(cd "$REPO" && gh run list --workflow=ci.yml --branch main --status completed --limit 1 \
          --json conclusion,createdAt --jq '.[0] | "\(.conclusion) \(.createdAt)"' 2>/dev/null)
 [ -n "$ultimo" ] || { echo "NO MEDIDO: gh no devolvio runs de ci.yml en main"; exit 2; }
 estado=${ultimo%% *}; cuando=${ultimo##* }
