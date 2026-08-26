@@ -71,3 +71,52 @@ def test_websocket_topics_are_generated_only_for_assigned_symbols():
     assert binance_url(symbols).endswith("ethusdt@aggTrade")
     assert "btcusdt" not in binance_url(symbols)
     assert "solusdt" not in binance_url(symbols)
+
+
+@pytest.mark.asyncio
+async def test_el_vaciado_de_apagado_se_lleva_los_minutos_cerrados(monkeypatch):
+    """Los que esperan la gracia se perdian en cada reinicio: son dato real."""
+    from app.ws_collector import LATE_TRADE_GRACE_SECONDS
+
+    ahora = 1_000_000.0
+    monkeypatch.setattr(time, "time", lambda: ahora)
+    store = BucketStore()
+    # un minuto cerrado hace 70 s: NO es elegible para el flush normal (gracia 125 s)
+    cerrado_ms = int((ahora - 130) * 1000)
+    await store.add("BTC", "binance", cerrado_ms, 100.0, 1.0, True)
+    assert await store.minute_snapshot() == []
+    assert LATE_TRADE_GRACE_SECONDS > 60
+    # con gracia 0 si sale, que es lo que hace el vaciado del apagado
+    assert len(await store.minute_snapshot(grace=0.0)) == 1
+
+
+@pytest.mark.asyncio
+async def test_el_vaciado_de_apagado_NO_publica_el_minuto_en_curso(monkeypatch):
+    """Un minuto a medias escrito como completo seria inventarse un volumen."""
+    ahora = 1_000_000.0
+    monkeypatch.setattr(time, "time", lambda: ahora)
+    store = BucketStore()
+    await store.add("BTC", "binance", int((ahora - 5) * 1000), 100.0, 1.0, True)
+    assert await store.minute_snapshot(grace=0.0) == []
+
+
+@pytest.mark.asyncio
+async def test_drain_devuelve_cuantos_minutos_salvo(monkeypatch):
+    from app import ws_collector
+
+    ahora = 1_000_000.0
+    monkeypatch.setattr(time, "time", lambda: ahora)
+    monkeypatch.setattr(ws_collector, "STORE", BucketStore())
+    await ws_collector.STORE.add("BTC", "binance", int((ahora - 130) * 1000), 100.0, 1.0, True)
+    escritos = []
+
+    async def _falso(_pool, _ownership, snapshots):
+        escritos.append(snapshots)
+
+    monkeypatch.setattr(ws_collector, "_write_minute", _falso)
+    assert await ws_collector.drain_closed_minutes(None, None) == 1
+    assert len(escritos) == 1
+    # y sin nada que salvar no toca la base
+    monkeypatch.setattr(ws_collector, "STORE", BucketStore())
+    assert await ws_collector.drain_closed_minutes(None, None) == 0
+    assert len(escritos) == 1

@@ -267,13 +267,21 @@ async def wait_for_stop_or_lock_loss(
             timeout=timeout,
             return_when=asyncio.FIRST_COMPLETED,
         )
+        # El apagado se mira PRIMERO. Si ya se pidio parar, que una tarea critica
+        # termine en el mismo despertar es lo esperado -la esta cancelando el apagado-,
+        # no una muerte inesperada. Con el orden anterior cada SIGTERM podia salir por
+        # el raise de abajo: medido en 140, cada despliegue dejaba a coinalyze-ingest en
+        # "Failed with result exit-code" con un RuntimeError que no era un fallo real,
+        # y un fallo falso repetido es lo que hace que nadie mire el que si lo sea.
+        if stop_wait in done:
+            return True
         if lock_monitor in done:
             await lock_monitor
         for task in critical_tasks:
             if task in done:
                 await task
                 raise RuntimeError(f"critical task stopped unexpectedly: {task.get_name()}")
-        return stop_wait in done
+        return False
     finally:
         stop_wait.cancel()
         await asyncio.gather(stop_wait, return_exceptions=True)

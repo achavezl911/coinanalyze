@@ -452,3 +452,57 @@ async def test_postgres_ingest_component_failure_cannot_be_overwritten_concurren
         for connection in (first, second, control):
             if connection is not None and not connection.is_closed():
                 await connection.close()
+
+
+@pytest.mark.asyncio
+async def test_el_apagado_no_se_lee_como_muerte_inesperada():
+    """Cada despliegue dejaba a ingest en 'Failed with result exit-code' sin fallo real."""
+    import asyncio
+
+    from app.db import wait_for_stop_or_lock_loss
+
+    stop = asyncio.Event()
+
+    async def _tarea():
+        await asyncio.sleep(0.01)
+
+    async def _monitor():
+        await asyncio.sleep(3600)
+
+    critica = asyncio.create_task(_tarea(), name="Task-critica")
+    monitor = asyncio.create_task(_monitor(), name="service-lock")
+    stop.set()
+    await asyncio.sleep(0.02)  # la tarea critica YA termino cuando se mira
+    try:
+        assert await wait_for_stop_or_lock_loss(stop, monitor, critical_tasks=(critica,)) is True
+    finally:
+        monitor.cancel()
+        await asyncio.gather(monitor, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_una_tarea_critica_que_muere_SIN_apagado_sigue_saltando():
+    """El brazo que debe seguir fallando: aflojar el guardia no puede apagarlo."""
+    import asyncio
+
+    import pytest as _pytest
+
+    from app.db import wait_for_stop_or_lock_loss
+
+    stop = asyncio.Event()  # nadie pidio parar
+
+    async def _tarea():
+        return None
+
+    async def _monitor():
+        await asyncio.sleep(3600)
+
+    critica = asyncio.create_task(_tarea(), name="Task-7")
+    monitor = asyncio.create_task(_monitor(), name="service-lock")
+    await asyncio.sleep(0.01)
+    try:
+        with _pytest.raises(RuntimeError, match="critical task stopped unexpectedly: Task-7"):
+            await wait_for_stop_or_lock_loss(stop, monitor, critical_tasks=(critica,))
+    finally:
+        monitor.cancel()
+        await asyncio.gather(monitor, return_exceptions=True)
