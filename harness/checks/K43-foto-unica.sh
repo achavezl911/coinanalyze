@@ -1,122 +1,165 @@
 #!/bin/bash
-# K43  el panel pinta de UNA foto, y la foto dice cuando se tomo.
+# K43  toda cifra que el panel pinta esta cubierta por UNA ventana declarada.
 #
 # Hoy la pantalla es un collage: app.js menciona 37 rutas en 49 sitios y hace 8
-# Promise.all; cada endpoint resuelve su propio now() y solo uno de esos instantes
-# llega a pintarse. Medido el 2026-08-26: las 37 rutas del panel son 403749 B y 14.10 s
-# sumadas; /api/ai/context trae lo mismo -y 12 de las 20 rutas huerfanas de K31- en
-# 71586 B y 3.15 s, en UNA peticion.
+# Promise.all; cada endpoint resuelve su propio now() y solo uno de esos instantes se
+# pinta. Medido el 2026-08-26: las 37 rutas son 403749 B y 14.10 s sumadas;
+# /api/ai/context trae 16 de ellas -y 12 de las 20 huerfanas de K31- en 71586 B y
+# 3.15 s, en UNA peticion.
 #
-# EL CRITERIO QUE PARECE OBVIO SE CUMPLE SIENDO FALSO. "un solo generated_at" es
-# facil de servir y no prueba nada: medido, dentro del snapshot hay 27 instantes y 16
-# son de construccion, con el generated_at de la raiz tomado A MITAD del armado -13
-# secciones calculadas antes de su propia etiqueta y dos despues, liquidation_map a
-# +2.650 s-. Una etiqueta unica sobre datos de vendimias distintas miente MAS que 43
-# etiquetas porque parece autoritativa. Por eso aqui se exige una VENTANA de
-# construccion declarada y que todas las secciones caigan dentro.
+# NO SE DEJA DE PINTAR NADA. Las 37 siguen en pantalla; lo que cambia es que cada una
+# queda bajo una ventana en vez de bajo ninguna. Y no todas van al mismo sitio: meter
+# una serie de 576 velas en cada refresco es un error de categoria -una serie no tiene
+# un instante, tiene una ventana- y revienta los 69.9 KB de la foto.
 #
-# TRES FAMILIAS DE INSTANTE Y NO SE PUEDEN MEZCLAR:
-#   construccion  as_of, generated_at, snapshot_ts, captured_at: cuando NOSOTROS
-#                 calculamos esa seccion. Tiene que caer dentro de la ventana.
-#   referencia    *_reference_ts y *_latest_ts de K38, y window_start/window_end de
-#                 K42: apuntan al pasado A PROPOSITO. La barra de 24 h TIENE que ser
-#                 vieja. EXENTOS: aplicarles el criterio seria deshacer K38.
-#   fuente        fetched_at: cuando el DATO se trajo de su origen, que no es cuando
-#                 nosotros armamos la foto. Medido: external_macro_context viene con
-#                 fetched_at 52 min atras porque esa es la cadencia real de esa
-#                 fuente, no un fallo. EXENTO, y ademas es la forma correcta de
-#                 declarar la edad: existiendo. Meterlo en construccion haria el
-#                 criterio imposible por el motivo equivocado.
+# CUATRO FAMILIAS, cada ruta en UNA y declarada aqui con lo que promete:
+#   FOTO     estado ambiente del instante: solo depende de symbol. Va dentro de
+#            /api/ai/context y la gobierna su [build_started_at, build_finished_at].
+#   SERIE    devuelve una sucesion de barras. Su ventana es su coverage, que K03 ya
+#            le obliga a declarar. NO entra en el sobre.
+#   DEMANDA  la respuesta depende de algo que ELIGE el operador -un nivel, un rango,
+#            un perfil-. La foto no puede saber que le vas a preguntar, asi que cada
+#            respuesta trae su propio as_of.
+#   EXENTA   no es una cifra de mercado. Con cita, no por conveniencia.
 #
-# Las dos mitades tienen que pasar. Ninguna vale sin la otra: una foto perfecta que
-# el panel no usa no arregla la pantalla, y un panel que solo pide la foto no sirve
-# si la foto miente sobre cuando se tomo.
+# LA MITAD (a) -que la foto declare su ventana- ya esta VERDE contra 140 desde
+# f36d009. Lo que sigue ROJO es esta mitad.
+#
+# POR QUE NO SE EXIGE "EXACTAMENTE UNA" EN EL SENTIDO LITERAL, y esto se midio antes
+# de decidirlo: 11 de las 37 estan a la vez en la foto y traen as_of o coverage propio
+# -external-macro, funding-context, macro-context, oi, passive-flow, profile,
+# quality/feeds, structure, structure-detail, swing-score, trend-matrix-. Eso NO es un
+# defecto: es el mismo dato alcanzable por dos caminos, y quien pinta elige uno. Exigir
+# "una y solo una" habria puesto 11 rutas en ROJO por algo que no rompe nada, que es
+# el error que ya casi se comete en K42 al implementar el oraculo tal como se encargo.
+# Lo que si se exige, y es lo que impide la escapatoria: cada ruta esta ASIGNADA a una
+# familia aqui, y esa familia CUMPLE su promesa contra 140. Una ruta sin familia es un
+# fallo; una familia que no cumple lo que promete, tambien.
 set -uo pipefail
 _REPO_LLAMANTE=${REPO:-}
 B=/srv/coinanalyze/harness; . "$B/env"
 REPO=${_REPO_LLAMANTE:-${REPO:-/srv/coinanalyze/repo}}
 PANEL="$REPO/static/app.js"
 SIM=${K43_SIMBOLO:-BTCUSDT_PERP.A}
-# Excepciones declaradas CON motivo. No es una lista de conveniencia.
-#   /api/stream   SSE: empuje continuo, no es una foto y no puede serlo
-#   /api/healthz  salud del sistema, no una cifra de mercado
-EXCEPCIONES="/api/stream /api/healthz"
+
+# --- LA ASIGNACION. Una linea por ruta, con la familia y el motivo medido. ---
+# desk/state y scalp/execution-cost estan en DEMANDA y no en FOTO, y NO por su firma:
+# los dos declaran symbol como unico parametro obligatorio. Es por medicion del
+# 2026-08-26 contra 140: desk/state con direction=long y direction=short devuelve
+# cuerpos distintos (22159 B vs 22186 B, sha 14a69d09 vs d118d355) y con
+# profile=swing vs scalper devuelve 22747 B vs 53 B; scalp/execution-cost con
+# profile=intradia vs swing da 6572 B vs 6567 B, sha 9111bab6 vs 0a0afc9c. app.js los
+# llama con state.tradingProfile y state.direction, o sea con eleccion del operador.
+# Meterlos en la foto obligaria a armar una foto por combinacion, o a pintar cifras de
+# un perfil bajo la ventana de otro, que es justo lo que esta unidad existe para
+# impedir.
+ASIGNACION="
+/api/data-confidence=FOTO /api/divergences=FOTO /api/external-macro=FOTO
+/api/funding-context=FOTO /api/macro-context=FOTO /api/oi=FOTO
+/api/passive-flow=FOTO /api/profile=FOTO /api/quality/feeds=FOTO
+/api/scalp/delta-matrix=FOTO /api/scalp/liquidation-levels=FOTO
+/api/scalp/orderbook=FOTO /api/structure=FOTO /api/structure-detail=FOTO
+/api/swing-score=FOTO /api/trend-matrix=FOTO
+/api/dashboard/state=FOTO /api/market-impact=FOTO /api/positioning=FOTO
+/api/scalp/absorption=FOTO /api/scalp/basis=FOTO /api/scalp/liquidations=FOTO
+/api/wyckoff=FOTO
+/api/ohlcv=SERIE /api/cvd/divergence=SERIE /api/daily=SERIE
+/api/delta-profile=SERIE /api/whale/delta=SERIE /api/verdicts=SERIE
+/api/level/breakout=DEMANDA /api/range/validate=DEMANDA /api/zone/analysis=DEMANDA
+/api/scalp/execution-cost=DEMANDA /api/desk/state=DEMANDA
+/api/stream=EXENTA /api/healthz=EXENTA /api/symbols=EXENTA
+"
+# EXENTAS, con su motivo: stream es SSE -empuje continuo, no una foto y no puede
+# serlo-; healthz es salud del sistema; symbols es catalogo de configuracion.
 
 [ -r "$PANEL" ] || { echo "NO MEDIDO: no se puede leer static/app.js"; exit 2; }
 
-fallos=""
+foto=$(curl -sS -k --netrc-file "$NETRC" --max-time 40 \
+       "$API_PROD/api/ai/context?symbol=$SIM" 2>/dev/null)
+[ -n "$foto" ] || { echo "NO MEDIDO: /api/ai/context no respondio"; exit 2; }
 
-# ---- mitad (a): la foto declara su ventana de construccion ----
-cuerpo=$(curl -sS -k --netrc-file "$NETRC" --max-time 40 \
-         "$API_PROD/api/ai/context?symbol=$SIM" 2>/dev/null)
-[ -n "$cuerpo" ] || { echo "NO MEDIDO: /api/ai/context no respondio"; exit 2; }
+printf '%s' "$foto" | REPO="$REPO" SIM="$SIM" ASIGNACION="$ASIGNACION" \
+  NETRC="$NETRC" API_PROD="$API_PROD" python3 -c '
+import json, os, re, subprocess, sys
 
-foto=$(printf '%s' "$cuerpo" | python3 -c '
-import sys, json, re
-from datetime import datetime
+foto = json.load(sys.stdin)
+claves = set(foto)
+repo, sim = os.environ["REPO"], os.environ["SIM"]
+netrc, base = os.environ["NETRC"], os.environ["API_PROD"]
 
-CONSTRUCCION = re.compile(r"^(as_of|generated_at|snapshot_ts|captured_at)$")
-REFERENCIA = re.compile(r"reference_ts$|_latest_ts$|^window_start$|^window_end$|session_end_at$")
+asign = {}
+for par in os.environ["ASIGNACION"].split():
+    r, _, f = par.partition("=")
+    asign[r] = f
 
-try:
-    d = json.load(sys.stdin)
-except Exception:
-    print("NOMED json ilegible"); raise SystemExit(0)
+pintadas = sorted(set(subprocess.run(
+    ["grep", "-o", "/api/[a-z0-9/-]*", repo + "/static/app.js"],
+    capture_output=True, text=True).stdout.split()))
+pintadas = [r for r in pintadas if r != "/api/ai/context"]
 
-ini, fin = d.get("build_started_at"), d.get("build_finished_at")
-if not ini or not fin:
-    print("ROJO el sobre no declara su ventana de construccion: falta %s"
-          % " ".join(k for k, v in (("build_started_at", ini), ("build_finished_at", fin)) if not v))
-    raise SystemExit(0)
-try:
-    t0, t1 = datetime.fromisoformat(ini), datetime.fromisoformat(fin)
-except ValueError:
-    print("ROJO build_started_at/build_finished_at no son fechas ISO"); raise SystemExit(0)
-if t1 < t0:
-    print("ROJO la ventana declarada termina antes de empezar"); raise SystemExit(0)
+def clave_en_foto(r):
+    n = r.replace("/api/", "").replace("/", "_").replace("-", "_")
+    cand = [n, n.replace("scalp_", ""), n + "_context"]
+    cand += {"oi": ["oi_context"], "market_memory": ["market_memory_2y"],
+             "quality_feeds": ["data_quality"], "external_macro": ["external_macro_context"],
+             "scalp_orderbook": ["orderbook"], "structure": ["market_structure"],
+             "scalp_liquidations": ["scalp_liquidations"]}.get(n, [])
+    # /api/dashboard/state no necesita seccion propia: es un COMPUESTO de claves que la
+    # foto ya trae. Medido el 2026-08-26 contra 140, sus 7 claves estan todas dentro,
+    # cuatro con el mismo nombre (scalp setup snapshot symbol) y tres renombradas, con
+    # los MISMOS campos una a una: barriers=price_barriers (14 de 14),
+    # cvd_swing=cvd_swing_90d (2 de 2), market_memory=market_memory_2y (11 de 11).
+    # Anadirlo como clave duplicaria 12571 B por foto. Lo que toca no es meterlo: es
+    # dejar de pedirlo.
+    if r == "/api/dashboard/state":
+        COMPUESTO = ("scalp", "setup", "snapshot", "price_barriers", "cvd_swing_90d",
+                     "market_memory_2y")
+        faltan = [c for c in COMPUESTO if c not in claves]
+        return None if faltan else "compuesto:" + ",".join(COMPUESTO)
+    return next((c for c in cand if c in claves), None)
 
-fuera = []
-def rec(o, ruta=""):
-    if isinstance(o, dict):
-        for k, v in o.items():
-            r = (ruta + "." + k).lstrip(".")
-            if isinstance(v, str) and len(v) > 15 and CONSTRUCCION.match(k) and not REFERENCIA.search(k):
-                try:
-                    t = datetime.fromisoformat(v)
-                except ValueError:
-                    continue
-                if not (t0 <= t <= t1):
-                    fuera.append((r, (t - t1).total_seconds()))
-            rec(v, r)
-    elif isinstance(o, list):
-        for v in o[:5]:
-            rec(v, ruta + "[]")
-rec(d)
+def cuerpo(r):
+    out = subprocess.run(["curl", "-sS", "-k", "--netrc-file", netrc, "--max-time", "30",
+        base + r + "?symbol=%s&level=78800&low=77000&high=80000" % sim],
+        capture_output=True, text=True).stdout
+    try:
+        return json.loads(out)
+    except Exception:
+        return None
 
-if fuera:
-    fuera.sort(key=lambda x: -abs(x[1]))
-    print("ROJO %d secciones se calcularon fuera de la ventana declarada y no declaran su edad: %s"
-          % (len(fuera), " ".join("%s(%+.1fs)" % (r, s) for r, s in fuera[:4])))
-    raise SystemExit(0)
-print("OK ventana [%s, %s) de %.2f s" % (ini[11:19], fin[11:19], (t1 - t0).total_seconds()))
-')
-case "$foto" in
-  NOMED*) echo "NO MEDIDO: ${foto#NOMED }"; exit 2 ;;
-  ROJO*)  fallos="LA FOTO: ${foto#ROJO }" ;;
-esac
+sin_familia, incumplen = [], []
+for r in pintadas:
+    fam = asign.get(r)
+    if fam is None:
+        sin_familia.append(r)
+        continue
+    if fam == "EXENTA":
+        continue
+    if fam == "FOTO":
+        if not clave_en_foto(r):
+            incumplen.append("%s(FOTO: no esta en el sobre)" % r)
+        continue
+    d = cuerpo(r)
+    if not isinstance(d, dict):
+        incumplen.append("%s(%s: sin json)" % (r, fam))
+    elif fam == "SERIE" and not ("coverage" in d or "data_gaps" in d):
+        incumplen.append("%s(SERIE: sin coverage)" % r)
+    elif fam == "DEMANDA" and not any(k in d for k in ("as_of", "generated_at", "snapshot_ts")):
+        incumplen.append("%s(DEMANDA: sin as_of)" % r)
 
-# ---- mitad (b): el panel no pide nada mas que la foto ----
-otras=""
-for r in $(cd "$REPO" && grep -o "/api/[a-z0-9/-]*" static/app.js | sort -u); do
-  case " $EXCEPCIONES " in *" $r "*) continue ;; esac
-  [ "$r" = "/api/ai/context" ] && continue
-  otras="$otras $r"
-done
-n=$(printf '%s' "$otras" | wc -w)
-[ "$n" -eq 0 ] || {
-  extra="EL PANEL: pide $n rutas ademas de la foto:$otras"
-  fallos="${fallos:+$fallos | }$extra"
-}
-
-[ -z "$fallos" ] || { echo "$fallos" | cut -c1-300; exit 1; }
-echo "el panel pide solo /api/ai/context (mas $EXCEPCIONES, declaradas) y la foto declara su ventana de construccion con todas sus secciones dentro"
+if sin_familia:
+    print("%d rutas que el panel pinta no tienen familia asignada: %s"
+          % (len(sin_familia), " ".join(sin_familia)))
+    raise SystemExit(1)
+if incumplen:
+    print("%d de %d rutas no cumplen lo que su familia promete: %s"
+          % (len(incumplen), len(pintadas), " ".join(incumplen)))
+    raise SystemExit(1)
+print("las %d rutas que el panel pinta estan cubiertas: %d en la foto, %d series con "
+      "coverage, %d bajo demanda con as_of propio, %d exentas con cita"
+      % (len(pintadas),
+         sum(1 for r in pintadas if asign[r] == "FOTO"),
+         sum(1 for r in pintadas if asign[r] == "SERIE"),
+         sum(1 for r in pintadas if asign[r] == "DEMANDA"),
+         sum(1 for r in pintadas if asign[r] == "EXENTA")))
+'

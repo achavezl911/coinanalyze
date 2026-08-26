@@ -29,9 +29,11 @@ from app.scalp_logic import (
     liquidation_burst,
     liquidation_map,
     macro_context,
+    market_impact,
     market_memory,
     market_structure,
     oi_context,
+    positioning_context,
     price_barriers,
     reference_levels,
     resolve_matrix_as_of,
@@ -40,6 +42,7 @@ from app.scalp_logic import (
     structure_detail,
     volatility_context,
     volume_profile,
+    wyckoff_context,
 )
 from app.scalp_logic import compute_swing_score as _compute_swing_score
 from app.scalp_logic import passive_flow as _passive_flow
@@ -792,6 +795,19 @@ async def build_ai_symbol_context(
         "volume_profile": await volume_profile(conn, symbol, matrix_as_of),
         "price_barriers": await price_barriers(conn, symbol),
         "market_memory_2y": await market_memory(conn, symbol),
+        # K43 · estado ambiente del instante: solo dependen de symbol, asi que caben
+        # bajo la ventana del sobre y el panel deja de pedirlos por separado. Medido el
+        # 2026-08-26 en 140: los tres suman 17021 B y 0.08 s, sobre una foto de 71586 B
+        # y 3.15 s. No entran aqui ni las series -una serie no tiene un instante, tiene
+        # una ventana, y su contrato es el coverage de K03- ni lo que depende de algo
+        # que elige el operador, que necesita su propio as_of por respuesta.
+        "market_impact": await market_impact(conn, symbol, matrix_as_of),
+        # compact_dict y no la salida cruda: positioning_context devuelve ts como datetime
+        # y por el endpoint no se nota -FastAPI lo serializa solo- pero aqui rough_token_estimate
+        # llama a json.dumps pelado y reventaba la foto entera con TypeError. Lo cazo el
+        # espejo antes de desplegar; contra 140 habria sido un 500 en /api/ai/context.
+        "positioning": compact_dict(await positioning_context(conn, symbol)),
+        "wyckoff": await wyckoff_context(conn, symbol),
         "context_metadata": await context_metadata(conn, symbol),
         "data_quality": await data_quality(conn, symbol),
         "macro_context": await macro_context(conn, symbol, as_of=matrix_as_of),
