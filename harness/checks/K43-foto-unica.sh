@@ -171,11 +171,16 @@ PAREJAS="
 # LA VENTANA ES TODO EL LOG RETENIDO, y esto NO es pereza: /api/quality/feeds vive dentro
 # de la pestana "calidad" (app.js:1609) y /api/divergences dentro de "contexto"
 # (app.js:1625), o sea que solo se piden cuando el operador abre esa pestana. Medido: las
-# dos, mas /api/verdicts, no las pide un navegador desde el 13/Ago, mientras las otras 30
-# se piden hoy mismo. Con una ventana de un dia habrian desaparecido del denominador tres
-# rutas VIVAS -y dos de ellas son justo los dos huecos de FOTO que quedan pendientes-, o
-# sea que el check se habria puesto mas verde por no mirar. Una pestana cerrada no es una
-# ruta muerta.
+# dos, mas /api/verdicts, no las pide un navegador desde el 21/Ago -quality/feeds en 10
+# dias distintos, divergences y verdicts en 8-, mientras las otras 30 llegan al 25/Ago.
+# Con una ventana de un dia habrian desaparecido del denominador tres rutas VIVAS -y dos
+# de ellas son justo los dos huecos de FOTO que quedan pendientes-, o sea que el check se
+# habria puesto mas verde por no mirar. Una pestana cerrada no es una ruta muerta.
+# OJO AL MEDIRLO: los ficheros rotados hay que leerlos en orden CRONOLOGICO. El glob
+# access.log.*.gz los da en orden lexicografico, o sea .10 .11 .12 .13 .14 .2 .3, asi que
+# quedarse con la ultima fecha vista da la de un fichero VIEJO para toda ruta que no
+# aparezca en el log en curso. Asi salio un "13/Ago" que estaba 8 dias corrido; lo cazo el
+# operador. Se ordena por el numero de rotacion descendente antes de concatenar.
 ARNES_IP=${K43_ARNES_IP:-10.10.100.2}
 LOG_AWK=$(cat <<'AWK'
 $1 != ARNES && /Mozilla/ { p = $7; sub(/\?.*/, "", p); if (p ~ /^\/api\//) c[p]++ }
@@ -191,6 +196,7 @@ foto=$(curl -sS -k --netrc-file "$NETRC" "${CAB[@]}" --max-time 60 \
 printf '%s' "$foto" | PEDIDAS="$PEDIDAS" SIM="$SIM" ASIGNACION="$ASIGNACION" PAREJAS="$PAREJAS" \
   NETRC="$NETRC" API_PROD="$API_PROD" K43_CABECERA="${K43_CABECERA:-}" python3 -c '
 import json, os, subprocess, sys
+from datetime import datetime
 
 foto = json.load(sys.stdin)
 claves = set(foto)
@@ -276,6 +282,66 @@ def sobre(i):
         _sobres.append(d if isinstance(d, dict) else {})
     return _sobres[i]
 
+# La segunda forma legitima de declarar la ventana, y va DECLARADA por ruta y no deducida:
+# /api/daily pone la ventana en data_gaps y la completitud FILA A FILA, con
+# futures_ohlcv_minutes contra session_expected_minutes medidos sobre la sesion de verdad
+# -que va de 09:30 a 09:30 de Nueva York y ni siquiera dura siempre 24 h-. api.py:1990 lo
+# razona: inventarle un "expected de sesiones" a partir de days daria falsos incompletos
+# cada vez que el historico es mas corto que lo pedido. Esto NO es una exencion: se
+# comprueba que la ventana este y que las 60 filas traigan las dos cuentas. Si un dia dejan
+# de traerlas, vuelve a ser un fallo.
+VENTANA_POR_FILA = {"/api/daily": ("futures_ohlcv_minutes", "session_expected_minutes")}
+
+def declara_ventana(d, ruta=""):
+    campos = VENTANA_POR_FILA.get(ruta)
+    if campos:
+        huecos = d.get("data_gaps") if isinstance(d.get("data_gaps"), dict) else {}
+        if not huecos.get("window_start") or not huecos.get("window_end"):
+            return "sin ventana declarada en data_gaps"
+        filas = d.get("rows") or []
+        if not filas:
+            return None if huecos.get("status") == "no_data" else "sin filas y sin no_data"
+        sin = sum(1 for f in filas if not all(c in f for c in campos))
+        return "%d de %d filas sin %s" % (sin, len(filas), " y ".join(campos)) if sin else None
+    return _declara_ventana_agregada(d)
+
+def _declara_ventana_agregada(d):
+    # La promesa de SERIE es "mi ventana es mi coverage". Hasta el 2026-08-26 el check solo
+    # miraba que EXISTIERA la clave coverage o la clave data_gaps: el mismo agujero que
+    # tenia FOTO antes de K45, y se cumplia sirviendo coverage:{} o data_gaps:null. Se
+    # exige la ventana ENTERA y coherente, con la forma que ya sirven las seis series de
+    # K03 por declared_series_response: served_window con inicio, fin, esperados,
+    # observados y complete. served_window a null solo vale si el sobre dice ademas que no
+    # hay dato, que es lo que sirve /api/ohlcv cuando no tiene ni una fila.
+    cov = d.get("coverage")
+    if not isinstance(cov, dict) or "served_window" not in cov:
+        return "sin coverage.served_window"
+    v = cov["served_window"]
+    if v is None:
+        # Sin ventana solo se pasa si el sobre DICE que no hay dato, con esa misma palabra.
+        # Vale en cualquiera de los dos sitios donde el proyecto ya la usa: dentro de
+        # data_gaps -lo que sirve /api/ohlcv- o dentro del propio coverage, que es donde
+        # tiene que ir cuando la serie cruza dos feeds y no hay UN data_gaps que sea suyo.
+        huecos = d.get("data_gaps")
+        estados = [cov.get("status"), huecos.get("status") if isinstance(huecos, dict) else None]
+        return None if "no_data" in estados else "served_window a null sin declarar no_data"
+    if not isinstance(v, dict):
+        return "served_window no es un objeto"
+    faltan = [k for k in ("window_start", "window_end", "expected_buckets",
+                          "observed_buckets", "complete") if k not in v]
+    if faltan:
+        return "coverage sin " + ",".join(faltan)
+    try:
+        ini = datetime.fromisoformat(str(v["window_start"]).replace("Z", "+00:00"))
+        fin = datetime.fromisoformat(str(v["window_end"]).replace("Z", "+00:00"))
+    except ValueError:
+        return "la ventana no son dos instantes"
+    if fin <= ini:
+        return "la ventana no avanza"
+    if not isinstance(v["expected_buckets"], int) or v["expected_buckets"] < 1:
+        return "expected_buckets no es un entero positivo"
+    return None
+
 def cubre(r):
     if r not in parejas:
         return "sin pareja declarada"
@@ -319,8 +385,10 @@ for r in pintadas:
     d = cuerpo(r)
     if not isinstance(d, dict):
         incumplen.append("%s(%s: sin json)" % (r, fam))
-    elif fam == "SERIE" and not ("coverage" in d or "data_gaps" in d):
-        incumplen.append("%s(SERIE: sin coverage)" % r)
+    elif fam == "SERIE":
+        mal = declara_ventana(d, r)
+        if mal:
+            incumplen.append("%s(SERIE: %s)" % (r, mal))
     elif fam == "DEMANDA" and not any(k in d for k in ("as_of", "generated_at", "snapshot_ts")):
         incumplen.append("%s(DEMANDA: sin as_of)" % r)
 

@@ -37,6 +37,8 @@ from typing import Any
 
 import asyncpg
 
+from app.data_gaps import coverage_entry, expected_buckets
+
 # Nº de cubos objetivo. Con menos el perfil pierde el detalle de los nodos delgados; con más,
 # cada cubo recibe tan pocas velas que el reparto uniforme domina la forma.
 TARGET_BUCKETS = 72
@@ -212,6 +214,11 @@ def profile_read(bars: list[dict[str, Any]], interval: str, price: float | None)
     }
 
 
+# La cadencia de cada intervalo servido. Es la misma que codifica el CASE de la consulta de
+# abajo, y vive aqui arriba porque ahora tambien la necesita la cobertura.
+DELTA_PROFILE_BUCKET = {"4hour": timedelta(hours=4), "5min": timedelta(minutes=5)}
+
+
 async def delta_profile(
     conn: asyncpg.Connection,
     symbol: str,
@@ -235,4 +242,28 @@ async def delta_profile(
         symbol, interval, since, as_of,
     )
     result = profile_read([dict(row) for row in rows], interval, price)
-    return {"symbol": symbol, "requested_days": days, **result}
+    # K43 · es una SERIE y su ventana es su coverage. Hasta el 2026-08-26 declaraba from/to
+    # y bars, que dicen QUE se sirvio pero no cuanto FALTA: con 90 dias de velas de 4 h se
+    # sirvieron 539 de las 540 que caben en la ventana y no habia forma de verlo. La ventana
+    # es la de las velas que ENTRARON, no la pedida: pedir 90 dias cuando el historico tiene
+    # 9 no es un hueco, es un historico mas corto, y medirlo contra lo pedido daria
+    # incompletos falsos -el mismo motivo por el que /api/daily no lo hace (api.py:1990)-.
+    # observed son las velas traidas; `bars` es el subconjunto que ademas tiene rango de
+    # precio utilizable, que es otra cuenta y por eso no se mezclan.
+    cobertura = None
+    if rows:
+        paso = DELTA_PROFILE_BUCKET[interval]
+        ventana_ini = rows[0]["ts"]
+        ventana_fin = rows[-1]["ts"] + paso
+        cobertura = coverage_entry(
+            ventana_ini,
+            ventana_fin,
+            sources=((f"ohlcv_{interval}", expected_buckets(ventana_ini, ventana_fin, paso),
+                      len(rows)),),
+        )
+    return {
+        "symbol": symbol,
+        "requested_days": days,
+        "coverage": {"served_window": cobertura},
+        **result,
+    }
