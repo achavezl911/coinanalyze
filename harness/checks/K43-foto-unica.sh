@@ -124,7 +124,7 @@ PAREJAS="
 /api/funding-context           | funding_context        |
 /api/macro-context             | macro_context          |
 /api/passive-flow              | passive_flow           |
-/api/quality/feeds             | data_quality           |
+/api/quality/feeds             | feed_quality           |
 /api/scalp/delta-matrix        | delta_matrix           |
 /api/scalp/liquidation-levels  | liquidation_levels     | symbol,bucket_bps,minutes,rows
 /api/scalp/orderbook           | orderbook              | symbol,rows
