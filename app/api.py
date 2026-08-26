@@ -801,7 +801,7 @@ async def cvd_divergence(
     symbol: str,
     interval: str = "5min",
     limit: Annotated[int, Query(ge=10, le=3000)] = 576,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     ws_symbol = WS_SYMBOL_MAP[selected]
     bucket = historical_interval_value(interval)
@@ -866,7 +866,48 @@ async def cvd_divergence(
             symbol=ws_symbol,
             cumulative_keys=("cvd_spot", "cvd_diff"),
         )
-    return result
+        # K43 · esta ruta servia un ARRAY PELADO: no tenia donde declarar su ventana, que es
+        # justo lo que la familia SERIE promete. Ahora va en sobre. La cobertura lleva las DOS
+        # patas por separado porque la serie es un JOIN de futuros y contado: un bucket falta
+        # si falta en CUALQUIERA de los dos, y con una sola cifra no se sabria cual fallo.
+        # Los observados se cuentan contra las tablas FUENTE y no contra las filas servidas:
+        # las filas ya vienen enmascaradas por el hueco declarado, o sea que contarlas diria
+        # que esta todo mientras se pinta un null.
+        cobertura = None
+        if result:
+            ventana_ini = result[0]["bucket"]
+            ventana_fin = result[-1]["bucket"] + bucket
+            esperados = expected_buckets(ventana_ini, ventana_fin, bucket)
+            patas = await conn.fetchrow(
+                """
+                SELECT (SELECT count(DISTINCT date_bin($3::interval, ts, '1970-01-01'::timestamptz))
+                          FROM ohlcv WHERE symbol=$1 AND interval='1min'
+                           AND ts >= $4 AND ts < $5) AS fut,
+                       (SELECT count(DISTINCT date_bin($3::interval, ts, '1970-01-01'::timestamptz))
+                          FROM spot_trades_agg
+                         WHERE symbol=$2 AND exchange='combined' AND venue_count=2
+                           AND interval='1min' AND ts >= $4 AND ts < $5) AS spot
+                """,
+                selected,
+                ws_symbol,
+                bucket,
+                ventana_ini,
+                ventana_fin,
+            )
+            cobertura = coverage_entry(
+                ventana_ini,
+                ventana_fin,
+                sources=(
+                    ("ohlcv_1min", esperados, int(patas["fut"])),
+                    ("spot_trades", esperados, int(patas["spot"])),
+                ),
+            )
+    return {
+        "symbol": selected,
+        "interval": interval,
+        "rows": result,
+        "coverage": {"served_window": cobertura, "status": None if result else "no_data"},
+    }
 
 
 @app.get("/api/oi")
@@ -1923,10 +1964,31 @@ async def verdicts(
             limit,
             DAILY_VERDICT_OUTCOME_VERSION,
         )
+    filas = records(rows)
+    # K43 · es una SERIE y su ventana es su coverage. Declaraba las filas y una nota en prosa,
+    # o sea QUE se sirvio pero no cuanto falta: medido el 2026-08-26, entre la primera y la
+    # ultima sesion servidas hay 13 fechas y solo 12 filas, y no habia forma de verlo desde la
+    # respuesta. La ventana son las sesiones SERVIDAS -de la primera a la ultima- y no las
+    # `limit` pedidas: pedir 90 cuando el ledger tiene 12 no es un hueco, es un ledger corto, y
+    # medirlo contra lo pedido daria incompletos falsos (el mismo motivo de api.py:1990).
+    # Los bordes salen de session_bounds y no de medianoche UTC: la sesion va de 09:30 a 09:30
+    # de Nueva York, asi que una ventana de dias UTC describiria otra cosa. Y los esperados se
+    # cuentan por FECHA de sesion, no dividiendo la ventana entre 24 h, porque con el cambio de
+    # horario una sesion no siempre dura 24 h y la division truncaria una sesion entera.
+    cobertura = None
+    ventanas = [v for v in (_session_window(fila) for fila in filas) if v]
+    if ventanas:
+        ini, fin = min(v[0] for v in ventanas), max(v[1] for v in ventanas)
+        fechas = {str(fila.get("session_date"))[:10] for fila in filas}
+        esperadas = (date.fromisoformat(max(fechas)) - date.fromisoformat(min(fechas))).days + 1
+        cobertura = coverage_entry(
+            ini, fin, sources=(("daily_verdict_snapshot", esperadas, len(fechas)),)
+        )
     return {
         "symbol": selected,
         "logic_version": logic_version,
-        "rows": records(rows),
+        "rows": filas,
+        "coverage": {"served_window": cobertura},
         "note": (
             "snapshot = primera emision inmutable capturada para la sesion; observed_at = "
             "momento en que fue conocible; reference_price_at = anchor de fwd_return_*_pct. "

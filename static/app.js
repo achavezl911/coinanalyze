@@ -1536,7 +1536,9 @@ async function loadSection(id, force = false) {
   const q = encodeURIComponent(symbol);
   if (id === 'flujo') {
     const [cvd, oi, whale, daily, delta, absorption] = await Promise.all([
-      maybe(`/api/cvd/divergence?symbol=${q}&interval=5min&limit=576`, []),
+      // Desde 2026-08-26 la ruta sirve sobre con coverage (K43: una serie declara su
+      // ventana). filasDe() acepta las dos formas, asi que el orden de despliegue da igual.
+      maybe(`/api/cvd/divergence?symbol=${q}&interval=5min&limit=576`, { rows: [] }),
       maybe(`/api/oi?symbol=${q}&interval=15min&limit=384`, { rows: [] }),
       maybe(`/api/whale/delta?symbol=${q}&interval=15min&limit=384`, { rows: [] }),
       maybe(`/api/daily?symbol=${q}&days=60`, { rows: [], streak: 0 }),
@@ -1544,7 +1546,7 @@ async function loadSection(id, force = false) {
       maybe(`/api/scalp/absorption?symbol=${q}`, []),
     ]);
     if (symbol !== state.symbol) return;
-    renderFlowCharts(cvd, null, filasDe(whale));
+    renderFlowCharts(filasDe(cvd), null, filasDe(whale));
     renderDailyBars(daily);
     renderDeltaMatrix(delta);
     renderAbsorption(absorption);
