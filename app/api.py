@@ -1028,7 +1028,14 @@ async def whale_delta(
                      -- CORTO. Sin esto la fila es indistinguible de una completa y quien
                      -- lee el delta no puede saber que le faltan segundos de mercado.
                      MIN(covered_seconds) AS covered_seconds_min,
-                     count(*) FILTER (WHERE covered_seconds < 60) AS short_minutes
+                     count(*) FILTER (WHERE covered_seconds < 60) AS short_minutes,
+                     -- K52b: y los NULOS hay que contarlos APARTE. Un filtro
+                     -- covered_seconds < 60 no los satisface, asi que sin esta linea un
+                     -- bucket de legado salia covered_seconds_min=null short_minutes=0,
+                     -- IDENTICO a uno completo de verdad. "No falta nada" y "no lo se"
+                     -- no pueden ser la misma respuesta: es la regla de K03 aplicada a
+                     -- una columna nueva, y la incumplio el codigo que la anadio.
+                     count(*) FILTER (WHERE covered_seconds IS NULL) AS unknown_minutes
               FROM spot_trades_agg
               WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
               GROUP BY 1 ORDER BY 1 DESC LIMIT $3
@@ -1038,6 +1045,13 @@ async def whale_delta(
             bucket,
             limit,
         )
+        # LA MARCA NO ES UN FACTOR DE ESCALA, y quien la use para "reparar" el volumen se
+        # pasa. Medido sobre los 21 arranques del 2026-08-26 con bucket presente: la
+        # fraccion DECLARADA -covered_seconds/60- tiene mediana 0.367 y la fraccion de
+        # VOLUMEN observada contra los vecinos, 0.182; la razon entre las dos es 0.452 y
+        # 17 de 21 quedan por debajo de lo declarado. Los primeros segundos tras
+        # reconectar no son productivos. covered_seconds dice QUE falta, no CUANTO.
+        #
         # Aqui NO se enmascara -y es deliberado-: spot_trades_agg no tiene detector que
         # escriba sus huecos en data_gap (COLA.md), asi que no hay identidad de hueco que
         # consultar y llamar a mask_gapped_series_rows seria una llamada hueca. Pero la

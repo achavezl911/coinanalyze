@@ -118,11 +118,24 @@ if hay_columna == "0":
     afectados = sorted({ts.strftime("%H:%M") for ts, _, _, _ in filas if solapa(ts)})
     print(f"{tabla} no tiene covered_seconds: {len(afectados)} minutos que solapan un reinicio estan guardados como filas indistinguibles de una completa -{afectados[:4]}- y {len(ventanas)} ventanas de indisponibilidad en el journal"); sys.exit(1)
 
-# --- LO QUE SE EXIGE: el que solapa, ausente o marcado ---------------------------------
-sin_marcar, marcados, control_malo, control_bueno, legado = [], 0, [], 0, 0
+# --- EL LEGADO SE SEPARA POR TIEMPO, NO POR NULIDAD -----------------------------------
+# El operador lo cazo induciendolo: con "si es NULO, legado" ANTES de mirar el solape, un
+# simbolo -o un venue, o un feed nuevo- que NUNCA escriba la marca pasa para siempre,
+# porque su nulo se lee como legado. Cazaba la regresion TOTAL y la mentira, y no la
+# PARCIAL. El discriminador tiene que ser el CORTE: el primer ts con marca. Antes de el,
+# legado declarado; a partir de el, un nulo es un productor que dejo de marcar.
+marcados_ts = [ts for ts, _s, cubierto, _n in filas if cubierto != "NULO"]
+if not marcados_ts:
+    print(f"NO MEDIDO: ninguna fila de la ventana lleva marca; el productor aun no la escribe"); sys.exit(2)
+corte = min(marcados_ts)
+
+sin_marcar, marcados, control_malo, control_bueno, legado, nulos_tarde = [], 0, [], 0, 0, []
 for ts, simbolo, cubierto, _n in filas:
     if cubierto == "NULO":
-        legado += 1
+        if ts >= corte:
+            nulos_tarde.append(f"{ts.strftime("%H:%M")}/{simbolo}" + (" (solapa un reinicio)" if solapa(ts) else ""))
+        else:
+            legado += 1
         continue
     segundos = int(cubierto)
     if solapa(ts):
@@ -137,6 +150,8 @@ for ts, simbolo, cubierto, _n in filas:
         else:
             control_bueno += 1
 
+if nulos_tarde:
+    print(f"{len(nulos_tarde)} buckets POSTERIORES al corte {corte.strftime("%H:%MZ")} sin marca: alguien dejo de escribirla y su nulo se leeria como legado -> " + " · ".join(nulos_tarde[:3])); sys.exit(1)
 if legado and not marcados and not control_bueno:
     print(f"NO MEDIDO: las {legado} filas de la ventana tienen covered_seconds NULO; la marca aun no la escribe el productor"); sys.exit(2)
 if sin_marcar:
@@ -149,6 +164,6 @@ if marcados == 0 and len(ventanas) > 0:
     ausentes = sum(1 for ini, fin in ventanas if not any(solapa(ts) for ts, _, _, _ in filas))
     print(f"{len(ventanas)} ventanas de indisponibilidad y NINGUN bucket marcado ni ausente en ellas: o la marca no se escribe o las ventanas no se emparejan"); sys.exit(1)
 
-print(f"{marcados} buckets que solapan un reinicio llevan marca legible y ninguno pasa por completo, sobre {len(ventanas)} ventanas de indisponibilidad del journal; y el CONTROL POSITIVO: {control_bueno} minutos sin reinicio, ninguno marcado. {legado} filas de legado con covered_seconds NULO")
+print(f"{marcados} buckets que solapan un reinicio llevan marca legible y ninguno pasa por completo, sobre {len(ventanas)} ventanas de indisponibilidad del journal; CONTROL POSITIVO: {control_bueno} minutos sin reinicio, ninguno marcado; y CERO nulos posteriores al corte {corte.strftime("%H:%MZ")}, que es lo que separa el legado -{legado} filas- de un productor que dejo de marcar")
 ' "$JOURNAL" "$DATOS" "$hay_columna" "$TABLA"
 exit $?
