@@ -2305,6 +2305,90 @@ async def signals_execution(
     }
 
 
+REPLAY_COLUMNS = """
+    fr.frame_id, fr.observation_id, o.symbol, o.observed_at,
+    fr.context_version, fr.context_as_of, fr.context_hash,
+    o.logic_version, o.evidence_version,
+    fr.context, o.evidence, fr.created_at
+"""
+REPLAY_TIMESTAMPS = ("observed_at", "context_as_of", "created_at")
+REPLAY_JSON = ("context", "evidence")
+
+
+@app.get("/api/signals/replay")
+async def signals_replay(
+    request: Request,
+    symbol: str,
+    since: str | None = None,
+    until: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 200,
+) -> dict[str, Any]:
+    """signal_replay_frame: los insumos congelados con los que se decidio.
+
+    El context viaja ENTERO y como objeto, junto a su context_hash y a la evidence que
+    produjo. Resumirlo o recortarlo dejaria la capacidad sin sentido: lo unico que
+    demuestra que una decision del pasado es correcta es volver a ejecutar el nucleo
+    sobre estos mismos insumos y obtener la misma evidence, y para eso hacen falta
+    todos. logic_version viaja porque sin ella el llamante no sabe QUE nucleo aplicar.
+
+    El limite por defecto es mas bajo que en las otras rutas de senales a proposito:
+    cada fila arrastra dos JSON completos, no una decena de columnas.
+    """
+    rechaza_parametros_desconocidos(request, ("symbol", "since", "until", "limit"))
+    selected = validate_symbol(symbol)
+    try:
+        end = datetime.fromisoformat(until) if until else datetime.now(UTC)
+        start = datetime.fromisoformat(since) if since else end - timedelta(hours=1)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"since/until no son ISO-8601: {exc}") from exc
+    if start.tzinfo is None or end.tzinfo is None:
+        raise HTTPException(status_code=422, detail="since/until necesitan zona horaria explicita")
+    if end <= start:
+        raise HTTPException(status_code=422, detail="until tiene que ser posterior a since")
+    if end - start > LEDGER_MAX_WINDOW:
+        raise HTTPException(
+            status_code=422,
+            detail=f"la ventana maxima es {int(LEDGER_MAX_WINDOW.total_seconds() // 3600)} h",
+        )
+
+    async with app.state.pool.acquire() as conn:
+        rows = await conn.fetch(
+            f"""
+            SELECT {REPLAY_COLUMNS}
+            FROM signal_replay_frame fr
+            JOIN signal_observation o USING (observation_id)
+            WHERE o.symbol=$1 AND fr.context_as_of >= $2 AND fr.context_as_of < $3
+            ORDER BY fr.context_as_of, fr.frame_id
+            LIMIT $4
+            """,
+            selected,
+            start,
+            end,
+            limit + 1,
+        )
+    truncated = len(rows) > limit
+    frames = records(rows[:limit])
+    for frame in frames:
+        for column in REPLAY_TIMESTAMPS:
+            frame[column] = _utc_iso(frame[column])
+        # asyncpg devuelve el jsonb como texto. Servirlo como cadena obligaria a cada
+        # llamante a re-parsearlo, y el hash canonico dejaria de poder recalcularse
+        # sobre lo que se sirve, que es justo lo que hace verificable esta ruta.
+        for column in REPLAY_JSON:
+            if isinstance(frame[column], str):
+                frame[column] = json.loads(frame[column])
+
+    return {
+        "symbol": selected,
+        "since": _utc_iso(start),
+        "until": _utc_iso(end),
+        "limit": limit,
+        "count": len(frames),
+        "truncated": truncated,
+        "frames": frames,
+    }
+
+
 @app.get("/api/scalp/basis")
 async def scalp_basis(symbol: str) -> dict[str, Any]:
     selected = validate_symbol(symbol)
