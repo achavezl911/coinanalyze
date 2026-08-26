@@ -36,7 +36,21 @@ edad=$(( $(date -u +%s) - $(date -u -d "$arranque" +%s) ))
 
 # Ventana: los cuatro minutos anteriores al arranque y el del arranque. Ahi caen los
 # tres que el colchon de 125 s se lleva, y sobra margen por si la parada se adelanta.
+#
+# PERO la ventana se recorta al ARRANQUE ANTERIOR. Un proceso no puede haber perdido
+# minutos de antes de nacer, y con dos despliegues seguidos el agujero del primero cae
+# dentro de los cuatro minutos del segundo. Medido el 2026-08-26: arranques a las
+# 00:26:38 y 00:28:27, faltan 00:24 y 00:25 -del apagado del codigo VIEJO, que aun no
+# drenaba- y estan 00:26, 00:27 y 00:28, o sea que el apagado ordenado de las 00:28:16
+# no perdio NADA. Sin este recorte el check le imputaba al segundo lo del primero.
+# El criterio no se toca: sigue siendo "el ultimo apagado no perdio mas de un minuto".
 ini=$(date -u -d "$arranque -4 minutes" +%FT%T)
+anteriores=$("$B/bin/prod" "journalctl -u coinalyze-scalp --utc -o short-iso --since '2 days ago' --no-pager | grep 'Started coinalyze-scalp' | tail -6 | cut -d' ' -f1" 2>/dev/null)
+for previo in $anteriores; do
+  p=$(date -u -d "$previo" +%FT%T 2>/dev/null) || continue
+  [ "$p" \< "$(date -u -d "$arranque" +%FT%T)" ] || continue
+  [ "$p" \> "$ini" ] && ini=$p
+done
 fin=$(date -u -d "$arranque +1 minutes" +%FT%T)
 
 filas=$("$B/bin/prodsql" "WITH g AS (SELECT generate_series(date_trunc('minute', timestamptz '$ini+00'), date_trunc('minute', timestamptz '$fin+00'), interval '1 minute') AS ts) SELECT s.symbol, count(*) FILTER (WHERE f.ts IS NULL) AS ausentes FROM (VALUES ('BTCUSDT_PERP.A'),('ETHUSDT_PERP.A'),('SOLUSDT_PERP.A')) AS s(symbol) CROSS JOIN g LEFT JOIN futures_trades_agg f ON f.symbol=s.symbol AND f.exchange='binance' AND f.interval='1min' AND f.ts=g.ts GROUP BY 1 ORDER BY 1" 2>/dev/null)
