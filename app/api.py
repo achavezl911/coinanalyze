@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hmac
+import json
 import logging
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
@@ -2215,6 +2216,92 @@ async def signals_outcomes(
         "count": len(outcomes),
         "truncated": truncated,
         "outcomes": outcomes,
+    }
+
+
+EXECUTION_COLUMNS = """
+    s.execution_snapshot_id, s.observation_id, o.symbol, o.direction, o.observed_at,
+    s.snapshot_version, s.exchange, s.captured_at, s.book_ts, s.book_age_seconds,
+    s.status, s.reason, s.levels_reported, s.bid_levels_valid, s.ask_levels_valid,
+    s.best_bid_px, s.best_ask_px, s.mid_px, s.spread_bps,
+    s.bid_depth_usd, s.ask_depth_usd, s.source_book_hash, s.cost_curve, s.created_at
+"""
+EXECUTION_TIMESTAMPS = ("observed_at", "captured_at", "book_ts", "created_at")
+
+
+@app.get("/api/signals/execution")
+async def signals_execution(
+    request: Request,
+    symbol: str,
+    since: str | None = None,
+    until: str | None = None,
+    exchange: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=5000)] = 1000,
+) -> dict[str, Any]:
+    """signal_execution_snapshot: el coste real de ejecutar cada senal.
+
+    La curva de coste viaja entera. Se sirve tal cual la escribio el productor -es un
+    jsonb- porque compactarla o resumirla aqui haria imposible recalcularla desde fuera,
+    que es lo unico que demuestra que es correcta. Lo que la base guarda como NULL se
+    sirve como null; en particular market_cost_bps_vs_mid es null cuando no hubo
+    profundidad para llenar, y esa ausencia es informacion, no un hueco.
+    """
+    rechaza_parametros_desconocidos(
+        request, ("symbol", "since", "until", "exchange", "limit")
+    )
+    selected = validate_symbol(symbol)
+    if exchange is not None and exchange not in ("binance", "bybit"):
+        raise HTTPException(status_code=422, detail="exchange tiene que ser binance o bybit")
+    try:
+        end = datetime.fromisoformat(until) if until else datetime.now(UTC)
+        start = datetime.fromisoformat(since) if since else end - timedelta(hours=1)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"since/until no son ISO-8601: {exc}") from exc
+    if start.tzinfo is None or end.tzinfo is None:
+        raise HTTPException(status_code=422, detail="since/until necesitan zona horaria explicita")
+    if end <= start:
+        raise HTTPException(status_code=422, detail="until tiene que ser posterior a since")
+    if end - start > LEDGER_MAX_WINDOW:
+        raise HTTPException(
+            status_code=422,
+            detail=f"la ventana maxima es {int(LEDGER_MAX_WINDOW.total_seconds() // 3600)} h",
+        )
+
+    async with app.state.pool.acquire() as conn:
+        rows = await conn.fetch(
+            f"""
+            SELECT {EXECUTION_COLUMNS}
+            FROM signal_execution_snapshot s
+            JOIN signal_observation o USING (observation_id)
+            WHERE o.symbol=$1 AND s.captured_at >= $2 AND s.captured_at < $3
+              AND ($4::text IS NULL OR s.exchange = $4)
+            ORDER BY s.captured_at, s.observation_id, s.exchange
+            LIMIT $5
+            """,
+            selected,
+            start,
+            end,
+            exchange,
+            limit + 1,
+        )
+    truncated = len(rows) > limit
+    snapshots = records(rows[:limit])
+    for snapshot in snapshots:
+        for column in EXECUTION_TIMESTAMPS:
+            snapshot[column] = _utc_iso(snapshot[column])
+        # asyncpg devuelve el jsonb como texto; el llamante quiere la curva, no su fuente.
+        if isinstance(snapshot["cost_curve"], str):
+            snapshot["cost_curve"] = json.loads(snapshot["cost_curve"])
+
+    return {
+        "symbol": selected,
+        "since": _utc_iso(start),
+        "until": _utc_iso(end),
+        "exchange": exchange,
+        "limit": limit,
+        "count": len(snapshots),
+        "truncated": truncated,
+        "snapshots": snapshots,
     }
 
 
