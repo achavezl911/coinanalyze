@@ -30,6 +30,18 @@
 #     un error de aritmetica: es poder decidir DESPUES cuales de tus resultados declaras
 #     probados. Se mide contra el conjunto elegible completo, no contra los que ya tienen
 #     certificado.
+#     Y AQUI ESTA POR QUE ESTA UNIDAD EXISTE, que alguien podria discutir mirando el
+#     esquema: sql/schema.sql:2418 ya trae dos CHECK -source_finalized_at <=
+#     verified_visible_at, y visibility_version<>1 OR outcome_version=1- que imponen
+#     parte de esto. No basta, y el motivo es exacto: UN CHECK IMPIDE ESCRIBIR UNA FILA
+#     MALA, NO IMPIDE OMITIR UNA FILA BUENA. La base no puede detectar una AUSENCIA. Por
+#     eso la cobertura se mide derivando el conjunto elegible COMPLETO desde la regla, y
+#     no hay atajo por el esquema para cazar "certifico solo lo que me conviene".
+#     El append-only tampoco se queda en intencion: pg_trigger da DOS disparadores sobre
+#     la tabla a reject_signal_outcome_final_visibility_mutation, tgtype 27 -BEFORE ROW
+#     UPDATE OR DELETE- y tgtype 34 -BEFORE STATEMENT TRUNCATE-, que es el que se suele
+#     olvidar en las tablas que se declaran append-only. Pero un trigger tampoco impide
+#     una ausencia: solo impide reescribir el pasado.
 #   ABIERTA · que la lectura ocurriera de verdad en ese instante. verified_visible_at
 #     afirma algo sobre el pasado -"esto ya se podia leer"- y el pasado no se vuelve a
 #     observar: no hay forma de repetir aquella lectura. Es cota superior POR
