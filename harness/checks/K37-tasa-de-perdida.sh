@@ -63,21 +63,28 @@ set -uo pipefail
 B=/srv/coinanalyze/harness
 
 # ---------------------------------------------------------------- LA DECLARACION
-# feed | tabla | interval | cadencia_s | techo_%_dia | por que ese techo
+# feed | tabla | interval | cadencia_s | techo_%_dia | excepciones | por que ese techo
 #
 # NA = la ausencia de fila NO es atribuible en este feed, asi que no hay tasa que
 # medir. NA no es "no lo miro": es una afirmacion medida, y esta escrita. Pasar de NA
 # a una cifra es lo que cierra el feed, y necesita una medicion en hechos.tsv.
+#
+# EXCEPCIONES = SIMBOLO=techo;SIMBOLO=techo, para cuando la FUENTE publica un simbolo
+# mas escaso que los demas. Es por (feed, simbolo) y NUNCA por feed entero: subir el
+# techo del feed dejaria a los simbolos sanos con una holgura que taparia su propia
+# degradacion. Toda excepcion lleva su medicion y su FECHA en el motivo, y CADUCA
+# SOLA: si el simbolo baja al techo base, el check falla pidiendo que se quite, para
+# que una excepcion vieja no siga cubriendo un fallo nuevo.
 DECLARACION='
-long_short_ratio|long_short_ratio|5min|300|1.00|BTC 0.50 y ETH 0.55 en la MISMA ventana y el mismo proveedor: el techo es el doble de lo que este feed ya consigue
-funding_rate|funding_rate|5min|300|1.00|mide 0.00 en los tres simbolos
-open_interest|open_interest|5min|300|1.00|mide 0.00 en los tres simbolos
-oi_bybit|oi_bybit|5min|300|1.00|mide 0.00 en los tres simbolos
-predicted_funding_rate|predicted_funding_rate|5min|300|1.00|mide 0.00 en los tres simbolos
-ohlcv_1min|ohlcv|1min|60|1.00|mide 0.00 en los tres simbolos
-spot_trades_agg|spot_trades_agg|1min|60|1.00|mide 0.00 en la ventana; los 13 minutos que le faltan HOY son los MISMOS en los tres simbolos a la vez, o sea que la ausencia es nuestra y no del mercado
-futures_trades_agg|futures_trades_agg|1min|60|1.00|nacio el 2026-08-24 08:00Z y la ventana se le acota a su vida: 960 de 960. Los 28 minutos que le faltan HOY son los mismos en los tres simbolos, nunca 1 ni 2, o sea escritor y no mercado
-liquidations|liquidations|5min|300|NA|NO SE SABE si vacio es perdida: no escribe NUNCA una fila 0/0 (0 de 1172 filas en 2 dias) y la ausencia va del 26 al 48 por ciento segun el simbolo, o sea que sigue a la actividad del mercado y no a un fallo
+long_short_ratio|long_short_ratio|5min|300|1.00|SOLUSDT_PERP.A=10.00|BTC 0.50 y ETH 0.55 en la MISMA ventana y el mismo proveedor: el techo es el doble de lo que este feed ya consigue. SOL va aparte porque LA FUENTE lo publica mas escaso, y esta medido pidiendole a la API las MISMAS 24 h para los dos en UNA sola peticion el 2026-08-26T00:55Z: devolvio 288 de 289 buckets para BTC y 266 de 289 para SOL, 23 que trae para BTC y no para SOL. Nuestra base tenia 266 de SOL y 287 de BTC, o sea EXACTAMENTE lo que llego (a BTC le faltaba el bucket de las 00:55 que el proveedor acababa de publicar): no tiramos nada. Techo 10.00 sobre un 8.04 medido en 7 dias y un maximo diario de 8.68
+funding_rate|funding_rate|5min|300|1.00||mide 0.00 en los tres simbolos
+open_interest|open_interest|5min|300|1.00||mide 0.00 en los tres simbolos
+oi_bybit|oi_bybit|5min|300|1.00||mide 0.00 en los tres simbolos
+predicted_funding_rate|predicted_funding_rate|5min|300|1.00||mide 0.00 en los tres simbolos
+ohlcv_1min|ohlcv|1min|60|1.00||mide 0.00 en los tres simbolos
+spot_trades_agg|spot_trades_agg|1min|60|1.00||mide 0.00 en la ventana; los 13 minutos que le faltan HOY son los MISMOS en los tres simbolos a la vez, o sea que la ausencia es nuestra y no del mercado: mismo defecto que futures_trades_agg, arreglado en K40
+futures_trades_agg|futures_trades_agg|1min|60|1.00||la ventana se le acota por abajo a min(ts), que en esta tabla NO es su nacimiento sino su RETENCION -SCALP_MINUTE_RETENTION_HOURS=36, y min(ts) avanza cada dia-, asi que no se le imputan buckets borrados a proposito. Lo que pierde son nuestros DESPLIEGUES: el 2026-08-25, 19 despliegues y 33 minutos ausentes en 14 rachas, una por despliegue, iguales en los tres simbolos y los tres exchanges. Causa cerrada en K40; la perdida ya hecha se seguira contando 36 h
+liquidations|liquidations|5min|300|NA||NO SE SABE si vacio es perdida: no escribe NUNCA una fila 0/0 (0 de 1172 filas en 2 dias) y la ausencia va del 26 al 48 por ciento segun el simbolo, o sea que sigue a la actividad del mercado y no a un fallo
 '
 
 # ------------------------------------------------------------------- LA CONSULTA
@@ -89,15 +96,33 @@ liquidations|liquidations|5min|300|NA|NO SE SABE si vacio es perdida: no escribe
 # simbolos sale de 30 dias, no de la ventana, para que un simbolo que se calla
 # aparezca al 100 % de perdida en vez de desaparecer del conteo.
 ramas=""; tablas_declaradas=""
-while IFS='|' read -r feed tabla ivl cad techo _motivo; do
+while IFS='|' read -r feed tabla ivl cad techo excepciones _motivo; do
   [ -n "${feed:-}" ] || continue
   tablas_declaradas="${tablas_declaradas:+$tablas_declaradas,}'$tabla'"
   [ "$techo" = "NA" ] && continue
+  # El techo es una columna, no una constante: con excepciones se vuelve un CASE por
+  # simbolo. techo_base viaja aparte para poder decir cuando una excepcion ya sobra.
+  techo_sql="$techo"; lista_exc="NULL"
+  if [ -n "${excepciones:-}" ]; then
+    casos=""; simbolos=""; guardado=$IFS; IFS=';'
+    for par in $excepciones; do
+      sim=${par%%=*}; val=${par#*=}
+      [ -n "$sim" ] && [ -n "$val" ] && [ "$sim" != "$val" ] || continue
+      casos="$casos WHEN '$sim' THEN $val"
+      simbolos="${simbolos:+$simbolos,}'$sim'"
+    done
+    IFS=$guardado
+    if [ -n "$casos" ]; then
+      techo_sql="(CASE b.symbol$casos ELSE $techo END)"
+      lista_exc="$simbolos"
+    fi
+  fi
   ramas="${ramas:+$ramas
   UNION ALL}
   SELECT '$feed'::text feed, b.symbol, coalesce(o.obs,0)::int obs,
          floor(EXTRACT(EPOCH FROM (w.fin - greatest(b.nac, w.ini)))/$cad)::int esp,
-         $cad::int cad, $techo::numeric techo
+         $cad::int cad, $techo_sql::numeric techo, $techo::numeric techo_base,
+         (b.symbol IN ($lista_exc)) exceptuado
     FROM w
     JOIN (SELECT symbol, min(ts) nac FROM $tabla
            WHERE interval='$ivl' AND ts >= now()-interval '30 days' GROUP BY 1) b ON true
@@ -114,10 +139,13 @@ WITH w AS (SELECT (date_trunc('day', now() AT TIME ZONE 'UTC') - interval '7 day
 m AS ($ramas),
 c AS (SELECT feed, symbol, esp, esp-obs perdidos,
              round(100.0*(esp-obs)/nullif(esp,0), 2) pct,
-             round((esp-obs)/nullif(esp*cad/86400.0, 0), 1) por_dia, techo
+             round((esp-obs)/nullif(esp*cad/86400.0, 0), 1) por_dia, techo,
+             techo_base, exceptuado
         FROM m)
 SELECT 'SERIE|'||feed||'|'||symbol||'|'||pct||'|'||techo||'|'||por_dia
   FROM c WHERE esp > 0 AND pct > techo
+UNION ALL SELECT 'MUERTA|'||feed||'|'||symbol||'|'||pct||'|'||techo_base
+  FROM c WHERE esp > 0 AND exceptuado AND pct <= techo_base
 UNION ALL SELECT 'VACIO|'||feed FROM c WHERE esp <= 0
 UNION ALL SELECT 'TOTAL|'||count(*) FROM c
 UNION ALL SELECT 'SINTECHO|'||table_name
@@ -144,6 +172,9 @@ fallos=""
 if [ "$series" -gt 0 ]; then
   fallos="$series de $total series sobre techo: $(printf '%s' "$peor" | awk -F'|' '{printf "%s/%s %s%%/dia (techo %s%%, %s buckets/dia)", $2,$3,$4,$5,$6}')"
 fi
+muertas=$(printf '%s\n' "$salida" | sed -n 's/^MUERTA|//p' |
+  awk -F'|' '{printf "%s%s/%s (%s%% <= techo base %s%%)", (NR>1 ? ", " : ""), $1, $2, $3, $4}')
+[ -z "$muertas" ] || fallos="${fallos:+$fallos; }excepciones de techo que ya no hacen falta y hay que quitar: $muertas"
 [ "$vacios" -eq 0 ] || fallos="${fallos:+$fallos; }$vacios feeds declarados sin ningun simbolo con datos"
 [ -z "${sintecho% }" ] || fallos="${fallos:+$fallos; }tablas de cadencia sin techo declarado: ${sintecho% }"
 
