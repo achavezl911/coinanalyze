@@ -824,6 +824,10 @@ async def test_pr22_ai_bundle_shares_cvd_flow_as_of(monkeypatch) -> None:
         "divergence_scan",
         "liquidation_burst",
         "liquidation_levels",
+        # K43 · secciones de estado ambiente que entraron en la foto el 2026-08-26
+        "market_impact",
+        "positioning_context",
+        "wyckoff_context",
     ):
         monkeypatch.setattr(ai_context, name, empty_dict)
     monkeypatch.setattr(ai_context, "compute_scalp_summary", lambda _ctx: {})
