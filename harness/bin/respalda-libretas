@@ -1,0 +1,35 @@
+#!/bin/bash
+# respalda-libretas  ->  empuja las cuatro libretas fuera del nodo Proxmox.
+#
+# El criterio del arnes vive en cuatro ficheros que NO estan en el repo: hechos.tsv,
+# COLA.md, CAMBIOS.md y ESTADO.md. harness/bin y harness/checks sobreviven porque son
+# enlaces al repo, asi que sin esto se recuperarian los INSTRUMENTOS y no el CRITERIO.
+#
+# El destino es un repo APARTE y no el de la aplicacion: meterlas ahi anadiria churn a
+# cada PR, que es un coste real. Y no es el respaldo de 140, que escribe en su propio
+# rootfs /var/backups/coinalyze, o sea el MISMO nodo Proxmox: no cubre el fallo que
+# importa.
+#
+# harness/secretos/ NO se copia a proposito. Son 1605 bytes regenerables -el nodo entra
+# a 140 sin la clave- y lo irrecuperable es el criterio, no las llaves. harness/env si
+# va: su primera linea dice que ahi no vive ningun secreto.
+set -uo pipefail
+DESTINO=${LIBRETAS_REMOTO:-https://github.com/achavezl911/coinanalyze-libretas.git}
+COPIA=${LIBRETAS_COPIA:-/srv/coinanalyze/.libretas}
+
+[ -d "$COPIA/.git" ] || git clone --quiet "$DESTINO" "$COPIA" || exit 1
+
+install -m 644 /srv/coinanalyze/harness/hechos.tsv "$COPIA/hechos.tsv"
+install -m 644 /srv/coinanalyze/harness/COLA.md    "$COPIA/COLA.md"
+install -m 644 /srv/coinanalyze/harness/ESTADO.md  "$COPIA/ESTADO.md"
+install -m 644 /srv/coinanalyze/CAMBIOS.md         "$COPIA/CAMBIOS.md"
+install -m 644 /srv/coinanalyze/CLAUDE.md          "$COPIA/CLAUDE.md"
+install -m 644 /srv/coinanalyze/harness/env        "$COPIA/env"
+
+cd "$COPIA" || exit 1
+git add -A
+git diff --cached --quiet && exit 0   # nada que empujar; el timer no ensucia el log
+
+git -c user.name=arnes -c user.email=arnes@coinalyze \
+    commit -q -m "libretas $(date -u +%Y-%m-%dT%H:%M:%SZ)" || exit 1
+git push --quiet origin HEAD 2>/dev/null || exit 1
