@@ -3335,14 +3335,23 @@ async def liquidation_map(
         return {"symbol": symbol, "available": False}
     atr = _atr(await _resample_highs_lows(conn, symbol, 3600, 60), 14)
     bsize = px * bucket_bps / 10000.0
+    # La ventana se PINCHA y se declara. Antes el filtro era ts >= now()-$2 dentro de la
+    # propia consulta: asyncpg abre una transaccion por consulta, asi que ni siquiera las
+    # dos consultas de esta funcion compartian now(), y desde fuera la cifra no se podia
+    # recalcular porque la ventana se deslizaba entre la respuesta y la comprobacion.
+    # Con la ventana cerrada y declarada, K42 recalcula cada nivel y compara. El limite
+    # superior es exclusivo para que dos llamadas con el mismo window_end den lo mismo.
+    window_end = await conn.fetchval("SELECT now()")
+    window_start = window_end - timedelta(minutes=minutes)
     rows = await conn.fetch(
-        "SELECT round(price / $3::float8) * $3::float8 AS bucket, "
+        "SELECT round(price / $4::float8) * $4::float8 AS bucket, "
         " SUM(CASE WHEN side='long' THEN notional_usd ELSE 0 END) AS long_liq, "
         " SUM(CASE WHEN side='short' THEN notional_usd ELSE 0 END) AS short_liq, "
         " SUM(notional_usd) AS total FROM liquidations_realtime "
-        " WHERE symbol=$1 AND ts >= now()-($2::int * interval '1 minute') GROUP BY 1 ORDER BY total DESC",
+        " WHERE symbol=$1 AND ts >= $2 AND ts < $3 GROUP BY 1 ORDER BY total DESC",
         symbol,
-        minutes,
+        window_start,
+        window_end,
         bsize,
     )
     levels = []
@@ -3373,6 +3382,18 @@ async def liquidation_map(
         "type": "historical_realized_density_3h",
         "current_price": px,
         "atr_1h": round(atr, 4) if atr else None,
+        "as_of": window_end.isoformat(),
+        "window_start": window_start.isoformat(),
+        "window_end": window_end.isoformat(),
+        "window_minutes": minutes,
+        "bucket_size": round(bsize, 6),
+        # levels son los 12 mayores, no el mapa entero. Quien sume levels creyendo que
+        # tiene toda la ventana se equivoca en silencio: el 2026-08-26 en 140 habia 16
+        # buckets y los 12 mostrados dejaban fuera 6032.30 USD. Por eso se declaran
+        # cuantos hay, cuantos se muestran y cuanto suma la ventana COMPLETA.
+        "buckets_total": len(rows),
+        "levels_shown": len(levels),
+        "window_notional": round(sum(as_float(r["total"]) or 0 for r in rows), 2),
         "levels": levels,
         "cumulative_within_band": cumulative,
         "note": "liquidaciones YA EJECUTADAS en 3h por precio (historico, no proyeccion). Un cluster "
