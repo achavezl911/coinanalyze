@@ -199,3 +199,51 @@ async def test_sigterm_pasa_por_el_drenaje_en_vez_de_matar_el_proceso(store, mon
 
 async def _completado(valor):
     return valor
+
+
+async def test_el_desmontaje_espera_a_todas_las_tareas_antes_de_cerrar_el_pool(
+    store, monkeypatch
+) -> None:
+    """`trabajo` es un gather sin return_exceptions: termina en cuanto UNA hija cae.
+
+    Si el apagado siguiera ahi, cerraria el pool mientras las demas aun se desmontan, y
+    dos de los lazos escriben en la base dentro de su except CancelledError. Medido en
+    140 el 2026-08-26: "liquidation_feed_health_persist_failed ... pool is closed" en
+    los dos exchanges, en la primera parada ordenada que corrio.
+    """
+    import asyncio
+    import os
+    import signal
+
+    pool = _PoolCerrable()
+    cerrojo = _Cerrojo()
+    visto: dict[str, bool] = {}
+
+    async def _cede_rapido(*_args, **_kwargs):
+        await asyncio.Event().wait()
+
+    async def _cede_despacio(*_args, **_kwargs):
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            await asyncio.sleep(0.05)
+            visto["pool_cerrado"] = pool.cerrado
+            raise
+
+    monkeypatch.setattr(sc, "ACTIVE_SYMBOLS", ())
+    monkeypatch.setattr(sc, "acquire_service_lock", lambda *_a, **_k: _completado(cerrojo))
+    monkeypatch.setattr(sc, "create_pool", lambda *_a, **_k: _completado(pool))
+    monkeypatch.setattr(sc, "monitor_service_lock", _cede_rapido)
+    monkeypatch.setattr(sc, "monitor", _cede_despacio)
+    monkeypatch.setattr(sc, "owns_global_cleanup", lambda _i: False)
+
+    tarea = asyncio.create_task(sc.main())
+    await asyncio.sleep(0.05)
+    bucle = asyncio.get_running_loop()
+    assert signal.SIGTERM in bucle._signal_handlers
+
+    os.kill(os.getpid(), signal.SIGTERM)
+    await asyncio.wait_for(tarea, timeout=10)
+
+    assert visto.get("pool_cerrado") is False, "el pool se cerro antes de que cedieran todas"
+    assert pool.cerrado
