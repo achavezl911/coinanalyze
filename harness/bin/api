@@ -4,7 +4,14 @@
 set -eu
 B=/srv/coinanalyze/harness; . "$B/env"
 if [ "${1:-}" = "--espejo" ]; then
-  shift; curl -sS --max-time 20 "$API_ESPEJO$1" | "$B/bin/_corta"; exit
+  # El espejo NO tiene nginx delante. En 140 es nginx quien inyecta X-Internal-Token,
+  # asi que un curl pelado contra el espejo se come un 403 de app/api.py:196 y el check
+  # que lo llama sale NO MEDIDO por el canal, no por el codigo. Cada check que
+  # necesitaba el espejo se apanaba con su propia variable; aqui deja de hacer falta.
+  shift
+  [ -r "$ESPEJO_TOKEN" ] || { echo "falta $ESPEJO_TOKEN (X-Internal-Token del espejo, modo 600)" >&2; exit 4; }
+  curl -sS --max-time 20 -H "X-Internal-Token: $(cat "$ESPEJO_TOKEN")" \
+    "$API_ESPEJO$1" | "$B/bin/_corta"; exit
 fi
 [ -r "$NETRC" ] || { echo "falta $NETRC (auth_basic de nginx, modo 600)" >&2; exit 4; }
 curl -sS -k --netrc-file "$NETRC" --max-time 20 "$API_PROD$1" | "$B/bin/_corta"
