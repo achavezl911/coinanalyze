@@ -740,6 +740,13 @@ async def build_ai_symbol_context(
     profile: AIProfile = "default",
     bucket_bps: int = 10,
 ) -> dict[str, Any]:
+    # La foto se arma en ~3 s y cada seccion resuelve su propio reloj, asi que un solo
+    # instante NO la describe: medido el 2026-08-26 en 140, generated_at cae A MITAD del
+    # armado, con 13 secciones calculadas antes de su propia etiqueta y dos despues
+    # (liquidation_map a +2.650 s). Una etiqueta unica sobre datos de vendimias distintas
+    # miente mas que ninguna porque parece autoritativa. Lo que describe la foto es una
+    # VENTANA, y es lo que se declara para que K43 la compruebe desde fuera.
+    build_started_at = datetime.now(UTC)
     limits = PROFILE_LIMITS[profile]
     matrix_as_of = await resolve_matrix_as_of(conn)
     snap = await latest_snapshot(conn, symbol)
@@ -813,6 +820,15 @@ async def build_ai_symbol_context(
     payload["external_macro_context"] = align_with_internal(
         payload["external_macro_context"], payload["swing_score"]
     )
+    # generated_at se queda donde estaba y significa lo que siempre significo -lo consume
+    # el ai-bridge-, pero NO describe el sobre: para eso estan estas dos. Todo instante de
+    # CONSTRUCCION de cualquier seccion cae dentro de [build_started_at, build_finished_at].
+    # Quedan fuera a proposito dos familias que no son tiempo de armado: los *_reference_ts
+    # de K38 y window_start/window_end de K42, que apuntan al pasado porque esa es su
+    # semantica; y fetched_at, que dice cuando se trajo el dato de su origen -medido:
+    # external_macro_context viene con 52 min porque esa es la cadencia de esa fuente-.
+    payload["build_started_at"] = build_started_at.isoformat()
+    payload["build_finished_at"] = datetime.now(UTC).isoformat()
     payload["rough_token_estimate"] = rough_token_estimate(payload)
     return payload
 
@@ -824,6 +840,9 @@ async def build_ai_context(
     profile: AIProfile = "default",
     bucket_bps: int = 10,
 ) -> dict[str, Any]:
+    # El bundle arma N fotos EN SERIE, asi que su ventana es aun mas ancha que la de una
+    # sola: la de la primera empieza y la de la ultima acaba. Se declara igual.
+    build_started_at = datetime.now(UTC)
     symbol_payloads = [
         await build_ai_symbol_context(conn, symbol, profile=profile, bucket_bps=bucket_bps)
         for symbol in symbols
@@ -853,5 +872,7 @@ async def build_ai_context(
         "local_alerts": root_alerts,
         "symbols": symbol_payloads,
     }
+    payload["build_started_at"] = build_started_at.isoformat()
+    payload["build_finished_at"] = datetime.now(UTC).isoformat()
     payload["rough_token_estimate"] = rough_token_estimate(payload)
     return payload
