@@ -120,3 +120,31 @@ async def test_drain_devuelve_cuantos_minutos_salvo(monkeypatch):
     monkeypatch.setattr(ws_collector, "STORE", BucketStore())
     assert await ws_collector.drain_closed_minutes(None, None) == 0
     assert len(escritos) == 1
+
+
+def test_el_minuto_del_arranque_se_marca_corto():
+    """K52: la fila existe y hoy pasa por completa; el que arranca a mitad no cubre 60 s."""
+    from app.ws_collector import segundos_cubiertos
+
+    arranque = 1_000_030.0  # el proceso empieza 30 s dentro del minuto que abre en 1000000
+    assert segundos_cubiertos(1_000_000, arranque) == 30
+    assert segundos_cubiertos(1_000_045, arranque) == 60  # minuto posterior: completo
+    assert segundos_cubiertos(999_940, arranque) == 0     # minuto anterior entero: nada
+
+
+def test_el_minuto_completo_NO_se_marca():
+    """El control positivo: un guardia que marca todo esta tan roto como el que no marca."""
+    from app.ws_collector import segundos_cubiertos
+
+    arranque = 1_000_000.0
+    assert segundos_cubiertos(1_000_000, arranque) == 60
+    assert segundos_cubiertos(1_000_600, arranque) == 60
+
+
+def test_los_dos_colectores_marcan_igual():
+    """Lo pagan los dos y la marca tiene que significar lo mismo en las dos tablas."""
+    from app.scalp_collector import segundos_cubiertos as futuros
+    from app.ws_collector import segundos_cubiertos as spot
+
+    for ts in (999_900, 1_000_000, 1_000_030, 1_000_120):
+        assert spot(ts, 1_000_030.0) == futuros(ts, 1_000_030.0)

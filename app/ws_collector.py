@@ -36,6 +36,20 @@ MAX_NOTIONAL_USD = 1_000_000_000_000.0
 MAX_MESSAGE_TRADES = 1_000
 WHALE_TRADE_THRESHOLD = WHALE_THRESHOLD_MAP
 LATE_TRADE_GRACE_SECONDS = 125.0
+# K52 · el minuto que contiene el arranque se escribe CORTO y hoy pasa por completo.
+# No es una perdida nueva -medida el 2026-08-26 en 0.221 del trade_count de los vecinos,
+# con la linea base del dia en 0.923- pero es peor que una ausencia porque no se ve.
+# Se marca con los segundos que este proceso estuvo realmente escuchando.
+PROCESO_INICIADO = time.time()
+
+
+def segundos_cubiertos(ts: int, inicio: float | None = None) -> int:
+    """Segundos del minuto que empieza en ts con el colector ya escuchando."""
+
+    arranque = PROCESO_INICIADO if inicio is None else inicio
+    if ts >= arranque:
+        return 60
+    return max(0, min(60, int(round(ts + 60 - arranque))))
 REALTIME_MAX_EVENT_AGE_SECONDS = 15.0
 
 
@@ -229,6 +243,7 @@ async def _write_minute(
                     bucket.inst_buy_usd, bucket.inst_sell_usd,
                     bucket.mid_buy_usd, bucket.mid_sell_usd,
                     bucket.retail_buy_usd, bucket.retail_sell_usd, bucket.trade_count,
+                    segundos_cubiertos(ts),
                 )
             )
         try:
@@ -239,8 +254,8 @@ async def _write_minute(
                         INSERT INTO spot_trades_agg(
                           ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
                           inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
-                          retail_buy_usd,retail_sell_usd,trade_count
-                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+                          retail_buy_usd,retail_sell_usd,trade_count,covered_seconds
+                        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
                         ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
                           buy_vol_usd=EXCLUDED.buy_vol_usd,
                           sell_vol_usd=EXCLUDED.sell_vol_usd,
@@ -250,7 +265,8 @@ async def _write_minute(
                           mid_sell_usd=EXCLUDED.mid_sell_usd,
                           retail_buy_usd=EXCLUDED.retail_buy_usd,
                           retail_sell_usd=EXCLUDED.retail_sell_usd,
-                          trade_count=EXCLUDED.trade_count
+                          trade_count=EXCLUDED.trade_count,
+                          covered_seconds=EXCLUDED.covered_seconds
                         """,
                         records,
                     )
@@ -259,12 +275,13 @@ async def _write_minute(
                         INSERT INTO spot_trades_agg(
                           ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,
                           inst_buy_usd,inst_sell_usd,mid_buy_usd,mid_sell_usd,
-                          retail_buy_usd,retail_sell_usd,trade_count
+                          retail_buy_usd,retail_sell_usd,trade_count,covered_seconds
                         )
                         SELECT ts,symbol,'combined',2,'1min',
                           SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(inst_buy_usd),SUM(inst_sell_usd),
                           SUM(mid_buy_usd),SUM(mid_sell_usd),SUM(retail_buy_usd),SUM(retail_sell_usd),
-                          SUM(trade_count)::integer
+                          SUM(trade_count)::integer,
+                          MIN(covered_seconds)
                         FROM spot_trades_agg
                         WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
                         GROUP BY ts,symbol
@@ -279,7 +296,8 @@ async def _write_minute(
                           mid_sell_usd=EXCLUDED.mid_sell_usd,
                           retail_buy_usd=EXCLUDED.retail_buy_usd,
                           retail_sell_usd=EXCLUDED.retail_sell_usd,
-                          trade_count=EXCLUDED.trade_count
+                          trade_count=EXCLUDED.trade_count,
+                          covered_seconds=EXCLUDED.covered_seconds
                         """,
                         [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
                     )

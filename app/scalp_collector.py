@@ -664,6 +664,21 @@ async def flush_trades(
             await TRADE_STORE.prune()
 
 
+# K52 · el minuto que contiene el arranque se escribe CORTO. Lo pagan LOS DOS
+# colectores: futures, que drena desde el 08-26T00:24Z, da los mismos ratios que spot en
+# los mismos arranques. Se marca con los segundos realmente escuchados.
+PROCESO_INICIADO = time.time()
+
+
+def segundos_cubiertos(ts: int, inicio: float | None = None) -> int:
+    """Segundos del minuto que empieza en ts con el colector ya escuchando."""
+
+    arranque = PROCESO_INICIADO if inicio is None else inicio
+    if ts >= arranque:
+        return 60
+    return max(0, min(60, int(round(ts + 60 - arranque))))
+
+
 async def drenar_minutos(
     pool: asyncpg.Pool,
     ownership: ServiceOwnership | None = None,
@@ -728,19 +743,21 @@ async def _write_trade_rows(
             (
                 datetime.fromtimestamp(ts, UTC), symbol, exchange, 1, "1min",
                 b.buy_vol_usd, b.sell_vol_usd, b.large_buy_usd, b.large_sell_usd, b.trade_count,
+                segundos_cubiertos(ts),
             )
             for (symbol, exchange, ts), b in snapshots
         ]
         await conn.executemany(
             f"""
-            INSERT INTO {table}(ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+            INSERT INTO {table}(ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count,covered_seconds)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
             ON CONFLICT(symbol,exchange,interval,ts) DO UPDATE SET
               buy_vol_usd=EXCLUDED.buy_vol_usd,
               sell_vol_usd=EXCLUDED.sell_vol_usd,
               large_buy_usd=EXCLUDED.large_buy_usd,
               large_sell_usd=EXCLUDED.large_sell_usd,
-              trade_count=EXCLUDED.trade_count
+              trade_count=EXCLUDED.trade_count,
+              covered_seconds=EXCLUDED.covered_seconds
             """,
             records,
         )
@@ -782,8 +799,8 @@ async def _write_combined_minute(
     touched = sorted({(symbol, ts) for (symbol, _, ts), _ in snapshots})
     await conn.executemany(
         """
-        INSERT INTO futures_trades_agg(ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count)
-        SELECT ts,symbol,'combined',2,'1min',SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(large_buy_usd),SUM(large_sell_usd),SUM(trade_count)::integer
+        INSERT INTO futures_trades_agg(ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count,covered_seconds)
+        SELECT ts,symbol,'combined',2,'1min',SUM(buy_vol_usd),SUM(sell_vol_usd),SUM(large_buy_usd),SUM(large_sell_usd),SUM(trade_count)::integer,MIN(covered_seconds)
         FROM futures_trades_agg
         WHERE symbol=$1 AND ts=$2 AND exchange IN ('binance','bybit')
         GROUP BY ts,symbol
@@ -794,7 +811,8 @@ async def _write_combined_minute(
           sell_vol_usd=EXCLUDED.sell_vol_usd,
           large_buy_usd=EXCLUDED.large_buy_usd,
           large_sell_usd=EXCLUDED.large_sell_usd,
-          trade_count=EXCLUDED.trade_count
+          trade_count=EXCLUDED.trade_count,
+          covered_seconds=EXCLUDED.covered_seconds
         """,
         [(symbol, datetime.fromtimestamp(ts, UTC)) for symbol, ts in touched],
     )
