@@ -889,6 +889,10 @@ async def cvd_divergence(
                 SELECT (SELECT count(DISTINCT date_bin($3::interval, ts, '1970-01-01'::timestamptz))
                           FROM ohlcv WHERE symbol=$1 AND interval='1min'
                            AND ts >= $4 AND ts < $5) AS fut,
+                       -- OJO al repetir esta consulta a mano: el simbolo de la pata de
+                       -- contado es el de websocket ('BTC'), no el de derivados
+                       -- ('BTCUSDT_PERP.A'). Con el de derivados devuelve 0 y la pata
+                       -- parece muerta cuando esta sana.
                        (SELECT count(DISTINCT date_bin($3::interval, ts, '1970-01-01'::timestamptz))
                           FROM spot_trades_agg
                          WHERE symbol=$2 AND exchange='combined' AND venue_count=2
@@ -1869,7 +1873,15 @@ async def verdicts(
     # `limit` pedidas: pedir 90 cuando el ledger tiene 12 no es un hueco, es un ledger corto, y
     # medirlo contra lo pedido daria incompletos falsos (el mismo motivo de api.py:1990).
     # Los bordes salen de session_bounds y no de medianoche UTC: la sesion va de 09:30 a 09:30
-    # de Nueva York, asi que una ventana de dias UTC describiria otra cosa. Y los esperados se
+    # de Nueva York, asi que una ventana de dias UTC describiria otra cosa.
+    # AVISO A QUIEN AUDITE ESTA CIFRA: por dia NATURAL sale lo contrario. Medido el
+    # 2026-08-26, la unica sesion ausente de las 13 es la etiquetada 2026-08-15, que va de
+    # 08-14 13:30Z a 08-15 13:30Z y contiene el hueco de ohlcv_1min de 08-14 16:47 a 18:13:
+    # tiene 1354 velas de 1440, mientras las cuatro sesiones vecinas tienen 1440 de 1440 y
+    # las cuatro SI tienen veredicto. Correspondencia 1 a 1: la unica sesion con velas
+    # ausentes es la unica sin veredicto, o sea hueco de DATO y no de calculo, y el motor
+    # hizo bien en no publicarla. Agrupando por dia natural el 08-15 tiene sus 1440 velas y
+    # se concluye justo lo contrario. El borde esta a las 13:30Z. Y los esperados se
     # cuentan por FECHA de sesion, no dividiendo la ventana entre 24 h, porque con el cambio de
     # horario una sesion no siempre dura 24 h y la division truncaria una sesion entera.
     cobertura = None
