@@ -127,13 +127,21 @@ def test_absorption_has_a_single_definition() -> None:
     logic_source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
     # Se fija el CONTRATO, no el formato exacto de la llamada: ambas rutas tienen que leer
     # el p75 de la baseline y ninguna puede clasificar sin delta y sin movimiento medidos.
-    assert "classify_absorption(" in api_source
-    assert '(baseline or {}).get("p75")' in api_source
-    assert "if delta is None or move is None:" in api_source
+    # Desde el 2026-08-26 las DOS rutas viven en scalp_logic: la del endpoint se movio alli
+    # para que /api/ai/context pueda servir la misma respuesta sin ciclo de imports (api.py
+    # importa ai_context). El contrato se fija donde vive el calculo, y de api.py se exige
+    # ademas que DELEGUE: sin SQL propio, sin umbral propio y sin clasificar por su cuenta.
+    assert "classify_absorption(" in logic_source
+    assert '(baseline or {}).get("p75")' in logic_source
+    assert "if delta is None or move is None:" in logic_source
     assert '(baseline_3m or {}).get("p75"),' in logic_source
     assert "if price_move_3m is None:" in logic_source
     assert logic_source.count("Absorción fuerte de compras") == 1
-    assert "0.02" not in api_source.split("scalp_absorption")[1].split("@app.get")[1]
+    cuerpo = api_source.split('@app.get("/api/scalp/absorption")')[1].split("@app.get")[0]
+    assert "scalp_absorption_read(conn, selected)" in cuerpo
+    assert "SELECT" not in cuerpo
+    assert "classify_absorption(" not in cuerpo
+    assert "0.02" not in cuerpo
     # La constante sigue existiendo SOLO como fallback declarado, definida una vez.
     assert logic_source.count("ABSORPTION_MIN_RATIO = ") == 1
     assert "FALLBACK" in logic_source.split("ABSORPTION_MIN_RATIO = ")[1][:200]

@@ -135,6 +135,9 @@ PAREJAS="
 /api/market-impact             | market_impact          |
 /api/positioning               | positioning            |
 /api/wyckoff                   | wyckoff                |
+/api/scalp/absorption          | absorption             |
+/api/scalp/basis               | basis                  | symbol
+/api/scalp/liquidations        | scalp_liquidations     | symbol
 /api/dashboard/state#scalp          | scalp            |
 /api/dashboard/state#setup          | setup            |
 /api/dashboard/state#snapshot       | snapshot         | symbol

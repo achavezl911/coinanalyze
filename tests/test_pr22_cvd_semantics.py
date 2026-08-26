@@ -659,9 +659,12 @@ async def test_pr22_absorption_matrix_uses_one_as_of(monkeypatch) -> None:
     async def no_baselines(*_args, **_kwargs):
         return {}
 
+    # Los dos parches van a scalp_logic y no a api: el calculo se movio alli el 2026-08-26
+    # y el endpoint solo delega. La afirmacion que se prueba es la misma -las cuatro
+    # ventanas comparten UN as_of- y se sigue entrando por el endpoint.
     monkeypatch.setattr(api.app.state, "pool", Pool(), raising=False)
-    monkeypatch.setattr(api, "resolve_matrix_as_of", fixed_as_of)
-    monkeypatch.setattr(api, "load_baselines", no_baselines)
+    monkeypatch.setattr(scalp_logic, "resolve_matrix_as_of", fixed_as_of)
+    monkeypatch.setattr(scalp_logic, "load_baselines", no_baselines)
     rows = await api.scalp_absorption("BTCUSDT_PERP.A")
     assert len(conn.seen) == 4
     assert set(conn.seen) == {cutoff}
@@ -790,6 +793,10 @@ async def test_pr22_ai_bundle_shares_cvd_flow_as_of(monkeypatch) -> None:
     async def empty_list(*_args, **_kwargs):
         return []
 
+    async def fake_lista(_conn, _symbol, as_of=None):
+        seen.append(as_of)
+        return []
+
     monkeypatch.setattr(ai_context, "resolve_matrix_as_of", fixed_as_of)
     monkeypatch.setattr(ai_context, "delta_matrix", fake_delta)
     for name in (
@@ -828,8 +835,14 @@ async def test_pr22_ai_bundle_shares_cvd_flow_as_of(monkeypatch) -> None:
         "market_impact",
         "positioning_context",
         "wyckoff_context",
+        # basis y liquidaciones no reciben corte: sus ventanas son now()-N, como el libro.
+        "scalp_basis",
+        "scalp_liquidations",
     ):
         monkeypatch.setattr(ai_context, name, empty_dict)
+    # La absorcion SI recibe el corte compartido desde que entro en la foto, igual que
+    # delta_matrix: sus cuatro ventanas tienen que colgar del mismo instante que el resto.
+    monkeypatch.setattr(ai_context, "scalp_absorption", fake_lista)
     monkeypatch.setattr(ai_context, "compute_scalp_summary", lambda _ctx: {})
     monkeypatch.setattr(ai_context, "build_operator_read", lambda *_args: {})
     monkeypatch.setattr(ai_context, "local_alerts", lambda *_args: [])
@@ -846,7 +859,7 @@ async def test_pr22_ai_bundle_shares_cvd_flow_as_of(monkeypatch) -> None:
     await ai_context.build_ai_symbol_context(
         _NoopConnection(), "BTCUSDT_PERP.A", profile="lite"  # type: ignore[arg-type]
     )
-    assert len(seen) == 6
+    assert len(seen) == 7
     assert seen and set(seen) == {cutoff}
 
 

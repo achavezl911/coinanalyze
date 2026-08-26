@@ -58,9 +58,6 @@ from app.scalp_logic import (
     HYPOTHESES,
     TRADING_PROFILES,
     as_float,
-    baseline_band,
-    basis_quality,
-    classify_absorption,
     compute_scalp_summary,
     context_metadata,
     cross_asset,
@@ -99,6 +96,15 @@ from app.scalp_logic import (
     volume_profile,
     wyckoff_context,
     zone_analysis,
+)
+from app.scalp_logic import (
+    scalp_absorption as scalp_absorption_read,
+)
+from app.scalp_logic import (
+    scalp_basis as scalp_basis_read,
+)
+from app.scalp_logic import (
+    scalp_liquidations as scalp_liquidations_read,
 )
 from app.setups import DIRECTIONS, SETUP_LABELS, build_setup_context, split_hypothesis
 
@@ -1463,127 +1469,18 @@ async def scalp_orderbook(symbol: str) -> dict[str, Any]:
 
 @app.get("/api/scalp/absorption")
 async def scalp_absorption(symbol: str) -> list[dict[str, Any]]:
+    # El SQL vive en scalp_logic desde el 2026-08-26 para que /api/ai/context pueda servir
+    # LA MISMA respuesta: api.py importa ai_context, asi que al reves seria un ciclo.
     selected = validate_symbol(symbol)
-    windows = [("1m", 60), ("3m", 180), ("5m", 300), ("15m", 900)]
-    output: list[dict[str, Any]] = []
     async with app.state.pool.acquire() as conn:
-        as_of = await resolve_matrix_as_of(conn)
-        baselines = await load_baselines(conn, selected)
-        for label, seconds in windows:
-            row = await conn.fetchrow(
-                """
-                WITH fut AS (
-                  SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,
-                         SUM(buy_vol_usd+sell_vol_usd) AS volume,
-                         COUNT(*)::int AS buckets,
-                         -- El mayor hueco entre buckets dice si la ventana se midio entera:
-                         -- contar buckets no basta porque TradeStore solo crea uno cuando
-                         -- llega un trade, asi que su ausencia puede ser mercado quieto.
-                         EXTRACT(EPOCH FROM max(ts)-min(ts))::float8 AS span_seconds,
-                         (array_agg(last_px ORDER BY ts ASC))[1] AS first_px,
-                         (array_agg(last_px ORDER BY ts DESC))[1] AS last_px
-                  FROM futures_trades_realtime
-                  WHERE symbol=$1 AND exchange='combined' AND venue_count=2
-                    AND ts >= $3::timestamptz-($2::int * interval '1 second')
-                    AND ts <= $3
-                ) SELECT * FROM fut
-                """,
-                selected,
-                seconds,
-                as_of,
-            )
-            item = dict(row) if row else {"delta": None, "first_px": None, "last_px": None}
-            # Sin delta medido no hay lectura; `or 0.0` la fabricaba.
-            delta = as_float(item.get("delta"))
-            volume = as_float(item.get("volume"))
-            first_px = as_float(item.get("first_px"))
-            last_px = as_float(item.get("last_px"))
-            move = ((last_px - first_px) / first_px * 100) if first_px and last_px else None
-            baseline = baselines.get(label)
-            if delta is None or move is None:
-                # None y no 0.0: "no evaluable" no es un score neutro medido.
-                score, label_text = None, "No evaluable"
-            else:
-                score, label_text = classify_absorption(
-                    delta, move, volume, (baseline or {}).get("p75")
-                )
-            ratio = (abs(delta) / volume) if delta is not None and volume else None
-            output.append(
-                {
-                    "window": label,
-                    "as_of": as_of.isoformat(),
-                    "fut_delta": delta,
-                    "fut_volume": volume,
-                    "delta_ratio": ratio,
-                    # El umbral es el p75 medido de ESTA ventana, no una constante global.
-                    "min_ratio": (baseline or {}).get("p75", ABSORPTION_MIN_RATIO),
-                    "threshold_source": (
-                        "baseline_p75_medido" if baseline else "fallback_constante"
-                    ),
-                    "context": baseline_band(ratio, baseline),
-                    "price_move_pct": move,
-                    "absorption": label_text,
-                    "score": score,
-                    # Cobertura DECLARADA de la ventana: cuantos buckets la sostienen y que
-                    # tramo cubren de verdad. Sin esto, "Absorcion fuerte" sobre dos buckets
-                    # sueltos se lee igual que sobre la ventana completa.
-                    "coverage": {
-                        "buckets": int(item.get("buckets") or 0),
-                        "span_seconds": as_float(item.get("span_seconds")),
-                        "window_seconds": seconds,
-                        "span_ratio": (
-                            round(as_float(item["span_seconds"]) / seconds, 3)
-                            if as_float(item.get("span_seconds")) is not None
-                            else None
-                        ),
-                    },
-                    "timeframe": label,
-                }
-            )
-    return output
+        return await scalp_absorption_read(conn, selected)
 
 
 @app.get("/api/scalp/liquidations")
 async def scalp_liquidations(symbol: str) -> dict[str, Any]:
     selected = validate_symbol(symbol)
-    windows = [("1m", 60), ("5m", 300), ("15m", 900)]
     async with app.state.pool.acquire() as conn:
-        matrix = []
-        for label, seconds in windows:
-            row = await conn.fetchrow(
-                """
-                SELECT $2::text AS window,
-                       SUM(CASE WHEN side='long' THEN notional_usd ELSE 0 END) AS long_liq,
-                       SUM(CASE WHEN side='short' THEN notional_usd ELSE 0 END) AS short_liq,
-                       COUNT(*) AS events
-                FROM liquidations_realtime WHERE symbol=$1 AND ts >= now()-($3::int * interval '1 second')
-                """,
-                selected,
-                label,
-                seconds,
-            )
-            matrix.append(dict(row))
-        # Ventanas largas: historico multi-exchange del API de Coinalyze (buckets 5min, lag ~1-2 min)
-        for label, seconds in (("30m", 1800), ("1h", 3600), ("4h", 14400)):
-            row = await conn.fetchrow(
-                """
-                SELECT $2::text AS window,
-                       SUM(long_liq) AS long_liq,SUM(short_liq) AS short_liq,NULL::bigint AS events
-                FROM liquidations WHERE symbol=$1 AND interval='5min' AND ts >= now()-($3::int * interval '1 second')
-                """,
-                selected,
-                label,
-                seconds,
-            )
-            matrix.append(dict(row))
-        recent = await conn.fetch(
-            """
-            SELECT ts,exchange,side,notional_usd,price,qty FROM liquidations_realtime
-            WHERE symbol=$1 ORDER BY ts DESC LIMIT 20
-            """,
-            selected,
-        )
-    return {"symbol": selected, "matrix": matrix, "recent": records(recent)}
+        return await scalp_liquidations_read(conn, selected)
 
 
 @app.get("/api/scalp/alerts")
@@ -2131,39 +2028,8 @@ async def scalp_signals(
 @app.get("/api/scalp/basis")
 async def scalp_basis(symbol: str) -> dict[str, Any]:
     selected = validate_symbol(symbol)
-    asset = WS_SYMBOL_MAP[selected]
     async with app.state.pool.acquire() as conn:
-        row = await conn.fetchrow(
-            """
-            WITH fut AS (
-              SELECT ts,last_px,last_event_ms FROM futures_trades_realtime
-              WHERE symbol=$1 AND exchange='combined' AND venue_count=2
-              ORDER BY ts DESC LIMIT 1
-            ), spot AS (
-              SELECT ts,last_px,last_event_ms FROM spot_trades_realtime
-              WHERE symbol=$2 AND exchange='combined' AND venue_count=2
-              ORDER BY ts DESC LIMIT 1
-            )
-            SELECT fut.ts AS fut_ts,spot.ts AS spot_ts,
-                   fut.last_px AS fut_price,spot.last_px AS spot_price,
-                   fut.last_event_ms AS fut_event_ms,spot.last_event_ms AS spot_event_ms,
-                   (EXTRACT(EPOCH FROM now())*1000)::float8 AS now_ms,
-                   EXTRACT(EPOCH FROM now()-fut.ts)::float8 AS fut_lag_seconds,
-                   EXTRACT(EPOCH FROM now()-spot.ts)::float8 AS spot_lag_seconds
-            FROM fut FULL JOIN spot ON true
-            """,
-            selected,
-            asset,
-        )
-    item = dict(row) if row else {}
-    quality = basis_quality(
-        as_float(item.get("fut_price")),
-        as_float(item.get("spot_price")),
-        as_float(item.get("fut_event_ms")),
-        as_float(item.get("spot_event_ms")),
-        as_float(item.get("now_ms")) or 0.0,
-    )
-    return {"symbol": selected, **item, **quality}
+        return await scalp_basis_read(conn, selected)
 
 
 @app.get("/api/scalp/liquidation-levels")
