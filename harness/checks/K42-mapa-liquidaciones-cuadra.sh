@@ -166,7 +166,8 @@ if fallos:
     print("el mapa no cuadra con sus eventos: %s" % " | ".join(fallos[:4]))
     raise SystemExit(1)
 print("%d cifras recalculadas desde liquidations_realtime cuadran al centimo sobre la "
-      "ventana declarada [%s, %s): %d niveles de %d buckets, %.2f USD de %.2f mostrados"
+      "ventana declarada [%s, %s): %d niveles de %d buckets, %.2f USD mostrados de "
+      "%.2f en la ventana"
       % (comparadas, d["window_start"][11:19], d["window_end"][11:19], len(niveles),
          d["buckets_total"], sum(n["total_notional"] for n in niveles), d["window_notional"]))
 ' 3<<< "$eventos"
