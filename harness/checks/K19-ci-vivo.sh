@@ -59,7 +59,23 @@ ultimo=$(cd "$REPO" && gh run list --workflow=ci.yml --branch main --status comp
          --json conclusion,createdAt --jq '.[0] | "\(.conclusion) \(.createdAt)"' 2>/dev/null)
 [ -n "$ultimo" ] || { echo "NO MEDIDO: gh no devolvio runs de ci.yml en main"; exit 2; }
 estado=${ultimo%% *}; cuando=${ultimo##* }
-[ "$estado" = "success" ] || fallos="$fallos; el ultimo CI de main acabo en '$estado'"
+# UN RUN QUE NUNCA ARRANCO NO MIDIO NADA. startup_failure y cancelled no dicen "los
+# tests fallaron": dicen que el job no llego a ejecutarse, o sea que esta afirmacion se
+# queda SIN MEDIR. Contarlo ROJO hace que K19 anuncie "nuestro CI esta roto" cuando lo
+# unico cierto es que no se pudo mirar, y romper el instrumento no puede bajar los dos
+# lados por igual: para eso existe NOMED, cuyo texto ya dice "arregla el canal antes de
+# tocar el codigo", que es la instruccion correcta tanto si el roto es el runner como si
+# es el proveedor.
+#
+# La distincion sale de la CONCLUSION del run, evidencia local. NO se consulta
+# githubstatus: meterle al arnes una dependencia de un servicio externo para juzgar a
+# otro servicio externo anade un modo de fallo en vez de quitarlo.
+case "$estado" in
+  success) ;;
+  startup_failure|cancelled|skipped)
+    sin_medir="el ultimo CI completado de main acabo en '$estado': el job no llego a ejecutarse, asi que si el CI pasa o no NO ESTA MEDIDO" ;;
+  *) fallos="$fallos; el ultimo CI de main acabo en '$estado'" ;;
+esac
 edad=$(( ( $(date -u +%s) - $(date -u -d "$cuando" +%s) ) / 86400 ))
 [ "$edad" -le "$DIAS_MAX" ] || fallos="$fallos; el ultimo CI de main es de hace $edad dias (limite $DIAS_MAX)"
 
@@ -87,5 +103,9 @@ done <<EOF
 $parados
 EOF
 
+# ROJO gana a NOMED, y en este orden a proposito: lo que SI se midio y fallo -el runner
+# caido, un run atascado en cola- es un hecho, y no puede quedar tapado por una afirmacion
+# que no se pudo medir.
 [ -z "${fallos# }" ] || { echo "${fallos#; }" | sed 's/^ //'; exit 1; }
+[ -z "${sin_medir:-}" ] || { echo "NO MEDIDO: $sin_medir. Lo demas si se midio: 1 listener, unit active, NRestarts=$ahora sin crecer, ningun run en cola por encima de $COLA_MAX min"; exit 2; }
 echo "1 listener, unit active, NRestarts=$ahora sin crecer, ultimo CI de main success hace $edad dias, ningun run en cola por encima de $COLA_MAX min"
