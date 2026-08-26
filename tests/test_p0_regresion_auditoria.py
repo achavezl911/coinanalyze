@@ -183,3 +183,37 @@ def test_liquidation_null_is_not_zero() -> None:
     bloque = source.split("function renderLiquidations")[1].split("function ")[0]
     assert "asNumber(r.long_liq) || 0" not in bloque
     assert "Sin dato" in bloque
+
+
+async def test_execution_cost_declara_el_instante_mas_viejo_que_usa() -> None:
+    """K43 · DEMANDA: la respuesta trae su propio as_of, y es el del libro MAS VIEJO.
+
+    La tabla mezcla un libro por venue. Etiquetarla con el mas fresco prometeria una
+    frescura que la otra mitad no tiene; sin ningun venue usable no hay instante y va a
+    null, que es "no evaluable" y no "de ahora".
+    """
+    from datetime import UTC, datetime, timedelta
+
+    from app.scalp_logic import execution_cost
+
+    ahora = datetime.now(UTC)
+    libro = [[100.0, 10.0], [101.0, 10.0]]
+
+    class _Conn:
+        def __init__(self, filas):
+            self.filas = filas
+
+        async def fetch(self, _q, *_a):
+            return self.filas
+
+    def fila(exchange, edad):
+        return {"exchange": exchange, "ts": ahora - timedelta(seconds=edad),
+                "bids": libro, "asks": libro, "levels": 2, "age_seconds": edad}
+
+    salida = await execution_cost(_Conn([fila("binance", 2.0), fila("bybit", 9.0)]), "S", [1000.0])
+    assert salida["as_of"] == (ahora - timedelta(seconds=9.0)).isoformat()
+    assert [v["status"] for v in salida["venues"]] == ["VALID", "VALID"]
+
+    # Ningun venue usable: la edad desconocida ya no es valida, asi que tampoco hay as_of.
+    ciego = dict(fila("binance", 2.0), age_seconds=None)
+    assert (await execution_cost(_Conn([ciego]), "S", [1000.0]))["as_of"] is None

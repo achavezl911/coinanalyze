@@ -4914,10 +4914,19 @@ async def execution_cost(
                 "sell": [walk_book(bids, s) for s in sizes_usd] if usable else None,
             }
         )
+    # K43 · esta respuesta es de la familia DEMANDA -depende del perfil y de los tamanios
+    # que elige el operador-, asi que la foto no puede cubrirla y tiene que traer su propio
+    # instante. Es el MAS VIEJO de los libros que se usaron, no el mas nuevo: la tabla
+    # mezcla un libro por venue y una etiqueta unica con el mas fresco prometeria una
+    # frescura que la otra mitad de la tabla no tiene. Cada venue conserva ademas su ts y
+    # su age_seconds, que es lo que hay que mirar fila a fila. Sin ningun venue usable no
+    # hay instante que declarar y va a null: eso es "no evaluable", no "de ahora".
+    usables = [v["ts"] for v in venues if v["status"] == "VALID" and v["ts"] is not None]
     return {
         "symbol": symbol,
         "unit": "USD",
         "sizes_usd": sizes_usd,
+        "as_of": min(usables).isoformat() if usables else None,
         "stale_after_seconds": REALTIME_STALE_SECONDS,
         "note": "coste por venue; no existe 'combined' porque una orden se ejecuta en uno solo",
         "venues": venues,
