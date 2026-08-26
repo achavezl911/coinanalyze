@@ -27,6 +27,15 @@ install -m 644 /srv/coinanalyze/CLAUDE.md          "$COPIA/CLAUDE.md"
 install -m 644 /srv/coinanalyze/harness/env        "$COPIA/env"
 
 cd "$COPIA" || exit 1
+
+# EL MANIFIESTO ES LA PRUEBA. Sin el, la unica forma de verificar la restauracion es
+# comparar contra el fichero VIVO, y el vivo cambia entre un tick y el siguiente: el
+# check saldria ROJO cada vez que alguien anade un hecho, diciendo "no cuadra" cuando lo
+# unico que pasa es que la copia va tres minutos por detras. Un check que enrojece segun
+# el momento acaba tratandose como ruido. Con el manifiesto se verifica lo que de verdad
+# se promete: que lo que vuelve del remoto es byte a byte lo que se mando.
+sha256sum hechos.tsv COLA.md ESTADO.md CAMBIOS.md CLAUDE.md env > SHA256SUMS
+
 git add -A
 git diff --cached --quiet && exit 0   # nada que empujar; el timer no ensucia el log
 
