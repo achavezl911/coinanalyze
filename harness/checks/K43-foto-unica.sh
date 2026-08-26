@@ -53,10 +53,7 @@
 # los nombres de campo son los mismos y esto pasa, pero son 8 filas contra 50. Eso lo
 # tiene que ver K44 cuando el panel deje de pedir las partes, no este subconjunto.
 set -uo pipefail
-_REPO_LLAMANTE=${REPO:-}
 B=/srv/coinanalyze/harness; . "$B/env"
-REPO=${_REPO_LLAMANTE:-${REPO:-/srv/coinanalyze/repo}}
-PANEL="$REPO/static/app.js"
 SIM=${K43_SIMBOLO:-BTCUSDT_PERP.A}
 # Por defecto mide 140, que es lo que cuenta. K43_API y K43_CABECERA lo apuntan al espejo
 # para poder ver el efecto de un cambio ANTES de desplegarlo -el espejo no tiene nginx
@@ -67,16 +64,25 @@ CAB=()
 [ -n "${K43_CABECERA:-}" ] && CAB=(-H "$K43_CABECERA")
 
 # --- LA ASIGNACION. Una linea por ruta, con la familia y el motivo medido. ---
-# desk/state, scalp/execution-cost y profile estan en DEMANDA y no en FOTO, y NO por su
-# firma: los tres declaran symbol como unico parametro obligatorio. Es por medicion
-# contra 140: desk/state con direction=long y direction=short devuelve cuerpos distintos
-# (22159 B vs 22186 B, sha 14a69d09 vs d118d355) y con profile=swing vs scalper devuelve
-# 22747 B vs 53 B; scalp/execution-cost con profile=intradia vs swing da 6572 B vs
-# 6567 B, sha 9111bab6 vs 0a0afc9c; /api/profile con profile=intradia/swing/scalper da
-# 1751/2185/52 B, sha 479380f3/9e4a429d/fd484f84 (2026-08-26). app.js los llama con
-# state.tradingProfile y state.direction, o sea con eleccion del operador. Meterlos en la
-# foto obligaria a armar una foto por combinacion, o a pintar cifras de un perfil bajo la
-# ventana de otro, que es justo lo que esta unidad existe para impedir.
+# desk/state y scalp/execution-cost estan en DEMANDA y no en FOTO, y NO por su firma: los
+# dos declaran symbol como unico parametro obligatorio. Es por medicion contra 140:
+# desk/state con direction=long y direction=short devuelve cuerpos distintos (22159 B vs
+# 22186 B, sha 14a69d09 vs d118d355) y con profile=swing vs scalper devuelve 22747 B vs
+# 53 B; scalp/execution-cost con profile=intradia vs swing da 6572 B vs 6567 B, sha
+# 9111bab6 vs 0a0afc9c. app.js los llama con state.tradingProfile y state.direction, o sea
+# con eleccion del operador. Meterlos en la foto obligaria a armar una foto por
+# combinacion, o a pintar cifras de un perfil bajo la ventana de otro, que es justo lo que
+# esta unidad existe para impedir.
+#
+# /api/profile NO ESTA EN NINGUNA FAMILIA, y la version anterior de este fichero la puso
+# en DEMANDA con una frase que era falsa: decia que app.js la llamaba con
+# state.tradingProfile. Su cuerpo SI cambia con el perfil -1751/2185/52 B, sha 479380f3/
+# 9e4a429d/fd484f84- pero eso no lo pide el panel: su unica aparicion en app.js es el
+# COMENTARIO de la linea 392, y la jerarquia de temporalidades la sirve desk/state
+# (app.js:1499). Por el log de nginx, historico entero: 113 peticiones, las 113 desde
+# 10.10.100.2 con agente curl -o sea nosotros- y CERO desde cualquier navegador. Una ruta
+# que nadie pinta no necesita ventana, asi que no se le asigna familia. Si algun dia un
+# navegador la pide, saldra como "sin familia" y habra que decidirla entonces.
 #
 # /api/oi es SERIE y no FOTO, corregido el 2026-08-26: devuelve 384 barras de 15 min con
 # su coverage, su interval y sus data_gaps, o sea la definicion literal de SERIE que esta
@@ -96,7 +102,7 @@ ASIGNACION="
 /api/ohlcv=SERIE /api/cvd/divergence=SERIE /api/daily=SERIE
 /api/delta-profile=SERIE /api/whale/delta=SERIE /api/verdicts=SERIE /api/oi=SERIE
 /api/level/breakout=DEMANDA /api/range/validate=DEMANDA /api/zone/analysis=DEMANDA
-/api/scalp/execution-cost=DEMANDA /api/desk/state=DEMANDA /api/profile=DEMANDA
+/api/scalp/execution-cost=DEMANDA /api/desk/state=DEMANDA
 /api/stream=EXENTA /api/healthz=EXENTA /api/symbols=EXENTA
 "
 # EXENTAS, con su motivo: stream es SSE -empuje continuo, no una foto y no puede
@@ -148,19 +154,47 @@ PAREJAS="
 # techos de K37 (linea 148) y las excepciones de K41. Una excepcion vieja no puede
 # seguir cubriendo un fallo nuevo.
 
-[ -r "$PANEL" ] || { echo "NO MEDIDO: no se puede leer static/app.js"; exit 2; }
+# --- K46 · EL CONJUNTO QUE SE EVALUA SALE DEL LOG, NO DEL TEXTO DEL PANEL ---
+# Hasta el 2026-08-26 el denominador salia de un grep -o sobre app.js, y ahi caen las
+# menciones en COMENTARIOS: 2 de las 49 lo eran (linea 392 sobre /api/profile y 1611 sobre
+# /api/quality/feeds). Eso metio a /api/profile entre "las 37 que el panel pinta" cuando
+# el panel no la pide NUNCA -113 peticiones en todo el historico, las 113 nuestras con
+# curl-. El texto del panel no puede ser la fuente de verdad de lo que el panel pide.
+#
+# El cliente NO se identifica por una sola IP. Medido sobre el historico entero: hay
+# CUATRO navegadores -10.10.100.101 con 446138 peticiones (Firefox/Windows), 10.10.100.73
+# con 5578, 10.10.100.99 con 116 (iPhone) y 10.10.100.100 con 112 (Mac)- y un solo cliente
+# de curl, 10.10.100.2, que somos nosotros con 8084. Filtrar por la IP del navegador
+# principal dejaria fuera tres dispositivos reales; el criterio es "navegador y no el
+# arnes", que es lo que se quiere decir y no depende de que nadie cambie de sitio.
+#
+# LA VENTANA ES TODO EL LOG RETENIDO, y esto NO es pereza: /api/quality/feeds vive dentro
+# de la pestana "calidad" (app.js:1609) y /api/divergences dentro de "contexto"
+# (app.js:1625), o sea que solo se piden cuando el operador abre esa pestana. Medido: las
+# dos, mas /api/verdicts, no las pide un navegador desde el 13/Ago, mientras las otras 30
+# se piden hoy mismo. Con una ventana de un dia habrian desaparecido del denominador tres
+# rutas VIVAS -y dos de ellas son justo los dos huecos de FOTO que quedan pendientes-, o
+# sea que el check se habria puesto mas verde por no mirar. Una pestana cerrada no es una
+# ruta muerta.
+ARNES_IP=${K43_ARNES_IP:-10.10.100.2}
+LOG_AWK=$(cat <<'AWK'
+$1 != ARNES && /Mozilla/ { p = $7; sub(/\?.*/, "", p); if (p ~ /^\/api\//) c[p]++ }
+END { for (i in c) printf "%d %s\n", c[i], i }
+AWK
+)
+PEDIDAS=$("$B/bin/prod" "{ zcat /var/log/nginx/access.log.*.gz; cat /var/log/nginx/access.log.1 /var/log/nginx/access.log; } 2>/dev/null | awk -v ARNES=$ARNES_IP '$LOG_AWK' | sort -rn" 2>/dev/null)
 
 foto=$(curl -sS -k --netrc-file "$NETRC" "${CAB[@]}" --max-time 60 \
        "$API_PROD/api/ai/context?symbol=$SIM" 2>/dev/null)
 [ -n "$foto" ] || { echo "NO MEDIDO: /api/ai/context no respondio"; exit 2; }
 
-printf '%s' "$foto" | REPO="$REPO" SIM="$SIM" ASIGNACION="$ASIGNACION" PAREJAS="$PAREJAS" \
+printf '%s' "$foto" | PEDIDAS="$PEDIDAS" SIM="$SIM" ASIGNACION="$ASIGNACION" PAREJAS="$PAREJAS" \
   NETRC="$NETRC" API_PROD="$API_PROD" K43_CABECERA="${K43_CABECERA:-}" python3 -c '
 import json, os, subprocess, sys
 
 foto = json.load(sys.stdin)
 claves = set(foto)
-repo, sim = os.environ["REPO"], os.environ["SIM"]
+sim = os.environ["SIM"]
 netrc, base = os.environ["NETRC"], os.environ["API_PROD"]
 
 asign = {}
@@ -174,10 +208,23 @@ for linea in os.environ["PAREJAS"].strip().splitlines():
     parejas.setdefault(ruta.split("#")[0], []).append(
         (ruta.partition("#")[2], clave, [e for e in env.split(",") if e]))
 
-pintadas = sorted(set(subprocess.run(
-    ["grep", "-o", "/api/[a-z0-9/-]*", repo + "/static/app.js"],
-    capture_output=True, text=True).stdout.split()))
-pintadas = [r for r in pintadas if r != "/api/ai/context"]
+pedidas = {}
+for linea in os.environ["PEDIDAS"].strip().splitlines():
+    n, _, r = linea.strip().partition(" ")
+    if n.isdigit() and r.startswith("/api/"):
+        pedidas[r] = int(n)
+# Sin esta guarda el criterio se cumpliria SOLO: un log rotado, un ssh que falla o un
+# filtro que no engancha dejan el conjunto vacio, y "todas las rutas cumplen" seria cierto
+# sobre cero rutas. Con el historico de hoy son 33 rutas y 446k peticiones, asi que estos
+# suelos no aprietan; estan para distinguir "no hay fallos" de "no hay medicion".
+if sum(pedidas.values()) < 1000 or len(pedidas) < 10:
+    print("NO MEDIDO: el log de nginx solo da %d peticiones de navegador en %d rutas; "
+          "sin eso el denominador no es de fiar" % (sum(pedidas.values()), len(pedidas)))
+    raise SystemExit(2)
+# /api/ai/context es el sobre, no una cifra pintada: no se le exige familia porque ES la
+# ventana. Que el panel llegue a pedirla es lo que mide K44, no esta unidad.
+pintadas = [r for r in sorted(pedidas) if r != "/api/ai/context"]
+declaradas_sin_pedir = sorted(set(asign) - set(pedidas))
 
 cab = ["-H", os.environ["K43_CABECERA"]] if os.environ.get("K43_CABECERA") else []
 
@@ -211,6 +258,24 @@ def nombres(o, acc, saltar=(), con_valor=False):
             nombres(v, acc, con_valor=con_valor)
     return acc
 
+_sobres = [foto]
+
+def sobre(i):
+    # Observaciones ADICIONALES del sobre, y solo si hace falta. Un nombre cuenta como
+    # ausente unicamente si falta en las TRES, y el motivo esta medido: la foto y la ruta
+    # se piden con segundos de diferencia y pueden caer en FILAS distintas de
+    # metrics_snapshot, donde 40 de las 214 filas de tres horas traen liq_ratio_24h,
+    # regime_score y long_liq_24h a NULL (2026-08-26, prodsql). compact_dict tira los
+    # None, asi que en esas filas el nombre desaparece del sobre y reaparece en la
+    # siguiente. Con una sola observacion el check acusaba a dashboard/state de 9 nombres
+    # que si estan -comprobado: fallo una vez y paso las dos siguientes-, o sea que medía
+    # el instante y no el codigo. Un hueco de verdad -profile, quality/feeds- falta en
+    # todas las observaciones, siempre.
+    while len(_sobres) <= i:
+        d = cuerpo("/api/ai/context")
+        _sobres.append(d if isinstance(d, dict) else {})
+    return _sobres[i]
+
 def cubre(r):
     if r not in parejas:
         return "sin pareja declarada"
@@ -228,6 +293,11 @@ def cubre(r):
             continue
         faltan = sorted(nombres(trozo, set(), env, con_valor=True)
                         - nombres(foto[clave], set()))
+        for i in (1, 2):
+            if not faltan:
+                break
+            faltan = [n for n in faltan
+                      if n not in nombres(sobre(i).get(clave), set())]
         if faltan:
             fallos.append("%d nombres fuera de %s: %s"
                           % (len(faltan), clave, ",".join(faltan[:6])))
@@ -258,16 +328,20 @@ if sin_familia:
     print("%d rutas que el panel pinta no tienen familia asignada: %s"
           % (len(sin_familia), " ".join(sin_familia)))
     raise SystemExit(1)
+cola = ""
+if declaradas_sin_pedir:
+    cola = " · %d declaradas que ningun navegador pide: %s" % (
+        len(declaradas_sin_pedir), " ".join(declaradas_sin_pedir))
 if incumplen:
-    print("%d de %d rutas no cumplen lo que su familia promete: %s"
-          % (len(incumplen), len(pintadas), " ".join(incumplen)))
+    print("%d de %d rutas que un navegador pide no cumplen lo que su familia promete: %s%s"
+          % (len(incumplen), len(pintadas), " ".join(incumplen), cola))
     raise SystemExit(1)
-print("las %d rutas que el panel pinta estan cubiertas: %d en la foto con sus nombres de "
-      "campo dentro de la clave declarada, %d series con coverage, %d bajo demanda con "
-      "as_of propio, %d exentas con cita"
-      % (len(pintadas),
-         sum(1 for r in pintadas if asign[r] == "FOTO"),
-         sum(1 for r in pintadas if asign[r] == "SERIE"),
-         sum(1 for r in pintadas if asign[r] == "DEMANDA"),
-         sum(1 for r in pintadas if asign[r] == "EXENTA")))
+print(("las %d rutas que un navegador pide estan cubiertas: %d en la foto con sus nombres "
+       "de campo dentro de la clave declarada, %d series con coverage, %d bajo demanda con "
+       "as_of propio, %d exentas con cita"
+       % (len(pintadas),
+          sum(1 for r in pintadas if asign[r] == "FOTO"),
+          sum(1 for r in pintadas if asign[r] == "SERIE"),
+          sum(1 for r in pintadas if asign[r] == "DEMANDA"),
+          sum(1 for r in pintadas if asign[r] == "EXENTA"))) + cola)
 '
