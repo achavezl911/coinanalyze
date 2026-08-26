@@ -29,7 +29,17 @@ PY="${VENV_PY:-$REPO/.venv/bin/python}"
 
 [ -x "$PY" ] || { echo "NO MEDIDO: falta $PY"; exit 2; }
 
-salida=$(cd "$REPO" && "$PY" - "$API_PROD" "$NETRC" <<'PY' 2>&1
+# LA POBLACION LA MANDA PRODUCCION, no el arbol de trabajo. K20 pregunta "hay algun
+# endpoint de 140 devolviendo 5xx", asi que la lista de rutas tiene que salir de lo que
+# 140 SIRVE, no de lo que este arbol declara. Enumerando del arbol -que va en rama y por
+# delante de prod durante todo el desarrollo- cada endpoint nuevo sacaba un 404 y K20 lo
+# contaba ROJO, convirtiendo "tenemos trabajo sin mergear" en "produccion esta rota".
+# No se puede preguntar por openapi: 140 no lo publica -404 en /openapi.json,
+# /api/openapi.json y /docs/openapi.json-, asi que se lee del release que corre.
+RUTAS_PROD=$("$B/bin/prod" "grep -oE '^@app\.(get|post)\(\"[^\"]+\"' /opt/coinalyze/current/app/api.py | sed -E 's/.*\"(.*)\"/\1/' | sort -u" 2>/dev/null | grep -E '^/' | sort -u | tr '\n' ' ')
+[ -n "${RUTAS_PROD// /}" ] || { echo "NO MEDIDO: no se pudo enumerar las rutas del release de 140"; exit 2; }
+
+salida=$(cd "$REPO" && RUTAS_PROD="$RUTAS_PROD" "$PY" - "$API_PROD" "$NETRC" <<'PY' 2>&1
 import json, subprocess, sys, urllib.parse
 
 base, netrc = sys.argv[1], sys.argv[2]
@@ -80,8 +90,20 @@ VALORES = {
     "high": "%.2f" % (cierre * 1.02),
 }
 
+import os
+rutas_prod = set(os.environ["RUTAS_PROD"].split())
+# Las dos asimetrias se cuentan por separado y NO significan lo mismo:
+#   en el arbol y no en prod  -> trabajo sin desplegar. No es fallo de produccion.
+#   en prod y no en el arbol  -> ESTO si se dice: hay una ruta viva que este barrido no
+#                                sabe construir, o sea que K20 estaria pasando a verde
+#                                sin haberla probado, que es justo lo que no vale.
+sin_desplegar = sorted(set(spec["paths"]) - rutas_prod)
+sin_barrer = sorted(rutas_prod - set(spec["paths"]))
+
 rotos, sin_saber, desconocidos, total = [], [], [], 0
 for ruta, metodos in sorted(spec["paths"].items()):
+    if ruta not in rutas_prod:
+        continue
     op = metodos.get("get")
     if op is None:
         continue
@@ -112,12 +134,19 @@ for ruta, metodos in sorted(spec["paths"].items()):
 
 if desconocidos:
     print("PARAM %s" % " ".join(sorted(set(desconocidos))))
+elif sin_barrer:
+    print("CIEGO %s" % " ".join(sin_barrer))
 elif rotos:
     print("ROTO %d/%d con 5xx: %s" % (len(rotos), total, " ".join(rotos)))
 elif sin_saber:
     print("LLAMADA %s" % " ".join(sin_saber))
 else:
-    print("OK %d rutas barridas, ninguna 5xx" % total)
+    cola = ""
+    if sin_desplegar:
+        cola = "; %d sin desplegar, fuera del barrido a proposito: %s" % (
+            len(sin_desplegar), " ".join(sin_desplegar))
+    print("OK %d rutas de las %d que declara el release de 140, ninguna 5xx%s"
+          % (total, len(rutas_prod), cola))
 PY
 )
 
@@ -125,6 +154,7 @@ case "$salida" in
   NOMED*)    echo "NO MEDIDO: ${salida#NOMED }"; exit 2 ;;
   PARAM*)    echo "el barrido no sabe rellenar un parametro obligatorio nuevo: ${salida#PARAM }"; exit 1 ;;
   ROTO*)     echo "${salida#ROTO }"; exit 1 ;;
+  CIEGO*)    echo "el release de 140 sirve rutas que este barrido no sabe construir: ${salida#CIEGO }"; exit 1 ;;
   LLAMADA*)  echo "el barrido no supo llamar a: ${salida#LLAMADA }"; exit 1 ;;
   OK*)       echo "${salida#OK }"; exit 0 ;;
   *)         echo "NO MEDIDO: barrido sin veredicto -> $(printf '%s' "$salida" | head -3)"; exit 2 ;;
