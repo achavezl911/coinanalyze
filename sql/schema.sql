@@ -1312,6 +1312,13 @@ CREATE INDEX IF NOT EXISTS market_feed_health_shard_updated_idx
 
 -- PR19: provenance for materialized two-venue rows.
 -- NULL = legacy/unverified. Old rows are not rewritten.
+-- K52 · cuantos segundos del minuto estuvo el colector ESCUCHANDO. 60 es completo,
+-- NULL es legado -filas escritas antes de que esto existiera-. El minuto que contiene
+-- un arranque se escribe corto: medido el 2026-08-26 sobre 23 arranques, mediana 0.221
+-- del trade_count de sus vecinos, con la linea base del mismo dia en 0.923. Sin esta
+-- columna esa fila es INDISTINGUIBLE de una completa y nadie aguas abajo puede saberlo.
+ALTER TABLE spot_trades_agg ADD COLUMN IF NOT EXISTS covered_seconds smallint;
+ALTER TABLE futures_trades_agg ADD COLUMN IF NOT EXISTS covered_seconds smallint;
 ALTER TABLE spot_trades_agg ADD COLUMN IF NOT EXISTS venue_count smallint;
 ALTER TABLE spot_trades_realtime ADD COLUMN IF NOT EXISTS venue_count smallint;
 ALTER TABLE futures_trades_agg ADD COLUMN IF NOT EXISTS venue_count smallint;
@@ -1346,6 +1353,12 @@ BEGIN
 END
 $$;
 
+COMMENT ON COLUMN spot_trades_agg.covered_seconds IS
+    'K52: segundos del minuto con el colector escuchando. 60=completo; <60=el minuto '
+    'contiene un arranque y la fila va CORTA; NULL=legado, escrita antes de la marca.';
+COMMENT ON COLUMN futures_trades_agg.covered_seconds IS
+    'K52: segundos del minuto con el colector escuchando. 60=completo; <60=el minuto '
+    'contiene un arranque y la fila va CORTA; NULL=legado, escrita antes de la marca.';
 COMMENT ON COLUMN spot_trades_agg.venue_count IS
     'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined';
 COMMENT ON COLUMN spot_trades_realtime.venue_count IS

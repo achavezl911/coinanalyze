@@ -1023,7 +1023,12 @@ async def whale_delta(
             """
             WITH grouped AS (
               SELECT date_bin($2::interval, ts, '1970-01-01'::timestamptz) AS bucket,
-                     SUM(inst_buy_usd-inst_sell_usd) AS whale_delta
+                     SUM(inst_buy_usd-inst_sell_usd) AS whale_delta,
+                     -- K52: el minuto que contiene un arranque del colector se escribe
+                     -- CORTO. Sin esto la fila es indistinguible de una completa y quien
+                     -- lee el delta no puede saber que le faltan segundos de mercado.
+                     MIN(covered_seconds) AS covered_seconds_min,
+                     count(*) FILTER (WHERE covered_seconds < 60) AS short_minutes
               FROM spot_trades_agg
               WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
               GROUP BY 1 ORDER BY 1 DESC LIMIT $3
