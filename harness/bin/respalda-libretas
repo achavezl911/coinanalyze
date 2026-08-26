@@ -28,6 +28,34 @@ install -m 644 /srv/coinanalyze/harness/env        "$COPIA/env"
 
 cd "$COPIA" || exit 1
 
+# EL RESPALDO NO PISA LA PRUEBA. K49 caza que la copia dejo de ser prefijo del vivo, pero
+# si el respaldo sigue corriendo empuja el hechos.tsv ya roto y la copia vuelve a cuadrar:
+# la deteccion duraria lo que tarde el siguiente tick, o sea 5 minutos. Aqui se para en
+# seco y se deja la ULTIMA COPIA BUENA en el remoto, asi que K49 se queda ROJO hasta que
+# alguien mire. Un respaldo que sobrescribe la evidencia de su propio fallo no es un
+# respaldo.
+#
+# LIBRETAS_FORZAR=1 lo salta, para el caso legitimo de corregir un hecho mal medido. Se
+# pone a mano y se dice por que, como TODO=1 en el resto del arnes.
+# La copia anterior se lee del propio commit -git show HEAD:hechos.tsv- y no de un
+# fichero de al lado: asi no hay un duplicado de 185 KB viajando en cada push, y lo que
+# se compara es EXACTAMENTE lo que hay en el remoto.
+if [ "${LIBRETAS_FORZAR:-}" != "1" ] && git rev-parse --verify -q HEAD >/dev/null; then
+  anterior=$(mktemp) || exit 1
+  if git show HEAD:hechos.tsv > "$anterior" 2>/dev/null && [ -s "$anterior" ]; then
+    n=$(wc -c < "$anterior")
+    if [ "$(wc -c < /srv/coinanalyze/harness/hechos.tsv)" -lt "$n" ] ||
+       [ "$(head -c "$n" /srv/coinanalyze/harness/hechos.tsv | sha256sum | cut -d' ' -f1)" \
+         != "$(sha256sum "$anterior" | cut -d' ' -f1)" ]; then
+      rm -f "$anterior"
+      echo "respalda-libretas: hechos.tsv dejo de ser append-only respecto de la ultima copia." >&2
+      echo "  NO se empuja, para no pisar la evidencia. LIBRETAS_FORZAR=1 si el cambio es a proposito." >&2
+      exit 1
+    fi
+  fi
+  rm -f "$anterior"
+fi
+
 # EL MANIFIESTO ES LA PRUEBA. Sin el, la unica forma de verificar la restauracion es
 # comparar contra el fichero VIVO, y el vivo cambia entre un tick y el siguiente: el
 # check saldria ROJO cada vez que alguien anade un hecho, diciendo "no cuadra" cuando lo
