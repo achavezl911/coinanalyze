@@ -559,7 +559,35 @@ function imbalanceCell(tr, value) {
 }
 // El spread por venue tambien va en NEUTRO: comparar bps sueltos contra un literal no dice
 // si la operacion sale cara. Eso lo responde `execution_assessment` con objetivo y riesgo.
-function renderOrderbook(result) { const body = $('orderbook-body'); body.replaceChildren(); for (const r of safeArray(result.rows)) { const tr = document.createElement('tr'); td(tr, r.exchange, ''); td(tr, nd(r.spread_bps, v => `${number(v, 2)} bps`), 'neutral'); imbalanceCell(tr, r.imbalance_l1); imbalanceCell(tr, r.imbalance_l5); imbalanceCell(tr, r.imbalance_l10); td(tr, pct(r.wall_up_pct), 'neutral'); td(tr, pct(r.wall_down_pct), 'neutral'); body.append(tr); } }
+// Vacio y rancio no se pueden ver igual. El endpoint filtra ts >= now()-30s, asi que un
+// libro viejo llega como CERO filas y en la tabla no queda nada de donde deducir si el
+// libro no existe o si es que es viejo. La respuesta lo dice fuera de rows (K13) y aqui
+// se pinta: un hecho que el servidor declara y el panel calla sigue sin llegar a quien
+// decide. Son TRES casos y no dos, y el cuarto es que no hubo respuesta.
+function orderbookNote(freshness, filas) {
+  const estado = freshness && typeof freshness === 'object' ? freshness.status : null;
+  const edad = asNumber(freshness && freshness.age_seconds);
+  const tope = asNumber(freshness && freshness.max_age_seconds);
+  const antiguedad = edad === null ? 'sin decir de cuando' : `${number(edad, 1)} s de antiguedad`;
+  if (estado === 'empty') return 'Sin libro: no hay ninguna instantanea de este simbolo';
+  if (estado === 'stale') {
+    const corte = tope === null ? '' : `, corte ${number(tope, 0)} s`;
+    return `Libro RANCIO: ${antiguedad}${corte}. La tabla esta vacia porque el dato es viejo, no porque no exista`;
+  }
+  if (estado === 'fresh') return `${filas} venue${filas === 1 ? '' : 's'} · ${antiguedad}`;
+  return 'No hay lectura del libro: el servidor no respondio o no declara su frescura';
+}
+function renderOrderbook(result) {
+  const body = $('orderbook-body');
+  body.replaceChildren();
+  const filas = safeArray(result.rows);
+  for (const r of filas) { const tr = document.createElement('tr'); td(tr, r.exchange, ''); td(tr, nd(r.spread_bps, v => `${number(v, 2)} bps`), 'neutral'); imbalanceCell(tr, r.imbalance_l1); imbalanceCell(tr, r.imbalance_l5); imbalanceCell(tr, r.imbalance_l10); td(tr, pct(r.wall_up_pct), 'neutral'); td(tr, pct(r.wall_down_pct), 'neutral'); body.append(tr); }
+  const nota = $('orderbook-note');
+  if (!nota) return;
+  const fresco = result.freshness && result.freshness.status === 'fresh';
+  nota.textContent = orderbookNote(result.freshness, filas.length);
+  nota.className = `source-note${fresco ? '' : ' has-gaps'}`;
+}
 // null !== 0: "no se midio" y "no hubo liquidaciones" son lecturas distintas y el operador
 // necesita distinguirlas. Solo se calcula el ratio cuando AMBAS patas existen.
 function renderLiquidations(result) {
@@ -1522,6 +1550,9 @@ async function loadSection(id, force = false) {
     renderAbsorption(absorption);
   } else if (id === 'liquidez') {
     const [orderbook, execution, impact] = await Promise.all([
+      // Sin freshness en el respaldo A PROPOSITO: si la peticion falla, el panel no
+      // puede afirmar "no hay libro" ni "el libro es viejo". Lo que dice es que no hubo
+      // lectura, que es lo unico cierto.
       maybe(`/api/scalp/orderbook?symbol=${q}`, { rows: [] }),
       // El perfil viaja al coste: el horizonte decide el umbral de AVISO de spread y con que
       // objetivo se compara el coste. Sin el, un swing recibia lectura de intradia.
