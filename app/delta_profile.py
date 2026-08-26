@@ -243,11 +243,13 @@ async def delta_profile(
     )
     result = profile_read([dict(row) for row in rows], interval, price)
     # K43 · es una SERIE y su ventana es su coverage. Hasta el 2026-08-26 declaraba from/to
-    # y bars, que dicen QUE se sirvio pero no cuanto FALTA: con 90 dias de velas de 4 h se
-    # sirvieron 539 de las 540 que caben en la ventana y no habia forma de verlo. La ventana
-    # es la de las velas que ENTRARON, no la pedida: pedir 90 dias cuando el historico tiene
-    # 9 no es un hueco, es un historico mas corto, y medirlo contra lo pedido daria
-    # incompletos falsos -el mismo motivo por el que /api/daily no lo hace (api.py:1990)-.
+    # y bars, que dicen QUE se sirvio pero no si dentro de eso falta algo: 539 velas de 4 h
+    # entre el 2026-05-28 y el 2026-08-26 pueden ser 539 seguidas o 539 con agujeros, y las
+    # dos se veian igual. Lo que anade la cobertura es esa diferencia.
+    # La ventana es la de las velas que ENTRARON, no la pedida: pedir 90 dias cuando el
+    # historico tiene 9 no es un hueco, es un historico mas corto, y medirlo contra lo
+    # pedido daria incompletos falsos -el mismo motivo por el que /api/daily no lo hace
+    # (api.py:1990)-. Por eso complete=true no dice "esta todo lo que pediste".
     # observed son las velas traidas; `bars` es el subconjunto que ademas tiene rango de
     # precio utilizable, que es otra cuenta y por eso no se mezclan.
     cobertura = None
