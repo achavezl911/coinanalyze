@@ -37,7 +37,10 @@ from app.scalp_logic import (
     price_barriers,
     reference_levels,
     resolve_matrix_as_of,
+    scalp_absorption,
+    scalp_basis,
     scalp_context,
+    scalp_liquidations,
     spot_flow_windows,
     structure_detail,
     volatility_context,
@@ -849,6 +852,21 @@ async def build_ai_symbol_context(
         # espejo antes de desplegar; contra 140 habria sido un 500 en /api/ai/context.
         "positioning": compact_dict(await positioning_context(conn, symbol)),
         "wyckoff": await wyckoff_context(conn, symbol),
+        # K43 · las tres ultimas de la familia FOTO. No estaban aqui por un motivo de
+        # imports y no de diseno: su SQL vivia dentro de app/api.py, y api.py importa este
+        # modulo, asi que traerlas habria hecho el ciclo. Movidas a scalp_logic, la foto
+        # llama a LA MISMA funcion que el endpoint, que es la unica forma de que "esta en la
+        # foto" no signifique "hay algo parecido en la foto". Medido el 2026-08-26 en 140:
+        # los tres endpoints suman 5708 B (absorption 2195, liquidations 3103, basis 410).
+        # compact_dict en las dos que traen datetime -recent.ts de liquidations y los dos
+        # fut_ts/spot_ts de basis-: rough_token_estimate hace json.dumps PELADO y un
+        # datetime crudo tumba /api/ai/context entero, que ya paso con positioning.
+        "absorption": [
+            compact_dict(fila)
+            for fila in await scalp_absorption(conn, symbol, matrix_as_of)
+        ],
+        "scalp_liquidations": compact_dict(await scalp_liquidations(conn, symbol)),
+        "basis": compact_dict(await scalp_basis(conn, symbol)),
         "context_metadata": await context_metadata(conn, symbol),
         "data_quality": await data_quality(conn, symbol),
         "macro_context": await macro_context(conn, symbol, as_of=matrix_as_of),

@@ -4934,6 +4934,177 @@ async def execution_cost(
     }
 
 
+# Las tres de abajo vivian con su SQL dentro de app/api.py, y por eso no podian entrar en la
+# foto de K43: api.py IMPORTA ai_context, asi que la foto no puede importar de api.py sin
+# hacer el ciclo. Aqui las ve todo el mundo: el endpoint las sirve y /api/ai/context las
+# incluye, con la MISMA consulta y por tanto con la misma respuesta -que es la unica forma
+# de que "esta en la foto" no sea otra cosa parecida-.
+
+
+async def scalp_absorption(
+    conn: asyncpg.Connection, symbol: str, as_of: datetime | None = None
+) -> list[dict[str, Any]]:
+    """Absorcion por ventana: delta contra movimiento de precio, con su cobertura.
+
+    ``as_of`` entra por parametro como en market_impact: quien arma la foto resuelve el corte
+    UNA vez y lo reparte, que es lo que fijo PR22 -si cada seccion resolviera el suyo, las
+    cuatro ventanas de aqui podrian caer en un corte distinto al de delta_matrix y nadie lo
+    veria-. El endpoint no pasa ninguno y entonces se resuelve aqui, como hacia antes.
+    """
+    windows = [("1m", 60), ("3m", 180), ("5m", 300), ("15m", 900)]
+    output: list[dict[str, Any]] = []
+    as_of = as_of or await resolve_matrix_as_of(conn)
+    baselines = await load_baselines(conn, symbol)
+    for label, seconds in windows:
+        row = await conn.fetchrow(
+            """
+            WITH fut AS (
+              SELECT SUM(buy_vol_usd-sell_vol_usd) AS delta,
+                     SUM(buy_vol_usd+sell_vol_usd) AS volume,
+                     COUNT(*)::int AS buckets,
+                     -- El mayor hueco entre buckets dice si la ventana se midio entera:
+                     -- contar buckets no basta porque TradeStore solo crea uno cuando
+                     -- llega un trade, asi que su ausencia puede ser mercado quieto.
+                     EXTRACT(EPOCH FROM max(ts)-min(ts))::float8 AS span_seconds,
+                     (array_agg(last_px ORDER BY ts ASC))[1] AS first_px,
+                     (array_agg(last_px ORDER BY ts DESC))[1] AS last_px
+              FROM futures_trades_realtime
+              WHERE symbol=$1 AND exchange='combined' AND venue_count=2
+                AND ts >= $3::timestamptz-($2::int * interval '1 second')
+                AND ts <= $3
+            ) SELECT * FROM fut
+            """,
+            symbol,
+            seconds,
+            as_of,
+        )
+        item = dict(row) if row else {"delta": None, "first_px": None, "last_px": None}
+        # Sin delta medido no hay lectura; `or 0.0` la fabricaba.
+        delta = as_float(item.get("delta"))
+        volume = as_float(item.get("volume"))
+        first_px = as_float(item.get("first_px"))
+        last_px = as_float(item.get("last_px"))
+        move = ((last_px - first_px) / first_px * 100) if first_px and last_px else None
+        baseline = baselines.get(label)
+        if delta is None or move is None:
+            # None y no 0.0: "no evaluable" no es un score neutro medido.
+            score, label_text = None, "No evaluable"
+        else:
+            score, label_text = classify_absorption(
+                delta, move, volume, (baseline or {}).get("p75")
+            )
+        ratio = (abs(delta) / volume) if delta is not None and volume else None
+        output.append(
+            {
+                "window": label,
+                "as_of": as_of.isoformat(),
+                "fut_delta": delta,
+                "fut_volume": volume,
+                "delta_ratio": ratio,
+                # El umbral es el p75 medido de ESTA ventana, no una constante global.
+                "min_ratio": (baseline or {}).get("p75", ABSORPTION_MIN_RATIO),
+                "threshold_source": (
+                    "baseline_p75_medido" if baseline else "fallback_constante"
+                ),
+                "context": baseline_band(ratio, baseline),
+                "price_move_pct": move,
+                "absorption": label_text,
+                "score": score,
+                # Cobertura DECLARADA de la ventana: cuantos buckets la sostienen y que
+                # tramo cubren de verdad. Sin esto, "Absorcion fuerte" sobre dos buckets
+                # sueltos se lee igual que sobre la ventana completa.
+                "coverage": {
+                    "buckets": int(item.get("buckets") or 0),
+                    "span_seconds": as_float(item.get("span_seconds")),
+                    "window_seconds": seconds,
+                    "span_ratio": (
+                        round(as_float(item["span_seconds"]) / seconds, 3)
+                        if as_float(item.get("span_seconds")) is not None
+                        else None
+                    ),
+                },
+                "timeframe": label,
+            }
+        )
+    return output
+
+
+async def scalp_liquidations(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+    """Liquidaciones por ventana y las 20 ultimas, tal como las pinta el panel."""
+    windows = [("1m", 60), ("5m", 300), ("15m", 900)]
+    matrix = []
+    for label, seconds in windows:
+        row = await conn.fetchrow(
+            """
+            SELECT $2::text AS window,
+                   SUM(CASE WHEN side='long' THEN notional_usd ELSE 0 END) AS long_liq,
+                   SUM(CASE WHEN side='short' THEN notional_usd ELSE 0 END) AS short_liq,
+                   COUNT(*) AS events
+            FROM liquidations_realtime WHERE symbol=$1 AND ts >= now()-($3::int * interval '1 second')
+            """,
+            symbol,
+            label,
+            seconds,
+        )
+        matrix.append(dict(row))
+    # Ventanas largas: historico multi-exchange del API de Coinalyze (buckets 5min, lag ~1-2 min)
+    for label, seconds in (("30m", 1800), ("1h", 3600), ("4h", 14400)):
+        row = await conn.fetchrow(
+            """
+            SELECT $2::text AS window,
+                   SUM(long_liq) AS long_liq,SUM(short_liq) AS short_liq,NULL::bigint AS events
+            FROM liquidations WHERE symbol=$1 AND interval='5min' AND ts >= now()-($3::int * interval '1 second')
+            """,
+            symbol,
+            label,
+            seconds,
+        )
+        matrix.append(dict(row))
+    recent = await conn.fetch(
+        """
+        SELECT ts,exchange,side,notional_usd,price,qty FROM liquidations_realtime
+        WHERE symbol=$1 ORDER BY ts DESC LIMIT 20
+        """,
+        symbol,
+    )
+    return {"symbol": symbol, "matrix": matrix, "recent": [dict(row) for row in recent]}
+
+
+async def scalp_basis(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+    """Basis futuro-contado con su calidad, que depende del desfase entre las dos patas."""
+    row = await conn.fetchrow(
+        """
+        WITH fut AS (
+          SELECT ts,last_px,last_event_ms FROM futures_trades_realtime
+          WHERE symbol=$1 AND exchange='combined' AND venue_count=2
+          ORDER BY ts DESC LIMIT 1
+        ), spot AS (
+          SELECT ts,last_px,last_event_ms FROM spot_trades_realtime
+          WHERE symbol=$2 AND exchange='combined' AND venue_count=2
+          ORDER BY ts DESC LIMIT 1
+        )
+        SELECT fut.ts AS fut_ts,spot.ts AS spot_ts,
+               fut.last_px AS fut_price,spot.last_px AS spot_price,
+               fut.last_event_ms AS fut_event_ms,spot.last_event_ms AS spot_event_ms,
+               (EXTRACT(EPOCH FROM now())*1000)::float8 AS now_ms,
+               EXTRACT(EPOCH FROM now()-fut.ts)::float8 AS fut_lag_seconds,
+               EXTRACT(EPOCH FROM now()-spot.ts)::float8 AS spot_lag_seconds
+        FROM fut FULL JOIN spot ON true
+        """,
+        symbol,
+        WS_SYMBOL_MAP[symbol],
+    )
+    item = dict(row) if row else {}
+    quality = basis_quality(
+        as_float(item.get("fut_price")),
+        as_float(item.get("spot_price")),
+        as_float(item.get("fut_event_ms")),
+        as_float(item.get("spot_event_ms")),
+        as_float(item.get("now_ms")) or 0.0,
+    )
+    return {"symbol": symbol, **item, **quality}
+
+
 IMPACT_WINDOWS = (("5m", 300), ("15m", 900), ("18m", 1080), ("1h", 3600))
 
 
