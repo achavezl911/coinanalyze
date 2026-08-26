@@ -2013,6 +2013,98 @@ async def scalp_signals(
     return {"symbol": selected, "rows": records(rows)}
 
 
+def _utc_iso(value: datetime | None) -> str | None:
+    """El ledger no filtra la zona horaria del servidor: siempre UTC y siempre con Z."""
+    if value is None:
+        return None
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+LEDGER_MAX_WINDOW = timedelta(hours=24)
+
+# Las columnas del ledger se nombran una a una a proposito. Un SELECT * ata la
+# respuesta publica a lo que schema.sql tenga ese dia: una columna nueva se filtraria
+# sola y una renombrada romperia al cliente sin que nada lo dijera.
+LEDGER_COLUMNS = """
+    observation_id, observed_at, observed_minute, symbol, signal_family,
+    is_periodic, is_transition, logic_version, evidence_version, sampling_version,
+    decision_status, direction, actionable, state, confidence, reason,
+    reference_price, reference_price_source, reference_price_at,
+    long_score, short_score, evidence_coverage_pct, metrics_snapshot_ts,
+    regime_score, regime_label, regime_logic_version
+"""
+LEDGER_TIMESTAMPS = (
+    "observed_at",
+    "observed_minute",
+    "reference_price_at",
+    "metrics_snapshot_ts",
+)
+
+
+@app.get("/api/signals/ledger")
+async def signals_ledger(
+    symbol: str,
+    since: str | None = None,
+    until: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=5000)] = 1000,
+) -> dict[str, Any]:
+    """signal_observation, el ledger de senales, servido tal cual se escribio.
+
+    Una observacion es una fila y se devuelven todas las de la ventana. Lo que la base
+    guarda como NULL se sirve como null: la clave no se borra nunca, porque "no lo se"
+    y "esta metrica no existe" no pueden ser la misma respuesta.
+    """
+    selected = validate_symbol(symbol)
+    try:
+        end = datetime.fromisoformat(until) if until else datetime.now(UTC)
+        start = (
+            datetime.fromisoformat(since) if since else end - timedelta(hours=1)
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"since/until no son ISO-8601: {exc}") from exc
+    if start.tzinfo is None or end.tzinfo is None:
+        raise HTTPException(status_code=422, detail="since/until necesitan zona horaria explicita")
+    if end <= start:
+        raise HTTPException(status_code=422, detail="until tiene que ser posterior a since")
+    if end - start > LEDGER_MAX_WINDOW:
+        raise HTTPException(
+            status_code=422,
+            detail=f"la ventana maxima es {int(LEDGER_MAX_WINDOW.total_seconds() // 3600)} h",
+        )
+
+    async with app.state.pool.acquire() as conn:
+        rows = await conn.fetch(
+            f"""
+            SELECT {LEDGER_COLUMNS}
+            FROM signal_observation
+            WHERE symbol=$1 AND observed_at >= $2 AND observed_at < $3
+            ORDER BY observed_at, observation_id
+            LIMIT $4
+            """,
+            selected,
+            start,
+            end,
+            limit + 1,
+        )
+    # Se pide una fila de mas: es la unica forma de saber si el LIMIT corto sin
+    # volver a contar. Un ledger que corta en silencio miente sobre la ventana.
+    truncated = len(rows) > limit
+    observations = records(rows[:limit])
+    for observation in observations:
+        for column in LEDGER_TIMESTAMPS:
+            observation[column] = _utc_iso(observation[column])
+
+    return {
+        "symbol": selected,
+        "since": _utc_iso(start),
+        "until": _utc_iso(end),
+        "limit": limit,
+        "count": len(observations),
+        "truncated": truncated,
+        "observations": observations,
+    }
+
+
 @app.get("/api/scalp/basis")
 async def scalp_basis(symbol: str) -> dict[str, Any]:
     selected = validate_symbol(symbol)
