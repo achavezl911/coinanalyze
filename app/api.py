@@ -56,6 +56,7 @@ from app.scalp_logic import (
     ABSORPTION_MIN_RATIO,
     EXECUTION_PROFILES,
     HYPOTHESES,
+    PROFILE_WINDOWS,
     TRADING_PROFILES,
     as_float,
     compute_scalp_summary,
@@ -67,7 +68,7 @@ from app.scalp_logic import (
     divergence_scan,
     execution_assessment,
     execution_cost,
-    feed_quality,
+    feed_quality_view,
     funding_context,
     hypothesis_evidence,
     level_breakout,
@@ -77,7 +78,6 @@ from app.scalp_logic import (
     market_impact,
     market_memory,
     market_structure,
-    metric_quality,
     oi_context,
     passive_flow,
     positioning_context,
@@ -137,17 +137,6 @@ HISTORICAL_INTERVALS = {
 
 # Ventanas que alimentan la jerarquia de perfiles y la hipotesis. Una sola definicion: si
 # /api/profile y /api/hypothesis usaran listas distintas podrian contradecirse.
-PROFILE_WINDOWS = [
-    ("30s", 30),
-    ("1m", 60),
-    ("5m", 300),
-    ("15m", 900),
-    ("18m", 1080),
-    ("1h", 3600),
-    ("4h", 14400),
-]
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     pool = await create_pool(SETTINGS, application_name="coinalyze-api")
@@ -1303,26 +1292,13 @@ async def quality_feeds(symbol: str) -> dict[str, Any]:
     La pestana de calidad mostraba la salud de los procesos internos bajo el titulo "Fuentes
     de datos". Son cosas distintas: un colector vivo puede estar alimentando un feed al que
     le falta un venue, y un feed completo puede sostener una metrica cuya ventana esta a
-    medias. Aqui van los tres niveles separados: servicios, feeds y metricas.
+    medias. Los tres niveles -servicios, feeds y metricas- los arma feed_quality_view, que
+    vive en scalp_logic desde el 2026-08-26 para que /api/ai/context sirva LA MISMA
+    respuesta: api.py importa ai_context, asi que al reves seria un ciclo.
     """
     selected = validate_symbol(symbol)
     async with app.state.pool.acquire() as conn:
-        as_of = await resolve_matrix_as_of(conn)
-        feeds = await feed_quality(conn, selected)
-        matrix = await delta_matrix(conn, selected, PROFILE_WINDOWS, as_of)
-        ctx = await scalp_context(conn, selected, as_of)
-        quality = await data_quality(conn, selected)
-    scalp = compute_scalp_summary(ctx)
-    return {
-        **feeds,
-        **metric_quality(matrix, scalp, feeds),
-        "collectors": quality.get("collectors"),
-        "contexts": {
-            "scalp": quality.get("scalp"),
-            "intraday": quality.get("intraday"),
-            "macro": quality.get("macro"),
-        },
-    }
+        return await feed_quality_view(conn, selected)
 
 
 @app.get("/api/baselines")

@@ -797,6 +797,10 @@ async def test_pr22_ai_bundle_shares_cvd_flow_as_of(monkeypatch) -> None:
         seen.append(as_of)
         return []
 
+    async def fake_calidad(_conn, _symbol, as_of=None, **_kwargs):
+        seen.append(as_of)
+        return {}
+
     monkeypatch.setattr(ai_context, "resolve_matrix_as_of", fixed_as_of)
     monkeypatch.setattr(ai_context, "delta_matrix", fake_delta)
     for name in (
@@ -843,6 +847,8 @@ async def test_pr22_ai_bundle_shares_cvd_flow_as_of(monkeypatch) -> None:
     # La absorcion SI recibe el corte compartido desde que entro en la foto, igual que
     # delta_matrix: sus cuatro ventanas tienen que colgar del mismo instante que el resto.
     monkeypatch.setattr(ai_context, "scalp_absorption", fake_lista)
+    # La vista de calidad tambien cuelga del corte compartido: juzga ventanas de matriz.
+    monkeypatch.setattr(ai_context, "feed_quality_view", fake_calidad)
     monkeypatch.setattr(ai_context, "compute_scalp_summary", lambda _ctx: {})
     monkeypatch.setattr(ai_context, "build_operator_read", lambda *_args: {})
     monkeypatch.setattr(ai_context, "local_alerts", lambda *_args: [])
@@ -859,7 +865,7 @@ async def test_pr22_ai_bundle_shares_cvd_flow_as_of(monkeypatch) -> None:
     await ai_context.build_ai_symbol_context(
         _NoopConnection(), "BTCUSDT_PERP.A", profile="lite"  # type: ignore[arg-type]
     )
-    assert len(seen) == 7
+    assert len(seen) == 8
     assert seen and set(seen) == {cutoff}
 
 

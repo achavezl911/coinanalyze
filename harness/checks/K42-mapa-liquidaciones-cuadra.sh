@@ -91,7 +91,19 @@ INI=$2; FIN=$3; BSIZE=$4; NBUCKETS=$5
 # fallar CERRADO en vez de dar un ROJO falso por filas que no llegaron.
 esperadas=$("$B/bin/prodsql" "SELECT count(DISTINCT (price,side)) FROM liquidations_realtime
   WHERE symbol='$SIM' AND ts >= '$INI'::timestamptz AND ts < '$FIN'::timestamptz" 2>/dev/null)
-eventos=$("$B/bin/prodsql" "SELECT price, side, sum(notional_usd) FROM liquidations_realtime
+# TOPE_FILAS y TODO=1, y aqui esta el motivo escrito porque TODO=1 no se pone por inercia:
+# esta consulta NO se puede acotar sin perder el check. Las filas son los eventos crudos y
+# el bucketeo se hace en python A PROPOSITO -es lo unico que se esta verificando-, asi que
+# un LIMIT recortaria el recalculo y daria un ROJO falso, y agregarlas en SQL seria
+# preguntarle al acusado. El 2026-08-26 la ventana trajo 359 pares (precio,lado) distintos
+# y en 8 KB solo caben ~310: el check salio NO MEDIDO, que es fallar cerrado y esta bien,
+# pero se comio un VERDE que si estaba. Con el corte quitado siguen dos frenos: el conteo
+# separado que compara filas recibidas contra esperadas, y este tope explicito.
+[ "$esperadas" -le "${K42_TOPE_FILAS:-5000}" ] || {
+  echo "NO MEDIDO: $esperadas pares (precio,lado) en la ventana, por encima del tope de ${K42_TOPE_FILAS:-5000}"
+  exit 2
+}
+eventos=$(TODO=1 "$B/bin/prodsql" "SELECT price, side, sum(notional_usd) FROM liquidations_realtime
   WHERE symbol='$SIM' AND ts >= '$INI'::timestamptz AND ts < '$FIN'::timestamptz
   GROUP BY 1,2 ORDER BY 1" 2>/dev/null)
 recibidas=$(printf '%s\n' "$eventos" | grep -c '|')

@@ -24,6 +24,7 @@ from app.scalp_logic import (
     data_quality,
     delta_matrix,
     divergence_scan,
+    feed_quality_view,
     funding_context,
     horizon_structure,
     liquidation_burst,
@@ -207,6 +208,25 @@ def compact_dict(row: dict[str, Any], allowed_fields: set[str] | None = None) ->
             continue
         output[key] = compact_value(value)
     return output
+
+
+def sin_perder_los_nulos(value: Any) -> Any:
+    """Como compact_value pero SIN tirar los None, y con un motivo por seccion.
+
+    compact_dict borra la clave cuando el valor es None, que ahorra tokens y para casi todo
+    da igual. Para la seccion de CALIDAD no da igual: ahi el null ES la respuesta -"esta
+    metrica no se puede saber ahora mismo"- y borrarla la vuelve indistinguible de una
+    metrica que nadie publica. metric_quality lo dice en su propia docstring: lo que no se
+    puede saber va como null. Los datetime siguen convirtiendose porque
+    rough_token_estimate hace json.dumps PELADO y uno crudo tumba el endpoint entero.
+    """
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return {clave: sin_perder_los_nulos(v) for clave, v in value.items()}
+    if isinstance(value, list):
+        return [sin_perder_los_nulos(v) for v in value]
+    return compact_value(value)
 
 
 def rough_token_estimate(payload: dict[str, Any]) -> int:
@@ -807,6 +827,7 @@ async def build_ai_symbol_context(
     external = await external_macro_context(
         conn, etf_configured=bool(get_settings().COINGLASS_API_KEY)
     )
+    calidad = await data_quality(conn, symbol)
     payload: dict[str, Any] = {
         "schema_version": "ai_context.v2",
         "interpretation_prompt": ANALYSIS_PROMPT,
@@ -868,7 +889,16 @@ async def build_ai_symbol_context(
         "scalp_liquidations": compact_dict(await scalp_liquidations(conn, symbol)),
         "basis": compact_dict(await scalp_basis(conn, symbol)),
         "context_metadata": await context_metadata(conn, symbol),
-        "data_quality": await data_quality(conn, symbol),
+        "data_quality": calidad,
+        # K43 · lo que sirve /api/quality/feeds, con LA MISMA funcion y las MISMAS ventanas
+        # (PROFILE_WINDOWS, que no son las del perfil de la foto: metric_quality juzga la de
+        # 30 s y la de 4 h, que el perfil por defecto ni pide). Se le pasan el resumen de
+        # scalp y data_quality que esta foto ya calculo bajo este mismo corte, en vez de
+        # dejar que los lea otra vez: dos lecturas dentro de la misma respuesta pueden no
+        # coincidir. Y va SIN compactar los nulos porque aqui el null es la respuesta.
+        "feed_quality": sin_perder_los_nulos(
+            await feed_quality_view(conn, symbol, matrix_as_of, scalp=summary, calidad=calidad)
+        ),
         "macro_context": await macro_context(conn, symbol, as_of=matrix_as_of),
         "external_macro_context": external,
         "divergences": await divergence_scan(

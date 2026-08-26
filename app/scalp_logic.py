@@ -4941,6 +4941,63 @@ async def execution_cost(
 # de que "esta en la foto" no sea otra cosa parecida-.
 
 
+# Las ventanas del perfil. Vivian en app/api.py y se mudan aqui el 2026-08-26 porque la
+# vista de calidad las necesita y este modulo no puede importar de api.py sin cerrar el
+# ciclo. api.py las sigue usando por import, o sea que sigue habiendo UNA lista.
+PROFILE_WINDOWS = [
+    ("30s", 30),
+    ("1m", 60),
+    ("5m", 300),
+    ("15m", 900),
+    ("18m", 1080),
+    ("1h", 3600),
+    ("4h", 14400),
+]
+
+
+async def feed_quality_view(
+    conn: asyncpg.Connection,
+    symbol: str,
+    as_of: datetime | None = None,
+    *,
+    scalp: dict[str, Any] | None = None,
+    calidad: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Los TRES niveles de calidad que sirve /api/quality/feeds, en un solo sitio.
+
+    Servicios, feeds y metricas son cosas distintas: un colector vivo puede estar
+    alimentando un feed al que le falta un venue, y un feed completo puede sostener una
+    metrica cuya ventana esta a medias.
+
+    La matriz se calcula SIEMPRE con PROFILE_WINDOWS y no con las ventanas del perfil de la
+    foto. No es un detalle: metric_quality juzga la ventana de 30 s y la de 4 h, que el
+    perfil por defecto de la foto ni siquiera pide. Calcularla con otras ventanas daria los
+    MISMOS NOMBRES sobre otra medicion, que es la peor de las formas de fallar porque nada
+    lo distingue de estar bien.
+
+    ``scalp`` y ``calidad`` entran por parametro para quien ya los tenga -la foto los arma
+    antes, bajo el mismo corte-: recalcularlos seria leer dos veces lo mismo y arriesgarse a
+    que las dos lecturas no coincidan dentro de la misma respuesta.
+    """
+    as_of = as_of or await resolve_matrix_as_of(conn)
+    feeds = await feed_quality(conn, symbol)
+    matrix = await delta_matrix(conn, symbol, PROFILE_WINDOWS, as_of)
+    if scalp is None:
+        scalp = compute_scalp_summary(await scalp_context(conn, symbol, as_of))
+    if calidad is None:
+        calidad = await data_quality(conn, symbol)
+    return {
+        **feeds,
+        **metric_quality(matrix, scalp, feeds),
+        "collectors": calidad.get("collectors"),
+        "contexts": {
+            "scalp": calidad.get("scalp"),
+            "intraday": calidad.get("intraday"),
+            "macro": calidad.get("macro"),
+        },
+    }
+
+
 async def scalp_absorption(
     conn: asyncpg.Connection, symbol: str, as_of: datetime | None = None
 ) -> list[dict[str, Any]]:
