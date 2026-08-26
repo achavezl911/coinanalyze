@@ -147,6 +147,17 @@ SIGNIFICANT_FIELDS = {
     "btr_15m",
     "btr_1h",
     "btr_24h",
+    # Los cinco de abajo los pinta /api/dashboard/state desde la MISMA fila y este filtro
+    # los tiraba, asi que la foto llevaba la cifra sin poder decir de cuando es: ts es el
+    # instante de la instantanea, y metrics_cutoff_at y price_cutoff_at son los dos cierres
+    # de ventana que K38 obliga a declarar -sin ellos, "cambio de 5m" puede ser de 20m y no
+    # hay como saberlo-. Medido el 2026-08-26 contra 140: 6 nombres de dashboard/state.
+    # snapshot no estaban en la foto (symbol si esta, en la raiz del sobre).
+    "ts",
+    "metrics_cutoff_at",
+    "price_cutoff_at",
+    "liq_ratio_24h",
+    "oi_bybit",
 }
 
 
@@ -554,23 +565,53 @@ def quality_score(confidence: dict[str, Any]) -> int:
     return max(0, min(100, score))
 
 
+# El libro que va en la foto tiene que ser EL MISMO que sirve /api/scalp/orderbook: mismo
+# filtro de edad, mismo predicado de venue y los mismos tres estados. Hasta el 2026-08-26 no
+# lo era -la foto se traia "lo ultimo que hubiera", sin acotar la edad y sin declararla-, asi
+# que un panel que bebiera de la foto (K44) pintaria un libro viejo sin forma de saber que lo
+# es: exactamente lo que K13 puso en VERDE en el endpoint y se habria perdido en silencio al
+# cambiar de fuente. Los predicados viven aqui y los usan los dos; tenerlos duplicados es
+# como se separaron la primera vez.
+ORDERBOOK_MAX_AGE_SECONDS = 30
+ORDERBOOK_FRESCAS_SQL = """
+    SELECT DISTINCT ON (exchange) * FROM orderbook_snapshot
+    WHERE symbol=$1 AND ts >= now()-make_interval(secs => $2)
+      AND (exchange <> 'combined' OR venue_count=2)
+    ORDER BY exchange,ts DESC
+"""
+# La edad se pregunta SIN el filtro de 30 s, que es justo lo que el filtro esconde. Va en su
+# propia consulta y no quitando el filtro de la de arriba: medido en 140 el 2026-08-26, un
+# DISTINCT ON sin acotar tarda 97.8 ms sobre esta tabla y este LIMIT 1 tarda 0.165 ms. El
+# predicado de venue es el mismo, o sea que "lo mas nuevo que serviria" y no "lo mas nuevo
+# que hay".
+ORDERBOOK_EDAD_SQL = """
+    SELECT ts FROM orderbook_snapshot
+    WHERE symbol=$1 AND (exchange <> 'combined' OR venue_count=2)
+    ORDER BY ts DESC LIMIT 1
+"""
+
+
+def orderbook_freshness(as_of: datetime | None, hay_filas: bool) -> dict[str, Any]:
+    # TRES estados, no dos. "No hay libro" y "el libro es viejo" son hechos distintos y el
+    # que decide es quien mira: con cero filas y sin esto, los dos se ven igual.
+    edad = (datetime.now(UTC) - as_of).total_seconds() if as_of is not None else None
+    return {
+        "status": "fresh" if hay_filas else ("empty" if as_of is None else "stale"),
+        "as_of": as_of.isoformat() if as_of is not None else None,
+        "age_seconds": round(edad, 1) if edad is not None else None,
+        "max_age_seconds": ORDERBOOK_MAX_AGE_SECONDS,
+    }
+
+
 async def latest_orderbook(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
-    rows = await conn.fetch(
-        """
-        SELECT DISTINCT ON (exchange)
-               exchange,ts,spread_bps,imbalance_l1,imbalance_l5,imbalance_l10,
-               wall_up_pct,wall_down_pct,bid_px,ask_px
-        FROM orderbook_snapshot
-        WHERE symbol=$1 AND exchange IN ('combined','binance','bybit')
-        ORDER BY exchange,ts DESC
-        """,
-        symbol,
-    )
+    rows = await conn.fetch(ORDERBOOK_FRESCAS_SQL, symbol, ORDERBOOK_MAX_AGE_SECONDS)
+    as_of = await conn.fetchval(ORDERBOOK_EDAD_SQL, symbol)
     by_exchange = {str(row["exchange"]): compact_dict(dict(row)) for row in rows}
     return {
         "combined": by_exchange.get("combined"),
         "binance": by_exchange.get("binance"),
         "bybit": by_exchange.get("bybit"),
+        "freshness": orderbook_freshness(as_of, bool(rows)),
     }
 
 
