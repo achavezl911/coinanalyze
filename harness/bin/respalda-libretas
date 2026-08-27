@@ -64,9 +64,66 @@ fi
 # se promete: que lo que vuelve del remoto es byte a byte lo que se mando.
 sha256sum hechos.tsv COLA.md ESTADO.md CAMBIOS.md CLAUDE.md env > SHA256SUMS
 
-git add -A
-git diff --cached --quiet && exit 0   # nada que empujar; el timer no ensucia el log
+# EL CORTE VA DESPUES DEL PUSH, NO ANTES, Y ESA ERA LA AVERIA. Lo de antes era:
+#     git add -A
+#     git diff --cached --quiet && exit 0   <- aqui
+#     git push --quiet origin HEAD 2>/dev/null || exit 1
+# Un push que falla UNA vez deja el commit hecho EN LOCAL. En la corrida siguiente los
+# ficheros ya no han cambiado, el indice sale limpio, y ese `exit 0` se lleva la corrida
+# sin llegar nunca al push: no reintenta JAMAS. Medido el 2026-08-27: el remoto llevaba
+# 25 h congelado -80 commits sin empujar, o sea la auditoria entera de un dia en un solo
+# LXC- mientras el timer corria cada 5 min y la unit salia 0/SUCCESS.
+# CONFUNDIA "no hay nada nuevo que preparar" con "ya esta todo empujado". Son la misma
+# familia que K60 y K63: un instrumento que no distingue "no habia nada que hacer" de
+# "falle y me rendi", y de las dos sale por la puerta buena.
+#
+# LA CONDICION AHORA ES LOCAL == REMOTO, y se le pregunta AL REMOTO. El indice solo
+# decide si hay que hacer un commit nuevo; quien decide si hay que empujar es la
+# comparacion con lo que el remoto tiene de verdad.
+rama=$(git symbolic-ref --quiet --short HEAD) || {
+  echo "respalda-libretas: la copia no esta en una rama; no se puede comparar con el remoto" >&2
+  exit 1
+}
 
-git -c user.name=arnes -c user.email=arnes@coinalyze \
-    commit -q -m "libretas $(date -u +%Y-%m-%dT%H:%M:%SZ)" || exit 1
-git push --quiet origin HEAD 2>/dev/null || exit 1
+git add -A
+if ! git diff --cached --quiet; then
+  git -c user.name=arnes -c user.email=arnes@coinalyze \
+      commit -q -m "libretas $(date -u +%Y-%m-%dT%H:%M:%SZ)" || exit 1
+fi
+
+# NO SABER NO ES ESTAR BIEN, pero "la rama todavia no existe alli" SI es un estado
+# legitimo: es la primera subida. Son dos cosas distintas y confundirlas es la misma
+# averia que este arreglo persigue, un piso mas abajo. ls-remote las separa: rama
+# ausente da rc=0 con salida vacia, y un remoto inalcanzable da rc!=0.
+sha_remoto() {
+  local salida rc
+  salida=$(git ls-remote --heads origin "$rama" 2>&1); rc=$?
+  if [ "$rc" -ne 0 ]; then printf '%s\n' "$salida" >&2; return 1; fi
+  printf '%s' "$salida" | awk '{print $1; exit}'
+}
+
+remoto=$(sha_remoto) || {
+  echo "respalda-libretas: no se pudo consultar el remoto ($DESTINO)" >&2
+  exit 1
+}
+
+# EL CONTROL POSITIVO QUE HAY QUE CONSERVAR: si el remoto ya tiene exactamente esto, se
+# sale 0 y en silencio. Es lo que buscaba el atajo viejo -que un timer de 5 minutos no
+# ensucie el log- y sigue cumpliendose, solo que ahora la pregunta es la correcta.
+[ -n "$remoto" ] && [ "$(git rev-parse HEAD)" = "$remoto" ] && exit 0
+
+# EL PUSH CONSERVA SU stderr. Antes iba a /dev/null, asi que la unit moria sin decir por
+# que y el operador se quedaba con un rc pelado.
+git push origin HEAD || exit 1
+
+# Y SE VERIFICA DESPUES: que el push devuelva 0 no prueba que el remoto quedara al dia.
+# Si sigue por detras, la unit FALLA en vez de salir 0, que es justo lo que no hacia.
+remoto=$(sha_remoto) || {
+  echo "respalda-libretas: se empujo pero no se pudo confirmar el remoto" >&2
+  exit 1
+}
+[ "$(git rev-parse HEAD)" = "$remoto" ] || {
+  echo "respalda-libretas: el remoto sigue por detras del local despues del push" >&2
+  echo "  local=$(git rev-parse HEAD) remoto=${remoto:-<la rama no existe en el remoto>}" >&2
+  exit 1
+}
