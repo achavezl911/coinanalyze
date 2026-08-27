@@ -1250,8 +1250,13 @@ async def test_wrong_outcome_version_blocks_mature_fold(
         ]
         == 1
     )
-    assert report["gates"]["positive_oos_gate_count"] == 0
-    assert report["gates"]["positive_execution_oos_gate_count"] == 0
+    # K60: el fold esta BLOQUEADO, asi que ninguna celda es evaluable. "0 puertas
+    # pasadas" y "0 puertas medibles" no pueden ser el mismo numero: el conteo es
+    # None y el denominador lo dice.
+    assert report["gates"]["positive_oos_gate_count"] is None
+    assert report["gates"]["oos_gate_evaluable_cell_count"] == 0
+    assert report["gates"]["positive_execution_oos_gate_count"] is None
+    assert report["gates"]["execution_oos_gate_evaluable_cell_count"] == 0
 
 
 @pytest.mark.asyncio
@@ -1330,7 +1335,10 @@ async def test_execution_era_missing_second_venue_blocks_mature_fold(
         execution_integrity["execution_era_observations_without_two_snapshots"]
         == 1
     )
-    assert report["gates"]["positive_oos_gate_count"] == 0
+    # K60: mismo motivo que arriba. Nada era evaluable, asi que no hay un 0 que
+    # publicar.
+    assert report["gates"]["positive_oos_gate_count"] is None
+    assert report["gates"]["oos_gate_evaluable_cell_count"] == 0
 
 
 @pytest.mark.asyncio

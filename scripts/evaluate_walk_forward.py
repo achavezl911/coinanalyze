@@ -160,6 +160,11 @@ def _write_csv(path: Path, report: dict[str, Any]) -> None:
         writer.writerows(rows)
 
 
+def _gate_count(value: int | None) -> str:
+    """NO EVALUABLE no es cero. Imprimirlo como 0 es el defecto de K60."""
+    return "NO_EVALUABLE" if value is None else str(value)
+
+
 async def _run(args: argparse.Namespace) -> dict[str, Any]:
     settings = get_settings()
     conn = await asyncpg.connect(settings.pg_dsn)
@@ -209,10 +214,23 @@ def main() -> None:
         f"manifest={report['manifest']['manifest_name']}",
         f"ready_by_clock={gates['ready_by_clock_fold_count']}",
         f"evaluation_ready={gates['evaluation_ready_fold_count']}",
-        f"gross_positive_oos_gates={gates['positive_oos_gate_count']}",
+        # K60: el conteo de puertas viaja SIEMPRE con cuantas celdas eran
+        # evaluables. Sin ese denominador, un 0 se lee como "evaluado, sin
+        # ventaja" cuando lo que hubo fue nada que evaluar.
+        f"gross_positive_oos_gates={_gate_count(gates['positive_oos_gate_count'])}",
+        (
+            "oos_gate_evaluable="
+            f"{gates['oos_gate_evaluable_cell_count']}"
+            f"/{gates['oos_gate_evaluable_cell_count'] + gates['oos_gate_not_evaluable_cell_count']}"
+        ),
         (
             "execution_positive_oos_gates="
-            f"{gates['positive_execution_oos_gate_count']}"
+            f"{_gate_count(gates['positive_execution_oos_gate_count'])}"
+        ),
+        (
+            "execution_oos_gate_evaluable="
+            f"{gates['execution_oos_gate_evaluable_cell_count']}"
+            f"/{gates['execution_oos_gate_evaluable_cell_count'] + gates['execution_oos_gate_not_evaluable_cell_count']}"
         ),
     )
     if "confirmatory_state" in report:

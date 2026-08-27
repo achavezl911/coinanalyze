@@ -1656,6 +1656,20 @@ def _fold_state_summary(
         elif outcome_recovery_pending:
             final_state = "outcome_recovery_pending"
 
+    # EL RELOJ NO ES EL DATO. Un fold puede estar maduro y no tener ni una
+    # observacion en la ventana de prueba -pasa hoy contra produccion: el
+    # manifiesto congela evidence_version=1 y esa ventana es 100% v6-. Declararlo
+    # "listo para evaluar" hace que el resumen publique un 0 de puertas que se lee
+    # como "evaluado, sin ventaja" cuando lo que hubo fue nada que evaluar.
+    test_periodic_observations = int(
+        test_integrity.get("periodic_observations") or 0
+    )
+    not_evaluable_reason: str | None = None
+    if final_state == "ready_by_clock" and test_periodic_observations == 0:
+        not_evaluable_reason = "test_window_has_no_periodic_observations"
+    elif final_state != "ready_by_clock":
+        not_evaluable_reason = final_state
+
     return {
         "fold_index": fold["fold_index"],
         "discovery_start": fold["discovery_start"],
@@ -1665,7 +1679,10 @@ def _fold_state_summary(
         "test_maturity_at": fold["test_maturity_at"],
         "clock_state": clock_state,
         "state": final_state,
-        "evaluation_ready": final_state == "ready_by_clock",
+        "evaluation_ready": (
+            final_state == "ready_by_clock" and not_evaluable_reason is None
+        ),
+        "not_evaluable_reason": not_evaluable_reason,
         "integrity_blocked": integrity_blocked,
         "outcome_recovery_pending": outcome_recovery_pending,
     }
@@ -1728,6 +1745,53 @@ def _std_error(values: list[float], n_effective: int | None) -> float | None:
     if n_effective is None or n_effective < 2 or len(values) < 2:
         return None
     return statistics.stdev(values) / math.sqrt(n_effective)
+
+
+def _count_oos_gates(
+    folds: list[dict[str, Any]],
+) -> tuple[int | None, int, int]:
+    """Puertas pasadas, celdas EVALUABLES y celdas no evaluables.
+
+    Sumar ``is True`` hace que un None cuente igual que un False, y entonces un 0
+    significa a la vez "ninguna paso" y "ninguna se pudo medir". Devolver el par
+    es lo que permite distinguirlos. Con cero evaluables el conteo NO es 0: es
+    None, porque no hubo medicion que resumir.
+    """
+    passed = 0
+    evaluable = 0
+    not_evaluable = 0
+    for fold in folds:
+        for mode_views in fold["gross_views"].values():
+            for rows in mode_views.values():
+                for row in rows:
+                    value = row["positive_oos_gate_passed"]
+                    if value is None:
+                        not_evaluable += 1
+                        continue
+                    evaluable += 1
+                    if value is True:
+                        passed += 1
+    return (passed if evaluable else None), evaluable, not_evaluable
+
+
+def _count_execution_oos_gates(
+    folds: list[dict[str, Any]],
+) -> tuple[int | None, int, int]:
+    """El gemelo de _count_oos_gates para las vistas de ejecucion."""
+    passed = 0
+    evaluable = 0
+    not_evaluable = 0
+    for fold in folds:
+        for rows in fold["execution_views"].values():
+            for row in rows:
+                value = row["positive_market_cost_oos_gate_passed"]
+                if value is None:
+                    not_evaluable += 1
+                    continue
+                evaluable += 1
+                if value is True:
+                    passed += 1
+    return (passed if evaluable else None), evaluable, not_evaluable
 
 
 def _base_verdict_gate(
@@ -3140,19 +3204,16 @@ async def evaluate_walk_forward(
         bool(fold["evaluation_ready"]) for fold in folds
     )
 
-    positive_oos_gate_count = 0
-    positive_execution_oos_gate_count = 0
-    for fold in folds:
-        for mode_views in fold["gross_views"].values():
-            for rows in mode_views.values():
-                positive_oos_gate_count += sum(
-                    row["positive_oos_gate_passed"] is True for row in rows
-                )
-        for rows in fold["execution_views"].values():
-            positive_execution_oos_gate_count += sum(
-                row["positive_market_cost_oos_gate_passed"] is True
-                for row in rows
-            )
+    (
+        positive_oos_gate_count,
+        oos_gate_evaluable_cell_count,
+        oos_gate_not_evaluable_cell_count,
+    ) = _count_oos_gates(folds)
+    (
+        positive_execution_oos_gate_count,
+        execution_oos_gate_evaluable_cell_count,
+        execution_oos_gate_not_evaluable_cell_count,
+    ) = _count_execution_oos_gates(folds)
 
     is_spec_v1 = options.spec_version == WALK_FORWARD_SPEC_VERSION
     global_execution_end = min(
@@ -3215,8 +3276,18 @@ async def evaluate_walk_forward(
             "ready_by_clock_fold_count": ready_by_clock_fold_count,
             "evaluation_ready_fold_count": evaluation_ready_fold_count,
             "positive_oos_gate_count": positive_oos_gate_count,
+            "oos_gate_evaluable_cell_count": oos_gate_evaluable_cell_count,
+            "oos_gate_not_evaluable_cell_count": (
+                oos_gate_not_evaluable_cell_count
+            ),
             "positive_execution_oos_gate_count": (
                 positive_execution_oos_gate_count
+            ),
+            "execution_oos_gate_evaluable_cell_count": (
+                execution_oos_gate_evaluable_cell_count
+            ),
+            "execution_oos_gate_not_evaluable_cell_count": (
+                execution_oos_gate_not_evaluable_cell_count
             ),
         },
         "first_oos_cutoff_in_future": first_oos_cutoff_in_future,
