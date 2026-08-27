@@ -35,7 +35,6 @@ def test_session_bounds_follow_dst():
 @pytest.mark.parametrize(
     ("buy", "sell", "asset", "expected_label", "sign"),
     [
-        (4_000_000, 500_000, "BTC", "Sin operaciones spot de gran tamaño relevantes", 0),
         (5_000_000, 500_000, "ETH", "Acumulación agresiva", 1),
         (100_000, 900_000, "SOL", "Distribución agresiva", -1),
         (600_000, 400_000, "SOL", "Neutro", 1),
@@ -45,6 +44,41 @@ def test_whale_classification(buy, sell, asset, expected_label, sign):
     intensity, label = whale_classification(buy, sell, asset)
     assert label == expected_label
     assert (intensity > 0) - (intensity < 0) == sign
+
+
+def test_whale_below_threshold_does_not_vote_zero():
+    # K59: sin operaciones por encima del umbral no hay desequilibrio que medir. El 0.0
+    # de antes hacia votar al componente de mas peso (30 de 100) contra la regla que
+    # compute_regime documenta, y dejaba el score en 0.7 exacto del suyo.
+    intensity, label = whale_classification(4_000_000, 500_000, "BTC")
+    assert intensity is None
+    assert label == "Sin operaciones spot de gran tamaño relevantes"
+
+
+def test_whale_zero_with_real_activity_is_still_a_measurement():
+    # CONTROL POSITIVO del arreglo: un delta EXACTAMENTE cero con actividad por encima
+    # del umbral SI es una medicion, y tiene que seguir votando 0.0.
+    intensity, label = whale_classification(500_000, 500_000, "SOL")
+    assert intensity == 0.0
+    assert label == "Neutro"
+
+
+def test_absent_whale_stops_voting_and_renormalizes():
+    base = {
+        "cvd_spot_imbalance_24h": 0.4,
+        "cvd_fut_imbalance_24h": 0.4,
+        "oi_chg_24h_pct": 5.0,
+        "fr_avg": 0.0,
+        "long_liq_24h": 0.0,
+        "short_liq_24h": 0.0,
+    }
+    votando_cero, _ = compute_regime({**base, "whale_intensity": 0.0})
+    ausente, _ = compute_regime({**base, "whale_intensity": None})
+    # Con el ausente votando cero, el peso medido es 100 y el score se diluye a 0.7 del
+    # que manda la regla; sin el, se renormaliza sobre 70.
+    # compute_regime redondea a 2 decimales: la tolerancia es la del propio productor.
+    assert ausente == pytest.approx(votando_cero / 0.7, abs=0.01)
+    assert ausente > votando_cero
 
 
 def test_compute_regime_organic_bullish():
