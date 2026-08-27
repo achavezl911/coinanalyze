@@ -113,6 +113,14 @@ DEFAULT_TEST_DAYS = 7
 DEFAULT_FOLD_COUNT = 4
 DEFAULT_MIN_GROUP_N = 30
 
+# Umbral declarado para decidir si una linea base se distingue de cero, en unidades
+# de error estandar corregido por solapamiento. El veredicto del walk-forward es una
+# RAZON contra la base (retention_ratio = test/discovery), asi que una base nula no
+# produce un numero grande: produce un numero SIN SIGNIFICADO. Medido sobre el fold 1
+# del manifiesto pr11-fixed-kernel-v1, las bases de h=15 dan |t| 0.23/0.24/0.52 y el
+# codigo servia ratios de -26.6, -28.3 y -9.3.
+BASE_SIGNIFICANCE_T = 2.0
+
 GROSS_VIEWS = ("overall", "state", "regime")
 
 # Kept explicit (like app/signal_execution.py) to avoid an import cycle with
@@ -1677,23 +1685,86 @@ def _percentile(values: list[float], pct: float) -> float | None:
     return ordered[lo] * (hi - k) + ordered[hi] * (k - lo)
 
 
+def _nonoverlap_slot(row: dict[str, Any]) -> tuple[Any, int] | None:
+    """Hueco NO SOLAPADO que ocupa la fila: (simbolo, bloque de h minutos).
+
+    En dense_periodic hay una observacion por minuto y una ventana de h minutos,
+    o sea ~h ventanas solapadas por cada hueco independiente. Contar los huecos
+    distintos es la n efectiva MEDIDA sobre las propias filas, sin suponer nada
+    sobre la cadencia. En utc_nonoverlap sale igual a n por construccion, que es
+    la comprobacion de que la definicion es la correcta.
+
+    Devuelve None si la fila no lleva con que situarse: entonces la n efectiva no
+    se puede establecer y el error estandar tampoco. Eso cierra el porton, no lo
+    abre.
+    """
+    observed_minute = row.get("observed_minute")
+    if not isinstance(observed_minute, datetime):
+        return None
+    horizon = int(row.get("horizon_minutes") or 0)
+    if horizon <= 0:
+        return None
+    minute_index = math.floor(_aware_utc(observed_minute).timestamp() / 60.0)
+    return (row.get("symbol"), minute_index // horizon)
+
+
+def _effective_n(rows: list[dict[str, Any]]) -> int | None:
+    slots: set[tuple[Any, int]] = set()
+    for row in rows:
+        slot = _nonoverlap_slot(row)
+        if slot is None:
+            return None
+        slots.add(slot)
+    return len(slots) or None
+
+
+def _std_error(values: list[float], n_effective: int | None) -> float | None:
+    """Error estandar sobre la n EFECTIVA, no sobre el numero de filas.
+
+    Dividir por sqrt(n) cuando las ventanas se solapan infla la aparente
+    significancia, y lo hace mas cuanto mas largo el horizonte: medido en el fold
+    1, h=60 da |t| 11.07 ingenua contra 1.43 corregida.
+    """
+    if n_effective is None or n_effective < 2 or len(values) < 2:
+        return None
+    return statistics.stdev(values) / math.sqrt(n_effective)
+
+
+def _base_verdict_gate(
+    base_expectancy: float | None,
+    base_std_error: float | None,
+) -> tuple[float | None, str | None]:
+    """|t| de la linea base y, si no llega al umbral, POR QUE no hay razon que servir.
+
+    Un motivo legible en vez de un None mudo: quien lee la salida tiene que poder
+    distinguir "no se pudo medir" de "se midio y no dice nada".
+    """
+    if base_expectancy is None:
+        return None, "base_absent"
+    if base_std_error is None or base_std_error <= 0.0:
+        return None, "base_std_error_not_establishable"
+    base_t = abs(base_expectancy) / base_std_error
+    if base_t < BASE_SIGNIFICANCE_T:
+        return base_t, "base_not_distinguishable_from_zero"
+    return base_t, None
+
+
 def _group_stats(
     rows: list[dict[str, Any]],
     *,
     min_group_n: int,
 ) -> dict[str, Any]:
-    returns = [
-        float(row["directional_return_pct"])
-        for row in rows
-        if row["directional_return_pct"] is not None
-    ]
+    contributing = [row for row in rows if row["directional_return_pct"] is not None]
+    returns = [float(row["directional_return_pct"]) for row in contributing]
     mfe = [float(row["mfe_pct"]) for row in rows if row["mfe_pct"] is not None]
     mae = [float(row["mae_pct"]) for row in rows if row["mae_pct"] is not None]
     n = len(returns)
     if n == 0:
         return {
             "n": 0,
+            "n_effective": 0,
             "expectancy_gross_pct": None,
+            "expectancy_std_error_pct": None,
             "hit_rate_pct": None,
             "median_return_pct": None,
             "p10_return_pct": None,
@@ -1704,9 +1775,12 @@ def _group_stats(
         }
 
     hits = sum(1 for value in returns if value > 0)
+    n_effective = _effective_n(contributing)
     return {
         "n": n,
+        "n_effective": n_effective,
         "expectancy_gross_pct": statistics.fmean(returns),
+        "expectancy_std_error_pct": _std_error(returns, n_effective),
         "hit_rate_pct": hits / n * 100.0,
         "median_return_pct": statistics.median(returns),
         "p10_return_pct": _percentile(returns, 0.10),
@@ -1988,13 +2062,21 @@ def _build_gross_views(
             expectancy_diff = None
             retention_ratio = None
             sign_preserved = None
+            base_t, base_inconclusive_reason = _base_verdict_gate(
+                discovery_expectancy,
+                discovery_stats["expectancy_std_error_pct"],
+            )
             if discovery_expectancy is not None and test_expectancy is not None:
+                # La DIFERENCIA sigue siendo una cifra legitima contra una base
+                # nula. La RAZON y el SIGNO no lo son: una divide por un cero
+                # estadistico y el otro compara el signo de una moneda al aire.
                 expectancy_diff = test_expectancy - discovery_expectancy
-                if discovery_expectancy != 0:
-                    retention_ratio = test_expectancy / discovery_expectancy
-                sign_preserved = (discovery_expectancy > 0) == (
-                    test_expectancy > 0
-                )
+                if base_inconclusive_reason is None:
+                    if discovery_expectancy != 0:
+                        retention_ratio = test_expectancy / discovery_expectancy
+                    sign_preserved = (discovery_expectancy > 0) == (
+                        test_expectancy > 0
+                    )
 
             hit_rate_diff = None
             if (
@@ -2014,6 +2096,9 @@ def _build_gross_views(
                     "expectancy_retention_ratio": retention_ratio,
                     "hit_rate_diff_pct": hit_rate_diff,
                     "sign_preserved": sign_preserved,
+                    "base_expectancy_t": base_t,
+                    "base_inconclusive_reason": base_inconclusive_reason,
+                    "base_significance_t_threshold": BASE_SIGNIFICANCE_T,
                     "label": label,
                     "positive_oos_gate_passed": positive_gate,
                 }
@@ -2196,6 +2281,8 @@ def _execution_bucket_summary(
             "entry_implementation_shortfall_mean_bps": None,
             "entry_only_market_net_expectancy_bps": None,
             "symmetric_market_net_expectancy_bps": None,
+            "symmetric_market_net_std_error_bps": None,
+            "symmetric_market_net_n_effective": 0,
             "symmetric_market_net_hit_rate_pct": None,
             "modeled_net_after_fees_n": 0,
             "modeled_net_after_fees_expectancy_bps": None,
@@ -2207,6 +2294,12 @@ def _execution_bucket_summary(
     symmetric = bucket["symmetric_market_net_bps"]
     after_fees = bucket["modeled_net_after_fees_bps"]
     n_cost = len(symmetric)
+    sym_slots = bucket.get("symmetric_slots") or []
+    sym_n_effective = (
+        None
+        if len(sym_slots) != n_cost or any(slot is None for slot in sym_slots)
+        else (len(set(sym_slots)) or None)
+    )
 
     return {
         "n_evaluated_actionable": n_eval,
@@ -2240,6 +2333,8 @@ def _execution_bucket_summary(
         "symmetric_market_net_expectancy_bps": (
             statistics.fmean(symmetric) if symmetric else None
         ),
+        "symmetric_market_net_std_error_bps": _std_error(symmetric, sym_n_effective),
+        "symmetric_market_net_n_effective": sym_n_effective,
         "symmetric_market_net_hit_rate_pct": (
             None
             if not symmetric
@@ -2328,6 +2423,7 @@ def _build_execution_views(
                             "entry_only_market_net_bps": [],
                             "symmetric_market_net_bps": [],
                             "modeled_net_after_fees_bps": [],
+                            "symmetric_slots": [],
                         },
                     )
                     bucket["n_evaluated_actionable"] += 1
@@ -2364,6 +2460,8 @@ def _build_execution_views(
                         value = measure[field]
                         if value is not None:
                             bucket[field].append(value)
+                    if measure["symmetric_market_net_bps"] is not None:
+                        bucket["symmetric_slots"].append(_nonoverlap_slot(row))
         return groups
 
     discovery_groups = period_groups(discovery_rows, discovery_snapshots)
@@ -2396,9 +2494,13 @@ def _build_execution_views(
         test_net = test_stats["symmetric_market_net_expectancy_bps"]
         net_diff = None
         retention_ratio = None
+        base_t, base_inconclusive_reason = _base_verdict_gate(
+            discovery_net,
+            discovery_stats["symmetric_market_net_std_error_bps"],
+        )
         if discovery_net is not None and test_net is not None:
             net_diff = test_net - discovery_net
-            if discovery_net != 0:
+            if base_inconclusive_reason is None and discovery_net != 0:
                 retention_ratio = test_net / discovery_net
 
         result.append(
@@ -2412,6 +2514,9 @@ def _build_execution_views(
                 "test": test_stats,
                 "net_expectancy_diff_bps": net_diff,
                 "net_expectancy_retention_ratio": retention_ratio,
+                "base_net_expectancy_t": base_t,
+                "base_inconclusive_reason": base_inconclusive_reason,
+                "base_significance_t_threshold": BASE_SIGNIFICANCE_T,
                 "label": label,
                 "positive_market_cost_oos_gate_passed": positive_gate,
             }

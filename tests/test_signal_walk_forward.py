@@ -37,6 +37,8 @@ from app.signal_walk_forward import (
     WalkForwardManifestOptions,
     _actionable_evaluated,
     _all_periodic_evaluated,
+    _base_verdict_gate,
+    _build_gross_views,
     _classify_generalization,
     _compute_confirmatory_result,
     _confirmatory_outcome_integrity_for_fold,
@@ -572,6 +574,121 @@ def test_integrity_blocked_never_passes_generalization_gate() -> None:
     )
     assert label == "integrity_blocked"
     assert gate is None
+
+
+def _grid_rows(
+    returns: list[float],
+    *,
+    symbol: str,
+    horizon_minutes: int,
+) -> list[dict]:
+    """Filas de rejilla con reloj: una observacion por minuto, que es la cadencia
+    real de produccion y la que produce el solapamiento."""
+    return [
+        {
+            "symbol": symbol,
+            "observed_minute": datetime.fromtimestamp(index * 60, tz=UTC),
+            "horizon_minutes": horizon_minutes,
+            "state": "s",
+            "direction": "long",
+            "regime_label": "r",
+            "actionable": True,
+            "usable": True,
+            "status": "evaluated",
+            "directional_return_pct": value,
+            "mfe_pct": abs(value),
+            "mae_pct": -abs(value),
+        }
+        for index, value in enumerate(returns)
+    ]
+
+
+def test_effective_n_counts_nonoverlapping_slots_not_rows() -> None:
+    # 60 observaciones por minuto con horizonte 15: 60 ventanas solapadas que
+    # ocupan solo 4 huecos independientes.
+    stats = _group_stats(
+        _grid_rows([1.0] * 60, symbol="BTCUSDT_PERP.A", horizon_minutes=15),
+        min_group_n=30,
+    )
+    assert stats["n"] == 60
+    assert stats["n_effective"] == 4
+
+    # Con horizonte 1 no hay solapamiento: la n efectiva es la n.
+    stats_h1 = _group_stats(
+        _grid_rows([1.0] * 60, symbol="BTCUSDT_PERP.A", horizon_minutes=1),
+        min_group_n=30,
+    )
+    assert stats_h1["n_effective"] == stats_h1["n"] == 60
+
+
+def test_std_error_uses_effective_n_so_overlap_cannot_inflate_it() -> None:
+    returns = [1.0, -1.0] * 30
+    solapado = _group_stats(
+        _grid_rows(returns, symbol="BTCUSDT_PERP.A", horizon_minutes=15),
+        min_group_n=30,
+    )
+    sin_solapar = _group_stats(
+        _grid_rows(returns, symbol="BTCUSDT_PERP.A", horizon_minutes=1),
+        min_group_n=30,
+    )
+    # Misma muestra, misma desviacion; el solapado tiene MENOS informacion, asi
+    # que su error estandar tiene que ser MAYOR, no menor.
+    assert solapado["expectancy_std_error_pct"] > sin_solapar["expectancy_std_error_pct"]
+
+
+def test_effective_n_is_not_establishable_without_a_clock() -> None:
+    # Trap 7 de la casa: si no se puede situar la fila, el porton se cierra, no
+    # se abre con una n inventada.
+    stats = _group_stats(
+        [{"directional_return_pct": 1.0, "mfe_pct": 1.0, "mae_pct": -1.0}] * 40,
+        min_group_n=30,
+    )
+    assert stats["n"] == 40
+    assert stats["n_effective"] is None
+    assert stats["expectancy_std_error_pct"] is None
+    assert _base_verdict_gate(1.0, None) == (None, "base_std_error_not_establishable")
+
+
+def test_base_verdict_gate_declares_its_threshold_in_both_directions() -> None:
+    bajo_t, motivo = _base_verdict_gate(1.0, 1.0)
+    assert bajo_t == 1.0
+    assert motivo == "base_not_distinguishable_from_zero"
+
+    alto_t, sin_motivo = _base_verdict_gate(10.0, 1.0)
+    assert alto_t == 10.0
+    assert sin_motivo is None
+
+    assert _base_verdict_gate(None, 1.0) == (None, "base_absent")
+
+
+def test_null_base_yields_no_ratio_and_a_strong_base_still_does() -> None:
+    test_grid = _grid_rows([1.0] * 120, symbol="BTCUSDT_PERP.A", horizon_minutes=1)
+
+    # Base de puro ruido: media ~0 con dispersion. No puede sostener una razon.
+    ruido = [1.0, -1.0] * 60
+    nula = _build_gross_views(
+        discovery_grid=_grid_rows(ruido, symbol="BTCUSDT_PERP.A", horizon_minutes=1),
+        test_grid=test_grid,
+        min_group_n=30,
+        fold_state="ready_by_clock",
+    )["overall"][0]
+    assert nula["expectancy_retention_ratio"] is None
+    assert nula["sign_preserved"] is None
+    assert nula["base_inconclusive_reason"] == "base_not_distinguishable_from_zero"
+    # La diferencia sobrevive: es legitima contra una base nula.
+    assert nula["expectancy_diff_pct"] is not None
+
+    # CONTROL POSITIVO: una base que SI se distingue de cero produce un numero.
+    solida = [2.0] * 119 + [1.9]
+    viva = _build_gross_views(
+        discovery_grid=_grid_rows(solida, symbol="BTCUSDT_PERP.A", horizon_minutes=1),
+        test_grid=test_grid,
+        min_group_n=30,
+        fold_state="ready_by_clock",
+    )["overall"][0]
+    assert viva["base_inconclusive_reason"] is None
+    assert viva["expectancy_retention_ratio"] == pytest.approx(1.0 / 1.99917, rel=1e-3)
+    assert viva["sign_preserved"] is True
 
 
 def test_sampling_modes_are_distinct_and_utc_nonoverlap_is_clock_only() -> None:

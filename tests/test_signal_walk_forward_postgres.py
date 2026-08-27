@@ -1044,7 +1044,15 @@ async def test_synthetic_mature_fold_pairs_discovery_and_oos(
     # n=1 is below the default min_group_n=30 reporting guardrail, so the
     # label must be the sample-size gate rather than a generalization claim.
     assert row["label"] == "insufficient_sample"
-    assert row["sign_preserved"] is True
+    # K58: con discovery n=1 no hay error estandar, asi que la base no se puede
+    # distinguir de cero y el veredicto NO se emite. Antes salia True, que es
+    # comparar el signo de una sola observacion contra otra sola observacion y
+    # servirlo como si fuera un hallazgo.
+    assert row["sign_preserved"] is None
+    assert row["expectancy_retention_ratio"] is None
+    assert row["base_inconclusive_reason"] == "base_std_error_not_establishable"
+    # La DIFERENCIA si es una cifra legitima contra una base nula.
+    assert row["expectancy_diff_pct"] == pytest.approx(-1.0)
 
     execution_rows = fold_report["execution_views"][DENSE_PERIODIC]
     binance_1k = [
