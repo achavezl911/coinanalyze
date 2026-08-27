@@ -63,15 +63,17 @@ NO_PANEL=$(echo /api/ai/context /api/ai/context/bundle /api/ai/profiles /api/str
 # mueve una sola letra del DOM porque su destino es la serie de velas (app.js:227).
 CANVAS="/api/ohlcv"
 
-# EL SUJETO SALE DE $REPO; EL INSTRUMENTO PUEDE SALIR DE DONDE SEA. node_modules esta
-# en .gitignore, asi que un arbol recien clonado -el que usa el gate de K15 contra
-# origin/main- no lo tiene y el check saldria NOMED sin que nada este roto. jsdom es el
-# microscopio, no la muestra: lo que TIENE que venir de $REPO son static/app.js,
-# index.html y el propio probe.js, y eso no cambia.
+CANONICO=/srv/coinanalyze/repo/harness/panel
+# EL INSTRUMENTO NO ES PARTE DEL ARBOL QUE SE MIDE, y el gate de K15 lo demostro: corre
+# el check del PR contra un worktree de origin/main, donde harness/panel todavia NO
+# existe, y salia NO MEDIDO -"el PR ha roto la capacidad de medir"- sin que nada
+# estuviera roto. La sonda cae al instrumento canonico cuando el arbol medido no lo
+# trae. Lo que SIGUE saliendo de $REPO es el SUJETO: static/index.html y static/app.js.
+[ -f "$PANEL/probe.js" ] || PANEL="$CANONICO"
 MODULOS="$PANEL/node_modules"
-[ -d "$MODULOS" ] || MODULOS=/srv/coinanalyze/repo/harness/panel/node_modules
+[ -d "$MODULOS" ] || MODULOS="$CANONICO/node_modules"
 
-[ -d "$PANEL" ]                  || { echo "NO MEDIDO: falta harness/panel en $REPO"; exit 2; }
+[ -f "$PANEL/probe.js" ]         || { echo "NO MEDIDO: no hay sonda de panel ni en $REPO ni en $CANONICO"; exit 2; }
 [ -d "$MODULOS" ]                || { echo "NO MEDIDO: falta jsdom; correr npm install en $PANEL"; exit 2; }
 command -v node >/dev/null       || { echo "NO MEDIDO: no hay node en esta maquina"; exit 2; }
 [ -x "$PY" ]                     || { echo "NO MEDIDO: falta el venv del repo"; exit 2; }
@@ -97,8 +99,12 @@ fi
 # REPO se EXPORTA: render.js lee $REPO/static/app.js y sin exportarlo caeria al valor
 # por defecto, o sea que el gate de K15 mediria el app.js del arbol de trabajo creyendo
 # medir el de origin/main. El sujeto tiene que salir del arbol que se esta midiendo.
-salida=$(cd "$PANEL" && REPO="$REPO" NODE_PATH="$MODULOS" K31_FIXTURES="$CACHE" timeout 900 node probe.js 2>/dev/null)
-[ -n "$salida" ] || { echo "NO MEDIDO: la sonda del panel no devolvio nada"; exit 2; }
+err=$(mktemp)
+salida=$(cd "$PANEL" && REPO="$REPO" NODE_PATH="$MODULOS" K31_FIXTURES="$CACHE" timeout 900 node probe.js 2>"$err")
+# EL STDERR NO SE TIRA. Antes iba a /dev/null y una excepcion de la sonda se publicaba
+# como "no devolvio nada", que no dice ni donde ni por que. La causa viaja en la linea.
+[ -n "$salida" ] || { echo "NO MEDIDO: la sonda del panel no devolvio nada: $(tr "\n" " " < "$err" | cut -c1-200)"; rm -f "$err"; exit 2; }
+rm -f "$err"
 
 leer() { printf '%s' "$salida" | "$PY" -c "import json,sys;d=json.load(sys.stdin);print(d.get('$1',''))"; }
 lista() { printf '%s' "$salida" | "$PY" -c "import json,sys;d=json.load(sys.stdin);print(' '.join(d.get('$1',[])))"; }

@@ -60,6 +60,19 @@ function mutar(o, prof = 0) {
   return o;
 }
 
+// UNA EXCEPCION TIENE QUE SALIR COMO JSON, NO COMO STDOUT VACIO. Medido: leyendo un
+// static/index.html sin permiso la sonda moria con EACCES, stdout quedaba vacio y el
+// check publicaba "la sonda no devolvio nada", que no dice NADA de la causa. Un
+// instrumento que no puede explicar por que no midio obliga a adivinar, y adivinar es
+// lo que este proyecto no puede permitirse.
+function morir(e) {
+  const msg = e && e.message ? e.message : String(e);
+  console.log(JSON.stringify({ error: msg.slice(0, 300) }, null, 1));
+  process.exit(0);
+}
+process.on('uncaughtException', morir);
+process.on('unhandledRejection', morir);
+
 (async () => {
   const t0 = Date.now();
   fs.mkdirSync(FIX, { recursive: true });
@@ -84,6 +97,20 @@ function mutar(o, prof = 0) {
     texto_dom: cap.texto.length,
   };
   if (cap.fatal) { salida.error = 'el panel no arranca: ' + cap.fatal; console.log(JSON.stringify(salida, null, 1)); process.exit(0); }
+
+  // SIN PAYLOADS NO HAY MEDICION, Y ESO ES NO MEDIDO, NO UN ROJO. Si no se pudo traer ni
+  // uno -sin credenciales, sin red, o produccion caida- el panel arranca con sus
+  // fallbacks y pide DOS rutas en vez de treinta y dos. Publicar eso como "64 rutas no
+  // llegan a la pantalla" seria fabricar un rojo enorme a partir de un canal roto, que
+  // es justo la familia de K63: el estado del INSTRUMENTO disfrazado de veredicto sobre
+  // el SUJETO.
+  const conDatos = urls.filter(u => fs.existsSync(path.join(FIX, fixtureName(u)))).length;
+  salida.payloads_con_datos = conDatos;
+  if (conDatos === 0) {
+    salida.error = 'no se pudo traer NI UN payload de produccion: ' +
+      (noOk.length ? 'codigos ' + [...new Set(noOk.map(x => cap.status[x.url] || x.codigo))].join(',') : 'sin respuesta');
+    console.log(JSON.stringify(salida, null, 1)); process.exit(0);
+  }
 
   // 2 · CONTROL: dos renders sin mutar deben ser IDENTICOS. Si no lo son, el
   // instrumento es inestable y cualquier veredicto por mutacion seria ruido.
