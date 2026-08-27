@@ -160,6 +160,17 @@ def _write_csv(path: Path, report: dict[str, Any]) -> None:
         writer.writerows(rows)
 
 
+def _evidence_stamp(selection: dict[str, Any]) -> str:
+    """evidence=6(OVERRIDE,manifiesto=1) o evidence=1(manifiesto)."""
+    aplicada = selection["applied_evidence_version"]
+    if not selection["override_applied"]:
+        return f"evidence={aplicada}(manifiesto)"
+    return (
+        f"evidence={aplicada}"
+        f"(OVERRIDE,manifiesto={selection['manifest_evidence_version']})"
+    )
+
+
 def _gate_count(value: int | None) -> str:
     """NO EVALUABLE no es cero. Imprimirlo como 0 es el defecto de K60."""
     return "NO_EVALUABLE" if value is None else str(value)
@@ -173,7 +184,11 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
             isolation="repeatable_read",
             readonly=True,
         ):
-            return await evaluate_walk_forward(conn, args.manifest_name)
+            return await evaluate_walk_forward(
+                conn,
+                args.manifest_name,
+                evidence_version_override=args.evidence_version_override,
+            )
     finally:
         await conn.close()
 
@@ -192,6 +207,20 @@ def main() -> None:
         default=Path("walk_forward_report.json"),
     )
     parser.add_argument("--csv", type=Path, default=None)
+    parser.add_argument(
+        "--evidence-version-override",
+        type=int,
+        default=None,
+        metavar="N",
+        help=(
+            "Evalua con este evidence_version en vez del que congelo el manifiesto. "
+            "El manifiesto NO se toca y su hash se sigue verificando contra su propio "
+            "valor. Existe porque el manifiesto congelo v1 y esa cohorte murio el "
+            "2026-08-11T23:28:41Z, asi que una corrida fiel selecciona cero filas. Con "
+            "la bandera puesta lo que selecciona es la bandera, y el informe lo dice: "
+            "evidence_selection en el JSON y evidence=... en esta linea."
+        ),
+    )
     args = parser.parse_args()
 
     report = asyncio.run(_run(args))
@@ -212,6 +241,10 @@ def main() -> None:
         "Walk-forward report written:",
         args.output,
         f"manifest={report['manifest']['manifest_name']}",
+        # QUE SELECCIONO LAS FILAS, siempre y en la primera linea. Con el manifiesto
+        # congelado en una cohorte muerta, esto es lo que decide que se mide; un informe
+        # que no lo diga miente por omision aunque cada cifra suya sea correcta.
+        _evidence_stamp(report["evidence_selection"]),
         f"ready_by_clock={gates['ready_by_clock_fold_count']}",
         f"evaluation_ready={gates['evaluation_ready_fold_count']}",
         # K60: el conteo de puertas viaja SIEMPRE con cuantas celdas eran
