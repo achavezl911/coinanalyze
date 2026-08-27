@@ -38,3 +38,6 @@ id_ed25519*
 # derivado rancio es peor que no tenerlo porque se consulta como si fuera cierto.
 # Ademas inflaba los diffs: un cambio de 6000 lineas aparentaba 25000.
 graphify-out/
+
+# instrumento de K31: jsdom se instala con npm install en harness/panel
+harness/panel/node_modules/

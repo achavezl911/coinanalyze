@@ -121,7 +121,25 @@ jobs:
       - name: Checks del arnes (K15)
         run: |
           set -uo pipefail
-          CHECKS="harness/checks/K02-cobertura-hueco.sh harness/checks/K31-eslabon5.sh"
+          # K31 SALE DE ESTE GATE EL 2026-08-27, por la regla que ya estaba escrita doce
+          # lineas mas arriba: aqui solo corren los checks cuyo SUJETO es el arbol.
+          # Estaba aqui porque su criterio viejo era un grep sobre static/app.js, o sea
+          # TEXTO, y el texto se puede leer sin salir del arbol. Su criterio nuevo mide
+          # si la cifra LLEGA A LA PANTALLA ejecutando el panel contra los payloads
+          # REALES de produccion, asi que su sujeto ya no es solo el arbol.
+          # MEDIDO, no supuesto: harness/secretos/api.netrc es -rw------- de root y el
+          # usuario github-runner NO puede leerlo, asi que desde este runner la sonda no
+          # captura ni un payload. Y no se arregla abriendo el netrc: dar a un runner
+          # que ejecuta el codigo de cualquier PR las credenciales de produccion es una
+          # decision de seguridad que no me corresponde tomar a mi.
+          # LO QUE SE PIERDE, dicho en vez de disimulado: el gate se queda con UN solo
+          # check, K02, que esta ROJO en main y en el PR, o sea que hoy compara 0 con 0
+          # y no protege nada. Ya era casi asi -los dos checks de la lista estaban
+          # ROJOS-, pero ahora es visible. Ponerle dientes pide meter aqui un check que
+          # este VERDE y cuyo sujeto sea el arbol, y eso es alcance del operador.
+          # K31 se sigue midiendo en cada verify del arnes en 143, donde SI hay
+          # credenciales, y sigue en ROJO con sus 27 rutas.
+          CHECKS="harness/checks/K02-cobertura-hueco.sh"
           VENV="$GITHUB_WORKSPACE/.venv/bin/python"
 
           # GUARDIA 1 · el instrumento tiene que existir ANTES de contar. Un check
