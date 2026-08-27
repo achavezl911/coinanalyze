@@ -63,12 +63,23 @@ def optional_finite(value: object) -> float | None:
     return number if math.isfinite(number) else None
 
 
-def whale_classification(inst_buy: float, inst_sell: float, asset: str) -> tuple[float, str]:
+def whale_classification(
+    inst_buy: float, inst_sell: float, asset: str
+) -> tuple[float | None, str]:
     total = inst_buy + inst_sell
     if total < WHALE_ACTIVITY_MIN[asset]:
         # El tamano de una orden NO identifica a quien la manda: se habla de operaciones
         # grandes, que es lo unico que el feed permite afirmar.
-        return 0.0, "Sin operaciones spot de gran tamaño relevantes"
+        #
+        # K59: None, NO 0.0. Sin operaciones por encima del umbral no hay desequilibrio
+        # que medir, y 0.0 significaria "medido y equilibrado". El componente pesa 30 de
+        # 100 -el mayor de los cinco- asi que servir el cero lo hacia votar SIEMPRE
+        # contra la regla que compute_regime documenta en su propio cuerpo, y dejaba el
+        # score en 0.7 exacto del que manda esa regla. schema.sql:956-962 ya quito el
+        # NOT NULL de la columna citando "ausencia != cero"; esta es la puerta que nadie
+        # cruzaba. Un 0.0 de VERDAD -delta cero con actividad por encima del umbral-
+        # sigue saliendo por el camino de abajo, que es una medicion y no una ausencia.
+        return None, "Sin operaciones spot de gran tamaño relevantes"
     delta = inst_buy - inst_sell
     ratio = abs(delta) / total if total else 0.0
     intensity = math.copysign(ratio, delta) if delta else 0.0
