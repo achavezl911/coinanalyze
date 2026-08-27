@@ -224,7 +224,13 @@ async def _persist_pr22_daily_snapshot(monkeypatch: pytest.MonkeyPatch):
             "ts": metrics_at,
             "regime_score": 12.0,
             "regime_label": "v2",
-            "regime_logic_version": 2,
+            # La fila tiene que llevar la version VIVA, no un 2 literal: daily_agg pide
+            # WHERE regime_logic_version=$2 con la constante del modulo, asi que un
+            # literal aqui hace que el fixture deje de representar "hay un snapshot
+            # compatible" en cuanto la constante sube, y el test pasa a medir la
+            # ausencia de snapshot -que es justo lo que cubre el test de al lado,
+            # test_pr23_daily_v3_does_not_copy_legacy_regime-. K62.
+            "regime_logic_version": daily_agg.REGIME_LOGIC_VERSION,
         },
     )
     monkeypatch.setattr(daily_agg, "latest_closed_session_date", lambda: date(2026, 8, 11))
@@ -252,7 +258,7 @@ async def test_pr23_new_daily_snapshot_uses_daily_verdict_v3(monkeypatch) -> Non
 @pytest.mark.asyncio
 async def test_pr22_daily_snapshot_copies_regime_logic_version(monkeypatch) -> None:
     _, args = await _persist_pr22_daily_snapshot(monkeypatch)
-    assert args[7] == 2
+    assert args[7] == daily_agg.REGIME_LOGIC_VERSION
 
 
 @pytest.mark.asyncio
@@ -290,6 +296,6 @@ async def test_pr23_daily_v3_uses_regime_v2_when_available(monkeypatch) -> None:
     _, args = await _persist_pr22_daily_snapshot(monkeypatch)
     assert args[3] == "daily-verdict-v4"
     assert args[6] == datetime(2026, 8, 11, 15, 0, tzinfo=UTC)
-    assert args[7] == 2
+    assert args[7] == daily_agg.REGIME_LOGIC_VERSION
     assert args[14] == 12.0
     assert args[15] == "v2"

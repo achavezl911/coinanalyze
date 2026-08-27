@@ -159,7 +159,10 @@ async def test_pr22_new_metrics_snapshot_has_regime_logic_version_2() -> None:
     conn = Connection()
     await insert_snapshot(conn, snap)  # type: ignore[arg-type]
     assert "regime_logic_version" in conn.query
-    assert conn.args[-1] == 2
+    # K62 advanced the live regime writer to 3 (K59: the whale component stopped
+    # voting zero and started abstaining, so `measured` drops 100 -> 70 for
+    # BTC/ETH). Prospective only; rows already written keep their v2 label.
+    assert conn.args[-1] == 3
 
 
 def test_pr24_new_signal_observation_has_evidence_version_5() -> None:

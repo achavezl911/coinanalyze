@@ -181,6 +181,13 @@ def test_pr24_version_boundaries_and_regime_guards() -> None:
     assert SCALP_SIGNAL_LOGIC_VERSION == "scalp-summary-v1"
     assert SIGNAL_SAMPLING_VERSION == 1
     assert REPLAY_CONTEXT_VERSION == 1
-    assert REGIME_LOGIC_VERSION == 2
+    # K62 advanced the live regime writer to regime_logic_version=3 on
+    # 2026-08-27T04:43:05Z: the whale component (30 of 100, the heaviest)
+    # stopped voting zero and started abstaining, so `measured` drops from 100
+    # to 70 for BTC/ETH and the score renormalises over a different
+    # denominator. That changes what the number MEANS, and the column exists
+    # precisely so two rows under one label are known to share one rule. This
+    # bump is prospective only; rows already written keep their v2 label.
+    assert REGIME_LOGIC_VERSION == 3
     assert OUTCOME_VERSION == 1
     assert EXECUTION_SNAPSHOT_VERSION == 1

@@ -11,6 +11,12 @@ import asyncpg
 import pytest
 
 from app.db import ServiceOwnership, ServiceOwnershipLost, fenced_transaction
+
+# K62: persist_signal_observations filtra WHERE regime_logic_version=$3 con la constante
+# viva, asi que un literal en el fixture deja de significar "hay un snapshot compatible"
+# en cuanto la constante sube: el snapshot no se encuentra y el test pasa a medir la
+# AUSENCIA, que es lo que cubre test_pr24_v5_signal_does_not_copy_legacy_regime.
+from app.metrics import REGIME_LOGIC_VERSION
 from app.signal_ledger import persist_signal_observations
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -253,14 +259,16 @@ async def test_latest_non_future_metrics_snapshot_is_frozen() -> None:
     conn = await _connect_schema(schema)
     try:
         await conn.execute(
-            """
+            f"""
             INSERT INTO metrics_snapshot(
               ts,symbol,regime_score,regime_label,regime_logic_version,
               price_cutoff_at,metrics_cutoff_at
             ) VALUES
-              (clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',-40,'bearish',2,
+              (clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',-40,'bearish',
+               {REGIME_LOGIC_VERSION},
                clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '5 minutes'),
-              (clock_timestamp()+interval '1 hour','BTCUSDT_PERP.A',80,'future',2,
+              (clock_timestamp()+interval '1 hour','BTCUSDT_PERP.A',80,'future',
+               {REGIME_LOGIC_VERSION},
                clock_timestamp()+interval '1 hour',clock_timestamp()+interval '1 hour')
             """
         )
@@ -326,12 +334,13 @@ async def test_metrics_snapshot_knowledge_time_uses_committed_visibility_before_
         await transaction.start()
         transaction_active = True
         await writer.execute(
-            """
+            f"""
             INSERT INTO metrics_snapshot(
               ts,symbol,regime_score,regime_label,regime_logic_version,
               price_cutoff_at,metrics_cutoff_at
             ) VALUES(
-              clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',42,'committed-v2',2,
+              clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',42,'committed-v2',
+              {REGIME_LOGIC_VERSION},
               clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '3 minutes'
             )
             """
@@ -415,12 +424,13 @@ async def test_pr24_v5_signal_does_not_copy_legacy_regime() -> None:
             assert legacy_only[field] is None
 
         await conn.execute(
-            """
+            f"""
             INSERT INTO metrics_snapshot(
               ts,symbol,regime_score,regime_label,regime_logic_version,
               price_cutoff_at,metrics_cutoff_at
             ) VALUES(
-              clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',25,'v2',2,
+              clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',25,'v2',
+              {REGIME_LOGIC_VERSION},
               clock_timestamp()-interval '2 minutes',clock_timestamp()-interval '3 minutes'
             )
             """
@@ -442,7 +452,7 @@ async def test_pr24_v5_signal_does_not_copy_legacy_regime() -> None:
         assert (v2["regime_score"], v2["regime_label"], v2["regime_logic_version"]) == (
             25,
             "v2",
-            2,
+            REGIME_LOGIC_VERSION,
         )
         assert v2["metrics_snapshot_ts"] is not None
     finally:
@@ -455,11 +465,12 @@ async def test_pr22_signal_observation_copies_regime_logic_version() -> None:
     conn = await _connect_schema(schema)
     try:
         await conn.execute(
-            """
+            f"""
             INSERT INTO metrics_snapshot(
               ts,symbol,regime_score,regime_label,regime_logic_version
             ) VALUES(
-              clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',25,'v2',2
+              clock_timestamp()-interval '1 minute','BTCUSDT_PERP.A',25,'v2',
+              {REGIME_LOGIC_VERSION}
             )
             """
         )
@@ -468,7 +479,7 @@ async def test_pr22_signal_observation_copies_regime_logic_version() -> None:
             "SELECT evidence_version,regime_logic_version FROM signal_observation"
         )
         assert row["evidence_version"] == 6
-        assert row["regime_logic_version"] == 2
+        assert row["regime_logic_version"] == REGIME_LOGIC_VERSION
     finally:
         await _drop_schema(conn, schema)
 
