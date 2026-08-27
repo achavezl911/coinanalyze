@@ -281,6 +281,14 @@ async def test_pr22_postgres_cvd_cutoff_excludes_later_trade_from_all_windows() 
     try:
         await conn.execute(SCHEMA_SQL)
         cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+        # K07: la fecha fija es lo que hace este test DETERMINISTA -las aserciones
+        # comparan instantes exactos-, asi que no se mueve: se le crea su particion.
+        # schema.sql solo particiona alrededor de now(), asi que un cutoff fijo se queda
+        # fuera del rango en cuanto pasan unos dias y el INSERT muere con "no partition
+        # of relation futures_trades_realtime found for row". Moverlo arreglaria el
+        # sintoma y volveria a envejecer; crear la particion arregla la causa y no puede
+        # envejecer nunca, porque el test declara el sitio donde va a escribir.
+        await conn.execute("SELECT ensure_temporal_partitions($1, 0, 0)", cutoff)
         await conn.executemany(
             """
             INSERT INTO futures_trades_realtime(
@@ -320,6 +328,14 @@ async def test_pr22_market_structure_query_excludes_trade_after_as_of() -> None:
     try:
         await conn.execute(SCHEMA_SQL)
         cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
+        # K07: la fecha fija es lo que hace este test DETERMINISTA -las aserciones
+        # comparan instantes exactos-, asi que no se mueve: se le crea su particion.
+        # schema.sql solo particiona alrededor de now(), asi que un cutoff fijo se queda
+        # fuera del rango en cuanto pasan unos dias y el INSERT muere con "no partition
+        # of relation futures_trades_realtime found for row". Moverlo arreglaria el
+        # sintoma y volveria a envejecer; crear la particion arregla la causa y no puede
+        # envejecer nunca, porque el test declara el sitio donde va a escribir.
+        await conn.execute("SELECT ensure_temporal_partitions($1, 0, 0)", cutoff)
         await conn.executemany(
             """
             INSERT INTO futures_trades_realtime(
