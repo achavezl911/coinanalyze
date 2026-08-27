@@ -181,13 +181,11 @@ def test_pr24_version_boundaries_and_regime_guards() -> None:
     assert SCALP_SIGNAL_LOGIC_VERSION == "scalp-summary-v1"
     assert SIGNAL_SAMPLING_VERSION == 1
     assert REPLAY_CONTEXT_VERSION == 1
-    # K62 advanced the live regime writer to regime_logic_version=3 on
-    # 2026-08-27T04:43:05Z: the whale component (30 of 100, the heaviest)
-    # stopped voting zero and started abstaining, so `measured` drops from 100
-    # to 70 for BTC/ETH and the score renormalises over a different
-    # denominator. That changes what the number MEANS, and the column exists
-    # precisely so two rows under one label are known to share one rule. This
-    # bump is prospective only; rows already written keep their v2 label.
-    assert REGIME_LOGIC_VERSION == 3
+    # K62: el escritor cambio de regla el 2026-08-27T04:43:05Z (K59) y esta
+    # constante DEBERIA ir por 3, pero subirla sola rompe produccion: el CHECK
+    # signal_observation_pr25_regime_provenance_check (sql/schema.sql:2476) exige
+    # regimen 2 para evidencia 3/4/5/6. Probado y revertido, 302 s sin escribir.
+    # Se mueve con la evidencia 7, que es K64. Ver app/metrics.py.
+    assert REGIME_LOGIC_VERSION == 2
     assert OUTCOME_VERSION == 1
     assert EXECUTION_SNAPSHOT_VERSION == 1

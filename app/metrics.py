@@ -100,7 +100,7 @@ fuese el balance completo. Antes se sumaba 0 por cada componente ausente, asi qu
 parecia medido y no lo estaba.
 """
 
-REGIME_LOGIC_VERSION = 3
+REGIME_LOGIC_VERSION = 2
 """Version de la LOGICA con la que se calculo el regimen, no del esquema.
 
 Sube cuando cambia lo que el score SIGNIFICA, porque tres consultas filtran por esta
@@ -110,17 +110,33 @@ calcularon con la MISMA regla. Dos reglas bajo una etiqueta convierten esa garan
 contraria, sin que nada falle.
 
   NULL -> 2  2026-08-12T03:11Z
-  2 -> 3     2026-08-27T04:43:05Z. K59: el componente whale -30 de 100, el de mas peso-
-             dejo de votar cero por debajo del umbral y pasa a abstenerse, con lo que
-             `measured` baja de 100 a 70 para BTC y ETH y el score se renormaliza sobre
-             otro denominador. El instante esta medido al segundo: ultimo whale_intensity
-             cero exacto 04:42:05Z, arranque del servicio 04:42:48Z, primera fila de la
-             era nueva 04:43:05Z.
 
-Subirla es PROSPECTIVO: ninguna fila ya escrita se reinterpreta. Las escritas entre el
-corte y este despliegue llevan la regla nueva con la etiqueta 2 y se quedan asi;
-re-etiquetarlas seria escritura en produccion. harness/checks/K62 lo cuenta en cada
-corrida.
+ESTA CONSTANTE ESTA MAL HOY Y NO SE PUEDE ARREGLAR AQUI. El 2026-08-27T04:43:05Z el
+componente whale -30 de 100, el de mas peso- dejo de votar cero y paso a abstenerse (K59),
+o sea que `measured` baja de 100 a 70 para BTC y ETH y el score se renormaliza sobre otro
+denominador. Cambio lo que el numero significa y la etiqueta se quedo en 2, asi que hay
+dos reglas bajo una etiqueta. El instante esta medido al segundo: ultimo whale_intensity
+cero exacto 04:42:05Z, arranque del servicio 04:42:48Z, primera fila de la era nueva
+04:43:05Z.
+
+POR QUE NO BASTA SUBIRLA A 3, PROBADO EN PRODUCCION Y REVERTIDO: la base de datos tiene
+su propia copia de esta regla y es mas estricta que el codigo.
+
+    sql/schema.sql:2476  signal_observation_pr25_regime_provenance_check
+      CHECK (evidence_version NOT IN (3,4,5,6)
+             OR regime_logic_version IS NOT DISTINCT FROM 2
+             OR <bloque de regimen entero a NULL>)
+
+Con la constante en 3 y SIGNAL_EVIDENCE_VERSION en 6, cada INSERT de signal_observation
+viola ese CHECK y el colector de scalp deja de escribir. Desplegado a las 15:06:51Z y
+revertido a las 15:12Z: 302 s sin una sola observacion, con
+`asyncpg.exceptions.CheckViolationError` en el journal de coinalyze-scalp.
+
+La salida NO es tocar el CHECK -eso reinterpreta 111434 filas de evidencia 6 ya
+publicadas- sino publicar evidencia 7, que arrastra otros tres contratos congelados al
+mismo 6: _CERTIFIED_EVIDENCE_VERSION (signal_visibility.py:49),
+SPEC_V2_SUPPORTED_EVIDENCE_VERSION (signal_walk_forward.py:101) y el mapa de
+signal_regime.py:40. Esta escrito entero como K64 en harness/COLA.md.
 """
 
 

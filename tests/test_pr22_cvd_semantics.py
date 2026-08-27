@@ -159,10 +159,10 @@ async def test_pr22_new_metrics_snapshot_has_regime_logic_version_2() -> None:
     conn = Connection()
     await insert_snapshot(conn, snap)  # type: ignore[arg-type]
     assert "regime_logic_version" in conn.query
-    # K62 advanced the live regime writer to 3 (K59: the whale component stopped
-    # voting zero and started abstaining, so `measured` drops 100 -> 70 for
-    # BTC/ETH). Prospective only; rows already written keep their v2 label.
-    assert conn.args[-1] == 3
+    # K62: la regla cambio el 2026-08-27T04:43:05Z y la etiqueta sigue en 2
+    # porque el CHECK de signal_observation no admite otra hasta la evidencia 7
+    # (K64). Ver el docstring de REGIME_LOGIC_VERSION en app/metrics.py.
+    assert conn.args[-1] == 2
 
 
 def test_pr24_new_signal_observation_has_evidence_version_5() -> None:
