@@ -259,9 +259,9 @@ def test_pr24_versions_change_only_evidence_and_daily_logic() -> None:
     assert SCALP_SIGNAL_LOGIC_VERSION == "scalp-summary-v1"
     assert SIGNAL_SAMPLING_VERSION == 1
     assert REPLAY_CONTEXT_VERSION == 1
-    # K62: bumped to 3 when the whale component stopped voting zero (K59).
-    # See tests/test_pr24_daily_historical_integrity.py for the full rationale.
-    assert REGIME_LOGIC_VERSION == 3
+    # K62: deberia ir por 3 desde el 2026-08-27T04:43:05Z, pero el CHECK de
+    # signal_observation lo impide hasta que exista evidencia 7 (K64).
+    assert REGIME_LOGIC_VERSION == 2
     assert OUTCOME_VERSION == 1
     assert EXECUTION_SNAPSHOT_VERSION == 1
     assert DAILY_VERDICT_SNAPSHOT_VERSION == 1

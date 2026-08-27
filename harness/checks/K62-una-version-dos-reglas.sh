@@ -45,15 +45,20 @@
 #       140 escribe, NO de la constante del repo: el repo puede ir por delante de lo
 #       desplegado y entonces el check estaria juzgando codigo que no corre-. Se exige en
 #       las DOS tablas que llevan la columna: metrics_snapshot y signal_observation.
-#   2 · EL PRECIO DEL ARREGLO SE MIDE Y SE DECLARA, PERO NO SE JUZGA. signal_regime no
-#       usa la constante viva sino un mapa CONGELADO evidence -> regimen. Subir el regimen
-#       sin publicar una evidencia nueva deja la pareja escrita fuera de ese mapa y lo
-#       nuevo sale 'unavailable'. No se exige aqui porque la alternativa -no subir- es
-#       MEZCLAR, que es peor, y porque publicar evidencia nueva NO es una linea: el
-#       certificador (_CERTIFIED_EVIDENCE_VERSION=6) y el walk-forward
-#       (SPEC_V2_SUPPORTED_EVIDENCE_VERSION=6) estan clavados al mismo 6. Se EJECUTA el
-#       CASE congelado REAL contra 140 y se imprime el numero en cada corrida, tambien en
-#       VERDE, para que el coste no se vuelva ruido de fondo.
+#       CON UN ASIENTO QUE NO ES UN MARGEN A OJO: signal_ledger.py:261 escoge el snapshot
+#       con ts <= context_as_of, asi que una observacion solo puede copiar la etiqueta V si
+#       ya existia un snapshot con V cuando se escribio. Justo tras un despliegue esa
+#       ausencia es FISICA. El elegible son las observaciones escritas 120 s despues del
+#       primer snapshot con la etiqueta viva; mientras no haya ninguna, se declara.
+#   2 · LA PAREJA QUE SE ESCRIBE TIENE QUE SER ACEPTABLE PARA QUIEN LA LEE. El escritor
+#       pone (evidence_version, regime_logic_version) y hay DOS lectores con la misma
+#       regla congelada: el mapa de signal_regime.py:40, que falla cerrado y publica el
+#       conteo, y el CHECK signal_observation_pr25_regime_provenance_check de
+#       sql/schema.sql:2476, que NO interpreta nada: rechaza el INSERT. Por eso esto es
+#       ROJO y no una declaracion -lo degrade a declaracion una vez, mirando solo el
+#       lector de Python, y costo 302 s de colector de scalp caido en produccion-.
+#       Ademas se EJECUTA el CASE congelado REAL contra 140 y se imprime cuantas filas
+#       quedan ilegibles, tambien en VERDE, para que el coste no se vuelva ruido de fondo.
 #   3 · LAS DOS CONSULTAS QUE USAN LA CONSTANTE VIVA se EJECUTAN contra 140 con la
 #       constante DEL RELEASE QUE CORRE EN 140, y tienen que devolver fila fresca para los
 #       tres simbolos. Una constante subida sin desplegar, o desplegada sin que nadie haya
@@ -231,12 +236,37 @@ try:
       FROM signal_observation WHERE regime_logic_version = %(v)d
     """ % {"v": v_prod}, 5)
 
+    # signal_observation NO PUEDE LLEVAR LA ETIQUETA ANTES QUE metrics_snapshot, y eso no
+    # es un margen a ojo: signal_ledger.py:261 escoge el snapshot con ts <= context_as_of,
+    # asi que una observacion solo puede copiar la version V si YA existia un snapshot con
+    # V cuando se escribio. Justo despues de un despliegue hay una ventana -medida hoy: la
+    # primera observacion salio a las 15:07:02Z con regimen NULL y el primer snapshot con
+    # 3 a las 15:07:05Z, 3 s despues- en la que la ausencia es fisica, no un defecto. El
+    # elegible son las observaciones escritas MAS DE 120 s despues del primer snapshot con
+    # la etiqueta viva; si todavia no hay ninguna, se declara y no se juzga.
+    asiento = consulta("q2b", """
+    SELECT 'q2b', count(*)::text,
+           count(*) FILTER (WHERE regime_logic_version = %(v)d)::text
+      FROM signal_observation
+     WHERE observed_at >= (SELECT min(ts) FROM metrics_snapshot
+                            WHERE regime_logic_version = %(v)d) + interval '120 seconds'
+    """ % {"v": v_prod}, 3)
+    obs_elegibles = entero(asiento[0][0], "observaciones elegibles tras el asiento")
+    obs_con_v = entero(asiento[0][1], "observaciones con la version viva")
+
     for tabla, arco_min, arco_max, n in q2:
         n = entero(n, "filas con version %d en %s" % (v_prod, tabla))
         if n == 0 or arco_min is None:
+            if tabla == "signal_observation" and obs_elegibles == 0:
+                declara.append(
+                    "signal_observation aun no ha escrito ninguna observacion 120 s "
+                    "despues del primer snapshot con la etiqueta %d: la ausencia todavia "
+                    "es fisica y no se juzga" % v_prod)
+                continue
             fallos.append(
-                "ninguna fila de %s lleva la version %d que produccion acaba de escribir: "
-                "la etiqueta viva no tiene datos detras" % (tabla, v_prod))
+                "ninguna fila de %s lleva la version %d que produccion acaba de escribir, "
+                "y ya hay %d observaciones escritas con margen de sobra: la etiqueta viva "
+                "no tiene datos detras" % (tabla, v_prod, obs_elegibles))
             continue
         if arco_min < CORTE:
             fallos.append(
@@ -247,21 +277,18 @@ try:
                 "homogeneas"
                 % (v_prod, tabla, arco_min, CORTE[:19].replace(" ", "T"), arco_max, n))
 
-    # --- 2 · EL PRECIO DEL ARREGLO · MEDIDO Y DECLARADO, NO JUZGADO -------------------
-    # Aqui hay una decision, y la escribo entera porque el numero solo no la explica.
-    # signal_regime NO usa la constante viva: usa un mapa CONGELADO evidence -> regimen
-    # {3:2,4:2,5:2,6:2}. Subir el regimen a 3 sin publicar una evidencia nueva deja la
-    # pareja (6,3) fuera del mapa, y su propio docstring dice que eso "fails closed as
-    # unavailable". O sea: lo nuevo deja de ser legible para el analisis de regimen.
-    # NO SE JUZGA, Y ESTE ES EL MOTIVO: la alternativa -no subir la constante- es MEZCLAR,
-    # que es peor, y publicar evidencia 7 NO es una linea. Medido: _CERTIFIED_EVIDENCE_
-    # VERSION=6 (signal_visibility.py:49) y SPEC_V2_SUPPORTED_EVIDENCE_VERSION=6
-    # (signal_walk_forward.py:101) tambien estan clavados al 6, asi que una evidencia 7
-    # para el certificador y el walk-forward, y eso es otro trabajo con su propio alcance.
-    # Y NO ES UN APAGON SILENCIOSO: signal_regime.py:931-934 publica
-    # regime_unavailable_periodic_observations, o sea que el producto CUENTA lo que no
-    # puede leer. Con lookback de 30 dias (signal_regime.py:26) la ventana tarda 30 dias
-    # en quedarse a oscuras del todo, que es el plazo real que tiene la migracion.
+    # --- 2 · LA PAREJA QUE SE ESCRIBE TIENE QUE SER ACEPTABLE PARA QUIEN LA LEE --------
+    # ESTE BRAZO LO QUITE Y LO VOLVI A PONER, Y LA LECCION VALE MAS QUE EL BRAZO. Lo
+    # escribi como ROJO, me parecio que exigia demasiado -la unica salida era publicar
+    # evidencia 7, y eso arrastra otros contratos- y lo degrade a "declarar y no juzgar"
+    # razonando que signal_regime FALLA CERRADO y publica el conteo de lo ilegible. El
+    # razonamiento era correcto sobre signal_regime y COMPLETAMENTE FALSO sobre la base:
+    # sql/schema.sql:2476 tiene un CHECK con la MISMA regla, y un CHECK no interpreta
+    # nada, RECHAZA EL INSERT. Desplegado a las 15:06:51Z, el colector de scalp murio con
+    # CheckViolationError y estuvo 302 s sin escribir una sola observacion.
+    # QUITAR UN BRAZO ROJO PORQUE PAGARLO SALE CARO NO LO HACE FALSO. Y la razon de que
+    # este me pareciera opinable es que solo mire el lector de Python: la regla estaba
+    # tambien en el esquema, que es donde no se opina.
     from app.metrics import REGIME_LOGIC_VERSION
     from app.signal_ledger import SIGNAL_EVIDENCE_VERSION
     from app.signal_regime import (
@@ -270,6 +297,16 @@ try:
     )
 
     exigido = FROZEN_EVIDENCE_REGIME_LOGIC_VERSION.get(SIGNAL_EVIDENCE_VERSION)
+    if exigido != REGIME_LOGIC_VERSION:
+        fallos.append(
+            "el repo ESCRIBE la pareja (evidence_version=%s, regime_logic_version=%s) y hay "
+            "DOS lectores que exigen %s para esa evidencia: el mapa congelado de "
+            "signal_regime.py:40 y, sobre todo, el CHECK "
+            "signal_observation_pr25_regime_provenance_check de sql/schema.sql:2476, que NO "
+            "es interpretable -rechaza el INSERT-. Desplegar esta pareja para el colector de "
+            "scalp y deja de escribir: probado en produccion el 2026-08-27T15:06:51Z y "
+            "revertido a las 15:12Z, 302 s sin una sola observacion"
+            % (SIGNAL_EVIDENCE_VERSION, REGIME_LOGIC_VERSION, exigido))
 
     # Se EJECUTA el CASE congelado REAL -construido llamando a la funcion del modulo, no
     # copiado- contra las observaciones posteriores al corte.
@@ -283,15 +320,6 @@ try:
 
     ilegibles = sum(entero(n, "observaciones %s" % e) for e, n in q3 if e != "legible")
     legibles = sum(entero(n, "observaciones %s" % e) for e, n in q3 if e == "legible")
-    if exigido != REGIME_LOGIC_VERSION:
-        declara.append(
-            "PRECIO DEL ARREGLO: el repo escribe la pareja (evidence_version=%s, "
-            "regime_logic_version=%s) y el mapa congelado de signal_regime exige %s para "
-            "esa evidencia, asi que el analisis de regimen las cuenta como 'unavailable'. "
-            "Publicar evidencia %s es OTRO trabajo -_CERTIFIED_EVIDENCE_VERSION y "
-            "SPEC_V2_SUPPORTED_EVIDENCE_VERSION tambien estan clavados al 6-"
-            % (SIGNAL_EVIDENCE_VERSION, REGIME_LOGIC_VERSION, exigido,
-               SIGNAL_EVIDENCE_VERSION + 1))
     if ilegibles:
         declara.append(
             "ya ilegibles para el regimen %d de %d observaciones posteriores al corte, "
@@ -377,7 +405,15 @@ try:
                      ORDER BY ts DESC LIMIT 60) t) u
     """ % {"b": BTC, "c": CORTE}, 4)
 
-    for tramo, maximo in (("recientes", 1), ("era_vieja", 0)):
+    # EL UMBRAL DEL TRAMO RECIENTE NO ES 1, Y ESTA ES LA RAZON MEDIDA: un despliegue que
+    # sube la constante deja UN cambio, y si se revierte deja DOS -a mi me paso hoy: la
+    # ventana tiene una isla de 18 filas con la version 3 entre las 15:07:05Z y las
+    # 15:11:05Z-. Eso es historia legitima de despliegues, no una version enferma. Lo que
+    # este control existe para atrapar -version por fila: reloj, hash, contador- da 119
+    # cambios sobre 120 filas, asi que cualquier umbral entre 2 y 100 lo distingue igual
+    # de bien. Con 6 caben tres despliegues en la ventana sin rojo falso. El tramo de
+    # DENTRO de una era sigue exigiendo CERO, que es donde el control es afilado.
+    for tramo, maximo in (("recientes", 6), ("era_vieja", 0)):
         fila = [(c, n) for t, c, n in q5 if t == tramo]
         if len(fila) != 1:
             raise NoMedido("el tramo %s del control positivo no vino una sola vez" % tramo)
@@ -406,6 +442,24 @@ try:
         (SELECT regime_logic_version FROM metrics_snapshot
           WHERE ts < '%(c)s' ORDER BY ts DESC LIMIT 1)
     """ % {"c": CORTE}, 4)
+    # ISLAS: filas posteriores al corte que llevan una version que produccion YA NO
+    # escribe. Un despliegue revertido las deja, y son lo unico que rompe la contiguidad
+    # de una etiqueta, asi que se nombran con su arco en vez de esconderse dentro del
+    # control positivo. Hoy hay una mia: 18 filas con la version 3.
+    islas = consulta("q7", """
+    SELECT 'q7', coalesce(regime_logic_version::text,'NULO'), count(*)::text,
+           min(ts)::text, max(ts)::text
+      FROM metrics_snapshot
+     WHERE ts >= '%(c)s' AND regime_logic_version IS DISTINCT FROM %(v)d
+     GROUP BY 2 ORDER BY 2
+    """ % {"c": CORTE, "v": v_prod}, 5)
+    for version, n, desde, hasta in islas:
+        declara.append(
+            "ISLA de %s filas con la version %s en metrics_snapshot, de %s a %s: una "
+            "etiqueta que produccion ya no escribe, posterior al corte. Rompe la "
+            "contiguidad de la etiqueta viva y no se puede quitar sin escribir en "
+            "produccion" % (n, version, desde, hasta))
+
     resto = []
     for tabla, n, hasta in q6:
         n = entero(n, "residuo de %s" % tabla)
