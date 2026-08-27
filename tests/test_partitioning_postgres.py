@@ -577,3 +577,100 @@ async def test_partition_rollback_refuses_to_discard_post_migration_writes() -> 
     finally:
         await _drop_schema(conn, schema)
         await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_retention_through_app_partitioning_deletes_exactly_what_it_claims() -> None:
+    """K16 · lo que borra, borra lo que dice: ni una fila mas, ni una menos.
+
+    El test de arriba comprueba que la particion de un dia ENTERAMENTE vencido
+    desaparece y que la de la frontera sobrevive COMO OBJETO. Eso no dice nada de las
+    filas de dentro de la frontera, que es justo donde vive el riesgo: apply_temporal_
+    retention promete "drop complete expired partitions, then trim the one boundary
+    partition", o sea que ademas del DROP hace un DELETE ... WHERE ts < cutoff.
+
+    Aqui se mide esa promesa fila a fila y a traves de app.partitioning, que es el
+    modulo que la aplicacion llama de verdad y que hasta hoy no importaba ningun test.
+    """
+
+    from app.partitioning import apply_temporal_retention
+
+    owner = await asyncpg.connect(_dsn())
+    schema = _schema_name()
+    try:
+        await _setup_legacy(owner, schema)
+        await owner.execute(MIGRATION)
+
+        retention_hours = 48
+        now = datetime.now(UTC)
+        # Cuatro filas elegidas alrededor del corte que la funcion calculara
+        # (statement_timestamp() - 48h). El margen de 1 h a cada lado absorbe el tiempo
+        # que tarde el test: sin margen, esto seria una carrera contra el reloj.
+        marcas = {
+            "dia_entero_vencido": now - timedelta(hours=96),
+            "justo_fuera": now - timedelta(hours=49),
+            "justo_dentro": now - timedelta(hours=47),
+            "reciente": now - timedelta(hours=1),
+        }
+        # Las particiones de esos dias tienen que existir antes de insertar: una tabla
+        # particionada rechaza la fila para la que no hay hija.
+        for marca in marcas.values():
+            await owner.fetchval("SELECT ensure_temporal_partitions($1,0,0)", marca)
+
+        # Exchange propio: _setup_legacy ya deja dos filas de 'binance' dentro del
+        # horizonte, y mezclarlas con las mias haria que el test dependiera de ese
+        # montaje en vez de de la regla que mide. 'bybit' y no un nombre inventado
+        # porque futures_trades_realtime_exchange_check solo admite binance, bybit
+        # y combined: la base rechaza cualquier otro.
+        for i, (_nombre, ts) in enumerate(sorted(marcas.items())):
+            await owner.execute(
+                """
+                INSERT INTO futures_trades_realtime(
+                  ts,symbol,exchange,buy_vol_usd,sell_vol_usd,large_buy_usd,
+                  large_sell_usd,trade_count,last_px,last_event_ms
+                ) VALUES($1,'BTCUSDT_PERP.A','bybit',1,1,0,0,1,100,$2)
+                """,
+                ts,
+                i,
+            )
+        assert (
+            await owner.fetchval(
+                "SELECT count(*) FROM futures_trades_realtime WHERE exchange='bybit'"
+            )
+            == 4
+        )
+
+        await apply_temporal_retention(owner, "futures_trades_realtime", retention_hours)
+
+        quedan = [
+            fila["ts"]
+            for fila in await owner.fetch(
+                "SELECT ts FROM futures_trades_realtime WHERE exchange='bybit' ORDER BY ts"
+            )
+        ]
+        # LO QUE DICE: se van las anteriores al corte, se quedan las posteriores.
+        assert quedan == [marcas["justo_dentro"], marcas["reciente"]]
+
+        # Y el dia enteramente vencido no se queda como particion huerfana y vacia:
+        # esa es la mitad DROP de la promesa, y sin ella la tabla acumula objetos.
+        dia_vencido = marcas["dia_entero_vencido"].date()
+        assert (
+            await owner.fetchval(
+                "SELECT to_regclass($1)",
+                f"{schema}.futures_trades_realtime_p{dia_vencido:%Y%m%d}",
+            )
+            is None
+        )
+        # La frontera SIGUE existiendo aunque se le hayan quitado filas por debajo del
+        # corte: si tambien se dropeara, se llevaria por delante las de "justo_dentro".
+        dia_frontera = marcas["justo_dentro"].date()
+        assert (
+            await owner.fetchval(
+                "SELECT to_regclass($1)",
+                f"{schema}.futures_trades_realtime_p{dia_frontera:%Y%m%d}",
+            )
+            is not None
+        )
+    finally:
+        await _drop_schema(owner, schema)
+        await owner.close()
