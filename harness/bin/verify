@@ -17,7 +17,12 @@ for c in "$B"/checks/*.sh; do
   esac
   printf '%-22s %-5s %s\n' "$id" "$estado" "$(printf '%s' "$out" | head -1 | cut -c1-70)"
 done
-printf '\n%d VERDE   %d ROJO   %d NOMED\n' "$verde" "$rojo" "$nomed"
+# K63 · EL VEREDICTO NO ES UNA PROPIEDAD DEL SISTEMA, ES DEL PAR SISTEMA-OBSERVADOR.
+# Medido: bajo devops hay 5 ROJO y bajo root 7, o sea que la identidad degradada TAPA
+# rojos reales. Copiar un marcador a una libreta sin la identidad al lado produce
+# exactamente la cifra falsa y plausible que este arnes existe para evitar.
+quien=$(id -un)
+printf '\n%d VERDE   %d ROJO   %d NOMED   ·  medido como %s\n' "$verde" "$rojo" "$nomed" "$quien"
 [ "$nomed" -gt 0 ] && printf 'NOMED no es ROJO. Arregla el canal antes de tocar el codigo.\n'
-printf '%s\t%d\t%d\t%d\n' "$(date -u +%FT%TZ)" "$verde" "$rojo" "$nomed" >> "$B/estado/verify.tsv"
+printf '%s\t%d\t%d\t%d\t%s\n' "$(date -u +%FT%TZ)" "$verde" "$rojo" "$nomed" "$quien" >> "$B/estado/verify.tsv"
 [ "$rojo" -eq 0 ] && [ "$nomed" -eq 0 ]
