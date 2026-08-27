@@ -20,7 +20,11 @@ from pathlib import Path
 import asyncpg
 import pytest
 
-from app.signal_confirmatory import ConfirmatoryContract, confirmatory_block_key
+from app.signal_confirmatory import (
+    ConfirmatoryContract,
+    confirmatory_block_key,
+    confirmatory_decision,
+)
 from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG, outcome_window
 from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
 from app.signal_visibility import certify_final_outcomes, certify_research_bundles
@@ -1721,8 +1725,45 @@ async def test_confirmatory_full_research_coverage_allows_bootstrap(
     assert coverage["research_data_coverage_pct"] == pytest.approx(100.0)
     assert report["confirmatory_result"]["confirmatory_outcome_integrity"]["outcome_complete"] is True
     # Full coverage must reach the normal bootstrap path -- not gated.
-    assert report["confirmatory_result"]["ci_lower_bps"] is not None
-    assert report["confirmatory_state"] in ("pass", "fail")
+    #
+    # EL CAMINO ES DE ESTE TEST; EL VEREDICTO NO. Hay DOS "inconclusive" distintos y
+    # distinguirlos es justo lo que este test existe para hacer:
+    #   PORTON      _compute_confirmatory_result, cobertura/outcome/bloques insuficientes.
+    #               Sale ANTES del bootstrap y deja ci_lower_bps y ci_upper_bps en None.
+    #   ESTADISTICA confirmatory_decision, ya con el intervalo publicado. Su propio
+    #               docstring lo dice: "must only be called once coverage/minimum-block
+    #               requirements are already known to be satisfied".
+    # El assert anterior (in ("pass","fail")) afirmaba un VEREDICTO que este montaje no
+    # controla, y por eso enrojecia solo a ciertas horas: _matured_v3_schedule ancla el
+    # fixture a clock_timestamp() A PROPOSITO -es lo que lo hace madurar-, asi que el
+    # numero de slots, y con el la anchura del intervalo, dependen de la hora de la
+    # corrida. MEDIDO el 2026-08-27 sobre el MISMO commit e003d38: a las 18:58:59Z el CI
+    # dio success y a las 21:07Z fallo, con slots=11, bloques=3, minimum_effect_bps=0.0 y
+    # ci=[-10.49, +489.51], o sea un intervalo que cruza el cero con todo el derecho.
+    # Alternando +5.0/-5.0 por paridad de indice, un numero impar de slots deja 6
+    # positivos y 5 negativos: el montaje NUNCA garantizo un veredicto.
+    # Asi que se afirma lo que el docstring de este test reclama -que la cobertura
+    # completa NO se bloquea- y no un resultado estadistico que no es suyo.
+    confirmatory = report["confirmatory_result"]
+    assert confirmatory["ci_lower_bps"] is not None
+    assert confirmatory["ci_upper_bps"] is not None
+    # Las cuatro condiciones del porton, satisfechas: si alguna fallara, el estado seria
+    # "inconclusive" por porton y no por estadistica.
+    assert confirmatory["confirmatory_outcome_integrity"]["outcome_complete"] is True
+    assert coverage["research_data_coverage_pct"] >= contract.minimum_research_data_coverage_pct
+    assert confirmatory["coverage"]["cost_evaluable_pct"] is not None
+    assert (
+        confirmatory["coverage"]["cost_evaluable_pct"]
+        >= contract.minimum_execution_data_coverage_pct
+    )
+    assert confirmatory["primary_block_count"] >= contract.minimum_primary_blocks
+    # Y el estado publicado es EXACTAMENTE el que la rama estadistica deriva del intervalo
+    # publicado. Con el porton disparado esto no se puede cumplir: los extremos son None.
+    assert report["confirmatory_state"] == confirmatory_decision(
+        lower_ci_bps=confirmatory["ci_lower_bps"],
+        upper_ci_bps=confirmatory["ci_upper_bps"],
+        minimum_effect_bps=contract.minimum_effect_bps,
+    )
 
 
 # ---------------------------------------------------------------------------
