@@ -3168,10 +3168,34 @@ def _parse_iso(value: Any) -> datetime:
 async def evaluate_walk_forward(
     conn: asyncpg.Connection,
     manifest_name: str,
+    *,
+    evidence_version_override: int | None = None,
 ) -> dict[str, Any]:
-    """Stage B: hash/schedule-verified read-only walk-forward evaluation."""
+    """Stage B: hash/schedule-verified read-only walk-forward evaluation.
+
+    ``evidence_version_override`` reemplaza el evidence_version que el manifiesto
+    congelo, SOLO para esta corrida y SOLO en memoria: el manifiesto no se toca y su
+    hash ya se verifico contra su propio valor dentro de load_walk_forward_manifest.
+
+    Existe porque el manifiesto congelo evidence_version=1 y esa cohorte MURIO el
+    2026-08-11T23:28:41Z: desde el 08-12 hay 117338 observaciones y CERO de v1, asi que
+    una evaluacion fiel al manifiesto selecciona cero filas y no puede decir nada. Con la
+    bandera el manifiesto sigue muerto; lo que pasa a seleccionar es la bandera, y por eso
+    el informe estampa las DOS versiones y baja selection_faithful_to_manifest. Un informe
+    que no diga que lo eligio no esta informando, esta mintiendo por omision.
+    """
 
     manifest, options = await load_walk_forward_manifest(conn, manifest_name)
+
+    manifest_evidence_version = options.evidence_version
+    override_applied = False
+    if evidence_version_override is not None:
+        if evidence_version_override <= 0:
+            raise ValueError("evidence_version_override must be positive")
+        override_applied = evidence_version_override != manifest_evidence_version
+        # replace() y no mutacion: WalkForwardManifestOptions es frozen a proposito.
+        options = replace(options, evidence_version=evidence_version_override)
+
     generated_at = _aware_utc(await conn.fetchval("SELECT clock_timestamp()"))
 
     fold_specs: list[dict[str, Any]] = []
@@ -3263,8 +3287,22 @@ async def evaluate_walk_forward(
             "min_group_n": manifest["min_group_n"],
             "spec": manifest["spec"],
         },
+        # QUE SELECCIONO LAS FILAS. Va FUERA del bloque "manifest" y a propio nivel
+        # porque no es una propiedad del manifiesto -que es inmutable y esta verificado
+        # por hash- sino de ESTA corrida. Se estampa SIEMPRE, tambien cuando no hay
+        # override, para que la ausencia de la bandera tampoco haya que deducirla.
+        "evidence_selection": {
+            "manifest_evidence_version": manifest_evidence_version,
+            "applied_evidence_version": options.evidence_version,
+            "override_applied": override_applied,
+        },
         "gates": {
             "manifest_hash_valid": True,
+            # manifest_hash_valid SIGUE SIENDO TRUE con la bandera puesta, porque el
+            # manifiesto no se toco. Por eso hace falta esta segunda puerta al lado: sin
+            # ella, "hash valido" se lee como "este informe es lo que el manifiesto
+            # mandaba", y con override NO lo es.
+            "selection_faithful_to_manifest": not override_applied,
             "schedule_valid": True,
             "selection_policy_is_fixed_no_selection": True,
             "first_oos_boundary_frozen_before_start": (

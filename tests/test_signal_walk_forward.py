@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import inspect
 import math
+import sys
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -111,8 +113,91 @@ def test_no_cli_option_can_request_a_retroactive_cutoff() -> None:
 
 
 def test_evaluator_has_no_external_options_override() -> None:
+    """El evaluador no se puede DIRIGIR. Una sola excepcion, y acotada.
+
+    Este guardia existe para que nadie pueda mover lo que el manifiesto congelo hasta
+    que el resultado guste: esa es la integridad entera del walk-forward. Se ESTRECHA,
+    no se levanta, y por un motivo medido: el manifiesto congelo evidence_version=1 y
+    esa cohorte murio el 2026-08-11T23:28:41Z -desde el 08-12 hay 117338 observaciones
+    y CERO de v1-, asi que una corrida fiel al manifiesto selecciona cero filas y el
+    informe no puede decir nada de trece dias de dato prospectivo.
+
+    Lo que sigue prohibido es TODO lo demas: la lista es exhaustiva, asi que un segundo
+    mando -folds, horizontes, umbrales, politica de seleccion- rompe este test. Y la
+    excepcion viene con su contrapartida, que es lo que la hace aceptable y esta
+    cubierta por test_report_always_stamps_what_selected_the_rows: la version aplicada
+    se ESTAMPA siempre en el informe y selection_faithful_to_manifest baja a False.
+    Un mando que se puede mover en silencio seria p-hacking; uno que deja constancia en
+    la primera linea del informe es una decision declarada.
+    """
+
     signature = inspect.signature(evaluate_walk_forward)
-    assert list(signature.parameters) == ["conn", "manifest_name"]
+    assert list(signature.parameters) == [
+        "conn",
+        "manifest_name",
+        "evidence_version_override",
+    ]
+    override = signature.parameters["evidence_version_override"]
+    # Keyword-only y opcional: no se puede colar por posicion ni por descuido.
+    assert override.kind is inspect.Parameter.KEYWORD_ONLY
+    assert override.default is None
+
+
+def test_report_always_stamps_what_selected_the_rows() -> None:
+    """La contrapartida del override: el informe SIEMPRE dice que selecciono.
+
+    Es la mitad que hace aceptable la bandera. Con el manifiesto congelado en una
+    cohorte muerta, lo que decide que filas se miden pasa a ser el override, y un
+    informe que no lo diga miente por omision aunque cada cifra suya sea correcta.
+    Se comprueba sobre la FUENTE de las dos piezas que lo publican, porque el informe
+    entero necesita base y CI no define TEST_DATABASE_URL.
+    """
+
+    evaluador = Path("app/signal_walk_forward.py").read_text(encoding="utf-8")
+    # El bloque va a primer nivel del informe, no dentro de "manifest": no es una
+    # propiedad del manifiesto -inmutable y verificado por hash- sino de la corrida.
+    assert '"evidence_selection": {' in evaluador
+    for campo in (
+        '"manifest_evidence_version"',
+        '"applied_evidence_version"',
+        '"override_applied"',
+    ):
+        assert campo in evaluador
+    # Y la puerta que impide leer "hash valido" como "fiel al manifiesto".
+    assert '"selection_faithful_to_manifest": not override_applied,' in evaluador
+
+    cli = Path("scripts/evaluate_walk_forward.py").read_text(encoding="utf-8")
+    assert '_evidence_stamp(report["evidence_selection"])' in cli
+
+
+def test_evidence_stamp_distinguishes_override_from_manifest() -> None:
+    """La linea impresa, que es lo unico que un humano lee, distingue los dos casos."""
+
+    sys.path.insert(0, str(Path("scripts").resolve()))
+    try:
+        from evaluate_walk_forward import _evidence_stamp
+    finally:
+        sys.path.pop(0)
+
+    fiel = _evidence_stamp(
+        {
+            "manifest_evidence_version": 1,
+            "applied_evidence_version": 1,
+            "override_applied": False,
+        }
+    )
+    assert fiel == "evidence=1(manifiesto)"
+
+    dirigido = _evidence_stamp(
+        {
+            "manifest_evidence_version": 1,
+            "applied_evidence_version": 6,
+            "override_applied": True,
+        }
+    )
+    # Las DOS versiones en la misma linea: la que se uso y la que el manifiesto mandaba.
+    assert dirigido == "evidence=6(OVERRIDE,manifiesto=1)"
+    assert "OVERRIDE" in dirigido
 
 
 @pytest.mark.asyncio
