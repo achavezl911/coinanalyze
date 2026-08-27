@@ -1,0 +1,6 @@
+{
+  "name": "coinalyze-panel-probe",
+  "private": true,
+  "description": "Instrumento de K31: ejecuta el app.js real en un DOM real para medir si una cifra llega a la pantalla.",
+  "dependencies": { "jsdom": "24.x" }
+}
