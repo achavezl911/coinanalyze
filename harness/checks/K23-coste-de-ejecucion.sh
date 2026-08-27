@@ -109,6 +109,18 @@ faltan = sorted({k for k in CLAVES for f in filas if k not in f})
 if faltan:
     print(f"{ruta} sirve capturas sin las claves {faltan[:6]}"); sys.exit(1)
 
+# LA REFERENCIA CUENTA SOLO status='valid' Y LA RUTA SIRVE TODOS LOS ESTADOS, cada uno
+# CON SU status. Comparar el total servido contra una referencia filtrada era comparar
+# dos poblaciones distintas: mientras no hubo capturas 'stale' en la hora muestreada los
+# dos numeros coincidian por casualidad, y el 2026-08-27T17:00Z aparecieron 3 -359 valid
+# + 3 stale = 362- y el check enrojecio sin que nada estuviera roto. La ruta NO mezcla a
+# ciegas: declara el estado de cada fila, que es justo lo que este proyecto le exige a
+# todo lo demas. El defecto era del instrumento. Se compara valid contra valid, y las
+# demas se DECLARAN, que es mas informacion que antes y no menos.
+no_validas = [f for f in filas if f["status"] != "valid"]
+otros = [f["status"] for f in no_validas]
+filas = [f for f in filas if f["status"] == "valid"]
+
 def casi(a, b, tol=1e-6):
     if a is None and b is None: return True
     if a is None or b is None: return False
@@ -202,6 +214,13 @@ if len(filas) != esperadas:
     print(f"la ruta sirve {len(filas)} capturas y la hora tiene {esperadas}"); sys.exit(1)
 
 cobertura = f"{con_origen}/{len(filas)}"
-print(f"{puntos} puntos de curva recalculados + tope del libro contra orderbook_snapshot en {cobertura} capturas con origen persistido + {len(NOMBRES)} conteos: {simbolo} {desde}, {len(filas)} capturas enteras. ABIERTO a proposito: avg_price y levels_used, que exigen la escalera que el libro no retiene")
+declarado = ""
+if no_validas:
+    conteo = {e: otros.count(e) for e in sorted(set(otros))}
+    reparto = ", ".join(f"{e}={n}" for e, n in conteo.items())
+    declarado = (f" DECLARADO y no juzgado: la ruta sirvio ademas {len(no_validas)} capturas"
+                 f" no validas ({reparto}), cada una CON su status, y no se recalculan"
+                 f" porque su libro no era utilizable en su instante")
+print(f"{puntos} puntos de curva recalculados + tope del libro contra orderbook_snapshot en {cobertura} capturas con origen persistido + {len(NOMBRES)} conteos: {simbolo} {desde}, {len(filas)} capturas enteras. ABIERTO a proposito: avg_price y levels_used, que exigen la escalera que el libro no retiene.{declarado}")
 ' "$ref" "$simbolo" "$desde" "$esperadas" "$RUTA" "$ORIGEN"
 exit $?
