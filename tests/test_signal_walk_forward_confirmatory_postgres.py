@@ -930,11 +930,16 @@ async def test_confirmatory_positive_raw_expectancy_cannot_pass_once_baseline_is
     assert report["confirmatory_state"] != "pass"
     assert report["confirmatory_state"] == "fail"
 
-    # Exploratory positive_oos_gate_count is 0 (n=1/day-group is below the
-    # default min_group_n reporting guardrail) while the confirmatory
-    # decision is a clean, deterministic FAIL -- proof the two are
-    # structurally decoupled.
-    assert report["gates"]["positive_oos_gate_count"] == 0
+    # K07/K60: la capa exploratoria NO PUDO EVALUAR NADA -n=1 por grupo-dia queda por
+    # debajo del guardarrail min_group_n-, asi que su conteo de puertas es None y no 0.
+    # Este assert exigia == 0 y era la ultima afirmacion viva del defecto que cerro K60:
+    # un 0 donde no hubo medicion. Sobrevivio porque este fichero NUNCA se ejecutaba, al
+    # no estar definida TEST_DATABASE_URL; lo caza el primer CI que corre la persistencia.
+    # Y el punto del test sale REFORZADO: la exploratoria declara que no pudo medir
+    # mientras la confirmatoria da un FAIL limpio y determinista. Eso es desacoplamiento
+    # estructural mejor demostrado que con un "0 puertas pasadas".
+    assert report["gates"]["positive_oos_gate_count"] is None
+    assert report["gates"]["oos_gate_evaluable_cell_count"] == 0
 
 
 @pytest.mark.asyncio

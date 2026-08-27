@@ -42,31 +42,58 @@ jobs:
           . .venv/bin/activate
           python -m compileall -q app
 
-      # K07 · TODAVIA SIN CABLEAR, y aqui esta por que, con las cifras.
+      # K07 · CABLEADO el 2026-08-27, y con las cifras que lo hicieron posible.
       #
-      # Los 16 tests/*_postgres.py -167 tests, o sea toda la persistencia- se saltan
-      # porque no se define TEST_DATABASE_URL. Definirla es una linea y ya esta
-      # probado que funciona sin ningun secreto: el runner corre en 143, pg_hba usa
-      # peer por socket, existe el rol "github-runner" y la base coinalyze_test con
-      # schema.sql aplicado. Con eso corren.
+      # LO QUE DECIA ESTE COMENTARIO ANTES ERA CORRECTO EN 08-25 Y HOY YA NO, y merece
+      # quedar escrito porque los dos -operador e implementador- afirmamos su diagnostico
+      # sin volver a ejecutarlo: decia que 6 de los 8 fallos eran deriva entre schema.sql
+      # y app/partitioning.py, o sea sujeto de K16, y por tanto que K16 bloqueaba a K07.
+      # MEDIDO HOY, mismo commit: contra una base con schema.sql RECIEN aplicada,
+      # test_partitioning_postgres.py pasa ENTERO y la suite da 1372 pasan / 5 fallan.
+      # Contra la vieja coinalyze_test fallan 7 de 8. El cerrojo era el ESTADO de esa
+      # base reutilizada, no el arbol. K16 NO era prerrequisito de nada.
       #
-      # No se cablea AUN porque al ejecutarlos por primera vez el 2026-08-25 salieron
-      # dos cosas que dejarian este CI rojo o colgado para todo el mundo:
-      #   8 fallos de 151 en los 15 ficheros sanos (35.7 s): 6 en
-      #     test_partitioning_postgres.py, todos UndefinedObjectError por el
-      #     constraint orderbook_snapshot_non_crossed_check -deriva entre schema.sql
-      #     y lo que espera app/partitioning.py, o sea sujeto de K16-, y 2 en
-      #     test_pr22_cvd_semantics_postgres.py.
-      #   test_signal_walk_forward_confirmatory_postgres.py CUELGA: espera al reloj
-      #     de pared, no a la base (epoll_wait, cero conexiones TCP, cero locks).
-      #     Hay que inyectarle el tiempo.
+      # DE AHI LA FORMA DE ABAJO: la base de test NACE Y MUERE CON CADA CORRIDA. Una base
+      # reutilizada acumula el esquema de la primera vez que se creo y va derivando en
+      # silencio del schema.sql del arbol, hasta que los fallos que produce se leen como
+      # defectos del codigo. Es la misma familia que K63: el estado del instrumento
+      # disfrazado de veredicto sobre el sujeto.
       #
-      # Cablearlo ahora seria comprar un CI verde a base de excluir lo que falla, que
-      # es justo lo que K33 prohibe. Se cablea cuando esos dos frentes esten cerrados.
+      # DSN POR SOCKET, no por TCP: los tests de takeover abren una segunda conexion con
+      # las credenciales que les da el DSN, y con host TCP piden contrasena y fallan con
+      # InvalidPasswordError, que tambien es canal disfrazado de codigo.
+      - name: Create disposable test database
+        id: testdb
+        run: |
+          set -eu
+          db="ci_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          createdb --host=/var/run/postgresql "$db"
+          echo "db=$db" >> "$GITHUB_OUTPUT"
+          psql --host=/var/run/postgresql -d "$db" -q -v ON_ERROR_STOP=1 -f sql/schema.sql
+
+      # EL SUELO SUBE ~220 TESTS DE GOLPE Y ESO NO ES PROGRESO SOBRE NINGUN ROJO VIEJO:
+      # es el suelo apareciendo. Los 16 ficheros *_postgres.py llevaban desde siempre sin
+      # ejecutarse, asi que la persistencia entera estaba sin vigilar; que ahora cuente no
+      # significa que se haya arreglado nada, significa que por fin se mide.
+      #
+      # LO QUE CUESTA, MEDIDO Y NO ESTIMADO: la suite pasa de ~5 s a 772 s (12:52). Casi
+      # todo es sueno de reloj de pared en test_signal_walk_forward_confirmatory_postgres:
+      # NO cuelga -eso decia el comentario viejo y es falso-, sino que espera a que el
+      # reloj de la base pase la madurez del fold, y esas esperas son DOCE de 48 a 52 s
+      # cada una. El tope es un cubo de 60 s por diseno (_wait_past, y el alineado de
+      # cubos que lo acota). Bajarlo pide inyectarle el tiempo al modulo, o sea cambiar
+      # como lee el reloj: es trabajo acotado y conocido -un helper, doce puntos de
+      # llamada- pero NO es un retoque de CI, asi que aqui se paga y se declara.
       - name: Pytest
+        env:
+          TEST_DATABASE_URL: "postgresql:///${{ steps.testdb.outputs.db }}?host=/var/run/postgresql"
         run: |
           . .venv/bin/activate
           pytest -q
+
+      - name: Drop disposable test database
+        if: always() && steps.testdb.outputs.db != ''
+        run: dropdb --host=/var/run/postgresql --if-exists "${{ steps.testdb.outputs.db }}"
 
       - name: JavaScript tests
         run: node --test tests/js/
