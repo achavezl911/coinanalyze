@@ -42,6 +42,8 @@ from app.signal_walk_forward import (
     _classify_generalization,
     _compute_confirmatory_result,
     _confirmatory_outcome_integrity_for_fold,
+    _count_execution_oos_gates,
+    _count_oos_gates,
     _execution_measure,
     _expected_utc_nonoverlap_slot_count,
     _fetch_confirmatory_primary_rows,
@@ -689,6 +691,47 @@ def test_null_base_yields_no_ratio_and_a_strong_base_still_does() -> None:
     assert viva["base_inconclusive_reason"] is None
     assert viva["expectancy_retention_ratio"] == pytest.approx(1.0 / 1.99917, rel=1e-3)
     assert viva["sign_preserved"] is True
+
+
+def _gate_fold(gross: list, execution: list | None = None) -> dict:
+    return {
+        "gross_views": {"dense_periodic": {"overall": [
+            {"positive_oos_gate_passed": v} for v in gross
+        ]}},
+        "execution_views": {"dense_periodic": [
+            {"positive_market_cost_oos_gate_passed": v}
+            for v in (execution or [])
+        ]},
+    }
+
+
+def test_gate_count_separates_did_not_pass_from_could_not_be_measured() -> None:
+    passed, evaluable, not_evaluable = _count_oos_gates(
+        [_gate_fold([True, True, False, None])]
+    )
+    assert (passed, evaluable, not_evaluable) == (2, 3, 1)
+
+
+def test_gate_count_is_none_not_zero_when_nothing_is_evaluable() -> None:
+    # K60: el defecto era sumar "is True", con lo que un None contaba igual que un
+    # False y el total salia 0. Un 0 se lee como "evaluado, sin ventaja".
+    passed, evaluable, not_evaluable = _count_oos_gates(
+        [_gate_fold([None, None, None])]
+    )
+    assert passed is None
+    assert (evaluable, not_evaluable) == (0, 3)
+
+    # Un cero HONESTO sigue siendo un cero: hubo medicion y ninguna paso.
+    honesto, evaluable_h, _ = _count_oos_gates([_gate_fold([False, False])])
+    assert honesto == 0
+    assert evaluable_h == 2
+
+
+def test_execution_gate_count_behaves_like_its_twin() -> None:
+    assert _count_execution_oos_gates(
+        [_gate_fold([], [True, False, None])]
+    ) == (1, 2, 1)
+    assert _count_execution_oos_gates([_gate_fold([], [None])]) == (None, 0, 1)
 
 
 def test_sampling_modes_are_distinct_and_utc_nonoverlap_is_clock_only() -> None:
