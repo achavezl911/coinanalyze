@@ -98,10 +98,23 @@ anchos = sorted({(hora(b["bucket"]) - hora(a["bucket"])).total_seconds()
                  for a, b in zip(filas, filas[1:])})
 ancho = timedelta(seconds=anchos[0]) if anchos else timedelta(minutes=15)
 
-con_reinicio, sin_reinicio, mudos, control_malo = 0, 0, [], []
+# UN BUCKET QUE AUN NO ESTA ESCRITO NO SE PUEDE JUZGAR. El minuto vive en RAM hasta
+# M+185 s (60 de minuto + 125 de gracia), asi que el bucket que contiene los ultimos
+# minutos todavia no tiene dentro su minuto corto. Sin este margen el check sale ROJO
+# cada vez que se corre justo despues de un reinicio: paso a las 23:58Z con el arranque
+# de las 23:57:35Z, y el ROJO decia "23:45 contiene un arranque y sirve short_minutes=0"
+# cuando lo cierto era que 23:57 aun no se habia volcado. Es la misma familia que la
+# tolerancia de K23: no se le exige a un sistema lo que todavia no puede tener.
+ahora = datetime.now(UTC)
+ASIENTO = timedelta(minutes=6)
+
+con_reinicio, sin_reinicio, mudos, control_malo, sin_asentar = 0, 0, [], [], 0
 for f in filas:
     inicio = hora(f["bucket"])
     if inicio < corte:
+        continue
+    if inicio + ancho > ahora - ASIENTO:
+        sin_asentar += 1
         continue
     cortos = f.get("short_minutes") or 0
     desconocidos = f.get("unknown_minutes") or 0
@@ -121,11 +134,11 @@ if mudos:
 if control_malo:
     print(f"CONTROL POSITIVO ROTO: {len(control_malo)} buckets sin reinicio salen marcados: " + " · ".join(control_malo[:3])); sys.exit(1)
 if con_reinicio == 0:
-    print(f"NO MEDIDO: ningun bucket posterior al corte {corte:%H:%MZ} contiene un arranque; falta el brazo que prueba que se declara"); sys.exit(2)
+    print(f"NO MEDIDO: ningun bucket posterior al corte {corte:%H:%MZ} y ya asentado contiene un arranque; falta el brazo que prueba que se declara ({sin_asentar} sin asentar)"); sys.exit(2)
 if sin_reinicio == 0:
     print(f"NO MEDIDO: ningun bucket posterior al corte {corte:%H:%MZ} esta libre de arranques; falta el control positivo"); sys.exit(2)
 
 legado = sum(1 for f in filas if (f.get("unknown_minutes") or 0) > 0)
-print(f"la ruta distingue las tres cosas EJECUTANDOLA: {con_reinicio} buckets con reinicio lo declaran con short_minutes, {sin_reinicio} sin reinicio salen limpios -control positivo- y {legado} de legado dicen unknown_minutes en vez de pasar por completos. Corte {corte:%H:%MZ}, {len(filas)} buckets de {horas} h. La marca dice QUE falta, no CUANTO: no la uses como factor de escala")
+print(f"la ruta distingue las tres cosas EJECUTANDOLA: {con_reinicio} buckets con reinicio lo declaran con short_minutes, {sin_reinicio} sin reinicio salen limpios -control positivo- y {legado} de legado dicen unknown_minutes en vez de pasar por completos. Corte {corte:%H:%MZ}, {len(filas)} buckets de {horas} h y {sin_asentar} sin asentar que no se juzgan. La marca dice QUE falta, no CUANTO: no la uses como factor de escala")
 ' "$JOURNAL" "$CUERPO" "$RUTA" "$HORAS"
 exit $?
