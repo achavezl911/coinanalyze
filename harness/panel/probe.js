@@ -99,16 +99,18 @@ process.on('unhandledRejection', morir);
   if (cap.fatal) { salida.error = 'el panel no arranca: ' + cap.fatal; console.log(JSON.stringify(salida, null, 1)); process.exit(0); }
 
   // SIN PAYLOADS NO HAY MEDICION, Y ESO ES NO MEDIDO, NO UN ROJO. Si no se pudo traer ni
-  // uno -sin credenciales, sin red, o produccion caida- el panel arranca con sus
-  // fallbacks y pide DOS rutas en vez de treinta y dos. Publicar eso como "64 rutas no
-  // llegan a la pantalla" seria fabricar un rojo enorme a partir de un canal roto, que
-  // es justo la familia de K63: el estado del INSTRUMENTO disfrazado de veredicto sobre
-  // el SUJETO.
+  // uno -sin credenciales, sin red, o produccion caida- el panel NO se queda mudo: los
+  // maybe() caen a sus fallbacks y las secciones siguen pidiendo. MEDIDO induciendolo
+  // con un netrc inexistente: 29 rutas pedidas y CERO payloads con datos. O sea que sin
+  // esta guardia el check publicaria "37 de 66 no llegan a la pantalla", un rojo
+  // inventado a partir de un canal roto, que es la familia de K63: el estado del
+  // INSTRUMENTO disfrazado de veredicto sobre el SUJETO.
   const conDatos = urls.filter(u => fs.existsSync(path.join(FIX, fixtureName(u)))).length;
   salida.payloads_con_datos = conDatos;
   if (conDatos === 0) {
-    salida.error = 'no se pudo traer NI UN payload de produccion: ' +
-      (noOk.length ? 'codigos ' + [...new Set(noOk.map(x => cap.status[x.url] || x.codigo))].join(',') : 'sin respuesta');
+    const codigos = [...new Set(noOk.map(u => cap.status[u]).filter(Boolean))];
+    salida.error = 'no se pudo traer NI UN payload de produccion (' + urls.length +
+      ' rutas pedidas): ' + (codigos.length ? 'codigos ' + codigos.join(',') : 'sin respuesta');
     console.log(JSON.stringify(salida, null, 1)); process.exit(0);
   }
 
