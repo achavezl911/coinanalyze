@@ -92,13 +92,35 @@ def whale_classification(
 
 REGIME_WEIGHTS = {"cvd": 25.0, "oi": 15.0, "funding": 15.0, "liquidations": 15.0, "whale": 30.0}
 REGIME_MIN_COVERAGE = 0.5
-REGIME_LOGIC_VERSION = 2
 """Fraccion minima del peso que debe estar medida para publicar un regimen.
 
 Por debajo de esto el score seria la opinion de uno o dos componentes presentada como si
 fuese el balance completo. Antes se sumaba 0 por cada componente ausente, asi que
 `compute_regime({})` devolvia (0.0, 'Lateral / Indecision'): un veredicto neutral que
 parecia medido y no lo estaba.
+"""
+
+REGIME_LOGIC_VERSION = 3
+"""Version de la LOGICA con la que se calculo el regimen, no del esquema.
+
+Sube cuando cambia lo que el score SIGNIFICA, porque tres consultas filtran por esta
+columna -daily_agg.py:354, signal_ledger.py:265 y el mapa congelado de
+signal_regime.py:146- y lo que garantizan al filtrar es que las filas que devuelven se
+calcularon con la MISMA regla. Dos reglas bajo una etiqueta convierten esa garantia en su
+contraria, sin que nada falle.
+
+  NULL -> 2  2026-08-12T03:11Z
+  2 -> 3     2026-08-27T04:43:05Z. K59: el componente whale -30 de 100, el de mas peso-
+             dejo de votar cero por debajo del umbral y pasa a abstenerse, con lo que
+             `measured` baja de 100 a 70 para BTC y ETH y el score se renormaliza sobre
+             otro denominador. El instante esta medido al segundo: ultimo whale_intensity
+             cero exacto 04:42:05Z, arranque del servicio 04:42:48Z, primera fila de la
+             era nueva 04:43:05Z.
+
+Subirla es PROSPECTIVO: ninguna fila ya escrita se reinterpreta. Las escritas entre el
+corte y este despliegue llevan la regla nueva con la etiqueta 2 y se quedan asi;
+re-etiquetarlas seria escritura en produccion. harness/checks/K62 lo cuenta en cada
+corrida.
 """
 
 
