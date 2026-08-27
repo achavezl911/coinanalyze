@@ -764,6 +764,44 @@ async def _wait_past(conn: asyncpg.Connection, target: datetime) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _align_forward_same_utc_day(
+    moment: datetime, *, minutes: int, span_hours: int
+) -> datetime:
+    """``_align_forward`` that ALSO guarantees ``result`` and ``result +
+    span_hours`` land on the same UTC calendar day.
+
+    The confirmatory block unit is ``day``. Fixtures that pair an actionable
+    row with a non-actionable dilution row rely on both landing in the SAME
+    block -- that pairing is the whole point of a real, independent baseline
+    cohort. But the schedule is anchored to the real clock ON PURPOSE (see
+    ``_matured_v3_schedule``), so ``test_start`` lands at an arbitrary time of
+    day; when it lands late enough, ``+1h`` and ``+2h`` straddle UTC midnight,
+    the pair splits across two day-blocks, and the dilution row stops diluting.
+
+    MEASURED 2026-08-27, and neither symptom was a code defect:
+      * ``test_start`` at 22:30Z put the P1-01 membership pair in different
+        days, so the lone actionable block's baseline read +500bps instead of
+        the -500bps the neutral row should have produced.
+      * with six day-pairs and one of them split, the lone block contributed
+        its own +500bps and the mean came out 500/6 = 83.33bps instead of 0.0.
+    Both assertions were RIGHT; the fixture was putting the rows in different
+    blocks. Aligning the assertions would have deleted two real guards.
+
+    NO-OP unless a straddle would actually happen: when the span already fits
+    inside the day this returns exactly what ``_align_forward`` returns, so
+    fixtures keep their current placement at every other hour. Costs at most
+    one day of the fold window (measured: window 10 days, largest fixture 6).
+    """
+
+    aligned = _align_forward(moment, minutes=minutes)
+    if (aligned + timedelta(hours=span_hours)).date() == aligned.date():
+        return aligned
+    next_midnight = (aligned + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    return _align_forward(next_midnight, minutes=minutes)
+
+
 @pytest.mark.asyncio
 async def test_confirmatory_not_ready_until_the_last_fold_matures(
     conn: asyncpg.Connection,
@@ -963,7 +1001,9 @@ async def test_confirmatory_pass_with_genuine_excess_over_diluted_baseline(
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
+    test_start = _align_forward_same_utc_day(
+        folds[0]["test_start"], minutes=max(options.horizons), span_hours=2
+    )
 
     await _insert_diluted_spread_bundles(
         conn,
@@ -1114,7 +1154,9 @@ async def test_confirmatory_baseline_cohort_includes_non_actionable_rows_regardl
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
+    test_start = _align_forward_same_utc_day(
+        folds[0]["test_start"], minutes=max(options.horizons), span_hours=2
+    )
 
     # Single calendar-day block: one actionable long row (default
     # state/regime) plus one non-actionable neutral row with a DIFFERENT
@@ -1239,7 +1281,9 @@ async def test_confirmatory_result_is_identical_across_repeated_evaluations(
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
+    test_start = _align_forward_same_utc_day(
+        folds[0]["test_start"], minutes=max(options.horizons), span_hours=2
+    )
     # Diluted baseline (see test_confirmatory_pass_with_genuine_excess_over_
     # diluted_baseline) so this is a genuine, baseline-adjusted PASS -- not
     # merely a positive raw return -- making the idempotence check below
@@ -1497,7 +1541,9 @@ async def test_confirmatory_selective_pending_outcomes_force_inconclusive_and_su
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
+    test_start = _align_forward_same_utc_day(
+        folds[0]["test_start"], minutes=max(options.horizons), span_hours=2
+    )
 
     # 2 fully-evaluated, diluted-baseline calendar-day blocks -- would PASS
     # on the evaluated-only subset alone.
