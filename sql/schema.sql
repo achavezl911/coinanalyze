@@ -108,6 +108,41 @@ CREATE TABLE IF NOT EXISTS oi_bybit (
 );
 CREATE INDEX IF NOT EXISTS oi_bybit_ts_idx ON oi_bybit(ts DESC);
 
+-- OI DIARIO · LA MEMORIA LARGA DEL INTERES ABIERTO.
+--
+-- apply_retention borra open_interest y oi_bybit con un DELETE liso por antiguedad
+-- (daily_agg.py) y HARD_DATA_RETENTION_DAYS vale 90 en produccion. La recoleccion de OI
+-- arranco el 2026-07-23, asi que el primer dia se pierde el 2026-10-21 y a partir de ahi
+-- la serie empieza un dia mas tarde cada dia. Ninguna consulta daria error: el hueco
+-- aparece por el extremo VIEJO, que es el que nadie mira.
+--
+-- ohlcv resuelve lo mismo EXIMIENDO interval='daily' de su DELETE. Aqui no se puede: las
+-- dos tablas de OI llevan CHECK (interval = '5min'), y relajar ese CHECK es DROP+ADD, o sea
+-- un cambio NO aditivo del esquema. Una tabla nueva es puramente aditiva Y da una garantia
+-- mas fuerte: no esta exenta por una lista de intervalos que alguien puede olvidar
+-- actualizar, sino PORQUE NINGUN DELETE LA NOMBRA. La exencion es estructural, no una regla.
+--
+-- samples/expected_samples no son adorno: un resumen sobre un dia a medias es
+-- indistinguible de uno completo si no dice cuanto midio, que es el defecto de K60 aplicado
+-- a la memoria larga. samples > 0 impide escribir la fila de un dia sin ninguna muestra.
+CREATE TABLE IF NOT EXISTS open_interest_daily (
+    day date NOT NULL,
+    symbol text NOT NULL REFERENCES symbols(symbol),
+    source text NOT NULL CHECK (source IN ('coinalyze','bybit')),
+    oi_open double precision NOT NULL CHECK (finite_float8(oi_open) AND oi_open >= 0),
+    oi_high double precision NOT NULL CHECK (finite_float8(oi_high) AND oi_high >= 0),
+    oi_low double precision NOT NULL CHECK (finite_float8(oi_low) AND oi_low >= 0),
+    oi_close double precision NOT NULL CHECK (finite_float8(oi_close) AND oi_close >= 0),
+    samples integer NOT NULL CHECK (samples > 0),
+    expected_samples integer NOT NULL CHECK (expected_samples > 0),
+    built_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (symbol, source, day),
+    CHECK (samples <= expected_samples),
+    CHECK (oi_high >= GREATEST(oi_open, oi_close, oi_low)),
+    CHECK (oi_low <= LEAST(oi_open, oi_close, oi_high))
+);
+CREATE INDEX IF NOT EXISTS open_interest_daily_day_idx ON open_interest_daily(day DESC);
+
 CREATE TABLE IF NOT EXISTS funding_rate (
     ts timestamptz NOT NULL,
     symbol text NOT NULL REFERENCES symbols(symbol),

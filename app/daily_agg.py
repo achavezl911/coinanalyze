@@ -541,6 +541,70 @@ async def materialize_daily_verdict_outcomes(conn: asyncpg.Connection) -> int:
     return int(inserted or 0)
 
 
+# El dia de OI es UTC y no la sesion NYSE: el interes abierto no cierra a las 16:00 de
+# Nueva York. 288 buckets de 5 min es el dia entero.
+OI_DAILY_SOURCES: tuple[tuple[str, str], ...] = (
+    ("open_interest", "coinalyze"),
+    ("oi_bybit", "bybit"),
+)
+OI_DAILY_EXPECTED_SAMPLES = 288
+
+
+async def rollup_open_interest_daily(conn: asyncpg.Connection) -> int:
+    """Consolida en open_interest_daily cada dia UTC YA CERRADO que siga en los 5min.
+
+    RECALCULA TODOS los dias vivos en cada pasada, y eso es deliberado por tres motivos
+    que se pagan con una sola sentencia:
+      · RELLENA HACIA ATRAS sin codigo aparte. El dia que esto se despliegue consolida de
+        golpe todo lo que haya desde el 2026-07-23, que es justo lo que hay que salvar
+        antes del 2026-10-21.
+      · SE CURA SOLA. Si el rebarrido recupera 5min de un dia viejo, su resumen se rehace
+        en la siguiente pasada en vez de quedarse con la version pobre.
+      · ES IDEMPOTENTE por construccion, no por cuidado del llamante.
+    El coste es un GROUP BY sobre lo que quepa en la retencion: con 90 dias son ~78 k filas
+    y 540 de salida. Es mas barato que ohlcv 'daily', que ya se guarda para siempre.
+
+    EL DIA EN CURSO NO SE ESCRIBE. Un dia abierto tiene un oi_close que todavia va a
+    cambiar, y una fila que se reescribe sola no es un resumen: es una copia con retraso.
+    """
+
+    total = 0
+    for tabla, fuente in OI_DAILY_SOURCES:
+        # array_agg ORDER BY para open/close porque son el PRIMER y el ULTIMO bucket del
+        # dia, no su minimo ni su maximo: min(oi_open) daria un numero que nunca existio.
+        filas = await conn.execute(
+            f"""
+            INSERT INTO open_interest_daily(
+              day,symbol,source,oi_open,oi_high,oi_low,oi_close,samples,expected_samples,built_at
+            )
+            SELECT
+              (ts AT TIME ZONE 'UTC')::date,
+              symbol,
+              $1,
+              (array_agg(oi_open ORDER BY ts ASC))[1],
+              max(oi_high),
+              min(oi_low),
+              (array_agg(oi_close ORDER BY ts DESC))[1],
+              count(*)::int,
+              $2,
+              now()
+            FROM {tabla}
+            WHERE interval='5min'
+              AND (ts AT TIME ZONE 'UTC')::date < (now() AT TIME ZONE 'UTC')::date
+            GROUP BY 1,2
+            ON CONFLICT (symbol,source,day) DO UPDATE SET
+              oi_open=EXCLUDED.oi_open, oi_high=EXCLUDED.oi_high,
+              oi_low=EXCLUDED.oi_low, oi_close=EXCLUDED.oi_close,
+              samples=EXCLUDED.samples, expected_samples=EXCLUDED.expected_samples,
+              built_at=EXCLUDED.built_at
+            """,  # noqa: S608 - {tabla} sale de OI_DAILY_SOURCES, nunca del exterior
+            fuente,
+            OI_DAILY_EXPECTED_SAMPLES,
+        )
+        total += int(filas.split()[-1])
+    return total
+
+
 async def apply_retention(
     conn: asyncpg.Connection,
     hard_days: int,
@@ -771,6 +835,11 @@ async def cycle(
             verdicts = await persist_verdicts(conn, settings.SYMBOLS)
             outcomes = await materialize_daily_verdict_outcomes(conn)
             baselines = await refresh_baselines(conn, settings.SYMBOLS)
+            # ANTES DE apply_retention Y NO DESPUES, y el orden es el arreglo entero: el dia
+            # que acaba de cruzar HARD_DATA_RETENTION_DAYS se borra en esta misma pasada. Si
+            # el resumen fuera despues, ese dia se perderia sin haberse consolidado jamas --
+            # y en silencio, porque la serie solo empezaria un dia mas tarde.
+            oi_daily = await rollup_open_interest_daily(conn)
             await apply_retention(
                 conn,
                 settings.HARD_DATA_RETENTION_DAYS,
@@ -782,7 +851,8 @@ async def cycle(
         heartbeat_detail = (
             f"daily_candles={daily_candles},h4_candles={h4_candles},"
             f"spot_candles={spot_candles},baselines={baselines},"
-            f"daily_rows={inserted},verdicts={verdicts},outcomes={outcomes}"
+            f"daily_rows={inserted},verdicts={verdicts},outcomes={outcomes},"
+            f"oi_daily={oi_daily}"
         )
         if ownership is None:
             await heartbeat(conn, "daily", detail=heartbeat_detail)
