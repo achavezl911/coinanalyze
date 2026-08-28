@@ -165,8 +165,17 @@ class WalkForwardManifestOptions:
     confirmatory_contract: ConfirmatoryContract | None = None
 
 
-def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
+def validate_manifest_options(
+    options: WalkForwardManifestOptions,
+    *,
+    require_declared_execution_cost: bool = True,
+) -> None:
     """Fail closed on any invalid or out-of-contract manifest option.
+
+    ``require_declared_execution_cost`` es el unico interruptor de esta funcion y
+    su valor por defecto es el estricto, para que cualquier llamante nuevo nazca
+    protegido. Solo la LECTURA de un manifiesto ya congelado lo apaga, y lo hace
+    en un unico sitio nombrado -- ver ``_options_from_spec``.
 
     No CLI option here can request a retroactive cutoff: the cutoff is always
     derived from the PostgreSQL clock at freeze time plus ``warmup_days``,
@@ -295,6 +304,20 @@ def validate_manifest_options(options: WalkForwardManifestOptions) -> None:
         if not math.isfinite(fee) or not 0 <= fee <= 100:
             raise ValueError(
                 f"fee_bps_per_side for {exchange} must be finite and between 0 and 100"
+            )
+
+    # EL COSTE DE OPERAR NO PUEDE QUEDAR SIN DECLARAR (K65). Los otros cuatro campos de
+    # coleccion -- horizons, sampling_modes, exchanges, sizes_usd -- ya fallaban cerrados
+    # si venian vacios; fee_bps_per_side era el unico que no, y es justo el que decide si
+    # un resultado es un negocio. Un mapa incompleto no dice "esto es gratis": no dice
+    # nada, y hoy se leia como cero. Un 0.0 EXPLICITO sigue pasando -- eso es una
+    # afirmacion que alguien firma, y esta funcion no juzga si es creible.
+    if require_declared_execution_cost:
+        undeclared = sorted(set(options.exchanges) - set(fee_exchanges))
+        if undeclared:
+            raise ValueError(
+                "fee_bps_per_side must declare a fee for every execution exchange "
+                f"before a manifest can be frozen; undeclared: {undeclared}"
             )
 
     if options.spec_version != WALK_FORWARD_SPEC_VERSION_V3:
@@ -664,7 +687,14 @@ def _options_from_spec(
         research_visibility_version=research_visibility_version,
         confirmatory_contract=confirmatory_contract,
     )
-    validate_manifest_options(options)
+    # EL RECHAZO ES AL NACER, NO AL LEER, y es el unico sitio donde se apaga (K65).
+    # Lo ya congelado no se puede reparar desde aqui: pr11-fixed-kernel-v1 vive en 140 con
+    # fee_bps_per_side={} y reescribirlo es PUERTA 1 -- mutar dato de produccion -- y ademas
+    # cambia el manifest_hash que el propio informe valida. Fallar cerrado tambien aqui no
+    # anadiria coste a ningun manifiesto: convertiria un informe que dice "no evaluable" en
+    # una excepcion, y se llevaria por delante a K60, que evalua esa misma fila.
+    # Un manifiesto muerto que se puede LEER es mas util que uno que revienta.
+    validate_manifest_options(options, require_declared_execution_cost=False)
     return options
 
 
