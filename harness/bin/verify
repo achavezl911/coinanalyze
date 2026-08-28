@@ -22,7 +22,35 @@ done
 # rojos reales. Copiar un marcador a una libreta sin la identidad al lado produce
 # exactamente la cifra falsa y plausible que este arnes existe para evitar.
 quien=$(id -un)
-printf '\n%d VERDE   %d ROJO   %d NOMED   ·  medido como %s\n' "$verde" "$rojo" "$nomed" "$quien"
+
+# K63 UN EJE MAS ALLA · EL VEREDICTO TAMPOCO ES UNA PROPIEDAD DEL ARBOL SOLO.
+# harness/bin y harness/checks son ENLACES a repo/harness/*, asi que los checks que
+# corren son los de LA RAMA EN QUE ESTE EL ARBOL. Declarar la identidad y callar la rama
+# produce marcadores que parecen el mismo y no lo son.
+# MEDIDO EL 2026-08-27, y la evidencia es un dia entero de trabajo: se publicaron TRES
+# marcadores como si fueran uno.
+#   26 VERDE 7 ROJO 0 NOMED  ·  arbol en claude/k31-cifra-en-pantalla
+#   25 VERDE 8 ROJO 0 NOMED  ·  misma rama, antes de restaurar K49
+#   24 VERDE 8 ROJO 1 NOMED  ·  arbol en claude/k49-respaldo-no-se-rinde
+# Cada uno cierto de SU arbol, NINGUNO de main, y uno acabo en el traspaso del rol como
+# "el estado". La prueba de que no es teorico: el mismo K31 daba 27 rutas en una rama y
+# 25 en otra, con criterios distintos. No eran cifras en disputa: eran dos arboles.
+#
+# SE LE PREGUNTA A LA CARPETA DE LOS CHECKS, no al repo por su ruta: es la que de verdad
+# acaba de producir el veredicto, y con el enlace de por medio esa es la unica pregunta
+# que no se puede contestar de memoria.
+#
+# "+cambios" cuenta SOLO ficheros VERSIONADOS modificados, que es lo que hace que los
+# checks difieran del SHA que se declara. Un fichero sin versionar al lado no cambia lo
+# que el check ejecuta, y contarlo pondria "+cambios" permanente -y una marca que esta
+# siempre encendida no informa de nada-.
+rama=$(git -C "$B/checks" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')
+[ "$rama" = "HEAD" ] && rama='(detached)'
+sha=$(git -C "$B/checks" rev-parse --short HEAD 2>/dev/null || echo '?')
+[ -n "$(git -C "$B/checks" status --porcelain --untracked-files=no 2>/dev/null)" ] && sha="$sha+cambios"
+arbol="$rama@$sha"
+
+printf '\n%d VERDE   %d ROJO   %d NOMED   ·  medido como %s en %s\n' "$verde" "$rojo" "$nomed" "$quien" "$arbol"
 [ "$nomed" -gt 0 ] && printf 'NOMED no es ROJO. Arregla el canal antes de tocar el codigo.\n'
-printf '%s\t%d\t%d\t%d\t%s\n' "$(date -u +%FT%TZ)" "$verde" "$rojo" "$nomed" "$quien" >> "$B/estado/verify.tsv"
+printf '%s\t%d\t%d\t%d\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$verde" "$rojo" "$nomed" "$quien" "$rama" "$sha" >> "$B/estado/verify.tsv"
 [ "$rojo" -eq 0 ] && [ "$nomed" -eq 0 ]
