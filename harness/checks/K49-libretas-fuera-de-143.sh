@@ -33,6 +33,39 @@ for f in "${!VIVAS[@]}"; do
   [ -r "${VIVAS[$f]}" ] || { echo "NO MEDIDO: no se puede leer la libreta viva ${VIVAS[$f]}"; exit 2; }
 done
 
+# EL RESPALDO PODIA ESTAR FALLANDO CADA 5 MIN Y ESTE CHECK NO SE ENTERABA.
+# MEDIDO el 2026-08-28: coinalyze-libretas.service llevaba fallando desde las 22:10:03Z
+# -un servicio sin User= corre como root pero con HOME VACIO, y sin HOME git no llega a
+# /root/.gitconfig, donde vive el ayudante de credenciales- con 9 commits sin empujar que
+# contenian una sesion entera de auditoria. Y este check seguia en VERDE, porque lo unico
+# que miraba era la EDAD de la copia contra un techo de 24 h: habrian hecho falta 24
+# FALLOS CONSECUTIVOS para que enrojeciera. UN FALLO RUIDOSO QUE NINGUN CHECK LEE ES UN
+# FALLO SILENCIOSO CON PASOS EXTRA.
+# El arreglo del PR 94 hizo que la unit fallara a gritos en cada tick; esto es lo que la
+# escucha. Sin las dos mitades no sirve ninguna.
+UNIT=${K49_UNIT:-coinalyze-libretas.service}
+TIMER=${K49_TIMER:-coinalyze-libretas.timer}
+if command -v systemctl >/dev/null 2>&1; then
+  carga=$(systemctl show "$UNIT" -p LoadState --value 2>/dev/null)
+  case "$carga" in
+    loaded) ;;
+    not-found|"") echo "no hay unit de respaldo instalada ($UNIT): no hay nada empujando las libretas fuera de 143"; exit 1 ;;
+    *) echo "NO MEDIDO: LoadState=$carga para $UNIT"; exit 2 ;;
+  esac
+  resultado=$(systemctl show "$UNIT" -p Result --value 2>/dev/null)
+  salida=$(systemctl show "$UNIT" -p ExecMainStatus --value 2>/dev/null)
+  if [ "$resultado" != "success" ] || [ "$salida" != "0" ]; then
+    motivo=$(journalctl -u "$UNIT" -n 20 --no-pager 2>/dev/null \
+             | grep -iE 'fatal|error|respalda-libretas:' | tail -1 | cut -c1-160)
+    echo "la unit de respaldo FALLO (Result=$resultado ExecMainStatus=$salida): ${motivo:-sin motivo en el journal}"; exit 1
+  fi
+  # Y EL TIMER TIENE QUE ESTAR ARMADO. Una unit que "no ha fallado" porque no la lanza
+  # nadie es el cero-sin-medicion de K60 aplicado a un respaldo: el veredicto mas
+  # tranquilizador posible sobre algo que no esta ocurriendo.
+  systemctl is-active --quiet "$TIMER" 2>/dev/null || {
+    echo "la unit de respaldo no ha fallado, pero su timer ($TIMER) NO esta activo: no la lanza nadie"; exit 1; }
+fi
+
 # TRES ESTADOS, NO UNO. La version anterior metia "no existe", "existe pero vacio" y "no
 # se pudo alcanzar" en el mismo saco y afirmaba ROJO para los tres: dio VERDE, ROJO y
 # VERDE otra vez en minutos, y ese ROJO decia "siguen SOLO en el rootfs de 143" cuando el
@@ -128,6 +161,11 @@ else
   desfase="hechos.tsv es PREFIJO EXACTO del vivo, $(( bytes_vivo - bytes_copia )) B por detras (append-only intacto)"
 fi
 
-total=$(( $(wc -c < "${VIVAS[hechos.tsv]}") + $(wc -c < "${VIVAS[COLA.md]}") \
-        + $(wc -c < "${VIVAS[ESTADO.md]}") + $(wc -c < "${VIVAS[CAMBIOS.md]}") ))
-echo "las 4 libretas ($total B) estan fuera de 143, copia de hace ${horas} h, RESTAURADA y cuadrada contra su manifiesto (6 ficheros); $desfase"
+# LA CIFRA TIENE QUE SER LA DE LA COPIA. Antes se sumaban los ficheros VIVOS y la frase
+# decia que esos bytes estaban fuera de 143: el numero pertenecia a un objeto DISTINTO del
+# que se afirmaba a salvo. Con el desfase normal la diferencia es de bytes y pasa
+# desapercibida; el dia que el respaldo se congele, la cifra seguiria creciendo con el
+# vivo y publicando tranquilidad sobre una copia que ya no crece. Se suma lo restaurado.
+total=$(( $(wc -c < "$TMP/copia/hechos.tsv") + $(wc -c < "$TMP/copia/COLA.md") \
+        + $(wc -c < "$TMP/copia/ESTADO.md") + $(wc -c < "$TMP/copia/CAMBIOS.md") ))
+echo "las 4 libretas RESTAURADAS suman $total B fuera de 143, copia de hace ${horas} h, cuadrada contra su manifiesto (6 ficheros); $desfase"
