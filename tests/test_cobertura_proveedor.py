@@ -368,6 +368,47 @@ def test_el_repaso_trocea_sin_dejar_agujeros_ni_solapar() -> None:
         assert ini_siguiente < fin_previa, "sin solape queda un residuo permanente"
 
 
+@pytest.mark.asyncio
+async def test_el_repaso_cuenta_como_presente_lo_que_YA_ESTA_GUARDADO() -> None:
+    """K66 · un hueco es un dato que NO TENEMOS, no una respuesta que no llego.
+
+    Medido en 140 el 2026-08-28: de los 1325 buckets que historical_resweep_cadence_v1
+    declaraba ausentes, 1312 estaban en long_short_ratio. El 99.0 % de sus huecos eran
+    datos que ya teniamos, porque las observaciones salian SOLO de la respuesta de esa
+    pasada. Si el proveedor contesta truncado, todo lo demas de la ventana le parece
+    ausente aunque este guardado.
+    """
+
+    from scripts.resweep_cadence_gaps import PLANS, observaciones_conocidas
+
+    plan = PLANS[("long_short_ratio", "5min")]
+    inicio = datetime(2026, 8, 20, tzinfo=UTC)
+    guardados = [inicio + timedelta(minutes=5) * i for i in range(6)]
+    aceptado = guardados[0]
+
+    class ConexionQueTieneElDato:
+        def __init__(self) -> None:
+            self.consultas: list[str] = []
+
+        async def fetch(self, sql: str, *args):
+            self.consultas.append(" ".join(sql.split()))
+            return [{"ts": ts} for ts in guardados[1:]]
+
+    conn = ConexionQueTieneElDato()
+    ident = {"symbol": "BTCUSDT_PERP.A"}
+    conocidas = await observaciones_conocidas(
+        conn, plan, ident, inicio, inicio + timedelta(minutes=30), {aceptado}
+    )
+
+    # La union, que es el punto: lo de la pasada MAS lo que ya estaba.
+    assert conocidas == set(guardados)
+    # Y se le pregunta a la tabla del plan, no a una deducida del feed: una tabla
+    # equivocada devolveria el conjunto vacio, que es indistinguible de "no tenemos nada"
+    # y volveria a declarar huecos falsos EN SILENCIO.
+    assert "FROM long_short_ratio" in conn.consultas[0]
+    assert PLANS[("ohlcv_1min", "1min")] is not plan
+
+
 def test_el_repaso_conoce_los_dos_feeds_con_atraso_y_sus_cadencias() -> None:
     """Un feed sin plan NO se toca: se apunta en 'sin_plan' y se deja como estaba."""
     from scripts.resweep_cadence_gaps import PLANS

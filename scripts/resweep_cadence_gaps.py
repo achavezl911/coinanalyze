@@ -67,11 +67,34 @@ class FeedPlan:
     async def store(self, conn, payload, symbol_map, start_ts, end_ts, observed) -> int:
         raise NotImplementedError
 
+    async def almacenado(self, conn, ident, inicio, fin) -> set[datetime]:
+        """Los buckets de esta ventana que YA estan en el almacenamiento canonico.
+
+        La tabla se declara por plan y no se deduce del feed: deducirla seria inventarse
+        donde vive el dato, y una tabla equivocada devolveria el conjunto vacio -- que aqui
+        es indistinguible de 'no tenemos nada' y volveria a declarar huecos falsos, esta
+        vez en silencio.
+        """
+        raise NotImplementedError
+
+    async def _almacenado_en(self, conn, tabla, intervalo, ident, inicio, fin) -> set[datetime]:
+        filas = await conn.fetch(
+            f"SELECT ts FROM {tabla} "  # noqa: S608 - tabla es una constante del plan
+            "WHERE symbol=$1 AND interval=$2 AND ts >= $3 AND ts < $4",
+            ident["symbol"], intervalo, inicio, fin,
+        )
+        return {fila["ts"] for fila in filas}
+
 
 class LongShortPlan(FeedPlan):
     async def store(self, conn, payload, symbol_map, start_ts, end_ts, observed) -> int:
         return await upsert_long_short(
             conn, payload, symbol_map, start_ts, end_ts, observed=observed
+        )
+
+    async def almacenado(self, conn, ident, inicio, fin) -> set[datetime]:
+        return await self._almacenado_en(
+            conn, "long_short_ratio", "5min", ident, inicio, fin
         )
 
 
@@ -80,6 +103,9 @@ class Ohlcv1mPlan(FeedPlan):
         return await upsert_ohlcv(
             conn, payload, symbol_map, start_ts, end_ts, "1min", observed=observed
         )
+
+    async def almacenado(self, conn, ident, inicio, fin) -> set[datetime]:
+        return await self._almacenado_en(conn, "ohlcv", "1min", ident, inicio, fin)
 
 
 PLANS: dict[tuple[str, str], FeedPlan] = {
@@ -130,6 +156,19 @@ def _windows(
         ventanas.append((max(desde, cursor - solape), fin))
         cursor = fin
     return ventanas
+
+
+async def observaciones_conocidas(
+    conn, plan: FeedPlan, ident, inicio: datetime, fin: datetime, aceptados: set[datetime]
+) -> set[datetime]:
+    """Lo que SABEMOS que existe para esta ventana, que es lo que decide si hay hueco.
+
+    Un hueco es un dato que NO TENEMOS. Que la fuente no lo mande en ESTA pasada no lo
+    convierte en hueco si ya esta guardado: eso es una propiedad de la respuesta, no del
+    dato. Por eso lo aceptado en la pasada se une con lo que el almacenamiento canonico
+    ya tiene, que es la otra mitad de la misma pregunta.
+    """
+    return set(aceptados) | await plan.almacenado(conn, ident, inicio, fin)
 
 
 async def _pendientes_en(conn, ident, inicio, fin) -> int:
@@ -231,7 +270,10 @@ async def run(feed: str | None, limit: int, dry_run: bool, archive_exhausted: bo
                         )
                         cobertura = await reconcile_cadence_coverage(
                             conn,
-                            observations=aceptados.get(ident["symbol"], set()),
+                            observations=await observaciones_conocidas(
+                                conn, plan, ident, inicio, fin,
+                                aceptados.get(ident["symbol"], set()),
+                            ),
                             feed=ident["feed"], exchange=ident["exchange"],
                             market=ident["market"], symbol=ident["symbol"],
                             granularity=ident["granularity"],
