@@ -23,6 +23,7 @@ from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG
 from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
 from app.signal_walk_forward import (
     DEFAULT_MANIFEST_NAME,
+    EXECUTION_EXCHANGES,
     SELECTION_POLICY,
     SPEC_V2_SUPPORTED_CONTEXT_VERSION,
     SPEC_V2_SUPPORTED_EVIDENCE_VERSION,
@@ -62,6 +63,16 @@ from app.signal_walk_forward import (
     validate_manifest_options,
 )
 
+# K65 · un manifiesto no puede congelarse dejando sin declarar el coste de un exchange que
+# el mismo declara operar, asi que todo fixture que llegue a la validacion trae el mapa
+# COMPLETO. Se deriva de EXECUTION_EXCHANGES en vez de escribirse a mano para que anadir
+# un exchange no deje estos fixtures a medio tarifar en silencio, que es exactamente el
+# fallo abierto que K65 cierra. binance conserva su 2.0 historica porque el contrato
+# confirmatorio ancla primary_taker_fee_bps a ella (signal_confirmatory.py:262).
+_DECLARED_FEES: tuple[tuple[str, float], ...] = tuple(
+    (exchange, 2.0 if exchange == "binance" else 4.0) for exchange in EXECUTION_EXCHANGES
+)
+
 
 def test_default_manifest_name_is_the_fixed_production_program() -> None:
     assert DEFAULT_MANIFEST_NAME == "pr11-fixed-kernel-v1"
@@ -72,7 +83,26 @@ def test_selection_policy_is_fixed_kernel_no_selection() -> None:
 
 
 def test_valid_default_options_pass_validation() -> None:
-    validate_manifest_options(WalkForwardManifestOptions())
+    validate_manifest_options(WalkForwardManifestOptions(fee_bps_per_side=_DECLARED_FEES))
+
+
+def test_reading_an_already_frozen_manifest_still_accepts_an_empty_fee_map() -> None:
+    """El rechazo del coste sin declarar es al NACER, no al leer (K65).
+
+    pr11-fixed-kernel-v1 vive en 140 con fee_bps_per_side={} y no se puede
+    reescribir sin mutar dato de produccion -- lo que ademas cambiaria el
+    manifest_hash que el propio informe valida. Si la lectura fallara cerrada,
+    ese manifiesto dejaria de poder evaluarse y el informe pasaria de decir "no
+    evaluable" a reventar. Este test fija esa asimetria para que nadie la
+    "endurezca" sin ver lo que tira.
+    """
+
+    validate_manifest_options(
+        WalkForwardManifestOptions(), require_declared_execution_cost=False
+    )
+
+    with pytest.raises(ValueError, match="every execution exchange"):
+        validate_manifest_options(WalkForwardManifestOptions())
 
 
 @pytest.mark.parametrize(
@@ -96,6 +126,8 @@ def test_valid_default_options_pass_validation() -> None:
         {"symbols": ("BTC", "BTC")},
         {"fee_bps_per_side": (("binance", -1.0),)},
         {"fee_bps_per_side": (("okx", 5.0),)},
+        # K65 · un exchange que se declara operar y no se tarifa se leia como gratis.
+        {"fee_bps_per_side": ()},
         {"logic_version": "scalp-summary-v2"},
         {"evidence_version": 0},
     ],
@@ -103,6 +135,23 @@ def test_valid_default_options_pass_validation() -> None:
 def test_invalid_options_fail_closed(kwargs: dict) -> None:
     options = WalkForwardManifestOptions(**kwargs)
     with pytest.raises(ValueError):
+        validate_manifest_options(options)
+
+
+@pytest.mark.skipif(
+    len(EXECUTION_EXCHANGES) < 2,
+    reason="con un solo exchange no existe manifiesto a medio tarifar que inducir",
+)
+def test_a_partially_priced_manifest_fails_closed() -> None:
+    """K65 · el parcial importa mas que el vacio.
+
+    El mapa vacio lo caza cualquiera; el que declara binance y calla bybit
+    sobrevive a "acuerdate de pasar --fee-bps-per-side" y deja un exchange
+    operando gratis dentro de un manifiesto que por lo demas parece completo.
+    """
+
+    options = WalkForwardManifestOptions(fee_bps_per_side=_DECLARED_FEES[:1])
+    with pytest.raises(ValueError, match=str(EXECUTION_EXCHANGES[1])):
         validate_manifest_options(options)
 
 
@@ -274,6 +323,7 @@ async def test_freeze_runtime_sql_reads_no_outcomes_or_performance() -> None:
             test_days=7,
             fold_count=1,
             horizons=(15,),
+            fee_bps_per_side=_DECLARED_FEES,
         ),
     )
 
@@ -469,6 +519,7 @@ def _spec_v2_kwargs() -> dict[str, object]:
         "outcome_version": SPEC_V2_SUPPORTED_OUTCOME_VERSION,
         "execution_snapshot_version": SPEC_V2_SUPPORTED_EXECUTION_SNAPSHOT_VERSION,
         "research_visibility_version": SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION,
+        "fee_bps_per_side": _DECLARED_FEES,
     }
 
 
@@ -1171,7 +1222,7 @@ def _spec_v3_kwargs() -> dict[str, object]:
     kwargs = _spec_v2_kwargs()
     kwargs["spec_version"] = WALK_FORWARD_SPEC_VERSION_V3
     kwargs["symbols"] = ("BTCUSDT_PERP.A",)
-    kwargs["fee_bps_per_side"] = (("binance", 2.0),)
+    kwargs["fee_bps_per_side"] = _DECLARED_FEES
     kwargs["confirmatory_contract"] = ConfirmatoryContract(**_confirmatory_contract_kwargs())
     return kwargs
 

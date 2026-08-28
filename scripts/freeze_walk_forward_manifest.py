@@ -310,7 +310,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         default=None,
         metavar="EXCHANGE=BPS",
-        help="Optional explicit taker fee scenario to freeze into the manifest. Empty by default.",
+        help=(
+            "REQUIRED, once per --exchange: the explicit taker fee frozen into the "
+            "manifest. A manifest that declares an exchange it does not price cannot "
+            "be frozen (K65); an explicit 0.0 is accepted, silence is not."
+        ),
     )
     parser.add_argument(
         "--spec-version",

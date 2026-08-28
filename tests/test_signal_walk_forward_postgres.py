@@ -15,6 +15,7 @@ from app.signal_outcomes import OUTCOME_HORIZONS_MINUTES, OUTCOME_SETTLEMENT_LAG
 from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
 from app.signal_visibility import certify_final_outcomes, certify_research_bundles
 from app.signal_walk_forward import (
+    EXECUTION_EXCHANGES,
     WALK_FORWARD_REPORT_VERSION_V2,
     WALK_FORWARD_SPEC_VERSION_V2,
     WalkForwardManifestOptions,
@@ -30,6 +31,27 @@ from app.signal_walk_forward import (
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_SQL = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
+
+# K65 · CONGELAR EXIGE DECLARAR EL COSTE DE CADA EXCHANGE QUE EL MANIFIESTO DICE OPERAR.
+# El mapa se deriva de EXECUTION_EXCHANGES en vez de escribirse a mano para que anadir un
+# exchange no deje estos fixtures a medio tarifar en silencio -- que es literalmente el
+# fallo abierto que K65 cierra, cometido dentro de la prueba que deberia cazarlo.
+_DECLARED_FEES: tuple[tuple[str, float], ...] = tuple(
+    (exchange, 2.0 if exchange == "binance" else 4.0) for exchange in EXECUTION_EXCHANGES
+)
+
+
+def _priced_options(**kwargs) -> WalkForwardManifestOptions:
+    """Opciones congelables: el coste va declarado salvo que el test diga otra cosa.
+
+    Existe para que un test cuyo sujeto NO es el coste no tenga que repetir el mapa
+    entero, y para que la razon viva en un solo sitio con su cita. Un test que quiera
+    inducir el fallo abierto pasa fee_bps_per_side explicitamente y este ayudante se
+    aparta.
+    """
+
+    kwargs.setdefault("fee_bps_per_side", _DECLARED_FEES)
+    return WalkForwardManifestOptions(**kwargs)
 
 
 def _ddl(marker: str) -> str:
@@ -139,7 +161,7 @@ async def conn():
 async def test_freeze_creates_manifest_with_future_cutoff(conn: asyncpg.Connection) -> None:
     async with conn.transaction():
         manifest = await freeze_walk_forward_manifest(
-            conn, WalkForwardManifestOptions(name="pr11-future-cutoff-test")
+            conn, _priced_options(name="pr11-future-cutoff-test")
         )
 
     now = await conn.fetchval("SELECT clock_timestamp()")
@@ -156,7 +178,7 @@ async def test_freeze_creates_manifest_with_future_cutoff(conn: asyncpg.Connecti
 
 @pytest.mark.asyncio
 async def test_freeze_same_name_same_spec_is_idempotent(conn: asyncpg.Connection) -> None:
-    options = WalkForwardManifestOptions(name="pr11-idempotent-test")
+    options = _priced_options(name="pr11-idempotent-test")
     async with conn.transaction():
         first = await freeze_walk_forward_manifest(conn, options)
     async with conn.transaction():
@@ -174,13 +196,13 @@ async def test_freeze_same_name_same_spec_is_idempotent(conn: asyncpg.Connection
 async def test_freeze_same_name_different_spec_fails_closed(conn: asyncpg.Connection) -> None:
     async with conn.transaction():
         await freeze_walk_forward_manifest(
-            conn, WalkForwardManifestOptions(name="pr11-conflict-test", fold_count=4)
+            conn, _priced_options(name="pr11-conflict-test", fold_count=4)
         )
 
     with pytest.raises(ValueError):
         async with conn.transaction():
             await freeze_walk_forward_manifest(
-                conn, WalkForwardManifestOptions(name="pr11-conflict-test", fold_count=2)
+                conn, _priced_options(name="pr11-conflict-test", fold_count=2)
             )
 
     count = await conn.fetchval("SELECT count(*) FROM signal_walk_forward_manifest")
@@ -196,7 +218,7 @@ async def test_freeze_never_reads_outcome_or_performance_tables(
 
     async with conn.transaction():
         without_outcomes = await freeze_walk_forward_manifest(
-            conn, WalkForwardManifestOptions(name="pr11-no-outcomes-test")
+            conn, _priced_options(name="pr11-no-outcomes-test")
         )
     assert without_outcomes["manifest_id"] is not None
 
@@ -210,7 +232,7 @@ async def test_freeze_never_reads_outcome_or_performance_tables(
 async def test_manifest_table_rejects_update(conn: asyncpg.Connection) -> None:
     async with conn.transaction():
         manifest = await freeze_walk_forward_manifest(
-            conn, WalkForwardManifestOptions(name="pr11-update-test")
+            conn, _priced_options(name="pr11-update-test")
         )
     with pytest.raises(asyncpg.PostgresError):
         await conn.execute(
@@ -223,7 +245,7 @@ async def test_manifest_table_rejects_update(conn: asyncpg.Connection) -> None:
 async def test_manifest_table_rejects_delete(conn: asyncpg.Connection) -> None:
     async with conn.transaction():
         manifest = await freeze_walk_forward_manifest(
-            conn, WalkForwardManifestOptions(name="pr11-delete-test")
+            conn, _priced_options(name="pr11-delete-test")
         )
     with pytest.raises(asyncpg.PostgresError):
         await conn.execute(
@@ -236,7 +258,7 @@ async def test_manifest_table_rejects_delete(conn: asyncpg.Connection) -> None:
 async def test_manifest_table_rejects_truncate(conn: asyncpg.Connection) -> None:
     async with conn.transaction():
         await freeze_walk_forward_manifest(
-            conn, WalkForwardManifestOptions(name="pr11-truncate-test")
+            conn, _priced_options(name="pr11-truncate-test")
         )
     with pytest.raises(asyncpg.PostgresError):
         await conn.execute("TRUNCATE signal_walk_forward_manifest")
@@ -1080,7 +1102,7 @@ async def test_future_fold_cannot_pass_oos_gate(
 ) -> None:
     async with conn.transaction():
         manifest = await freeze_walk_forward_manifest(
-            conn, WalkForwardManifestOptions(name="pr11-future-fold-gate", fold_count=1)
+            conn, _priced_options(name="pr11-future-fold-gate", fold_count=1)
         )
     async with conn.transaction(isolation="repeatable_read", readonly=True):
         report = await evaluate_walk_forward(conn, manifest["manifest_name"])
@@ -1196,7 +1218,7 @@ async def test_evaluator_performs_no_writes(
 ) -> None:
     async with conn.transaction():
         manifest = await freeze_walk_forward_manifest(
-            conn, WalkForwardManifestOptions(name="pr11-read-only-test")
+            conn, _priced_options(name="pr11-read-only-test")
         )
 
     async with conn.transaction(isolation="repeatable_read", readonly=True):
@@ -1560,7 +1582,7 @@ async def test_spec_v2_evaluate_walk_forward_gates_by_certificate_end_to_end(
         both_venues=False,
     )
 
-    options = WalkForwardManifestOptions(
+    options = _priced_options(
         name="pr25-spec-v2-e2e-test",
         warmup_days=1,
         test_days=7,

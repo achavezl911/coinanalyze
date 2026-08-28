@@ -11,9 +11,24 @@ import asyncpg
 import pytest
 
 import scripts.freeze_walk_forward_manifest as cli
+from app.signal_walk_forward import EXECUTION_EXCHANGES
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_SQL = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
+
+# K65 · el congelador ya no acepta un manifiesto que declare operar en un exchange sin
+# tarifarlo, y estos flags no son decorado: sin ellos, estas mismas pruebas de regresion
+# congelaban manifiestos que afirmaban en silencio que operar sale gratis en los dos
+# sitios. Se derivan de EXECUTION_EXCHANGES para que anadir un exchange no las deje a
+# medio tarifar sin ruido. binance conserva su 2.0 porque --primary-taker-fee-bps la ancla.
+_FEE_FLAGS = [
+    argumento
+    for exchange in EXECUTION_EXCHANGES
+    for argumento in (
+        "--fee-bps-per-side",
+        f"{exchange}={2.0 if exchange == 'binance' else 4.0}",
+    )
+]
 
 _SPEC_V2_FLAGS = {
     "--logic-version": "scalp-summary-v1",
@@ -60,11 +75,9 @@ def _spec_v3_args(
         "3",
         "--symbol",
         "BTCUSDT_PERP.A",
-        "--fee-bps-per-side",
-        "binance=2.0",
         "--output",
         str(output),
-    ]
+    ] + _FEE_FLAGS
     if acknowledge:
         args.append("--acknowledge-confirmatory-primary-hypothesis")
     for flag, value in _SPEC_V3_FLAGS.items():
@@ -133,7 +146,9 @@ def dsn(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
 
 def test_legacy_invocation_resolves_spec_v1_defaults(dsn: str, tmp_path: Path) -> None:
     output = tmp_path / "legacy.json"
-    cli.main(["--name", "cli-legacy-defaults-test", "--output", str(output)])
+    cli.main(
+        ["--name", "cli-legacy-defaults-test", "--output", str(output)] + _FEE_FLAGS
+    )
 
     manifest = json.loads(output.read_text(encoding="utf-8"))
     assert manifest["spec"]["spec_version"] == 1
@@ -155,7 +170,14 @@ def test_legacy_invocation_resolves_spec_v1_defaults(dsn: str, tmp_path: Path) -
 
 def test_explicit_spec_v2_invocation_uses_exact_supplied_tuple(dsn: str, tmp_path: Path) -> None:
     output = tmp_path / "spec_v2.json"
-    args = ["--name", "cli-spec-v2-explicit-test", "--spec-version", "2", "--output", str(output)]
+    args = [
+        "--name",
+        "cli-spec-v2-explicit-test",
+        "--spec-version",
+        "2",
+        "--output",
+        str(output),
+    ] + _FEE_FLAGS
     for flag, value in _SPEC_V2_FLAGS.items():
         args += [flag, value]
     cli.main(args)
