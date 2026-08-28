@@ -1,0 +1,8 @@
+[Unit]
+Description=Respalda las cuatro libretas del arnes fuera del nodo Proxmox (K49)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/srv/coinanalyze/harness/bin/respalda-libretas

@@ -1,0 +1,13 @@
+[Unit]
+Description=Empuja las libretas cada 5 min (K49 compara el respaldo con el vivo byte a byte)
+
+[Timer]
+# OnCalendar y no OnUnitActiveSec: este ultimo se ancla a la ultima activacion y deja
+# NEXT vacio hasta que algo lo arranque. Un respaldo que depende de haber arrancado ya
+# es justo el que no corre cuando hace falta.
+OnCalendar=*:0/5
+AccuracySec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
