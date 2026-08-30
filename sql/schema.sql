@@ -2364,6 +2364,16 @@ ALTER TABLE daily_verdict_snapshot
   ADD CONSTRAINT daily_verdict_snapshot_pr24_regime_provenance_check CHECK (
     logic_version NOT IN ('daily-verdict-v2','daily-verdict-v3','daily-verdict-v4')
     OR regime_logic_version IS NOT DISTINCT FROM 2
+    -- K64: daily-verdict-v4 admite ADEMAS el regimen 3. El brazo del 2 queda INTACTO y
+    -- no es simetrico con signal_observation a proposito: alli la evidencia 7 es nueva y
+    -- no tiene legado, aqui v4 ya tiene 45 filas escritas con regimen 2 y reinterpretarlas
+    -- no se pide ni se hace. La etiqueta v4 abarcara las dos reglas, y eso NO es el fallo
+    -- de K62 porque el discriminador sigue estando en la fila: regime_logic_version dice
+    -- cual de las dos la produjo. Lo que K62 castiga es una etiqueta que abarca dos reglas
+    -- SIN nada que las separe.
+    OR (
+      logic_version = 'daily-verdict-v4' AND regime_logic_version IS NOT DISTINCT FROM 3
+    )
     OR (
       regime_logic_version IS NULL AND regime_score IS NULL AND regime_label IS NULL
       AND metrics_snapshot_ts IS NULL
@@ -2509,8 +2519,14 @@ ALTER TABLE signal_observation
   DROP CONSTRAINT IF EXISTS signal_observation_pr25_regime_provenance_check;
 ALTER TABLE signal_observation
   ADD CONSTRAINT signal_observation_pr25_regime_provenance_check CHECK (
-    evidence_version NOT IN (3,4,5,6)
-    OR regime_logic_version IS NOT DISTINCT FROM 2
+    -- K64 · PUERTA CONCEDIDA 2026-08-30. Se ANADE el 7 a la lista y se le exige el
+    -- regimen 3. NO es una relajacion: medido contra el espejo, hoy la evidencia 7 pasa
+    -- este CHECK TRIVIALMENTE porque 7 no esta en la lista, asi que la pareja incoherente
+    -- (7,2) entra sin que nada la pare. Esto lo ENDURECE. El brazo del 2 queda intacto:
+    -- reinterpretar las 129252 filas de evidencia 6 ya publicadas no se pide y no se hace.
+    evidence_version NOT IN (3,4,5,6,7)
+    OR (evidence_version <= 6 AND regime_logic_version IS NOT DISTINCT FROM 2)
+    OR (evidence_version  = 7 AND regime_logic_version IS NOT DISTINCT FROM 3)
     OR (
       regime_logic_version IS NULL AND regime_score IS NULL AND regime_label IS NULL
       AND metrics_snapshot_ts IS NULL AND price_cutoff_at IS NULL
@@ -2524,7 +2540,16 @@ ALTER TABLE signal_observation
   DROP CONSTRAINT IF EXISTS signal_observation_pr25_reference_time_check;
 ALTER TABLE signal_observation
   ADD CONSTRAINT signal_observation_pr25_reference_time_check CHECK (
-    evidence_version NOT IN (5,6) OR (
+    -- K64 · PUERTA CONCEDIDA 2026-08-30. El 7 entra en la lista porque si no, este
+    -- contrato no se RELAJA: CADUCA. Con evidencia 7 fuera de la lista, el CHECK pasa
+    -- trivialmente para el 100 % de lo que se escriba a partir de ahora, y la coherencia
+    -- del precio de referencia -- los tres campos juntos o los tres nulos, y la marca no
+    -- posterior a la observacion -- dejaria de vigilarse en la CAPA DE ESCRITURA.
+    -- K21, K22 y K24 la replican, y K24 incluso mejor que este CHECK -- re-deriva los
+    -- tres campos desde el contexto congelado --, pero K24 mira 170 filas de UN simbolo
+    -- en 5 h sobre 153544, o sea el 0.11 %. La constraint guarda el 100 % en la
+    -- escritura. No son la misma capa y no se sustituyen.
+    evidence_version NOT IN (5,6,7) OR (
       (
         reference_price IS NULL AND reference_price_source IS NULL
         AND reference_price_at IS NULL

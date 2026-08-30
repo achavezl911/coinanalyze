@@ -159,16 +159,18 @@ async def test_pr22_new_metrics_snapshot_has_regime_logic_version_2() -> None:
     conn = Connection()
     await insert_snapshot(conn, snap)  # type: ignore[arg-type]
     assert "regime_logic_version" in conn.query
-    # K62: la regla cambio el 2026-08-27T04:43:05Z y la etiqueta sigue en 2
-    # porque el CHECK de signal_observation no admite otra hasta la evidencia 7
-    # (K64). Ver el docstring de REGIME_LOGIC_VERSION en app/metrics.py.
-    assert conn.args[-1] == 2
+    # K62/K64: la regla cambio el 2026-08-27T04:43:05Z y desde el 2026-08-30 la
+    # etiqueta que se ESCRIBE es la 3, con la evidencia 7 y las tres parejas de
+    # CHECK. Ver el docstring de REGIME_LOGIC_VERSION en app/metrics.py.
+    assert conn.args[-1] == 3
 
 
 def test_pr24_new_signal_observation_has_evidence_version_5() -> None:
-    # PR25 advanced the live writer to evidence_version=6 (prospective,
-    # additive research-visibility contract). See app/signal_visibility.py.
-    assert SIGNAL_EVIDENCE_VERSION == 6
+    # K64 advanced the live writer to evidence_version=7 (prospective: ninguna
+    # fila existente se reinterpreta). El nombre de esta funcion lleva desde la
+    # v5 sin actualizarse y se deja igual a proposito: renombrarla ahora romperia
+    # la unica pista de cuando nacio.
+    assert SIGNAL_EVIDENCE_VERSION == 7
 
 
 class _NoopConnection:

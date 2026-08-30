@@ -42,6 +42,10 @@ FROZEN_EVIDENCE_REGIME_LOGIC_VERSION: dict[int, int] = {
     4: 2,
     5: 2,
     6: 2,
+    # K64, 2026-08-30: la evidencia 7 nace bajo la logica de regimen 3. Este mapa CRECE
+    # -- es su via de crecimiento declarada arriba -- y lo de antes NO se toca: 3/4/5/6
+    # siguen clavados al 2 porque se publicaron bajo esa regla.
+    7: 3,
 }
 
 STRONG_BEARISH = "strong_bearish"

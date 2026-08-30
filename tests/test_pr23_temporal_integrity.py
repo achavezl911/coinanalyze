@@ -251,17 +251,17 @@ async def test_macro_daily_query_excludes_sessions_after_cutoff() -> None:
 
 
 def test_pr24_versions_change_only_evidence_and_daily_logic() -> None:
-    # PR25 advanced the live writer to evidence_version=6; see
-    # app/signal_visibility.py for the prospective research-visibility
-    # contract this cohort is eligible for.
-    assert SIGNAL_EVIDENCE_VERSION == 6
+    # K64 advanced the live writer to evidence_version=7, the first cohort
+    # written under regime logic 3. La v6 se queda con su regimen 2 en el mapa
+    # congelado: subir el escritor NO reinterpreta lo publicado.
+    assert SIGNAL_EVIDENCE_VERSION == 7
     assert DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v4"
     assert SCALP_SIGNAL_LOGIC_VERSION == "scalp-summary-v1"
     assert SIGNAL_SAMPLING_VERSION == 1
     assert REPLAY_CONTEXT_VERSION == 1
-    # K62: deberia ir por 3 desde el 2026-08-27T04:43:05Z, pero el CHECK de
-    # signal_observation lo impide hasta que exista evidencia 7 (K64).
-    assert REGIME_LOGIC_VERSION == 2
+    # K62/K64: subio a 3 el 2026-08-30, CON la evidencia 7 y con las tres
+    # parejas de CHECK. Subirla sola tumbo el colector 302 s el 08-27.
+    assert REGIME_LOGIC_VERSION == 3
     assert OUTCOME_VERSION == 1
     assert EXECUTION_SNAPSHOT_VERSION == 1
     assert DAILY_VERDICT_SNAPSHOT_VERSION == 1

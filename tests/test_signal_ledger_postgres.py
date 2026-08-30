@@ -412,7 +412,7 @@ async def test_pr24_v5_signal_does_not_copy_legacy_regime() -> None:
             FROM signal_observation ORDER BY observation_id
             """
         )
-        assert legacy_only["evidence_version"] == 6
+        assert legacy_only["evidence_version"] == 7
         for field in (
             "regime_score",
             "regime_label",
@@ -478,7 +478,7 @@ async def test_pr22_signal_observation_copies_regime_logic_version() -> None:
         row = await conn.fetchrow(
             "SELECT evidence_version,regime_logic_version FROM signal_observation"
         )
-        assert row["evidence_version"] == 6
+        assert row["evidence_version"] == 7
         assert row["regime_logic_version"] == REGIME_LOGIC_VERSION
     finally:
         await _drop_schema(conn, schema)
@@ -501,7 +501,7 @@ async def test_evidence_and_reference_provenance_are_frozen() -> None:
         assert row["reference_price_source"] == "futures_realtime_combined"
         assert row["reference_price_at"] is not None
         assert row["reference_price_at"] <= row["observed_at"]
-        assert row["evidence_version"] == 6
+        assert row["evidence_version"] == 7
         evidence = row["evidence"]
         if isinstance(evidence, str):
             evidence = json.loads(evidence)

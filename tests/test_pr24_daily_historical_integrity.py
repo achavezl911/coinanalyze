@@ -172,20 +172,22 @@ def test_pr24_version_boundaries_and_regime_guards() -> None:
     assert DAILY_VERDICT_LOGIC_VERSION == "daily-verdict-v4"
     assert DAILY_VERDICT_OUTCOME_VERSION == 1
     assert DAILY_VERDICT_OUTCOME_HORIZONS == (7, 14)
-    # PR25 advanced the live writer to evidence_version=6; the historical
+    # K64 advanced the live writer to evidence_version=7; the historical
     # PR24 constraint text below remains verbatim in schema.sql (superseded
     # by the PR25 block appended after it, never rewritten in place).
-    assert SIGNAL_EVIDENCE_VERSION == 6
+    # EL LITERAL SE QUEDA COMO LITERAL a proposito: comparar contra la propia
+    # constante seria compararla consigo misma y dejaria de avisar. Este assert
+    # es un cable trampa -- que salte es lo que obliga a mirar los tres CHECK.
+    assert SIGNAL_EVIDENCE_VERSION == 7
     assert "evidence_version NOT IN (3,4,5)" in schema
     assert "'daily-verdict-v2','daily-verdict-v3','daily-verdict-v4'" in schema
     assert SCALP_SIGNAL_LOGIC_VERSION == "scalp-summary-v1"
     assert SIGNAL_SAMPLING_VERSION == 1
     assert REPLAY_CONTEXT_VERSION == 1
-    # K62: el escritor cambio de regla el 2026-08-27T04:43:05Z (K59) y esta
-    # constante DEBERIA ir por 3, pero subirla sola rompe produccion: el CHECK
-    # signal_observation_pr25_regime_provenance_check (sql/schema.sql:2476) exige
-    # regimen 2 para evidencia 3/4/5/6. Probado y revertido, 302 s sin escribir.
-    # Se mueve con la evidencia 7, que es K64. Ver app/metrics.py.
-    assert REGIME_LOGIC_VERSION == 2
+    # K62/K64, 2026-08-30: el escritor cambio de regla el 2026-08-27T04:43:05Z
+    # (K59) y esta constante subio a 3 CON la evidencia 7 y con las tres parejas
+    # de CHECK, no sola. Subirla sola es lo que rompio produccion 302 s el 08-27.
+    # Si vuelve a moverse, se mueve igual: evidencia nueva + los tres CHECK.
+    assert REGIME_LOGIC_VERSION == 3
     assert OUTCOME_VERSION == 1
     assert EXECUTION_SNAPSHOT_VERSION == 1
