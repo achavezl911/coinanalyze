@@ -198,9 +198,35 @@ async def test_pr25_frozen_map_is_immune_to_a_live_regime_logic_version_bump(
 
 
 def test_pr25_frozen_evidence_regime_map_is_exact() -> None:
+    """K64: el mapa CRECE con 7 -> 3 y lo anterior NO se mueve.
+
+    Que crezca es su via declarada: una evidencia moderna ausente del mapa falla cerrada.
+    Lo que no puede pasar es que crecer reinterprete lo publicado, asi que las cuatro
+    parejas viejas se siguen fijando una por una y no por conteo.
+    """
     from app.signal_regime import FROZEN_EVIDENCE_REGIME_LOGIC_VERSION
 
-    assert FROZEN_EVIDENCE_REGIME_LOGIC_VERSION == {3: 2, 4: 2, 5: 2, 6: 2}
+    assert FROZEN_EVIDENCE_REGIME_LOGIC_VERSION == {3: 2, 4: 2, 5: 2, 6: 2, 7: 3}
+
+
+@pytest.mark.asyncio
+async def test_K64_la_evidencia_7_sale_disponible_con_regimen_3_y_la_6_sigue_con_el_2() -> None:
+    """EL CRITERIO DE K64, ejecutado contra el CASE congelado REAL y no razonado.
+
+    Las tres a la vez, que es como lo pide: una observacion de evidencia 7 escrita hoy
+    sale 'available', una de evidencia 6 anterior al corte SIGUE saliendo 'available' con
+    su regimen 2, y la pareja que NO esta en el mapa -evidencia 7 con regimen 2- sigue
+    siendo RECHAZADA. Sin este ultimo brazo, un mapa que lo admitiera todo pasaria igual y
+    no se distinguiria de haber borrado la regla.
+    """
+    assert await _reader_status(evidence_version=7, regime_logic_version=3) == "available"
+    assert await _reader_status(evidence_version=6, regime_logic_version=2) == "available"
+
+    # CONTROL POSITIVO, obligatorio: la pareja incoherente NO pasa.
+    assert await _reader_status(evidence_version=7, regime_logic_version=2) == "unavailable"
+    # Y una evidencia que nadie ha ensenado a leer sigue fallando CERRADA en vez de
+    # heredar la constante viva.
+    assert await _reader_status(evidence_version=8, regime_logic_version=3) == "unavailable"
 
 
 def _evidence(

@@ -25,7 +25,23 @@ SIGNAL_FAMILY = "scalp"
 # visibility contract (app.signal_visibility.RESEARCH_VISIBILITY_VERSION=1).
 # v1-v5 remain historical under their original publication-time semantics;
 # this bump is prospective only, no existing row is reinterpreted.
-SIGNAL_EVIDENCE_VERSION = 6
+# K64, 2026-08-30: v7 es la primera cohorte escrita con la logica de regimen 3 -- el
+# componente whale ABSTENIENDOSE en vez de votar cero, que cambio lo que el score
+# significa el 2026-08-27T04:43:05Z. Sube la EVIDENCIA y no solo el regimen porque el
+# mapa congelado de signal_regime.py:40 clava 6 -> 2, y tiene que seguir clavandolo: v6
+# se publico bajo la regla vieja y reinterpretarla seria mentir sobre 129252 filas.
+# Prospectivo: ninguna fila existente se reinterpreta.
+#
+# LO QUE NO SUBE, Y NO ES UN OLVIDO. Dos contratos siguen en 6 porque su propio
+# comentario dice que NO deben moverse:
+#   signal_walk_forward.SPEC_V2_SUPPORTED_EVIDENCE_VERSION -- una semantica cientifica
+#     nueva exige una spec v3 explicita, no heredar la constante viva. La v7 no se
+#     evaluara con spec v2 hasta que exista esa spec, y eso es la garantia, no el fallo.
+#   signal_visibility._CERTIFIED_EVIDENCE_VERSION -- su tupla congelada es la que el
+#     CHECK signal_research_bundle_visibility_pr25_frozen_tuple_check exige. K25 pide
+#     literalmente "0 certificados apuntando a evidence_version<>6", asi que dejarla
+#     quieta lo mantiene coherente. Las observaciones de v7 NO se certificaran todavia.
+SIGNAL_EVIDENCE_VERSION = 7
 SIGNAL_SAMPLING_VERSION = 1
 
 _LONG_STATES = frozenset({"Long Momentum", "Long Pullback"})

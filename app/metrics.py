@@ -100,7 +100,7 @@ fuese el balance completo. Antes se sumaba 0 por cada componente ausente, asi qu
 parecia medido y no lo estaba.
 """
 
-REGIME_LOGIC_VERSION = 2
+REGIME_LOGIC_VERSION = 3
 """Version de la LOGICA con la que se calculo el regimen, no del esquema.
 
 Sube cuando cambia lo que el score SIGNIFICA, porque tres consultas filtran por esta
@@ -110,33 +110,36 @@ calcularon con la MISMA regla. Dos reglas bajo una etiqueta convierten esa garan
 contraria, sin que nada falle.
 
   NULL -> 2  2026-08-12T03:11Z
+  2 -> 3     2026-08-30, con evidencia 7 (K64)
 
-ESTA CONSTANTE ESTA MAL HOY Y NO SE PUEDE ARREGLAR AQUI. El 2026-08-27T04:43:05Z el
-componente whale -30 de 100, el de mas peso- dejo de votar cero y paso a abstenerse (K59),
-o sea que `measured` baja de 100 a 70 para BTC y ETH y el score se renormaliza sobre otro
-denominador. Cambio lo que el numero significa y la etiqueta se quedo en 2, asi que hay
-dos reglas bajo una etiqueta. El instante esta medido al segundo: ultimo whale_intensity
-cero exacto 04:42:05Z, arranque del servicio 04:42:48Z, primera fila de la era nueva
-04:43:05Z.
+POR QUE SUBIO A 3. El 2026-08-27T04:43:05Z el componente whale -30 de 100, el de mas
+peso- dejo de votar cero y paso a abstenerse (K59), o sea que `measured` baja de 100 a 70
+para BTC y ETH y el score se renormaliza sobre otro denominador. Cambio lo que el numero
+significa y la etiqueta se quedo en 2: dos reglas bajo una etiqueta, que es exactamente lo
+que esta columna existe para impedir. El instante esta medido al segundo: ultimo
+whale_intensity cero exacto 04:42:05Z, arranque del servicio 04:42:48Z, primera fila de la
+era nueva 04:43:05Z.
 
-POR QUE NO BASTA SUBIRLA A 3, PROBADO EN PRODUCCION Y REVERTIDO: la base de datos tiene
-su propia copia de esta regla y es mas estricta que el codigo.
+POR QUE NO BASTABA SUBIRLA SOLA, Y COSTO 302 s DE PRODUCCION APRENDERLO. La base tiene su
+propia copia de esta regla y es mas estricta que el codigo:
+signal_observation_pr25_regime_provenance_check clavaba el regimen 2 para la evidencia
+3/4/5/6. Con la constante en 3 y la evidencia en 6, CADA INSERT de signal_observation
+violaba ese CHECK y el colector de scalp dejaba de escribir. Desplegado el 2026-08-27 a
+las 15:06:51Z y revertido a las 15:12Z, con CheckViolationError en el journal.
 
-    sql/schema.sql:2476  signal_observation_pr25_regime_provenance_check
-      CHECK (evidence_version NOT IN (3,4,5,6)
-             OR regime_logic_version IS NOT DISTINCT FROM 2
-             OR <bloque de regimen entero a NULL>)
+LA SALIDA NO FUE RELAJAR EL CHECK -eso reinterpretaria las 129252 filas de evidencia 6 ya
+publicadas- sino PUBLICAR EVIDENCIA 7 y darle su propia pareja. Tres constraints admiten
+ahora la pareja nueva DEJANDO INTACTO su brazo del 2, con puerta concedida el 2026-08-30 y
+ensayadas antes contra el espejo:
+  signal_observation_pr25_regime_provenance_check       (7 -> regimen 3)
+  daily_verdict_snapshot_pr24_regime_provenance_check   (daily-verdict-v4 -> regimen 3)
+  signal_observation_pr25_reference_time_check          (el 7 entra en la lista)
+La tercera no admite una pareja: impide que el contrato del precio de referencia CADUQUE
+para todo lo nuevo, que es lo que pasa cuando una version sale de la lista de un
+`NOT IN (...)`. Ninguna cifra de arriba se cita de memoria: estan en hechos.tsv.
 
-Con la constante en 3 y SIGNAL_EVIDENCE_VERSION en 6, cada INSERT de signal_observation
-viola ese CHECK y el colector de scalp deja de escribir. Desplegado a las 15:06:51Z y
-revertido a las 15:12Z: 302 s sin una sola observacion, con
-`asyncpg.exceptions.CheckViolationError` en el journal de coinalyze-scalp.
-
-La salida NO es tocar el CHECK -eso reinterpreta 111434 filas de evidencia 6 ya
-publicadas- sino publicar evidencia 7, que arrastra otros tres contratos congelados al
-mismo 6: _CERTIFIED_EVIDENCE_VERSION (signal_visibility.py:49),
-SPEC_V2_SUPPORTED_EVIDENCE_VERSION (signal_walk_forward.py:101) y el mapa de
-signal_regime.py:40. Esta escrito entero como K64 en harness/COLA.md.
+SI ESTA CONSTANTE VUELVE A SUBIR, sube CON una evidencia nueva y con las tres parejas.
+Subirla sola es el fallo del 08-27 otra vez, y el sintoma es un colector mudo.
 """
 
 
