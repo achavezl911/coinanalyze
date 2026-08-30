@@ -650,6 +650,14 @@ async def reconcile_cadence_coverage(
             # Recuperar y archivar son excluyentes: una exige todos los buckets, la otra
             # ninguno.
             if _source_skipped(gap_start, gap_end):
+                # LOS DOS CONTEOS SE MIDEN AQUI, no se afirman. _source_skipped ya
+                # comprueba las dos mitades -- straddle y ni un bucket del tramo en lo
+                # devuelto --, pero no las DEJABA ESCRITAS, y K04 solo puede re-derivar
+                # lo escrito: auditado el 2026-08-30, su rama de ausencia aceptaba una
+                # fila que declaraba 12 buckets dentro del hueco. 'dentro' se recuenta en
+                # vez de poner un 0 literal porque un 0 escrito a mano no es una medida,
+                # y si algun dia las dos comprobaciones se separaran, esto lo diria.
+                dentro = sum(1 for b in returned if gap_start <= b < gap_end)
                 resultado = await conn.execute(
                     """
                     UPDATE data_gap
@@ -662,12 +670,14 @@ async def reconcile_cadence_coverage(
                             'method','source_response_absence',
                             'proof_source',$3::text,
                             'response_first_bucket',$4::timestamptz,
-                            'response_last_bucket',$5::timestamptz
+                            'response_last_bucket',$5::timestamptz,
+                            'window_returned_rows',$6::int,
+                            'response_returned_rows',$7::int
                         )
                     WHERE id=$1 AND status='unresolved'
                     """,
                     int(row["id"]), SOURCE_ABSENCE_REASON, detection_source,
-                    first_returned, last_returned,
+                    first_returned, last_returned, dentro, len(returned),
                 )
                 if resultado == "UPDATE 1":
                     archived += 1
@@ -791,6 +801,8 @@ async def archive_source_response_absence(
     window_end: datetime,
     response_first_bucket: datetime,
     response_last_bucket: datetime,
+    window_returned_rows: int,
+    response_returned_rows: int,
     proof_source: str,
 ) -> int:
     """Archive a window the source COVERS and does not publish. La OTRA prueba.
@@ -811,10 +823,32 @@ async def archive_source_response_absence(
     El straddle se exige AQUI y no se acepta por parametro, por lo mismo que la otra
     funcion exige un control: si el llamante pudiera afirmar que la respuesta rodeaba el
     hueco, la prueba re-derivable seria lo que alguien tecleo.
+
+    LOS DOS CONTEOS SE ESCRIBEN, Y ES UNA CORRECCION DE MI PROPIO CODIGO DE HOY. La
+    primera version guardaba el straddle y nada mas, y el straddle prueba la mitad
+    izquierda de la frase -- que la fuente CUBRIO el tramo -- pero no la derecha, que es
+    la que de verdad afirma: que DENTRO no vino nada. Auditado el 2026-08-30, el
+    predicado de K04 aceptaba una fila que declaraba 12 buckets DENTRO del hueco, y el
+    censo lo remata: 492 filas de ausencia con CERO conteos frente a 409 de horizonte con
+    409. La rama de horizonte si re-derivaba su afirmacion; esta no.
+
+    Los dos numeros salen del MISMO sondeo que produjo las dos marcas -- una sola
+    respuesta ancha --, nunca de la linea de ordenes: scripts/archive_beyond_horizon.py
+    no tiene ni tendra una opcion para teclearlos, por lo mismo de siempre.
     """
     window_start, window_end = _validated_window(window_start, window_end)
     if not all((feed, exchange, market, symbol, granularity, proof_source)):
         raise ValueError("gap identity cannot be empty")
+    if window_returned_rows != 0:
+        raise ValueError(
+            "this is not an absence: the response returned rows INSIDE the window, so "
+            "the data exists and archiving it would both lie and throw it away"
+        )
+    if response_returned_rows <= 0:
+        raise ValueError(
+            "an empty response is not proof of coverage: without rows around the gap "
+            "this is an exhausted horizon at best, and silence at worst"
+        )
     response_first_bucket = _aware_utc(response_first_bucket, "response_first_bucket")
     response_last_bucket = _aware_utc(response_last_bucket, "response_last_bucket")
     if response_first_bucket >= window_start or response_last_bucket < window_end:
@@ -838,6 +872,8 @@ async def archive_source_response_absence(
                 'response_last_bucket',$11::timestamptz,
                 'window_start',$6::timestamptz,
                 'window_end',$7::timestamptz,
+                'window_returned_rows',$12::int,
+                'response_returned_rows',$13::int,
                 'checked_at',clock_timestamp()
             )
         WHERE feed=$1 AND feed_class='cadence'
@@ -848,6 +884,7 @@ async def archive_source_response_absence(
         feed, exchange, market, symbol, granularity,
         window_start, window_end, SOURCE_ABSENCE_REASON,
         proof_source, response_first_bucket, response_last_bucket,
+        int(window_returned_rows), int(response_returned_rows),
     )
     return int(result.rsplit(" ", 1)[-1]) if result.startswith("UPDATE ") else 0
 

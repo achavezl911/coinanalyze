@@ -527,9 +527,18 @@ async def test_postgres_liquidation_silence_creates_no_gap_but_queue_loss_does(
         queue: asyncio.Queue = asyncio.Queue(maxsize=1)
         monkeypatch.setattr(scalp, "LIQ_QUEUE", queue)
 
+        # ACOTADO POR IDENTIDAD, no global. Las dos consultas de este test miraban
+        # data_gap ENTERA -- count(*) sin WHERE y fetchrow sin WHERE --, asi que solo
+        # pasaban sobre una base recien nacida. En CI eso se cumple y en el espejo, que
+        # es una copia de produccion con 33 filas, daba un ROJO que no era un fallo. Un
+        # rojo falso repetido ensena a ignorar el que si lo es, y ademas dejaba el
+        # fetchrow eligiendo una fila cualquiera: el dia que fallase de verdad, el
+        # diccionario comparado podia ser de otro hueco.
+        SUYO = "feed='liquidations' AND exchange='binance' AND symbol='BTCUSDT_PERP.A'"
+
         # A connected event stream can be silent; no timer or empty queue creates a gap.
         await persist_liquidation_health_snapshot(conn)
-        assert await conn.fetchval("SELECT count(*) FROM data_gap") == 0
+        assert await conn.fetchval(f"SELECT count(*) FROM data_gap WHERE {SUYO}") == 0
 
         event_at = datetime(2026, 8, 9, 12, tzinfo=UTC)
         item = (
@@ -546,7 +555,8 @@ async def test_postgres_liquidation_silence_creates_no_gap_but_queue_loss_does(
         await safe_liq_put(item)
         await persist_liquidation_health_snapshot(conn)
         row = await conn.fetchrow(
-            "SELECT feed,exchange,symbol,evidence_type,status,start_ts,end_ts FROM data_gap"
+            "SELECT feed,exchange,symbol,evidence_type,status,start_ts,end_ts "
+            f"FROM data_gap WHERE {SUYO}"
         )
         assert dict(row) == {
             "feed": "liquidations",
@@ -713,6 +723,16 @@ K04_PRUEBA_SE_SOSTIENE = """
           AND recovery_metadata->>'response_last_bucket'  IS NOT NULL
           AND (recovery_metadata->>'response_first_bucket')::timestamptz <  start_ts
           AND (recovery_metadata->>'response_last_bucket')::timestamptz  >= end_ts
+          AND (
+                resolved_at < coalesce(
+                  (SELECT min(resolved_at) FROM data_gap
+                    WHERE recovery_metadata ? 'response_returned_rows'),
+                  'infinity'::timestamptz)
+             OR (    recovery_metadata->>'window_returned_rows'   IS NOT NULL
+                 AND recovery_metadata->>'response_returned_rows' IS NOT NULL
+                 AND (recovery_metadata->>'window_returned_rows')::int   = 0
+                 AND (recovery_metadata->>'response_returned_rows')::int > 0)
+              )
         WHEN 'provider_horizon_exhausted' THEN
               recovery_metadata->>'window_returned_rows'  IS NOT NULL
           AND recovery_metadata->>'control_returned_rows' IS NOT NULL
@@ -924,6 +944,8 @@ async def test_postgres_la_ausencia_de_la_fuente_tambien_pasa_la_re_derivacion_d
             window_start=inicio, window_end=inicio + timedelta(minutes=5),
             response_first_bucket=inicio - timedelta(hours=2),
             response_last_bucket=inicio + timedelta(hours=2),
+            window_returned_rows=0,
+            response_returned_rows=47,
             proof_source="test wide window",
         )
         assert tocadas == 1
@@ -964,6 +986,8 @@ async def test_postgres_una_respuesta_que_no_rodea_el_hueco_no_prueba_ausencia()
                 window_start=inicio, window_end=inicio + timedelta(minutes=5),
                 response_first_bucket=inicio + timedelta(minutes=1),
                 response_last_bucket=inicio + timedelta(hours=2),
+                window_returned_rows=0,
+                response_returned_rows=47,
                 proof_source="test wide window",
             )
         assert await conn.fetchval(
@@ -1036,6 +1060,212 @@ async def test_postgres_se_repara_el_archivado_mudo_y_NO_se_pisa_uno_con_prueba(
         assert intacta == "source_response_absence", (
             "una fila con prueba escrita no se reescribe por esta via"
         )
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_la_ausencia_declara_CERO_dentro_y_K04_lo_exige() -> None:
+    """La rama de ausencia no re-derivaba su afirmacion central, y era un fallo mio.
+
+    El straddle prueba la mitad IZQUIERDA de la frase -- que la fuente cubrio el tramo --
+    y jamas la derecha, que es lo que la frase de verdad afirma: que DENTRO no vino nada.
+    Auditado el 2026-08-30, el predicado aceptaba una fila que DECLARABA 12 buckets
+    dentro del hueco. El brazo que muerde es el segundo: la misma fila, con el conteo
+    cambiado a 12, tiene que dejar de pasar.
+    """
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 24, 10, 10, tzinfo=UTC)
+        gap_id = await _cadence_gap(conn, start=inicio, end=inicio + timedelta(minutes=5))
+        await archive_source_response_absence(
+            conn,
+            feed="ohlcv_1min", exchange="binance", market="perpetual",
+            symbol="BTCUSDT_PERP.A", granularity="1min",
+            window_start=inicio, window_end=inicio + timedelta(minutes=5),
+            response_first_bucket=inicio - timedelta(hours=2),
+            response_last_bucket=inicio + timedelta(hours=2),
+            window_returned_rows=0, response_returned_rows=47,
+            proof_source="test wide window",
+        )
+        meta = await conn.fetchval(
+            "SELECT recovery_metadata FROM data_gap WHERE id=$1", gap_id
+        )
+        assert '"window_returned_rows": 0' in meta
+        assert '"response_returned_rows": 47' in meta
+        assert await conn.fetchval(
+            f"SELECT {K04_PRUEBA_SE_SOSTIENE} FROM data_gap WHERE id=$1", gap_id
+        ) is True
+
+        # EL BRAZO QUE MUERDE: la misma fila diciendo que dentro SI vinieron filas.
+        await conn.execute(
+            "UPDATE data_gap SET recovery_metadata=jsonb_set(recovery_metadata,"
+            "'{window_returned_rows}','12'::jsonb) WHERE id=$1", gap_id
+        )
+        assert await conn.fetchval(
+            f"SELECT {K04_PRUEBA_SE_SOSTIENE} FROM data_gap WHERE id=$1", gap_id
+        ) is False, "una fila que declara buckets DENTRO del hueco no prueba una ausencia"
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_el_legado_se_dispensa_por_TIEMPO_y_no_por_nulidad() -> None:
+    """Las 484 filas viejas del motor vivo no llevan los conteos porque cuando se
+    escribieron no existian. Exigirselos pondria K04 ROJO sobre filas SANAS, y un rojo
+    falso repetido ensena a ignorar el que si lo es.
+
+    El corte es min(resolved_at) de las filas que YA traen la clave: lo anterior queda
+    dispensado y lo posterior tiene que traerla. Discriminar por NULIDAD en vez de por
+    tiempo daria el mismo resultado para la fila vieja y ninguno para la nueva sin
+    conteos, que es justo la que hay que cazar: por eso el tercer brazo.
+    """
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 20, 3, tzinfo=UTC)
+        legado = await _cadence_gap(conn, start=inicio, end=inicio + timedelta(minutes=5))
+        nueva = await _cadence_gap(
+            conn, start=inicio + timedelta(days=1), end=inicio + timedelta(days=1, minutes=5)
+        )
+        # La fila que FIJA el corte: la primera que trae la clave.
+        conconteos = await _cadence_gap(
+            conn, start=inicio + timedelta(days=2), end=inicio + timedelta(days=2, minutes=5)
+        )
+        await archive_source_response_absence(
+            conn,
+            feed="ohlcv_1min", exchange="binance", market="perpetual",
+            symbol="BTCUSDT_PERP.A", granularity="1min",
+            window_start=inicio + timedelta(days=2),
+            window_end=inicio + timedelta(days=2, minutes=5),
+            response_first_bucket=inicio + timedelta(days=2) - timedelta(hours=2),
+            response_last_bucket=inicio + timedelta(days=2) + timedelta(hours=2),
+            window_returned_rows=0, response_returned_rows=44,
+            proof_source="test wide window",
+        )
+        corte = await conn.fetchval(
+            "SELECT resolved_at FROM data_gap WHERE id=$1", conconteos
+        )
+
+        # Un archivado sin conteos ANTERIOR al corte: dispensado.
+        await conn.execute(
+            "UPDATE data_gap SET status='unrecoverable',resolved_at=$2,"
+            "recovery_metadata=jsonb_build_object('method','source_response_absence',"
+            "'response_first_bucket',$3::timestamptz,'response_last_bucket',$4::timestamptz)"
+            " WHERE id=$1",
+            legado, corte - timedelta(hours=1),
+            inicio - timedelta(hours=1), inicio + timedelta(hours=1),
+        )
+        # Y otro IDENTICO pero POSTERIOR al corte: ese ya no se dispensa.
+        await conn.execute(
+            "UPDATE data_gap SET status='unrecoverable',resolved_at=$2,"
+            "recovery_metadata=jsonb_build_object('method','source_response_absence',"
+            "'response_first_bucket',$3::timestamptz,'response_last_bucket',$4::timestamptz)"
+            " WHERE id=$1",
+            nueva, corte + timedelta(hours=1),
+            inicio + timedelta(days=1) - timedelta(hours=1),
+            inicio + timedelta(days=1) + timedelta(hours=1),
+        )
+
+        assert await conn.fetchval(
+            f"SELECT {K04_PRUEBA_SE_SOSTIENE} FROM data_gap WHERE id=$1", legado
+        ) is True, "al legado anterior al corte no se le exigen conteos que no existian"
+        assert await conn.fetchval(
+            f"SELECT {K04_PRUEBA_SE_SOSTIENE} FROM data_gap WHERE id=$1", nueva
+        ) is False, "despues del corte, un archivado sin conteos es un archivado sin prueba"
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_no_se_archiva_una_ausencia_con_filas_dentro_ni_con_ancha_vacia() -> None:
+    """Las dos negativas de los conteos, en el escritor y no solo en el verificador.
+
+    Si vinieron filas DENTRO, el dato existe: archivarlo miente y ademas lo tira. Si la
+    ancha vuelve vacia, no hay cobertura que probar: eso es horizonte agotado como mucho,
+    y silencio como poco. Sin estas dos, el unico sitio donde se cazan las dos formas es
+    K04, o sea DESPUES de haber escrito la mentira en la tabla.
+    """
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 24, 10, 10, tzinfo=UTC)
+        gap_id = await _cadence_gap(conn, start=inicio, end=inicio + timedelta(minutes=5))
+        comunes = {
+            "feed": "ohlcv_1min", "exchange": "binance", "market": "perpetual",
+            "symbol": "BTCUSDT_PERP.A", "granularity": "1min",
+            "window_start": inicio, "window_end": inicio + timedelta(minutes=5),
+            "response_first_bucket": inicio - timedelta(hours=2),
+            "response_last_bucket": inicio + timedelta(hours=2),
+            "proof_source": "test wide window",
+        }
+        with pytest.raises(ValueError, match="not an absence"):
+            await archive_source_response_absence(
+                conn, **comunes, window_returned_rows=3, response_returned_rows=47
+            )
+        with pytest.raises(ValueError, match="not proof of coverage"):
+            await archive_source_response_absence(
+                conn, **comunes, window_returned_rows=0, response_returned_rows=0
+            )
+        assert await conn.fetchval(
+            "SELECT status FROM data_gap WHERE id=$1", gap_id
+        ) == "unresolved"
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_el_motor_vivo_tambien_deja_escritos_los_dos_conteos() -> None:
+    """EL CABO SUELTO QUE HABRIA ROTO K04 EN LA PRIMERA HORA.
+
+    reconcile_cadence_coverage escribe source_response_absence por su propia via, y
+    escribia las dos marcas y NINGUN conteo. Como el corte del legado es min(resolved_at)
+    de las filas que traen la clave, en cuanto la herramienta escribiera la primera, cada
+    fila NUEVA del motor vivo -- que corre cada ciclo -- habria empezado a caer como
+    'archivado sin prueba' siendo SANA. Un rojo que no es un fallo, creciendo solo.
+
+    _source_skipped ya comprobaba las dos mitades; lo que faltaba era dejarlas escritas.
+    """
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 21, 4, tzinfo=UTC)
+        cadencia = timedelta(minutes=1)
+        # La fuente contesta 10 buckets y se salta el sexto: hueco de UNO, rodeado.
+        todos = [inicio + cadencia * i for i in range(10)]
+        saltado = todos[5]
+        devueltos = {b for b in todos if b != saltado}
+        gap_id = await _cadence_gap(conn, start=saltado, end=saltado + cadencia)
+
+        await reconcile_cadence_coverage(
+            conn,
+            observations=devueltos,
+            feed="ohlcv_1min", exchange="binance", market="perpetual",
+            symbol="BTCUSDT_PERP.A", granularity="1min",
+            start=inicio, end=inicio + cadencia * 10, cadence=cadencia,
+            detection_source="test motor vivo",
+            source_response_buckets=devueltos,
+        )
+
+        fila = await conn.fetchrow(
+            "SELECT status,recovery_metadata FROM data_gap WHERE id=$1", gap_id
+        )
+        assert fila["status"] == "unrecoverable"
+        assert '"method": "source_response_absence"' in fila["recovery_metadata"]
+        assert '"window_returned_rows": 0' in fila["recovery_metadata"]
+        assert '"response_returned_rows": 9' in fila["recovery_metadata"]
+        assert await conn.fetchval(
+            f"SELECT {K04_PRUEBA_SE_SOSTIENE} FROM data_gap WHERE id=$1", gap_id
+        ) is True, "lo que escribe el motor vivo tiene que pasar la re-derivacion de K04"
     finally:
         await tx.rollback()
         await conn.close()

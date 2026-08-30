@@ -304,6 +304,11 @@ async def _procesar(
             window_end=gap.end,
             response_first_bucket=sondeo.primera,
             response_last_bucket=sondeo.ultima,
+            # Los dos conteos salen del MISMO Sondeo que dio las dos marcas. No hay
+            # opcion de linea de ordenes para ellos y no la va a haber: si se pudieran
+            # teclear, la prueba re-derivable seria lo que alguien escribio.
+            window_returned_rows=sondeo.filas_dentro,
+            response_returned_rows=sondeo.ancha_filas,
             proof_source=PROOF_SOURCE,
         )
     return salida

@@ -44,12 +44,42 @@
 #   source_response_absence      la fuente CUBRIO el hueco y no lo mando.
 #                                response_first_bucket < start_ts
 #                                AND response_last_bucket >= end_ts
+#                                AND window_returned_rows = 0
+#                                AND response_returned_rows > 0
 #   provider_horizon_exhausted   la fuente ya no sirve esa ventana, y no es que
 #                                este caida: window_returned_rows = 0
 #                                AND control_returned_rows > 0 (control reciente)
 # Un method desconocido es "sin prueba" A PROPOSITO: el dia que alguien invente un
 # tercer camino de archivado, este check lo para hasta que se le ensene a
 # verificarlo. Es lo contrario de la lista negra, que dejaba pasar lo que no conocia.
+#
+# v4, 2026-08-30: LA RAMA DE AUSENCIA NO RE-DERIVABA SU AFIRMACION CENTRAL, y el fallo
+# es de esta misma jornada. El straddle prueba la mitad IZQUIERDA de la frase -- que la
+# fuente cubrio el tramo -- y jamas la derecha, que es la que la frase de verdad afirma:
+# que DENTRO no vino nada. Inducido sobre filas sinteticas con el predicado literal:
+#     real de hoy (44-48 de 49 alrededor, 0 dentro) ......... aceptaba
+#     metadata que DECLARA 12 filas dentro del hueco ........ aceptaba   <- falsa
+#     CONTROL NEG: la respuesta no rodea el hueco ........... rechazaba
+# Censo que lo remata: 492 filas de ausencia con CERO conteos, frente a 409 de horizonte
+# con 409. La rama de horizonte si re-derivaba lo suyo; esta no.
+#
+# EL LEGADO SE DISCRIMINA POR TIEMPO, NUNCA POR NULIDAD. Las 484 filas viejas del motor
+# vivo no llevan los conteos porque cuando se escribieron no existian, y exigirselos
+# pondria K04 ROJO sobre 492 filas SANAS -- un rojo que no es un fallo, y un rojo falso
+# repetido ensena a ignorar el que si lo es. El corte es min(resolved_at) de las filas
+# que YA traen la clave: todo lo archivado antes de que el escritor supiera escribirla
+# queda dispensado, y todo lo posterior tiene que traerla. Es una subconsulta SIN
+# correlacion, asi que Postgres la evalua una sola vez. Si nadie la trae todavia, el
+# coalesce a 'infinity' dispensa a todas: el dia que se escriba la primera, el corte se
+# fija solo y ya no se mueve, porque un min sobre filas nuevas nunca baja.
+#
+# LO QUE ESTE CHECK SIGUE SIN EXIGIR, Y SE DICE EN VEZ DE DESCUBRIRSE DESPUES: no pide
+# DENSIDAD en la ventana ancha. Una respuesta de dos buckets con cuatro horas de hueco
+# en medio rodea el tramo y pasa. Es evidencia fina de "cubrio", pero es exactamente el
+# mismo raser que usa el detector vivo, y ponerle un umbral aqui seria inventarme una
+# cifra que nadie ha medido. Las 8 filas del 2026-08-30 se auditaron contra el proveedor
+# y dan 48, 45, 48, 44 y 44 de 49 con cero dentro, o sea que hoy la densidad sobra; el
+# dia que alguien archive con dos buckets, esto es lo que hay que volver a mirar.
 #
 # Se cuentan tres cosas y cualquiera lo pone ROJO:
 #   1. huecos 'unresolved' de mas de 24 h
@@ -91,6 +121,16 @@ sin_prueba=$(leer sin_prueba "SELECT count(*) FROM data_gap
           AND recovery_metadata->>'response_last_bucket'  IS NOT NULL
           AND (recovery_metadata->>'response_first_bucket')::timestamptz <  start_ts
           AND (recovery_metadata->>'response_last_bucket')::timestamptz  >= end_ts
+          AND (
+                resolved_at < coalesce(
+                  (SELECT min(resolved_at) FROM data_gap
+                    WHERE recovery_metadata ? 'response_returned_rows'),
+                  'infinity'::timestamptz)
+             OR (    recovery_metadata->>'window_returned_rows'   IS NOT NULL
+                 AND recovery_metadata->>'response_returned_rows' IS NOT NULL
+                 AND (recovery_metadata->>'window_returned_rows')::int   = 0
+                 AND (recovery_metadata->>'response_returned_rows')::int > 0)
+              )
         WHEN 'provider_horizon_exhausted' THEN
               recovery_metadata->>'window_returned_rows'  IS NOT NULL
           AND recovery_metadata->>'control_returned_rows' IS NOT NULL
