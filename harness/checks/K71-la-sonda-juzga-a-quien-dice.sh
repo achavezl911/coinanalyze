@@ -26,13 +26,31 @@
 # este check tiene que decirlo en vez de seguir presumiendo de un peligro que ya no existe.
 #
 # QUE EXIGE, y los cuatro brazos ponen ROJO por separado:
-#   1 COBERTURA   cada (feed,exchange) con filas 'unresolved' en 140 tiene sonda declarada.
-#                 El inventario se lee de 140, no de una lista escrita a mano aqui: una
-#                 lista a mano envejece sin avisar y este check dejaria de morder el dia que
-#                 aparezca un feed nuevo.
+#   1 COBERTURA   cada (feed,exchange) que el sistema RECOLECTA, mas cada una que tenga
+#                 filas 'unresolved' de cadencia en 140, tiene sonda declarada.
 #   2 IDENTIDAD   la sonda traduce el simbolo canonico al del PROVEEDOR de ESE exchange,
 #                 EJECUTANDO su funcion. Sin ejecutarla solo se comprobaria que existe un
 #                 diccionario, que es justo lo que ya habia.
+#
+# v2, 2026-08-30: EL BRAZO 2 SE JUBILABA SOLO EL DIA QUE K04 CERRARA, y es K25/K52 otra
+# vez: su inventario salia de status='unresolved', o sea del conjunto que SOBREVIVE y no
+# del ELEGIBLE. Las 3 filas de open_interest_5min@bybit eran la UNICA razon por la que
+# tenia dientes. Inducido inyectando la traduccion buggy de antes de #108:
+#     inventario de HOY   (5 parejas, con bybit) -> malas=1  ROJO, caza
+#     inventario POST-K04 (4 parejas, sin bybit) -> malas=0  PASA, no caza
+# Y el brazo 3 habria seguido imprimiendo en VERDE que las bolsas difieren: un check
+# presumiendo de un peligro contra el que ya no prueba nada. El inventario VACIO si
+# estaba cubierto; el que no lo estaba era el PARCIAL, que es el que llega solo.
+#
+# AHORA EL INVENTARIO DEL BRAZO 2 SALE DE LO QUE EL CICLO VIVO RECOLECTA:
+# app.ingest.BARRIDO_CADENCIA, que es la declaracion del ingest -- (tabla, feed, exchange,
+# intervalo, cadencia, margen) -- y NO de la herramienta que se esta auditando, que seria
+# comprobar el mapa contra si mismo. Ese catalogo no se vacia porque se cierren huecos, y
+# el dia que alguien anada una octava serie sin sonda, el brazo 1 lo dice.
+# El inventario de 140 se conserva y se UNE, porque cubre lo contrario: un detector que
+# apunte un feed que el barrido no conoce. Que ese inventario venga VACIO ya no es NO
+# MEDIDO -- es la buena noticia --, y para no confundirlo con "no pude preguntar" se
+# sondea aparte que 140 conteste.
 #   3 CONSECUENCIA  binance y bybit difieren de verdad en 140 (ver arriba).
 #   4 NEGATIVA    un (feed,exchange) NO declarado se RECHAZA, no se le adivina endpoint.
 #                 Adivinarlo mal da cero filas por la razon equivocada, y cero filas por la
@@ -49,10 +67,20 @@ REPO=/srv/coinanalyze/repo
 PY="$REPO/.venv/bin/python"
 [ -x "$PY" ] || { echo "NO MEDIDO: falta el venv del repo en $PY"; exit 2; }
 
-# --- inventario de 140: que (feed,exchange) tienen filas sin resolver -------------------
-INV=$("$B/bin/prodsql" "SELECT feed||' '||exchange FROM data_gap WHERE status='unresolved'
+# --- 140 contesta? Se pregunta APARTE del inventario, porque un inventario vacio es la
+# buena noticia y no se puede confundir con no haber podido preguntar.
+VIVO=$("$B/bin/prodsql" "SELECT count(*) FROM data_gap" 2>/dev/null \
+       | tr -d ' ' | grep -E '^[0-9]+$' | head -1)
+case "${VIVO:-}" in
+  ''|*[!0-9]*) echo "NO MEDIDO: 140 no contesto la cuenta de data_gap"; exit 2 ;;
+esac
+
+# --- inventario de 140: que (feed,exchange) DE CADENCIA tienen filas sin resolver -------
+# feed_class='cadence' porque un flujo de sucesos no se sondea contando filas de una
+# ventana, y exigirle sonda seria pedirle a la herramienta que mienta sobre el.
+INV=$("$B/bin/prodsql" "SELECT feed||' '||exchange FROM data_gap
+       WHERE status='unresolved' AND feed_class='cadence'
        GROUP BY 1 ORDER BY 1" 2>/dev/null | grep -E '^[a-z0-9_]+ [a-z0-9_]+$')
-[ -n "$INV" ] || { echo "NO MEDIDO: 140 no devolvio el inventario de (feed,exchange) sin resolver"; exit 2; }
 
 # --- control positivo, medido en 140 en esta misma pasada ------------------------------
 DIF=$("$B/bin/prodsql" "SELECT round(min(abs(b.oi_close-y.oi_close)
@@ -79,7 +107,22 @@ except Exception as exc:  # noqa: BLE001
     print(f"NO MEDIDO: no se pudo importar la herramienta ({type(exc).__name__}: {exc})")
     sys.exit(2)
 
-inventario = [tuple(l.split()) for l in os.environ["K71_INVENTARIO"].splitlines() if l.strip()]
+try:
+    # El catalogo de lo que el CICLO VIVO recolecta. Sale del ingest, no de la
+    # herramienta que se audita: comprobar el mapa contra si mismo no diria nada.
+    from app.ingest import BARRIDO_CADENCIA
+except Exception as exc:  # noqa: BLE001
+    print(f"NO MEDIDO: no se pudo leer el catalogo del ciclo vivo ({type(exc).__name__}: {exc})")
+    sys.exit(2)
+
+catalogo = sorted({(feed, exchange) for _, feed, exchange, *_ in BARRIDO_CADENCIA})
+if not catalogo:
+    print("NO MEDIDO: BARRIDO_CADENCIA esta vacio; no hay catalogo que auditar")
+    sys.exit(2)
+en_prod = [tuple(l.split()) for l in os.environ["K71_INVENTARIO"].splitlines() if l.strip()]
+# La UNION: lo que se recolecta -que no se vacia- mas lo que hoy tiene huecos -que cubre
+# un detector apuntando un feed que el barrido no conoce-.
+inventario = sorted(set(catalogo) | set(en_prod))
 dif = float(os.environ["K71_DIF"])
 fallos = []
 
@@ -133,8 +176,10 @@ else:
     if not esperado_bybit or esperado_bybit == canon:
         print(f"NO MEDIDO: el catalogo no da un simbolo de bybit distinto para {canon}")
         sys.exit(2)
+    # SOBRE EL CATALOGO, no sobre el inventario de huecos: la traduccion de bybit se
+    # ejecuta aunque no quede una sola fila sin resolver. Ese era el fallo de la v1.
     malas = []
-    for feed, exchange in inventario:
+    for feed, exchange in catalogo:
         try:
             obtenido = traduce(feed, exchange, canon)
         except Exception as exc:  # noqa: BLE001
@@ -183,11 +228,12 @@ if fallos:
     sys.exit(1)
 
 print(
-    f"las {len(inventario)} parejas (feed,exchange) con huecos sin resolver en 140 tienen "
-    f"sonda declarada y la sonda pide el simbolo del proveedor que toca -- bybit traduce a "
-    f"'{BYBIT_SYMBOL_MAP[canon]}' y binance se queda en '{canon}' --, un feed no declarado "
-    f"se rechaza, y confundirlos importaria: binance y bybit difieren {dif} % en el ultimo "
-    f"ts comun de open interest"
+    f"las {len(inventario)} parejas (feed,exchange) auditadas tienen sonda declarada "
+    f"-- {len(catalogo)} que el ciclo vivo recolecta mas {len(en_prod)} con huecos sin "
+    f"resolver en 140 --, y la traduccion se EJECUTA sobre las {len(catalogo)} del "
+    f"catalogo, no sobre los huecos que sobrevivan: bybit da '{BYBIT_SYMBOL_MAP[canon]}' "
+    f"y binance se queda en '{canon}'. Un feed no declarado se rechaza, y confundirlos "
+    f"importaria: binance y bybit difieren {dif} % en el ultimo ts comun de open interest"
 )
 PY
 exit $?
