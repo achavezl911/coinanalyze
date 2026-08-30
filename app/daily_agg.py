@@ -22,7 +22,12 @@ from app.db import (
     monitor_service_lock,
     wait_for_stop_or_lock_loss,
 )
-from app.ingest import rollup_ohlcv_5m, seconds_until_aligned_run, upsert_ohlcv
+from app.ingest import (
+    barrido_cadencia_persistido,
+    rollup_ohlcv_5m,
+    seconds_until_aligned_run,
+    upsert_ohlcv,
+)
 from app.interpretation import evaluate_setups
 from app.logging_setup import configure_logging
 from app.metrics import (
@@ -880,6 +885,20 @@ async def cycle(
             rolled_5m = await rollup_ohlcv_5m(
                 conn, settings.SYMBOLS, inicio_5m, fin_5m, only_missing=True
             )
+            # EL BARRIDO ANCHO DE CADENCIA, y va JUSTO DESPUES DEL ROLLUP a proposito:
+            # al reves apuntaria como hueco de 5min lo que el rollup estaba a punto de
+            # construir con minutos que ya tenemos, o sea filas de data_gap que nacen
+            # resueltas. El orden respecto a apply_retention, en cambio, NO es
+            # load-bearing: la ventana se topa explicitamente en
+            # HARD_DATA_RETENTION_DAYS, luego lo que la purga va a borrar cae fuera de
+            # todos modos. Se dice porque las dos vecindades se leen igual y solo una
+            # importa.
+            barrido = await barrido_cadencia_persistido(
+                conn,
+                settings.SYMBOLS,
+                hard_days=settings.HARD_DATA_RETENTION_DAYS,
+                ahora=datetime.now(UTC),
+            )
             await apply_retention(
                 conn,
                 settings.HARD_DATA_RETENTION_DAYS,
@@ -892,7 +911,10 @@ async def cycle(
             f"daily_candles={daily_candles},h4_candles={h4_candles},"
             f"spot_candles={spot_candles},baselines={baselines},"
             f"daily_rows={inserted},verdicts={verdicts},outcomes={outcomes},"
-            f"oi_daily={oi_daily},rolled_5m={rolled_5m}"
+            f"oi_daily={oi_daily},rolled_5m={rolled_5m},"
+            f"cadencia_declarada={barrido['ventanas']},"
+            f"cadencia_omitida={barrido['omitidas']},"
+            f"cadencia_recuperada={barrido['recuperadas']}"
         )
         if ownership is None:
             await heartbeat(conn, "daily", detail=heartbeat_detail)
