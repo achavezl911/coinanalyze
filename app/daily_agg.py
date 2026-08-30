@@ -22,7 +22,7 @@ from app.db import (
     monitor_service_lock,
     wait_for_stop_or_lock_loss,
 )
-from app.ingest import seconds_until_aligned_run, upsert_ohlcv
+from app.ingest import rollup_ohlcv_5m, seconds_until_aligned_run, upsert_ohlcv
 from app.interpretation import evaluate_setups
 from app.logging_setup import configure_logging
 from app.metrics import (
@@ -605,6 +605,20 @@ async def rollup_open_interest_daily(conn: asyncpg.Connection) -> int:
     return total
 
 
+def ventana_barrido_5m(ahora: datetime, hard_days: int) -> tuple[int, int]:
+    """Ventana del barrido de 5min, en epoch. DEBE CONTENER lo que la purga va a borrar.
+
+    Esta fuera de cycle() para que se pueda fijar en una prueba, porque el dia de mas es
+    justo la clase de detalle que alguien simplifica de vuelta a hard_days sin ver que
+    con eso el orden respecto a apply_retention deja de significar nada: lo que se va a
+    borrar caeria fuera del barrido y colocarlo antes seria decorativo.
+    """
+    return (
+        int((ahora - timedelta(days=hard_days + 1)).timestamp()),
+        int(ahora.timestamp()),
+    )
+
+
 async def apply_retention(
     conn: asyncpg.Connection,
     hard_days: int,
@@ -840,6 +854,32 @@ async def cycle(
             # el resumen fuera despues, ese dia se perderia sin haberse consolidado jamas --
             # y en silencio, porque la serie solo empezaria un dia mas tarde.
             oi_daily = await rollup_open_interest_daily(conn)
+            # EL 5min NO SE CURA SOLO, y esto se midio: el ciclo del ingest solo resume
+            # su propia ventana de peticion -40 minutos-, asi que un 1min que llegue mas
+            # tarde por recuperacion nunca produce su vela de 5. La noche del 2026-08-29
+            # se recuperaron 4464 buckets de 1min del apagon y el 5min siguio con 1440
+            # huecos, 894 de ellos con sus CINCO minutos ya guardados. El barrido mira
+            # todo lo que el 1min alcanza y no lo que trajo una respuesta: es la leccion
+            # de K66, y reusar la funcion viva en vez de escribir otra es la de K67.
+            # VA ANTES DE apply_retention Y LA VENTANA LLEVA UN DIA DE MAS, y las dos
+            # cosas son la misma decision: el 1min se borra a los
+            # HARD_DATA_RETENTION_DAYS (90) y el 5min aguanta HTF (400), asi que detras
+            # del DELETE ya no queda con que construir la vela y el hueco se fija en la
+            # serie de 5min durante los 400 dias siguientes.
+            # EL +1 ES LO QUE HACE QUE EL ORDEN IMPORTE. Con la ventana clavada en 90 lo
+            # que la purga esta a punto de borrar ya cae FUERA del barrido, y colocarlo
+            # antes no protegeria de nada: seria una precaucion decorativa. Con un dia de
+            # margen, los minutos que cruzaron los 90 se consolidan en esta misma pasada
+            # y se borran despues. Importa cuando el servicio ha estado parado y vuelve
+            # con dias acumulados, que es justo cuando nadie esta mirando.
+            # only_missing: lo cerrado no cambia, y reescribirlo cada hora solo produce
+            # tuplas muertas contra un thin pool que no tiene margen.
+            inicio_5m, fin_5m = ventana_barrido_5m(
+                datetime.now(UTC), settings.HARD_DATA_RETENTION_DAYS
+            )
+            rolled_5m = await rollup_ohlcv_5m(
+                conn, settings.SYMBOLS, inicio_5m, fin_5m, only_missing=True
+            )
             await apply_retention(
                 conn,
                 settings.HARD_DATA_RETENTION_DAYS,
@@ -852,7 +892,7 @@ async def cycle(
             f"daily_candles={daily_candles},h4_candles={h4_candles},"
             f"spot_candles={spot_candles},baselines={baselines},"
             f"daily_rows={inserted},verdicts={verdicts},outcomes={outcomes},"
-            f"oi_daily={oi_daily}"
+            f"oi_daily={oi_daily},rolled_5m={rolled_5m}"
         )
         if ownership is None:
             await heartbeat(conn, "daily", detail=heartbeat_detail)

@@ -163,15 +163,40 @@ async def upsert_ohlcv(
     return len(records)
 
 
+# El unico eje que cambia entre la pasada viva y el barrido de recuperacion. Se elige de
+# este diccionario y NUNCA se compone con texto de fuera: la consulta es una sola y por
+# tanto la guarda de los cinco minutos es la MISMA para los dos caminos. Ese es el punto
+# del diseno y no un detalle de estilo -- dos consultas serian dos guardas, y la segunda
+# es la que algun dia se olvida.
+_CONFLICTO_5M = {
+    # Pasada viva: el bucket en curso cambia segun llegan minutos, asi que se reescribe.
+    False: """ON CONFLICT(symbol,interval,ts) DO UPDATE SET
+            open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low,
+            close=EXCLUDED.close, volume=EXCLUDED.volume,
+            buy_volume=EXCLUDED.buy_volume, tx=EXCLUDED.tx, btx=EXCLUDED.btx""",
+    # Barrido historico: lo cerrado ya no cambia. Reescribir 31473 filas cada hora con
+    # los mismos valores solo produce tuplas muertas y WAL, y el thin pool del nodo no
+    # tiene margen para eso (VFree 4.00 MiB el 2026-08-30).
+    True: "ON CONFLICT(symbol,interval,ts) DO NOTHING",
+}
+
+
 async def rollup_ohlcv_5m(
     conn: asyncpg.Connection,
     symbols: tuple[str, ...],
     start_ts: int,
     end_ts: int,
+    *,
+    only_missing: bool = False,
 ) -> int:
-    """Build recent 5-minute candles locally without spending API quota."""
+    """Build 5-minute candles locally from stored 1-minute rows, without API quota.
+
+    ``only_missing`` no relaja NADA de la validacion: solo cambia si un bucket que ya
+    existe se reescribe o se deja en paz. La exigencia de los cinco minutos vive en el
+    HAVING de mas abajo y la comparten los dos caminos.
+    """
     count = await conn.fetchval(
-        """
+        f"""
         WITH bars AS (
           SELECT
             date_bin('5 minutes'::interval, ts, TIMESTAMPTZ '1970-01-01') AS bucket,
@@ -200,10 +225,7 @@ async def rollup_ohlcv_5m(
           )
           SELECT bucket,symbol,'5min',open,high,low,close,volume,buy_volume,tx,btx
           FROM bars
-          ON CONFLICT(symbol,interval,ts) DO UPDATE SET
-            open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low,
-            close=EXCLUDED.close, volume=EXCLUDED.volume,
-            buy_volume=EXCLUDED.buy_volume, tx=EXCLUDED.tx, btx=EXCLUDED.btx
+          {_CONFLICTO_5M[only_missing]}
           RETURNING 1
         )
         SELECT count(*) FROM upserted
