@@ -19,6 +19,7 @@ from app.data_gaps import (
     RecoveryObservation,
     RecoveryValidationError,
     archive_beyond_source_horizon,
+    archive_source_response_absence,
     blocking_requirement_keys,
     declared_gap_windows,
     reconcile_cadence_coverage,
@@ -894,6 +895,147 @@ async def test_postgres_dos_tramos_separados_no_se_funden_en_uno() -> None:
                 (inicio + timedelta(minutes=35)).isoformat(),
             ),
         ]
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_la_ausencia_de_la_fuente_tambien_pasa_la_re_derivacion_de_K04() -> None:
+    """K71 · la OTRA prueba, y por que hacen falta las dos.
+
+    Los dos casos vuelven vacios DENTRO del hueco. Lo que los separa es la ventana ANCHA:
+    si la respuesta rodea el tramo, la fuente lo cubre y lo que falta falta EN LA FUENTE.
+    Medido en 140 el 2026-08-30, 4 de las 99 filas sin resolver caen aqui; archivarlas
+    como 'horizonte agotado' habria pasado K04 igual -- K04 re-deriva lo ESCRITO -- y
+    habria sido falso, porque el proveedor sirve ese tramo hoy mismo.
+    """
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 24, 10, 10, tzinfo=UTC)
+        gap_id = await _cadence_gap(conn, start=inicio, end=inicio + timedelta(minutes=5))
+
+        tocadas = await archive_source_response_absence(
+            conn,
+            feed="ohlcv_1min", exchange="binance", market="perpetual",
+            symbol="BTCUSDT_PERP.A", granularity="1min",
+            window_start=inicio, window_end=inicio + timedelta(minutes=5),
+            response_first_bucket=inicio - timedelta(hours=2),
+            response_last_bucket=inicio + timedelta(hours=2),
+            proof_source="test wide window",
+        )
+        assert tocadas == 1
+
+        sostiene = await conn.fetchval(
+            f"SELECT {K04_PRUEBA_SE_SOSTIENE} FROM data_gap WHERE id=$1", gap_id
+        )
+        assert sostiene is True, "K04 tiene que aceptar la prueba de ausencia que escribe la app"
+        fila = await conn.fetchrow(
+            "SELECT status,resolution_reason,recovery_metadata FROM data_gap WHERE id=$1",
+            gap_id,
+        )
+        assert fila["status"] == "unrecoverable"
+        assert "does not publish this bucket" in fila["resolution_reason"]
+        assert '"method": "source_response_absence"' in fila["recovery_metadata"]
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_una_respuesta_que_no_rodea_el_hueco_no_prueba_ausencia() -> None:
+    """El straddle se exige AQUI y no se acepta por parametro. Si el llamante pudiera
+    afirmar que la respuesta rodeaba el hueco, la prueba re-derivable seria lo que alguien
+    tecleo. Es el caso del hueco pegado a la frontera del proveedor: hay respuesta, pero
+    empieza DENTRO del tramo que dice cubrir."""
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 17, 4, 35, tzinfo=UTC)
+        gap_id = await _cadence_gap(conn, start=inicio, end=inicio + timedelta(minutes=5))
+        with pytest.raises(ValueError, match="does not cover the window"):
+            await archive_source_response_absence(
+                conn,
+                feed="ohlcv_1min", exchange="binance", market="perpetual",
+                symbol="BTCUSDT_PERP.A", granularity="1min",
+                window_start=inicio, window_end=inicio + timedelta(minutes=5),
+                response_first_bucket=inicio + timedelta(minutes=1),
+                response_last_bucket=inicio + timedelta(hours=2),
+                proof_source="test wide window",
+            )
+        assert await conn.fetchval(
+            "SELECT status FROM data_gap WHERE id=$1", gap_id
+        ) == "unresolved"
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_se_repara_el_archivado_mudo_y_NO_se_pisa_uno_con_prueba() -> None:
+    """K71 · la capacidad peligrosa, acotada.
+
+    Para reparar las 10 filas que el 2026-08-29 quedaron 'unrecoverable' con
+    recovery_metadata='{}' hay que poder escribir sobre una fila ya archivada. Mal
+    acotado, eso permite tapar una prueba buena con otra. La guarda es la AUSENCIA de
+    method, no 'la prueba no se sostiene': una fila con method escrito NO se toca aunque
+    su prueba sea mala. Reescribir en silencio lo que no entiendes es como se fabrica una
+    prueba con buena letra.
+
+    LOS DOS BRAZOS SON EL MISMO ARCHIVADO SOBRE LA MISMA VENTANA: lo unico que cambia es
+    lo que la fila tenia escrito antes. Sin la guarda, el segundo brazo tambien pasaria a
+    1 y la funcion podria pisar cualquier archivado anterior.
+    """
+    conn = await _connect()
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        inicio = datetime(2026, 8, 17, 2, 40, tzinfo=UTC)
+        mudo = await _cadence_gap(conn, start=inicio, end=inicio + timedelta(minutes=5))
+        con_prueba = await _cadence_gap(
+            conn,
+            start=inicio + timedelta(hours=1),
+            end=inicio + timedelta(hours=1, minutes=5),
+        )
+        # El estado exacto en que quedaron las 10: archivadas y sin una sola prueba.
+        await conn.execute(
+            "UPDATE data_gap SET status='unrecoverable',resolved_at=now(),"
+            "recovery_metadata='{}'::jsonb WHERE id=$1", mudo
+        )
+        # Y una vecina archivada CON method, que es lo que no se puede pisar.
+        await conn.execute(
+            "UPDATE data_gap SET status='unrecoverable',resolved_at=now(),"
+            "recovery_metadata=jsonb_build_object('method','source_response_absence',"
+            "'response_first_bucket',$2::timestamptz,'response_last_bucket',$3::timestamptz)"
+            " WHERE id=$1",
+            con_prueba, inicio, inicio + timedelta(days=1),
+        )
+
+        ventana_ini = inicio - timedelta(minutes=1)
+        ventana_fin = inicio + timedelta(hours=2)
+        tocadas = await archive_beyond_source_horizon(
+            conn,
+            feed="ohlcv_1min", exchange="binance", market="perpetual",
+            symbol="BTCUSDT_PERP.A", granularity="1min",
+            window_start=ventana_ini, window_end=ventana_fin,
+            control_start=datetime(2026, 8, 30, 12, tzinfo=UTC),
+            control_end=datetime(2026, 8, 30, 14, tzinfo=UTC),
+            control_returned_rows=24,
+        )
+        assert tocadas == 1, "solo la fila SIN method entra: la otra esta protegida"
+
+        assert await conn.fetchval(
+            f"SELECT {K04_PRUEBA_SE_SOSTIENE} FROM data_gap WHERE id=$1", mudo
+        ) is True
+        intacta = await conn.fetchval(
+            "SELECT recovery_metadata->>'method' FROM data_gap WHERE id=$1", con_prueba
+        )
+        assert intacta == "source_response_absence", (
+            "una fila con prueba escrita no se reescribe por esta via"
+        )
     finally:
         await tx.rollback()
         await conn.close()

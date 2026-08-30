@@ -50,6 +50,19 @@ PROVIDER_HORIZON_REASON = (
     "window returned data"
 )
 
+# LA UNICA FILA QUE SE PUEDE REESCRIBIR es la que no tiene NINGUN metodo escrito. La
+# noche del 2026-08-29 un --limit de recover_gaps.py archivo 10 filas con
+# recovery_metadata='{}' -- sin prueba --, y K04 las cuenta como archivado en falso. Para
+# repararlas hace falta poder escribir sobre una fila que ya esta 'unrecoverable', y esa
+# es una capacidad peligrosa: mal acotada, permite tapar una prueba buena con otra. Se
+# acota por AUSENCIA de method, no por "la prueba no se sostiene": una fila con un method
+# desconocido o con una prueba mala NO se toca, se mira. Reescribir en silencio lo que no
+# entiendes es como se fabrica una prueba con buena letra.
+_REESCRIBIBLE = (
+    "(status='unresolved' OR "
+    " (status='unrecoverable' AND recovery_metadata->>'method' IS NULL))"
+)
+
 
 def _aware_utc(value: datetime, name: str) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
@@ -737,7 +750,7 @@ async def archive_beyond_source_horizon(
         raise ValueError("the control window must be more recent than the archived window")
 
     result = await conn.execute(
-        """
+        f"""
         UPDATE data_gap
         SET status='unrecoverable',
             resolved_at=clock_timestamp(), recovered_at=NULL,
@@ -756,12 +769,85 @@ async def archive_beyond_source_horizon(
             )
         WHERE feed=$1 AND feed_class='cadence'
           AND exchange=$2 AND market=$3 AND symbol=$4 AND granularity=$5
-          AND status='unresolved'
+          AND {_REESCRIBIBLE}
           AND start_ts >= $6 AND end_ts <= $7
-        """,
+        """,  # noqa: S608 -- _REESCRIBIBLE es una constante del modulo, no entrada
         feed, exchange, market, symbol, granularity,
         window_start, window_end, PROVIDER_HORIZON_REASON,
         control_start, control_end, int(control_returned_rows),
+    )
+    return int(result.rsplit(" ", 1)[-1]) if result.startswith("UPDATE ") else 0
+
+
+async def archive_source_response_absence(
+    conn: asyncpg.Connection,
+    *,
+    feed: str,
+    exchange: str,
+    market: str,
+    symbol: str,
+    granularity: str,
+    window_start: datetime,
+    window_end: datetime,
+    response_first_bucket: datetime,
+    response_last_bucket: datetime,
+    proof_source: str,
+) -> int:
+    """Archive a window the source COVERS and does not publish. La OTRA prueba.
+
+    POR QUE HACEN FALTA LAS DOS, y es la trampa que este proyecto ya piso una vez: una
+    ventana de cinco minutos que vuelve VACIA se lee exactamente igual en los dos casos.
+    Puede ser que la fuente ya no sirva ese tramo -- horizonte agotado -- o puede ser que
+    lo sirva entero y no publique ese bucket -- ausencia suya --. Son hechos distintos
+    sobre el dato y solo uno de los dos es "horizonte". Pedir una ventana ANCHA los
+    separa: si la respuesta trae buckets ANTES del inicio y EN o DESPUES del final, la
+    fuente CUBRIO el tramo, y lo que falta dentro falta en la fuente.
+
+    Medido en 140 el 2026-08-30: de las 99 filas sin resolver, 80 son horizonte -- la
+    ventana ancha vuelve vacia -- y 4 son ausencia -- la ancha trae 44 y 47 filas
+    rodeando el hueco --. Archivar esas 4 como "horizonte" pasaria K04 igual, porque K04
+    re-deriva lo que hay escrito, y seria falso: la fuente sirve ese tramo hoy mismo.
+
+    El straddle se exige AQUI y no se acepta por parametro, por lo mismo que la otra
+    funcion exige un control: si el llamante pudiera afirmar que la respuesta rodeaba el
+    hueco, la prueba re-derivable seria lo que alguien tecleo.
+    """
+    window_start, window_end = _validated_window(window_start, window_end)
+    if not all((feed, exchange, market, symbol, granularity, proof_source)):
+        raise ValueError("gap identity cannot be empty")
+    response_first_bucket = _aware_utc(response_first_bucket, "response_first_bucket")
+    response_last_bucket = _aware_utc(response_last_bucket, "response_last_bucket")
+    if response_first_bucket >= window_start or response_last_bucket < window_end:
+        raise ValueError(
+            "the response does not cover the window: a response that starts inside the "
+            "gap or ends before it proves nothing about the missing buckets"
+        )
+
+    result = await conn.execute(
+        f"""
+        UPDATE data_gap
+        SET status='unrecoverable',
+            resolved_at=clock_timestamp(), recovered_at=NULL,
+            recovery_attempts=recovery_attempts+1,
+            last_recovery_attempt_at=clock_timestamp(),
+            resolution_reason=$8,
+            recovery_metadata=jsonb_build_object(
+                'method','source_response_absence',
+                'proof_source',$9::text,
+                'response_first_bucket',$10::timestamptz,
+                'response_last_bucket',$11::timestamptz,
+                'window_start',$6::timestamptz,
+                'window_end',$7::timestamptz,
+                'checked_at',clock_timestamp()
+            )
+        WHERE feed=$1 AND feed_class='cadence'
+          AND exchange=$2 AND market=$3 AND symbol=$4 AND granularity=$5
+          AND {_REESCRIBIBLE}
+          AND start_ts >= $6 AND end_ts <= $7
+        """,  # noqa: S608 -- _REESCRIBIBLE es una constante del modulo, no entrada
+        feed, exchange, market, symbol, granularity,
+        window_start, window_end, SOURCE_ABSENCE_REASON,
+        proof_source, response_first_bucket, response_last_bucket,
     )
     return int(result.rsplit(" ", 1)[-1]) if result.startswith("UPDATE ") else 0
 
