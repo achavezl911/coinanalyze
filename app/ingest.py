@@ -427,6 +427,7 @@ async def _reconcile_persisted_cadence(
     start: datetime,
     end: datetime,
     cadence: timedelta,
+    omitir_ya_declarados: bool = False,
 ) -> CadenceCoverage:
     if table not in _CADENCE_TABLES:
         raise ValueError("unsupported cadence source table")
@@ -447,7 +448,122 @@ async def _reconcile_persisted_cadence(
         end=end,
         cadence=cadence,
         detection_source=PERSISTED_CADENCE_DETECTION_SOURCE,
+        omitir_ya_declarados=omitir_ya_declarados,
     )
+
+
+# EL BARRIDO ANCHO · tabla, feed, exchange, interval, cadencia, margen de autocuracion.
+#
+# POR QUE EXISTE. El detector vivo mira 24 h atras. Un corte mas largo que eso deja todo
+# lo anterior a las ultimas 24 h SIN NI UNA FILA: no es un hueco sin resolver, es un
+# hueco que para el sistema nunca existio. Medido el 2026-08-30 en 140 tras el apagon
+# de 37.4 h del 28: 2099 buckets de metricas y 636 de ohlcv sin una sola fila que los
+# cubriera. La ventana del detector no puede ser mas corta que el corte mas largo, y
+# como no se sabe cuanto durara el proximo, la unica ventana que no se queda corta es
+# LA VIDA ENTERA DE LA SERIE RETENIDA.
+#
+# Y POR QUE SOBRE NUESTRAS FILAS Y NO SOBRE LA RESPUESTA. Son dos detectores distintos:
+# el de respuesta solo ve lo que la fuente se salto DENTRO de un tramo que contesto, asi
+# que un bucket que nunca le pedimos -porque estabamos caidos y al volver pedimos 26 h-
+# no esta en la respuesta, no esta en la ventana y no existe. El persistido compara
+# contra la TABLA, y ahi un bucket que no tenemos falta se le pregunte a quien se
+# pregunte. La funcion persistida ya aceptaba las SEIS tablas y se la llamaba con UNA.
+#
+# EL MARGEN NO ES UNO SOLO, porque la ventana que se cura sola es distinta por familia:
+# el ciclo de ohlcv pide 40 min y el de metricas 26 h -ingest.py, start_ohlcv y
+# start_history-. Apuntar dentro de ese margen seria apuntar algo que el proximo ciclo
+# va a rellenar. El de 5min de ohlcv hereda el de 1min porque su vela se construye de
+# esos cinco minutos, y por eso ESTE BARRIDO VA DESPUES DEL ROLLUP ANCHO: al reves
+# apuntaria como hueco lo que el rollup estaba a punto de construir.
+BARRIDO_CADENCIA: tuple[tuple[str, str, str, str, timedelta, timedelta], ...] = (
+    ("ohlcv", "ohlcv_1min", "binance", "1min", timedelta(minutes=1), timedelta(minutes=45)),
+    ("ohlcv", "ohlcv_5min", "binance", "5min", timedelta(minutes=5), timedelta(minutes=45)),
+    ("open_interest", "open_interest_5min", "binance", "5min",
+     timedelta(minutes=5), timedelta(hours=27)),
+    ("oi_bybit", "open_interest_5min", "bybit", "5min",
+     timedelta(minutes=5), timedelta(hours=27)),
+    ("funding_rate", "funding_rate", "binance", "5min",
+     timedelta(minutes=5), timedelta(hours=27)),
+    ("predicted_funding_rate", "predicted_funding_rate", "binance", "5min",
+     timedelta(minutes=5), timedelta(hours=27)),
+    ("long_short_ratio", "long_short_ratio", "binance", "5min",
+     timedelta(minutes=5), timedelta(hours=27)),
+)
+
+
+def _piso(momento: datetime, cadencia: timedelta) -> datetime:
+    """Baja el instante al bucket cerrado de esa cadencia. Sin esto la ventana no
+    empieza ni acaba en frontera y generate_series interno apuntaria huecos falsos de
+    un bucket en cada extremo."""
+    segundos = int(cadencia.total_seconds())
+    marca = int(momento.timestamp()) // segundos * segundos
+    return datetime.fromtimestamp(marca, tz=UTC)
+
+
+def ventana_barrido_cadencia(
+    ahora: datetime, primera: datetime | None, hard_days: int,
+    cadencia: timedelta, margen: timedelta,
+) -> tuple[datetime, datetime] | None:
+    """La ventana del barrido ancho, o None si no hay nada que barrer.
+
+    EL LIMITE POR DETRAS SALE DE LA PROPIA SERIE y se topa en la retencion, por dos
+    motivos que no son el mismo: antes de que la serie exista no hay ausencia que
+    reprochar -contarlo daria un ROJO gigante y falso-, y lo que apply_retention borra
+    por politica no es un hueco. Con el tope explicito, el ORDEN respecto a la purga
+    deja de importar: la ventana es la misma se ejecute antes o despues.
+    """
+    if primera is None:
+        return None
+    fin = _piso(ahora - margen, cadencia)
+    inicio = _piso(max(primera, ahora - timedelta(days=hard_days)), cadencia)
+    if inicio >= fin:
+        return None
+    return inicio, fin
+
+
+async def barrido_cadencia_persistido(
+    conn: asyncpg.Connection,
+    symbols: Iterable[str],
+    *,
+    hard_days: int,
+    ahora: datetime,
+) -> dict[str, int]:
+    """Declara TODA discontinuidad de las siete series de cadencia que nadie haya visto.
+
+    Corre una vez al dia. No pide nada al proveedor: solo mira lo que tenemos y apunta
+    lo que falta, que es justo lo que ningun detector hacia mas alla de 24 h.
+    """
+    resumen = {"ventanas": 0, "omitidas": 0, "recuperadas": 0, "series": 0}
+    # Los simbolos se fijan UNA vez: se recorren dentro de siete bucles y un iterador se
+    # habria vaciado en el primero, barriendo seis series con cero simbolos y saliendo
+    # con todo a cero. Un barrido que no barre nada imprime lo mismo que uno limpio.
+    simbolos = tuple(symbols)
+    for tabla, feed, exchange, interval, cadencia, margen in BARRIDO_CADENCIA:
+        # La tabla entra en un f-string, asi que la lista blanca se comprueba AQUI y no
+        # solo dentro de _reconcile_persisted_cadence.
+        if tabla not in _CADENCE_TABLES:
+            raise ValueError("unsupported cadence source table")
+        primera = await conn.fetchval(
+            f"SELECT min(ts) FROM {tabla} WHERE interval=$1", interval
+        )
+        ventana = ventana_barrido_cadencia(ahora, primera, hard_days, cadencia, margen)
+        if ventana is None:
+            continue
+        inicio, fin = ventana
+        for symbol in simbolos:
+            cobertura = await _reconcile_persisted_cadence(
+                conn, table=tabla, feed=feed, exchange=exchange, market="perpetual",
+                symbol=symbol, interval=interval, start=inicio, end=fin,
+                cadence=cadencia,
+                # Sin esto, long_short_ratio -que ya tiene 371 filas de otro detector-
+                # se llevaria 371 duplicadas en la primera pasada.
+                omitir_ya_declarados=True,
+            )
+            resumen["series"] += 1
+            resumen["ventanas"] += len(cobertura.missing_windows) - cobertura.omitted_gaps
+            resumen["omitidas"] += cobertura.omitted_gaps
+            resumen["recuperadas"] += cobertura.recovered_gaps
+    return resumen
 
 
 async def _reconcile_response_cadence(

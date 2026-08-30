@@ -413,10 +413,49 @@ class CadenceCoverage:
     # Sin esto el repaso no puede decir lo que hizo, y un contador que no se incrementa
     # nunca es peor que no tenerlo: parece que no paso nada.
     archived_gaps: int = 0
+    # Ventanas que NO se apuntaron porque otro detector ya las cubria entera. Se publica
+    # por el mismo motivo que archived_gaps: un barrido que omite en silencio y otro que
+    # no encuentra nada imprimen la misma linea, y son cosas distintas.
+    omitted_gaps: int = 0
 
     @property
     def complete(self) -> bool:
         return self.missing_buckets == 0
+
+
+async def _cubierto_por_otro_detector(
+    conn: asyncpg.Connection,
+    *,
+    feed: str,
+    exchange: str,
+    market: str,
+    symbol: str,
+    granularity: str,
+    start: datetime,
+    end: datetime,
+    detection_source: str,
+) -> bool:
+    """Ya hay una fila de OTRO detector que cubre esta ventana ENTERA, en cualquier estado.
+
+    El estado da igual a proposito: unresolved, recovered y unrecoverable son tres formas
+    de que el sistema HAYA VISTO el tramo, que es lo unico que decide si hace falta una
+    fila mas. Y la cobertura tiene que ser completa: un solape parcial deja fuera buckets
+    que seguirian mudos.
+    """
+    return bool(
+        await conn.fetchval(
+            """
+            SELECT EXISTS (
+              SELECT 1 FROM data_gap
+              WHERE feed=$1 AND feed_class='cadence' AND exchange=$2 AND market=$3
+                AND symbol=$4 AND granularity=$5 AND evidence_type='missing_interval'
+                AND detection_source <> $6
+                AND start_ts <= $7 AND end_ts >= $8
+            )
+            """,
+            feed, exchange, market, symbol, granularity, detection_source, start, end,
+        )
+    )
 
 
 async def reconcile_cadence_coverage(
@@ -433,6 +472,7 @@ async def reconcile_cadence_coverage(
     cadence: timedelta,
     detection_source: str,
     source_response_buckets: Iterable[datetime] | None = None,
+    omitir_ya_declarados: bool = False,
 ) -> CadenceCoverage:
     """Record missing cadence and recover only when every expected bucket is proven.
 
@@ -446,6 +486,19 @@ async def reconcile_cadence_coverage(
     them, a bucket the source skipped inside a span it did answer is archived as absent at
     the source; everything else stays unresolved. Absence in our own storage proves nothing
     about the source, so callers reading persisted rows pass nothing here.
+
+    ``omitir_ya_declarados`` es para el BARRIDO ANCHO, y existe por una razon medida: el
+    mismo tramo visto por dos detectores son DOS filas, porque detection_source esta dentro
+    de la clave de conflicto de ``record_data_gap``. Un barrido que mire long_short_ratio
+    -que ya tiene 371 filas de otro detector- escribiria 371 duplicadas, que es exactamente
+    la patologia que K04 lleva midiendo. Con la bandera puesta, una ventana que OTRO
+    detection_source ya cubre ENTERA no se vuelve a apuntar: lo que se juzga es si el
+    sistema LLEGO A VER el hueco, y ya lo vio.
+    SOLO se omite lo declarado por OTRO detector, nunca lo nuestro, porque la fila propia
+    hay que volver a apuntarla para que corra el re-abrir de mas abajo: un tramo que se
+    recupero y vuelve a faltar tiene que bloquear otra vez. Y SOLO si la cobertura es
+    COMPLETA -start_ts <= inicio AND end_ts >= fin-: con un solape parcial se apunta, que
+    duplicar de mas es un ruido visible y callar de menos es perdida muda otra vez.
     """
     start, end = _validated_window(start, end)
     if cadence <= timedelta(0):
@@ -481,7 +534,21 @@ async def reconcile_cadence_coverage(
     first_returned = min(returned) if returned else None
     last_returned = max(returned) if returned else None
 
+    omitidos = 0
     for gap_start, gap_end in missing_windows:
+        if omitir_ya_declarados and await _cubierto_por_otro_detector(
+            conn,
+            feed=feed,
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            granularity=granularity,
+            start=gap_start,
+            end=gap_end,
+            detection_source=detection_source,
+        ):
+            omitidos += 1
+            continue
         gap_id = await record_data_gap(
             conn,
             feed=feed,
@@ -625,6 +692,7 @@ async def reconcile_cadence_coverage(
         missing_windows=missing_windows,
         recovered_gaps=recovered,
         archived_gaps=archived,
+        omitted_gaps=omitidos,
     )
 
 
