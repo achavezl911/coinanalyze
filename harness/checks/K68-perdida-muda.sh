@@ -51,10 +51,26 @@
 # no confundirlas: los que tienen sus cinco 1min ya guardados se reconstruyen EN LOCAL
 # sin proveedor y sin fecha limite; los demas necesitan al proveedor y caducan con su
 # horizonte de 48 h.
+# LA VENTANA ES LA VIDA DE LA SERIE, NO UNA VENTANA RODANTE, y esta es la decision de
+# diseno que mas importa de todo el fichero. La primera version miraba 7 dias. Con eso,
+# el 2026-09-04 el apagon del 28 se habria salido por detras y EL CHECK SE HABRIA PUESTO
+# VERDE SOLO POR EL PASO DEL TIEMPO, sin que nadie recuperara ni declarara nada: un check
+# que se cura olvidando es peor que no tenerlo, porque ademas tranquiliza. Se cambio en
+# cuanto se midio que la ventana ancha cuesta 8 s, o sea que no habia nada que ahorrar.
+# SOLO HAY DOS CAMINOS A VERDE, y los dos exigen que alguien haga algo: RECUPERAR el dato
+# o DECLARAR la perdida con una fila de data_gap. El tiempo no es ninguno de los dos.
+# Y NO ES TEORICO: al ensanchar aparecieron 570 buckets mudos de CUATRO incidentes
+# anteriores que nadie sabia que existian -489 el 07-28, 36 el 07-30, 3 el 08-06 y 42 el
+# 08-07-, todos ya fuera del horizonte de 48 h del proveedor y ninguno declarado. La
+# version de 7 dias los habria escondido para siempre.
+# El limite por detras se toma de la PROPIA SERIE -su min(ts)- y no de una constante:
+# antes de que la serie exista no hay ausencia que reprochar, y contarlo daria un ROJO
+# gigante y falso. Se topa en RETENCION_DIAS porque apply_retention borra por ahi y lo
+# borrado por politica no es un hueco.
 set -uo pipefail
 B=/srv/coinanalyze/harness
 
-DIAS=7
+RETENCION_DIAS=90
 BORDE=45
 SIMBOLOS="'BTCUSDT_PERP.A','ETHUSDT_PERP.A','SOLUSDT_PERP.A'"
 
@@ -65,7 +81,9 @@ serie() {
   local intervalo="$1" feed="$2" cadencia="$3" secs="$4"
   "$B/bin/prodsql" "
     WITH lim AS (
-      SELECT to_timestamp(floor(extract(epoch from now() - interval '$DIAS days')/$secs)*$secs) AS ini,
+      SELECT to_timestamp(floor(extract(epoch from greatest(
+               (SELECT min(ts) FROM ohlcv WHERE interval='$intervalo'),
+               now() - interval '$RETENCION_DIAS days'))/$secs)*$secs) AS ini,
              to_timestamp(floor(extract(epoch from now() - interval '$BORDE minutes')/$secs)*$secs) AS fin),
          ventana AS (
       SELECT generate_series((SELECT ini FROM lim), (SELECT fin FROM lim),
@@ -92,8 +110,9 @@ solapan() {
   "$B/bin/prodsql" "
     SELECT count(*) FROM data_gap
     WHERE feed='$2' AND granularity='$1' AND symbol IN ($SIMBOLOS)
-      AND start_ts < date_trunc('minute', now()) - interval '$BORDE minutes'
-      AND end_ts   > date_trunc('minute', now()) - interval '$DIAS days'" 2>/dev/null \
+      AND start_ts < now() - interval '$BORDE minutes'
+      AND end_ts   > greatest((SELECT min(ts) FROM ohlcv WHERE interval='$1'),
+                              now() - interval '$RETENCION_DIAS days')" 2>/dev/null \
     | tr -d ' ' | grep -E '^[0-9]+$' | head -1
 }
 
@@ -127,9 +146,9 @@ if [ "$total" -eq 0 ]; then
   # estaban todos declarados" son estados distintos y el segundo es el unico que prueba
   # algo sobre el detector. Fundirlos en una frase es como se lee de mas en un VERDE.
   if [ "$((a1 + a5))" -eq 0 ]; then
-    echo "VERDE: ohlcv 1min y 5min SIN NI UNA discontinuidad en $((j1 + j5)) buckets juzgados de los ultimos $DIAS dias, luego no hay nada que declarar"
+    echo "VERDE: ohlcv 1min y 5min SIN NI UNA discontinuidad en $((j1 + j5)) buckets juzgados -toda la serie retenida-, luego no hay nada que declarar"
   else
-    echo "VERDE: $((a1 + a5)) discontinuidades de ohlcv 1min y 5min en $((j1 + j5)) buckets juzgados de los ultimos $DIAS dias, y las $((a1 + a5)) tienen fila de data_gap que las cubre; 0 mudas"
+    echo "VERDE: $((a1 + a5)) discontinuidades de ohlcv 1min y 5min en $((j1 + j5)) buckets juzgados -toda la serie retenida-, y las $((a1 + a5)) tienen fila de data_gap que las cubre; 0 mudas"
   fi
   exit 0
 fi
@@ -140,7 +159,9 @@ local_5=0
 if [ "$m5" -gt 0 ]; then
   local_5=$("$B/bin/prodsql" "
     WITH lim AS (
-      SELECT to_timestamp(floor(extract(epoch from now() - interval '$DIAS days')/300)*300) AS ini,
+      SELECT to_timestamp(floor(extract(epoch from greatest(
+               (SELECT min(ts) FROM ohlcv WHERE interval='5min'),
+               now() - interval '$RETENCION_DIAS days'))/300)*300) AS ini,
              to_timestamp(floor(extract(epoch from now() - interval '$BORDE minutes')/300)*300) AS fin),
          ventana AS (
       SELECT generate_series((SELECT ini FROM lim), (SELECT fin FROM lim),
