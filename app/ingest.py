@@ -511,6 +511,15 @@ def ventana_barrido_cadencia(
     reprochar -contarlo daria un ROJO gigante y falso-, y lo que apply_retention borra
     por politica no es un hueco. Con el tope explicito, el ORDEN respecto a la purga
     deja de importar: la ventana es la misma se ejecute antes o despues.
+
+    PUNTO CIEGO DECLARADO, porque descubrirlo dentro de tres meses seria peor: hard_days
+    es el tope CORRECTO para las cinco series de metricas y para ohlcv 1min, pero NO para
+    ohlcv 5min ni 4hour, que apply_retention borra a HTF_DATA_RETENTION_DAYS (400 en 140,
+    contra 90 de HARD). O sea que entre los 90 y los 400 dias hay serie 5min retenida que
+    este barrido no mira. HOY NO MUERDE -- ohlcv 5min empieza el 2026-07-23, 38 dias --
+    y K68 trae el mismo tope por el mismo motivo, asi que check y barrido coinciden y
+    ninguno miente sobre el otro. Cuando la serie pase de 90 dias hay que subir los dos
+    a la vez o el check pedira declaraciones que el barrido no puede hacer.
     """
     if primera is None:
         return None
@@ -530,8 +539,14 @@ async def barrido_cadencia_persistido(
 ) -> dict[str, int]:
     """Declara TODA discontinuidad de las siete series de cadencia que nadie haya visto.
 
-    Corre una vez al dia. No pide nada al proveedor: solo mira lo que tenemos y apunta
-    lo que falta, que es justo lo que ningun detector hacia mas alla de 24 h.
+    CORRE CADA HORA, no una vez al dia pese al nombre del servicio: el bucle de
+    daily_agg usa timeout 45 s en la primera vuelta y luego alinea a 3600 s
+    (daily_agg.py, bucle de servicio), asi que ademas se ejecuta 45 s despues de cada
+    arranque. Lo escribo porque la primera version de este docstring decia "una vez al
+    dia" y era falso: cambia a <=1 h la latencia con que se declara un tramo mudo, y
+    hace que un despliegue dispare un barrido.
+    No pide nada al proveedor: solo mira lo que tenemos y apunta lo que falta, que es
+    justo lo que ningun detector hacia mas alla de 24 h.
     """
     resumen = {"ventanas": 0, "omitidas": 0, "recuperadas": 0, "series": 0}
     # Los simbolos se fijan UNA vez: se recorren dentro de siete bucles y un iterador se
