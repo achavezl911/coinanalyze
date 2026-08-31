@@ -1926,7 +1926,15 @@ function executionClass(execution) {
   const bandas = [execution.cost_to_target_band, execution.cost_to_risk_band].filter(Boolean);
   if (bandas.includes('prohibitivo')) return 'negative';
   if (bandas.includes('ajustado')) return 'neutral';
-  if (bandas.includes('aceptable')) return 'positive';
+  // UN 'aceptable' SOBRE UN COSTE INCOMPLETO NO SE PINTA EN VERDE, y es la MISMA regla de
+  // arriba aplicada un paso mas alla: el backend calcula cost_to_target y cost_to_risk
+  // sumando SOLO las patas medidas (scalp_logic.py:4796-4812), asi que una pata que falta
+  // baja el coste y sube la banda. Medido contra 140 el 2026-08-31 con el mismo plan y el
+  // mismo mercado: sin slippage sale 8.013 bps y 'aceptable'; con slippage 10, 28.013 bps y
+  // 'prohibitivo'. Verde es la unica clase que afirma algo bueno, y aqui no se sabe.
+  if (bandas.includes('aceptable')) {
+    return safeArray(execution.cost_components_missing).length ? 'neutral' : 'positive';
+  }
   return 'neutral';
 }
 // El aviso de spread es SECUNDARIO: informa, no veta ni clasifica direccion. Se devuelve
@@ -1946,7 +1954,18 @@ function renderExecutionRows(dl, execution) {
     rowDL(dl, 'Falta para evaluar', faltan || 'plan de operación', 'neutral');
     return;
   }
-  rowDL(dl, 'Coste ida y vuelta', nd(execution.total_cost_bps, v => `${number(v, 2)} bps`), 'neutral');
+  // EL TOTAL SE ROTULA POR LO QUE ES. El backend publica cost_components_missing y hasta hoy
+  // esta capa no lo leia: pintaba "Coste ida y vuelta" a secas sobre una suma de las patas
+  // MEDIDAS, y el lector pone un cero donde no hay dato. No es cosmetico -- el veredicto de
+  // la fila de arriba sale de ese mismo total parcial.
+  const patasAusentes = safeArray(execution.cost_components_missing);
+  rowDL(dl, patasAusentes.length ? 'Coste ida y vuelta (PARCIAL)' : 'Coste ida y vuelta',
+    nd(execution.total_cost_bps, v => `${number(v, 2)} bps`), 'neutral');
+  if (patasAusentes.length) {
+    rowDL(dl, 'Patas de coste sin dato',
+      `${patasAusentes.join(', ')} · el total y el veredicto salen solo de las medidas, así que ambos son un SUELO`,
+      'negative');
+  }
   const sobreObjetivo = asNumber(execution.cost_to_target);
   rowDL(dl, 'Coste / objetivo',
     sobreObjetivo === null ? 'N/D' : `${number(sobreObjetivo * 100, 1)}% del objetivo · ${execution.cost_to_target_band}`,
