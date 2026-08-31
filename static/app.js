@@ -599,6 +599,12 @@ function renderLiquidations(result) {
     const known = longV !== null && shortV !== null;
     const ratio = known && shortV > 0 ? longV / shortV : null;
     const tr = document.createElement('tr');
+    // QUE VENUES CUBRE LA FILA, dicho y no supuesto. Hasta el 2026-08-31 esta tabla mezclaba
+    // dos fuentes: 1m/5m/15m traian binance y bybit, y 30m/1h/4h solo binance, con las mismas
+    // columnas y sin nada que lo dijera. Ya salen las seis de la misma fuente; el rotulo
+    // existe para que volver a mezclarlas no pueda pasar desapercibido.
+    const venues = safeArray(r.venues);
+    tr.title = venues.length ? `Cubre ${venues.join(' + ')}` : 'Cobertura de venues no declarada';
     [[r.window, ''],
      [longV === null ? 'Sin dato' : money(longV), longV === null ? 'neutral' : 'negative'],
      [shortV === null ? 'Sin dato' : money(shortV), shortV === null ? 'neutral' : 'positive'],
