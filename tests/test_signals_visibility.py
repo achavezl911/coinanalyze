@@ -205,7 +205,10 @@ def test_el_contrato_responde_para_la_evidencia_congelada_y_None_para_el_resto()
     )
     # La cabecera del modulo dice "no v1-v5 backfill" y lo dice hacia adelante tambien:
     # una evidencia sin contrato no se certifica sola por mucho que el certificador corra.
-    for sin_contrato in (1, 2, 3, 4, 5, 7, 8):
+    # K75: la 6 entra en esta lista al pasar el contrato a la 7, y NO es un descuido --
+    # esta drenada (785684 finales con cero sin certificar) y ya no se escribe, asi que
+    # K25 la ve como version PARADA: visible, sin gatear.
+    for sin_contrato in (1, 2, 3, 4, 5, 6, 8):
         assert visibility_version_for_evidence(sin_contrato) is None
 
 

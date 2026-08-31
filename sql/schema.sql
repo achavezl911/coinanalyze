@@ -2417,9 +2417,22 @@ CREATE TABLE IF NOT EXISTS signal_research_bundle_visibility (
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     UNIQUE(observation_id,visibility_version),
     CONSTRAINT signal_research_bundle_visibility_pr25_frozen_tuple_check CHECK (
-        visibility_version <> 1
+        -- K75 · PUERTA CONCEDIDA 2026-08-31. Se ANADE el brazo de la v2 y el de la v1
+        -- queda INTACTO: reinterpretar los 70422 certificados ya escritos no se pide y
+        -- no se hace. NO es una relajacion, es lo contrario -- medido: con la forma
+        -- anterior "visibility_version <> 1 OR ...", una fila v2 hacia TRUE el primer
+        -- disyuntivo y el CHECK pasaba TRIVIALMENTE, asi que la v2 nacia SIN GUARDIA.
+        visibility_version NOT IN (1, 2)
         OR (
-            evidence_version = 6
+            visibility_version = 1
+            AND evidence_version = 6
+            AND context_version = 1
+            AND outcome_version = 1
+            AND execution_snapshot_version = 1
+        )
+        OR (
+            visibility_version = 2
+            AND evidence_version = 7
             AND context_version = 1
             AND outcome_version = 1
             AND execution_snapshot_version = 1
@@ -2475,7 +2488,12 @@ CREATE TABLE IF NOT EXISTS signal_outcome_final_visibility (
     UNIQUE(outcome_id,visibility_version),
     CHECK (source_finalized_at <= verified_visible_at),
     CONSTRAINT signal_outcome_final_visibility_pr25_frozen_tuple_check CHECK (
-        visibility_version <> 1 OR outcome_version = 1
+        -- K75 · PUERTA CONCEDIDA 2026-08-31. Mismo caso y misma cura que el de bundles:
+        -- el brazo de la v1 queda intacto y el de la v2 se anade para que la version
+        -- nueva NAZCA CON GUARDIA en vez de pasar por el hueco del "<> 1".
+        visibility_version NOT IN (1, 2)
+        OR (visibility_version = 1 AND outcome_version = 1)
+        OR (visibility_version = 2 AND outcome_version = 1)
     )
 );
 CREATE INDEX IF NOT EXISTS signal_outcome_final_visibility_outcome_idx
@@ -2559,6 +2577,48 @@ ALTER TABLE signal_observation
       )
     )
   );
+
+-- K75 · PUERTA CONCEDIDA 2026-08-31 · los dos frozen_tuple, RECONCILIADOS.
+-- Las definiciones de arriba viven dentro de CREATE TABLE IF NOT EXISTS, o sea que en una
+-- base que YA tiene las tablas no se aplican solas. Sin este bloque, CI -base nueva-
+-- tendria el brazo de la v2 y produccion NO, que es la peor de las divergencias posibles:
+-- la prueba pasaria justo donde el guardia no existe.
+ALTER TABLE signal_research_bundle_visibility
+  DROP CONSTRAINT IF EXISTS signal_research_bundle_visibility_pr25_frozen_tuple_check;
+ALTER TABLE signal_research_bundle_visibility
+  ADD CONSTRAINT signal_research_bundle_visibility_pr25_frozen_tuple_check CHECK (
+    visibility_version NOT IN (1, 2)
+    OR (
+      visibility_version = 1
+      AND evidence_version = 6
+      AND context_version = 1
+      AND outcome_version = 1
+      AND execution_snapshot_version = 1
+    )
+    OR (
+      visibility_version = 2
+      AND evidence_version = 7
+      AND context_version = 1
+      AND outcome_version = 1
+      AND execution_snapshot_version = 1
+    )
+  );
+
+ALTER TABLE signal_outcome_final_visibility
+  DROP CONSTRAINT IF EXISTS signal_outcome_final_visibility_pr25_frozen_tuple_check;
+ALTER TABLE signal_outcome_final_visibility
+  ADD CONSTRAINT signal_outcome_final_visibility_pr25_frozen_tuple_check CHECK (
+    visibility_version NOT IN (1, 2)
+    OR (visibility_version = 1 AND outcome_version = 1)
+    OR (visibility_version = 2 AND outcome_version = 1)
+  );
+
+COMMENT ON CONSTRAINT signal_research_bundle_visibility_pr25_frozen_tuple_check
+  ON signal_research_bundle_visibility IS
+  'Visibility v1 freezes evidence 6 + context/outcome/snapshot 1; v2 freezes evidence 7 with the same other three. Any other visibility_version is unconstrained here BY DESIGN and must declare its own arm before being written';
+COMMENT ON CONSTRAINT signal_outcome_final_visibility_pr25_frozen_tuple_check
+  ON signal_outcome_final_visibility IS
+  'Visibility v1 and v2 both certify only outcome_version 1; a new visibility_version must declare its own arm before being written';
 
 COMMENT ON CONSTRAINT signal_observation_pr25_regime_provenance_check
   ON signal_observation IS

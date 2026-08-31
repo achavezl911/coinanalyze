@@ -29,6 +29,27 @@ from app.signal_walk_forward import (
     freeze_walk_forward_manifest,
 )
 
+
+# --- K75 · EL CONTRATO VIVO YA NO ES EL DE LA SPEC CONGELADA ----------------------------
+# Estas pruebas construyen observaciones de la tupla que spec v2/v3 EXIGE -- evidencia 6 y
+# research_visibility_version 1 -- y las certifican con el certificador de verdad, porque
+# lo que miden es el walk-forward, no el certificador. Hasta K75 eso funcionaba sin decir
+# nada porque el objetivo vivo del certificador COINCIDIA con el de la spec. Ya no: la
+# puerta del 2026-08-31 lo movio a evidencia 7 / visibilidad 2 y las specs siguen
+# congeladas en 6 / 1 a proposito (signal_walk_forward.py:95-99).
+#
+# Se fija el contrato con monkeypatch en vez de escribir los certificados a mano PARA NO
+# PERDER FIDELIDAD: asi estas pruebas siguen pasando por la seleccion REAL -- la exigencia
+# de bundle completo, el anti-join, el lote -- que es justo lo que varias de ellas
+# necesitan cuando construyen bundles incompletos y esperan que NO se certifiquen.
+@pytest.fixture(autouse=True)
+def _contrato_de_la_spec_congelada(monkeypatch: pytest.MonkeyPatch) -> None:
+    import app.signal_visibility as _vis
+
+    monkeypatch.setattr(_vis, "_CERTIFIED_EVIDENCE_VERSION", 6)
+    monkeypatch.setattr(_vis, "RESEARCH_VISIBILITY_VERSION", 1)
+
+
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_SQL = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
 
