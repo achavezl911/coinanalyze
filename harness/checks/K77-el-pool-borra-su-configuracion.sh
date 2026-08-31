@@ -18,8 +18,16 @@
 #     1a (init recien corrido, sin release)  UTC · 20s · 3s · 30s · coinalyze-k77
 #     2a (despues de UN release)             America/Mexico_City · 0 · 0 · 0 · ''
 #   O sea: init SI corre. RESET ALL se lo lleva entero en cada devolucion, y el default del
-#   servidor de 140 es America/Mexico_City (pg_settings source=configuration file, y
-#   pg_db_role_setting tiene 0 filas: no hay ajuste por rol ni por base que lo tape).
+#   servidor de 140 es America/Mexico_City (pg_db_role_setting tiene 0 filas: no hay ajuste
+#   por rol ni por base que lo tape).
+#   ESA CIFRA SE CITA DEL FICHERO Y YA NO DE pg_settings, y el motivo importa: hasta el
+#   2026-08-31 se leia con prodsql como reset_val=America/Mexico_City source=configuration
+#   file, pero desde que prodsql lleva -c timezone=UTC en su PGOPTIONS su propia sesion
+#   tapa ese valor (pasa a reset_val=UTC source=client). El comando que SI se reproduce:
+#     prod "grep -rn '^timezone' /etc/postgresql/17/main/postgresql.conf"
+#       -> 743:timezone = 'America/Mexico_City'
+#   Y NO vale sustituirlo por boot_val, que es GMT: el boot_val es el default COMPILADO,
+#   no el del servidor.
 #
 # LO QUE SE PIERDE ES MAS QUE LA ZONA, y es lo que sube esto por delante del coste:
 #     pide                            recibe (boot_val del servidor)
@@ -31,12 +39,17 @@
 # concluye lo contrario de lo que pasa.
 #
 # AVISO DE INSTRUMENTO, que es como se mide esto mal. En una sesion de prodsql
-# statement_timeout sale 60000 con source=client: eso es el PGOPTIONS del propio prodsql,
-# no lo que ve la app. Medido en 140 hoy: TimeZone reset_val=America/Mexico_City
-# (source=configuration file, NO contaminado), statement_timeout setting=60000 source=client
-# pero boot_val=0. El numero que hereda una conexion del pool tras RESET ALL es su PROPIO
-# reset_val, que sin opciones de arranque es el boot_val. Por eso el brazo B no pregunta por
-# pg_settings: abre una conexion POR EL CAMINO DE LA APP y lee desde dentro.
+# statement_timeout sale 60000 con source=client, y TimeZone sale UTC con source=client:
+# los dos son el PGOPTIONS del propio prodsql, no lo que ve la app. El numero que hereda una
+# conexion del pool tras RESET ALL es su PROPIO reset_val, que sin opciones de arranque es
+# el boot_val (0 para los timeouts). Por eso el brazo B no pregunta por pg_settings: abre
+# una conexion POR EL CAMINO DE LA APP y lee desde dentro.
+# Y ESE MISMO ESTORBO ES EL CONTROL POSITIVO DEL MECANISMO DEL ARREGLO, que es lo que cierra
+# el unico paso inferencial del brazo A -pg_stat_activity no lleva GUCs, asi que A ve el
+# NOMBRE y no la zona-: statement_timeout sale reset_val=60000 con boot_val=0, y TimeZone
+# reset_val=UTC con boot_val=GMT. Que el reset_val NO sea el boot_val demuestra EN 140 que
+# un valor del paquete de arranque se convierte en el reset_val de la sesion, que es
+# exactamente lo que sobrevive a un RESET ALL. Son dos instancias vivas del mecanismo.
 #
 # DONDE SE PONE LA MEDICION, que es lo unico no obvio. Hay una ventana en la que una
 # conexion SI conserva lo que init le puso: entre init y su primer release. Esa ventana NO
