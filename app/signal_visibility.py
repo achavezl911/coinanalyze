@@ -42,11 +42,30 @@ from app.db import ServiceOwnership, ServiceOwnershipLost, fenced_transaction
 # is no v1-v5 backfill: RESEARCH_VISIBILITY_VERSION=1 only ever applies to
 # evidence_version=6, the frozen horizon grid and the frozen exchange set
 # below.
+#
+# K75 · PUERTA CONCEDIDA POR ALEJANDRO 2026-08-31. La v2 se declara para la evidencia 7
+# EXACTAMENTE como este comentario exigia: version NUEVA con tupla NUEVA, en vez de
+# ensanchar la 1. Las otras tres patas -- contexto, outcome y snapshot de ejecucion -- NO
+# se mueven, y eso NO es pereza: se midio que no habian cambiado. Las 6 observaciones de
+# evidencia 7 con el bundle entero traen context_version=1, snapshot_version=1 y los 8
+# horizontes con outcome_version=1, o sea la misma forma que la v1 salvo la evidencia.
+#
+# Y SE CONCEDIO EN EL MISMO CAMBIO QUE LOS DOS CHECK, por una razon medida y no razonada:
+# los dos tienen la forma "visibility_version <> 1 OR <regla>", asi que con
+# visibility_version=2 el primer disyuntivo es TRUE y el CHECK ENTERO PASA TRIVIALMENTE.
+# Declarar la version sin fijar su tupla cambiaria una deuda VISIBLE -- K25 en rojo,
+# contando y con su tasa -- por una puerta abierta INVISIBLE. Es la quinta y sexta
+# instancia de la enfermedad que cerro #111, y esta vez se cierra a la vez que se abre.
+#
+# LA EVIDENCIA 6 NO QUEDA HUERFANA, y es lo primero que habia que descartar antes de
+# mover el contrato: esta DRENADA. 785684 outcomes finales con cero sin certificado y
+# 68868 bundles completos con cero sin certificar. Cambiar el objetivo del certificador
+# de la 6 a la 7 no abandona trabajo a medias.
 # ---------------------------------------------------------------------------
 
-RESEARCH_VISIBILITY_VERSION = 1
+RESEARCH_VISIBILITY_VERSION = 2
 
-_CERTIFIED_EVIDENCE_VERSION = 6
+_CERTIFIED_EVIDENCE_VERSION = 7
 _CERTIFIED_CONTEXT_VERSION = 1
 _CERTIFIED_OUTCOME_VERSION = 1
 _CERTIFIED_EXECUTION_SNAPSHOT_VERSION = 1
@@ -60,9 +79,20 @@ _CERTIFIED_EXECUTION_SNAPSHOT_VERSION = 1
 # de signal_observation y preguntar por cada una. Una version nueva que produccion empiece
 # a escribir aparece sola en esa comparacion, sin que nadie acuerde de tocar el check.
 #
-# Deriva de _CERTIFIED_EVIDENCE_VERSION en vez de repetir el 6, para que no haya dos
+# Deriva de _CERTIFIED_EVIDENCE_VERSION en vez de repetir el numero, para que no haya dos
 # sitios que puedan discrepar: el certificador pasa esa misma constante como parametro de
-# su consulta (:146 y :180), asi que la fuente sigue siendo una sola.
+# su consulta (:146 y :180), asi que la fuente sigue siendo una sola. Por eso este mapa NO
+# se toco al pasar a la v2: sigue la constante sola.
+#
+# CONSECUENCIA DE LA v2 QUE SE DECLARA EN VEZ DE DESCUBRIRSE DESPUES: a partir de ahora
+# este mapa dice que la evidencia 6 NO tiene contrato, porque el certificador ya no la
+# mira. No gatea nada y esta medido: (b) de K25 solo muerde si la version SIGUE VIVA, y la
+# 6 dejo de escribirse; y sus finales estan certificados al 100 % -- 785684 con cero sin
+# certificado --, asi que tampoco aporta a (a). Quedan 2361 outcomes de evidencia 6 en
+# 'pending', TODOS vencidos el 2026-08-28 por el apagon: mientras sigan pending no son
+# finales y no entran en el conjunto elegible. Si algun dia se evaluasen, apareceran en
+# (b) como version sin contrato y PARADA -- visibles, sin gatear -- que es exactamente
+# donde tienen que salir.
 _CERTIFICATION_CONTRACT: dict[int, int] = {
     _CERTIFIED_EVIDENCE_VERSION: RESEARCH_VISIBILITY_VERSION,
 }

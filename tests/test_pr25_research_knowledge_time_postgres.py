@@ -11,13 +11,19 @@ import pytest
 
 from app.signal_replay import SCALP_SIGNAL_LOGIC_VERSION
 from app.signal_visibility import (
+    _CERTIFIED_EVIDENCE_VERSION,
     _CERTIFIED_EXECUTION_EXCHANGES,
     _CERTIFIED_OUTCOME_HORIZONS,
     RESEARCH_VISIBILITY_VERSION,
     certify_final_outcomes,
     certify_research_bundles,
 )
-from app.signal_walk_forward import WalkForwardManifestOptions, _fetch_period_grid_v2
+from app.signal_walk_forward import (
+    SPEC_V2_SUPPORTED_EVIDENCE_VERSION,
+    SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION,
+    WalkForwardManifestOptions,
+    _fetch_period_grid_v2,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_SQL = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
@@ -85,13 +91,16 @@ async def conn():
 
 
 # ---------------------------------------------------------------------------
-# Fixture helpers: a complete evidence_version=6 periodic research bundle.
+# Fixture helpers: a complete periodic research bundle de la evidencia QUE EL MODULO
+# DECLARE CERTIFICABLE, no la que estaba escrita a mano cuando se escribio la prueba.
+# Hasta K75 esto ponia un 6 literal y la suite entera se volvio roja al declarar la v2:
+# nueve pruebas que no probaban el contrato sino UNA version concreta de el.
 # ---------------------------------------------------------------------------
 
 _ALL_HORIZONS = (1, 3, 5, 15, 30, 60, 120, 240)
 
 
-async def _insert_v6_observation(
+async def _insert_certifiable_observation(
     conn: asyncpg.Connection,
     *,
     observed_at: datetime,
@@ -99,6 +108,7 @@ async def _insert_v6_observation(
     state: str = "Long Momentum",
     reference_price: float = 100.0,
     created_at: datetime | None = None,
+    evidence_version: int = _CERTIFIED_EVIDENCE_VERSION,
 ) -> int:
     row_created_at = created_at or observed_at
     return int(
@@ -117,7 +127,7 @@ async def _insert_v6_observation(
               $1,date_trunc('minute',$1::timestamptz),$5,
               'BTCUSDT_PERP.A','scalp',
               true,false,
-              $6,6,1,
+              $6,$7,1,
               'evaluable',$2,true,$3,'media','test',
               $4,'futures_realtime_combined',$1,
               70,30,90,
@@ -132,8 +142,63 @@ async def _insert_v6_observation(
             reference_price,
             row_created_at,
             SCALP_SIGNAL_LOGIC_VERSION,
+            evidence_version,
         )
     )
+
+
+async def _insert_spec_v2_certificate(
+    conn: asyncpg.Connection, observation_id: int, verified_visible_at: datetime
+) -> None:
+    """Certificado de la tupla que spec v2 EXIGE, escrito a mano y no por el certificador.
+
+    Hasta K75 estas pruebas llamaban a certify_research_bundles() porque el objetivo del
+    certificador coincidia con el de spec v2. Con la v2 concedida ya NO coinciden -- el
+    certificador va a evidencia 7 / visibilidad 2 y spec v2 sigue congelado en 6 / 1 --,
+    y ese desacople es DELIBERADO: signal_walk_forward.py:95-99 dice por escrito que la
+    tupla de un manifiesto ya persistido no puede cambiar cuando avanzan las constantes.
+    Lo que estas tres pruebas miden es el CORTE POR KNOWLEDGE-TIME, no que version este
+    viva, asi que se les da su certificado directamente y siguen midiendo lo suyo.
+    """
+    await conn.execute(
+        """
+        INSERT INTO signal_research_bundle_visibility(
+          observation_id,visibility_version,evidence_version,context_version,
+          outcome_version,execution_snapshot_version,verified_visible_at
+        ) VALUES($1,$2,$3,1,1,1,$4)
+        """,
+        observation_id,
+        SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION,
+        SPEC_V2_SUPPORTED_EVIDENCE_VERSION,
+        verified_visible_at,
+    )
+
+
+async def _insert_spec_v2_final_certificate(
+    conn: asyncpg.Connection, observation_id: int, horizon_minutes: int
+) -> int:
+    """El gemelo de _insert_spec_v2_certificate para el certificado de outcome final."""
+    outcome_id = int(
+        await conn.fetchval(
+            "SELECT outcome_id FROM signal_outcome "
+            "WHERE observation_id=$1 AND horizon_minutes=$2",
+            observation_id,
+            horizon_minutes,
+        )
+    )
+    await conn.execute(
+        """
+        INSERT INTO signal_outcome_final_visibility(
+          outcome_id,visibility_version,outcome_version,source_status,
+          source_finalized_at,verified_visible_at
+        )
+        SELECT outcome_id,$2,1,status,finalized_at,clock_timestamp()
+        FROM signal_outcome WHERE outcome_id=$1
+        """,
+        outcome_id,
+        SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION,
+    )
+    return outcome_id
 
 
 async def _insert_frame(
@@ -233,9 +298,11 @@ async def _insert_complete_bundle(
     *,
     observed_at: datetime,
     created_at: datetime | None = None,
+    evidence_version: int = _CERTIFIED_EVIDENCE_VERSION,
 ) -> int:
-    observation_id = await _insert_v6_observation(
-        conn, observed_at=observed_at, created_at=created_at
+    observation_id = await _insert_certifiable_observation(
+        conn, observed_at=observed_at, created_at=created_at,
+        evidence_version=evidence_version,
     )
     await _insert_frame(conn, observation_id, observed_at, created_at=created_at)
     await _insert_outcome_schedule(conn, observation_id, observed_at)
@@ -304,7 +371,7 @@ def _spec_v2_options(*, horizons: tuple[int, ...] = (15,)) -> WalkForwardManifes
         name="pr25-spec-v2-fetch-test",
         horizons=horizons,
         logic_version=SCALP_SIGNAL_LOGIC_VERSION,
-        evidence_version=6,
+        evidence_version=SPEC_V2_SUPPORTED_EVIDENCE_VERSION,
         sampling_version=1,
         context_version=1,
         outcome_version=1,
@@ -329,7 +396,7 @@ async def test_certification_cannot_see_uncommitted_bundle_then_certifies_after_
 
         tx_a = conn_a.transaction()
         await tx_a.start()
-        observation_id = await _insert_v6_observation(conn_a, observed_at=observed_at)
+        observation_id = await _insert_certifiable_observation(conn_a, observed_at=observed_at)
         await _insert_frame(conn_a, observation_id, observed_at)
         await _insert_outcome_schedule(conn_a, observation_id, observed_at)
         await _insert_execution_snapshot(
@@ -382,9 +449,12 @@ async def test_fixed_cutoff_between_created_at_and_verified_visible_at_excludes_
     conn, schema = await _new_schema_conn()
     try:
         observed_at = datetime(2020, 1, 1, 0, 0, tzinfo=UTC)
-        observation_id = await _insert_complete_bundle(conn, observed_at=observed_at)
+        observation_id = await _insert_complete_bundle(
+            conn, observed_at=observed_at,
+            evidence_version=SPEC_V2_SUPPORTED_EVIDENCE_VERSION,
+        )
 
-        assert await certify_research_bundles(conn) == 1
+        await _insert_spec_v2_certificate(conn, observation_id, datetime.now(UTC))
         verified_visible_at = await conn.fetchval(
             "SELECT verified_visible_at FROM signal_research_bundle_visibility "
             "WHERE observation_id=$1",
@@ -432,8 +502,11 @@ async def test_final_outcome_race_projects_pending_until_final_certificate() -> 
     conn_b = await _join_schema(schema)
     try:
         observed_at = datetime(2021, 6, 1, 8, 0, tzinfo=UTC)
-        observation_id = await _insert_complete_bundle(setup, observed_at=observed_at)
-        assert await certify_research_bundles(setup) == 1
+        observation_id = await _insert_complete_bundle(
+            setup, observed_at=observed_at,
+            evidence_version=SPEC_V2_SUPPORTED_EVIDENCE_VERSION,
+        )
+        await _insert_spec_v2_certificate(setup, observation_id, datetime.now(UTC))
 
         tx_a = conn_a.transaction()
         await tx_a.start()
@@ -461,11 +534,7 @@ async def test_final_outcome_race_projects_pending_until_final_certificate() -> 
         assert row_before_cert["status"] == "pending"
         assert row_before_cert["directional_return_pct"] is None
 
-        assert await certify_final_outcomes(setup) == 1
-        outcome_id = await setup.fetchval(
-            "SELECT outcome_id FROM signal_outcome WHERE observation_id=$1 AND horizon_minutes=15",
-            observation_id,
-        )
+        outcome_id = await _insert_spec_v2_final_certificate(setup, observation_id, 15)
         verified_visible_at = await setup.fetchval(
             "SELECT verified_visible_at FROM signal_outcome_final_visibility WHERE outcome_id=$1",
             outcome_id,
@@ -507,7 +576,9 @@ async def test_committed_evidence_without_certificate_excluded_then_certified_on
     conn: asyncpg.Connection,
 ) -> None:
     observed_at = datetime(2022, 3, 1, 9, 0, tzinfo=UTC)
-    observation_id = await _insert_complete_bundle(conn, observed_at=observed_at)
+    observation_id = await _insert_complete_bundle(
+        conn, observed_at=observed_at, evidence_version=SPEC_V2_SUPPORTED_EVIDENCE_VERSION
+    )
 
     options = _spec_v2_options(horizons=(15,))
     period_start = observed_at - timedelta(hours=1)
@@ -523,8 +594,7 @@ async def test_committed_evidence_without_certificate_excluded_then_certified_on
     )
     assert grid_before == []
 
-    assert await certify_research_bundles(conn) == 1
-    assert await certify_research_bundles(conn) == 0
+    await _insert_spec_v2_certificate(conn, observation_id, datetime.now(UTC))
     assert await conn.fetchval("SELECT count(*) FROM signal_research_bundle_visibility") == 1
 
     grid_after = await _fetch_period_grid_v2(
@@ -717,7 +787,11 @@ async def test_migration_down_fails_closed_on_evidence_v6(
     conn: asyncpg.Connection,
 ) -> None:
     observed_at = datetime(2023, 4, 1, 0, 0, tzinfo=UTC)
-    observation_id = await _insert_v6_observation(conn, observed_at=observed_at)
+    # La guarda de la migracion down es sobre la evidencia 6 EN CONCRETO, asi que aqui el
+    # 6 es literal a proposito: seguir la constante viva convertiria esta prueba en otra.
+    observation_id = await _insert_certifiable_observation(
+        conn, observed_at=observed_at, evidence_version=6
+    )
 
     with pytest.raises(asyncpg.PostgresError, match="refuses to"):
         await conn.execute(DOWN_SQL)
@@ -849,3 +923,85 @@ def test_visibility_v1_frozen_shape_survives_live_constant_monkeypatch(
 
     assert _CERTIFIED_OUTCOME_HORIZONS == (1, 3, 5, 15, 30, 60, 120, 240)
     assert _CERTIFIED_EXECUTION_EXCHANGES == ("binance", "bybit")
+
+
+# --- K75 · LA TUPLA DE LA v2, Y LA CONSECUENCIA QUE NADIE HABIA NOMBRADO ----------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("caso", "evidencia", "contexto", "outcome", "ejecucion"),
+    [
+        ("D contexto basura", 7, 9, 1, 1),
+        ("E outcome basura", 7, 1, 9, 1),
+        ("F evidencia muerta", 5, 1, 1, 1),
+        ("G snapshot basura", 7, 1, 1, 9),
+    ],
+)
+async def test_la_v2_no_admite_tuplas_fuera_de_su_contrato(
+    conn: asyncpg.Connection, caso: str, evidencia: int, contexto: int,
+    outcome: int, ejecucion: int,
+) -> None:
+    """La induccion del operador, congelada en prueba.
+
+    ANTES de K75 los CHECK tenian la forma "visibility_version <> 1 OR <regla>", asi que
+    una fila con visibility_version=2 hacia TRUE el primer disyuntivo y el CHECK ENTERO
+    pasaba TRIVIALMENTE: la version nueva nacia SIN GUARDIA. Estos cuatro casos PASABAN
+    todos. Si alguien vuelve a esa forma, esta prueba lo caza.
+    """
+    observed_at = datetime(2024, 5, 1, 0, 0, tzinfo=UTC)
+    observation_id = await _insert_complete_bundle(
+        conn, observed_at=observed_at, evidence_version=evidencia
+    )
+    with pytest.raises(asyncpg.PostgresError):
+        await conn.execute(
+            """
+            INSERT INTO signal_research_bundle_visibility(
+              observation_id,visibility_version,evidence_version,context_version,
+              outcome_version,execution_snapshot_version,verified_visible_at
+            ) VALUES($1,2,$2,$3,$4,$5,clock_timestamp())
+            """,
+            observation_id, evidencia, contexto, outcome, ejecucion,
+        )
+
+
+@pytest.mark.asyncio
+async def test_el_brazo_de_la_v1_sigue_intacto_y_sigue_mordiendo(
+    conn: asyncpg.Connection,
+) -> None:
+    """Los dos controles de la puerta: la v1 buena PASA y la v1 con evidencia 7 FALLA.
+
+    Sin el positivo, un CHECK que rechazase todo se leeria igual de bien que este.
+    """
+    observed_at = datetime(2024, 6, 1, 0, 0, tzinfo=UTC)
+    buena = await _insert_complete_bundle(conn, observed_at=observed_at, evidence_version=6)
+    await _insert_spec_v2_certificate(conn, buena, datetime.now(UTC))
+
+    mala = await _insert_complete_bundle(
+        conn, observed_at=observed_at + timedelta(minutes=5), evidence_version=7
+    )
+    with pytest.raises(asyncpg.PostgresError):
+        await conn.execute(
+            """
+            INSERT INTO signal_research_bundle_visibility(
+              observation_id,visibility_version,evidence_version,context_version,
+              outcome_version,execution_snapshot_version,verified_visible_at
+            ) VALUES($1,1,7,1,1,1,clock_timestamp())
+            """,
+            mala,
+        )
+
+
+def test_el_certificador_y_spec_v2_YA_NO_APUNTAN_A_LA_MISMA_EVIDENCIA() -> None:
+    """LA CONSECUENCIA DE K75 QUE NO ESTABA EN LA PUERTA, escrita para que no sorprenda.
+
+    El certificador pasa a evidencia 7 / visibilidad 2 y spec v2 sigue congelado en 6 / 1.
+    Eso NO es un fallo: signal_walk_forward.py:95-99 dice por escrito que la tupla de un
+    manifiesto ya persistido no puede cambiar cuando avanzan las constantes. Pero tiene un
+    precio que conviene tener delante: ninguna observacion certificada A PARTIR DE AHORA
+    entra en un manifiesto spec v2, asi que la evaluacion walk-forward se queda congelada
+    sobre el historico de evidencia 6 hasta que alguien declare una spec v3.
+    Esta prueba NO pide que se arregle: pide que si algun dia se alinean, sea a proposito.
+    """
+    assert _CERTIFIED_EVIDENCE_VERSION != SPEC_V2_SUPPORTED_EVIDENCE_VERSION
+    assert RESEARCH_VISIBILITY_VERSION != SPEC_V2_SUPPORTED_RESEARCH_VISIBILITY_VERSION
