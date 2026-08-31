@@ -18,9 +18,10 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.config import BYBIT_SYMBOL_MAP
-from app.data_gaps import DataGap
+from app.data_gaps import DataGap, RecoveryValidationError
 from scripts.recover_gaps import (
     PLANES_METRICA,
+    CoinalyzeLongShortAdapter,
     CoinalyzeMetricAdapter,
     construir_adaptadores,
     exact_adapter_for,
@@ -172,7 +173,9 @@ def test_una_identidad_no_registrada_devuelve_None_en_vez_de_adivinar():
     adaptadores = construir_adaptadores(ClienteFalso())
     permitidos = frozenset({CANON})
 
-    assert exact_adapter_for(_gap(feed="long_short_ratio"), adaptadores, permitidos) is None
+    # long_short_ratio ya NO sirve de ejemplo: desde #112 tiene adaptador propio. Se
+    # cambia por un feed que de verdad no lo tiene, en vez de borrar el caso.
+    assert exact_adapter_for(_gap(feed="liquidations"), adaptadores, permitidos) is None
     assert exact_adapter_for(_gap(exchange="okx"), adaptadores, permitidos) is None
     assert exact_adapter_for(_gap(granularity="1min"), adaptadores, permitidos) is None
     assert exact_adapter_for(_gap(market="spot"), adaptadores, permitidos) is None
@@ -189,16 +192,24 @@ def test_el_registro_no_admite_dos_adaptadores_para_la_misma_identidad():
     identidad dejarian que el ultimo pisara al primero en silencio."""
     adaptadores = construir_adaptadores(ClienteFalso())
 
-    assert len(adaptadores) == len(PLANES_METRICA) + 1  # +1 el de ohlcv 1min
+    # +2: el de ohlcv 1min y el de long_short, que tienen escritor propio
+    assert len(adaptadores) == len(PLANES_METRICA) + 2
     identidades = [(p.feed, p.exchange) for p in PLANES_METRICA]
     assert len(identidades) == len(set(identidades))
 
 
-def test_long_short_ratio_NO_tiene_plan_y_se_dice_por_que():
-    """No es un olvido: su tabla no es (o,h,l,c) sino long_pct/short_pct/ratio, o sea otro
-    escritor. Si alguien lo anade a PLANES_METRICA sin cambiar el escritor,
-    upsert_ohlc_metric lo rechaza por su lista blanca -- pero este test lo dice antes."""
+def test_long_short_ratio_TIENE_adaptador_pero_NO_plan_y_se_dice_por_que():
+    """Sigue fuera de PLANES_METRICA, y ahora por escrito con su alternativa al lado.
+
+    Su tabla no es (o,h,l,c) sino long_pct/short_pct/ratio, o sea otro escritor
+    (upsert_long_short). Si alguien lo anade a PLANES_METRICA sin cambiar el escritor,
+    upsert_ohlc_metric lo rechaza por su lista blanca -- pero este test lo dice antes. Lo
+    que NO puede pasar ya es que quede sin via: el hueco de 136 buckets del 2026-08-28 no
+    se pudo recuperar por falta de este adaptador.
+    """
     assert all(p.feed != "long_short_ratio" for p in PLANES_METRICA)
+    adaptadores = construir_adaptadores(ClienteFalso())
+    assert ("long_short_ratio", "binance", "perpetual", "5min") in adaptadores
 
 
 def test_las_tablas_y_prefijos_son_los_que_acepta_el_escritor():
@@ -252,6 +263,131 @@ async def test_postgres_la_recuperacion_de_bybit_aterriza_en_oi_bybit_con_el_can
         assert await conn.fetchval(
             "SELECT count(*) FROM open_interest WHERE ts=$1 AND symbol=$2", INICIO, CANON
         ) == antes_binance, "y NO puede tocar la tabla de binance"
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+# --- long_short_ratio: el feed que NO cabia en el plan generico -------------------------
+
+
+class ClienteFalsoLongShort:
+    """Devuelve posicionamiento (l/s/r), que es lo que este endpoint publica."""
+
+    def __init__(self, filas=None) -> None:
+        self.llamadas: list[dict] = []
+        self.filas = filas
+
+    async def history(self, endpoint, symbols, **kwargs):
+        self.llamadas.append({"endpoint": endpoint, "symbols": list(symbols), **kwargs})
+        clave = list(symbols)[0]
+        if self.filas is not None:
+            return {clave: self.filas}
+        return {
+            clave: [
+                {"t": int(INICIO.timestamp()), "l": 60.0, "s": 40.0, "r": 1.5},
+                {
+                    "t": int((INICIO + timedelta(minutes=5)).timestamp()),
+                    "l": 45.0, "s": 55.0, "r": 0.818,
+                },
+            ]
+        }
+
+
+def _gap_ls(**cambios) -> DataGap:
+    return _gap(feed="long_short_ratio", granularity="5min", **cambios)
+
+
+@pytest.mark.asyncio
+async def test_long_short_se_pide_al_endpoint_de_posicionamiento_y_con_el_canonico():
+    """binance no traduce, pero se fija de que ENDPOINT sale: pedirlo a ohlcv-history
+    devolveria precio donde tiene que haber reparto de la multitud."""
+    cliente = ClienteFalsoLongShort()
+    adaptador = CoinalyzeLongShortAdapter(cliente)
+
+    observaciones = await adaptador.fetch(_gap_ls())
+
+    assert cliente.llamadas[0]["endpoint"] == "long-short-ratio-history"
+    assert cliente.llamadas[0]["symbols"] == [CANON]
+    assert cliente.llamadas[0]["interval"] == "5min"
+    assert [o.symbol for o in observaciones] == [CANON, CANON]
+    assert [o.feed for o in observaciones] == ["long_short_ratio"] * 2
+
+
+@pytest.mark.asyncio
+async def test_long_short_NO_pide_convert_to_usd():
+    """Un porcentaje no se convierte a dolares. El plan generico lleva convert_to_usd
+    porque el interes abierto lo necesita; aqui no existe el parametro y es correcto."""
+    cliente = ClienteFalsoLongShort()
+
+    await CoinalyzeLongShortAdapter(cliente).fetch(_gap_ls())
+
+    assert "convert_to_usd" not in cliente.llamadas[0]
+
+
+@pytest.mark.asyncio
+async def test_postgres_la_fila_incoherente_hace_FALLAR_la_recuperacion_entera():
+    """EL SILENCIO DE upsert_long_short ES VENENO AQUI, y este es el test que lo fija.
+
+    upsert_long_short descarta sin avisar la fila cuyo l+s se aleja de 100 (ingest.py).
+    En el ciclo vivo eso es correcto -- mejor no tener el dato que inventar el reparto --.
+    Aqui seria dejar el hueco marcado 'recovered' con MENOS buckets de los que
+    validate_recovery acaba de exigir: un VERDE cuya evidencia es un conteo que encogio.
+    La comparacion count != len(observations) lo convierte en fallo duro.
+    """
+    import os
+
+    import asyncpg
+
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    cliente = ClienteFalsoLongShort(filas=[
+        {"t": int(INICIO.timestamp()), "l": 60.0, "s": 40.0, "r": 1.5},
+        # l+s = 130, o sea que no es un reparto. upsert_long_short la tira en silencio.
+        {"t": int((INICIO + timedelta(minutes=5)).timestamp()),
+         "l": 60.0, "s": 70.0, "r": 0.857},
+    ])
+    adaptador = CoinalyzeLongShortAdapter(cliente)
+    observaciones = await adaptador.fetch(_gap_ls())
+    assert len(observaciones) == 2, "la fuente mando dos y el adaptador no filtra"
+
+    conn = await asyncpg.connect(dsn)
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        with pytest.raises(RecoveryValidationError):
+            await adaptador.persist(conn, observaciones)
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_la_recuperacion_de_long_short_aterriza_en_su_tabla():
+    """Donde aterriza el dato, con el reparto intacto y no convertido a otra unidad."""
+    import os
+
+    import asyncpg
+
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    conn = await asyncpg.connect(dsn)
+    tx = conn.transaction()
+    await tx.start()
+    try:
+        adaptador = CoinalyzeLongShortAdapter(ClienteFalsoLongShort())
+        observaciones = await adaptador.fetch(_gap_ls())
+        await adaptador.persist(conn, observaciones)
+
+        fila = await conn.fetchrow(
+            "SELECT symbol, long_pct, short_pct, ratio FROM long_short_ratio "
+            "WHERE ts=$1 AND interval='5min' AND symbol=$2", INICIO, CANON
+        )
+        assert fila is not None, "tiene que caer en long_short_ratio"
+        assert fila["symbol"] == CANON
+        assert (fila["long_pct"], fila["short_pct"]) == (60.0, 40.0)
     finally:
         await tx.rollback()
         await conn.close()

@@ -889,6 +889,227 @@ async def archive_source_response_absence(
     return int(result.rsplit(" ", 1)[-1]) if result.startswith("UPDATE ") else 0
 
 
+# LA TERCERA VIA, y nace de un hueco que las otras dos no saben cerrar SIN MENTIR.
+# Medido el 2026-08-30 contra el proveedor: las 3 filas de long_short_ratio del bloque
+# 2026-08-28 07:45-19:05 piden 136 buckets y la fuente sirve 135, 135 y 127. Con eso:
+#   validate_recovery exige timestamps == expected -- igualdad de CONJUNTOS -- y las
+#     rechaza enteras, asi que la recuperacion no entra y los 135 que SI existen se
+#     quedan fuera de la base.
+#   archive_source_response_absence las rechaza tambien, y hace bien: sus
+#     window_returned_rows serian 135 y no 0, o sea que archivarlas afirmaria que la
+#     fuente no publica lo que si publica, y ademas tiraria el dato.
+#   archive_beyond_source_horizon es falso de plano: la ventana devuelve 135 filas.
+# El hueco no es de metodo, es de GRANULARIDAD: el detector escribio UNA fila para un
+# tramo que la fuente cubre a trozos. La respuesta honesta no es elegir la excusa menos
+# mala, es partir la fila en los trozos que la MEDICION distingue y resolver cada uno
+# por su propia via.
+PARTITION_REASON = (
+    "partitioned by measured source coverage: the source serves this window only in "
+    "part, so it was split into sub-gaps that tile it and are resolved one by one"
+)
+
+# Los hijos llevan detection_source PROPIO por dos razones que no son cosmeticas. Una:
+# data_gap ya tiene 172 filas duplicadas -- el mismo bucket apuntado por dos detectores
+# --, asi que "las filas contenidas en la ventana del padre" NO son los hijos, y probar
+# la teselacion sobre ese conjunto daria solapes que no son de la particion. Dos: el
+# padre GUARDA este valor en su metadata, asi que el check saca el conjunto de hijos de
+# la propia fila y no de una constante escrita a mano en el check, que envejece sin
+# avisar. Versionado porque el dia que cambie la forma de partir, las particiones viejas
+# tienen que seguir re-derivandose con su propia regla.
+PARTITION_DETECTION_SOURCE = "source_coverage_partition_v1"
+
+
+def partition_runs(
+    start: datetime,
+    end: datetime,
+    cadence: timedelta,
+    present: Iterable[datetime],
+) -> tuple[tuple[datetime, datetime, bool], ...]:
+    """Trocear [start,end) en tramos contiguos de buckets PRESENTES y AUSENTES.
+
+    Devuelve la particion entera -- teselada, sin hueco y sin solape --, no solo los
+    trozos que faltan. Que salgan los dos tipos del MISMO recorrido es lo que garantiza
+    que la union sea exactamente la ventana del padre: una funcion que solo listase los
+    ausentes obligaria a deducir los presentes por complemento, y ahi es donde se cuela
+    el bucket que no se cuenta en ningun sitio.
+    """
+    if cadence <= timedelta(0):
+        raise ValueError("cadence must be positive to partition a window")
+    start, end = _validated_window(start, end)
+    marcas = {_aware_utc(marca, "present bucket") for marca in present}
+
+    rejilla: list[datetime] = []
+    bucket = start
+    while bucket < end:
+        rejilla.append(bucket)
+        bucket += cadence
+    fuera = marcas - set(rejilla)
+    if fuera:
+        # Una marca fuera de la rejilla significa que la fuente no responde en la
+        # cadencia declarada, y entonces la particion entera se apoya en una rejilla que
+        # no es la suya. Reventar es la unica salida honesta: alinearla por lo bajo
+        # inventaria buckets.
+        raise ValueError(
+            f"{len(fuera)} source buckets are not on the declared cadence grid: "
+            "partitioning against the wrong grid would invent buckets"
+        )
+
+    tramos: list[tuple[datetime, datetime, bool]] = []
+    for bucket in rejilla:
+        hay = bucket in marcas
+        if tramos and tramos[-1][2] == hay and tramos[-1][1] == bucket:
+            tramos[-1] = (tramos[-1][0], bucket + cadence, hay)
+        else:
+            tramos.append((bucket, bucket + cadence, hay))
+    return tuple(tramos)
+
+
+async def partition_gap_by_source_coverage(
+    conn: asyncpg.Connection,
+    *,
+    gap_id: int,
+    present_buckets: Sequence[datetime],
+    proof_source: str,
+) -> dict[str, Any]:
+    """Partir un hueco que la fuente cubre A MEDIAS en hijos que TESELAN su ventana.
+
+    NO cierra el padre y es deliberado: al salir de aqui el padre sigue 'unresolved' y
+    los hijos nacen 'unresolved'. Cerrar el padre aqui escribiria una afirmacion --
+    "cada trozo esta resuelto" -- que en ese instante todavia es falsa, y este proyecto
+    ya tiene medido lo que cuesta una prueba escrita antes de ser cierta. El padre se
+    cierra en ``close_partitioned_gap``, que lo VERIFICA contra la tabla.
+
+    Se niega si la cobertura es COMPLETA (recuperese entero: partir seria trocear por
+    gusto) o VACIA (eso es ausencia u horizonte, y esos tienen su via y su prueba).
+    """
+    if not proof_source:
+        raise ValueError("a partition without a named prover cannot be audited")
+    gap = await _load_gap(conn, gap_id)
+    if gap is None:
+        raise LookupError(f"data gap {gap_id} does not exist")
+    if gap.status != "unresolved":
+        raise ValueError(
+            f"gap {gap_id} is '{gap.status}': partitioning a resolved gap would "
+            "reopen an accounting that is already closed"
+        )
+    if gap.feed_class != "cadence" or gap.expected_cadence is None:
+        raise ValueError("only cadence gaps have a bucket grid to partition")
+
+    tramos = partition_runs(gap.start, gap.end, gap.expected_cadence, present_buckets)
+    esperados = expected_buckets(gap.start, gap.end, gap.expected_cadence)
+    presentes = len({_aware_utc(marca, "present bucket") for marca in present_buckets})
+    if presentes == 0:
+        raise ValueError(
+            "the source returned nothing inside the window: that is an absence or an "
+            "exhausted horizon, and each has its own proof -- not a partition"
+        )
+    if presentes >= esperados:
+        raise ValueError(
+            "the source covers the window completely: recover it whole instead of "
+            "splitting it, so the recovery keeps validating the full cadence"
+        )
+
+    hijos: list[dict[str, Any]] = []
+    async with conn.transaction():
+        for inicio, fin, hay in tramos:
+            motivo = (
+                f"source coverage measured by {proof_source}: "
+                f"{'serves' if hay else 'does not publish'} this run; "
+                f"parent gap {gap.id} covers {gap.start.isoformat()}..{gap.end.isoformat()} "
+                f"with {presentes}/{esperados} buckets served"
+            )
+            hijo = await record_data_gap(
+                conn,
+                feed=gap.feed,
+                feed_class=gap.feed_class,
+                exchange=gap.exchange,
+                market=gap.market,
+                symbol=gap.symbol,
+                granularity=gap.granularity,
+                start=inicio,
+                end=fin,
+                evidence_type="missing_interval",
+                detection_reason=motivo,
+                detection_source=PARTITION_DETECTION_SOURCE,
+                expected_cadence=gap.expected_cadence,
+            )
+            hijos.append({"gap": hijo, "start": inicio, "end": fin, "served": hay})
+    return {
+        "gap": gap.id,
+        "expected_buckets": esperados,
+        "served_buckets": presentes,
+        "children": hijos,
+    }
+
+
+async def close_partitioned_gap(
+    conn: asyncpg.Connection,
+    *,
+    gap_id: int,
+    proof_source: str,
+) -> str:
+    """Cerrar el padre SOLO si sus hijos ya teselan la ventana y ninguno sigue abierto.
+
+    La comprobacion se hace aqui Y la rehace K04 desde la fila: no es duplicar por
+    duplicar. Esta impide ESCRIBIR la afirmacion falsa; la de K04 impide que siga en pie
+    si manana alguien reabre un hijo. Un guardia en la escritura no vigila el pasado, y
+    uno en la lectura no impide el error -- hacen falta los dos.
+    """
+    gap = await _load_gap(conn, gap_id)
+    if gap is None:
+        raise LookupError(f"data gap {gap_id} does not exist")
+    if gap.status != "unresolved":
+        return gap.status
+
+    fila = await conn.fetchrow(
+        """
+        SELECT count(*) AS hijos,
+               count(*) FILTER (WHERE status='unresolved') AS abiertos,
+               coalesce(sum(end_ts-start_ts), interval '0') AS cubierto
+        FROM data_gap
+        WHERE feed=$1 AND exchange=$2 AND market=$3 AND symbol=$4 AND granularity=$5
+          AND detection_source=$6
+          AND start_ts >= $7 AND end_ts <= $8
+        """,
+        gap.feed, gap.exchange, gap.market, gap.symbol, gap.granularity,
+        PARTITION_DETECTION_SOURCE, gap.start, gap.end,
+    )
+    if int(fila["hijos"]) < 2:
+        raise ValueError(f"gap {gap_id} has no partition to close")
+    if int(fila["abiertos"]) != 0:
+        raise ValueError(
+            f"{fila['abiertos']} of the {fila['hijos']} sub-gaps are still unresolved: "
+            "closing the parent now would claim an accounting that is not done"
+        )
+    if fila["cubierto"] != gap.end - gap.start:
+        raise ValueError(
+            "the sub-gaps do not tile the parent window: closing it would leave "
+            "buckets accounted for nowhere"
+        )
+
+    await conn.execute(
+        """
+        UPDATE data_gap
+        SET status='unrecoverable',
+            resolved_at=clock_timestamp(), recovered_at=NULL,
+            recovery_attempts=recovery_attempts+1,
+            last_recovery_attempt_at=clock_timestamp(),
+            resolution_reason=$2,
+            recovery_metadata=jsonb_build_object(
+                'method','partitioned_by_source_coverage',
+                'proof_source',$3::text,
+                'partition_detection_source',$4::text,
+                'partition_children',$5::int,
+                'checked_at',clock_timestamp()
+            )
+        WHERE id=$1 AND status='unresolved'
+        """,
+        gap_id, PARTITION_REASON, proof_source,
+        PARTITION_DETECTION_SOURCE, int(fila["hijos"]),
+    )
+    return "unrecoverable"
+
+
 @dataclass(frozen=True, slots=True)
 class RecoveryObservation:
     timestamp: datetime

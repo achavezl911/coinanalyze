@@ -183,7 +183,7 @@ def decidir(
     )
 
 
-async def _pide(
+async def pide_marcas(
     client: CoinalyzeClient, gap: DataGap, desde: datetime, hasta: datetime
 ) -> list[datetime]:
     endpoint, interval = SONDA_POR_FEED[(gap.feed, gap.exchange)]
@@ -210,7 +210,7 @@ async def _sondea_ancho(client: CoinalyzeClient, gap: DataGap) -> Sondeo:
     pedirlo aparte: las dos afirmaciones salen del mismo hecho observado, y no puede
     pasar que una peticion vea el tramo servido y la otra no.
     """
-    marcas = await _pide(client, gap, gap.start - MARGEN_ANCHO, gap.end + MARGEN_ANCHO)
+    marcas = await pide_marcas(client, gap, gap.start - MARGEN_ANCHO, gap.end + MARGEN_ANCHO)
     dentro = [m for m in marcas if gap.start <= m < gap.end]
     return Sondeo(
         filas_dentro=len(dentro),
@@ -260,7 +260,7 @@ async def _procesar(
     if clave not in control_cache:
         # El control es la MISMA ventana reciente para toda la identidad, asi que se pide
         # una vez. Cachearlo no relaja la prueba: cada fila archivada guarda ese conteo.
-        control_cache[clave] = len(await _pide(client, gap, control_ini, control_fin))
+        control_cache[clave] = len(await pide_marcas(client, gap, control_ini, control_fin))
     filas_control = control_cache[clave]
 
     veredicto = decidir(gap, sondeo=sondeo, filas_control=filas_control)

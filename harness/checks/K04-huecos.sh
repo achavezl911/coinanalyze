@@ -53,6 +53,40 @@
 # tercer camino de archivado, este check lo para hasta que se le ensene a
 # verificarlo. Es lo contrario de la lista negra, que dejaba pasar lo que no conocia.
 #
+# v5, 2026-08-31: EL TERCER CAMINO LLEGO, y llego por donde el header decia. Medido
+# contra el proveedor el 2026-08-30 (hechos.tsv:969): las 3 filas de long_short_ratio del
+# bloque 2026-08-28 07:45-19:05 piden 136 buckets de 5min y la fuente sirve 135, 135 y
+# 127. Las tres vias existentes fallan y HACEN BIEN -- validate_recovery exige igualdad de
+# conjuntos y las rechaza enteras; ausencia exige window_returned_rows=0 y aqui son 135;
+# horizonte es falso de plano porque la ventana devuelve datos --. El agujero no es de
+# metodo sino de GRANULARIDAD: una sola fila para un tramo que la fuente cubre a trozos.
+#
+#   partitioned_by_source_coverage  el hueco se partio por donde la MEDICION lo parte, y
+#                                   cada trozo se resolvio por su propia via.
+#
+# ESTA RAMA NO CREE NADA DE LO QUE LA FILA CUENTA SOBRE SI MISMA, y es lo que la
+# distingue de un motivo con buena letra: se re-deriva contra la TABLA. Los hijos tienen
+# que TESELAR la ventana del padre -- contenidos, disjuntos, y la suma de sus medidas
+# igual a la del padre -- y ninguno puede seguir 'unresolved'. Hacen falta las tres
+# condiciones: contencion + suma sola admite un HUECO compensado por un SOLAPE, que es
+# justo como se pierde un bucket sin que ningun conteo baje.
+#
+# Y NO SE AFLOJA NADA AL COMPONER: un hijo recuperado paso validate_recovery entero sobre
+# su propio tramo, y un hijo archivado lo juzga ESTE MISMO check por sus otras dos ramas.
+# El padre no hereda una excusa, hereda pruebas ya verificadas una a una.
+#
+# EL CONJUNTO DE HIJOS SALE DE LA PROPIA FILA -- recovery_metadata->>
+# 'partition_detection_source' --, nunca de una constante escrita aqui. Dos razones
+# medidas: data_gap tiene 172 filas duplicadas por dos detectores, asi que "lo contenido
+# en la ventana del padre" NO son los hijos y probar la teselacion sobre ese conjunto
+# daria solapes ajenos; y una constante en el check envejece sin avisar, que es la
+# enfermedad que este mismo fichero le diagnostico a su propia v2.
+#
+# EL ATAJO QUE SE RECHAZO, escrito para que no lo reinvente nadie: cerrar el padre como
+# 'recovered'. El conteo 3 filtra por status='unrecoverable', asi que un padre
+# 'recovered' NO se examina y habria pasado en VERDE sin prueba ninguna. 'unrecoverable'
+# lo mete en el cubo vigilado, que es donde tiene que estar algo que no se recupero.
+#
 # v4, 2026-08-30: LA RAMA DE AUSENCIA NO RE-DERIVABA SU AFIRMACION CENTRAL, y el fallo
 # es de esta misma jornada. El straddle prueba la mitad IZQUIERDA de la frase -- que la
 # fuente cubrio el tramo -- y jamas la derecha, que es la que la frase de verdad afirma:
@@ -112,7 +146,7 @@ mudos=$(leer mudos "SELECT count(*) FROM data_gap
 # no se contaria, o sea que un metadata a medias se colaria como bueno. Si algun dia
 # hay un metadata con basura donde va una fecha, el cast revienta, la consulta no
 # devuelve numero y `leer` saca NOMED: "no pude medir" no es "no hay problema".
-sin_prueba=$(leer sin_prueba "SELECT count(*) FROM data_gap
+sin_prueba=$(leer sin_prueba "SELECT count(*) FROM data_gap g
   WHERE status='unrecoverable'
     AND NOT coalesce(
       CASE recovery_metadata->>'method'
@@ -136,6 +170,28 @@ sin_prueba=$(leer sin_prueba "SELECT count(*) FROM data_gap
           AND recovery_metadata->>'control_returned_rows' IS NOT NULL
           AND (recovery_metadata->>'window_returned_rows')::int  =  0
           AND (recovery_metadata->>'control_returned_rows')::int >  0
+        WHEN 'partitioned_by_source_coverage' THEN
+              g.recovery_metadata->>'partition_detection_source' IS NOT NULL
+          AND (SELECT count(*) >= 2
+                  AND count(*) FILTER (WHERE h.status='unresolved') = 0
+                  AND sum(h.end_ts - h.start_ts) = g.end_ts - g.start_ts
+                 FROM data_gap h
+                WHERE h.feed=g.feed AND h.exchange=g.exchange AND h.market=g.market
+                  AND h.symbol=g.symbol AND h.granularity=g.granularity
+                  AND h.detection_source=g.recovery_metadata->>'partition_detection_source'
+                  AND h.start_ts >= g.start_ts AND h.end_ts <= g.end_ts)
+          AND NOT EXISTS (
+                SELECT 1 FROM data_gap a JOIN data_gap b
+                    ON b.id > a.id
+                   AND b.feed=a.feed AND b.exchange=a.exchange AND b.market=a.market
+                   AND b.symbol=a.symbol AND b.granularity=a.granularity
+                   AND b.detection_source=a.detection_source
+                   AND b.start_ts >= g.start_ts AND b.end_ts <= g.end_ts
+                   AND a.start_ts < b.end_ts AND b.start_ts < a.end_ts
+                 WHERE a.feed=g.feed AND a.exchange=g.exchange AND a.market=g.market
+                   AND a.symbol=g.symbol AND a.granularity=g.granularity
+                   AND a.detection_source=g.recovery_metadata->>'partition_detection_source'
+                   AND a.start_ts >= g.start_ts AND a.end_ts <= g.end_ts)
         ELSE false
       END, false)") || exit 2
 

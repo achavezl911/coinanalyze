@@ -1,8 +1,11 @@
+import json
+import os
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
 import app.api as api
+import app.data_gaps as data_gaps
 from app.api import mask_gapped_series_rows
 from app.data_gaps import (
     DataGap,
@@ -394,3 +397,201 @@ async def test_una_serie_vacia_dice_no_data_y_no_inventa_ventana(monkeypatch) ->
     assert sobre["data_gaps"]["status"] == "no_data"
     assert sobre["data_gaps"]["window_start"] is None
     assert sobre["coverage"]["served_window"] is None
+
+
+async def _espejo():
+    """Conexion al espejo dentro de una transaccion que SIEMPRE termina en ROLLBACK."""
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        return None, None
+    import asyncpg
+
+    conn = await asyncpg.connect(dsn)
+    tx = conn.transaction()
+    await tx.start()
+    return conn, tx
+
+
+async def _hueco(conn, inicio, fin, **cambios) -> int:
+    """Un hueco de cadencia de 5min con identidad sintetica, para no pisar dato real."""
+    campos = {
+        "feed": "syn_particion", "feed_class": "cadence", "exchange": "binance",
+        "market": "perpetual", "symbol": "BTCUSDT_PERP.A", "granularity": "5min",
+        "evidence_type": "missing_interval", "detection_reason": "sintetico",
+        "detection_source": "test_particion", "expected_cadence": timedelta(minutes=5),
+    }
+    campos.update(cambios)
+    return await record_data_gap(conn, start=inicio, end=fin, **campos)
+
+
+# --- K73 · PARTIR UN HUECO QUE LA FUENTE CUBRE A MEDIAS ---------------------------------
+#
+# El caso real, medido contra el proveedor el 2026-08-30: las 3 filas de long_short_ratio
+# del bloque 2026-08-28 07:45-19:05 piden 136 buckets y la fuente sirve 135, 135 y 127.
+# Las tres vias existentes las rechazan Y HACEN BIEN, asi que hace falta partir.
+
+
+def test_partition_runs_tesela_la_ventana_sin_hueco_y_sin_solape() -> None:
+    """La propiedad que sostiene todo lo demas: la union de los tramos ES la ventana."""
+    inicio = datetime(2026, 8, 28, 7, 45, tzinfo=UTC)
+    fin = inicio + timedelta(minutes=50)  # 10 buckets
+    cadencia = timedelta(minutes=5)
+    presentes = [inicio + timedelta(minutes=5 * i) for i in (0, 1, 2, 4, 5, 6, 7, 8, 9)]
+
+    tramos = data_gaps.partition_runs(inicio, fin, cadencia, presentes)
+
+    assert [(a, b, s) for a, b, s in tramos] == [
+        (inicio, inicio + timedelta(minutes=15), True),
+        (inicio + timedelta(minutes=15), inicio + timedelta(minutes=20), False),
+        (inicio + timedelta(minutes=20), fin, True),
+    ]
+    assert tramos[0][0] == inicio and tramos[-1][1] == fin
+    assert all(tramos[i][1] == tramos[i + 1][0] for i in range(len(tramos) - 1))
+    assert sum((b - a for a, b, _ in tramos), timedelta(0)) == fin - inicio
+
+
+def test_partition_runs_devuelve_UN_solo_tramo_si_no_falta_nada() -> None:
+    """Y por eso el que parte se niega despues: partir esto seria trocear por gusto."""
+    inicio = datetime(2026, 8, 28, 7, 45, tzinfo=UTC)
+    cadencia = timedelta(minutes=5)
+    todos = [inicio + timedelta(minutes=5 * i) for i in range(4)]
+
+    tramos = data_gaps.partition_runs(inicio, inicio + timedelta(minutes=20), cadencia, todos)
+
+    assert len(tramos) == 1 and tramos[0][2] is True
+
+
+def test_partition_runs_revienta_si_la_fuente_no_responde_en_la_rejilla() -> None:
+    """Una marca fuera de la cadencia declarada significa que la particion entera se
+    apoya en una rejilla que no es la suya. Alinearla por lo bajo inventaria buckets."""
+    inicio = datetime(2026, 8, 28, 7, 45, tzinfo=UTC)
+    with pytest.raises(ValueError, match="cadence grid"):
+        data_gaps.partition_runs(
+            inicio, inicio + timedelta(minutes=20), timedelta(minutes=5),
+            [inicio + timedelta(minutes=7)],
+        )
+
+
+@pytest.mark.asyncio
+async def test_postgres_partir_escribe_los_hijos_y_DEJA_al_padre_sin_resolver() -> None:
+    """La separacion en dos pasos es la propiedad, no una comodidad.
+
+    Al salir de partir, "cada trozo esta resuelto" todavia es FALSO. Escribirlo aqui
+    seria una prueba puesta antes de ser cierta, que es exactamente lo que este proyecto
+    lleva semanas pagando. El padre se cierra en close_partitioned_gap, que lo verifica
+    contra la tabla.
+    """
+    conn, tx = await _espejo()
+    if conn is None:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    try:
+        inicio = datetime(2026, 1, 2, 0, 0, tzinfo=UTC)
+        padre = await _hueco(conn, inicio, inicio + timedelta(minutes=50))
+        presentes = [inicio + timedelta(minutes=5 * i) for i in range(10) if i != 3]
+
+        salida = await data_gaps.partition_gap_by_source_coverage(
+            conn, gap_id=padre, present_buckets=presentes, proof_source="prueba",
+        )
+
+        assert salida["expected_buckets"] == 10
+        assert salida["served_buckets"] == 9
+        assert len(salida["children"]) == 3
+        assert await conn.fetchval(
+            "SELECT status FROM data_gap WHERE id=$1", padre
+        ) == "unresolved"
+        assert await conn.fetchval(
+            "SELECT count(*) FROM data_gap WHERE detection_source=$1 AND status='unresolved'",
+            data_gaps.PARTITION_DETECTION_SOURCE,
+        ) == 3
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_partir_se_niega_con_cobertura_completa_o_vacia() -> None:
+    """Los dos extremos tienen su via y su prueba, y ninguna es esta. Vacia es ausencia
+    u horizonte; completa se recupera entera, para que la recuperacion siga validando la
+    cadencia completa en vez de una partida en trozos que nadie vuelve a juntar."""
+    conn, tx = await _espejo()
+    if conn is None:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    try:
+        inicio = datetime(2026, 1, 3, 0, 0, tzinfo=UTC)
+        padre = await _hueco(conn, inicio, inicio + timedelta(minutes=20))
+        todos = [inicio + timedelta(minutes=5 * i) for i in range(4)]
+
+        with pytest.raises(ValueError, match="completely"):
+            await data_gaps.partition_gap_by_source_coverage(
+                conn, gap_id=padre, present_buckets=todos, proof_source="prueba")
+        with pytest.raises(ValueError, match="absence or an"):
+            await data_gaps.partition_gap_by_source_coverage(
+                conn, gap_id=padre, present_buckets=[], proof_source="prueba")
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_cerrar_se_niega_mientras_quede_un_hijo_abierto() -> None:
+    """EL CONTROL QUE IMPIDE ESCRIBIR LA AFIRMACION FALSA. Y el positivo al lado: en
+    cuanto los hijos estan, cierra -- un guardia que no deja cerrar nunca esta tan roto
+    como el que cierra siempre."""
+    conn, tx = await _espejo()
+    if conn is None:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    try:
+        inicio = datetime(2026, 1, 4, 0, 0, tzinfo=UTC)
+        padre = await _hueco(conn, inicio, inicio + timedelta(minutes=50))
+        presentes = [inicio + timedelta(minutes=5 * i) for i in range(10) if i != 3]
+        await data_gaps.partition_gap_by_source_coverage(
+            conn, gap_id=padre, present_buckets=presentes, proof_source="prueba")
+
+        with pytest.raises(ValueError, match="still unresolved"):
+            await data_gaps.close_partitioned_gap(
+                conn, gap_id=padre, proof_source="prueba")
+
+        await conn.execute(
+            "UPDATE data_gap SET status='unrecoverable', resolved_at=now() "
+            "WHERE detection_source=$1", data_gaps.PARTITION_DETECTION_SOURCE)
+        assert await data_gaps.close_partitioned_gap(
+            conn, gap_id=padre, proof_source="prueba") == "unrecoverable"
+
+        fila = await conn.fetchrow(
+            "SELECT status, resolution_reason, recovery_metadata FROM data_gap WHERE id=$1",
+            padre)
+        assert fila["status"] == "unrecoverable"
+        assert fila["resolution_reason"] == data_gaps.PARTITION_REASON
+        prueba = json.loads(fila["recovery_metadata"])
+        assert prueba["method"] == "partitioned_by_source_coverage"
+        assert prueba["partition_detection_source"] == data_gaps.PARTITION_DETECTION_SOURCE
+    finally:
+        await tx.rollback()
+        await conn.close()
+
+
+@pytest.mark.asyncio
+async def test_postgres_cerrar_se_niega_si_los_hijos_dejan_un_bucket_sin_contabilizar() -> None:
+    """Borrado un hijo, la suma ya no da la ventana del padre. Cerrar entonces dejaria
+    buckets contabilizados en ningun sitio, que es la forma silenciosa de perder dato."""
+    conn, tx = await _espejo()
+    if conn is None:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    try:
+        inicio = datetime(2026, 1, 5, 0, 0, tzinfo=UTC)
+        padre = await _hueco(conn, inicio, inicio + timedelta(minutes=50))
+        presentes = [inicio + timedelta(minutes=5 * i) for i in range(10) if i != 3]
+        salida = await data_gaps.partition_gap_by_source_coverage(
+            conn, gap_id=padre, present_buckets=presentes, proof_source="prueba")
+        await conn.execute(
+            "UPDATE data_gap SET status='unrecoverable', resolved_at=now() "
+            "WHERE detection_source=$1", data_gaps.PARTITION_DETECTION_SOURCE)
+        await conn.execute(
+            "DELETE FROM data_gap WHERE id=$1", salida["children"][-1]["gap"])
+
+        with pytest.raises(ValueError, match="do not tile"):
+            await data_gaps.close_partitioned_gap(
+                conn, gap_id=padre, proof_source="prueba")
+    finally:
+        await tx.rollback()
+        await conn.close()

@@ -45,7 +45,7 @@ from app.data_gaps import (
     recover_unresolved_gaps,
 )
 from app.db import create_pool
-from app.ingest import upsert_ohlc_metric, upsert_ohlcv
+from app.ingest import upsert_long_short, upsert_ohlc_metric, upsert_ohlcv
 
 # La traduccion canonico -> proveedor vive en UN solo sitio y se importa, no se copia:
 # harness/checks/K71 la EJECUTA, asi que una segunda copia seria una que nadie vigila.
@@ -131,8 +131,9 @@ class PlanMetrica:
 # Los cuatro feeds de metricas de 5 min que el ciclo vivo escribe. Las tablas y los
 # prefijos son los que valida upsert_ohlc_metric (ingest.py:250) contra su lista blanca de
 # cuatro parejas: si aqui se pusiera otra, revienta ahi en vez de escribir en la tabla
-# equivocada. long_short_ratio NO esta, y no es un olvido: su tabla no es (o,h,l,c) sino
-# long_pct/short_pct/ratio, o sea otro escritor. Se anade cuando se mida, no antes.
+# equivocada. long_short_ratio SIGUE SIN ESTAR aqui, y ya no por falta de medida: su
+# tabla no es (o,h,l,c) sino long_pct/short_pct/ratio, o sea otro escritor, asi que vive
+# en CoinalyzeLongShortAdapter y no en este plan.
 PLANES_METRICA: tuple[PlanMetrica, ...] = (
     PlanMetrica("open_interest_5min", "binance", "open-interest-history",
                 "open_interest", "oi", True),
@@ -213,11 +214,89 @@ class CoinalyzeMetricAdapter:
             )
 
 
+class CoinalyzeLongShortAdapter:
+    """Recuperacion exacta de long_short_ratio, que NO cabe en PLANES_METRICA.
+
+    Y no cabe por una razon de forma, no de gusto: upsert_ohlc_metric (ingest.py:250)
+    valida su tabla contra una lista blanca de cuatro parejas y escribe columnas
+    (o,h,l,c). long_short_ratio guarda long_pct/short_pct/ratio, o sea OTRO escritor --
+    upsert_long_short, ingest.py:326 --. Meterlo en el plan habria reventado alli en vez
+    de escribir en la tabla equivocada, que es justo para lo que sirve aquella lista
+    blanca, pero no habria recuperado nada.
+
+    upsert_long_short DESCARTA en silencio la fila incoherente (l+s lejos de 100, o
+    ratio negativo) en vez de normalizarla. Ese silencio es correcto en el ciclo vivo y
+    seria veneno aqui: dejaria el hueco marcado 'recovered' con menos buckets de los que
+    validate_recovery acaba de exigir. La comparacion count != len(observations) lo
+    convierte en un fallo duro, y es la misma guarda que llevan los otros dos
+    adaptadores por el mismo motivo.
+    """
+
+    name = "coinalyze.long-short-ratio-history"
+    feed = "long_short_ratio"
+    exchange = "binance"
+    market = "perpetual"
+    granularity = "5min"
+
+    def __init__(self, client: CoinalyzeClient) -> None:
+        self.client = client
+
+    async def fetch(self, gap: DataGap) -> list[RecoveryObservation]:
+        pedido = simbolo_de_proveedor(gap.feed, gap.exchange, gap.symbol)
+        payload = await self.client.history(
+            "long-short-ratio-history",
+            [pedido],
+            interval=self.granularity,
+            start_ts=int(gap.start.timestamp()),
+            end_ts=int(gap.end.timestamp()) - 1,
+        )
+        observations: list[RecoveryObservation] = []
+        for row in payload.get(pedido, []):
+            try:
+                timestamp = datetime.fromtimestamp(int(row["t"]), UTC)
+            except (KeyError, TypeError, ValueError, OverflowError) as exc:
+                raise RecoveryValidationError(
+                    "invalid long/short recovery timestamp"
+                ) from exc
+            observations.append(
+                RecoveryObservation(
+                    timestamp=timestamp,
+                    key=f"{gap.symbol}:{self.granularity}:{int(timestamp.timestamp())}",
+                    feed=self.feed,
+                    exchange=self.exchange,
+                    market=self.market,
+                    symbol=gap.symbol,
+                    granularity=self.granularity,
+                    payload=row,
+                )
+            )
+        return sorted(observations, key=lambda item: item.timestamp)
+
+    async def persist(self, conn, observations) -> None:
+        if not observations:
+            raise RecoveryValidationError("no validated long/short observations to persist")
+        symbol = observations[0].symbol
+        payload = {symbol: [item.payload for item in observations]}
+        count = await upsert_long_short(
+            conn,
+            payload,
+            {symbol: symbol},
+            int(observations[0].timestamp.timestamp()),
+            int(observations[-1].timestamp.timestamp()),
+        )
+        if count != len(observations):
+            raise RecoveryValidationError(
+                "validated long/short rows were not all persistable"
+            )
+
+
 def construir_adaptadores(client: CoinalyzeClient) -> dict[tuple[str, ...], RecoveryAdapter]:
     """Registro indexado por la identidad EXACTA que compara validate_recovery."""
     adaptadores: dict[tuple[str, ...], RecoveryAdapter] = {}
     ohlcv = CoinalyzeOhlcv1mAdapter(client)
     adaptadores[(ohlcv.feed, ohlcv.exchange, ohlcv.market, ohlcv.granularity)] = ohlcv
+    ls = CoinalyzeLongShortAdapter(client)
+    adaptadores[(ls.feed, ls.exchange, ls.market, ls.granularity)] = ls
     for plan in PLANES_METRICA:
         adaptador = CoinalyzeMetricAdapter(client, plan)
         clave = (adaptador.feed, adaptador.exchange, adaptador.market, adaptador.granularity)
