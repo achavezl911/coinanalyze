@@ -1531,7 +1531,9 @@ async def range_validate(
             dict(r)
             for r in await conn.fetch(
                 "SELECT ts, open, high, low, close FROM ohlcv "
-                "WHERE symbol=$1 AND interval='daily' AND ts::date >= $2 AND ts::date <= $3 "
+                "WHERE symbol=$1 AND interval='daily' "
+                "  AND (ts AT TIME ZONE 'UTC')::date >= $2 "
+                "  AND (ts AT TIME ZONE 'UTC')::date <= $3 "
                 "AND ts + interval '1 day' <= $4 ORDER BY ts",
                 symbol,
                 start_date,
@@ -1545,7 +1547,8 @@ async def range_validate(
             for r in reversed(
                 await conn.fetch(
                     "SELECT ts, open, high, low, close FROM ohlcv "
-                    "WHERE symbol=$1 AND interval='daily' AND ts::date < $2 "
+                    "WHERE symbol=$1 AND interval='daily' "
+                    "  AND (ts AT TIME ZONE 'UTC')::date < $2 "
                     "AND ts + interval '1 day' <= $3 ORDER BY ts DESC LIMIT 90",
                     symbol,
                     start_date,
@@ -1658,7 +1661,7 @@ async def market_memory(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
     as_of = datetime.now(UTC)
     rows = await conn.fetch(
         """
-        SELECT ts::date AS date,open,high,low,close,
+        SELECT (ts AT TIME ZONE 'UTC')::date AS date,open,high,low,close,
                volume*close AS volume_usd,
                (2*buy_volume-volume)*close AS cvd_futures_usd
         FROM ohlcv
