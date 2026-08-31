@@ -173,5 +173,8 @@ def test_range_validate_prefers_dates_over_the_rolling_window() -> None:
     source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
     body = source[source.index("async def range_validate") : source.index("async def level_breakout")]
     assert "if start_date is not None and end_date is not None:" in body
-    # la referencia de volatilidad debe anclarse al INICIO del tramo, no a hoy
-    assert "ts::date < $2" in body
+    # La referencia de volatilidad debe anclarse al INICIO del tramo, no a hoy ($2 es
+    # start_date). Y la fecha se saca en UTC a proposito: ts::date pelado usaria la zona de
+    # la SESION -America/Mexico_City en 140-, que con barras diarias estampadas a 00:00Z
+    # resta un dia al 100 % de ellas y corre la ventana entera. Ver K76.
+    assert "(ts AT TIME ZONE 'UTC')::date < $2" in body
