@@ -92,20 +92,45 @@ async def create_pool(
     application_name: str,
     ownership: ServiceOwnership | None = None,
 ) -> asyncpg.Pool:
-    async def init_connection(conn: asyncpg.Connection) -> None:
-        await conn.execute("SET TIME ZONE 'UTC'")
-        await conn.execute("SET statement_timeout = '20s'")
-        await conn.execute("SET lock_timeout = '3s'")
-        await conn.execute("SET idle_in_transaction_session_timeout = '30s'")
-        await conn.execute("SELECT set_config('application_name', $1, false)", application_name)
-
+    # ESTO VA EN server_settings Y NO EN init=, Y NO ES UNA PREFERENCIA DE ESTILO.
+    #
+    # Hasta el 2026-08-31 estas cinco cosas se ponian con SET dentro de un init=. asyncpg
+    # ejecuta RESET ALL al DEVOLVER cada conexion al pool (pool.py:239 llama a
+    # Connection.reset(), y connection.py:1746-1754 arma esa consulta), mientras que init=
+    # corre UNA sola vez, al crear la conexion (pool.py:558-560). O sea que la configuracion
+    # existia durante la primera adquisicion y se borraba en la primera devolucion, para
+    # siempre. Medido en el espejo con el codigo de entonces:
+    #     1a adquisicion   UTC · 20s · 3s · 30s · <nombre>
+    #     2a adquisicion   America/Mexico_City · 0 · 0 · 0 · ''
+    # Y en 140, la huella: las 9 conexiones agrupadas con application_name VACIO frente a las
+    # 4 de acquire_service_lock, que SI conservaban el suyo -- porque el suyo ya viajaba en
+    # server_settings. Dos mecanismos, dos resultados, en la misma pg_stat_activity.
+    #
+    # Lo que se perdia no era solo la zona horaria: los tres timeouts caian al boot_val del
+    # servidor, que es 0 = SIN LIMITE. La app creia tener tres frenos y no tenia ninguno. Y
+    # la zona caia a America/Mexico_City (default de 140 por configuration file), que es lo
+    # que hacia que un ts::date crudo leyera el dia equivocado.
+    #
+    # server_settings viaja en el paquete de arranque, asi que pasa a ser el reset_val de la
+    # sesion y SOBREVIVE al RESET ALL. Es la unica via que no toca la base viva; la otra
+    # -- ALTER ROLE / ALTER DATABASE -- si la tocaria.
+    #
+    # SI ALGUIEN VUELVE A MOVER ESTO A UN SET, K77 se pone ROJO. Que sea un init= con
+    # setup= tambien funcionaria (setup si corre en cada acquire, pool.py:174-176), pero
+    # cuesta cinco viajes de ida y vuelta por adquisicion en vez de cero.
     pool = await asyncpg.create_pool(
         dsn=settings.pg_dsn,
         min_size=settings.PG_POOL_MIN,
         max_size=settings.PG_POOL_MAX,
         max_inactive_connection_lifetime=300,
         command_timeout=30,
-        init=init_connection,
+        server_settings={
+            "timezone": "UTC",
+            "statement_timeout": "20s",
+            "lock_timeout": "3s",
+            "idle_in_transaction_session_timeout": "30s",
+            "application_name": application_name,
+        },
     )
     await sync_market_catalog(pool, ownership=ownership)
     async with pool.acquire() as conn:
