@@ -5089,9 +5089,49 @@ async def scalp_absorption(
     return output
 
 
+# Los venues que ESCUCHA el stream de liquidaciones. Es la misma pareja que ya declara el
+# censo de feeds en :3511 ("binance+bybit") y la que exige _liquidation_window_measured (:514)
+# antes de dar una ventana por medida. Se publica en cada fila para que una mezcla de fuentes
+# como la que arreglo K80 no pueda volver a pasar desapercibida.
+LIQUIDATION_VENUES = ("binance", "bybit")
+
+
 async def scalp_liquidations(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
-    """Liquidaciones por ventana y las 20 ultimas, tal como las pinta el panel."""
-    windows = [("1m", 60), ("5m", 300), ("15m", 900)]
+    """Liquidaciones por ventana y las 20 ultimas, tal como las pinta el panel.
+
+    LAS SEIS VENTANAS SALEN DE LA MISMA FUENTE, y hasta el 2026-08-31 no era asi: las tres
+    cortas venian de liquidations_realtime -que tiene columna exchange y trae binance Y
+    bybit- y las tres largas de liquidations -que NO tiene esa columna y es binance solo-.
+    renderExecutionRows... perdon, renderLiquidations (static/app.js:593) las pinta en la
+    MISMA tabla con las MISMAS columnas, asi que el lector que comparaba la fila 15m con la
+    30m estaba comparando dos universos de mercado sin que nada se lo dijera.
+
+    MEDIDO EN 140 EL 2026-08-31, sobre las ventanas que pinta el panel y no sobre una comoda:
+        30m BTC  SIN DATO  con  141842 USD liquidados en los dos venues
+        1h  BTC   268631   vs   520035   falta 48.3 %
+        4h  BTC  1207124   vs  1623568   falta 25.6 %
+        1h  SOL    13830   vs    37526   falta 63.1 %
+    Y el comentario que habia aqui afirmaba DOS cosas y las dos eran falsas: decia "historico
+    multi-exchange del API de Coinalyze (buckets 5min, lag ~1-2 min)" sobre una tabla
+    binance-only cuyo retraso medido es 31m57s. Ese retraso hacia que la fila 30m no pudiera
+    funcionar NUNCA: su ventana termina antes de que exista el bucket mas nuevo.
+
+    POR QUE ESTO NO NECESITO PUERTA. Meter exchange en la clave de liquidations -hoy PRIMARY
+    KEY (symbol, interval, ts)- no es aditivo y si seria puerta. No hace falta: la dimension
+    YA existe en liquidations_realtime, cuya retencion es SCALP_TRADE_RETENTION_HOURS=12 h
+    contra una ventana maxima de 4 h, y cuyo binance CUADRA con el agregado del API al
+    99.0-99.9 % -medido-. O sea que no se cambia a una fuente mas pobre: es el mismo binance
+    y ademas bybit.
+
+    liquidations SIGUE viva y no se toca: la usan metrics.py, daily_agg.py y /api/liquidations.
+    Que su componente de puntuacion sea binance-only esta MEDIDO y declarado en K80, y no se
+    arregla aqui porque mueve el componente entre 0.010 y 0.047 sobre un rango de 2.
+    """
+    # Las ventanas declaran QUE VENUES cubren, y no se deduce de que venue llego a disparar:
+    # un arco en calma no reduce la cobertura de la escucha. Con las seis filas saliendo de la
+    # misma fuente esto es belt-and-braces, y es justo lo que impide que alguien vuelva a
+    # mezclar fuentes sin que se note.
+    windows = [("1m", 60), ("5m", 300), ("15m", 900), ("30m", 1800), ("1h", 3600), ("4h", 14400)]
     matrix = []
     for label, seconds in windows:
         row = await conn.fetchrow(
@@ -5106,20 +5146,7 @@ async def scalp_liquidations(conn: asyncpg.Connection, symbol: str) -> dict[str,
             label,
             seconds,
         )
-        matrix.append(dict(row))
-    # Ventanas largas: historico multi-exchange del API de Coinalyze (buckets 5min, lag ~1-2 min)
-    for label, seconds in (("30m", 1800), ("1h", 3600), ("4h", 14400)):
-        row = await conn.fetchrow(
-            """
-            SELECT $2::text AS window,
-                   SUM(long_liq) AS long_liq,SUM(short_liq) AS short_liq,NULL::bigint AS events
-            FROM liquidations WHERE symbol=$1 AND interval='5min' AND ts >= now()-($3::int * interval '1 second')
-            """,
-            symbol,
-            label,
-            seconds,
-        )
-        matrix.append(dict(row))
+        matrix.append({**dict(row), "venues": list(LIQUIDATION_VENUES)})
     recent = await conn.fetch(
         """
         SELECT ts,exchange,side,notional_usd,price,qty FROM liquidations_realtime
