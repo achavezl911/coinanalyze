@@ -3,4 +3,11 @@
 set -eu
 B=/srv/coinanalyze/harness; . "$B/env"
 [ -n "${1:-}" ] || { echo 'uso: espejosql "SELECT ..."' >&2; exit 2; }
+# MISMA ZONA QUE prodsql Y QUE LA APP, por la misma razon (ver prodsql). Si solo se
+# arreglara prodsql, los DOS canales de medida discreparian entre si, y el espejo es
+# justo donde se verifica un arreglo antes de llevarlo a 140.
+# El SERVIDOR del espejo se queda en America/Mexico_City a proposito: esa es la propiedad
+# que hace que el espejo REPRODUZCA los fallos de zona en vez de taparlos, y vive en el
+# postgresql.conf, no en este canal.
+export PGOPTIONS='-c timezone=UTC'
 psql -X -A -F'|' -t -v ON_ERROR_STOP=1 -q -d "$ESPEJO_DB" -c "$*" 2>&1 | "$B/bin/_corta"

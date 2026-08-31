@@ -15,7 +15,7 @@ if [ -r /etc/coinalyze/coinalyze.env ]; then set -a; . /etc/coinalyze/coinalyze.
 export PGHOST=\${PG_HOST:-127.0.0.1} PGPORT=\${PG_PORT:-5432}
 export PGUSER=${PROD_PG_USER} PGDATABASE=${PROD_PG_DB}
 [ -n "\${PG_PASSWORD:-}" ] && export PGPASSWORD="\$PG_PASSWORD"
-export PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=60000'
+export PGOPTIONS='-c default_transaction_read_only=on -c statement_timeout=60000 -c timezone=UTC'
 printf %s '$enc' | base64 -d | psql -X -A -F'|' -t -v ON_ERROR_STOP=1 -q -f -
 PAYLOAD
 )
