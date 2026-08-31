@@ -76,11 +76,20 @@
 # El padre no hereda una excusa, hereda pruebas ya verificadas una a una.
 #
 # EL CONJUNTO DE HIJOS SALE DE LA PROPIA FILA -- recovery_metadata->>
-# 'partition_detection_source' --, nunca de una constante escrita aqui. Dos razones
-# medidas: data_gap tiene 172 filas duplicadas por dos detectores, asi que "lo contenido
-# en la ventana del padre" NO son los hijos y probar la teselacion sobre ese conjunto
-# daria solapes ajenos; y una constante en el check envejece sin avisar, que es la
-# enfermedad que este mismo fichero le diagnostico a su propia v2.
+# 'partition_detection_source' --, nunca de una constante escrita aqui. TRES razones
+# medidas, y la tercera la encontro el operador auditando esto:
+#   1. data_gap tiene 172 filas duplicadas por dos detectores, asi que "lo contenido en la
+#      ventana del padre" NO son los hijos, y probar la teselacion sobre ese conjunto
+#      daria solapes ajenos.
+#   2. una constante en el check envejece sin avisar, que es la enfermedad que este mismo
+#      fichero le diagnostico a su propia v2.
+#   3. EL PADRE CUMPLE SU PROPIO FILTRO DE CONTENCION -- start_ts >= g.start_ts AND
+#      end_ts <= g.end_ts lo satisface el padre consigo mismo --, asi que si compartiera
+#      detection_source con sus hijos SE CONTARIA A SI MISMO y la suma de medidas daria el
+#      DOBLE de la ventana, con lo que la teselacion fallaria siempre. Hoy no pasa porque
+#      el padre lleva historical_ingest_persisted_cadence_v2 y los hijos
+#      source_coverage_partition_v1. LA EXCLUSION ES POR DISENO, NO POR SUERTE: quien
+#      toque esta consulta y unifique los detection_source rompe el check sin tocarlo.
 #
 # EL ATAJO QUE SE RECHAZO, escrito para que no lo reinvente nadie: cerrar el padre como
 # 'recovered'. El conteo 3 filtra por status='unrecoverable', asi que un padre

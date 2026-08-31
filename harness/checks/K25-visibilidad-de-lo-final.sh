@@ -18,8 +18,10 @@
 #     Un certificado es una copia congelada de algo que se mueve; si el original cambiara
 #     despues de certificarlo, el certificado quedaria mintiendo y nadie se enteraria.
 #   CERRADA · la regla de elegibilidad, que el productor aplica y nadie comprobaba desde
-#     fuera: solo outcome_version=1 y solo observaciones con evidence_version=6. Ningun
-#     certificado puede apuntar a un outcome no final, ni a una version que no sea esa.
+#     fuera: solo outcome_version=1 y solo las observaciones cuya evidence_version tenga
+#     CONTRATO. Ningun certificado puede apuntar a un outcome no final, ni a una version
+#     fuera de contrato. El conjunto certificable ya no se teclea aqui: sale de EJECUTAR
+#     app.signal_visibility.visibility_version_for_evidence sobre las versiones VIVAS.
 #   CERRADA · el orden de relojes QUE NO IMPONE EL ESQUEMA: verified_visible_at <=
 #     created_at, porque el productor pide el reloj y DESPUES inserta. El otro orden
 #     -source_finalized_at <= verified_visible_at- si lo impone un CHECK de
@@ -65,10 +67,132 @@
 #   Y EL RETRASO NO SE USA PARA CLASIFICAR NADA, solo se declara. Un umbral sobre el
 #     reloj seria la trampa 4 otra vez, y ademas ya hay quien vigila que el productor no
 #     se pare: K06. Aqui se gatea sobre la COBERTURA, que es un conjunto, no un instante.
+# v2, 2026-08-31: DOS NUMEROS, Y EL SEGUNDO NO ABSUELVE AL PRIMERO.
+#
+# QUE FALLABA. La v1 contaba bajo "sin certificado" dos hechos distintos: un outcome que
+# DEBIA certificarse y no lo esta, y un outcome cuya evidence_version NO TIENE CONTRATO de
+# certificacion. El segundo no es un fallo del certificador -- es deuda que nadie ha
+# declarado --, y mezclarlos tiene un precio medido: el 2026-08-31, con la evidencia 7
+# viva desde las 00:19Z, K25 informaba "304 outcomes ... no tienen certificado" mientras la
+# cifra real crecia a ~1861/h. Informar el PRIMER grupo que incumple no deja distinguir un
+# problema parado de uno acelerando.
+#
+# EL MECANISMO, leido y no deducido: _CERTIFIED_EVIDENCE_VERSION=6 viaja como PARAMETRO de
+# la consulta que elige a quien certificar (signal_visibility.py:146 y :180), y la cabecera
+# de ese modulo dice expresamente que RESEARCH_VISIBILITY_VERSION=1 solo se aplica a
+# evidence_version=6 y que NO hay relleno hacia atras. No es un fallo: es el contrato
+# congelado funcionando. K25 tiene razon en estar ROJO; lo que le faltaba era decir por que.
+#
+# LOS DOS NUMEROS:
+#   (a) outcomes DENTRO de un contrato vigente sin certificado ....... tiene que ser 0
+#   (b) outcomes cuya evidence_version NO tiene contrato ............. con su conteo y su
+#       tasa, y pone ROJO si produccion SIGUE escribiendo esa version
+#
+# INDUCIDO CONTRA 140 CON EL PREDICADO LITERAL, porque un check que solo sabe salir ROJO
+# esta tan roto como el que solo sabe salir VERDE:
+#   A  contrato={6}, la vispera del corte ....... (a)=0     -> VERDE. Control POSITIVO
+#   B  contrato={6}, hoy con la 7 viva .......... 100 % fuera de contrato -> ROJO
+#   C  contrato={6,7}, declarado sin certificar .. (a)=837  -> ROJO
+# C es el que prueba que (b) NO absuelve: declarar el contrato no borra las filas, las
+# MUEVE al numero que gatea. Y A es el que prueba que esto no es un ROJO permanente.
+#
+# LO QUE SE ESTRECHA, Y SE DECLARA EN VEZ DE ESCONDERSE. La v1 habria gateado sobre
+# CUALQUIER elegible sin certificado de la ventana; la v2 solo gatea (b) si esa version
+# SIGUE VIVA. Motivo medido: la evidencia 5 dejo 2362 finales sin certificar que se
+# pararon el 08-13 04:50 y que NUNCA tendran contrato -- "no v1-v5 backfill", lo dice
+# signal_visibility.py:42 --, asi que la lectura literal de "(b) pone ROJO en cuanto
+# exista" seria un ROJO permanente e inarreglable, y un rojo que no se puede arreglar
+# ensena a ignorar el que si. No desaparecen: se informan como PARADA en cada pasada.
+# El veredicto de HOY es el mismo con las dos lecturas -- ROJO --; la diferencia solo
+# aparece el dia que la 7 tenga contrato.
 set -uo pipefail
-B=/srv/coinanalyze/harness; . "$B/env"
+B=/srv/coinanalyze/harness; REPO=/srv/coinanalyze/repo; . "$B/env"
 RUTA=/api/signals/visibility
 TOPE_FILAS=1200
+PY="$REPO/.venv/bin/python"
+[ -x "$PY" ] || { echo "NO MEDIDO: falta el venv del repo en $PY"; exit 2; }
+
+# --- EL CONTRATO, EJECUTADO SOBRE LAS VERSIONES VIVAS ------------------------------------
+# Las versiones salen de 140 -lo que produccion escribe- y el contrato del REPO -lo que
+# signal_visibility declara certificable-. Ninguna de las dos es una lista escrita aqui.
+vivas=$("$B/bin/prodsql" "
+  SELECT DISTINCT evidence_version FROM signal_observation
+   WHERE created_at >= date_trunc('hour', now()) - interval '1 hour'
+   ORDER BY 1" 2>/dev/null | grep -E '^[0-9]+$' | tr '\n' ' ' | sed 's/ $//')
+[ -n "$vivas" ] || { echo "NO MEDIDO: 140 no dice que evidence_version esta escribiendo"; exit 2; }
+
+reparto=$(cd "$REPO" && "$PY" - $vivas <<'PY' 2>/dev/null
+import sys
+from app.signal_visibility import visibility_version_for_evidence
+
+con, sin, visib = [], [], set()
+for arg in sys.argv[1:]:
+    v = int(arg)
+    # SE EJECUTA la funcion, no se lee un diccionario: comprobar que existe un mapa no
+    # distingue este check del que daba por bueno cualquier contrato. Leccion de K71.
+    contrato = visibility_version_for_evidence(v)
+    (con if contrato is not None else sin).append(v)
+    if contrato is not None:
+        visib.add(contrato)
+# Dos visibility_version distintas a la vez NO se sabe juzgar, y eso si es NO MEDIDO.
+# Que no haya NINGUNA es otra cosa muy distinta -- todo lo que produccion escribe hoy
+# esta fuera de contrato -- y tiene que salir ROJO, no NOMED.
+if len(visib) > 1:
+    raise SystemExit(0)
+print(f"{','.join(map(str, con))}|{','.join(map(str, sin))}|{visib.pop() if visib else 0}")
+PY
+)
+[ -n "$reparto" ] || { echo "NO MEDIDO: no se pudo ejecutar el contrato de visibilidad sobre las versiones vivas ($vivas)"; exit 2; }
+CON_CONTRATO=${reparto%%|*}; _r=${reparto#*|}
+SIN_CONTRATO=${_r%%|*}; VISIB=${_r##*|}
+arr() { if [ -n "${1:-}" ]; then printf 'ARRAY[%s]::int[]' "$1"; else printf 'ARRAY[]::int[]'; fi; }
+CON_ARR=$(arr "$CON_CONTRATO"); SIN_ARR=$(arr "$SIN_CONTRATO")
+
+# (b) LA DEUDA SIN CONTRATO, POR VERSION Y CON SU VELOCIDAD. El corte es min(
+# verified_visible_at): lo finalizado ANTES de que existiera el certificador no es deuda
+# suya, y exigirselo seria discriminar el legado por nulidad en vez de por tiempo -la
+# misma correccion que ya se le hizo a K04-. La ultima columna dice si produccion SIGUE
+# escribiendo esa version, y es lo unico que separa una deuda parada de una acelerando.
+# LA TASA ES LA ULTIMA HORA CERRADA Y NO UN PROMEDIO LARGO, y esto se corrigio midiendo:
+# con la evidencia 7 nacida a las 00:19Z, promediar 6 h daba 449.7/h para algo que el
+# operador midio en ~2027/h instantaneos. Un promedio sobre una ventana mas larga que la
+# vida del problema lo diluye justo cuando mas corre, que es el error opuesto al que este
+# check acaba de arreglar.
+deuda=$("$B/bin/prodsql" "
+  WITH corte AS (SELECT min(verified_visible_at) c FROM signal_outcome_final_visibility)
+  SELECT o.evidence_version, count(*),
+         count(*) FILTER (
+           WHERE so.finalized_at >= date_trunc('hour', now()) - interval '1 hour'
+             AND so.finalized_at <  date_trunc('hour', now())),
+         (o.evidence_version = ANY($SIN_ARR))
+  FROM signal_outcome so JOIN signal_observation o USING (observation_id), corte
+  WHERE so.outcome_version=1 AND so.status IN ('evaluated','not_evaluable')
+    AND so.finalized_at >= corte.c
+    AND NOT (o.evidence_version = ANY($CON_ARR))
+    AND NOT EXISTS (
+      SELECT 1 FROM signal_outcome_final_visibility v WHERE v.outcome_id=so.outcome_id)
+  GROUP BY 1 ORDER BY 1" 2>/dev/null | grep -E '^[0-9]+\|')
+
+deuda_viva=0; deuda_parada=0; detalle=""
+while IFS='|' read -r v n tasa viva; do
+  [ -n "${v:-}" ] || continue
+  if [ "$viva" = "t" ]; then
+    deuda_viva=$((deuda_viva + n))
+    detalle="${detalle:+$detalle · }evidencia $v: $n sin contrato y VIVA, $tasa en la ultima hora cerrada"
+  else
+    deuda_parada=$((deuda_parada + n))
+    detalle="${detalle:+$detalle · }evidencia $v: $n sin contrato, PARADA"
+  fi
+done <<DEUDA
+$deuda
+DEUDA
+[ -n "$detalle" ] || detalle="ninguna"
+
+# EL PORTON QUE NO EXISTIA, y es el caso de HOY: si NINGUNA version viva tiene contrato,
+# el 100 % de lo que produccion escribe es incertificable y no hay ventana (a) que medir.
+# Salir por NO MEDIDO aqui seria lo peor de todo: "no pude medir" leido como "no pasa
+# nada" mientras la deuda corre.
+[ -n "$CON_CONTRATO" ] || { echo "(b) el 100 % de lo que produccion escribe HOY esta fuera de contrato: evidencia viva $vivas y ninguna certificable · $detalle · (a) no se puede medir porque no hay conjunto elegible"; exit 1; }
 
 ventana=$("$B/bin/prodsql" "
   SELECT o.symbol,
@@ -100,21 +224,24 @@ ref=$("$B/bin/prodsql" "
     AND v.verified_visible_at < timestamptz '$hasta'" 2>/dev/null | grep -E '^[0-9]+\|' | head -1)
 [ -n "$ref" ] || { echo "NO MEDIDO: la consulta de referencia no devolvio nada"; exit 2; }
 
-# LA COBERTURA. Conjunto elegible COMPLETO de la ventana -definido sobre finalized_at,
-# que es cuando el outcome se hizo final- contra los que tienen certificado. Si sale
-# distinto de cero, alguien puede elegir despues que resultados declara probados.
+# (a) LA COBERTURA DENTRO DEL CONTRATO. Conjunto elegible COMPLETO de la ventana
+# -definido sobre finalized_at, que es cuando el outcome se hizo final- contra los que
+# tienen certificado. Si sale distinto de cero, alguien puede elegir despues que
+# resultados declara probados. Tiene que ser 0 y NADA lo absuelve.
 huecos=$("$B/bin/prodsql" "
   SELECT count(*), coalesce(min(so.outcome_id)::text,'-')
   FROM signal_outcome so
   JOIN signal_observation o USING (observation_id)
   WHERE o.symbol='$simbolo' AND so.outcome_version=1
     AND so.status IN ('evaluated','not_evaluable')
+    AND o.evidence_version = ANY($CON_ARR)
     AND so.finalized_at >= timestamptz '$desde' AND so.finalized_at < timestamptz '$hasta'
     AND NOT EXISTS (
       SELECT 1 FROM signal_outcome_final_visibility v
-      WHERE v.outcome_id=so.outcome_id AND v.visibility_version=1)" 2>/dev/null \
+      WHERE v.outcome_id=so.outcome_id AND v.visibility_version=$VISIB)" 2>/dev/null \
   | grep -E '^[0-9]+\|' | head -1)
 [ -n "$huecos" ] || { echo "NO MEDIDO: no se pudo contar el conjunto elegible sin certificado"; exit 2; }
+
 
 # La fila VIVA de cada outcome certificado, por ssh+psql: es lo que impide que la ruta
 # se valide a si misma.
@@ -142,6 +269,11 @@ from datetime import datetime, UTC
 ref = sys.argv[1].split("|")
 simbolo, desde, esperadas, ruta = sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5]
 camino_cuerpo, camino_origen, huecos = sys.argv[6], sys.argv[7], sys.argv[8]
+# El contrato viaja EJECUTADO desde el repo, no tecleado aqui: son las versiones para las
+# que signal_visibility.visibility_version_for_evidence devolvio algo.
+certificables = {int(x) for x in sys.argv[9].split(",") if x}
+visibilidad = int(sys.argv[10])
+deuda_viva, deuda_parada, detalle_deuda = int(sys.argv[11]), int(sys.argv[12]), sys.argv[13]
 
 crudo = open(camino_cuerpo).read()
 try:
@@ -189,8 +321,8 @@ for f in filas:
         if int(f["outcome_version"]) != int(o[2]):
             fallos.append(f"outcome {oid}: outcome_version {f["outcome_version"]} y la fila viva {o[2]}")
         # --- CAPA CERRADA 2: la regla de elegibilidad ---------------------------------
-        if int(o[3]) != 6:
-            fallos.append(f"outcome {oid}: certificado sobre una observacion con evidence_version={o[3]}, y solo la 6 es certificable")
+        if int(o[3]) not in certificables:
+            fallos.append(f"outcome {oid}: certificado sobre una observacion con evidence_version={o[3]}, y el contrato solo cubre {sorted(certificables)}")
         if o[0] not in ("evaluated", "not_evaluable"):
             fallos.append(f"outcome {oid}: certificado sobre un outcome que HOY esta en {o[0]}, que no es final")
         if int(f["horizon_minutes"]) != int(o[4]):
@@ -205,8 +337,8 @@ for f in filas:
         fallos.append(f"outcome {oid}: verified_visible_at {visto} es POSTERIOR a created_at {creado}: el reloj se pidio antes de insertar")
     if fin > visto:
         fallos.append(f"outcome {oid}: source_finalized_at {fin} es posterior a verified_visible_at {visto}")
-    if int(f["visibility_version"]) != 1:
-        fallos.append(f"outcome {oid}: visibility_version {f["visibility_version"]}, y solo existe la 1")
+    if int(f["visibility_version"]) != visibilidad:
+        fallos.append(f"outcome {oid}: visibility_version {f["visibility_version"]}, y el contrato declara la {visibilidad}")
 
 # --- CAPA CERRADA 4: la cobertura, medida sobre el conjunto elegible completo ----------
 try:
@@ -214,8 +346,15 @@ try:
     sin_certificado = int(sin_certificado)
 except Exception:
     print(f"NO MEDIDO: no se pudo contar el conjunto elegible sin certificado"); sys.exit(2)
+# --- LOS DOS NUMEROS, Y EL SEGUNDO NO ABSUELVE AL PRIMERO -----------------------------
+# (a) es un fallo de CERTIFICACION: el contrato cubre esas filas y no estan certificadas.
+# (b) es deuda DECLARADA: nadie ha escrito contrato para esa evidencia. Son cosas
+# distintas y hasta el 2026-08-31 K25 las sumaba bajo "sin certificado", que es como un
+# problema que acelera se lee igual que uno parado.
 if sin_certificado:
-    print(f"{sin_certificado} outcomes finales de {simbolo} en {desde} no tienen certificado -el primero es {primero}-: la tabla de certificados esta incompleta, y elegir cuales se certifican es elegir que resultados se declaran probados"); sys.exit(1)
+    print(f"(a) {sin_certificado} outcomes finales de {simbolo} en {desde} DENTRO del contrato no tienen certificado -el primero es {primero}-: la tabla de certificados esta incompleta, y elegir cuales se certifican es elegir que resultados se declaran probados · (b) {deuda_viva} sin contrato vivos, {deuda_parada} parados: {detalle_deuda}"); sys.exit(1)
+if deuda_viva:
+    print(f"(b) {deuda_viva} outcomes finales sin CONTRATO de certificacion y produccion sigue escribiendo esa evidencia: {detalle_deuda}. No es que falte certificarlos: es que nadie ha declarado como se certifica esa forma, asi que no se certifican solos por mucho que el certificador corra. (a) queda en 0 · deuda parada {deuda_parada}"); sys.exit(1)
 
 if fallos:
     print(f"{len(fallos)} comprobaciones fallan sobre {len(filas)} certificados: " + " · ".join(fallos[:3])); sys.exit(1)
@@ -243,6 +382,6 @@ if len(filas) != esperadas:
     print(f"la ruta sirve {len(filas)} certificados y la hora tiene {esperadas}"); sys.exit(1)
 
 retrasos = sorted((hora(f["verified_visible_at"]) - hora(f["source_finalized_at"])).total_seconds() for f in filas)
-print(f"{concordados} certificados contra la fila VIVA de signal_outcome -estado, finalizacion, version y horizonte-, {len(filas)} con relojes en orden y elegibilidad comprobada, y CERO elegibles sin certificar en la ventana + {len(NOMBRES)} conteos: {simbolo} {desde}, {len(filas)} certificados enteros. Retraso de certificacion declarado, no gateado: {retrasos[0]:.1f} s a {retrasos[-1]:.1f} s. ABIERTO a proposito: que la lectura ocurriera en ese instante, que no se puede volver a observar")
-' "$ref" "$simbolo" "$desde" "$esperadas" "$RUTA" "$CUERPO" "$ORIGEN" "$huecos"
+print(f"(a) 0 elegibles dentro del contrato sin certificar y (b) 0 sin contrato vivos -deuda parada {deuda_parada}: {detalle_deuda}-. {concordados} certificados contra la fila VIVA de signal_outcome -estado, finalizacion, version y horizonte-, {len(filas)} con relojes en orden y elegibilidad comprobada, y CERO elegibles sin certificar en la ventana + {len(NOMBRES)} conteos: {simbolo} {desde}, {len(filas)} certificados enteros. Retraso de certificacion declarado, no gateado: {retrasos[0]:.1f} s a {retrasos[-1]:.1f} s. ABIERTO a proposito: que la lectura ocurriera en ese instante, que no se puede volver a observar")
+' "$ref" "$simbolo" "$desde" "$esperadas" "$RUTA" "$CUERPO" "$ORIGEN" "$huecos" "$CON_CONTRATO" "$VISIB" "$deuda_viva" "$deuda_parada" "$detalle"
 exit $?

@@ -185,3 +185,36 @@ async def test_un_parametro_que_nadie_reconoce_no_pasa_en_silencio() -> None:
         api_module.app.state.pool = original
     assert error.value.status_code == 422
     assert "horizon" in error.value.detail
+
+
+# --- K25 v2 · EL CONTRATO SE EJECUTA, Y "NO HAY CONTRATO" NO ES "TODAVIA NO" -------------
+
+
+def test_el_contrato_responde_para_la_evidencia_congelada_y_None_para_el_resto() -> None:
+    """La funcion es lo unico publico a proposito: K25 tiene que EJECUTARLA sobre las
+    versiones vivas, no leer un diccionario. Comprobar que existe un mapa no distingue
+    este codigo del que daba por bueno cualquier contrato -- leccion de K71."""
+    from app.signal_visibility import (
+        _CERTIFIED_EVIDENCE_VERSION,
+        RESEARCH_VISIBILITY_VERSION,
+        visibility_version_for_evidence,
+    )
+
+    assert visibility_version_for_evidence(_CERTIFIED_EVIDENCE_VERSION) == (
+        RESEARCH_VISIBILITY_VERSION
+    )
+    # La cabecera del modulo dice "no v1-v5 backfill" y lo dice hacia adelante tambien:
+    # una evidencia sin contrato no se certifica sola por mucho que el certificador corra.
+    for sin_contrato in (1, 2, 3, 4, 5, 7, 8):
+        assert visibility_version_for_evidence(sin_contrato) is None
+
+
+def test_el_contrato_no_se_puede_ampliar_sin_declarar_una_visibilidad_nueva() -> None:
+    """Guarda contra el arreglo tentador del 2026-08-31: meter la evidencia 7 en el
+    contrato para que K25 se calle. Ampliar el contrato SIN subir
+    RESEARCH_VISIBILITY_VERSION certificaria una forma distinta bajo la misma etiqueta,
+    que es justo lo que la cabecera de signal_visibility prohibe por escrito."""
+    import app.signal_visibility as v
+
+    assert set(v._CERTIFICATION_CONTRACT) == {v._CERTIFIED_EVIDENCE_VERSION}
+    assert set(v._CERTIFICATION_CONTRACT.values()) == {v.RESEARCH_VISIBILITY_VERSION}

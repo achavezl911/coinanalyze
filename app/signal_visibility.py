@@ -51,6 +51,36 @@ _CERTIFIED_CONTEXT_VERSION = 1
 _CERTIFIED_OUTCOME_VERSION = 1
 _CERTIFIED_EXECUTION_SNAPSHOT_VERSION = 1
 
+# EL CONTRATO, EXPUESTO PARA QUE SE PUEDA EJECUTAR EN VEZ DE LEERSE.
+#
+# El mapa es PRIVADO y la funcion es lo unico publico, y no es estilo: es la leccion de
+# K71. Un vigilante que comprueba "existe un diccionario" no se distingue del codigo que
+# le pedia el simbolo canonico a las dos bolsas; solo EJECUTAR la traduccion los separa.
+# Asi que K25 no puede leer el conjunto certificable: tiene que sacar las versiones VIVAS
+# de signal_observation y preguntar por cada una. Una version nueva que produccion empiece
+# a escribir aparece sola en esa comparacion, sin que nadie acuerde de tocar el check.
+#
+# Deriva de _CERTIFIED_EVIDENCE_VERSION en vez de repetir el 6, para que no haya dos
+# sitios que puedan discrepar: el certificador pasa esa misma constante como parametro de
+# su consulta (:146 y :180), asi que la fuente sigue siendo una sola.
+_CERTIFICATION_CONTRACT: dict[int, int] = {
+    _CERTIFIED_EVIDENCE_VERSION: RESEARCH_VISIBILITY_VERSION,
+}
+
+
+def visibility_version_for_evidence(evidence_version: int) -> int | None:
+    """La visibility_version que certifica esa evidencia, o None si NO HAY CONTRATO.
+
+    None no es "todavia no le ha tocado": es que nadie ha declarado como se certifica esa
+    forma. La cabecera de este modulo lo dice para v1-v5 y vale igual hacia adelante --
+    "no v1-v5 backfill" --, asi que una evidencia sin contrato NO se certifica nunca por
+    si sola, por mucho que el certificador siga corriendo. Distinguir las dos cosas es
+    justo lo que K25 no sabia hacer el 2026-08-31: contaba como "certificado que falta" lo
+    que en realidad era "contrato que nadie ha escrito", y con la evidencia 7 viva eso
+    crecia a ~1600/h sin que el check dijera que estaba acelerando.
+    """
+    return _CERTIFICATION_CONTRACT.get(int(evidence_version))
+
 # Frozen v1 bundle-completeness shape. Literal, not imported from
 # app.signal_outcomes.OUTCOME_HORIZONS_MINUTES / app.signal_execution.
 # EXECUTION_EXCHANGES: a future horizon or exchange change must define a new
