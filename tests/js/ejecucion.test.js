@@ -102,3 +102,51 @@ test('el aviso de spread no aporta direccion', () => {
   }
   assert.equal(typeof app.spreadWarning(e), 'string');
 });
+
+// ---------------- un coste al que le faltan patas no se pinta en verde ----------------
+//
+// El backend suma SOLO las patas medidas (scalp_logic.py:4796-4812) y publica cuales faltan
+// en cost_components_missing; de ese total parcial salen cost_to_target y cost_to_risk, o
+// sea el veredicto. Hasta el 2026-08-31 esta capa no leia ese campo: pintaba "Coste ida y
+// vuelta" a secas y coloreaba en VERDE un 'aceptable' calculado sobre media medicion.
+// MEDIDO contra 140, mismo plan y mismo mercado: sin slippage 8.013 bps y 'aceptable'; con
+// slippage 10, 28.013 bps y 'prohibitivo'. Es la misma regla que ya gobierna SIN EVALUAR,
+// un paso mas alla: no saber si sale cara no es lo mismo que saber que sale barata.
+
+const conPatasAusentes = (target, risk, ausentes) => ({
+  ...evaluado(target, risk), cost_components_missing: ausentes,
+});
+
+test('un aceptable con patas de coste ausentes NO se pinta en verde', () => {
+  assert.equal(app.executionClass(conPatasAusentes('aceptable', 'aceptable', ['slippage_bps'])), 'neutral');
+  assert.equal(
+    app.executionClass(conPatasAusentes('aceptable', 'aceptable', ['slippage_bps', 'funding_bps'])),
+    'neutral',
+  );
+});
+
+test('CONTROL POSITIVO: con las cuatro patas medidas, el aceptable SIGUE en verde', () => {
+  // Sin esto, la regla de arriba se podria satisfacer matando el verde para siempre, que es
+  // un check que no distingue nada.
+  assert.equal(app.executionClass(conPatasAusentes('aceptable', 'aceptable', [])), 'positive');
+  assert.equal(app.executionClass(evaluado('aceptable', 'aceptable')), 'positive');
+});
+
+test('la degradacion solo toca a la clase que AFIRMA algo bueno', () => {
+  // prohibitivo y ajustado ya no afirman nada bueno: una pata ausente solo puede empeorarlos,
+  // asi que su color no cambia y el mensaje no se diluye.
+  assert.equal(app.executionClass(conPatasAusentes('prohibitivo', 'aceptable', ['slippage_bps'])), 'negative');
+  assert.equal(app.executionClass(conPatasAusentes('ajustado', 'aceptable', ['slippage_bps'])), 'neutral');
+});
+
+test('renderExecutionRows CONSULTA cost_components_missing', () => {
+  // De texto fuente por necesidad: lo que la pantalla pinta no deja huella en ninguna
+  // respuesta de la API. Mismo motivo que el brazo C de K76.
+  const i = FUENTE.indexOf('function renderExecutionRows');
+  assert.ok(i >= 0, 'no se encontro renderExecutionRows en app.js');
+  const cuerpo = FUENTE.slice(i, FUENTE.indexOf('\n}', i));
+  assert.ok(
+    cuerpo.includes('cost_components_missing'),
+    'renderExecutionRows volvio a pintar el coste sin mirar que patas faltan',
+  );
+});
