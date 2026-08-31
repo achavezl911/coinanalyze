@@ -211,8 +211,10 @@ DETALLE=${LINEA#*|}
 [ "$VEREDICTO" = NOMED ] && { echo "NO MEDIDO: $DETALLE"; exit 2; }
 
 # ---------------------------------------------------------------- VEREDICTO
+# El ROJO dice CUAL de las dos cosas falta. Con el arbol ya arreglado y 140 todavia no, la
+# lectura facil es "el arreglo no funciono", y lo que pasa es que no se ha desplegado.
 FALLOS=""
-[ "$SIN_NOMBRE" -gt 0 ] && FALLOS="140: $SIN_NOMBRE de $((SIN_NOMBRE + AGRUPADAS_OK)) conexiones agrupadas con application_name VACIO -- el RESET ALL del release les borro tambien la zona y los tres timeouts -- mientras los $CERROJOS cerrojos conservan el suyo"
+[ "$SIN_NOMBRE" -gt 0 ] && FALLOS="140: $SIN_NOMBRE de $((SIN_NOMBRE + AGRUPADAS_OK)) conexiones agrupadas con application_name VACIO -- el RESET ALL del release les borro tambien la zona y los tres timeouts -- mientras los $CERROJOS cerrojos conservan el suyo$([ "$VEREDICTO" = VERDE ] && printf '%s' ' (el arbol YA lo tiene arreglado: el brazo del espejo pasa. Falta DESPLEGAR)')"
 [ "$VEREDICTO" = ROJO ] && FALLOS="${FALLOS:+$FALLOS · }espejo: $DETALLE"
 
 if [ -n "$FALLOS" ]; then
