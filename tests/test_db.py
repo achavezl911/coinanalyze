@@ -15,10 +15,12 @@ from app.db import (
     INGEST_COMPONENT_MAX_AGES,
     ServiceOwnershipLost,
     acquire_service_lock,
+    create_pool,
     fenced_transaction,
     heartbeat_component,
     heartbeat_shard,
     monitor_service_lock,
+    read_db_identity,
     sync_market_catalog,
 )
 
@@ -158,6 +160,78 @@ async def test_postgres_service_lock_excludes_same_shard_and_releases_on_close()
         for conn in (first, other, reacquired):
             if conn is not None and not conn.is_closed():
                 await conn.close()
+
+
+def test_create_pool_reads_the_database_identity_before_it_writes():
+    """K08 · el ORDEN es el arreglo entero, asi que se guarda con un test.
+
+    Da igual cuanta identidad se lea si sync_market_catalog -que ESCRIBE en market_assets
+    y symbols- corre por delante: para cuando alguien pudiera mirar, ya se escribio en la
+    base equivocada. Este test falla el dia que alguien mueva la escritura hacia arriba."""
+    fuente = Path("app/db.py").read_text(encoding="utf-8")
+    cuerpo = fuente.split("async def create_pool")[1].split("\nasync def ")[0]
+    # SIN LOS COMENTARIOS, y no es un detalle: la primera version de este test comparaba
+    # sobre el texto crudo y fallaba porque el comentario de encima NOMBRA a
+    # sync_market_catalog para explicar el orden. Un nombre citado en prosa no es una
+    # llamada; se comparan los sitios donde de verdad se invoca.
+    codigo = "\n".join(
+        linea for linea in cuerpo.splitlines() if not linea.lstrip().startswith("#")
+    )
+    assert "await read_db_identity(" in codigo, "create_pool ya no lee la identidad"
+    assert codigo.index("await read_db_identity(") < codigo.index(
+        "await sync_market_catalog("
+    ), "create_pool escribe (sync_market_catalog) antes de verificar a que base se conecto"
+
+
+def test_schema_fingerprint_excludes_partitions():
+    """La huella tiene que ignorar las particiones. Con ellas dentro cambiaria sola cada
+    vez que ensure_temporal_partitions crea la del dia siguiente, y una huella que cambia
+    sola no distingue una base equivocada de un martes."""
+    from app.db import _SCHEMA_FINGERPRINT_SQL
+
+    assert "NOT c.relispartition" in _SCHEMA_FINGERPRINT_SQL
+
+
+@pytest.mark.asyncio
+async def test_postgres_read_db_identity_names_the_database_and_fingerprints_it() -> None:
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    try:
+        conn = await asyncpg.connect(dsn)
+    except (OSError, asyncpg.PostgresError) as exc:
+        pytest.skip(f"test PostgreSQL unavailable: {exc}")
+    try:
+        identidad = await read_db_identity(conn)
+        esperada = await conn.fetchval("SELECT current_database()")
+    finally:
+        await conn.close()
+    assert identidad["database"] == esperada
+    assert identidad["db_user"]
+    # Por socket unix inet_server_addr() es NULL. Se dice lo que es y no se inventa un
+    # 127.0.0.1 que nadie uso: medido asi en el espejo de 143 el 2026-09-01.
+    assert identidad["db_host"]
+    huella = identidad["schema_fingerprint"]
+    assert huella == "sin-tablas" or (len(huella) == 32 and int(huella, 16) >= 0)
+
+
+@pytest.mark.asyncio
+async def test_postgres_create_pool_fails_closed_when_another_database_answers(
+    monkeypatch,
+) -> None:
+    """La razon de ser de K08: si contesta una base que no es la que se pidio, no se
+    escribe NADA. Se fuerza el desacuerdo dejando el DSN apuntando a la base real y
+    cambiandole a la configuracion el nombre que dice esperar."""
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    settings = _test_settings(dsn).model_copy(update={"PG_DB": "una_base_que_no_es"})
+    monkeypatch.setattr(Settings, "pg_dsn", property(lambda self: dsn))
+    try:
+        with pytest.raises(RuntimeError, match="K08"):
+            await create_pool(settings, application_name="test-k08")
+    except (OSError, asyncpg.PostgresError) as exc:
+        pytest.skip(f"test PostgreSQL unavailable: {exc}")
 
 
 def test_schema_removes_literal_asset_checks_and_adds_foreign_keys():
