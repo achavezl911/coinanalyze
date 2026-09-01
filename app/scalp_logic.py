@@ -2428,32 +2428,47 @@ def _flow_rate(net: object, seconds: int) -> float | None:
     return net_value / (seconds / 60.0)
 
 
-async def spot_flow_windows(
+async def _flow_windows(
     conn: asyncpg.Connection,
     symbol: str,
     windows: tuple[tuple[str, int], ...] | list[tuple[str, int]],
     as_of: datetime | None = None,
+    *,
+    realtime_table: str = "spot_trades_realtime",
+    agg_table: str = "spot_trades_agg",
+    feed: str = "spot_trades",
+    market: str = "spot",
 ) -> dict[str, dict[str, dict[str, Any]]]:
-    """Rolling spot flow with a complete 1-minute history plus a non-overlapping live tail."""
+    """Rolling flow with a complete 1-minute history plus a non-overlapping live tail.
+
+    El empalme lo estrenó el spot y durante mucho tiempo fue solo suyo: el futuro se servía
+    del realtime a secas, así que toda ventana mayor que su retención salía nula aunque
+    futures_trades_agg tuviera el minuto. Las dos tablas tienen las mismas columnas, así que
+    la ruta es una y las fuentes son parámetros.
+    """
+    if realtime_table not in {"spot_trades_realtime", "futures_trades_realtime"}:
+        raise ValueError("unsupported realtime flow table")
+    if agg_table not in {"spot_trades_agg", "futures_trades_agg"}:
+        raise ValueError("unsupported aggregate flow table")
     cutoff = await resolve_matrix_as_of(conn, as_of)
     labels = [label for label, _ in windows]
     seconds = [value for _, value in windows]
     rows = await conn.fetch(
-        """
+        f"""
         WITH requested AS (
           SELECT * FROM unnest($2::text[], $3::int[]) AS r(horizon, seconds)
         ), exchanges(exchange) AS (
           VALUES ('combined'),('binance'),('bybit')
         ), rt_span AS (
           SELECT exchange,MIN(ts) AS lo,MAX(ts) AS hi
-          FROM spot_trades_realtime
+          FROM {realtime_table}
           WHERE symbol=$1 AND exchange IN ('combined','binance','bybit')
             AND (exchange <> 'combined' OR venue_count=2)
             AND ts <= $4::timestamptz
           GROUP BY exchange
         ), agg_span AS (
           SELECT exchange,MIN(ts) AS lo,MAX(ts) AS hi
-          FROM spot_trades_agg
+          FROM {agg_table}
           WHERE symbol=$1 AND exchange IN ('combined','binance','bybit') AND interval='1min'
             AND (exchange <> 'combined' OR venue_count=2)
             AND ts <= $4::timestamptz
@@ -2475,7 +2490,7 @@ async def spot_flow_windows(
                  SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
                  SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows
           FROM choice c
-          JOIN spot_trades_realtime t ON t.symbol=$1 AND t.exchange=c.exchange
+          JOIN {realtime_table} t ON t.symbol=$1 AND t.exchange=c.exchange
           WHERE c.realtime_complete
             AND (c.exchange <> 'combined' OR t.venue_count=2)
             AND t.ts >= c.window_start
@@ -2487,7 +2502,7 @@ async def spot_flow_windows(
                  SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
                  SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows
           FROM choice c
-          JOIN spot_trades_agg t ON t.symbol=$1 AND t.exchange=c.exchange AND t.interval='1min'
+          JOIN {agg_table} t ON t.symbol=$1 AND t.exchange=c.exchange AND t.interval='1min'
           WHERE NOT c.realtime_complete
             AND (c.exchange <> 'combined' OR t.venue_count=2)
             AND t.ts >= c.window_start AND t.ts <= c.agg_hi
@@ -2499,7 +2514,7 @@ async def spot_flow_windows(
                  SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
                  SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows
           FROM choice c
-          JOIN spot_trades_realtime t ON t.symbol=$1 AND t.exchange=c.exchange
+          JOIN {realtime_table} t ON t.symbol=$1 AND t.exchange=c.exchange
           WHERE NOT c.realtime_complete
             AND (c.exchange <> 'combined' OR t.venue_count=2)
             AND t.ts >= GREATEST(
@@ -2549,14 +2564,14 @@ async def spot_flow_windows(
         for exchange in ("binance", "bybit"):
             requirements.append(
                 GapRequirement(
-                    f"{label}:{exchange}", "spot_trades", exchange, "spot", symbol,
+                    f"{label}:{exchange}", feed, exchange, market, symbol,
                     start, cutoff,
                 )
             )
         for exchange in ("binance", "bybit", "combined"):
             requirements.append(
                 GapRequirement(
-                    f"{label}:combined", "spot_trades", exchange, "spot", symbol,
+                    f"{label}:combined", feed, exchange, market, symbol,
                     start, cutoff,
                 )
             )
@@ -2589,6 +2604,37 @@ async def spot_flow_windows(
         )
         result[str(item["horizon"])][str(item["exchange"])] = item
     return result
+
+
+async def spot_flow_windows(
+    conn: asyncpg.Connection,
+    symbol: str,
+    windows: tuple[tuple[str, int], ...] | list[tuple[str, int]],
+    as_of: datetime | None = None,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Rolling spot flow with a complete 1-minute history plus a non-overlapping live tail."""
+    return await _flow_windows(conn, symbol, windows, as_of)
+
+
+async def futures_flow_windows(
+    conn: asyncpg.Connection,
+    symbol: str,
+    windows: tuple[tuple[str, int], ...] | list[tuple[str, int]],
+    as_of: datetime | None = None,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Lo mismo para el perpetuo: futures_trades_agg guarda 1-min mucho mas atras que el
+    realtime, y sin este empalme toda ventana por encima de la retencion del realtime salia
+    nula teniendo el minuto en la base."""
+    return await _flow_windows(
+        conn,
+        symbol,
+        windows,
+        as_of,
+        realtime_table="futures_trades_realtime",
+        agg_table="futures_trades_agg",
+        feed="futures_trades",
+        market="perpetual",
+    )
 
 
 async def _cvd_src(
@@ -2692,19 +2738,40 @@ async def cvd_matrix(
         return "fresh" if end_gap <= 90 else ("degraded" if end_gap <= 180 else "stale")
 
     rtf_obs = obs(rtf_lo)
+    # EL FUTURO NO TENIA EL RESPALDO QUE EL SPOT YA TENIA. pick_fut cortaba por la retencion
+    # del realtime (12 h) y devolvia insufficient_retention SIN MIRAR futures_trades_agg, que
+    # guarda 36 h: la ventana de 24 h salia nula con el minuto en la base -- medido el
+    # 2026-09-01, 1436 de 1440 minutos, y de los 4 que faltaban 3 eran el borde de cola que
+    # esta misma cola de realtime cubre. Ahora la ventana que el realtime no alcanza cae al
+    # MISMO empalme que usa el spot. Lo que el realtime SI cubre no cambia de fuente ni de
+    # cifra: solo se rellena lo que hoy es null.
+    fut_flows = await futures_flow_windows(conn, symbol, _CVD_WINDOWS, cutoff)
 
-    def pick_fut(sec):
+    def pick_fut(sec, lab):
         if rtf_obs >= sec:
-            return rt_fut, gap(rtf_hi), "realtime", None
-        return None, None, None, "insufficient_retention"
+            return gap(rtf_hi), "realtime", None
+        spliced = (fut_flows.get(lab) or {}).get("combined") or {}
+        if spliced.get("complete"):
+            return spliced.get("end_gap_seconds"), spliced.get("source"), None
+        return None, None, (
+            "data_gap"
+            if spliced.get("gap_reason") == "data_gap"
+            else "insufficient_retention"
+        )
 
-    def get(srcmap, ex, lab):
-        c = (srcmap.get(ex) or {}).get(lab) or {}
+    def get(ex, lab, spliced):
+        if spliced:
+            c = (fut_flows.get(lab) or {}).get(ex) or {}
+            n = c.get("source_rows") or 0 if c.get("complete") else 0
+            return c.get("delta"), c.get("volume"), int(n)
+        c = (rt_fut.get(ex) or {}).get(lab) or {}
         return c.get("delta"), c.get("volume"), c.get("n") or 0
 
     windows = {}
     for lab, sec in _CVD_WINDOWS:
-        fsrc, fgap, fsource, freason = pick_fut(sec)
+        fgap, fsource, freason = pick_fut(sec, lab)
+        # 'realtime' o el empalme; la distincion importa porque la precision no es la misma.
+        from_agg = fsource is not None and fsource != "realtime"
         spot_window = spot_flows.get(lab) or {}
         spot_combined = spot_window.get("combined") or {}
         spot_complete = bool(spot_combined.get("complete"))
@@ -2723,8 +2790,8 @@ async def cvd_matrix(
         )
         f = s = None
         futures_gross = spot_gross = None
-        if fsrc is not None:
-            fd, futures_gross, fn = get(fsrc, "combined", lab)
+        if fsource is not None:
+            fd, futures_gross, fn = get("combined", lab, from_agg)
             f = fd if fn > 0 and f"{lab}:combined" not in blocked_futures else None
             freason = (
                 "data_gap"
@@ -2738,7 +2805,9 @@ async def cvd_matrix(
             futures_gross = None
         by_venue = {}
         for v in ("binance", "bybit"):
-            fv, fvg, fvn = get(fsrc, v, lab) if fsrc is not None else (None, None, 0)
+            fv, fvg, fvn = (
+                get(v, lab, from_agg) if fsource is not None else (None, None, 0)
+            )
             spot_venue = spot_window.get(v) or {}
             sv = as_float(spot_venue.get("delta")) if spot_venue.get("complete") else None
             svg = as_float(spot_venue.get("volume")) if spot_venue.get("complete") else None
@@ -2798,8 +2867,9 @@ async def cvd_matrix(
             "reset_timezone": "UTC",
             "venues": ["binance", "bybit"],
             "definition": "raw net = SUM(buy_vol_usd - sell_vol_usd), imbalance = net/gross, rate = net USD/min",
-            "sources": "spot usa realtime cuando cubre la ventana; si no, agg 1min historico + cola realtime sin solapamiento. Futures usa realtime con retencion configurable",
+            "sources": "spot y futures usan realtime cuando cubre la ventana; si no, agg 1min historico + cola realtime sin solapamiento. El campo source de cada pata dice cual de los dos sirvio esa ventana",
             "futures_realtime_retention_hours": get_settings().SCALP_TRADE_RETENTION_HOURS,
+            "futures_agg_retention_hours": get_settings().SCALP_MINUTE_RETENTION_HOURS,
             "freshness_rule": "end_gap<=90s fresh, <=180 degraded, >180 stale",
             "null_reasons": "insufficient_retention o missing_recent_bucket; null != flujo balanceado",
             "as_of_semantics": "cutoff de tiempo de evento compartido; no implica un snapshot MVCC entre statements",
@@ -4097,6 +4167,10 @@ async def delta_matrix(
 ) -> list[dict[str, Any]]:
     cutoff = await resolve_matrix_as_of(conn, as_of)
     spot_windows = await spot_flow_windows(conn, WS_SYMBOL_MAP[symbol], windows, cutoff)
+    # La ventana 1d es la que el operador VE con la pata de futuros en blanco (app.js:484
+    # pinta este payload). El realtime no la alcanza y futures_trades_agg si: mismo empalme
+    # que el spot, y solo para las ventanas que el realtime deja fuera.
+    futures_windows = await futures_flow_windows(conn, symbol, windows, cutoff)
     baselines = await load_baselines(conn, symbol)
     rows: list[dict[str, Any]] = []
     for label, seconds in windows:
@@ -4104,6 +4178,26 @@ async def delta_matrix(
         futures = await _realtime_flow(
             conn, "futures_trades_realtime", symbol, seconds, cutoff
         )
+        if not futures.get("complete"):
+            spliced = (futures_windows.get(label) or {}).get("combined") or {}
+            # SOLO si de verdad viene del agregado. Cuando el empalme resuelve 'realtime'
+            # esta ventana ya la servia el realtime y su null tiene OTRA causa -- el hueco
+            # interno por encima de REALTIME_STALE_SECONDS, que le pasa a SOL en 4h y 8h --,
+            # y taparla aqui seria saltarse esa guarda por la puerta de atras.
+            if spliced.get("complete") and spliced.get("source") != "realtime":
+                futures = {
+                    **futures,
+                    "delta": spliced.get("delta"),
+                    "volume": spliced.get("volume"),
+                    "trades": spliced.get("trades"),
+                    "source_rows": spliced.get("source_rows"),
+                    "coverage_status": spliced.get("coverage_status"),
+                    "end_gap_seconds": spliced.get("end_gap_seconds"),
+                    "source": spliced.get("source"),
+                    # Se midio sobre el realtime, que no es quien sirve esta ventana.
+                    "max_gap_seconds": None,
+                    "complete": True,
+                }
         # El chequeo de huecos solo aplica a la pata servida por realtime (buckets de 5 s).
         # Cuando spot viene del agg de 1 min el umbral de 30 s no significa nada, y la fila
         # ya lo declara en `spot_source`.
@@ -4171,6 +4265,9 @@ async def delta_matrix(
                 ),
                 "futures_coverage_status": futures.get("coverage_status", "unavailable"),
                 "spot_source": spot.get("source", "unavailable"),
+                # Sin esto, una fila servida por el empalme y otra por el realtime se leen
+                # igual teniendo precision distinta (1 min contra 5 s).
+                "futures_source": futures.get("source", "realtime"),
                 "spot_end_gap_seconds": spot.get("end_gap_seconds"),
                 "futures_end_gap_seconds": futures.get("end_gap_seconds"),
                 "spot_max_gap_seconds": spot_gap,
