@@ -240,6 +240,12 @@ async def _delta_rows(
         return spliced_futures or {}
 
     monkeypatch.setattr(scalp_logic, "spot_flow_windows", fake_spot)
+    async def sin_hueco_interno(_conn, _table, _symbol, _exchange, _seconds, as_of=None):
+        # (peor hueco, p99, muestras). Sin hueco no hay guarda que disparar, asi que
+        # estas pruebas siguen midiendo lo que median.
+        return None, None, 0
+
+    monkeypatch.setattr(scalp_logic, "_gap_and_baseline", sin_hueco_interno)
     monkeypatch.setattr(scalp_logic, "futures_flow_windows", fake_futures_windows)
     monkeypatch.setattr(scalp_logic, "_realtime_flow", fake_futures)
     monkeypatch.setattr(scalp_logic, "_oi_change_pct", fake_oi)
@@ -371,6 +377,12 @@ async def test_pr22_cvd_matrix_uses_one_as_of_for_all_windows(
 
     monkeypatch.setattr(scalp_logic, "_cvd_src", fake_cvd)
     monkeypatch.setattr(scalp_logic, "spot_flow_windows", fake_spot)
+    async def sin_hueco_interno(_conn, _table, _symbol, _exchange, _seconds, as_of=None):
+        # (peor hueco, p99, muestras). Sin hueco no hay guarda que disparar, asi que
+        # estas pruebas siguen midiendo lo que median.
+        return None, None, 0
+
+    monkeypatch.setattr(scalp_logic, "_gap_and_baseline", sin_hueco_interno)
     monkeypatch.setattr(scalp_logic, "futures_flow_windows", fake_futures_windows)
     monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", no_gaps)
     result = await scalp_logic.cvd_matrix(
@@ -421,7 +433,11 @@ async def test_pr22_trade_after_as_of_is_excluded_from_every_window(
         return 1.0
 
     monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", no_gaps)
+    async def no_internal_gap_par(*_args, **_kwargs):
+        return None, None, 0
+
     monkeypatch.setattr(scalp_logic, "max_internal_gap", no_internal_gap)
+    monkeypatch.setattr(scalp_logic, "_gap_and_baseline", no_internal_gap_par)
     await scalp_logic._realtime_flow(
         conn, "futures_trades_realtime", "BTCUSDT_PERP.A", 60, cutoff  # type: ignore[arg-type]
     )
@@ -457,7 +473,12 @@ async def test_pr22_gap_requirements_use_same_as_of(
         return 1.0
 
     monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", capture_gaps)
+    async def capture_gap_par(_conn, _table, _symbol, _exchange, _seconds, as_of=None):
+        await capture_internal_gap(_conn, _table, _symbol, _exchange, _seconds, as_of)
+        return None, None, 0
+
     monkeypatch.setattr(scalp_logic, "max_internal_gap", capture_internal_gap)
+    monkeypatch.setattr(scalp_logic, "_gap_and_baseline", capture_gap_par)
     await scalp_logic._realtime_flow(
         conn, "futures_trades_realtime", "BTCUSDT_PERP.A", 60, cutoff  # type: ignore[arg-type]
     )
@@ -1119,6 +1140,12 @@ async def test_k83_cvd_matrix_publica_futuros_cuando_solo_el_empalme_cubre(
 
     monkeypatch.setattr(scalp_logic, "_cvd_src", fake_cvd)
     monkeypatch.setattr(scalp_logic, "spot_flow_windows", fake_spot)
+    async def sin_hueco_interno(_conn, _table, _symbol, _exchange, _seconds, as_of=None):
+        # (peor hueco, p99, muestras). Sin hueco no hay guarda que disparar, asi que
+        # estas pruebas siguen midiendo lo que median.
+        return None, None, 0
+
+    monkeypatch.setattr(scalp_logic, "_gap_and_baseline", sin_hueco_interno)
     monkeypatch.setattr(scalp_logic, "futures_flow_windows", fake_futures_windows)
     monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", no_gaps)
     result = await scalp_logic.cvd_matrix(
@@ -1143,3 +1170,107 @@ async def test_k83_cvd_matrix_publica_futuros_cuando_solo_el_empalme_cubre(
     tres = result["windows"]["3d"]
     assert tres["futures"] is None
     assert tres["futures_status"]["reason"] == "insufficient_retention"
+
+
+# ---------------------------------------------------------------------------
+# K84 · UN HUECO ENTRE BUCKETS NO ES DATO PERDIDO, Y LAS DOS RUTAS TIENEN QUE JUZGARLO IGUAL.
+# El colector no escribe buckets vacios -medido en 140 el 2026-09-01: 4804 filas de SOL
+# combined en 8 h, CERO con trade_count=0, cadencia media 5.99 s-, asi que un hueco significa
+# que no se opero. Con el umbral fijo de 30 s, plantado en la cola natural de las SEIS series
+# medidas (p99 15-20 s, peor hueco 30-35 s), cual ventana se apagaba era cara o cruz -- y
+# cvd_matrix ni siquiera aplicaba la guarda, asi que publicaba la cifra que delta_matrix
+# blanqueaba, las dos dentro del mismo /api/ai/context.
+# ---------------------------------------------------------------------------
+def test_k84_el_umbral_sale_de_la_cadencia_medida_y_declara_su_origen() -> None:
+    # Serie fina como el SOL de la medida: p99 20 s -> 60 s de tolerancia.
+    umbral, origen = scalp_logic._gap_threshold_seconds(20.0, 500)
+    assert umbral == pytest.approx(60.0)
+    assert origen == "p99_medido_x3"
+    # Serie densa: p99 15 s -> 45 s. Tambien por encima de su peor hueco natural (35 s).
+    assert scalp_logic._gap_threshold_seconds(15.0, 500)[0] == pytest.approx(45.0)
+
+
+def test_k84_sin_muestras_suficientes_manda_la_constante() -> None:
+    # En una ventana de 15 s hay tres buckets: su p99 no significa nada.
+    umbral, origen = scalp_logic._gap_threshold_seconds(2.0, 3)
+    assert umbral == pytest.approx(scalp_logic.REALTIME_STALE_SECONDS)
+    assert origen == "constante_stale_30s"
+    assert scalp_logic._gap_threshold_seconds(None, 900)[1] == "constante_stale_30s"
+
+
+def test_k84_el_hueco_natural_ya_no_blanquea_pero_la_caida_si() -> None:
+    # El caso medido: SOL 8h, hueco de 35 s sobre una serie cuyo p99 es 20 s.
+    assert scalp_logic._gap_too_large(35.0, 20.0, 500) is False
+    # Y el caso que esta guarda existe para cazar: una caida de verdad.
+    assert scalp_logic._gap_too_large(9840.0, 20.0, 500) is True
+    assert scalp_logic._gap_too_large(120.0, 15.0, 500) is True
+    # Sin baremo se conserva exactamente la conducta anterior.
+    assert scalp_logic._gap_too_large(35.0) is True
+    assert scalp_logic._gap_too_large(None, 20.0, 500) is False
+
+
+@pytest.mark.asyncio
+async def test_k84_cvd_matrix_aplica_la_guarda_de_hueco_interno(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """cvd_matrix no aplicaba NINGUNA guarda de hueco a la pata de futuros.
+
+    Con una caida de verdad dentro de la ventana tiene que callar y DECIR POR QUE, igual que
+    hace delta_matrix; si no, la IA recibe un numero y un nulo para la misma cifra.
+    """
+    cutoff = datetime(2026, 9, 1, 3, 0, tzinfo=UTC)
+
+    async def fake_cvd(_conn, _table, _symbol, _is_agg, as_of=None):
+        values = {
+            exchange: {
+                label: {"delta": seconds * 2.0, "volume": seconds * 10.0, "n": 1}
+                for label, seconds in scalp_logic._CVD_WINDOWS
+            }
+            for exchange in ("combined", "binance", "bybit")
+        }
+        return values, cutoff - timedelta(days=8), cutoff - timedelta(seconds=5)
+
+    async def fake_spot(_conn, _symbol, windows, as_of=None):
+        return {
+            label: {
+                exchange: {
+                    "delta": float(seconds), "volume": seconds * 10.0, "source_rows": 1,
+                    "complete": True, "source": "realtime", "end_gap_seconds": 5.0,
+                    "precision_seconds": 1,
+                }
+                for exchange in ("combined", "binance", "bybit")
+            }
+            for label, seconds in windows
+        }
+
+    async def sin_empalme(_conn, _symbol, _windows, as_of=None):
+        return {}
+
+    async def hueco_solo_en_8h(_conn, _table, _symbol, _exchange, seconds, as_of=None):
+        # Una caida de 20 min: natural en ninguna serie, y solo cabe en la ventana de 8 h.
+        return (1200.0, 20.0, 500) if seconds == 28800 else (25.0, 20.0, 500)
+
+    async def no_gaps(_conn, _requirements):
+        return set()
+
+    monkeypatch.setattr(scalp_logic, "_cvd_src", fake_cvd)
+    monkeypatch.setattr(scalp_logic, "spot_flow_windows", fake_spot)
+    monkeypatch.setattr(scalp_logic, "futures_flow_windows", sin_empalme)
+    monkeypatch.setattr(scalp_logic, "_gap_and_baseline", hueco_solo_en_8h)
+    monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", no_gaps)
+    result = await scalp_logic.cvd_matrix(
+        _NoopConnection(), "BTCUSDT_PERP.A", cutoff  # type: ignore[arg-type]
+    )
+
+    ocho = result["windows"]["8h"]
+    assert ocho["futures"] is None
+    assert ocho["futures_status"]["reason"] == "internal_gap"
+    assert ocho["futures_status"]["max_gap_seconds"] == pytest.approx(1200.0)
+    assert ocho["futures_status"]["gap_threshold_seconds"] == pytest.approx(60.0)
+    assert ocho["futures_status"]["gap_threshold_source"] == "p99_medido_x3"
+
+    # El hueco natural de 25 s NO puede apagar las demas.
+    cuatro = result["windows"]["4h"]
+    assert cuatro["futures"] is not None
+    assert cuatro["futures_status"]["reason"] is None
+    assert "internal_gap" in result["window_meta"]["null_reasons"]
