@@ -9,15 +9,21 @@
 #     escribe las sumas y las cuatro columnas de procedencia SOLO si
 #     liquidation_history_observation (metrics.py:252) devuelve algo.
 #
-# LA CAUSA ES UNA SOLA Y ESTA EN GIT, no dos como parecia. El commit 4e61265 del 2026-08-12
-# -"fix: make daily evidence historically reproducible"- introdujo A LA VEZ la funcion
-# liquidation_history_observation y el gate complete_liquidations. La ultima sesion con dato
-# es la 2026-08-10, escrita antes de que eso llegara.
+# LA CAUSA ES UNA SOLA Y ESTA EN GIT, no dos como parecia, y son TRES COMMITS EN SECUENCIA en
+# 24 h -- medido con git y corregido dos veces, porque la primera version de esta cabecera
+# fechaba la migracion por el NOMBRE del fichero, que es un error de instrumento de manual:
+#   0df80b2  2026-08-11  introduce liquidation_history_observation
+#   610f27b  2026-08-11 23:51 -0600 (= 08-12 05:51Z)  anade sql/migrations/20260814_pr24_*.sql
+#            -el 20260814 es el NOMBRE, no la fecha- y un complete_liquidations con OTRA
+#            definicion: liquidation_start is not None and liquidation_end is not None
+#   4e61265  2026-08-12  lo cambia a "liquidation_observation is not None", QUE ES LA FORMA
+#            QUE CORRE HOY
+# La ultima sesion con dato es la 2026-08-10: UN DIA antes, no cuatro.
 #   Y LO QUE PARECIA UN SEGUNDO FALLO NO LO ES: las cuatro columnas de procedencia
 #   -liquidation_coverage_version, _observed_at, _source_start_at, _source_cutoff_at- estan
-#   CONECTADAS y se escriben en el mismo INSERT (daily_agg.py:214-215 y 280-283). Las anadio
-#   sql/migrations/20260814_pr24_...sql, del 2026-08-14, CUATRO DIAS DESPUES de que el dato
-#   parara. Nunca tuvieron ocasion. "NUNCA escrito" y "dejo de escribirse" son aqui EL MISMO
+#   CONECTADAS y se escriben en el mismo INSERT (daily_agg.py:214-215 y 280-283). Llegaron con
+#   610f27b, o sea UN DIA despues de que el dato parara y en el MISMO endurecimiento que puso
+#   el gate. Nunca tuvieron ocasion. "NUNCA escrito" y "dejo de escribirse" son aqui EL MISMO
 #   suceso visto por columnas de distinta edad, y no hacen falta dos causas.
 #
 # POR QUE EL GATE NO PASA NUNCA, y no es una carrera: es aritmetica.
@@ -52,7 +58,7 @@
 # se puede apagar ensena a ignorar los que si, que es la enfermedad que este arnes combate.
 # La regla correcta la dio K25: separar lo ELEGIBLE DENTRO DE UN CONTRATO VIGENTE de la
 # DEUDA PARADA que nunca tuvo contrato. Aqui el corte no se inventa, se lee del repo: las
-# cuatro columnas nacieron el 2026-08-14 con sql/migrations/20260814_pr24_*.sql.
+# cuatro columnas nacieron con 610f27b, el 2026-08-11 (git log --diff-filter=A).
 #   A · EL MECANISMO VIVO, no el residuo. La sesion elegible MAS RECIENTE tiene que traer su
 #       bloque. Es la unica pregunta que el pipeline puede contestar hoy y la que se pone
 #       VERDE al dia siguiente de desplegar el arreglo. El ELEGIBLE SALE DE UN INSTRUMENTO
