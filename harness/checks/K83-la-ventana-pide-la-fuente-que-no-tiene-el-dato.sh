@@ -155,6 +155,15 @@ EOF
     echo "NO MEDIDO: en $CORTO el realtime no solapa con la cola del agg (agg_hi + 1 min queda por delante de rt_lo). Hoy la ventana no seria cubrible ni empalmando, asi que el defecto que mide este check no se puede distinguir de una parada del colector"
     exit 2
   }
+  # La cola tiene que estar FRESCA con la misma vara que usa la aplicacion. El empalme se
+  # declara completo con rt_hi >= cutoff-30s (REALTIME_STALE_SECONDS), asi que con el feed
+  # rezagado la ventana no se puede completar NI CON EL ARREGLO PUESTO, y un ROJO estaria
+  # culpando a la fuente que falta de lo que es un feed parado. Medido el 2026-09-01: la
+  # cola iba a 9-21 s, o sea holgada pero no infinita.
+  python3 -c "import sys; sys.exit(0 if float('$COLA_S') <= 30 else 1)" || {
+    echo "NO MEDIDO: en $CORTO el realtime de futuros va $COLA_S s por detras del reloj y la regla de completitud pide <= 30 s. Hoy la ventana no se podria completar ni con el empalme puesto: esto es un feed rezagado, no la fuente que falta"
+    exit 2
+  }
   [ -n "$ARCO_TXT" ] || ARCO_TXT="arco $(python3 -c "print(round($ARCO_S/3600.0,2))") h, cola del realtime $COLA_S s"
 
   # --- A · cvd_matrix: la que lee la IA.
