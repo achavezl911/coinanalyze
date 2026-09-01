@@ -2746,9 +2746,24 @@ async def cvd_matrix(
     # MISMO empalme que usa el spot. Lo que el realtime SI cubre no cambia de fuente ni de
     # cifra: solo se rellena lo que hoy es null.
     fut_flows = await futures_flow_windows(conn, symbol, _CVD_WINDOWS, cutoff)
+    # LA GUARDA DE HUECO INTERNO, QUE ESTA RUTA NO APLICABA A LA PATA DE FUTUROS. Mientras
+    # delta_matrix marcaba la ventana incompleta por un hueco entre buckets, cvd_matrix
+    # publicaba su cifra, y LAS DOS VIAJAN EN EL MISMO /api/ai/context: la IA recibia un
+    # numero y un nulo para la misma cifra en el mismo instante. Medido en 140 el 2026-09-01:
+    # SOL 8h daba -47 951 783 aqui y null alli, tres rondas seguidas. Ahora las dos deciden
+    # con el MISMO baremo, que ademas ya no es una constante.
+    fut_huecos: dict[str, tuple[float | None, float | None, int]] = {}
+    for _lab, _sec in _CVD_WINDOWS:
+        if rtf_obs >= _sec:
+            fut_huecos[_lab] = await _gap_and_baseline(
+                conn, "futures_trades_realtime", symbol, "combined", _sec, cutoff
+            )
 
     def pick_fut(sec, lab):
         if rtf_obs >= sec:
+            peor, base, muestras = fut_huecos.get(lab, (None, None, 0))
+            if _gap_too_large(peor, base, muestras):
+                return None, None, "internal_gap"
             return gap(rtf_hi), "realtime", None
         spliced = (fut_flows.get(lab) or {}).get("combined") or {}
         if spliced.get("complete"):
@@ -2852,6 +2867,15 @@ async def cvd_matrix(
                 "reason": freason,
                 "end_gap_seconds": fgap if f is not None else None,
                 "freshness": fresh(fgap) if f is not None else "unavailable",
+                # El hueco interno y SU VARA DE MEDIR, que es lo que permite leer por que
+                # esta ventana esta -o no esta- y compararla con la otra ruta.
+                "max_gap_seconds": fut_huecos.get(lab, (None, None, 0))[0],
+                "gap_threshold_seconds": _gap_threshold_seconds(
+                    *fut_huecos.get(lab, (None, None, 0))[1:]
+                )[0],
+                "gap_threshold_source": _gap_threshold_seconds(
+                    *fut_huecos.get(lab, (None, None, 0))[1:]
+                )[1],
             },
         }
     return {
@@ -2871,7 +2895,7 @@ async def cvd_matrix(
             "futures_realtime_retention_hours": get_settings().SCALP_TRADE_RETENTION_HOURS,
             "futures_agg_retention_hours": get_settings().SCALP_MINUTE_RETENTION_HOURS,
             "freshness_rule": "end_gap<=90s fresh, <=180 degraded, >180 stale",
-            "null_reasons": "insufficient_retention o missing_recent_bucket; null != flujo balanceado",
+            "null_reasons": "insufficient_retention, missing_recent_bucket, data_gap o internal_gap -hueco entre buckets por encima de gap_threshold_seconds-; null != flujo balanceado",
             "as_of_semantics": "cutoff de tiempo de evento compartido; no implica un snapshot MVCC entre statements",
         },
     }
@@ -4000,8 +4024,94 @@ async def data_quality(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
 _PF_HORIZONS = (("15m", 900), ("1h", 3600), ("4h", 14400), ("8h", 28800))
 
 
-def _gap_too_large(max_gap_seconds: float | None) -> bool:
-    return max_gap_seconds is not None and max_gap_seconds > REALTIME_STALE_SECONDS
+# MUESTRAS MINIMAS PARA CREERLE AL PERCENTIL. En una ventana de 15 s hay tres buckets y su
+# p99 no dice nada; por debajo de esto manda la constante.
+_GAP_BASELINE_MIN_SAMPLES = 30
+# EL FACTOR SALE DE LA MEDIDA, no de un numero redondo. Medido en 140 el 2026-09-01 sobre
+# 8 h, en las SEIS series (spot y futuros por los tres simbolos):
+#     futures  BTC p99 15 s / peor 30.0   ETH p99 15 / peor 30.0   SOL p99 20 / peor 35.0
+#     spot     BTC p99 15 s / peor 35.0   ETH p99 20 / peor 35.0   SOL p99 15 / peor 35.0
+# O sea que el peor hueco NATURAL es ~2.3 veces el p99 de su propia serie, y la constante de
+# 30 s cae DENTRO de esa cola en todas ellas -por eso cual ventana se apagaba era cara o
+# cruz-. Con 3x el p99 el umbral queda en 45-60 s: por encima de todo lo natural observado y
+# muy por debajo de una caida de verdad (la que motivo esta guarda eran 2 h 44).
+_GAP_BASELINE_FACTOR = 3.0
+
+
+def _gap_threshold_seconds(
+    baseline_seconds: float | None, samples: int = 0
+) -> tuple[float, str]:
+    """Cuanto hueco se tolera, y DE DONDE sale ese numero."""
+    if baseline_seconds is None or samples < _GAP_BASELINE_MIN_SAMPLES:
+        return REALTIME_STALE_SECONDS, "constante_stale_30s"
+    escalado = _GAP_BASELINE_FACTOR * baseline_seconds
+    if escalado <= REALTIME_STALE_SECONDS:
+        return REALTIME_STALE_SECONDS, "constante_stale_30s"
+    return escalado, f"p99_medido_x{_GAP_BASELINE_FACTOR:g}"
+
+
+def _gap_too_large(
+    max_gap_seconds: float | None,
+    baseline_seconds: float | None = None,
+    samples: int = 0,
+) -> bool:
+    """Un hueco entre buckets NO es dato perdido mientras quepa en la cadencia de la serie.
+
+    El colector no escribe buckets vacios -medido en 140: 4804 filas de SOL en 8 h, CERO con
+    trade_count=0 y cadencia media 5.99 s-, asi que un hueco significa QUE NO SE OPERO, no
+    que se perdiera nada. Con un umbral fijo de 30 s, plantado en la cola natural de todas
+    las series, cual ventana se apagaba era cara o cruz.
+    """
+    if max_gap_seconds is None:
+        return False
+    umbral, _ = _gap_threshold_seconds(baseline_seconds, samples)
+    return max_gap_seconds > umbral
+
+
+async def _gap_and_baseline(
+    conn: asyncpg.Connection,
+    table: str,
+    symbol: str,
+    exchange: str,
+    seconds: int,
+    as_of: datetime | None = None,
+) -> tuple[float | None, float | None, int]:
+    """El mayor hueco de la ventana Y la cadencia normal de esa misma ventana, de una consulta.
+
+    Va en una sola pasada a proposito: separarlo en dos costaria otra consulta por ventana y
+    por ruta en un camino caliente, y ademas dejaria el hueco y su baremo medidos en
+    instantes distintos, que es justo el error que este arreglo persigue.
+    """
+    if table not in {"spot_trades_realtime", "futures_trades_realtime"}:
+        raise ValueError("unsupported realtime flow table")
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    row = await conn.fetchrow(
+        f"""
+        WITH edges AS (
+          SELECT ts FROM {table}
+          WHERE symbol=$1 AND exchange=$2
+            AND ($2 <> 'combined' OR venue_count=2)
+            AND ts >= $4::timestamptz-($3::int*interval '1 second')
+            AND ts <= $4
+          UNION ALL SELECT $4::timestamptz-($3::int*interval '1 second')
+        ), huecos AS (
+          SELECT EXTRACT(EPOCH FROM ts-prev)::float8 AS h
+          FROM (SELECT ts,lag(ts) OVER (ORDER BY ts) AS prev FROM edges) d
+          WHERE prev IS NOT NULL
+        )
+        SELECT MAX(h) AS peor,
+               percentile_cont(0.99) WITHIN GROUP (ORDER BY h) AS p99,
+               COUNT(*)::int AS n
+        FROM huecos
+        """,
+        symbol,
+        exchange,
+        seconds,
+        cutoff,
+    )
+    if row is None:
+        return None, None, 0
+    return as_float(row["peor"]), as_float(row["p99"]), int(row["n"] or 0)
 
 
 async def max_internal_gap(
@@ -4098,12 +4208,17 @@ async def _realtime_flow(
             for exchange in ("binance", "bybit", "combined")
         ],
     )
-    item["max_gap_seconds"] = await max_internal_gap(
+    peor, baseline, muestras = await _gap_and_baseline(
         conn, table, symbol, "combined", seconds, cutoff
     )
+    item["max_gap_seconds"] = peor
+    umbral, umbral_origen = _gap_threshold_seconds(baseline, muestras)
+    item["gap_baseline_seconds"] = baseline
+    item["gap_threshold_seconds"] = umbral
+    item["gap_threshold_source"] = umbral_origen
     item["as_of"] = cutoff.isoformat()
     item["complete"] = bool(item.get("span_ok")) and not _gap_too_large(
-        item["max_gap_seconds"]
+        item["max_gap_seconds"], baseline, muestras
     )
     item["complete"] = item["complete"] and "flow" not in blocked
     if "flow" in blocked:
@@ -4201,8 +4316,8 @@ async def delta_matrix(
         # El chequeo de huecos solo aplica a la pata servida por realtime (buckets de 5 s).
         # Cuando spot viene del agg de 1 min el umbral de 30 s no significa nada, y la fila
         # ya lo declara en `spot_source`.
-        spot_gap = (
-            await max_internal_gap(
+        spot_gap, spot_base, spot_muestras = (
+            await _gap_and_baseline(
                 conn,
                 "spot_trades_realtime",
                 WS_SYMBOL_MAP[symbol],
@@ -4211,9 +4326,11 @@ async def delta_matrix(
                 cutoff,
             )
             if spot.get("source") == "realtime"
-            else None
+            else (None, None, 0)
         )
-        spot_complete = bool(spot.get("complete")) and not _gap_too_large(spot_gap)
+        spot_complete = bool(spot.get("complete")) and not _gap_too_large(
+            spot_gap, spot_base, spot_muestras
+        )
         futures_complete = bool(futures.get("complete"))
         spot_delta = as_float(spot.get("delta")) if spot_complete else None
         futures_delta = as_float(futures.get("delta")) if futures_complete else None
@@ -4261,7 +4378,9 @@ async def delta_matrix(
                     )
                 ),
                 "spot_coverage_status": (
-                    "partial" if _gap_too_large(spot_gap) else spot.get("coverage_status", "unavailable")
+                    "partial"
+                    if _gap_too_large(spot_gap, spot_base, spot_muestras)
+                    else spot.get("coverage_status", "unavailable")
                 ),
                 "futures_coverage_status": futures.get("coverage_status", "unavailable"),
                 "spot_source": spot.get("source", "unavailable"),
@@ -4271,6 +4390,12 @@ async def delta_matrix(
                 "spot_end_gap_seconds": spot.get("end_gap_seconds"),
                 "futures_end_gap_seconds": futures.get("end_gap_seconds"),
                 "spot_max_gap_seconds": spot_gap,
+                # El hueco a secas no se puede leer sin su vara de medir, y la vara ya
+                # no es una constante: sale de la cadencia MEDIDA de la propia serie.
+                "spot_gap_threshold_seconds": _gap_threshold_seconds(spot_base, spot_muestras)[0],
+                "spot_gap_threshold_source": _gap_threshold_seconds(spot_base, spot_muestras)[1],
+                "futures_gap_threshold_seconds": futures.get("gap_threshold_seconds"),
+                "futures_gap_threshold_source": futures.get("gap_threshold_source"),
                 "futures_max_gap_seconds": futures.get("max_gap_seconds"),
                 # Sin referencia historica, "-45 M USD" no dice si es mucho o poco.
                 "fut_delta_ratio": (
