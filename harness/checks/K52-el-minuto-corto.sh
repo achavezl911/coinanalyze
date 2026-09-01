@@ -50,8 +50,38 @@ trap 'rm -f "$JOURNAL" "$DATOS"' EXIT
 
 # La ventana de indisponibilidad sale del journal, que es la unica fuente que sabe
 # cuando el proceso NO estaba. Se piden las dos puntas y se emparejan en python.
-"$B/bin/prod" "journalctl -u $UNIDAD --since '$HORAS hours ago' --no-pager -o short-iso --utc -n 400 2>/dev/null | grep -E 'Stopping $UNIDAD|Started $UNIDAD|binance_connected'" 2>/dev/null > "$JOURNAL"
-[ -s "$JOURNAL" ] || { echo "NO MEDIDO: el journal de 140 no devolvio nada para $UNIDAD en $HORAS h"; exit 2; }
+# LA MARCA DE CANAL NO ES ADORNO. Un journal vacio y una lectura que fallo se veian IGUAL:
+# ambos daban fichero vacio. Al dejar de ser fatal el vacio -que es lo que permite juzgar un
+# dia tranquilo- esa ambiguedad se convertiria en FALLO ABIERTO: un canal roto se leeria como
+# "no hubo reinicios" y el check aprobaria. Por eso el comando remoto emite una marca al
+# final: sin marca, no hubo lectura. Es la leccion de K52b aplicada a su hermano.
+"$B/bin/prod" "journalctl -u $UNIDAD --since '$HORAS hours ago' --no-pager -o short-iso --utc -n 400 2>/dev/null | grep -E 'Stopping $UNIDAD|Started $UNIDAD|binance_connected'; echo __CANAL_OK__" 2>/dev/null > "$JOURNAL"
+grep -q '^__CANAL_OK__$' "$JOURNAL" || {
+  echo "NO MEDIDO: el canal del journal de 140 no contesto para $UNIDAD -no llego la marca de canal-. Esto NO es un dia sin reinicios: es una lectura que fallo, y confundirlas seria fallar ABIERTO"
+  exit 2
+}
+EVENTOS=$(grep -cE "Stopping $UNIDAD|Started $UNIDAD|binance_connected" "$JOURNAL" 2>/dev/null || true)
+[ -n "$EVENTOS" ] || EVENTOS=0
+
+# CUANTO HACE DEL ULTIMO REINICIO. NO ensancha la ventana de JUICIO -- que sigue siendo
+# $HORAS h y no se toca -- sino que da el dato para DECLARAR el silencio en la salida. Sin
+# el, un brazo que lleva dos dias sin sujeto se lee igual que uno que lo tuvo hace una hora.
+# MEDIDO: en 29.5 dias el sujeto solo existe el 44.2 % del tiempo, con 32 huecos de mas de
+# 6 h y los mayores de casi 49 h. El silencio es la norma, no la excepcion, y tiene que verse.
+SILENCIO="desconocido"
+if [ "$EVENTOS" = "0" ]; then
+  ULTIMO=$("$B/bin/prod" "journalctl -u $UNIDAD --since '30 days ago' --no-pager -o short-iso --utc 2>/dev/null | grep -E 'Started $UNIDAD|binance_connected' | tail -1 | cut -c1-19" 2>/dev/null | tr -d " \n")
+  case "$ULTIMO" in
+    20[0-9][0-9]-*T*)
+      SILENCIO="$(python3 -c "
+import sys
+from datetime import datetime, UTC
+t = datetime.fromisoformat('$ULTIMO' + '+00:00')
+print('%.1f h' % ((datetime.now(UTC) - t).total_seconds() / 3600.0))
+" 2>/dev/null || echo desconocido)" ;;
+    *) SILENCIO="mas de 30 dias o ilegible" ;;
+  esac
+fi
 
 # La marca puede no existir todavia: se pide solo si la columna esta, y si no se pide
 # 'NULO', que es lo que el python interpreta como legado. Preguntar por una columna
@@ -72,6 +102,7 @@ import sys
 from datetime import datetime, timedelta, UTC
 
 camino_journal, camino_datos, hay_columna, tabla = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+eventos, silencio = int(sys.argv[5] or 0), sys.argv[6]
 
 def hora(t):
     return datetime.fromisoformat(t.replace("Z", "+00:00")).astimezone(UTC)
@@ -90,16 +121,31 @@ for linea in open(camino_journal):
         paradas.append(t)
     elif "Started" in linea or "binance_connected" in linea:
         arranques.append(t)
-if not paradas or not arranques:
-    print(f"NO MEDIDO: el journal no trae paradas y arranques emparejables ({len(paradas)}/{len(arranques)})"); sys.exit(2)
-
+# EL VEREDICTO PARTIDO. Antes, un journal sin eventos hacia INMEDIBLE el check entero, y
+# eso es mas de la mitad del tiempo: medido sobre 29.5 dias, el sujeto del brazo del solape
+# solo existe el 44.2 % del tiempo -- 394.6 h de 707 sin ningun reinicio en 6 h, con 32
+# huecos por encima de la ventana y los mayores cerca de 49 h.
+# Dejarlo en NOMED = el arnes sin medir el 55.8 % del tiempo. Ponerlo en VERDE = aprobar la
+# nada el 55.8 % del tiempo. NINGUNA DE LAS DOS: el veredicto lo dan los brazos que SIEMPRE
+# tienen sujeto -los nulos posteriores al corte y el control positivo sobre los minutos SIN
+# reinicio- y el del solape DECLARA que hoy no se juzgo, con cuanto lleva sin sujeto.
+# No se toca $HORAS. Un umbral que se ensancha hasta dejar de quejarse es indistinguible de
+# aflojar el criterio, y ademas aqui no arreglaria nada: ninguna anchura FABRICA reinicios.
 ventanas = []
-for parada in paradas:
-    siguientes = [a for a in arranques if a > parada]
-    if siguientes:
-        ventanas.append((parada, min(siguientes)))
-if not ventanas:
-    print("NO MEDIDO: ninguna parada del journal tiene arranque despues; la ventana esta cortada"); exit(2)
+if eventos == 0:
+    juzga_solape = False
+elif not paradas or not arranques:
+    # HUBO eventos y aun asi no emparejan: eso si es no poder medir, y se distingue del
+    # dia tranquilo precisamente porque eventos > 0.
+    print(f"NO MEDIDO: el journal trae {eventos} eventos pero ninguna pareja parada/arranque ({len(paradas)}/{len(arranques)})"); sys.exit(2)
+else:
+    for parada in paradas:
+        siguientes = [a for a in arranques if a > parada]
+        if siguientes:
+            ventanas.append((parada, min(siguientes)))
+    if not ventanas:
+        print(f"NO MEDIDO: las {len(paradas)} paradas del journal no tienen arranque despues; la ventana esta cortada"); sys.exit(2)
+    juzga_solape = True
 
 def solapa(ts):
     fin = ts + timedelta(minutes=1)
@@ -160,10 +206,20 @@ if control_malo:
     print(f"CONTROL POSITIVO ROTO: {len(control_malo)} buckets marcados sin reinicio que los explique: " + " · ".join(control_malo[:3])); sys.exit(1)
 if control_bueno == 0:
     print("NO MEDIDO: ningun minuto sin reinicio en la ventana; el control positivo no se pudo correr"); sys.exit(2)
-if marcados == 0 and len(ventanas) > 0:
+if juzga_solape and marcados == 0 and len(ventanas) > 0:
     ausentes = sum(1 for ini, fin in ventanas if not any(solapa(ts) for ts, _, _, _ in filas))
     print(f"{len(ventanas)} ventanas de indisponibilidad y NINGUN bucket marcado ni ausente en ellas: o la marca no se escribe o las ventanas no se emparejan"); sys.exit(1)
 
-print(f"{marcados} buckets que solapan un reinicio llevan marca legible y ninguno pasa por completo, sobre {len(ventanas)} ventanas de indisponibilidad del journal; CONTROL POSITIVO: {control_bueno} minutos sin reinicio, ninguno marcado; y CERO nulos posteriores al corte {corte.strftime("%H:%MZ")}, que es lo que separa el legado -{legado} filas- de un productor que dejo de marcar")
-' "$JOURNAL" "$DATOS" "$hay_columna" "$TABLA"
+cola = (f"CONTROL POSITIVO: {control_bueno} minutos sin reinicio, ninguno marcado; y CERO nulos "
+        f"posteriores al corte {corte.strftime("%H:%MZ")}, que es lo que separa el legado "
+        f"-{legado} filas- de un productor que dejo de marcar")
+if juzga_solape:
+    print(f"{marcados} buckets que solapan un reinicio llevan marca legible y ninguno pasa por "
+          f"completo, sobre {len(ventanas)} ventanas de indisponibilidad del journal; {cola}")
+else:
+    # NO se cuenta como aprobado: se dice que no se juzgo, y cuanto lleva sin poder juzgarse.
+    print(f"BRAZO DEL SOLAPE SIN SUJETO Y DECLARADO: 0 reinicios de la unidad en la ventana "
+          f"-ultimo hace {silencio}-, asi que hoy NO se juzga y NO se cuenta como aprobado. "
+          f"Lo que SI se juzgo, con sujeto: {cola}")
+' "$JOURNAL" "$DATOS" "$hay_columna" "$TABLA" "$EVENTOS" "$SILENCIO"
 exit $?
