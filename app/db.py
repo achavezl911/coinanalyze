@@ -18,6 +18,79 @@ INGEST_COMPONENT_MAX_AGES = {"ohlcv_1m": 180.0, "metrics_5m": 420.0}
 # nadie tenga que acordarse de anadirlo a mano.
 DEFAULT_HEARTBEAT_MAX_AGE = 900.0
 
+# K08 · A QUE BASE NOS CONECTAMOS SE LEE ANTES DE ESCRIBIR, Y SE PUBLICA.
+#
+# Hasta el 2026-09-01 la primera operacion despues de conectar era sync_market_catalog, que
+# ESCRIBE en market_assets y symbols, y detras ensure_temporal_partitions, que crea
+# particiones por DDL. No habia ni una lectura de verificacion por delante, asi que un
+# despliegue apuntando a la base equivocada NO SE DISTINGUIA de uno bueno: escribia igual, y
+# encima escribia antes de que nadie pudiera mirar.
+#
+# QUE DISTINGUE CADA COSA, MEDIDO EL 2026-09-01 Y NO SUPUESTO:
+#   nombre + host   SI separan 140 de su espejo. 140 contesta 'coinalyze' por TCP 127.0.0.1;
+#                   143 contesta 'coinalyze_espejo' y por socket unix, o sea con
+#                   inet_server_addr() a NULL.
+#   huella          NO los separa hoy: las dos dan 03471ad7c37946bab098bc5ebbe793bc sobre
+#                   548 columnas, porque el espejo es copia fiel (eso es lo que mide K82).
+#                   Sirve para lo otro: ver que el esquema vivo es el que el release espera.
+#                   Y ya lo demostro el dia que nacio: al correr los tests contra el espejo
+#                   la huella salto a 447f0bf5a464fa1ce2292ca1cee1bab7 con 550 columnas, y
+#                   las dos de mas eran service_fencing_test_write, la tabla de usar y
+#                   tirar de _prepare_fencing_schema. Una tabla que no deberia estar se ve
+#                   en un md5 de 32 caracteres sin mirar el catalogo entero.
+# Se publican los tres porque responden a preguntas distintas.
+_DB_IDENTITY: dict[str, object] | None = None
+
+# La huella EXCLUYE LAS PARTICIONES (NOT c.relispartition) a proposito. Con ellas dentro
+# cambiaria sola cada vez que ensure_temporal_partitions crea la del dia siguiente, y una
+# huella que cambia sola no distingue una base equivocada de un martes.
+_SCHEMA_FINGERPRINT_SQL = """
+SELECT md5(string_agg(f, ',' ORDER BY f))
+FROM (
+    SELECT c.relname || ':' || a.attname || ':'
+           || format_type(a.atttypid, a.atttypmod) AS f
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_attribute a ON a.attrelid = c.oid
+    WHERE n.nspname = 'public'
+      AND c.relkind IN ('r', 'p')
+      AND NOT c.relispartition
+      AND a.attnum > 0
+      AND NOT a.attisdropped
+) AS cols
+"""
+
+
+def db_identity() -> dict[str, object] | None:
+    """Lo que se leyo de la base al abrir el pool. None si todavia no se abrio ninguno."""
+    return _DB_IDENTITY
+
+
+async def read_db_identity(conn: asyncpg.Connection) -> dict[str, object]:
+    """Identidad de la base al otro lado de esta conexion. Solo lee."""
+    fila = await conn.fetchrow(
+        "SELECT current_database() AS database,"
+        " current_user AS db_user,"
+        # host() y no ::text: el cast de un inet arrastra la mascara y en 140 publicaria
+        # "127.0.0.1/32", que como host no lo es. Medido alli el 2026-09-01.
+        " host(inet_server_addr()) AS db_host,"
+        " inet_server_port() AS db_port,"
+        " current_setting('server_version') AS server_version"
+    )
+    huella = await conn.fetchval(_SCHEMA_FINGERPRINT_SQL)
+    return {
+        "database": fila["database"],
+        "db_user": fila["db_user"],
+        # inet_server_addr() devuelve NULL por socket unix. Decir "127.0.0.1" ahi seria
+        # inventarse un host que nadie uso; se dice lo que es.
+        "db_host": fila["db_host"] or "unix-socket",
+        "db_port": fila["db_port"],
+        "server_version": fila["server_version"],
+        # Si no hay ni una tabla, string_agg devuelve NULL: una base VACIA tiene que verse
+        # como vacia y no como una huella cualquiera.
+        "schema_fingerprint": huella or "sin-tablas",
+    }
+
 
 def heartbeat_max_age(service: str, required: Mapping[str, float]) -> float:
     """Umbral de un latido. Hereda del prefijo antes de ':' (los shards del estilo
@@ -132,6 +205,27 @@ async def create_pool(
             "application_name": application_name,
         },
     )
+    # K08 · ESTA LECTURA VA ANTES QUE sync_market_catalog Y NO ES DECORATIVA. Lo que viene
+    # detras escribe (market_assets, symbols) y crea particiones por DDL; si la base que
+    # contesta no es la que se pidio, el dano ya esta hecho cuando alguien se entera.
+    global _DB_IDENTITY
+    try:
+        async with pool.acquire() as conn:
+            identidad = await read_db_identity(conn)
+        # FALLO CERRADO. Es lo unico de este modulo que puede impedir un arranque, y esa es
+        # su razon de ser: mejor un servicio que no levanta que un servicio que escribe en
+        # la base de al lado. Se compara contra PG_DB, que es lo que la configuracion pidio.
+        if identidad["database"] != settings.PG_DB:
+            raise RuntimeError(
+                f"K08: la base que contesta en {identidad['db_host']}:"
+                f"{identidad['db_port']} se llama {identidad['database']!r}, pero la"
+                f" configuracion pidio {settings.PG_DB!r}. No se escribe nada."
+            )
+    except BaseException:
+        # Si no se puede verificar, no se deja el pool abierto detras.
+        await pool.close()
+        raise
+    _DB_IDENTITY = identidad
     await sync_market_catalog(pool, ownership=ownership)
     async with pool.acquire() as conn:
         await ensure_temporal_partitions(conn)

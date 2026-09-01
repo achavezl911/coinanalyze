@@ -44,6 +44,7 @@ from app.data_gaps import (
 from app.db import (
     INGEST_COMPONENT_MAX_AGES,
     create_pool,
+    db_identity,
     heartbeat,
     heartbeat_max_age,
     required_heartbeat_failures,
@@ -2779,6 +2780,11 @@ async def health() -> dict[str, Any]:
         degraded = True
     return {
         "status": "degraded" if degraded else "ok",
+        # K08 · a que base esta enganchado lo que corre. Se lee UNA vez, al abrir el pool
+        # (db.py create_pool) y ANTES de la primera escritura; aqui solo se publica. Sin
+        # esto, un despliegue mal apuntado escribe igual y no se distingue de uno bueno.
+        # No gatea el status: decir donde estas es una cosa y estar sano es otra.
+        "database": db_identity(),
         "missing_services": missing_services,
         "missing_symbols": missing_symbols,
         "governed_services": sorted(thresholds),
