@@ -212,6 +212,21 @@ if [ "$S0_CUBRE" = 1 ]; then
   fi
 fi
 
+# LA VENTANA DECLARADA NO SIEMPRE ES LA CULPABLE, y decirlo importa: una sesion se congela con
+# lo que tuviera en su ULTIMA reescritura, o sea con la ventana que hubiera ENTONCES. Cuando la
+# de hoy ya basta, el rojo es una perdida ANTERIOR al ensanchamiento y lo que queda es esperar
+# a que llegue a offset 2 una sesion escrita con la ventana nueva. Culpar a la ventana de hoy
+# seria mandar a arreglar lo que ya esta arreglado.
+case "$VENTANA" in
+  [0-9]*.[0-9]*|[0-9]*)
+    if awk "BEGIN{exit !($VENTANA >= 72.51)}"; then
+      DIAG="La ventana que el pipeline declara HOY -$VENTANA h- YA basta -hacen falta 71.51 h, y 72.51 h en la sesion de 25 h del cambio de hora-, asi que esta perdida es ANTERIOR al ensanchamiento: lo que queda es esperar a que llegue a offset 2 una sesion escrita con la ventana nueva"
+    else
+      DIAG="La ventana que el pipeline DECLARA haber cubierto es de $VENTANA h y para sobrevivir a su ultima reescritura hacian falta 71.51 h -72.51 h en la sesion de 25 h del cambio de hora-"
+    fi ;;
+  *) DIAG="Ninguna fila declara ventana, asi que no se puede decir si la anchura llega: hacen falta 71.51 h, y 72.51 h en la sesion de 25 h del cambio de hora" ;;
+esac
+
 # --- A2 · la permanencia. Lo que esta sesion tenga ya no lo cambia nadie.
 if [ "$S2_CUBRE" = 1 ] && [[ "$S2" > "2026-08-13" ]]; then
   if [ "$S2_FILAS" = 0 ]; then
@@ -221,7 +236,7 @@ if [ "$S2_CUBRE" = 1 ] && [[ "$S2" > "2026-08-13" ]]; then
     if [ "$S2_BLOQUE" = "$S2_FILAS" ]; then
       VERDES="${VERDES:+$VERDES y }la recien congelada ($S2) lo conserva en $S2_BLOQUE de $S2_FILAS"
     else
-      FALLOS="${FALLOS:+$FALLOS · }la sesion $S2 acaba de salir de la ventana de reescritura de daily_agg -offset 2, daily_agg.py:307- con el bloque en $S2_BLOQUE de $S2_FILAS filas: NADIE la volvera a calcular, o sea que el corpus la perdio PARA SIEMPRE. La ventana que el pipeline DECLARA haber cubierto es de $VENTANA h y para sobrevivir a su ultima reescritura hacian falta 71.51 h -72.51 h en la sesion de 25 h del cambio de hora-"
+      FALLOS="${FALLOS:+$FALLOS · }la sesion $S2 acaba de salir de la ventana de reescritura de daily_agg -offset 2, daily_agg.py:307- con el bloque en $S2_BLOQUE de $S2_FILAS filas: NADIE la volvera a calcular, o sea que el corpus la perdio PARA SIEMPRE. $DIAG"
     fi
   fi
 elif [ "$S2_CUBRE" = 1 ]; then
