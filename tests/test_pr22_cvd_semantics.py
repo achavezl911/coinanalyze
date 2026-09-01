@@ -183,6 +183,7 @@ async def _delta_rows(
     spot_volume: float | None = 6_000.0,
     futures_volume: float | None = 12_000.0,
     futures_complete: bool = True,
+    spliced_futures: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], datetime, list[datetime]]:
     cutoff = datetime(2026, 8, 11, 12, 0, tzinfo=UTC)
     seen: list[datetime] = []
@@ -234,7 +235,12 @@ async def _delta_rows(
     async def fake_baselines(_conn, _symbol):
         return {}
 
+    async def fake_futures_windows(_conn, _symbol, requested, as_of=None):
+        seen.append(as_of)
+        return spliced_futures or {}
+
     monkeypatch.setattr(scalp_logic, "spot_flow_windows", fake_spot)
+    monkeypatch.setattr(scalp_logic, "futures_flow_windows", fake_futures_windows)
     monkeypatch.setattr(scalp_logic, "_realtime_flow", fake_futures)
     monkeypatch.setattr(scalp_logic, "_oi_change_pct", fake_oi)
     monkeypatch.setattr(scalp_logic, "load_baselines", fake_baselines)
@@ -359,8 +365,13 @@ async def test_pr22_cvd_matrix_uses_one_as_of_for_all_windows(
         assert {requirement.end for requirement in requirements} == {cutoff}
         return set()
 
+    async def fake_futures_windows(_conn, _symbol, windows, as_of=None):
+        seen.append(as_of)
+        return {}
+
     monkeypatch.setattr(scalp_logic, "_cvd_src", fake_cvd)
     monkeypatch.setattr(scalp_logic, "spot_flow_windows", fake_spot)
+    monkeypatch.setattr(scalp_logic, "futures_flow_windows", fake_futures_windows)
     monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", no_gaps)
     result = await scalp_logic.cvd_matrix(
         _NoopConnection(), "BTCUSDT_PERP.A", cutoff  # type: ignore[arg-type]
@@ -983,3 +994,152 @@ async def test_pr22_ai_daily_window_total_fails_closed_on_missing_session() -> N
     assert totals["cvd_fut_usd"] is None
     assert totals["cvd_diff_usd"] is None
     assert totals["price_change_pct"] is None
+
+
+# ---------------------------------------------------------------------------
+# K83 · LA VENTANA QUE EL REALTIME NO ALCANZA SE SIRVE DEL EMPALME CON EL AGREGADO.
+# Antes de esto la pata de futuros se servia SOLO del realtime, asi que toda ventana por
+# encima de su retencion salia nula teniendo el minuto en futures_trades_agg. Medido en 140
+# el 2026-09-01: cvd_matrix 24h de ETH publicaba spot -5 753 605 y futures null mientras el
+# agregado tenia +188 775 113 -- la unica pata visible decia VENDE y la suprimida COMPRABA.
+# ---------------------------------------------------------------------------
+def _spliced(source: str = "agg_1min+realtime", complete: bool = True) -> dict[str, Any]:
+    return {
+        label: {
+            "combined": {
+                "delta": 4_444.0,
+                "volume": 9_000.0,
+                "trades": 40,
+                "source_rows": 40,
+                "source": source,
+                "complete": complete,
+                "coverage_status": "complete" if complete else "partial",
+                "end_gap_seconds": 12.0,
+            }
+        }
+        for label in ("30s", "1m")
+    }
+
+
+@pytest.mark.asyncio
+async def test_k83_delta_matrix_rellena_la_ventana_larga_desde_el_agregado(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rows, _cutoff, _seen = await _delta_rows(
+        monkeypatch, futures_complete=False, spliced_futures=_spliced()
+    )
+    for row in rows:
+        assert row["fut_delta"] == pytest.approx(4_444.0)
+        assert row["fut_volume"] == pytest.approx(9_000.0)
+        assert row["futures_source"] == "agg_1min+realtime"
+        assert row["futures_coverage_status"] == "complete"
+        # Se midio sobre el realtime, que no es quien sirve esta ventana: publicarlo seria
+        # atribuirle a la fuente buena un hueco que no es suyo.
+        assert row["futures_max_gap_seconds"] is None
+
+
+@pytest.mark.asyncio
+async def test_k83_delta_matrix_no_se_salta_la_guarda_del_hueco_interno(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """El empalme SOLO vale cuando de verdad viene del agregado.
+
+    Cuando resuelve 'realtime' la ventana ya la servia el realtime y su null tiene otra
+    causa -- el hueco interno por encima de REALTIME_STALE_SECONDS, que es lo que le pasa a
+    SOL en 4h y 8h --. Taparlo aqui seria saltarse esa guarda por la puerta de atras.
+    """
+    rows, _cutoff, _seen = await _delta_rows(
+        monkeypatch,
+        futures_complete=False,
+        spliced_futures=_spliced(source="realtime"),
+    )
+    for row in rows:
+        assert row["fut_delta"] is None
+        assert row["fut_imbalance"] is None
+
+
+@pytest.mark.asyncio
+async def test_k83_cvd_matrix_publica_futuros_cuando_solo_el_empalme_cubre(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cutoff = datetime(2026, 9, 1, 3, 0, tzinfo=UTC)
+    # El realtime llega a 12 h y el agregado a 36 h: la 8h la sirve el realtime, la 24h solo
+    # el empalme, y la 3d no la puede servir nadie.
+    realtime_arc = timedelta(hours=12)
+    agg_arc = timedelta(hours=36)
+
+    async def fake_cvd(_conn, _table, _symbol, _is_agg, as_of=None):
+        values = {
+            exchange: {
+                label: {"delta": seconds * 2.0, "volume": seconds * 10.0, "n": 1}
+                for label, seconds in scalp_logic._CVD_WINDOWS
+            }
+            for exchange in ("combined", "binance", "bybit")
+        }
+        return values, cutoff - realtime_arc, cutoff - timedelta(seconds=5)
+
+    async def fake_spot(_conn, _symbol, windows, as_of=None):
+        return {
+            label: {
+                exchange: {
+                    "delta": float(seconds),
+                    "volume": seconds * 10.0,
+                    "source_rows": 1,
+                    "complete": True,
+                    "source": "agg_1min+realtime",
+                    "end_gap_seconds": 5.0,
+                    "precision_seconds": 60,
+                }
+                for exchange in ("combined", "binance", "bybit")
+            }
+            for label, seconds in windows
+        }
+
+    async def fake_futures_windows(_conn, _symbol, windows, as_of=None):
+        out: dict[str, Any] = {}
+        for label, seconds in windows:
+            cubre = timedelta(seconds=seconds) <= agg_arc
+            out[label] = {
+                exchange: {
+                    "delta": -7_000.0,
+                    "volume": 21_000.0,
+                    "trades": 70,
+                    "source_rows": 70 if cubre else 0,
+                    "source": "agg_1min+realtime" if cubre else "agg_1min_partial",
+                    "complete": cubre,
+                    "coverage_status": "complete" if cubre else "partial",
+                    "end_gap_seconds": 12.0,
+                }
+                for exchange in ("combined", "binance", "bybit")
+            }
+        return out
+
+    async def no_gaps(_conn, _requirements):
+        return set()
+
+    monkeypatch.setattr(scalp_logic, "_cvd_src", fake_cvd)
+    monkeypatch.setattr(scalp_logic, "spot_flow_windows", fake_spot)
+    monkeypatch.setattr(scalp_logic, "futures_flow_windows", fake_futures_windows)
+    monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", no_gaps)
+    result = await scalp_logic.cvd_matrix(
+        _NoopConnection(), "BTCUSDT_PERP.A", cutoff  # type: ignore[arg-type]
+    )
+
+    # 8h: la sirve el realtime y NO cambia de fuente ni de cifra.
+    ocho = result["windows"]["8h"]
+    assert ocho["futures"] == pytest.approx(28_800 * 2.0)
+    assert ocho["futures_status"]["source"] == "realtime"
+
+    # 24h: el realtime no llega y el empalme si. Esta es la celda que estaba en null.
+    dia = result["windows"]["24h"]
+    assert dia["futures"] == pytest.approx(-7_000.0)
+    assert dia["futures_status"]["available"] is True
+    assert dia["futures_status"]["source"] == "agg_1min+realtime"
+    assert dia["futures_status"]["reason"] is None
+    assert dia["diff_spot_futures"] == pytest.approx(86_400.0 + 7_000.0)
+    assert dia["by_venue"]["binance"]["futures"] == pytest.approx(-7_000.0)
+
+    # 3d: no la cubre ninguna de las dos fuentes y tiene que SEGUIR nula, con su razon.
+    tres = result["windows"]["3d"]
+    assert tres["futures"] is None
+    assert tres["futures_status"]["reason"] == "insufficient_retention"

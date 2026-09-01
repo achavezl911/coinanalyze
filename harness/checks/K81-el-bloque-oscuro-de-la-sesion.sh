@@ -64,6 +64,28 @@
 #   porque para la 08-30 haria falta source_start <= 08-29 13:30Z y now-50h ya es 08-30
 #   00:00Z. O sea que las 21 viejas siguen sin poder llenarse solas y la separacion
 #   elegible/deuda-parada SIGUE siendo necesaria: lo que cambia es el plazo, no la regla.
+#
+# POR QUE EL 50 NO ES UNA CONSTANTE NATURAL, que es lo que faltaba escrito aqui y sin ello
+# el numero parece arbitrario o parece prudencia. NO ES NINGUNA DE LAS DOS: ES ARITMETICA.
+#   1 · daily_agg NO revisita una sesion: revisita TRECE. DAILY_LOOKBACK_DAYS = 13
+#       (app/config.py:200, default=13) y backfill lo usa en daily_agg.py:853. Como el
+#       rellenado solo ALCANZA a la mas reciente, las otras DOCE se reescriben a NULL en
+#       cada pasada, para siempre. Por eso la separacion elegible/deuda-parada no es
+#       prudencia: sin ella este check estaria en ROJO PERMANENTE por doce sesiones que no
+#       pueden completarse. Ese es el motivo de que el brazo A pregunte por la sesion
+#       elegible MAS RECIENTE y no por las trece.
+#       MATIZ MEDIDO, porque la version que me llego decia otra cosa: 140 SI define la
+#       variable -- /etc/coinalyze/coinalyze.env:36, DAILY_LOOKBACK_DAYS=13 --, solo que con
+#       el MISMO valor que el default. El 13 es correcto; "140 no lo redefine", no.
+#       Comprobado con: bin/prod "grep -n DAILY_LOOKBACK_DAYS /etc/coinalyze/coinalyze.env"
+#   2 · UNA SESION CUESTA MUCHO MAS QUE 24 H DE VENTANA. session_bounds va de 09:30 NY a
+#       09:30 NY, o sea que la sesion D arranca en (D-1) 13:30Z; cuando el latido corre de
+#       madrugada, alcanzar ese arranque pide ~35-36 h, no 24. Con 50 h se cubre UNA sesion
+#       y sobran ~12 h; la siguiente hacia atras cuesta 24 h mas, asi que haria falta ~60
+#       para llegar a dos. El 50 esta donde esta porque cubre una sesion con holgura, no
+#       porque 50 signifique nada.
+#   NO SE CAMBIA EL 50 EN ESTE CHECK. Lo que hacia falta era que el porque estuviera escrito
+#   donde se lee, y es esto.
 # La regla correcta la dio K25: separar lo ELEGIBLE DENTRO DE UN CONTRATO VIGENTE de la
 # DEUDA PARADA que nunca tuvo contrato. Aqui el corte no se inventa, se lee del repo: las
 # cuatro columnas nacieron con 610f27b, el 2026-08-11 (git log --diff-filter=A).
