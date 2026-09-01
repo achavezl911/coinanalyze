@@ -187,7 +187,9 @@ EOF
   exit 2
 }
 
-FALLOS=""; DECLARA=""; JUZGADO=0
+# El texto del VERDE se compone SOLO con los brazos que de verdad se juzgaron. Un brazo que
+# no tuvo sujeto se DECLARA; afirmar de el que paso seria decir algo que no se midio.
+FALLOS=""; DECLARA=""; VERDES=""; JUZGADO=0
 
 # --- A1 · el mecanismo vivo. Control positivo: con el diseno actual esto SIEMPRE esta cubierto.
 if [ "$S0_CUBRE" = 1 ]; then
@@ -195,8 +197,11 @@ if [ "$S0_CUBRE" = 1 ]; then
     DECLARA="${DECLARA} · A1 NO JUZGADO: la pasada horaria de daily aun no ha visitado la sesion viva ($L) desde que cerro"
   else
     JUZGADO=1
-    [ "$S0_BLOQUE" = "$S0_FILAS" ] ||
+    if [ "$S0_BLOQUE" = "$S0_FILAS" ]; then
+      VERDES="la sesion viva ($L) trae su bloque en $S0_BLOQUE de $S0_FILAS filas"
+    else
       FALLOS="la sesion VIVA ($L, offset 0, la que daily reescribe cada hora) trae el bloque en $S0_BLOQUE de $S0_FILAS filas: el contexto de la IA recibe NULL donde hubo liquidaciones medidas"
+    fi
   fi
 fi
 
@@ -206,8 +211,11 @@ if [ "$S2_CUBRE" = 1 ] && [[ "$S2" > "2026-08-13" ]]; then
     DECLARA="${DECLARA} · A2 NO JUZGADO: la sesion recien congelada ($S2) no tiene ninguna fila"
   else
     JUZGADO=1
-    [ "$S2_BLOQUE" = "$S2_FILAS" ] ||
+    if [ "$S2_BLOQUE" = "$S2_FILAS" ]; then
+      VERDES="${VERDES:+$VERDES y }la recien congelada ($S2) lo conserva en $S2_BLOQUE de $S2_FILAS"
+    else
       FALLOS="${FALLOS:+$FALLOS · }la sesion $S2 acaba de salir de la ventana de reescritura de daily_agg -offset 2, daily_agg.py:307- con el bloque en $S2_BLOQUE de $S2_FILAS filas: NADIE la volvera a calcular, o sea que el corpus la perdio PARA SIEMPRE. La ventana que el pipeline DECLARA haber cubierto es de $VENTANA h y para sobrevivir a su ultima reescritura hacian falta 71.51 h -72.51 h en la sesion de 25 h del cambio de hora-"
+    fi
   fi
 elif [ "$S2_CUBRE" = 1 ]; then
   DECLARA="${DECLARA} · A2 NO JUZGADO: la sesion congelada ($S2) es anterior al 2026-08-14 y no tuvo contrato"
@@ -222,4 +230,4 @@ DEUDA=""
 [ -n "$FALLOS" ] && { echo "ROJO: $FALLOS$DECLARA$DEUDA"; exit 1; }
 [ "$JUZGADO" = 1 ] || { echo "NO MEDIDO: ningun brazo tuvo sujeto que juzgar$DECLARA"; exit 2; }
 
-echo "la sesion viva ($L) trae su bloque en $S0_BLOQUE de $S0_FILAS filas y la recien congelada ($S2) lo conserva en $S2_BLOQUE de $S2_FILAS, con la tabla CRUDA cubriendo sus arcos enteros y una ventana declarada de $VENTANA h; ninguna fila con contrato vigente afirma un total sin procedencia$DECLARA$DEUDA"
+echo "$VERDES, con la tabla CRUDA cubriendo el arco entero y una ventana declarada de $VENTANA h; ninguna fila con contrato vigente afirma un total sin procedencia$DECLARA$DEUDA"
