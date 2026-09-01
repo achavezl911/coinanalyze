@@ -11,6 +11,7 @@ Dos defectos medidos sobre la instalacion viva del 2026-08-06:
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -99,9 +100,19 @@ def test_la_cobertura_no_se_decide_solo_con_los_extremos() -> None:
     source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
     assert "max_internal_gap" in source
     assert 'item["complete"] = bool(item.get("span_ok")) and not _gap_too_large(' in source
-    # La pata spot de la matriz tambien tiene que pasar por la puerta.
+    # La pata spot de la matriz tambien tiene que pasar por la puerta. El baremo dejo de
+    # ser una constante y la llamada lleva ahora la cadencia medida, asi que se busca el
+    # primer argumento y no el texto exacto: lo que se guarda es que spot_gap PASE por la
+    # puerta, no como se escribe la linea.
     matrix = source.split("async def delta_matrix")[1]
-    assert "_gap_too_large(spot_gap)" in matrix
+    assert re.search(r"_gap_too_large\(\s*spot_gap\b", matrix)
+    # K84 · Y LA PATA DE FUTUROS DE LA OTRA RUTA, POR LA MISMA. cvd_matrix no aplicaba
+    # NINGUNA guarda de hueco, asi que publicaba la cifra que delta_matrix blanqueaba --
+    # las dos dentro del mismo /api/ai/context. Volver a quitarla las hace divergir otra vez
+    # en cuanto haya una caida de verdad.
+    cvd = source.split("async def cvd_matrix")[1].split("\nasync def ")[0]
+    assert "_gap_too_large(" in cvd
+    assert "internal_gap" in cvd
 
 
 def test_el_borde_de_entrada_cuenta_como_hueco() -> None:
