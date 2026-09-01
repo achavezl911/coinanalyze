@@ -419,16 +419,35 @@ LIQUIDATION_HISTORY_HEARTBEAT = "ingest:liquidations_history"
 # solo si el latido de este barrido CUBRE la sesion entera (metrics.py: source_start <=
 # required_start y source_cutoff >= required_end), y una sesion va de 09:30 Nueva York a
 # 09:30 NY -24 h que en verano son [D-1 13:30Z, D 13:30Z]-, NO de medianoche a medianoche.
-# Con el start_history comun de 26 h, esa condicion solo se cumple si el barrido cierra
-# dentro de [D 13:30Z, D 15:30Z]: DOS HORAS AL DIA. El servicio daily corre hacia las
-# 00:06Z, que nunca cae ahi, asi que el bloque llevaba sin escribirse desde el 2026-08-10
-# -commit 4e61265, que introdujo el gate- y era IMPOSIBLE, no intermitente.
-# CON 50 h la banda pasa a ser [D 13:30Z, D+1 15:30Z], o sea 26 h de ancho: cubre de sobra
-# el momento en que daily corre y tolera que se mueva. El minimo aritmetico son 34.6 h; se
-# deja margen porque el coste es de UNA sola peticion -312 -> 600 buckets de 5min por
-# simbolo, solo este feed- y porque quedarse justo en el minimo devuelve el fallo el dia que
-# el planificador se desplace media hora.
-LIQUIDATION_HISTORY_LOOKBACK_HOURS = 50
+# OJO, que es lo que hace que ensanchar esto sea barato: el gate NO decide de donde salen las
+# sumas. Las sumas salen de la tabla persistida liquidations (daily_agg.py:119-123), que
+# acumula ~40 dias. Esta ventana solo decide si el CERTIFICADO del ultimo barrido alcanza el
+# arco que se va a sumar. Ensancharla no puede falsear una cifra: solo puede permitir
+# publicar una que ya estaba calculada bien.
+#
+# CON 26 h el gate era IMPOSIBLE, no intermitente: solo se cumplia si el barrido cerraba
+# dentro de [D 13:30Z, D 15:30Z], y por eso el bloque llevaba sin escribirse desde el
+# 2026-08-10 -commit 4e61265, que introdujo el gate-.
+# CON 50 h se escribia Y SE BORRABA AL DIA SIGUIENTE, que es el fallo que el 50 no vio.
+# daily_agg reescribe las DOS sesiones mas recientes en cada pasada -daily_agg.py:307,
+# "if exists and offset >= 2: continue"- y su pasada es HORARIA y alineada a HH:00:45
+# -daily_agg.py:975-978, seconds_until_aligned_run(now, 3600, 45); NO hacia las 00:06Z, que
+# es lo que decia la version anterior de este comentario y esta medido que no-. La sesion D,
+# ya escrita con bloque, vuelve a pasar por el mismo ON CONFLICT DO UPDATE mientras es
+# offset 1, y ahi el gate ya no se cumple: se reescribe a NULL. Cuando a las (D+2) 13:30Z
+# cae a offset 2 se CONGELA en NULL y nadie la vuelve a calcular. Medido el 2026-09-01: el
+# corpus no crecia -33 filas y 11 sesiones a las 03:00Z y a las 17:00Z, misma cardinalidad y
+# distinta pertenencia-. Era una ventana deslizante de anchura uno.
+#
+# EL NUMERO, ENTONCES, SALE DE LA ULTIMA REESCRITURA Y NO DE LA PRIMERA:
+#   W >= (D+2) 13:00:45 - (D-1) 13:30:00 = 71 h 30 min 45 s
+# y en la sesion de 25 h del cambio de hora de otono -2026-11-01, empieza en EDT y acaba en
+# EST- el mismo calculo da 72 h 30 min 45 s, que es el peor caso del ano. 74 es el primer
+# numero redondo por encima, con 1 h 29 min de margen para que un desplazamiento del
+# planificador no devuelva el fallo: la misma razon por la que el 50 no se dejo en 34.6.
+# EL COSTE SIGUE SIENDO UNA SOLA PETICION: 600 -> 888 buckets de 5min por simbolo, este feed
+# y ninguno mas. El presupuesto de rate limit cuenta peticiones, no payload.
+LIQUIDATION_HISTORY_LOOKBACK_HOURS = 74
 
 
 async def _reconcile_persisted_cadence(
