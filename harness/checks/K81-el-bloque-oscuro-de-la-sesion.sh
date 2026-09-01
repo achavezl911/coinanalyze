@@ -169,17 +169,24 @@ SELECT (SELECT l FROM cierre),
             AND long_liq_usd IS NOT NULL AND liquidation_coverage_version IS NULL),
        coalesce((SELECT round((extract(epoch FROM max(liquidation_source_cutoff_at
                    - liquidation_source_start_at))/3600)::numeric, 2)::text
-                 FROM daily_session_agg WHERE liquidation_source_start_at IS NOT NULL), '-')
+                 FROM daily_session_agg WHERE liquidation_source_start_at IS NOT NULL), '-'),
+       (SELECT count(DISTINCT session_date) FROM daily_session_agg
+          WHERE long_liq_usd IS NOT NULL
+            AND session_date > (SELECT l FROM cierre) - 13)
 " 2>/dev/null | tr -d ' ' | head -1)
 
-[ "$(printf '%s' "$SALIDA" | tr -cd '|' | wc -c)" = "11" ] || {
+[ "$(printf '%s' "$SALIDA" | tr -cd '|' | wc -c)" = "12" ] || {
   echo "NO MEDIDO: 140 no contesto al foco de sesiones: $(printf '%s' "$SALIDA" | head -c 120)"
   exit 2
 }
 IFS='|' read -r L S0_CUBRE S0_FILAS S0_BLOQUE S0_VISTO S2 S2_CUBRE S2_FILAS S2_BLOQUE \
-                SIN_PROC_VIVAS DEUDA_PARADA VENTANA <<EOF
+                SIN_PROC_VIVAS DEUDA_PARADA VENTANA CORPUS <<EOF
 $SALIDA
 EOF
+# INFORMATIVO Y NO GATEADO: cuantas de las 13 sesiones que daily_agg mira -- las 12 congeladas
+# mas la viva -- conservan su bloque. Este check muestrea UNA congelada por pasada, la de
+# offset 2, asi que este contador es lo que hace visible si el corpus crece o solo desliza.
+CORPUS=" · CORPUS: $CORPUS de las 13 sesiones del backfill conservan su bloque"
 
 # --- C · sin inventario externo no hay nada que exigir.
 [ "$S0_CUBRE" = 1 ] || [ "$S2_CUBRE" = 1 ] || {
@@ -227,7 +234,7 @@ fi
 DEUDA=""
 [ "$DEUDA_PARADA" -gt 0 ] && DEUDA=" · DEUDA PARADA, informada y NO gateada: $DEUDA_PARADA filas anteriores al 2026-08-14 tienen sumas sin procedencia porque las columnas aun no existian. Son las que impiden validar daily_session_agg_pr24_liquidation_coverage_check, que sigue NOT VALID; arreglarlas es escribir en produccion, o sea PUERTA de Alejandro"
 
-[ -n "$FALLOS" ] && { echo "ROJO: $FALLOS$DECLARA$DEUDA"; exit 1; }
+[ -n "$FALLOS" ] && { echo "ROJO: $FALLOS$CORPUS$DECLARA$DEUDA"; exit 1; }
 [ "$JUZGADO" = 1 ] || { echo "NO MEDIDO: ningun brazo tuvo sujeto que juzgar$DECLARA"; exit 2; }
 
-echo "$VERDES, con la tabla CRUDA cubriendo el arco entero y una ventana declarada de $VENTANA h; ninguna fila con contrato vigente afirma un total sin procedencia$DECLARA$DEUDA"
+echo "$VERDES, con la tabla CRUDA cubriendo el arco entero y una ventana declarada de $VENTANA h; ninguna fila con contrato vigente afirma un total sin procedencia$CORPUS$DECLARA$DEUDA"
