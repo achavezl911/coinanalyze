@@ -414,6 +414,22 @@ PERSISTED_CADENCE_DETECTION_SOURCE = "historical_ingest_persisted_cadence_v2"
 RESPONSE_CADENCE_DETECTION_SOURCE = "historical_ingest_response_cadence_v2"
 LIQUIDATION_HISTORY_HEARTBEAT = "ingest:liquidations_history"
 
+# EL HISTORICO DE LIQUIDACIONES MIRA MAS ATRAS QUE LOS DEMAS, y el numero sale de una
+# aritmetica, no de un pulgar. daily_agg publica el bloque de liquidaciones de una sesion
+# solo si el latido de este barrido CUBRE la sesion entera (metrics.py: source_start <=
+# required_start y source_cutoff >= required_end), y una sesion va de 09:30 Nueva York a
+# 09:30 NY -24 h que en verano son [D-1 13:30Z, D 13:30Z]-, NO de medianoche a medianoche.
+# Con el start_history comun de 26 h, esa condicion solo se cumple si el barrido cierra
+# dentro de [D 13:30Z, D 15:30Z]: DOS HORAS AL DIA. El servicio daily corre hacia las
+# 00:06Z, que nunca cae ahi, asi que el bloque llevaba sin escribirse desde el 2026-08-10
+# -commit 4e61265, que introdujo el gate- y era IMPOSIBLE, no intermitente.
+# CON 50 h la banda pasa a ser [D 13:30Z, D+1 15:30Z], o sea 26 h de ancho: cubre de sobra
+# el momento en que daily corre y tolera que se mueva. El minimo aritmetico son 34.6 h; se
+# deja margen porque el coste es de UNA sola peticion -312 -> 600 buckets de 5min por
+# simbolo, solo este feed- y porque quedarse justo en el minimo devuelve el fallo el dia que
+# el planificador se desplace media hora.
+LIQUIDATION_HISTORY_LOOKBACK_HOURS = 50
+
 
 async def _reconcile_persisted_cadence(
     conn: asyncpg.Connection,
@@ -788,6 +804,8 @@ async def ingest_metrics_cycle(
     price_cutoff = ClosedCutoff.at(now_utc, 60)
     end_ts = cutoff.api_end_ts
     start_history = cutoff.boundary_ts - 26 * 60 * 60
+    # Ventana propia y mas ancha SOLO para el historico de liquidaciones (ver la constante).
+    liq_start_history = cutoff.boundary_ts - LIQUIDATION_HISTORY_LOOKBACK_HOURS * 60 * 60
     symbols = tuple(settings.SYMBOLS)
     identity = {symbol: symbol for symbol in symbols}
     bybit_symbols = tuple(BYBIT_SYMBOL_MAP[symbol] for symbol in symbols)
@@ -817,7 +835,7 @@ async def ingest_metrics_cycle(
     await asyncio.sleep(1)
     liquidations, long_short = await asyncio.gather(
         client.history(
-            "liquidation-history", symbols, interval="5min", start_ts=start_history,
+            "liquidation-history", symbols, interval="5min", start_ts=liq_start_history,
             end_ts=end_ts, convert_to_usd=True,
         ),
         client.history(
@@ -849,14 +867,14 @@ async def ingest_metrics_cycle(
                 observed=metric_observations["predicted"],
             )
             counts["liquidations"] = await upsert_liquidations(
-                conn, liquidations, identity, start_history, end_ts
+                conn, liquidations, identity, liq_start_history, end_ts
             )
             counts["long_short"] = await upsert_long_short(
                 conn, long_short, identity, start_history, end_ts,
                 observed=metric_observations["long_short"],
             )
 
-            source_start = datetime.fromtimestamp(start_history, tz=UTC)
+            source_start = datetime.fromtimestamp(liq_start_history, tz=UTC)
             liq_status, liq_detail = _liquidation_history_observation(
                 liquidations, symbols, accepted_rows=counts["liquidations"],
                 source_start=source_start, source_cutoff=cutoff.exclusive_boundary,
