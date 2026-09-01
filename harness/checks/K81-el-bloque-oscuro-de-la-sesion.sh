@@ -53,9 +53,17 @@
 # LOS TRES BRAZOS. Y ANTES, LA CORRECCION QUE ESTE CHECK SE HIZO A SI MISMO, porque es la
 # parte que mas cuesta reaprender: su PRIMERA version exigia el bloque a las 30 sesiones
 # elegibles de los ultimos 30 dias y las 4 columnas a las 30 filas viejas. Eso era un ROJO
-# INARREGLABLE: daily_agg no recalcula una sesion ya escrita, asi que las 21 en NULL no se
-# llenan solas, y rellenarlas o borrarlas seria mutar produccion -PUERTA 1-. Un rojo que no
-# se puede apagar ensena a ignorar los que si, que es la enfermedad que este arnes combate.
+# INARREGLABLE para las sesiones VIEJAS: rellenarlas o borrarlas seria mutar produccion
+# -PUERTA 1-. Un rojo que no se puede apagar ensena a ignorar los que si.
+#   CORRECCION MEDIDA EL 2026-09-01T02:0xZ, y afecta a lo que yo mismo escribi aqui: dije que
+#   "daily_agg no recalcula una sesion ya escrita" y ES FALSO. El servicio REVISITA sesiones
+#   recientes y el INSERT ... ON CONFLICT DO UPDATE las reescribe: horas despues de desplegar
+#   la ventana de 50 h, la sesion 2026-08-31 paso a tener el bloque en 3 de 3 filas y
+#   liquidation_coverage_version=1, sin esperar a que cerrara ninguna sesion nueva.
+#   EL ALCANCE DEL RELLENADO ES DE UNA SESION Y SE VE EN LOS DATOS: 08-30 y 08-29 siguen a 0,
+#   porque para la 08-30 haria falta source_start <= 08-29 13:30Z y now-50h ya es 08-30
+#   00:00Z. O sea que las 21 viejas siguen sin poder llenarse solas y la separacion
+#   elegible/deuda-parada SIGUE siendo necesaria: lo que cambia es el plazo, no la regla.
 # La regla correcta la dio K25: separar lo ELEGIBLE DENTRO DE UN CONTRATO VIGENTE de la
 # DEUDA PARADA que nunca tuvo contrato. Aqui el corte no se inventa, se lee del repo: las
 # cuatro columnas nacieron con 610f27b, el 2026-08-11 (git log --diff-filter=A).
@@ -154,7 +162,7 @@ DEUDA=""
 ARBOL_OK=0
 grep -q 'liq_start_history' "$REPO/app/ingest.py" 2>/dev/null && ARBOL_OK=1
 if [ -n "$FALLOS" ]; then
-  [ "$ARBOL_OK" = 1 ] && FALLOS="$FALLOS · EL ARBOL YA LLEVA LA VENTANA PROPIA (liq_start_history): esta sesion se escribio antes y daily_agg no la recalcula, asi que esto se apaga solo con la PRIMERA sesion que se cierre despues de desplegar"
+  [ "$ARBOL_OK" = 1 ] && FALLOS="$FALLOS · EL ARBOL YA LLEVA LA VENTANA PROPIA (liq_start_history): si esto sigue ROJO tras un ciclo del servicio daily, el arreglo NO basto -- daily SI reescribe la sesion mas reciente, medido el 2026-09-01-"
   echo "ROJO: $FALLOS$DEUDA"
   exit 1
 fi
