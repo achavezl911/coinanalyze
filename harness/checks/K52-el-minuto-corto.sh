@@ -68,9 +68,17 @@ EVENTOS=$(grep -cE "Stopping $UNIDAD|Started $UNIDAD|binance_connected" "$JOURNA
 # el, un brazo que lleva dos dias sin sujeto se lee igual que uno que lo tuvo hace una hora.
 # MEDIDO: en 29.5 dias el sujeto solo existe el 44.2 % del tiempo, con 32 huecos de mas de
 # 6 h y los mayores de casi 49 h. El silencio es la norma, no la excepcion, y tiene que verse.
+# SE MIRA POR REINICIOS DE LA UNIDAD, NO POR EVENTOS, y por el mismo motivo que el veredicto
+# de abajo: con EVENTOS estaban dentro las reconexiones de binance, asi que en reposo -- que
+# es cuando este dato hace falta -- EVENTOS>0 y el silencio salia "desconocido" justo en el
+# caso que hay que declarar. Medido el 2026-09-02: 0 reinicios y aun asi "ultimo hace
+# desconocido". Y la busqueda de 30 dias tampoco puede mirar binance_connected: preguntamos
+# cuando se reinicio la UNIDAD, no cuando reconecto el feed.
+REINICIOS=$(grep -cE "Stopping $UNIDAD|Started $UNIDAD" "$JOURNAL" 2>/dev/null || true)
+[ -n "$REINICIOS" ] || REINICIOS=0
 SILENCIO="desconocido"
-if [ "$EVENTOS" = "0" ]; then
-  ULTIMO=$("$B/bin/prod" "journalctl -u $UNIDAD --since '30 days ago' --no-pager -o short-iso --utc 2>/dev/null | grep -E 'Started $UNIDAD|binance_connected' | tail -1 | cut -c1-19" 2>/dev/null | tr -d " \n")
+if [ "$REINICIOS" = "0" ]; then
+  ULTIMO=$("$B/bin/prod" "journalctl -u $UNIDAD --since '30 days ago' --no-pager -o short-iso --utc 2>/dev/null | grep -E 'Started $UNIDAD' | tail -1 | cut -c1-19" 2>/dev/null | tr -d " \n")
   case "$ULTIMO" in
     20[0-9][0-9]-*T*)
       SILENCIO="$(python3 -c "
@@ -131,13 +139,22 @@ for linea in open(camino_journal):
 # reinicio- y el del solape DECLARA que hoy no se juzgo, con cuanto lleva sin sujeto.
 # No se toca $HORAS. Un umbral que se ensancha hasta dejar de quejarse es indistinguible de
 # aflojar el criterio, y ademas aqui no arreglaria nada: ninguna anchura FABRICA reinicios.
+# SIN SUJETO SE DECIDE POR "NINGUNA PARADA", NO POR "NINGUN EVENTO". La particion anterior
+# usaba eventos==0 y dejaba fuera el caso MAS COMUN en reposo: el grep de :58 tambien recoge
+# binance_connected, y :122 lo mete en ARRANQUES. Dos reconexiones de websocket sin ningun
+# reinicio dan eventos=2, paradas=0, arranques=2 -- el journal NO esta vacio, la rama de
+# "dia tranquilo" no disparaba, y el elif de abajo tiraba un exit 2. Medido el 2026-09-02:
+# el ultimo reinicio real fue 17 h antes, o sea reposo puro, y el check salia NO MEDIDO
+# diciendo "2 eventos pero ninguna pareja (0/2)". Una reconexion de feed NO es un reinicio
+# de unidad: sin parada no hay nada que solapar, y eso es no tener sujeto, no un fallo.
+#
+# LO QUE SIGUE SIENDO NO MEDIDO, y por eso no basta con "ninguna pareja": una parada SIN
+# arranque posterior es una VENTANA ABIERTA -el servicio se fue y no ha vuelto dentro de la
+# ventana-. Declarar eso VERDE esconderia un servicio caido, que es justo lo contrario de
+# lo que este check existe para ver.
 ventanas = []
-if eventos == 0:
+if not paradas:
     juzga_solape = False
-elif not paradas or not arranques:
-    # HUBO eventos y aun asi no emparejan: eso si es no poder medir, y se distingue del
-    # dia tranquilo precisamente porque eventos > 0.
-    print(f"NO MEDIDO: el journal trae {eventos} eventos pero ninguna pareja parada/arranque ({len(paradas)}/{len(arranques)})"); sys.exit(2)
 else:
     for parada in paradas:
         siguientes = [a for a in arranques if a > parada]
