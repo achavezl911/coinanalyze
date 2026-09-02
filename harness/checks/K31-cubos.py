@@ -71,7 +71,7 @@ def devueltas(fn, dominio):
     def del_dict(d, prof=0):
         if prof > 3:
             return
-        for _k, v in zip(d.keys, d.values):
+        for _k, v in zip(d.keys, d.values, strict=False):
             if isinstance(v, ast.Name):
                 if v.id in v2p:
                     out.add(v2p[v.id])
@@ -182,10 +182,10 @@ def main() -> int:
         else:
             cubos['hueco'].append(r)
 
-    print('bundle=%d diseno=%d hueco=%d umbral_generico=%d' % (
-        len(cubos['bundle']), len(cubos['diseno']), len(cubos['hueco']), umbral))
+    print(f"bundle={len(cubos['bundle'])} diseno={len(cubos['diseno'])} "
+          f"hueco={len(cubos['hueco'])} umbral_generico={umbral}")
     print('BUNDLE:' + ''.join(' ' + r for r in cubos['bundle']))
-    print('DISENO:' + ''.join(' %s(%s)' % (r, quien[r]) for r in cubos['diseno']))
+    print('DISENO:' + ''.join(f' {r}({quien[r]})' for r in cubos['diseno']))
     print('HUECO:' + ''.join(' ' + r for r in cubos['hueco']))
     return 0
 
