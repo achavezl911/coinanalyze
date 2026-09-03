@@ -999,7 +999,15 @@ async def binance_loop() -> None:
     while True:
         started = time.monotonic()
         try:
-            async with websockets.connect(url, ping_interval=20, ping_timeout=20, max_size=2_000_000) as ws:
+            # open_timeout=30 y no el default de 10 s de websockets. Desde el 2026-09-02 13Z el
+            # laboratorio pierde el 35-50 % de los handshakes hacia AWS ap-northeast-1 y el
+            # kernel retransmite el SYN a 1, 3, 7, 15 y 31 s: con 10 s la reconexion se rinde
+            # ANTES que el kernel. Una conexion medida desde el host Proxmox entro a los 4.2 s,
+            # o sea que la retransmision SI recupera. El coste es que un intento sin esperanza
+            # tarda 30 s en soltar, y con el reciclado en 3600 s los intentos son raros.
+            async with websockets.connect(
+                url, open_timeout=30, ping_interval=20, ping_timeout=20, max_size=2_000_000
+            ) as ws:
                 LOGGER.info("binance_futures_connected streams=%d", len(streams))
                 async for raw in ws:
                     if time.monotonic() - started > SETTINGS.BINANCE_BOOK_FORCE_RECONNECT_SECONDS:
@@ -1013,7 +1021,18 @@ async def binance_loop() -> None:
         except BookResyncRequired as exc:
             LOGGER.warning("binance_futures_resync reason=%s retry=%.1fs", exc, backoff)
         except (ConnectionClosed, TimeoutError, OSError, json.JSONDecodeError) as exc:
-            LOGGER.warning("binance_futures_disconnected error=%s retry=%.1fs", type(exc).__name__, backoff)
+            # Sin el codigo no se puede saber si nos cerro Binance -1008 policy, 1013 try
+            # again- o si se cayo la red -1006 sin trama de cierre-, y una prediccion sobre
+            # cinco ConnectionClosedError quedo INMEDIBLE por eso. ConnectionClosed.code
+            # existe en websockets 16.0 y devuelve 1006 cuando no hubo trama; TimeoutError y
+            # OSError no lo tienen y traen errno.
+            code = getattr(exc, "code", None)
+            if code is None:
+                code = getattr(exc, "errno", None)
+            LOGGER.warning(
+                "binance_futures_disconnected error=%s code=%s retry=%.1fs",
+                type(exc).__name__, code, backoff,
+            )
         except Exception:
             LOGGER.exception("binance_futures_ws_error retry=%.1fs", backoff)
         await BOOK_STORE.drop_exchange("binance")

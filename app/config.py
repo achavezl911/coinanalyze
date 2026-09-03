@@ -191,7 +191,12 @@ class Settings(BaseSettings):
     TRADESTORE_MAX_BUCKETS_PER_KEY: int = Field(default=30, ge=5, le=240)
     BINANCE_BOOK_MAX_EVENT_LAG_SECONDS: int = Field(default=10, ge=2, le=60)
     BINANCE_BOOK_STALE_SECONDS: int = Field(default=15, ge=3, le=120)
-    BINANCE_BOOK_FORCE_RECONNECT_SECONDS: int = Field(default=300, ge=60, le=3600)
+    # 3600 y no 300: depth10@100ms es un snapshot parcial -set_snapshot reemplaza el libro
+    # entero en cada mensaje-, asi que no hay estado incremental que un reciclado por reloj
+    # tenga que reparar, y el libro rancio ya lo cubren las dos variables de arriba, que
+    # miran EVIDENCIA. El 300 heredado costaba 7577 handshakes en 30 dias contra una red
+    # que desde el 2026-09-02 pierde el 35-50 % de ellos. Ver harness/checks/K85.
+    BINANCE_BOOK_FORCE_RECONNECT_SECONDS: int = Field(default=3600, ge=60, le=3600)
 
     HARD_DATA_RETENTION_DAYS: int = Field(default=14, ge=2, le=365)
     HTF_DATA_RETENTION_DAYS: int = Field(default=400, ge=30, le=3650)
