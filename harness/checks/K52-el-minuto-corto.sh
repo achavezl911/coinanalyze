@@ -25,6 +25,15 @@
 #     completa. O no esta -y entonces lo cuenta K37- o lleva una marca legible POR LA API
 #     sin conocer el journal. La marca es covered_seconds: segundos del minuto que el
 #     colector estuvo escuchando; 60 es completo y NULL es legado.
+#   TRES CAUSAS DE UN BUCKET CORTO, y la tercera no la sabiamos: el reinicio LIMPIO
+#     (Stopping/Started), la CAIDA (Main process exited, sin Stopping ninguno) y LA BASE QUE
+#     NO ACEPTA ESCRITURAS. La tercera la midio el operador: 2026-08-29T23:22Z tiene
+#     covered_seconds=3 en BTC y ETH SIN ningun evento de la unidad a mas o menos un minuto,
+#     en plena caida de Postgres. El colector estaba escuchando; lo que no habia era donde
+#     escribir. VA DICHO AQUI PARA QUE NADIE LO LEA COMO UNA MARCA ROTA: un corto sin
+#     reinicio no es necesariamente un fallo del marcador. Es historico y cae fuera de la
+#     ventana de 6 h, asi que hoy no lo juzga nadie; el dia que vuelva a pasar dentro de la
+#     ventana, este check lo llamara "CONTROL POSITIVO ROTO" y se equivocara de sujeto.
 #   CONTROL POSITIVO, en el mismo check y obligatorio: un minuto SIN reinicio no puede
 #     salir marcado. Un guardia que marca todo esta tan roto como el que no marca nada, y
 #     ese brazo es el que nadie prueba.
