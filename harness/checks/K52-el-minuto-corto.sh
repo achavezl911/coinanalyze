@@ -183,8 +183,13 @@ for linea in open(camino_journal):
 # segundo: sus buckets marcados quedaban "sin reinicio que los explique". Falso ROJO.
 # AGRUPACION A 30 s, y el numero sale de dos medidas, no de un gusto:
 #   · Stopped acompana a SU Stopping a 5 s -117 y 117 en 30 dias, siempre en pareja-, y las
-#     tres frases de una caida caen en 1-2 s ("Scheduled restart job", "Main process
-#     exited", "Failed with result", en ESE orden: el 2026-08-29T21:19:16-17Z).
+#     tres frases de una caida caen en segundos. EL ORDEN REAL, y lo digo porque yo lo
+#     conte mal: dentro de UNA caida es "Main process exited" -> "Failed with result" ->
+#     "Scheduled restart job" -> "Started". Yo publique que "Scheduled" iba ANTES que
+#     "exited" y era falso: estaba cruzando el "Scheduled" de la caida N con el "exited" de
+#     la N+1 de un BUCLE de reinicio a 5 s. Medido en el racimo del 2026-08-29T21:16:15Z:
+#     15 exited, 15 Failed, 20 Scheduled, 20 Started, 20 exited, 20 Failed, 25 Scheduled...
+#     QUE NADIE VUELVA A INTENTAR DEDUPLICAR POR TIPO creyendo que el orden es otro.
 #   · Y los dos reinicios REALES mas juntos de 30 dias distan 108 s: 08-11T23:27:05 ->
 #     23:28:53 y 08-26T00:26:28 -> 00:28:16.
 # Con 120 s yo fundia esos dos reinicios en uno y la ventana del segundo desaparecia: sus
