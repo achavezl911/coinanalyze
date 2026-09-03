@@ -116,7 +116,7 @@ def hora(t):
     return datetime.fromisoformat(t.replace("Z", "+00:00")).astimezone(UTC)
 
 # --- las ventanas de indisponibilidad, emparejando Stopping con la primera escritura ---
-paradas, arranques = [], []
+paradas, arranques, cierres = [], [], []
 for linea in open(camino_journal):
     partes = linea.split()
     if len(partes) < 2:
@@ -131,8 +131,19 @@ for linea in open(camino_journal):
         # eso se DEDUPLICAN mas abajo -si no, un reinicio normal daria DOS paradas y
         # fabricaria una ventana fantasma-.
         paradas.append(t)
-    elif "Started" in linea or "binance_connected" in linea:
+    elif "Started" in linea:
+        # SUJETO DEL EMPAREJAMIENTO = Started DE LA UNIDAD. binance_connected NO entra aqui:
+        # es una reconexion de websocket, no un reinicio, y mi propio c8dbcbb ya lo decia en
+        # :148 antes de que yo lo incumpliera en el cambio siguiente. Metiendolo, dos
+        # reconexiones en reposo se volvian "arranques huerfanos", se emparejaban con el
+        # borde de los datos y fabricaban una ventana fantasma de 4 h sobre un servicio que
+        # no se habia movido desde el 09-01: 690 buckets acusados, ROJO FALSO.
         arranques.append(t)
+    elif "binance_connected" in linea:
+        # SI sirve para CERRAR una ventana que YA abrio una parada -es la primera escritura
+        # real tras el reinicio, que es donde de verdad vuelve el dato- pero NUNCA para
+        # abrirla. Cerrar no fabrica sujeto; abrir si.
+        cierres.append(t)
 # EL VEREDICTO PARTIDO. Antes, un journal sin eventos hacia INMEDIBLE el check entero, y
 # eso es mas de la mitad del tiempo: medido sobre 29.5 dias, el sujeto del brazo del solape
 # solo existe el 44.2 % del tiempo -- 394.6 h de 707 sin ningun reinicio en 6 h, con 32
@@ -180,14 +191,14 @@ for _l in open(camino_datos):
             inicio_ventana = hora(_p[0]); break
         except ValueError:
             continue
-huerfanos = [a for a in arranques if not any(p < a for p in paradas)]
+huerfanos = [a for a in arranques if not any(p < a for p in paradas)]  # Started sin parada
 
 ventanas = []
 if not paradas and not huerfanos:
     juzga_solape = False
 else:
     for parada in paradas:
-        siguientes = [a for a in arranques if a > parada]
+        siguientes = [a for a in sorted(arranques + cierres) if a > parada]
         if siguientes:
             ventanas.append((parada, min(siguientes)))
     for a in huerfanos:

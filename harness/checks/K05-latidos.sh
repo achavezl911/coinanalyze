@@ -95,6 +95,10 @@ for s in d.get("services") or []:
 # EL GATE ES EL status, que es autoritativo porque lo calcula la app. Los umbrales de aqui
 # abajo son SOLO PARA EXPLICAR quien lo rompio; si la app los cambia, el gate sigue bien y
 # lo unico que puede quedar viejo es el texto.
+# DICHO EXPLICITAMENTE porque es una DUPLICACION y las duplicaciones envejecen: esta tabla
+# repite api.py:2740-2752 y db.py:95. Se acepta a sabiendas y acotada: no gatea nada, y el
+# dia que la app mueva un umbral, lo unico que puede mentir es la frase "N s > M s", nunca
+# el veredicto. Si alguien la ve desfasada, el arreglo es copiarla, no gatear con ella.
 UMBRALES = {"ingest": 420.0, "ingest:ohlcv_1m": 180.0, "ingest:metrics_5m": 420.0,
             "ws": 90.0, "scalp": 90.0, "daily": 3900.0, "api": 180.0}
 POR_DEFECTO = 900.0
