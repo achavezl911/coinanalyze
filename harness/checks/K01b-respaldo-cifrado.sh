@@ -58,8 +58,15 @@ if [ "${K01B_RESTAURA:-0}" = "1" ]; then
     else
       filtro=""
     fi
-    a=$(psql -X -A -t -d coinalyze_k01b -c "SET extra_float_digits=0" -c "SELECT count(*)||':'||coalesce(md5(string_agg(x::text,E'\n' ORDER BY x::text)),'vacia') FROM $t x $filtro" 2>/dev/null | grep -E '^[0-9]' | head -1)
-    b=$("$B/bin/prodsql" "SET extra_float_digits=0; SELECT count(*)||':'||coalesce(md5(string_agg(x::text,E'\n' ORDER BY x::text)),'vacia') FROM $t x $filtro" 2>/dev/null | grep -E '^[0-9]' | head -1)
+    # SET timezone='UTC' EN LOS DOS LADOS, junto al extra_float_digits. Sin el, este lado
+    # hereda el timezone del SERVIDOR de 143 -America/Mexico_City- mientras prodsql fuerza
+    # UTC desde K77, y md5(x::text) sobre filas con timestamptz da hashes distintos PARA LA
+    # MISMA FILA. Eso es lo que hacia FALLAR a scalp_signal_snapshot_p20260831 y _p20260901
+    # sin que hubiera nada roto. Medido: SELECT md5(now()::timestamptz::text) da
+    # 52043ad7a8f53acff983b1b50bc8cd39 en America/Mexico_City y 83d0a377e7f763b94950e0f82e7be523
+    # en UTC. Un comparador que depende de la zona de la sesion no compara datos, compara sesiones.
+    a=$(psql -X -A -t -d coinalyze_k01b -c "SET timezone='UTC'" -c "SET extra_float_digits=0" -c "SELECT count(*)||':'||coalesce(md5(string_agg(x::text,E'\n' ORDER BY x::text)),'vacia') FROM $t x $filtro" 2>/dev/null | grep -E '^[0-9]' | head -1)
+    b=$("$B/bin/prodsql" "SET timezone='UTC'; SET extra_float_digits=0; SELECT count(*)||':'||coalesce(md5(string_agg(x::text,E'\n' ORDER BY x::text)),'vacia') FROM $t x $filtro" 2>/dev/null | grep -E '^[0-9]' | head -1)
     probadas=$((probadas+1))
     [ -n "$a" ] && [ "$a" = "$b" ] || fallos="$fallos $t($a vs $b)"
   done
@@ -73,6 +80,15 @@ if [ "${K01B_RESTAURA:-0}" = "1" ]; then
 fi
 
 [ -s "$REG" ] || { echo "nunca se ha restaurado un .enc: lanza K01B_RESTAURA=1 $0"; exit 1; }
+# EL VEREDICTO SALE DE LA ULTIMA LINEA, NO DEL ULTIMO OK. Antes se grepeaban solo los OK,
+# asi que un OK ANTIGUO tapaba un FALLO RECIENTE y el check publicaba "restaurado y cuadrado"
+# citando una prueba vieja mientras la ultima habia fallado. Una prueba de respaldo que
+# ignora su propio fallo mas reciente es peor que no tenerla: afirma justo lo que no sabe.
+reciente=$(tail -1 "$REG")
+case "$reciente" in
+  *"$(printf '\t')FALLO$(printf '\t')"*)
+    echo "la prueba de restauracion MAS RECIENTE fallo: $reciente"; exit 1 ;;
+esac
 ultima=$(grep -P '\tOK\t' "$REG" | tail -1)
 [ -n "$ultima" ] || { echo "la ultima prueba de restauracion FALLO: $(tail -1 "$REG")"; exit 1; }
 probado=$(printf '%s' "$ultima" | cut -f3)
