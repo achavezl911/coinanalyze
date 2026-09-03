@@ -55,7 +55,7 @@ trap 'rm -f "$JOURNAL" "$DATOS"' EXIT
 # dia tranquilo- esa ambiguedad se convertiria en FALLO ABIERTO: un canal roto se leeria como
 # "no hubo reinicios" y el check aprobaria. Por eso el comando remoto emite una marca al
 # final: sin marca, no hubo lectura. Es la leccion de K52b aplicada a su hermano.
-"$B/bin/prod" "journalctl -u $UNIDAD --since '$HORAS hours ago' --no-pager -o short-iso --utc -n 400 2>/dev/null | grep -E 'Stopping $UNIDAD|Started $UNIDAD|binance_connected'; echo __CANAL_OK__" 2>/dev/null > "$JOURNAL"
+"$B/bin/prod" "journalctl -u $UNIDAD --since '$HORAS hours ago' --no-pager -o short-iso --utc -n 400 2>/dev/null | grep -E 'Stopping $UNIDAD|Stopped $UNIDAD|Started $UNIDAD|binance_connected'; echo __CANAL_OK__" 2>/dev/null > "$JOURNAL"
 grep -q '^__CANAL_OK__$' "$JOURNAL" || {
   echo "NO MEDIDO: el canal del journal de 140 no contesto para $UNIDAD -no llego la marca de canal-. Esto NO es un dia sin reinicios: es una lectura que fallo, y confundirlas seria fallar ABIERTO"
   exit 2
@@ -74,7 +74,7 @@ EVENTOS=$(grep -cE "Stopping $UNIDAD|Started $UNIDAD|binance_connected" "$JOURNA
 # caso que hay que declarar. Medido el 2026-09-02: 0 reinicios y aun asi "ultimo hace
 # desconocido". Y la busqueda de 30 dias tampoco puede mirar binance_connected: preguntamos
 # cuando se reinicio la UNIDAD, no cuando reconecto el feed.
-REINICIOS=$(grep -cE "Stopping $UNIDAD|Started $UNIDAD" "$JOURNAL" 2>/dev/null || true)
+REINICIOS=$(grep -cE "Stopping $UNIDAD|Stopped $UNIDAD|Started $UNIDAD" "$JOURNAL" 2>/dev/null || true)
 [ -n "$REINICIOS" ] || REINICIOS=0
 SILENCIO="desconocido"
 if [ "$REINICIOS" = "0" ]; then
@@ -125,7 +125,11 @@ for linea in open(camino_journal):
         t = hora(partes[0])
     except ValueError:
         continue
-    if "Stopping" in linea:
+    if "Stopping" in linea or "Stopped" in linea:
+        # "Stopped" TAMBIEN es una parada: un reinicio por Restart=on-failure lo escribe.
+        # Medido en 30 dias: 117 Stopping y 117 Stopped, o sea que vienen en pareja, y por
+        # eso se DEDUPLICAN mas abajo -si no, un reinicio normal daria DOS paradas y
+        # fabricaria una ventana fantasma-.
         paradas.append(t)
     elif "Started" in linea or "binance_connected" in linea:
         arranques.append(t)
@@ -152,16 +156,45 @@ for linea in open(camino_journal):
 # arranque posterior es una VENTANA ABIERTA -el servicio se fue y no ha vuelto dentro de la
 # ventana-. Declarar eso VERDE esconderia un servicio caido, que es justo lo contrario de
 # lo que este check existe para ver.
+# DEDUPLICACION: Stopping y Stopped del MISMO reinicio llegan con segundos de diferencia.
+paradas.sort()
+_ded = []
+for _p in paradas:
+    if not _ded or (_p - _ded[-1]).total_seconds() > 120:
+        _ded.append(_p)
+paradas = _ded
+
+# QUINTA FORMA · un Started SIN parada delante. Medido en 30 dias: 154 Started contra 117
+# Stopping, o sea 37 arranques huerfanos. Su ventana esta ABIERTA HACIA ATRAS -el servicio
+# se fue antes de que empezara la ventana de 6 h, o la parada cayo en el borde- y NO se
+# puede tratar como "sin sujeto": los minutos anteriores a ese Started SI solaparon un
+# reinicio, y dejarlos pasar al CONTROL POSITIVO hace que sus marcas parezcan puestas sin
+# motivo. Inducido: con solo "Started", el control positivo gritaba "CONTROL POSITIVO ROTO:
+# 2 buckets marcados sin reinicio que los explique" -- un ROJO FALSO sobre un reinicio real.
+# Se empareja con el BORDE de la ventana, que es lo unico honrado que se puede afirmar.
+inicio_ventana = None
+for _l in open(camino_datos):
+    _p = _l.strip().split("|")
+    if _p and _p[0]:
+        try:
+            inicio_ventana = hora(_p[0]); break
+        except ValueError:
+            continue
+huerfanos = [a for a in arranques if not any(p < a for p in paradas)]
+
 ventanas = []
-if not paradas:
+if not paradas and not huerfanos:
     juzga_solape = False
 else:
     for parada in paradas:
         siguientes = [a for a in arranques if a > parada]
         if siguientes:
             ventanas.append((parada, min(siguientes)))
+    for a in huerfanos:
+        if inicio_ventana is not None and inicio_ventana < a:
+            ventanas.append((inicio_ventana, a))
     if not ventanas:
-        print(f"NO MEDIDO: las {len(paradas)} paradas del journal no tienen arranque despues; la ventana esta cortada"); sys.exit(2)
+        print(f"NO MEDIDO: las {len(paradas)} paradas del journal no tienen arranque despues y los {len(huerfanos)} arranques huerfanos no caen dentro de los datos; la ventana esta cortada"); sys.exit(2)
     juzga_solape = True
 
 def solapa(ts):

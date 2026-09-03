@@ -86,9 +86,48 @@ for s in d.get("services") or []:
         # linea dejando fuera a ws-binance, que era EL servicio que habia que ver. Un
         # mensaje que esconde al culpable detras del mas hablador no sirve de nada.
         malos.append((nombre, estado, det[:110]))
+# CRITERIO 3 · EL status GLOBAL. Los criterios 1 y 2 miran la LISTA y la FILA, y los dos
+# se quedaron ciegos ante las tres formas que el operador indujo el 2026-09-03: un scalp
+# MUERTO 2 h con su fila diciendo ok (lag 7200), un scalp AUSENTE de services
+# (missing_services), y el snapshot de BTC a 1200 s. En las tres, filas_no_ok estaba VACIO
+# y el status global decia degraded. required_heartbeat_failures (db.py:110-135) ya juzga
+# esas tres cosas con los umbrales de verdad y api.py las publica en el status.
+# EL GATE ES EL status, que es autoritativo porque lo calcula la app. Los umbrales de aqui
+# abajo son SOLO PARA EXPLICAR quien lo rompio; si la app los cambia, el gate sigue bien y
+# lo unico que puede quedar viejo es el texto.
+UMBRALES = {"ingest": 420.0, "ingest:ohlcv_1m": 180.0, "ingest:metrics_5m": 420.0,
+            "ws": 90.0, "scalp": 90.0, "daily": 3900.0, "api": 180.0}
+POR_DEFECTO = 900.0
+
+
+def umbral(nombre):
+    if nombre in UMBRALES:
+        return UMBRALES[nombre]
+    return UMBRALES.get(nombre.split(":")[0], POR_DEFECTO)
+
+
+estado_global = str(d.get("status") or "")
+faltan = [str(x) for x in (d.get("missing_services") or [])]
+rancios = []
+for s in d.get("services") or []:
+    if not isinstance(s, dict):
+        continue
+    nm, lag = str(s.get("service") or ""), s.get("lag_seconds")
+    if nm in nombres and isinstance(lag, (int, float)) and lag > umbral(nm):
+        rancios.append(nm + "=" + str(int(lag)) + "s>" + str(int(umbral(nm))) + "s")
+simbolos = []
+for s in d.get("symbols") or []:
+    if isinstance(s, dict) and isinstance(s.get("lag_seconds"), (int, float)) and s["lag_seconds"] > 180:
+        simbolos.append(str(s.get("symbol")) + "=" + str(int(s["lag_seconds"])) + "s")
 print("VIGILA " + " ".join(sorted(n for n in nombres if n)))
 print("MALOS " + ", ".join(n + "=" + e for n, e, _ in sorted(malos)))
-print("DETALLE " + " · ".join(n + ": " + d for n, _, d in sorted(malos)))
+print("DETALLE " + " · ".join(n + ": " + d2 for n, _, d2 in sorted(malos)))
+print("GLOBAL " + estado_global)
+print("PORQUE " + " · ".join(
+    (["missing_services: " + ", ".join(faltan)] if faltan else [])
+    + (["rancios: " + ", ".join(sorted(rancios))] if rancios else [])
+    + (["simbolos>180s: " + ", ".join(sorted(simbolos))] if simbolos else [])
+) or "PORQUE (healthz no dice por que)")
 ' 2>/dev/null)
 
 case "$veredicto" in
@@ -101,6 +140,8 @@ esac
 vigilados=$(printf '%s\n' "$veredicto" | sed -n 's/^VIGILA //p' | tr ' ' '\n' | grep -v '^$' | sort -u)
 malos=$(printf '%s\n' "$veredicto" | sed -n 's/^MALOS //p')
 detalle=$(printf '%s\n' "$veredicto" | sed -n 's/^DETALLE //p')
+global=$(printf '%s\n' "$veredicto" | sed -n 's/^GLOBAL //p')
+porque=$(printf '%s\n' "$veredicto" | sed -n 's/^PORQUE //p')
 falta=$(comm -23 <(printf '%s\n' "$tabla") <(printf '%s\n' "$vigilados") | tr '\n' ' ')
 
 # LOS DOS CRITERIOS SE SUMAN, NO SE SUSTITUYEN, y si fallan los dos se dicen los dos: son
@@ -108,6 +149,7 @@ falta=$(comm -23 <(printf '%s\n' "$tabla") <(printf '%s\n' "$vigilados") | tr '\
 fallos=""
 [ -z "${falta// /}" ] || fallos="sin vigilar: $falta"
 [ -z "$malos" ] || fallos="${fallos:+$fallos · }servicios gobernados que NO publican ok: $malos · detalle literal: $detalle"
+[ "$global" = "ok" ] || fallos="${fallos:+$fallos · }healthz.status=$global · $porque"
 [ -z "$fallos" ] || { printf '%s\n' "$fallos" | cut -c1-700; exit 1; }
 
 echo "$(printf '%s\n' "$tabla" | wc -l) latidos, todos vigilados y TODOS publicando ok"
