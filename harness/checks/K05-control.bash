@@ -433,10 +433,96 @@ else
     "$real no existe: este control NO se ha ejercitado"
 fi
 
+# --- C14 · EL ESCRITOR DE LA SERIE, EJERCITADO POR SU CAMINO -----------------------
+# HUECO QUE ME ENCONTRO EL OPERADOR el 2026-09-04, y tiene razon: los controles de arriba
+# prueban el CHECK, y el arreglo del 2026-09-04T18:49Z no vive ahi sino en bin/capta-healthz,
+# o sea en el ESCRITOR. "Verificado en vivo" NO lo ejercita: un healthz normal no trae saltos
+# de linea, asi que el minuto bueno de las 18:50:01Z habria salido identico con el arreglo
+# puesto o quitado. El invariante que sostiene la ventana de 30 -UNA MUESTRA = UNA LINEA-
+# solo se prueba conduciendo el escritor con respuestas fabricadas.
+#
+# SE EJERCITA EL FICHERO INSTALADO. La copia se deriva a mano con un solo sed sobre la linea
+# S= -a donde escribe- y C14a COMPRUEBA que la diferencia es EXACTAMENTE esa: si fuese otro
+# programa, los cinco brazos siguientes no dirian nada de lo que corre en el cron.
+#
+# MI PROPIO C14 NACIO FANTASMA Y LO CACE EN SU PRIMERA CORRIDA (2026-09-04T19:50Z): puse el
+# curl de mentira en un fichero SIN permiso de ejecucion, capta-healthz cayo al curl de
+# verdad y escribio un healthz REAL de 140. C14c y C14d PASARON con el -una respuesta real
+# tambien es una linea y tambien es JSON valido-, o sea que dos brazos estaban aprobando sin
+# tocar el fixture. Dos consecuencias, y las dos estan puestas: el curl falso ahora es una
+# FUNCION EXPORTADA -no depende de permisos ni de PATH- y CADA brazo exige una marca que
+# solo existe en su fixture, asi que una caida al curl real no puede volver a pasar en verde.
+CAP="$B/bin/capta-healthz"
+if [ -r "$CAP" ]; then
+  CD="$DIR/cap"; mkdir -p "$CD"; SER="$CD/serie.jsonl"
+  sed "s#^S=.*#S=$SER#" "$CAP" > "$CD/capta"
+  eval "curl() { cat '$CD/payload' 2>/dev/null; return 0; }"
+  export -f curl
+
+  juzgal() {  # $1 = etiqueta   $2 = lineas esperadas   $3 = lineas reales   $4 = patron   $5 = salida
+    local est
+    if [ "$3" = "$2" ] && printf '%s\n' "$5" | grep -qF -- "$4"; then est=PASA; else est=FALLA; fallos=$((fallos + 1)); fi
+    printf '%-44s lineas=%s (esperado %s)  %-5s  %s\n' "$1" "$3" "$2" "$est" "$(printf '%s' "$5" | head -1 | cut -c1-58)"
+    [ "$est" = FALLA ] && printf '   esperaba encontrar: %s\n' "$4"
+    return 0
+  }
+  captura() {  # deja en $CAPN las lineas escritas y en $CAPL la ultima linea
+    : > "$SER"
+    bash "$CD/capta" >/dev/null 2>&1
+    CAPN=$(wc -l < "$SER"); CAPL=$(tail -n 1 "$SER" 2>/dev/null)
+  }
+  # Devuelve OK:<campo> SOLO si la linea entera parsea como JSON. Un solo patron prueba tres
+  # cosas a la vez: que es JSON valido, que el cuerpo salio del FIXTURE y que el campo llego
+  # entero. Es lo que impide que un brazo pase por haber medido otra cosa.
+  campo() { printf '%s' "$1" | python3 -c 'import json,sys
+d = json.loads(sys.stdin.read())
+c = d["h"].get("control") or d["h"].get("detail") or ""
+print("OK:" + str(c).replace(chr(10), "<LF>"))' 2>/dev/null; }
+
+  # C14a · el control del control: la copia es el mismo programa menos la ruta de salida.
+  difs=$(diff "$CAP" "$CD/capta" | grep -c '^[<>]')
+  soloS=$(diff "$CAP" "$CD/capta" | grep '^[<>]' | grep -cv '^[<>] S=')
+  juzgal "C14a la copia solo cambia la linea S=" 2 "$difs" "0" "$soloS"
+
+  # C14b · EL CASO QUE LO ORIGINO: pagina HTML de 502, ocho lineas -> UNA muestra.
+  printf '<html>\n<head><title>502 Bad Gateway</title></head>\n<body>\n<center><h1>502 C14B-MARCA</h1></center>\n<hr>\n<center>nginx</center>\n</body>\n</html>\n' > "$CD/payload"
+  captura
+  juzgal "C14b 502 de 8 lineas -> UNA linea" 1 "$CAPN" "502 C14B-MARCA" "$CAPL"
+
+  # C14c · el caso normal no se toca: el cuerpo compacto llega entero y la linea es JSON.
+  printf '{"status":"ok","control":"C14C-MARCA","services":[{"service":"scalp"}]}' > "$CD/payload"
+  captura
+  juzgal "C14c JSON compacto: intacto y valido" 1 "$CAPN" "OK:C14C-MARCA" "$(campo "$CAPL")"
+
+  # C14d · pretty-printed: el saneado quita los saltos y lo que queda SIGUE siendo JSON.
+  # Es el brazo que separa "quito bytes" de "rompo el cuerpo": la sangria sobrevive.
+  printf '{\n  "status": "ok",\n  "control": "C14D-MARCA",\n  "services": [\n    {"service": "ws"}\n  ]\n}\n' > "$CD/payload"
+  captura
+  juzgal "C14d pretty -> 1 linea y sigue siendo JSON" 1 "$CAPN" "OK:C14D-MARCA" "$(campo "$CAPL")"
+
+  # C14e · LA DISTINCION QUE IMPORTA: tr -d borra los BYTES CR y LF, no la secuencia de dos
+  # caracteres \n dentro de una cadena. Si el saneado se hiciera con sed sobre el escape, el
+  # detail de un servicio degradado se corromperia y el check citaria basura. Se juzga sobre
+  # el valor PARSEADO: si el escape se hubiera borrado saldria C14E-MARCAsegunda sin <LF>.
+  printf '{"status":"degraded","detail":"C14E-MARCA\\nsegunda"}' > "$CD/payload"
+  captura
+  juzgal "C14e el salto ESCAPADO se conserva" 1 "$CAPN" "OK:C14E-MARCA<LF>segunda" "$(campo "$CAPL")"
+
+  # C14f · sin respuesta: el respaldo del escritor tambien tiene que ser UNA linea y JSON,
+  # porque el check lo va a leer igual que a una muestra buena.
+  : > "$CD/payload"
+  captura
+  juzgal "C14f sin respuesta -> 1 linea y JSON" 1 "$CAPN" "sin respuesta" "$(campo "$CAPL")$CAPL"
+else
+  printf '%-44s %-18s %-5s  %s\n' "C14 el escritor de la serie" "no esta" "AVISO" \
+    "$CAP no existe: estos brazos NO se han ejercitado"
+fi
+
 echo
 if [ "$fallos" -eq 0 ]; then
-  echo "23 de 23 controles PASAN. Los dos brazos juzgan, el borde 23/24 esta donde se dijo,"
-  echo "la serie que no se puede juzgar da NO MEDIDO y el criterio 1 sigue entero."
+  echo "29 de 29 controles PASAN. Los dos brazos juzgan, el borde 23/24 esta donde se dijo,"
+  echo "la serie que no se puede juzgar da NO MEDIDO, el criterio 1 sigue entero y el"
+  echo "ESCRITOR de la serie mantiene una muestra = una linea (C14)."
   exit 0
 fi
 echo "$fallos controles FALLAN."
