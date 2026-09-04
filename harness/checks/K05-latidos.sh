@@ -71,10 +71,17 @@
 # minutos; la nueva no. **Quien lo caza entonces:** el minuto del 502 lo sigue cazando ESTE
 # check por el criterio 1 (healthz ilegible -> NO MEDIDO, sin cambio); la parada y el arranque
 # los cazan K52 (covered_seconds del minuto de borde) y K37 (huecos de datos); y el estado
-# instantaneo NO se pierde de vista porque la linea AHORA de este check lo imprime siempre,
-# gatee o no. Lo que ya no ocurre es que un pico de 1 o 2 minutos ponga el marcador en ROJO.
-# LO QUE NO CAMBIA: el criterio 1 entero, el detail LITERAL del servicio culpable, el PORQUE
-# del status global (missing_services, rancios, simbolos), y que los criterios se SUMAN.
+# instantaneo se sigue VIENDO en la linea de VERDE -que es exactamente cuando antes habria
+# rojeado-: AHORA trae el status y los no-ok del minuto, y RECUENTO trae cuantas veces cada
+# servicio fallo en la ventana. Se ve y no gatea, que es lo que se pedia.
+# LO QUE SI SE PIERDE, y lo digo aqui porque es lo unico: el detail LITERAL de un episodio
+# que no llegue a N ya no aparece en el mensaje. Sigue guardado entero en la serie, y se
+# saca con grep sobre healthz-serie.jsonl por el minuto que interese.
+# LO QUE TAMBIEN SE PAGA: la latencia. Una caida sostenida tardaba 1 muestra en rojear y
+# ahora tarda 24. Es el precio explicito de no rojear 1 de cada 12 corridas por ruido.
+# LO QUE NO CAMBIA: el criterio 1 entero, el detail LITERAL del servicio culpable cuando SI
+# gatea, el PORQUE del status global (missing_services, rancios, simbolos), y que los
+# criterios se SUMAN.
 # LO QUE APARECE COMO DEPENDENCIA NUEVA: el cron de bin/capta-healthz en 143. Si deja de
 # escribir, los criterios 2 y 3 dan NO MEDIDO -por eso estan los guardias de frescura y de
 # hueco-, nunca VERDE por silencio.
