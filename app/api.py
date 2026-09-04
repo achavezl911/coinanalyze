@@ -1036,7 +1036,15 @@ async def whale_delta(
                      -- IDENTICO a uno completo de verdad. "No falta nada" y "no lo se"
                      -- no pueden ser la misma respuesta: es la regla de K03 aplicada a
                      -- una columna nueva, y la incumplio el codigo que la anadio.
-                     count(*) FILTER (WHERE covered_seconds IS NULL) AS unknown_minutes
+                     count(*) FILTER (WHERE covered_seconds IS NULL) AS unknown_minutes,
+                     -- K52c: las tres cuentas de arriba solo saben de minutos PRESENTES.
+                     -- El minuto que no llega a EXISTIR como 'combined' -un arranque a
+                     -- las 05:20:58 deja a bybit sin operar en el resto del minuto, y
+                     -- ws_collector.py:288 exige los dos venues para emitirlo- no suma en
+                     -- ninguna de las tres, y el bucket sale IDENTICO a uno completo.
+                     -- count(*) es exacto: la PK (symbol,exchange,interval,ts) hace que
+                     -- cada minuto aparezca una sola vez bajo este WHERE.
+                     count(*) AS minutes_present
               FROM spot_trades_agg
               WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
               GROUP BY 1 ORDER BY 1 DESC LIMIT $3
