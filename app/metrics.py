@@ -466,10 +466,6 @@ async def compute_snapshot(
             price_cutoff - timedelta(hours=24), price_cutoff,
         ),
         GapRequirement(
-            "fut_session", "ohlcv_1min", "binance", "perpetual", symbol,
-            session_start, price_cutoff,
-        ),
-        GapRequirement(
             "fut_3m", "ohlcv_1min", "binance", "perpetual", symbol,
             price_cutoff - timedelta(minutes=3), price_cutoff,
         ),
@@ -498,20 +494,51 @@ async def compute_snapshot(
             "perpetual", symbol, metrics_cutoff - timedelta(hours=24), metrics_cutoff,
         ),
     ]
+    # LA APERTURA DE SESION CAE EN UNA FRONTERA DE MINUTO EXACTA. current_nyse_start()
+    # devuelve las 09:30 de Nueva York -13:30Z en EDT, 14:30Z en EST- y price_cutoff es el
+    # minuto CERRADO, o sea floor(now, 60 s). Durante los 60 s de [apertura, apertura+1min)
+    # los dos valen el mismo instante y la ventana de sesion es [t,t): CERO minutos
+    # cerrados dentro. _validated_window rechaza [t,t) y hace bien -una ventana sin un solo
+    # bucket no se puede comparar contra un hueco-, pero el ValueError subia hasta
+    # run_aligned_feed (ingest.py:1023) y se llevaba por delante el snapshot ENTERO de
+    # todos los simbolos Y el latido del feed, que se escribe DESPUES de publish_snapshot
+    # (ingest.py:802 y :977). Medido en 140 sobre 30 dias de journal: 46 tracebacks, dos
+    # por dia -uno por ciclo-, 23 dias seguidos, siempre en el minuto de la apertura.
+    #
+    # UNA METRICA QUE NO CONSUME NI UNA FILA NO TIENE REQUISITO QUE COMPROBAR. Se OMITE del
+    # conjunto. Las otras dos salidas se descartaron a proposito: pedirla como "ventana
+    # vacia declarada" obliga a relajar el validador para un solo llamante, y saltarse el
+    # snapshot entero tira las otras trece metricas del minuto, que si son medibles.
+    sesion_con_minuto_cerrado = session_start < price_cutoff
+    if sesion_con_minuto_cerrado:
+        requirements.append(
+            GapRequirement(
+                "fut_session", "ohlcv_1min", "binance", "perpetual", symbol,
+                session_start, price_cutoff,
+            )
+        )
     for exchange in ("binance", "bybit", "combined"):
-        requirements.extend(
-            (
-                GapRequirement(
-                    "spot_24h", "spot_trades", exchange, "spot", ws_symbol,
-                    price_cutoff - timedelta(hours=24), price_cutoff,
-                ),
+        requirements.append(
+            GapRequirement(
+                "spot_24h", "spot_trades", exchange, "spot", ws_symbol,
+                price_cutoff - timedelta(hours=24), price_cutoff,
+            )
+        )
+        if sesion_con_minuto_cerrado:
+            requirements.append(
                 GapRequirement(
                     "spot_session", "spot_trades", exchange, "spot", ws_symbol,
                     session_start, price_cutoff,
-                ),
+                )
             )
-        )
     blocked = await blocking_requirement_keys(conn, requirements)
+    if not sesion_con_minuto_cerrado:
+        # F4: NULL = no medido. El SQL ya devuelve NULL aqui -SUM(...) FILTER (WHERE ts >=
+        # $3) sobre cero filas, metrics.py:349 y :370-, pero el significado se fija en este
+        # lado y no en un COALESCE de manana: un 0.0 seria una sesion plana MEDIDA, y esta
+        # sesion no tiene todavia ni un minuto que medir.
+        data["cvd_session"] = None
+        data["spot_cvd_session"] = None
     if "price" in blocked:
         data["price"] = None
         data["price_ts"] = None
