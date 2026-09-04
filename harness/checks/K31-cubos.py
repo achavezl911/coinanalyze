@@ -30,6 +30,18 @@ import pathlib
 import sys
 from collections import Counter
 
+# SOBRES · funciones que RECIBEN el dato ya calculado y solo lo envuelven. NO son
+# productoras, y compartir un sobre no es compartir dato. Va DECLARADO y con cita, igual
+# que NO_PANEL y CANVAS en el propio check, porque derivarlo fallo: intente "recibe una
+# variable local del handler" y tambien lo cumplen productoras de verdad
+# -compute_scalp_summary(ctx)-, con lo que el reparto se desplomaba a 1/1/25.
+#   declared_series_response(conn, rows, ...)  api.py:348-360, su docstring dice
+#   literalmente "El sobre de una serie". La llaman 6 handlers -poco para caer por
+#   frecuencia, cuyo umbral son 16- y contandola como productora, /api/cvd, /api/cvd/spot
+#   y /api/liquidations salian BUNDLE cuando cada una calcula su result con su PROPIO
+#   SELECT (api.py:709-721, :975-981): TRES HUECOS REALES publicados como cableados.
+SOBRES = {'declared_series_response'}
+
 REPO = pathlib.Path(__import__('os').environ.get('REPO', '/srv/coinanalyze/repo'))
 API = REPO / 'app/api.py'
 
@@ -133,6 +145,7 @@ def main() -> int:
     # linea /api/signals/ledger y /api/signals/outcomes "devolvian" una productora y se
     # escapaban de HUECO. Es convencion del lenguaje, no una lista teclada.
     dominio = {d for d in dominio if not d.startswith('_')}
+    dominio -= SOBRES
 
     freq = Counter()
     for fn in handlers.values():

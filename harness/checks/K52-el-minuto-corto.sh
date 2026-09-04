@@ -25,6 +25,15 @@
 #     completa. O no esta -y entonces lo cuenta K37- o lleva una marca legible POR LA API
 #     sin conocer el journal. La marca es covered_seconds: segundos del minuto que el
 #     colector estuvo escuchando; 60 es completo y NULL es legado.
+#   TRES CAUSAS DE UN BUCKET CORTO, y la tercera no la sabiamos: el reinicio LIMPIO
+#     (Stopping/Started), la CAIDA (Main process exited, sin Stopping ninguno) y LA BASE QUE
+#     NO ACEPTA ESCRITURAS. La tercera la midio el operador: 2026-08-29T23:22Z tiene
+#     covered_seconds=3 en BTC y ETH SIN ningun evento de la unidad a mas o menos un minuto,
+#     en plena caida de Postgres. El colector estaba escuchando; lo que no habia era donde
+#     escribir. VA DICHO AQUI PARA QUE NADIE LO LEA COMO UNA MARCA ROTA: un corto sin
+#     reinicio no es necesariamente un fallo del marcador. Es historico y cae fuera de la
+#     ventana de 6 h, asi que hoy no lo juzga nadie; el dia que vuelva a pasar dentro de la
+#     ventana, este check lo llamara "CONTROL POSITIVO ROTO" y se equivocara de sujeto.
 #   CONTROL POSITIVO, en el mismo check y obligatorio: un minuto SIN reinicio no puede
 #     salir marcado. Un guardia que marca todo esta tan roto como el que no marca nada, y
 #     ese brazo es el que nadie prueba.
@@ -55,7 +64,7 @@ trap 'rm -f "$JOURNAL" "$DATOS"' EXIT
 # dia tranquilo- esa ambiguedad se convertiria en FALLO ABIERTO: un canal roto se leeria como
 # "no hubo reinicios" y el check aprobaria. Por eso el comando remoto emite una marca al
 # final: sin marca, no hubo lectura. Es la leccion de K52b aplicada a su hermano.
-"$B/bin/prod" "journalctl -u $UNIDAD --since '$HORAS hours ago' --no-pager -o short-iso --utc -n 400 2>/dev/null | grep -E 'Stopping $UNIDAD|Started $UNIDAD|binance_connected'; echo __CANAL_OK__" 2>/dev/null > "$JOURNAL"
+"$B/bin/prod" "journalctl -u $UNIDAD --since '$HORAS hours ago' --no-pager -o short-iso --utc -n 400 2>/dev/null | grep -E 'Stopping $UNIDAD|Stopped $UNIDAD|Started $UNIDAD|Main process exited|Failed with result|Scheduled restart job|binance_connected'; echo __CANAL_OK__" 2>/dev/null > "$JOURNAL"
 grep -q '^__CANAL_OK__$' "$JOURNAL" || {
   echo "NO MEDIDO: el canal del journal de 140 no contesto para $UNIDAD -no llego la marca de canal-. Esto NO es un dia sin reinicios: es una lectura que fallo, y confundirlas seria fallar ABIERTO"
   exit 2
@@ -74,7 +83,7 @@ EVENTOS=$(grep -cE "Stopping $UNIDAD|Started $UNIDAD|binance_connected" "$JOURNA
 # caso que hay que declarar. Medido el 2026-09-02: 0 reinicios y aun asi "ultimo hace
 # desconocido". Y la busqueda de 30 dias tampoco puede mirar binance_connected: preguntamos
 # cuando se reinicio la UNIDAD, no cuando reconecto el feed.
-REINICIOS=$(grep -cE "Stopping $UNIDAD|Started $UNIDAD" "$JOURNAL" 2>/dev/null || true)
+REINICIOS=$(grep -cE "Stopping $UNIDAD|Stopped $UNIDAD|Started $UNIDAD|Main process exited" "$JOURNAL" 2>/dev/null || true)
 [ -n "$REINICIOS" ] || REINICIOS=0
 SILENCIO="desconocido"
 if [ "$REINICIOS" = "0" ]; then
@@ -116,7 +125,7 @@ def hora(t):
     return datetime.fromisoformat(t.replace("Z", "+00:00")).astimezone(UTC)
 
 # --- las ventanas de indisponibilidad, emparejando Stopping con la primera escritura ---
-paradas, arranques = [], []
+paradas, arranques, cierres = [], [], []
 for linea in open(camino_journal):
     partes = linea.split()
     if len(partes) < 2:
@@ -125,10 +134,33 @@ for linea in open(camino_journal):
         t = hora(partes[0])
     except ValueError:
         continue
-    if "Stopping" in linea:
-        paradas.append(t)
-    elif "Started" in linea or "binance_connected" in linea:
+    if ("Stopping" in linea or "Stopped" in linea or "Main process exited" in linea
+            or "Failed with result" in linea or "Scheduled restart job" in linea):
+        # UNA CAIDA NO ESCRIBE Stopping NI Stopped. systemd escribe "Main process exited,
+        # code=exited, status=1/FAILURE", "Failed with result" y "Scheduled restart job".
+        # Medido en 30 dias: 117 Stopping y 117 Stopped siempre en pareja a 5 s, 154 Started
+        # y 35 CAIDAS. Mis "37 huerfanos" no eran paradas fuera de la ventana: eran caidas
+        # DENTRO de ella que yo no sabia leer, y al emparejarlas con el borde me tragaba
+        # minutos completos -jB: 4 buckets acusados que estaban bien-.
+        principal = "Stopping" in linea or "Main process exited" in linea
+        # "Stopped" TAMBIEN es una parada: un reinicio por Restart=on-failure lo escribe.
+        # Medido en 30 dias: 117 Stopping y 117 Stopped, o sea que vienen en pareja, y por
+        # eso se DEDUPLICAN mas abajo -si no, un reinicio normal daria DOS paradas y
+        # fabricaria una ventana fantasma-.
+        paradas.append((t, principal))
+    elif "Started" in linea:
+        # SUJETO DEL EMPAREJAMIENTO = Started DE LA UNIDAD. binance_connected NO entra aqui:
+        # es una reconexion de websocket, no un reinicio, y mi propio c8dbcbb ya lo decia en
+        # :148 antes de que yo lo incumpliera en el cambio siguiente. Metiendolo, dos
+        # reconexiones en reposo se volvian "arranques huerfanos", se emparejaban con el
+        # borde de los datos y fabricaban una ventana fantasma de 4 h sobre un servicio que
+        # no se habia movido desde el 09-01: 690 buckets acusados, ROJO FALSO.
         arranques.append(t)
+    elif "binance_connected" in linea:
+        # SI sirve para CERRAR una ventana que YA abrio una parada -es la primera escritura
+        # real tras el reinicio, que es donde de verdad vuelve el dato- pero NUNCA para
+        # abrirla. Cerrar no fabrica sujeto; abrir si.
+        cierres.append(t)
 # EL VEREDICTO PARTIDO. Antes, un journal sin eventos hacia INMEDIBLE el check entero, y
 # eso es mas de la mitad del tiempo: medido sobre 29.5 dias, el sujeto del brazo del solape
 # solo existe el 44.2 % del tiempo -- 394.6 h de 707 sin ningun reinicio en 6 h, con 32
@@ -152,16 +184,66 @@ for linea in open(camino_journal):
 # arranque posterior es una VENTANA ABIERTA -el servicio se fue y no ha vuelto dentro de la
 # ventana-. Declarar eso VERDE esconderia un servicio caido, que es justo lo contrario de
 # lo que este check existe para ver.
+# DEDUPLICACION: Stopping y Stopped del MISMO reinicio llegan con segundos de diferencia.
+# DEDUP POR IDENTIDAD, NO POR TIEMPO. Stopped acompana a SU Stopping a 5 s, y
+# "Failed with result"/"Scheduled restart" acompanan a SU "Main process exited". Fundir por
+# ventana de 120 s juntaba DOS REINICIOS REALES separados 108 s -paso dos veces en 30 dias,
+# 08-11T23:27:05->23:28:53 y 08-26T00:26:28->00:28:16- y hacia desaparecer la ventana del
+# segundo: sus buckets marcados quedaban "sin reinicio que los explique". Falso ROJO.
+# AGRUPACION A 30 s, y el numero sale de dos medidas, no de un gusto:
+#   · Stopped acompana a SU Stopping a 5 s -117 y 117 en 30 dias, siempre en pareja-, y las
+#     tres frases de una caida caen en segundos. EL ORDEN REAL, y lo digo porque yo lo
+#     conte mal: dentro de UNA caida es "Main process exited" -> "Failed with result" ->
+#     "Scheduled restart job" -> "Started". Yo publique que "Scheduled" iba ANTES que
+#     "exited" y era falso: estaba cruzando el "Scheduled" de la caida N con el "exited" de
+#     la N+1 de un BUCLE de reinicio a 5 s. Medido en el racimo del 2026-08-29T21:16:15Z:
+#     15 exited, 15 Failed, 20 Scheduled, 20 Started, 20 exited, 20 Failed, 25 Scheduled...
+#     QUE NADIE VUELVA A INTENTAR DEDUPLICAR POR TIPO creyendo que el orden es otro.
+#   · Y los dos reinicios REALES mas juntos de 30 dias distan 108 s: 08-11T23:27:05 ->
+#     23:28:53 y 08-26T00:26:28 -> 00:28:16.
+# Con 120 s yo fundia esos dos reinicios en uno y la ventana del segundo desaparecia: sus
+# buckets marcados quedaban "sin reinicio que los explique", falso ROJO (jA). Con 30 s la
+# pareja y el racimo de la caida se agrupan y los dos reinicios siguen separados. Intente
+# hacerlo por TIPO -principal contra secundario- y se rompio con el orden real del journal,
+# donde "Scheduled restart job" llega ANTES que "Main process exited".
+paradas = [t for t, _ in sorted(paradas, key=lambda x: x[0])]
+_ded = []
+for _t in paradas:
+    if not _ded or (_t - _ded[-1]).total_seconds() > 30:
+        _ded.append(_t)
+paradas = _ded
+
+# QUINTA FORMA · un Started SIN parada delante. Medido en 30 dias: 154 Started contra 117
+# Stopping, o sea 37 arranques huerfanos. Su ventana esta ABIERTA HACIA ATRAS -el servicio
+# se fue antes de que empezara la ventana de 6 h, o la parada cayo en el borde- y NO se
+# puede tratar como "sin sujeto": los minutos anteriores a ese Started SI solaparon un
+# reinicio, y dejarlos pasar al CONTROL POSITIVO hace que sus marcas parezcan puestas sin
+# motivo. Inducido: con solo "Started", el control positivo gritaba "CONTROL POSITIVO ROTO:
+# 2 buckets marcados sin reinicio que los explique" -- un ROJO FALSO sobre un reinicio real.
+# Se empareja con el BORDE de la ventana, que es lo unico honrado que se puede afirmar.
+inicio_ventana = None
+for _l in open(camino_datos):
+    _p = _l.strip().split("|")
+    if _p and _p[0]:
+        try:
+            inicio_ventana = hora(_p[0]); break
+        except ValueError:
+            continue
+huerfanos = [a for a in arranques if not any(p < a for p in paradas)]  # Started sin parada
+
 ventanas = []
-if not paradas:
+if not paradas and not huerfanos:
     juzga_solape = False
 else:
     for parada in paradas:
-        siguientes = [a for a in arranques if a > parada]
+        siguientes = [a for a in sorted(arranques + cierres) if a > parada]
         if siguientes:
             ventanas.append((parada, min(siguientes)))
+    for a in huerfanos:
+        if inicio_ventana is not None and inicio_ventana < a:
+            ventanas.append((inicio_ventana, a))
     if not ventanas:
-        print(f"NO MEDIDO: las {len(paradas)} paradas del journal no tienen arranque despues; la ventana esta cortada"); sys.exit(2)
+        print(f"NO MEDIDO: las {len(paradas)} paradas del journal no tienen arranque despues y los {len(huerfanos)} arranques huerfanos no caen dentro de los datos; la ventana esta cortada"); sys.exit(2)
     juzga_solape = True
 
 def solapa(ts):
