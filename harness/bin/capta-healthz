@@ -9,6 +9,13 @@ S=/srv/coinanalyze/harness/estado/healthz-serie.jsonl
 B=/srv/coinanalyze/harness; . "$B/env" 2>/dev/null
 c=$(curl -sS -k --netrc-file "$NETRC" --max-time 20 "$API_PROD/api/healthz" 2>/dev/null)
 [ -n "$c" ] || c='{"error":"sin respuesta"}'
+# UNA MUESTRA, UNA LINEA. El 2026-09-04T17:17:01Z, durante el despliegue, nginx contesto una
+# pagina HTML de 502 y este printf la escribio CRUDA: ese minuto ocupa OCHO lineas del
+# fichero. Quien lea la serie contando lineas cree que son ocho muestras, y una ventana de
+# 30 se come 7 muestras buenas por un solo minuto malo. Los saltos de linea se quitan aqui,
+# en el origen. El cuerpo sigue siendo el que llego -si no es JSON, se guarda como llego y
+# quien lo lea lo vera ilegible-, pero el invariante del fichero deja de romperse.
+c=$(printf '%s' "$c" | tr -d '\r\n')
 printf '{"t":"%s","h":%s}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$c" >> "$S"
 # Un dia son 1440 lineas de ~5 KB = ~7 MB. Se recorta a 3 dias para que no crezca sin fin.
 [ "$(wc -l < "$S" 2>/dev/null || echo 0)" -gt 4320 ] && { tail -n 4320 "$S" > "$S.tmp" && mv "$S.tmp" "$S"; }
