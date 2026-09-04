@@ -1,0 +1,1261 @@
+#!/usr/bin/env python3
+# arquitectura · REGENERA LA CAPA DERIVADA DE ARQUITECTURA/ DESDE EL ARBOL DE TRABAJO.
+#
+# POR QUE ESTO ES UN GENERADOR Y NO UN DOCUMENTO
+# Un documento de arquitectura escrito a mano envejece, y uno que miente es PEOR que
+# ninguno, porque la gente se fia. En esta casa el patron se ha repetido nueve veces:
+# algo existe, parece completo, y esta muerto o sin conectar. La unica forma de que un
+# mapa siga siendo cierto en un mes es que NADIE lo escriba: que salga del codigo, y que
+# un check (K88) compare lo commiteado contra una regeneracion fresca. Es el patron de
+# respalda-libretas/K49 -copia commiteada contra fichero vivo- aplicado a la arquitectura.
+#
+# LA REGLA QUE MANDA SOBRE TODAS: NO INVENTAR.
+# Lo que no se puede derivar del AST se escribe como PENDIENTE con su motivo, nunca en
+# blanco y nunca con lo plausible. Un mapa con 40 rutas descritas y 28 pendientes
+# declaradas vale; uno con 68 a medias inventadas es la novena repeticion del patron.
+#
+# DETERMINISMO, Y NO ES UN DETALLE DE ESTILO
+# La salida NO lleva fecha, ni SHA, ni rutas absolutas, ni nada que cambie sin que cambie
+# el codigo. Si llevara la fecha de generacion, K88 daria ROJO cada vez que se regenera y
+# el check se apagaria por ruido en una semana. Todo orden es alfabetico o por linea.
+#
+# ALCANCE HONESTO DE LO QUE ESTE PROGRAMA PUEDE SABER
+# Es analisis ESTATICO. Ve lo que el AST dice. NO ve: despacho dinamico (getattr, dicts de
+# funciones), SQL construido por concatenacion en tiempo de ejecucion, ni middlewares que
+# reescriben la respuesta. Cada limite de estos se declara en el fichero de la ruta como
+# PENDIENTE con su motivo, para que quien lea sepa que ahi hay que mirar el codigo.
+from __future__ import annotations
+
+import argparse
+import ast
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+# --------------------------------------------------------------------------------------
+# 0 · DONDE VIVE TODO
+# --------------------------------------------------------------------------------------
+AQUI = Path(__file__).resolve()
+# harness/bin/arquitectura -> harness/bin -> harness -> repo
+REPO_POR_DEFECTO = AQUI.parent.parent.parent
+
+VERSION_FORMATO = 3  # sube cuando cambie el formato de salida; K88 lo compara
+
+
+# --------------------------------------------------------------------------------------
+# 1 · EL CATALOGO DE TABLAS · sql/schema.sql
+#     Se lee para NO INVENTAR TABLAS. Un identificador que aparece detras de un FROM y no
+#     esta en el catalogo puede ser un CTE, un alias o una subconsulta: se aparta a una
+#     lista propia en vez de afirmarlo como tabla. Es la diferencia entre derivar y
+#     adivinar, y aqui ya se pago adivinar.
+# --------------------------------------------------------------------------------------
+RE_CREATE_TABLE = re.compile(
+    r"CREATE\s+(?:UNLOGGED\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
+    r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)\s*\(",
+    re.IGNORECASE,
+)
+RE_CREATE_VIEW = re.compile(
+    r"CREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\s+(?:IF\s+NOT\s+EXISTS\s+)?"
+    r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)",
+    re.IGNORECASE,
+)
+
+
+def sin_comentarios_sql(texto: str) -> str:
+    """Quita '-- ...' y '/* ... */'. Sin esto, un CREATE TABLE citado dentro de un
+    comentario entra al catalogo como si fuera real."""
+    texto = re.sub(r"/\*.*?\*/", " ", texto, flags=re.DOTALL)
+    texto = re.sub(r"--[^\n]*", " ", texto)
+    return texto
+
+
+def lee_catalogo(repo: Path) -> dict:
+    """Devuelve {'tablas': {nombre: {'linea': n, 'columnas': [...]}}, 'vistas': {...}}."""
+    f = repo / "sql" / "schema.sql"
+    salida = {"tablas": {}, "vistas": {}, "fuente": "sql/schema.sql"}
+    if not f.is_file():
+        salida["pendiente"] = "no existe sql/schema.sql: no hay catalogo contra el que validar"
+        return salida
+    crudo = f.read_text(encoding="utf-8", errors="replace")
+    limpio = sin_comentarios_sql(crudo)
+
+    # Linea real en el fichero CRUDO: se busca la posicion en el limpio y se cuenta sobre
+    # el mismo offset, que se conserva porque sin_comentarios_sql sustituye por espacios
+    # de longitud distinta -> se recalcula buscando el nombre en el crudo.
+    for m in RE_CREATE_TABLE.finditer(limpio):
+        nombre = m.group(1).lower()
+        columnas, fin = columnas_de_create(limpio, m.end())
+        linea = linea_de(crudo, nombre, "TABLE")
+        salida["tablas"][nombre] = {"linea": linea, "columnas": columnas}
+    for m in RE_CREATE_VIEW.finditer(limpio):
+        nombre = m.group(1).lower()
+        salida["vistas"][nombre] = {"linea": linea_de(crudo, nombre, "VIEW")}
+    return salida
+
+
+def linea_de(crudo: str, nombre: str, clase: str) -> int:
+    pat = re.compile(
+        r"CREATE\s+(?:UNLOGGED\s+|OR\s+REPLACE\s+|MATERIALIZED\s+)*" + clase +
+        r"\s+(?:IF\s+NOT\s+EXISTS\s+)?" + re.escape(nombre) + r"\b",
+        re.IGNORECASE,
+    )
+    m = pat.search(crudo)
+    return crudo[: m.start()].count("\n") + 1 if m else 0
+
+
+def columnas_de_create(texto: str, desde: int) -> tuple[list[str], int]:
+    """Lee el cuerpo de un CREATE TABLE contando parentesis y saca los nombres de columna
+    (el primer identificador de cada elemento de primer nivel que no sea una restriccion)."""
+    prof = 1
+    i = desde
+    n = len(texto)
+    elementos: list[str] = []
+    actual: list[str] = []
+    while i < n and prof > 0:
+        c = texto[i]
+        if c == "(":
+            prof += 1
+        elif c == ")":
+            prof -= 1
+            if prof == 0:
+                break
+        if prof == 1 and c == ",":
+            elementos.append("".join(actual))
+            actual = []
+        else:
+            actual.append(c)
+        i += 1
+    elementos.append("".join(actual))
+    RESTRICCIONES = {
+        "primary", "foreign", "unique", "check", "constraint", "exclude", "like", "partition",
+    }
+    columnas = []
+    for e in elementos:
+        e = e.strip()
+        if not e:
+            continue
+        m = re.match(r'["]?([A-Za-z_][A-Za-z0-9_]*)["]?', e)
+        if not m:
+            continue
+        nom = m.group(1)
+        if nom.lower() in RESTRICCIONES:
+            continue
+        columnas.append(nom)
+    return columnas, i
+
+
+# --------------------------------------------------------------------------------------
+# 2 · EL INDICE DE FUNCIONES DEL ARBOL
+#     Sin esto no hay cierre transitivo, y sin cierre transitivo no hay radio de impacto:
+#     es exactamente lo que no estaba escrito cuando dos lineas en metrics.py tumbaron el
+#     snapshot entero de los tres simbolos durante 24 dias.
+# --------------------------------------------------------------------------------------
+class Modulo:
+    def __init__(self, rel: str, arbol: ast.Module, texto: str):
+        self.rel = rel                      # 'app/api.py'
+        self.punteado = rel[:-3].replace("/", ".")  # 'app.api'
+        self.arbol = arbol
+        self.lineas = texto.splitlines()
+        self.alias: dict[str, str] = {}     # nombre local -> 'app.metrics.compute_snapshot'
+        self.mod_alias: dict[str, str] = {} # 'mt' -> 'app.metrics'
+
+
+def carga_modulos(repo: Path, paquetes: list[str]) -> dict[str, Modulo]:
+    mods: dict[str, Modulo] = {}
+    for paq in paquetes:
+        base = repo / paq
+        if not base.is_dir():
+            continue
+        for f in sorted(base.rglob("*.py")):
+            if "__pycache__" in f.parts:
+                continue
+            rel = f.relative_to(repo).as_posix()
+            texto = f.read_text(encoding="utf-8", errors="replace")
+            try:
+                arbol = ast.parse(texto, filename=rel)
+            except SyntaxError as e:
+                sys.stderr.write(f"arquitectura: {rel} no parsea ({e}); se omite\n")
+                continue
+            mods[rel[:-3].replace("/", ".")] = Modulo(rel, arbol, texto)
+    return mods
+
+
+def resuelve_imports(mods: dict[str, Modulo]) -> None:
+    """Rellena alias y mod_alias de cada modulo. Solo importa lo del propio arbol; lo de
+    fuera (fastapi, asyncpg) se deja sin resolver a proposito: no es nuestro codigo y
+    afirmar algo de el seria inventar."""
+    for mod in mods.values():
+        for n in ast.walk(mod.arbol):
+            if isinstance(n, ast.ImportFrom):
+                if n.level:  # from . import x  /  from .metrics import y
+                    partes = mod.punteado.split(".")
+                    raiz = ".".join(partes[: max(1, len(partes) - n.level)])
+                    origen = f"{raiz}.{n.module}" if n.module else raiz
+                else:
+                    origen = n.module or ""
+                if not any(origen == m or origen.startswith(m + ".") or m.startswith(origen + ".")
+                           for m in mods):
+                    continue
+                for a in n.names:
+                    local = a.asname or a.name
+                    if f"{origen}.{a.name}" in mods:      # from app import metrics
+                        mod.mod_alias[local] = f"{origen}.{a.name}"
+                    else:
+                        mod.alias[local] = f"{origen}.{a.name}"
+            elif isinstance(n, ast.Import):
+                for a in n.names:
+                    if a.name in mods:
+                        mod.mod_alias[a.asname or a.name.split(".")[0]] = a.name
+
+
+class Funcion:
+    def __init__(self, clave: str, nodo, mod: Modulo):
+        self.clave = clave          # 'app.metrics.compute_snapshot'
+        self.nodo = nodo
+        self.mod = mod
+        self.fichero = mod.rel
+        self.linea = nodo.lineno
+        self.fin = getattr(nodo, "end_lineno", nodo.lineno)
+        self.llama: set[str] = set()        # claves del arbol
+        self.llama_fuera: set[str] = set()  # nombres no resueltos (libreria o dinamico)
+        self.sql: list[str] = []
+        self.llamada_por: set[str] = set()
+
+
+def indexa_funciones(mods: dict[str, Modulo]) -> dict[str, Funcion]:
+    funcs: dict[str, Funcion] = {}
+    for mod in mods.values():
+        def recorre(cuerpo, prefijo):
+            for n in cuerpo:
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    clave = f"{mod.punteado}.{prefijo}{n.name}"
+                    funcs[clave] = Funcion(clave, n, mod)
+                    # metodos: se indexan como Clase.metodo
+                    recorre(n.body, f"{prefijo}{n.name}.")
+                elif isinstance(n, ast.ClassDef):
+                    recorre(n.body, f"{prefijo}{n.name}.")
+        recorre(mod.arbol.body, "")
+    return funcs
+
+
+# --------------------------------------------------------------------------------------
+# 3 · QUIEN LLAMA A QUIEN
+# --------------------------------------------------------------------------------------
+def nombre_de_llamada(nodo: ast.AST) -> str | None:
+    """'foo' de foo(), 'mod.foo' de mod.foo(), 'a.b.foo' de a.b.foo()."""
+    f = nodo.func if isinstance(nodo, ast.Call) else nodo
+    partes = []
+    while isinstance(f, ast.Attribute):
+        partes.append(f.attr)
+        f = f.value
+    if isinstance(f, ast.Name):
+        partes.append(f.id)
+        return ".".join(reversed(partes))
+    return None
+
+
+def resuelve(nombre: str, mod: Modulo, funcs: dict[str, Funcion], mods: dict[str, Modulo]) -> str | None:
+    if nombre is None:
+        return None
+    # 1 · importado explicitamente:  from app.metrics import compute_snapshot
+    if nombre in mod.alias and mod.alias[nombre] in funcs:
+        return mod.alias[nombre]
+    # 2 · definido en el propio modulo
+    propio = f"{mod.punteado}.{nombre}"
+    if propio in funcs:
+        return propio
+    # 3 · mod.func con el modulo importado
+    if "." in nombre:
+        cabeza, resto = nombre.split(".", 1)
+        if cabeza in mod.mod_alias:
+            cand = f"{mod.mod_alias[cabeza]}.{resto}"
+            if cand in funcs:
+                return cand
+        if cabeza in mod.alias:
+            cand = f"{mod.alias[cabeza]}.{resto}"
+            if cand in funcs:
+                return cand
+        # metodo de clase definida en el propio modulo: self.x / Clase.x
+        cand = f"{mod.punteado}.{nombre}"
+        if cand in funcs:
+            return cand
+    return None
+
+
+RE_SQL = re.compile(
+    r"\b(SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|WITH|CREATE\s+TABLE|ALTER\s+TABLE|TRUNCATE)\b",
+    re.IGNORECASE,
+)
+
+
+def parece_sql(s: str) -> bool:
+    return bool(RE_SQL.search(s)) and len(s) > 12
+
+
+def analiza_cuerpos(funcs: dict[str, Funcion], mods: dict[str, Modulo]) -> None:
+    """Llena llama / llama_fuera / sql de cada funcion. Las llamadas de funciones ANIDADAS
+    se atribuyen tambien a la funcion que las contiene: si un handler define un closure y
+    lo usa, ese SQL es suyo a efectos de impacto."""
+    for fn in funcs.values():
+        # EL DECORADOR NO ES UNA LLAMADA DEL CUERPO. ast.walk sobre el FunctionDef entra
+        # tambien en decorator_list, y sin esto toda ruta salia "llamando" a app.get: ruido
+        # en las 68 fichas, y peor, un falso positivo en el radio de impacto.
+        decoradores = {id(x) for d in getattr(fn.nodo, "decorator_list", []) for x in ast.walk(d)}
+        for n in ast.walk(fn.nodo):
+            if id(n) in decoradores:
+                continue
+            if isinstance(n, ast.Call):
+                nombre = nombre_de_llamada(n)
+                if nombre is None:
+                    fn.llama_fuera.add("<llamada dinamica>")
+                    continue
+                destino = resuelve(nombre, fn.mod, funcs, mods)
+                if destino and destino != fn.clave:
+                    fn.llama.add(destino)
+                elif not destino:
+                    fn.llama_fuera.add(nombre)
+            elif isinstance(n, ast.Constant) and isinstance(n.value, str):
+                if parece_sql(n.value):
+                    fn.sql.append(n.value)
+            elif isinstance(n, ast.JoinedStr):
+                # f-string con SQL dentro: se reconstruye con los huecos marcados. No se
+                # afirma el valor de las variables; se marca {?} para que se vea que ahi
+                # hay algo que el analisis estatico NO sabe.
+                trozos = []
+                for v in n.values:
+                    if isinstance(v, ast.Constant) and isinstance(v.value, str):
+                        trozos.append(v.value)
+                    else:
+                        trozos.append("{?}")
+                s = "".join(trozos)
+                if parece_sql(s):
+                    fn.sql.append(s)
+    for fn in funcs.values():
+        for d in fn.llama:
+            funcs[d].llamada_por.add(fn.clave)
+
+
+# --------------------------------------------------------------------------------------
+# 4 · DE SQL A TABLAS
+# --------------------------------------------------------------------------------------
+RE_CTE = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s+AS\s*(?:MATERIALIZED\s*|NOT\s+MATERIALIZED\s*)?\(", re.IGNORECASE)
+RE_LEE = re.compile(r"\b(?:FROM|JOIN)\s+(?:ONLY\s+)?([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)", re.IGNORECASE)
+RE_ESCRIBE = re.compile(
+    r"\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?|COPY)\s+(?:ONLY\s+)?"
+    r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)",
+    re.IGNORECASE,
+)
+# Palabras que siguen a FROM sin ser tablas.
+NO_TABLA = {
+    "select", "lateral", "unnest", "generate_series", "values", "jsonb_array_elements",
+    "json_array_elements", "regexp_split_to_table", "dual", "only", "extract", "current_date",
+}
+
+
+def tablas_de_sql(sql: str, catalogo: dict) -> dict:
+    limpio = sin_comentarios_sql(sql)
+    ctes = {m.group(1).lower() for m in RE_CTE.finditer(limpio)}
+    lee, escribe, dudosos = set(), set(), set()
+    conocidas = set(catalogo["tablas"]) | set(catalogo["vistas"])
+
+    def clasifica(nombre: str, destino: set):
+        n = nombre.lower()
+        if n in NO_TABLA or n in ctes:
+            return
+        base = n.split(".")[-1]
+        if n in conocidas or base in conocidas:
+            destino.add(base if base in conocidas else n)
+        else:
+            dudosos.add(n)
+
+    for m in RE_LEE.finditer(limpio):
+        clasifica(m.group(1), lee)
+    for m in RE_ESCRIBE.finditer(limpio):
+        clasifica(m.group(1), escribe)
+    return {"lee": lee, "escribe": escribe, "dudosos": dudosos}
+
+
+# --------------------------------------------------------------------------------------
+# 5 · QUE CAMPOS PUBLICA UNA RUTA
+#     Esta es la parte donde es mas facil mentir, asi que es donde mas se declara lo que
+#     no se sabe. Cada campo lleva DE DONDE sale; cada hueco, POR QUE es un hueco.
+# --------------------------------------------------------------------------------------
+class Campos:
+    def __init__(self):
+        self.ciertos: dict[str, str] = {}     # campo -> procedencia
+        self.pendientes: list[str] = []       # motivos, en lenguaje llano
+        self.forma: set[str] = set()          # 'objeto', 'lista de objetos', ...
+
+    def mezcla(self, otro: "Campos"):
+        for k, v in otro.ciertos.items():
+            self.ciertos.setdefault(k, v)
+        for m in otro.pendientes:
+            if m not in self.pendientes:
+                self.pendientes.append(m)
+        self.forma |= otro.forma
+
+
+def asignaciones(nodo) -> dict[str, ast.AST]:
+    """Ultima asignacion simple de cada nombre dentro del cuerpo de una funcion."""
+    out: dict[str, ast.AST] = {}
+    for n in ast.walk(nodo):
+        if isinstance(n, ast.Assign) and len(n.targets) == 1 and isinstance(n.targets[0], ast.Name):
+            out[n.targets[0].id] = n.value
+        elif isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name) and n.value is not None:
+            out[n.target.id] = n.value
+    return out
+
+
+def sql_directo_de_tabla(fn: Funcion, catalogo: dict) -> tuple[str, list[str]] | None:
+    """Si la funcion hace UN SELECT * (o DISTINCT ON (..) *) sobre UNA sola tabla del
+    catalogo, los campos publicados SON las columnas de esa tabla. Es derivacion, no
+    suposicion, y se cita el origen. Si hay CTEs o mas de una tabla, se devuelve None:
+    ahi ya no se sabe, y decirlo es mejor que acertar por casualidad."""
+    for sql in fn.sql:
+        limpio = sin_comentarios_sql(sql)
+        if not re.search(r"SELECT\s+(?:DISTINCT\s+ON\s*\([^)]*\)\s*)?\*", limpio, re.IGNORECASE):
+            continue
+        if re.search(r"\bWITH\b", limpio, re.IGNORECASE):
+            continue
+        t = tablas_de_sql(sql, catalogo)
+        if len(t["lee"]) == 1 and not t["dudosos"]:
+            tabla = next(iter(t["lee"]))
+            info = catalogo["tablas"].get(tabla)
+            if info and info["columnas"]:
+                return tabla, info["columnas"]
+    return None
+
+
+def campos_de_retorno(valor, fn: Funcion, funcs, mods, catalogo, prof=0, vistos=None) -> Campos:
+    c = Campos()
+    if vistos is None:
+        vistos = set()
+    if prof > 4:
+        c.pendientes.append("la cadena de retornos pasa de 4 saltos: no se sigue mas para no adivinar")
+        return c
+    if valor is None:
+        c.pendientes.append("return sin valor")
+        return c
+
+    if isinstance(valor, ast.Await):
+        return campos_de_retorno(valor.value, fn, funcs, mods, catalogo, prof, vistos)
+
+    if isinstance(valor, ast.Dict):
+        c.forma.add("objeto")
+        for k, v in zip(valor.keys, valor.values):
+            if k is None:  # **otra
+                nombre = nombre_de_llamada(v) if isinstance(v, (ast.Call, ast.Attribute, ast.Name)) else None
+                destino = resuelve(nombre, fn.mod, funcs, mods) if nombre else None
+                if destino and destino not in vistos:
+                    sub = campos_de_funcion(funcs[destino], funcs, mods, catalogo, prof + 1, vistos | {destino})
+                    for cam, org in sub.ciertos.items():
+                        c.ciertos.setdefault(cam, org)
+                    for m in sub.pendientes:
+                        if m not in c.pendientes:
+                            c.pendientes.append(f"por **{nombre or '?'}: {m}")
+                else:
+                    c.pendientes.append(
+                        f"el objeto se expande con **{nombre or 'expresion'}, que no se resuelve en el arbol: "
+                        "sus campos no se pueden derivar")
+            elif isinstance(k, ast.Constant) and isinstance(k.value, str):
+                c.ciertos[k.value] = f"literal en {fn.fichero}:{getattr(k, 'lineno', fn.linea)}"
+            else:
+                c.pendientes.append("una clave del objeto es una expresion, no un literal")
+        return c
+
+    if isinstance(valor, (ast.List, ast.ListComp)):
+        c.forma.add("lista")
+        elem = valor.elt if isinstance(valor, ast.ListComp) else (valor.elts[0] if valor.elts else None)
+        if elem is not None:
+            sub = campos_de_retorno(elem, fn, funcs, mods, catalogo, prof + 1, vistos)
+            c.mezcla(sub)
+            c.forma.discard("objeto")
+            c.forma.add("lista de objetos")
+        else:
+            c.pendientes.append("lista vacia en el literal: no se puede derivar el elemento")
+        return c
+
+    if isinstance(valor, ast.Call):
+        nombre = nombre_de_llamada(valor)
+        destino = resuelve(nombre, fn.mod, funcs, mods) if nombre else None
+        if destino and destino not in vistos:
+            return campos_de_funcion(funcs[destino], funcs, mods, catalogo, prof + 1, vistos | {destino})
+        # records(rows) / JSONResponse(...) y demas envoltorios que no son del arbol
+        if nombre and valor.args:
+            sub = campos_de_retorno(valor.args[0], fn, funcs, mods, catalogo, prof + 1, vistos)
+            if sub.ciertos or sub.pendientes:
+                sub.pendientes.insert(0, f"la respuesta pasa por {nombre}(), que no se puede seguir")
+                return sub
+        c.pendientes.append(
+            f"la respuesta la construye {nombre or 'una llamada'}(), que no se resuelve en el arbol")
+        return c
+
+    if isinstance(valor, ast.Name):
+        asig = asignaciones(fn.nodo)
+        if valor.id in asig and valor.id not in vistos:
+            return campos_de_retorno(asig[valor.id], fn, funcs, mods, catalogo, prof + 1, vistos | {valor.id})
+        c.pendientes.append(f"devuelve la variable '{valor.id}', cuyo contenido no se resuelve estaticamente")
+        return c
+
+    if isinstance(valor, ast.Constant):
+        c.forma.add("valor escalar")
+        return c
+
+    if isinstance(valor, ast.IfExp):
+        c.mezcla(campos_de_retorno(valor.body, fn, funcs, mods, catalogo, prof + 1, vistos))
+        c.mezcla(campos_de_retorno(valor.orelse, fn, funcs, mods, catalogo, prof + 1, vistos))
+        return c
+
+    c.pendientes.append(f"el valor devuelto es un {type(valor).__name__}, que no se analiza estaticamente")
+    return c
+
+
+def campos_de_funcion(fn: Funcion, funcs, mods, catalogo, prof=0, vistos=None) -> Campos:
+    c = Campos()
+    if vistos is None:
+        vistos = {fn.clave}
+    returns = [n for n in ast.walk(fn.nodo) if isinstance(n, ast.Return)]
+    # Los return de funciones anidadas no son el return de esta funcion.
+    anidadas = [x for x in ast.walk(fn.nodo)
+                if isinstance(x, (ast.FunctionDef, ast.AsyncFunctionDef)) and x is not fn.nodo]
+    de_anidadas = {id(r) for a in anidadas for r in ast.walk(a) if isinstance(r, ast.Return)}
+    returns = [r for r in returns if id(r) not in de_anidadas]
+
+    if not returns:
+        directo = sql_directo_de_tabla(fn, catalogo)
+        if directo:
+            tabla, cols = directo
+            for col in cols:
+                c.ciertos[col] = f"columna de {tabla} ({catalogo['fuente']})"
+            return c
+        c.pendientes.append("la funcion no tiene ningun return explicito")
+        return c
+
+    for r in returns:
+        c.mezcla(campos_de_retorno(r.value, fn, funcs, mods, catalogo, prof, vistos))
+
+    # Rescate honesto: si no salio ningun campo cierto pero la funcion hace un SELECT *
+    # sobre UNA tabla del catalogo, los campos son sus columnas. Se cita el origen.
+    if not c.ciertos:
+        directo = sql_directo_de_tabla(fn, catalogo)
+        if directo:
+            tabla, cols = directo
+            for col in cols:
+                c.ciertos[col] = f"columna de {tabla} ({catalogo['fuente']})"
+            c.pendientes = [m for m in c.pendientes if "records" not in m and "no se puede seguir" not in m]
+            c.pendientes.append(
+                f"campos derivados del SELECT * sobre {tabla}: son las columnas declaradas en "
+                f"{catalogo['fuente']}, no una lista escrita a mano. Si la consulta filtra "
+                "columnas en codigo, esta lista es un techo, no la respuesta exacta")
+    return c
+
+
+# --------------------------------------------------------------------------------------
+# 6 · LAS RUTAS
+# --------------------------------------------------------------------------------------
+METODOS = {"get", "post", "put", "delete", "patch", "head", "options"}
+
+
+def descubre_rutas(funcs: dict[str, Funcion]) -> list[dict]:
+    rutas = []
+    for fn in funcs.values():
+        for dec in getattr(fn.nodo, "decorator_list", []):
+            if not isinstance(dec, ast.Call):
+                continue
+            nombre = nombre_de_llamada(dec)
+            if not nombre or "." not in nombre:
+                continue
+            objeto, metodo = nombre.rsplit(".", 1)
+            if metodo not in METODOS and metodo != "route":
+                continue
+            if not dec.args or not isinstance(dec.args[0], ast.Constant):
+                continue
+            camino = dec.args[0].value
+            if not isinstance(camino, str):
+                continue
+            verbos = [metodo.upper()]
+            if metodo == "route":
+                for kw in dec.keywords:
+                    if kw.arg == "methods" and isinstance(kw.value, (ast.List, ast.Tuple)):
+                        verbos = [e.value.upper() for e in kw.value.elts
+                                  if isinstance(e, ast.Constant) and isinstance(e.value, str)]
+            rutas.append({
+                "camino": camino,
+                "metodos": verbos,
+                "objeto": objeto,
+                "handler": fn.clave,
+                "fichero": fn.fichero,
+                "linea": fn.linea,
+                "fin": fn.fin,
+                "fn": fn,
+                "decorador_linea": dec.lineno,
+            })
+    rutas.sort(key=lambda r: (r["camino"], r["metodos"][0]))
+    return rutas
+
+
+def cierre_de(clave: str, funcs: dict[str, Funcion], tope=4000) -> list[str]:
+    """Todas las funciones del arbol alcanzables desde el handler. Es el conjunto cuyo
+    cambio puede cambiar esta ruta: la mitad de abajo del radio de impacto."""
+    visto = {clave}
+    pila = [clave]
+    while pila and len(visto) < tope:
+        c = pila.pop()
+        for d in sorted(funcs[c].llama):
+            if d not in visto:
+                visto.add(d)
+                pila.append(d)
+    visto.discard(clave)
+    return sorted(visto)
+
+
+def escritores_y_lectores(funcs: dict[str, Funcion], catalogo: dict) -> dict[str, dict]:
+    """Para CADA tabla, quien la escribe y quien la lee en TODO el arbol, no solo desde
+    rutas.
+
+    POR QUE ESTO NO ES UN EXTRA. Se midio hoy con el caso que motivo el encargo:
+    `compute_snapshot` (app/metrics.py:429) NO aparece en el cierre de llamadas de NINGUNA
+    de las 68 rutas -lo llama `compute_and_store_all`, que es el colector-. Y aun asi
+    tumbo el snapshot de los tres simbolos 24 dias. El acoplamiento real no viaja por la
+    pila de llamadas: viaja por la TABLA.
+
+        compute_snapshot --escribe--> metrics_snapshot --la leen--> N rutas
+
+    Un grafo de llamadas puro (graphify) no ve esa arista, porque no es una llamada. Sin
+    unir los dos saltos, la pregunta "si toco esto, que rutas cambian" se contesta con un
+    cero tranquilizador y falso, que es el peor resultado posible."""
+    RE_VERBO = re.compile(
+        r"\b(INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?|COPY)\s+(?:ONLY\s+)?"
+        r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)",
+        re.IGNORECASE,
+    )
+    out: dict[str, dict] = {}
+
+    def linea_del(fn: Funcion, sql: str) -> int:
+        for n in ast.walk(fn.nodo):
+            if isinstance(n, ast.Constant) and isinstance(n.value, str) and n.value is sql:
+                return n.lineno
+        return fn.linea
+
+    for clave, fn in funcs.items():
+        for sql in fn.sql:
+            t = tablas_de_sql(sql, catalogo)
+            linea = linea_del(fn, sql)
+            limpio = sin_comentarios_sql(sql)
+            for tabla in t["escribe"]:
+                verbo = "?"
+                for m in RE_VERBO.finditer(limpio):
+                    if m.group(2).lower().split(".")[-1] == tabla:
+                        verbo = m.group(1).upper().split()[0]
+                        break
+                e = out.setdefault(tabla, {"escritores": [], "lectores": []})
+                e["escritores"].append({
+                    "funcion": clave, "sitio": f"{fn.fichero}:{linea}", "verbo": verbo,
+                })
+            for tabla in t["lee"]:
+                out.setdefault(tabla, {"escritores": [], "lectores": []})["lectores"].append({
+                    "funcion": clave, "sitio": f"{fn.fichero}:{linea}",
+                })
+    for v in out.values():
+        v["escritores"] = sorted(
+            {(e["sitio"], e["verbo"], e["funcion"]) for e in v["escritores"]})
+        v["escritores"] = [{"sitio": s, "verbo": vb, "funcion": f} for s, vb, f in v["escritores"]]
+        v["lectores"] = sorted({(l["sitio"], l["funcion"]) for l in v["lectores"]})
+        v["lectores"] = [{"sitio": s, "funcion": f} for s, f in v["lectores"]]
+    return out
+
+
+# Tipos que FastAPI INYECTA. No son parametros de peticion: quien llame a la ruta no los
+# manda ni puede. MEDIDO con harness/bin/capta-foto el 2026-09-04: sin esta distincion,
+# `request: Request` salia como obligatorio y el captador omitia 4 rutas de /api/signals/*
+# por "parametro obligatorio sin valor" -un hueco en la foto que no existia en la API-.
+INYECTADOS = {
+    "Request", "Response", "BackgroundTasks", "WebSocket", "HTTPConnection",
+    "SecurityScopes", "UploadFile",
+}
+
+
+def parametros_de(fn: Funcion) -> list[dict]:
+    args = fn.nodo.args
+    out = []
+
+    def uno(a, d):
+        if a.arg in ("self", "cls"):
+            return None
+        tipo = ast.unparse(a.annotation) if a.annotation else None
+        base = (tipo or "").split("[")[0].split("|")[0].strip().split(".")[-1]
+        inyectado = base in INYECTADOS
+        return {
+            "nombre": a.arg,
+            "tipo": tipo,
+            "defecto": ast.unparse(d) if d is not None else None,
+            # un parametro que pone el framework no es obligatorio PARA QUIEN LLAMA.
+            "obligatorio": d is None and not inyectado,
+            "lo_inyecta_el_framework": inyectado,
+        }
+
+    posicionales = list(args.posonlyargs) + list(args.args)
+    defectos = [None] * (len(posicionales) - len(args.defaults)) + list(args.defaults)
+    for a, d in zip(posicionales, defectos):
+        p = uno(a, d)
+        if p:
+            out.append(p)
+    for a, d in zip(args.kwonlyargs, args.kw_defaults):
+        p = uno(a, d)
+        if p:
+            out.append(p)
+    return out
+
+
+def codigos_de(fn: Funcion, funcs: dict[str, Funcion], cierre: list[str]) -> list[dict]:
+    """HTTPException que puede levantar la ruta, ella o cualquiera de su cierre."""
+    out = []
+    for clave in [fn.clave] + cierre:
+        f = funcs[clave]
+        for n in ast.walk(f.nodo):
+            if isinstance(n, ast.Raise) and isinstance(n.exc, ast.Call):
+                if nombre_de_llamada(n.exc) not in ("HTTPException", "fastapi.HTTPException"):
+                    continue
+                codigo, detalle = None, None
+                for kw in n.exc.keywords:
+                    if kw.arg == "status_code" and isinstance(kw.value, ast.Constant):
+                        codigo = kw.value.value
+                    if kw.arg == "detail" and isinstance(kw.value, ast.Constant):
+                        detalle = kw.value.value
+                if codigo is None and n.exc.args and isinstance(n.exc.args[0], ast.Constant):
+                    codigo = n.exc.args[0].value
+                out.append({
+                    "codigo": codigo, "detalle": detalle,
+                    "donde": f"{f.fichero}:{n.lineno}",
+                    "propio": clave == fn.clave,
+                })
+    out.sort(key=lambda x: (str(x["codigo"]), x["donde"]))
+    return out
+
+
+# --------------------------------------------------------------------------------------
+# 7 · ESCRITURA
+# --------------------------------------------------------------------------------------
+def slug(camino: str) -> str:
+    s = camino.strip("/").replace("/", "-").replace("{", "").replace("}", "")
+    return s or "raiz"
+
+
+def md_lista(items, vacio="_ninguna_"):
+    return "\n".join(f"- {i}" for i in items) if items else vacio
+
+
+def escribe(repo: Path, destino: Path, datos: dict) -> list[Path]:
+    escritos = []
+    (destino / "rutas").mkdir(parents=True, exist_ok=True)
+
+    # --- 7a · el JSON, que es la fuente para maquinas y lo que K88 compara -------------
+    p = destino / "derivada.json"
+    p.write_text(json.dumps(datos, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    escritos.append(p)
+
+    # --- 7b · un fichero por ruta -----------------------------------------------------
+    # POR QUE UN FICHERO POR RUTA: el requisito literal es que una IA que va a tocar
+    # /api/setup pueda leer SOLO lo de esa ruta. Con un fichero unico de 68 rutas hay que
+    # grepear y adivinar donde acaba una y empieza otra -y el diff no dice cual cambio-.
+    # Con un fichero por ruta, "leer lo de /api/setup" es abrir un fichero de 60 lineas.
+    for r in datos["rutas"]:
+        p = destino / "rutas" / f"{slug(r['camino'])}.md"
+        p.write_text(md_ruta(r, datos), encoding="utf-8")
+        escritos.append(p)
+
+    # --- 7c · el indice ---------------------------------------------------------------
+    p = destino / "INDICE.md"
+    p.write_text(md_indice(datos), encoding="utf-8")
+    escritos.append(p)
+
+    p = destino / "LEEME.md"
+    p.write_text(md_leeme(datos), encoding="utf-8")
+    escritos.append(p)
+
+    p = destino / "TABLAS.md"
+    p.write_text(md_tablas(datos), encoding="utf-8")
+    escritos.append(p)
+    return escritos
+
+
+def md_tablas(datos: dict) -> str:
+    L = []
+    A = L.append
+    A("# ARQUITECTURA · las tablas, y por donde viaja el impacto")
+    A("")
+    A("> Generado por `harness/bin/arquitectura`. No editar a mano.")
+    A("")
+    A("**El acoplamiento de este sistema NO viaja solo por la pila de llamadas: viaja por la**")
+    A("**tabla.** Medido: `compute_snapshot` (`app/metrics.py:429`) no aparece en el cierre de")
+    A("llamadas de ninguna de las 68 rutas, y aun asi tumbo el snapshot de los tres simbolos")
+    A("durante 24 dias. El camino real es de dos saltos:")
+    A("")
+    A("```")
+    A("compute_snapshot --escribe--> metrics_snapshot --la leen--> N rutas")
+    A("```")
+    A("")
+    A("Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.")
+    A("")
+    A("## Tablas que alguna ruta lee o escribe")
+    A("")
+    A("| tabla | escritores en el arbol | rutas que la leen | rutas que la escriben |")
+    A("|---|---|---|---|")
+    for t in sorted(datos["tablas"]):
+        i = datos["tablas"][t]
+        esc = len(i.get("escritores_del_arbol", []))
+        A(f"| [`{t}`](#{t.replace('_', '-')}) | {esc if esc else '**0 · PENDIENTE**'} | "
+          f"{len(i['leida_por'])} | {len(i['escrita_por'])} |")
+    A("")
+    A("## Detalle · quien escribe cada una")
+    A("")
+    for t in sorted(datos["tablas"]):
+        i = datos["tablas"][t]
+        A(f"### {t}")
+        A("")
+        A(f"{datos['catalogo_lineas'].get(t, 'sin linea en el catalogo')}.")
+        A("")
+        esc = i.get("escritores_del_arbol", [])
+        if esc:
+            A("La escriben:")
+            A("")
+            for e in esc:
+                A(f"- `{e['funcion']}` — **{e['verbo']}** en `{e['sitio']}`")
+        else:
+            A("**PENDIENTE · ninguna funcion de `app/` la escribe con SQL literal.** O la llena")
+            A("algo fuera del paquete analizado, o el SQL se arma en ejecucion.")
+        A("")
+        if i["leida_por"]:
+            A(f"**Si cambia el contenido o el esquema de `{t}`, estas {len(i['leida_por'])} rutas lo notan:**")
+            A("")
+            for r in i["leida_por"]:
+                A(f"- [`{r}`](rutas/{slug(r)}.md)")
+            A("")
+        if i["escrita_por"]:
+            A(f"Rutas que ESCRIBEN en `{t}`: " + ", ".join(f"`{r}`" for r in i["escrita_por"]))
+            A("")
+    if datos.get("tablas_sin_ruta"):
+        A("## Tablas que se escriben pero que ninguna ruta lee")
+        A("")
+        A("Existen y se llenan, pero **no se publican por ninguna ruta**. No es")
+        A("necesariamente un fallo -puede ser estado interno-, pero es exactamente la forma")
+        A("del patron que en esta casa se ha repetido nueve veces: algo que existe, parece")
+        A("completo, y no esta conectado a nada. Merece una mirada, no una conclusion.")
+        A("")
+        for t, v in sorted(datos["tablas_sin_ruta"].items()):
+            sitios = ", ".join(f"`{e['sitio']}`" for e in v["escritores"][:4])
+            A(f"- `{t}` — la escriben {len(v['escritores'])}: {sitios}")
+        A("")
+    return "\n".join(L) + "\n"
+
+
+def md_ruta(r: dict, datos: dict) -> str:
+    L = []
+    A = L.append
+    A(f"# `{' '.join(r['metodos'])} {r['camino']}`")
+    A("")
+    A("> CAPA DERIVADA · **generada** por `harness/bin/arquitectura` desde el AST. No editar a mano:")
+    A("> el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla")
+    A("> en el generador, no en el fichero.")
+    A("")
+    A(f"Handler `{r['handler'].split('.')[-1]}` · `{r['fichero']}:{r['linea']}`"
+      f" (cuerpo hasta la {r['fin']}) · decorador en la linea {r['decorador_linea']}.")
+    A("")
+
+    A("## Parametros de entrada")
+    A("")
+    if r["parametros"]:
+        A("| nombre | tipo | por defecto | obligatorio |")
+        A("|---|---|---|---|")
+        for p in r["parametros"]:
+            marca = ("lo pone el framework" if p.get("lo_inyecta_el_framework")
+                     else ("si" if p["obligatorio"] else "no"))
+            A(f"| `{p['nombre']}` | `{p['tipo'] or '?'}` | "
+              f"{'`' + p['defecto'] + '`' if p['defecto'] else '—'} | {marca} |")
+    else:
+        A("_ninguno_")
+    A("")
+
+    A("## Campos que publica")
+    A("")
+    if r["campos"]:
+        A(f"{len(r['campos'])} campos derivados. La procedencia dice de donde sale cada uno.")
+        A("")
+        A("| campo | de donde sale |")
+        A("|---|---|")
+        for c in sorted(r["campos"]):
+            A(f"| `{c}` | {r['campos'][c]} |")
+    else:
+        A("**PENDIENTE · no se ha podido derivar ni un campo.**")
+    A("")
+    if r["campos_pendientes"]:
+        A("**Lo que de esta respuesta NO se sabe** (y por eso no se rellena):")
+        A("")
+        for m in r["campos_pendientes"]:
+            A(f"- {m}")
+        A("")
+    if r["forma"]:
+        A(f"Forma de la respuesta segun el AST: {', '.join(sorted(r['forma']))}.")
+        A("")
+    if r["tipo_retorno"]:
+        A(f"Tipo declarado en la firma: `{r['tipo_retorno']}`.")
+        A("")
+
+    A("## Tablas que toca")
+    A("")
+    if r["tablas_lee"] or r["tablas_escribe"]:
+        if r["tablas_lee"]:
+            A("LEE:")
+            A("")
+            for t in r["tablas_lee"]:
+                A(f"- `{t}` — {datos['catalogo_lineas'].get(t, 'sin linea en el catalogo')}")
+                # QUIEN LLENA ESA TABLA. Es el aviso que no existia: si esta ruta se queda
+                # muda, la causa suele estar aqui y no en el handler.
+                esc = datos["tablas"].get(t, {}).get("escritores_del_arbol", [])
+                if esc:
+                    for e in esc:
+                        A(f"  - la llena `{e['funcion']}` ({e['verbo']}) — `{e['sitio']}`")
+                else:
+                    A("  - **PENDIENTE · ninguna funcion del arbol la escribe con SQL literal.**")
+                    A("    O la llena algo fuera de `app/` (migracion, colector externo, carga manual),")
+                    A("    o el SQL se construye en ejecucion y el analisis estatico no lo ve.")
+            A("")
+        if r["tablas_escribe"]:
+            A("**ESCRIBE** (una ruta de lectura que escribe merece mirarse):")
+            A("")
+            for t in r["tablas_escribe"]:
+                A(f"- `{t}` — {datos['catalogo_lineas'].get(t, 'sin linea en el catalogo')}")
+            A("")
+    else:
+        A("_ninguna consulta SQL literal en el cierre de esta ruta._")
+        A("")
+    if r["tablas_dudosas"]:
+        A("Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por")
+        A("tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):")
+        A("")
+        A(md_lista(f"`{t}`" for t in r["tablas_dudosas"]))
+        A("")
+
+    A("## Funciones que la componen")
+    A("")
+    A(f"{len(r['cierre'])} funciones del arbol son alcanzables desde este handler. **Tocar cualquiera")
+    A("de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.")
+    A("")
+    if r["llama_directo"]:
+        A("Llamadas directas del handler:")
+        A("")
+        for c in r["llama_directo"]:
+            A(f"- `{c}` — {datos['funciones'][c]['sitio']}")
+        A("")
+    if r["cierre_indirecto"]:
+        A(f"<details><summary>Alcanzables de forma indirecta ({len(r['cierre_indirecto'])})</summary>")
+        A("")
+        for c in r["cierre_indirecto"]:
+            A(f"- `{c}` — {datos['funciones'][c]['sitio']}")
+        A("")
+        A("</details>")
+        A("")
+    if r["llama_fuera"]:
+        A(f"<details><summary>Llamadas que salen del arbol o no se resuelven ({len(r['llama_fuera'])})</summary>")
+        A("")
+        A("Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para aqui.")
+        A("")
+        A(md_lista(f"`{c}`" for c in r["llama_fuera"]))
+        A("")
+        A("</details>")
+        A("")
+
+    A("## Fallos que puede devolver")
+    A("")
+    if r["codigos"]:
+        A("| codigo | detalle | donde | de quien |")
+        A("|---|---|---|---|")
+        for c in r["codigos"]:
+            A(f"| {c['codigo']} | {c['detalle'] or '—'} | `{c['donde']}` | "
+              f"{'el propio handler' if c['propio'] else 'una funcion de su cierre'} |")
+    else:
+        A("_no levanta HTTPException en su cierre. Un fallo aqui sale como 500 del framework._")
+    A("")
+
+    A("## Capa DECLARADA")
+    A("")
+    A("**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana")
+    A("pertenece (K43), que promete, y si es superficie de producto o instrumento interno.")
+    A("Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.")
+    A("")
+    A("## Radio de impacto")
+    A("")
+    A("**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de")
+    A("las de arriba- se genera en F2 y se enlaza aqui.")
+    return "\n".join(L) + "\n"
+
+
+def md_indice(datos: dict) -> str:
+    L = []
+    A = L.append
+    A("# ARQUITECTURA · indice de rutas")
+    A("")
+    A("> Generado por `harness/bin/arquitectura`. No editar a mano.")
+    A("")
+    A(f"{datos['resumen']['rutas']} rutas descubiertas en el arbol. Para trabajar sobre una,")
+    A("**abre solo su fichero**: no hace falta leer nada mas.")
+    A("")
+    A("| ruta | metodo | campos | tablas | funciones | ficha |")
+    A("|---|---|---|---|---|---|")
+    for r in datos["rutas"]:
+        n_campos = len(r["campos"]) if r["campos"] else 0
+        marca = f"{n_campos}" if n_campos else "**0 · PENDIENTE**"
+        A(f"| `{r['camino']}` | {' '.join(r['metodos'])} | {marca} | "
+          f"{len(r['tablas_lee']) + len(r['tablas_escribe'])} | {len(r['cierre'])} | "
+          f"[ficha](rutas/{slug(r['camino'])}.md) |")
+    A("")
+    A("## Rutas cuyos campos NO se han podido derivar")
+    A("")
+    sin = [r for r in datos["rutas"] if not r["campos"]]
+    if sin:
+        A(f"{len(sin)} de {datos['resumen']['rutas']}. Cada una con su motivo en la ficha.")
+        A("")
+        for r in sin:
+            motivo = r["campos_pendientes"][0] if r["campos_pendientes"] else "sin motivo registrado"
+            A(f"- `{r['camino']}` — {motivo}")
+    else:
+        A("_ninguna: las rutas descubiertas tienen al menos un campo derivado._")
+    A("")
+    A("## Tablas, y que rutas las tocan")
+    A("")
+    A("| tabla | la leen | la escriben |")
+    A("|---|---|---|")
+    for t in sorted(datos["tablas"]):
+        info = datos["tablas"][t]
+        A(f"| `{t}` | {len(info['leida_por'])} | {len(info['escrita_por'])} |")
+    return "\n".join(L) + "\n"
+
+
+def md_leeme(datos: dict) -> str:
+    r = datos["resumen"]
+    return f"""# ARQUITECTURA · la arquitectura funcional viva
+
+> **Este directorio se REGENERA. No se edita a mano.**
+> `harness/bin/arquitectura` lo produce entero desde el AST del arbol, y
+> `harness/checks/K88-la-arquitectura-que-miente.sh` se pone ROJO si lo commiteado no
+> coincide con una regeneracion fresca, o si hay una ruta en el codigo que aqui no esta.
+
+## Por que existe
+
+Un documento de arquitectura escrito a mano envejece, y **uno que miente es peor que
+ninguno, porque la gente se fia**. El caso que lo pago: `compute_snapshot` alimenta
+`publish_snapshot`, que alimenta `metrics_snapshot`, que alimenta N rutas. Eso no estaba
+escrito en ningun sitio, y un arreglo de dos lineas en `metrics.py` tumbo el snapshot
+entero de los tres simbolos durante 24 dias sin que nadie supiera el alcance.
+
+## Las tres capas
+
+| capa | quien la escribe | estado |
+|---|---|---|
+| **DERIVADA** | el generador, desde el codigo | **viva** — es esto |
+| **DECLARADA** | a mano, una vez (pregunta del trader, familia de ventana K43, promesa) | PENDIENTE · F3 |
+| **IMPACTO** | el generador, invirtiendo el grafo (`funcion/tabla -> rutas`) | PENDIENTE · F2 |
+
+## Como se lee sin leerlo entero
+
+1. `INDICE.md` — las {r['rutas']} rutas en una tabla.
+2. `rutas/<ruta>.md` — **una ficha por ruta.** Si vas a tocar `/api/setup`, abre
+   `rutas/api-setup.md` y nada mas.
+3. `derivada.json` — lo mismo para maquinas, y es lo que K88 compara.
+
+## Que sabe y que no sabe
+
+Es analisis **estatico**: ve lo que el AST dice. **No ve** despacho dinamico, SQL
+concatenado en tiempo de ejecucion, ni middlewares que reescriban la respuesta. Cada
+limite de esos aparece como PENDIENTE **con su motivo** en la ficha de la ruta. Un hueco
+declarado es informacion; un hueco rellenado con lo plausible es la averia que este
+directorio existe para no repetir.
+
+## Cifras de esta regeneracion
+
+- rutas descubiertas: **{r['rutas']}**
+- rutas con al menos un campo derivado: **{r['rutas_con_campos']}**
+- rutas sin ningun campo derivado (PENDIENTE, con motivo en su ficha): **{r['rutas_sin_campos']}**
+- funciones alcanzables desde alguna ruta: **{r['funciones_alcanzables']}**
+- tablas del catalogo `sql/schema.sql`: **{r['tablas_catalogo']}**
+- tablas alcanzadas desde alguna ruta: **{r['tablas_alcanzadas']}**
+
+## Regenerar
+
+```sh
+harness/bin/arquitectura            # reescribe ARQUITECTURA/
+harness/bin/arquitectura --comprueba  # no escribe; rc=1 si lo commiteado no cuadra
+harness/checks/K88-la-arquitectura-que-miente.sh
+```
+"""
+
+
+# --------------------------------------------------------------------------------------
+# 8 · MAIN
+# --------------------------------------------------------------------------------------
+def construye(repo: Path, paquetes: list[str]) -> dict:
+    catalogo = lee_catalogo(repo)
+    mods = carga_modulos(repo, paquetes)
+    resuelve_imports(mods)
+    funcs = indexa_funciones(mods)
+    analiza_cuerpos(funcs, mods)
+    rutas_crudas = descubre_rutas(funcs)
+
+    tablas: dict[str, dict] = {}
+    rutas = []
+    funciones_usadas: dict[str, dict] = {}
+
+    for r in rutas_crudas:
+        fn: Funcion = r["fn"]
+        cierre = cierre_de(fn.clave, funcs)
+        lee, escribe, dudosos = set(), set(), set()
+        for clave in [fn.clave] + cierre:
+            for sql in funcs[clave].sql:
+                t = tablas_de_sql(sql, catalogo)
+                lee |= t["lee"]; escribe |= t["escribe"]; dudosos |= t["dudosos"]
+
+        campos = campos_de_funcion(fn, funcs, mods, catalogo)
+        directo = sorted(fn.llama)
+        fuera = sorted(x for x in fn.llama_fuera if x)
+        tipo_ret = ast.unparse(fn.nodo.returns) if fn.nodo.returns else None
+
+        for clave in [fn.clave] + cierre:
+            f = funcs[clave]
+            funciones_usadas.setdefault(clave, {
+                "sitio": f"`{f.fichero}:{f.linea}`",
+                "fichero": f.fichero, "linea": f.linea,
+            })
+
+        for t in lee:
+            tablas.setdefault(t, {"leida_por": [], "escrita_por": []})["leida_por"].append(r["camino"])
+        for t in escribe:
+            tablas.setdefault(t, {"leida_por": [], "escrita_por": []})["escrita_por"].append(r["camino"])
+
+        rutas.append({
+            "camino": r["camino"],
+            "metodos": r["metodos"],
+            "handler": r["handler"],
+            "fichero": r["fichero"],
+            "linea": r["linea"],
+            "fin": r["fin"],
+            "decorador_linea": r["decorador_linea"],
+            "parametros": parametros_de(fn),
+            "tipo_retorno": tipo_ret,
+            "campos": dict(sorted(campos.ciertos.items())),
+            "campos_pendientes": campos.pendientes,
+            "forma": sorted(campos.forma),
+            "tablas_lee": sorted(lee),
+            "tablas_escribe": sorted(escribe),
+            "tablas_dudosas": sorted(dudosos),
+            "llama_directo": directo,
+            "cierre": cierre,
+            "cierre_indirecto": [c for c in cierre if c not in set(directo)],
+            "llama_fuera": fuera,
+            "codigos": codigos_de(fn, funcs, cierre),
+        })
+
+    for t in tablas.values():
+        t["leida_por"] = sorted(set(t["leida_por"]))
+        t["escrita_por"] = sorted(set(t["escrita_por"]))
+
+    # El segundo salto del acoplamiento: quien alimenta cada tabla desde FUERA de las
+    # rutas (los colectores). Sin esto, compute_snapshot sale con impacto cero.
+    ey = escritores_y_lectores(funcs, catalogo)
+    for t, info in tablas.items():
+        info["escritores_del_arbol"] = ey.get(t, {}).get("escritores", [])
+        info["lectores_del_arbol"] = ey.get(t, {}).get("lectores", [])
+    # tablas que nadie lee desde una ruta pero que alguien escribe: existen y no se
+    # publican. Se listan aparte en vez de desaparecer del mapa.
+    solo_escritura = {
+        t: v for t, v in sorted(ey.items())
+        if t not in tablas and v["escritores"]
+    }
+
+    con = sum(1 for r in rutas if r["campos"])
+    return {
+        "version_formato": VERSION_FORMATO,
+        "paquetes_analizados": paquetes,
+        "rutas": rutas,
+        "tablas": dict(sorted(tablas.items())),
+        "tablas_sin_ruta": solo_escritura,
+        "catalogo_lineas": {
+            t: f"`{catalogo['fuente']}:{i['linea']}`, {len(i['columnas'])} columnas"
+            for t, i in sorted(catalogo["tablas"].items())
+        },
+        "funciones": dict(sorted(funciones_usadas.items())),
+        "resumen": {
+            "rutas": len(rutas),
+            "rutas_con_campos": con,
+            "rutas_sin_campos": len(rutas) - con,
+            # FUNCIONES ALCANZABLES DESDE ALGUNA RUTA, no el censo del arbol.
+            # MEDIDO con el control N3 de K88: publicar len(funcs) -las 731 del arbol-
+            # hacia que anadir un modulo huerfano que ninguna ruta alcanza pusiera K88 en
+            # ROJO. El mapa de rutas no habia cambiado en nada. Un check que enrojece por
+            # algo que no describe se apaga por ruido en una semana, y entonces deja de
+            # cazar tambien lo que si importa. Esta cifra solo se mueve si cambia el grafo
+            # que el documento de verdad describe.
+            "funciones_alcanzables": len(funciones_usadas),
+            "tablas_catalogo": len(catalogo["tablas"]),
+            "tablas_alcanzadas": len(tablas),
+        },
+    }
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Regenera la capa DERIVADA de ARQUITECTURA/.")
+    ap.add_argument("--repo", default=str(REPO_POR_DEFECTO))
+    ap.add_argument("--salida", default=None, help="por defecto <repo>/ARQUITECTURA")
+    ap.add_argument("--paquetes", default="app", help="separados por coma")
+    ap.add_argument("--comprueba", action="store_true",
+                    help="no escribe: rc=1 si lo que hay en disco no coincide con la regeneracion")
+    ap.add_argument("--json", action="store_true", help="vuelca el JSON por stdout y no escribe nada")
+    a = ap.parse_args()
+
+    repo = Path(a.repo).resolve()
+    destino = Path(a.salida).resolve() if a.salida else repo / "ARQUITECTURA"
+    paquetes = [p.strip() for p in a.paquetes.split(",") if p.strip()]
+
+    datos = construye(repo, paquetes)
+
+    if a.json:
+        json.dump(datos, sys.stdout, indent=2, ensure_ascii=False, sort_keys=True)
+        print()
+        return 0
+
+    if a.comprueba:
+        import tempfile, filecmp
+        with tempfile.TemporaryDirectory() as tmp:
+            fresco = Path(tmp)
+            escribe(repo, fresco, datos)
+            difs = []
+            en_disco = {p.relative_to(destino).as_posix()
+                        for p in destino.rglob("*") if p.is_file()} if destino.is_dir() else set()
+            en_fresco = {p.relative_to(fresco).as_posix() for p in fresco.rglob("*") if p.is_file()}
+            for rel in sorted(en_fresco - en_disco):
+                difs.append(f"FALTA en lo commiteado: {rel}")
+            for rel in sorted(en_disco - en_fresco):
+                difs.append(f"SOBRA en lo commiteado (el codigo ya no lo produce): {rel}")
+            for rel in sorted(en_fresco & en_disco):
+                if not filecmp.cmp(fresco / rel, destino / rel, shallow=False):
+                    difs.append(f"DIFIERE de la regeneracion: {rel}")
+            for d in difs:
+                print(d)
+            if difs:
+                print(f"\n{len(difs)} discrepancias entre ARQUITECTURA/ y el codigo.")
+                return 1
+            print(f"ARQUITECTURA/ coincide con la regeneracion fresca ({len(en_fresco)} ficheros).")
+            return 0
+
+    escritos = escribe(repo, destino, datos)
+    r = datos["resumen"]
+    print(f"{len(escritos)} ficheros en {destino.relative_to(repo) if destino.is_relative_to(repo) else destino}")
+    print(f"{r['rutas']} rutas · {r['rutas_con_campos']} con campos derivados · "
+          f"{r['rutas_sin_campos']} PENDIENTE · {r['funciones_alcanzables']} funciones alcanzables · "
+          f"{r['tablas_alcanzadas']} de {r['tablas_catalogo']} tablas alcanzadas")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

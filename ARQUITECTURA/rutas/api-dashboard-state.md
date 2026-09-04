@@ -1,0 +1,154 @@
+# `GET /api/dashboard/state`
+
+> CAPA DERIVADA · **generada** por `harness/bin/arquitectura` desde el AST. No editar a mano:
+> el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
+> en el generador, no en el fichero.
+
+Handler `dashboard_state` · `app/api.py:2565` (cuerpo hasta la 2586) · decorador en la linea 2564.
+
+## Parametros de entrada
+
+| nombre | tipo | por defecto | obligatorio |
+|---|---|---|---|
+| `symbol` | `str` | — | si |
+
+## Campos que publica
+
+7 campos derivados. La procedencia dice de donde sale cada uno.
+
+| campo | de donde sale |
+|---|---|
+| `barriers` | literal en app/api.py:2584 |
+| `cvd_swing` | literal en app/api.py:2583 |
+| `market_memory` | literal en app/api.py:2585 |
+| `scalp` | literal en app/api.py:2581 |
+| `setup` | literal en app/api.py:2582 |
+| `snapshot` | literal en app/api.py:2580 |
+| `symbol` | literal en app/api.py:2579 |
+
+Forma de la respuesta segun el AST: objeto.
+
+Tipo declarado en la firma: `dict[str, Any]`.
+
+## Tablas que toca
+
+LEE:
+
+- `daily_session_agg` — `sql/schema.sql:1032`, 14 columnas
+  - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:205`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
+- `futures_trades_agg` — `sql/schema.sql:273`, 9 columnas
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1538`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:801`
+- `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:772`
+- `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
+  - **PENDIENTE · ninguna funcion del arbol la escribe con SQL literal.**
+    O la llena algo fuera de `app/` (migracion, colector externo, carga manual),
+    o el SQL se construye en ejecucion y el analisis estatico no lo ve.
+- `market_feed_health` — `sql/schema.sql:1318`, 7 columnas
+  - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:579`
+  - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:608`
+  - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:705`
+- `metric_baseline` — `sql/schema.sql:1265`, 14 columnas
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:779`
+- `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:682`
+- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:153`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:184`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:199`
+- `open_interest` — `sql/schema.sql:83`, 7 columnas
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
+- `orderbook_snapshot` — `sql/schema.sql:287`, 18 columnas
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:844`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:900`
+- `spot_trades_agg` — `sql/schema.sql:198`, 13 columnas
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:253`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:274`
+- `spot_trades_realtime` — `sql/schema.sql:228`, 10 columnas
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:375`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:392`
+
+## Funciones que la componen
+
+42 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
+
+Llamadas directas del handler:
+
+- `app.api.daily_data` — `app/api.py:493`
+- `app.api.latest_snapshot` — `app/api.py:466`
+- `app.api.validate_symbol` — `app/api.py:221`
+- `app.interpretation.cvd_swing_read` — `app/interpretation.py:578`
+- `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
+- `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
+- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1660`
+- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1235`
+- `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
+
+<details><summary>Alcanzables de forma indirecta (33)</summary>
+
+- `app.api.records` — `app/api.py:234`
+- `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
+- `app.interpretation._barrier_zones` — `app/interpretation.py:779`
+- `app.interpretation._cvd_observation` — `app/interpretation.py:521`
+- `app.interpretation._cvd_side` — `app/interpretation.py:570`
+- `app.interpretation._memory_features` — `app/interpretation.py:372`
+- `app.interpretation._percentile` — `app/interpretation.py:368`
+- `app.interpretation.daily_flow_read` — `app/interpretation.py:208`
+- `app.interpretation.market_memory_read` — `app/interpretation.py:400`
+- `app.interpretation.number` — `app/interpretation.py:10`
+- `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
+- `app.metrics.current_nyse_start` — `app/metrics.py:20`
+- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
+- `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
+- `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
+- `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
+- `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
+- `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
+- `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
+- `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
+- `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
+- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
+- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
+- `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
+- `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
+- `app.setups._sign` — `app/setups.py:95`
+- `app.setups.classify_oi` — `app/setups.py:162`
+- `app.setups.oi_price_reading` — `app/setups.py:228`
+
+</details>
+
+<details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
+
+Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para aqui.
+
+- `app.state.pool.acquire`
+
+</details>
+
+## Fallos que puede devolver
+
+| codigo | detalle | donde | de quien |
+|---|---|---|---|
+| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+
+## Capa DECLARADA
+
+**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
+pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
+Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+
+## Radio de impacto
+
+**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
+las de arriba- se genera en F2 y se enlaza aqui.

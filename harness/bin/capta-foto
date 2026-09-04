@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+# capta-foto · LAS 68 RUTAS LO MAS JUNTO POSIBLE, MIDIENDO SU PROPIA SIMULTANEIDAD.
+#
+# POR QUE EXISTE. Sin foto simultanea NO SE DISTINGUE UN DEFECTO DE UNA DERIVA. Ya se pago:
+# se publico "invariante rota" comparando `structure_detail` de una foto contra
+# `structure_horizons` de OTRA. No habia invariante rota; habia dos instantes distintos.
+# Cualquier comparacion entre rutas -y F5 es exactamente eso, la bateria del trader contra
+# lo que la arquitectura promete- necesita antes saber CUANTO de simultanea fue la captura.
+#
+# LO QUE MIDE DE SI MISMO, y es la mitad del valor:
+#   · instante de envio y de recepcion de CADA peticion (UTC y reloj monotono)
+#   · latencia individual
+#   · EL ARCO: del primer envio a la ultima recepcion. Es la cota de deriva posible.
+#     Dos rutas que discrepan mas de lo que el mercado puede haberse movido en el arco
+#     discrepan por DEFECTO. Dentro del arco, no se puede afirmar: es NO SE SABE.
+#
+# EL CUERPO SE GUARDA ENTERO Y NO PASA POR bin/_corta. Es deliberado y este es el motivo:
+# _corta existe para no arruinar una sesion con 8 KB de volcado en el contexto, y aqui
+# nada va al contexto -va a disco-. Una respuesta truncada no sirve para comparar campos.
+#
+# NO DECIDE NADA. Captura y describe. Quien juzgue, que lo haga contra el fichero.
+from __future__ import annotations
+
+import argparse
+import concurrent.futures as cf
+import json
+import os
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+AQUI = Path(__file__).resolve()
+REPO = AQUI.parent.parent.parent
+HARNESS = Path("/srv/coinanalyze/harness")
+
+
+def ahora_utc() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
+
+def lee_env(fichero: Path) -> dict:
+    env = {}
+    if not fichero.is_file():
+        return env
+    for linea in fichero.read_text(encoding="utf-8", errors="replace").splitlines():
+        linea = linea.split("#", 1)[0].strip()
+        if "=" not in linea:
+            continue
+        k, v = linea.split("=", 1)
+        v = v.strip()
+        if v.startswith("${") and ":-" in v:      # ${X:-defecto}
+            v = v.split(":-", 1)[1].rstrip("}")
+        env[k.strip()] = v.strip().strip('"').strip("'")
+    return env
+
+
+def rutas_de_arquitectura(doc: Path) -> list[dict]:
+    """EL ELEGIBLE SE DERIVA DE UN INSTRUMENTO EXTERNO: las rutas y sus parametros
+    obligatorios salen de la capa DERIVADA, que a su vez sale del AST. Aqui no hay ninguna
+    lista escrita a mano que pueda quedarse vieja sin que nadie se entere."""
+    f = doc / "derivada.json"
+    if not f.is_file():
+        sys.exit(f"capta-foto: falta {f}. Genera antes la capa derivada: harness/bin/arquitectura")
+    d = json.loads(f.read_text(encoding="utf-8"))
+    return d["rutas"]
+
+
+def construye_url(ruta: dict, valores: dict) -> tuple[str, list[str]]:
+    """Devuelve (camino_con_query, parametros_que_no_se_supieron_rellenar)."""
+    camino = ruta["camino"]
+    query, sin_valor = [], []
+    for p in ruta["parametros"]:
+        if not p["obligatorio"]:
+            continue
+        nombre = p["nombre"]
+        if nombre in valores:
+            query.append(f"{nombre}={valores[nombre]}")
+        else:
+            sin_valor.append(nombre)
+    if query:
+        camino += ("&" if "?" in camino else "?") + "&".join(query)
+    return camino, sin_valor
+
+
+def una(base: str, camino: str, netrc: str, timeout: int, t0_mono: float) -> dict:
+    cmd = ["curl", "-sS", "-k", "--netrc-file", netrc, "--max-time", str(timeout),
+           "-w", "\n%{http_code}\t%{time_total}\t%{size_download}\t%{content_type}",
+           base + camino]
+    envio_utc, envio_mono = ahora_utc(), time.monotonic()
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 10)
+        crudo, err, rc = p.stdout, p.stderr.strip(), p.returncode
+    except subprocess.TimeoutExpired:
+        crudo, err, rc = "", "timeout del subproceso", 28
+    recibo_utc, recibo_mono = ahora_utc(), time.monotonic()
+
+    codigo, t_total, tam, tipo, cuerpo = None, None, None, None, crudo
+    if "\n" in crudo:
+        cuerpo, ultima = crudo.rsplit("\n", 1)
+        partes = ultima.split("\t")
+        if len(partes) == 4:
+            codigo = int(partes[0]) if partes[0].isdigit() else None
+            try:
+                t_total = float(partes[1])
+            except ValueError:
+                pass
+            tam = int(partes[2]) if partes[2].isdigit() else None
+            tipo = partes[3] or None
+
+    cuerpo_json, cuerpo_error = None, None
+    if cuerpo:
+        try:
+            cuerpo_json = json.loads(cuerpo)
+        except Exception as e:
+            cuerpo_error = f"{type(e).__name__}: {e}"
+
+    return {
+        "camino": camino,
+        "http": codigo,
+        "curl_rc": rc,
+        "curl_error": err or None,
+        "envio_utc": envio_utc,
+        "recibo_utc": recibo_utc,
+        # desplazamiento desde el arranque de la captura: es lo que hace comparable
+        # una peticion con otra sin depender de la precision del reloj de pared.
+        "envio_ms_desde_t0": round((envio_mono - t0_mono) * 1000, 1),
+        "recibo_ms_desde_t0": round((recibo_mono - t0_mono) * 1000, 1),
+        "latencia_ms": round((recibo_mono - envio_mono) * 1000, 1),
+        "curl_time_total_s": t_total,
+        "bytes": tam,
+        "content_type": tipo,
+        "cuerpo": cuerpo_json if cuerpo_json is not None else cuerpo,
+        "cuerpo_no_es_json": cuerpo_error,
+    }
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="Captura las rutas de ARQUITECTURA/ lo mas junto posible y mide su simultaneidad.")
+    ap.add_argument("--salida", required=True, help="fichero .json donde se escribe la foto")
+    ap.add_argument("--base", default=None, help="por defecto API_PROD de harness/env")
+    ap.add_argument("--netrc", default=None, help="por defecto NETRC de harness/env")
+    ap.add_argument("--doc", default=str(REPO / "ARQUITECTURA"))
+    ap.add_argument("--simbolo", default=None,
+                    help="valor para el parametro 'symbol'. Si no se da, se pide a /api/symbols ANTES del arco.")
+    ap.add_argument("--paralelas", type=int, default=16,
+                    help="peticiones a la vez. Mas estrecha el arco y mas carga mete; 16 por defecto.")
+    ap.add_argument("--timeout", type=int, default=25)
+    ap.add_argument("--repeticiones", type=int, default=1,
+                    help="fotos seguidas. Con 2 se ve que se mueve solo por el tiempo.")
+    a = ap.parse_args()
+
+    env = lee_env(HARNESS / "env")
+    base = a.base or env.get("API_PROD")
+    netrc = a.netrc or env.get("NETRC")
+    if not base:
+        sys.exit("capta-foto: no se pudo leer API_PROD de harness/env; da --base")
+    if not netrc or not Path(netrc).is_file():
+        sys.exit(f"capta-foto: no encuentro el netrc ({netrc}); da --netrc")
+
+    rutas = rutas_de_arquitectura(Path(a.doc))
+    print(f"capta-foto · {len(rutas)} rutas desde {a.doc}/derivada.json", file=sys.stderr)
+
+    # --- PREPARACION, FUERA DEL ARCO ---------------------------------------------------
+    # Esta peticion NO cuenta para la simultaneidad y por eso va antes y sola. Meterla
+    # dentro ensancharia el arco y falsearia justo la cifra que este programa existe para
+    # dar.
+    valores = {}
+    if a.simbolo:
+        valores["symbol"] = a.simbolo
+    else:
+        r = una(base, "/api/symbols", netrc, a.timeout, time.monotonic())
+        if isinstance(r["cuerpo"], list) and r["cuerpo"]:
+            prim = r["cuerpo"][0]
+            if isinstance(prim, dict) and "symbol" in prim:
+                valores["symbol"] = prim["symbol"]
+        if "symbol" not in valores:
+            print("capta-foto: /api/symbols no dio un simbolo utilizable; las rutas que lo "
+                  "exigen se marcaran OMITIDA y NO se inventara un valor", file=sys.stderr)
+
+    fotos = []
+    for n in range(a.repeticiones):
+        peticiones, omitidas = [], []
+        for r in rutas:
+            camino, faltan = construye_url(r, valores)
+            if faltan:
+                omitidas.append({"camino": r["camino"], "motivo":
+                                 f"parametros obligatorios sin valor: {', '.join(faltan)}"})
+            else:
+                peticiones.append(camino)
+
+        t0_mono, t0_utc = time.monotonic(), ahora_utc()
+        with cf.ThreadPoolExecutor(max_workers=a.paralelas) as ex:
+            res = list(ex.map(lambda c: una(base, c, netrc, a.timeout, t0_mono), peticiones))
+        t_fin_utc = ahora_utc()
+
+        envios = [x["envio_ms_desde_t0"] for x in res]
+        recibos = [x["recibo_ms_desde_t0"] for x in res]
+        lat = sorted(x["latencia_ms"] for x in res)
+        ok = [x for x in res if x["http"] == 200]
+
+        arco = {
+            "t0_utc": t0_utc,
+            "t_fin_utc": t_fin_utc,
+            # EL ARCO ES LA COTA DE DERIVA. Todo lo que discrepe menos que lo que el
+            # mercado puede moverse en este arco es NO SE SABE, no un hallazgo.
+            "arco_ms": round(max(recibos) - min(envios), 1) if res else None,
+            "primer_envio_ms": round(min(envios), 1) if res else None,
+            "ultimo_envio_ms": round(max(envios), 1) if res else None,
+            "ventana_de_envios_ms": round(max(envios) - min(envios), 1) if res else None,
+            "latencia_min_ms": lat[0] if lat else None,
+            "latencia_mediana_ms": lat[len(lat) // 2] if lat else None,
+            "latencia_max_ms": lat[-1] if lat else None,
+            "paralelas": a.paralelas,
+        }
+        fotos.append({
+            "indice": n,
+            "arco": arco,
+            "recuento": {
+                "pedidas": len(peticiones),
+                "http_200": len(ok),
+                "no_200": len(res) - len(ok),
+                "omitidas": len(omitidas),
+                "total_rutas_en_el_documento": len(rutas),
+            },
+            "omitidas": omitidas,
+            "respuestas": sorted(res, key=lambda x: x["camino"]),
+        })
+        print(f"  foto {n}: {len(ok)}/{len(peticiones)} en 200 · arco {arco['arco_ms']} ms · "
+              f"envios repartidos en {arco['ventana_de_envios_ms']} ms · "
+              f"latencia mediana {arco['latencia_mediana_ms']} ms · {len(omitidas)} omitidas",
+              file=sys.stderr)
+
+    salida = {
+        "instrumento": "harness/bin/capta-foto",
+        "base": base,
+        "simbolo_usado": valores.get("symbol"),
+        "simbolo_de_donde": "--simbolo" if a.simbolo else "/api/symbols (fuera del arco)",
+        "capturado_utc": ahora_utc(),
+        "fotos": fotos,
+    }
+    p = Path(a.salida)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(salida, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    tam = p.stat().st_size
+    print(f"\n{p}  ·  {tam} bytes  ·  {len(fotos)} foto(s)", file=sys.stderr)
+    print("Para la comparacion de F5: toda discrepancia menor que la deriva posible en el",
+          file=sys.stderr)
+    print("arco NO es un hallazgo. El arco esta en fotos[].arco.arco_ms.", file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

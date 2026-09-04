@@ -1,0 +1,84 @@
+# `GET /api/scalp/liquidation-levels`
+
+> CAPA DERIVADA · **generada** por `harness/bin/arquitectura` desde el AST. No editar a mano:
+> el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
+> en el generador, no en el fichero.
+
+Handler `liquidation_levels` · `app/api.py:2517` (cuerpo hasta la 2553) · decorador en la linea 2516.
+
+## Parametros de entrada
+
+| nombre | tipo | por defecto | obligatorio |
+|---|---|---|---|
+| `symbol` | `str` | — | si |
+| `minutes` | `Annotated[int, Query(ge=1, le=1440)]` | `60` | no |
+| `bucket_bps` | `Annotated[int, Query(ge=1, le=100)]` | `10` | no |
+| `limit` | `Annotated[int, Query(ge=1, le=200)]` | `50` | no |
+
+## Campos que publica
+
+4 campos derivados. La procedencia dice de donde sale cada uno.
+
+| campo | de donde sale |
+|---|---|
+| `bucket_bps` | literal en app/api.py:2553 |
+| `minutes` | literal en app/api.py:2553 |
+| `rows` | literal en app/api.py:2553 |
+| `symbol` | literal en app/api.py:2553 |
+
+Forma de la respuesta segun el AST: objeto.
+
+Tipo declarado en la firma: `dict[str, Any]`.
+
+## Tablas que toca
+
+LEE:
+
+- `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:772`
+- `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
+  - **PENDIENTE · ninguna funcion del arbol la escribe con SQL literal.**
+    O la llena algo fuera de `app/` (migracion, colector externo, carga manual),
+    o el SQL se construye en ejecucion y el analisis estatico no lo ve.
+- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:153`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:184`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:199`
+
+## Funciones que la componen
+
+2 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
+
+Llamadas directas del handler:
+
+- `app.api.records` — `app/api.py:234`
+- `app.api.validate_symbol` — `app/api.py:221`
+
+<details><summary>Llamadas que salen del arbol o no se resuelven (3)</summary>
+
+Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para aqui.
+
+- `Query`
+- `app.state.pool.acquire`
+- `conn.fetch`
+
+</details>
+
+## Fallos que puede devolver
+
+| codigo | detalle | donde | de quien |
+|---|---|---|---|
+| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+
+## Capa DECLARADA
+
+**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
+pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
+Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+
+## Radio de impacto
+
+**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
+las de arriba- se genera en F2 y se enlaza aqui.
