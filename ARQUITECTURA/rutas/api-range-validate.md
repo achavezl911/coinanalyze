@@ -1,0 +1,104 @@
+# `GET /api/range/validate`
+
+> CAPA DERIVADA · **generada** por `harness/bin/arquitectura` desde el AST. No editar a mano:
+> el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
+> en el generador, no en el fichero.
+
+Handler `range_validate_endpoint` · `app/api.py:1668` (cuerpo hasta la 1698) · decorador en la linea 1667.
+
+## Parametros de entrada
+
+| nombre | tipo | por defecto | obligatorio |
+|---|---|---|---|
+| `symbol` | `str` | — | si |
+| `low` | `Annotated[float, Query(gt=0)]` | — | si |
+| `high` | `Annotated[float, Query(gt=0)]` | — | si |
+| `days` | `Annotated[int, Query(ge=40, le=730)]` | `180` | no |
+| `end_days_ago` | `Annotated[int, Query(ge=0, le=690)]` | `0` | no |
+| `start_date` | `date | None` | `None` | no |
+| `end_date` | `date | None` | `None` | no |
+
+## Campos que publica
+
+5 campos derivados. La procedencia dice de donde sale cada uno.
+
+| campo | de donde sale |
+|---|---|
+| `from` | literal en app/scalp_logic.py:1599 |
+| `prior_bars` | literal en app/scalp_logic.py:1601 |
+| `symbol` | literal en app/scalp_logic.py:1596 |
+| `to` | literal en app/scalp_logic.py:1600 |
+| `window_days` | literal en app/scalp_logic.py:1598 |
+
+**Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
+
+- el objeto se expande con **window, que no se resuelve en el arbol: sus campos no se pueden derivar
+- el objeto se expande con **result, que no se resuelve en el arbol: sus campos no se pueden derivar
+
+Forma de la respuesta segun el AST: objeto.
+
+Tipo declarado en la firma: `dict[str, Any]`.
+
+## Tablas que toca
+
+LEE:
+
+- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:153`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:184`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:199`
+
+## Funciones que la componen
+
+8 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
+
+Llamadas directas del handler:
+
+- `app.api.validate_symbol` — `app/api.py:221`
+- `app.scalp_logic.range_validate` — `app/scalp_logic.py:1507`
+
+<details><summary>Alcanzables de forma indirecta (6)</summary>
+
+- `app.interpretation.number` — `app/interpretation.py:10`
+- `app.zones._atr_abs` — `app/zones.py:519`
+- `app.zones._edge_episodes` — `app/zones.py:499`
+- `app.zones._ols_slope` — `app/zones.py:471`
+- `app.zones._rotations` — `app/zones.py:483`
+- `app.zones.range_validate_read` — `app/zones.py:535`
+
+</details>
+
+<details><summary>Llamadas que salen del arbol o no se resuelven (3)</summary>
+
+Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para aqui.
+
+- `HTTPException`
+- `Query`
+- `app.state.pool.acquire`
+
+</details>
+
+## Fallos que puede devolver
+
+| codigo | detalle | donde | de quien |
+|---|---|---|---|
+| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 422 | low must be below high | `app/api.py:1683` | el propio handler |
+| 422 | range spans more than 3x; narrow it | `app/api.py:1685` | el propio handler |
+| 422 | start_date and end_date must come together | `app/api.py:1687` | el propio handler |
+| 422 | start_date must be before end_date | `app/api.py:1690` | el propio handler |
+| 422 | span exceeds the 730 days of history | `app/api.py:1692` | el propio handler |
+| 422 | days + end_days_ago exceeds daily history | `app/api.py:1694` | el propio handler |
+
+## Capa DECLARADA
+
+**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
+pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
+Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+
+## Radio de impacto
+
+**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
+las de arriba- se genera en F2 y se enlaza aqui.
