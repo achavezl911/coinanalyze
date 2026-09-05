@@ -28,13 +28,13 @@ Tipo declarado en la firma: `StreamingResponse`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:772`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 18 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:844`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:900`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 10 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:375`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:392`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
 
 ## Funciones que la componen
 
@@ -71,5 +71,16 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.records` | 22 | 7 | **28** | [impacto](../impacto/app-api.md) |
+| `app.api.stream` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.api.stream_generator` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

@@ -171,6 +171,62 @@ caso "F5 el generador falla al correr" 2 "NO MEDIDO" f5
 
 echo
 # ======================================================================================
+# CAPA DE IMPACTO (F2) · el brazo 1 la compara porque compara TODOS los ficheros, pero
+# "porque si" no es una prueba. Aqui se induce.
+# ======================================================================================
+echo "IMPACTO · la capa de F2 tambien esta guardada"
+
+# I1 · EL CASO QUE PIDIO EL OPERADOR: alguien edita a mano un radio en una ficha de ruta
+# para que diga que su cambio afecta a menos cosas de las que afecta. Es la mentira mas
+# rentable que se puede contar en este documento, y por eso tiene que costar ROJO.
+i1() { sed -i 's/| \*\*8\*\* |/| **1** |/' "$T/ARQUITECTURA/impacto/app-metrics.md"; }
+caso "I1 radio editado a mano en impacto/" 1 "no coincide con la regeneracion" i1
+
+# I2 · el mismo fraude en la ficha de la ruta, que es donde lo leeria quien va a tocarla.
+i2() { sed -i '0,/| \*\*[0-9]*\*\* | \[impacto\]/s//| **0** | [impacto]/' \
+         "$T/ARQUITECTURA/rutas/api-snapshot.md"; }
+caso "I2 radio editado a mano en una ficha de ruta" 1 "no coincide con la regeneracion" i2
+
+# I3 · IMPACTO.md borrado entero.
+i3() { rm -f "$T/ARQUITECTURA/IMPACTO.md"; }
+caso "I3 IMPACTO.md borrado" 1 "no coincide con la regeneracion" i3
+
+# I4 · BRAZO 3 · SE AVERIA EL GENERADOR, NO SU SALIDA. Y esa distincion es el control.
+# Mi primera version de este caso editaba `cuadra` dentro de derivada.json, y no probaba
+# nada: el brazo 1 cazaba el JSON tocado ANTES de que el brazo 3 llegara a mirar, o sea
+# que el caso pasaba por la razon equivocada. El unico escenario donde el brazo 3 es
+# NECESARIO es este: el generador atribuye mal Y regenera coherente, asi que el documento
+# cuadra consigo mismo y el brazo 1 no tiene nada que decir.
+# La averia inducida no es inventada: es la REGRESION concreta al comportamiento de F1
+# -devolver la linea donde abre el literal en vez de la del verbo SQL-, que ponia el
+# escritor de liquidations_realtime en :73 cuando esta en :74.
+i4() {
+  sed -i 's/^    for i, l in enumerate(texto.splitlines()):$/    for i, l in []:/' \
+      "$T/harness/bin/arquitectura"
+  python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+}
+caso "I4 generador con la regresion de F1 en las lineas" 1 "no cuadra con su respuesta conocida" i4
+
+# I5 · un generador de version anterior que no emite el bloque 'controles'. Regenera
+# coherente, asi que el brazo 1 pasa; el brazo 3 no puede juzgar y tiene que decir NOMED.
+# No es que el impacto este mal: es que este check no sabe si lo esta.
+i5() {
+  sed -i 's/^def controles_de_respuesta_conocida(impacto: dict, tablas: dict, ey: dict) -> dict:$/&\n    return {}/' \
+      "$T/harness/bin/arquitectura"
+  python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+}
+caso "I5 generador que no emite el bloque de controles" 2 "NO MEDIDO" i5
+
+# I6 · EL GENERADOR REVIENTA CON TRACEBACK. Python sale con 1, igual que "hay
+# discrepancias", asi que este es el modo de fallo mas probable y el mas facil de leer
+# mal. F5 no lo cubria: su generador falso salia con 9. La version anterior del check
+# decia ROJO con "(0 ficheros)" delante. Tiene que ser NOMED.
+i6() { sed -i 's/^def construye(repo: Path, paquetes: list\[str\]) -> dict:$/&\n    raise RuntimeError("averia inducida por I6")/' \
+         "$T/harness/bin/arquitectura"; }
+caso "I6 el generador revienta con traceback (rc=1)" 2 "NO MEDIDO" i6
+
+echo
+# ======================================================================================
 # HUELLA · que el brazo 1 y el brazo 2 son DE VERDAD independientes.
 # P7 aisla el brazo 2 (fichas correctas, JSON vaciado). Este aisla el brazo 1: se induce
 # una deriva que el brazo 2 NO puede ver, porque el conjunto de rutas sigue siendo

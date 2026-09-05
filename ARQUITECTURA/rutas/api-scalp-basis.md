@@ -34,10 +34,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:772`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 10 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:375`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:392`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
@@ -83,5 +83,18 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.basis_quality` | 10 | 9 | **17** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.scalp_basis` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.scalp_basis` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

@@ -29,33 +29,33 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `data_gap` — `sql/schema.sql:1412`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1091`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1242`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1261`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1310`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:321`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:583`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:662`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:686`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:722`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:763`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:792`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:861`
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1092`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1243`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1262`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1311`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:322`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:584`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:663`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:687`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
 - `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:772`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
 - `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:682`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 18 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:844`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:900`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
 - `pipeline_heartbeat` — `sql/schema.sql:1284`, 4 columnas
-  - la llena `app.db.heartbeat` (INSERT) — `app/db.py:417`
-  - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:471`
-  - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:541`
+  - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
+  - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
+  - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 10 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:375`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:392`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
@@ -115,5 +115,24 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | 10 | **32** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.data_gaps.blocking_requirement_keys` | 20 | 14 | **31** | [impacto](../impacto/app-data_gaps.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._flow_windows` | 13 | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.spot_flow_windows` | 13 | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.db.required_heartbeat_failures` | 4 | 7 | **7** | [impacto](../impacto/app-db.md) |
+| `app.ai_context.data_confidence_row` | 3 | 0 | **3** | [impacto](../impacto/app-ai_context.md) |
+| `app.ai_context.quality_score` | 3 | 0 | **3** | [impacto](../impacto/app-ai_context.md) |
+| `app.api.data_confidence` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

@@ -28,7 +28,11 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 ## Tablas que toca
 
-_ninguna consulta SQL literal en el cierre de esta ruta._
+LEE:
+
+- `orderbook_snapshot` — `sql/schema.sql:287`, 18 columnas
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
 
 ## Funciones que la componen
 
@@ -66,5 +70,17 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | 7 | **28** | [impacto](../impacto/app-api.md) |
+| `app.ai_context.orderbook_freshness` | 3 | 0 | **3** | [impacto](../impacto/app-ai_context.md) |
+| `app.api.scalp_orderbook` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

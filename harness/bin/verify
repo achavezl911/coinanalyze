@@ -41,16 +41,31 @@ quien=$(id -un)
 # que no se puede contestar de memoria.
 #
 # "+cambios" cuenta SOLO ficheros VERSIONADOS modificados, que es lo que hace que los
-# checks difieran del SHA que se declara. Un fichero sin versionar al lado no cambia lo
-# que el check ejecuta, y contarlo pondria "+cambios" permanente -y una marca que esta
-# siempre encendida no informa de nada-.
+# checks difieran del SHA que se declara.
+#
+# LO QUE DECIA AQUI Y ERA FALSO: "un fichero sin versionar al lado no cambia lo que el
+# check ejecuta". Si lo cambia, y el 2026-09-04 se cobro. verify:9 globea checks/*.sh, o
+# sea que UN CHECK SIN VERSIONAR ES UN CHECK QUE CORRE Y CUENTA. Ese dia el marcador
+# publico "43 VERDE main 752d435" cuando 752d435 no contenia K88: el +1 VERDE venia de un
+# fichero que no estaba en ese commit y el marcador no lo decia. Repetir esa medicion
+# desde el SHA declarado da 42, no 43. Es la misma enfermedad que el propio K63 describe
+# tres parrafos mas arriba -un marcador que parece el mismo y no lo es- solo que por el
+# eje de lo no versionado en vez del de la rama.
+#
+# Se cuenta SOLO lo no versionado de bin/ y checks/, que es lo que decide lo que verify
+# ejecuta. Un .md suelto en la raiz del repo sigue sin contar, asi que la marca no queda
+# encendida para siempre -que era la preocupacion legitima del comentario viejo-.
 rama=$(git -C "$B/checks" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')
 [ "$rama" = "HEAD" ] && rama='(detached)'
 sha=$(git -C "$B/checks" rev-parse --short HEAD 2>/dev/null || echo '?')
 [ -n "$(git -C "$B/checks" status --porcelain --untracked-files=no 2>/dev/null)" ] && sha="$sha+cambios"
+sinver=$(( $(git -C "$B/checks" ls-files --others --exclude-standard . 2>/dev/null | wc -l)
+         + $(git -C "$B/bin"    ls-files --others --exclude-standard . 2>/dev/null | wc -l) ))
+[ "$sinver" -gt 0 ] && sha="$sha+${sinver}sinversionar"
 arbol="$rama@$sha"
 
 printf '\n%d VERDE   %d ROJO   %d NOMED   ·  medido como %s en %s\n' "$verde" "$rojo" "$nomed" "$quien" "$arbol"
+[ "$sinver" -gt 0 ] && printf '%d fichero(s) de harness/{bin,checks} NO estan en %s. Este marcador NO se\nreproduce desde ese commit: commitealos o el numero es de otro arbol.\n' "$sinver" "$sha"
 [ "$nomed" -gt 0 ] && printf 'NOMED no es ROJO. Arregla el canal antes de tocar el codigo.\n'
 printf '%s\t%d\t%d\t%d\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$verde" "$rojo" "$nomed" "$quien" "$rama" "$sha" >> "$B/estado/verify.tsv"
 [ "$rojo" -eq 0 ] && [ "$nomed" -eq 0 ]

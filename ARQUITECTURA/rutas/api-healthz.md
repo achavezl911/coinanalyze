@@ -34,11 +34,11 @@ LEE:
 
 - `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:682`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 - `pipeline_heartbeat` — `sql/schema.sql:1284`, 4 columnas
-  - la llena `app.db.heartbeat` (INSERT) — `app/db.py:417`
-  - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:471`
-  - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:541`
+  - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
+  - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
+  - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
 
 **ESCRIBE** (una ruta de lectura que escribe merece mirarse):
 
@@ -95,5 +95,19 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.db.heartbeat` | 1 | 53 | **53** | [impacto](../impacto/app-db.md) |
+| `app.api.records` | 22 | 7 | **28** | [impacto](../impacto/app-api.md) |
+| `app.api.health` | 1 | 7 | **7** | [impacto](../impacto/app-api.md) |
+| `app.db.db_identity` | 1 | 7 | **7** | [impacto](../impacto/app-db.md) |
+| `app.db.heartbeat_max_age` | 1 | 7 | **7** | [impacto](../impacto/app-db.md) |
+| `app.db.required_heartbeat_failures` | 4 | 7 | **7** | [impacto](../impacto/app-db.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

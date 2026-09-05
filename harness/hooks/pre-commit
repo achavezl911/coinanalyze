@@ -1,0 +1,93 @@
+#!/bin/sh
+# pre-commit · LA FUENTE VERSIONADA DEL HOOK. Se instala con harness/bin/instala-hooks.
+#
+# QUE CAMBIA RESPECTO DE LA VERSION ANTERIOR, Y POR QUE
+# La version que vivia solo en .git/hooks empezaba asi:
+#
+#     [ "${HARNESS_DOC:-0}" = "1" ] && exit 0
+#
+# o sea que el escape saltaba el hook ENTERO, libretas incluidas. F1 tuvo que usarlo para
+# meter 71 .md generados, y en esa misma corrida el filtro de libretas -que existe porque
+# el 2026-08-26 una segunda CAMBIOS.md se colo y se quedo sin respaldar- estuvo APAGADO.
+# Un escape que hay que usar de forma rutinaria acaba usandose siempre, y entonces el
+# guardia que de verdad importa no guarda nada.
+#
+# EL ORDEN DE ABAJO ES EL ARREGLO:
+#   1 · las cuatro libretas por NOMBRE se rechazan SIEMPRE. HARNESS_DOC ya no las salva.
+#   2 · los .md bajo ARQUITECTURA/ se aceptan SI el arbol pasa `arquitectura --comprueba`.
+#       Son generados y los guarda K88; no son documentacion de proceso.
+#   3 · cualquier otro .md nuevo sigue rechazado, con HARNESS_DOC como escape.
+#
+# CONSERVADOR A PROPOSITO: si el generador no esta, no corre o falla, ARQUITECTURA/ NO se
+# acepta. "No pude comprobar que es generado" no es "es generado". Es la misma regla de
+# los tres estados del arnes: lo que no se puede medir no se aprueba.
+set -u
+RAIZ=$(git rev-parse --show-toplevel 2>/dev/null) || RAIZ=.
+nuevos=$(git diff --cached --name-only --diff-filter=A || true)
+
+# --- 1 · LAS LIBRETAS, ANTES QUE NINGUN ESCAPE ----------------------------------------
+# Las cuatro viven FUERA del repo -/srv/coinanalyze/CAMBIOS.md y harness/{COLA,ESTADO}.md
+# y harness/hechos.tsv- y K49 respalda esas. Una copia aqui seria una segunda libreta del
+# mismo nombre: exactamente el fallo que se cobro el 2026-08-26, cuando un cd a repo/
+# mando una entrada de CAMBIOS al fichero equivocado y ahi se quedo, sin respaldar.
+for f in $nuevos; do
+  case "$f" in
+    CAMBIOS.md|COLA.md|ESTADO.md|harness/CAMBIOS.md|harness/COLA.md|harness/ESTADO.md|hechos.tsv|harness/hechos.tsv)
+      echo "pre-commit: $f NO va en el repo. Las libretas viven en /srv/coinanalyze/"
+      echo "  CAMBIOS.md -> /srv/coinanalyze/CAMBIOS.md"
+      echo "  COLA.md y ESTADO.md -> /srv/coinanalyze/harness/"
+      echo "K49 respalda esas. Una copia aqui seria una segunda libreta del mismo nombre."
+      echo "NO hay escape para esto: HARNESS_DOC=1 tampoco lo salta."
+      exit 1 ;;
+  esac
+done
+
+# --- 2 · ¿que se toca, y donde? --------------------------------------------------------
+# ARQUITECTURA/ se mira ante CUALQUIER cambio -alta, modificacion o borrado-, no solo ante
+# ficheros nuevos. Mirar solo las altas dejaba pasar la averia que mas importa: EDITAR A
+# MANO una ficha ya commiteada. Se cazo el 2026-09-05 con el caso P3 del control, que daba
+# rc=0 -commit aceptado- sobre un `symbol` cambiado a mano en una ficha.
+# Fuera de ARQUITECTURA/, el filtro sigue siendo solo de ALTAS: modificar un .md que ya
+# existe nunca ha estado prohibido y no es lo que este hook vigila.
+tocado_arq=$(git diff --cached --name-only -- 'ARQUITECTURA' || true)
+md_otros=''
+for f in $nuevos; do
+  case "$f" in
+    ARQUITECTURA/*) ;;
+    *.md)           md_otros="$md_otros $f" ;;
+  esac
+done
+
+# --- 3 · ARQUITECTURA/ se acepta si el arbol cuadra con su regeneracion -----------------
+if [ -n "$tocado_arq" ]; then
+  GEN="$RAIZ/harness/bin/arquitectura"
+  if [ ! -r "$GEN" ]; then
+    echo "pre-commit: se toca ARQUITECTURA/ pero no encuentro $GEN"
+    echo "  sin el generador no se puede comprobar que son generados, asi que no pasan."
+    exit 1
+  fi
+  salida=$(python3 "$GEN" --repo "$RAIZ" --comprueba 2>&1); rc=$?
+  if [ "$rc" != "0" ]; then
+    echo "pre-commit: ARQUITECTURA/ NO coincide con su regeneracion desde este arbol."
+    echo "$salida" | sed -n '1,6p' | sed 's/^/  /'
+    echo "  ARQUITECTURA/ se GENERA, no se edita: corrige el generador y regenera con"
+    echo "    harness/bin/arquitectura"
+    echo "  (esto es lo mismo que mide K88; commitear un mapa editado a mano lo pondria ROJO)"
+    exit 1
+  fi
+fi
+
+# --- 4 · cualquier otro .md nuevo, como siempre ----------------------------------------
+if [ -n "$md_otros" ]; then
+  if [ "${HARNESS_DOC:-0}" = "1" ]; then
+    exit 0
+  fi
+  for f in $md_otros; do
+    echo "pre-commit: .md nuevo rechazado -> $f"
+  done
+  echo "el proyecto tiene tres documentos y ya existen. Usa el mensaje del commit."
+  echo "si de verdad hace falta: HARNESS_DOC=1 git commit ..."
+  echo "(ARQUITECTURA/*.md no necesita el escape: se comprueba que este generado)"
+  exit 1
+fi
+exit 0

@@ -39,9 +39,9 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `signal_observation` — `sql/schema.sql:415`, 34 columnas
-  - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:370`
+  - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:371`
 - `signal_replay_frame` — `sql/schema.sql:751`, 7 columnas
-  - la llena `app.signal_replay.persist_signal_replay_frame` (INSERT) — `app/signal_replay.py:110`
+  - la llena `app.signal_replay.persist_signal_replay_frame` (INSERT) — `app/signal_replay.py:111`
 
 ## Funciones que la componen
 
@@ -93,5 +93,18 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | 7 | **28** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 5 | 0 | **5** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 5 | 0 | **5** | [impacto](../impacto/app-api.md) |
+| `app.api.signals_replay` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

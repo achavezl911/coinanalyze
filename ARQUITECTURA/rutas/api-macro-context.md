@@ -35,7 +35,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `daily_session_agg` — `sql/schema.sql:1032`, 14 columnas
-  - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:205`
+  - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
 
 ## Funciones que la componen
@@ -83,5 +83,24 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | 10 | **32** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.metrics.current_nyse_start` | 15 | 14 | **26** | [impacto](../impacto/app-metrics.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._pct_rank` | 7 | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.macro_context` | 5 | 3 | **6** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._conditional_outcome` | 5 | 0 | **5** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._forward_returns` | 5 | 0 | **5** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._regime` | 5 | 0 | **5** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.macro_context_endpoint` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

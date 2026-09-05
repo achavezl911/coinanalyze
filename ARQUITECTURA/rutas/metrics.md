@@ -26,23 +26,21 @@ Tipo declarado en la firma: `Response`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:772`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
-  - **PENDIENTE · ninguna funcion del arbol la escribe con SQL literal.**
-    O la llena algo fuera de `app/` (migracion, colector externo, carga manual),
-    o el SQL se construye en ejecucion y el analisis estatico no lo ve.
+  - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
 - `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:682`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 18 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:844`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:900`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
 - `pipeline_heartbeat` — `sql/schema.sql:1284`, 4 columnas
-  - la llena `app.db.heartbeat` (INSERT) — `app/db.py:417`
-  - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:471`
-  - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:541`
+  - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
+  - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
+  - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
 - `scalp_signal_snapshot` — `sql/schema.sql:381`, 16 columnas
-  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1405`
+  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1406`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
@@ -90,5 +88,15 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api._parse_heartbeat_detail` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.api.prometheus_metrics` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

@@ -95,6 +95,17 @@ case "$rc" in
   0) ;;
   1)
     cuantas=$(printf '%s\n' "$salida" | grep -cE '^(FALTA|SOBRA|DIFIERE)' || true)
+    # UN TRACEBACK DE PYTHON TAMBIEN SALE CON 1, Y ESE ES EL MODO DE FALLO MAS PROBABLE
+    # DEL GENERADOR. La version anterior de este check llamaba ROJO a un generador
+    # reventado, y encima con el recuento "(0 ficheros)" delante, que es la forma exacta
+    # de un veredicto que no se sostiene. Confundir "esta roto" con "no se pudo medir" es
+    # justo lo que los tres estados de este arnes existen para impedir. Se cazo el
+    # 2026-09-05 induciendolo con el control I5, y el caso F5 no lo cubria porque su
+    # generador falso salia con 9, no con 1.
+    if [ "$cuantas" -eq 0 ] || printf '%s' "$salida" | grep -q 'Traceback (most recent call last)'; then
+      echo "NO MEDIDO: el generador salio con 1 pero no listo ninguna discrepancia: $(printf '%s' "$salida" | grep -E 'Error|Traceback' | tail -1 | cut -c1-140)"
+      exit 2
+    fi
     primera=$(printf '%s\n' "$salida" | grep -E '^(FALTA|SOBRA|DIFIERE)' | head -3 | tr '\n' ' ')
     echo "ARQUITECTURA/ no coincide con la regeneracion desde este arbol ($cuantas ficheros): $(printf '%s' "$primera" | cut -c1-150)"
     echo "  se arregla regenerando:  harness/bin/arquitectura"
@@ -104,5 +115,40 @@ case "$rc" in
     exit 2 ;;
 esac
 
-echo "ARQUITECTURA/ describe las $n_doc rutas del codigo y coincide con la regeneracion fresca"
+# --- BRAZO 3 · LOS CONTROLES DE RESPUESTA CONOCIDA ------------------------------------
+# El brazo 1 compara el documento consigo mismo regenerado, y el 2 comprueba que estan
+# todas las rutas. Ninguno de los dos ve que el GRAFO DE IMPACTO se haya torcido: si el
+# generador empieza a atribuir mal, regenera coherente y las dos comparaciones pasan.
+# Por eso el generador mide en cada corrida tres preguntas de respuesta conocida:
+#   compute_snapshot      -> 0 rutas por llamada, 8 por tabla (las de metrics_snapshot)
+#   spot_trades_agg       -> 2 INSERT de ws_collector + 1 DELETE de daily_agg
+#   liquidations_realtime -> 1 escritor en scalp_collector.py:74 y 14 rutas lectoras
+# Las tres tienen respuesta verificada FUERA de este programa -dos contra el codigo por el
+# operador, una contra la base de 140, 3241 filas el 2026-09-04-. La tercera es la que
+# nacio de un fallo real: en F1 daba CERO escritores porque el generador no resolvia SQL
+# guardado en una constante de modulo.
+cuadran=$(python3 -c '
+import json,sys
+d=json.load(open(sys.argv[1]))
+c=d.get("controles")
+if not c: print("SINCAMPO"); raise SystemExit
+malos=[k for k,v in c.items() if isinstance(v,dict) and not v.get("cuadra")]
+print(",".join(malos) if malos else "OK")' "$DOC/derivada.json" 2>/dev/null)
+
+case "$cuadran" in
+  OK) ;;
+  SINCAMPO)
+    echo "NO MEDIDO: derivada.json no trae el bloque 'controles' (¿version de formato vieja?)"
+    exit 2 ;;
+  "")
+    echo "NO MEDIDO: no se pudo leer el bloque 'controles' de derivada.json"
+    exit 2 ;;
+  *)
+    echo "el grafo de impacto no cuadra con su respuesta conocida: $cuadran"
+    echo "  no es una diferencia de formato: el generador esta atribuyendo mal"
+    exit 1 ;;
+esac
+
+echo "ARQUITECTURA/ describe las $n_doc rutas del codigo, coincide con la regeneracion fresca"
+echo "  y los tres controles de impacto cuadran con su respuesta conocida"
 exit 0

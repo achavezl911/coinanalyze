@@ -39,13 +39,13 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `daily_session_agg` — `sql/schema.sql:1032`, 14 columnas
-  - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:205`
+  - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:153`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:184`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:199`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
 - `oi_bybit` — `sql/schema.sql:97`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:648`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
@@ -98,5 +98,26 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.data_gaps._aware_utc` | 14 | 21 | **25** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 14 | 21 | **25** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.expected_buckets` | 12 | 21 | **24** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.coverage_entry` | 13 | 0 | **13** | [impacto](../impacto/app-data_gaps.md) |
+| `app.scalp_logic._pct_rank` | 7 | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.data_gaps.align_down` | 4 | 0 | **4** | [impacto](../impacto/app-data_gaps.md) |
+| `app.scalp_logic._buckets_observados` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._oi_coverage` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._oi_quadrant` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.oi_context` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.oi_context_endpoint` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.
