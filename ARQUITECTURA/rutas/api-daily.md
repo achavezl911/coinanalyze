@@ -112,35 +112,63 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:1930` | el propio handler |
 | 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
 
+## Superficie · quien la consume (medido)
+
+| donde | sitios |
+|---|---|
+| **checks** | `harness/checks/K03-hueco-declarado.sh:161`, `harness/checks/K43-foto-unica.sh:296` |
+| **panel** | `static/app.js:1482`, `static/app.js:1550`, `static/app.js:1635` |
+| **readme** | `README.md:70`, `README.md:90`, `README.md:409` |
+| **tests** | `tests/test_dashboard_presentation.py:83` |
+
+La consume el panel: **es superficie de producto**.
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **3** — pide ['as_of']: el operador elige el momento.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+Claves temporales entre los campos que publica:
+
+- `knowledge_time_replay`
+- `projection_latest_session_date`
+- `through_session_date`
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/api-daily.md`](../declarada/api-daily.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.metrics.session_bounds` | 2 | 51 | **51** | [impacto](../impacto/app-metrics.md) |
-| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps.blocking_requirement_keys` | 20 | 14 | **31** | [impacto](../impacto/app-data_gaps.md) |
-| `app.api.records` | 22 | 7 | **28** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 14 | 21 | **25** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 14 | 21 | **25** | [impacto](../impacto/app-data_gaps.md) |
-| `app.interpretation.number` | 13 | 3 | **14** | [impacto](../impacto/app-interpretation.md) |
-| `app.api.mask_gapped_series_rows` | 7 | 0 | **7** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps.declared_gap_windows` | 7 | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
-| `app.api.daily_data` | 3 | 0 | **3** | [impacto](../impacto/app-api.md) |
-| `app.interpretation.daily_flow_read` | 3 | 0 | **3** | [impacto](../impacto/app-interpretation.md) |
-| `app.api._session_window` | 2 | 0 | **2** | [impacto](../impacto/app-api.md) |
-| `app.api.daily` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.metrics.session_bounds` | 2 | **0** | 51 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |
+| `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
+| `app.api.mask_gapped_series_rows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
+| `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
+| `app.api.daily_data` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |
+| `app.interpretation.daily_flow_read` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-interpretation.md) |
+| `app.api._session_window` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-api.md) |
+| `app.api.daily` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

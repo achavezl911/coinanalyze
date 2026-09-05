@@ -88,29 +88,53 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
 
+## Superficie · quien la consume (medido)
+
+| donde | sitios |
+|---|---|
+| **panel** | `static/app.js:1638` |
+| **readme** | `README.md:281` |
+
+La consume el panel: **es superficie de producto**.
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **1** — solo pide symbol (o nada): estado ambiente.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+**Ninguna clave temporal entre los campos derivados.** O no publica marca de
+tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
+mismo que lo primero: la foto de produccion lo decide, no este documento.
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/api-divergences.md`](../declarada/api-divergences.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._complete_tail_values` | 10 | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._intraday_divergences` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._return_stdev_pct` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._slope_pct` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.divergence_scan` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.api.divergences_endpoint` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._complete_tail_values` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._intraday_divergences` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._return_stdev_pct` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._slope_pct` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.divergence_scan` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.divergences_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

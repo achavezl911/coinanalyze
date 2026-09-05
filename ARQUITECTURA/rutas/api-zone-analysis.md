@@ -90,34 +90,57 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | 422 | low must be below high | `app/api.py:1660` | el propio handler |
 | 422 | zone spans more than 3x; narrow it | `app/api.py:1662` | el propio handler |
 
+## Superficie · quien la consume (medido)
+
+| donde | sitios |
+|---|---|
+| **panel** | `static/app.js:2603` |
+
+La consume el panel: **es superficie de producto**.
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **2** — pide ['days']: coverage de su propia serie.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+**Ninguna clave temporal entre los campos derivados.** O no publica marca de
+tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
+mismo que lo primero: la foto de produccion lo decide, no este documento.
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/api-zone-analysis.md`](../declarada/api-zone-analysis.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.interpretation.number` | 13 | 3 | **14** | [impacto](../impacto/app-interpretation.md) |
-| `app.api.zone_analysis_endpoint` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.zone_analysis` | 1 | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.zones._atr_pct` | 1 | 0 | **1** | [impacto](../impacto/app-zones.md) |
-| `app.zones._clamp` | 1 | 0 | **1** | [impacto](../impacto/app-zones.md) |
-| `app.zones._effort_result` | 1 | 0 | **1** | [impacto](../impacto/app-zones.md) |
-| `app.zones._narrative` | 1 | 0 | **1** | [impacto](../impacto/app-zones.md) |
-| `app.zones._oi_behaviour` | 1 | 0 | **1** | [impacto](../impacto/app-zones.md) |
-| `app.zones._percentile` | 1 | 0 | **1** | [impacto](../impacto/app-zones.md) |
-| `app.zones._rejection` | 1 | 0 | **1** | [impacto](../impacto/app-zones.md) |
-| `app.zones.zone_character_read` | 1 | 0 | **1** | [impacto](../impacto/app-zones.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
+| `app.api.zone_analysis_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.zone_analysis` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.zones._atr_pct` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-zones.md) |
+| `app.zones._clamp` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-zones.md) |
+| `app.zones._effort_result` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-zones.md) |
+| `app.zones._narrative` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-zones.md) |
+| `app.zones._oi_behaviour` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-zones.md) |
+| `app.zones._percentile` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-zones.md) |
+| `app.zones._rejection` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-zones.md) |
+| `app.zones.zone_character_read` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-zones.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

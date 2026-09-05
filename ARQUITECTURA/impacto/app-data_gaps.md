@@ -4,40 +4,40 @@
 
 24 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
-El radio POR TABLA se calcula subiendo llamadores hasta **k=2**; lo que este mas arriba **no se afirma**.
+El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
-| funcion | linea | por llamada | por tabla | total |
-|---|---|---|---|---|
-| [`reconcile_cadence_coverage`](#reconcile-cadence-coverage) | 474 | 0 | 47 | **47** |
-| [`blocking_requirement_keys`](#blocking-requirement-keys) | 108 | 20 | 14 | **31** |
-| [`_aware_utc`](#-aware-utc) | 67 | 14 | 21 | **25** |
-| [`_validated_window`](#-validated-window) | 73 | 14 | 21 | **25** |
-| [`expected_buckets`](#expected-buckets) | 245 | 12 | 21 | **24** |
-| [`from_record`](#from-record) | 1140 | 0 | 21 | **21** |
-| [`_cubierto_por_otro_detector`](#-cubierto-por-otro-detector) | 439 | 0 | 21 | **21** |
-| [`_load_gap`](#-load-gap) | 1220 | 0 | 21 | **21** |
-| [`_mark_unrecoverable`](#-mark-unrecoverable) | 1230 | 0 | 21 | **21** |
-| [`_record_recovery_failure`](#-record-recovery-failure) | 1255 | 0 | 21 | **21** |
-| [`archive_beyond_source_horizon`](#archive-beyond-source-horizon) | 722 | 0 | 21 | **21** |
-| [`archive_source_response_absence`](#archive-source-response-absence) | 792 | 0 | 21 | **21** |
-| [`close_partitioned_gap`](#close-partitioned-gap) | 1045 | 0 | 21 | **21** |
-| [`missing_cadence_windows`](#missing-cadence-windows) | 378 | 0 | 21 | **21** |
-| [`partition_gap_by_source_coverage`](#partition-gap-by-source-coverage) | 967 | 0 | 21 | **21** |
-| [`partition_runs`](#partition-runs) | 922 | 0 | 21 | **21** |
-| [`record_data_gap`](#record-data-gap) | 287 | 0 | 21 | **21** |
-| [`record_event_stream_loss`](#record-event-stream-loss) | 348 | 0 | 21 | **21** |
-| [`recover_gap`](#recover-gap) | 1272 | 0 | 21 | **21** |
-| [`recover_unresolved_gaps`](#recover-unresolved-gaps) | 1333 | 0 | 21 | **21** |
-| [`validate_recovery`](#validate-recovery) | 1176 | 0 | 21 | **21** |
-| [`coverage_entry`](#coverage-entry) | 253 | 13 | 0 | **13** |
-| [`declared_gap_windows`](#declared-gap-windows) | 197 | 7 | 0 | **7** |
-| [`align_down`](#align-down) | 232 | 4 | 0 | **4** |
+| funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
+|---|---|---|---|---|---|
+| [`reconcile_cadence_coverage`](#reconcile-cadence-coverage) | 474 | 0 | **21** | 47 ↑ | **21** |
+| [`blocking_requirement_keys`](#blocking-requirement-keys) | 108 | 20 | **0** | 14 ↑ | **20** |
+| [`_aware_utc`](#-aware-utc) | 67 | 14 | **0** | 21 ↑ | **14** |
+| [`_validated_window`](#-validated-window) | 73 | 14 | **0** | 21 ↑ | **14** |
+| [`expected_buckets`](#expected-buckets) | 245 | 12 | **0** | 21 ↑ | **12** |
+| [`from_record`](#from-record) | 1140 | 0 | **0** | 21 ↑ | **0** |
+| [`_cubierto_por_otro_detector`](#-cubierto-por-otro-detector) | 439 | 0 | **0** | 21 ↑ | **0** |
+| [`_load_gap`](#-load-gap) | 1220 | 0 | **0** | 21 ↑ | **0** |
+| [`_mark_unrecoverable`](#-mark-unrecoverable) | 1230 | 0 | **21** | 21 | **21** |
+| [`_record_recovery_failure`](#-record-recovery-failure) | 1255 | 0 | **21** | 21 | **21** |
+| [`archive_beyond_source_horizon`](#archive-beyond-source-horizon) | 722 | 0 | **21** | 21 | **21** |
+| [`archive_source_response_absence`](#archive-source-response-absence) | 792 | 0 | **21** | 21 | **21** |
+| [`close_partitioned_gap`](#close-partitioned-gap) | 1045 | 0 | **21** | 21 | **21** |
+| [`missing_cadence_windows`](#missing-cadence-windows) | 378 | 0 | **0** | 21 ↑ | **0** |
+| [`partition_gap_by_source_coverage`](#partition-gap-by-source-coverage) | 967 | 0 | **0** | 21 ↑ | **0** |
+| [`partition_runs`](#partition-runs) | 922 | 0 | **0** | 21 ↑ | **0** |
+| [`record_data_gap`](#record-data-gap) | 287 | 0 | **21** | 21 | **21** |
+| [`record_event_stream_loss`](#record-event-stream-loss) | 348 | 0 | **0** | 21 ↑ | **0** |
+| [`recover_gap`](#recover-gap) | 1272 | 0 | **21** | 21 | **21** |
+| [`recover_unresolved_gaps`](#recover-unresolved-gaps) | 1333 | 0 | **0** | 21 ↑ | **0** |
+| [`validate_recovery`](#validate-recovery) | 1176 | 0 | **0** | 21 ↑ | **0** |
+| [`coverage_entry`](#coverage-entry) | 253 | 13 | **0** | 0 | **13** |
+| [`declared_gap_windows`](#declared-gap-windows) | 197 | 7 | **0** | 0 | **7** |
+| [`align_down`](#align-down) | 232 | 4 | **0** | 0 | **4** |
 
 ## reconcile_cadence_coverage
 
 `app/data_gaps.py:474` · clave completa `app.data_gaps.reconcile_cadence_coverage`
 
-**Radio total: 47 rutas** de 68.
+**Radio exacto: 21 rutas** de 68 · **cota superior: 47** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -45,9 +45,41 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 47 rutas · k=2
+### Por tabla · k=0 — 21 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+Escribe **ella misma**: `data_gap`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+### Por tabla · k<=2 — 47 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (47 contra 21). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.reconcile_cadence_coverage`, `app.data_gaps.record_data_gap`
 - `external_macro_observation` — la escribe `app.external_macro.refresh_external_macro`
@@ -158,13 +190,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 5.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## blocking_requirement_keys
 
 `app/data_gaps.py:108` · clave completa `app.data_gaps.blocking_requirement_keys`
 
-**Radio total: 31 rutas** de 68.
+**Radio exacto: 20 rutas** de 68 · **cota superior: 31** (mas ancha)
 
 ### Por llamada — 20 rutas
 
@@ -191,9 +223,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
-### Por tabla — 14 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 14 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (14 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `metrics_snapshot` — la escribe `app.metrics.insert_snapshot`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
@@ -232,13 +273,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/snapshot`](../rutas/api-snapshot.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 22.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 22 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _aware_utc
 
 `app/data_gaps.py:67` · clave completa `app.data_gaps._aware_utc`
 
-**Radio total: 25 rutas** de 68.
+**Radio exacto: 14 rutas** de 68 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 14 rutas
 
@@ -259,9 +300,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/verdicts`](../rutas/api-verdicts.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps._mark_unrecoverable`, `app.data_gaps._record_recovery_failure`, `app.data_gaps.archive_beyond_source_horizon`, `app.data_gaps.archive_source_response_absence`, `app.data_gaps.reconcile_cadence_coverage`, `app.data_gaps.record_data_gap`, `app.data_gaps.recover_gap`
 
@@ -304,13 +354,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 20.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 20 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _validated_window
 
 `app/data_gaps.py:73` · clave completa `app.data_gaps._validated_window`
 
-**Radio total: 25 rutas** de 68.
+**Radio exacto: 14 rutas** de 68 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 14 rutas
 
@@ -331,9 +381,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/verdicts`](../rutas/api-verdicts.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.archive_beyond_source_horizon`, `app.data_gaps.archive_source_response_absence`, `app.data_gaps.reconcile_cadence_coverage`, `app.data_gaps.record_data_gap`
 
@@ -376,13 +435,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 21.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 21 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## expected_buckets
 
 `app/data_gaps.py:245` · clave completa `app.data_gaps.expected_buckets`
 
-**Radio total: 24 rutas** de 68.
+**Radio exacto: 12 rutas** de 68 · **cota superior: 24** (mas ancha)
 
 ### Por llamada — 12 rutas
 
@@ -401,9 +460,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/oi-context`](../rutas/api-oi-context.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.record_data_gap`
 
@@ -447,13 +515,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 16.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 16 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## from_record
 
 `app/data_gaps.py:1140` · clave completa `app.data_gaps.DataGap.from_record`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -461,9 +529,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps._mark_unrecoverable`, `app.data_gaps._record_recovery_failure`, `app.data_gaps.close_partitioned_gap`, `app.data_gaps.record_data_gap`, `app.data_gaps.recover_gap`
 
@@ -516,13 +593,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 6.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _cubierto_por_otro_detector
 
 `app/data_gaps.py:439` · clave completa `app.data_gaps._cubierto_por_otro_detector`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -530,9 +607,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.reconcile_cadence_coverage`, `app.data_gaps.record_data_gap`
 
@@ -585,13 +671,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 3.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _load_gap
 
 `app/data_gaps.py:1220` · clave completa `app.data_gaps._load_gap`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -599,9 +685,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps._mark_unrecoverable`, `app.data_gaps._record_recovery_failure`, `app.data_gaps.close_partitioned_gap`, `app.data_gaps.record_data_gap`, `app.data_gaps.recover_gap`
 
@@ -654,13 +749,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 5.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _mark_unrecoverable
 
 `app/data_gaps.py:1230` · clave completa `app.data_gaps._mark_unrecoverable`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 21 rutas** de 68 · **cota superior: 21** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -668,9 +763,37 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 21 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+Escribe **ella misma**: `data_gap`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps._mark_unrecoverable`, `app.data_gaps._record_recovery_failure`, `app.data_gaps.recover_gap`
 
@@ -723,13 +846,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 2.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _record_recovery_failure
 
 `app/data_gaps.py:1255` · clave completa `app.data_gaps._record_recovery_failure`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 21 rutas** de 68 · **cota superior: 21** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -737,9 +860,37 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 21 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+Escribe **ella misma**: `data_gap`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps._mark_unrecoverable`, `app.data_gaps._record_recovery_failure`, `app.data_gaps.recover_gap`
 
@@ -792,13 +943,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 2.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## archive_beyond_source_horizon
 
 `app/data_gaps.py:722` · clave completa `app.data_gaps.archive_beyond_source_horizon`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 21 rutas** de 68 · **cota superior: 21** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -806,9 +957,37 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 21 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+Escribe **ella misma**: `data_gap`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.archive_beyond_source_horizon`
 
@@ -861,13 +1040,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 0.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 0 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## archive_source_response_absence
 
 `app/data_gaps.py:792` · clave completa `app.data_gaps.archive_source_response_absence`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 21 rutas** de 68 · **cota superior: 21** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -875,9 +1054,37 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 21 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+Escribe **ella misma**: `data_gap`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.archive_source_response_absence`
 
@@ -930,13 +1137,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 0.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 0 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## close_partitioned_gap
 
 `app/data_gaps.py:1045` · clave completa `app.data_gaps.close_partitioned_gap`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 21 rutas** de 68 · **cota superior: 21** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -944,9 +1151,37 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 21 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+Escribe **ella misma**: `data_gap`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.close_partitioned_gap`
 
@@ -999,13 +1234,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 0.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 0 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## missing_cadence_windows
 
 `app/data_gaps.py:378` · clave completa `app.data_gaps.missing_cadence_windows`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1013,9 +1248,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.reconcile_cadence_coverage`, `app.data_gaps.record_data_gap`
 
@@ -1068,13 +1312,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 3.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## partition_gap_by_source_coverage
 
 `app/data_gaps.py:967` · clave completa `app.data_gaps.partition_gap_by_source_coverage`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1082,9 +1326,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.record_data_gap`
 
@@ -1137,13 +1390,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 0.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 0 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## partition_runs
 
 `app/data_gaps.py:922` · clave completa `app.data_gaps.partition_runs`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1151,9 +1404,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.record_data_gap`
 
@@ -1206,13 +1468,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 1.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 1 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## record_data_gap
 
 `app/data_gaps.py:287` · clave completa `app.data_gaps.record_data_gap`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 21 rutas** de 68 · **cota superior: 21** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1220,9 +1482,37 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 21 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+Escribe **ella misma**: `data_gap`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.reconcile_cadence_coverage`, `app.data_gaps.record_data_gap`
 
@@ -1275,13 +1565,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 6.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## record_event_stream_loss
 
 `app/data_gaps.py:348` · clave completa `app.data_gaps.record_event_stream_loss`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1289,9 +1579,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.record_data_gap`
 
@@ -1344,13 +1643,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 2.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## recover_gap
 
 `app/data_gaps.py:1272` · clave completa `app.data_gaps.recover_gap`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 21 rutas** de 68 · **cota superior: 21** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1358,9 +1657,37 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 21 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+Escribe **ella misma**: `data_gap`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps._mark_unrecoverable`, `app.data_gaps._record_recovery_failure`, `app.data_gaps.recover_gap`
 
@@ -1413,13 +1740,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 1.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 1 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## recover_unresolved_gaps
 
 `app/data_gaps.py:1333` · clave completa `app.data_gaps.recover_unresolved_gaps`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1427,9 +1754,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps.recover_gap`
 
@@ -1482,13 +1818,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 0.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 0 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## validate_recovery
 
 `app/data_gaps.py:1176` · clave completa `app.data_gaps.validate_recovery`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1496,9 +1832,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.data_gaps._mark_unrecoverable`, `app.data_gaps._record_recovery_failure`, `app.data_gaps.recover_gap`
 
@@ -1551,13 +1896,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 2.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## coverage_entry
 
 `app/data_gaps.py:253` · clave completa `app.data_gaps.coverage_entry`
 
-**Radio total: 13 rutas** de 68.
+**Radio exacto: 13 rutas** de 68 · **cota superior: 13** (igual al exacto)
 
 ### Por llamada — 13 rutas
 
@@ -1577,17 +1922,22 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/verdicts`](../rutas/api-verdicts.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-### Por tabla — 0 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 16.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 16 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## declared_gap_windows
 
 `app/data_gaps.py:197` · clave completa `app.data_gaps.declared_gap_windows`
 
-**Radio total: 7 rutas** de 68.
+**Radio exacto: 7 rutas** de 68 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -1601,17 +1951,22 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/oi`](../rutas/api-oi.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-### Por tabla — 0 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 8.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## align_down
 
 `app/data_gaps.py:232` · clave completa `app.data_gaps.align_down`
 
-**Radio total: 4 rutas** de 68.
+**Radio exacto: 4 rutas** de 68 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -1622,9 +1977,14 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/funding-context`](../rutas/api-funding-context.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
 
-### Por tabla — 0 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 7.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

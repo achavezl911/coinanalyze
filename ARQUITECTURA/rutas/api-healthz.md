@@ -87,27 +87,51 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 _no levanta HTTPException en su cierre. Un fallo aqui sale como 500 del framework._
 
+## Superficie · quien la consume (medido)
+
+| donde | sitios |
+|---|---|
+| **panel** | `static/app.js:1494`, `static/app.js:1622` |
+| **readme** | `README.md:413` |
+
+La consume el panel: **es superficie de producto**.
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **1** — solo pide symbol (o nada): estado ambiente.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+**Ninguna clave temporal entre los campos derivados.** O no publica marca de
+tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
+mismo que lo primero: la foto de produccion lo decide, no este documento.
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/api-healthz.md`](../declarada/api-healthz.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.db.heartbeat` | 1 | 53 | **53** | [impacto](../impacto/app-db.md) |
-| `app.api.records` | 22 | 7 | **28** | [impacto](../impacto/app-api.md) |
-| `app.api.health` | 1 | 7 | **7** | [impacto](../impacto/app-api.md) |
-| `app.db.db_identity` | 1 | 7 | **7** | [impacto](../impacto/app-db.md) |
-| `app.db.heartbeat_max_age` | 1 | 7 | **7** | [impacto](../impacto/app-db.md) |
-| `app.db.required_heartbeat_failures` | 4 | 7 | **7** | [impacto](../impacto/app-db.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.db.heartbeat` | 1 | **7** | 53 ↑ | **7** | [impacto](../impacto/app-db.md) |
+| `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.health` | 1 | **0** | 7 ↑ | **1** | [impacto](../impacto/app-api.md) |
+| `app.db.db_identity` | 1 | **0** | 7 ↑ | **1** | [impacto](../impacto/app-db.md) |
+| `app.db.heartbeat_max_age` | 1 | **0** | 7 ↑ | **1** | [impacto](../impacto/app-db.md) |
+| `app.db.required_heartbeat_failures` | 4 | **0** | 7 ↑ | **4** | [impacto](../impacto/app-db.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

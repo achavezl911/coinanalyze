@@ -92,30 +92,56 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | 422 | span exceeds the 730 days of history | `app/api.py:1692` | el propio handler |
 | 422 | days + end_days_ago exceeds daily history | `app/api.py:1694` | el propio handler |
 
+## Superficie · quien la consume (medido)
+
+| donde | sitios |
+|---|---|
+| **checks** | `harness/checks/K76-la-ventana-que-pides.sh:97` |
+| **panel** | `static/app.js:2890` |
+
+La consume el panel: **es superficie de producto**.
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **2** — pide ['days']: coverage de su propia serie.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+Claves temporales entre los campos que publica:
+
+- `from`
+- `to`
+- `window_days`
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/api-range-validate.md`](../declarada/api-range-validate.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.interpretation.number` | 13 | 3 | **14** | [impacto](../impacto/app-interpretation.md) |
-| `app.zones._atr_abs` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.zones._edge_episodes` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.zones._ols_slope` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.zones._rotations` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.zones.range_validate_read` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.api.range_validate_endpoint` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.range_validate` | 1 | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
+| `app.zones._atr_abs` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones._edge_episodes` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones._ols_slope` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones._rotations` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones.range_validate_read` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.api.range_validate_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.range_validate` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

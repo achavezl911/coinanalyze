@@ -149,6 +149,63 @@ case "$cuadran" in
     exit 1 ;;
 esac
 
+# --- BRAZO 4 · LA CAPA DECLARADA · CUENTA, NO ENROJECE (todavia) -----------------------
+# La capa declarada (F3) es la unica que se escribe a mano: pregunta del trader, familia de
+# ventana K43, promesa y superficie. No se puede exigir completa de golpe -son 68 rutas y
+# cada linea necesita su cita-, asi que este brazo CUENTA cuantas faltan y lo dice en el
+# mensaje. Poner ROJO hoy solo enseñaria a ignorar el check.
+#
+# LO QUE SI ES ROJO: una declarada HUERFANA, de una ruta que ya no existe. Es el mismo
+# defecto que el brazo 2 por el otro lado -el documento anunciando algo que no esta- y
+# ademas es basura que nadie va a retirar si nadie la nombra.
+# El lector va en un heredoc y NO en `python3 -c '...'`. La version anterior llevaba un
+# f-string con comillas escapadas dentro de comillas simples de shell y reventaba con
+# SyntaxError; el check lo leia como cadena vacia y publicaba "derivada.json no trae el
+# recuento" -un diagnostico FALSO, porque el campo estaba ahi-. Es la misma confusion que
+# ya se corrigio en el brazo 1: el instrumento fallando disfrazado de dato malo. Por eso
+# ahora se distingue el rc del parser de la ausencia del campo.
+lectura=$(python3 - "$DOC/derivada.json" 2>&1 <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+r = d.get("resumen", {})
+if r.get("sin_declarar") is None:
+    print("SINCAMPO")
+else:
+    print("%s\t%s\t%s" % (r.get("declaradas_completas"),
+                          r.get("declaradas_incompletas"),
+                          r.get("sin_declarar")))
+PY
+); rc_lect=$?
+
+if [ "$rc_lect" != "0" ]; then
+  echo "NO MEDIDO: el lector del recuento de la capa declarada fallo: $(printf '%s' "$lectura" | tail -1 | cut -c1-120)"
+  exit 2
+fi
+if [ "$lectura" = "SINCAMPO" ]; then
+  echo "NO MEDIDO: derivada.json no trae el recuento de la capa declarada (¿formato viejo?)"
+  exit 2
+fi
+completas=$(printf '%s' "$lectura" | cut -f1)
+incompletas=$(printf '%s' "$lectura" | cut -f2)
+faltan=$(printf '%s' "$lectura" | cut -f3)
+
+if [ -d "$DOC/declarada" ]; then
+  huerfanas=''
+  for f in "$DOC"/declarada/*.md; do
+    [ -e "$f" ] || continue
+    s=$(basename "$f" .md)
+    grep -q "\"declarada\/$s.md\"" "$DOC/derivada.json" || huerfanas="$huerfanas $s"
+  done
+  if [ -n "$huerfanas" ]; then
+    n=$(printf '%s' "$huerfanas" | wc -w)
+    echo "$n declaracion(es) HUERFANA(s): describen una ruta que ya no existe:$huerfanas"
+    echo "  el documento anuncia una superficie retirada. Borralas o restaura la ruta."
+    exit 1
+  fi
+fi
+
 echo "ARQUITECTURA/ describe las $n_doc rutas del codigo, coincide con la regeneracion fresca"
-echo "  y los tres controles de impacto cuadran con su respuesta conocida"
+echo "  y los cuatro controles de impacto cuadran con su respuesta conocida"
+printf '  capa DECLARADA: %s completas · %s incompletas · %s sin declarar (de %s). No es ROJO: se cuenta.\n' \
+  "$completas" "$incompletas" "$faltan" "$n_doc"
 exit 0

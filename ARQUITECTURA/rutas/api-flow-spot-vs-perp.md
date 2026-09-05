@@ -81,26 +81,50 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
 | 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1455` | el propio handler |
 
+## Superficie · quien la consume (medido)
+
+**NINGUN consumidor encontrado** en `static/app.js`, `static/index.html`,
+`harness/checks`, `tests`, `tools` ni `README.md`.
+
+No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su
+nombre-, pero es la forma exacta del patron que en esta casa se ha repetido nueve
+veces. **Merece una mirada, no una conclusion.**
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **2** — pide ['days', 'interval']: coverage de su propia serie.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+**Ninguna clave temporal entre los campos derivados.** O no publica marca de
+tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
+mismo que lo primero: la foto de produccion lo decide, no este documento.
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/api-flow-spot-vs-perp.md`](../declarada/api-flow-spot-vs-perp.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.flow_confirmation` | 10 | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.api.flow_spot_vs_perp` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.spot_perp_flow` | 1 | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.flow_confirmation` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.flow_spot_vs_perp` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.spot_perp_flow` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.
