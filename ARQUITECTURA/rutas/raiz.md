@@ -48,16 +48,25 @@ _no levanta HTTPException en su cierre. Un fallo aqui sale como 500 del framewor
 docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
 comentario no tiene consumidor, tiene quien habla de ella.
 
-| donde | llamadas | menciones |
-|---|---|---|
-| **checks** | `harness/checks/K01a-espejo.sh:58`, `harness/checks/K01b-respaldo-cifrado.sh:31`, `harness/checks/K01b-respaldo-cifrado.sh:73`, `harness/checks/K01b-respaldo-cifrado.sh:95` _(+106)_ | `harness/checks/K03-hueco-declarado.sh:61`, `harness/checks/K05-latidos.sh:16`, `harness/checks/K05-latidos.sh:96`, `harness/checks/K31-cubos.py:46` _(+13)_ |
-| **herramientas** | — | `tools/generate_dashboard_usage_pdf.py:25`, `tools/generate_dashboard_usage_pdf.py:26`, `tools/generate_dashboard_usage_pdf.py:27`, `tools/generate_dashboard_usage_pdf.py:28` _(+5)_ |
-| **panel** | `static/app.js:127`, `static/app.js:139`, `static/app.js:140`, `static/app.js:193` _(+59)_ | `static/app.js:66` |
-| **panel-html** | `static/index.html:93`, `static/index.html:110`, `static/index.html:286` | — |
-| **readme** | — | `README.md:19`, `README.md:22`, `README.md:215`, `README.md:257` _(+3)_ |
-| **tests** | `tests/js/ejecucion.test.js:45`, `tests/js/harness.js:48`, `tests/js/harness.js:69`, `tests/js/harness.js:73` _(+40)_ | `tests/js/harness.js:79`, `tests/js/harness.js:147`, `tests/test_ai_context.py:49`, `tests/test_ai_context.py:50` _(+247)_ |
+**NO MEDIBLE con este metodo, y se declara en vez de rellenarse.**
 
-**La llama el panel: es superficie de producto.**
+`/` casa con cualquier barra. Con el detector general esta ficha llegaba a
+acreditar **505 citas** —`PAGE_W / 2`, `REPO / 'app/api.py'`, `ROOT / "docs"`—
+y no informaba de nada.
+
+Se intento un criterio propio antes de rendirse: exigir la barra **entrecomillada
+y sola** (`'/'`, `"/"`, `GET /`). Baja de 505 a **23**, y las 23 siguen siendo
+ruido, contadas una a una: `"/".join(...)`, `parsed.path.lstrip("/")`,
+`open(DIR + "/" + nombre)`, `pathname: '/'` en un stub del navegador,
+`not name.startswith("/")`. **Cero de las 23 son una peticion HTTP a la raiz.**
+
+La barra entrecomillada es tan comun como la division, asi que **no hay criterio
+textual que las separe en este repo**. Para saber quien consume la raiz hay que
+mirar el servidor, no el codigo fuente:
+
+```sh
+prod "grep -c ' / ' /var/log/nginx/access.log"
+```
 
 ## Ventana · con que clave la declara (derivado)
 

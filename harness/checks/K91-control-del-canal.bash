@@ -38,9 +38,15 @@ python3 - "$FUENTE" "$DIR/prodsql-doble" <<'PY'
 import re, sys
 src = open(sys.argv[1], encoding="utf-8").read()
 # el bloque: salida=$(ssh ... )   ->   salida=$(sh "$K91_FALSO")
+# LA SUSTITUCION CONSERVA LA REDIRECCION DE stderr, y no es un detalle.
+# La primera version reemplazaba por `salida=$(sh "$K91_FALSO")` a secas: el doble escribia
+# su stderr a la terminal en vez de al fichero que el sujeto luego inspecciona, asi que los
+# casos P1 y P2 daban rc=0 y parecia que la segunda defensa no funcionaba. El defecto era
+# del CONTROL: probaba un prodsql sin la redireccion, o sea, un sujeto que no es.
+# Es la misma familia de la que llevo cuatro rondas: el instrumento midiendo otra cosa.
 nuevo, n = re.subn(
-    r'salida=\$\(ssh[^)]*?"\$PROD_SSH_USER@\$PROD_HOST"[^)]*?\)',
-    'salida=$(sh "$K91_FALSO")', src, flags=re.S)
+    r'salida=\$\(ssh[^)]*?"\$PROD_SSH_USER@\$PROD_HOST"[^)]*?(2>"\$err")\)',
+    r'salida=$(sh "$K91_FALSO" \1)', src, flags=re.S)
 if n != 1:
     sys.stderr.write(f"SUSTITUCIONES={n}\n"); sys.exit(3)
 # el env del arnes trae rutas reales que aqui no hacen falta
@@ -62,10 +68,16 @@ printf '#!/bin/sh\ncat\n' > "$DIR/harness/bin/_corta"; chmod +x "$DIR/harness/bi
 printf 'PROD_SSH_USER=x\nPROD_HOST=x\nPROD_SSH_KEY=/dev/null\nPROD_KNOWN_HOSTS=/dev/null\nPROD_PG_USER=x\nPROD_PG_DB=x\n' \
   > "$DIR/harness/env"
 
-caso() {  # <nombre> <rc esperado> <salida que finge psql> <rc del transporte>
-  local nombre="$1" esperado="$2" texto="$3" rct="${4:-0}"
+caso() {  # <nombre> <rc esperado> <lo que va a STDOUT> <rc del transporte> <lo que va a STDERR>
+  local nombre="$1" esperado="$2" texto="$3" rct="${4:-0}" errtxt="${5:-}"
+  # EL DOBLE ESCRIBE POR LOS DOS CANALES POR SEPARADO, que es lo que el sujeto distingue
+  # ahora. La version anterior solo sabia escribir por stdout, y por eso sus 6 casos no
+  # podian ver que la segunda defensa miraba el canal equivocado: un control que no puede
+  # representar el fallo no lo caza.
   printf '%s\n' "$texto" > "$DIR/falso-salida"
-  printf '#!/bin/sh\ncat "%s/falso-salida"\nexit %s\n' "$DIR" "$rct" > "$DIR/falso.sh"
+  printf '%s' "$errtxt" > "$DIR/falso-err"
+  printf '#!/bin/sh\ncat "%s/falso-salida"\n[ -s "%s/falso-err" ] && cat "%s/falso-err" >&2\nexit %s\n' \
+    "$DIR" "$DIR" "$DIR" "$rct" > "$DIR/falso.sh"
   local out rc
   out=$(K91_B="$DIR/harness" K91_FALSO="$DIR/falso.sh" \
         sh "$DIR/prodsql-doble" "SELECT 1" 2>&1); rc=$?
@@ -82,19 +94,37 @@ echo "K91-control-del-canal · sujeto: $FUENTE"
 echo
 
 echo "POSITIVO · un SQL roto NO puede salir con 0"
-caso "P1 ERROR de psql al principio de linea" 5 'ERROR:  column "ts" does not exist'
-caso "P2 ERROR precedido de filas validas" 5 ' BTCUSDT|1|2
-ERROR:  relation "x" does not exist'
-caso "P3 el transporte falla (ssh caido)" 255 'ssh: connect to host port 22: No route' 255
+# P1 · EL FORMATO REAL DEL ERROR DE psql, que es el caso que la version anterior NO cubria.
+# psql se invoca con `-f -`, asi que escribe `psql:<stdin>:N: ERROR:  ...` y lo manda por
+# STDERR. El control viejo ponia el texto en stdout y sin el prefijo `psql:`: probaba un
+# error que este canal no produce, y por eso sus 6 casos pasaron sobre una defensa que
+# tenia cero verdaderos positivos.
+# El rc del transporte se fuerza a 0 A PROPOSITO: asi el caso ejercita la SEGUNDA defensa y
+# no la primera. Si pasara por el rc, no probaria lo que dice probar.
+caso "P1 error real de psql por stderr, con rc del transporte 0" 5 \
+     ' BTCUSDT|1|2' 0 'psql:<stdin>:1: ERROR:  column "ts" does not exist
+LINE 3:          date_trunc(...)'
+caso "P2 error de psql SIN prefijo psql: (otra invocacion)" 5 \
+     '' 0 'ERROR:  relation "x" does not exist'
+caso "P3 el transporte falla (ssh caido)" 255 '' 255 'ssh: connect to host port 22: No route'
+caso "P4 psql sale con !=0 y lo dice por stderr" 3 '' 3 'psql:<stdin>:1: ERROR:  syntax error'
 
 echo
 echo "NEGATIVO · una consulta buena sigue saliendo con 0"
 caso "N1 filas normales" 0 ' BTCUSDT_PERP.A|7524|3|6|34439'
 caso "N2 cero filas (vacio NO es error del canal)" 0 ''
-# N3 · EL FALSO POSITIVO QUE HAY QUE EVITAR. Si el grep no anclara al principio de linea,
-# una fila cuyo TEXTO contenga "ERROR:" -un mensaje de log guardado en una tabla, por
-# ejemplo- haria fallar el canal entero. En un canal que usan 31 checks eso seria caro.
+# N3 · el texto EN MEDIO de una fila. Lo resolvia ya el ancla, y sigue resuelto.
 caso "N3 una FILA que contiene el texto ERROR:" 0 ' BTCUSDT|nivel=ERROR: algo paso|3'
+# N4 · EL FALSO POSITIVO DEMOSTRADO, y es el que la version anterior no probaba.
+# Una fila cuyo PRIMER campo empieza por ERROR: — `SELECT 'ERROR: esto es un dato'` — daba
+# rc=5 con el ancla '^ERROR:'. Hoy no hay ninguna fila asi en produccion (0 en
+# pipeline_heartbeat.detail, market_feed_health.detail, data_gap.*_reason y
+# scalp_signal_snapshot.reason, medido por el operador), asi que era un fallo LATENTE con
+# disparador demostrado en un canal que usan 31 checks. Con los canales separados no puede
+# volver: el dato de negocio nunca pasa por stderr.
+caso "N4 una FILA cuyo PRIMER campo empieza por ERROR:" 0 'ERROR: esto es un dato'
+caso "N5 fila que empieza por ERROR: y ademas filas normales" 0 'ERROR: al inicio
+ BTCUSDT|1|2'
 
 echo
 total=$((pasan + fallos))

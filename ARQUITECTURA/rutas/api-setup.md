@@ -87,11 +87,12 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K88-control.bash:133` | — |
+| **checks** | — | `harness/checks/K88-control.bash:139`, `harness/checks/K88-control.bash:140`, `harness/checks/K88-control.bash:397` |
 | **readme** | — | `README.md:411` |
 
-**No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
-Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
+**Nadie la llama.** Sus 4 rastros son todos MENCION -comentario,
+docstring o documento-. Es la forma del patron que en esta casa se ha repetido
+nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**
 
 ## Ventana · con que clave la declara (derivado)
 

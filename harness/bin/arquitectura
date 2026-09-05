@@ -975,24 +975,43 @@ RE_BASE_URL = re.compile(
 
 
 def lineas_de_prosa_py(texto: str) -> set:
-    """Numeros de linea que son COMENTARIO o CADENA en un .py, segun `tokenize`.
+    """Numeros de linea que son PROSA en un .py.
 
-    La heuristica de "la linea empieza por #" funciona en .sh y NO en .py: el caso mas
-    comun de todos es el docstring que abre un fichero de test —`tests/test_x.py:1`— y la
-    version anterior lo acreditaba como LLAMADA. Eran 15 de las 290 citas .py, y para las
-    cinco rutas de /api/signals/* esa era su UNICA cita de tests.
-    Un docstring no llama a nada. Aqui se tokeniza en vez de adivinar."""
+    PROSA ES SOLO DOS COSAS: un comentario, o una cadena suelta como sentencia -o sea, un
+    docstring-. Nada mas.
+
+    LA VERSION ANTERIOR SE PASO DE FRENADA Y ESTE ES EL PUNTO. Marcaba prosa TODA cadena
+    (`tok.type == STRING`), y **en python una ruta en codigo casi siempre ES una cadena
+    literal**. Resultado, medido por el operador: 22 lineas de codigo pasaron a MENCION —
+    `assert "/api/dashboard/state" in source`, `for ruta in ("/api/profile", ...)`, tuplas
+    de rutas— y `/api/profile` y `/metrics` se quedaron SIN NINGUNA LLAMADA teniendola.
+    Es el espejo exacto del defecto de F3b: alli el mapa apuntaba a la linea de debajo de
+    la llamada; aqui decia que una linea de codigo no era una llamada.
+
+    Un docstring se identifica con `ast`, no con `tokenize`: es un `Expr` cuyo valor es una
+    cadena, o sea una cadena que no se asigna, no se pasa y no se compara. Los comentarios
+    siguen saliendo de `tokenize`, que es donde `ast` no llega."""
     import io, tokenize as tk
     fuera = set()
+    # 1 · comentarios
     try:
         for tok in tk.generate_tokens(io.StringIO(texto).readline):
-            if tok.type in (tk.COMMENT, tk.STRING):
+            if tok.type == tk.COMMENT:
                 for n in range(tok.start[0], tok.end[0] + 1):
                     fuera.add(n)
     except Exception:
-        # fichero que no tokeniza (sintaxis rota, encoding raro): no se inventa nada, se
-        # cae a la heuristica de linea y ya esta. Declarado, no silencioso.
-        return set()
+        pass
+    # 2 · docstrings: una cadena SUELTA como sentencia. Cubre el de modulo, el de clase, el
+    # de funcion y cualquier cadena de relleno usada como comentario largo.
+    try:
+        for n in ast.walk(ast.parse(texto)):
+            if (isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant)
+                    and isinstance(n.value.value, str)):
+                for i in range(n.value.lineno, getattr(n.value, "end_lineno", n.value.lineno) + 1):
+                    fuera.add(i)
+    except SyntaxError:
+        # fichero que no parsea: se queda con los comentarios y no se inventa nada.
+        pass
     return fuera
 
 
@@ -1013,6 +1032,28 @@ def consumidores_de(repo: Path, camino: str) -> dict:
     Se separa LLAMADA de MENCION porque no pesan igual: una ruta cuyo unico rastro es un
     comentario NO tiene consumidor, tiene quien habla de ella.
     """
+    # LA RAIZ NO ES MEDIBLE CON ESTE METODO, Y SE DECLARA EN VEZ DE RELLENARSE.
+    #
+    # `/` casa con CUALQUIER barra: su ficha acreditaba **505 citas** y dentro habia
+    # `PAGE_W / 2`, `REPO / 'app/api.py'`, `ROOT / "docs"`. No informaba de nada y
+    # contaminaba cualquier recuento global que no la excluyera.
+    #
+    # SE INTENTO UN CRITERIO PROPIO ANTES DE RENDIRSE, y tambien falla. Exigir la barra
+    # ENTRECOMILLADA Y SOLA -`'/'`, `"/"`, `GET /`- baja de 505 a 23 citas, pero las 23
+    # siguen siendo ruido y estan contadas una a una:
+    #     "/".join(ESTADOS)              K13-vacio-o-rancio.sh:75
+    #     parsed.path.lstrip("/")        tests/test_db.py:133 y otros dos
+    #     open(DIR + "/" + nombre)       K05-control.bash:77
+    #     pathname: '/'                  tests/js/harness.js:127   (stub del navegador)
+    #     not name.startswith("/")       tests/test_metrics_endpoint.py:184
+    # CERO de las 23 son una peticion HTTP a la raiz. La barra entrecomillada es tan comun
+    # como la division, asi que no hay criterio TEXTUAL que las separe en este repo.
+    #
+    # Decision: no se publica un recuento que no significa nada. Se declara vacio CON EL
+    # MOTIVO en la ficha, que es lo que el §19 pide: "no se sabe" es una respuesta valida y
+    # rellenar con lo plausible -o con lo ruidoso- es lo que no lo es.
+    if camino == "/":
+        return {}
     pat = re.compile(r"(?<![\w/])" + re.escape(camino) + r"(?![\w/-])")
     out: dict[str, dict] = {}
     for etiqueta, rel in CONSUMIDORES:
@@ -1687,6 +1728,26 @@ def md_ruta(r: dict, datos: dict) -> str:
         else:
             A(f"**No la llama el panel**, pero si {c['n_llamadas']} linea(s) de codigo fuera de el.")
             A("Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.")
+    elif r["camino"] == "/":
+        A("**NO MEDIBLE con este metodo, y se declara en vez de rellenarse.**")
+        A("")
+        A("`/` casa con cualquier barra. Con el detector general esta ficha llegaba a")
+        A("acreditar **505 citas** —`PAGE_W / 2`, `REPO / 'app/api.py'`, `ROOT / \"docs\"`—")
+        A("y no informaba de nada.")
+        A("")
+        A("Se intento un criterio propio antes de rendirse: exigir la barra **entrecomillada")
+        A("y sola** (`'/'`, `\"/\"`, `GET /`). Baja de 505 a **23**, y las 23 siguen siendo")
+        A("ruido, contadas una a una: `\"/\".join(...)`, `parsed.path.lstrip(\"/\")`,")
+        A("`open(DIR + \"/\" + nombre)`, `pathname: '/'` en un stub del navegador,")
+        A("`not name.startswith(\"/\")`. **Cero de las 23 son una peticion HTTP a la raiz.**")
+        A("")
+        A("La barra entrecomillada es tan comun como la division, asi que **no hay criterio")
+        A("textual que las separe en este repo**. Para saber quien consume la raiz hay que")
+        A("mirar el servidor, no el codigo fuente:")
+        A("")
+        A("```sh")
+        A("prod \"grep -c ' / ' /var/log/nginx/access.log\"")
+        A("```")
     else:
         A("**NINGUN rastro**, ni llamada ni mencion, en `static/app.js`, `static/index.html`,")
         A("`harness/checks`, `tests`, `tools` ni `README.md`.")

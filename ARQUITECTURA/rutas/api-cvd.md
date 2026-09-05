@@ -107,10 +107,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K02-cobertura-hueco.sh:46`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K88-control.bash:344`, `harness/checks/K88-control.bash:346` _(+1)_ | `harness/checks/K02-cobertura-hueco.sh:5`, `harness/checks/K31-cubos.py:40`, `harness/checks/K88-control.bash:305`, `harness/checks/K88-control.bash:337` |
+| **checks** | `harness/checks/K02-cobertura-hueco.sh:46`, `harness/checks/K03-hueco-declarado.sh:46` | `harness/checks/K02-cobertura-hueco.sh:5`, `harness/checks/K31-cubos.py:40`, `harness/checks/K88-control.bash:324`, `harness/checks/K88-control.bash:356` _(+1)_ |
 | **readme** | — | `README.md:403` |
 
-**No la llama el panel**, pero si 5 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

@@ -26,11 +26,30 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PENDIENTE, y el motivo es que no la he medido.** No esta entre las rutas cuyo cuerpo he
+leido en la foto, y sus campos no se derivan del AST lo bastante como para sostener una
+promesa.
+
+Lo que **si** se sabe y esta en su ficha derivada: la bateria le asigna **P1.5** —*"¿que
+dice el score de swing y de que se compone?"*, con el criterio *"recalcular el score desde
+sus componentes publicados; si no se puede, el score no es auditable y eso es un K"*— y
+**S10** —*"¿el score de swing puede ser negativo? un score que solo vive en positivo no
+puede recomendar un corto"*—.
+
+Las dos son comprobables y ninguna con una foto de un instante:
+
+```sh
+harness/bin/api '/api/swing-score?symbol=BTCUSDT' | python3 -m json.tool
+harness/bin/prodsql "SELECT MIN(swing_score), MAX(swing_score), COUNT(*)
+  FROM daily_verdict WHERE session_date >= now() - interval '30 days'"
+```
+
+**S10 es la barata y la que mas delata**: si el minimo de 30 dias es >= 0, el score no puede
+recomendar un corto y el producto es asimetrico por construccion.
+
 
 ## SUPERFICIE
 

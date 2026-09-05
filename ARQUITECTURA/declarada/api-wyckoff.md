@@ -42,11 +42,39 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · separa "no hay fase" de "no se pudo calcular".** `available` es un campo de
+primer nivel. Es **P0.5** en la familia de estructura: sin el, una fase vacia y un calculo
+que fallo son el mismo hueco.
+
+**PROMESA 2 · la fase viene con su EXPLICACION y sus EVENTOS.**
+`phase = {code, state, explanation}`, `events = [1]` con `date`, `close`,
+`volume_multiple`, `bars_ago`, `type` y `direction`, y `bias` con
+**`evidence_coverage_pct`** y `agreement`.
+
+`evidence_coverage_pct` es la respuesta a **P0.4** —*"¿que antigüedad tiene el dato mas
+viejo que entra en este calculo?"*— por el lado de la cobertura: una fase decidida con el
+40 % de la evidencia y otra con el 100 % no se pintan igual.
+
+**PROMESA 3 · publica el rango del que sale.** `range = {available, from, to, low, high,
+mid…}`: los bordes son datos, no una raya.
+
+*Que significa no cumplirlo:* **P1.4 y S11 lo dicen y son la misma pregunta por dos lados**:
+*"¿la fase cambia alguna vez, o es una etiqueta pegajosa?"* y *"¿Wyckoff distingue
+acumulacion de distribucion, o solo detecta una?"*. Una fase que nunca cambia cumple todas
+las promesas de forma y no vale nada.
+
+**PENDIENTE · eso no lo puedo medir con una foto.** Necesita 30 dias:
+
+```sh
+harness/bin/prodsql "SELECT wyckoff_phase, COUNT(*) FROM daily_verdict
+  WHERE session_date >= now() - interval '30 days' GROUP BY 1 ORDER BY 2 DESC"
+```
+
+Si sale una sola fase, es K. **La llama el panel** (`static/app.js:1481` y `:1583`).
+
 
 ## SUPERFICIE
 

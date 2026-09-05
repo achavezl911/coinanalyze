@@ -24457,10 +24457,10 @@
     "rutas_con_campos": 62,
     "rutas_sin_campos": 6,
     "sin_clave_temporal": 36,
-    "sin_consumidor": 4,
+    "sin_consumidor": 5,
     "sin_declarar": 0,
-    "sin_llamada": 14,
-    "solo_mencion": 10,
+    "sin_llamada": 12,
+    "solo_mencion": 7,
     "tablas_alcanzadas": 30,
     "tablas_catalogo": 40
   },
@@ -24476,551 +24476,12 @@
       "cierre_indirecto": [],
       "claves_temporales": [],
       "codigos": [],
-      "consumidores": {
-        "checks": {
-          "llamadas": [
-            "harness/checks/K01a-espejo.sh:58",
-            "harness/checks/K01b-respaldo-cifrado.sh:31",
-            "harness/checks/K01b-respaldo-cifrado.sh:73",
-            "harness/checks/K01b-respaldo-cifrado.sh:95",
-            "harness/checks/K02-cobertura-hueco.sh:55",
-            "harness/checks/K02-cobertura-hueco.sh:56",
-            "harness/checks/K02-cobertura-hueco.sh:70",
-            "harness/checks/K05-control.bash:77",
-            "harness/checks/K05-control.bash:188",
-            "harness/checks/K05-control.bash:210",
-            "harness/checks/K05-control.bash:336",
-            "harness/checks/K05-control.bash:424",
-            "harness/checks/K05-latidos.sh:114",
-            "harness/checks/K05-latidos.sh:117",
-            "harness/checks/K05-latidos.sh:359",
-            "harness/checks/K05-latidos.sh:362",
-            "harness/checks/K05-latidos.sh:383",
-            "harness/checks/K05-latidos.sh:394",
-            "harness/checks/K06-visibilidad.sh:26",
-            "harness/checks/K07-persistencia.sh:31",
-            "harness/checks/K07-persistencia.sh:34",
-            "harness/checks/K13-vacio-o-rancio.sh:75",
-            "harness/checks/K18-borrado.sh:81",
-            "harness/checks/K19-ci-vivo.sh:79",
-            "harness/checks/K19-ci-vivo.sh:100",
-            "harness/checks/K20-cincoxx.sh:28",
-            "harness/checks/K20-cincoxx.sh:39",
-            "harness/checks/K20-cincoxx.sh:40",
-            "harness/checks/K22-resultado-por-horizonte.sh:176",
-            "harness/checks/K22-resultado-por-horizonte.sh:177",
-            "harness/checks/K22-resultado-por-horizonte.sh:178",
-            "harness/checks/K23-coste-de-ejecucion.sh:153",
-            "harness/checks/K23-coste-de-ejecucion.sh:155",
-            "harness/checks/K23-coste-de-ejecucion.sh:176",
-            "harness/checks/K23-coste-de-ejecucion.sh:178",
-            "harness/checks/K23-coste-de-ejecucion.sh:181",
-            "harness/checks/K23-coste-de-ejecucion.sh:183",
-            "harness/checks/K23-coste-de-ejecucion.sh:188",
-            "harness/checks/K23-coste-de-ejecucion.sh:190",
-            "harness/checks/K23-coste-de-ejecucion.sh:192",
-            "harness/checks/K23-coste-de-ejecucion.sh:216",
-            "harness/checks/K25-visibilidad-de-lo-final.sh:112",
-            "harness/checks/K31-eslabon5.sh:44",
-            "harness/checks/K31-eslabon5.sh:149",
-            "harness/checks/K37-tasa-de-perdida.sh:123",
-            "harness/checks/K38-referencia-por-tiempo.sh:118",
-            "harness/checks/K42-mapa-liquidaciones-cuadra.sh:70",
-            "harness/checks/K42-mapa-liquidaciones-cuadra.sh:128",
-            "harness/checks/K43-foto-unica.sh:189",
-            "harness/checks/K49-libretas-fuera-de-143.sh:109",
-            "harness/checks/K52-el-minuto-corto.sh:97",
-            "harness/checks/K52-el-minuto-corto.sh:281",
-            "harness/checks/K52-el-minuto-corto.sh:288",
-            "harness/checks/K52-el-minuto-corto.sh:294",
-            "harness/checks/K52b-la-ruta-no-falla-abierta.sh:79",
-            "harness/checks/K58-base-que-es-cero.sh:87",
-            "harness/checks/K58-base-que-es-cero.sh:192",
-            "harness/checks/K59-whale-vota-cero.sh:49",
-            "harness/checks/K60-resumen-sobre-cero-filas.sh:51",
-            "harness/checks/K62-una-version-dos-reglas.sh:93",
-            "harness/checks/K65-el-coste-no-puede-nacer-vacio.sh:62",
-            "harness/checks/K66-hueco-sobre-dato-que-tenemos.sh:50",
-            "harness/checks/K68-perdida-muda.sh:86",
-            "harness/checks/K68-perdida-muda.sh:87",
-            "harness/checks/K71-la-sonda-juzga-a-quien-dice.sh:67",
-            "harness/checks/K77-el-pool-borra-su-configuracion.sh:144",
-            "harness/checks/K77-el-pool-borra-su-configuracion.sh:207",
-            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:168",
-            "harness/checks/K82-el-espejo-contra-su-volcado.sh:89",
-            "harness/checks/K82-el-espejo-contra-su-volcado.sh:115",
-            "harness/checks/K82-el-espejo-contra-su-volcado.sh:118",
-            "harness/checks/K85-el-reciclado-que-fabrica-handshakes.sh:98",
-            "harness/checks/K85-el-reciclado-que-fabrica-handshakes.sh:101",
-            "harness/checks/K85-el-reciclado-que-fabrica-handshakes.sh:114",
-            "harness/checks/K85-el-reciclado-que-fabrica-handshakes.sh:118",
-            "harness/checks/K86-control.bash:68",
-            "harness/checks/K86-control.bash:69",
-            "harness/checks/K86-control.bash:105",
-            "harness/checks/K86-control.bash:155",
-            "harness/checks/K86-control.bash:179",
-            "harness/checks/K86-control.bash:185",
-            "harness/checks/K86-control.bash:199",
-            "harness/checks/K86-control.bash:200",
-            "harness/checks/K86-control.bash:216",
-            "harness/checks/K86-control.bash:246",
-            "harness/checks/K86-control.bash:251",
-            "harness/checks/K86-control.bash:252",
-            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:99",
-            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:144",
-            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:146",
-            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:147",
-            "harness/checks/K88-control.bash:67",
-            "harness/checks/K88-control.bash:115",
-            "harness/checks/K88-control.bash:192",
-            "harness/checks/K88-control.bash:196",
-            "harness/checks/K88-control.bash:214",
-            "harness/checks/K88-control.bash:224",
-            "harness/checks/K88-control.bash:238",
-            "harness/checks/K88-control.bash:265",
-            "harness/checks/K88-hook-control.bash:69",
-            "harness/checks/K88-hook-control.bash:103",
-            "harness/checks/K88-hook-control.bash:146",
-            "harness/checks/K88-hook-control.bash:203",
-            "harness/checks/K88-la-arquitectura-que-miente.sh:197",
-            "harness/checks/K88-la-arquitectura-que-miente.sh:226",
-            "harness/checks/K88-la-arquitectura-que-miente.sh:229",
-            "harness/checks/K88-la-arquitectura-que-miente.sh:244",
-            "harness/checks/K88-la-arquitectura-que-miente.sh:265",
-            "harness/checks/K90-control.bash:66",
-            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:67"
-          ],
-          "menciones": [
-            "harness/checks/K03-hueco-declarado.sh:61",
-            "harness/checks/K05-latidos.sh:16",
-            "harness/checks/K05-latidos.sh:96",
-            "harness/checks/K31-cubos.py:46",
-            "harness/checks/K31-cubos.py:165",
-            "harness/checks/K52-el-minuto-corto.sh:14",
-            "harness/checks/K52-el-minuto-corto.sh:189",
-            "harness/checks/K58-base-que-es-cero.sh:16",
-            "harness/checks/K58-base-que-es-cero.sh:17",
-            "harness/checks/K58-base-que-es-cero.sh:36",
-            "harness/checks/K60-resumen-sobre-cero-filas.sh:100",
-            "harness/checks/K80-la-matriz-cambia-de-universo.sh:34",
-            "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:25",
-            "harness/checks/K84-dos-matrices-una-cifra.sh:22",
-            "harness/checks/K84-dos-matrices-una-cifra.sh:23",
-            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:29",
-            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:30"
-          ]
-        },
-        "herramientas": {
-          "llamadas": [],
-          "menciones": [
-            "tools/generate_dashboard_usage_pdf.py:25",
-            "tools/generate_dashboard_usage_pdf.py:26",
-            "tools/generate_dashboard_usage_pdf.py:27",
-            "tools/generate_dashboard_usage_pdf.py:28",
-            "tools/generate_dashboard_usage_pdf.py:29",
-            "tools/generate_dashboard_usage_pdf.py:260",
-            "tools/generate_dashboard_usage_pdf.py:262",
-            "tools/generate_dashboard_usage_pdf.py:265",
-            "tools/generate_dashboard_usage_pdf.py:276"
-          ]
-        },
-        "panel": {
-          "llamadas": [
-            "static/app.js:127",
-            "static/app.js:139",
-            "static/app.js:140",
-            "static/app.js:193",
-            "static/app.js:203",
-            "static/app.js:299",
-            "static/app.js:300",
-            "static/app.js:345",
-            "static/app.js:346",
-            "static/app.js:372",
-            "static/app.js:376",
-            "static/app.js:383",
-            "static/app.js:384",
-            "static/app.js:385",
-            "static/app.js:386",
-            "static/app.js:416",
-            "static/app.js:471",
-            "static/app.js:600",
-            "static/app.js:652",
-            "static/app.js:677",
-            "static/app.js:694",
-            "static/app.js:1028",
-            "static/app.js:1044",
-            "static/app.js:1081",
-            "static/app.js:1089",
-            "static/app.js:1106",
-            "static/app.js:1167",
-            "static/app.js:1437",
-            "static/app.js:1867",
-            "static/app.js:1976",
-            "static/app.js:1980",
-            "static/app.js:2003",
-            "static/app.js:2086",
-            "static/app.js:2116",
-            "static/app.js:2198",
-            "static/app.js:2298",
-            "static/app.js:2322",
-            "static/app.js:2456",
-            "static/app.js:2457",
-            "static/app.js:2562",
-            "static/app.js:2728",
-            "static/app.js:2863",
-            "static/app.js:2941",
-            "static/app.js:3030",
-            "static/app.js:3031",
-            "static/app.js:3189",
-            "static/app.js:3277",
-            "static/app.js:3297",
-            "static/app.js:3315",
-            "static/app.js:3332",
-            "static/app.js:3348",
-            "static/app.js:3349",
-            "static/app.js:3364",
-            "static/app.js:3371",
-            "static/app.js:3394",
-            "static/app.js:3406",
-            "static/app.js:3407",
-            "static/app.js:3454",
-            "static/app.js:3485",
-            "static/app.js:3486",
-            "static/app.js:3507",
-            "static/app.js:3554",
-            "static/app.js:3566"
-          ],
-          "menciones": [
-            "static/app.js:66"
-          ]
-        },
-        "panel-html": {
-          "llamadas": [
-            "static/index.html:93",
-            "static/index.html:110",
-            "static/index.html:286"
-          ],
-          "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:19",
-            "README.md:22",
-            "README.md:215",
-            "README.md:257",
-            "README.md:261",
-            "README.md:296",
-            "README.md:343"
-          ]
-        },
-        "tests": {
-          "llamadas": [
-            "tests/js/ejecucion.test.js:45",
-            "tests/js/harness.js:48",
-            "tests/js/harness.js:69",
-            "tests/js/harness.js:73",
-            "tests/js/harness.js:82",
-            "tests/js/harness.js:87",
-            "tests/js/harness.js:91",
-            "tests/js/harness.js:121",
-            "tests/js/harness.js:127",
-            "tests/js/huecos.test.js:142",
-            "tests/test_metrics.py:80",
-            "tests/test_ohlcv_5m_rollup_postgres.py:88",
-            "tests/test_oi_context_referencia.py:81",
-            "tests/test_oi_context_referencia.py:85",
-            "tests/test_oi_context_referencia.py:108",
-            "tests/test_pr19_source_truth.py:266",
-            "tests/test_pr19_source_truth.py:300",
-            "tests/test_pr22_cvd_semantics.py:199",
-            "tests/test_pr22_cvd_semantics.py:219",
-            "tests/test_range_validate.py:25",
-            "tests/test_range_validate.py:37",
-            "tests/test_range_validate.py:77",
-            "tests/test_range_validate.py:100",
-            "tests/test_signal_confirmatory.py:262",
-            "tests/test_signal_execution_postgres.py:239",
-            "tests/test_signal_execution_postgres.py:240",
-            "tests/test_signal_execution_postgres.py:315",
-            "tests/test_signal_walk_forward.py:1115",
-            "tests/test_signal_walk_forward.py:1117",
-            "tests/test_signal_walk_forward.py:1132",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:335",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:425",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:427",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:601",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:767",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:1731",
-            "tests/test_signal_walk_forward_postgres.py:494",
-            "tests/test_signal_walk_forward_postgres.py:599",
-            "tests/test_signal_walk_forward_postgres.py:601",
-            "tests/test_signal_walk_forward_postgres.py:1113",
-            "tests/test_wyckoff.py:13",
-            "tests/test_wyckoff.py:14",
-            "tests/test_zones.py:36",
-            "tests/test_zones.py:37"
-          ],
-          "menciones": [
-            "tests/js/harness.js:79",
-            "tests/js/harness.js:147",
-            "tests/test_ai_context.py:49",
-            "tests/test_ai_context.py:50",
-            "tests/test_ai_context.py:55",
-            "tests/test_ai_context.py:57",
-            "tests/test_ai_context.py:58",
-            "tests/test_ai_context.py:68",
-            "tests/test_ai_context.py:76",
-            "tests/test_ai_context.py:83",
-            "tests/test_ai_context.py:90",
-            "tests/test_ai_context.py:91",
-            "tests/test_ai_context.py:100",
-            "tests/test_barrido_cadencia_postgres.py:48",
-            "tests/test_breakout.py:26",
-            "tests/test_breakout.py:27",
-            "tests/test_coinalyze_rate_limit.py:155",
-            "tests/test_config.py:57",
-            "tests/test_config.py:90",
-            "tests/test_config.py:91",
-            "tests/test_config.py:94",
-            "tests/test_config.py:103",
-            "tests/test_config.py:104",
-            "tests/test_daily_semantics.py:26",
-            "tests/test_daily_semantics.py:27",
-            "tests/test_daily_semantics.py:31",
-            "tests/test_daily_semantics.py:44",
-            "tests/test_daily_semantics.py:80",
-            "tests/test_daily_semantics.py:95",
-            "tests/test_daily_semantics.py:101",
-            "tests/test_daily_semantics.py:102",
-            "tests/test_daily_semantics.py:268",
-            "tests/test_daily_semantics.py:337",
-            "tests/test_daily_semantics.py:350",
-            "tests/test_daily_semantics.py:353",
-            "tests/test_daily_semantics.py:365",
-            "tests/test_daily_semantics.py:438",
-            "tests/test_daily_semantics.py:451",
-            "tests/test_daily_semantics.py:459",
-            "tests/test_daily_semantics.py:522",
-            "tests/test_dashboard_layout.py:6",
-            "tests/test_dashboard_layout.py:7",
-            "tests/test_dashboard_layout.py:8",
-            "tests/test_dashboard_presentation.py:11",
-            "tests/test_dashboard_presentation.py:12",
-            "tests/test_dashboard_presentation.py:13",
-            "tests/test_data_gaps_postgres.py:38",
-            "tests/test_data_gaps_postgres.py:41",
-            "tests/test_data_gaps_postgres.py:89",
-            "tests/test_db.py:133",
-            "tests/test_db.py:255",
-            "tests/test_delta_profile.py:18",
-            "tests/test_delta_profile.py:33",
-            "tests/test_deploy_health_gate.py:17",
-            "tests/test_deploy_health_gate.py:33",
-            "tests/test_deploy_health_gate.py:55",
-            "tests/test_deploy_health_gate.py:64",
-            "tests/test_deploy_health_gate.py:82",
-            "tests/test_deploy_health_gate.py:96",
-            "tests/test_deploy_health_gate.py:108",
-            "tests/test_deploy_health_gate.py:124",
-            "tests/test_deploy_health_gate.py:126",
-            "tests/test_deploy_health_gate.py:146",
-            "tests/test_deploy_health_gate.py:171",
-            "tests/test_deploy_health_gate.py:185",
-            "tests/test_deploy_health_gate.py:198",
-            "tests/test_deploy_health_gate.py:248",
-            "tests/test_deploy_health_gate.py:250",
-            "tests/test_deploy_health_gate.py:252",
-            "tests/test_deploy_health_gate.py:273",
-            "tests/test_deploy_health_gate.py:279",
-            "tests/test_flow_continuity.py:112",
-            "tests/test_flow_semantics.py:14",
-            "tests/test_flow_semantics.py:51",
-            "tests/test_flow_semantics.py:207",
-            "tests/test_freeze_walk_forward_manifest_cli.py:17",
-            "tests/test_freeze_walk_forward_manifest_cli.py:148",
-            "tests/test_freeze_walk_forward_manifest_cli.py:172",
-            "tests/test_freeze_walk_forward_manifest_cli.py:207",
-            "tests/test_freeze_walk_forward_manifest_cli.py:223",
-            "tests/test_freeze_walk_forward_manifest_cli.py:254",
-            "tests/test_freeze_walk_forward_manifest_cli.py:289",
-            "tests/test_freeze_walk_forward_manifest_cli.py:302",
-            "tests/test_freeze_walk_forward_manifest_cli.py:314",
-            "tests/test_freeze_walk_forward_manifest_cli.py:332",
-            "tests/test_freeze_walk_forward_manifest_cli.py:353",
-            "tests/test_horizontal_symbol_e2e.py:21",
-            "tests/test_liquidation_map_ventana.py:66",
-            "tests/test_market_feed_health.py:36",
-            "tests/test_metrics_endpoint.py:80",
-            "tests/test_metrics_endpoint.py:126",
-            "tests/test_metrics_endpoint.py:127",
-            "tests/test_metrics_endpoint.py:152",
-            "tests/test_metrics_endpoint.py:160",
-            "tests/test_metrics_endpoint.py:167",
-            "tests/test_metrics_endpoint.py:179",
-            "tests/test_metrics_endpoint.py:184",
-            "tests/test_metrics_endpoint.py:185",
-            "tests/test_ohlcv_4h.py:21",
-            "tests/test_ohlcv_4h.py:47",
-            "tests/test_ohlcv_4h.py:53",
-            "tests/test_ohlcv_4h.py:60",
-            "tests/test_ohlcv_4h.py:70",
-            "tests/test_ohlcv_5m_rollup_postgres.py:38",
-            "tests/test_oi_daily_rollup_postgres.py:27",
-            "tests/test_p0_data_integrity.py:32",
-            "tests/test_p0_data_integrity.py:100",
-            "tests/test_p0_data_integrity.py:120",
-            "tests/test_p0_regresion_auditoria.py:151",
-            "tests/test_p0_regresion_auditoria.py:161",
-            "tests/test_p0_regresion_auditoria.py:170",
-            "tests/test_p0_regresion_auditoria.py:180",
-            "tests/test_p1_execution_cost.py:30",
-            "tests/test_p1_execution_cost.py:31",
-            "tests/test_p1_timeframes_and_spot.py:53",
-            "tests/test_p1_timeframes_and_spot.py:131",
-            "tests/test_p2_baselines.py:42",
-            "tests/test_p2_baselines.py:45",
-            "tests/test_p2_baselines.py:103",
-            "tests/test_p2_baselines.py:113",
-            "tests/test_p2_baselines.py:125",
-            "tests/test_p2_baselines.py:136",
-            "tests/test_p3_impact_and_alerts.py:91",
-            "tests/test_p3_impact_and_alerts.py:97",
-            "tests/test_p3_impact_and_alerts.py:106",
-            "tests/test_partition_compatibility_bridge.py:16",
-            "tests/test_partition_compatibility_bridge.py:19",
-            "tests/test_partitioning_postgres.py:14",
-            "tests/test_partitioning_postgres.py:18",
-            "tests/test_partitioning_postgres.py:224",
-            "tests/test_partitioning_postgres.py:253",
-            "tests/test_partitioning_postgres.py:254",
-            "tests/test_pr19_source_truth.py:204",
-            "tests/test_pr19_source_truth.py:205",
-            "tests/test_pr19_source_truth.py:215",
-            "tests/test_pr19_source_truth.py:257",
-            "tests/test_pr19_source_truth.py:269",
-            "tests/test_pr20_semantics.py:133",
-            "tests/test_pr20_semantics.py:180",
-            "tests/test_pr20_semantics.py:184",
-            "tests/test_pr20_semantics.py:186",
-            "tests/test_pr20_semantics.py:194",
-            "tests/test_pr20_semantics.py:202",
-            "tests/test_pr20_semantics.py:203",
-            "tests/test_pr20_semantics.py:215",
-            "tests/test_pr20_semantics.py:216",
-            "tests/test_pr20_semantics.py:220",
-            "tests/test_pr20_semantics.py:222",
-            "tests/test_pr20_semantics.py:225",
-            "tests/test_pr20_semantics.py:238",
-            "tests/test_pr21_point_in_time.py:120",
-            "tests/test_pr21_point_in_time.py:124",
-            "tests/test_pr21_point_in_time.py:155",
-            "tests/test_pr21_point_in_time.py:167",
-            "tests/test_pr21_point_in_time.py:210",
-            "tests/test_pr21_point_in_time_postgres.py:13",
-            "tests/test_pr21_point_in_time_postgres.py:16",
-            "tests/test_pr21_point_in_time_postgres.py:18",
-            "tests/test_pr22_cvd_semantics.py:197",
-            "tests/test_pr22_cvd_semantics.py:217",
-            "tests/test_pr22_cvd_semantics_postgres.py:21",
-            "tests/test_pr22_cvd_semantics_postgres.py:24",
-            "tests/test_pr22_cvd_semantics_postgres.py:26",
-            "tests/test_pr23_temporal_integrity.py:31",
-            "tests/test_pr23_temporal_integrity_postgres.py:16",
-            "tests/test_pr23_temporal_integrity_postgres.py:18",
-            "tests/test_pr23_temporal_integrity_postgres.py:21",
-            "tests/test_pr24_daily_historical_integrity_postgres.py:20",
-            "tests/test_pr24_daily_historical_integrity_postgres.py:22",
-            "tests/test_pr24_daily_historical_integrity_postgres.py:25",
-            "tests/test_pr25_research_knowledge_time_postgres.py:29",
-            "tests/test_pr25_research_knowledge_time_postgres.py:31",
-            "tests/test_pr25_research_knowledge_time_postgres.py:34",
-            "tests/test_pr25_research_knowledge_time_postgres.py:157",
-            "tests/test_pr25_research_knowledge_time_postgres.py:570",
-            "tests/test_pr25_research_knowledge_time_postgres.py:708",
-            "tests/test_pr25_research_knowledge_time_postgres.py:756",
-            "tests/test_pr25_research_knowledge_time_postgres.py:912",
-            "tests/test_pr25_research_knowledge_time_postgres.py:998",
-            "tests/test_range_validate.py:29",
-            "tests/test_range_validate.py:166",
-            "tests/test_range_validate.py:173",
-            "tests/test_reorganizacion.py:18",
-            "tests/test_reorganizacion.py:19",
-            "tests/test_reorganizacion.py:196",
-            "tests/test_reorganizacion.py:205",
-            "tests/test_setup_observables.py:7",
-            "tests/test_signal_attribution_postgres.py:19",
-            "tests/test_signal_backtest_postgres.py:19",
-            "tests/test_signal_confirmatory.py:438",
-            "tests/test_signal_execution_postgres.py:21",
-            "tests/test_signal_ledger_postgres.py:23",
-            "tests/test_signal_outcomes_postgres.py:21",
-            "tests/test_signal_regime_postgres.py:20",
-            "tests/test_signal_regime_postgres.py:484",
-            "tests/test_signal_regime_postgres.py:563",
-            "tests/test_signal_regime_postgres.py:636",
-            "tests/test_signal_regime_postgres.py:737",
-            "tests/test_signal_replay_postgres.py:21",
-            "tests/test_signal_walk_forward.py:609",
-            "tests/test_signal_walk_forward.py:610",
-            "tests/test_signal_walk_forward.py:828",
-            "tests/test_signal_walk_forward.py:1393",
-            "tests/test_signal_walk_forward.py:1514",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:48",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:49",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:64",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:247",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:253",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:326",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:547",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:717",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:784",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:880",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:1214",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:1466",
-            "tests/test_signal_walk_forward_confirmatory_postgres.py:1552",
-            "tests/test_signal_walk_forward_postgres.py:38",
-            "tests/test_signal_walk_forward_postgres.py:39",
-            "tests/test_signal_walk_forward_postgres.py:54",
-            "tests/test_signal_walk_forward_postgres.py:295",
-            "tests/test_v121_hardening.py:12",
-            "tests/test_v121_hardening.py:18",
-            "tests/test_v121_hardening.py:25",
-            "tests/test_v121_hardening.py:32",
-            "tests/test_v121_hardening.py:40",
-            "tests/test_v150_calidad.py:22",
-            "tests/test_v150_calidad.py:23",
-            "tests/test_v150_oi_scoring.py:9",
-            "tests/test_v150_oi_scoring.py:46",
-            "tests/test_v150_oi_scoring.py:50",
-            "tests/test_v150_oi_scoring.py:87",
-            "tests/test_v150_oi_scoring.py:95",
-            "tests/test_v150_setup_confirmado.py:83",
-            "tests/test_v150_topbar.py:16",
-            "tests/test_v150_topbar.py:17",
-            "tests/test_v150_version_docs.py:9",
-            "tests/test_v150_version_docs.py:10",
-            "tests/test_v150_version_docs.py:11",
-            "tests/test_v150_version_docs.py:24",
-            "tests/test_v150_version_docs.py:56",
-            "tests/test_v150_version_docs.py:59",
-            "tests/test_whale_delta_minutes_postgres.py:34",
-            "tests/test_ws_collector.py:63",
-            "tests/test_ws_collector.py:64",
-            "tests/test_wyckoff.py:102",
-            "tests/test_wyckoff.py:103",
-            "tests/test_zones.py:1",
-            "tests/test_zones.py:23",
-            "tests/test_zones.py:46",
-            "tests/test_zones.py:47"
-          ]
-        }
-      },
+      "consumidores": {},
       "consumo": {
-        "llamada_desde_el_panel": true,
-        "n_llamadas": 220,
-        "n_menciones": 285,
-        "sin_ninguno": false,
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 0,
+        "sin_ninguno": true,
         "solo_mencion": false
       },
       "declarada": {
@@ -26283,18 +25744,18 @@
       ],
       "consumidores": {
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_range_validate.py:167"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 0,
-        "n_menciones": 1,
+        "n_llamadas": 1,
+        "n_menciones": 0,
         "sin_ninguno": false,
-        "solo_mencion": true
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -26498,16 +25959,14 @@
         "checks": {
           "llamadas": [
             "harness/checks/K02-cobertura-hueco.sh:46",
-            "harness/checks/K03-hueco-declarado.sh:46",
-            "harness/checks/K88-control.bash:344",
-            "harness/checks/K88-control.bash:346",
-            "harness/checks/K88-control.bash:348"
+            "harness/checks/K03-hueco-declarado.sh:46"
           ],
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:5",
             "harness/checks/K31-cubos.py:40",
-            "harness/checks/K88-control.bash:305",
-            "harness/checks/K88-control.bash:337"
+            "harness/checks/K88-control.bash:324",
+            "harness/checks/K88-control.bash:356",
+            "harness/checks/K88-control.bash:398"
           ]
         },
         "readme": {
@@ -26519,8 +25978,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 5,
-        "n_menciones": 5,
+        "n_llamadas": 2,
+        "n_menciones": 6,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -26927,16 +26386,13 @@
         "checks": {
           "llamadas": [
             "harness/checks/K02-cobertura-hueco.sh:46",
-            "harness/checks/K03-hueco-declarado.sh:46",
-            "harness/checks/K88-control.bash:341",
-            "harness/checks/K88-control.bash:344",
-            "harness/checks/K88-control.bash:346",
-            "harness/checks/K88-control.bash:348"
+            "harness/checks/K03-hueco-declarado.sh:46"
           ],
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:5",
             "harness/checks/K31-cubos.py:40",
-            "harness/checks/K88-control.bash:337"
+            "harness/checks/K88-control.bash:356",
+            "harness/checks/K88-control.bash:398"
           ]
         },
         "readme": {
@@ -26948,8 +26404,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 6,
-        "n_menciones": 4,
+        "n_llamadas": 2,
+        "n_menciones": 5,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -27121,17 +26577,18 @@
           ]
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/test_dashboard_presentation.py:83"
+          ],
           "menciones": [
-            "tests/test_dashboard_presentation.py:83",
             "tests/test_data_gaps.py:128"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 8,
-        "n_menciones": 11,
+        "n_llamadas": 9,
+        "n_menciones": 10,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -27353,18 +26810,18 @@
           ]
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_metrics_endpoint.py:162",
             "tests/test_v121_hardening.py:27",
             "tests/test_v150_desk_snapshot.py:126"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 9,
-        "n_menciones": 8,
+        "n_llamadas": 12,
+        "n_menciones": 5,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -27638,16 +27095,16 @@
           ]
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_dashboard_presentation.py:122"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 2,
-        "n_menciones": 2,
+        "n_llamadas": 3,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -27932,16 +27389,16 @@
           ]
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_v150_desk_snapshot.py:128"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 2,
-        "n_menciones": 2,
+        "n_llamadas": 3,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -28314,16 +27771,16 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_dashboard_layout.py:108"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 4,
-        "n_menciones": 2,
+        "n_llamadas": 5,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -28992,16 +28449,16 @@
           ]
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_v150_desk_snapshot.py:126"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 3,
-        "n_menciones": 3,
+        "n_llamadas": 4,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -30892,18 +30349,18 @@
           ]
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_v150_desk_snapshot.py:126"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 0,
-        "n_menciones": 7,
+        "n_llamadas": 1,
+        "n_menciones": 6,
         "sin_ninguno": false,
-        "solo_mencion": true
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -31540,16 +30997,16 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_metrics_endpoint.py:140"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 3,
-        "n_menciones": 1,
+        "n_llamadas": 4,
+        "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -31808,16 +31265,16 @@
           ]
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_v121_hardening.py:28"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 3,
-        "n_menciones": 3,
+        "n_llamadas": 4,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32330,16 +31787,16 @@
           ]
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_v121_hardening.py:29"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 3,
-        "n_menciones": 3,
+        "n_llamadas": 4,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32983,10 +32440,12 @@
       ],
       "consumidores": {
         "checks": {
-          "llamadas": [
-            "harness/checks/K88-control.bash:133"
-          ],
-          "menciones": []
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K88-control.bash:139",
+            "harness/checks/K88-control.bash:140",
+            "harness/checks/K88-control.bash:397"
+          ]
         },
         "readme": {
           "llamadas": [],
@@ -32997,10 +32456,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 1,
-        "n_menciones": 1,
+        "n_llamadas": 0,
+        "n_menciones": 4,
         "sin_ninguno": false,
-        "solo_mencion": false
+        "solo_mencion": true
       },
       "declarada": {
         "completa": true,
@@ -33311,13 +32770,12 @@
         "checks": {
           "llamadas": [
             "harness/checks/K21-ledger-de-senales.sh:32",
-            "harness/checks/K24-replay-del-contexto.sh:88",
-            "harness/checks/K88-control.bash:326",
-            "harness/checks/K88-control.bash:329"
+            "harness/checks/K24-replay-del-contexto.sh:88"
           ],
           "menciones": [
             "harness/checks/K24-replay-del-contexto.sh:19",
-            "harness/checks/K31-cubos.py:145"
+            "harness/checks/K31-cubos.py:145",
+            "harness/checks/K88-control.bash:398"
           ]
         },
         "tests": {
@@ -33329,8 +32787,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 4,
-        "n_menciones": 3,
+        "n_llamadas": 2,
+        "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -34061,18 +33519,18 @@
           ]
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_pr24_daily_historical_integrity.py:89"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 0,
-        "n_menciones": 3,
+        "n_llamadas": 1,
+        "n_menciones": 2,
         "sin_ninguno": false,
-        "solo_mencion": true
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -34699,18 +34157,19 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/test_deploy_health_gate.py:180"
+          ],
           "menciones": [
             "tests/test_deploy_health_gate.py:42",
-            "tests/test_deploy_health_gate.py:158",
-            "tests/test_deploy_health_gate.py:180"
+            "tests/test_deploy_health_gate.py:158"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 2,
-        "n_menciones": 3,
+        "n_llamadas": 3,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -34830,16 +34289,16 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_v150_desk_snapshot.py:126"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 4,
-        "n_menciones": 1,
+        "n_llamadas": 5,
+        "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -35093,14 +34552,16 @@
         "checks": {
           "llamadas": [],
           "menciones": [
-            "harness/checks/K88-control.bash:356"
+            "harness/checks/K88-control.bash:141",
+            "harness/checks/K88-control.bash:375",
+            "harness/checks/K88-control.bash:396"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 0,
-        "n_menciones": 1,
+        "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": true
       },
@@ -35505,16 +34966,16 @@
           ]
         },
         "tests": {
-          "llamadas": [],
-          "menciones": [
+          "llamadas": [
             "tests/test_wyckoff.py:106"
-          ]
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 4,
-        "n_menciones": 2,
+        "n_llamadas": 5,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -35764,20 +35225,21 @@
           ]
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/test_metrics_endpoint.py:161"
+          ],
           "menciones": [
             "tests/test_metrics_endpoint.py:3",
-            "tests/test_metrics_endpoint.py:4",
-            "tests/test_metrics_endpoint.py:161"
+            "tests/test_metrics_endpoint.py:4"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 0,
-        "n_menciones": 7,
+        "n_llamadas": 1,
+        "n_menciones": 6,
         "sin_ninguno": false,
-        "solo_mencion": true
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,

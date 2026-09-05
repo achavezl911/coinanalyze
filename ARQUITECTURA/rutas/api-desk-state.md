@@ -230,7 +230,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K43-foto-unica.sh:105` | — |
 | **panel** | `static/app.js:1488` | — |
 | **readme** | — | `README.md:34` |
-| **tests** | — | `tests/test_v150_desk_snapshot.py:128` |
+| **tests** | `tests/test_v150_desk_snapshot.py:128` | — |
 
 **La llama el panel: es superficie de producto.**
 
