@@ -32,11 +32,24 @@ hay que escribirla con su cita** — o es un hueco, no una exencion.
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete, y es poco a proposito
+
+En la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z) devuelve **una lista de 3 elementos** con `symbol` y `asset`. No lee
+ninguna tabla: sale de `SETTINGS.SYMBOLS` y `WS_SYMBOL_MAP` (`app/api.py:609-611`).
+
+**PROMESA · es la lista de simbolos CONFIGURADOS, no la de simbolos con datos.**
+Que una ruta la nombre no garantiza que haya una fila suya en ninguna tabla.
+
+*Que significa:* usarla como universo para un recuento produce denominadores que incluyen
+simbolos sin dato. Es la forma de **P0.5** aplicada al eje de los simbolos.
+
+**No publica marca temporal, y aqui SI es correcto**: es configuracion, no medida.
+**Familia 4 de K43 (exenta), y esta es la cita de la exencion.**
+
+Consumidores: `static/app.js:1804` (**la llama el panel**),
+`harness/checks/K43-foto-unica.sh:106`, `tests/test_deploy_health_gate.py:180`.
+
 
 ## SUPERFICIE
 

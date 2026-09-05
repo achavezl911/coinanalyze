@@ -32,11 +32,26 @@ hay que escribirla con su cita** — o es un hueco, no una exencion.
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Esta ruta NO promete nada comprobable, y eso es lo que se escribe
+
+En la foto devuelve `alerts = [1]` con `priority`, `side`, `message` y `detail`: **cuatro
+campos, ninguno temporal, ninguno numerico auditable**. `message` y `detail` son prosa.
+
+**No publica:** ni su instante, ni la ventana de la que sale la alerta, ni el umbral que la
+disparo, ni cuantas veces se ha disparado antes. Es de las **7 rutas sin ninguna marca
+temporal** de la foto.
+
+**PROMESA declarada:** *emite alertas con prioridad y lado, y no promete nada sobre cuando
+se generaron, sobre que ventana miran ni sobre su tasa base.*
+
+*Que significa:* una alerta sin instante no se puede desduplicar, y sin tasa base no se
+puede juzgar. **P1.7** -"¿cuantas senales de este tipo en 30 dias?"- no tiene respuesta
+posible desde aqui.
+
+**Y nadie la llama:** sus dos unicos rastros son MENCIONES en comentarios
+(`harness/checks/K31-cubos.py:18` y `:187`). Una ruta de la que solo se habla.
+
 
 ## SUPERFICIE
 

@@ -48,11 +48,33 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### NADIE LA LLAMA, y esta medido
+
+Censo sobre `static/app.js`, `static/index.html`, `harness/checks`, `tests`, `tools` y
+`README.md`, con limite de token y separando llamada de mencion: **cero llamadas y cero
+menciones**. Es una de las **seis** rutas del sistema sin ningun rastro.
+
+No prueba que este muerta -puede llamarla una IA por su nombre, o algo fuera del repo-,
+pero es la forma exacta del patron que en esta casa se ha repetido nueve veces.
+
+### Lo que promete
+
+**PROMESA · cada zona declara SU fuerza y CUANTAS VECES la han tocado.**
+En la foto: `active_zone`, `nearest_support` y `nearest_resistance`, las tres con
+`center`, `low`, `high`, `score`, `difficulty` y **`touches`**. Mas `current_price`,
+`decision = "ESPERAR: zona en disputa"`, `live_pressure` y `long_case`.
+
+`touches` es lo que contesta **P2.2** -"¿cuantas veces ese nivel ha aguantado?"-. Sin el,
+como dice la bateria, *"el nivel es una raya"*.
+
+**PROMESA · dice que NO hacer, no solo que hay.** `decision` incluye `ESPERAR`. Es una de
+las pocas respuestas del sistema al **P5.9** -la prueba de fuego del ¶19-: un producto que
+nunca dice "no operes" es un generador de razones.
+
+**Y NADIE LA LLAMA, que es lo grave aqui.** Esta ruta contesta P2.2, P2.8, P3.1 y P3.5 -y
+la unica de las 68 que publica `touches`- y no la consume ni el panel ni un check.
+
 
 ## SUPERFICIE
 

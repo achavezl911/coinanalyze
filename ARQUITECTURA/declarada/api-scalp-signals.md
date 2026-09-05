@@ -41,11 +41,28 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo propio de esta ruta
+
+**PROMESA · publica la serie con la que se puede AUDITAR el estado, con sus dos scores.**
+En la foto: `rows = [200]` con `ts`, `long_score`, `short_score`, `state` y `confidence`.
+
+Es la unica puerta por la que `state` se puede **recalcular desde sus insumos**: con
+`long_score` y `short_score` en cada fila, la regla de `scalp_bias_label`
+(`app/scalp_logic.py:301-313`: `edge < 12` -> No Trade, `>= 70` -> Momentum, `>= 58` ->
+Pullback) se puede reproducir fuera del sistema. Eso contesta **P1.5** aplicado al scalp:
+*"si el score no se puede recalcular desde sus componentes publicados, no es auditable"*.
+
+*Que significa no cumplirlo:* que `state` viniera sin los dos scores. Entonces la unica
+forma de comprobar la etiqueta seria creersela.
+
+**Y aqui esta el otro extremo de K90:** esta serie, con `ts` por fila, es **la que permite
+medir la persistencia** que `/api/scalp/summary` no promete. La ruta cumple; lo que no
+cumple es el rotulo del panel.
+
+**Nadie la llama:** sus rastros son MENCIONES. La serie que hace auditable al scalp no la
+consume nadie.
+
 
 ## SUPERFICIE
 

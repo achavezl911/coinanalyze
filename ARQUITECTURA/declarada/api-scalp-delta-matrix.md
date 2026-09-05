@@ -44,11 +44,34 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
+### La promesa que comparte casi toda la familia `/api/scalp/*`
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+**Publica SU EDAD y EL UMBRAL con el que hay que juzgarla, en vez de dejar que el
+consumidor lo suponga.** Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): las rutas de esta familia traen
+`status` junto a alguna forma de `age`/`lag` y su `stale_after_seconds` o
+`max_age_seconds`. Es lo que convierte "este numero es viejo" en una comprobacion y no en
+una opinion.
+
+*Que significa no cumplirlo:* publicar un valor rancio indistinguible de uno vivo. Es
+**P0.9** de la bateria — *"si el proveedor esta caido, ¿me entero o veo el ultimo valor
+congelado?"* — y su respuesta solo puede darla la propia ruta, porque nadie de fuera sabe
+cuanto es demasiado para ESTE dato.
+
+### Lo propio de esta ruta
+
+**PROMESA · declara que sus ventanas SE SOLAPAN, en el propio cuerpo.**
+En la foto devuelve **12 elementos**, cada uno con `window`, `as_of`, `window_type`,
+**`windows_are_nested`**, **`independent_confirmations`** y `acceleration_measured`.
+
+`windows_are_nested` es una promesa poco comun y muy valiosa: dice que las ventanas de la
+matriz **no son observaciones independientes**. Doce ventanas anidadas que "confirman" lo
+mismo son UNA observacion repetida doce veces, y `independent_confirmations` da el numero
+que de verdad se puede contar.
+
+*Que significa no cumplirlo:* contar doce confirmaciones cuando hay una. Es exactamente el
+error que la bateria persigue en **P5.3** -"¿la muestra solapa ventanas?"- llevado a la
+respuesta: aqui no hay que deducirlo, la ruta lo dice.
+
 
 ## SUPERFICIE
 

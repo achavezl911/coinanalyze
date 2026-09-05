@@ -24459,8 +24459,8 @@
     "sin_clave_temporal": 36,
     "sin_consumidor": 4,
     "sin_declarar": 0,
-    "sin_llamada": 10,
-    "solo_mencion": 6,
+    "sin_llamada": 11,
+    "solo_mencion": 7,
     "tablas_alcanzadas": 30,
     "tablas_catalogo": 40
   },
@@ -35068,19 +35068,18 @@
       ],
       "consumidores": {
         "checks": {
-          "llamadas": [
-            "harness/checks/K88-control.bash:356",
-            "harness/checks/K88-control.bash:359"
-          ],
-          "menciones": []
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K88-control.bash:356"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 2,
-        "n_menciones": 0,
+        "n_llamadas": 0,
+        "n_menciones": 1,
         "sin_ninguno": false,
-        "solo_mencion": false
+        "solo_mencion": true
       },
       "declarada": {
         "completa": true,

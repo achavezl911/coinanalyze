@@ -31,11 +31,35 @@ Claves de **primer nivel** — la respuesta declara su propio instante o periodo
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### NADIE LA LLAMA, y esta medido
+
+Censo sobre `static/app.js`, `static/index.html`, `harness/checks`, `tests`, `tools` y
+`README.md`, con limite de token y separando llamada de mencion: **cero llamadas y cero
+menciones**. Es una de las **seis** rutas del sistema sin ningun rastro.
+
+No prueba que este muerta -puede llamarla una IA por su nombre, o algo fuera del repo-,
+pero es la forma exacta del patron que en esta casa se ha repetido nueve veces.
+
+### Lo que promete
+
+**PROMESA · publica la volatilidad en las TRES formas que hacen falta para un stop.**
+En la foto: `atr` por `5m`/`15m`/`1h`/`4h`/`1d`, `realized_vol_annualized_pct` por
+`1h`/`24h`/`7d`, `daily_range_percentile_1y = 43.6`, `compression_score = 0.488`,
+`range_expansion = false` y `note = "realized vol anualizada desde velas…"`.
+
+Contesta **P2.5** -"¿que distancia hay hasta mi stop en % y en ATR?"- con el ATR de cinco
+marcos, que es lo que permite decir si *"un stop a 0.3 % en un activo con ATR de 2 % es
+ruido, no stop"*.
+
+**PROMESA · el percentil trae SU ventana en el nombre.** `daily_range_percentile_1y`: el
+`_1y` va en la clave, no en la documentacion. Un percentil sin ventana no es comparable
+entre dias.
+
+**NO publica ninguna marca temporal**, y aqui pesa: un ATR de hace seis horas se parece
+mucho a uno de ahora, y no hay forma de distinguirlos desde la respuesta. **Candidata a la
+misma familia que `/api/scalp/liquidation-levels`.**
+
 
 ## SUPERFICIE
 

@@ -43,11 +43,37 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
+### La promesa que comparte casi toda la familia `/api/scalp/*`
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+**Publica SU EDAD y EL UMBRAL con el que hay que juzgarla, en vez de dejar que el
+consumidor lo suponga.** Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): las rutas de esta familia traen
+`status` junto a alguna forma de `age`/`lag` y su `stale_after_seconds` o
+`max_age_seconds`. Es lo que convierte "este numero es viejo" en una comprobacion y no en
+una opinion.
+
+*Que significa no cumplirlo:* publicar un valor rancio indistinguible de uno vivo. Es
+**P0.9** de la bateria — *"si el proveedor esta caido, ¿me entero o veo el ultimo valor
+congelado?"* — y su respuesta solo puede darla la propia ruta, porque nadie de fuera sabe
+cuanto es demasiado para ESTE dato.
+
+### Lo propio de esta ruta
+
+**PROMESA · la frescura va en un bloque PROPIO, no mezclada con los datos.**
+En la foto: `freshness = {status, as_of, age_seconds, max_age_seconds}` al lado de
+`rows[3]`. Separarlo importa: un consumidor puede comprobar la frescura **sin entender el
+libro**, y un `rows` vacio con `freshness.status` malo no se confunde con un mercado quieto.
+
+*Que significa no cumplirlo:* el defecto que vigila `harness/checks/K13-vacio-o-rancio.sh`
+-en sus lineas 33, 92 y 94-, que es literalmente "vacio o rancio" tratados como lo mismo.
+
+**PENDIENTE · la trampa de P4.2 no la he comprobado.** La bateria avisa de **dos formas**
+de esta respuesta (`{rows:[…]}` e indexada por venue). En la foto salio `rows`, pero una
+sola foto no descarta la otra forma. Comando para cerrarlo:
+
+```sh
+harness/bin/api '/api/scalp/orderbook?symbol=ETHUSDT' | head -c 400
+```
+
 
 ## SUPERFICIE
 

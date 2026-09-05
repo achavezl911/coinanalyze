@@ -351,12 +351,18 @@ fi
 
 # C-D3 · un comentario es MENCION, no llamada. Sin esta distincion, una ruta de la que
 # solo se habla figura como consumida.
+#
+# LA RUTA DEL FIXTURE NO EXISTE, Y ES DELIBERADO. La primera version usaba
+# /api/volatility, que es una ruta REAL, y con eso este control se colaba en el censo: el
+# fichero pasaba a mencionarla y su ficha dejaba de decir "sin consumidor". El instrumento
+# se estaba midiendo a si mismo y movia la cifra que el propio mapa publica. Con una ruta
+# inventada el control ejercita lo mismo y no contamina nada.
 cd3() {
   mkdir -p "$T/harness/checks"
-  printf '#!/bin/sh\n# esta prueba mira /api/volatility algun dia\necho hola\n' > "$T/harness/checks/Kzz.sh"
+  printf '#!/bin/sh\n# esta prueba mira /api/zzz-fixture-cd3 algun dia\necho hola\n' > "$T/harness/checks/Kzz.sh"
 }
 T="$DIR/cons3"; rm -rf "$T"; cp -r "$LIMPIO" "$T"; cd3
-lee=$(cons /api/volatility)
+lee=$(cons /api/zzz-fixture-cd3)
 if [ "$lee" = "0 1" ]; then
   pasan=$((pasan+1)); printf '  [ok   ] %-46s %s\n' "CD3 un comentario es MENCION, no llamada" "$lee"
 else
