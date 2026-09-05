@@ -31,7 +31,8 @@ En la foto: `metric = "impact_bps_per_musd"`,
 `definition = "|cambio de precio en bps| / (|delta…"`, y **`limitations = [3]`**, la primera
 de las cuales dice *"Es impacto agregado del mercado, no…"*.
 
-**Es la unica de las 68 que publica un campo `limitations`.** Contesta **P4.3** —*"¿cuanto
+**Solo 2 de las 68 publican un campo `limitations`**: esta y `/api/positioning`.
+(Escribi "la unica" sin contarlo; el recuento sobre `derivada.json` da dos.) Contesta **P4.3** —*"¿cuanto
 mueve el precio mi entrada?"*— y, mas importante, **avisa de que no lo contesta del todo**:
 el impacto agregado del mercado no es el impacto de TU orden. Eso es el ¶19 aplicado a una
 metrica concreta, y publicado por la propia ruta en vez de escrito en un documento aparte.
