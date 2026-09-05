@@ -109,6 +109,24 @@ ASIGNACION="
 # serlo-; healthz es salud del sistema; symbols es catalogo de configuracion.
 
 # --- LAS PAREJAS DE FOTO. ruta | clave del sobre | envoltorio ---
+#
+# LA TERCERA COLUMNA ES UNA LISTA DE EXCLUSION, no de campos permitidos. Se pasa como
+# `saltar` a nombres() (linea ~363): son campos que la RUTA trae y que el sobre no tiene por
+# que replicar -metadatos de la peticion como `symbol` o `minutes`, o el envoltorio-.
+# Se dice aqui porque leerla al reves cuesta caro: midiendola como "lista de permitidos"
+# salen CUATRO rutas incumpliendo (swing-score, scalp/basis, scalp/orderbook,
+# scalp/liquidations) y NINGUNA de las cuatro incumple — sus campos si estan en el sobre.
+#
+# 2026-09-05 · la fila de `liquidation_levels` de aqui abajo gano `as_of`, `window_start` y
+# `window_end` con la decision D2 -publicar su instante y su ventana-, y este check lo cazo
+# el mismo dia del despliegue: la ruta empezo a publicar tres nombres que su familia
+# declarada no contemplaba. Hizo exactamente su trabajo. Los tres son metadatos de la
+# ventana que la propia peticion define, no dato que el sobre deba traer: van a la exclusion.
+#
+# (El camino completo de esa ruta NO se escribe en este comentario a proposito. El detector
+#  de consumidores casa el nombre alla donde aparezca, asi que el mapa acreditaria como
+#  MENCION de la ruta al comentario que la EXPLICA. Ya paso en F3b, F3f y F5; escribirlo
+#  aqui fue la cuarta, y se vio comparando el censo de consumo contra HEAD.)
 # El ENVOLTORIO son los nombres de PRIMER NIVEL que la ruta pone alrededor de su dato y
 # la foto no repite porque el sobre los declara UNA sola vez para todas las secciones
 # (symbol, as_of) o porque son la caja y no el contenido (rows). Se descuenta el nombre
@@ -126,7 +144,7 @@ PAREJAS="
 /api/passive-flow              | passive_flow           |
 /api/quality/feeds             | feed_quality           |
 /api/scalp/delta-matrix        | delta_matrix           |
-/api/scalp/liquidation-levels  | liquidation_levels     | symbol,bucket_bps,minutes,rows
+/api/scalp/liquidation-levels  | liquidation_levels     | symbol,bucket_bps,minutes,rows,as_of,window_start,window_end
 /api/scalp/orderbook           | orderbook              | symbol,rows
 /api/structure                 | market_structure       |
 /api/structure-detail          | structure_detail       |

@@ -37,7 +37,8 @@ hay que escribirla con su cita** — o es un hueco, no una exencion.
 
 Devuelve los perfiles de analisis disponibles. No lee ninguna tabla: sale de codigo.
 
-**No publica ninguna marca temporal**, y es de las **7 rutas de la foto sin ninguna**.
+**No publica ninguna marca temporal**, y es de las **6 rutas de la foto sin ninguna**
+(eran 7 hasta el 2026-09-05, ver `api-scalp-alerts.md`).
 Igual que `/api/symbols`, aqui es **correcto**: son perfiles declarados en el codigo, no
 una medida. **Familia 4 de K43 (exenta), con esta cita.**
 

@@ -157,7 +157,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:99`, `harness/checks/K43-foto-unica.sh:141`, `harness/checks/K43-foto-unica.sh:142`, `harness/checks/K43-foto-unica.sh:143` _(+7)_ | `harness/checks/K43-foto-unica.sh:149`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13` |
+| **checks** | `harness/checks/K43-foto-unica.sh:99`, `harness/checks/K43-foto-unica.sh:159`, `harness/checks/K43-foto-unica.sh:160`, `harness/checks/K43-foto-unica.sh:161` _(+7)_ | `harness/checks/K43-foto-unica.sh:167`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13` |
 | **panel** | `static/app.js:1503` | `static/app.js:1375` |
 | **readme** | — | `README.md:195`, `README.md:488`, `README.md:502` |
 | **tests** | `tests/test_metrics_endpoint.py:162`, `tests/test_v121_hardening.py:27`, `tests/test_v150_desk_snapshot.py:126` | — |

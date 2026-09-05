@@ -106,7 +106,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K02-cobertura-hueco.sh:46`, `harness/checks/K03-hueco-declarado.sh:46` | `harness/checks/K02-cobertura-hueco.sh:5`, `harness/checks/K31-cubos.py:40`, `harness/checks/K88-control.bash:356`, `harness/checks/K88-control.bash:398` |
+| **checks** | `harness/checks/K02-cobertura-hueco.sh:46`, `harness/checks/K03-hueco-declarado.sh:46` | `harness/checks/K02-cobertura-hueco.sh:5`, `harness/checks/K31-cubos.py:40`, `harness/checks/K88-control.bash:416`, `harness/checks/K88-control.bash:458` |
 | **readme** | — | `README.md:404` |
 
 **No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.

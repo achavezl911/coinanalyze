@@ -370,7 +370,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:196`, `harness/checks/K43-foto-unica.sh:197`, `harness/checks/K43-foto-unica.sh:235` _(+1)_ | `harness/checks/K43-foto-unica.sh:7`, `harness/checks/K43-foto-unica.sh:17`, `harness/checks/K43-foto-unica.sh:233`, `harness/checks/K84-dos-matrices-una-cifra.sh:33` |
+| **checks** | `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:214`, `harness/checks/K43-foto-unica.sh:215`, `harness/checks/K43-foto-unica.sh:253` _(+1)_ | `harness/checks/K43-foto-unica.sh:7`, `harness/checks/K43-foto-unica.sh:17`, `harness/checks/K43-foto-unica.sh:251`, `harness/checks/K84-dos-matrices-una-cifra.sh:33` |
 | **readme** | — | `README.md:62`, `README.md:414`, `README.md:518` |
 | **tests** | — | `tests/test_metrics_endpoint.py:131`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:111`, `tests/test_pr22_cvd_semantics.py:1182` |
 

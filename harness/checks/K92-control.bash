@@ -53,11 +53,27 @@ exit 3
 PY
 chmod +x "$DIR/bin/prodsql-roto"
 
-JOURNAL_OK='2026-09-05T17:16:55+00:00 coinalyze-ws[123]: Stopped Coinalyze WS collector.'
-# formato de la consulta: parada|segundo|cov_parada|cov_siguiente|filas_parada|filas_siguiente
-FILA_MIENTE=' 2026-09-05T17:16| 55| 60| 45| 2| 2'
-FILA_SANA='   2026-09-05T17:16| 55| 55| 45| 2| 2'
-FILA_AUSENTE='2026-09-05T17:16| 55|   |   | 0| 0'
+# LA VENTANA, no el instante. Se necesitan los DOS marcadores: `Stopping` abre y `Started`
+# cierra. Es la correccion del 2026-09-05: el criterio viejo miraba el minuto de la parada y
+# el SIGUIENTE, y el minuto que miente es el ANTERIOR -el que contiene el `Stopping`-.
+JOURNAL_OK='2026-09-05T17:16:55+00:00 systemd[1]: Stopping coinalyze-ws.service...
+2026-09-05T17:17:14+00:00 systemd[1]: Started coinalyze-ws.service.'
+
+# formato de la consulta, ahora CUATRO columnas: minuto|caido|filas|cov
+#   caido > 0  -> SUJETO   (minuto que la ventana toca)
+#   caido = 0  -> CONTROL  (minuto intacto: tiene que poder declarar 60)
+# La ventana 17:16:55 -> 17:17:14 deja 5 s en el minuto 17:16 y 14 s en el 17:17.
+CTRL='       2026-09-05T17:13|  0|  6| 60
+ 2026-09-05T17:20|  0|  6| 60'
+FILA_MIENTE=" 2026-09-05T17:16|  5|  6| 60
+ 2026-09-05T17:17| 14|  6| 45
+$CTRL"
+FILA_SANA="   2026-09-05T17:16|  5|  6| 55
+ 2026-09-05T17:17| 14|  6| 45
+$CTRL"
+FILA_AUSENTE="2026-09-05T17:16|  5|  0| -1
+ 2026-09-05T17:17| 14|  0| -1
+$CTRL"
 
 caso() {  # <nombre> <rc> <patron> <journal> <filas> [prodsql] [prod]
   local nombre="$1" esperado="$2" patron="$3" jr="$4" fl="$5"
@@ -81,42 +97,76 @@ echo "K92-control · sujeto: $CHK"
 echo
 
 echo "POSITIVO · el minuto que miente"
-# P1 · EL CASO REAL, con las cifras medidas en 140: parada en el segundo 55, el minuto de la
-# parada dice 60 -deberia decir 55- y el siguiente dice 45.
-caso "P1 cov=60 con la parada dentro del minuto" 1 "dicen covered_seconds=60" \
+# P1 · EL CASO REAL, con las cifras medidas en 140 el 2026-09-04: la ventana deja 5 s en el
+# minuto 17:16, que declara 60 cuando lo mas que puede declarar es 55.
+caso "P1 cov=60 con 5s de ventana dentro del minuto" 1 "declaran MAS cobertura" \
      "$JOURNAL_OK" "$FILA_MIENTE"
-# P2 · dos paradas, una miente y otra no: tiene que nombrar solo la que miente.
-caso "P2 dos paradas, solo una miente" 1 "17:16" \
+# P2 · dos ventanas, una miente y otra no: tiene que nombrar solo la que miente.
+caso "P2 dos ventanas, solo una miente" 1 "17:16" \
      "$JOURNAL_OK
-2026-09-04T09:30:20+00:00 coinalyze-ws[123]: Stopped Coinalyze WS collector." \
-     " 2026-09-05T17:16| 55| 60| 45| 2| 2
- 2026-09-04T09:30| 20| 20| 50| 2| 2"
+2026-09-04T09:30:20+00:00 systemd[1]: Stopping coinalyze-ws.service...
+2026-09-04T09:30:40+00:00 systemd[1]: Started coinalyze-ws.service." \
+     " 2026-09-05T17:16|  5|  6| 60
+ 2026-09-04T09:30| 20|  6| 40
+$CTRL"
 
 echo
 echo "NEGATIVO · cuando la cobertura SI se escribe corta"
-caso "N1 cov=55 con la parada en el segundo 55" 0 "declaran su cobertura corta" \
+caso "N1 cov=55 con 5s de ventana: justo en el limite" 0 "compatible con su parada" \
      "$JOURNAL_OK" "$FILA_SANA"
-# N2 · la parada en el segundo 0 no acorta el minuto anterior: cov=60 es correcto ahi.
-caso "N2 parada en el segundo 0: cov=60 es correcto" 0 "declaran su cobertura corta" \
-     "2026-09-05T17:16:00+00:00 coinalyze-ws[123]: Stopped Coinalyze WS collector." \
-     " 2026-09-05T17:16|  0| 60| 45| 2| 2"
-# N3 · sin fila en el minuto de la parada es el caso AUSENTE, que YA se arreglo y no es el
-# sujeto de este check. No puede contar como defecto.
-caso "N3 minuto de la parada AUSENTE: no es el sujeto" 0 "" \
+# N2 · los minutos intactos son CONTROL, no sujeto. Se afirma sobre el RECUENTO -«2 minuto(s)
+# tocados» con cuatro filas en la consulta-, porque con el mismo fixture que N1 este caso
+# pasaria siempre que pasara N1 y no probaria nada por su cuenta.
+caso "N2 los 2 intactos no entran en el recuento de sujetos" 0 "los 2 minuto\(s\) tocados" \
+     "$JOURNAL_OK" "$FILA_SANA"
+# N3 · sin fila es el caso AUSENTE, que YA se arreglo y no es el sujeto de este check.
+caso "N3 minuto tocado AUSENTE: no es el sujeto" 2 "sin sujeto" \
      "$JOURNAL_OK" "$FILA_AUSENTE"
 
 echo
+echo "LA DESIGUALDAD · declarar de MENOS no es este defecto"
+# D1 · EL CASO QUE OBLIGO A CAMBIAR EL CRITERIO. El 2026-09-03 la ventana fue de 19 s y el
+# minuto declaro covered_seconds=1: el colector tardo en recibir su primer trade despues del
+# arranque. La RESTA EXACTA -exigir cov = 60-19 = 41- daria ROJO aqui, y seria un ROJO
+# FALSO: declarar de menos no es mentir que estas completo. La DESIGUALDAD lo deja pasar.
+caso "D1 cov=1 con 19s de ventana: corto de mas, no miente" 0 "compatible con su parada" \
+     "2026-09-03T05:20:39+00:00 systemd[1]: Stopping coinalyze-ws.service...
+2026-09-03T05:20:58+00:00 systemd[1]: Started coinalyze-ws.service." \
+     " 2026-09-03T05:20| 19|  3|  1
+ 2026-09-03T05:17|  0|  6| 60"
+# D2 · y un solo segundo por encima del limite SI es ROJO: la desigualdad no es un colador.
+caso "D2 cov=56 con 5s de ventana: un segundo de mas ya miente" 1 "permite<=55 dice=56" \
+     "$JOURNAL_OK" " 2026-09-05T17:16|  5|  6| 56
+$CTRL"
+
+echo
+echo "LA VENTANA QUE CRUZA DOS MINUTOS"
+# V1 · una sola ventana produce DOS sujetos con limites distintos -5 s y 14 s-, y el segundo
+# sale sano con 45. El criterio viejo, que miraba «el siguiente», habria dado por bueno el
+# primero -el unico roto- exactamente al reves.
+caso "V1 una ventana, dos minutos, limites distintos" 1 "permite<=55" \
+     "$JOURNAL_OK" "$FILA_MIENTE"
+# V2 · un `Stopping` sin su `Started` es una ventana abierta: no se juzga. Si se juzgara,
+# habria que inventarle un final.
+caso "V2 Stopping sin Started: ventana abierta, no se juzga" 2 "sin sujeto que medir" \
+     "2026-09-05T17:16:55+00:00 systemd[1]: Stopping coinalyze-ws.service..." \
+     "$FILA_MIENTE"
+
+echo
 echo "EL CONTROL DEL SUJETO · en la misma consulta"
-# C1 · si el minuto SIGUIENTE tambien sale completo, la parada no acorto nada: o el journal
-# miente o el reloj no cuadra. NO MEDIDO, nunca ROJO.
-caso "C1 el minuto siguiente TAMBIEN sale completo" 2 "el sujeto seria el registro de paradas" \
-     "$JOURNAL_OK" " 2026-09-05T17:16| 55| 60| 60| 2| 2"
+# C1 · HUELLA POSITIVA. Si NINGUN minuto intacto llega a 60, la tabla va corta por todas
+# partes y un minuto corto junto a una parada no seria atribuible a la parada. NOMED, jamas
+# ROJO: el hallazgo no se sostendria.
+caso "C1 ningun minuto intacto declara 60" 2 "NINGUNO declara 60" \
+     "$JOURNAL_OK" " 2026-09-05T17:16|  5|  6| 60
+ 2026-09-05T17:13|  0|  6| 58
+ 2026-09-05T17:20|  0|  6| 59"
 
 echo
 echo "ANTI-FANTASMA · lo que no se puede medir es NOMED, jamas VERDE"
-# F1 · CERO PARADAS NO ES CERO DEFECTOS. Sin parada no hay minuto de parada y el check no
+# F1 · CERO VENTANAS NO ES CERO DEFECTOS. Sin ventana no hay segundos caidos y el check no
 # tiene sujeto. Es la leccion de K60 aplicada al elegible.
-caso "F1 ninguna parada en la ventana" 2 "sin sujeto que medir" \
+caso "F1 ninguna ventana en el periodo" 2 "sin sujeto que medir" \
      "" "$FILA_MIENTE"
 caso "F2 el journal no se puede leer" 2 "no se pudo leer el journal" \
      "$JOURNAL_OK" "$FILA_MIENTE" "$DIR/bin/prodsql" "$DIR/bin/prod-roto"
