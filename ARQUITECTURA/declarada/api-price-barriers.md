@@ -68,6 +68,11 @@ En la foto: `active_zone`, `nearest_support` y `nearest_resistance`, las tres co
 `touches` es lo que contesta **P2.2** -"¿cuantas veces ese nivel ha aguantado?"-. Sin el,
 como dice la bateria, *"el nivel es una raya"*.
 
+Recuento sobre las 65 rutas de la foto, buscando cualquier clave con `touch` hasta 4
+niveles: **4 rutas lo publican** — esta, `/api/ai/context`, `/api/ai/context/bundle` y
+`/api/dashboard/state`. Las otras tres **embeben el bloque de barreras**: el dato sale de
+aqui y llega al producto por esas puertas. **La ruta que lo calcula no la llama nadie.**
+
 **PROMESA · dice que NO hacer, no solo que hay.** `decision` incluye `ESPERAR`. Es una de
 las pocas respuestas del sistema al **P5.9** -la prueba de fuego del ¶19-: un producto que
 nunca dice "no operes" es un generador de razones.
