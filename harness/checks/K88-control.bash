@@ -19,6 +19,11 @@
 set -uo pipefail
 
 ORIG=${K88_CONTROL_REPO:-/srv/coinanalyze/repo}
+# EL PROPIO FICHERO, EN ABSOLUTO Y ANTES DEL cd. El barrido AC1 se grepea a si mismo, y con
+# `$0` relativo mas el `cd "$DIR"` de mas abajo daba "de 0 rutas nombradas, 0 reales" — un
+# ok por no haber leido nada. Es el mismo fantasma que este control lleva cuatro rondas
+# cazando en otros, cometido aqui.
+YO="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 CHK="$(cd "$(dirname "$0")" && pwd)/K88-la-arquitectura-que-miente.sh"
 [ -r "$CHK" ] || { echo "no encuentro el check en $CHK"; exit 2; }
 
@@ -130,7 +135,21 @@ caso "P5 ruta nueva sin regenerar (HUECO)" 1 "no las describe" p5
 
 # P6 · ruta retirada del codigo y el documento sigue anunciandola. Es peor que el hueco:
 # promete una superficie que ya no existe.
-p6() { sed -i 's|^@app\.get("/api/setup")|@app.get("/api/setup-renombrada")|' "$T/app/api.py"; }
+# LA RUTA QUE SE RENOMBRA SE AÑADE PRIMERO, y no es una real. Antes este cuerpo hacia
+# `sed` sobre `@app.get("/api/setup")`, o sea que el mapa acreditaba como CONSUMIDOR de
+# /api/setup la linea cuyo proposito es BORRARLA. Es la misma contaminacion que se cazo en
+# F3b con /api/volatility, en otro sitio: el instrumento colandose en su propio censo.
+p6() {
+  cat >> "$T/app/api.py" <<'PY'
+
+
+@app.get("/api/zzz-fixture-p6")
+async def zzz_fixture_p6() -> dict[str, str]:
+    return {"control": "p6"}
+PY
+  python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+  sed -i 's|^@app\.get("/api/zzz-fixture-p6")|@app.get("/api/zzz-fixture-p6-renombrada")|' "$T/app/api.py"
+}
 caso "P6 ruta renombrada sin regenerar" 1 "(no las describe|YA NO existen)" p6
 
 # P7 · TAUTOLOGIA. Se vacia la lista de rutas de derivada.json dejando las 68 fichas .md
@@ -323,10 +342,10 @@ PY
 # C-D1 · el caso que motivo el arreglo: RUTA=/api/x sin comillas ES una llamada.
 cd1() {
   mkdir -p "$T/harness/checks"
-  printf '#!/bin/sh\nRUTA=/api/signals/ledger\ncurl "$RUTA"\n' > "$T/harness/checks/Kzz.sh"
+  printf '#!/bin/sh\nRUTA=/api/zzz-fixture-cd1\ncurl "$RUTA"\n' > "$T/harness/checks/Kzz.sh"
 }
 T="$DIR/cons"; rm -rf "$T"; cp -r "$LIMPIO" "$T"; cd1
-lee=$(cons /api/signals/ledger)
+lee=$(cons /api/zzz-fixture-cd1)
 if [ "$lee" = "1 0" ]; then
   pasan=$((pasan+1)); printf '  [ok   ] %-46s %s\n' "CD1 RUTA=/api/x sin comillas es LLAMADA" "$lee"
 else
@@ -338,14 +357,14 @@ fi
 # detector viejo exigia comillas, y el limite de token tiene que conservarlo.
 cd2() {
   mkdir -p "$T/harness/checks"
-  printf '#!/bin/sh\ncurl "/api/cvd/spot"\n' > "$T/harness/checks/Kzz.sh"
+  printf '#!/bin/sh\ncurl "/api/zzz-fix/sub"\n' > "$T/harness/checks/Kzz.sh"
 }
 T="$DIR/cons2"; rm -rf "$T"; cp -r "$LIMPIO" "$T"; cd2
-corta=$(cons /api/cvd); larga=$(cons /api/cvd/spot)
+corta=$(cons /api/zzz-fix); larga=$(cons /api/zzz-fix/sub)
 if [ "$corta" = "0 0" ] && [ "$larga" = "1 0" ]; then
-  pasan=$((pasan+1)); printf '  [ok   ] %-46s /api/cvd=%s /api/cvd/spot=%s\n' "CD2 /api/cvd NO casa con /api/cvd/spot" "$corta" "$larga"
+  pasan=$((pasan+1)); printf '  [ok   ] %-46s corta=%s larga=%s\n' "CD2 el prefijo NO casa con la ruta larga" "$corta" "$larga"
 else
-  fallos=$((fallos+1)); printf '  [FALLA] %-46s /api/cvd=%s (esperaba "0 0") /api/cvd/spot=%s (esperaba "1 0")\n' \
+  fallos=$((fallos+1)); printf '  [FALLA] %-46s corta=%s (esperaba "0 0") larga=%s (esperaba "1 0")\n' \
     "CD2 limite de token" "$corta" "$larga"
 fi
 
@@ -367,6 +386,43 @@ if [ "$lee" = "0 1" ]; then
   pasan=$((pasan+1)); printf '  [ok   ] %-46s %s\n' "CD3 un comentario es MENCION, no llamada" "$lee"
 else
   fallos=$((fallos+1)); printf '  [FALLA] %-46s dio "%s", esperaba "0 1"\n' "CD3 comentario es mencion" "$lee"
+fi
+
+echo
+# ======================================================================================
+# EL INSTRUMENTO NO PUEDE COLARSE EN SU PROPIO CENSO · barrido, no caso a caso.
+#
+# Es la TERCERA vez que la misma contaminacion aparece en otro sitio:
+#   F3b  /api/volatility en el fixture de CD3 -> su ficha dejaba de decir "sin consumidor"
+#   F3d  /api/setup en p6 -> el mapa acreditaba como CONSUMIDOR la linea que la BORRA
+#   F3d  /api/signals/ledger en CD1, /api/cvd y /api/cvd/spot en CD2
+# Arreglarlas una a una ya fallo dos veces. Esto barre el fichero entero y falla si queda
+# CUALQUIER ruta real, sin importar en que caso este. Los fixtures usan rutas inventadas
+# -zzz-*, control-*- que no existen en el codigo, asi que nombrarlas no mueve ningun censo.
+# ======================================================================================
+echo "AUTOCONTAMINACION · ningun fixture puede nombrar una ruta REAL"
+
+reales=$(grep -oE "/api/[a-z0-9/_-]+" "$YO" | sort -u)
+# El elegible sale de un instrumento EXTERNO: los decoradores del api.py de verdad.
+existen=$(grep -oE '^@app\.(get|post|put|delete|patch)\("[^"]+"\)' "$ORIG/app/api.py" \
+          | sed 's/.*("//; s/")$//' | sort -u)
+colados=''
+for r in $reales; do
+  printf '%s\n' "$existen" | grep -qx "$r" || continue
+  # Una ruta real puede aparecer en un COMENTARIO -explicando por que se quito-, y eso no
+  # contamina: el detector las clasifica como MENCION. Solo cuentan las lineas de codigo.
+  if grep -nE "(^|[^#])/api/" "$YO" | grep -v '^[0-9]*:[[:space:]]*#' | grep -q -- "$r"; then
+    colados="$colados $r"
+  fi
+done
+if [ -z "$colados" ]; then
+  pasan=$((pasan+1))
+  printf '  [ok   ] %-46s de %s rutas nombradas, 0 reales en codigo\n' \
+    "AC1 ningun fixture nombra una ruta real" "$(printf '%s\n' "$reales" | grep -c .)"
+else
+  fallos=$((fallos+1))
+  printf '  [FALLA] %-46s rutas REALES en codigo de fixture:%s\n' \
+    "AC1 autocontaminacion" "$colados"
 fi
 
 echo

@@ -33,21 +33,40 @@ penc=$(printf '%s' "$payload" | base64 | tr -d '\n')
 #
 # Aqui no se usa PIPESTATUS a proposito: esto es /bin/sh, no bash. Se captura, se mira y
 # despues se imprime.
+# NO SE FUNDE stderr CON stdout, Y ESA ES LA CORRECCION.
+# La version anterior capturaba con `2>&1` y despues buscaba '^ERROR:' en el monton. Medido
+# por el operador: esa segunda defensa tenia CERO verdaderos positivos y un falso positivo
+# demostrado.
+#   · psql se invoca con `-f -`, asi que su error llega como
+#     `psql:<stdin>:1: ERROR:  column "x" does not exist` — que NO empieza por ERROR:,
+#     luego el ancla no podia casarlo NUNCA.
+#   · lo unico que si empieza por ERROR: al principio de linea es una FILA cuyo primer
+#     campo empieza asi. `SELECT 'ERROR: esto es un dato'` daba rc=5.
+# Anclar a '^psql:.*: ERROR:' habria tapado el sintoma. La causa es haber mezclado dos
+# canales que el sistema ya traia separados: mientras esten separados, un error y una fila
+# NO PUEDEN confundirse, se escriba lo que se escriba en una columna de texto.
+err=$(mktemp) || exit 2
+trap 'rm -f "$err"' EXIT INT TERM
+
 salida=$(ssh -n -o BatchMode=yes -o ConnectTimeout=8 \
   -i "$PROD_SSH_KEY" -o UserKnownHostsFile="$PROD_KNOWN_HOSTS" \
-  "$PROD_SSH_USER@$PROD_HOST" "printf %s $penc | base64 -d | sh" 2>&1)
+  "$PROD_SSH_USER@$PROD_HOST" "printf %s $penc | base64 -d | sh" 2>"$err")
 rc=$?
 
 printf '%s\n' "$salida" | "$B/bin/_corta"
 
-# 1 · el rc del transporte (ssh caido, clave mala, psql con ON_ERROR_STOP)
-[ "$rc" = "0" ] || exit "$rc"
+# 1 · el rc del transporte y del SQL (ssh caido, clave mala, psql con ON_ERROR_STOP=1)
+if [ "$rc" != "0" ]; then
+  cat "$err" >&2
+  exit "$rc"
+fi
 
-# 2 · SEGUNDA DEFENSA: psql escribe "ERROR:  ..." y con 2>&1 viaja mezclado con las filas.
-# Se busca al PRINCIPIO DE LINEA para no confundirlo con una fila que contenga ese texto
-# -un mensaje de log, por ejemplo-, que seria un falso positivo caro en un canal que usan
-# 31 checks. rc=5 para distinguirlo de un fallo de transporte.
-if printf '%s\n' "$salida" | grep -q '^ERROR:'; then
+# 2 · SEGUNDA DEFENSA, ahora sobre el canal correcto. Un ERROR en stderr no puede venir de
+# una fila: las filas van por stdout. Se busca sin anclar al principio de linea a proposito
+# -aqui el ancla no aporta y solo puede fallar-, y ya no hay falso positivo posible porque
+# el dato de negocio nunca pasa por aqui. rc=5 lo distingue de un fallo de transporte.
+if grep -q 'ERROR:' "$err"; then
+  cat "$err" >&2
   exit 5
 fi
 exit 0

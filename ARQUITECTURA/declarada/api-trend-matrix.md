@@ -27,11 +27,38 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · publica SU instante en primer nivel.** `as_of` (en la foto,
+`2026-09-04T22:33:12.133578+00:00`). Es de las pocas que se fecha a si misma y no solo a
+sus filas.
+
+**PROMESA 2 · declara el METODO en el cuerpo.**
+`note = "sesgo por marco = estructura(pivote…"`. Un marco que dice "alcista" sin decir como
+lo decidio no se puede re-derivar, y **P1.2** exige comparar esta ruta contra `/api/structure`
+y `/api/structure-detail`: sin el metodo publicado, la comparacion es entre tres cajas
+negras.
+
+**PROMESA 3 · seis marcos, y la alineacion aparte.**
+`timeframes = {15m, 1h, 4h, 8h, 1d, 3d}` y `medium_term_alignment = "alcista"` como campo
+independiente. Que la alineacion sea un campo y no una deduccion es lo que permite
+contestar **P1.3** —*"¿los marcos se contradicen entre si?"*—: `mixto` es una respuesta
+publicada, no algo que el consumidor tenga que inferir.
+
+*Que significa no cumplirlo:* que `medium_term_alignment` no fuera nunca contradictorio. La
+bateria lo dice en P1.3: *"una matriz que nunca se contradice esta aplanando algo. Contar
+contradicciones en 30 dias: si son 0, sospechar del metodo, no del mercado."*
+
+**PENDIENTE · esa cuenta no la he hecho.** Necesita serie, no foto:
+
+```sh
+harness/bin/prodsql "SELECT COUNT(*) FILTER (WHERE swing_bias <> regime_bias), COUNT(*)
+  FROM daily_verdict WHERE session_date >= now() - interval '30 days'"
+```
+
+**La llama el panel** (`static/app.js:1478` y `:1580`).
+
 
 ## SUPERFICIE
 

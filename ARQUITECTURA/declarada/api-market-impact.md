@@ -23,11 +23,31 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · publica su DEFINICION y sus LIMITACIONES en el cuerpo.**
+En la foto: `metric = "impact_bps_per_musd"`,
+`definition = "|cambio de precio en bps| / (|delta…"`, y **`limitations = [3]`**, la primera
+de las cuales dice *"Es impacto agregado del mercado, no…"*.
+
+**Solo 2 de las 68 publican un campo `limitations`**: esta y `/api/positioning`.
+(Escribi "la unica" sin contarlo; el recuento sobre `derivada.json` da dos.) Contesta **P4.3** —*"¿cuanto
+mueve el precio mi entrada?"*— y, mas importante, **avisa de que no lo contesta del todo**:
+el impacto agregado del mercado no es el impacto de TU orden. Eso es el ¶19 aplicado a una
+metrica concreta, y publicado por la propia ruta en vez de escrito en un documento aparte.
+
+**PROMESA 2 · cada ventana declara si esta COMPLETA.**
+`windows = [4]` con `window`, `impact_bps_per_musd`, `net_delta_musd`, `price_move_bps`,
+`coverage` y **`coverage_complete`**. Un booleano al lado del porcentaje: la diferencia
+entre "cubierto al 92 %" y "completo" no se deja al criterio del que lee.
+
+*Que significa no cumplirlo:* que `limitations` se quitara "porque ensucia la respuesta".
+Entonces un impacto agregado se leeria como impacto propio, que es exactamente el error que
+el campo existe para impedir.
+
+**La llama el panel** (`static/app.js:1568`).
+
 
 ## SUPERFICIE
 

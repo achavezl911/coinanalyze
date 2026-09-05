@@ -123,7 +123,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:46`, `harness/checks/K03-hueco-declarado.sh:161`, `harness/checks/K03-hueco-declarado.sh:164`, `harness/checks/K43-foto-unica.sh:102` _(+1)_ | `harness/checks/K02-cobertura-hueco.sh:37`, `harness/checks/K03-hueco-declarado.sh:8`, `harness/checks/K03-hueco-declarado.sh:15`, `harness/checks/K03-hueco-declarado.sh:153` _(+2)_ |
 | **panel** | `static/app.js:1482`, `static/app.js:1550`, `static/app.js:1635` | — |
 | **readme** | — | `README.md:70`, `README.md:90`, `README.md:409` |
-| **tests** | — | `tests/test_dashboard_presentation.py:83`, `tests/test_data_gaps.py:128` |
+| **tests** | `tests/test_dashboard_presentation.py:83` | `tests/test_data_gaps.py:128` |
 
 **La llama el panel: es superficie de producto.**
 

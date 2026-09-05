@@ -23,11 +23,26 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA · cada capa publica SUS VOTOS, no solo su conclusion.**
+En la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): `layers = [3]` con `layer`, `horizon`, `bias`, **`votes_up`**,
+**`votes_total`** y `method`. Mas `as_of` y `alignment = "mixto"` en primer nivel.
+
+`votes_up` sobre `votes_total` es lo que hace **auditable** el sesgo: un `bias = "alcista"`
+con 2 de 3 votos y otro con 3 de 3 no son lo mismo, y sin los votos serian indistinguibles.
+Es **P1.5** aplicado a la estructura —*"si el score no se puede recalcular desde sus
+componentes publicados, no es auditable y eso es un K"*—.
+
+**PROMESA · publica la contradiccion en vez de resolverla.** `alignment = "mixto"` con tres
+capas de horizonte distinto: la ruta **no elige** por el trader. Es P1.3 y la mitad de P5.9.
+
+*Que significa no cumplirlo:* que `votes_total` desapareciera, o que `alignment` nunca
+saliera `mixto`. Lo primero rompe la auditabilidad; lo segundo delata un aplanamiento.
+
+**La llama el panel** (`static/app.js:1577`).
+
 
 ## SUPERFICIE
 
