@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_orderbook` · `app/api.py:1464` (cuerpo hasta la 1476) · decorador en la linea 1463.
+Handler `scalp_orderbook` · `app/api.py:1465` (cuerpo hasta la 1477) · decorador en la linea 1464.
 
 ## Parametros de entrada
 
@@ -18,9 +18,9 @@ Handler `scalp_orderbook` · `app/api.py:1464` (cuerpo hasta la 1476) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `freshness` | literal en app/api.py:1475 |
-| `rows` | literal en app/api.py:1474 |
-| `symbol` | literal en app/api.py:1473 |
+| `freshness` | literal en app/api.py:1476 |
+| `rows` | literal en app/api.py:1475 |
+| `symbol` | literal en app/api.py:1474 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -42,8 +42,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.orderbook_freshness` — `app/ai_context.py:634`
-- `app.api.records` — `app/api.py:234`
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.records` — `app/api.py:235`
+- `app.api.validate_symbol` — `app/api.py:222`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (4)</summary>
 
@@ -60,7 +60,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -71,7 +71,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K13-vacio-o-rancio.sh:32`, `harness/checks/K13-vacio-o-rancio.sh:33`, `harness/checks/K13-vacio-o-rancio.sh:92`, `harness/checks/K13-vacio-o-rancio.sh:94` _(+4)_ | `harness/checks/K13-vacio-o-rancio.sh:2`, `harness/checks/K43-foto-unica.sh:44`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:71` |
-| **panel** | `static/app.js:1564` | — |
+| **panel** | `static/app.js:1576` | — |
 | **tests** | — | `tests/js/libro_vacio_o_rancio.test.js:4`, `tests/test_orderbook_frescura.py:1`, `tests/test_orderbook_frescura.py:119` |
 
 **La llama el panel: es superficie de producto.**

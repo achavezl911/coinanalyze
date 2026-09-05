@@ -433,7 +433,22 @@ echo
 # exactamente el mismo. Si el check pasara, el brazo 1 no estaria haciendo nada.
 # ======================================================================================
 echo "HUELLA · los dos brazos cazan cosas distintas"
-h1() { sed -i 's/"linea": 2008/"linea": 99999/' "$T/ARQUITECTURA/derivada.json"; }
+# EL NUMERO DE LINEA NO SE FIJA: se toma el que haya. La version anterior clavaba
+# `"linea": 2008` -la de una ruta concreta en su dia- y dejo de casar en cuanto un cambio
+# api.py desplazo el fichero: el caso pasaba a rc=0 y contaba como "el check no enrojece",
+# que es lo contrario de lo que prueba. Es la misma fragilidad que I6, y por eso aqui se
+# muta la PRIMERA linea que haya, sea cual sea.
+h1() {
+  python3 - "$T/ARQUITECTURA/derivada.json" <<'PYH1'
+import json, re, sys
+p = sys.argv[1]
+t = open(p, encoding="utf-8").read()
+m = re.search(r'"linea": (\d+)', t)
+if not m:
+    raise SystemExit("sin ninguna clave 'linea': el fixture no puede inducir nada")
+open(p, "w", encoding="utf-8").write(t.replace(m.group(0), '"linea": 99999', 1))
+PYH1
+}
 caso "H1 deriva invisible al brazo 2" 1 "no coincide con la regeneracion" h1
 
 echo

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `zone_analysis_endpoint` · `app/api.py:1651` (cuerpo hasta la 1664) · decorador en la linea 1650.
+Handler `zone_analysis_endpoint` · `app/api.py:1652` (cuerpo hasta la 1665) · decorador en la linea 1651.
 
 ## Parametros de entrada
 
@@ -54,7 +54,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.zone_analysis` — `app/scalp_logic.py:1364`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
@@ -86,9 +86,9 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:1660` | el propio handler |
-| 422 | zone spans more than 3x; narrow it | `app/api.py:1662` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 422 | low must be below high | `app/api.py:1661` | el propio handler |
+| 422 | zone spans more than 3x; narrow it | `app/api.py:1663` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -99,7 +99,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-foto-unica.sh:104` | — |
-| **panel** | `static/app.js:2603` | — |
+| **panel** | `static/app.js:2615` | — |
 | **tests** | — | `tests/test_p0_data_integrity.py:126` |
 
 **La llama el panel: es superficie de producto.**
@@ -135,7 +135,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
 | `app.api.zone_analysis_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.zone_analysis` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |

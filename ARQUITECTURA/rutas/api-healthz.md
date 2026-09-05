@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `health` · `app/api.py:2747` (cuerpo hasta la 2801) · decorador en la linea 2746.
+Handler `health` · `app/api.py:2859` (cuerpo hasta la 2913) · decorador en la linea 2858.
 
 ## Parametros de entrada
 
@@ -16,13 +16,13 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `database` | literal en app/api.py:2795 |
-| `governed_services` | literal en app/api.py:2798 |
-| `missing_services` | literal en app/api.py:2796 |
-| `missing_symbols` | literal en app/api.py:2797 |
-| `services` | literal en app/api.py:2799 |
-| `status` | literal en app/api.py:2790 |
-| `symbols` | literal en app/api.py:2800 |
+| `database` | literal en app/api.py:2907 |
+| `governed_services` | literal en app/api.py:2910 |
+| `missing_services` | literal en app/api.py:2908 |
+| `missing_symbols` | literal en app/api.py:2909 |
+| `services` | literal en app/api.py:2911 |
+| `status` | literal en app/api.py:2902 |
+| `symbols` | literal en app/api.py:2912 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:234`
+- `app.api.records` — `app/api.py:235`
 - `app.db.db_identity` — `app/db.py:64`
 - `app.db.heartbeat` — `app/db.py:409`
 - `app.db.heartbeat_max_age` — `app/db.py:95`
@@ -96,7 +96,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:55`, `harness/checks/K05-control.bash:307`, `harness/checks/K05-latidos.sh:127`, `harness/checks/K05-latidos.sh:388` _(+3)_ | `harness/checks/K05-latidos.sh:2`, `harness/checks/K08-que-base.sh:8` |
-| **panel** | `static/app.js:1494`, `static/app.js:1622` | — |
+| **panel** | `static/app.js:1506`, `static/app.js:1634` | — |
 | **readme** | — | `README.md:413`, `README.md:436` |
 | **tests** | — | `tests/test_cobertura_proveedor.py:7`, `tests/test_deploy_health_gate.py:38`, `tests/test_deploy_health_gate.py:154`, `tests/test_ingest_health.py:232` |
 

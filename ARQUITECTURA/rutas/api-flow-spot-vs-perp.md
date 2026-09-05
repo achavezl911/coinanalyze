@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `flow_spot_vs_perp` · `app/api.py:1447` (cuerpo hasta la 1460) · decorador en la linea 1446.
+Handler `flow_spot_vs_perp` · `app/api.py:1448` (cuerpo hasta la 1461) · decorador en la linea 1447.
 
 ## Parametros de entrada
 
@@ -54,7 +54,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:5604`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
@@ -78,8 +78,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
-| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1455` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1456` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -126,7 +126,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.flow_confirmation` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.flow_spot_vs_perp` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.spot_perp_flow` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |

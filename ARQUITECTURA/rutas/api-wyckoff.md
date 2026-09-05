@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `wyckoff_endpoint` · `app/api.py:1716` (cuerpo hasta la 1720) · decorador en la linea 1715.
+Handler `wyckoff_endpoint` · `app/api.py:1717` (cuerpo hasta la 1721) · decorador en la linea 1716.
 
 ## Parametros de entrada
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1606`
 
 <details><summary>Alcanzables de forma indirecta (20)</summary>
@@ -97,7 +97,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -108,7 +108,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:101`, `harness/checks/K43-foto-unica.sh:137` | — |
-| **panel** | `static/app.js:1481`, `static/app.js:1583` | — |
+| **panel** | `static/app.js:1493`, `static/app.js:1595` | — |
 | **readme** | — | `README.md:149` |
 | **tests** | `tests/test_wyckoff.py:106` | — |
 

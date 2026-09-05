@@ -8,8 +8,8 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`classify_oi`](#classify-oi) | 162 | 9 | **0** | 9 ↑ | **9** |
-| [`oi_price_reading`](#oi-price-reading) | 228 | 9 | **0** | 9 ↑ | **9** |
+| [`classify_oi`](#classify-oi) | 162 | 9 | **0** | 10 ↑ | **9** |
+| [`oi_price_reading`](#oi-price-reading) | 228 | 9 | **0** | 10 ↑ | **9** |
 | [`_sign`](#-sign) | 95 | 9 | **0** | 0 | **9** |
 | [`_bars_closed_beyond`](#-bars-closed-beyond) | 805 | 2 | **0** | 0 | **2** |
 | [`_breakout_frontier`](#-breakout-frontier) | 741 | 2 | **0** | 0 | **2** |
@@ -53,9 +53,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -68,6 +68,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -114,9 +115,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -129,6 +130,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)

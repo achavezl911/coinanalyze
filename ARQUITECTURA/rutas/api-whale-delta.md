@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1014` (cuerpo hasta la 1080) · decorador en la linea 1013.
+Handler `whale_delta` · `app/api.py:1015` (cuerpo hasta la 1081) · decorador en la linea 1014.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `whale_delta` · `app/api.py:1014` (cuerpo hasta la 1080) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:428 |
-| `data_gaps` | literal en app/api.py:433 |
-| `interval` | literal en app/api.py:426 |
-| `rows` | literal en app/api.py:427 |
-| `symbol` | literal en app/api.py:425 |
+| `coverage` | literal en app/api.py:429 |
+| `data_gaps` | literal en app/api.py:434 |
+| `interval` | literal en app/api.py:427 |
+| `rows` | literal en app/api.py:428 |
+| `symbol` | literal en app/api.py:426 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,10 +59,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:348`
-- `app.api.historical_interval_value` — `app/api.py:227`
-- `app.api.records` — `app/api.py:234`
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.declared_series_response` — `app/api.py:349`
+- `app.api.historical_interval_value` — `app/api.py:228`
+- `app.api.records` — `app/api.py:235`
+- `app.api.validate_symbol` — `app/api.py:222`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
@@ -88,8 +88,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -100,7 +100,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:46`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:103`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:57` | `harness/checks/K02-cobertura-hueco.sh:37`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:6`, `harness/checks/K59-whale-vota-cero.sh:15` |
-| **panel** | `static/app.js:1549` | — |
+| **panel** | `static/app.js:1561` | — |
 | **readme** | — | `README.md:408` |
 | **tests** | — | `tests/test_data_gaps.py:325` |
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd` · `app/api.py:698` (cuerpo hasta la 742) · decorador en la linea 697.
+Handler `cvd` · `app/api.py:699` (cuerpo hasta la 743) · decorador en la linea 698.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `cvd` · `app/api.py:698` (cuerpo hasta la 742) · decorador en la linea
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:428 |
-| `data_gaps` | literal en app/api.py:433 |
-| `interval` | literal en app/api.py:426 |
-| `rows` | literal en app/api.py:427 |
-| `symbol` | literal en app/api.py:425 |
+| `coverage` | literal en app/api.py:429 |
+| `data_gaps` | literal en app/api.py:434 |
+| `interval` | literal en app/api.py:427 |
+| `rows` | literal en app/api.py:428 |
+| `symbol` | literal en app/api.py:426 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -65,11 +65,11 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:348`
-- `app.api.historical_interval_value` — `app/api.py:227`
-- `app.api.mask_gapped_series_rows` — `app/api.py:238`
-- `app.api.records` — `app/api.py:234`
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.declared_series_response` — `app/api.py:349`
+- `app.api.historical_interval_value` — `app/api.py:228`
+- `app.api.mask_gapped_series_rows` — `app/api.py:239`
+- `app.api.records` — `app/api.py:235`
+- `app.api.validate_symbol` — `app/api.py:222`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
@@ -96,8 +96,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

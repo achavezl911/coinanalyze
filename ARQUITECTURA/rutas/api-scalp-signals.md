@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_signals` · `app/api.py:2023` (cuerpo hasta la 2042) · decorador en la linea 2022.
+Handler `scalp_signals` · `app/api.py:2024` (cuerpo hasta la 2043) · decorador en la linea 2023.
 
 ## Parametros de entrada
 
@@ -19,8 +19,8 @@ Handler `scalp_signals` · `app/api.py:2023` (cuerpo hasta la 2042) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `rows` | literal en app/api.py:2042 |
-| `symbol` | literal en app/api.py:2042 |
+| `rows` | literal en app/api.py:2043 |
+| `symbol` | literal en app/api.py:2043 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -40,8 +40,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:234`
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.records` — `app/api.py:235`
+- `app.api.validate_symbol` — `app/api.py:222`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (3)</summary>
 
@@ -57,7 +57,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

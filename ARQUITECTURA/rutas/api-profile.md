@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trading_profile` · `app/api.py:1352` (cuerpo hasta la 1368) · decorador en la linea 1351.
+Handler `trading_profile` · `app/api.py:1353` (cuerpo hasta la 1369) · decorador en la linea 1352.
 
 ## Parametros de entrada
 
@@ -19,7 +19,7 @@ Handler `trading_profile` · `app/api.py:1352` (cuerpo hasta la 1368) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1366 |
+| `as_of` | literal en app/api.py:1367 |
 | `bias` | literal en app/scalp_logic.py:4653 |
 | `confidence` | literal en app/scalp_logic.py:4655 |
 | `contradictions` | literal en app/scalp_logic.py:4659 |
@@ -31,7 +31,7 @@ Handler `trading_profile` · `app/api.py:1352` (cuerpo hasta la 1368) · decorad
 | `profile` | literal en app/scalp_logic.py:4651 |
 | `profile_label` | literal en app/scalp_logic.py:4652 |
 | `reference_only` | literal en app/scalp_logic.py:4658 |
-| `symbol` | literal en app/api.py:1365 |
+| `symbol` | literal en app/api.py:1366 |
 | `weights_note` | literal en app/scalp_logic.py:4661 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -89,7 +89,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4277`
 - `app.scalp_logic.profile_view` — `app/scalp_logic.py:4498`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
@@ -138,8 +138,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
-| 422 | — | `app/api.py:1356` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 422 | — | `app/api.py:1357` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -187,13 +187,13 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 10 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |
 | `app.metrics.current_nyse_start` | 15 | **0** | 14 ↑ | **15** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.load_baselines` | 14 | **0** | 9 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.baseline_band` | 13 | **0** | 9 ↑ | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.load_baselines` | 14 | **0** | 10 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.baseline_band` | 13 | **0** | 10 ↑ | **13** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._resample_highs_lows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.spot_flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |

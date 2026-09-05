@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `dashboard_state` · `app/api.py:2565` (cuerpo hasta la 2586) · decorador en la linea 2564.
+Handler `dashboard_state` · `app/api.py:2674` (cuerpo hasta la 2698) · decorador en la linea 2673.
 
 ## Parametros de entrada
 
@@ -14,17 +14,18 @@ Handler `dashboard_state` · `app/api.py:2565` (cuerpo hasta la 2586) · decorad
 
 ## Campos que publica
 
-7 campos derivados. La procedencia dice de donde sale cada uno.
+8 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `barriers` | literal en app/api.py:2584 |
-| `cvd_swing` | literal en app/api.py:2583 |
-| `market_memory` | literal en app/api.py:2585 |
-| `scalp` | literal en app/api.py:2581 |
-| `setup` | literal en app/api.py:2582 |
-| `snapshot` | literal en app/api.py:2580 |
-| `symbol` | literal en app/api.py:2579 |
+| `barriers` | literal en app/api.py:2696 |
+| `cvd_swing` | literal en app/api.py:2695 |
+| `market_memory` | literal en app/api.py:2697 |
+| `scalp` | literal en app/api.py:2691 |
+| `scalp_persistence` | literal en app/api.py:2693 |
+| `setup` | literal en app/api.py:2694 |
+| `snapshot` | literal en app/api.py:2690 |
+| `symbol` | literal en app/api.py:2689 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -63,6 +64,8 @@ LEE:
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
+- `signal_observation` — `sql/schema.sql:415`, 34 columnas
+  - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:371`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:254`
@@ -71,16 +74,22 @@ LEE:
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
 
+Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
+tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
+
+- `m`
+
 ## Funciones que la componen
 
-42 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+43 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.daily_data` — `app/api.py:493`
-- `app.api.latest_snapshot` — `app/api.py:466`
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.daily_data` — `app/api.py:494`
+- `app.api.latest_snapshot` — `app/api.py:467`
+- `app.api.scalp_persistence` — `app/api.py:2631`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.interpretation.cvd_swing_read` — `app/interpretation.py:578`
 - `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
@@ -90,7 +99,7 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (33)</summary>
 
-- `app.api.records` — `app/api.py:234`
+- `app.api.records` — `app/api.py:235`
 - `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
 - `app.interpretation._cvd_observation` — `app/interpretation.py:521`
@@ -138,7 +147,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -148,8 +157,8 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:99`, `harness/checks/K43-foto-unica.sh:141`, `harness/checks/K43-foto-unica.sh:142`, `harness/checks/K43-foto-unica.sh:143` _(+4)_ | `harness/checks/K43-foto-unica.sh:149`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:14` |
-| **panel** | `static/app.js:1491` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:99`, `harness/checks/K43-foto-unica.sh:141`, `harness/checks/K43-foto-unica.sh:142`, `harness/checks/K43-foto-unica.sh:143` _(+7)_ | `harness/checks/K43-foto-unica.sh:149`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13` |
+| **panel** | `static/app.js:1503` | `static/app.js:1375` |
 | **readme** | — | `README.md:195`, `README.md:488`, `README.md:502` |
 | **tests** | `tests/test_metrics_endpoint.py:162`, `tests/test_v121_hardening.py:27`, `tests/test_v150_desk_snapshot.py:126` | — |
 
@@ -187,30 +196,30 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.evaluate_setups` | 4 | **0** | 51 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 10 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.metrics.current_nyse_start` | 15 | **0** | 14 ↑ | **15** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.compute_scalp_summary` | 9 | **0** | 24 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.scalp_context` | 9 | **0** | 24 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.load_baselines` | 14 | **0** | 9 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.baseline_band` | 13 | **0** | 9 ↑ | **13** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.basis_quality` | 10 | **0** | 9 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.classify_absorption` | 10 | **0** | 9 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._closed_5m_oi_bounds` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._closed_window_move_pct` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._first_present` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._liquidation_window_measured` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._measured_event_sum` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.scalp_bias_label` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.score_component` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.setups.classify_oi` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-setups.md) |
-| `app.setups.oi_price_reading` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-setups.md) |
+| `app.scalp_logic.load_baselines` | 14 | **0** | 10 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.baseline_band` | 13 | **0** | 10 ↑ | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.basis_quality` | 10 | **0** | 10 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.classify_absorption` | 10 | **0** | 10 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._closed_5m_oi_bounds` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._closed_window_move_pct` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._first_present` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._liquidation_window_measured` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._measured_event_sum` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.scalp_bias_label` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.score_component` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.setups.classify_oi` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-setups.md) |
+| `app.setups.oi_price_reading` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-setups.md) |
 | `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic._resample_highs_lows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._as_utc_datetime` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 18 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 19 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

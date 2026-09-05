@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_levels` · `app/api.py:2517` (cuerpo hasta la 2553) · decorador en la linea 2516.
+Handler `liquidation_levels` · `app/api.py:2518` (cuerpo hasta la 2574) · decorador en la linea 2517.
 
 ## Parametros de entrada
 
@@ -17,14 +17,17 @@ Handler `liquidation_levels` · `app/api.py:2517` (cuerpo hasta la 2553) · deco
 
 ## Campos que publica
 
-4 campos derivados. La procedencia dice de donde sale cada uno.
+7 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `bucket_bps` | literal en app/api.py:2553 |
-| `minutes` | literal en app/api.py:2553 |
-| `rows` | literal en app/api.py:2553 |
-| `symbol` | literal en app/api.py:2553 |
+| `as_of` | literal en app/api.py:2570 |
+| `bucket_bps` | literal en app/api.py:2569 |
+| `minutes` | literal en app/api.py:2568 |
+| `rows` | literal en app/api.py:2573 |
+| `symbol` | literal en app/api.py:2567 |
+| `window_end` | literal en app/api.py:2572 |
+| `window_start` | literal en app/api.py:2571 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -51,16 +54,20 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:234`
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.records` — `app/api.py:235`
+- `app.api.validate_symbol` — `app/api.py:222`
 
-<details><summary>Llamadas que salen del arbol o no se resuelven (3)</summary>
+<details><summary>Llamadas que salen del arbol o no se resuelven (7)</summary>
 
 Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para aqui.
 
+- `<llamada dinamica>`
 - `Query`
 - `app.state.pool.acquire`
+- `as_of.isoformat`
 - `conn.fetch`
+- `datetime.now`
+- `timedelta`
 
 </details>
 
@@ -68,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -79,7 +86,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:96`, `harness/checks/K43-foto-unica.sh:129` | — |
-| **panel** | `static/app.js:1606` | — |
+| **panel** | `static/app.js:1618` | — |
 | **readme** | — | `README.md:488`, `README.md:500` |
 | **tests** | `tests/test_v121_hardening.py:29` | — |
 
@@ -95,9 +102,11 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `as_of`
+- `window_end`
+- `window_start`
 
 ## Capa DECLARADA
 

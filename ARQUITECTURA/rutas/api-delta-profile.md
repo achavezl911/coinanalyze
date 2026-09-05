@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `delta_profile_endpoint` · `app/api.py:1623` (cuerpo hasta la 1640) · decorador en la linea 1622.
+Handler `delta_profile_endpoint` · `app/api.py:1624` (cuerpo hasta la 1641) · decorador en la linea 1623.
 
 ## Parametros de entrada
 
@@ -50,7 +50,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.delta_profile.delta_profile` — `app/delta_profile.py:222`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
@@ -82,8 +82,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
-| 422 | — | `app/api.py:1635` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 422 | — | `app/api.py:1636` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

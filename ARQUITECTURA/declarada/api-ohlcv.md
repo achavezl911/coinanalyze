@@ -96,6 +96,23 @@ cerrada. El error no se ve en la vela: se ve en las cuatro cosas que la consumen
 
 Es la unica serie de las cuatro que publica los tres campos.
 
+### Y esa cobertura NO esta en la tabla · quien puede confiar en ella
+
+`is_complete`, `is_closed` y `coverage_pct` **los calcula la CONSULTA de esta ruta**
+(`app/api.py:657-663`), no la tabla. Medido contra el catalogo del esquema: las columnas de
+`ohlcv` son `ts, symbol, interval, open, high, low, close, volume, buy_volume, sell_volume,
+delta, tx, btx` — **ninguna de cobertura**.
+
+**Eso decide quien puede confiar en ella:** la cobertura de `ohlcv` **solo existe para quien
+pase por `/api/ohlcv`**. Cualquier consumidor que lea la tabla directamente —un colector,
+una consulta de auditoria, otra ruta— **no tiene forma de saber si un bucket esta completo**,
+porque el dato no esta guardado en ningun sitio: se deriva al servir.
+
+*Que significa:* no es un defecto de esta ruta —hace mas de lo que la tabla le da—, pero es
+una asimetria que hay que conocer antes de comparar cifras de `ohlcv` obtenidas por caminos
+distintos. Contrasta con `spot_trades_agg`, que **si** guarda su `covered_seconds` y por
+tanto se lo cuenta a todo el mundo.
+
 
 ## SUPERFICIE
 

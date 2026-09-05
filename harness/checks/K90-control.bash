@@ -1,19 +1,30 @@
 #!/bin/bash
-# K90-control · LOS DOS BRAZOS, INDUCIDOS SIN RED Y SIN BASE.
+# K90-control · LOS BRAZOS DEL GUARDIA, INDUCIDOS SIN RED Y SIN BASE.
 #
-# K90 corre contra 140 por prodsql y esta sesion no llega a ese canal, asi que el control
-# INYECTA el canal: un prodsql falso que imprime la tabla que se le pida, y una copia de
-# app.js con el rotulo que se le pida. Asi se ejercitan las dos mitades del sujeto -el
-# rotulo y la medida- por separado y en combinacion, que es lo que un solo dato real no
-# permitiria.
+# EL SUJETO CAMBIO CON LA DECISION D1, Y ESTE CONTROL CON EL.
+# Antes K90 comparaba el CALCULO contra el ROTULO -la cadena '1-15 minutos' de app.js- y
+# cuatro casos de este fichero probaban el parseo de ese rango. Con el rotulo convertido en
+# MEDIDA, el sujeto es **lo publicado contra lo medido**, y esos cuatro dejaron de tener
+# sujeto. El reparto, contado:
 #
-# EL BRAZO QUE MAS IMPORTA AQUI ES EL NEGATIVO, y no es el habitual: no basta con que K90
-# no enrojezca cuando el p90 es alto. Tiene que ponerse VERDE **SOLO** cuando el rotulo
-# deje de prometer un rango, porque esa es una de las dos salidas legitimas del defecto
-# -la otra es dar persistencia al calculo- y un check que siguiera en rojo despues de
-# arreglado se apagaria igual que uno que miente en verde.
+#   SOBREVIVEN sin tocar (9) ... F1..F4 (anti-fantasma), C2 (canal), S1..S3 (formato de
+#                                simbolo), C1 (el control del muestreo). Ninguno dependia
+#                                del rotulo.
+#   CAMBIAN (4) ............... P1, P2, N3, N4 -los del parseo del rango-. Su sujeto era la
+#                               cadena; ahora es la comparacion de cifras.
+#   NACEN (6) ................. el rotulo literal que vuelve, el bloque que falta, el que
+#                               dice no-disponible, la mediana que no cuadra, el p90 que no
+#                               cuadra, y el CONTROL publicado que no cuadra.
 #
-# NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh. Mismo patron que K88-control.
+# TODO SE INYECTA: un `api` de mentira que devuelve el cuerpo que se le pida y un `prodsql`
+# de mentira que devuelve la fila que se le pida. Asi se ejercitan las dos mitades del par
+# por separado y en combinacion, que es lo que un solo dato real no permitiria.
+#
+# Y LA LECCION DE F3d SIGUE EN PIE: un control que fabrica su sustituto no caza el
+# desacuerdo con el original. Por eso E1 lee el ESQUEMA REAL y comprueba que las columnas
+# que el SQL de K90 nombra existen -con su control negativo-.
+#
+# NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh.
 set -uo pipefail
 
 ORIG=${K90_CONTROL_REPO:-/srv/coinanalyze/repo}
@@ -22,200 +33,178 @@ CHK="$(cd "$(dirname "$0")" && pwd)/K90-la-senal-no-dura-su-rotulo.sh"
 
 DIR=$(mktemp -d) || exit 2
 [ "${K90_CONTROL_GUARDA:-0}" = "1" ] || trap 'rm -rf "$DIR"' EXIT
-cd "$DIR" || exit 2          # como K88-control: se demuestra que no depende del cwd
+cd "$DIR" || exit 2          # se demuestra que no depende del cwd
 fallos=0; pasan=0
 
 mkdir -p "$DIR/repo/static" "$DIR/repo/app" "$DIR/bin"
-# scalp_logic.py de mentira, SIN mecanismos de persistencia (el estado real hoy)
-printf 'def scalp_bias_label(a, b):\n    return "No Trade", "baja"\n' > "$DIR/repo/app/scalp_logic.py"
 
-rotulo_en() {   # $1 = texto del campo time
-  printf "      name: 'Corto plazo', time: '%s', action: shortAction,\n" "$1" \
-    > "$DIR/repo/static/app.js"
+# --- el panel de mentira -----------------------------------------------------------------
+rotulo_en() {   # $1 = lo que va en `time:`  (vacio = la forma nueva, sin literal)
+  if [ -z "$1" ]; then
+    printf "      name: 'Corto plazo', time: shortHorizon, action: shortAction,\n" \
+      > "$DIR/repo/static/app.js"
+  else
+    printf "      name: 'Corto plazo', time: '%s', action: shortAction,\n" "$1" \
+      > "$DIR/repo/static/app.js"
+  fi
 }
 
-# prodsql falso: imprime la tabla que se le pase por K90C_TABLA, con el formato de psql
+# --- el api de mentira: devuelve el JSON que se le ponga en K90C_CUERPO -------------------
+cat > "$DIR/bin/api" <<'PY'
+#!/bin/sh
+printf '%s' "${K90C_CUERPO:-}"
+exit "${K90C_APIRC:-0}"
+PY
+chmod +x "$DIR/bin/api"
+
+# --- el prodsql de mentira ----------------------------------------------------------------
 cat > "$DIR/bin/prodsql" <<'PY'
 #!/bin/sh
-[ -n "${K90C_TABLA:-}" ] || exit 0
-printf '%s\n' "$K90C_TABLA"
+[ -n "${K90C_FILA:-}" ] || exit 0
+printf '%s\n' "$K90C_FILA"
 PY
 chmod +x "$DIR/bin/prodsql"
-
-# prodsql que FALLA, para el brazo de canal
 cat > "$DIR/bin/prodsql-roto" <<'PY'
 #!/bin/sh
-echo "could not connect to server" >&2
-exit 4
+echo "psql:<stdin>:1: ERROR:  column \"x\" does not exist" >&2
+exit 3
 PY
 chmod +x "$DIR/bin/prodsql-roto"
 
-caso() {  # <nombre> <rc esperado> <patron> <rotulo> <tabla> [prodsql]
-  local nombre="$1" esperado="$2" patron="$3" rot="$4" tabla="$5" psql="${6:-$DIR/bin/prodsql}"
+# cuerpos que se reutilizan
+CUERPO_OK='{"symbol":"BTCUSDT_PERP.A","scalp_persistence":{"available":true,"mediana_min":1,"p90_min":3,"p90_no_accionable_min":6,"dias":30,"etiqueta":"mediana 1 min · p90 3 min"}}'
+FILA_OK=' 1|3|6|7524|34439'
+
+caso() {  # <nombre> <rc> <patron> <rotulo> <cuerpo> <fila> [prodsql]
+  local nombre="$1" esperado="$2" patron="$3" rot="$4" cuerpo="$5" fila="$6"
+  local psql="${7:-$DIR/bin/prodsql}"
   rotulo_en "$rot"
   local out rc
-  out=$(REPO="$DIR/repo" K90_APPJS="$DIR/repo/static/app.js" K90_PRODSQL="$psql" \
-        K90C_TABLA="$tabla" bash "$CHK" 2>&1); rc=$?
+  out=$(REPO="$DIR/repo" K90_APPJS="$DIR/repo/static/app.js" K90_API="$DIR/bin/api" \
+        K90_PRODSQL="$psql" K90C_CUERPO="$cuerpo" K90C_FILA="$fila" \
+        bash "$CHK" 2>&1); rc=$?
   local ok=1
   [ "$rc" = "$esperado" ] || ok=0
   if [ -n "$patron" ] && ! printf '%s' "$out" | grep -qE "$patron"; then ok=0; fi
   if [ "$ok" = 1 ]; then
-    pasan=$((pasan+1)); printf '  [ok   ] %-52s rc=%s\n' "$nombre" "$rc"
+    pasan=$((pasan+1)); printf '  [ok   ] %-54s rc=%s\n' "$nombre" "$rc"
   else
     fallos=$((fallos+1))
-    printf '  [FALLA] %-52s rc=%s (esperaba %s, patron /%s/)\n      %s\n' \
+    printf '  [FALLA] %-54s rc=%s (esperaba %s, patron /%s/)\n      %s\n' \
       "$nombre" "$rc" "$esperado" "$patron" "$(printf '%s' "$out" | head -2 | tr '\n' ' ' | cut -c1-150)"
   fi
 }
 
-# Las cifras REALES medidas por el operador el 2026-09-05 contra 140, 30 dias:
-REAL=' BTCUSDT | 11452 | 3 | 6 | 34356
- ETHUSDT | 11380 | 3 | 6 | 34356
- SOLUSDT | 10990 | 4 | 11 | 34356'
-# Las mismas filas con el p90 accionable POR ENCIMA del umbral: es el mundo arreglado.
-SANO=' BTCUSDT | 11452 | 9 | 6 | 34356
- ETHUSDT | 11380 | 10 | 6 | 34356
- SOLUSDT | 10990 | 12 | 11 | 34356'
-
 echo "K90-control · sujeto: $CHK"
 echo
 
-echo "POSITIVO · con el rotulo de hoy y las cifras de hoy, ROJO"
-caso "P1 rotulo 1-15 y p90 3/3/4 (el caso real)" 1 "p90 de la racha accionable no llega" \
-     "1–15 minutos" "$REAL"
-caso "P2 guion normal en vez del largo, mismo veredicto" 1 "p90 de la racha accionable no llega" \
-     "1-15 minutos" "$REAL"
-caso "P3 un solo simbolo por debajo" 1 "SOLUSDT" \
-     "1–15 minutos" ' BTCUSDT | 11452 | 9 | 6 | 34356
- SOLUSDT | 10990 | 4 | 11 | 34356'
+echo "NACEN · el rotulo literal ya no puede volver"
+# N-R1 · EL CASO QUE LA DECISION D1 HACE POSIBLE. Antes el rango literal era el sujeto;
+# ahora su MERA PRESENCIA es el defecto, y se caza sin red ni base.
+caso "R1 vuelve el rango '1-15 minutos' a la tarjeta" 1 "ESCRITO A MANO" \
+     "1–15 minutos" "$CUERPO_OK" "$FILA_OK"
+caso "R2 vuelve con guion normal" 1 "ESCRITO A MANO" \
+     "1-15 minutos" "$CUERPO_OK" "$FILA_OK"
+# R3 · un texto SIN numeros no es un rango: "sin medida" es la salida legitima cuando el
+# bloque no llega, y no puede confundirse con un rotulo inventado.
+caso "R3 texto sin numeros NO es un rotulo literal" 0 "coincide con lo medido" \
+     "persistencia sin medida" "$CUERPO_OK" "$FILA_OK"
 
 echo
-echo "NEGATIVO · el check NO puede enrojecer cuando el defecto no esta"
-caso "N1 mismas cifras, p90 por encima del umbral" 0 "lo alcanza en los" \
-     "1–15 minutos" "$SANO"
-# N2 · LA SALIDA POR PRODUCTO. Si el rotulo deja de prometer un rango, no hay horizonte que
-# incumplir y el check se pone VERDE SOLO, con las MISMAS cifras rojas de hoy.
-caso "N2 rotulo 'lectura instantanea' con las cifras de HOY" 0 "no anuncia un rango" \
-     "lectura instantanea" "$REAL"
-# N3 · y si el rotulo sube el rango, el umbral sube con el: 20-40 -> umbral 30, sigue rojo;
-# pero 1-4 -> umbral 2, y un p90 de 3 YA LO CUMPLE.
-caso "N3 rotulo 1-4 (umbral 2): el p90 de 3 lo cumple" 0 "lo alcanza en los" \
-     "1–4 minutos" "$REAL"
-caso "N4 rotulo 20-40 (umbral 30): sigue rojo" 1 "umbral 30" \
-     "20–40 minutos" "$REAL"
+echo "NACEN · lo publicado contra lo medido"
+caso "R4 publicado y medido coinciden" 0 "coincide con lo medido" \
+     "" "$CUERPO_OK" "$FILA_OK"
+# R5 · el caso central del sujeto NUEVO: el panel dice 3 y la serie dice 7.
+caso "R5 el p90 publicado no es el medido (3 contra 7)" 1 "p90\(±4\)" \
+     "" "$CUERPO_OK" ' 1|7|11|7524|34439'
+caso "R6 la mediana publicada no es la medida" 1 "mediana\(±4\)" \
+     "" "$CUERPO_OK" ' 5|3|6|7524|34439'
+# R7 · EL CONTROL PUBLICADO TAMBIEN SE COMPARA. Un panel que copiara bien la cifra
+# principal y mal el control seguiria afirmando algo falso, solo que mas escondido.
+caso "R7 el CONTROL publicado no es el medido" 1 "control\(±5\)" \
+     "" "$CUERPO_OK" ' 1|3|11|7524|34439'
+# R8 · la tolerancia existe porque la ventana es movil: ±1 min no es un defecto.
+caso "R8 diferencia de 1 min esta dentro de tolerancia" 0 "coincide con lo medido" \
+     "" "$CUERPO_OK" ' 2|4|7|7524|34439'
 
 echo
-echo "CONTROL EN LA MISMA CONSULTA · si el lado no accionable es igual de corto, NO MEDIDO"
-# Es el control que decide entre dos hipotesis: "la senal parpadea" contra "el muestreo
-# trocea las dos series igual". Sin el, K90 afirmaria lo primero sin haber descartado lo
-# segundo.
-caso "C1 p90 no accionable IGUAL de corto" 2 "el sujeto seria el muestreo" \
-     "1–15 minutos" ' BTCUSDT | 11452 | 3 | 3 | 34356
- ETHUSDT | 11380 | 3 | 2 | 34356'
+echo "NACEN · el bloque que falta o no es medible"
+caso "R9 /api/dashboard/state no publica scalp_persistence" 1 "NO publica scalp_persistence" \
+     "" '{"symbol":"BTCUSDT_PERP.A","scalp":{}}' "$FILA_OK"
+# R10 · "no disponible" es NOMED, no ROJO: la ruta dice que no pudo medir, no que mienta.
+caso "R10 scalp_persistence dice que no es medible" 2 "no es medible" \
+     "" '{"scalp_persistence":{"available":false,"motivo":"sin episodios accionables"}}' "$FILA_OK"
 
 echo
-echo "ANTI-FANTASMA · lo que no se puede medir es NOMED, nunca VERDE"
-caso "F1 no existe la tarjeta 'Corto plazo'" 2 "NO MEDIDO" \
-     "" "$REAL"
-caso "F2 la consulta no devuelve ninguna fila" 2 "ninguna fila de simbolo" \
-     "1–15 minutos" ""
-caso "F3 prodsql falla" 2 "NO MEDIDO" \
-     "1–15 minutos" "$REAL" "$DIR/bin/prodsql-roto"
-
-# F4 · si alguien le pone histeresis al calculo, el sujeto cambia y K90 no puede seguir
-# afirmando lo mismo sin releer el criterio. NOMED, no verde ni rojo.
-printf 'HYSTERESIS_MINUTES = 3\ndef scalp_bias_label(a, b):\n    return "No Trade", "baja"\n' \
-  > "$DIR/repo/app/scalp_logic.py"
-caso "F4 aparece histeresis en scalp_logic" 2 "mecanismo\(s\) de persistencia" \
-     "1–15 minutos" "$REAL"
-printf 'def scalp_bias_label(a, b):\n    return "No Trade", "baja"\n' > "$DIR/repo/app/scalp_logic.py"
+echo "SOBREVIVE · el control del muestreo, en la misma consulta"
+# C1 · si el lado NO accionable es igual de corto, el sujeto es el muestreo. Sobrevive
+# entero: no dependia del rotulo, solo cambia de sitio dentro del check.
+caso "C1 el p90 no accionable no supera al accionable" 2 "el sujeto seria el muestreo" \
+     "" '{"scalp_persistence":{"available":true,"mediana_min":1,"p90_min":3,"p90_no_accionable_min":3,"dias":30}}' \
+     ' 1|3|3|7524|34439'
 
 echo
-# ======================================================================================
-# EL SIMBOLO DE ESTA CASA · el defecto que los 12 controles anteriores no vieron.
-# Los doce pasaban con un prodsql INYECTADO por mi, y en mis filas de mentira los simbolos
-# eran BTCUSDT. En 140 son BTCUSDT_PERP.A. El check reconocia 0 de 2 filas reales y 1 de 1
-# de las inventadas: el control daba por bueno un detector que en produccion no veia nada.
-# UN CONTROL QUE FABRICA SU SUSTITUTO NO CAZA EL DESACUERDO CON EL ORIGINAL.
-# Por eso las DOS formas van aqui, y la real primero.
-# ======================================================================================
-echo "FORMATO DE SIMBOLO · las dos formas, y la real primero"
-
-REAL_PERP=' BTCUSDT_PERP.A|7524|3|6|34439
- ETHUSDT_PERP.A|7666|3|6|34439
- SOLUSDT_PERP.A|5118|4|11|34439'
-caso "S1 simbolos BTCUSDT_PERP.A (los de 140)" 1 "BTCUSDT_PERP.A" \
-     "1–15 minutos" "$REAL_PERP"
-caso "S2 simbolos BTCUSDT a secas (siguen valiendo)" 1 "BTCUSDT" \
-     "1–15 minutos" "$REAL"
-# S3 · una salida que NO trae ninguna fila de simbolo reconocible sigue siendo NOMED.
-caso "S3 salida sin ninguna fila de simbolo" 2 "ninguna fila de simbolo reconocible" \
-     "1–15 minutos" 'total | 3 | 6 | 34439'
+echo "SOBREVIVEN · formato de simbolo y canal"
+caso "S1 filas con BTCUSDT_PERP.A (las de 140)" 0 "coincide con lo medido" \
+     "" "$CUERPO_OK" "$FILA_OK"
+caso "S3 la consulta no devuelve ninguna fila util" 2 "ninguna fila utilizable" \
+     "" "$CUERPO_OK" 'total | nada'
+caso "C2 SQL roto: NO MEDIDO, no 'sin filas'" 2 "la consulta fallo" \
+     "" "$CUERPO_OK" "$FILA_OK" "$DIR/bin/prodsql-roto"
 
 echo
-# ======================================================================================
-# EL CANAL · prodsql devolvia rc=0 aunque el SQL fallara, asi que el guardia del rc era
-# decorativo. El check mira AHORA tambien la salida.
-# ======================================================================================
-echo "CANAL · un SQL roto es NO MEDIDO, no 'sin filas'"
+echo "SOBREVIVEN · anti-fantasma"
+# F1 · SIN app.js NO SE PUEDE JUZGAR EL ROTULO, asi que es NOMED y no VERDE.
+# NO se induce con `caso`: esa funcion llama a `rotulo_en`, que RECREA el fichero, o sea
+# que el caso no borraba nada y pasaba por no haber inducido la averia. Es el mismo
+# fantasma que este arnes lleva seis paquetes cazando, y lo cometi aqui. Se induce a mano.
+rm -f "$DIR/repo/static/app.js"
+out=$(REPO="$DIR/repo" K90_APPJS="$DIR/repo/static/app.js" K90_API="$DIR/bin/api" \
+      K90_PRODSQL="$DIR/bin/prodsql" K90C_CUERPO="$CUERPO_OK" K90C_FILA="$FILA_OK" \
+      bash "$CHK" 2>&1); rc=$?
+if [ "$rc" = "2" ] && printf '%s' "$out" | grep -q "no encuentro"; then
+  pasan=$((pasan+1)); printf "  [ok   ] %-54s rc=%s\n" "F1 sin app.js: NOMED, no verde" "$rc"
+else
+  fallos=$((fallos+1)); printf "  [FALLA] %-54s rc=%s\n" "F1 sin app.js" "$rc"
+fi
+rotulo_en ""
 
-cat > "$DIR/bin/prodsql-error" <<'PY'
-#!/bin/sh
-# imita al prodsql VIEJO: escribe el ERROR de psql y sale con 0
-echo 'ERROR:  column "ts" does not exist'
-echo 'LINE 3:          date_trunc(...)'
-exit 0
-PY
-chmod +x "$DIR/bin/prodsql-error"
-caso "C2 SQL roto con rc=0 (el prodsql viejo)" 2 "la consulta fallo" \
-     "1–15 minutos" "$REAL" "$DIR/bin/prodsql-error"
+caso "F2 la respuesta no es JSON" 2 "no es JSON" \
+     "" 'esto no es json' "$FILA_OK"
+caso "F3 el api falla" 2 "NO MEDIDO" \
+     "" "" "$FILA_OK"
 
 echo
-# ======================================================================================
-# EL ESQUEMA DE VERDAD · el unico caso que NO usa un sustituto fabricado por mi.
-#
-# Los 12 controles de la primera version pasaron los 12 y ninguno toco el esquema: por eso
-# no vieron que `ts` no existe en signal_observation. Aqui se lee el esquema REAL del repo
-# -sql/schema.sql, que es el fichero que el desplegador aplica contra la base viva- y se
-# exige que TODA columna que el SQL de K90 nombra este declarada ahi.
-# No prueba que 140 tenga ese esquema; prueba que el check y el esquema versionado
-# concuerdan, que es lo que fallaba. El dia que alguien renombre observed_minute, este
-# caso lo dice en vez de pasar 12 de 12.
-# ======================================================================================
-echo "ESQUEMA REAL · las columnas que K90 nombra existen en sql/schema.sql"
-
+# =====================================================================================
+# EL ESQUEMA REAL · el unico caso que NO usa un sustituto fabricado por mi.
+# Es la leccion de F3c: los 12 controles de la primera version pasaron los 12 y ninguno
+# toco el esquema, por eso no vieron que `ts` no existia. Las columnas del SQL nuevo se
+# comprueban contra sql/schema.sql, que es el fichero que el desplegador aplica.
+# =====================================================================================
+echo "ESQUEMA REAL · las columnas que K90 nombra existen"
 SCHEMA="$ORIG/sql/schema.sql"
 if [ ! -r "$SCHEMA" ]; then
-  fallos=$((fallos+1)); printf '  [FALLA] %-52s no encuentro %s\n' "E1 columnas de signal_observation" "$SCHEMA"
+  fallos=$((fallos+1)); printf '  [FALLA] %-54s no encuentro %s\n' "E1" "$SCHEMA"
 else
-  cuerpo=$(python3 - "$SCHEMA" <<'PY'
-import re, sys
-t = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-m = re.search(r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?signal_observation\s*\((.*?)\n\)\s*;",
-              t, re.S | re.I)
-print(m.group(1) if m else "")
+  # el catalogo del generador ya conoce las columnas de ALTER desde F4, asi que se usa el
+  # mismo instrumento que el mapa: si el esquema cambia, los dos se enteran a la vez.
+  res=$(python3 - "$ORIG" <<'PY'
+import sys
+from importlib.machinery import SourceFileLoader
+from pathlib import Path
+repo = Path(sys.argv[1])
+m = SourceFileLoader("arq", str(repo / "harness/bin/arquitectura")).load_module()
+cat = m.lee_catalogo(repo)
+cols = set(cat["tablas"].get("signal_observation", {}).get("columnas", []))
+faltan = [c for c in ("observed_minute", "is_periodic", "actionable", "symbol") if c not in cols]
+falsos = [c for c in ("ts", "columna_que_no_existe") if c in cols]
+print("FALTAN" if faltan else ("FALSOS" if falsos else "OK"), faltan or falsos)
 PY
-)
-  faltan=''
-  # las columnas que el SQL de K90 nombra de esa tabla
-  for col in observed_minute is_periodic actionable symbol; do
-    printf '%s' "$cuerpo" | grep -qE "(^|[[:space:],(])$col[[:space:]]" || faltan="$faltan $col"
-  done
-  # CONTROL NEGATIVO en el mismo caso: una columna inventada NO puede aparecer, y `ts`
-  # -la que el check pedia y no existe- tampoco.
-  falsos=''
-  for col in ts columna_que_no_existe; do
-    printf '%s' "$cuerpo" | grep -qE "(^|[[:space:],(])$col[[:space:]]" && falsos="$falsos $col"
-  done
-  if [ -z "$cuerpo" ]; then
-    fallos=$((fallos+1)); printf '  [FALLA] %-52s no encuentro la tabla en el esquema\n' "E1 columnas de signal_observation"
-  elif [ -n "$faltan" ]; then
-    fallos=$((fallos+1)); printf '  [FALLA] %-52s faltan en el esquema:%s\n' "E1 columnas que K90 nombra" "$faltan"
-  elif [ -n "$falsos" ]; then
-    fallos=$((fallos+1)); printf '  [FALLA] %-52s el control negativo casa con:%s\n' "E1 control negativo" "$falsos"
-  else
-    pasan=$((pasan+1)); printf '  [ok   ] %-52s las 4 estan; ts y la inventada NO\n' "E1 esquema real de signal_observation"
-  fi
+2>&1)
+  case "$res" in
+    OK*) pasan=$((pasan+1)); printf '  [ok   ] %-54s las 4 estan; ts y la inventada NO\n' "E1 esquema de signal_observation" ;;
+    *)   fallos=$((fallos+1)); printf '  [FALLA] %-54s %s\n' "E1 esquema de signal_observation" "$res" ;;
+  esac
 fi
 
 echo
