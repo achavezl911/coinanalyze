@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `funding_context_endpoint` · `app/api.py:1602` (cuerpo hasta la 1605) · decorador en la linea 1601.
+Handler `funding_context_endpoint` · `app/api.py:1603` (cuerpo hasta la 1606) · decorador en la linea 1602.
 
 ## Parametros de entrada
 
@@ -49,7 +49,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.funding_context` — `app/scalp_logic.py:3347`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -86,7 +86,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K43-foto-unica.sh:94`, `harness/checks/K43-foto-unica.sh:124` | `harness/checks/K02-cobertura-hueco.sh:24`, `harness/checks/K03-hueco-declarado.sh:29` |
-| **panel** | `static/app.js:1607` | — |
+| **panel** | `static/app.js:1619` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -121,7 +121,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.expected_buckets` | 12 | **0** | 21 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |

@@ -4,6 +4,7 @@ import asyncio
 import hmac
 import json
 import logging
+import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime, timedelta
@@ -2550,7 +2551,27 @@ async def liquidation_levels(
             bucket_bps,
             limit,
         )
-    return {"symbol": selected, "minutes": minutes, "bucket_bps": bucket_bps, "rows": records(rows)}
+    # D2 · ESTA RUTA NO PUBLICABA NINGUNA MARCA TEMPORAL, Y SU VENTANA TERMINA AHORA.
+    # Medido en la foto del 2026-09-04: 400 B con symbol, minutes, bucket_bps y rows[], y
+    # CERO marcas — ni as_of, ni ts, ni edad. Era una de las 8 rutas sin ninguna, mientras
+    # la promesa de la familia /api/scalp/* es publicar su edad y el umbral con que juzgarla.
+    #
+    # No son niveles historicos por diseño: `minutes` es un parametro (ge=1, le=1440) y
+    # "los ultimos N minutos" describe una ventana que ACABA EN ESTE INSTANTE. Sin fecharla,
+    # unos niveles de hace un minuto y unos de hace seis horas son indistinguibles.
+    #
+    # Los tres campos se DERIVAN del `minutes` que la ruta ya recibe: no hay consulta nueva,
+    # no cambia ninguna fila, y es ADITIVO -ningun consumidor existente se rompe-.
+    as_of = datetime.now(UTC)
+    return {
+        "symbol": selected,
+        "minutes": minutes,
+        "bucket_bps": bucket_bps,
+        "as_of": as_of.isoformat(),
+        "window_start": (as_of - timedelta(minutes=minutes)).isoformat(),
+        "window_end": as_of.isoformat(),
+        "rows": records(rows),
+    }
 
 
 @app.get("/api/data-confidence")
@@ -2559,6 +2580,94 @@ async def data_confidence(symbol: str | None = None) -> dict[str, Any]:
     async with app.state.pool.acquire() as conn:
         rows = [await data_confidence_row(conn, selected) for selected in selected_symbols]
     return {"rows": rows}
+
+
+# D1 · EL ROTULO DE LA TARJETA DE CORTO DEJA DE SER UNA PROMESA Y PASA A SER UNA MEDIDA.
+#
+# `static/app.js:1435` decia `time: '1-15 minutos'` — una cadena escrita a mano que
+# prometia un horizonte que la señal no sostiene. Medido contra 140, 30 dias, 34 439 minutos
+# por simbolo: p90 de la racha accionable BTC 3 · ETH 3 · SOL 4, contra un umbral de 8 que
+# salia del propio rotulo. Mediana: 1 minuto.
+#
+# NO SE LE METE HISTERESIS A LA SEÑAL, y esta descartado con motivo: eso cambia lo que el
+# sistema CALCULA, no lo que DECLARA. `signal_outcome`, el walk-forward y K21-K25 quedarian
+# medidos contra una señal distinta de la que produjo el historico.
+#
+# POR QUE SE PUBLICA AQUI Y NO SE CALCULA EN EL PANEL.
+# `app.js` puede contar rachas, pero no puede FECHAR lo que cuenta: quedaria una cifra en
+# pantalla sin instante ni ventana, que es exactamente el defecto que esta misma ruta ya
+# tiene medido -no publica instante de raiz y 5 de sus 6 bloques tampoco-. Publicarla aqui
+# permite que viaje con su `as_of` y sus dias, y ademas deja a K90 con sujeto: puede
+# comparar LO PUBLICADO contra LO MEDIDO.
+_PERSISTENCIA_CACHE: dict[str, tuple[float, dict]] = {}
+PERSISTENCIA_TTL_S = 300
+PERSISTENCIA_DIAS = 30
+
+PERSISTENCIA_SQL = """
+WITH u AS (
+  SELECT DISTINCT symbol, observed_minute AS m, (actionable IS TRUE) AS acc
+  FROM signal_observation
+  WHERE is_periodic IS TRUE AND symbol = $1
+    AND observed_minute >= now() - make_interval(days => $2)
+),
+g AS (
+  SELECT symbol, m, acc,
+         (EXTRACT(EPOCH FROM m)/60)::bigint
+           - ROW_NUMBER() OVER (PARTITION BY symbol, acc ORDER BY m) AS grupo
+  FROM u
+),
+ep AS (SELECT acc, COUNT(*) AS minutos FROM g GROUP BY acc, grupo)
+SELECT
+  COUNT(*) FILTER (WHERE acc)                                              AS episodios,
+  percentile_disc(0.5) WITHIN GROUP (ORDER BY minutos) FILTER (WHERE acc)  AS mediana,
+  percentile_disc(0.9) WITHIN GROUP (ORDER BY minutos) FILTER (WHERE acc)  AS p90,
+  MAX(minutos) FILTER (WHERE acc)                                          AS maximo,
+  percentile_disc(0.9) WITHIN GROUP (ORDER BY minutos) FILTER (WHERE NOT acc) AS p90_no_accionable,
+  (SELECT COUNT(*) FROM u)                                                 AS minutos_muestra
+FROM ep
+"""
+
+
+async def scalp_persistence(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+    """Cuanto dura de verdad la señal de corto. Es el rotulo de la tarjeta.
+
+    Con cache de 5 min: la persistencia de 30 dias no se mueve en los 15 s del refresco del
+    panel, y sin cache esta agregacion correria en cada peticion sobre ~34 000 filas por
+    simbolo. El `as_of` que se publica es el del CALCULO, no el de la peticion — si no, la
+    cifra diria una frescura que no tiene.
+
+    `p90_no_accionable` viaja al lado a proposito: es el CONTROL. Si los dos lados salieran
+    igual de cortos, el sujeto seria el muestreo y no la señal, y esta cifra no se sostendria.
+    """
+    ahora = time.monotonic()
+    hit = _PERSISTENCIA_CACHE.get(symbol)
+    if hit and ahora - hit[0] < PERSISTENCIA_TTL_S:
+        return hit[1]
+    fila = await conn.fetchrow(PERSISTENCIA_SQL, symbol, PERSISTENCIA_DIAS)
+    if fila is None or fila["episodios"] in (None, 0):
+        # CERO EPISODIOS NO ES UNA PERSISTENCIA DE CERO: es que no se pudo medir.
+        out = {
+            "available": False,
+            "motivo": "sin episodios accionables en la ventana",
+            "dias": PERSISTENCIA_DIAS,
+            "as_of": datetime.now(UTC).isoformat(),
+        }
+    else:
+        out = {
+            "available": True,
+            "mediana_min": int(fila["mediana"]),
+            "p90_min": int(fila["p90"]),
+            "maximo_min": int(fila["maximo"]),
+            "episodios": int(fila["episodios"]),
+            "minutos_muestra": int(fila["minutos_muestra"]),
+            "p90_no_accionable_min": (None if fila["p90_no_accionable"] is None
+                                      else int(fila["p90_no_accionable"])),
+            "dias": PERSISTENCIA_DIAS,
+            "as_of": datetime.now(UTC).isoformat(),
+            "etiqueta": f"mediana {int(fila['mediana'])} min · p90 {int(fila['p90'])} min",
+        }
+    _PERSISTENCIA_CACHE[symbol] = (ahora, out)
+    return out
 
 
 @app.get("/api/dashboard/state")
@@ -2571,6 +2680,7 @@ async def dashboard_state(symbol: str) -> dict[str, Any]:
         cvd_swing = None
         barriers = await price_barriers(conn, selected)
         memory = await market_memory(conn, selected)
+        persistencia = await scalp_persistence(conn, selected)
         if snap:
             daily_result = await daily_data(conn, selected, 730)
             setup_result = evaluate_setups(snap, daily_result["rows"][-60:])
@@ -2579,6 +2689,8 @@ async def dashboard_state(symbol: str) -> dict[str, Any]:
         "symbol": selected,
         "snapshot": snap,
         "scalp": compute_scalp_summary(ctx),
+        # el rotulo de la tarjeta de corto, MEDIDO. Ver scalp_persistence().
+        "scalp_persistence": persistencia,
         "setup": setup_result,
         "cvd_swing": cvd_swing,
         "barriers": barriers,

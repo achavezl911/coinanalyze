@@ -8,19 +8,19 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`persist_signal_observations`](#persist-signal-observations) | 227 | 0 | **5** | 24 ↑ | **5** |
-| [`_validated_required_fields`](#-validated-required-fields) | 201 | 0 | **0** | 9 ↑ | **0** |
-| [`classify_signal_observation`](#classify-signal-observation) | 62 | 0 | **0** | 9 ↑ | **0** |
-| [`decision_fingerprint`](#decision-fingerprint) | 179 | 0 | **0** | 9 ↑ | **0** |
-| [`select_reference_price`](#select-reference-price) | 95 | 0 | **0** | 9 ↑ | **0** |
-| [`serialize_signal_evidence`](#serialize-signal-evidence) | 166 | 0 | **0** | 9 ↑ | **0** |
-| [`_finite`](#-finite) | 52 | 0 | **0** | 5 ↑ | **0** |
+| [`persist_signal_observations`](#persist-signal-observations) | 227 | 0 | **6** | 24 ↑ | **6** |
+| [`_validated_required_fields`](#-validated-required-fields) | 201 | 0 | **0** | 10 ↑ | **0** |
+| [`classify_signal_observation`](#classify-signal-observation) | 62 | 0 | **0** | 10 ↑ | **0** |
+| [`decision_fingerprint`](#decision-fingerprint) | 179 | 0 | **0** | 10 ↑ | **0** |
+| [`select_reference_price`](#select-reference-price) | 95 | 0 | **0** | 10 ↑ | **0** |
+| [`serialize_signal_evidence`](#serialize-signal-evidence) | 166 | 0 | **0** | 10 ↑ | **0** |
+| [`_finite`](#-finite) | 52 | 0 | **0** | 6 ↑ | **0** |
 
 ## persist_signal_observations
 
 `app/signal_ledger.py:227` · clave completa `app.signal_ledger.persist_signal_observations`
 
-**Radio exacto: 5 rutas** de 68 · **cota superior: 24** (mas ancha)
+**Radio exacto: 6 rutas** de 68 · **cota superior: 24** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -28,12 +28,13 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 5 rutas · **exacto**
+### Por tabla · k=0 — 6 rutas · **exacto**
 
 Escribe **ella misma**: `signal_observation`
 
 Y esas tablas las leen:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
@@ -42,7 +43,7 @@ Y esas tablas las leen:
 
 ### Por tabla · k<=2 — 24 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (24 contra 5). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (24 contra 6). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -118,7 +119,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:201` · clave completa `app.signal_ledger._validated_required_fields`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -131,9 +132,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -149,6 +150,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -157,11 +159,12 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**9 rutas se enteran SOLO por el dato**, sin
+**10 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -176,7 +179,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:62` · clave completa `app.signal_ledger.classify_signal_observation`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -189,9 +192,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -207,6 +210,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -215,11 +219,12 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**9 rutas se enteran SOLO por el dato**, sin
+**10 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -234,7 +239,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:179` · clave completa `app.signal_ledger.decision_fingerprint`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -247,9 +252,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -265,6 +270,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -273,11 +279,12 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**9 rutas se enteran SOLO por el dato**, sin
+**10 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -292,7 +299,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:95` · clave completa `app.signal_ledger.select_reference_price`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -305,9 +312,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -323,6 +330,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -331,11 +339,12 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**9 rutas se enteran SOLO por el dato**, sin
+**10 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -350,7 +359,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:166` · clave completa `app.signal_ledger.serialize_signal_evidence`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -363,9 +372,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -381,6 +390,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -389,11 +399,12 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**9 rutas se enteran SOLO por el dato**, sin
+**10 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -408,7 +419,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:52` · clave completa `app.signal_ledger._finite`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 5** (mas ancha)
+**Radio exacto: 0 rutas** de 68 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -421,9 +432,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 5 rutas · **cota superior**
+### Por tabla · k<=2 — 6 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (5 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (6 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -436,15 +447,17 @@ Ella o alguien que la llama hasta k=2 escribe:
 
 Y esas tablas las leen:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
 - [`/api/signals/replay`](../rutas/api-signals-replay.md)
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 
-**5 rutas se enteran SOLO por el dato**, sin
+**6 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)

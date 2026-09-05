@@ -8,10 +8,10 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`load_signal_execution_inputs`](#load-signal-execution-inputs) | 410 | 0 | **0** | 9 ↑ | **0** |
-| [`persist_signal_execution_snapshots`](#persist-signal-execution-snapshots) | 429 | 0 | **1** | 9 ↑ | **1** |
-| [`_canonical_json`](#-canonical-json) | 139 | 0 | **0** | 5 ↑ | **0** |
-| [`execution_snapshot_record`](#execution-snapshot-record) | 263 | 0 | **0** | 5 ↑ | **0** |
+| [`load_signal_execution_inputs`](#load-signal-execution-inputs) | 410 | 0 | **0** | 10 ↑ | **0** |
+| [`persist_signal_execution_snapshots`](#persist-signal-execution-snapshots) | 429 | 0 | **1** | 10 ↑ | **1** |
+| [`_canonical_json`](#-canonical-json) | 139 | 0 | **0** | 6 ↑ | **0** |
+| [`execution_snapshot_record`](#execution-snapshot-record) | 263 | 0 | **0** | 6 ↑ | **0** |
 | [`_aware_utc`](#-aware-utc) | 127 | 0 | **0** | 1 ↑ | **0** |
 | [`_cost_curve`](#-cost-curve) | 245 | 0 | **0** | 1 ↑ | **0** |
 | [`_decode_depth_levels`](#-decode-depth-levels) | 168 | 0 | **0** | 1 ↑ | **0** |
@@ -22,7 +22,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/signal_execution.py:410` · clave completa `app.signal_execution.load_signal_execution_inputs`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -35,9 +35,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -53,6 +53,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -61,11 +62,12 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**9 rutas se enteran SOLO por el dato**, sin
+**10 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -80,7 +82,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:429` · clave completa `app.signal_execution.persist_signal_execution_snapshots`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 1 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -96,9 +98,9 @@ Y esas tablas las leen:
 
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 1). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 1). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -114,6 +116,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -122,11 +125,12 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**9 rutas se enteran SOLO por el dato**, sin
+**10 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -141,7 +145,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:139` · clave completa `app.signal_execution._canonical_json`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 5** (mas ancha)
+**Radio exacto: 0 rutas** de 68 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -154,9 +158,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 5 rutas · **cota superior**
+### Por tabla · k<=2 — 6 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (5 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (6 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -169,15 +173,17 @@ Ella o alguien que la llama hasta k=2 escribe:
 
 Y esas tablas las leen:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
 - [`/api/signals/replay`](../rutas/api-signals-replay.md)
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 
-**5 rutas se enteran SOLO por el dato**, sin
+**6 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
@@ -190,7 +196,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:263` · clave completa `app.signal_execution.execution_snapshot_record`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 5** (mas ancha)
+**Radio exacto: 0 rutas** de 68 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -203,9 +209,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 5 rutas · **cota superior**
+### Por tabla · k<=2 — 6 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (5 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (6 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -218,15 +224,17 @@ Ella o alguien que la llama hasta k=2 escribe:
 
 Y esas tablas las leen:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
 - [`/api/signals/replay`](../rutas/api-signals-replay.md)
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 
-**5 rutas se enteran SOLO por el dato**, sin
+**6 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)

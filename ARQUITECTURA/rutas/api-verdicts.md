@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `verdicts` · `app/api.py:1826` (cuerpo hasta la 1912) · decorador en la linea 1825.
+Handler `verdicts` · `app/api.py:1827` (cuerpo hasta la 1913) · decorador en la linea 1826.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `verdicts` · `app/api.py:1826` (cuerpo hasta la 1912) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:1905 |
-| `logic_version` | literal en app/api.py:1903 |
-| `note` | literal en app/api.py:1906 |
-| `rows` | literal en app/api.py:1904 |
-| `symbol` | literal en app/api.py:1902 |
+| `coverage` | literal en app/api.py:1906 |
+| `logic_version` | literal en app/api.py:1904 |
+| `note` | literal en app/api.py:1907 |
+| `rows` | literal en app/api.py:1905 |
+| `symbol` | literal en app/api.py:1903 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -46,9 +46,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._session_window` — `app/api.py:447`
-- `app.api.records` — `app/api.py:234`
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api._session_window` — `app/api.py:448`
+- `app.api.records` — `app/api.py:235`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
 
 <details><summary>Alcanzables de forma indirecta (3)</summary>
@@ -79,7 +79,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -90,7 +90,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:103` | `harness/checks/K43-foto-unica.sh:177` |
-| **panel** | `static/app.js:1630` | — |
+| **panel** | `static/app.js:1642` | — |
 | **readme** | — | `README.md:72`, `README.md:276`, `README.md:410` |
 
 **La llama el panel: es superficie de producto.**

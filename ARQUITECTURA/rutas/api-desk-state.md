@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `desk_state` · `app/api.py:1216` (cuerpo hasta la 1314) · decorador en la linea 1215.
+Handler `desk_state` · `app/api.py:1217` (cuerpo hasta la 1315) · decorador en la linea 1216.
 
 ## Parametros de entrada
 
@@ -21,15 +21,15 @@ Handler `desk_state` · `app/api.py:1216` (cuerpo hasta la 1314) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1288 |
-| `components` | literal en app/api.py:1292 |
-| `direction` | literal en app/api.py:1290 |
-| `note` | literal en app/api.py:1309 |
-| `partial` | literal en app/api.py:1303 |
-| `profile` | literal en app/api.py:1289 |
-| `setup` | literal en app/api.py:1291 |
-| `source_timestamps` | literal en app/api.py:1293 |
-| `symbol` | literal en app/api.py:1287 |
+| `as_of` | literal en app/api.py:1289 |
+| `components` | literal en app/api.py:1293 |
+| `direction` | literal en app/api.py:1291 |
+| `note` | literal en app/api.py:1310 |
+| `partial` | literal en app/api.py:1304 |
+| `profile` | literal en app/api.py:1290 |
+| `setup` | literal en app/api.py:1292 |
+| `source_timestamps` | literal en app/api.py:1294 |
+| `symbol` | literal en app/api.py:1288 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -112,7 +112,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.data_quality` — `app/scalp_logic.py:3973`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4277`
@@ -214,10 +214,10 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
-| 422 | — | `app/api.py:1236` | el propio handler |
-| 422 | — | `app/api.py:1240` | el propio handler |
-| 422 | — | `app/api.py:1244` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 422 | — | `app/api.py:1237` | el propio handler |
+| 422 | — | `app/api.py:1241` | el propio handler |
+| 422 | — | `app/api.py:1245` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -228,7 +228,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:105` | — |
-| **panel** | `static/app.js:1488` | — |
+| **panel** | `static/app.js:1500` | — |
 | **readme** | — | `README.md:34` |
 | **tests** | `tests/test_v150_desk_snapshot.py:128` | — |
 
@@ -265,26 +265,26 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 10 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |
 | `app.metrics.current_nyse_start` | 15 | **0** | 14 ↑ | **15** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.compute_scalp_summary` | 9 | **0** | 24 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.scalp_context` | 9 | **0** | 24 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.load_baselines` | 14 | **0** | 9 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.baseline_band` | 13 | **0** | 9 ↑ | **13** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.basis_quality` | 10 | **0** | 9 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.classify_absorption` | 10 | **0** | 9 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._closed_5m_oi_bounds` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._closed_window_move_pct` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._first_present` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._liquidation_window_measured` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._measured_event_sum` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.scalp_bias_label` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.score_component` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.setups.classify_oi` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-setups.md) |
-| `app.setups.oi_price_reading` | 9 | **0** | 9 ↑ | **9** | [impacto](../impacto/app-setups.md) |
+| `app.scalp_logic.load_baselines` | 14 | **0** | 10 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.baseline_band` | 13 | **0** | 10 ↑ | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.basis_quality` | 10 | **0** | 10 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.classify_absorption` | 10 | **0** | 10 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._closed_5m_oi_bounds` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._closed_window_move_pct` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._first_present` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._liquidation_window_measured` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._measured_event_sum` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.scalp_bias_label` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.score_component` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.setups.classify_oi` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-setups.md) |
+| `app.setups.oi_price_reading` | 9 | **0** | 10 ↑ | **9** | [impacto](../impacto/app-setups.md) |
 | `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic._resample_highs_lows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |

@@ -1367,6 +1367,18 @@ function renderDecisionBoard(dashboard, trend, swing, structureDetail, confidenc
   const externalAlignment = externalMacro.alignment || {};
   const eventRisk = externalMacro.event_risk || {};
 
+  // D1 · EL HORIZONTE DE LA TARJETA DE CORTO SALE DE UN DATO, NO DE UNA CADENA.
+  // Aqui decia `time: '1–15 minutos'`, escrito a mano, y medido contra 30 dias la senal
+  // dura una mediana de 1 minuto con p90 de 3. El rotulo prometia un horizonte que el
+  // calculo no sostiene, y ese error se paga con dinero: invita a aguantar una posicion
+  // por un plazo que la senal no cubre.
+  // Ahora la cifra viene de /api/dashboard/state -> scalp_persistence, que la mide del
+  // mismo sitio del que sale el veredicto de K90. Si el bloque no llega o no es medible,
+  // se dice "sin medida", NUNCA un rango inventado: un rotulo sin dato es lo que habia.
+  const persistencia = dashboard.scalp_persistence || {};
+  const shortHorizon = persistencia.available && persistencia.etiqueta
+    ? persistencia.etiqueta
+    : 'persistencia sin medida';
   const scalpState = String(scalp.state || '').toLowerCase();
   const shortSide = scalpState.includes('long') ? 'LONG' : scalpState.includes('short') ? 'SHORT' : 'WAIT';
   let shortAction = shortSide === 'WAIT' ? 'ESPERAR' : `VIGILAR ${shortSide}`;
@@ -1432,7 +1444,7 @@ function renderDecisionBoard(dashboard, trend, swing, structureDetail, confidenc
 
   body.replaceChildren(
     horizonCard({
-      name: 'Corto plazo', time: '1–15 minutos', action: shortAction, side: shortAction.includes(shortSide) ? shortSide : 'WAIT',
+      name: 'Corto plazo', time: shortHorizon, action: shortAction, side: shortAction.includes(shortSide) ? shortSide : 'WAIT',
       thesis: shortThesis, trigger: shortTrigger, invalidation: shortInvalidation,
       metric: `Scalp ${number(scalp.long_score, 0)}L / ${number(scalp.short_score, 0)}S · barrera ${barriers.decision || 'sin lectura'}`,
       link: '#liquidez', linkText: 'Ver liquidez y barreras',

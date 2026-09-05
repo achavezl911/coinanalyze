@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd_divergence` · `app/api.py:797` (cuerpo hasta la 911) · decorador en la linea 796.
+Handler `cvd_divergence` · `app/api.py:798` (cuerpo hasta la 912) · decorador en la linea 797.
 
 ## Parametros de entrada
 
@@ -20,10 +20,10 @@ Handler `cvd_divergence` · `app/api.py:797` (cuerpo hasta la 911) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:910 |
-| `interval` | literal en app/api.py:908 |
-| `rows` | literal en app/api.py:909 |
-| `symbol` | literal en app/api.py:907 |
+| `coverage` | literal en app/api.py:911 |
+| `interval` | literal en app/api.py:909 |
+| `rows` | literal en app/api.py:910 |
+| `symbol` | literal en app/api.py:908 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -68,10 +68,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.historical_interval_value` — `app/api.py:227`
-- `app.api.mask_gapped_series_rows` — `app/api.py:238`
-- `app.api.records` — `app/api.py:234`
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.historical_interval_value` — `app/api.py:228`
+- `app.api.mask_gapped_series_rows` — `app/api.py:239`
+- `app.api.records` — `app/api.py:235`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:245`
 
@@ -99,8 +99,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -111,7 +111,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:102` | `harness/checks/K02-cobertura-hueco.sh:5` |
-| **panel** | `static/app.js:1547` | — |
+| **panel** | `static/app.js:1559` | — |
 | **readme** | — | `README.md:405` |
 
 **La llama el panel: es superficie de producto.**

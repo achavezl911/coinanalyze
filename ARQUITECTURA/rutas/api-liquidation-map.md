@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_map_endpoint` · `app/api.py:1609` (cuerpo hasta la 1612) · decorador en la linea 1608.
+Handler `liquidation_map_endpoint` · `app/api.py:1610` (cuerpo hasta la 1613) · decorador en la linea 1609.
 
 ## Parametros de entrada
 
@@ -58,7 +58,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3420`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -133,7 +133,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._resample_highs_lows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._atr` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._tr_series` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |

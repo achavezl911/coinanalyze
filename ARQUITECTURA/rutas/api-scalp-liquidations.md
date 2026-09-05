@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_liquidations` · `app/api.py:1489` (cuerpo hasta la 1492) · decorador en la linea 1488.
+Handler `scalp_liquidations` · `app/api.py:1490` (cuerpo hasta la 1493) · decorador en la linea 1489.
 
 ## Parametros de entrada
 
@@ -40,7 +40,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5321`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
@@ -55,7 +55,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -66,7 +66,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:100`, `harness/checks/K43-foto-unica.sh:140`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:113`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:114` _(+1)_ | — |
-| **panel** | `static/app.js:1605` | — |
+| **panel** | `static/app.js:1617` | — |
 
 **La llama el panel: es superficie de producto.**
 

@@ -19,7 +19,7 @@
 | `/api/cvd/divergence` | GET | 4 | 3 | 9 | [ficha](rutas/api-cvd-divergence.md) |
 | `/api/cvd/spot` | GET | 5 | 2 | 11 | [ficha](rutas/api-cvd-spot.md) |
 | `/api/daily` | GET | 11 | 2 | 13 | [ficha](rutas/api-daily.md) |
-| `/api/dashboard/state` | GET | 7 | 12 | 42 | [ficha](rutas/api-dashboard-state.md) |
+| `/api/dashboard/state` | GET | 8 | 13 | 43 | [ficha](rutas/api-dashboard-state.md) |
 | `/api/data-confidence` | GET | 1 | 6 | 10 | [ficha](rutas/api-data-confidence.md) |
 | `/api/delta-profile` | GET | 3 | 1 | 11 | [ficha](rutas/api-delta-profile.md) |
 | `/api/desk/state` | GET | 9 | 13 | 76 | [ficha](rutas/api-desk-state.md) |
@@ -50,7 +50,7 @@
 | `/api/scalp/basis` | GET | 1 | 2 | 4 | [ficha](rutas/api-scalp-basis.md) |
 | `/api/scalp/delta-matrix` | GET | **0 · PENDIENTE** | 3 | 18 | [ficha](rutas/api-scalp-delta-matrix.md) |
 | `/api/scalp/execution-cost` | GET | 8 | 9 | 30 | [ficha](rutas/api-scalp-execution-cost.md) |
-| `/api/scalp/liquidation-levels` | GET | 4 | 3 | 2 | [ficha](rutas/api-scalp-liquidation-levels.md) |
+| `/api/scalp/liquidation-levels` | GET | 7 | 3 | 2 | [ficha](rutas/api-scalp-liquidation-levels.md) |
 | `/api/scalp/liquidations` | GET | 3 | 1 | 2 | [ficha](rutas/api-scalp-liquidations.md) |
 | `/api/scalp/orderbook` | GET | 3 | 1 | 3 | [ficha](rutas/api-scalp-orderbook.md) |
 | `/api/scalp/signals` | GET | 2 | 1 | 2 | [ficha](rutas/api-scalp-signals.md) |
@@ -115,7 +115,7 @@
 | `predicted_funding_rate` | 3 | 0 |
 | `scalp_signal_snapshot` | 4 | 0 |
 | `signal_execution_snapshot` | 1 | 0 |
-| `signal_observation` | 5 | 0 |
+| `signal_observation` | 6 | 0 |
 | `signal_outcome` | 2 | 0 |
 | `signal_outcome_final_visibility` | 1 | 0 |
 | `signal_replay_frame` | 1 | 0 |

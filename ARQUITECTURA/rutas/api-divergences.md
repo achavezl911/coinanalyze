@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `divergences_endpoint` · `app/api.py:1812` (cuerpo hasta la 1815) · decorador en la linea 1811.
+Handler `divergences_endpoint` · `app/api.py:1813` (cuerpo hasta la 1816) · decorador en la linea 1812.
 
 ## Parametros de entrada
 
@@ -61,7 +61,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2073`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
@@ -86,7 +86,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -97,7 +97,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:93`, `harness/checks/K43-foto-unica.sh:122` | `harness/checks/K43-foto-unica.sh:175` |
-| **panel** | `static/app.js:1638` | — |
+| **panel** | `static/app.js:1650` | — |
 | **readme** | — | `README.md:281` |
 
 **La llama el panel: es superficie de producto.**
@@ -133,7 +133,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._complete_tail_values` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._intraday_divergences` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._return_stdev_pct` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |

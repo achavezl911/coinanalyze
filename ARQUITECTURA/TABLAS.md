@@ -41,7 +41,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`predicted_funding_rate`](#predicted-funding-rate) | 1 | 3 | 0 |
 | [`scalp_signal_snapshot`](#scalp-signal-snapshot) | 1 | 4 | 0 |
 | [`signal_execution_snapshot`](#signal-execution-snapshot) | 1 | 1 | 0 |
-| [`signal_observation`](#signal-observation) | 1 | 5 | 0 |
+| [`signal_observation`](#signal-observation) | 1 | 6 | 0 |
 | [`signal_outcome`](#signal-outcome) | 4 | 2 | 0 |
 | [`signal_outcome_final_visibility`](#signal-outcome-final-visibility) | 1 | 1 | 0 |
 | [`signal_replay_frame`](#signal-replay-frame) | 1 | 1 | 0 |
@@ -115,7 +115,29 @@ la columna con la que el sistema declara si un minuto se midio entero.
 
 ## LA CADENCIA · cada cuanto escribe quien escribe
 
-**Ninguna tabla guarda su cadencia esperada**: hay que ir al codigo. Por eso esta aqui.
+**Ninguna tabla de SERIE guarda su cadencia esperada.** Pero *"hay que salir de la
+base para averiguarlo"* —que es lo que decia la version anterior de esta seccion— **es
+falso, y hay contraejemplo medido**:
+
+```sql
+-- sql/schema.sql:1422
+expected_cadence interval,          -- en data_gap
+
+-- medido en 140 por el operador:
+00:05:00  en 816 filas / 5 feeds
+00:01:00  en 435 filas / 1 feed
+total 1251 = TODAS las filas de data_gap
+```
+
+**`data_gap.expected_cadence` es una fuente de cadencia que ya existe dentro de la**
+**base**, y ademas el esquema la usa en una restriccion: `feed_class = 'cadence'` exige
+`expected_cadence > 0` y `feed_class = 'event_stream'` exige que sea NULL
+(`sql/schema.sql:1443-1446`). O sea que el sistema **ya distingue** un feed con ritmo de
+uno de eventos, y lo guarda.
+
+**Su limite, que es lo que la hace parcial y no total:** solo aparecen ahi **los feeds
+que han tenido hueco**. Un feed que nunca fallo no tiene fila en `data_gap`, asi que su
+cadencia no esta. Por eso las constantes de abajo siguen haciendo falta.
 
 | constante | valor | de `app/config.py` |
 |---|---|---|
@@ -695,8 +717,9 @@ La escriben:
 
 - `app.signal_ledger.persist_signal_observations` — **INSERT** en `app/signal_ledger.py:371`
 
-**Si cambia el contenido o el esquema de `signal_observation`, estas 5 rutas lo notan:**
+**Si cambia el contenido o el esquema de `signal_observation`, estas 6 rutas lo notan:**
 
+- [`/api/dashboard/state`](rutas/api-dashboard-state.md)
 - [`/api/signals/execution`](rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](rutas/api-signals-ledger.md)
 - [`/api/signals/outcomes`](rutas/api-signals-outcomes.md)

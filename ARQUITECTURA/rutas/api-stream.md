@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `stream` · `app/api.py:2852` (cuerpo hasta la 2857) · decorador en la linea 2851.
+Handler `stream` · `app/api.py:2964` (cuerpo hasta la 2969) · decorador en la linea 2963.
 
 ## Parametros de entrada
 
@@ -43,11 +43,11 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.stream_generator` — `app/api.py:2804`
+- `app.api.stream_generator` — `app/api.py:2916`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
-- `app.api.records` — `app/api.py:234`
+- `app.api.records` — `app/api.py:235`
 
 </details>
 
@@ -72,7 +72,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K20-cincoxx.sh:126`, `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:106` | `harness/checks/K20-cincoxx.sh:124`, `harness/checks/K31-eslabon5.sh:57` |
-| **panel** | `static/app.js:1654` | — |
+| **panel** | `static/app.js:1666` | — |
 | **readme** | — | `README.md:412` |
 
 **La llama el panel: es superficie de producto.**

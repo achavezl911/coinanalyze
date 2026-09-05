@@ -9,22 +9,22 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
 | [`swing_score`](#swing-score) | 6152 | 2 | **0** | 51 ↑ | **2** |
-| [`as_float`](#as-float) | 920 | 37 | **0** | 9 ↑ | **37** |
-| [`resolve_matrix_as_of`](#resolve-matrix-as-of) | 2404 | 24 | **0** | 10 ↑ | **24** |
+| [`as_float`](#as-float) | 920 | 37 | **0** | 10 ↑ | **37** |
+| [`resolve_matrix_as_of`](#resolve-matrix-as-of) | 2404 | 24 | **0** | 11 ↑ | **24** |
 | [`_explicit_as_of`](#-explicit-as-of) | 2398 | 25 | **0** | 0 | **25** |
 | [`compute_scalp_summary`](#compute-scalp-summary) | 628 | 9 | **0** | 24 ↑ | **9** |
 | [`scalp_context`](#scalp-context) | 325 | 9 | **0** | 24 ↑ | **9** |
-| [`load_baselines`](#load-baselines) | 158 | 14 | **0** | 9 ↑ | **14** |
-| [`baseline_band`](#baseline-band) | 134 | 13 | **0** | 9 ↑ | **13** |
-| [`basis_quality`](#basis-quality) | 231 | 10 | **0** | 9 ↑ | **10** |
-| [`classify_absorption`](#classify-absorption) | 193 | 10 | **0** | 9 ↑ | **10** |
-| [`_closed_5m_oi_bounds`](#-closed-5m-oi-bounds) | 94 | 9 | **0** | 9 ↑ | **9** |
-| [`_closed_window_move_pct`](#-closed-window-move-pct) | 590 | 9 | **0** | 9 ↑ | **9** |
-| [`_first_present`](#-first-present) | 502 | 9 | **0** | 9 ↑ | **9** |
-| [`_liquidation_window_measured`](#-liquidation-window-measured) | 514 | 9 | **0** | 9 ↑ | **9** |
-| [`_measured_event_sum`](#-measured-event-sum) | 558 | 9 | **0** | 9 ↑ | **9** |
-| [`scalp_bias_label`](#scalp-bias-label) | 292 | 9 | **0** | 9 ↑ | **9** |
-| [`score_component`](#score-component) | 317 | 9 | **0** | 9 ↑ | **9** |
+| [`load_baselines`](#load-baselines) | 158 | 14 | **0** | 10 ↑ | **14** |
+| [`baseline_band`](#baseline-band) | 134 | 13 | **0** | 10 ↑ | **13** |
+| [`basis_quality`](#basis-quality) | 231 | 10 | **0** | 10 ↑ | **10** |
+| [`classify_absorption`](#classify-absorption) | 193 | 10 | **0** | 10 ↑ | **10** |
+| [`_closed_5m_oi_bounds`](#-closed-5m-oi-bounds) | 94 | 9 | **0** | 10 ↑ | **9** |
+| [`_closed_window_move_pct`](#-closed-window-move-pct) | 590 | 9 | **0** | 10 ↑ | **9** |
+| [`_first_present`](#-first-present) | 502 | 9 | **0** | 10 ↑ | **9** |
+| [`_liquidation_window_measured`](#-liquidation-window-measured) | 514 | 9 | **0** | 10 ↑ | **9** |
+| [`_measured_event_sum`](#-measured-event-sum) | 558 | 9 | **0** | 10 ↑ | **9** |
+| [`scalp_bias_label`](#scalp-bias-label) | 292 | 9 | **0** | 10 ↑ | **9** |
+| [`score_component`](#score-component) | 317 | 9 | **0** | 10 ↑ | **9** |
 | [`_resample_highs_lows`](#-resample-highs-lows) | 1197 | 14 | **0** | 0 | **14** |
 | [`_flow_windows`](#-flow-windows) | 2431 | 13 | **0** | 0 | **13** |
 | [`spot_flow_windows`](#spot-flow-windows) | 2609 | 13 | **0** | 0 | **13** |
@@ -322,9 +322,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -337,6 +337,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -398,9 +399,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -415,6 +416,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -689,9 +691,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -704,6 +706,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -754,9 +757,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -769,6 +772,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -816,9 +820,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -831,6 +835,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -878,9 +883,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -893,6 +898,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -939,9 +945,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -954,6 +960,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1000,9 +1007,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1015,6 +1022,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1061,9 +1069,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1076,6 +1084,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1122,9 +1131,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1137,6 +1146,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1183,9 +1193,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1198,6 +1208,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1244,9 +1255,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1259,6 +1270,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1305,9 +1317,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 9 rutas · **cota superior**
+### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1320,6 +1332,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)

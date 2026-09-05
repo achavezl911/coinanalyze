@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `positioning` · `app/api.py:1127` (cuerpo hasta la 1131) · decorador en la linea 1126.
+Handler `positioning` · `app/api.py:1128` (cuerpo hasta la 1132) · decorador en la linea 1127.
 
 ## Parametros de entrada
 
@@ -61,7 +61,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:221`
+- `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5525`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -93,7 +93,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:99`, `harness/checks/K43-foto-unica.sh:136` | — |
-| **panel** | `static/app.js:1608` | — |
+| **panel** | `static/app.js:1620` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -129,7 +129,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.positioning_context` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.positioning` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
