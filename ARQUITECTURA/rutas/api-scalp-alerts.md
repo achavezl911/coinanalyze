@@ -118,12 +118,17 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 ## Superficie · quien la consume (medido)
 
-**NINGUN consumidor encontrado** en `static/app.js`, `static/index.html`,
-`harness/checks`, `tests`, `tools` ni `README.md`.
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su
-nombre-, pero es la forma exacta del patron que en esta casa se ha repetido nueve
-veces. **Merece una mirada, no una conclusion.**
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | — | `harness/checks/K31-cubos.py:18`, `harness/checks/K31-cubos.py:187` |
+
+**Nadie la llama.** Sus 2 rastros son todos MENCION -comentario,
+docstring o documento-. Es la forma del patron que en esta casa se ha repetido
+nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**
 
 ## Ventana · con que clave la declara (derivado)
 

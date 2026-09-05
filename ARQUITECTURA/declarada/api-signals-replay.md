@@ -24,11 +24,53 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
+### Las cinco de `/api/signals/*` comparten contrato, y por eso se declaran juntas
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+Medido sobre la foto de produccion (`entregas/20260904-foto-prod-1.json`,
+2026-09-04T22:34:11Z, arco 37 387 ms): las cinco publican **`symbol`, `since`, `until`,
+`limit`, `count`, `truncated`** y su coleccion. No es un parecido: es el mismo contrato.
+
+**PROMESA 1 · devuelve el ECO de la ventana que USO, no la que le pidieron.**
+En la foto se pidieron sin `since` ni `until`, y las cinco contestaron con el par relleno
+-`21:33:11Z` .. `22:33:11Z`, una hora exacta hacia atras desde el instante de la peticion-.
+O sea que la ruta **no deja que el consumidor suponga la ventana por defecto**: la dice.
+
+*Que significa no cumplirlo:* que `since`/`until` faltaran o no cuadraran con las filas
+devueltas. Un consumidor que cuente eventos sobre una ventana que no conoce publica una
+tasa sin denominador, que es la forma de error mas cara de esta bateria (P5.2).
+
+**PROMESA 2 · NO devuelve una lista cortada sin decirlo.**
+`truncated` viaja al lado de `count` y `limit` en las cinco. Con `limit` alcanzado y
+`truncated` en `false`, o `count > limit`, la promesa esta rota.
+
+*Que significa no cumplirlo:* exactamente el defecto de P5.2 -"¿sobre cuantas operaciones
+se calcula?"-. Una lista truncada en silencio convierte cualquier agregado de aguas abajo
+en una cifra plausible y falsa, y no hay forma de notarlo desde fuera.
+
+**PROMESA 3 · valida la zona horaria en vez de suponerla.**
+`422 · "since/until necesitan zona horaria explicita"` (`app/api.py:2112`, y su gemelo en
+las otras cuatro). La ruta prefiere fallar a interpretar un instante ambiguo.
+
+*Que significa no cumplirlo:* un `since` sin zona interpretado como local movería la
+ventana entera y las cifras seguirian pareciendo razonables.
+
+**LO QUE NINGUNA DE LAS CINCO PROMETE, y conviene tenerlo escrito:** ninguna publica su
+propio instante de construccion. `until` es el borde de la ventana pedida, no "cuando se
+armo esta respuesta". Con `since`/`until` rellenos por defecto los dos coinciden en la
+practica, pero es una coincidencia del camino por defecto, no una promesa.
+
+### Lo propio de esta ruta
+
+**PROMESA 4 · cada fotograma declara CON QUE VERSION y DE CUANDO fue el contexto.**
+Cada fila trae `context_version` y `context_as_of`. Es la respuesta a **P5.5**, y la bateria
+ya midio ahi un defecto caro: *"dos etiquetas de version ocupaban DIAS DISTINTOS"*, o sea
+que se atribuyo a la version lo que era el calendario.
+
+*Que significa no cumplirlo:* comparar dos epocas creyendo comparar dos versiones. Con
+`context_as_of` en cada fotograma, el solape de fechas se puede medir en vez de suponerse.
+En la foto: **145 fotogramas en una hora**. Lo vigila
+`harness/checks/K24-replay-del-contexto.sh:87`.
+
 
 ## SUPERFICIE
 

@@ -28,11 +28,36 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### NADIE LA LLAMA, y esta medido
+
+Censo sobre `static/app.js`, `static/index.html`, `harness/checks`, `tests`, `tools` y
+`README.md`, con limite de token y separando llamada de mencion: **cero llamadas y cero
+menciones**. Es una de las **seis** rutas del sistema sin ningun rastro.
+
+No prueba que este muerta -puede llamarla una IA por su nombre, o algo fuera del repo-,
+pero es la forma exacta del patron que en esta casa se ha repetido nueve veces.
+
+### Lo que promete
+
+**PROMESA · cada nivel declara SU MARCO temporal.**
+En la foto: `previous_day` y `current_day` (con `high`/`low`/`close`/`open`), `opens` por
+`daily`/`weekly`/`monthly`, `sessions_today_utc` por `asia`/`london`/`new_york`, y
+`note = "niveles desde ohlcv 1min (retencion…)"`.
+
+Es **P2.7** -"¿el nivel viene de mi marco o de otro?"-: un soporte diario no invalida un
+scalp. Aqui el marco no hay que deducirlo, esta en el nombre de la clave.
+
+**INCUMPLE parcialmente P2.1**, y esta medido. La bateria pide que *"cada nivel declare SU
+procedencia"* porque el frontend maneja **seis fuentes distintas de niveles**. Esta ruta
+declara el MARCO (`daily`, `weekly`, `asia`…) pero **no la FUENTE**: los seis grupos salen
+todos de `ohlcv` -la unica tabla que lee- y no hay campo que distinga un nivel de sesion de
+un open semanal mas alla de donde esta colgado.
+
+*Que significa:* dos niveles del mismo precio en grupos distintos no se pueden deduplicar.
+No lo abro como K porque el criterio -¿cuantos niveles duplicados hacen falta para que
+importe?- no lo puedo fijar sin una medida sobre varios simbolos.
+
 
 ## SUPERFICIE
 

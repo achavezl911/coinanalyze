@@ -27,11 +27,30 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### NADIE LA LLAMA, y esta medido
+
+Censo sobre `static/app.js`, `static/index.html`, `harness/checks`, `tests`, `tools` y
+`README.md`, con limite de token y separando llamada de mencion: **cero llamadas y cero
+menciones**. Es una de las **seis** rutas del sistema sin ningun rastro.
+
+No prueba que este muerta -puede llamarla una IA por su nombre, o algo fuera del repo-,
+pero es la forma exacta del patron que en esta casa se ha repetido nueve veces.
+
+### Lo que promete
+
+**PROMESA · publica su instante Y el metodo con el que calculo, no solo el numero.**
+En la foto: `as_of = "2026-09-04T22:33:02.187567+00:00"`, `available = true`,
+`correlation`, `beta_vs_base` y `relative_strength_vs_base_pct` -las tres por `1h`, `4h`,
+`24h`- y `note = "correlacion Pearson de retornos 5min…"`.
+
+Es de las pocas que trae **`as_of` de primer nivel**: la respuesta se fecha a si misma, no
+solo a sus filas. Y `available` separa "no hay correlacion" de "no se pudo calcular", que
+es **P0.5** — el cero medido contra el cero sin dato.
+
+*Que significa no cumplirlo:* una correlacion sin metodo ni ventana no se puede reproducir,
+y una sin `available` no se distingue de un fallo silencioso.
+
 
 ## SUPERFICIE
 

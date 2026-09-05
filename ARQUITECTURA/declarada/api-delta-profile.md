@@ -21,9 +21,24 @@ Familia **2** de K43 — coverage de su propia serie.
 
 Derivado de su firma: pide ['days', 'interval']: coverage de su propia serie.
 
-**PENDIENTE · no se le ha derivado ninguna clave temporal.** O no publica
-marca de tiempo, o sus campos no son derivables estaticamente. La foto de
-produccion lo decide: `entregas/20260904-foto-prod-1.json`.
+**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z, arco 37 387 ms).
+
+El AST no le derivo ninguna clave temporal, pero **si publica marca de tiempo en el**
+**cuerpo**. Son cosas distintas y aqui se separan: lo primero es un limite del
+analisis estatico, lo segundo una afirmacion sobre el producto.
+
+Claves de **primer nivel** — la respuesta declara su propio instante o periodo:
+
+- `from` (nombre)
+- `to` (nombre)
+
+Claves **anidadas** (3), dentro de filas o bloques:
+
+- `coverage.served_window` (nombre)
+- `coverage.served_window.window_end` (nombre)
+- `coverage.served_window.window_start` (nombre)
+
+<sub>Medido leyendo el cuerpo de la respuesta en la foto, no supuesto. 5 claves temporales en total.</sub>
 
 ## PROMESA
 

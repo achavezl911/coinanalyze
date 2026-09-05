@@ -17,17 +17,48 @@ Familia **2** de K43 — coverage de su propia serie.
 
 Derivado de su firma: pide ['limit']: coverage de su propia serie.
 
-**PENDIENTE · no se le ha derivado ninguna clave temporal.** O no publica
-marca de tiempo, o sus campos no son derivables estaticamente. La foto de
-produccion lo decide: `entregas/20260904-foto-prod-1.json`.
+**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): **no publica NINGUNA**
+**marca temporal en el cuerpo.** Ni de primer nivel ni anidada.
+
+Aqui el AST y la foto coinciden, asi que la afirmacion es firme: esta ruta no dice
+de cuando es lo que publica. **Candidata a familia 4 de K43 (exenta), y la exencion
+hay que escribirla con su cita** — o es un hueco, no una exencion.
+
+<sub>Medido leyendo el cuerpo de la respuesta, no supuesto.</sub>
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
+### La promesa que comparte casi toda la familia `/api/scalp/*`
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+**Publica SU EDAD y EL UMBRAL con el que hay que juzgarla, en vez de dejar que el
+consumidor lo suponga.** Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): las rutas de esta familia traen
+`status` junto a alguna forma de `age`/`lag` y su `stale_after_seconds` o
+`max_age_seconds`. Es lo que convierte "este numero es viejo" en una comprobacion y no en
+una opinion.
+
+*Que significa no cumplirlo:* publicar un valor rancio indistinguible de uno vivo. Es
+**P0.9** de la bateria — *"si el proveedor esta caido, ¿me entero o veo el ultimo valor
+congelado?"* — y su respuesta solo puede darla la propia ruta, porque nadie de fuera sabe
+cuanto es demasiado para ESTE dato.
+
+### Lo propio de esta ruta
+
+**PROMESA · agrupa por PRECIO y publica el numero de eventos de cada cubo.**
+En la foto: `rows = [3]` con `price_bucket`, `long_liq`, `short_liq`, `total_notional` y
+`events`.
+
+**INCUMPLE la promesa de frescura de la familia**, y esta medido: es de las **7 rutas que
+no publican NINGUNA marca temporal** en el cuerpo (ver la seccion VENTANA de arriba). Ni
+`as_of`, ni `ts`, ni edad, ni `stale_after_seconds`.
+
+*Que significa:* un consumidor no puede distinguir estos niveles de hace un minuto de los
+de hace seis horas. Y con **S7** de la bateria encima -"¿las liquidaciones que me amenazan
+son las de mi lado?"- publicar niveles sin decir de cuando son es la mitad del problema.
+
+**Es candidata a K**, y no lo abro yo porque el criterio depende de una decision: si estos
+niveles son historicos por diseño -como `/api/liquidation-map`- basta con decirlo en el
+cuerpo; si pretenden ser actuales, les falta la marca. **Eso lo decide producto.**
+
 
 ## SUPERFICIE
 

@@ -19,9 +19,30 @@ Familia **1** de K43 — ventana de construccion de la foto (estado ambiente).
 
 Derivado de su firma: solo pide symbol (o nada): estado ambiente.
 
-**PENDIENTE · no se le ha derivado ninguna clave temporal.** O no publica
-marca de tiempo, o sus campos no son derivables estaticamente. La foto de
-produccion lo decide: `entregas/20260904-foto-prod-1.json`.
+**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z, arco 37 387 ms).
+
+El AST no le derivo ninguna clave temporal, pero **si publica marca de tiempo en el**
+**cuerpo**. Son cosas distintas y aqui se separan: lo primero es un limite del
+analisis estatico, lo segundo una afirmacion sobre el producto.
+
+Claves de **primer nivel** — la respuesta declara su propio instante o periodo:
+
+- `generated_at` (nombre)
+- `window_seconds` (nombre)
+
+Claves **anidadas** (11), dentro de filas o bloques:
+
+- `collectors.api.lag_seconds` (nombre)
+- `collectors.api.stale_after_seconds` (nombre)
+- `collectors.daily.lag_seconds` (nombre)
+- `collectors.daily.stale_after_seconds` (nombre)
+- `collectors.ingest.lag_seconds` (nombre)
+- `collectors.ingest.stale_after_seconds` (nombre)
+- `collectors.scalp.lag_seconds` (nombre)
+- `collectors.scalp.stale_after_seconds` (nombre)
+- _… y 3 mas_
+
+<sub>Medido leyendo el cuerpo de la respuesta en la foto, no supuesto. 13 claves temporales en total.</sub>
 
 ## PROMESA
 

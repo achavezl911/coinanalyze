@@ -61,12 +61,17 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **readme** | `README.md:488`, `README.md:498` |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-**No la consume el panel.** Con consumidor solo en checks/tests/tools, es
-**instrumento interno** — o una ruta que alguien dejo de usar y nadie retiro.
+| donde | llamadas | menciones |
+|---|---|---|
+| **readme** | — | `README.md:488`, `README.md:498` |
+
+**Nadie la llama.** Sus 2 rastros son todos MENCION -comentario,
+docstring o documento-. Es la forma del patron que en esta casa se ha repetido
+nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**
 
 ## Ventana · con que clave la declara (derivado)
 

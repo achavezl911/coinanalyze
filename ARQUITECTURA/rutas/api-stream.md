@@ -65,13 +65,17 @@ _no levanta HTTPException en su cierre. Un fallo aqui sale como 500 del framewor
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **checks** | `harness/checks/K20-cincoxx.sh:126` |
-| **panel** | `static/app.js:1654` |
-| **readme** | `README.md:412` |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-La consume el panel: **es superficie de producto**.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K20-cincoxx.sh:126`, `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:106` | `harness/checks/K20-cincoxx.sh:124`, `harness/checks/K31-eslabon5.sh:57` |
+| **panel** | `static/app.js:1654` | — |
+| **readme** | — | `README.md:412` |
+
+**La llama el panel: es superficie de producto.**
 
 ## Ventana · con que clave la declara (derivado)
 

@@ -24457,8 +24457,10 @@
     "rutas_con_campos": 62,
     "rutas_sin_campos": 6,
     "sin_clave_temporal": 36,
-    "sin_consumidor": 14,
+    "sin_consumidor": 4,
     "sin_declarar": 0,
+    "sin_llamada": 11,
+    "solo_mencion": 7,
     "tablas_alcanzadas": 30,
     "tablas_catalogo": 40
   },
@@ -24475,37 +24477,530 @@
       "claves_temporales": [],
       "codigos": [],
       "consumidores": {
-        "checks": [
-          "harness/checks/K05-control.bash:77",
-          "harness/checks/K05-latidos.sh:359",
-          "harness/checks/K05-latidos.sh:362",
-          "harness/checks/K13-vacio-o-rancio.sh:75",
-          "harness/checks/K52-el-minuto-corto.sh:189",
-          "harness/checks/K88-control.bash:105",
-          "harness/checks/K88-control.bash:255",
-          "harness/checks/K88-hook-control.bash:146",
-          "harness/checks/K88-hook-control.bash:203"
-        ],
-        "panel": [
-          "static/app.js:66"
-        ],
-        "readme": [
-          "README.md:294",
-          "README.md:296"
-        ],
-        "tests": [
-          "tests/js/harness.js:127",
-          "tests/js/harness.js:147",
-          "tests/test_coinalyze_rate_limit.py:155",
-          "tests/test_data_gaps_postgres.py:89",
-          "tests/test_db.py:133",
-          "tests/test_metrics_endpoint.py:184",
-          "tests/test_signal_walk_forward_confirmatory_postgres.py:247",
-          "tests/test_signal_walk_forward_confirmatory_postgres.py:253",
-          "tests/test_signal_walk_forward_confirmatory_postgres.py:326",
-          "tests/test_signal_walk_forward_confirmatory_postgres.py:547",
-          "tests/test_signal_walk_forward_confirmatory_postgres.py:717"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K01a-espejo.sh:58",
+            "harness/checks/K01b-respaldo-cifrado.sh:31",
+            "harness/checks/K01b-respaldo-cifrado.sh:73",
+            "harness/checks/K01b-respaldo-cifrado.sh:95",
+            "harness/checks/K02-cobertura-hueco.sh:55",
+            "harness/checks/K02-cobertura-hueco.sh:56",
+            "harness/checks/K02-cobertura-hueco.sh:70",
+            "harness/checks/K05-control.bash:77",
+            "harness/checks/K05-control.bash:210",
+            "harness/checks/K05-control.bash:336",
+            "harness/checks/K05-latidos.sh:114",
+            "harness/checks/K05-latidos.sh:117",
+            "harness/checks/K05-latidos.sh:359",
+            "harness/checks/K05-latidos.sh:362",
+            "harness/checks/K05-latidos.sh:383",
+            "harness/checks/K05-latidos.sh:394",
+            "harness/checks/K06-visibilidad.sh:26",
+            "harness/checks/K13-vacio-o-rancio.sh:75",
+            "harness/checks/K18-borrado.sh:81",
+            "harness/checks/K19-ci-vivo.sh:79",
+            "harness/checks/K19-ci-vivo.sh:100",
+            "harness/checks/K20-cincoxx.sh:39",
+            "harness/checks/K20-cincoxx.sh:40",
+            "harness/checks/K22-resultado-por-horizonte.sh:176",
+            "harness/checks/K22-resultado-por-horizonte.sh:177",
+            "harness/checks/K22-resultado-por-horizonte.sh:178",
+            "harness/checks/K23-coste-de-ejecucion.sh:153",
+            "harness/checks/K23-coste-de-ejecucion.sh:155",
+            "harness/checks/K23-coste-de-ejecucion.sh:176",
+            "harness/checks/K23-coste-de-ejecucion.sh:178",
+            "harness/checks/K23-coste-de-ejecucion.sh:181",
+            "harness/checks/K23-coste-de-ejecucion.sh:183",
+            "harness/checks/K23-coste-de-ejecucion.sh:188",
+            "harness/checks/K23-coste-de-ejecucion.sh:190",
+            "harness/checks/K23-coste-de-ejecucion.sh:192",
+            "harness/checks/K23-coste-de-ejecucion.sh:216",
+            "harness/checks/K31-cubos.py:46",
+            "harness/checks/K31-cubos.py:165",
+            "harness/checks/K31-eslabon5.sh:149",
+            "harness/checks/K37-tasa-de-perdida.sh:123",
+            "harness/checks/K42-mapa-liquidaciones-cuadra.sh:70",
+            "harness/checks/K42-mapa-liquidaciones-cuadra.sh:128",
+            "harness/checks/K43-foto-unica.sh:189",
+            "harness/checks/K49-libretas-fuera-de-143.sh:109",
+            "harness/checks/K52-el-minuto-corto.sh:97",
+            "harness/checks/K52-el-minuto-corto.sh:281",
+            "harness/checks/K52-el-minuto-corto.sh:288",
+            "harness/checks/K52-el-minuto-corto.sh:294",
+            "harness/checks/K52b-la-ruta-no-falla-abierta.sh:79",
+            "harness/checks/K58-base-que-es-cero.sh:192",
+            "harness/checks/K68-perdida-muda.sh:86",
+            "harness/checks/K68-perdida-muda.sh:87",
+            "harness/checks/K77-el-pool-borra-su-configuracion.sh:144",
+            "harness/checks/K77-el-pool-borra-su-configuracion.sh:207",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:168",
+            "harness/checks/K82-el-espejo-contra-su-volcado.sh:89",
+            "harness/checks/K85-el-reciclado-que-fabrica-handshakes.sh:98",
+            "harness/checks/K85-el-reciclado-que-fabrica-handshakes.sh:101",
+            "harness/checks/K85-el-reciclado-que-fabrica-handshakes.sh:114",
+            "harness/checks/K85-el-reciclado-que-fabrica-handshakes.sh:118",
+            "harness/checks/K86-control.bash:68",
+            "harness/checks/K86-control.bash:69",
+            "harness/checks/K86-control.bash:105",
+            "harness/checks/K86-control.bash:155",
+            "harness/checks/K86-control.bash:179",
+            "harness/checks/K86-control.bash:185",
+            "harness/checks/K86-control.bash:199",
+            "harness/checks/K86-control.bash:200",
+            "harness/checks/K86-control.bash:216",
+            "harness/checks/K86-control.bash:246",
+            "harness/checks/K86-control.bash:251",
+            "harness/checks/K86-control.bash:252",
+            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:99",
+            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:144",
+            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:146",
+            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:147",
+            "harness/checks/K88-control.bash:67",
+            "harness/checks/K88-control.bash:115",
+            "harness/checks/K88-control.bash:192",
+            "harness/checks/K88-control.bash:196",
+            "harness/checks/K88-control.bash:214",
+            "harness/checks/K88-control.bash:224",
+            "harness/checks/K88-control.bash:238",
+            "harness/checks/K88-control.bash:265",
+            "harness/checks/K88-hook-control.bash:69",
+            "harness/checks/K88-hook-control.bash:103",
+            "harness/checks/K88-hook-control.bash:146",
+            "harness/checks/K88-hook-control.bash:203",
+            "harness/checks/K88-la-arquitectura-que-miente.sh:197",
+            "harness/checks/K90-control.bash:66",
+            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:67"
+          ],
+          "menciones": [
+            "harness/checks/K03-hueco-declarado.sh:61",
+            "harness/checks/K05-latidos.sh:16",
+            "harness/checks/K05-latidos.sh:96",
+            "harness/checks/K52-el-minuto-corto.sh:14",
+            "harness/checks/K52-el-minuto-corto.sh:189",
+            "harness/checks/K58-base-que-es-cero.sh:16",
+            "harness/checks/K58-base-que-es-cero.sh:17",
+            "harness/checks/K58-base-que-es-cero.sh:36",
+            "harness/checks/K60-resumen-sobre-cero-filas.sh:100",
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:34",
+            "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:25",
+            "harness/checks/K84-dos-matrices-una-cifra.sh:22",
+            "harness/checks/K84-dos-matrices-una-cifra.sh:23",
+            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:29",
+            "harness/checks/K86-la-excepcion-que-sabe-que-hora-es.sh:30"
+          ]
+        },
+        "herramientas": {
+          "llamadas": [
+            "tools/generate_dashboard_usage_pdf.py:25",
+            "tools/generate_dashboard_usage_pdf.py:26",
+            "tools/generate_dashboard_usage_pdf.py:27",
+            "tools/generate_dashboard_usage_pdf.py:28",
+            "tools/generate_dashboard_usage_pdf.py:29",
+            "tools/generate_dashboard_usage_pdf.py:260",
+            "tools/generate_dashboard_usage_pdf.py:262",
+            "tools/generate_dashboard_usage_pdf.py:265",
+            "tools/generate_dashboard_usage_pdf.py:276"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:127",
+            "static/app.js:139",
+            "static/app.js:140",
+            "static/app.js:193",
+            "static/app.js:203",
+            "static/app.js:299",
+            "static/app.js:300",
+            "static/app.js:345",
+            "static/app.js:346",
+            "static/app.js:372",
+            "static/app.js:376",
+            "static/app.js:383",
+            "static/app.js:384",
+            "static/app.js:385",
+            "static/app.js:386",
+            "static/app.js:416",
+            "static/app.js:471",
+            "static/app.js:600",
+            "static/app.js:652",
+            "static/app.js:677",
+            "static/app.js:694",
+            "static/app.js:1028",
+            "static/app.js:1044",
+            "static/app.js:1081",
+            "static/app.js:1089",
+            "static/app.js:1106",
+            "static/app.js:1167",
+            "static/app.js:1437",
+            "static/app.js:1867",
+            "static/app.js:1976",
+            "static/app.js:1980",
+            "static/app.js:2003",
+            "static/app.js:2086",
+            "static/app.js:2116",
+            "static/app.js:2198",
+            "static/app.js:2298",
+            "static/app.js:2322",
+            "static/app.js:2456",
+            "static/app.js:2457",
+            "static/app.js:2562",
+            "static/app.js:2728",
+            "static/app.js:2863",
+            "static/app.js:2941",
+            "static/app.js:3030",
+            "static/app.js:3031",
+            "static/app.js:3189",
+            "static/app.js:3277",
+            "static/app.js:3297",
+            "static/app.js:3315",
+            "static/app.js:3332",
+            "static/app.js:3348",
+            "static/app.js:3349",
+            "static/app.js:3364",
+            "static/app.js:3371",
+            "static/app.js:3394",
+            "static/app.js:3406",
+            "static/app.js:3407",
+            "static/app.js:3454",
+            "static/app.js:3485",
+            "static/app.js:3486",
+            "static/app.js:3507",
+            "static/app.js:3554",
+            "static/app.js:3566"
+          ],
+          "menciones": [
+            "static/app.js:66"
+          ]
+        },
+        "panel-html": {
+          "llamadas": [
+            "static/index.html:93",
+            "static/index.html:110",
+            "static/index.html:286"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:19",
+            "README.md:22",
+            "README.md:215",
+            "README.md:257",
+            "README.md:261",
+            "README.md:296",
+            "README.md:343"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/ejecucion.test.js:45",
+            "tests/js/harness.js:48",
+            "tests/js/harness.js:69",
+            "tests/js/harness.js:73",
+            "tests/js/harness.js:82",
+            "tests/js/harness.js:87",
+            "tests/js/harness.js:91",
+            "tests/js/harness.js:121",
+            "tests/js/harness.js:127",
+            "tests/js/huecos.test.js:142",
+            "tests/test_ai_context.py:49",
+            "tests/test_ai_context.py:50",
+            "tests/test_ai_context.py:55",
+            "tests/test_ai_context.py:57",
+            "tests/test_ai_context.py:58",
+            "tests/test_ai_context.py:68",
+            "tests/test_ai_context.py:76",
+            "tests/test_ai_context.py:83",
+            "tests/test_ai_context.py:90",
+            "tests/test_ai_context.py:91",
+            "tests/test_ai_context.py:100",
+            "tests/test_barrido_cadencia_postgres.py:48",
+            "tests/test_breakout.py:26",
+            "tests/test_breakout.py:27",
+            "tests/test_coinalyze_rate_limit.py:155",
+            "tests/test_config.py:57",
+            "tests/test_config.py:90",
+            "tests/test_config.py:91",
+            "tests/test_config.py:94",
+            "tests/test_config.py:103",
+            "tests/test_config.py:104",
+            "tests/test_daily_semantics.py:26",
+            "tests/test_daily_semantics.py:27",
+            "tests/test_daily_semantics.py:31",
+            "tests/test_daily_semantics.py:44",
+            "tests/test_daily_semantics.py:80",
+            "tests/test_daily_semantics.py:95",
+            "tests/test_daily_semantics.py:101",
+            "tests/test_daily_semantics.py:102",
+            "tests/test_daily_semantics.py:268",
+            "tests/test_daily_semantics.py:337",
+            "tests/test_daily_semantics.py:350",
+            "tests/test_daily_semantics.py:353",
+            "tests/test_daily_semantics.py:365",
+            "tests/test_daily_semantics.py:438",
+            "tests/test_daily_semantics.py:451",
+            "tests/test_daily_semantics.py:459",
+            "tests/test_daily_semantics.py:522",
+            "tests/test_dashboard_layout.py:6",
+            "tests/test_dashboard_layout.py:7",
+            "tests/test_dashboard_layout.py:8",
+            "tests/test_dashboard_presentation.py:11",
+            "tests/test_dashboard_presentation.py:12",
+            "tests/test_dashboard_presentation.py:13",
+            "tests/test_data_gaps_postgres.py:38",
+            "tests/test_data_gaps_postgres.py:41",
+            "tests/test_data_gaps_postgres.py:89",
+            "tests/test_db.py:133",
+            "tests/test_db.py:255",
+            "tests/test_delta_profile.py:18",
+            "tests/test_deploy_health_gate.py:17",
+            "tests/test_deploy_health_gate.py:33",
+            "tests/test_deploy_health_gate.py:55",
+            "tests/test_deploy_health_gate.py:64",
+            "tests/test_deploy_health_gate.py:82",
+            "tests/test_deploy_health_gate.py:96",
+            "tests/test_deploy_health_gate.py:108",
+            "tests/test_deploy_health_gate.py:124",
+            "tests/test_deploy_health_gate.py:126",
+            "tests/test_deploy_health_gate.py:146",
+            "tests/test_deploy_health_gate.py:171",
+            "tests/test_deploy_health_gate.py:185",
+            "tests/test_deploy_health_gate.py:198",
+            "tests/test_deploy_health_gate.py:248",
+            "tests/test_deploy_health_gate.py:250",
+            "tests/test_deploy_health_gate.py:252",
+            "tests/test_deploy_health_gate.py:273",
+            "tests/test_deploy_health_gate.py:279",
+            "tests/test_flow_continuity.py:112",
+            "tests/test_flow_semantics.py:14",
+            "tests/test_flow_semantics.py:51",
+            "tests/test_freeze_walk_forward_manifest_cli.py:17",
+            "tests/test_freeze_walk_forward_manifest_cli.py:148",
+            "tests/test_freeze_walk_forward_manifest_cli.py:172",
+            "tests/test_freeze_walk_forward_manifest_cli.py:207",
+            "tests/test_freeze_walk_forward_manifest_cli.py:223",
+            "tests/test_freeze_walk_forward_manifest_cli.py:254",
+            "tests/test_freeze_walk_forward_manifest_cli.py:289",
+            "tests/test_freeze_walk_forward_manifest_cli.py:302",
+            "tests/test_freeze_walk_forward_manifest_cli.py:314",
+            "tests/test_freeze_walk_forward_manifest_cli.py:332",
+            "tests/test_freeze_walk_forward_manifest_cli.py:353",
+            "tests/test_horizontal_symbol_e2e.py:21",
+            "tests/test_liquidation_map_ventana.py:66",
+            "tests/test_market_feed_health.py:36",
+            "tests/test_metrics.py:80",
+            "tests/test_metrics_endpoint.py:80",
+            "tests/test_metrics_endpoint.py:126",
+            "tests/test_metrics_endpoint.py:127",
+            "tests/test_metrics_endpoint.py:152",
+            "tests/test_metrics_endpoint.py:160",
+            "tests/test_metrics_endpoint.py:167",
+            "tests/test_metrics_endpoint.py:179",
+            "tests/test_metrics_endpoint.py:184",
+            "tests/test_metrics_endpoint.py:185",
+            "tests/test_ohlcv_4h.py:21",
+            "tests/test_ohlcv_4h.py:47",
+            "tests/test_ohlcv_4h.py:53",
+            "tests/test_ohlcv_4h.py:60",
+            "tests/test_ohlcv_4h.py:70",
+            "tests/test_ohlcv_5m_rollup_postgres.py:38",
+            "tests/test_ohlcv_5m_rollup_postgres.py:88",
+            "tests/test_oi_context_referencia.py:81",
+            "tests/test_oi_context_referencia.py:85",
+            "tests/test_oi_context_referencia.py:108",
+            "tests/test_oi_daily_rollup_postgres.py:27",
+            "tests/test_p0_data_integrity.py:32",
+            "tests/test_p0_data_integrity.py:100",
+            "tests/test_p0_data_integrity.py:120",
+            "tests/test_p0_regresion_auditoria.py:151",
+            "tests/test_p0_regresion_auditoria.py:161",
+            "tests/test_p0_regresion_auditoria.py:170",
+            "tests/test_p0_regresion_auditoria.py:180",
+            "tests/test_p1_execution_cost.py:30",
+            "tests/test_p1_execution_cost.py:31",
+            "tests/test_p1_timeframes_and_spot.py:53",
+            "tests/test_p1_timeframes_and_spot.py:131",
+            "tests/test_p2_baselines.py:42",
+            "tests/test_p2_baselines.py:45",
+            "tests/test_p2_baselines.py:103",
+            "tests/test_p2_baselines.py:113",
+            "tests/test_p2_baselines.py:125",
+            "tests/test_p2_baselines.py:136",
+            "tests/test_p3_impact_and_alerts.py:91",
+            "tests/test_p3_impact_and_alerts.py:97",
+            "tests/test_p3_impact_and_alerts.py:106",
+            "tests/test_partition_compatibility_bridge.py:16",
+            "tests/test_partition_compatibility_bridge.py:19",
+            "tests/test_partitioning_postgres.py:14",
+            "tests/test_partitioning_postgres.py:18",
+            "tests/test_partitioning_postgres.py:224",
+            "tests/test_partitioning_postgres.py:253",
+            "tests/test_partitioning_postgres.py:254",
+            "tests/test_pr19_source_truth.py:204",
+            "tests/test_pr19_source_truth.py:205",
+            "tests/test_pr19_source_truth.py:215",
+            "tests/test_pr19_source_truth.py:257",
+            "tests/test_pr19_source_truth.py:266",
+            "tests/test_pr19_source_truth.py:269",
+            "tests/test_pr19_source_truth.py:300",
+            "tests/test_pr20_semantics.py:133",
+            "tests/test_pr20_semantics.py:180",
+            "tests/test_pr20_semantics.py:184",
+            "tests/test_pr20_semantics.py:186",
+            "tests/test_pr20_semantics.py:194",
+            "tests/test_pr20_semantics.py:202",
+            "tests/test_pr20_semantics.py:203",
+            "tests/test_pr20_semantics.py:215",
+            "tests/test_pr20_semantics.py:216",
+            "tests/test_pr20_semantics.py:220",
+            "tests/test_pr20_semantics.py:222",
+            "tests/test_pr20_semantics.py:225",
+            "tests/test_pr20_semantics.py:238",
+            "tests/test_pr21_point_in_time.py:120",
+            "tests/test_pr21_point_in_time.py:124",
+            "tests/test_pr21_point_in_time.py:155",
+            "tests/test_pr21_point_in_time.py:167",
+            "tests/test_pr21_point_in_time.py:210",
+            "tests/test_pr21_point_in_time_postgres.py:13",
+            "tests/test_pr21_point_in_time_postgres.py:16",
+            "tests/test_pr21_point_in_time_postgres.py:18",
+            "tests/test_pr22_cvd_semantics.py:197",
+            "tests/test_pr22_cvd_semantics.py:199",
+            "tests/test_pr22_cvd_semantics.py:217",
+            "tests/test_pr22_cvd_semantics.py:219",
+            "tests/test_pr22_cvd_semantics_postgres.py:21",
+            "tests/test_pr22_cvd_semantics_postgres.py:24",
+            "tests/test_pr22_cvd_semantics_postgres.py:26",
+            "tests/test_pr23_temporal_integrity.py:31",
+            "tests/test_pr23_temporal_integrity_postgres.py:16",
+            "tests/test_pr23_temporal_integrity_postgres.py:18",
+            "tests/test_pr23_temporal_integrity_postgres.py:21",
+            "tests/test_pr24_daily_historical_integrity_postgres.py:20",
+            "tests/test_pr24_daily_historical_integrity_postgres.py:22",
+            "tests/test_pr24_daily_historical_integrity_postgres.py:25",
+            "tests/test_pr25_research_knowledge_time_postgres.py:29",
+            "tests/test_pr25_research_knowledge_time_postgres.py:31",
+            "tests/test_pr25_research_knowledge_time_postgres.py:34",
+            "tests/test_pr25_research_knowledge_time_postgres.py:912",
+            "tests/test_range_validate.py:25",
+            "tests/test_range_validate.py:29",
+            "tests/test_range_validate.py:37",
+            "tests/test_range_validate.py:77",
+            "tests/test_range_validate.py:100",
+            "tests/test_range_validate.py:166",
+            "tests/test_range_validate.py:173",
+            "tests/test_reorganizacion.py:18",
+            "tests/test_reorganizacion.py:19",
+            "tests/test_reorganizacion.py:196",
+            "tests/test_reorganizacion.py:205",
+            "tests/test_signal_attribution_postgres.py:19",
+            "tests/test_signal_backtest_postgres.py:19",
+            "tests/test_signal_confirmatory.py:262",
+            "tests/test_signal_execution_postgres.py:21",
+            "tests/test_signal_execution_postgres.py:239",
+            "tests/test_signal_execution_postgres.py:240",
+            "tests/test_signal_execution_postgres.py:315",
+            "tests/test_signal_ledger_postgres.py:23",
+            "tests/test_signal_outcomes_postgres.py:21",
+            "tests/test_signal_regime_postgres.py:20",
+            "tests/test_signal_regime_postgres.py:484",
+            "tests/test_signal_regime_postgres.py:563",
+            "tests/test_signal_regime_postgres.py:737",
+            "tests/test_signal_replay_postgres.py:21",
+            "tests/test_signal_walk_forward.py:828",
+            "tests/test_signal_walk_forward.py:1115",
+            "tests/test_signal_walk_forward.py:1117",
+            "tests/test_signal_walk_forward.py:1132",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:64",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:247",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:335",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:425",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:427",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:601",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:767",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:1731",
+            "tests/test_signal_walk_forward_postgres.py:54",
+            "tests/test_signal_walk_forward_postgres.py:494",
+            "tests/test_signal_walk_forward_postgres.py:599",
+            "tests/test_signal_walk_forward_postgres.py:601",
+            "tests/test_signal_walk_forward_postgres.py:1113",
+            "tests/test_v121_hardening.py:12",
+            "tests/test_v121_hardening.py:18",
+            "tests/test_v121_hardening.py:25",
+            "tests/test_v121_hardening.py:32",
+            "tests/test_v121_hardening.py:40",
+            "tests/test_v150_calidad.py:22",
+            "tests/test_v150_calidad.py:23",
+            "tests/test_v150_oi_scoring.py:46",
+            "tests/test_v150_oi_scoring.py:50",
+            "tests/test_v150_topbar.py:16",
+            "tests/test_v150_topbar.py:17",
+            "tests/test_v150_version_docs.py:9",
+            "tests/test_v150_version_docs.py:10",
+            "tests/test_v150_version_docs.py:11",
+            "tests/test_v150_version_docs.py:24",
+            "tests/test_v150_version_docs.py:56",
+            "tests/test_v150_version_docs.py:59",
+            "tests/test_whale_delta_minutes_postgres.py:34",
+            "tests/test_ws_collector.py:63",
+            "tests/test_ws_collector.py:64",
+            "tests/test_wyckoff.py:13",
+            "tests/test_wyckoff.py:14",
+            "tests/test_wyckoff.py:102",
+            "tests/test_wyckoff.py:103",
+            "tests/test_zones.py:1",
+            "tests/test_zones.py:23",
+            "tests/test_zones.py:36",
+            "tests/test_zones.py:37",
+            "tests/test_zones.py:46",
+            "tests/test_zones.py:47"
+          ],
+          "menciones": [
+            "tests/js/harness.js:79",
+            "tests/js/harness.js:147",
+            "tests/test_delta_profile.py:33",
+            "tests/test_flow_semantics.py:207",
+            "tests/test_pr25_research_knowledge_time_postgres.py:157",
+            "tests/test_pr25_research_knowledge_time_postgres.py:570",
+            "tests/test_pr25_research_knowledge_time_postgres.py:708",
+            "tests/test_pr25_research_knowledge_time_postgres.py:756",
+            "tests/test_pr25_research_knowledge_time_postgres.py:998",
+            "tests/test_setup_observables.py:7",
+            "tests/test_signal_confirmatory.py:438",
+            "tests/test_signal_regime_postgres.py:636",
+            "tests/test_signal_walk_forward.py:609",
+            "tests/test_signal_walk_forward.py:610",
+            "tests/test_signal_walk_forward.py:1393",
+            "tests/test_signal_walk_forward.py:1514",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:48",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:49",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:253",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:326",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:547",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:717",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:784",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:880",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:1214",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:1466",
+            "tests/test_signal_walk_forward_confirmatory_postgres.py:1552",
+            "tests/test_signal_walk_forward_postgres.py:38",
+            "tests/test_signal_walk_forward_postgres.py:39",
+            "tests/test_signal_walk_forward_postgres.py:295",
+            "tests/test_v150_oi_scoring.py:9",
+            "tests/test_v150_oi_scoring.py:87",
+            "tests/test_v150_oi_scoring.py:95",
+            "tests/test_v150_setup_confirmado.py:83"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 427,
+        "n_menciones": 57,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -24940,16 +25435,45 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K43-foto-unica.sh:196",
-          "harness/checks/K43-foto-unica.sh:235",
-          "harness/checks/K43-foto-unica.sh:284"
-        ],
-        "readme": [
-          "README.md:62",
-          "README.md:414",
-          "README.md:518"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K31-eslabon5.sh:60",
+            "harness/checks/K43-foto-unica.sh:197",
+            "harness/checks/K43-foto-unica.sh:235",
+            "harness/checks/K43-foto-unica.sh:284"
+          ],
+          "menciones": [
+            "harness/checks/K43-foto-unica.sh:7",
+            "harness/checks/K43-foto-unica.sh:17",
+            "harness/checks/K43-foto-unica.sh:233",
+            "harness/checks/K84-dos-matrices-una-cifra.sh:33"
+          ]
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:62",
+            "README.md:414",
+            "README.md:518"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_orderbook_frescura.py:116"
+          ],
+          "menciones": [
+            "tests/test_metrics_endpoint.py:131",
+            "tests/test_p0_data_integrity.py:111",
+            "tests/test_pr22_cvd_semantics.py:1182"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 5,
+        "n_menciones": 10,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -25418,10 +25942,26 @@
         }
       ],
       "consumidores": {
-        "readme": [
-          "README.md:415",
-          "README.md:519"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K31-eslabon5.sh:60"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:415",
+            "README.md:519"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 1,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -25543,10 +26083,26 @@
       "claves_temporales": [],
       "codigos": [],
       "consumidores": {
-        "readme": [
-          "README.md:416",
-          "README.md:520"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K31-eslabon5.sh:60"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:416",
+            "README.md:520"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 1,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -25612,6 +26168,13 @@
         }
       ],
       "consumidores": {},
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 0,
+        "sin_ninguno": true,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -25697,7 +26260,21 @@
           "propio": false
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "tests": {
+          "llamadas": [
+            "tests/test_range_validate.py:167"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 1,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -25792,6 +26369,13 @@
         }
       ],
       "consumidores": {},
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 0,
+        "sin_ninguno": true,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -25890,9 +26474,34 @@
         }
       ],
       "consumidores": {
-        "readme": [
-          "README.md:403"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K03-hueco-declarado.sh:46",
+            "harness/checks/K88-control.bash:344",
+            "harness/checks/K88-control.bash:346",
+            "harness/checks/K88-control.bash:348"
+          ],
+          "menciones": [
+            "harness/checks/K02-cobertura-hueco.sh:5",
+            "harness/checks/K31-cubos.py:40",
+            "harness/checks/K88-control.bash:305",
+            "harness/checks/K88-control.bash:337"
+          ]
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:403"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 5,
+        "n_menciones": 5,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -26022,10 +26631,22 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:170",
-          "harness/checks/K84-dos-matrices-una-cifra.sh:84"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:170",
+            "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:171",
+            "harness/checks/K84-dos-matrices-una-cifra.sh:84",
+            "harness/checks/K84-dos-matrices-una-cifra.sh:91"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 4,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -26130,12 +26751,33 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1547"
-        ],
-        "readme": [
-          "README.md:405"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:102"
+          ],
+          "menciones": [
+            "harness/checks/K02-cobertura-hueco.sh:5"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1547"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:405"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 2,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -26261,9 +26903,34 @@
         }
       ],
       "consumidores": {
-        "readme": [
-          "README.md:404"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K03-hueco-declarado.sh:46",
+            "harness/checks/K88-control.bash:341",
+            "harness/checks/K88-control.bash:344",
+            "harness/checks/K88-control.bash:346",
+            "harness/checks/K88-control.bash:348"
+          ],
+          "menciones": [
+            "harness/checks/K02-cobertura-hueco.sh:5",
+            "harness/checks/K31-cubos.py:40",
+            "harness/checks/K88-control.bash:337"
+          ]
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:404"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 6,
+        "n_menciones": 4,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -26399,23 +27066,54 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K03-hueco-declarado.sh:161",
-          "harness/checks/K43-foto-unica.sh:296"
-        ],
-        "panel": [
-          "static/app.js:1482",
-          "static/app.js:1550",
-          "static/app.js:1635"
-        ],
-        "readme": [
-          "README.md:70",
-          "README.md:90",
-          "README.md:409"
-        ],
-        "tests": [
-          "tests/test_dashboard_presentation.py:83"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K03-hueco-declarado.sh:161",
+            "harness/checks/K03-hueco-declarado.sh:164",
+            "harness/checks/K43-foto-unica.sh:102",
+            "harness/checks/K43-foto-unica.sh:296"
+          ],
+          "menciones": [
+            "harness/checks/K02-cobertura-hueco.sh:37",
+            "harness/checks/K03-hueco-declarado.sh:8",
+            "harness/checks/K03-hueco-declarado.sh:15",
+            "harness/checks/K03-hueco-declarado.sh:153",
+            "harness/checks/K03-hueco-declarado.sh:165",
+            "harness/checks/K43-foto-unica.sh:289"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1482",
+            "static/app.js:1550",
+            "static/app.js:1635"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:70",
+            "README.md:90",
+            "README.md:409"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_dashboard_presentation.py:83"
+          ],
+          "menciones": [
+            "tests/test_data_gaps.py:128"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 9,
+        "n_menciones": 10,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -26604,19 +27302,51 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1491"
-        ],
-        "readme": [
-          "README.md:195",
-          "README.md:488",
-          "README.md:502"
-        ],
-        "tests": [
-          "tests/test_metrics_endpoint.py:162",
-          "tests/test_v121_hardening.py:27",
-          "tests/test_v150_desk_snapshot.py:126"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:99",
+            "harness/checks/K43-foto-unica.sh:141",
+            "harness/checks/K43-foto-unica.sh:142",
+            "harness/checks/K43-foto-unica.sh:143",
+            "harness/checks/K43-foto-unica.sh:144",
+            "harness/checks/K43-foto-unica.sh:145",
+            "harness/checks/K43-foto-unica.sh:146",
+            "harness/checks/K43-foto-unica.sh:147"
+          ],
+          "menciones": [
+            "harness/checks/K43-foto-unica.sh:149",
+            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:14"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1491"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:195",
+            "README.md:488",
+            "README.md:502"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_metrics_endpoint.py:162",
+            "tests/test_v121_hardening.py:27",
+            "tests/test_v150_desk_snapshot.py:126"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 12,
+        "n_menciones": 5,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -26725,13 +27455,33 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1493",
-          "static/app.js:1621"
-        ],
-        "readme": [
-          "README.md:501"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:93",
+            "harness/checks/K43-foto-unica.sh:121"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1493",
+            "static/app.js:1621"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:501"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -26849,15 +27599,37 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1137"
-        ],
-        "readme": [
-          "README.md:111"
-        ],
-        "tests": [
-          "tests/test_dashboard_presentation.py:122"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:103"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1137"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:111"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_dashboard_presentation.py:122"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -27121,15 +27893,37 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1488"
-        ],
-        "readme": [
-          "README.md:34"
-        ],
-        "tests": [
-          "tests/test_v150_desk_snapshot.py:128"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:105"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1488"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:34"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_v150_desk_snapshot.py:128"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -27286,12 +28080,34 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1638"
-        ],
-        "readme": [
-          "README.md:281"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:93",
+            "harness/checks/K43-foto-unica.sh:122"
+          ],
+          "menciones": [
+            "harness/checks/K43-foto-unica.sh:175"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1638"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:281"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -27461,13 +28277,35 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1483",
-          "static/app.js:1637"
-        ],
-        "tests": [
-          "tests/test_dashboard_layout.py:108"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:93",
+            "harness/checks/K43-foto-unica.sh:123"
+          ],
+          "menciones": [
+            "harness/checks/K20-cincoxx.sh:2"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1483",
+            "static/app.js:1637"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_dashboard_layout.py:108"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 5,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -27579,7 +28417,21 @@
           "propio": true
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "tests": {
+          "llamadas": [],
+          "menciones": [
+            "tests/test_p0_data_integrity.py:126"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": true
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -27692,9 +28544,30 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1607"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K03-hueco-declarado.sh:47",
+            "harness/checks/K43-foto-unica.sh:94",
+            "harness/checks/K43-foto-unica.sh:124"
+          ],
+          "menciones": [
+            "harness/checks/K02-cobertura-hueco.sh:24",
+            "harness/checks/K03-hueco-declarado.sh:29"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1607"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -27771,13 +28644,49 @@
       "claves_temporales": [],
       "codigos": [],
       "consumidores": {
-        "panel": [
-          "static/app.js:1494",
-          "static/app.js:1622"
-        ],
-        "readme": [
-          "README.md:413"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K03-hueco-declarado.sh:55",
+            "harness/checks/K05-control.bash:307",
+            "harness/checks/K05-latidos.sh:127",
+            "harness/checks/K05-latidos.sh:388",
+            "harness/checks/K08-que-base.sh:34",
+            "harness/checks/K43-foto-unica.sh:106"
+          ],
+          "menciones": [
+            "harness/checks/K05-latidos.sh:2",
+            "harness/checks/K08-que-base.sh:8"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1494",
+            "static/app.js:1622"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:413"
+          ]
+        },
+        "tests": {
+          "llamadas": [],
+          "menciones": [
+            "tests/test_cobertura_proveedor.py:7",
+            "tests/test_deploy_health_gate.py:38",
+            "tests/test_deploy_health_gate.py:154",
+            "tests/test_ingest_health.py:232"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 8,
+        "n_menciones": 7,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -28049,13 +28958,30 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:109",
-          "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:140"
-        ],
-        "tests": [
-          "tests/test_v150_desk_snapshot.py:126"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:109",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:120",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:140"
+          ],
+          "menciones": [
+            "harness/checks/K31-cubos.py:62",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:5"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_v150_desk_snapshot.py:126"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 4,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -28295,9 +29221,26 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:2765"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K31-eslabon5.sh:61",
+            "harness/checks/K43-foto-unica.sh:104"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:2765"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -28417,9 +29360,28 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K42-mapa-liquidaciones-cuadra.sh:43"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K42-mapa-liquidaciones-cuadra.sh:44"
+          ],
+          "menciones": [
+            "harness/checks/K42-mapa-liquidaciones-cuadra.sh:8",
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:31"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_liquidation_map_ventana.py:1"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 2,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -28520,9 +29482,28 @@
         }
       ],
       "consumidores": {
-        "readme": [
-          "README.md:407"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K03-hueco-declarado.sh:46"
+          ],
+          "menciones": [
+            "harness/checks/K31-cubos.py:41"
+          ]
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:407"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 2,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -28644,13 +29625,33 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1578",
-          "static/app.js:1636"
-        ],
-        "readme": [
-          "README.md:278"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:94",
+            "harness/checks/K43-foto-unica.sh:125"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1578",
+            "static/app.js:1636"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:278"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -28742,9 +29743,26 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1568"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:99",
+            "harness/checks/K43-foto-unica.sh:135"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1568"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -28840,12 +29858,25 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K76-la-ventana-que-pides.sh:163"
-        ],
-        "readme": [
-          "README.md:171"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K76-la-ventana-que-pides.sh:163"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:171"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 1,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -28945,19 +29976,46 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K20-cincoxx.sh:68",
-          "harness/checks/K31-eslabon5.sh:64"
-        ],
-        "panel": [
-          "static/app.js:1492"
-        ],
-        "readme": [
-          "README.md:402"
-        ],
-        "tests": [
-          "tests/test_p1_timeframes_and_spot.py:52"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K03-hueco-declarado.sh:46",
+            "harness/checks/K20-cincoxx.sh:68",
+            "harness/checks/K20-cincoxx.sh:83",
+            "harness/checks/K31-eslabon5.sh:64",
+            "harness/checks/K43-foto-unica.sh:102"
+          ],
+          "menciones": [
+            "harness/checks/K02-cobertura-hueco.sh:11",
+            "harness/checks/K03-hueco-declarado.sh:7",
+            "harness/checks/K43-foto-unica.sh:318"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1492"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:402"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_p1_timeframes_and_spot.py:52"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 8,
+        "n_menciones": 4,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -29081,13 +30139,37 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1548",
-          "static/app.js:1603"
-        ],
-        "readme": [
-          "README.md:406"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K03-hueco-declarado.sh:46",
+            "harness/checks/K43-foto-unica.sh:103"
+          ],
+          "menciones": [
+            "harness/checks/K43-foto-unica.sh:44",
+            "harness/checks/K43-foto-unica.sh:87"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1548",
+            "static/app.js:1603"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:406"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 5,
+        "n_menciones": 3,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -29217,9 +30299,30 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K38-referencia-por-tiempo.sh:33"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K03-hueco-declarado.sh:47",
+            "harness/checks/K38-referencia-por-tiempo.sh:34"
+          ],
+          "menciones": [
+            "harness/checks/K02-cobertura-hueco.sh:25",
+            "harness/checks/K03-hueco-declarado.sh:30",
+            "harness/checks/K38-referencia-por-tiempo.sh:7"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_oi_context_referencia.py:1"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 3,
+        "n_menciones": 3,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -29343,9 +30446,26 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1579"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:95",
+            "harness/checks/K43-foto-unica.sh:126"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1579"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -29454,9 +30574,26 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1608"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:99",
+            "harness/checks/K43-foto-unica.sh:136"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1608"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -29560,6 +30697,13 @@
         }
       ],
       "consumidores": {},
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 0,
+        "sin_ninguno": true,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -29707,9 +30851,35 @@
         }
       ],
       "consumidores": {
-        "tests": [
-          "tests/test_v150_desk_snapshot.py:126"
-        ]
+        "checks": {
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K31-cubos.py:62",
+            "harness/checks/K43-foto-unica.sh:43",
+            "harness/checks/K43-foto-unica.sh:77",
+            "harness/checks/K43-foto-unica.sh:162",
+            "harness/checks/K43-foto-unica.sh:163"
+          ]
+        },
+        "panel": {
+          "llamadas": [],
+          "menciones": [
+            "static/app.js:392"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_v150_desk_snapshot.py:126"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 1,
+        "n_menciones": 6,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -29899,12 +31069,38 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1623"
-        ],
-        "readme": [
-          "README.md:32"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:95",
+            "harness/checks/K43-foto-unica.sh:127"
+          ],
+          "menciones": [
+            "harness/checks/K43-foto-unica.sh:43",
+            "harness/checks/K43-foto-unica.sh:163",
+            "harness/checks/K43-foto-unica.sh:174"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1623"
+          ],
+          "menciones": [
+            "static/app.js:1619"
+          ]
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:32"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 5,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -30059,12 +31255,33 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K76-la-ventana-que-pides.sh:97"
-        ],
-        "panel": [
-          "static/app.js:2890"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K31-eslabon5.sh:61",
+            "harness/checks/K43-foto-unica.sh:104",
+            "harness/checks/K76-la-ventana-que-pides.sh:97"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:2890"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [],
+          "menciones": [
+            "tests/test_p0_data_integrity.py:126"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -30193,6 +31410,13 @@
         }
       ],
       "consumidores": {},
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 0,
+        "sin_ninguno": true,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -30278,12 +31502,32 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1552"
-        ],
-        "tests": [
-          "tests/test_metrics_endpoint.py:140"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:100",
+            "harness/checks/K43-foto-unica.sh:138"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1552"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_metrics_endpoint.py:140"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -30405,7 +31649,22 @@
           "propio": false
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K31-cubos.py:18",
+            "harness/checks/K31-cubos.py:187"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": true
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -30504,16 +31763,39 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1604"
-        ],
-        "readme": [
-          "README.md:488",
-          "README.md:499"
-        ],
-        "tests": [
-          "tests/test_v121_hardening.py:28"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:100",
+            "harness/checks/K43-foto-unica.sh:139"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1604"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:488",
+            "README.md:499"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_v121_hardening.py:28"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -30622,13 +31904,32 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216",
-          "harness/checks/K84-dos-matrices-una-cifra.sh:86"
-        ],
-        "panel": [
-          "static/app.js:1551"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:96",
+            "harness/checks/K43-foto-unica.sh:128",
+            "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216",
+            "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217",
+            "harness/checks/K84-dos-matrices-una-cifra.sh:86",
+            "harness/checks/K84-dos-matrices-una-cifra.sh:92"
+          ],
+          "menciones": [
+            "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:79"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1551"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 7,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -30796,9 +32097,25 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1567"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:105"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1567"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 2,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -30968,16 +32285,39 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1606"
-        ],
-        "readme": [
-          "README.md:488",
-          "README.md:500"
-        ],
-        "tests": [
-          "tests/test_v121_hardening.py:29"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:96",
+            "harness/checks/K43-foto-unica.sh:129"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1606"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:488",
+            "README.md:500"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_v121_hardening.py:29"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -31078,13 +32418,29 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K80-la-matriz-cambia-de-universo.sh:113",
-          "harness/checks/K80-la-matriz-cambia-de-universo.sh:156"
-        ],
-        "panel": [
-          "static/app.js:1605"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:100",
+            "harness/checks/K43-foto-unica.sh:140",
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:113",
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:114",
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:156"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1605"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 6,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -31161,13 +32517,44 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K13-vacio-o-rancio.sh:32",
-          "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:89"
-        ],
-        "panel": [
-          "static/app.js:1564"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K13-vacio-o-rancio.sh:33",
+            "harness/checks/K13-vacio-o-rancio.sh:92",
+            "harness/checks/K13-vacio-o-rancio.sh:94",
+            "harness/checks/K43-foto-unica.sh:97",
+            "harness/checks/K43-foto-unica.sh:130",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:89",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:97"
+          ],
+          "menciones": [
+            "harness/checks/K13-vacio-o-rancio.sh:2",
+            "harness/checks/K43-foto-unica.sh:44",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:71"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1564"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_orderbook_frescura.py:1"
+          ],
+          "menciones": [
+            "tests/js/libro_vacio_o_rancio.test.js:4",
+            "tests/test_orderbook_frescura.py:119"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 9,
+        "n_menciones": 5,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -31246,10 +32633,20 @@
         }
       ],
       "consumidores": {
-        "readme": [
-          "README.md:488",
-          "README.md:498"
-        ]
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:488",
+            "README.md:498"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": true
       },
       "declarada": {
         "completa": true,
@@ -31440,7 +32837,21 @@
           "propio": false
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:14"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": true
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -31547,12 +32958,25 @@
         }
       ],
       "consumidores": {
-        "checks": [
-          "harness/checks/K88-control.bash:123"
-        ],
-        "readme": [
-          "README.md:411"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K88-control.bash:133"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:411"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 1,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -31677,7 +33101,27 @@
           "propio": true
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [
+            "harness/checks/K23-coste-de-ejecucion.sh:42"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_signals_execution.py:1"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 2,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -31839,7 +33283,33 @@
           "propio": true
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [
+            "harness/checks/K21-ledger-de-senales.sh:32",
+            "harness/checks/K24-replay-del-contexto.sh:88",
+            "harness/checks/K88-control.bash:326",
+            "harness/checks/K88-control.bash:329"
+          ],
+          "menciones": [
+            "harness/checks/K24-replay-del-contexto.sh:19",
+            "harness/checks/K31-cubos.py:145"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_signals_ledger.py:1"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 5,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -31998,7 +33468,29 @@
           "propio": true
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [
+            "harness/checks/K22-resultado-por-horizonte.sh:29"
+          ],
+          "menciones": [
+            "harness/checks/K31-cubos.py:145"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_signals_outcomes.py:1"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 2,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -32159,7 +33651,27 @@
           "propio": true
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [
+            "harness/checks/K24-replay-del-contexto.sh:87"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_signals_replay.py:1"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 2,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -32321,7 +33833,27 @@
           "propio": true
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [
+            "harness/checks/K25-visibilidad-de-lo-final.sh:110"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_signals_visibility.py:1"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 2,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -32492,12 +34024,31 @@
         }
       ],
       "consumidores": {
-        "readme": [
-          "README.md:401"
-        ],
-        "tests": [
-          "tests/test_pr24_daily_historical_integrity.py:89"
-        ]
+        "checks": {
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K31-cubos.py:109"
+          ]
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:401"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_pr24_daily_historical_integrity.py:89"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 1,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -32573,15 +34124,36 @@
       "claves_temporales": [],
       "codigos": [],
       "consumidores": {
-        "checks": [
-          "harness/checks/K20-cincoxx.sh:126"
-        ],
-        "panel": [
-          "static/app.js:1654"
-        ],
-        "readme": [
-          "README.md:412"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K20-cincoxx.sh:126",
+            "harness/checks/K31-eslabon5.sh:60",
+            "harness/checks/K43-foto-unica.sh:106"
+          ],
+          "menciones": [
+            "harness/checks/K20-cincoxx.sh:124",
+            "harness/checks/K31-eslabon5.sh:57"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1654"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:412"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 3,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -32678,9 +34250,26 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1577"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:97",
+            "harness/checks/K43-foto-unica.sh:131"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1577"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -32782,10 +34371,29 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1480",
-          "static/app.js:1582"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:97",
+            "harness/checks/K43-foto-unica.sh:132"
+          ],
+          "menciones": [
+            "harness/checks/K31-eslabon5.sh:29"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1480",
+            "static/app.js:1582"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -32955,10 +34563,27 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1479",
-          "static/app.js:1581"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:98",
+            "harness/checks/K43-foto-unica.sh:133"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1479",
+            "static/app.js:1581"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 4,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -33037,12 +34662,34 @@
       "claves_temporales": [],
       "codigos": [],
       "consumidores": {
-        "panel": [
-          "static/app.js:1804"
-        ],
-        "tests": [
-          "tests/test_deploy_health_gate.py:180"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:106"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1804"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_deploy_health_gate.py:180"
+          ],
+          "menciones": [
+            "tests/test_deploy_health_gate.py:42",
+            "tests/test_deploy_health_gate.py:158"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -33145,13 +34792,33 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1478",
-          "static/app.js:1580"
-        ],
-        "tests": [
-          "tests/test_v150_desk_snapshot.py:126"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:98",
+            "harness/checks/K43-foto-unica.sh:134"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1478",
+            "static/app.js:1580"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_v150_desk_snapshot.py:126"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 5,
+        "n_menciones": 0,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -33252,14 +34919,35 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1630"
-        ],
-        "readme": [
-          "README.md:72",
-          "README.md:276",
-          "README.md:410"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:103"
+          ],
+          "menciones": [
+            "harness/checks/K43-foto-unica.sh:177"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1630"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:72",
+            "README.md:276",
+            "README.md:410"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 2,
+        "n_menciones": 4,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -33378,7 +35066,21 @@
           "propio": false
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K88-control.bash:356"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": true
+      },
       "declarada": {
         "completa": true,
         "existe": true,
@@ -33468,9 +35170,19 @@
         }
       ],
       "consumidores": {
-        "readme": [
-          "README.md:121"
-        ]
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:121"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": true
       },
       "declarada": {
         "completa": true,
@@ -33567,12 +35279,44 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1549"
-        ],
-        "readme": [
-          "README.md:408"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K03-hueco-declarado.sh:46",
+            "harness/checks/K43-foto-unica.sh:103",
+            "harness/checks/K52b-la-ruta-no-falla-abierta.sh:57"
+          ],
+          "menciones": [
+            "harness/checks/K02-cobertura-hueco.sh:37",
+            "harness/checks/K52b-la-ruta-no-falla-abierta.sh:6",
+            "harness/checks/K59-whale-vota-cero.sh:15"
+          ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1549"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:408"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_data_gaps.py:325"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 6,
+        "n_menciones": 4,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -33717,16 +35461,39 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:1481",
-          "static/app.js:1583"
-        ],
-        "readme": [
-          "README.md:149"
-        ],
-        "tests": [
-          "tests/test_wyckoff.py:106"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K43-foto-unica.sh:101",
+            "harness/checks/K43-foto-unica.sh:137"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:1481",
+            "static/app.js:1583"
+          ],
+          "menciones": []
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:149"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_wyckoff.py:106"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 5,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -33841,9 +35608,32 @@
         }
       ],
       "consumidores": {
-        "panel": [
-          "static/app.js:2603"
-        ]
+        "checks": {
+          "llamadas": [
+            "harness/checks/K31-eslabon5.sh:61",
+            "harness/checks/K43-foto-unica.sh:104"
+          ],
+          "menciones": []
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:2603"
+          ],
+          "menciones": []
+        },
+        "tests": {
+          "llamadas": [],
+          "menciones": [
+            "tests/test_p0_data_integrity.py:126"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 3,
+        "n_menciones": 1,
+        "sin_ninguno": false,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -33941,12 +35731,29 @@
         }
       ],
       "consumidores": {
-        "readme": [
-          "README.md:290",
-          "README.md:291",
-          "README.md:319",
-          "README.md:503"
-        ]
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:290",
+            "README.md:291",
+            "README.md:319",
+            "README.md:503"
+          ]
+        },
+        "tests": {
+          "llamadas": [],
+          "menciones": [
+            "tests/test_metrics_endpoint.py:3",
+            "tests/test_metrics_endpoint.py:4"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 6,
+        "sin_ninguno": false,
+        "solo_mencion": true
       },
       "declarada": {
         "completa": true,

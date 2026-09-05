@@ -52,3 +52,24 @@ harness/bin/arquitectura            # reescribe ARQUITECTURA/
 harness/bin/arquitectura --comprueba  # no escribe; rc=1 si lo commiteado no cuadra
 harness/checks/K88-la-arquitectura-que-miente.sh
 ```
+
+## LOS INSUMOS · que lee el generador, y que pasa si falta
+
+**Regenerar en otra maquina con media copia produce un mapa distinto y K88 lo llama ROJO.**
+Medido regenerando desde copias parciales: **sin `static/`, `tests/`, `tools/` y
+`README.md` difieren 56 ficheros; sin `harness/checks`, 15.** No es un fallo del check: es
+que el mapa describe menos cosas porque ha visto menos.
+
+| insumo | para que | si falta |
+|---|---|---|
+| `app/**.py` | AST: rutas, campos, llamadas, SQL, constantes | no hay mapa |
+| `sql/schema.sql` | catalogo de tablas y columnas; valida que una tabla existe | ninguna tabla se afirma |
+| `static/app.js`, `static/index.html` | consumidores: **llamada** desde el panel | toda ruta parece instrumento interno |
+| `harness/checks/**` | consumidores: checks que la miden | 5 rutas de `/api/signals/*` salen huerfanas |
+| `tests/**`, `tools/**`, `README.md` | consumidores: llamadas y menciones | menos rastro del que hay |
+| `ARQUITECTURA/declarada/*.md` | **FUENTE de la capa declarada**; se lee, no se escribe | todas las rutas salen PENDIENTE de declaracion |
+
+Lo que el generador **NO** lee, y es deliberado: la foto de produccion
+(`entregas/*-foto-prod-*.json`). No esta versionada, asi que si entrara aqui, regenerar sin
+ella daria ROJO por no tener una medicion en vez de por estar mal. Lo observado en
+produccion vive en la capa **declarada**, con su fecha y su cita.

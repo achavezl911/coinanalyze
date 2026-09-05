@@ -21,17 +21,41 @@ Familia **1** de K43 — ventana de construccion de la foto (estado ambiente).
 
 Derivado de su firma: solo pide symbol (o nada): estado ambiente.
 
-**PENDIENTE · no se le ha derivado ninguna clave temporal.** O no publica
-marca de tiempo, o sus campos no son derivables estaticamente. La foto de
-produccion lo decide: `entregas/20260904-foto-prod-1.json`.
+**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): **no publica NINGUNA**
+**marca temporal en el cuerpo.** Ni de primer nivel ni anidada.
+
+Aqui el AST y la foto coinciden, asi que la afirmacion es firme: esta ruta no dice
+de cuando es lo que publica. **Candidata a familia 4 de K43 (exenta), y la exencion
+hay que escribirla con su cita** — o es un hueco, no una exencion.
+
+<sub>Medido leyendo el cuerpo de la respuesta, no supuesto.</sub>
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+Devuelve los perfiles de analisis disponibles. No lee ninguna tabla: sale de codigo.
+
+**No publica ninguna marca temporal**, y es de las **7 rutas de la foto sin ninguna**.
+Igual que `/api/symbols`, aqui es **correcto**: son perfiles declarados en el codigo, no
+una medida. **Familia 4 de K43 (exenta), con esta cita.**
+
+**PROMESA · enumera los perfiles que el sistema acepta, y esa lista es la misma que valida
+las peticiones.** Si divergiera, un perfil listado aqui seria rechazado por
+`/api/ai/context`.
+
+**PENDIENTE · no lo he comprobado.** Haria falta cruzar esta lista contra el validador de
+`/api/ai/context`. Comando:
+
+```sh
+harness/bin/api /api/ai/profiles
+harness/bin/api '/api/ai/context?symbol=BTCUSDT&profile=<uno de los listados>'
+```
+
+Consumidores: `harness/checks/K31-eslabon5.sh:60` la llama; `README.md:416` y `:520` la
+mencionan. **No la llama el panel.**
+
 
 ## SUPERFICIE
 

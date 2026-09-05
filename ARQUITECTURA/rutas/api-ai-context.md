@@ -364,13 +364,18 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:196`, `harness/checks/K43-foto-unica.sh:235`, `harness/checks/K43-foto-unica.sh:284` |
-| **readme** | `README.md:62`, `README.md:414`, `README.md:518` |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-**No la consume el panel.** Con consumidor solo en checks/tests/tools, es
-**instrumento interno** — o una ruta que alguien dejo de usar y nadie retiro.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:197`, `harness/checks/K43-foto-unica.sh:235`, `harness/checks/K43-foto-unica.sh:284` | `harness/checks/K43-foto-unica.sh:7`, `harness/checks/K43-foto-unica.sh:17`, `harness/checks/K43-foto-unica.sh:233`, `harness/checks/K84-dos-matrices-una-cifra.sh:33` |
+| **readme** | — | `README.md:62`, `README.md:414`, `README.md:518` |
+| **tests** | `tests/test_orderbook_frescura.py:116` | `tests/test_metrics_endpoint.py:131`, `tests/test_p0_data_integrity.py:111`, `tests/test_pr22_cvd_semantics.py:1182` |
+
+**No la llama el panel**, pero si 5 linea(s) de codigo fuera de el.
+Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
 

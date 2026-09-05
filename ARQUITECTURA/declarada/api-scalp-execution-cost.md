@@ -22,11 +22,37 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
+### La promesa que comparte casi toda la familia `/api/scalp/*`
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+**Publica SU EDAD y EL UMBRAL con el que hay que juzgarla, en vez de dejar que el
+consumidor lo suponga.** Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): las rutas de esta familia traen
+`status` junto a alguna forma de `age`/`lag` y su `stale_after_seconds` o
+`max_age_seconds`. Es lo que convierte "este numero es viejo" en una comprobacion y no en
+una opinion.
+
+*Que significa no cumplirlo:* publicar un valor rancio indistinguible de uno vivo. Es
+**P0.9** de la bateria — *"si el proveedor esta caido, ¿me entero o veo el ultimo valor
+congelado?"* — y su respuesta solo puede darla la propia ruta, porque nadie de fuera sabe
+cuanto es demasiado para ESTE dato.
+
+### Lo propio de esta ruta
+
+**PROMESA · el coste es POR VENUE y la ruta dice explicitamente que no hay uno combinado.**
+En la foto: `note = "coste por venue; no existe 'combined'…"`, `venues = [2]` con su
+`exchange`, `ts`, `age_seconds` y `status` cada uno, `as_of`,
+`stale_after_seconds = 30.0`, `status = "VALID"`.
+
+Es la respuesta directa a la trampa de **P4.1**: dos rutas con dos definiciones de "coste".
+Esta lo resuelve **negandose a promediar** y diciendolo en el cuerpo.
+
+*Que significa no cumplirlo:* que apareciera un coste "combinado" sin decir de que libro
+sale. Un coste medio de dos libros distintos no es el coste de ninguna operacion real.
+
+**PROMESA · valida el tamaño en vez de recortarlo en silencio.**
+`422 · "hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD"` (`app/api.py:1401`).
+
+Consumidores: `static/app.js:1567` (**la llama el panel**), `K43-foto-unica.sh:105`.
+
 
 ## SUPERFICIE
 

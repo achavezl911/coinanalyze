@@ -103,14 +103,18 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **checks** | `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K31-eslabon5.sh:64` |
-| **panel** | `static/app.js:1492` |
-| **readme** | `README.md:402` |
-| **tests** | `tests/test_p1_timeframes_and_spot.py:52` |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-La consume el panel: **es superficie de producto**.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K02-cobertura-hueco.sh:46`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K20-cincoxx.sh:83` _(+2)_ | `harness/checks/K02-cobertura-hueco.sh:11`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K43-foto-unica.sh:318` |
+| **panel** | `static/app.js:1492` | — |
+| **readme** | — | `README.md:402` |
+| **tests** | `tests/test_p1_timeframes_and_spot.py:52` | — |
+
+**La llama el panel: es superficie de producto.**
 
 ## Ventana · con que clave la declara (derivado)
 

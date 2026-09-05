@@ -17,9 +17,30 @@ Familia **1** de K43 — ventana de construccion de la foto (estado ambiente).
 
 Derivado de su firma: solo pide symbol (o nada): estado ambiente.
 
-**PENDIENTE · no se le ha derivado ninguna clave temporal.** O no publica
-marca de tiempo, o sus campos no son derivables estaticamente. La foto de
-produccion lo decide: `entregas/20260904-foto-prod-1.json`.
+**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z, arco 37 387 ms).
+
+El AST no le derivo ninguna clave temporal, pero **si publica marca de tiempo en el**
+**cuerpo**. Son cosas distintas y aqui se separan: lo primero es un limite del
+analisis estatico, lo segundo una afirmacion sobre el producto.
+
+Claves **anidadas** (16), dentro de filas o bloques:
+
+- `intraday.anchored_at` (nombre)
+- `intraday.lag_seconds` (nombre)
+- `intraday.windows.15m.lag_seconds` (nombre)
+- `intraday.windows.15m.window_seconds` (nombre)
+- `intraday.windows.16h.lag_seconds` (nombre)
+- `intraday.windows.16h.window_seconds` (nombre)
+- `intraday.windows.1h.lag_seconds` (nombre)
+- `intraday.windows.1h.window_seconds` (nombre)
+- _… y 8 mas_
+
+**Y NO tiene ninguna de primer nivel.** O sea: la respuesta fecha sus FILAS pero
+no se fecha a SI MISMA. Para K43 eso importa — un consumidor que quiera saber de
+cuando es la foto entera tiene que deducirlo de la fila mas reciente, y eso es
+adivinar. **Candidata a familia 1 con defecto declarado.**
+
+<sub>Medido leyendo el cuerpo de la respuesta en la foto, no supuesto. 16 claves temporales en total.</sub>
 
 ## PROMESA
 

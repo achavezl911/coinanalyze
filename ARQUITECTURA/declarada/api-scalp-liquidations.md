@@ -21,17 +21,58 @@ Familia **1** de K43 — ventana de construccion de la foto (estado ambiente).
 
 Derivado de su firma: solo pide symbol (o nada): estado ambiente.
 
-**PENDIENTE · no se le ha derivado ninguna clave temporal.** O no publica
-marca de tiempo, o sus campos no son derivables estaticamente. La foto de
-produccion lo decide: `entregas/20260904-foto-prod-1.json`.
+**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z, arco 37 387 ms).
+
+El AST no le derivo ninguna clave temporal, pero **si publica marca de tiempo en el**
+**cuerpo**. Son cosas distintas y aqui se separan: lo primero es un limite del
+analisis estatico, lo segundo una afirmacion sobre el producto.
+
+Claves **anidadas** (2), dentro de filas o bloques:
+
+- `matrix[].window` (nombre)
+- `recent[].ts` (nombre)
+
+**Y NO tiene ninguna de primer nivel.** O sea: la respuesta fecha sus FILAS pero
+no se fecha a SI MISMA. Para K43 eso importa — un consumidor que quiera saber de
+cuando es la foto entera tiene que deducirlo de la fila mas reciente, y eso es
+adivinar. **Candidata a familia 1 con defecto declarado.**
+
+<sub>Medido leyendo el cuerpo de la respuesta en la foto, no supuesto. 2 claves temporales en total.</sub>
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
+### La promesa que comparte casi toda la familia `/api/scalp/*`
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+**Publica SU EDAD y EL UMBRAL con el que hay que juzgarla, en vez de dejar que el
+consumidor lo suponga.** Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): las rutas de esta familia traen
+`status` junto a alguna forma de `age`/`lag` y su `stale_after_seconds` o
+`max_age_seconds`. Es lo que convierte "este numero es viejo" en una comprobacion y no en
+una opinion.
+
+*Que significa no cumplirlo:* publicar un valor rancio indistinguible de uno vivo. Es
+**P0.9** de la bateria — *"si el proveedor esta caido, ¿me entero o veo el ultimo valor
+congelado?"* — y su respuesta solo puede darla la propia ruta, porque nadie de fuera sabe
+cuanto es demasiado para ESTE dato.
+
+### Lo propio de esta ruta
+
+**PROMESA · cada ventana declara CUANTOS VENUES la respaldan.**
+En la foto: `matrix = [6]` con `window`, `long_liq`, `short_liq`, `events` y **`venues`**.
+
+Es la respuesta a **P0.6** -"¿cuantos venues respaldan esta cifra?"-. Sin `venues`, un cero
+de un venue caido y un cero de mercado en calma son el mismo cero.
+
+*Que significa no cumplirlo:* el defecto de **P0.5**, un cero sin testigo. Con `events` y
+`venues` al lado, `long_liq = 0` con `events = 0` y `venues = 2` es una afirmacion
+-no hubo liquidaciones-, y con `venues = 0` es una ausencia de medida.
+
+**PENDIENTE · no he comprobado que `venues` sea distinto de 0 en algun caso real.** La foto
+es una sola y de un momento tranquilo. Comando:
+
+```sh
+harness/bin/api '/api/scalp/liquidations?symbol=BTCUSDT' | python3 -m json.tool | grep -c venues
+```
+
 
 ## SUPERFICIE
 
