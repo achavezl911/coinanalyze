@@ -42,11 +42,29 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA · cuenta VENUES VIVOS por tipo de dato, no una confianza agregada.**
+En la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z) devuelve `rows = [3]` —una por simbolo— con `snapshot_lag_seconds`,
+**`spot_venues_live`**, **`futures_venues_live`**, **`book_venues_live`** y
+`combined_book_lag_seconds`.
+
+Contesta **P0.6** —*"¿cuantos venues respaldan esta cifra?"*— y de la unica forma que sirve:
+**tres recuentos separados**, porque un venue puede estar vivo para trades y muerto para el
+libro. Y contesta **P0.10** —*"¿la confianza se deriva o se escribe a mano?"*— publicando
+los ingredientes en vez de una nota global: aqui no hay ningun campo `confidence` que
+pudiera ser una constante.
+
+*Que significa no cumplirlo:* que apareciera un unico `confidence: "alta"`. La bateria es
+explicita: *"si es una constante o un COALESCE, no es confianza: es decoracion"*.
+
+**NO publica su propio instante**, y es una de las 26 rutas de la foto que solo fechan sus
+filas: `snapshot_lag_seconds` es un retraso, no una marca. Un consumidor puede saber cuanto
+hace del snapshot, pero no de cuando es esta respuesta.
+
+**La llama el panel** (`static/app.js:1493` y `:1621`), asi que su lectura llega al trader.
+
 
 ## SUPERFICIE
 

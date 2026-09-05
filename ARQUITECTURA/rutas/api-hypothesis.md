@@ -243,9 +243,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:109`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:120`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:140` | `harness/checks/K31-cubos.py:62`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:5` |
-| **tests** | `tests/test_v150_desk_snapshot.py:126` | — |
+| **tests** | — | `tests/test_v150_desk_snapshot.py:126` |
 
-**No la llama el panel**, pero si 4 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 3 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

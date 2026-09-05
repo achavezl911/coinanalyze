@@ -76,8 +76,6 @@ Lo vigila `harness/checks/K23-coste-de-ejecucion.sh:42`.
 
 ## SUPERFICIE
 
-**Sin consumidor conocido**, medido: no aparece en `static/app.js`,
-`static/index.html`, `harness/checks`, `tests`, `tools` ni `README.md`.
+**El recuento vive en la ficha derivada**, que se regenera: [`rutas/api-signals-execution.md`](../rutas/api-signals-execution.md), seccion *Superficie*. Aqui NO se copia el numero.
 
-No prueba que este muerta -puede llamarla algo fuera del repo-, pero es la
-forma del patron que en esta casa se ha repetido nueve veces.
+La primera version de estas fichas lo copiaba y envejecio el mismo dia: el andamio escribio "sin consumidor conocido" cuando el detector no veia `RUTA=/api/x` ni `$VAR/api/x`, y al arreglarlo la prosa quedo mintiendo mientras el JSON del mismo commit decia otra cosa. K88 lo caza ahora (brazo 5), y esto quita la causa.

@@ -20,6 +20,34 @@ printf %s '$enc' | base64 -d | psql -X -A -F'|' -t -v ON_ERROR_STOP=1 -q -f -
 PAYLOAD
 )
 penc=$(printf '%s' "$payload" | base64 | tr -d '\n')
-ssh -n -o BatchMode=yes -o ConnectTimeout=8 \
+
+# EL RC DEL SQL SE PERDIA EN EL PIPE, Y ESO APAGABA EL GUARDIA DE TODOS LOS CHECKS.
+# La version anterior terminaba en `ssh ... 2>&1 | "$B/bin/_corta"`: en un pipe, el rc que
+# ve el llamante es el del ULTIMO mandato -_corta, que siempre sale 0-, asi que
+# `prodsql "SELECT no_existe FROM ..."` devolvia 0 igual que `SELECT 1`. Medido por el
+# operador el 2026-09-05. Consecuencia: cualquier guardia `[ "$rc" = 0 ] || NO MEDIDO`
+# escrito en un check NO PODIA DISPARARSE NUNCA, y un SQL roto llegaba al check disfrazado
+# de "sin filas". K90 cayo de pie -tiene ademas un guardia de filas- pero por suerte, no
+# por diseño: un check que tratara cero filas como VERDE se habria puesto verde con la
+# consulta rota. Es la version de canal del "NOMED no es ROJO" que sostiene este arnes.
+#
+# Aqui no se usa PIPESTATUS a proposito: esto es /bin/sh, no bash. Se captura, se mira y
+# despues se imprime.
+salida=$(ssh -n -o BatchMode=yes -o ConnectTimeout=8 \
   -i "$PROD_SSH_KEY" -o UserKnownHostsFile="$PROD_KNOWN_HOSTS" \
-  "$PROD_SSH_USER@$PROD_HOST" "printf %s $penc | base64 -d | sh" 2>&1 | "$B/bin/_corta"
+  "$PROD_SSH_USER@$PROD_HOST" "printf %s $penc | base64 -d | sh" 2>&1)
+rc=$?
+
+printf '%s\n' "$salida" | "$B/bin/_corta"
+
+# 1 · el rc del transporte (ssh caido, clave mala, psql con ON_ERROR_STOP)
+[ "$rc" = "0" ] || exit "$rc"
+
+# 2 · SEGUNDA DEFENSA: psql escribe "ERROR:  ..." y con 2>&1 viaja mezclado con las filas.
+# Se busca al PRINCIPIO DE LINEA para no confundirlo con una fila que contenga ese texto
+# -un mensaje de log, por ejemplo-, que seria un falso positivo caro en un canal que usan
+# 31 checks. rc=5 para distinguirlo de un fallo de transporte.
+if printf '%s\n' "$salida" | grep -q '^ERROR:'; then
+  exit 5
+fi
+exit 0

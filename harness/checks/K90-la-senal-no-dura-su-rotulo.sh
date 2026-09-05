@@ -84,14 +84,20 @@ fi
 # --- 3 · LA MEDIDA. Por simbolo, con la cardinalidad como control. ---------------------
 [ -x "$PRODSQL" ] || { echo "NO MEDIDO: no hay canal a produccion ($PRODSQL)"; exit 2; }
 
+# LA COLUMNA ES observed_minute, NO ts. Y NO NECESITA date_trunc.
+# La primera version de este check pedia `ts`, que NO EXISTE en signal_observation: las
+# reales son `observed_at` (timestamptz) y `observed_minute` (ya truncada al minuto).
+# Resultado: `ERROR: column "ts" does not exist`, que con el prodsql viejo llegaba como
+# rc=0 y salida vacia, o sea que el check decia "no devolvio ninguna fila" -un diagnostico
+# falso- en vez de "la consulta esta rota". Los DOS defectos se tapaban entre si.
 SQL="
 WITH base AS (
   SELECT symbol,
-         date_trunc('minute', ts) AS m,
+         observed_minute          AS m,
          (actionable IS TRUE)     AS acc
   FROM signal_observation
   WHERE is_periodic IS TRUE
-    AND ts >= now() - interval '$DIAS days'
+    AND observed_minute >= now() - interval '$DIAS days'
 ),
 u AS (SELECT DISTINCT symbol, m, acc FROM base),
 g AS (
@@ -115,12 +121,28 @@ FROM ep e GROUP BY e.symbol ORDER BY e.symbol;
 "
 
 salida=$(TODO=1 "$PRODSQL" "$SQL" 2>&1); rc=$?
-[ "$rc" = "0" ] || { echo "NO MEDIDO: prodsql fallo (rc=$rc): $(printf '%s' "$salida" | tail -1 | cut -c1-140)"; exit 2; }
 
-filas=$(printf '%s\n' "$salida" | grep -cE '^[[:space:]]*[A-Z0-9]+USDT[[:space:]]*\|')
+# EL rc NO BASTA, Y HASTA HOY NO SERVIA DE NADA. `prodsql` devolvia 0 aunque el SQL
+# fallara -el rc se perdia en su pipe final- asi que este guardia era decorativo. Se
+# arreglo el canal, pero el check mira TAMBIEN la salida: es el consumidor quien no puede
+# permitirse confiar en que el canal este arreglado, y un `ERROR:` de psql viaja mezclado
+# con las filas por el 2>&1.
+if [ "$rc" != "0" ] || printf '%s\n' "$salida" | grep -q '^ERROR:'; then
+  echo "NO MEDIDO: la consulta fallo (rc=$rc): $(printf '%s\n' "$salida" | grep -m1 '^ERROR:' | cut -c1-140)"
+  echo "  ${salida:+salida: }$(printf '%s' "$salida" | tail -1 | cut -c1-100)"
+  exit 2
+fi
+
+# EL SIMBOLO DE ESTA CASA ES BTCUSDT_PERP.A, NO BTCUSDT.
+# El detector anterior era '^[[:space:]]*[A-Z0-9]+USDT[[:space:]]*\|' y exigia que tras
+# USDT viniera el separador. Aqui viene `_PERP.A`, asi que reconocia 0 de 2 filas reales y
+# 1 de 1 de las inventadas — o sea que el control lo daba por bueno y produccion no. Ahora
+# se acepta cualquier sufijo hasta la barra, y las DOS formas van como control del check.
+filas=$(printf '%s\n' "$salida" | grep -cE '^[[:space:]]*[A-Z][A-Z0-9]*USDT[A-Za-z0-9_.:-]*[[:space:]]*\|')
 if [ "$filas" -eq 0 ]; then
   # CERO FILAS NO ES CERO MEDIDO. Es la leccion de K60: sin filas no hay veredicto.
-  echo "NO MEDIDO: la consulta no devolvio ninguna fila de simbolo (¿tabla vacia, o cambio el nombre de la columna?)"
+  echo "NO MEDIDO: la consulta no devolvio ninguna fila de simbolo reconocible"
+  echo "  primera linea de la salida: $(printf '%s\n' "$salida" | head -1 | cut -c1-100)"
   exit 2
 fi
 
@@ -138,7 +160,7 @@ while IFS='|' read -r sym ep p90a p90n mins; do
     rojos="$rojos $sym"
   fi
 done <<EOF
-$(printf '%s\n' "$salida" | grep -E '^[[:space:]]*[A-Z0-9]+USDT[[:space:]]*\|')
+$(printf '%s\n' "$salida" | grep -E '^[[:space:]]*[A-Z][A-Z0-9]*USDT[A-Za-z0-9_.:-]*[[:space:]]*\|')
 EOF
 
 if [ -n "$sospecha" ]; then

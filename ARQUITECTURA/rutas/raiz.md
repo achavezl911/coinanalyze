@@ -50,12 +50,12 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K01a-espejo.sh:58`, `harness/checks/K01b-respaldo-cifrado.sh:31`, `harness/checks/K01b-respaldo-cifrado.sh:73`, `harness/checks/K01b-respaldo-cifrado.sh:95` _(+87)_ | `harness/checks/K03-hueco-declarado.sh:61`, `harness/checks/K05-latidos.sh:16`, `harness/checks/K05-latidos.sh:96`, `harness/checks/K52-el-minuto-corto.sh:14` _(+11)_ |
-| **herramientas** | `tools/generate_dashboard_usage_pdf.py:25`, `tools/generate_dashboard_usage_pdf.py:26`, `tools/generate_dashboard_usage_pdf.py:27`, `tools/generate_dashboard_usage_pdf.py:28` _(+5)_ | — |
+| **checks** | `harness/checks/K01a-espejo.sh:58`, `harness/checks/K01b-respaldo-cifrado.sh:31`, `harness/checks/K01b-respaldo-cifrado.sh:73`, `harness/checks/K01b-respaldo-cifrado.sh:95` _(+106)_ | `harness/checks/K03-hueco-declarado.sh:61`, `harness/checks/K05-latidos.sh:16`, `harness/checks/K05-latidos.sh:96`, `harness/checks/K31-cubos.py:46` _(+13)_ |
+| **herramientas** | — | `tools/generate_dashboard_usage_pdf.py:25`, `tools/generate_dashboard_usage_pdf.py:26`, `tools/generate_dashboard_usage_pdf.py:27`, `tools/generate_dashboard_usage_pdf.py:28` _(+5)_ |
 | **panel** | `static/app.js:127`, `static/app.js:139`, `static/app.js:140`, `static/app.js:193` _(+59)_ | `static/app.js:66` |
 | **panel-html** | `static/index.html:93`, `static/index.html:110`, `static/index.html:286` | — |
 | **readme** | — | `README.md:19`, `README.md:22`, `README.md:215`, `README.md:257` _(+3)_ |
-| **tests** | `tests/js/ejecucion.test.js:45`, `tests/js/harness.js:48`, `tests/js/harness.js:69`, `tests/js/harness.js:73` _(+257)_ | `tests/js/harness.js:79`, `tests/js/harness.js:147`, `tests/test_delta_profile.py:33`, `tests/test_flow_semantics.py:207` _(+30)_ |
+| **tests** | `tests/js/ejecucion.test.js:45`, `tests/js/harness.js:48`, `tests/js/harness.js:69`, `tests/js/harness.js:73` _(+40)_ | `tests/js/harness.js:79`, `tests/js/harness.js:147`, `tests/test_ai_context.py:49`, `tests/test_ai_context.py:50` _(+247)_ |
 
 **La llama el panel: es superficie de producto.**
 

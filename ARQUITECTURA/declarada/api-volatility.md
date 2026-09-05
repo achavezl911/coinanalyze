@@ -17,26 +17,38 @@ Familia **1** de K43 — ventana de construccion de la foto (estado ambiente).
 
 Derivado de su firma: solo pide symbol (o nada): estado ambiente.
 
-**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z, arco 37 387 ms).
+**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`,
+2026-09-04T22:34:11Z, arco 37 387 ms): **NO publica ninguna marca temporal.**
 
-El AST no le derivo ninguna clave temporal, pero **si publica marca de tiempo en el**
-**cuerpo**. Son cosas distintas y aqui se separan: lo primero es un limite del
-analisis estatico, lo segundo una afirmacion sobre el producto.
+18 hojas en el cuerpo, **0 con nombre o valor temporal**: `symbol`, `atr`,
+`realized_vol_annualized_pct`, `daily_range_percentile_1y`, `compression_score`,
+`range_expansion`, `note`.
 
-Claves de **primer nivel** — la respuesta declara su propio instante o periodo:
+### El error que esta seccion tuvo, porque explica una distincion de K43
 
-- `daily_range_percentile_1y` (sufijo de periodo)
+La primera version decia que **si** publicaba marca, y su unica prueba era
+`daily_range_percentile_1y`: mi detector la marco por el sufijo `_1y`. **Un sufijo de
+periodo declara la VENTANA DEL CALCULO, no el INSTANTE DE LA RESPUESTA**, y son cosas
+distintas — es justo la distincion que K43 persigue. `_1y` dice *sobre cuanto historico se
+calculo el percentil*; no dice *de cuando es este numero*.
 
-<sub>Medido leyendo el cuerpo de la respuesta en la foto, no supuesto. 1 claves temporales en total.</sub>
+Esa confusion hizo que la tabla de la entrega publicara **27 con marca · 7 sin ninguna**
+cuando lo coherente es **26 · 8 · 2**, contradiciendo a la seccion PROMESA de esta misma
+ficha, que ya decia que no publica ninguna.
+
+**Familia 1 de K43 con defecto declarado**: es estado ambiente y **no dice de cuando es**.
+Un ATR de hace seis horas se parece mucho a uno de ahora.
 
 ## PROMESA
 
 
 ### NADIE LA LLAMA, y esta medido
 
-Censo sobre `static/app.js`, `static/index.html`, `harness/checks`, `tests`, `tools` y
-`README.md`, con limite de token y separando llamada de mencion: **cero llamadas y cero
-menciones**. Es una de las **seis** rutas del sistema sin ningun rastro.
+El recuento esta en [`rutas/api-volatility.md`](../rutas/api-volatility.md) y **no se
+copia aqui**: esta misma frase afirmaba a mano un recuento de rastro nulo en el commit anterior
+mientras `derivada.json` del **mismo commit** listaba una mencion — y la mencion era el
+comentario que explicaba que se habia quitado esta ruta de un fixture. El arreglo quito el
+fixture; la prosa que lo explicaba volvio a meterla.
 
 No prueba que este muerta -puede llamarla una IA por su nombre, o algo fuera del repo-,
 pero es la forma exacta del patron que en esta casa se ha repetido nueve veces.
@@ -63,8 +75,8 @@ misma familia que `/api/scalp/liquidation-levels`.**
 
 ## SUPERFICIE
 
-**Sin consumidor conocido**, medido: no aparece en `static/app.js`,
-`static/index.html`, `harness/checks`, `tests`, `tools` ni `README.md`.
+**El recuento vive en la ficha derivada**, que se regenera: [`rutas/api-volatility.md`](../rutas/api-volatility.md), seccion *Superficie*. Aqui NO se copia el numero.
 
-No prueba que este muerta -puede llamarla algo fuera del repo-, pero es la
-forma del patron que en esta casa se ha repetido nueve veces.
+La primera version de estas fichas lo copiaba y envejecio el mismo dia: el andamio escribio "sin consumidor conocido" cuando el detector no veia `RUTA=/api/x` ni `$VAR/api/x`, y al arreglarlo la prosa quedo mintiendo mientras el JSON del mismo commit decia otra cosa. K88 lo caza ahora (brazo 5), y esto quita la causa.
+
+Lo que si aporta esta capa: de lo que hay, **nada es una llamada**. Una ruta de la que solo se habla en comentarios no tiene consumidor: tiene quien la nombra.

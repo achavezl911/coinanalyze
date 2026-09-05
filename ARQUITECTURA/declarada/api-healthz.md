@@ -39,11 +39,36 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · nombra a los que FALTAN, no solo a los que estan.**
+En la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): `governed_services = [12]`, `missing_services = [0]`,
+`missing_symbols = [0]`, y `services = [12]` con `service`, `updated_at`, `status`,
+`detail` y `lag_seconds` cada uno.
+
+`missing_services` es la clave: una lista de servicios vivos **no dice nada** sobre los que
+deberian estar y no reportan. Publicar el conjunto GOBERNADO al lado del observado
+convierte "faltan servicios" en una resta, no en una sospecha. Es **P0.5** aplicado al eje
+de los servicios: un servicio ausente y uno que no existe se distinguen.
+
+**PROMESA 2 · declara CONTRA QUE BASE responde.**
+`database = {database, db_user, db_host, db_port, server_version, schema_fingerprint}`.
+Con `schema_fingerprint`, dos instancias con el mismo nombre y esquemas distintos dejan de
+ser indistinguibles — que es lo que vigila `harness/checks/K08-que-base.sh:33`.
+
+**PROMESA 3 · cada servicio trae SU retraso, no uno global.**
+`lag_seconds` por servicio y por simbolo. Un `status = "ok"` global con un colector a 40
+minutos es exactamente el cero tranquilizador que este arnes persigue; con el lag por fila
+no se puede ocultar.
+
+*Que significa no cumplirlo:* que `status` fuera `ok` con algo en `missing_services`, o que
+`lag_seconds` desapareciera. Lo vigila K05 en dos sitios (`:127` y `:388`).
+
+**ESCRIBE en `pipeline_heartbeat`**, y es la unica ruta de las 68 que escribe una tabla.
+Una ruta de salud que deja rastro de haber sido consultada tiene sentido, pero **conviene
+saberlo**: pedir `/api/healthz` no es una operacion de solo lectura.
+
 
 ## SUPERFICIE
 

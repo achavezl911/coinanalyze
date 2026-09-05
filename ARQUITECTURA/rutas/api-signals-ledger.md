@@ -90,9 +90,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K21-ledger-de-senales.sh:32`, `harness/checks/K24-replay-del-contexto.sh:88`, `harness/checks/K88-control.bash:326`, `harness/checks/K88-control.bash:329` | `harness/checks/K24-replay-del-contexto.sh:19`, `harness/checks/K31-cubos.py:145` |
-| **tests** | `tests/test_signals_ledger.py:1` | — |
+| **tests** | — | `tests/test_signals_ledger.py:1` |
 
-**No la llama el panel**, pero si 5 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 4 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

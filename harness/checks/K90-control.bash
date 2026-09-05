@@ -131,6 +131,94 @@ caso "F4 aparece histeresis en scalp_logic" 2 "mecanismo\(s\) de persistencia" \
 printf 'def scalp_bias_label(a, b):\n    return "No Trade", "baja"\n' > "$DIR/repo/app/scalp_logic.py"
 
 echo
+# ======================================================================================
+# EL SIMBOLO DE ESTA CASA · el defecto que los 12 controles anteriores no vieron.
+# Los doce pasaban con un prodsql INYECTADO por mi, y en mis filas de mentira los simbolos
+# eran BTCUSDT. En 140 son BTCUSDT_PERP.A. El check reconocia 0 de 2 filas reales y 1 de 1
+# de las inventadas: el control daba por bueno un detector que en produccion no veia nada.
+# UN CONTROL QUE FABRICA SU SUSTITUTO NO CAZA EL DESACUERDO CON EL ORIGINAL.
+# Por eso las DOS formas van aqui, y la real primero.
+# ======================================================================================
+echo "FORMATO DE SIMBOLO · las dos formas, y la real primero"
+
+REAL_PERP=' BTCUSDT_PERP.A|7524|3|6|34439
+ ETHUSDT_PERP.A|7666|3|6|34439
+ SOLUSDT_PERP.A|5118|4|11|34439'
+caso "S1 simbolos BTCUSDT_PERP.A (los de 140)" 1 "BTCUSDT_PERP.A" \
+     "1–15 minutos" "$REAL_PERP"
+caso "S2 simbolos BTCUSDT a secas (siguen valiendo)" 1 "BTCUSDT" \
+     "1–15 minutos" "$REAL"
+# S3 · una salida que NO trae ninguna fila de simbolo reconocible sigue siendo NOMED.
+caso "S3 salida sin ninguna fila de simbolo" 2 "ninguna fila de simbolo reconocible" \
+     "1–15 minutos" 'total | 3 | 6 | 34439'
+
+echo
+# ======================================================================================
+# EL CANAL · prodsql devolvia rc=0 aunque el SQL fallara, asi que el guardia del rc era
+# decorativo. El check mira AHORA tambien la salida.
+# ======================================================================================
+echo "CANAL · un SQL roto es NO MEDIDO, no 'sin filas'"
+
+cat > "$DIR/bin/prodsql-error" <<'PY'
+#!/bin/sh
+# imita al prodsql VIEJO: escribe el ERROR de psql y sale con 0
+echo 'ERROR:  column "ts" does not exist'
+echo 'LINE 3:          date_trunc(...)'
+exit 0
+PY
+chmod +x "$DIR/bin/prodsql-error"
+caso "C2 SQL roto con rc=0 (el prodsql viejo)" 2 "la consulta fallo" \
+     "1–15 minutos" "$REAL" "$DIR/bin/prodsql-error"
+
+echo
+# ======================================================================================
+# EL ESQUEMA DE VERDAD · el unico caso que NO usa un sustituto fabricado por mi.
+#
+# Los 12 controles de la primera version pasaron los 12 y ninguno toco el esquema: por eso
+# no vieron que `ts` no existe en signal_observation. Aqui se lee el esquema REAL del repo
+# -sql/schema.sql, que es el fichero que el desplegador aplica contra la base viva- y se
+# exige que TODA columna que el SQL de K90 nombra este declarada ahi.
+# No prueba que 140 tenga ese esquema; prueba que el check y el esquema versionado
+# concuerdan, que es lo que fallaba. El dia que alguien renombre observed_minute, este
+# caso lo dice en vez de pasar 12 de 12.
+# ======================================================================================
+echo "ESQUEMA REAL · las columnas que K90 nombra existen en sql/schema.sql"
+
+SCHEMA="$ORIG/sql/schema.sql"
+if [ ! -r "$SCHEMA" ]; then
+  fallos=$((fallos+1)); printf '  [FALLA] %-52s no encuentro %s\n' "E1 columnas de signal_observation" "$SCHEMA"
+else
+  cuerpo=$(python3 - "$SCHEMA" <<'PY'
+import re, sys
+t = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+m = re.search(r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?signal_observation\s*\((.*?)\n\)\s*;",
+              t, re.S | re.I)
+print(m.group(1) if m else "")
+PY
+)
+  faltan=''
+  # las columnas que el SQL de K90 nombra de esa tabla
+  for col in observed_minute is_periodic actionable symbol; do
+    printf '%s' "$cuerpo" | grep -qE "(^|[[:space:],(])$col[[:space:]]" || faltan="$faltan $col"
+  done
+  # CONTROL NEGATIVO en el mismo caso: una columna inventada NO puede aparecer, y `ts`
+  # -la que el check pedia y no existe- tampoco.
+  falsos=''
+  for col in ts columna_que_no_existe; do
+    printf '%s' "$cuerpo" | grep -qE "(^|[[:space:],(])$col[[:space:]]" && falsos="$falsos $col"
+  done
+  if [ -z "$cuerpo" ]; then
+    fallos=$((fallos+1)); printf '  [FALLA] %-52s no encuentro la tabla en el esquema\n' "E1 columnas de signal_observation"
+  elif [ -n "$faltan" ]; then
+    fallos=$((fallos+1)); printf '  [FALLA] %-52s faltan en el esquema:%s\n' "E1 columnas que K90 nombra" "$faltan"
+  elif [ -n "$falsos" ]; then
+    fallos=$((fallos+1)); printf '  [FALLA] %-52s el control negativo casa con:%s\n' "E1 control negativo" "$falsos"
+  else
+    pasan=$((pasan+1)); printf '  [ok   ] %-52s las 4 estan; ts y la inventada NO\n' "E1 esquema real de signal_observation"
+  fi
+fi
+
+echo
 total=$((pasan + fallos))
 echo "$pasan de $total pasan · $fallos fallan"
 [ "$fallos" -eq 0 ] || exit 1

@@ -46,11 +46,30 @@ Claves **anidadas** (11), dentro de filas o bloques:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · publica SU instante y SU ventana, las dos, en primer nivel.**
+En la foto: `generated_at = "2026-09-04T22:33:10.478574+00:00"` y `window_seconds = 900`.
+Es de las **pocas rutas de las 68 que hacen las dos cosas** — la mayoria fecha sus filas y
+no se fecha a si misma (ver la seccion VENTANA de las 26 fichas medidas en la foto).
+
+**PROMESA 2 · distingue el estado del FEED del estado de la METRICA.**
+`feeds = [7]` (con `feed`, `exchange`, `market`, `data_type`, `status`) y `metrics = [8]`
+(con `metric`, `timeframe`, `status`, `value`, `coverage`, `source`) son listas separadas.
+Y el `note` lo dice: *"Estado de cada metrica PUBLICADA…"*.
+
+Contesta **P0.8** — *"¿cuando fue el ultimo dato REAL de cada feed, no el ultimo
+calculado?"*. Con las dos listas separadas y `coverage` en la de metricas, "recalculado
+hace 1 min" y "observado hace 1 min" dejan de ser lo mismo.
+
+*Que significa no cumplirlo:* fundir las dos listas. Una metrica fresca calculada sobre un
+feed muerto pareceria sana, que es el caso que P0.9 describe.
+
+**PROMESA 3 · agrupa por colector y por contexto.** `collectors = {ingest, ws, scalp,
+daily, api}` y `contexts = {scalp, intraday, macro}`: el mismo estado visto por quien lo
+produce y por quien lo consume.
+
 
 ## SUPERFICIE
 

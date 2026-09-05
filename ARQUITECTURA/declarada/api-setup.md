@@ -35,11 +35,34 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · publica el instante del SNAPSHOT del que sale, no el suyo.**
+En la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): `snapshot_ts = "2026-09-04T22:33:05.548107Z"`. La ruta se arma despues,
+y lo que fecha es **el dato del que depende**. Para P0.1 eso es lo correcto: importa de
+cuando es el snapshot, no de cuando se formateo la respuesta.
+
+**PROMESA 2 · publica TODOS los setups evaluados, no solo el que gana.**
+`primary` mas `setups = [5]`, cada uno con `id`, `name`, `bias`, `horizon`, `confidence` y
+`state`. Es lo que hace posible **P1.10** —*"¿el setup de largo contradice al de corto?"*—:
+con solo `primary`, la contradiccion seria invisible por construccion.
+
+**PROMESA 3 · declara la fuente del flujo diario por su nombre.**
+`daily_flow_source = "cvd_spot_usd (Binance+Bybit)"`. No es un detalle: el mismo `slope`
+calculado sobre otra fuente es otro numero, y **P1.1** ya midio que *"el diferencial
+spot-futuros NO vota direccion"*.
+
+**PROMESA 4 · dice que es un sesgo y no un consejo.** `warning = "Sesgo probabilistico. No
+constituye…"`. Es la unica de las 68 que trae un descargo en el cuerpo.
+
+*Que significa no cumplirlo:* que `setups` se recortara a los que apoyan a `primary`.
+Entonces el producto seria un generador de razones, que es lo que **P5.9** persigue.
+
+**Nadie la llama** salvo un fixture de control: su unico rastro de codigo es
+`harness/checks/K88-control.bash:133`, que la usa como caso de prueba. Contesta **siete**
+preguntas de la bateria —mas que ninguna otra ruta— y el panel no la consume.
+
 
 ## SUPERFICIE
 
