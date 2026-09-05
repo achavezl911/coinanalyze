@@ -1,0 +1,13 @@
+#!/bin/sh
+# instala-hooks · pone .git/hooks/pre-commit a apuntar a la fuente VERSIONADA.
+#
+# SYMLINK Y NO COPIA, a proposito: el hook que rechazaba .md vivia SOLO en .git/hooks -que
+# no viaja, no se revisa en ningun PR y nadie sabe si el de al lado tiene el mismo-. Con
+# el enlace, el hook que corre es siempre el del arbol en el que estas, y un cambio al
+# hook se ve en el diff como cualquier otro codigo. El precio es que si haces checkout de
+# una rama sin harness/hooks/pre-commit el enlace queda colgando y git deja de aplicarlo;
+# se prefiere eso a que dos maquinas apliquen reglas distintas creyendo que aplican la misma.
+set -eu
+RAIZ=$(git rev-parse --show-toplevel)
+ln -sfn ../../harness/hooks/pre-commit "$RAIZ/.git/hooks/pre-commit"
+printf 'pre-commit -> %s\n' "$(readlink "$RAIZ/.git/hooks/pre-commit")"

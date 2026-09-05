@@ -31,9 +31,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
-  - **PENDIENTE · ninguna funcion del arbol la escribe con SQL literal.**
-    O la llena algo fuera de `app/` (migracion, colector externo, carga manual),
-    o el SQL se construye en ejecucion y el analisis estatico no lo ve.
+  - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
 
 ## Funciones que la componen
 
@@ -67,5 +65,16 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.scalp_liquidations` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.scalp_liquidations` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

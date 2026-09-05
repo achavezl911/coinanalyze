@@ -42,13 +42,13 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `daily_session_agg` — `sql/schema.sql:1032`, 14 columnas
-  - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:205`
+  - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:153`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:184`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:199`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
 
 ## Funciones que la componen
 
@@ -107,5 +107,36 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.interpretation.number` | 13 | 3 | **14** | [impacto](../impacto/app-interpretation.md) |
+| `app.zones._atr_abs` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones._edge_episodes` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones._ols_slope` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones._rotations` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones.range_validate_read` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.scalp_logic.wyckoff_context` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.wyckoff._atr_abs` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._bar_date` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._bias_read` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._candidate_rank` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._clamp` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._clean_bars` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._events` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._phase` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._quantile` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._range_bounds` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._session_date` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._signed_balance` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff.detect_latest_range` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff.wyckoff_auto_read` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.api.wyckoff_endpoint` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

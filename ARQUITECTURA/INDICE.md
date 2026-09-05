@@ -52,7 +52,7 @@
 | `/api/scalp/execution-cost` | GET | 8 | 9 | 30 | [ficha](rutas/api-scalp-execution-cost.md) |
 | `/api/scalp/liquidation-levels` | GET | 4 | 3 | 2 | [ficha](rutas/api-scalp-liquidation-levels.md) |
 | `/api/scalp/liquidations` | GET | 3 | 1 | 2 | [ficha](rutas/api-scalp-liquidations.md) |
-| `/api/scalp/orderbook` | GET | 3 | 0 | 3 | [ficha](rutas/api-scalp-orderbook.md) |
+| `/api/scalp/orderbook` | GET | 3 | 1 | 3 | [ficha](rutas/api-scalp-orderbook.md) |
 | `/api/scalp/signals` | GET | 2 | 1 | 2 | [ficha](rutas/api-scalp-signals.md) |
 | `/api/scalp/summary` | GET | 58 | 8 | 24 | [ficha](rutas/api-scalp-summary.md) |
 | `/api/setup` | GET | 8 | 2 | 8 | [ficha](rutas/api-setup.md) |
@@ -71,7 +71,7 @@
 | `/api/verdicts` | GET | 5 | 2 | 7 | [ficha](rutas/api-verdicts.md) |
 | `/api/volatility` | GET | 7 | 2 | 9 | [ficha](rutas/api-volatility.md) |
 | `/api/volume-profile` | GET | 6 | 1 | 6 | [ficha](rutas/api-volume-profile.md) |
-| `/api/whale/delta` | GET | 5 | 1 | 9 | [ficha](rutas/api-whale-delta.md) |
+| `/api/whale/delta` | GET | 5 | 2 | 9 | [ficha](rutas/api-whale-delta.md) |
 | `/api/wyckoff` | GET | 10 | 2 | 22 | [ficha](rutas/api-wyckoff.md) |
 | `/api/zone/analysis` | GET | 8 | 2 | 12 | [ficha](rutas/api-zone-analysis.md) |
 | `/metrics` | GET | **0 · PENDIENTE** | 6 | 1 | [ficha](rutas/metrics.md) |
@@ -94,7 +94,7 @@
 | `daily_session_agg` | 20 | 0 |
 | `daily_verdict_outcome` | 3 | 0 |
 | `daily_verdict_snapshot` | 3 | 0 |
-| `data_gap` | 20 | 0 |
+| `data_gap` | 21 | 0 |
 | `external_macro_observation` | 3 | 0 |
 | `funding_rate` | 3 | 0 |
 | `futures_trades_agg` | 6 | 0 |
@@ -110,7 +110,7 @@
 | `oi_bybit` | 3 | 0 |
 | `open_interest` | 18 | 0 |
 | `orderbook_depth` | 1 | 0 |
-| `orderbook_snapshot` | 13 | 0 |
+| `orderbook_snapshot` | 14 | 0 |
 | `pipeline_heartbeat` | 7 | 1 |
 | `predicted_funding_rate` | 3 | 0 |
 | `scalp_signal_snapshot` | 4 | 0 |

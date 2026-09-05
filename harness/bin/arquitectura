@@ -160,6 +160,14 @@ class Modulo:
         self.lineas = texto.splitlines()
         self.alias: dict[str, str] = {}     # nombre local -> 'app.metrics.compute_snapshot'
         self.mod_alias: dict[str, str] = {} # 'mt' -> 'app.metrics'
+        # CONSTANTES DE MODULO QUE SON CADENAS.  nombre -> (texto, linea de apertura)
+        # Existen porque F1 se equivoco aqui: el generador buscaba el literal SQL DENTRO
+        # de la funcion, y `await conn.executemany(LIQUIDATION_INSERT_SQL, buffer)` no
+        # lleva ningun literal. Resultado: `liquidations_realtime` figuraba leida por 14
+        # rutas y sin ningun escritor, cuando su INSERT esta en scalp_collector.py:74 y la
+        # tabla tiene 3241 filas vivas en 140. El mapa no mintio -lo declaro PENDIENTE-
+        # pero callo algo que si se podia derivar.
+        self.constantes: dict[str, tuple[str, int]] = {}
 
 
 def carga_modulos(repo: Path, paquetes: list[str]) -> dict[str, Modulo]:
@@ -180,6 +188,24 @@ def carga_modulos(repo: Path, paquetes: list[str]) -> dict[str, Modulo]:
                 continue
             mods[rel[:-3].replace("/", ".")] = Modulo(rel, arbol, texto)
     return mods
+
+
+def indexa_constantes(mods: dict[str, Modulo]) -> None:
+    """Constantes de nivel de modulo cuyo valor es una cadena. Tambien las de clase, que
+    aparecen en los colectores."""
+    for mod in mods.values():
+        def recorre(cuerpo, prefijo=""):
+            for n in cuerpo:
+                if isinstance(n, (ast.Assign, ast.AnnAssign)):
+                    destinos = n.targets if isinstance(n, ast.Assign) else [n.target]
+                    if (n.value is not None and isinstance(n.value, ast.Constant)
+                            and isinstance(n.value.value, str)):
+                        for t in destinos:
+                            if isinstance(t, ast.Name):
+                                mod.constantes[prefijo + t.id] = (n.value.value, n.value.lineno)
+                elif isinstance(n, ast.ClassDef):
+                    recorre(n.body, f"{prefijo}{n.name}.")
+        recorre(mod.arbol.body)
 
 
 def resuelve_imports(mods: dict[str, Modulo]) -> None:
@@ -220,7 +246,10 @@ class Funcion:
         self.fin = getattr(nodo, "end_lineno", nodo.lineno)
         self.llama: set[str] = set()        # claves del arbol
         self.llama_fuera: set[str] = set()  # nombres no resueltos (libreria o dinamico)
-        self.sql: list[str] = []
+        # cada entrada: {texto, fichero, linea, origen}. La procedencia va DENTRO del dato
+        # porque el SQL de una funcion puede vivir en OTRO fichero (constante de modulo).
+        self.sql: list[dict] = []
+        self.sql_no_resuelto: set[str] = set()
         self.llamada_por: set[str] = set()
 
 
@@ -294,6 +323,46 @@ def parece_sql(s: str) -> bool:
     return bool(RE_SQL.search(s)) and len(s) > 12
 
 
+# Metodos de asyncpg cuyo primer argumento ES la consulta. Si ahi va un nombre en vez de
+# un literal, hay que ir a buscar la constante: es la unica forma de no perder el escritor.
+METODOS_BD = {
+    "execute", "executemany", "fetch", "fetchrow", "fetchval", "cursor",
+    "prepare", "copy_from_query",
+}
+
+
+def linea_del_verbo(texto: str, linea_apertura: int) -> int:
+    """Linea del PRIMER verbo SQL dentro del literal, no la del `\"\"\"` que lo abre.
+
+    Un literal triple de cuatro lineas hacia que el mapa citara la linea de la comilla:
+    `ws_collector.py:253` cuando el INSERT esta en la 254, y `scalp_collector.py:73`
+    cuando el INSERT esta en la 74 -que es justo la linea con la que el operador cito el
+    escritor-. Apuntar a la sentencia y no a la comilla es la diferencia entre una cita
+    que se puede seguir y una que hay que corregir a mano cada vez."""
+    for i, l in enumerate(texto.splitlines()):
+        if RE_SQL.search(l):
+            return linea_apertura + i
+    return linea_apertura
+
+
+def resuelve_constante(nodo, mod: Modulo, mods: dict[str, Modulo]):
+    """Un ast.Name -> (texto, fichero, linea) si apunta a una constante de cadena del
+    arbol. None si no se puede resolver: entonces se declara, no se adivina."""
+    if not isinstance(nodo, ast.Name):
+        return None
+    if nodo.id in mod.constantes:
+        texto, linea = mod.constantes[nodo.id]
+        return texto, mod.rel, linea
+    destino = mod.alias.get(nodo.id)
+    if destino:
+        modname, _, attr = destino.rpartition(".")
+        otro = mods.get(modname)
+        if otro and attr in otro.constantes:
+            texto, linea = otro.constantes[attr]
+            return texto, otro.rel, linea
+    return None
+
+
 def analiza_cuerpos(funcs: dict[str, Funcion], mods: dict[str, Modulo]) -> None:
     """Llena llama / llama_fuera / sql de cada funcion. Las llamadas de funciones ANIDADAS
     se atribuyen tambien a la funcion que las contiene: si un handler define un closure y
@@ -311,6 +380,26 @@ def analiza_cuerpos(funcs: dict[str, Funcion], mods: dict[str, Modulo]) -> None:
                 if nombre is None:
                     fn.llama_fuera.add("<llamada dinamica>")
                     continue
+
+                # SQL QUE VIVE EN UNA CONSTANTE DE MODULO. Se mira solo en las llamadas a
+                # base de datos: ahi el primer argumento ES la consulta, asi que resolver
+                # el nombre no es una suposicion. Fuera de esas llamadas no se resuelve,
+                # para no atribuir a una funcion un SQL que solo estaba de paso.
+                if nombre.rsplit(".", 1)[-1] in METODOS_BD:
+                    for arg in list(n.args) + [k.value for k in n.keywords]:
+                        r = resuelve_constante(arg, fn.mod, mods)
+                        if r and parece_sql(r[0]):
+                            texto, fichero, linea = r
+                            fn.sql.append({
+                                "texto": texto, "fichero": fichero,
+                                "linea": linea_del_verbo(texto, linea),
+                                "origen": f"constante {arg.id}",
+                            })
+                        elif isinstance(arg, ast.Name) and not r and arg is (n.args[0] if n.args else None):
+                            # primer argumento de una llamada de BD que no se resuelve:
+                            # ahi hay una consulta que este analisis NO ve. Se anota.
+                            fn.sql_no_resuelto.add(f"{arg.id} (en {fn.fichero}:{n.lineno})")
+
                 destino = resuelve(nombre, fn.mod, funcs, mods)
                 if destino and destino != fn.clave:
                     fn.llama.add(destino)
@@ -318,7 +407,11 @@ def analiza_cuerpos(funcs: dict[str, Funcion], mods: dict[str, Modulo]) -> None:
                     fn.llama_fuera.add(nombre)
             elif isinstance(n, ast.Constant) and isinstance(n.value, str):
                 if parece_sql(n.value):
-                    fn.sql.append(n.value)
+                    fn.sql.append({
+                        "texto": n.value, "fichero": fn.fichero,
+                        "linea": linea_del_verbo(n.value, n.lineno),
+                        "origen": "literal",
+                    })
             elif isinstance(n, ast.JoinedStr):
                 # f-string con SQL dentro: se reconstruye con los huecos marcados. No se
                 # afirma el valor de las variables; se marca {?} para que se vea que ahi
@@ -331,7 +424,11 @@ def analiza_cuerpos(funcs: dict[str, Funcion], mods: dict[str, Modulo]) -> None:
                         trozos.append("{?}")
                 s = "".join(trozos)
                 if parece_sql(s):
-                    fn.sql.append(s)
+                    fn.sql.append({
+                        "texto": s, "fichero": fn.fichero,
+                        "linea": linea_del_verbo(s, n.lineno),
+                        "origen": "f-string (los huecos van como {?})",
+                    })
     for fn in funcs.values():
         for d in fn.llama:
             funcs[d].llamada_por.add(fn.clave)
@@ -413,7 +510,8 @@ def sql_directo_de_tabla(fn: Funcion, catalogo: dict) -> tuple[str, list[str]] |
     catalogo, los campos publicados SON las columnas de esa tabla. Es derivacion, no
     suposicion, y se cita el origen. Si hay CTEs o mas de una tabla, se devuelve None:
     ahi ya no se sabe, y decirlo es mejor que acertar por casualidad."""
-    for sql in fn.sql:
+    for entrada in fn.sql:
+        sql = entrada["texto"]
         limpio = sin_comentarios_sql(sql)
         if not re.search(r"SELECT\s+(?:DISTINCT\s+ON\s*\([^)]*\)\s*)?\*", limpio, re.IGNORECASE):
             continue
@@ -633,16 +731,13 @@ def escritores_y_lectores(funcs: dict[str, Funcion], catalogo: dict) -> dict[str
     )
     out: dict[str, dict] = {}
 
-    def linea_del(fn: Funcion, sql: str) -> int:
-        for n in ast.walk(fn.nodo):
-            if isinstance(n, ast.Constant) and isinstance(n.value, str) and n.value is sql:
-                return n.lineno
-        return fn.linea
-
     for clave, fn in funcs.items():
-        for sql in fn.sql:
+        for entrada in fn.sql:
+            sql = entrada["texto"]
             t = tablas_de_sql(sql, catalogo)
-            linea = linea_del(fn, sql)
+            # el SITIO sale de la entrada, no de la funcion: cuando el SQL vive en una
+            # constante de otro modulo, el sitio correcto es donde esta el SQL.
+            sitio = f"{entrada['fichero']}:{entrada['linea']}"
             limpio = sin_comentarios_sql(sql)
             for tabla in t["escribe"]:
                 verbo = "?"
@@ -652,18 +747,22 @@ def escritores_y_lectores(funcs: dict[str, Funcion], catalogo: dict) -> dict[str
                         break
                 e = out.setdefault(tabla, {"escritores": [], "lectores": []})
                 e["escritores"].append({
-                    "funcion": clave, "sitio": f"{fn.fichero}:{linea}", "verbo": verbo,
+                    "funcion": clave, "sitio": sitio, "verbo": verbo,
+                    "origen": entrada["origen"],
                 })
             for tabla in t["lee"]:
                 out.setdefault(tabla, {"escritores": [], "lectores": []})["lectores"].append({
-                    "funcion": clave, "sitio": f"{fn.fichero}:{linea}",
+                    "funcion": clave, "sitio": sitio, "origen": entrada["origen"],
                 })
     for v in out.values():
-        v["escritores"] = sorted(
-            {(e["sitio"], e["verbo"], e["funcion"]) for e in v["escritores"]})
-        v["escritores"] = [{"sitio": s, "verbo": vb, "funcion": f} for s, vb, f in v["escritores"]]
-        v["lectores"] = sorted({(l["sitio"], l["funcion"]) for l in v["lectores"]})
-        v["lectores"] = [{"sitio": s, "funcion": f} for s, f in v["lectores"]]
+        v["escritores"] = [
+            {"sitio": s, "verbo": vb, "funcion": f, "origen": o}
+            for s, vb, f, o in sorted({(e["sitio"], e["verbo"], e["funcion"], e["origen"])
+                                       for e in v["escritores"]})]
+        v["lectores"] = [
+            {"sitio": s, "funcion": f, "origen": o}
+            for s, f, o in sorted({(l["sitio"], l["funcion"], l["origen"])
+                                   for l in v["lectores"]})]
     return out
 
 
@@ -675,6 +774,156 @@ INYECTADOS = {
     "Request", "Response", "BackgroundTasks", "WebSocket", "HTTPConnection",
     "SecurityScopes", "UploadFile",
 }
+
+
+# =====================================================================================
+# F2 · EL RADIO DE IMPACTO
+#
+# LA PREGUNTA: si toco esta funcion o esta tabla, QUE RUTAS CAMBIAN.
+#
+# VIAJA POR DOS CAMINOS QUE NO SE PARECEN EN NADA, Y POR ESO SE PUBLICAN SEPARADOS:
+#
+#   POR LLAMADA   la ruta ejecuta esta funcion. Exacto: o esta en su cierre o no esta.
+#   POR TABLA     esta funcion (o quien la llama) escribe una tabla que la ruta LEE.
+#                 La ruta no ejecuta nada de esto: se entera por el dato.
+#
+# Fundir los dos en un solo numero seria volver al cero tranquilizador con otra forma. El
+# caso que lo prueba, medido en F1 y confirmado hoy: `compute_snapshot` tiene radio POR
+# LLAMADA = 0 rutas y radio POR TABLA = 8. Un unico numero -sea 0, sea 8- oculta la mitad
+# de la verdad y la mitad que oculta es la que costo 24 dias de snapshot caido.
+#
+# EL k, Y POR QUE VA ESCRITO EN CADA FICHA
+# El camino por tabla sube por los llamadores, porque el valor que calcula una funcion no
+# lo escribe ella: lo escribe alguien mas arriba. Subir SIN LIMITE llega al bucle maestro
+# -`app.ingest.run`- que ejecuta todos los ciclos y escribe 11 tablas, y entonces el radio
+# de `compute_snapshot` pasa de 8 a 43 de 68 rutas. Un radio que dice 43 de 68 no sirve
+# para decidir nada.
+#   k<=2  ->  8 rutas, exactamente las 8 que leen metrics_snapshot   <- se publica esto
+#   k=3   -> 43 rutas, porque entra ingest_cycle
+# El corte no es un numero elegido a ojo: a k=3 aparece el ORQUESTADOR, que es un limite
+# estructural del codigo. Y como cualquier corte deja fuera cosas ciertas, **cada ficha lo
+# dice**: lo que este mas arriba de k=2 no se afirma. Un limite declarado es informacion;
+# un limite callado es una mentira con forma de numero.
+# =====================================================================================
+K_POR_TABLA = 2
+
+
+def sube_llamadores(clave: str, funcs: dict[str, Funcion], k: int) -> dict[str, int]:
+    """Llamadores transitivos hasta distancia k. Devuelve {clave: distancia}."""
+    from collections import deque
+    dist = {clave: 0}
+    q = deque([clave])
+    while q:
+        c = q.popleft()
+        if dist[c] >= k:
+            continue
+        for p in funcs[c].llamada_por:
+            if p not in dist:
+                dist[p] = dist[c] + 1
+                q.append(p)
+    return dist
+
+
+def calcula_impacto(funcs: dict[str, Funcion], rutas: list[dict], catalogo: dict,
+                    tablas: dict, ey: dict) -> dict:
+    # quien escribe cada tabla, indexado al reves: funcion -> tablas que escribe
+    escribe_directo: dict[str, set] = {}
+    for tabla, v in ey.items():
+        for e in v["escritores"]:
+            escribe_directo.setdefault(e["funcion"], set()).add(tabla)
+
+    # ruta -> cierre, ya calculado. Se invierte una vez en vez de por funcion.
+    por_llamada: dict[str, list[str]] = {}
+    for r in rutas:
+        for clave in [r["handler"]] + r["cierre"]:
+            por_llamada.setdefault(clave, []).append(r["camino"])
+
+    lectoras: dict[str, list[str]] = {t: v["leida_por"] for t, v in tablas.items()}
+
+    out: dict[str, dict] = {}
+    for clave, fn in funcs.items():
+        arriba = sube_llamadores(clave, funcs, K_POR_TABLA)
+        tablas_escritas: dict[str, list[str]] = {}
+        for a in arriba:
+            # de cada llamador se mira lo que escribe EL MISMO y lo que llama a UN salto:
+            # es el camino por el que el valor de esta funcion acaba en disco, sin
+            # arrastrar el resto del bucle en el que ese llamador participa.
+            for f2 in [a] + sorted(funcs[a].llama):
+                for t in escribe_directo.get(f2, ()):
+                    tablas_escritas.setdefault(t, []).append(f2)
+        rutas_tabla = sorted({r for t in tablas_escritas for r in lectoras.get(t, [])})
+        rutas_llamada = sorted(set(por_llamada.get(clave, [])))
+        if not rutas_llamada and not rutas_tabla:
+            continue
+        out[clave] = {
+            "sitio": f"{fn.fichero}:{fn.linea}",
+            "por_llamada": rutas_llamada,
+            "por_tabla": rutas_tabla,
+            "tablas_escritas": {t: sorted(set(v)) for t, v in sorted(tablas_escritas.items())},
+            "llamadores_hasta_k": sorted(c for c, d in arriba.items() if d > 0),
+            "solo_por_tabla": sorted(set(rutas_tabla) - set(rutas_llamada)),
+            "total": len(set(rutas_llamada) | set(rutas_tabla)),
+        }
+    return out
+
+
+def controles_de_respuesta_conocida(impacto: dict, tablas: dict, ey: dict) -> dict:
+    """TRES PREGUNTAS CUYA RESPUESTA YA SE SABE, MEDIDAS POR EL PROPIO GENERADOR.
+
+    Un grafo de impacto es facil de mirar y dificil de creer: sale un numero y no hay con
+    que contrastarlo. Estas tres tienen respuesta conocida de antes -dos las midio el
+    operador contra el codigo, una contra la base de 140- asi que si el generador se
+    tuerce, se ve aqui y no dentro de tres semanas.
+
+    Van DENTRO de derivada.json a proposito: asi K88 las compara en cada corrida por el
+    brazo 1, y no dependen de que alguien se acuerde de correr el control."""
+    salida = {}
+
+    # 1 · compute_snapshot: 0 rutas por llamada, y por tabla EXACTAMENTE las que leen
+    #     metrics_snapshot. Es el caso que motivo todo el encargo.
+    i = impacto.get("app.metrics.compute_snapshot", {})
+    lectoras = sorted(tablas.get("metrics_snapshot", {}).get("leida_por", []))
+    salida["compute_snapshot"] = {
+        "pregunta": "si toco compute_snapshot, que rutas cambian",
+        "por_llamada": i.get("por_llamada", []),
+        "por_tabla": i.get("por_tabla", []),
+        "rutas_que_leen_metrics_snapshot": lectoras,
+        "esperado": "por_llamada vacio; por_tabla == las lectoras de metrics_snapshot",
+        "cuadra": i.get("por_llamada", []) == [] and i.get("por_tabla", []) == lectoras,
+    }
+
+    # 2 · spot_trades_agg: dos INSERT de ws_collector y un DELETE de retencion en
+    #     daily_agg. El operador lo verifico a mano el 2026-09-04.
+    esc = ey.get("spot_trades_agg", {}).get("escritores", [])
+    salida["spot_trades_agg"] = {
+        "pregunta": "quien escribe spot_trades_agg",
+        "escritores": [f"{e['verbo']} {e['sitio']}" for e in esc],
+        "esperado": "2 INSERT en app/ws_collector.py y 1 DELETE en app/daily_agg.py",
+        "cuadra": (sorted(e["verbo"] for e in esc) == ["DELETE", "INSERT", "INSERT"]
+                   and sum(1 for e in esc if e["sitio"].startswith("app/ws_collector.py")
+                           and e["verbo"] == "INSERT") == 2
+                   and sum(1 for e in esc if e["sitio"].startswith("app/daily_agg.py")
+                           and e["verbo"] == "DELETE") == 1),
+    }
+
+    # 3 · liquidations_realtime: UN escritor, en app/scalp_collector.py:74, y 14 lectoras.
+    #     Es el control que en F1 salio mal -cero escritores- y que hizo falta resolver
+    #     constantes de modulo para arreglar. Con la tabla viva en 140 (3241 filas,
+    #     ultima 22:00:40Z el 2026-09-04) el cero era imposible.
+    esc = ey.get("liquidations_realtime", {}).get("escritores", [])
+    lect = sorted(tablas.get("liquidations_realtime", {}).get("leida_por", []))
+    salida["liquidations_realtime"] = {
+        "pregunta": "quien escribe liquidations_realtime y quien la lee",
+        "escritores": [f"{e['verbo']} {e['sitio']} [{e['origen']}]" for e in esc],
+        "rutas_lectoras": len(lect),
+        "esperado": "1 escritor en app/scalp_collector.py:74 y 14 rutas lectoras",
+        "cuadra": (len(esc) == 1
+                   and esc[0]["sitio"] == "app/scalp_collector.py:74"
+                   and len(lect) == 14),
+    }
+
+    salida["todos_cuadran"] = all(v["cuadra"] for k, v in salida.items() if isinstance(v, dict))
+    return salida
 
 
 def parametros_de(fn: Funcion) -> list[dict]:
@@ -778,7 +1027,170 @@ def escribe(repo: Path, destino: Path, datos: dict) -> list[Path]:
     p = destino / "TABLAS.md"
     p.write_text(md_tablas(datos), encoding="utf-8")
     escritos.append(p)
+
+    # --- 7d · la capa de IMPACTO ------------------------------------------------------
+    # Indice general + un fichero POR MODULO FUENTE. El criterio es el mismo que llevo a
+    # un fichero por ruta: quien va a tocar `app/metrics.py` abre `impacto/app-metrics.md`
+    # y nada mas. Un unico fichero con las 300 funciones seria otra vez algo que hay que
+    # leer entero para usar.
+    (destino / "impacto").mkdir(parents=True, exist_ok=True)
+    p = destino / "IMPACTO.md"
+    p.write_text(md_impacto(datos), encoding="utf-8")
+    escritos.append(p)
+    for modulo, fichero in agrupa_impacto_por_modulo(datos).items():
+        p = destino / "impacto" / f"{modulo.replace('/', '-').replace('.py', '')}.md"
+        p.write_text(fichero, encoding="utf-8")
+        escritos.append(p)
     return escritos
+
+
+def agrupa_impacto_por_modulo(datos: dict) -> dict[str, str]:
+    porm: dict[str, list] = {}
+    for clave, i in datos["impacto"]["funciones"].items():
+        porm.setdefault(i["sitio"].split(":")[0], []).append((clave, i))
+    out = {}
+    k = datos["impacto"]["k_por_tabla"]
+    for modulo, items in sorted(porm.items()):
+        items.sort(key=lambda x: (-x[1]["total"], x[0]))
+        L = [f"# Impacto · `{modulo}`", "",
+             "> Generado por `harness/bin/arquitectura`. No editar a mano.", "",
+             f"{len(items)} funciones de este fichero alcanzan alguna ruta. "
+             "**Tocar cualquiera de ellas puede cambiar las rutas que se listan.**", "",
+             f"El radio POR TABLA se calcula subiendo llamadores hasta **k={k}**; "
+             "lo que este mas arriba **no se afirma**.", "",
+             "| funcion | linea | por llamada | por tabla | total |",
+             "|---|---|---|---|---|"]
+        for clave, i in items:
+            L.append(f"| [`{clave.split('.')[-1]}`](#{clave.split('.')[-1].lower().replace('_', '-')}) "
+                     f"| {i['sitio'].split(':')[1]} | {len(i['por_llamada'])} | "
+                     f"{len(i['por_tabla'])} | **{i['total']}** |")
+        L.append("")
+        for clave, i in items:
+            L.append(f"## {clave.split('.')[-1]}")
+            L.append("")
+            L.append(f"`{i['sitio']}` · clave completa `{clave}`")
+            L.append("")
+            L.append(f"**Radio total: {i['total']} rutas** de {datos['resumen']['rutas']}.")
+            L.append("")
+            L.append(f"### Por llamada — {len(i['por_llamada'])} rutas")
+            L.append("")
+            L.append("La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.")
+            L.append("")
+            L.append(md_lista(f"[`{r}`](../rutas/{slug(r)}.md)" for r in i["por_llamada"])
+                     if i["por_llamada"] else "_ninguna ruta la ejecuta._")
+            L.append("")
+            L.append(f"### Por tabla — {len(i['por_tabla'])} rutas · k={k}")
+            L.append("")
+            if i["tablas_escritas"]:
+                L.append("Esta funcion, o alguien que la llama hasta k=%d, escribe:" % k)
+                L.append("")
+                for t, quien in i["tablas_escritas"].items():
+                    L.append(f"- `{t}` — la escribe {', '.join('`' + q + '`' for q in quien)}")
+                L.append("")
+                L.append("Y esas tablas las leen:")
+                L.append("")
+                L.append(md_lista(f"[`{r}`](../rutas/{slug(r)}.md)" for r in i["por_tabla"]))
+            else:
+                L.append("_ni ella ni sus llamadores hasta k=%d escriben ninguna tabla._" % k)
+            L.append("")
+            if i["solo_por_tabla"]:
+                L.append(f"**{len(i['solo_por_tabla'])} rutas se enteran SOLO por el dato**, sin")
+                L.append("ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:")
+                L.append("")
+                L.append(md_lista(f"[`{r}`](../rutas/{slug(r)}.md)" for r in i["solo_por_tabla"]))
+                L.append("")
+            L.append(f"<sub>Radio por tabla hasta k={k}. Lo que este mas arriba no se afirma. "
+                     f"Llamadores considerados: {len(i['llamadores_hasta_k'])}.</sub>")
+            L.append("")
+        out[modulo] = "\n".join(L) + "\n"
+    return out
+
+
+def md_impacto(datos: dict) -> str:
+    k = datos["impacto"]["k_por_tabla"]
+    fs = datos["impacto"]["funciones"]
+    L = []
+    A = L.append
+    A("# ARQUITECTURA · IMPACTO · si toco esto, que rutas cambian")
+    A("")
+    A("> Generado por `harness/bin/arquitectura`. No editar a mano.")
+    A("")
+    A("## Los dos caminos, y por que van separados")
+    A("")
+    A("| camino | que significa | exactitud |")
+    A("|---|---|---|")
+    A("| **por llamada** | la ruta **ejecuta** esta funcion | exacto: esta en su cierre o no |")
+    A(f"| **por tabla** | esta funcion, o quien la llama hasta k={k}, **escribe** una tabla que la ruta **lee** | acotado por k |")
+    A("")
+    A("La ruta no ejecuta nada del camino por tabla: **se entera por el dato**. Fundir los")
+    A("dos en un solo numero ocultaria justo la mitad que importa. El caso que lo prueba:")
+    A("")
+    A("```")
+    A("compute_snapshot   por llamada:  0 rutas      <- un grafo de llamadas diria 'no afecta a nada'")
+    A("                   por tabla:    8 rutas      <- y tumbo el snapshot 24 dias")
+    A("```")
+    A("")
+    A(f"## El corte: k={k}, y esta declarado")
+    A("")
+    A("El camino por tabla sube por los llamadores, porque el valor que calcula una funcion")
+    A("no lo escribe ella. Subir **sin limite** llega a `app.ingest.run`, el bucle maestro")
+    A("que ejecuta todos los ciclos y escribe 11 tablas:")
+    A("")
+    A("| k | rutas en el radio de `compute_snapshot` | que entra |")
+    A("|---|---|---|")
+    A("| 1 | 8 | `compute_and_store_all` |")
+    A("| 2 | **8** | `publish_snapshot` — **es el que se publica** |")
+    A("| 3 | 43 | `ingest_cycle`, el orquestador |")
+    A("| sin limite | 43 | `ingest.run` |")
+    A("")
+    A(f"A k={k} el radio son las 8 rutas que leen `metrics_snapshot`, ni una mas. El corte no")
+    A("es un numero elegido a ojo: a k=3 aparece el orquestador, que es un limite")
+    A("estructural. **Lo que este mas arriba de k=%d no se afirma**, y cada ficha lo repite." % k)
+    A("")
+    A("## A · si toco una TABLA")
+    A("")
+    A("| tabla | la escriben | rutas que la leen | rutas que la escriben |")
+    A("|---|---|---|---|")
+    for t in sorted(datos["tablas"]):
+        i = datos["tablas"][t]
+        A(f"| [`{t}`](TABLAS.md#{t.replace('_', '-')}) | {len(i.get('escritores_del_arbol', []))} | "
+          f"**{len(i['leida_por'])}** | {len(i['escrita_por'])} |")
+    A("")
+    A("## B · si toco una FUNCION")
+    A("")
+    A(f"{len(fs)} funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el")
+    A("fichero de su modulo**: `impacto/<modulo>.md`.")
+    A("")
+    A("| funcion | sitio | por llamada | por tabla | solo por tabla | total |")
+    A("|---|---|---|---|---|---|")
+    for clave, i in sorted(fs.items(), key=lambda x: (-x[1]["total"], x[0])):
+        mod = i["sitio"].split(":")[0].replace("/", "-").replace(".py", "")
+        A(f"| [`{clave}`](impacto/{mod}.md) | `{i['sitio']}` | {len(i['por_llamada'])} | "
+          f"{len(i['por_tabla'])} | {len(i['solo_por_tabla'])} | **{i['total']}** |")
+    A("")
+    A("## C · los tres controles de respuesta conocida")
+    A("")
+    A("Un grafo de impacto es facil de mirar y dificil de creer: sale un numero y no hay con")
+    A("que contrastarlo. Estos tres tienen respuesta conocida de antes, y los mide el propio")
+    A("generador en cada corrida, asi que K88 los compara sin que nadie se acuerde de nada.")
+    A("")
+    # .get y no [] a proposito: un generador al que se le quiten los controles tiene que
+    # producir un documento COHERENTE y dejar que sea K88 quien diga NO MEDIDO. Si
+    # reventara aqui, el fallo se leeria como "el documento no cuadra", que es otra cosa.
+    c = datos.get("controles") or {}
+    if not c:
+        A("**PENDIENTE · este generador no emite los controles de respuesta conocida.**")
+        A("K88 lo marca NO MEDIDO: no es que el impacto este mal, es que no se sabe.")
+    else:
+        A("| control | esperado | cuadra |")
+        A("|---|---|---|")
+        for nombre in ("compute_snapshot", "spot_trades_agg", "liquidations_realtime"):
+            v = c.get(nombre)
+            if v:
+                A(f"| `{nombre}` | {v['esperado']} | {'**si**' if v['cuadra'] else '**NO**'} |")
+        A("")
+        A(f"Los tres cuadran: **{c.get('todos_cuadran')}**.")
+    return "\n".join(L) + "\n"
 
 
 def md_tablas(datos: dict) -> str:
@@ -987,8 +1399,32 @@ def md_ruta(r: dict, datos: dict) -> str:
     A("")
     A("## Radio de impacto")
     A("")
-    A("**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de")
-    A("las de arriba- se genera en F2 y se enlaza aqui.")
+    k = datos["impacto"]["k_por_tabla"]
+    fs = datos["impacto"]["funciones"]
+    # las funciones del cierre de esta ruta, ordenadas por lo ANCHO que es su radio: las
+    # de arriba son las que, si las tocas, se llevan por delante mas cosas ademas de esta.
+    suyas = [(c, fs[c]) for c in [r["handler"]] + r["cierre"] if c in fs]
+    suyas.sort(key=lambda x: (-x[1]["total"], x[0]))
+    A(f"Radio por tabla calculado **hasta k={k}**; lo que este mas arriba **no se afirma**.")
+    A("")
+    if suyas:
+        A("Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto")
+        A("significa que ese arreglo de dos lineas no es de dos lineas:")
+        A("")
+        A("| funcion | por llamada | por tabla | total | detalle |")
+        A("|---|---|---|---|---|")
+        for clave, i in suyas[:25]:
+            mod = i["sitio"].split(":")[0].replace("/", "-").replace(".py", "")
+            A(f"| `{clave}` | {len(i['por_llamada'])} | {len(i['por_tabla'])} | "
+              f"**{i['total']}** | [impacto](../impacto/{mod}.md) |")
+        if len(suyas) > 25:
+            A(f"| _… y {len(suyas) - 25} mas_ | | | | [IMPACTO.md](../IMPACTO.md) |")
+        A("")
+    else:
+        A("_ninguna funcion de esta ruta alcanza otra ruta._")
+        A("")
+    A("**El inverso completo -si toco X, que rutas cambian- esta en**")
+    A("[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.")
     return "\n".join(L) + "\n"
 
 
@@ -1099,6 +1535,7 @@ def construye(repo: Path, paquetes: list[str]) -> dict:
     catalogo = lee_catalogo(repo)
     mods = carga_modulos(repo, paquetes)
     resuelve_imports(mods)
+    indexa_constantes(mods)
     funcs = indexa_funciones(mods)
     analiza_cuerpos(funcs, mods)
     rutas_crudas = descubre_rutas(funcs)
@@ -1112,8 +1549,8 @@ def construye(repo: Path, paquetes: list[str]) -> dict:
         cierre = cierre_de(fn.clave, funcs)
         lee, escribe, dudosos = set(), set(), set()
         for clave in [fn.clave] + cierre:
-            for sql in funcs[clave].sql:
-                t = tablas_de_sql(sql, catalogo)
+            for entrada in funcs[clave].sql:
+                t = tablas_de_sql(entrada["texto"], catalogo)
                 lee |= t["lee"]; escribe |= t["escribe"]; dudosos |= t["dudosos"]
 
         campos = campos_de_funcion(fn, funcs, mods, catalogo)
@@ -1173,9 +1610,21 @@ def construye(repo: Path, paquetes: list[str]) -> dict:
         if t not in tablas and v["escritores"]
     }
 
+    impacto = calcula_impacto(funcs, rutas, catalogo, tablas, ey)
+    # cada ficha de ruta lleva el radio de SU handler al alcance de la mano
+    for r in rutas:
+        r["impacto_del_handler"] = impacto.get(r["handler"], {}).get("total", 0)
+
     con = sum(1 for r in rutas if r["campos"])
     return {
         "version_formato": VERSION_FORMATO,
+        "impacto": {
+            "k_por_tabla": K_POR_TABLA,
+            "nota": ("radio por tabla calculado subiendo llamadores hasta k=%d; "
+                     "lo que este mas arriba NO se afirma" % K_POR_TABLA),
+            "funciones": impacto,
+        },
+        "controles": controles_de_respuesta_conocida(impacto, tablas, ey),
         "paquetes_analizados": paquetes,
         "rutas": rutas,
         "tablas": dict(sorted(tablas.items())),

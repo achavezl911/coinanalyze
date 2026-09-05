@@ -28,32 +28,32 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `daily_session_agg` — `sql/schema.sql:1032`, 14 columnas
-  - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:205`
+  - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
 - `data_gap` — `sql/schema.sql:1412`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1091`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1242`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1261`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1310`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:321`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:583`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:662`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:686`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:722`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:763`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:792`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:861`
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1092`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1243`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1262`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1311`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:322`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:584`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:663`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:687`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
 - `external_macro_observation` — `sql/schema.sql:1234`, 5 columnas
-  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:552`
+  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:553`
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:574`
 - `macro_event` — `sql/schema.sql:1245`, 6 columnas
-  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:563`
+  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:564`
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:576`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:153`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:184`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:199`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
 
@@ -155,5 +155,39 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.swing_score` | 2 | 51 | **51** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | 10 | **32** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.data_gaps.blocking_requirement_keys` | 20 | 14 | **31** | [impacto](../impacto/app-data_gaps.md) |
+| `app.metrics.current_nyse_start` | 15 | 14 | **26** | [impacto](../impacto/app-metrics.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._resample_highs_lows` | 14 | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._flow_windows` | 13 | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.spot_flow_windows` | 13 | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._gap_and_baseline` | 12 | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._gap_threshold_seconds` | 12 | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._gap_too_large` | 12 | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._oi_change_pct` | 11 | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._realtime_flow` | 11 | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._complete_tail_values` | 10 | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._contiguous_measured_suffix` | 10 | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.flow_confirmation` | 10 | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._atr` | 9 | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._structure_from_swings` | 9 | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._swings` | 9 | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._tr_series` | 9 | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.trend_matrix` | 8 | 3 | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.structure_detail` | 7 | 3 | **8** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._dsr` | 7 | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
+| _… y 24 mas_ | | | | [IMPACTO.md](../IMPACTO.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

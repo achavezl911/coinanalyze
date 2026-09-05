@@ -34,7 +34,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `metric_baseline` — `sql/schema.sql:1265`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:779`
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:780`
 
 ## Funciones que la componen
 
@@ -74,5 +74,17 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-**PENDIENTE · F2.** El sentido inverso -que otras rutas caen si tocas una funcion de
-las de arriba- se genera en F2 y se enlaza aqui.
+Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+
+Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
+significa que ese arreglo de dos lineas no es de dos lineas:
+
+| funcion | por llamada | por tabla | total | detalle |
+|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.load_baselines` | 14 | 9 | **21** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.metric_baselines` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+
+**El inverso completo -si toco X, que rutas cambian- esta en**
+[`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.
