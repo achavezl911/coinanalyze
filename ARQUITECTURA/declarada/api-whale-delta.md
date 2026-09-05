@@ -45,11 +45,38 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete · es la unica serie que declara su cobertura POR BUCKET
+
+En la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): `rows = [384]` con `bucket`, `whale_delta`, y **cuatro campos de
+cobertura por fila**: `covered_seconds_min`, `short_minutes`, `unknown_minutes`,
+`minutes_present`.
+
+Las otras tres series de familia 2 (`ohlcv`, `cvd`, `oi`) declaran su cobertura **de la
+ventana entera** con `coverage.served_window`. Esta la declara **de cada bucket**, y esa es
+la diferencia que importa.
+
+**PROMESA 1 · un bucket de 15 min hecho con 11 minutos lo dice.**
+`minutes_present` contra el esperado, y `short_minutes` contando los minutos incompletos.
+Es **P0.7** —*"¿el minuto que estoy viendo esta completo?"*— contestado por fila y no por
+ventana.
+
+**PROMESA 2 · distingue el minuto CORTO del minuto AUSENTE.**
+`short_minutes` y `unknown_minutes` son campos separados: un minuto que se recogio a medias
+y un minuto del que no se sabe nada **no son el mismo hueco**. Es **P0.5** aplicado al eje
+del tiempo, y es justo la distincion que K52 persigue.
+
+**PROMESA 3 · publica el MINIMO de segundos cubiertos, no la media.**
+`covered_seconds_min`. Una media de 58 s sobre 15 minutos puede esconder un minuto de 5 s;
+el minimo no. Publicar el peor caso en vez del promedio es lo que hace la cifra utilizable.
+
+*Que significa no cumplirlo:* que `whale_delta` viniera solo con `bucket`. Entonces un
+bucket construido con un tercio de los datos y otro completo pesarian igual en cualquier
+agregado de aguas abajo, y **la bateria ya midio el caso**: `spot_trades_agg` con
+`venue_count=2` para `combined` hace que **el minuto desaparezca** si un venue calla.
+
+**Es la ruta que mejor material da para F4**, donde aterriza `covered_seconds`.
+
 
 ## SUPERFICIE
 

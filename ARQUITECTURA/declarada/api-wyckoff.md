@@ -66,14 +66,37 @@ mid…}`: los bordes son datos, no una raya.
 acumulacion de distribucion, o solo detecta una?"*. Una fase que nunca cambia cumple todas
 las promesas de forma y no vale nada.
 
-**PENDIENTE · eso no lo puedo medir con una foto.** Necesita 30 dias:
+**PENDIENTE · y el motivo NO es el tiempo: es que la fase no se guarda en ningun sitio.**
+
+La version anterior de esta ficha pedia
+`SELECT wyckoff_phase, COUNT(*) FROM daily_verdict`. **Esa columna no existe.** Comprobado
+contra el esquema versionado antes de volver a pedir nada:
 
 ```sh
-harness/bin/prodsql "SELECT wyckoff_phase, COUNT(*) FROM daily_verdict
-  WHERE session_date >= now() - interval '30 days' GROUP BY 1 ORDER BY 2 DESC"
+$ grep -c -i "wyckoff" sql/schema.sql
+0
+$ grep -n "def _phase" app/wyckoff.py
+401:def _phase(
 ```
 
-Si sale una sola fase, es K. **La llama el panel** (`static/app.js:1481` y `:1583`).
+**Cero apariciones de `wyckoff` en las 40 tablas del esquema.** La fase se calcula al vuelo
+en `app/wyckoff.py:401` y se devuelve en la respuesta; **no se persiste**.
+
+Consecuencia para la bateria: **P1.4** —*"¿la fase cambia alguna vez, o es una etiqueta
+pegajosa?"*— y **S11** —*"¿distingue acumulacion de distribucion?"*— **no se pueden medir
+con ninguna consulta a la base**. Solo se pueden medir capturando `/api/wyckoff` en el
+tiempo, que es un instrumento que hoy no existe:
+
+```sh
+# no hay serie: habria que capturar la ruta N veces y guardar phase.code
+harness/bin/api '/api/wyckoff?symbol=BTCUSDT' | python3 -c "import json,sys;print(json.load(sys.stdin)['phase'])"
+```
+
+**Y esto es de la misma clase que el `ts` de K90 en F3c**: una consulta escrita contra un
+esquema supuesto. La regla que sale de las dos: *antes de pedir una consulta, comprobar sus
+columnas contra el esquema y pegar el comando*.
+
+**La llama el panel** (`static/app.js:1481` y `:1583`).
 
 
 ## SUPERFICIE

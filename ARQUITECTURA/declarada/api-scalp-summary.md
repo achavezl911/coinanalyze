@@ -34,6 +34,9 @@ foto de produccion es la que lo decide: `entregas/20260904-foto-prod-1.json`.
 
 ### Lo que la ruta promete sobre persistencia: NADA. Y esta medido.
 
+**PROMESA · publica el lado del intradia en el instante de la foto, y NO promete que ese
+lado siga ahi en el siguiente instante.**
+
 `scalp_bias_label` (`app/scalp_logic.py:292-313`) es una **funcion pura de los dos scores
 del instante**. Su decision entera:
 

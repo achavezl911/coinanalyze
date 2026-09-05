@@ -47,11 +47,55 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
+### Las series de familia 2 comparten contrato, y se declaran juntas
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): **576 velas de 5 min** publica `symbol`, `interval`, `rows`, y ademas
+**`coverage`** y **`data_gaps`** — los dos ultimos son el contrato de la familia y valen
+mas que las filas.
+
+**PROMESA 1 · declara LA VENTANA QUE SIRVIO, no la que le pidieron.**
+`coverage = {served_window}`. Un `limit` es una peticion; `served_window` es lo que
+hay. La ruta no deja que el consumidor deduzca la ventana contando filas — que es lo que
+haria si `rows` viniera solo.
+
+*Que significa no cumplirlo:* que `coverage` desapareciera. Entonces una serie corta por
+falta de dato y una serie corta porque se pidio poco serian indistinguibles, y cualquier
+tasa calculada encima tendria un denominador supuesto. Es **P5.2** llevado a las series.
+
+**PROMESA 2 · publica SUS HUECOS, no solo sus filas.**
+`data_gaps` trae `feed`, `exchanges`, `market`, `symbol`, `window_start`, `window_end`… Es
+la respuesta a **P0.2** —*"¿hay algun agujero en el historico que estoy mirando?"*— y la
+bateria le pone un caso concreto: **las 38 h del 08-28/29**. Una serie que publica sus
+huecos permite preguntar; una que los omite obliga a fiarse.
+
+**PROMESA 3 · el hueco declarado ENMASCARA el valor, no lo maquilla.**
+Es lo que hace `mask_gapped_series_rows` (`app/api.py:679-689`), y el codigo lo explica:
+
+> *"Un bucket con hueco declarado no puede seguir devolviendo precios como si nada:
+> `sample_count` y `coverage_pct` son material para ADIVINAR la cobertura, y adivinar es
+> justo lo que el panel no debe tener que hacer. Aqui la vela entera se pone a null, que es
+> una afirmacion y no una pista."*
+
+*Que significa no cumplirlo:* devolver el ultimo valor conocido en un bucket con hueco. Es
+**P0.9** —*"si el proveedor esta caido, ¿me entero o veo el ultimo valor congelado?"*— y la
+diferencia entre `null` y un numero rancio es la diferencia entre saberlo y no saberlo.
+
+### Lo propio de esta ruta
+
+**PROMESA · cada vela dice si esta COMPLETA y si esta CERRADA, y son dos cosas distintas.**
+El SQL las publica como campos (`app/api.py:657-663`): `is_complete` (`sample_count =
+expected_count`), `is_closed` (`bucket + interval <= now()`) y `coverage_pct`. El codigo lo
+razona en el propio fichero:
+
+> *"Una vela derivada no es una vela cerrada. Sin estos campos, un bucket con 2 de 5 minutos
+> (o el que esta abriendose ahora) era indistinguible de uno completo y alimentaba ATR,
+> estructura, rupturas y perfiles."*
+
+*Que significa no cumplirlo:* que la vela en curso entrara en un ATR como si estuviera
+cerrada. El error no se ve en la vela: se ve en las cuatro cosas que la consumen.
+
+Es la unica serie de las cuatro que publica los tres campos.
+
 
 ## SUPERFICIE
 

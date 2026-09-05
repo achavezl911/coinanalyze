@@ -42,11 +42,36 @@ Claves **anidadas** (3), dentro de filas o bloques:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · separa lo PEDIDO de lo SERVIDO, con los dos en el cuerpo.**
+En la foto: `requested_days = 90` junto a `from = "2026-06-07"`, `to = "2026-09-04"`,
+`bars = 539` e `interval = "4hour"`. Se pidieron 90 dias y se sirvieron **89**, y la ruta lo
+dice sin que haya que restar fechas.
+
+Es la forma mas limpia de **P0.4** —*"¿que antigüedad tiene el dato mas viejo que entra en
+este calculo?"*— de las 68: no publica un `coverage_pct`, publica los dos bordes y el
+recuento de barras.
+
+**PROMESA 2 · `available` separa "no hay perfil" de "no se pudo calcular".** Es **P0.5**.
+
+**PENDIENTE · una sospecha que NO puedo cerrar y que no es mia.** El operador midio que esta
+ruta es una de **tres** cuyas marcas temporales salieron **identicas en las dos capturas de
+su foto** (junto a `/api/baselines` y `/api/price-barriers`). 34 s de arco **no prueban
+congelacion** —un perfil de 90 dias no tiene por que moverse en 34 s—, asi que es una
+candidata, no un hallazgo. Se cierra con dos capturas separadas por horas:
+
+```sh
+harness/bin/api '/api/delta-profile?symbol=BTCUSDT' > /tmp/dp1.json
+# esperar 2 h
+harness/bin/api '/api/delta-profile?symbol=BTCUSDT' > /tmp/dp2.json
+diff <(python3 -c "import json;print(json.load(open('/tmp/dp1.json'))['to'])") \
+     <(python3 -c "import json;print(json.load(open('/tmp/dp2.json'))['to'])")
+```
+
+Si `to` no cambia en dos horas de mercado abierto, es K.
+
 
 ## SUPERFICIE
 

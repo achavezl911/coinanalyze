@@ -23,11 +23,31 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PENDIENTE, y el motivo es que no he leido su cuerpo.**
+
+No esta entre las respuestas de la foto cuyo cuerpo he inspeccionado, y sus campos no se
+derivan del AST lo bastante como para sostener una afirmacion. **No lo relleno con lo
+plausible**: seria exactamente lo que este directorio existe para no hacer.
+
+Lo que si se sabe, de su ficha derivada y de la bateria:
+
+- La bateria le asigna **P2.6** —*"si me saltan el stop, ¿es estructura o es una mecha?"*—
+  junto a `/api/zone/analysis` (`entregas/20260904-2100-bateria-trader.md:145`).
+- **Nadie la llama**: sus rastros son MENCION. Es una de las 12 rutas sin ninguna llamada.
+
+Comando para cerrarla, sin consulta a la base:
+
+```sh
+harness/bin/api '/api/volume-profile?symbol=BTCUSDT' | python3 -m json.tool | head -40
+```
+
+Lo que hay que mirar cuando responda: **si cada nivel del perfil declara sobre que ventana
+se calculo**. Un POC de 24 h y uno de 7 dias son niveles distintos con el mismo nombre, y es
+la misma trampa que P2.7 describe para `/api/reference-levels`.
+
 
 ## SUPERFICIE
 

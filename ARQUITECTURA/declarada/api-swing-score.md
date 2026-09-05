@@ -29,27 +29,38 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ### Lo que promete
 
-**PENDIENTE, y el motivo es que no la he medido.** No esta entre las rutas cuyo cuerpo he
-leido en la foto, y sus campos no se derivan del AST lo bastante como para sostener una
-promesa.
+**PROMESA · el score de swing es SIMETRICO: puede recomendar cortos.**
 
-Lo que **si** se sabe y esta en su ficha derivada: la bateria le asigna **P1.5** —*"¿que
-dice el score de swing y de que se compone?"*, con el criterio *"recalcular el score desde
-sus componentes publicados; si no se puede, el score no es auditable y eso es un K"*— y
-**S10** —*"¿el score de swing puede ser negativo? un score que solo vive en positivo no
-puede recomendar un corto"*—.
+Medido en 140 por el operador el 2026-09-05 sobre `daily_verdict`:
 
-Las dos son comprobables y ninguna con una foto de un instante:
+```
+MIN(swing_score) = -55   MAX = 60   filas = 81
+control de la ventana: 81 filas · 27 dias distintos · 2026-08-07 a 2026-09-05
+```
+
+Contesta **S10** de la bateria —*"¿el score de swing puede ser negativo? un score que solo
+vive en positivo no puede recomendar un corto"*— y la respuesta es **si**: el minimo real es
+**-55** sobre 81 filas de 27 dias distintos.
+
+**S10 NO es K.** El criterio que yo mismo escribi era *"si el minimo de 30 dias es >= 0, es
+K"*, y con -55 no se cumple: el producto no es asimetrico por este eje.
+
+*Que significa no cumplirlo:* que el minimo subiera a 0 en una ventana de 30 dias. Entonces
+el score no podria recomendar un corto y la mitad del ¶19 —"el Dashboard tiene que decir
+LARGO, CORTO o NO ENTRAR"— seria imposible por construccion. **El control va en la misma
+consulta**: el recuento de dias distintos, porque un minimo negativo sacado de 3 dias no
+dice lo mismo que uno sacado de 27.
+
+**PENDIENTE · P1.5 sigue abierta y su motivo no es el tiempo.**
+*"Recalcular el score desde sus componentes publicados; si no se puede, el score no es
+auditable y eso es un K."* No he leido el cuerpo de esta ruta en la foto, asi que **no se si
+publica sus componentes**. Es una peticion, no una consulta:
 
 ```sh
 harness/bin/api '/api/swing-score?symbol=BTCUSDT' | python3 -m json.tool
-harness/bin/prodsql "SELECT MIN(swing_score), MAX(swing_score), COUNT(*)
-  FROM daily_verdict WHERE session_date >= now() - interval '30 days'"
 ```
 
-**S10 es la barata y la que mas delata**: si el minimo de 30 dias es >= 0, el score no puede
-recomendar un corto y el producto es asimetrico por construccion.
-
+Si la respuesta trae el score y **no** trae de que se compone, es K por P1.5.
 
 ## SUPERFICIE
 
