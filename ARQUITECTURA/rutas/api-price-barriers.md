@@ -98,7 +98,11 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 ## Superficie · quien la consume (medido)
 
-**NINGUN consumidor encontrado** en `static/app.js`, `static/index.html`,
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
+
+**NINGUN rastro**, ni llamada ni mencion, en `static/app.js`, `static/index.html`,
 `harness/checks`, `tests`, `tools` ni `README.md`.
 
 No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su

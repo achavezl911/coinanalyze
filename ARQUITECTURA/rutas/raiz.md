@@ -44,14 +44,20 @@ _no levanta HTTPException en su cierre. Un fallo aqui sale como 500 del framewor
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **checks** | `harness/checks/K05-control.bash:77`, `harness/checks/K05-latidos.sh:359`, `harness/checks/K05-latidos.sh:362`, `harness/checks/K13-vacio-o-rancio.sh:75` _(+5)_ |
-| **panel** | `static/app.js:66` |
-| **readme** | `README.md:294`, `README.md:296` |
-| **tests** | `tests/js/harness.js:127`, `tests/js/harness.js:147`, `tests/test_coinalyze_rate_limit.py:155`, `tests/test_data_gaps_postgres.py:89` _(+7)_ |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-La consume el panel: **es superficie de producto**.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K01a-espejo.sh:58`, `harness/checks/K01b-respaldo-cifrado.sh:31`, `harness/checks/K01b-respaldo-cifrado.sh:73`, `harness/checks/K01b-respaldo-cifrado.sh:95` _(+87)_ | `harness/checks/K03-hueco-declarado.sh:61`, `harness/checks/K05-latidos.sh:16`, `harness/checks/K05-latidos.sh:96`, `harness/checks/K52-el-minuto-corto.sh:14` _(+11)_ |
+| **herramientas** | `tools/generate_dashboard_usage_pdf.py:25`, `tools/generate_dashboard_usage_pdf.py:26`, `tools/generate_dashboard_usage_pdf.py:27`, `tools/generate_dashboard_usage_pdf.py:28` _(+5)_ | — |
+| **panel** | `static/app.js:127`, `static/app.js:139`, `static/app.js:140`, `static/app.js:193` _(+59)_ | `static/app.js:66` |
+| **panel-html** | `static/index.html:93`, `static/index.html:110`, `static/index.html:286` | — |
+| **readme** | — | `README.md:19`, `README.md:22`, `README.md:215`, `README.md:257` _(+3)_ |
+| **tests** | `tests/js/ejecucion.test.js:45`, `tests/js/harness.js:48`, `tests/js/harness.js:69`, `tests/js/harness.js:73` _(+257)_ | `tests/js/harness.js:79`, `tests/js/harness.js:147`, `tests/test_delta_profile.py:33`, `tests/test_flow_semantics.py:207` _(+30)_ |
+
+**La llama el panel: es superficie de producto.**
 
 ## Ventana · con que clave la declara (derivado)
 

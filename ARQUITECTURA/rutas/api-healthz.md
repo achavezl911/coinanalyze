@@ -89,12 +89,18 @@ _no levanta HTTPException en su cierre. Un fallo aqui sale como 500 del framewor
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **panel** | `static/app.js:1494`, `static/app.js:1622` |
-| **readme** | `README.md:413` |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-La consume el panel: **es superficie de producto**.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K03-hueco-declarado.sh:55`, `harness/checks/K05-control.bash:307`, `harness/checks/K05-latidos.sh:127`, `harness/checks/K05-latidos.sh:388` _(+2)_ | `harness/checks/K05-latidos.sh:2`, `harness/checks/K08-que-base.sh:8` |
+| **panel** | `static/app.js:1494`, `static/app.js:1622` | — |
+| **readme** | — | `README.md:413` |
+| **tests** | — | `tests/test_cobertura_proveedor.py:7`, `tests/test_deploy_health_gate.py:38`, `tests/test_deploy_health_gate.py:154`, `tests/test_ingest_health.py:232` |
+
+**La llama el panel: es superficie de producto.**
 
 ## Ventana · con que clave la declara (derivado)
 

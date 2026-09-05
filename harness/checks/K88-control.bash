@@ -26,6 +26,16 @@ DIR=$(mktemp -d) || exit 2
 [ "${K88_CONTROL_GUARDA:-0}" = "1" ] || trap 'rm -rf "$DIR"' EXIT
 fallos=0; pasan=0
 
+# SE CORRE DESDE UN DIRECTORIO QUE NO ES EL REPO, A PROPOSITO.
+# Cinco cuerpos invocaban el generador por ruta RELATIVA -`python3 harness/bin/arquitectura`-
+# con el error a /dev/null. Desde el repo el relativo resolvia y todo pasaba; desde
+# /home/devops no existia, la regeneracion NO OCURRIA, y D1 y D3 juzgaban un arbol sin
+# regenerar: 26 de 28 desde fuera contra 28 de 28 desde dentro. El mismo control daba dos
+# veredictos segun quien lo lanzara, que es la enfermedad que K63 describe para el marcador.
+# Arrancar aqui es la huella de que ya no depende del cwd: si alguien vuelve a meter una
+# ruta relativa, este cd la caza en la primera corrida.
+cd "$DIR" || exit 2
+
 # --- la copia limpia sobre la que se induce cada averia --------------------------------
 LIMPIO="$DIR/limpio"
 mkdir -p "$LIMPIO/harness/bin" "$LIMPIO/harness/checks" "$LIMPIO/sql"
@@ -239,11 +249,11 @@ echo
 echo "DECLARADA · la editada a mano sobrevive; la derivada editada a mano, no"
 
 # D1 · (a) del encargo: editar la PROSA de una declarada no rompe nada.
-d1() { python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+d1() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
        mkdir -p "$T/ARQUITECTURA/declarada"
        printf '# X\n\n## PREGUNTA\nq\n\n## VENTANA\nv\n\n## PROMESA\np\n\n## SUPERFICIE\ns\n' \
          > "$T/ARQUITECTURA/declarada/api-setup.md"
-       python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+       python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
        # ahora se EDITA A MANO, sin regenerar
        printf '\n\nprosa anadida a mano despues de regenerar.\n' \
          >> "$T/ARQUITECTURA/declarada/api-setup.md"; }
@@ -266,13 +276,13 @@ d3() {
 async def control_declarada() -> dict[str, str]:
     return {"control": "declarada"}
 PY
-  python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+  python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
 }
 caso "D3 ruta nueva sin declarada: PENDIENTE y contada" 0 "sin declarar" d3
 
 # D4 · una declaracion HUERFANA -de una ruta que ya no existe- SI es ROJO: es el brazo 2
 # por el otro lado, el documento anunciando una superficie retirada.
-d4() { python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+d4() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
        mkdir -p "$T/ARQUITECTURA/declarada"
        printf '# fantasma\n\n## PREGUNTA\nq\n' > "$T/ARQUITECTURA/declarada/api-ruta-que-no-existe.md"; }
 caso "D4 declaracion huerfana" 1 "HUERFANA" d4
@@ -281,10 +291,77 @@ caso "D4 declaracion huerfana" 1 "HUERFANA" d4
 # regenerar. Es el limite del mecanismo y se prueba: la ESTRUCTURA esta guardada, la PROSA
 # no. K88 comprueba que la declaracion existe y esta completa, NO que sea cierta -eso lo
 # mide F5 con la bateria-.
-d5() { python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+d5() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
        mkdir -p "$T/ARQUITECTURA/declarada"
        printf '# X\n\n## PREGUNTA\nq\n' > "$T/ARQUITECTURA/declarada/api-setup.md"; }
 caso "D5 declarada incompleta obliga a regenerar" 1 "no coincide con la regeneracion" d5
+
+echo
+# ======================================================================================
+# EL DETECTOR DE CONSUMIDORES · su acierto y su falso positivo, los dos.
+# El detector viejo exigia comillas alrededor de la ruta y no veia `RUTA=/api/x`, que es
+# como la escriben K21..K25: cinco fichas de /api/signals/* afirmaban "NINGUN consumidor"
+# y su consumidor era el check que las mide. Se cambio a un limite de token. El motivo del
+# diseño viejo era legitimo -que /api/cvd no case con /api/cvd/spot- y por eso va aqui
+# como control: un detector que caza de mas es tan inutil como uno que caza de menos.
+# ======================================================================================
+echo "CONSUMIDORES · caza lo que debe y no caza de mas"
+
+cons() {  # $1 = ruta   -> imprime "llamadas menciones" contra un fichero de prueba
+  python3 - "$T" "$1" <<'PY'
+import sys, json
+from importlib.machinery import SourceFileLoader
+from pathlib import Path
+T, ruta = sys.argv[1], sys.argv[2]
+m = SourceFileLoader("arq", f"{T}/harness/bin/arquitectura").load_module()
+c = m.consumidores_de(Path(T), ruta)
+r = m.resume_consumo(c)
+print(r["n_llamadas"], r["n_menciones"])
+PY
+}
+
+# C-D1 · el caso que motivo el arreglo: RUTA=/api/x sin comillas ES una llamada.
+cd1() {
+  mkdir -p "$T/harness/checks"
+  printf '#!/bin/sh\nRUTA=/api/signals/ledger\ncurl "$RUTA"\n' > "$T/harness/checks/Kzz.sh"
+}
+T="$DIR/cons"; rm -rf "$T"; cp -r "$LIMPIO" "$T"; cd1
+lee=$(cons /api/signals/ledger)
+if [ "$lee" = "1 0" ]; then
+  pasan=$((pasan+1)); printf '  [ok   ] %-46s %s\n' "CD1 RUTA=/api/x sin comillas es LLAMADA" "$lee"
+else
+  fallos=$((fallos+1)); printf '  [FALLA] %-46s dio "%s", esperaba "1 0"\n' "CD1 RUTA=/api/x sin comillas" "$lee"
+fi
+
+# C-D2 · EL FALSO POSITIVO QUE HAY QUE SEGUIR EVITANDO. Un fichero que solo nombra
+# /api/cvd/spot NO puede contar como consumidor de /api/cvd. Es el motivo por el que el
+# detector viejo exigia comillas, y el limite de token tiene que conservarlo.
+cd2() {
+  mkdir -p "$T/harness/checks"
+  printf '#!/bin/sh\ncurl "/api/cvd/spot"\n' > "$T/harness/checks/Kzz.sh"
+}
+T="$DIR/cons2"; rm -rf "$T"; cp -r "$LIMPIO" "$T"; cd2
+corta=$(cons /api/cvd); larga=$(cons /api/cvd/spot)
+if [ "$corta" = "0 0" ] && [ "$larga" = "1 0" ]; then
+  pasan=$((pasan+1)); printf '  [ok   ] %-46s /api/cvd=%s /api/cvd/spot=%s\n' "CD2 /api/cvd NO casa con /api/cvd/spot" "$corta" "$larga"
+else
+  fallos=$((fallos+1)); printf '  [FALLA] %-46s /api/cvd=%s (esperaba "0 0") /api/cvd/spot=%s (esperaba "1 0")\n' \
+    "CD2 limite de token" "$corta" "$larga"
+fi
+
+# C-D3 · un comentario es MENCION, no llamada. Sin esta distincion, una ruta de la que
+# solo se habla figura como consumida.
+cd3() {
+  mkdir -p "$T/harness/checks"
+  printf '#!/bin/sh\n# esta prueba mira /api/volatility algun dia\necho hola\n' > "$T/harness/checks/Kzz.sh"
+}
+T="$DIR/cons3"; rm -rf "$T"; cp -r "$LIMPIO" "$T"; cd3
+lee=$(cons /api/volatility)
+if [ "$lee" = "0 1" ]; then
+  pasan=$((pasan+1)); printf '  [ok   ] %-46s %s\n' "CD3 un comentario es MENCION, no llamada" "$lee"
+else
+  fallos=$((fallos+1)); printf '  [FALLA] %-46s dio "%s", esperaba "0 1"\n' "CD3 comentario es mencion" "$lee"
+fi
 
 echo
 # ======================================================================================

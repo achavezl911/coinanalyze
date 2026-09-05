@@ -17,9 +17,16 @@ Familia **2** de K43 — coverage de su propia serie.
 
 Derivado de su firma: pide ['days']: coverage de su propia serie.
 
-**PENDIENTE · no se le ha derivado ninguna clave temporal.** O no publica
-marca de tiempo, o sus campos no son derivables estaticamente. La foto de
-produccion lo decide: `entregas/20260904-foto-prod-1.json`.
+**PENDIENTE · no esta en la foto de produccion.** El captador la omitio porque
+exige un parametro de precio (`level`, `low`/`high`) que **no se puede inventar**
+(`entregas/20260904-foto-prod-1.json`, seccion `omitidas`).
+
+El AST tampoco le deriva clave temporal. **No se sabe** si publica marca de tiempo:
+hace falta una peticion con un precio real. Comando para cerrarlo:
+
+```sh
+harness/bin/api '/api/zone/analysis?symbol=BTCUSDT&…'   # con el precio que corresponda
+```
 
 ## PROMESA
 

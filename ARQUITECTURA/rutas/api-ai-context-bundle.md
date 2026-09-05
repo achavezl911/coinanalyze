@@ -331,12 +331,17 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **readme** | `README.md:415`, `README.md:519` |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-**No la consume el panel.** Con consumidor solo en checks/tests/tools, es
-**instrumento interno** — o una ruta que alguien dejo de usar y nadie retiro.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K31-eslabon5.sh:60` | — |
+| **readme** | — | `README.md:415`, `README.md:519` |
+
+**No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
+Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
 

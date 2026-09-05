@@ -21,9 +21,14 @@ Familia **1** de K43 — ventana de construccion de la foto (estado ambiente).
 
 Derivado de su firma: solo pide symbol (o nada): estado ambiente.
 
-**PENDIENTE · no se le ha derivado ninguna clave temporal.** O no publica
-marca de tiempo, o sus campos no son derivables estaticamente. La foto de
-produccion lo decide: `entregas/20260904-foto-prod-1.json`.
+**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): **no publica NINGUNA**
+**marca temporal en el cuerpo.** Ni de primer nivel ni anidada.
+
+Aqui el AST y la foto coinciden, asi que la afirmacion es firme: esta ruta no dice
+de cuando es lo que publica. **Candidata a familia 4 de K43 (exenta), y la exencion
+hay que escribirla con su cita** — o es un hueco, no una exencion.
+
+<sub>Medido leyendo el cuerpo de la respuesta, no supuesto.</sub>
 
 ## PROMESA
 

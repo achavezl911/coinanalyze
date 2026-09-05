@@ -953,13 +953,31 @@ RE_TEMPORAL = re.compile(
 )
 
 
+# Una linea es COMENTARIO si empieza por # (sh/py) o // (js), o si esta dentro de un
+# docstring. No pesa igual que una llamada: un check que NOMBRA una ruta en un comentario
+# no la consume.
+RE_COMENTARIO = re.compile(r"^\s*(#|//|\*|<!--)")
+
+
 def consumidores_de(repo: Path, camino: str) -> dict:
-    """Quien menciona esta ruta, fuera del propio api.py. Instrumento externo al AST."""
-    out = {}
-    # La ruta se busca literal y entrecomillada de las dos formas: en app.js aparece como
-    # '/api/x' o "/api/x", y buscar sin comillas haria que /api/cvd casara con
-    # /api/cvd/spot y toda ruta corta saliera consumida por sus hermanas.
-    patrones = [f"'{camino}'", f'"{camino}"', f"`{camino}`", f"{camino}?", f"{camino}`"]
+    """Quien usa esta ruta, fuera del propio api.py. Instrumento externo al AST.
+
+    EL DETECTOR ANTERIOR EXIGIA COMILLAS Y SE DEJABA LA MITAD.
+    Buscaba `'/api/x'`, `"/api/x"`, `` `/api/x` ``, `/api/x?`. Los checks K21..K25 escriben
+    `RUTA=/api/signals/ledger` SIN comillas y luego llaman por `$RUTA`, asi que las cinco
+    fichas de `/api/signals/*` afirmaban "NINGUN consumidor" cuando su consumidor era el
+    check que las mide. De 14 rutas "sin consumidor", 8 lo tenian.
+
+    El motivo del diseño viejo era legitimo -que `/api/cvd` no casara con `/api/cvd/spot`-
+    y se conserva con un LIMITE DE TOKEN en vez de con comillas: la ruta no puede ir
+    seguida de `/`, `-` ni de un caracter de palabra. El caso `/api/cvd` vs `/api/cvd/spot`
+    esta puesto como control en K88-control.
+
+    Se separa LLAMADA de MENCION porque no pesan igual: una ruta cuyo unico rastro es un
+    comentario NO tiene consumidor, tiene quien habla de ella.
+    """
+    pat = re.compile(r"(?<![\w/])" + re.escape(camino) + r"(?![\w/-])")
+    out: dict[str, dict] = {}
     for etiqueta, rel in CONSUMIDORES:
         base = repo / rel
         ficheros = []
@@ -968,18 +986,43 @@ def consumidores_de(repo: Path, camino: str) -> dict:
         elif base.is_dir():
             ficheros = [p for p in sorted(base.rglob("*"))
                         if p.is_file() and p.suffix in (".js", ".html", ".sh", ".bash", ".py", ".md")]
-        golpes = []
+        llamadas, menciones = [], []
         for p in ficheros:
             try:
                 texto = p.read_text(encoding="utf-8", errors="replace")
             except Exception:
                 continue
+            en_docstring = False
             for n, linea in enumerate(texto.splitlines(), 1):
-                if any(pat in linea for pat in patrones):
-                    golpes.append(f"{p.relative_to(repo).as_posix()}:{n}")
-        if golpes:
-            out[etiqueta] = golpes
+                # docstrings de python: se cuentan las comillas triples de la linea
+                if p.suffix == ".py":
+                    triples = linea.count('"""') + linea.count("'''")
+                    dentro = en_docstring
+                    if triples % 2 == 1:
+                        en_docstring = not en_docstring
+                else:
+                    dentro = False
+                if not pat.search(linea):
+                    continue
+                sitio = f"{p.relative_to(repo).as_posix()}:{n}"
+                es_texto = dentro or bool(RE_COMENTARIO.match(linea)) or p.suffix == ".md"
+                (menciones if es_texto else llamadas).append(sitio)
+        if llamadas or menciones:
+            out[etiqueta] = {"llamadas": llamadas, "menciones": menciones}
     return out
+
+
+def resume_consumo(cons: dict) -> dict:
+    """Aplana el detalle para poder contar sin recorrer la estructura entera."""
+    llamadas = [s for v in cons.values() for s in v["llamadas"]]
+    menciones = [s for v in cons.values() for s in v["menciones"]]
+    en_panel = any(k in cons and cons[k]["llamadas"] for k in ("panel", "panel-html"))
+    return {
+        "n_llamadas": len(llamadas), "n_menciones": len(menciones),
+        "llamada_desde_el_panel": en_panel,
+        "solo_mencion": bool(menciones) and not llamadas,
+        "sin_ninguno": not llamadas and not menciones,
+    }
 
 
 def claves_temporales_de(campos: dict) -> list[str]:
@@ -1589,22 +1632,33 @@ def md_ruta(r: dict, datos: dict) -> str:
 
     A("## Superficie · quien la consume (medido)")
     A("")
+    c = r["consumo"]
+    A("**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un")
+    A("docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un")
+    A("comentario no tiene consumidor, tiene quien habla de ella.")
+    A("")
     if r["consumidores"]:
-        A("| donde | sitios |")
-        A("|---|---|")
-        for etiqueta, golpes in sorted(r["consumidores"].items()):
-            muestra = ", ".join(f"`{g}`" for g in golpes[:4])
-            if len(golpes) > 4:
-                muestra += f" _(+{len(golpes) - 4})_"
-            A(f"| **{etiqueta}** | {muestra} |")
+        A("| donde | llamadas | menciones |")
+        A("|---|---|---|")
+        for etiqueta, v in sorted(r["consumidores"].items()):
+            def muestra(xs):
+                if not xs:
+                    return "—"
+                s = ", ".join(f"`{g}`" for g in xs[:4])
+                return s + (f" _(+{len(xs) - 4})_" if len(xs) > 4 else "")
+            A(f"| **{etiqueta}** | {muestra(v['llamadas'])} | {muestra(v['menciones'])} |")
         A("")
-        if "panel" in r["consumidores"] or "panel-html" in r["consumidores"]:
-            A("La consume el panel: **es superficie de producto**.")
+        if c["llamada_desde_el_panel"]:
+            A("**La llama el panel: es superficie de producto.**")
+        elif c["solo_mencion"]:
+            A(f"**Nadie la llama.** Sus {c['n_menciones']} rastros son todos MENCION -comentario,")
+            A("docstring o documento-. Es la forma del patron que en esta casa se ha repetido")
+            A("nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**")
         else:
-            A("**No la consume el panel.** Con consumidor solo en checks/tests/tools, es")
-            A("**instrumento interno** — o una ruta que alguien dejo de usar y nadie retiro.")
+            A(f"**No la llama el panel**, pero si {c['n_llamadas']} linea(s) de codigo fuera de el.")
+            A("Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.")
     else:
-        A("**NINGUN consumidor encontrado** en `static/app.js`, `static/index.html`,")
+        A("**NINGUN rastro**, ni llamada ni mencion, en `static/app.js`, `static/index.html`,")
         A("`harness/checks`, `tests`, `tools` ni `README.md`.")
         A("")
         A("No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su")
@@ -1780,6 +1834,27 @@ harness/bin/arquitectura            # reescribe ARQUITECTURA/
 harness/bin/arquitectura --comprueba  # no escribe; rc=1 si lo commiteado no cuadra
 harness/checks/K88-la-arquitectura-que-miente.sh
 ```
+
+## LOS INSUMOS · que lee el generador, y que pasa si falta
+
+**Regenerar en otra maquina con media copia produce un mapa distinto y K88 lo llama ROJO.**
+Medido regenerando desde copias parciales: **sin `static/`, `tests/`, `tools/` y
+`README.md` difieren 56 ficheros; sin `harness/checks`, 15.** No es un fallo del check: es
+que el mapa describe menos cosas porque ha visto menos.
+
+| insumo | para que | si falta |
+|---|---|---|
+| `app/**.py` | AST: rutas, campos, llamadas, SQL, constantes | no hay mapa |
+| `sql/schema.sql` | catalogo de tablas y columnas; valida que una tabla existe | ninguna tabla se afirma |
+| `static/app.js`, `static/index.html` | consumidores: **llamada** desde el panel | toda ruta parece instrumento interno |
+| `harness/checks/**` | consumidores: checks que la miden | 5 rutas de `/api/signals/*` salen huerfanas |
+| `tests/**`, `tools/**`, `README.md` | consumidores: llamadas y menciones | menos rastro del que hay |
+| `ARQUITECTURA/declarada/*.md` | **FUENTE de la capa declarada**; se lee, no se escribe | todas las rutas salen PENDIENTE de declaracion |
+
+Lo que el generador **NO** lee, y es deliberado: la foto de produccion
+(`entregas/*-foto-prod-*.json`). No esta versionada, asi que si entrara aqui, regenerar sin
+ella daria ROJO por no tener una medicion en vez de por estar mal. Lo observado en
+produccion vive en la capa **declarada**, con su fecha y su cita.
 """
 
 
@@ -1847,7 +1922,8 @@ def construye(repo: Path, paquetes: list[str], destino: Path | None = None) -> d
             "llama_fuera": fuera,
             "codigos": codigos_de(fn, funcs, cierre),
             # --- F3 · lo medible de la capa declarada ---------------------------------
-            "consumidores": consumidores_de(repo, r["camino"]),
+            "consumidores": (cons := consumidores_de(repo, r["camino"])),
+            "consumo": resume_consumo(cons),
             "claves_temporales": claves_temporales_de(dict(sorted(campos.ciertos.items()))),
             "familia_ventana": familia_candidata(parametros_de(fn)),
             "declarada": lee_declarada(destino, r["camino"]) if destino else
@@ -1876,6 +1952,13 @@ def construye(repo: Path, paquetes: list[str], destino: Path | None = None) -> d
     # cada ficha de ruta lleva el radio de SU handler al alcance de la mano
     for r in rutas:
         r["impacto_del_handler"] = impacto.get(r["handler"], {}).get("total", 0)
+    # LA VENTANA OBSERVADA EN LA FOTO NO ENTRA AQUI, y es deliberado. Las claves con que
+    # cada ruta declara su instante EN EL CUERPO solo se ven midiendo produccion
+    # (entregas/20260904-foto-prod-1.json), y ese fichero no esta versionado: si el
+    # generador lo leyera, regenerar en otra maquina daria un mapa distinto y K88 seria
+    # ROJO por no tener una medicion, no por estar mal. Lo observado va a la capa
+    # DECLARADA -que es donde vive lo medido, con su fecha y su cita-; lo derivable del
+    # AST se queda aqui.
 
     con = sum(1 for r in rutas if r["campos"])
     return {
@@ -1914,7 +1997,11 @@ def construye(repo: Path, paquetes: list[str], destino: Path | None = None) -> d
             "declaradas_incompletas": sum(
                 1 for r in rutas if r["declarada"]["existe"] and not r["declarada"]["completa"]),
             "sin_declarar": sum(1 for r in rutas if not r["declarada"]["existe"]),
-            "sin_consumidor": sum(1 for r in rutas if not r["consumidores"]),
+            # sin NINGUN rastro, y aparte las que solo tienen menciones: son cosas
+            # distintas y fundirlas fue el defecto del detector anterior.
+            "sin_consumidor": sum(1 for r in rutas if r["consumo"]["sin_ninguno"]),
+            "solo_mencion": sum(1 for r in rutas if r["consumo"]["solo_mencion"]),
+            "sin_llamada": sum(1 for r in rutas if r["consumo"]["n_llamadas"] == 0),
             "sin_clave_temporal": sum(1 for r in rutas if not r["claves_temporales"]),
         },
     }

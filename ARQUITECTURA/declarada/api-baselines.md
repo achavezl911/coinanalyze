@@ -15,9 +15,30 @@ Contesta **1** de las 66 preguntas de la bateria (`entregas/20260904-2100-bateri
 
 **PENDIENTE de familia.** parametros ['metric', 'symbol']: no encaja en 1/2/3 sin leerla
 
-**PENDIENTE · no se le ha derivado ninguna clave temporal.** O no publica
-marca de tiempo, o sus campos no son derivables estaticamente. La foto de
-produccion lo decide: `entregas/20260904-foto-prod-1.json`.
+**MEDIDO en la foto de produccion** (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z, arco 37 387 ms).
+
+El AST no le derivo ninguna clave temporal, pero **si publica marca de tiempo en el**
+**cuerpo**. Son cosas distintas y aqui se separan: lo primero es un limite del
+analisis estatico, lo segundo una afirmacion sobre el producto.
+
+Claves **anidadas** (40), dentro de filas o bloques:
+
+- `windows.15m.sample_end` (nombre)
+- `windows.15m.sample_start` (nombre)
+- `windows.15m.window_label` (nombre)
+- `windows.15m.window_seconds` (nombre)
+- `windows.18m.sample_end` (nombre)
+- `windows.18m.sample_start` (nombre)
+- `windows.18m.window_label` (nombre)
+- `windows.18m.window_seconds` (nombre)
+- _… y 32 mas_
+
+**Y NO tiene ninguna de primer nivel.** O sea: la respuesta fecha sus FILAS pero
+no se fecha a SI MISMA. Para K43 eso importa — un consumidor que quiera saber de
+cuando es la foto entera tiene que deducirlo de la fila mas reciente, y eso es
+adivinar. **Candidata a familia 1 con defecto declarado.**
+
+<sub>Medido leyendo el cuerpo de la respuesta en la foto, no supuesto. 40 claves temporales en total.</sub>
 
 ## PROMESA
 

@@ -94,12 +94,17 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **checks** | `harness/checks/K76-la-ventana-que-pides.sh:97` |
-| **panel** | `static/app.js:2890` |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-La consume el panel: **es superficie de producto**.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-foto-unica.sh:104`, `harness/checks/K76-la-ventana-que-pides.sh:97` | — |
+| **panel** | `static/app.js:2890` | — |
+| **tests** | — | `tests/test_p0_data_integrity.py:126` |
+
+**La llama el panel: es superficie de producto.**
 
 ## Ventana · con que clave la declara (derivado)
 

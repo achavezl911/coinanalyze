@@ -142,13 +142,18 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **panel** | `static/app.js:1491` |
-| **readme** | `README.md:195`, `README.md:488`, `README.md:502` |
-| **tests** | `tests/test_metrics_endpoint.py:162`, `tests/test_v121_hardening.py:27`, `tests/test_v150_desk_snapshot.py:126` |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-La consume el panel: **es superficie de producto**.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K43-foto-unica.sh:99`, `harness/checks/K43-foto-unica.sh:141`, `harness/checks/K43-foto-unica.sh:142`, `harness/checks/K43-foto-unica.sh:143` _(+4)_ | `harness/checks/K43-foto-unica.sh:149`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:14` |
+| **panel** | `static/app.js:1491` | — |
+| **readme** | — | `README.md:195`, `README.md:488`, `README.md:502` |
+| **tests** | `tests/test_metrics_endpoint.py:162`, `tests/test_v121_hardening.py:27`, `tests/test_v150_desk_snapshot.py:126` | — |
+
+**La llama el panel: es superficie de producto.**
 
 ## Ventana · con que clave la declara (derivado)
 

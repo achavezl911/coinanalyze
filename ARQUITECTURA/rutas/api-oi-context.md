@@ -92,12 +92,17 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 ## Superficie · quien la consume (medido)
 
-| donde | sitios |
-|---|---|
-| **checks** | `harness/checks/K38-referencia-por-tiempo.sh:33` |
+**LLAMADA** es una linea de codigo que la usa; **MENCION** es un comentario, un
+docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
+comentario no tiene consumidor, tiene quien habla de ella.
 
-**No la consume el panel.** Con consumidor solo en checks/tests/tools, es
-**instrumento interno** — o una ruta que alguien dejo de usar y nadie retiro.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K38-referencia-por-tiempo.sh:34` | `harness/checks/K02-cobertura-hueco.sh:25`, `harness/checks/K03-hueco-declarado.sh:30`, `harness/checks/K38-referencia-por-tiempo.sh:7` |
+| **tests** | `tests/test_oi_context_referencia.py:1` | — |
+
+**No la llama el panel**, pero si 3 linea(s) de codigo fuera de el.
+Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
 
