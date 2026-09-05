@@ -72,7 +72,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1032`, 14 columnas
+- `daily_session_agg` — `sql/schema.sql:1032`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
 - `daily_verdict_outcome` — `sql/schema.sql:2290`, 10 columnas
@@ -97,10 +97,10 @@ LEE:
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:574`
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:651`
-- `futures_trades_agg` — `sql/schema.sql:273`, 9 columnas
+- `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
   - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1538`
   - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:802`
-- `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
+- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
 - `liquidations` — `sql/schema.sql:174`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:657`
@@ -131,7 +131,7 @@ LEE:
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:648`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 18 columnas
+- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
 - `pipeline_heartbeat` — `sql/schema.sql:1284`, 4 columnas
@@ -142,11 +142,11 @@ LEE:
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:654`
 - `scalp_signal_snapshot` — `sql/schema.sql:381`, 16 columnas
   - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1406`
-- `spot_trades_agg` — `sql/schema.sql:198`, 13 columnas
+- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:254`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:275`
-- `spot_trades_realtime` — `sql/schema.sql:228`, 10 columnas
+- `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
 

@@ -56,6 +56,11 @@ RE_CREATE_TABLE = re.compile(
     r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)\s*\(",
     re.IGNORECASE,
 )
+RE_ALTER_ADD = re.compile(
+    r"^ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?([A-Za-z_][A-Za-z0-9_]*)\s+"
+    r"ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z_][A-Za-z0-9_]*)",
+    re.IGNORECASE | re.MULTILINE,
+)
 RE_CREATE_VIEW = re.compile(
     r"CREATE\s+(?:OR\s+REPLACE\s+)?(?:MATERIALIZED\s+)?VIEW\s+(?:IF\s+NOT\s+EXISTS\s+)?"
     r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)",
@@ -89,6 +94,21 @@ def lee_catalogo(repo: Path) -> dict:
         columnas, fin = columnas_de_create(limpio, m.end())
         linea = linea_de(crudo, nombre, "TABLE")
         salida["tablas"][nombre] = {"linea": linea, "columnas": columnas}
+
+    # LAS COLUMNAS AÑADIDAS POR `ALTER TABLE ... ADD COLUMN` NO ESTAN EN EL `CREATE`.
+    # El catalogo se armaba solo con los CREATE y perdia **49 columnas en 10 tablas**:
+    # `daily_session_agg` figuraba con 14 y tiene 37, `scalp_signal_snapshot` con 16 y tiene
+    # 25. Y entre las perdidas estaban **`covered_seconds` de spot_trades_agg y
+    # futures_trades_agg**, que es justamente la columna con la que este sistema declara si
+    # un minuto se midio entero — o sea que el mapa no podia describir la cobertura porque
+    # no veia la columna que la mide.
+    # Se cazo en F4 al contar tablas de serie con cobertura: `spot_trades_agg` salia SIN, y
+    # eso contradecia lo que la propia ficha de F1 ya citaba.
+    for m in RE_ALTER_ADD.finditer(limpio):
+        tabla, col = m.group(1).lower(), m.group(2)
+        if tabla in salida["tablas"] and col not in salida["tablas"][tabla]["columnas"]:
+            salida["tablas"][tabla]["columnas"].append(col)
+            salida["tablas"][tabla].setdefault("columnas_por_alter", []).append(col)
     for m in RE_CREATE_VIEW.finditer(limpio):
         nombre = m.group(1).lower()
         salida["vistas"][nombre] = {"linea": linea_de(crudo, nombre, "VIEW")}
@@ -1197,6 +1217,75 @@ def controles_de_respuesta_conocida(impacto: dict, tablas: dict, ey: dict) -> di
     return salida
 
 
+# =====================================================================================
+# F4 · LA COBERTURA DE CADA TABLA, Y LA CADENCIA DE QUIEN LA ESCRIBE
+#
+# UN LECTOR NO PUEDE JUZGAR UNA FILA SIN SABER CADA CUANTO DEBERIA HABERLA.
+# TABLAS.md ya decia quien escribe cada tabla; lo que faltaba es con que ritmo y si la
+# propia tabla declara CUANTO del periodo se observo. Sin eso, una serie con huecos y una
+# serie completa se leen igual.
+#
+# LAS DEFINICIONES, ESCRITAS ANTES QUE EL CODIGO:
+#   TABLA DE SERIE ..... su clave incluye una columna de tiempo por bucket
+#   DECLARA COBERTURA .. tiene una columna que dice CUANTO del periodo se observo
+#   CUANTITATIVA ....... esa columna es un numero, no un booleano: solo asi se puede
+#                        separar "periodo medido a medias" de "periodo no medido"
+# =====================================================================================
+CLAVES_TIEMPO = {"ts", "bucket", "observed_minute", "session_date", "day", "minute"}
+RE_COBERTURA = re.compile(
+    r"covered_seconds|sample_count|minutes_present|venue_count|coverage|expected_count|"
+    r"short_minutes|unknown_minutes|_5m_samples|_minutes$", re.IGNORECASE)
+# Una cobertura BOOLEANA no permite distinguir corto de ausente: dice que algo falta, no
+# cuanto. Se marcan aparte a proposito.
+RE_COB_BOOLEANA = re.compile(r"_version$|_complete$|_is_full", re.IGNORECASE)
+
+
+def cobertura_de_tablas(catalogo: dict) -> dict:
+    out = {}
+    for t, info in catalogo["tablas"].items():
+        cols = info["columnas"]
+        low = {c.lower() for c in cols}
+        es_serie = bool(CLAVES_TIEMPO & low)
+        hits = [c for c in cols if RE_COBERTURA.search(c)]
+        cuantitativas = [c for c in hits if not RE_COB_BOOLEANA.search(c)]
+        out[t] = {
+            "es_serie": es_serie,
+            "columnas_de_cobertura": hits,
+            "cuantitativas": cuantitativas,
+            "distingue_corto_de_ausente": bool(cuantitativas),
+            "por_alter": info.get("columnas_por_alter", []),
+        }
+    return out
+
+
+def cadencias(repo: Path, mods: dict, funcs: dict) -> dict:
+    """De que constante duerme cada bucle, y cuanto vale.
+
+    NINGUNA TABLA GUARDA SU PROPIA CADENCIA ESPERADA: hay que ir al codigo. Por eso entra
+    al mapa — para que el lector no tenga que salir de la base para juzgar una fila."""
+    cfg = repo / "app/config.py"
+    valores = {}
+    if cfg.is_file():
+        for m in re.finditer(
+                r"^\s{4}([A-Z][A-Z0-9_]*(?:SECONDS|INTERVAL|MINUTES|_MS))\s*:\s*\w+\s*=\s*Field\(default=([^,)]+)",
+                cfg.read_text(encoding="utf-8", errors="replace"), re.M):
+            valores[m.group(1)] = m.group(2).strip()
+    # que funcion duerme con que constante
+    duerme: dict[str, list] = {}
+    for clave, fn in funcs.items():
+        for n in ast.walk(fn.nodo):
+            if not (isinstance(n, ast.Call) and nombre_de_llamada(n) in
+                    ("asyncio.sleep", "sleep")):
+                continue
+            for a in n.args:
+                nom = nombre_de_llamada(a) if isinstance(a, (ast.Attribute, ast.Name)) else None
+                if nom and nom.startswith("SETTINGS."):
+                    k = nom.split(".", 1)[1]
+                    duerme.setdefault(clave, []).append(
+                        {"constante": k, "valor": valores.get(k), "sitio": f"{fn.fichero}:{n.lineno}"})
+    return {"constantes": dict(sorted(valores.items())), "bucles": duerme}
+
+
 def parametros_de(fn: Funcion) -> list[dict]:
     args = fn.nodo.args
     out = []
@@ -1531,6 +1620,126 @@ def md_tablas(datos: dict) -> str:
         A(f"| [`{t}`](#{t.replace('_', '-')}) | {esc if esc else '**0 · PENDIENTE**'} | "
           f"{len(i['leida_por'])} | {len(i['escrita_por'])} |")
     A("")
+    # --- F4 · la cobertura y la cadencia ---------------------------------------------
+    cob = datos.get("cobertura", {})
+    cad = datos.get("cadencias", {})
+    series = {t: v for t, v in cob.items() if v["es_serie"]}
+    con = {t: v for t, v in series.items() if v["distingue_corto_de_ausente"]}
+    A("## LA COBERTURA · que tablas dicen CUANTO del periodo se observo")
+    A("")
+    A("**Un lector no puede juzgar una fila sin saber cada cuanto deberia haberla, ni cuanto")
+    A("del periodo se llego a medir.** Una serie con huecos y una completa se leen igual si la")
+    A("tabla no lo declara.")
+    A("")
+    A("Definiciones, escritas antes del recuento:")
+    A("")
+    A("- **tabla de serie**: su clave incluye una columna de tiempo por bucket (`ts`,")
+    A("  `bucket`, `observed_minute`, `session_date`).")
+    A("- **declara cobertura**: tiene una columna que dice **cuanto** del periodo se observo.")
+    A("- **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa")
+    A("  *\"periodo medido a medias\"* de *\"periodo no medido\"*.")
+    A("")
+    A(f"| | de {len(cob)} tablas del esquema |")
+    A("|---|---|")
+    A(f"| de SERIE | **{len(series)}** |")
+    A(f"| de serie que DECLARAN cobertura cuantitativa | **{len(con)}** |")
+    A(f"| de serie que NO declaran ninguna | **{len(series) - len(con)}** |")
+    A("")
+    if con:
+        A("| tabla | columnas de cobertura |")
+        A("|---|---|")
+        for t, v in sorted(con.items()):
+            A(f"| `{t}` | {', '.join('`' + c + '`' for c in v['cuantitativas'])} |")
+        A("")
+    sinc = sorted(t for t in series if t not in con)
+    if sinc:
+        A(f"**Las {len(sinc)} de serie SIN cobertura declarada.** No es un defecto por si mismo")
+        A("—una tabla de eventos periodicos puede no necesitarla—, pero es lo que impide")
+        A("distinguir un periodo vacio de uno no medido:")
+        A("")
+        A(md_lista(f"`{t}`" for t in sinc))
+        A("")
+    # columnas que solo existen por ALTER
+    alt = {t: v["por_alter"] for t, v in cob.items() if v["por_alter"]}
+    if alt:
+        A("### Columnas que NO estan en su `CREATE TABLE`")
+        A("")
+        A(f"**{sum(len(v) for v in alt.values())} columnas en {len(alt)} tablas** se añaden con")
+        A("`ALTER TABLE ... ADD COLUMN`. Un instrumento que lea solo los `CREATE` no las ve — y")
+        A("**este generador no las veia hasta F4**: `daily_session_agg` figuraba con 14 columnas")
+        A("y tiene 37, y entre las que faltaban estaba **`covered_seconds`**, que es justamente")
+        A("la columna con la que el sistema declara si un minuto se midio entero.")
+        A("")
+        for t, cs in sorted(alt.items()):
+            A(f"- `{t}` — {len(cs)}: {', '.join('`' + c + '`' for c in cs[:6])}"
+              + (f" _(+{len(cs)-6})_" if len(cs) > 6 else ""))
+        A("")
+
+    A("## LA CADENCIA · cada cuanto escribe quien escribe")
+    A("")
+    A("**Ninguna tabla guarda su cadencia esperada**: hay que ir al codigo. Por eso esta aqui.")
+    A("")
+    if cad.get("constantes"):
+        A("| constante | valor | de `app/config.py` |")
+        A("|---|---|---|")
+        for k, v in cad["constantes"].items():
+            A(f"| `{k}` | {v} | |")
+        A("")
+    if cad.get("bucles"):
+        A("Y que bucle duerme con cual:")
+        A("")
+        A("| funcion | constante | valor | sitio |")
+        A("|---|---|---|---|")
+        for fn, ds in sorted(cad["bucles"].items()):
+            for d in ds:
+                A(f"| `{fn}` | `{d['constante']}` | {d['valor']} | `{d['sitio']}` |")
+        A("")
+
+    # --- el K del bucket corto, escrito y NO abierto ---------------------------------
+    con_seg = sorted(t for t, v in cob.items()
+                     if any(c == "covered_seconds" for c in v["cuantitativas"]))
+    if con_seg:
+        A("## EL BUCKET CORTO DEL LADO DE LA PARADA · el mismo patron en DOS tablas")
+        A("")
+        A("**Defecto abierto y medido, y aparece en dos sitios.** Va con su reproduccion y")
+        A("**no se abre desde aqui**: el sujeto es de produccion.")
+        A("")
+        A("```")
+        A("spot_trades_agg, minuto 17:17  ->  covered_seconds = 45   correcto (60 - 15)")
+        A("spot_trades_agg, minuto 17:16  ->  covered_seconds = 60   y el colector estuvo")
+        A("                                                          parado sus ultimos 5 s")
+        A("```")
+        A("")
+        A("El bucket **AUSENTE** ya se arreglo. El bucket **CORTO del lado de la PARADA** se")
+        A("sigue escribiendo como completo, y **ese es el caso peor**: la fila existe, K37 la")
+        A("cuenta como presente, y las derivadas de ese minuto no saben que van cortas. Un")
+        A("hueco que se ve es un hueco; un minuto que miente que esta completo no lo ve nadie.")
+        A("")
+        A(f"**Y afecta a las {len(con_seg)} tablas que declaran cobertura por segundo**: "
+          + ", ".join(f"`{t}`" for t in con_seg) + ".")
+        A("")
+        A("`_write_combined_minute` (`app/scalp_collector.py:801-812`) construye la fila")
+        A("`combined` con **`MIN(covered_seconds)`** de sus dos patas, y `ws_collector.py:284`")
+        A("hace lo mismo para spot. **El `MIN` es la eleccion correcta** —el minuto combinado")
+        A("no puede estar mejor cubierto que su peor pata— pero **hereda el defecto**: si una")
+        A("pata escribe 60 cuando fueron 55, el combinado escribe 60.")
+        A("")
+        A("**No se arregla en el agregador: se arregla en quien escribe la pata.**")
+        A("")
+        A("**Reproduccion:** cualquier reinicio cuya **parada** caiga en un minuto distinto al")
+        A("del **arranque**. El minuto del arranque se cubre bien; el de la parada no.")
+        A("")
+        A("**Criterio ejecutable, si se decide abrirlo:**")
+        A("")
+        A("> ROJO si existe algun minuto con `covered_seconds = 60` cuyo intervalo contenga el")
+        A("> instante de una parada del colector.")
+        A("> **Control en la misma consulta**: el minuto *siguiente* a esa parada tiene que")
+        A("> estar ausente o con cobertura baja. Si los dos salieran completos, el sujeto seria")
+        A("> el registro de paradas y no la cobertura.")
+        A("> El elegible sale de un instrumento externo: los `Stopped` del journal, no de la")
+        A("> propia tabla.")
+        A("")
+
     A("## Detalle · quien escribe cada una")
     A("")
     for t in sorted(datos["tablas"]):
@@ -2065,6 +2274,9 @@ def construye(repo: Path, paquetes: list[str], destino: Path | None = None) -> d
         "rutas": rutas,
         "tablas": dict(sorted(tablas.items())),
         "tablas_sin_ruta": solo_escritura,
+        # F4 · la cobertura de cada tabla y el ritmo de quien la escribe
+        "cobertura": cobertura_de_tablas(catalogo),
+        "cadencias": cadencias(repo, mods, funcs),
         "catalogo_lineas": {
             t: f"`{catalogo['fuente']}:{i['linea']}`, {len(i['columnas'])} columnas"
             for t, i in sorted(catalogo["tablas"].items())
