@@ -45,11 +45,27 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+Es **la gemela spot de `/api/cvd`** y comparte su contrato entero: `symbol`, `interval`,
+`rows = [576]` con `bucket`/`delta_usd`/`cvd`, mas `coverage.served_window` y `data_gaps`.
+Ver la ficha de `/api/cvd` para las tres promesas de la familia.
+
+**PROMESA propia · publica el CVD de spot como serie separada del de futuros, y esa
+separacion es la que hace posible la pregunta.**
+`/api/cvd` (futuros) y esta (spot) son dos rutas y no una con un parametro. La bateria mide
+en **P1.1** que *"el diferencial spot-futuros NO vota direccion"*, y esa comprobacion solo se
+puede hacer si las dos series se pueden pedir **por separado y con el mismo `interval`**.
+
+*Que significa no cumplirlo:* fundirlas en una ruta con `market=spot|perp`. Se seguiria
+pudiendo, pero se perderia la garantia de que las dos usan el mismo bucket — y el diferencial
+de dos series con distinto bucket no significa nada.
+
+**Y es una de las 6 rutas SIN NINGUN RASTRO en el repo** (ver la ficha derivada): nadie la
+llama, ni el panel ni un check. Su dato llega al producto por `/api/cvd/divergence` y por
+`spot_trades_agg`, que leen 10 rutas.
+
 
 ## SUPERFICIE
 

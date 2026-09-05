@@ -48,11 +48,53 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete, y lo que NO · aqui esta el peor caso de P0.1
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z):
+
+```
+/api/dashboard/state   12 512 B
+  instante de RAIZ ....................... NINGUNO
+  bloques de primer nivel ................ 6   (snapshot, scalp, setup, cvd_swing,
+                                                barriers, market_memory)
+  de esos, CON su propio instante ........ 1   (snapshot.ts)
+  instantes DISTINTOS en el cuerpo ....... 5
+```
+
+**PROMESA · agrupa en una sola peticion los seis bloques que pinta la mesa.** Es su razon de
+ser y la cumple: el panel la llama una vez (`static/app.js:1491`) en vez de seis.
+
+### Y lo que NO promete, que es lo que importa
+
+**NO publica ningun instante de raiz, y cinco de sus seis bloques tampoco.** Solo
+`snapshot.ts` se fecha. `scalp`, `setup`, `cvd_swing`, `barriers` y `market_memory` llegan
+**sin decir de cuando son**, y hay **5 instantes distintos** dentro del cuerpo.
+
+**Esto es P0.1 en su forma mas cara, y por dos razones:**
+
+1. **Es la ruta que alimenta el panel.** `app.js:1491` la carga y de ahi salen la tarjeta de
+   corto (`dashboard.scalp`, `app.js:1362`) y las barreras.
+2. **Es el otro extremo de K90.** El rotulo "1–15 minutos" cuelga de `scalp`, que es
+   **precisamente uno de los cinco bloques sin fechar**. Un consumidor no puede saber si el
+   `scalp.state` que esta viendo es de hace 2 segundos o de hace 4 minutos, **y la ruta no
+   se lo dice**.
+
+**PROMESA declarada, entonces:** *entrega seis bloques en una peticion y **no promete nada
+sobre la frescura de cinco de ellos**.* No es que incumpla: es que no promete, y el panel
+pinta como si prometiera.
+
+**K candidata, con criterio ejecutable y control:**
+
+> ROJO si `/api/dashboard/state` no publica un instante de raiz **o** si algun bloque de
+> primer nivel llega sin marca temporal.
+> **Medido hoy: sin raiz, 5 de 6 bloques sin marca.**
+> Control en la misma medida: `/api/ai/context`, que **si** publica raiz y fecha 21 de 39
+> bloques — o sea que **el sistema sabe hacerlo** y esta ruta no lo hace.
+
+El control es lo que convierte esto de "seria bonito" en un defecto: no es una limitacion
+del framework ni del dato, es una eleccion de esta ruta.
+
 
 ## SUPERFICIE
 

@@ -40,11 +40,30 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z), **204 422 B** — la respuesta mas grande de las 68:
+
+**PROMESA 1 · nombra LOS DOS SIMBOLOS que compara, no solo uno.**
+`symbol = "BTCUSDT_PERP.A"` y **`spot_symbol = "BTCUSD.A"`**, mas
+`venue = "binance (perp .A vs spot .A)"`. Un diferencial spot-perp entre dos instrumentos que
+no se nombran es un numero sin sujeto; aqui los dos lados estan escritos, y el venue tambien.
+
+**PROMESA 2 · declara su unidad y su bucket.** `unit = "USD"`, `interval = "4hour"`.
+
+Es **P1.1** —*"¿hay una senal activa ahora y de que lado?"*— por el eje del flujo, y la
+bateria le pone una advertencia medida: *"el diferencial spot-futuros NO vota direccion"*.
+Que esta ruta publique los dos simbolos es lo que permite **comprobar** esa afirmacion en vez
+de creerla: se puede re-derivar el diferencial desde las dos series.
+
+*Que significa no cumplirlo:* que `spot_symbol` desapareciera. El mismo numero calculado
+contra `BTCUSDT` spot o contra `BTCUSD.A` es distinto, y sin el campo no habria forma de
+saber cual.
+
+**Nadie la llama**: es una de las rutas cuyos unicos rastros son menciones (ver ficha
+derivada).
+
 
 ## SUPERFICIE
 

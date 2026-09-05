@@ -23,11 +23,29 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z), **2 010 B**:
+
+**PROMESA 1 · publica su instante Y el precio con el que decidio.**
+`as_of` y `price = 79665.2` en primer nivel. La ubicacion (`location = "en_valor"`) es
+relativa al `value_area`, y con el precio publicado se puede re-derivar: `poc`, `vah`, `val`
+estan los tres.
+
+**PROMESA 2 · el resultado va por HORIZONTES, no agregado.**
+`horizons = {15m, 1h, 4h, 8h}` y `counts` con las tres categorias
+(`reacumulacion_silenciosa`, `redistribucion_silenciosa`, `neutral`). El `summary` es un
+resumen **al lado** del detalle, no en su lugar.
+
+**PROMESA 3 · declara que es una INFERENCIA.**
+`note = "manos silenciosas inferidas por abs…"`. Contesta **P4.7** —*"¿hay flujo pasivo
+absorbiendo en mi contra?"*— y al mismo tiempo avisa de que la respuesta es inferida y no
+observada. Es el ¶19 publicado en el cuerpo.
+
+*Que significa no cumplirlo:* que `summary` viniera sin `counts`. Un "neutral" que sale de
+2 de 4 horizontes y otro que sale de 4 de 4 serian el mismo texto.
+
 
 ## SUPERFICIE
 

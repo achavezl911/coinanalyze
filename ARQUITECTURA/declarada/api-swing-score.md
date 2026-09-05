@@ -51,16 +51,33 @@ LARGO, CORTO o NO ENTRAR"— seria imposible por construccion. **El control va e
 consulta**: el recuento de dias distintos, porque un minimo negativo sacado de 3 dias no
 dice lo mismo que uno sacado de 27.
 
-**PENDIENTE · P1.5 sigue abierta y su motivo no es el tiempo.**
-*"Recalcular el score desde sus componentes publicados; si no se puede, el score no es
-auditable y eso es un K."* No he leido el cuerpo de esta ruta en la foto, asi que **no se si
-publica sus componentes**. Es una peticion, no una consulta:
+**PROMESA 2 · publica DE QUE SE COMPONE el score, componente a componente.**
 
-```sh
-harness/bin/api '/api/swing-score?symbol=BTCUSDT' | python3 -m json.tool
+Medido contra 140 por el operador el 2026-09-05, con bytes y claves al lado:
+
+```
+/api/swing-score?symbol=BTCUSDT_PERP.A   ->  2020 B
+claves: score · conviction · evidence_coverage_pct · measured_weight · total_weight ·
+        conflicts · components · horizon
+components[]: name · direction · contribution · weight · status · why
 ```
 
-Si la respuesta trae el score y **no** trae de que se compone, es K por P1.5.
+**P1.5 REFUTADA como K.** La bateria exige *"recalcular el score desde sus componentes
+publicados; si no se puede, el score no es auditable y eso es un K"*. Aqui se puede: cada
+componente trae su `contribution` y su `weight`, y `measured_weight` contra `total_weight`
+dice **cuanto peso llego a medirse** — asi que la suma se puede reproducir y ademas se sabe
+si esta completa.
+
+**PROMESA 3 · publica sus CONFLICTOS, no solo su conclusion.** `conflicts` al lado de
+`conviction`. Un score de 40 con tres componentes de acuerdo y otro de 40 con dos en contra
+no son lo mismo, y sin `conflicts` serian indistinguibles.
+
+**PROMESA 4 · cada componente dice POR QUE.** `components[].why` y `components[].status`.
+No es decoracion: `status` es lo que distingue un componente que voto 0 de uno que no pudo
+medirse — **P0.5 en el eje de los componentes**.
+
+*Que significa no cumplirlo:* que `components` se recortara a los que apoyan al `score`.
+Entonces `conflicts` seria siempre 0 y la auditabilidad seria aparente.
 
 ## SUPERFICIE
 

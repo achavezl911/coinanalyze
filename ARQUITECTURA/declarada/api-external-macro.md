@@ -41,11 +41,32 @@ Claves **anidadas** (2), dentro de filas o bloques:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z), **3 467 B**:
+
+**PROMESA 1 · publica DOS instantes con significados distintos.**
+`as_of = "2026-09-04"` (el dia del dato macro) y
+`fetched_at = "2026-09-04T22:15:20.229197+00:00"` (cuando se trajo). Un dato macro diario
+traido a las 22:15 **no es un dato de las 22:15**, y separarlos es lo que impide leerlo mal.
+
+**PROMESA 2 · declara sus FUENTES por nombre.** `sources = [4]`, la primera
+`"FRED / Federal Reserve"`. Y `method = "Reglas deterministas de cambio a 5/…"`: la
+clasificacion de regimen es reproducible porque el metodo esta publicado.
+
+**PROMESA 3 · publica su cobertura Y su confianza, y la confianza NO es una constante.**
+`coverage_pct = 100` junto a `data_confidence = "alta"`. La bateria avisa en **P0.10**:
+*"si es una constante o un COALESCE, no es confianza: es decoracion"*. Aqui va con el
+`coverage_pct` al lado, asi que se puede comprobar que se mueven juntos.
+
+**PROMESA 4 · declara lo que NO puede medir.**
+`limitations = [1]: "Flujos ETF requieren COINGLASS_API_…"`, y `institutional_flows` lleva
+su propio `available` y `configured`. Un flujo de 0 por falta de clave y un flujo de 0
+medido **no son el mismo cero** — es **P0.5**, y la ruta lo distingue con dos campos.
+
+*Que significa no cumplirlo:* que `institutional_flows` publicara ceros sin `configured`.
+
 
 ## SUPERFICIE
 

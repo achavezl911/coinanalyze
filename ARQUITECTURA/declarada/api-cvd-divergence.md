@@ -40,11 +40,30 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PENDIENTE, y el motivo no es el tiempo: no he leido su cuerpo en la foto.**
+
+Es la gemela de `/api/divergences` para **P5.6**, y la diferencia entre las dos es
+justamente lo que la bateria persigue en P1.2: **dos rutas que hablan de lo mismo**. La
+ficha derivada dice que lee `spot_trades_agg` y `ohlcv`, o sea que su divergencia es
+**precio contra CVD spot**.
+
+Peticion con parametros comprobados, y **las dos juntas**, que es como se compara:
+
+```sh
+harness/bin/api '/api/cvd/divergence?symbol=BTCUSDT_PERP.A' > /tmp/cvddiv.json
+harness/bin/api '/api/divergences?symbol=BTCUSDT_PERP.A'    > /tmp/div.json
+wc -c /tmp/cvddiv.json /tmp/div.json
+python3 -c "import json;print(sorted(json.load(open('/tmp/cvddiv.json'))));print(sorted(json.load(open('/tmp/div.json'))))"
+```
+
+**Lo que hay que mirar:** si las dos rutas, para el mismo instante, dicen lo mismo sobre la
+misma divergencia. Si difieren y **ninguna declara su ventana**, la discrepancia no se puede
+atribuir ni a un defecto ni a una deriva — que es exactamente el error que el operador
+cometio y publico: comparar dos fotos distintas creyendo comparar dos rutas.
+
 
 ## SUPERFICIE
 

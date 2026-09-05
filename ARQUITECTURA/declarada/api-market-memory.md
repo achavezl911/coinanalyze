@@ -46,11 +46,37 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z), **2 633 B**:
+
+**PROMESA 1 · publica los ANALOGOS uno a uno, no solo su resumen.**
+`analogs = [5]` con `date`, `similarity_score`, `state` y `forward` cada uno, mas
+`analog_summary` con **`sample`**, tres medianas de retorno y `positive_20d_count`.
+
+Es **P5.7** —*"¿que dice la memoria de mercado de una situacion como esta?"*— y, sobre todo,
+**P5.2**: con `sample` y las cinco fechas publicadas, la n **no hay que suponerla**, y
+`positive_20d_count` sobre `sample` es la tasa base sin tener que calcularla a ciegas.
+
+**PROMESA 2 · el metodo esta escrito y es reproducible.**
+`method = "5 vecinos no solapados por retorno…"` y `source = "OHLCV diario de futuros
+Binance via…"`. **"No solapados"** es la palabra que importa: la bateria avisa en **P5.3**
+de que *"si el muestreo solapa, la n efectiva es menor y el |t| real MAS PEQUEÑO que el
+ingenuo"*. Aqui la ruta declara que no solapa.
+
+**PROMESA 3 · declara su cobertura contra su objetivo.**
+`coverage = {days, from, to, target_days}`. Los dias que hay **y** los que se querian, en
+campos separados: una memoria de 2 años pedida y servida con 400 dias no se confunde con una
+completa.
+
+**PROMESA 4 · avisa de lo que un analogo NO es.**
+`warning = "Los analogos describen lo que ocurrio…"`. Cinco vecinos historicos no son una
+prediccion, y la ruta lo dice en su cuerpo.
+
+*Que significa no cumplirlo:* que `analog_summary` viniera sin `sample`. Una mediana de 5
+casos y una de 500 se pintarian igual, que es exactamente P5.2.
+
 
 ## SUPERFICIE
 

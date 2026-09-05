@@ -28,11 +28,41 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete · es la ruta que mejor declara SU MUESTRA de las 68
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z), **542 B**:
+
+```
+unit = 'porcentaje de cuentas'      sample_count = 8600     sample_days = 29.99
+long_pct / short_pct / ratio        sample_is_full_month = True
+median_sample / percentile_sample   ts = '2026-09-04T22:25:00Z'   age_seconds = 489.1
+limitations = [2]  'Es reparto de CUENTAS, no de nocional...'
+```
+
+**PROMESA 1 · dice EN QUE UNIDAD esta, y la unidad es la trampa.**
+`unit = "porcentaje de cuentas"` y `limitations[0] = "Es reparto de CUENTAS, no de
+nocional…"`. Un 50/50 de cuentas con el 90 % del nocional de un lado **no es un 50/50**, y
+la ruta lo dice en su propio cuerpo en vez de dejar que se lea al reves.
+
+**Es una de las solo 2 rutas de las 68 que publican `limitations`** (la otra es
+`/api/market-impact`).
+
+**PROMESA 2 · publica su MUESTRA entera, no solo el percentil.**
+`sample_count = 8600`, `sample_days = 29.99` y **`sample_is_full_month`**. Es **P5.2**
+—*"¿sobre cuantas operaciones se calcula? n=3 y n=300 no se pintan igual"*— contestado sin
+que haya que preguntarlo, y `sample_is_full_month` es la respuesta a la pregunta de detras:
+*¿el percentil se calculo sobre una ventana completa o sobre lo que habia?*
+
+**PROMESA 3 · publica su EDAD, no solo su instante.** `ts` mas `age_seconds = 489.1`. La
+resta ya viene hecha, asi que un consumidor no puede equivocarse de huso al calcularla.
+
+**PROMESA 4 · el percentil viene con su mediana.** `percentile_sample = 21.8` junto a
+`median_sample = 1.1422`. Un percentil sin la distribucion detras no se puede juzgar.
+
+*Que significa no cumplirlo:* que `unit` o `limitations` desaparecieran. El numero seguiria
+siendo correcto y **se leeria mal**, que es peor.
+
 
 ## SUPERFICIE
 
