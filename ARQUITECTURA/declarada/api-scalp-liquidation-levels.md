@@ -47,17 +47,34 @@ cuanto es demasiado para ESTE dato.
 En la foto: `rows = [3]` con `price_bucket`, `long_liq`, `short_liq`, `total_notional` y
 `events`.
 
-**INCUMPLE la promesa de frescura de la familia**, y esta medido: es de las **7 rutas que
-no publican NINGUNA marca temporal** en el cuerpo (ver la seccion VENTANA de arriba). Ni
-`as_of`, ni `ts`, ni edad, ni `stale_after_seconds`.
+**FRESCURA · cumplia a medias y hoy cumple la mitad que faltaba.** Esta ficha decia
+"INCUMPLE" hasta el 2026-09-05, cuando **la decision D2** -*publicar el instante y la
+ventana en vez de dejar que el consumidor los suponga*- entro en produccion.
 
-*Que significa:* un consumidor no puede distinguir estos niveles de hace un minuto de los
-de hace seis horas. Y con **S7** de la bateria encima -"¿las liquidaciones que me amenazan
-son las de mi lado?"- publicar niveles sin decir de cuando son es la mitad del problema.
+Medido hoy contra 140, no contra la foto de ayer:
 
-**Es candidata a K**, y no lo abro yo porque el criterio depende de una decision: si estos
-niveles son historicos por diseño -como `/api/liquidation-map`- basta con decirlo en el
-cuerpo; si pretenden ser actuales, les falta la marca. **Eso lo decide producto.**
+```bash
+harness/bin/api '/api/scalp/liquidation-levels?symbol=BTCUSDT_PERP.A'
+#   as_of        = 2026-09-05T20:32:32.484479+00:00
+#   window_start = 2026-09-05T19:32:32.484479+00:00
+#   window_end   = 2026-09-05T20:32:32.484479+00:00
+#   primer nivel = as_of, bucket_bps, minutes, rows, symbol, window_end, window_start
+```
+
+**Lo que ya cumple:** el consumidor puede fechar el dato (`as_of`) y sabe **sobre que
+tramo** se agrego (`window_start`/`window_end`), que es mas de lo que pedia la promesa de
+familia — un `as_of` a secas no habria dicho si el cubo resume una hora o un dia.
+
+**Lo que SIGUE sin cumplir, y conviene no taparlo:** la promesa de familia tiene **dos
+mitades** -*"publica SU EDAD **y EL UMBRAL** con el que hay que juzgarla"*- y esta ruta
+solo trae la primera. No publica `stale_after_seconds` ni `max_age_seconds`, asi que el
+consumidor puede fechar el dato pero **sigue teniendo que inventarse cuanto es demasiado
+viejo para el**. La pregunta **P0.9** de la bateria queda a medias por eso.
+
+*Por que se para aqui:* el umbral de estos niveles depende del uso -para **S7**,
+*"¿las liquidaciones que me amenazan son las de mi lado?"*, un minuto es tarde; para
+contexto de sesion, una hora vale- y ponerle un numero seria decidir por producto. Con
+`window_start`/`window_end` publicados, **el consumidor ya tiene con que decidirlo el.**
 
 
 ## SUPERFICIE

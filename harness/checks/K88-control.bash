@@ -324,6 +324,66 @@ echo
 # diseño viejo era legitimo -que /api/cvd no case con /api/cvd/spot- y por eso va aqui
 # como control: un detector que caza de mas es tan inutil como uno que caza de menos.
 # ======================================================================================
+echo "TEMPORAL · la familia que las siete reglas de consumo no podian ver"
+# LAS SIETE REGLAS DEL BRAZO 5 MIRABAN TODAS `consumo`. El 2026-09-05 la decision D2 dio
+# `as_of` a una ruta, su ficha siguio diciendo «INCUMPLE ... ni as_of, ni ts», y ninguna
+# regla podia cazarlo porque el consumo no habia cambiado. La ceguera era de FAMILIA.
+# Los fixtures eligen la ruta LEYENDO derivada.json, no por su nombre: asi no caducan
+# cuando cambie que rutas publican marca temporal.
+# EL ORDEN IMPORTA, y es el mismo de D1: esqueleto -> REGENERAR -> añadir la frase. Crear
+# una ficha cambia `declarada.completa` en derivada.json, asi que escribirla sin regenerar
+# enrojece el brazo 1 y el caso mediria otra cosa. Lo enseño el propio brazo 1 al correrlo.
+_elige() {  # <con_claves 0|1> -> imprime la ruta relativa de su ficha
+  python3 - "$T" "$1" <<'PY'
+import json, sys
+from pathlib import Path
+t, quiere = Path(sys.argv[1]), sys.argv[2] == "1"
+d = json.load(open(t / "ARQUITECTURA/derivada.json"))
+print(next(x for x in d["rutas"] if bool(x["claves_temporales"]) == quiere)["declarada"]["fichero"])
+PY
+}
+_esqueleto() {  # <fichero relativo>
+  mkdir -p "$T/ARQUITECTURA/declarada"
+  printf '# x\n\n## PREGUNTA\nq\n\n## VENTANA\nv\n\n## PROMESA\np\n\n## SUPERFICIE\ns\n' \
+    > "$T/ARQUITECTURA/$1"
+}
+_gen() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1; }
+
+t1() { _gen; f=$(_elige 1); _esqueleto "$f"; _gen
+       printf '\nNo publica ninguna marca temporal.\n' >> "$T/ARQUITECTURA/$f"; }
+caso "T1 ficha niega la marca y la derivada la lista" 1 "claves_temporales=" t1
+
+# T2 · CONTROL NEGATIVO. La misma frase sobre una ruta que de verdad no publica marca no
+# puede enrojecer. Sin este caso, T1 solo probaria que el patron casa con el texto.
+t2() { _gen; f=$(_elige 0); _esqueleto "$f"; _gen
+       printf '\nNo publica ninguna marca temporal.\n' >> "$T/ARQUITECTURA/$f"; }
+caso "T2 la misma frase sobre una ruta SIN marca: VERDE" 0 "coincide con la regeneracion" t2
+
+# T3 · LA REGLA QUE NO NECESITA SABER LA VERDAD. Tres fichas citaban «las 7 rutas sin
+# ninguna marca temporal»; D2 saco una del conjunto y las tres quedaron viejas a la vez sin
+# nombrar a la ruta que cambio. El 7 no se puede comprobar contra la derivada -cuenta otra
+# cosa: rutas cuya respuesta el AST resuelve, no rutas de la foto-, pero SI se puede exigir
+# que las fichas coincidan ENTRE ELLAS. Si una dice 6 y otra 7, una miente, y eso se sabe
+# sin saber cual es el numero bueno.
+# Las DOS fichas van sobre rutas SIN claves temporales, para que lo unico que enrojezca sea
+# el desacuerdo entre las cifras y no la familia TEMPORAL de T1.
+t3() { _gen; a=$(_elige 0); _esqueleto "$a"; _gen
+       b="declarada/$(python3 -c '
+import json,sys
+d=json.load(open(sys.argv[1]))
+c=[x for x in d["rutas"] if not x["claves_temporales"]]
+print(c[1]["declarada"]["fichero"].split("/")[-1])' "$T/ARQUITECTURA/derivada.json")"
+       _esqueleto "$b"; _gen
+       printf '\nEs de las 6 rutas sin ninguna marca temporal.\n'          >> "$T/ARQUITECTURA/$a"
+       printf '\nEs de las 7 rutas que no publican NINGUNA marca temporal.\n' >> "$T/ARQUITECTURA/$b"; }
+caso "T3 dos fichas citan cifras distintas del mismo censo" 1 "no coinciden en cuantas" t3
+
+# T4 · y la regla de cifras NO puede ser un si-siempre: con una sola cifra citada, calla.
+t4() { _gen; f=$(_elige 0); _esqueleto "$f"; _gen
+       printf '\nEs de las 6 rutas sin ninguna marca temporal.\n' >> "$T/ARQUITECTURA/$f"; }
+caso "T4 una sola cifra citada: la regla calla" 0 "coincide con la regeneracion" t4
+
+echo
 echo "CONSUMIDORES · caza lo que debe y no caza de mas"
 
 cons() {  # $1 = ruta   -> imprime "llamadas menciones" contra un fichero de prueba

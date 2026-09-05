@@ -240,6 +240,23 @@ REGLAS = [
     (r"\*\*La llama el panel",      lambda c: c["llamada_desde_el_panel"],     "dice 'la llama el panel'"),
     (r"[Nn]o la llama el panel",    lambda c: not c["llamada_desde_el_panel"], "dice 'no la llama el panel'"),
 ]
+
+# LAS SIETE DE ARRIBA MIRAN TODAS `consumo` -QUIEN LLAMA A LA RUTA-. Por eso el brazo era
+# ciego a lo que la ruta PUBLICA, y el 2026-09-05 lo demostro: la decision D2 dio
+# `as_of`/`window_start`/`window_end` a una ruta de scalp -la de los niveles de
+# liquidacion-, su ficha siguio diciendo «INCUMPLE ... ni `as_of`, ni `ts`», y ninguna de
+# las siete reglas podia verlo porque el consumo de esa ruta no cambio. La ceguera no era
+# de grado sino de FAMILIA.
+# (Su camino completo no se escribe aqui: el detector de consumidores lo acreditaria como
+#  MENCION, y este comentario pasaria a figurar en el mapa como consumidor suyo.)
+# SIN MAYUSCULAS EN EL PATRON. La primera version pedia `no publica` en minuscula y las
+# fichas reales escriben «**No publica ninguna marca temporal**» al empezar la frase: el
+# control T1 salio VERDE con una ficha que mentia. Van todas con IGNORECASE.
+TEMPORAL = [
+    (r"no +publican? +ninguna +marca +temporal", "dice 'no publica ninguna marca temporal'"),
+    (r"sin +ninguna +marca\s+temporal",          "dice 'sin ninguna marca temporal'"),
+    (r"INCUMPLE la promesa de frescura",         "dice 'INCUMPLE la promesa de frescura'"),
+]
 malos = []
 for f in sorted((doc / "declarada").glob("*.md")):
     r = por_slug.get(f.stem)
@@ -251,6 +268,31 @@ for f in sorted((doc / "declarada").glob("*.md")):
             malos.append(f"{f.name} {etiqueta} y la derivada dice "
                          f"llamadas={r['consumo']['n_llamadas']} "
                          f"menciones={r['consumo']['n_menciones']}")
+    # familia TEMPORAL: la afirmacion es sobre lo que la ruta PUBLICA, no sobre quien la llama.
+    for pat, etiqueta in TEMPORAL:
+        if re.search(pat, texto, re.IGNORECASE) and r["claves_temporales"]:
+            malos.append(f"{f.name} {etiqueta} y la derivada del mismo commit lista "
+                         f"claves_temporales={r['claves_temporales']}")
+
+# LA REGLA QUE NO NECESITA SABER LA VERDAD. Tres fichas citaban «es de las 7 rutas sin
+# ninguna marca temporal»; D2 saco una del conjunto y las TRES quedaron viejas a la vez, aun
+# sin nombrar a la ruta que cambio. No se puede comprobar el 7 contra la derivada -la
+# derivada cuenta rutas cuya respuesta el AST resuelve, la ficha cuenta rutas de la FOTO, y
+# fusionar las dos cifras seria medir otra definicion y llamarlo correccion-. Pero SI se
+# puede exigir que las fichas coincidan ENTRE ELLAS: si una dice 6 y otra 7, una miente,
+# y eso se sabe sin saber cual es el numero bueno.
+cifras = {}
+for f in sorted((doc / "declarada").glob("*.md")):
+    # DOS redacciones para la misma afirmacion -«N rutas sin ninguna» y «N rutas que no
+    # publican NINGUNA»-, y el primer patron solo cubria la primera: el control con la ficha
+    # de ayer lo enseño en cuanto se corrio.
+    for m in re.finditer(r"(?:de las|las) \*{0,2}(\d+) rutas?\b[^.]{0,60}?"
+                         r"(?:sin +ninguna|no +publican? +ninguna)",
+                         f.read_text(encoding="utf-8", errors="replace"), re.IGNORECASE):
+        cifras.setdefault(m.group(1), []).append(f.name)
+if len(cifras) > 1:
+    detalle = " · ".join(f"{n} en {','.join(sorted(set(fs)))}" for n, fs in sorted(cifras.items()))
+    malos.append(f"las fichas no coinciden en cuantas rutas no publican marca temporal: {detalle}")
 print("\n".join(malos))
 PY
 ); rc_des=$?

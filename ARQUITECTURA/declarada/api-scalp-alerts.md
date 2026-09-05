@@ -39,8 +39,9 @@ En la foto devuelve `alerts = [1]` con `priority`, `side`, `message` y `detail`:
 campos, ninguno temporal, ninguno numerico auditable**. `message` y `detail` son prosa.
 
 **No publica:** ni su instante, ni la ventana de la que sale la alerta, ni el umbral que la
-disparo, ni cuantas veces se ha disparado antes. Es de las **7 rutas sin ninguna marca
-temporal** de la foto.
+disparo, ni cuantas veces se ha disparado antes. Es de las **6 rutas sin ninguna marca
+temporal** de la foto (eran 7 hasta el 2026-09-05: `/api/scalp/liquidation-levels` salio
+del conjunto al ganar `as_of` con la decision D2).
 
 **PROMESA declarada:** *emite alertas con prioridad y lado, y no promete nada sobre cuando
 se generaron, sobre que ventana miran ni sobre su tasa base.*

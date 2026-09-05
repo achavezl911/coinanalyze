@@ -24,9 +24,31 @@
 # escribir la cobertura, no hay razon para creerle el resto. Es la regla que costo tres
 # rondas asentar en este arnes.
 #
-# EL CONTROL VA EN LA MISMA CONSULTA: el minuto SIGUIENTE a una parada tiene que salir
-# **ausente o corto**. Si los dos salieran completos, el sujeto seria el registro de paradas
-# -o el reloj- y no la cobertura, y el hallazgo no se sostendria.
+# EL CRITERIO ESTUVO MAL APUNTADO HASTA EL 2026-09-05, y lo cazo su propio control.
+# La primera version miraba «el minuto de la parada y el SIGUIENTE», y el defecto esta en el
+# minuto ANTERIOR: en el ejemplo de arriba el que miente es 17:16 -el que contiene el
+# instante en que el colector se fue- y 17:17 sale bien porque ya nace corto. Mirando el
+# siguiente, el check habria dado por sano justo el minuto roto.
+#
+# EL SUJETO ES LA VENTANA `Stopping -> Started`, no un instante. `Stopped` solo marca el
+# final del apagado; entre `Stopping` y `Started` el colector NO estaba recogiendo, y esa
+# ventana puede cruzar dos minutos -17:16:55 -> 17:17:14 son 5 s del uno y 14 s del otro-.
+# Se exigen los DOS marcadores: un `Stopping` sin su `Started` es una ventana abierta y no
+# se juzga.
+#
+# LA COMPARACION ES UNA DESIGUALDAD, NO UNA RESTA. Se exige
+#     covered_seconds <= 60 - segundos_caidos_en_ese_minuto
+# y no la igualdad. Un minuto puede declarar MENOS de lo que la parada explica por otras
+# razones -el arranque del 2026-09-03 tardo en recibir su primer trade y dejo el minuto en
+# `covered_seconds=1` con solo 19 s de ventana- y eso NO es este defecto. La resta exacta
+# habria dado ROJO ahi y el ROJO habria sido falso. Solo miente el minuto que declara MAS
+# cobertura de la que la ventana permite.
+#
+# EL CONTROL, EN LA MISMA CONSULTA: se traen tambien los minutos del entorno (+-3) que
+# NINGUNA ventana toca. Al menos uno tiene que declarar 60. Si ninguno llega a 60, la tabla
+# va corta por todas partes y el hallazgo no seria atribuible a la parada: eso es NOMED, no
+# ROJO. Es huella positiva -probar que el instrumento SABE decir «completo»-, no basta con
+# que la consulta no falle.
 #
 # Corre contra 140 por prodsql y por el journal. Sin ninguno de los dos, NOMED.
 set -uo pipefail
@@ -72,46 +94,91 @@ case "$faltan" in
   *) echo "NO MEDIDO: a $TABLA le faltan columnas en el esquema:$faltan"; exit 2 ;;
 esac
 
-# --- 1 · EL ELEGIBLE · las paradas, del JOURNAL --------------------------------------
-# `Stopped` es la linea que systemd escribe al terminar la unidad. Se piden con -n acotado
-# a proposito: un journalctl sin limite es la forma mas rapida de arruinar una sesion.
-paradas=$("$PROD" "journalctl -u $UNIT --since '-$DIAS days' --utc -o short-iso --no-hostname -n 2000 | grep -E 'Stopped|Deactivated successfully'" 2>&1); rc=$?
+# --- 1 · EL ELEGIBLE · las VENTANAS de parada, del JOURNAL ----------------------------
+# Se piden los DOS marcadores. Se leen con -n acotado a proposito: un journalctl sin limite
+# es la forma mas rapida de arruinar una sesion.
+paradas=$("$PROD" "journalctl -u $UNIT --since '-$DIAS days' --utc -o short-iso --no-hostname -n 2000 | grep -E 'Stopping|Started'" 2>&1); rc=$?
 if [ "$rc" != "0" ]; then
   echo "NO MEDIDO: no se pudo leer el journal (rc=$rc): $(printf '%s' "$paradas" | tail -1 | cut -c1-110)"
   exit 2
 fi
-inst=$(printf '%s\n' "$paradas" | grep -oE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}' | sort -u)
-n_par=$(printf '%s\n' "$inst" | grep -c . || true)
+# EMPAREJAR. Cada `Stopping` se casa con el PRIMER `Started` posterior. Un `Stopping` sin
+# `Started` detras es una ventana que sigue abierta -el colector no ha vuelto- y no se
+# juzga: sin final no hay segundos caidos que exigir. Un `Started` sin `Stopping` delante
+# es el arranque de la maquina y tampoco abre ventana.
+ventanas=$(printf '%s\n' "$paradas" | python3 -c '
+import re, sys
+RE = re.compile(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\S*\s.*?(Stopping|Started)")
+ini, out, abiertas = None, [], 0
+for l in sys.stdin:
+    m = RE.match(l)
+    if not m:
+        continue
+    t, que = m.group(1), m.group(2)
+    if que == "Stopping":
+        if ini is not None:
+            abiertas += 1
+        ini = t
+    elif ini is not None:
+        out.append(f"{ini} {t}")
+        ini = None
+if ini is not None:
+    abiertas += 1
+print(abiertas)
+print("\n".join(out))
+' 2>&1); rc=$?
+if [ "$rc" != "0" ]; then
+  echo "NO MEDIDO: no se pudieron emparejar los marcadores: $(printf '%s' "$ventanas" | tail -1 | cut -c1-110)"
+  exit 2
+fi
+abiertas=$(printf '%s\n' "$ventanas" | head -1)
+pares=$(printf '%s\n' "$ventanas" | tail -n +2 | grep -E '^[0-9]{4}' || true)
+n_par=$(printf '%s\n' "$pares" | grep -c . || true)
 
 if [ "$n_par" -eq 0 ]; then
-  # CERO PARADAS NO ES CERO DEFECTOS: es que no hay con que medir. Sin parada no hay
-  # minuto de parada, y sin minuto de parada este check no tiene sujeto.
-  echo "NO MEDIDO: ninguna parada de $UNIT en $DIAS dias: sin sujeto que medir"
+  # CERO VENTANAS NO ES CERO DEFECTOS: es que no hay con que medir. Sin ventana no hay
+  # segundos caidos, y sin segundos caidos este check no tiene sujeto.
+  echo "NO MEDIDO: ninguna ventana Stopping->Started de $UNIT en $DIAS dias: sin sujeto que medir"
   exit 2
 fi
 
-# --- 2 · EL MINUTO DE LA PARADA Y EL SIGUIENTE, EN LA MISMA CONSULTA -------------------
-# Se construye una lista de instantes y se pregunta por los dos minutos de cada uno. El
-# control -el minuto siguiente- viaja en la misma fila para que no se pueda mirar uno sin
-# el otro.
-lista=$(printf '%s\n' "$inst" | sed "s/^/('/; s/\$/'::timestamptz)/" | paste -sd, -)
+# --- 2 · LOS MINUTOS TOCADOS Y SU ENTORNO, EN LA MISMA CONSULTA ------------------------
+# Sujeto y control viajan en la misma consulta para que no se pueda mirar uno sin el otro:
+# la columna `caido` los separa -mayor que cero es sujeto, cero es control-.
+lista=$(printf '%s\n' "$pares" | sed "s/^/('/; s/ /'::timestamptz,'/; s/\$/'::timestamptz)/" | paste -sd, -)
 SQL="
-WITH paradas(t) AS (VALUES $lista),
-m AS (
-  SELECT date_trunc('minute', t) AS min_parada,
-         date_trunc('minute', t) + interval '1 minute' AS min_siguiente,
-         EXTRACT(SECOND FROM t)::int AS seg
-  FROM paradas
+WITH v(t0, t1) AS (VALUES $lista),
+cand AS (
+  SELECT DISTINCT m AS min
+  FROM v, generate_series(date_trunc('minute', v.t0) - interval '3 minutes',
+                          date_trunc('minute', v.t1) + interval '3 minutes',
+                          interval '1 minute') m
+),
+-- SEGUNDOS DE PARADA QUE CAEN DENTRO DE CADA MINUTO. Si dos ventanas tocasen el mismo
+-- minuto se coge el MAXIMO y no la suma: es la eleccion CONSERVADORA -exige menos- y por
+-- tanto no puede fabricar un ROJO falso, que es lo unico que no se puede permitir aqui.
+-- EL CASE WHEN v.t0 IS NULL NO ES DECORACION. LEAST y GREATEST de PostgreSQL IGNORAN los
+-- NULL en vez de propagarlos, asi que sin el CASE un minuto que NINGUNA ventana toca -y que
+-- por tanto trae v.t0 y v.t1 a NULL por el LEFT JOIN- calculaba
+-- LEAST(NULL, min + 1 min) - GREATEST(NULL, min) = 60 s caidos. Los minutos de control
+-- salian como sujetos, el control se quedaba en cero y el check daba NOMED. Lo cazo el
+-- propio brazo de control la primera vez que se corrio.
+-- (Sin acentos graves: este SQL vive en una cadena entre comillas dobles y bash los
+--  ejecutaria como sustitucion de orden. Tambien lo enseño correr el check.)
+sol AS (
+  SELECT c.min,
+         COALESCE(MAX(CASE WHEN v.t0 IS NULL THEN 0 ELSE GREATEST(0, EXTRACT(EPOCH FROM (
+             LEAST(v.t1, c.min + interval '1 minute') - GREATEST(v.t0, c.min))))::int END), 0) AS caido
+  FROM cand c
+  LEFT JOIN v ON v.t1 > c.min AND v.t0 < c.min + interval '1 minute'
+  GROUP BY c.min
 )
-SELECT to_char(m.min_parada,'YYYY-MM-DD\"T\"HH24:MI') AS parada,
-       m.seg                                          AS segundo,
-       MAX(a.covered_seconds)                         AS cov_parada,
-       MAX(b.covered_seconds)                         AS cov_siguiente,
-       COUNT(a.ts)                                    AS filas_parada,
-       COUNT(b.ts)                                    AS filas_siguiente
-FROM m
-LEFT JOIN $TABLA a ON a.ts = m.min_parada    AND a.interval='1min' AND a.exchange<>'combined'
-LEFT JOIN $TABLA b ON b.ts = m.min_siguiente AND b.interval='1min' AND b.exchange<>'combined'
+SELECT to_char(s.min,'YYYY-MM-DD\"T\"HH24:MI') AS minuto,
+       s.caido                                 AS caido,
+       COUNT(a.ts)                             AS filas,
+       COALESCE(MAX(a.covered_seconds), -1)    AS cov
+FROM sol s
+LEFT JOIN $TABLA a ON a.ts = s.min AND a.interval='1min' AND a.exchange<>'combined'
 GROUP BY 1,2 ORDER BY 1;
 "
 salida=$(TODO=1 "$PRODSQL" "$SQL" 2>&1); rc=$?
@@ -122,50 +189,65 @@ fi
 
 filas=$(printf '%s\n' "$salida" | grep -cE '^[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}[[:space:]]*\|' || true)
 if [ "$filas" -eq 0 ]; then
-  echo "NO MEDIDO: la consulta no devolvio ninguna fila para las $n_par paradas"
+  echo "NO MEDIDO: la consulta no devolvio ninguna fila para las $n_par ventanas"
   echo "  primera linea: $(printf '%s\n' "$salida" | head -1 | cut -c1-100)"
   exit 2
 fi
 
 # --- 3 · EL VEREDICTO, Y SU CONTROL ----------------------------------------------------
-mentirosos=''; sospecha=''; sanos=0; detalle=''
-while IFS='|' read -r par seg covp covs fp fs; do
-  par=$(printf '%s' "$par" | tr -d ' '); seg=$(printf '%s' "$seg" | tr -d ' ')
-  covp=$(printf '%s' "$covp" | tr -d ' '); covs=$(printf '%s' "$covs" | tr -d ' ')
-  fp=$(printf '%s' "$fp" | tr -d ' '); fs=$(printf '%s' "$fs" | tr -d ' ')
-  [ -n "$par" ] || continue
-  # Sin fila en el minuto de la parada no hay nada que juzgar: ese es el caso AUSENTE, que
-  # ya se arreglo, y aqui no es el sujeto.
-  [ "${fp:-0}" -gt 0 ] || continue
-  detalle="$detalle ${par}(s=$seg cov=$covp sig=${covs:-ausente})"
-  # CONTROL: si el minuto SIGUIENTE tambien sale completo, el sujeto no es la cobertura.
-  if [ "${fs:-0}" -gt 0 ] && [ "${covs:-0}" = "60" ]; then
-    sospecha="$sospecha $par"
-  elif [ "$covp" = "60" ] && [ "${seg:-0}" -gt 0 ]; then
-    # el minuto de la parada dice 60 y la parada ocurrio DENTRO de el
-    mentirosos="$mentirosos $par"
+mentirosos=''; sujetos=0; sanos=0; control_60=0; control_n=0; detalle=''
+while IFS='|' read -r min caido nf cov; do
+  min=$(printf '%s' "$min" | tr -d ' ');   caido=$(printf '%s' "$caido" | tr -d ' ')
+  nf=$(printf '%s' "$nf" | tr -d ' ');     cov=$(printf '%s' "$cov" | tr -d ' ')
+  [ -n "$min" ] || continue
+  # Sin fila no hay nada que juzgar: ese es el caso AUSENTE, que ya se arreglo, y aqui no
+  # es el sujeto. Vale igual para el control.
+  [ "${nf:-0}" -gt 0 ] && [ "${cov:--1}" -ge 0 ] || continue
+  if [ "${caido:-0}" -eq 0 ]; then
+    # CONTROL · minuto que ninguna ventana toca. Tiene que poder decir 60.
+    control_n=$((control_n+1))
+    [ "$cov" -eq 60 ] && control_60=$((control_60+1))
+    continue
+  fi
+  sujetos=$((sujetos+1))
+  permitido=$((60 - caido))
+  if [ "$cov" -gt "$permitido" ]; then
+    # UNA LINEA POR MINUTO, no separado por espacios: el detalle lleva espacios dentro y
+    # contando por palabras salian 3 mentirosos donde hay 1.
+    mentirosos="${mentirosos}${min} caido=${caido}s permite<=${permitido} dice=${cov}
+"
   else
     sanos=$((sanos+1))
+    detalle="$detalle ${min}(caido=${caido}s cov=${cov})"
   fi
 done <<EOF
 $(printf '%s\n' "$salida" | grep -E '^[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}[[:space:]]*\|')
 EOF
 
-if [ -n "$sospecha" ]; then
-  n=$(printf '%s' "$sospecha" | wc -w)
-  echo "NO MEDIDO: en $n parada(s) el minuto SIGUIENTE tambien sale completo: el sujeto seria el registro de paradas, no la cobertura"
-  echo "  $detalle"
+if [ "$sujetos" -eq 0 ]; then
+  echo "NO MEDIDO: ninguna de las $n_par ventanas toca un minuto CON fila: sin sujeto"
+  exit 2
+fi
+
+# CONTROL · HUELLA POSITIVA. Si ningun minuto intacto llega a 60, la tabla va corta por
+# todas partes y un minuto corto junto a una parada no seria atribuible a la parada.
+if [ "$control_60" -eq 0 ]; then
+  echo "NO MEDIDO: de $control_n minuto(s) que ninguna ventana toca, NINGUNO declara 60:"
+  echo "  la tabla va corta por otra razon y el hallazgo no seria atribuible a la parada"
   exit 2
 fi
 
 if [ -n "$mentirosos" ]; then
-  n=$(printf '%s' "$mentirosos" | wc -w)
-  echo "$n minuto(s) de $TABLA dicen covered_seconds=60 con el colector parado dentro: $mentirosos"
-  echo "  sobre $filas parada(s) con fila, de $n_par paradas en $DIAS dias · $sanos correcto(s)"
+  n=$(printf '%s' "$mentirosos" | grep -c . || true)
+  echo "$n minuto(s) de $TABLA declaran MAS cobertura de la que su ventana de parada permite:"
+  printf '%s' "$mentirosos" | grep . | head -6 | sed 's/^/  /'
+  echo "  sobre $sujetos minuto(s) tocados por $n_par ventana(s) en $DIAS dias · $sanos correcto(s)"
+  echo "  control: $control_60 de $control_n minutos intactos declaran 60, luego la tabla SABE decir completo"
   echo "  se arregla en quien escribe la pata, NO en el MIN del combinado"
   exit 1
 fi
 
-echo "las $filas parada(s) con fila declaran su cobertura corta (de $n_par paradas en $DIAS dias)"
-echo "  $detalle"
+echo "los $sujetos minuto(s) tocados por $n_par ventana(s) declaran cobertura compatible con su parada"
+echo "  control: $control_60 de $control_n minutos intactos declaran 60"
+echo " $detalle"
 exit 0
