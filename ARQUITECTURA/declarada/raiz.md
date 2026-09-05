@@ -32,11 +32,36 @@ hay que escribirla con su cita** — o es un hueco, no una exencion.
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**Sirve el panel.** Devuelve `FileResponse` (`app/api.py:2861`), o sea el `index.html`
+estatico. No publica campos, y por eso su ficha derivada no deriva ninguno: **no hay
+respuesta que describir, hay un fichero que se entrega**.
+
+**PROMESA · es la puerta del producto y no promete ningun dato.** Todo lo que el trader ve
+llega despues, por las llamadas que hace `static/app.js`. Esta ruta no participa en ninguna
+de las 66 preguntas de la bateria, y eso es correcto: **es transporte, no contenido**.
+
+*Que significa no cumplirlo:* que devolviera algo distinto de la aplicacion. Lo cubre el
+humo del desplegador, no esta capa.
+
+### Y sus consumidores no son medibles con este metodo, que ya esta declarado
+
+Su ficha derivada lo explica con las cifras: el detector generico le acreditaba **505 citas**
+—casi todas divisiones de python— y el criterio propio (barra entrecomillada y sola) baja a
+**23**, de las que **cero** son una peticion HTTP. La barra entrecomillada es tan comun como
+la division.
+
+**Para saber quien consume la raiz hay que mirar el servidor, no el fuente:**
+
+```sh
+prod "grep -c ' / ' /var/log/nginx/access.log"
+```
+
+Es la unica de las 68 cuya superficie se mide fuera del repo, y queda dicho en vez de
+rellenado.
+
 
 ## SUPERFICIE
 

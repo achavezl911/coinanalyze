@@ -70,7 +70,7 @@ de un venue caido y un cero de mercado en calma son el mismo cero.
 es una sola y de un momento tranquilo. Comando:
 
 ```sh
-harness/bin/api '/api/scalp/liquidations?symbol=BTCUSDT' | python3 -m json.tool | grep -c venues
+harness/bin/api '/api/scalp/liquidations?symbol=BTCUSDT_PERP.A' | python3 -m json.tool | grep -c venues
 ```
 
 

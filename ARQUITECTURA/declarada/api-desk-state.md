@@ -25,11 +25,48 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z):
+
+```
+/api/desk/state   21 926 B
+  instante de RAIZ ....................... as_of = 2026-09-04T22:33:03.644050+00:00
+  bloques de primer nivel ................ 3   (components, partial, source_timestamps)
+  instantes DISTINTOS en el cuerpo ....... 1
+```
+
+**PROMESA 1 · publica un bloque dedicado a la procedencia temporal.**
+`source_timestamps` con `book_lag_seconds`, `book_status`, `basis_status`,
+`liquidations_measured`, `collectors` y `liquidations_last_event_age_s`.
+
+Es una solucion **distinta** a la de `/api/ai/context` para el mismo problema: en vez de que
+cada bloque lleve su `as_of`, **hay un bloque que declara el retraso de cada fuente**. Para
+P0.1 es defendible: un `book_lag_seconds` dice mas que un `as_of` del libro, porque ya trae
+la resta hecha.
+
+**PROMESA 2 · declara lo que le FALTA.** `partial` es un bloque de primer nivel. Una mesa
+armada con cinco de seis componentes y otra con seis **no se pintan igual**, y aqui la
+diferencia es un campo y no una impresion.
+
+**PROMESA 3 · `components` enumera los seis de los que se compone**: `trend_matrix`,
+`delta_matrix`, `profile`, `hypothesis`, `scalp`, `data_quality`. La mesa no es una caja
+negra: se puede ir a cada uno.
+
+*Que significa no cumplirlo:* que `partial` desapareciera. Entonces una mesa incompleta
+seria indistinguible de una completa, que es **P0.5** aplicado al agregado.
+
+**PENDIENTE · lo que no puedo sostener con la foto.** `liquidations_measured` y
+`basis_status` son campos de estado cuyo dominio no conozco: no se si `basis_status` puede
+valer algo distinto de `VALID`, ni si `liquidations_measured` es un booleano o un recuento.
+La peticion, **con el simbolo real comprobado**:
+
+```sh
+harness/bin/api '/api/desk/state?symbol=BTCUSDT_PERP.A' \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['source_timestamps'])"
+```
+
 
 ## SUPERFICIE
 

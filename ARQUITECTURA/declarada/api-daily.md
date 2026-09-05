@@ -29,11 +29,44 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete · es la ruta que mas explicitamente contesta P5.4 de las 68
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z), **73 936 B**:
+
+```
+temporal_semantics       = 'mutable_current_projection'
+knowledge_time_replay    = False
+through_session_date     = null
+projection_latest_session_date = '2026-09-04'
+streak = 2   streak_source = 'cvd_spot_usd'
+coverage_note = 'session_coverage_version=NULL signi...'
+```
+
+**PROMESA 1 · declara que lo que devuelve es MUTABLE, y con qué nombre.**
+`temporal_semantics = "mutable_current_projection"`. La sesion en curso **va a cambiar**, y
+la ruta lo dice en su cuerpo en vez de dejar que el consumidor lo descubra al volver a
+pedirla. Es **P1.8** —*"¿el veredicto tiene fecha o es perpetuo?"*— contestado por el otro
+lado: no es perpetuo, es explicitamente provisional.
+
+**PROMESA 2 · declara si esta reproduciendo el pasado o proyectando el presente.**
+`knowledge_time_replay = False` junto a `through_session_date = null`. Con `replay=True` y
+un `through_session_date` puesto, la respuesta seria *lo que se sabia entonces*; con
+`False`, es *lo que se sabe ahora*. **Es P5.4 —"¿esto se midio antes o despues de conocer el
+resultado?"— resuelto con un campo booleano**, y es la unica de las 68 que lo hace asi.
+
+**PROMESA 3 · la racha dice de QUE serie sale.** `streak = 2` con
+`streak_source = "cvd_spot_usd"`, y `sources` enumera las cuatro disponibles. Una racha de 2
+en spot y una de 2 en futuros no son la misma racha.
+
+**PROMESA 4 · explica que significa su NULL.**
+`coverage_note = "session_coverage_version=NULL signi…"`. Un nulo con su significado escrito
+deja de ser ambiguo — es **P0.5** en la forma que mas cuesta ver.
+
+*Que significa no cumplirlo:* que `temporal_semantics` desapareciera. Entonces una
+proyeccion mutable se cachearia como si fuera un cierre, y **la bateria ya midio ese error**:
+dos etiquetas de version ocupando dias distintos (P5.5).
+
 
 ## SUPERFICIE
 

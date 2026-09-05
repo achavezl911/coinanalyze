@@ -32,11 +32,36 @@ hay que escribirla con su cita** — o es un hueco, no una exencion.
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete, y por que su promesa NO es de forma
+
+**No publica JSON: es SSE** (`StreamingResponse`, `app/api.py:2852`). El captador la recoge
+como texto y la capa derivada la marca PENDIENTE en sus campos por esa razon — no por un
+limite del analisis, sino porque **no hay un cuerpo unico que describir**.
+
+**PROMESA · entrega los tres bloques vivos por evento, y el panel los usa para lo que no
+puede esperar al refresco de 15 s.**
+Medido en el consumidor (`static/app.js:1654`): cada mensaje trae `rows` (precio y delta 5 s
+por simbolo), `scalp` (delta de futuros 5 s) y `books` (desequilibrio y spread). El panel los
+pinta en las tres pildoras `live-price`, `live-delta` y `live-book`.
+
+**PROMESA 2 · el estado de la conexion es visible.** `source.onopen` pone «Streaming activo»
+y `source.onerror` pone «Reconectando stream» (`app.js:1654`). Un stream caido **no se pinta
+como un stream quieto**, que es la version de P0.9 para un canal continuo.
+
+*Que significa no cumplirlo:* que el panel siguiera mostrando la ultima pildora recibida sin
+marcar que la conexion se cayo. Entonces un precio de hace diez minutos y uno de hace un
+segundo serian indistinguibles en pantalla.
+
+**PENDIENTE · lo que NO puedo sostener y no es cuestion de tiempo.** No se **con que cadencia
+emite** ni si cada evento lleva su propio instante. Una foto no sirve: hace falta escuchar el
+stream un rato, y ese instrumento no existe.
+
+```sh
+# lo que haria falta, y no lo tengo: escuchar N segundos y contar eventos con su marca
+curl -N --netrc-file "$NETRC" -k "$API_PROD/api/stream" | head -c 2000
+```
+
 
 ## SUPERFICIE
 

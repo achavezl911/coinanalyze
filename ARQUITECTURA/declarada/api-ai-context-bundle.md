@@ -25,11 +25,33 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z):
+
+```
+/api/ai/context/bundle   295 256 B
+  instante de RAIZ ....................... generated_at = 2026-09-04T22:33:19.779979+00:00
+  bloques de primer nivel ................ 1   (symbols)
+  instantes DISTINTOS en el cuerpo ....... 18
+```
+
+**PROMESA 1 · es el mismo contexto de `/api/ai/context` para LOS TRES simbolos, con una
+sola marca de raiz.** `symbols` cuelga de `generated_at`, y cada simbolo trae el suyo.
+
+**PROMESA 2 · el arco de armado es visible y NO es cero.** La raiz del bundle dice
+`22:33:19.779979` y la de `/api/ai/context` para un simbolo dice `22:33:02.403024`: **17
+segundos de diferencia** en la misma foto. No es un defecto — armar tres contextos lleva
+tiempo — pero **es la cifra que hace comparable un bloque con otro**, y esta publicada.
+
+*Que significa no cumplirlo:* que `generated_at` del bundle se tomara al empezar y no al
+acabar, o al reves, sin decir cual. Entonces los 18 instantes del cuerpo no se podrian
+situar respecto de el.
+
+**Hereda el defecto de `/api/ai/context`**: los mismos 18 bloques por simbolo siguen sin
+fecharse. Ver esa ficha.
+
 
 ## SUPERFICIE
 

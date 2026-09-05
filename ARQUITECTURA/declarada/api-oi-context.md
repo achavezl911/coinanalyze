@@ -28,11 +28,37 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete · y es la unica que publica DOS relojes distintos
+
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z), **3 356 B**:
+
+```
+oi_latest_ts    = '2026-09-04T22:25:00+00:00'
+price_latest_ts = '2026-09-04T22:32:00+00:00'      <- SIETE minutos de diferencia
+```
+
+**PROMESA 1 · el reloj del OI y el reloj del PRECIO son campos SEPARADOS.**
+Y en la foto llevan **7 minutos de desfase**, que no es un fallo: el OI se publica cada 5
+min y el precio cada minuto. Lo que importa es que **la ruta no finge que son el mismo
+instante**. Cualquier cociente OI/precio calculado sin saberlo mezcla dos vendimias, que es
+literalmente **P0.1**.
+
+**PROMESA 2 · cada ventana trae su cobertura.** `windows = {5m,15m,1h,4h,24h}` y
+`coverage` con las mismas cinco claves, en paralelo.
+
+**PROMESA 3 · el reparto por venue con su nota.** `by_venue` con `binance_oi_usd`,
+`bybit_oi_usd`, `two_venue_total_usd`, `bybit_share_of_two_venues_pct` y su `note`. El
+total de dos venues va nombrado **`two_venue_total_usd`**, no `total`: quien lo lea sabe que
+no es el OI del mercado entero.
+
+**PROMESA 4 · marca lo que es interpretacion.**
+`quadrant_note = "el cuadrante es interpretacion prob…"`. El cuadrante OI/precio es una
+lectura, no una medida, y la ruta lo separa.
+
+*Que significa no cumplirlo:* fundir los dos `*_latest_ts` en un `as_of` unico. Se perderia
+exactamente el dato que hace comparable el cociente.
+
 
 ## SUPERFICIE
 

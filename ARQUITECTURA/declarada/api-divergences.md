@@ -44,11 +44,31 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PENDIENTE, y el motivo no es el tiempo: no he leido su cuerpo en la foto.**
+
+Lo que si esta medido y va en su ficha derivada: la bateria le asigna **P5.6** —*"¿hay
+divergencias activas y que han valido historicamente?"*— junto a `/api/cvd/divergence`
+(`entregas/20260904-2100-bateria-trader.md:190`).
+
+**Y la pregunta tiene dos mitades que casi nunca vienen juntas:** *"hay divergencias
+activas"* es un estado, y *"que han valido historicamente"* es una tasa base. Una ruta puede
+contestar la primera perfectamente y no contestar la segunda en absoluto.
+
+Peticion con parametros comprobados:
+
+```sh
+harness/bin/api '/api/divergences?symbol=BTCUSDT_PERP.A' | python3 -m json.tool | head -30
+```
+
+**Lo que hay que mirar, en este orden:**
+1. ¿publica un instante de primer nivel? (P0.1)
+2. ¿cada divergencia trae su **tasa base historica**, o solo su existencia? Si solo publica
+   la existencia, **la mitad de P5.6 no la contesta nadie** y eso es material de K.
+3. ¿distingue una divergencia **ausente** de una **no calculable**? (P0.5)
+
 
 ## SUPERFICIE
 

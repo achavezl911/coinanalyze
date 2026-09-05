@@ -32,11 +32,33 @@ hay que escribirla con su cita** — o es un hueco, no una exencion.
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**No publica JSON: es texto de Prometheus** (`Response`, `app/api.py:2669`), y por eso la
+capa derivada marca sus campos PENDIENTE. Su contrato no es un objeto: es un formato de
+exposicion con su propio estandar.
+
+**PROMESA · expone el estado del sistema en el formato que un recolector espera, y lee
+`metrics_snapshot` y `pipeline_heartbeat` para hacerlo** (ver ficha derivada).
+
+**Y no la llama nadie**: es una de las rutas cuyos unicos rastros son menciones. No hay
+ningun Prometheus configurado en este repo que la recoja —`grep -rn "prometheus"` sobre
+`deploy/` y `config/` es el comando que lo cerraria—, asi que hoy es **superficie preparada
+para un consumidor que no existe**.
+
+Eso NO es un defecto por si mismo: una ruta de metricas es lo primero que se escribe y lo
+ultimo que se conecta. Pero es la forma del patron que en esta casa se ha repetido nueve
+veces, y por eso queda escrito.
+
+**PENDIENTE · una comprobacion barata que no he hecho:**
+
+```sh
+grep -rn "prometheus\|/metrics" deploy/ config/ 2>/dev/null | wc -l
+```
+
+Si sale 0, nadie la recoge y su promesa es solo potencial.
+
 
 ## SUPERFICIE
 

@@ -26,28 +26,41 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ### Lo que promete
 
-**PENDIENTE, y el motivo es que no he leido su cuerpo.**
+**MEDIDO CONTRA 140 por el operador el 2026-09-05**, y con los bytes y las claves al lado
+del veredicto, que es la contramedida que hacia falta:
 
-No esta entre las respuestas de la foto cuyo cuerpo he inspeccionado, y sus campos no se
-derivan del AST lo bastante como para sostener una afirmacion. **No lo relleno con lo
-plausible**: seria exactamente lo que este directorio existe para no hacer.
-
-Lo que si se sabe, de su ficha derivada y de la bateria:
-
-- La bateria le asigna **P2.6** —*"si me saltan el stop, ¿es estructura o es una mecha?"*—
-  junto a `/api/zone/analysis` (`entregas/20260904-2100-bateria-trader.md:145`).
-- **Nadie la llama**: sus rastros son MENCION. Es una de las 12 rutas sin ninguna llamada.
-
-Comando para cerrarla, sin consulta a la base:
-
-```sh
-harness/bin/api '/api/volume-profile?symbol=BTCUSDT' | python3 -m json.tool | head -40
+```
+/api/volume-profile?symbol=BTCUSDT_PERP.A   ->  626 B
+claves de primer nivel: symbol · as_of · available · session · vwap · note
+                        session.poc / session.vah / session.val
+                        vwap.session_convention = 'dia UTC 00:00'
 ```
 
-Lo que hay que mirar cuando responda: **si cada nivel del perfil declara sobre que ventana
-se calculo**. Un POC de 24 h y uno de 7 dias son niveles distintos con el mismo nombre, y es
-la misma trampa que P2.7 describe para `/api/reference-levels`.
+**PROMESA 1 · publica SU instante y LA CONVENCION de su sesion.**
+`as_of` en primer nivel y `vwap.session_convention = "dia UTC 00:00"`. Un VWAP de sesion
+depende enteramente de donde se corta el dia: dos rutas que corten distinto dan cifras
+distintas del mismo mercado, y sin la convencion publicada no hay forma de saber cual es
+cual.
 
+**PROMESA 2 · hay UNA sola ventana y esta nombrada.**
+`session.poc`, `session.vah`, `session.val` cuelgan todos del mismo bloque `session`. No hay
+un POC de 24 h y otro de 7 dias compartiendo nombre.
+
+**PROMESA 3 · `available` separa "no hay perfil" de "no se pudo calcular"** (P0.5).
+
+### La sospecha que yo mismo abri, REFUTADA
+
+En la version anterior de esta ficha escribi que habia que mirar *"si cada nivel del perfil
+declara sobre que ventana se calculo"*, porque **un POC de 24 h y uno de 7 dias son niveles
+distintos con el mismo nombre** — la trampa que **P2.7** describe para
+`/api/reference-levels`.
+
+**No aplica.** La ruta publica una unica ventana, con su convencion escrita en el cuerpo.
+**No es K**, y que caiga la sospecha es el resultado bueno: esta ficha pasa de sospecha a
+promesa cerrada con cita.
+
+*Que significa no cumplirlo:* que apareciera un segundo bloque de niveles -de otra ventana-
+al lado de `session`, sin nombre propio. Ahi si volveria P2.7.
 
 ## SUPERFICIE
 
