@@ -141,11 +141,33 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
 | 422 | — | `app/api.py:1356` | el propio handler |
 
+## Superficie · quien la consume (medido)
+
+| donde | sitios |
+|---|---|
+| **tests** | `tests/test_v150_desk_snapshot.py:126` |
+
+**No la consume el panel.** Con consumidor solo en checks/tests/tools, es
+**instrumento interno** — o una ruta que alguien dejo de usar y nadie retiro.
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **sin decidir** — parametros ['profile', 'symbol']: no encaja en 1/2/3 sin leerla.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+Claves temporales entre los campos que publica:
+
+- `as_of`
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/api-profile.md`](../declarada/api-profile.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 

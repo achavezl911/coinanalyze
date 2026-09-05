@@ -112,11 +112,37 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:1930` | el propio handler |
 | 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
 
+## Superficie · quien la consume (medido)
+
+| donde | sitios |
+|---|---|
+| **checks** | `harness/checks/K03-hueco-declarado.sh:161`, `harness/checks/K43-foto-unica.sh:296` |
+| **panel** | `static/app.js:1482`, `static/app.js:1550`, `static/app.js:1635` |
+| **readme** | `README.md:70`, `README.md:90`, `README.md:409` |
+| **tests** | `tests/test_dashboard_presentation.py:83` |
+
+La consume el panel: **es superficie de producto**.
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **3** — pide ['as_of']: el operador elige el momento.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+Claves temporales entre los campos que publica:
+
+- `knowledge_time_replay`
+- `projection_latest_session_date`
+- `through_session_date`
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/api-daily.md`](../declarada/api-daily.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 

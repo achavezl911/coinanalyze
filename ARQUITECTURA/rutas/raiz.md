@@ -42,11 +42,35 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 _no levanta HTTPException en su cierre. Un fallo aqui sale como 500 del framework._
 
+## Superficie · quien la consume (medido)
+
+| donde | sitios |
+|---|---|
+| **checks** | `harness/checks/K05-control.bash:77`, `harness/checks/K05-latidos.sh:359`, `harness/checks/K05-latidos.sh:362`, `harness/checks/K13-vacio-o-rancio.sh:75` _(+5)_ |
+| **panel** | `static/app.js:66` |
+| **readme** | `README.md:294`, `README.md:296` |
+| **tests** | `tests/js/harness.js:127`, `tests/js/harness.js:147`, `tests/test_coinalyze_rate_limit.py:155`, `tests/test_data_gaps_postgres.py:89` _(+7)_ |
+
+La consume el panel: **es superficie de producto**.
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **1** — solo pide symbol (o nada): estado ambiente.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+**Ninguna clave temporal entre los campos derivados.** O no publica marca de
+tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
+mismo que lo primero: la foto de produccion lo decide, no este documento.
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/raiz.md`](../declarada/raiz.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 

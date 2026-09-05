@@ -221,9 +221,70 @@ caso "I5 generador que no emite el bloque de controles" 2 "NO MEDIDO" i5
 # discrepancias", asi que este es el modo de fallo mas probable y el mas facil de leer
 # mal. F5 no lo cubria: su generador falso salia con 9. La version anterior del check
 # decia ROJO con "(0 ficheros)" delante. Tiene que ser NOMED.
-i6() { sed -i 's/^def construye(repo: Path, paquetes: list\[str\]) -> dict:$/&\n    raise RuntimeError("averia inducida por I6")/' \
+# El patron ancla en `def construye(` SIN la lista de argumentos: la version anterior
+# fijaba la firma entera y dejo de casar en cuanto `construye` gano un parametro. El caso
+# no reventaba: pasaba a rc=0 y habria contado como "el check no enrojece", que es lo
+# contrario de lo que prueba. Lo cazo la huella positiva; sin ella habria quedado en verde.
+i6() { sed -i 's/^def construye(.*$/&\n    raise RuntimeError("averia inducida por I6")/' \
          "$T/harness/bin/arquitectura"; }
 caso "I6 el generador revienta con traceback (rc=1)" 2 "NO MEDIDO" i6
+
+echo
+# ======================================================================================
+# CAPA DECLARADA (F3) · LA ASIMETRIA QUE HACE QUE EL MECANISMO SIRVA.
+# La declarada se escribe a mano y tiene que SOBREVIVIR a la regeneracion. La derivada
+# editada a mano tiene que seguir fallando. Si las dos se comportaran igual, o bien la
+# declarada seria inmantenible o bien la derivada quedaria sin guardia.
+# ======================================================================================
+echo "DECLARADA · la editada a mano sobrevive; la derivada editada a mano, no"
+
+# D1 · (a) del encargo: editar la PROSA de una declarada no rompe nada.
+d1() { python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+       mkdir -p "$T/ARQUITECTURA/declarada"
+       printf '# X\n\n## PREGUNTA\nq\n\n## VENTANA\nv\n\n## PROMESA\np\n\n## SUPERFICIE\ns\n' \
+         > "$T/ARQUITECTURA/declarada/api-setup.md"
+       python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+       # ahora se EDITA A MANO, sin regenerar
+       printf '\n\nprosa anadida a mano despues de regenerar.\n' \
+         >> "$T/ARQUITECTURA/declarada/api-setup.md"; }
+caso "D1 declarada editada a mano SIN regenerar" 0 "coincide con la regeneracion" d1
+
+# D2 · (b) del encargo: la derivada editada a mano sigue siendo ROJO. Es el mismo P4 de
+# arriba, repetido aqui a proposito para que la asimetria se lea de un vistazo: los dos
+# casos, juntos, son el mecanismo entero.
+d2() { sed -i 's/`snapshot_ts`/`inventado_ts`/' "$T/ARQUITECTURA/rutas/api-setup.md"; }
+caso "D2 derivada editada a mano SIGUE siendo ROJO" 1 "no coincide con la regeneracion" d2
+
+# D3 · (c) del encargo: una ruta nueva CON su ficha regenerada pero SIN declarada sale
+# como PENDIENTE y se CUENTA, sin ROJO. Es lo que permite avanzar por fases en vez de
+# exigir 68 declaraciones de golpe.
+d3() {
+  cat >> "$T/app/api.py" <<'PY'
+
+
+@app.get("/api/control-declarada")
+async def control_declarada() -> dict[str, str]:
+    return {"control": "declarada"}
+PY
+  python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+}
+caso "D3 ruta nueva sin declarada: PENDIENTE y contada" 0 "sin declarar" d3
+
+# D4 · una declaracion HUERFANA -de una ruta que ya no existe- SI es ROJO: es el brazo 2
+# por el otro lado, el documento anunciando una superficie retirada.
+d4() { python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+       mkdir -p "$T/ARQUITECTURA/declarada"
+       printf '# fantasma\n\n## PREGUNTA\nq\n' > "$T/ARQUITECTURA/declarada/api-ruta-que-no-existe.md"; }
+caso "D4 declaracion huerfana" 1 "HUERFANA" d4
+
+# D5 · una declarada a la que le falta una seccion cambia la ficha, asi que hay que
+# regenerar. Es el limite del mecanismo y se prueba: la ESTRUCTURA esta guardada, la PROSA
+# no. K88 comprueba que la declaracion existe y esta completa, NO que sea cierta -eso lo
+# mide F5 con la bateria-.
+d5() { python3 harness/bin/arquitectura --repo "$T" >/dev/null 2>&1
+       mkdir -p "$T/ARQUITECTURA/declarada"
+       printf '# X\n\n## PREGUNTA\nq\n' > "$T/ARQUITECTURA/declarada/api-setup.md"; }
+caso "D5 declarada incompleta obliga a regenerar" 1 "no coincide con la regeneracion" d5
 
 echo
 # ======================================================================================

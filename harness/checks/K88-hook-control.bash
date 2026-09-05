@@ -46,9 +46,34 @@ python3 "$LIMPIO/harness/bin/arquitectura" --repo "$LIMPIO" >/dev/null 2>&1 || {
 # caso <nombre> <rc esperado> <patron en la salida> <entorno> -- cuerpo que prepara $T
 caso() {
   local nombre="$1" esperado="$2" patron="$3" entorno="$4"; shift 4
-  T="$DIR/t"; rm -rf "$T"; cp -r "$LIMPIO" "$T"
+  # UN CASO SIN CUERPO NO ES UN CASO. Se olvido el argumento `normal` en dos llamadas y
+  # `entorno` se comio el nombre de la funcion: `$@` quedo vacio, el cuerpo no indujo nada
+  # y los dos casos se pasaron media hora "fallando" por una razon que no era la suya.
+  # Un argumento de mas o de menos no puede degradar un control en silencio.
+  if [ "$#" -eq 0 ]; then
+    fallos=$((fallos+1))
+    printf '  [FALLA] %-50s SIN CUERPO: ¿falta el argumento de entorno?\n' "$nombre"
+    return
+  fi
+  case "$entorno" in
+    normal|escape) ;;
+    *) fallos=$((fallos+1))
+       printf '  [FALLA] %-50s entorno invalido "%s"\n' "$nombre" "$entorno"; return ;;
+  esac
+  # UN DIRECTORIO NUEVO POR CASO. Reutilizar siempre `$DIR/t` con `rm -rf` + `cp -r`
+  # dejaba, a partir del segundo caso que usaba la segunda base, un arbol que no era el
+  # que el caso creia: el cuerpo corria con rc=0, no cambiaba nada, y `git commit` decia
+  # "nothing to commit". Un caso que no induce nada puede acertar el rc por casualidad.
+  T="$DIR/c$((pasan + fallos + 1))"
+  rm -rf "$T"; cp -r "${BASE:-$LIMPIO}" "$T"
   ln -sfn ../../harness/hooks/pre-commit "$T/.git/hooks/pre-commit"
-  ( cd "$T" && "$@" ) >/dev/null 2>&1
+  # EL CUERPO NO PUEDE FALLAR EN SILENCIO. Antes esto era `>/dev/null 2>&1` a secas, y un
+  # cuerpo que reventaba dejaba el arbol intacto: `git commit` decia "nothing to commit",
+  # el rc coincidia por casualidad con el esperado en algun caso, y el control aprobaba
+  # sin haber inducido nada. Se paga un poco de ruido a cambio de que un control mudo no
+  # se confunda con un control que pasa.
+  local prep prc
+  prep=$( cd "$T" && "$@" 2>&1 ); prc=$?
   local out rc
   out=$(cd "$T" && git add -A >/dev/null 2>&1
         if [ "$entorno" = "escape" ]; then HARNESS_DOC=1 git commit -m prueba 2>&1
@@ -64,6 +89,12 @@ caso() {
   # forma del C11 de K05: un control que pasa por no haber ejecutado nada.
   if printf '%s' "$out" | grep -q 'hook was ignored'; then
     ok=0; out="EL HOOK NO SE EJECUTO (git lo ignora: ¿falta el bit +x?). $out"
+  fi
+  # Y si el cuerpo no dejo NADA que commitear, el caso no indujo la averia que dice
+  # inducir: no se juzga su rc, se declara roto el caso.
+  if printf '%s' "$out" | grep -q 'nothing to commit'; then
+    ok=0
+    out="EL CASO NO INDUJO NADA (nada que commitear). cuerpo rc=$prc: $(printf '%s' "$prep" | tail -2 | tr '\n' ' ')"
   fi
   if [ "$ok" = 1 ]; then
     pasan=$((pasan+1)); printf '  [ok   ] %-50s rc=%s\n' "$nombre" "$rc"
@@ -114,6 +145,66 @@ caso "P2 .md nuevo en docs/" 1 "\.md nuevo rechazado" normal p2
 p3() { python3 harness/bin/arquitectura --repo . >/dev/null 2>&1
        sed -i 's/`symbol`/`inventado`/' ARQUITECTURA/rutas/api-setup.md; }
 caso "P3 ARQUITECTURA/ editada a mano" 1 "NO coincide con su regeneracion" normal p3
+
+echo
+# ======================================================================================
+# CAPA DECLARADA (F3) · el hook tiene que dejarla vivir.
+# Si commitear una declaracion escrita a mano exigiera regenerar o usar el escape, la capa
+# que necesita a una persona seria la mas cara de mantener, y en dos semanas nadie la
+# tocaria. La asimetria con la derivada es lo que hace que el mecanismo sirva.
+# ======================================================================================
+echo "DECLARADA · el hook la deja pasar; a la derivada editada a mano no"
+
+# SEGUNDA BASE, con ARQUITECTURA/ y una declarada YA commiteadas y regeneradas: es el
+# estado normal a partir del cual se edita a mano.
+#
+# Se prepara UNA VEZ aqui y no dentro de cada caso. Encadenar `regenerar + add + commit`
+# dentro del cuerpo del caso resulto fragil -el commit intermedio no llegaba a ocurrir y
+# los casos pasaban o fallaban por la razon equivocada; HD1 llego a dar rc=0 sin haber
+# ejercitado nada-. Un control que depende de que tres ordenes encadenadas salgan bien es
+# un control que a veces mide otra cosa.
+BASE2="$DIR/base2"
+cp -r "$LIMPIO" "$BASE2"
+(
+  cd "$BASE2" || exit 2
+  mkdir -p ARQUITECTURA/declarada
+  printf '# X\n\n## PREGUNTA\nq\n\n## VENTANA\nv\n\n## PROMESA\np\n\n## SUPERFICIE\ns\n' \
+    > ARQUITECTURA/declarada/api-setup.md
+  python3 harness/bin/arquitectura --repo . >/dev/null 2>&1
+  git add -A
+  git -c core.hooksPath=/dev/null commit -qm base-con-declarada
+) >/dev/null 2>&1
+# HUELLA: si la segunda base no quedo commiteada, los tres casos de abajo medirian otra
+# cosa. Se comprueba en vez de suponerlo.
+if [ -n "$(git -C "$BASE2" status --porcelain 2>/dev/null)" ]; then
+  echo "NO MEDIDO: la base con declarada no quedo limpia; los casos HD no medirian nada"
+  exit 2
+fi
+
+BASE="$BASE2"
+
+# H-D1 · (a) del encargo: editar la PROSA de una declarada, SIN regenerar y SIN escape,
+# pasa el hook. Es el 99 % de las ediciones de esta capa.
+hd1() { printf '\nprosa escrita a mano despues de commitear.\n' \
+          >> ARQUITECTURA/declarada/api-setup.md; }
+caso "HD1 prosa de una declarada, sin escape ni regenerar" 0 "" normal hd1
+
+# H-D2 · EL LIMITE, medido en vez de supuesto: CREAR una declarada nueva SI exige
+# regenerar, porque cambia el estado `existe` de la ficha derivada. No es un fallo: es la
+# frontera del mecanismo -la ESTRUCTURA esta guardada, la PROSA no- y conviene que este
+# escrita con su rc. Quien anada una declaracion, regenera; quien la edite, no.
+hd2() { printf '# Y\n\n## PREGUNTA\nq\n\n## VENTANA\nv\n\n## PROMESA\np\n\n## SUPERFICIE\ns\n' \
+          > ARQUITECTURA/declarada/api-snapshot.md; }
+caso "HD2 declarada NUEVA sin regenerar: hay que regenerar" 1 "NO coincide con su regeneracion" normal hd2
+
+# H-D3 · la asimetria, en el mismo commit: se edita la prosa de la declarada Y la ficha
+# derivada. El hook rechaza por la derivada, no por la declarada.
+hd3() { printf '\nprosa a mano.\n' >> ARQUITECTURA/declarada/api-setup.md
+        sed -i 's/`symbol`/`inventado`/' ARQUITECTURA/rutas/api-setup.md; }
+caso "HD3 prosa OK pero derivada tocada: RECHAZA" 1 "NO coincide con su regeneracion" normal hd3
+
+# el resto de casos vuelve a la base sin ARQUITECTURA/ commiteada
+BASE="$LIMPIO"
 
 echo
 # ======================================================================================

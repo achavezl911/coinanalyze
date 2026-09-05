@@ -96,11 +96,33 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:223` | una funcion de su cierre |
 
+## Superficie · quien la consume (medido)
+
+**NINGUN consumidor encontrado** en `static/app.js`, `static/index.html`,
+`harness/checks`, `tests`, `tools` ni `README.md`.
+
+No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su
+nombre-, pero es la forma exacta del patron que en esta casa se ha repetido nueve
+veces. **Merece una mirada, no una conclusion.**
+
+## Ventana · con que clave la declara (derivado)
+
+Familia **candidata** de K43: **1** — solo pide symbol (o nada): estado ambiente.
+
+K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie ·
+(3) su propio `as_of` bajo demanda · (4) exenta con cita.
+
+**Es una candidata derivada de la firma, no la declaracion.** La decide una persona
+en el fichero de la capa declarada y puede corregirla con cita.
+
+**Ninguna clave temporal entre los campos derivados.** O no publica marca de
+tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
+mismo que lo primero: la foto de produccion lo decide, no este documento.
+
 ## Capa DECLARADA
 
-**PENDIENTE · F3.** Que pregunta del trader contesta, a que familia de ventana
-pertenece (K43), que promete, y si es superficie de producto o instrumento interno.
-Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
+**Declarada** en [`declarada/api-price-barriers.md`](../declarada/api-price-barriers.md) — pregunta del trader,
+familia de ventana decidida, promesa y superficie, cada una con su cita.
 
 ## Radio de impacto
 
