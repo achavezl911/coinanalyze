@@ -38,6 +38,9 @@ las rutas que mejor cumplen K43, no entre las que lo evaden.
 
 ### Lo que promete, y esta en el codigo
 
+**PROMESA · declara EN SU PROPIO CUERPO que lo que publica es densidad historica ya
+ejecutada, no un mapa de posiciones en riesgo.**
+
 `"type": "historical_realized_density_3h"` (`app/scalp_logic.py:3479`) — el campo `type`
 va **dentro de la respuesta**. La ruta declara, en su propio cuerpo, que lo que publica es
 **densidad historica de liquidaciones YA EJECUTADAS en 3 horas**, no un mapa de posiciones

@@ -46,11 +46,49 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
+### Las series de familia 2 comparten contrato, y se declaran juntas
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+Medido en la foto (`entregas/20260904-foto-prod-1.json`, 2026-09-04T22:34:11Z): **384 buckets de 15 min** publica `symbol`, `interval`, `rows`, y ademas
+**`coverage`** y **`data_gaps`** — los dos ultimos son el contrato de la familia y valen
+mas que las filas.
+
+**PROMESA 1 · declara LA VENTANA QUE SIRVIO, no la que le pidieron.**
+`coverage = {served_window}`. Un `limit` es una peticion; `served_window` es lo que
+hay. La ruta no deja que el consumidor deduzca la ventana contando filas — que es lo que
+haria si `rows` viniera solo.
+
+*Que significa no cumplirlo:* que `coverage` desapareciera. Entonces una serie corta por
+falta de dato y una serie corta porque se pidio poco serian indistinguibles, y cualquier
+tasa calculada encima tendria un denominador supuesto. Es **P5.2** llevado a las series.
+
+**PROMESA 2 · publica SUS HUECOS, no solo sus filas.**
+`data_gaps` trae `feed`, `exchanges`, `market`, `symbol`, `window_start`, `window_end`… Es
+la respuesta a **P0.2** —*"¿hay algun agujero en el historico que estoy mirando?"*— y la
+bateria le pone un caso concreto: **las 38 h del 08-28/29**. Una serie que publica sus
+huecos permite preguntar; una que los omite obliga a fiarse.
+
+**PROMESA 3 · el hueco declarado ENMASCARA el valor, no lo maquilla.**
+Es lo que hace `mask_gapped_series_rows` (`app/api.py:679-689`), y el codigo lo explica:
+
+> *"Un bucket con hueco declarado no puede seguir devolviendo precios como si nada:
+> `sample_count` y `coverage_pct` son material para ADIVINAR la cobertura, y adivinar es
+> justo lo que el panel no debe tener que hacer. Aqui la vela entera se pone a null, que es
+> una afirmacion y no una pista."*
+
+*Que significa no cumplirlo:* devolver el ultimo valor conocido en un bucket con hueco. Es
+**P0.9** —*"si el proveedor esta caido, ¿me entero o veo el ultimo valor congelado?"*— y la
+diferencia entre `null` y un numero rancio es la diferencia entre saberlo y no saberlo.
+
+### Lo propio de esta ruta
+
+**PROMESA · es la serie mas escueta de las cuatro, y eso es lo que promete.**
+`rows = [384]` con solo `bucket` y `oi`. No publica delta, ni cambio porcentual, ni
+acumulado: **el open interest es un nivel, no un flujo**, y derivarlo es del consumidor.
+
+*Que significa no cumplirlo:* anadir un `oi_change` calculado con una ventana que la ruta no
+declare. Habria dos cambios de OI en el sistema -este y el `oi_chg_24h_pct` de
+`/api/snapshot`- con ventanas distintas y el mismo nombre corto.
+
 
 ## SUPERFICIE
 

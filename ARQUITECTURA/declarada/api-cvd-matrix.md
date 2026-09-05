@@ -28,11 +28,27 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · publica su instante DOS veces, y la segunda con contexto.**
+`as_of` en primer nivel y **`window_meta`** con su propio `as_of`, `window_type`,
+`windows_are_nested`, `independent_confirmations`, `acceleration_measured` y
+`reset_timezone`.
+
+**PROMESA 2 · declara que sus ventanas SE SOLAPAN.**
+`windows_are_nested` e `independent_confirmations` — el mismo contrato que
+`/api/scalp/delta-matrix`, y por la misma razon: **seis ventanas anidadas que "confirman" lo
+mismo son UNA observacion repetida seis veces**. Es **P5.3** contestado por la propia ruta
+en vez de deducido por el consumidor.
+
+**PROMESA 3 · declara su huso de reinicio.** `reset_timezone`. Un CVD de sesion depende de
+donde se corta el dia, y dos rutas que corten distinto dan cifras distintas del mismo
+mercado. Publicarlo es lo que permite compararlas.
+
+*Que significa no cumplirlo:* que `independent_confirmations` desapareciera y quedaran seis
+ventanas sueltas. El consumidor contaria seis confirmaciones donde hay una.
+
 
 ## SUPERFICIE
 
