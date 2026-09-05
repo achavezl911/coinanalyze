@@ -89,7 +89,7 @@ tiempo, que es un instrumento que hoy no existe:
 
 ```sh
 # no hay serie: habria que capturar la ruta N veces y guardar phase.code
-harness/bin/api '/api/wyckoff?symbol=BTCUSDT' | python3 -c "import json,sys;print(json.load(sys.stdin)['phase'])"
+harness/bin/api '/api/wyckoff?symbol=BTCUSDT_PERP.A' | python3 -c "import json,sys;print(json.load(sys.stdin)['phase'])"
 ```
 
 **Y esto es de la misma clase que el `ts` de K90 en F3c**: una consulta escrita contra un

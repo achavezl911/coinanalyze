@@ -63,9 +63,9 @@ congelacion** —un perfil de 90 dias no tiene por que moverse en 34 s—, asi q
 candidata, no un hallazgo. Se cierra con dos capturas separadas por horas:
 
 ```sh
-harness/bin/api '/api/delta-profile?symbol=BTCUSDT' > /tmp/dp1.json
+harness/bin/api '/api/delta-profile?symbol=BTCUSDT_PERP.A' > /tmp/dp1.json
 # esperar 2 h
-harness/bin/api '/api/delta-profile?symbol=BTCUSDT' > /tmp/dp2.json
+harness/bin/api '/api/delta-profile?symbol=BTCUSDT_PERP.A' > /tmp/dp2.json
 diff <(python3 -c "import json;print(json.load(open('/tmp/dp1.json'))['to'])") \
      <(python3 -c "import json;print(json.load(open('/tmp/dp2.json'))['to'])")
 ```
