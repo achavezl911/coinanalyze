@@ -99,18 +99,20 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.api.records` | 22 | 7 | **28** | [impacto](../impacto/app-api.md) |
-| `app.api._utc_iso` | 5 | 0 | **5** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 5 | 0 | **5** | [impacto](../impacto/app-api.md) |
-| `app.api.signals_visibility` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 5 | **0** | 0 | **5** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 5 | **0** | 0 | **5** | [impacto](../impacto/app-api.md) |
+| `app.api.signals_visibility` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

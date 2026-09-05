@@ -89,21 +89,23 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.metrics.session_bounds` | 2 | 51 | **51** | [impacto](../impacto/app-metrics.md) |
-| `app.api.records` | 22 | 7 | **28** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 14 | 21 | **25** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 14 | 21 | **25** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.coverage_entry` | 13 | 0 | **13** | [impacto](../impacto/app-data_gaps.md) |
-| `app.api._session_window` | 2 | 0 | **2** | [impacto](../impacto/app-api.md) |
-| `app.api.verdicts` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.metrics.session_bounds` | 2 | **0** | 51 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
+| `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.coverage_entry` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-data_gaps.md) |
+| `app.api._session_window` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-api.md) |
+| `app.api.verdicts` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

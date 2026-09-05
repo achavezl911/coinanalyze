@@ -4,17 +4,17 @@
 
 1 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
-El radio POR TABLA se calcula subiendo llamadores hasta **k=2**; lo que este mas arriba **no se afirma**.
+El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
-| funcion | linea | por llamada | por tabla | total |
-|---|---|---|---|---|
-| [`at`](#at) | 22 | 0 | 43 | **43** |
+| funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
+|---|---|---|---|---|---|
+| [`at`](#at) | 22 | 0 | **0** | 43 ↑ | **0** |
 
 ## at
 
 `app/cutoffs.py:22` · clave completa `app.cutoffs.ClosedCutoff.at`
 
-**Radio total: 43 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 43** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -22,9 +22,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 43 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 43 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (43 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `external_macro_observation` — la escribe `app.external_macro.refresh_external_macro`
 - `liquidations` — la escribe `app.ingest.upsert_liquidations`
@@ -128,5 +137,5 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 6.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

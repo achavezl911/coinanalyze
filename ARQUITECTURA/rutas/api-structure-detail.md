@@ -85,25 +85,27 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 24 | 10 | **32** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.metrics.current_nyse_start` | 15 | 14 | **26** | [impacto](../impacto/app-metrics.md) |
-| `app.scalp_logic._explicit_as_of` | 25 | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._resample_highs_lows` | 14 | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._contiguous_measured_suffix` | 10 | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._structure_from_swings` | 9 | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._swings` | 9 | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.structure_detail` | 7 | 3 | **8** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._dsr` | 7 | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.api.structure_detail_endpoint` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 10 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.metrics.current_nyse_start` | 15 | **0** | 14 ↑ | **15** | [impacto](../impacto/app-metrics.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._resample_highs_lows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._contiguous_measured_suffix` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._structure_from_swings` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._swings` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.structure_detail` | 7 | **0** | 3 ↑ | **7** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._dsr` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.structure_detail_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

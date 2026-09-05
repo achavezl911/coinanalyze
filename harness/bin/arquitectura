@@ -792,18 +792,30 @@ INYECTADOS = {
 # LLAMADA = 0 rutas y radio POR TABLA = 8. Un unico numero -sea 0, sea 8- oculta la mitad
 # de la verdad y la mitad que oculta es la que costo 24 dias de snapshot caido.
 #
-# EL k, Y POR QUE VA ESCRITO EN CADA FICHA
-# El camino por tabla sube por los llamadores, porque el valor que calcula una funcion no
-# lo escribe ella: lo escribe alguien mas arriba. Subir SIN LIMITE llega al bucle maestro
-# -`app.ingest.run`- que ejecuta todos los ciclos y escribe 11 tablas, y entonces el radio
-# de `compute_snapshot` pasa de 8 a 43 de 68 rutas. Un radio que dice 43 de 68 no sirve
-# para decidir nada.
-#   k<=2  ->  8 rutas, exactamente las 8 que leen metrics_snapshot   <- se publica esto
-#   k=3   -> 43 rutas, porque entra ingest_cycle
-# El corte no es un numero elegido a ojo: a k=3 aparece el ORQUESTADOR, que es un limite
-# estructural del codigo. Y como cualquier corte deja fuera cosas ciertas, **cada ficha lo
-# dice**: lo que este mas arriba de k=2 no se afirma. Un limite declarado es informacion;
-# un limite callado es una mentira con forma de numero.
+# EL CAMINO POR TABLA SE PUBLICA CON DOS NUMEROS, NUNCA CON UNO
+#
+#   k=0    lo que la funcion escribe ELLA MISMA -> rutas que leen esas tablas.
+#          EXACTO. Sin ninguna suposicion. Es el dato para toda funcion que escribe.
+#   k<=2   sube por los llamadores. COTA SUPERIOR DECLARADA. Hace falta solo para
+#          funciones PURAS -como compute_snapshot, que no escribe nada- cuyo valor lo
+#          escribe alguien mas arriba: sin la cota, su radio seria cero.
+#
+# POR QUE DOS Y NO UNO, Y ES UNA CORRECCION DE F2.
+# F2 publicaba solo el k<=2 y afirmaba que el corte era "un limite estructural del codigo,
+# porque a k=3 aparece el orquestador". ERA FALSO, y estaba ajustado a UN caso. El segundo
+# caso lo tira (medido por el operador el 2026-09-05):
+#
+#   ws_collector._write_minute escribe spot_trades_agg ella misma (INSERT :254 y :275)
+#      k=0   -> 10 rutas   <- exacto, y lo confirma un grep de fichas independiente
+#      k<=2  -> 17 rutas   <- las 7 de mas entran por ws_collector.run, el bucle del
+#                             colector: el MISMO tipo de orquestador que para
+#                             compute_snapshot quedaba fuera a k=3, aqui esta DENTRO a
+#                             k=2, porque la cadena de llamadas es mas corta.
+#
+# O sea que el corte no depende de la estructura del sistema sino de la PROFUNDIDAD de
+# cada cadena, y eso no es un limite: es un numero que acierta en el caso con el que se
+# ajusto. Sobre las 209 funciones con radio por tabla, 196 tienen k<=2 mayor que k=0.
+# El 17 no era falso -es una cota verdadera-: lo que faltaba era decir que es una cota.
 # =====================================================================================
 K_POR_TABLA = 2
 
@@ -842,12 +854,14 @@ def calcula_impacto(funcs: dict[str, Funcion], rutas: list[dict], catalogo: dict
 
     out: dict[str, dict] = {}
     for clave, fn in funcs.items():
+        # --- k=0 · LO QUE ESCRIBE ELLA MISMA. Exacto, sin ninguna suposicion. ----------
+        tablas_k0 = sorted(escribe_directo.get(clave, ()))
+        rutas_k0 = sorted({r for t in tablas_k0 for r in lectoras.get(t, [])})
+
+        # --- k<=2 · COTA SUPERIOR, porque el valor de una funcion pura lo escribe otro --
         arriba = sube_llamadores(clave, funcs, K_POR_TABLA)
         tablas_escritas: dict[str, list[str]] = {}
         for a in arriba:
-            # de cada llamador se mira lo que escribe EL MISMO y lo que llama a UN salto:
-            # es el camino por el que el valor de esta funcion acaba en disco, sin
-            # arrastrar el resto del bucle en el que ese llamador participa.
             for f2 in [a] + sorted(funcs[a].llama):
                 for t in escribe_directo.get(f2, ()):
                     tablas_escritas.setdefault(t, []).append(f2)
@@ -858,10 +872,14 @@ def calcula_impacto(funcs: dict[str, Funcion], rutas: list[dict], catalogo: dict
         out[clave] = {
             "sitio": f"{fn.fichero}:{fn.linea}",
             "por_llamada": rutas_llamada,
+            "por_tabla_k0": rutas_k0,
+            "tablas_k0": tablas_k0,
             "por_tabla": rutas_tabla,
             "tablas_escritas": {t: sorted(set(v)) for t, v in sorted(tablas_escritas.items())},
             "llamadores_hasta_k": sorted(c for c, d in arriba.items() if d > 0),
             "solo_por_tabla": sorted(set(rutas_tabla) - set(rutas_llamada)),
+            "cota_mas_ancha_que_k0": len(rutas_tabla) > len(rutas_k0),
+            "total_exacto": len(set(rutas_llamada) | set(rutas_k0)),
             "total": len(set(rutas_llamada) | set(rutas_tabla)),
         }
     return out
@@ -920,6 +938,27 @@ def controles_de_respuesta_conocida(impacto: dict, tablas: dict, ey: dict) -> di
         "cuadra": (len(esc) == 1
                    and esc[0]["sitio"] == "app/scalp_collector.py:74"
                    and len(lect) == 14),
+    }
+
+    # 4 · _write_minute a k=0: las 10 rutas que leen spot_trades_agg, con /api/cvd/spot
+    #     dentro. ESTE CONTROL EXISTE PORQUE F2 SE EQUIVOCO. F2 ajusto el k contra un solo
+    #     caso (compute_snapshot) y afirmo que el corte era estructural; este segundo caso
+    #     lo desmiente -a k<=2 da 17 porque entra ws_collector.run- y obliga a publicar el
+    #     k=0 exacto al lado de la cota. Un control con UN caso no es un control: es una
+    #     coincidencia con la que se puede vivir mucho tiempo.
+    i = impacto.get("app.ws_collector._write_minute", {})
+    lect_spot = sorted(tablas.get("spot_trades_agg", {}).get("leida_por", []))
+    salida["write_minute_k0"] = {
+        "pregunta": "a que rutas llega lo que _write_minute escribe ella misma",
+        "por_tabla_k0": i.get("por_tabla_k0", []),
+        "por_tabla_k2_cota": len(i.get("por_tabla", [])),
+        "rutas_que_leen_spot_trades_agg": lect_spot,
+        "esperado": ("por_tabla_k0 == las 10 lectoras de spot_trades_agg, /api/cvd/spot "
+                     "dentro; y la cota k<=2 es MAYOR, no igual"),
+        "cuadra": (i.get("por_tabla_k0", []) == lect_spot
+                   and len(lect_spot) == 10
+                   and "/api/cvd/spot" in lect_spot
+                   and len(i.get("por_tabla", [])) > len(lect_spot)),
     }
 
     salida["todos_cuadran"] = all(v["cuadra"] for k, v in salida.items() if isinstance(v, dict))
@@ -1056,21 +1095,27 @@ def agrupa_impacto_por_modulo(datos: dict) -> dict[str, str]:
              "> Generado por `harness/bin/arquitectura`. No editar a mano.", "",
              f"{len(items)} funciones de este fichero alcanzan alguna ruta. "
              "**Tocar cualquiera de ellas puede cambiar las rutas que se listan.**", "",
-             f"El radio POR TABLA se calcula subiendo llamadores hasta **k={k}**; "
-             "lo que este mas arriba **no se afirma**.", "",
-             "| funcion | linea | por llamada | por tabla | total |",
-             "|---|---|---|---|---|"]
+             "El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe "
+             f"ella misma (**exacto**), y `k<={k}` sube por los llamadores (**cota superior "
+             "declarada**). Nunca uno solo.", "",
+             "| funcion | linea | por llamada | tabla k=0 | tabla k<=%d (cota) | total exacto |" % k,
+             "|---|---|---|---|---|---|"]
         for clave, i in items:
+            cota = f"{len(i['por_tabla'])}" + (" ↑" if i["cota_mas_ancha_que_k0"] else "")
             L.append(f"| [`{clave.split('.')[-1]}`](#{clave.split('.')[-1].lower().replace('_', '-')}) "
                      f"| {i['sitio'].split(':')[1]} | {len(i['por_llamada'])} | "
-                     f"{len(i['por_tabla'])} | **{i['total']}** |")
+                     f"**{len(i['por_tabla_k0'])}** | {cota} | **{i['total_exacto']}** |")
         L.append("")
         for clave, i in items:
             L.append(f"## {clave.split('.')[-1]}")
             L.append("")
             L.append(f"`{i['sitio']}` · clave completa `{clave}`")
             L.append("")
-            L.append(f"**Radio total: {i['total']} rutas** de {datos['resumen']['rutas']}.")
+            # NUNCA UN SOLO NUMERO, tampoco en la cabecera: es donde mas se lee y donde
+            # mas facil seria volver a fundir el dato exacto con la cota.
+            L.append(f"**Radio exacto: {i['total_exacto']} rutas** de {datos['resumen']['rutas']} "
+                     f"· **cota superior: {i['total']}**"
+                     + (" (mas ancha)" if i["cota_mas_ancha_que_k0"] else " (igual al exacto)"))
             L.append("")
             L.append(f"### Por llamada — {len(i['por_llamada'])} rutas")
             L.append("")
@@ -1079,10 +1124,28 @@ def agrupa_impacto_por_modulo(datos: dict) -> dict[str, str]:
             L.append(md_lista(f"[`{r}`](../rutas/{slug(r)}.md)" for r in i["por_llamada"])
                      if i["por_llamada"] else "_ninguna ruta la ejecuta._")
             L.append("")
-            L.append(f"### Por tabla — {len(i['por_tabla'])} rutas · k={k}")
+            L.append(f"### Por tabla · k=0 — {len(i['por_tabla_k0'])} rutas · **exacto**")
             L.append("")
+            if i["tablas_k0"]:
+                L.append("Escribe **ella misma**: " + ", ".join(f"`{t}`" for t in i["tablas_k0"]))
+                L.append("")
+                L.append("Y esas tablas las leen:")
+                L.append("")
+                L.append(md_lista(f"[`{r}`](../rutas/{slug(r)}.md)" for r in i["por_tabla_k0"]))
+            else:
+                L.append("_no escribe ninguna tabla ella misma._ Si es una funcion pura, su")
+                L.append("impacto por dato viaja por quien la llama: mira la cota de abajo.")
+            L.append("")
+            L.append(f"### Por tabla · k<={k} — {len(i['por_tabla'])} rutas · **cota superior**")
+            L.append("")
+            if i["cota_mas_ancha_que_k0"]:
+                L.append(f"**Esta cota es MAS ANCHA que el dato exacto** ({len(i['por_tabla'])} contra "
+                         f"{len(i['por_tabla_k0'])}). Parte de la diferencia puede entrar por un bucle")
+                L.append("de colector que solo comparte llamador, no dato. **Es un techo, no una lista**")
+                L.append("**de afectadas.**")
+                L.append("")
             if i["tablas_escritas"]:
-                L.append("Esta funcion, o alguien que la llama hasta k=%d, escribe:" % k)
+                L.append("Ella o alguien que la llama hasta k=%d escribe:" % k)
                 L.append("")
                 for t, quien in i["tablas_escritas"].items():
                     L.append(f"- `{t}` — la escribe {', '.join('`' + q + '`' for q in quien)}")
@@ -1099,8 +1162,9 @@ def agrupa_impacto_por_modulo(datos: dict) -> dict[str, str]:
                 L.append("")
                 L.append(md_lista(f"[`{r}`](../rutas/{slug(r)}.md)" for r in i["solo_por_tabla"]))
                 L.append("")
-            L.append(f"<sub>Radio por tabla hasta k={k}. Lo que este mas arriba no se afirma. "
-                     f"Llamadores considerados: {len(i['llamadores_hasta_k'])}.</sub>")
+            L.append(f"<sub>k=0 es exacto. La cota k<={k} sube por {len(i['llamadores_hasta_k'])} "
+                     "llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas "
+                     f"arriba de k={k} no se afirma en ninguno de los dos.</sub>")
             L.append("")
         out[modulo] = "\n".join(L) + "\n"
     return out
@@ -1119,33 +1183,43 @@ def md_impacto(datos: dict) -> str:
     A("")
     A("| camino | que significa | exactitud |")
     A("|---|---|---|")
-    A("| **por llamada** | la ruta **ejecuta** esta funcion | exacto: esta en su cierre o no |")
-    A(f"| **por tabla** | esta funcion, o quien la llama hasta k={k}, **escribe** una tabla que la ruta **lee** | acotado por k |")
+    A("| **por llamada** | la ruta **ejecuta** esta funcion | **exacto**: esta en su cierre o no |")
+    A("| **por tabla · k=0** | la funcion **escribe ella misma** una tabla que la ruta **lee** | **exacto** |")
+    A(f"| **por tabla · k<={k}** | ella *o quien la llama hasta k={k}* escribe una tabla que la ruta lee | **cota superior** |")
     A("")
-    A("La ruta no ejecuta nada del camino por tabla: **se entera por el dato**. Fundir los")
-    A("dos en un solo numero ocultaria justo la mitad que importa. El caso que lo prueba:")
+    A("La ruta no ejecuta nada del camino por tabla: **se entera por el dato**. Fundir")
+    A("cualquiera de estos en un solo numero ocultaria justo la mitad que importa.")
     A("")
     A("```")
-    A("compute_snapshot   por llamada:  0 rutas      <- un grafo de llamadas diria 'no afecta a nada'")
-    A("                   por tabla:    8 rutas      <- y tumbo el snapshot 24 dias")
+    A("compute_snapshot   por llamada:      0 rutas   <- un grafo de llamadas diria 'no afecta a nada'")
+    A("                   por tabla k=0:    0 rutas   <- no escribe nada: es una funcion pura")
+    A("                   por tabla k<=2:   8 rutas   <- y tumbo el snapshot 24 dias")
     A("```")
     A("")
-    A(f"## El corte: k={k}, y esta declarado")
+    A("## Por que DOS numeros, y no uno · una correccion de F2")
     A("")
-    A("El camino por tabla sube por los llamadores, porque el valor que calcula una funcion")
-    A("no lo escribe ella. Subir **sin limite** llega a `app.ingest.run`, el bucle maestro")
-    A("que ejecuta todos los ciclos y escribe 11 tablas:")
+    A("F2 publicaba solo el `k<=2` y afirmaba que el corte era **un limite estructural del**")
+    A("**codigo, porque a k=3 aparece el orquestador**. Era falso, y estaba ajustado a UN")
+    A("caso. El segundo caso lo tira:")
     A("")
-    A("| k | rutas en el radio de `compute_snapshot` | que entra |")
-    A("|---|---|---|")
-    A("| 1 | 8 | `compute_and_store_all` |")
-    A("| 2 | **8** | `publish_snapshot` — **es el que se publica** |")
-    A("| 3 | 43 | `ingest_cycle`, el orquestador |")
-    A("| sin limite | 43 | `ingest.run` |")
+    A("```")
+    A("ws_collector._write_minute escribe spot_trades_agg ELLA MISMA (INSERT :254 y :275)")
+    A("   k=0   -> 10 rutas   exacto, y lo confirma un grep de fichas independiente")
+    A("   k<=2  -> 17 rutas   las 7 de mas entran por ws_collector.run, el bucle del colector")
+    A("```")
     A("")
-    A(f"A k={k} el radio son las 8 rutas que leen `metrics_snapshot`, ni una mas. El corte no")
-    A("es un numero elegido a ojo: a k=3 aparece el orquestador, que es un limite")
-    A("estructural. **Lo que este mas arriba de k=%d no se afirma**, y cada ficha lo repite." % k)
+    A("El **mismo tipo de orquestador** que para `compute_snapshot` quedaba fuera a k=3, aqui")
+    A("esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no depende")
+    A("de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un")
+    A("limite: es un numero que acierta en el caso con el que se ajusto.")
+    A("")
+    A(f"**Sobre las {len(fs)} funciones con radio, {sum(1 for x in fs.values() if x['cota_mas_ancha_que_k0'])} "
+      "tienen la cota mas ancha que su k=0.** El 17 no era")
+    A("falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.")
+    A("")
+    A(f"Solo **{sum(1 for x in fs.values() if x['tablas_k0'])}** de las {len(fs)} escriben alguna tabla")
+    A("ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por")
+    A("eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.")
     A("")
     A("## A · si toco una TABLA")
     A("")
@@ -1161,12 +1235,16 @@ def md_impacto(datos: dict) -> str:
     A(f"{len(fs)} funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el")
     A("fichero de su modulo**: `impacto/<modulo>.md`.")
     A("")
-    A("| funcion | sitio | por llamada | por tabla | solo por tabla | total |")
+    A("| funcion | sitio | por llamada | tabla k=0 | tabla k<=%d (cota) | total exacto |" % k)
     A("|---|---|---|---|---|---|")
-    for clave, i in sorted(fs.items(), key=lambda x: (-x[1]["total"], x[0])):
+    for clave, i in sorted(fs.items(), key=lambda x: (-x[1]["total_exacto"], -x[1]["total"], x[0])):
         mod = i["sitio"].split(":")[0].replace("/", "-").replace(".py", "")
+        cota = f"{len(i['por_tabla'])}" + (" ↑" if i["cota_mas_ancha_que_k0"] else "")
         A(f"| [`{clave}`](impacto/{mod}.md) | `{i['sitio']}` | {len(i['por_llamada'])} | "
-          f"{len(i['por_tabla'])} | {len(i['solo_por_tabla'])} | **{i['total']}** |")
+          f"**{len(i['por_tabla_k0'])}** | {cota} | **{i['total_exacto']}** |")
+    A("")
+    A("La flecha ↑ marca las funciones cuya cota es mas ancha que su dato exacto: ahi el")
+    A("numero de la cota **es un techo**, no una lista de afectadas.")
     A("")
     A("## C · los tres controles de respuesta conocida")
     A("")
@@ -1405,20 +1483,23 @@ def md_ruta(r: dict, datos: dict) -> str:
     # de arriba son las que, si las tocas, se llevan por delante mas cosas ademas de esta.
     suyas = [(c, fs[c]) for c in [r["handler"]] + r["cierre"] if c in fs]
     suyas.sort(key=lambda x: (-x[1]["total"], x[0]))
-    A(f"Radio por tabla calculado **hasta k={k}**; lo que este mas arriba **no se afirma**.")
+    A(f"El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella")
+    A(f"misma (**exacto**) y `k<={k}` sube por los llamadores (**cota superior declarada**;")
+    A("lo que este mas arriba no se afirma).")
     A("")
     if suyas:
         A("Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto")
         A("significa que ese arreglo de dos lineas no es de dos lineas:")
         A("")
-        A("| funcion | por llamada | por tabla | total | detalle |")
-        A("|---|---|---|---|---|")
+        A("| funcion | por llamada | tabla k=0 | tabla k<=%d (cota) | total exacto | detalle |" % k)
+        A("|---|---|---|---|---|---|")
         for clave, i in suyas[:25]:
             mod = i["sitio"].split(":")[0].replace("/", "-").replace(".py", "")
-            A(f"| `{clave}` | {len(i['por_llamada'])} | {len(i['por_tabla'])} | "
-              f"**{i['total']}** | [impacto](../impacto/{mod}.md) |")
+            cota = f"{len(i['por_tabla'])}" + (" ↑" if i["cota_mas_ancha_que_k0"] else "")
+            A(f"| `{clave}` | {len(i['por_llamada'])} | **{len(i['por_tabla_k0'])}** | {cota} | "
+              f"**{i['total_exacto']}** | [impacto](../impacto/{mod}.md) |")
         if len(suyas) > 25:
-            A(f"| _… y {len(suyas) - 25} mas_ | | | | [IMPACTO.md](../IMPACTO.md) |")
+            A(f"| _… y {len(suyas) - 25} mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |")
         A("")
     else:
         A("_ninguna funcion de esta ruta alcanza otra ruta._")

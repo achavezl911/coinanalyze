@@ -113,32 +113,34 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | 9 | **44** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 24 | 10 | **32** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps.blocking_requirement_keys` | 20 | 14 | **31** | [impacto](../impacto/app-data_gaps.md) |
-| `app.scalp_logic._explicit_as_of` | 25 | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.load_baselines` | 14 | 9 | **21** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.baseline_band` | 13 | 9 | **20** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._flow_windows` | 13 | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.spot_flow_windows` | 13 | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._gap_and_baseline` | 12 | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._gap_threshold_seconds` | 12 | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._gap_too_large` | 12 | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._oi_change_pct` | 11 | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._realtime_flow` | 11 | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._flow_imbalance` | 8 | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._flow_rate` | 8 | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.futures_flow_windows` | 8 | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.delta_matrix` | 7 | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.api.scalp_delta_matrix` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 37 | **0** | 9 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 10 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.load_baselines` | 14 | **0** | 9 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.baseline_band` | 13 | **0** | 9 ↑ | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.spot_flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._gap_and_baseline` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._gap_threshold_seconds` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._gap_too_large` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._oi_change_pct` | 11 | **0** | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._realtime_flow` | 11 | **0** | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._flow_imbalance` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._flow_rate` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.futures_flow_windows` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.delta_matrix` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.scalp_delta_matrix` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

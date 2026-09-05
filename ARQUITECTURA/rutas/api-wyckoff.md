@@ -107,36 +107,38 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.interpretation.number` | 13 | 3 | **14** | [impacto](../impacto/app-interpretation.md) |
-| `app.zones._atr_abs` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.zones._edge_episodes` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.zones._ols_slope` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.zones._rotations` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.zones.range_validate_read` | 4 | 0 | **4** | [impacto](../impacto/app-zones.md) |
-| `app.scalp_logic.wyckoff_context` | 3 | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.wyckoff._atr_abs` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._bar_date` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._bias_read` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._candidate_rank` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._clamp` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._clean_bars` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._events` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._phase` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._quantile` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._range_bounds` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._session_date` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff._signed_balance` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff.detect_latest_range` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.wyckoff.wyckoff_auto_read` | 3 | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
-| `app.api.wyckoff_endpoint` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
+| `app.zones._atr_abs` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones._edge_episodes` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones._ols_slope` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones._rotations` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.zones.range_validate_read` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
+| `app.scalp_logic.wyckoff_context` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.wyckoff._atr_abs` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._bar_date` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._bias_read` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._candidate_rank` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._clamp` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._clean_bars` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._events` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._phase` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._quantile` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._range_bounds` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._session_date` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff._signed_balance` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff.detect_latest_range` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.wyckoff.wyckoff_auto_read` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-wyckoff.md) |
+| `app.api.wyckoff_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

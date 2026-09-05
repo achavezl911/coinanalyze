@@ -97,27 +97,29 @@ Esto NO se puede derivar del codigo: se escribe a mano una vez y se mantiene.
 
 ## Radio de impacto
 
-Radio por tabla calculado **hasta k=2**; lo que este mas arriba **no se afirma**.
+El radio por tabla va con **dos numeros**: `k=0` es lo que la funcion escribe ella
+misma (**exacto**) y `k<=2` sube por los llamadores (**cota superior declarada**;
+lo que este mas arriba no se afirma).
 
 Las funciones de esta ruta, y a cuantas rutas MAS llega cada una. Un numero alto
 significa que ese arreglo de dos lineas no es de dos lineas:
 
-| funcion | por llamada | por tabla | total | detalle |
-|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | 0 | **62** | [impacto](../impacto/app-api.md) |
-| `app.interpretation.number` | 13 | 3 | **14** | [impacto](../impacto/app-interpretation.md) |
-| `app.api.level_breakout_endpoint` | 1 | 0 | **1** | [impacto](../impacto/app-api.md) |
-| `app.breakout._atr` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.breakout._confirmation_checks` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.breakout._delta_usd` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.breakout._rate` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.breakout.attempt_features` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.breakout.breakout_read` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.breakout.build_corpus` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.breakout.classify_outcome` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.breakout.find_attempts` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.breakout.wilson_ci` | 1 | 0 | **1** | [impacto](../impacto/app-breakout.md) |
-| `app.scalp_logic.level_breakout` | 1 | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
+| funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
+|---|---|---|---|---|---|
+| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
+| `app.api.level_breakout_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.breakout._atr` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.breakout._confirmation_checks` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.breakout._delta_usd` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.breakout._rate` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.breakout.attempt_features` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.breakout.breakout_read` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.breakout.build_corpus` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.breakout.classify_outcome` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.breakout.find_attempts` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.breakout.wilson_ci` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
+| `app.scalp_logic.level_breakout` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

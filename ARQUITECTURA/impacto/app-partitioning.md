@@ -4,18 +4,18 @@
 
 2 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
-El radio POR TABLA se calcula subiendo llamadores hasta **k=2**; lo que este mas arriba **no se afirma**.
+El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
-| funcion | linea | por llamada | por tabla | total |
-|---|---|---|---|---|
-| [`apply_temporal_retention`](#apply-temporal-retention) | 25 | 0 | 51 | **51** |
-| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 20 | 0 | 21 | **21** |
+| funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
+|---|---|---|---|---|---|
+| [`apply_temporal_retention`](#apply-temporal-retention) | 25 | 0 | **0** | 51 ↑ | **0** |
+| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 20 | 0 | **0** | 21 ↑ | **0** |
 
 ## apply_temporal_retention
 
 `app/partitioning.py:25` · clave completa `app.partitioning.apply_temporal_retention`
 
-**Radio total: 51 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 51** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -23,9 +23,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 51 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 51 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (51 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `daily_session_agg` — la escribe `app.daily_agg.apply_retention`
 - `daily_verdict` — la escribe `app.daily_agg.apply_retention`, `app.daily_agg.persist_verdicts`
@@ -153,13 +162,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 4.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## ensure_temporal_partitions
 
 `app/partitioning.py:20` · clave completa `app.partitioning.ensure_temporal_partitions`
 
-**Radio total: 21 rutas** de 68.
+**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -167,9 +176,18 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla — 21 rutas · k=2
+### Por tabla · k=0 — 0 rutas · **exacto**
 
-Esta funcion, o alguien que la llama hasta k=2, escribe:
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 21 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
 
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `market_assets` — la escribe `app.db.sync_market_catalog`
@@ -229,5 +247,5 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/structure`](../rutas/api-structure.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>Radio por tabla hasta k=2. Lo que este mas arriba no se afirma. Llamadores considerados: 6.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
