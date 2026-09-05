@@ -204,6 +204,69 @@ if [ -d "$DOC/declarada" ]; then
   fi
 fi
 
+# --- BRAZO 5 · LA FICHA NO PUEDE CONTRADECIR A LA DERIVADA DEL MISMO COMMIT ------------
+# EL CASO QUE LO MOTIVA, y es de manual. `declarada/api-volatility.md` afirmaba «cero
+# llamadas y cero menciones, una de las seis rutas sin ningun rastro» mientras
+# `derivada.json` del MISMO COMMIT listaba una mencion. Y la mencion era el comentario que
+# explicaba que se habia quitado esa ruta del fixture para no contaminar el censo: el
+# arreglo quito el fixture y la prosa que lo explicaba volvio a meter la mencion.
+# Quien lee ARQUITECTURA/ lee la ficha, no el JSON. Un mapa que se contradice consigo mismo
+# en el mismo commit es exactamente lo que este check existe para impedir, y hasta hoy no
+# lo cazaba: el brazo 1 compara la derivada contra su regeneracion, y la prosa a mano de la
+# capa declarada esta -a proposito- fuera de esa comparacion.
+#
+# NO se hace en el generador y es deliberado: si el generador leyera estas afirmaciones,
+# entrarian en derivada.json y editar una frase de la capa declarada moveria el mapa
+# entero, que es justo lo que el mecanismo de F3 evita. Lo comprueba el check, que puede
+# mirar las dos capas sin mezclarlas.
+desacuerdos=$(python3 - "$DOC" 2>&1 <<'PY'
+import json, re, sys
+from pathlib import Path
+doc = Path(sys.argv[1])
+d = json.load(open(doc / "derivada.json"))
+por_slug = {}
+for r in d["rutas"]:
+    s = r["declarada"]["fichero"].split("/")[-1][:-3]
+    por_slug[s] = r
+
+# Afirmaciones ACOTADAS y verificables. No se intenta entender la prosa: se buscan frases
+# concretas que afirman algo que la derivada ya mide, y solo esas.
+REGLAS = [
+    (r"cero llamadas",              lambda c: c["n_llamadas"] == 0,            "dice 'cero llamadas'"),
+    (r"cero menciones",             lambda c: c["n_menciones"] == 0,           "dice 'cero menciones'"),
+    (r"sin ningun rastro",          lambda c: c["sin_ninguno"],                "dice 'sin ningun rastro'"),
+    (r"Sin consumidor conocido",    lambda c: c["sin_ninguno"],                "dice 'sin consumidor conocido'"),
+    (r"NADIE LA LLAMA",             lambda c: c["n_llamadas"] == 0,            "dice 'nadie la llama'"),
+    (r"\*\*La llama el panel",      lambda c: c["llamada_desde_el_panel"],     "dice 'la llama el panel'"),
+    (r"[Nn]o la llama el panel",    lambda c: not c["llamada_desde_el_panel"], "dice 'no la llama el panel'"),
+]
+malos = []
+for f in sorted((doc / "declarada").glob("*.md")):
+    r = por_slug.get(f.stem)
+    if r is None:
+        continue
+    texto = f.read_text(encoding="utf-8", errors="replace")
+    for pat, ok, etiqueta in REGLAS:
+        if re.search(pat, texto) and not ok(r["consumo"]):
+            malos.append(f"{f.name} {etiqueta} y la derivada dice "
+                         f"llamadas={r['consumo']['n_llamadas']} "
+                         f"menciones={r['consumo']['n_menciones']}")
+print("\n".join(malos))
+PY
+); rc_des=$?
+
+if [ "$rc_des" != "0" ]; then
+  echo "NO MEDIDO: el comparador ficha/derivada fallo: $(printf '%s' "$desacuerdos" | tail -1 | cut -c1-120)"
+  exit 2
+fi
+if [ -n "$desacuerdos" ]; then
+  n=$(printf '%s\n' "$desacuerdos" | grep -c .)
+  echo "$n ficha(s) de la capa declarada contradicen a derivada.json DEL MISMO COMMIT:"
+  printf '%s\n' "$desacuerdos" | head -6 | sed 's/^/  /'
+  echo "  quien lee ARQUITECTURA/ lee la ficha. Corrige la prosa o regenera."
+  exit 1
+fi
+
 echo "ARQUITECTURA/ describe las $n_doc rutas del codigo, coincide con la regeneracion fresca"
 echo "  y los cuatro controles de impacto cuadran con su respuesta conocida"
 printf '  capa DECLARADA: %s completas · %s incompletas · %s sin declarar (de %s). No es ROJO: se cuenta.\n' \

@@ -41,3 +41,7 @@ graphify-out/
 
 # instrumento de K31: jsdom se instala con npm install en harness/panel
 harness/panel/node_modules/
+
+# lo deja la sesion del implementador dentro del repo, y verify cuenta untracked:
+# el mismo arbol sale limpio o sucio segun quien mire (devops no lee .claude/, root si).
+.claude/settings.local.json

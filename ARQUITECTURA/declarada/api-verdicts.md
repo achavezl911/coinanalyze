@@ -45,11 +45,35 @@ adivinar. **Candidata a familia 1 con defecto declarado.**
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · el veredicto es INMUTABLE desde su primera emision.**
+En la foto: `note = "snapshot = primera emision inmutabl…"` y `logic_version =
+"daily-verdict-v4"`. Contesta **P1.8** —*"¿el veredicto tiene fecha o es perpetuo?"*— y
+**P5.4** —*"¿esto se midio antes o despues de conocer el resultado?"*—: un veredicto que se
+congela al emitirse no se puede reescribir cuando se sabe como acabo.
+
+**PROMESA 2 · la version de la logica es un PARAMETRO, no un adorno.**
+`logic_version` se puede pedir (`app/api.py:1826`, con su defecto
+`DAILY_VERDICT_LOGIC_VERSION`). O sea que se puede preguntar por lo que decia la version
+anterior **sin** que la nueva reescriba la historia. Es exactamente lo que faltaba en el
+defecto de **P5.5** que la bateria ya midio: *"dos etiquetas de version ocupaban DIAS
+DISTINTOS"*.
+
+**PROMESA 3 · declara su cobertura.** `coverage = {served_window}` al lado de
+`rows = [20]`: la ventana servida no se deduce del numero de filas.
+
+*Que significa no cumplirlo:* que una fila cambiara de valor entre dos consultas del mismo
+`session_date` y `logic_version`. Eso es comprobable con dos capturas, y **no lo he hecho**:
+
+```sh
+harness/bin/api '/api/verdicts?symbol=BTCUSDT&limit=5' > /tmp/v1.json
+# esperar, repetir, y comparar por (session_date, logic_version)
+```
+
+**La llama el panel** (`static/app.js:1630`).
+
 
 ## SUPERFICIE
 

@@ -89,9 +89,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **readme** | — | `README.md:290`, `README.md:291`, `README.md:319`, `README.md:503` |
-| **tests** | — | `tests/test_metrics_endpoint.py:3`, `tests/test_metrics_endpoint.py:4` |
+| **tests** | — | `tests/test_metrics_endpoint.py:3`, `tests/test_metrics_endpoint.py:4`, `tests/test_metrics_endpoint.py:161` |
 
-**Nadie la llama.** Sus 6 rastros son todos MENCION -comentario,
+**Nadie la llama.** Sus 7 rastros son todos MENCION -comentario,
 docstring o documento-. Es la forma del patron que en esta casa se ha repetido
 nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**
 

@@ -29,11 +29,29 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 
 ## PROMESA
 
-**PENDIENTE.** No se ha escrito que promete esta ruta ni que significa no cumplirlo.
 
-Una promesa vale si es comprobable: "publica el instante de construccion", "no
-publica un 0 sin testigo", "la senal dura al menos N minutos". Si la ruta no
-promete nada comprobable, eso tambien se escribe.
+### Lo que promete
+
+**PROMESA 1 · separa el corte de las METRICAS del corte del PRECIO.**
+Entre sus 35 campos derivados estan **`metrics_cutoff_at`** y **`price_cutoff_at`**, ademas
+de `ts`. Tres marcas distintas en una misma fila, y no es redundancia: un precio de hace 5
+segundos junto a una metrica de hace 3 minutos es lo normal, y fundirlas en un `ts` unico
+seria el defecto que **P0.1** describe —*"una etiqueta unica sobre datos de vendimias
+distintas miente MAS que 43 etiquetas"*—.
+
+**PROMESA 2 · publica la fila entera del snapshot, sin recortar.**
+Los campos salen de `SELECT DISTINCT ON (symbol) * FROM metrics_snapshot` (`app/api.py:622`)
+y son las 35 columnas declaradas en `sql/schema.sql:945`. Que sea `*` importa: un consumidor
+que necesite una columna nueva la tiene el dia que se anade, sin tocar la ruta.
+
+*Que significa no cumplirlo:* que apareciera una lista blanca de columnas. Entonces
+`metrics_snapshot` y lo que se publica dejarian de ser lo mismo, y las 8 rutas que leen esa
+tabla podrian divergir entre si.
+
+**Nadie la llama.** Sus tres rastros son menciones (`K31-cubos.py:109`, `README.md:401`,
+`tests/…:89`). Es la puerta directa a la tabla que alimenta a otras 8 rutas, y ninguna la
+usa: todas leen la tabla por su cuenta.
+
 
 ## SUPERFICIE
 

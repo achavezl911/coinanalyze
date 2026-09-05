@@ -953,10 +953,47 @@ RE_TEMPORAL = re.compile(
 )
 
 
-# Una linea es COMENTARIO si empieza por # (sh/py) o // (js), o si esta dentro de un
-# docstring. No pesa igual que una llamada: un check que NOMBRA una ruta en un comentario
-# no la consume.
+# Una linea es COMENTARIO si empieza por # (sh/py) o // (js). Para .py NO basta con esto:
+# ver lineas_de_prosa_py().
 RE_COMENTARIO = re.compile(r"^\s*(#|//|\*|<!--)")
+
+# LA RUTA ALCANZADA POR UNA VARIABLE DE URL BASE.
+#   curl "$API_PROD/api/healthz"     <- el caracter anterior a / es una LETRA
+#   curl "${API_PROD}/api/healthz"   <- el anterior es }
+# El limite de token de la primera version rechazaba la primera y aceptaba la segunda: el
+# mismo codigo con y sin llaves daba dos veredictos. En este repo hay 5 llamadas asi, todas
+# curl real con netrc contra produccion, y el detector no acreditaba NINGUNA — acreditaba
+# la linea de DEBAJO, que en las cinco es el `echo` del mensaje de error. O sea que el mapa
+# decia que el consumidor de la ruta era el aviso de que no habia respondido.
+# Se normaliza el prefijo ANTES de casar: $VAR, ${VAR} y esquema://host:puerto se sustituyen
+# por un espacio, y despues se aplica el mismo limite de token de siempre.
+RE_BASE_URL = re.compile(
+    r"\$\{[A-Za-z_][A-Za-z0-9_]*\}"          # ${API_PROD}
+    r"|\$[A-Za-z_][A-Za-z0-9_]*"             # $API_PROD
+    r"|[a-zA-Z][a-zA-Z0-9+.-]*://[^\s\"'`]*?(?=/api/)"   # https://host:8443
+)
+
+
+def lineas_de_prosa_py(texto: str) -> set:
+    """Numeros de linea que son COMENTARIO o CADENA en un .py, segun `tokenize`.
+
+    La heuristica de "la linea empieza por #" funciona en .sh y NO en .py: el caso mas
+    comun de todos es el docstring que abre un fichero de test —`tests/test_x.py:1`— y la
+    version anterior lo acreditaba como LLAMADA. Eran 15 de las 290 citas .py, y para las
+    cinco rutas de /api/signals/* esa era su UNICA cita de tests.
+    Un docstring no llama a nada. Aqui se tokeniza en vez de adivinar."""
+    import io, tokenize as tk
+    fuera = set()
+    try:
+        for tok in tk.generate_tokens(io.StringIO(texto).readline):
+            if tok.type in (tk.COMMENT, tk.STRING):
+                for n in range(tok.start[0], tok.end[0] + 1):
+                    fuera.add(n)
+    except Exception:
+        # fichero que no tokeniza (sintaxis rota, encoding raro): no se inventa nada, se
+        # cae a la heuristica de linea y ya esta. Declarado, no silencioso.
+        return set()
+    return fuera
 
 
 def consumidores_de(repo: Path, camino: str) -> dict:
@@ -992,20 +1029,13 @@ def consumidores_de(repo: Path, camino: str) -> dict:
                 texto = p.read_text(encoding="utf-8", errors="replace")
             except Exception:
                 continue
-            en_docstring = False
+            prosa = lineas_de_prosa_py(texto) if p.suffix == ".py" else set()
             for n, linea in enumerate(texto.splitlines(), 1):
-                # docstrings de python: se cuentan las comillas triples de la linea
-                if p.suffix == ".py":
-                    triples = linea.count('"""') + linea.count("'''")
-                    dentro = en_docstring
-                    if triples % 2 == 1:
-                        en_docstring = not en_docstring
-                else:
-                    dentro = False
-                if not pat.search(linea):
+                # normalizar la base de URL antes de casar: $VAR, ${VAR}, https://host:8443
+                if not pat.search(RE_BASE_URL.sub(" ", linea)):
                     continue
                 sitio = f"{p.relative_to(repo).as_posix()}:{n}"
-                es_texto = dentro or bool(RE_COMENTARIO.match(linea)) or p.suffix == ".md"
+                es_texto = (n in prosa) or bool(RE_COMENTARIO.match(linea)) or p.suffix == ".md"
                 (menciones if es_texto else llamadas).append(sitio)
         if llamadas or menciones:
             out[etiqueta] = {"llamadas": llamadas, "menciones": menciones}

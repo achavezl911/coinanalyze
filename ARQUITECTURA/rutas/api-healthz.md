@@ -95,9 +95,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K03-hueco-declarado.sh:55`, `harness/checks/K05-control.bash:307`, `harness/checks/K05-latidos.sh:127`, `harness/checks/K05-latidos.sh:388` _(+2)_ | `harness/checks/K05-latidos.sh:2`, `harness/checks/K08-que-base.sh:8` |
+| **checks** | `harness/checks/K03-hueco-declarado.sh:55`, `harness/checks/K05-control.bash:307`, `harness/checks/K05-latidos.sh:127`, `harness/checks/K05-latidos.sh:388` _(+3)_ | `harness/checks/K05-latidos.sh:2`, `harness/checks/K08-que-base.sh:8` |
 | **panel** | `static/app.js:1494`, `static/app.js:1622` | — |
-| **readme** | — | `README.md:413` |
+| **readme** | — | `README.md:413`, `README.md:436` |
 | **tests** | — | `tests/test_cobertura_proveedor.py:7`, `tests/test_deploy_health_gate.py:38`, `tests/test_deploy_health_gate.py:154`, `tests/test_ingest_health.py:232` |
 
 **La llama el panel: es superficie de producto.**

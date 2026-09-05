@@ -83,7 +83,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:100`, `harness/checks/K43-foto-unica.sh:138` | — |
 | **panel** | `static/app.js:1552` | — |
-| **tests** | `tests/test_metrics_endpoint.py:140` | — |
+| **tests** | — | `tests/test_metrics_endpoint.py:140` |
 
 **La llama el panel: es superficie de producto.**
 

@@ -97,9 +97,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K23-coste-de-ejecucion.sh:42` | — |
-| **tests** | `tests/test_signals_execution.py:1` | — |
+| **tests** | — | `tests/test_signals_execution.py:1` |
 
-**No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
