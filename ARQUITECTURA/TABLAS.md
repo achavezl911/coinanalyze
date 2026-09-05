@@ -48,11 +48,139 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`spot_trades_agg`](#spot-trades-agg) | 3 | 10 | 0 |
 | [`spot_trades_realtime`](#spot-trades-realtime) | 2 | 12 | 0 |
 
+## LA COBERTURA · que tablas dicen CUANTO del periodo se observo
+
+**Un lector no puede juzgar una fila sin saber cada cuanto deberia haberla, ni cuanto
+del periodo se llego a medir.** Una serie con huecos y una completa se leen igual si la
+tabla no lo declara.
+
+Definiciones, escritas antes del recuento:
+
+- **tabla de serie**: su clave incluye una columna de tiempo por bucket (`ts`,
+  `bucket`, `observed_minute`, `session_date`).
+- **declara cobertura**: tiene una columna que dice **cuanto** del periodo se observo.
+- **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
+  *"periodo medido a medias"* de *"periodo no medido"*.
+
+| | de 40 tablas del esquema |
+|---|---|
+| de SERIE | **22** |
+| de serie que DECLARAN cobertura cuantitativa | **7** |
+| de serie que NO declaran ninguna | **15** |
+
+| tabla | columnas de cobertura |
+|---|---|
+| `daily_session_agg` | `cvd_fut_2v_minutes`, `session_expected_minutes`, `futures_ohlcv_minutes`, `spot_2v_minutes`, `session_expected_5m_samples`, `oi_5m_samples`, `funding_5m_samples` |
+| `futures_trades_agg` | `covered_seconds`, `venue_count` |
+| `futures_trades_realtime` | `venue_count` |
+| `orderbook_snapshot` | `venue_count` |
+| `signal_observation` | `evidence_coverage_pct` |
+| `spot_trades_agg` | `covered_seconds`, `venue_count` |
+| `spot_trades_realtime` | `venue_count` |
+
+**Las 15 de serie SIN cobertura declarada.** No es un defecto por si mismo
+—una tabla de eventos periodicos puede no necesitarla—, pero es lo que impide
+distinguir un periodo vacio de uno no medido:
+
+- `daily_verdict`
+- `daily_verdict_snapshot`
+- `external_api_rate_event`
+- `funding_rate`
+- `liquidations`
+- `liquidations_realtime`
+- `long_short_ratio`
+- `metrics_snapshot`
+- `ohlcv`
+- `oi_bybit`
+- `open_interest`
+- `open_interest_daily`
+- `orderbook_depth`
+- `predicted_funding_rate`
+- `scalp_signal_snapshot`
+
+### Columnas que NO estan en su `CREATE TABLE`
+
+**30 columnas en 6 tablas** se añaden con
+`ALTER TABLE ... ADD COLUMN`. Un instrumento que lea solo los `CREATE` no las ve — y
+**este generador no las veia hasta F4**: `daily_session_agg` figuraba con 14 columnas
+y tiene 37, y entre las que faltaban estaba **`covered_seconds`**, que es justamente
+la columna con la que el sistema declara si un minuto se midio entero.
+
+- `daily_session_agg` — 23: `cvd_fut_2v_usd`, `cvd_fut_2v_minutes`, `cvd_diff_2v_usd`, `volume_usd`, `price_high`, `price_low` _(+17)_
+- `futures_trades_agg` — 2: `covered_seconds`, `venue_count`
+- `futures_trades_realtime` — 1: `venue_count`
+- `orderbook_snapshot` — 1: `venue_count`
+- `spot_trades_agg` — 2: `covered_seconds`, `venue_count`
+- `spot_trades_realtime` — 1: `venue_count`
+
+## LA CADENCIA · cada cuanto escribe quien escribe
+
+**Ninguna tabla guarda su cadencia esperada**: hay que ir al codigo. Por eso esta aqui.
+
+| constante | valor | de `app/config.py` |
+|---|---|---|
+| `BINANCE_BOOK_FORCE_RECONNECT_SECONDS` | 3600 | |
+| `BINANCE_BOOK_MAX_EVENT_LAG_SECONDS` | 10 | |
+| `BINANCE_BOOK_STALE_SECONDS` | 15 | |
+| `EXTERNAL_MACRO_REFRESH_SECONDS` | 3600 | |
+| `INGEST_INTERVAL_SECONDS` | 60 | |
+| `SCALP_FLUSH_SECONDS` | 2 | |
+| `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | |
+| `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | |
+| `TRADESTORE_MAX_BUCKET_MINUTES` | 20 | |
+
+Y que bucle duerme con cual:
+
+| funcion | constante | valor | sitio |
+|---|---|---|---|
+| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:826` |
+| `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:642` |
+| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1352` |
+
+## EL BUCKET CORTO DEL LADO DE LA PARADA · el mismo patron en DOS tablas
+
+**Defecto abierto y medido, y aparece en dos sitios.** Va con su reproduccion y
+**no se abre desde aqui**: el sujeto es de produccion.
+
+```
+spot_trades_agg, minuto 17:17  ->  covered_seconds = 45   correcto (60 - 15)
+spot_trades_agg, minuto 17:16  ->  covered_seconds = 60   y el colector estuvo
+                                                          parado sus ultimos 5 s
+```
+
+El bucket **AUSENTE** ya se arreglo. El bucket **CORTO del lado de la PARADA** se
+sigue escribiendo como completo, y **ese es el caso peor**: la fila existe, K37 la
+cuenta como presente, y las derivadas de ese minuto no saben que van cortas. Un
+hueco que se ve es un hueco; un minuto que miente que esta completo no lo ve nadie.
+
+**Y afecta a las 2 tablas que declaran cobertura por segundo**: `futures_trades_agg`, `spot_trades_agg`.
+
+`_write_combined_minute` (`app/scalp_collector.py:801-812`) construye la fila
+`combined` con **`MIN(covered_seconds)`** de sus dos patas, y `ws_collector.py:284`
+hace lo mismo para spot. **El `MIN` es la eleccion correcta** —el minuto combinado
+no puede estar mejor cubierto que su peor pata— pero **hereda el defecto**: si una
+pata escribe 60 cuando fueron 55, el combinado escribe 60.
+
+**No se arregla en el agregador: se arregla en quien escribe la pata.**
+
+**Reproduccion:** cualquier reinicio cuya **parada** caiga en un minuto distinto al
+del **arranque**. El minuto del arranque se cubre bien; el de la parada no.
+
+**Criterio ejecutable, si se decide abrirlo:**
+
+> ROJO si existe algun minuto con `covered_seconds = 60` cuyo intervalo contenga el
+> instante de una parada del colector.
+> **Control en la misma consulta**: el minuto *siguiente* a esa parada tiene que
+> estar ausente o con cobertura baja. Si los dos salieran completos, el sujeto seria
+> el registro de paradas y no la cobertura.
+> El elegible sale de un instrumento externo: los `Stopped` del journal, no de la
+> propia tabla.
+
 ## Detalle · quien escribe cada una
 
 ### daily_session_agg
 
-`sql/schema.sql:1032`, 14 columnas.
+`sql/schema.sql:1032`, 37 columnas.
 
 La escriben:
 
@@ -184,7 +312,7 @@ La escriben:
 
 ### futures_trades_agg
 
-`sql/schema.sql:273`, 9 columnas.
+`sql/schema.sql:273`, 11 columnas.
 
 La escriben:
 
@@ -202,7 +330,7 @@ La escriben:
 
 ### futures_trades_realtime
 
-`sql/schema.sql:256`, 10 columnas.
+`sql/schema.sql:256`, 11 columnas.
 
 La escriben:
 
@@ -472,7 +600,7 @@ La escriben:
 
 ### orderbook_snapshot
 
-`sql/schema.sql:287`, 18 columnas.
+`sql/schema.sql:287`, 19 columnas.
 
 La escriben:
 
@@ -617,7 +745,7 @@ La escriben:
 
 ### spot_trades_agg
 
-`sql/schema.sql:198`, 13 columnas.
+`sql/schema.sql:198`, 15 columnas.
 
 La escriben:
 
@@ -640,7 +768,7 @@ La escriben:
 
 ### spot_trades_realtime
 
-`sql/schema.sql:228`, 10 columnas.
+`sql/schema.sql:228`, 11 columnas.
 
 La escriben:
 

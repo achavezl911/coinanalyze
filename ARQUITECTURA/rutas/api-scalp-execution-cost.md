@@ -45,7 +45,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
+- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
@@ -64,10 +64,10 @@ LEE:
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
 - `orderbook_depth` — `sql/schema.sql:329`, 6 columnas
   - la llena `app.scalp_collector._write_ladders` (INSERT) — `app/scalp_collector.py:877`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 18 columnas
+- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
-- `spot_trades_realtime` — `sql/schema.sql:228`, 10 columnas
+- `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
 

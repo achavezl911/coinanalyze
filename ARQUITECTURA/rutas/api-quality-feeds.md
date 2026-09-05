@@ -48,7 +48,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
-- `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
+- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
@@ -65,14 +65,14 @@ LEE:
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 18 columnas
+- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
 - `pipeline_heartbeat` — `sql/schema.sql:1284`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
   - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
-- `spot_trades_realtime` — `sql/schema.sql:228`, 10 columnas
+- `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
 

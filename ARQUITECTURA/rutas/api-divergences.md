@@ -36,7 +36,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1032`, 14 columnas
+- `daily_session_agg` — `sql/schema.sql:1032`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
@@ -44,7 +44,7 @@ LEE:
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
-- `spot_trades_agg` — `sql/schema.sql:198`, 13 columnas
+- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:254`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:275`

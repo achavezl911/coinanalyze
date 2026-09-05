@@ -1,6 +1,42 @@
 {
+  "cadencias": {
+    "bucles": {
+      "app.scalp_collector.flush_books": [
+        {
+          "constante": "SCALP_ORDERBOOK_FLUSH_SECONDS",
+          "sitio": "app/scalp_collector.py:826",
+          "valor": "2"
+        }
+      ],
+      "app.scalp_collector.flush_trades": [
+        {
+          "constante": "SCALP_FLUSH_SECONDS",
+          "sitio": "app/scalp_collector.py:642",
+          "valor": "2"
+        }
+      ],
+      "app.scalp_collector.persist_scalp_signals": [
+        {
+          "constante": "SCALP_SIGNAL_INTERVAL_SECONDS",
+          "sitio": "app/scalp_collector.py:1352",
+          "valor": "10"
+        }
+      ]
+    },
+    "constantes": {
+      "BINANCE_BOOK_FORCE_RECONNECT_SECONDS": "3600",
+      "BINANCE_BOOK_MAX_EVENT_LAG_SECONDS": "10",
+      "BINANCE_BOOK_STALE_SECONDS": "15",
+      "EXTERNAL_MACRO_REFRESH_SECONDS": "3600",
+      "INGEST_INTERVAL_SECONDS": "60",
+      "SCALP_FLUSH_SECONDS": "2",
+      "SCALP_ORDERBOOK_FLUSH_SECONDS": "2",
+      "SCALP_SIGNAL_INTERVAL_SECONDS": "10",
+      "TRADESTORE_MAX_BUCKET_MINUTES": "20"
+    }
+  },
   "catalogo_lineas": {
-    "daily_session_agg": "`sql/schema.sql:1032`, 14 columnas",
+    "daily_session_agg": "`sql/schema.sql:1032`, 37 columnas",
     "daily_verdict": "`sql/schema.sql:1073`, 17 columnas",
     "daily_verdict_outcome": "`sql/schema.sql:2290`, 10 columnas",
     "daily_verdict_snapshot": "`sql/schema.sql:1099`, 26 columnas",
@@ -8,8 +44,8 @@
     "external_api_rate_event": "`sql/schema.sql:1309`, 3 columnas",
     "external_macro_observation": "`sql/schema.sql:1234`, 5 columnas",
     "funding_rate": "`sql/schema.sql:146`, 7 columnas",
-    "futures_trades_agg": "`sql/schema.sql:273`, 9 columnas",
-    "futures_trades_realtime": "`sql/schema.sql:256`, 10 columnas",
+    "futures_trades_agg": "`sql/schema.sql:273`, 11 columnas",
+    "futures_trades_realtime": "`sql/schema.sql:256`, 11 columnas",
     "liquidations": "`sql/schema.sql:174`, 5 columnas",
     "liquidations_realtime": "`sql/schema.sql:339`, 8 columnas",
     "long_short_ratio": "`sql/schema.sql:187`, 6 columnas",
@@ -24,7 +60,7 @@
     "open_interest": "`sql/schema.sql:83`, 7 columnas",
     "open_interest_daily": "`sql/schema.sql:128`, 10 columnas",
     "orderbook_depth": "`sql/schema.sql:329`, 6 columnas",
-    "orderbook_snapshot": "`sql/schema.sql:287`, 18 columnas",
+    "orderbook_snapshot": "`sql/schema.sql:287`, 19 columnas",
     "pipeline_heartbeat": "`sql/schema.sql:1284`, 4 columnas",
     "predicted_funding_rate": "`sql/schema.sql:160`, 7 columnas",
     "scalp_signal_snapshot": "`sql/schema.sql:381`, 16 columnas",
@@ -37,9 +73,385 @@
     "signal_replay_frame": "`sql/schema.sql:751`, 7 columnas",
     "signal_research_bundle_visibility": "`sql/schema.sql:2406`, 9 columnas",
     "signal_walk_forward_manifest": "`sql/schema.sql:895`, 12 columnas",
-    "spot_trades_agg": "`sql/schema.sql:198`, 13 columnas",
-    "spot_trades_realtime": "`sql/schema.sql:228`, 10 columnas",
+    "spot_trades_agg": "`sql/schema.sql:198`, 15 columnas",
+    "spot_trades_realtime": "`sql/schema.sql:228`, 11 columnas",
     "symbols": "`sql/schema.sql:20`, 5 columnas"
+  },
+  "cobertura": {
+    "daily_session_agg": {
+      "columnas_de_cobertura": [
+        "cvd_fut_2v_minutes",
+        "session_coverage_version",
+        "session_expected_minutes",
+        "futures_ohlcv_minutes",
+        "spot_2v_minutes",
+        "session_expected_5m_samples",
+        "oi_5m_samples",
+        "funding_5m_samples",
+        "liquidation_coverage_version"
+      ],
+      "cuantitativas": [
+        "cvd_fut_2v_minutes",
+        "session_expected_minutes",
+        "futures_ohlcv_minutes",
+        "spot_2v_minutes",
+        "session_expected_5m_samples",
+        "oi_5m_samples",
+        "funding_5m_samples"
+      ],
+      "distingue_corto_de_ausente": true,
+      "es_serie": true,
+      "por_alter": [
+        "cvd_fut_2v_usd",
+        "cvd_fut_2v_minutes",
+        "cvd_diff_2v_usd",
+        "volume_usd",
+        "price_high",
+        "price_low",
+        "long_liq_usd",
+        "short_liq_usd",
+        "oi_high",
+        "oi_low",
+        "tx_count",
+        "session_coverage_version",
+        "session_expected_minutes",
+        "futures_ohlcv_minutes",
+        "spot_2v_minutes",
+        "session_expected_5m_samples",
+        "oi_5m_samples",
+        "funding_5m_samples",
+        "updated_at",
+        "liquidation_coverage_version",
+        "liquidation_observed_at",
+        "liquidation_source_start_at",
+        "liquidation_source_cutoff_at"
+      ]
+    },
+    "daily_verdict": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "daily_verdict_outcome": {
+      "columnas_de_cobertura": [
+        "target_session_coverage_version"
+      ],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "daily_verdict_snapshot": {
+      "columnas_de_cobertura": [
+        "session_coverage_version"
+      ],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "data_gap": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "external_api_rate_event": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "external_macro_observation": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "funding_rate": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "futures_trades_agg": {
+      "columnas_de_cobertura": [
+        "covered_seconds",
+        "venue_count"
+      ],
+      "cuantitativas": [
+        "covered_seconds",
+        "venue_count"
+      ],
+      "distingue_corto_de_ausente": true,
+      "es_serie": true,
+      "por_alter": [
+        "covered_seconds",
+        "venue_count"
+      ]
+    },
+    "futures_trades_realtime": {
+      "columnas_de_cobertura": [
+        "venue_count"
+      ],
+      "cuantitativas": [
+        "venue_count"
+      ],
+      "distingue_corto_de_ausente": true,
+      "es_serie": true,
+      "por_alter": [
+        "venue_count"
+      ]
+    },
+    "liquidations": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "liquidations_realtime": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "long_short_ratio": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "macro_event": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "market_assets": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "market_feed_health": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "market_feed_health_shard": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "metric_baseline": {
+      "columnas_de_cobertura": [
+        "sample_count"
+      ],
+      "cuantitativas": [
+        "sample_count"
+      ],
+      "distingue_corto_de_ausente": true,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "metrics_snapshot": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "ohlcv": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "oi_bybit": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "open_interest": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "open_interest_daily": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "orderbook_depth": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "orderbook_snapshot": {
+      "columnas_de_cobertura": [
+        "venue_count"
+      ],
+      "cuantitativas": [
+        "venue_count"
+      ],
+      "distingue_corto_de_ausente": true,
+      "es_serie": true,
+      "por_alter": [
+        "venue_count"
+      ]
+    },
+    "pipeline_heartbeat": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "predicted_funding_rate": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "scalp_signal_snapshot": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "schema_migration": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "service_ownership": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "signal_execution_snapshot": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "signal_observation": {
+      "columnas_de_cobertura": [
+        "evidence_coverage_pct"
+      ],
+      "cuantitativas": [
+        "evidence_coverage_pct"
+      ],
+      "distingue_corto_de_ausente": true,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "signal_outcome": {
+      "columnas_de_cobertura": [
+        "horizon_minutes"
+      ],
+      "cuantitativas": [
+        "horizon_minutes"
+      ],
+      "distingue_corto_de_ausente": true,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "signal_outcome_final_visibility": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "signal_replay_frame": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "signal_research_bundle_visibility": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "signal_walk_forward_manifest": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "spot_trades_agg": {
+      "columnas_de_cobertura": [
+        "covered_seconds",
+        "venue_count"
+      ],
+      "cuantitativas": [
+        "covered_seconds",
+        "venue_count"
+      ],
+      "distingue_corto_de_ausente": true,
+      "es_serie": true,
+      "por_alter": [
+        "covered_seconds",
+        "venue_count"
+      ]
+    },
+    "spot_trades_realtime": {
+      "columnas_de_cobertura": [
+        "venue_count"
+      ],
+      "cuantitativas": [
+        "venue_count"
+      ],
+      "distingue_corto_de_ausente": true,
+      "es_serie": true,
+      "por_alter": [
+        "venue_count"
+      ]
+    },
+    "symbols": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    }
   },
   "controles": {
     "compute_snapshot": {

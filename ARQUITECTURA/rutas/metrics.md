@@ -25,14 +25,14 @@ Tipo declarado en la firma: `Response`.
 
 LEE:
 
-- `futures_trades_realtime` — `sql/schema.sql:256`, 10 columnas
+- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
 - `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 18 columnas
+- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
 - `pipeline_heartbeat` — `sql/schema.sql:1284`, 4 columnas
