@@ -550,6 +550,35 @@
           <div class="table-scroll"><table><thead><tr><th>Sesión</th><th>Sesgo</th><th>Score</th><th>Convicción</th><th>Régimen</th><th>Ret. 7s</th><th>Ret. 14s</th></tr></thead><tbody id="replay-body"></tbody></table></div>
           <small class="tfprofile-foot">Historial de veredictos ya emitidos. No es una promesa de rentabilidad ni un backtest.</small>
         </article>
+
+        <!-- LA CAPA DE AUDITORIA. No anade superficie de señal: esta medido que la señal no
+             anticipa y que ninguna regla de entrada alcanzable le recupera la ventaja. Sirve
+             para lo otro, que si se puede hacer: coger una señal YA EMITIDA y reconstruir por
+             que se dijo, con que entradas, que habria costado ejecutarla y si su desenlace ya
+             era visible cuando se decidio -que es la puerta P5 entera-. -->
+        <article class="panel auditoria-panel">
+          <header><div><h3>Auditoría de una señal</h3><span>Por qué se dijo, con qué entradas, qué habría costado y si el desenlace ya se veía</span></div></header>
+          <p class="auditoria-alcance" id="auditoria-alcance">Cargando el alcance…</p>
+          <div class="table-scroll"><table>
+            <thead><tr>
+              <th>Observación</th><th>Lado</th><th>Contexto</th><th>Lógica</th>
+              <th>Libros</th><th>Certificados</th>
+            </tr></thead>
+            <tbody id="auditoria-body"></tbody>
+          </table></div>
+          <div id="auditoria-detalle" class="auditoria-detalle"><p class="auditoria-vacio">Elige una observación de la tabla para reconstruirla.</p></div>
+          <small class="tfprofile-foot">Cada cifra dice sobre cuántos elementos corre. «Libros» y «Certificados» son RECUENTOS de las filas que cada ruta publica para esa observación, no un resumen de ellas: el detalle las lista una por una tal como llegan. <strong>Un 0 en «Certificados» no es un defecto:</strong> un certificado solo existe cuando el horizonte ya se cumplió y se verificó, y los horizontes llegan a 240 min, así que en una ventana de 1 h la mayoría de las observaciones son demasiado recientes para tenerlo. Medido el 2026-09-06 sobre la ventana por defecto: cruzan 134/134 con replay, 134/134 con execution y <strong>26/134 (19.4 %) con visibility</strong>.</small>
+        </article>
+
+        <article class="panel auditoria-panel">
+          <header><div><h3>Historial crudo del scalp</h3><span>Lo que la señal veía, sin ventana de tiempo</span></div></header>
+          <p class="auditoria-alcance" id="scalp-historial-alcance">Cargando el alcance…</p>
+          <div class="table-scroll"><table>
+            <thead><tr><th>ts</th><th>Estado</th><th>Long</th><th>Short</th><th>Confianza</th><th>Libro</th><th>Basis bps</th><th>Motivo</th></tr></thead>
+            <tbody id="scalp-historial-body"></tbody>
+          </table></div>
+          <small class="tfprofile-foot">Esta ruta no acepta ventana de tiempo: su único límite es de filas. La banda de arriba dice qué tramo cubren las que llegaron.</small>
+        </article>
         </div>
       </section>
     </main>

@@ -1702,9 +1702,21 @@ async function loadSection(id, force = false) {
     renderFeedQuality(quality);
     renderMetricQuality(quality);
   } else if (id === 'replay') {
-    const verdicts = await maybe(`/api/verdicts?symbol=${q}&days=90`, { rows: [] });
+    // LAS CINCO SE PIDEN AQUI Y NO EN EL RESUMEN: la pestaña se carga a demanda, asi que el
+    // arranque del panel no paga por ellas. Se piden con `pedir` -no con `maybe`- porque la
+    // banda tiene que poder decir "no se pudo preguntar" en vez de ensenar una tabla vacia.
+    const [verdicts, ledger, replay, execution, visibility, scalp] = await Promise.all([
+      maybe(`/api/verdicts?symbol=${q}&days=90`, { rows: [] }),
+      pedir(`/api/signals/ledger?symbol=${q}`, { observations: [] }),
+      pedir(`/api/signals/replay?symbol=${q}`, { frames: [] }),
+      pedir(`/api/signals/execution?symbol=${q}`, { snapshots: [] }),
+      pedir(`/api/signals/visibility?symbol=${q}`, { certificates: [] }),
+      pedir(`/api/scalp/signals?symbol=${q}`, { rows: [] }),
+    ]);
     if (symbol !== state.symbol) return;
     renderReplay(verdicts);
+    renderAuditoria(ledger, replay, execution, visibility);
+    renderScalpHistorial(scalp);
   } else if (id === 'contexto') {
     const [daily, macro, externalMacro, divergences] = await Promise.all([
       maybe(`/api/daily?symbol=${q}&days=60`, { rows: [], streak: 0 }),
@@ -2330,6 +2342,179 @@ function renderReplay(result) {
      [r.regime_label || '—', 'neutral'],
      [r.fwd_return_7s_pct == null ? 'Pendiente' : pct(r.fwd_return_7s_pct), signClass(r.fwd_return_7s_pct)],
      [r.fwd_return_14s_pct == null ? 'Pendiente' : pct(r.fwd_return_14s_pct), signClass(r.fwd_return_14s_pct)]].forEach(x => td(tr, x[0], x[1]));
+    body.append(tr);
+  }
+}
+
+// ---------------------------------------------------------------------------------------
+// LA CAPA DE AUDITORIA · #replay
+//
+// CERO no es CERO DEFECTOS. `maybe` devuelve el fallback cuando la ruta falla, asi que una
+// tabla vacia puede significar dos cosas que no se parecen en nada: "no hay filas en la
+// ventana" y "no se pudo preguntar". `pedir` las separa, y la banda lo dice con todas las
+// letras. Sin esto, un 502 se pinta igual que un mercado tranquilo.
+async function pedir(path, fallback) {
+  const data = await maybe(path, fallback);
+  const fallo = state.errors && state.errors[path];
+  return { ok: !fallo, data, error: fallo ? fallo.message : null };
+}
+
+// AQUI NO SE AGREGA NADA QUE EL SERVIDOR NO PUBLIQUE. Todo lo que sale en la banda es un
+// campo del sobre -count, limit, truncated, since, until, ventana_maxima_h- o el nombre de
+// la ruta. El tope se publica desde este mismo commit; antes no se podia decir, porque el
+// panel no tenia forma de saber que pedir 48 h no recorta sino que RECHAZA.
+function bandaAlcance(nombre, res) {
+  if (!res.ok) return `${nombre}: NO SE PUDO PEDIR (${res.error}). Esto no es «no hay datos».`;
+  const s = res.data || {};
+  const trozos = [`${nombre}: ${s.count == null ? '—' : s.count} filas`];
+  if (s.since && s.until) {
+    const horas = (new Date(s.until) - new Date(s.since)) / 3600000;
+    trozos.push(`ventana pedida ${dateTime(s.since)} → ${dateTime(s.until)} (${number(horas, 2)} h)`);
+  } else if (s.servida_desde || s.servida_hasta) {
+    trozos.push(`sin ventana de tiempo; lo servido va de ${dateTime(s.servida_desde)} a ${dateTime(s.servida_hasta)}`);
+  }
+  trozos.push(s.ventana_maxima_h == null
+    ? 'sin tope de tiempo: el límite es de filas'
+    : `tope ${s.ventana_maxima_h} h — pedir más devuelve 422 y CERO filas, no un recorte`);
+  trozos.push(s.truncated === true
+    ? `TRUNCADO en ${s.limit} filas: hay más y no se pidieron`
+    : `sin truncar (límite ${s.limit == null ? '—' : s.limit})`);
+  return trozos.join(' · ');
+}
+
+const auditoria = { obs: [], porObs: new Map(), sel: null };
+
+function agrupaPorObs(filas, clave) {
+  for (const fila of filas) {
+    const id = fila.observation_id;
+    if (id == null) continue;
+    if (!auditoria.porObs.has(id)) auditoria.porObs.set(id, { frames: [], snapshots: [], certificates: [] });
+    auditoria.porObs.get(id)[clave].push(fila);
+  }
+}
+
+function renderAuditoria(ledger, replay, execution, visibility) {
+  const banda = $('auditoria-alcance');
+  if (banda) {
+    banda.replaceChildren();
+    for (const linea of [bandaAlcance('ledger', ledger), bandaAlcance('replay', replay),
+                         bandaAlcance('execution', execution), bandaAlcance('visibility', visibility)]) {
+      const p = document.createElement('span');
+      p.className = 'auditoria-linea';
+      p.textContent = linea;
+      banda.append(p);
+    }
+  }
+  auditoria.obs = safeArray(ledger.data && ledger.data.observations);
+  auditoria.porObs = new Map();
+  auditoria.sel = null;
+  agrupaPorObs(safeArray(replay.data && replay.data.frames), 'frames');
+  agrupaPorObs(safeArray(execution.data && execution.data.snapshots), 'snapshots');
+  agrupaPorObs(safeArray(visibility.data && visibility.data.certificates), 'certificates');
+
+  const body = $('auditoria-body');
+  if (!body) return;
+  body.replaceChildren();
+  for (const o of auditoria.obs) {
+    const anexos = auditoria.porObs.get(o.observation_id) || { frames: [], snapshots: [], certificates: [] };
+    const frame = anexos.frames[0];
+    const tr = document.createElement('tr');
+    tr.className = 'auditoria-fila';
+    tr.tabIndex = 0;
+    td(tr, dateTime(o.observed_at), '');
+    td(tr, o.direction || '—', o.direction === 'long' ? 'positive' : o.direction === 'short' ? 'negative' : 'neutral');
+    // El hash del contexto NO se recalcula aqui: se ensenia el que la ruta publica, cortado
+    // para que quepa. Recalcularlo en el navegador seria inventar una segunda verdad.
+    td(tr, frame ? `${String(frame.context_hash || '').slice(0, 12) || '—'} v${frame.context_version ?? '—'}` : 'sin frame',
+       frame ? 'neutral' : 'negative');
+    td(tr, o.logic_version == null ? '—' : String(o.logic_version), 'neutral');
+    td(tr, String(anexos.snapshots.length), anexos.snapshots.length ? 'neutral' : 'negative');
+    td(tr, String(anexos.certificates.length), anexos.certificates.length ? 'neutral' : 'negative');
+    const abre = () => { auditoria.sel = o.observation_id; renderAuditoriaDetalle(); };
+    tr.addEventListener('click', abre);
+    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abre(); } });
+    body.append(tr);
+  }
+  renderAuditoriaDetalle();
+}
+
+function tabla(destino, titulo, cabeceras, filas) {
+  const h4 = document.createElement('h4');
+  h4.textContent = titulo;
+  destino.append(h4);
+  if (!filas.length) {
+    const p = document.createElement('p');
+    p.className = 'auditoria-vacio';
+    p.textContent = 'La ruta no publica ninguna fila para esta observación.';
+    destino.append(p);
+    return;
+  }
+  const t = document.createElement('table');
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  for (const c of cabeceras) { const th = document.createElement('th'); th.textContent = c; trh.append(th); }
+  thead.append(trh); t.append(thead);
+  const tb = document.createElement('tbody');
+  for (const celdas of filas) { const tr = document.createElement('tr'); for (const c of celdas) td(tr, c, 'neutral'); tb.append(tr); }
+  t.append(tb);
+  const caja = document.createElement('div');
+  caja.className = 'table-scroll';
+  caja.append(t);
+  destino.append(caja);
+}
+
+function renderAuditoriaDetalle() {
+  const caja = $('auditoria-detalle');
+  if (!caja) return;
+  caja.replaceChildren();
+  if (auditoria.sel == null) {
+    const p = document.createElement('p');
+    p.className = 'auditoria-vacio';
+    p.textContent = 'Elige una observación de la tabla para reconstruirla.';
+    caja.append(p);
+    return;
+  }
+  const anexos = auditoria.porObs.get(auditoria.sel) || { frames: [], snapshots: [], certificates: [] };
+  const cab = document.createElement('p');
+  cab.className = 'auditoria-linea';
+  cab.textContent = `observation_id ${auditoria.sel} · ${anexos.frames.length} frame(s) · ${anexos.snapshots.length} libro(s) · ${anexos.certificates.length} certificado(s)`;
+  caja.append(cab);
+
+  // POR QUE SE DIJO · las claves del contexto congelado, sin interpretarlas.
+  tabla(caja, 'Con qué entradas se decidió', ['clave', 'valor'],
+    anexos.frames.flatMap(f => Object.entries(f.context || {}).map(([k, v]) => [k, typeof v === 'object' ? JSON.stringify(v) : String(v)])));
+
+  // QUE HABRIA COSTADO · una fila por libro. No se elige uno ni se promedian: son varios
+  // porque hay varios mercados, y esconder cual es cual seria justo el resumen que sobra.
+  tabla(caja, 'Qué habría costado ejecutarla', ['exchange', 'estado', 'spread bps', 'edad libro s', 'mid', 'captado'],
+    anexos.snapshots.map(s => [s.exchange || '—', s.status || '—',
+      s.spread_bps == null ? 'N/D' : number(s.spread_bps, 2),
+      s.book_age_seconds == null ? 'N/D' : number(s.book_age_seconds, 1),
+      s.mid_px == null ? 'N/D' : number(s.mid_px, 2), dateTime(s.captured_at)]));
+
+  // LA PUERTA P5 · las dos horas que hay que comparar, publicadas las dos. La comparacion se
+  // hace mirando: aqui no se calcula una diferencia que el servidor no publica.
+  tabla(caja, '¿El desenlace ya se veía cuando se decidió?', ['horizonte min', 'estado origen', 'finalizado', 'verificado visible'],
+    anexos.certificates.map(c => [c.horizon_minutes == null ? '—' : String(c.horizon_minutes),
+      c.source_status || '—', dateTime(c.source_finalized_at), dateTime(c.verified_visible_at)]));
+}
+
+function renderScalpHistorial(res) {
+  const banda = $('scalp-historial-alcance');
+  if (banda) banda.textContent = bandaAlcance('scalp/signals', res);
+  const body = $('scalp-historial-body');
+  if (!body) return;
+  body.replaceChildren();
+  for (const r of safeArray(res.data && res.data.rows)) {
+    const tr = document.createElement('tr');
+    td(tr, dateTime(r.ts), '');
+    td(tr, r.state || '—', 'neutral');
+    td(tr, r.long_score == null ? 'N/D' : number(r.long_score, 2), 'neutral');
+    td(tr, r.short_score == null ? 'N/D' : number(r.short_score, 2), 'neutral');
+    td(tr, r.confidence == null ? 'N/D' : number(r.confidence, 2), 'neutral');
+    td(tr, r.book_status || '—', 'neutral');
+    td(tr, r.basis_bps == null ? 'N/D' : number(r.basis_bps, 2), 'neutral');
+    td(tr, r.reason || '—', 'neutral');
     body.append(tr);
   }
 }

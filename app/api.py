@@ -2060,9 +2060,27 @@ async def scalp_signals(
             ORDER BY ts DESC LIMIT $2
             """,
             selected,
-            limit,
+            limit + 1,
         )
-    return {"symbol": selected, "rows": records(rows)}
+    # SE PIDE UNA FILA DE MAS, igual que en el ledger: es la unica forma de saber si el LIMIT
+    # corto sin volver a contar. Antes esta ruta devolvia 200 filas y callaba si habia 20 000
+    # detras; quien la pintara no podia distinguir "esto es todo" de "esto es lo que cupo".
+    truncated = len(rows) > limit
+    filas = records(rows[:limit])
+    # ESTA RUTA NO TIENE PARAMETRO DE TIEMPO -ni since ni until- y por eso NO le aplica el tope
+    # de 24 h de LEDGER_MAX_WINDOW: su unico limite es de FILAS. La ventana que se publica aqui
+    # no es una ventana PEDIDA sino la SERVIDA: el ts de la fila mas vieja y el de la mas nueva
+    # de las que se devuelven. Con ORDER BY ts DESC, la primera es la mas nueva.
+    return {
+        "symbol": selected,
+        "limit": limit,
+        "count": len(filas),
+        "truncated": truncated,
+        "servida_desde": _utc_iso(filas[-1]["ts"]) if filas else None,
+        "servida_hasta": _utc_iso(filas[0]["ts"]) if filas else None,
+        "ventana_maxima_h": None,
+        "rows": filas,
+    }
 
 
 def _utc_iso(value: datetime | None) -> str | None:
@@ -2073,6 +2091,12 @@ def _utc_iso(value: datetime | None) -> str | None:
 
 
 LEDGER_MAX_WINDOW = timedelta(hours=24)
+# EL TOPE SE PUBLICA como `ventana_maxima_h` en el sobre de ledger, execution, replay y
+# visibility. Sin el, quien las pinta no puede distinguir dos cosas que no se parecen:
+# pedir 48 h NO devuelve 24 h recortadas en silencio, devuelve 422 y CERO filas. Un panel
+# que no lo sepa ensenia un hueco donde hay un rechazo. `truncated` cubre el otro corte,
+# el de FILAS; este cubre el de TIEMPO. /api/scalp/signals no lo tiene -no acepta ventana-
+# y por eso publica null: el null dice "no aplica", no "no lo se".
 
 # Las columnas del ledger se nombran una a una a proposito. Un SELECT * ata la
 # respuesta publica a lo que schema.sql tenga ese dia: una columna nueva se filtraria
@@ -2167,6 +2191,7 @@ async def signals_ledger(
         "symbol": selected,
         "since": _utc_iso(start),
         "until": _utc_iso(end),
+        "ventana_maxima_h": int(LEDGER_MAX_WINDOW.total_seconds() // 3600),
         "limit": limit,
         "count": len(observations),
         "truncated": truncated,
@@ -2348,6 +2373,7 @@ async def signals_execution(
         "symbol": selected,
         "since": _utc_iso(start),
         "until": _utc_iso(end),
+        "ventana_maxima_h": int(LEDGER_MAX_WINDOW.total_seconds() // 3600),
         "exchange": exchange,
         "limit": limit,
         "count": len(snapshots),
@@ -2433,6 +2459,7 @@ async def signals_replay(
         "symbol": selected,
         "since": _utc_iso(start),
         "until": _utc_iso(end),
+        "ventana_maxima_h": int(LEDGER_MAX_WINDOW.total_seconds() // 3600),
         "limit": limit,
         "count": len(frames),
         "truncated": truncated,
@@ -2521,6 +2548,7 @@ async def signals_visibility(
         "symbol": selected,
         "since": _utc_iso(start),
         "until": _utc_iso(end),
+        "ventana_maxima_h": int(LEDGER_MAX_WINDOW.total_seconds() // 3600),
         "status": status,
         "limit": limit,
         "count": len(certificates),

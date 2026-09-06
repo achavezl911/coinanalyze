@@ -53,14 +53,14 @@
 | `/api/scalp/liquidation-levels` | GET | 7 | 3 | 2 | [ficha](rutas/api-scalp-liquidation-levels.md) |
 | `/api/scalp/liquidations` | GET | 3 | 1 | 2 | [ficha](rutas/api-scalp-liquidations.md) |
 | `/api/scalp/orderbook` | GET | 7 | 1 | 3 | [ficha](rutas/api-scalp-orderbook.md) |
-| `/api/scalp/signals` | GET | 2 | 1 | 2 | [ficha](rutas/api-scalp-signals.md) |
+| `/api/scalp/signals` | GET | 8 | 1 | 3 | [ficha](rutas/api-scalp-signals.md) |
 | `/api/scalp/summary` | GET | 63 | 8 | 24 | [ficha](rutas/api-scalp-summary.md) |
 | `/api/setup` | GET | 8 | 2 | 8 | [ficha](rutas/api-setup.md) |
-| `/api/signals/execution` | GET | 8 | 2 | 4 | [ficha](rutas/api-signals-execution.md) |
-| `/api/signals/ledger` | GET | 7 | 1 | 4 | [ficha](rutas/api-signals-ledger.md) |
+| `/api/signals/execution` | GET | 9 | 2 | 4 | [ficha](rutas/api-signals-execution.md) |
+| `/api/signals/ledger` | GET | 8 | 1 | 4 | [ficha](rutas/api-signals-ledger.md) |
 | `/api/signals/outcomes` | GET | 8 | 2 | 4 | [ficha](rutas/api-signals-outcomes.md) |
-| `/api/signals/replay` | GET | 7 | 2 | 4 | [ficha](rutas/api-signals-replay.md) |
-| `/api/signals/visibility` | GET | 8 | 3 | 4 | [ficha](rutas/api-signals-visibility.md) |
+| `/api/signals/replay` | GET | 8 | 2 | 4 | [ficha](rutas/api-signals-replay.md) |
+| `/api/signals/visibility` | GET | 9 | 3 | 4 | [ficha](rutas/api-signals-visibility.md) |
 | `/api/snapshot` | GET | 35 | 1 | 3 | [ficha](rutas/api-snapshot.md) |
 | `/api/stream` | GET | **0 · PENDIENTE** | 3 | 2 | [ficha](rutas/api-stream.md) |
 | `/api/structure` | GET | 4 | 6 | 11 | [ficha](rutas/api-structure.md) |

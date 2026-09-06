@@ -78,6 +78,18 @@ P1.7 ("¿cuantas senales de este tipo en 30 dias?") no tendria respuesta posible
 `harness/checks/K21-ledger-de-senales.sh:32`.
 
 
+**PROMESA 5 · publica su TOPE, no solo su ventana.**
+`ventana_maxima_h` viaja en el sobre desde 2026-09-06 y vale 24. El eco de PROMESA 1 dice
+que ventana se SIRVIO; este dice cual es la que se PODIA pedir. Sin el, un consumidor no
+distingue dos respuestas que no se parecen: pedir 48 h **no** devuelve 24 h recortadas en
+silencio, devuelve **422 y cero filas**. `truncated` cubre el corte por FILAS; este cubre el
+corte por TIEMPO, y son cortes distintos.
+
+*Que significa no cumplirlo:* un panel que pide una ventana mas larga de la cuenta y pinta el
+rechazo como un hueco de mercado. Es P5.2 otra vez -una cifra sin denominador-, solo que aqui
+el denominador que falta es el de la propia ventana.
+
+
 ## SUPERFICIE
 
 **El recuento vive en la ficha derivada**, que se regenera: [`rutas/api-signals-ledger.md`](../rutas/api-signals-ledger.md), seccion *Superficie*. Aqui NO se copia el numero.

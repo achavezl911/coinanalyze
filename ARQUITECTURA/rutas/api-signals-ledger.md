@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_ledger` · `app/api.py:2112` (cuerpo hasta la 2174) · decorador en la linea 2111.
+Handler `signals_ledger` · `app/api.py:2136` (cuerpo hasta la 2199) · decorador en la linea 2135.
 
 ## Parametros de entrada
 
@@ -18,17 +18,18 @@ Handler `signals_ledger` · `app/api.py:2112` (cuerpo hasta la 2174) · decorado
 
 ## Campos que publica
 
-7 campos derivados. La procedencia dice de donde sale cada uno.
+8 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `count` | literal en app/api.py:2171 |
-| `limit` | literal en app/api.py:2170 |
-| `observations` | literal en app/api.py:2173 |
-| `since` | literal en app/api.py:2168 |
-| `symbol` | literal en app/api.py:2167 |
-| `truncated` | literal en app/api.py:2172 |
-| `until` | literal en app/api.py:2169 |
+| `count` | literal en app/api.py:2196 |
+| `limit` | literal en app/api.py:2195 |
+| `observations` | literal en app/api.py:2198 |
+| `since` | literal en app/api.py:2192 |
+| `symbol` | literal en app/api.py:2191 |
+| `truncated` | literal en app/api.py:2197 |
+| `until` | literal en app/api.py:2193 |
+| `ventana_maxima_h` | literal en app/api.py:2194 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -48,8 +49,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2068`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2096`
+- `app.api._utc_iso` — `app/api.py:2086`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2120`
 - `app.api.records` — `app/api.py:235`
 - `app.api.validate_symbol` — `app/api.py:222`
 
@@ -75,11 +76,11 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:2105` | una funcion de su cierre |
-| 422 | — | `app/api.py:2133` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2135` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2137` | el propio handler |
-| 422 | — | `app/api.py:2139` | el propio handler |
+| 422 | — | `app/api.py:2129` | una funcion de su cierre |
+| 422 | — | `app/api.py:2157` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2159` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2161` | el propio handler |
+| 422 | — | `app/api.py:2163` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -90,10 +91,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K21-ledger-de-senales.sh:32`, `harness/checks/K24-replay-del-contexto.sh:88` | `harness/checks/K24-replay-del-contexto.sh:19`, `harness/checks/K31-cubos.py:145`, `harness/checks/K88-control.bash:477` |
+| **panel** | `static/app.js:1710` | — |
 | **tests** | — | `tests/test_signals_ledger.py:1` |
 
-**No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
-Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
+**La llama el panel: es superficie de producto.**
 
 ## Ventana · con que clave la declara (derivado)
 
@@ -128,7 +129,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.api._utc_iso` | 5 | **0** | 0 | **5** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.rechaza_parametros_desconocidos` | 5 | **0** | 0 | **5** | [impacto](../impacto/app-api.md) |
 | `app.api.signals_ledger` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
