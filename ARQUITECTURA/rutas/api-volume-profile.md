@@ -14,7 +14,7 @@ Handler `volume_profile_endpoint` · `app/api.py:1639` (cuerpo hasta la 1642) ·
 
 ## Campos que publica
 
-6 campos derivados. La procedencia dice de donde sale cada uno.
+17 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
@@ -22,8 +22,19 @@ Handler `volume_profile_endpoint` · `app/api.py:1639` (cuerpo hasta la 1642) ·
 | `available` | literal en app/scalp_logic.py:3585 |
 | `note` | literal en app/scalp_logic.py:3595 |
 | `session` | literal en app/scalp_logic.py:3586 |
+| `session.hvn` | literal en app/scalp_logic.py:3534 |
+| `session.lvn` | literal en app/scalp_logic.py:3535 |
+| `session.poc` | literal en app/scalp_logic.py:3531 |
+| `session.vah` | literal en app/scalp_logic.py:3532 |
+| `session.val` | literal en app/scalp_logic.py:3533 |
 | `symbol` | literal en app/scalp_logic.py:3583 |
 | `vwap` | literal en app/scalp_logic.py:3587 |
+| `vwap.bands` | literal en app/scalp_logic.py:3590 |
+| `vwap.distinct_from` | literal en app/scalp_logic.py:3593 |
+| `vwap.market` | literal en app/scalp_logic.py:3591 |
+| `vwap.session_convention` | literal en app/scalp_logic.py:3592 |
+| `vwap.utc_day` | literal en app/scalp_logic.py:3588 |
+| `vwap.weekly` | literal en app/scalp_logic.py:3589 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -99,6 +110,8 @@ en el fichero de la capa declarada y puede corregirla con cita.
 Claves temporales entre los campos que publica:
 
 - `as_of`
+- `vwap.distinct_from`
+- `vwap.utc_day`
 
 ## Capa DECLARADA
 

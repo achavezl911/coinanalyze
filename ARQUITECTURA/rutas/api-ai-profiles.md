@@ -12,12 +12,24 @@ _ninguno_
 
 ## Campos que publica
 
-2 campos derivados. La procedencia dice de donde sale cada uno.
+14 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `endpoints` | literal en app/api.py:2778 |
 | `profiles` | literal en app/api.py:2764 |
+| `profiles.default` | literal en app/api.py:2766 |
+| `profiles.default.purpose` | literal en app/api.py:2766 |
+| `profiles.default.recommended_for` | literal en app/api.py:2766 |
+| `profiles.lite` | literal en app/api.py:2765 |
+| `profiles.lite.purpose` | literal en app/api.py:2765 |
+| `profiles.lite.recommended_for` | literal en app/api.py:2765 |
+| `profiles.max` | literal en app/api.py:2771 |
+| `profiles.max.purpose` | literal en app/api.py:2772 |
+| `profiles.max.recommended_for` | literal en app/api.py:2775 |
+| `profiles.pro` | literal en app/api.py:2767 |
+| `profiles.pro.purpose` | literal en app/api.py:2768 |
+| `profiles.pro.recommended_for` | literal en app/api.py:2769 |
 
 Forma de la respuesta segun el AST: objeto.
 

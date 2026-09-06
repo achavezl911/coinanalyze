@@ -14,12 +14,17 @@ Handler `oi_context_endpoint` · `app/api.py:1768` (cuerpo hasta la 1771) · dec
 
 ## Campos que publica
 
-11 campos derivados. La procedencia dice de donde sale cada uno.
+16 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `available` | literal en app/scalp_logic.py:3113 |
 | `by_venue` | literal en app/scalp_logic.py:3124 |
+| `by_venue.binance_oi_usd` | literal en app/scalp_logic.py:3125 |
+| `by_venue.bybit_oi_usd` | literal en app/scalp_logic.py:3126 |
+| `by_venue.bybit_share_of_two_venues_pct` | literal en app/scalp_logic.py:3130 |
+| `by_venue.note` | literal en app/scalp_logic.py:3133 |
+| `by_venue.two_venue_total_usd` | literal en app/scalp_logic.py:3127 |
 | `coverage` | literal en app/scalp_logic.py:3121 |
 | `oi_latest_ts` | literal en app/scalp_logic.py:3118 |
 | `oi_total_usd` | literal en app/scalp_logic.py:3114 |

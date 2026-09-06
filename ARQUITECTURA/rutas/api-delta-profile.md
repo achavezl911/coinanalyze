@@ -17,11 +17,12 @@ Handler `delta_profile_endpoint` · `app/api.py:1646` (cuerpo hasta la 1663) · 
 
 ## Campos que publica
 
-3 campos derivados. La procedencia dice de donde sale cada uno.
+4 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `coverage` | literal en app/delta_profile.py:269 |
+| `coverage.served_window` | literal en app/delta_profile.py:269 |
 | `requested_days` | literal en app/delta_profile.py:268 |
 | `symbol` | literal en app/delta_profile.py:267 |
 
@@ -110,9 +111,9 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `coverage.served_window`
 
 ## Capa DECLARADA
 

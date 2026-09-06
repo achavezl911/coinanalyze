@@ -14,12 +14,15 @@ Handler `divergences_endpoint` · `app/api.py:1835` (cuerpo hasta la 1838) · de
 
 ## Campos que publica
 
-9 campos derivados. La procedencia dice de donde sale cada uno.
+12 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `available` | literal en app/scalp_logic.py:2195 |
 | `intraday` | literal en app/scalp_logic.py:2201 |
+| `intraday.available` | literal en app/scalp_logic.py:2086 |
+| `intraday.omitted` | literal en app/scalp_logic.py:2086 |
+| `intraday.windows` | literal en app/scalp_logic.py:2086 |
 | `note` | literal en app/scalp_logic.py:2202 |
 | `sessions` | literal en app/scalp_logic.py:2196 |
 | `summary` | literal en app/scalp_logic.py:2198 |

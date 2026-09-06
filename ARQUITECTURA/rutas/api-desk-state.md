@@ -17,18 +17,34 @@ Handler `desk_state` · `app/api.py:1239` (cuerpo hasta la 1337) · decorador en
 
 ## Campos que publica
 
-9 campos derivados. La procedencia dice de donde sale cada uno.
+25 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `as_of` | literal en app/api.py:1311 |
 | `components` | literal en app/api.py:1315 |
+| `components.data_quality` | literal en app/api.py:1301 |
+| `components.delta_matrix` | literal en app/api.py:1297 |
+| `components.hypothesis` | literal en app/api.py:1299 |
+| `components.profile` | literal en app/api.py:1298 |
+| `components.scalp` | literal en app/api.py:1300 |
+| `components.trend_matrix` | literal en app/api.py:1296 |
 | `direction` | literal en app/api.py:1313 |
 | `note` | literal en app/api.py:1332 |
 | `partial` | literal en app/api.py:1326 |
+| `partial.profile_coverage_pct` | literal en app/api.py:1330 |
+| `partial.profile_missing_data` | literal en app/api.py:1328 |
+| `partial.scalp_coverage_pct` | literal en app/api.py:1329 |
+| `partial.scalp_missing_components` | literal en app/api.py:1327 |
 | `profile` | literal en app/api.py:1312 |
 | `setup` | literal en app/api.py:1314 |
 | `source_timestamps` | literal en app/api.py:1316 |
+| `source_timestamps.basis_status` | literal en app/api.py:1319 |
+| `source_timestamps.book_lag_seconds` | literal en app/api.py:1317 |
+| `source_timestamps.book_status` | literal en app/api.py:1318 |
+| `source_timestamps.collectors` | literal en app/api.py:1321 |
+| `source_timestamps.liquidations_last_event_age_s` | literal en app/api.py:1322 |
+| `source_timestamps.liquidations_measured` | literal en app/api.py:1320 |
 | `symbol` | literal en app/api.py:1310 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -248,6 +264,8 @@ en el fichero de la capa declarada y puede corregirla con cita.
 Claves temporales entre los campos que publica:
 
 - `as_of`
+- `source_timestamps.book_lag_seconds`
+- `source_timestamps.liquidations_last_event_age_s`
 
 ## Capa DECLARADA
 

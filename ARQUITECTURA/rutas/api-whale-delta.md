@@ -16,12 +16,22 @@ Handler `whale_delta` · `app/api.py:1037` (cuerpo hasta la 1103) · decorador e
 
 ## Campos que publica
 
-5 campos derivados. La procedencia dice de donde sale cada uno.
+15 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `coverage` | literal en app/api.py:429 |
+| `coverage.served_window` | literal en app/api.py:430 |
 | `data_gaps` | literal en app/api.py:434 |
+| `data_gaps.declared` | literal en app/api.py:442 |
+| `data_gaps.exchanges` | literal en app/api.py:436 |
+| `data_gaps.feed` | literal en app/api.py:435 |
+| `data_gaps.market` | literal en app/api.py:437 |
+| `data_gaps.status` | literal en app/api.py:441 |
+| `data_gaps.symbol` | literal en app/api.py:438 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:443 |
+| `data_gaps.window_end` | literal en app/api.py:440 |
+| `data_gaps.window_start` | literal en app/api.py:439 |
 | `interval` | literal en app/api.py:427 |
 | `rows` | literal en app/api.py:428 |
 | `symbol` | literal en app/api.py:426 |
@@ -116,9 +126,11 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `coverage.served_window`
+- `data_gaps.window_end`
+- `data_gaps.window_start`
 
 ## Capa DECLARADA
 

@@ -14,12 +14,15 @@ Handler `quality_feeds` · `app/api.py:1341` (cuerpo hasta la 1353) · decorador
 
 ## Campos que publica
 
-4 campos derivados. La procedencia dice de donde sale cada uno.
+7 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `collectors` | literal en app/scalp_logic.py:5299 |
 | `contexts` | literal en app/scalp_logic.py:5300 |
+| `contexts.intraday` | literal en app/scalp_logic.py:5302 |
+| `contexts.macro` | literal en app/scalp_logic.py:5303 |
+| `contexts.scalp` | literal en app/scalp_logic.py:5301 |
 | `metrics` | literal en app/scalp_logic.py:3964 |
 | `note` | literal en app/scalp_logic.py:3965 |
 

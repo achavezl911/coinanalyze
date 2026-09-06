@@ -24980,7 +24980,7 @@
     "rutas": 68,
     "rutas_con_campos": 62,
     "rutas_sin_campos": 6,
-    "sin_clave_temporal": 35,
+    "sin_clave_temporal": 24,
     "sin_consumidor": 6,
     "sin_declarar": 0,
     "sin_llamada": 14,
@@ -26081,7 +26081,19 @@
       "camino": "/api/ai/profiles",
       "campos": {
         "endpoints": "literal en app/api.py:2778",
-        "profiles": "literal en app/api.py:2764"
+        "profiles": "literal en app/api.py:2764",
+        "profiles.default": "literal en app/api.py:2766",
+        "profiles.default.purpose": "literal en app/api.py:2766",
+        "profiles.default.recommended_for": "literal en app/api.py:2766",
+        "profiles.lite": "literal en app/api.py:2765",
+        "profiles.lite.purpose": "literal en app/api.py:2765",
+        "profiles.lite.recommended_for": "literal en app/api.py:2765",
+        "profiles.max": "literal en app/api.py:2771",
+        "profiles.max.purpose": "literal en app/api.py:2772",
+        "profiles.max.recommended_for": "literal en app/api.py:2775",
+        "profiles.pro": "literal en app/api.py:2767",
+        "profiles.pro.purpose": "literal en app/api.py:2768",
+        "profiles.pro.recommended_for": "literal en app/api.py:2769"
       },
       "campos_pendientes": [],
       "cierre": [],
@@ -26437,7 +26449,17 @@
       "camino": "/api/cvd",
       "campos": {
         "coverage": "literal en app/api.py:429",
+        "coverage.served_window": "literal en app/api.py:430",
         "data_gaps": "literal en app/api.py:434",
+        "data_gaps.declared": "literal en app/api.py:442",
+        "data_gaps.exchanges": "literal en app/api.py:436",
+        "data_gaps.feed": "literal en app/api.py:435",
+        "data_gaps.market": "literal en app/api.py:437",
+        "data_gaps.status": "literal en app/api.py:441",
+        "data_gaps.symbol": "literal en app/api.py:438",
+        "data_gaps.undeclared_buckets": "literal en app/api.py:443",
+        "data_gaps.window_end": "literal en app/api.py:440",
+        "data_gaps.window_start": "literal en app/api.py:439",
         "interval": "literal en app/api.py:427",
         "rows": "literal en app/api.py:428",
         "symbol": "literal en app/api.py:426"
@@ -26464,7 +26486,11 @@
         "app.data_gaps.declared_gap_windows",
         "app.data_gaps.expected_buckets"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "coverage.served_window",
+        "data_gaps.window_end",
+        "data_gaps.window_start"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -26586,6 +26612,20 @@
         "as_of": "literal en app/scalp_logic.py:2883",
         "symbol": "literal en app/scalp_logic.py:2882",
         "window_meta": "literal en app/scalp_logic.py:2885",
+        "window_meta.acceleration_measured": "literal en app/scalp_logic.py:2890",
+        "window_meta.as_of": "literal en app/scalp_logic.py:2886",
+        "window_meta.as_of_semantics": "literal en app/scalp_logic.py:2899",
+        "window_meta.definition": "literal en app/scalp_logic.py:2893",
+        "window_meta.freshness_rule": "literal en app/scalp_logic.py:2897",
+        "window_meta.futures_agg_retention_hours": "literal en app/scalp_logic.py:2896",
+        "window_meta.futures_realtime_retention_hours": "literal en app/scalp_logic.py:2895",
+        "window_meta.independent_confirmations": "literal en app/scalp_logic.py:2889",
+        "window_meta.null_reasons": "literal en app/scalp_logic.py:2898",
+        "window_meta.reset_timezone": "literal en app/scalp_logic.py:2891",
+        "window_meta.sources": "literal en app/scalp_logic.py:2894",
+        "window_meta.venues": "literal en app/scalp_logic.py:2892",
+        "window_meta.window_type": "literal en app/scalp_logic.py:2887",
+        "window_meta.windows_are_nested": "literal en app/scalp_logic.py:2888",
         "windows": "literal en app/scalp_logic.py:2884"
       },
       "campos_pendientes": [],
@@ -26624,7 +26664,21 @@
       ],
       "claves_temporales": [
         "as_of",
-        "window_meta"
+        "window_meta",
+        "window_meta.acceleration_measured",
+        "window_meta.as_of",
+        "window_meta.as_of_semantics",
+        "window_meta.definition",
+        "window_meta.freshness_rule",
+        "window_meta.futures_agg_retention_hours",
+        "window_meta.futures_realtime_retention_hours",
+        "window_meta.independent_confirmations",
+        "window_meta.null_reasons",
+        "window_meta.reset_timezone",
+        "window_meta.sources",
+        "window_meta.venues",
+        "window_meta.window_type",
+        "window_meta.windows_are_nested"
       ],
       "codigos": [
         {
@@ -26718,6 +26772,14 @@
       "camino": "/api/cvd/divergence",
       "campos": {
         "coverage": "literal en app/api.py:933",
+        "coverage.served_window": "literal en app/api.py:933",
+        "coverage.served_window.complete": "literal en app/data_gaps.py:279",
+        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:277",
+        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:278",
+        "coverage.served_window.sources": "literal en app/data_gaps.py:280",
+        "coverage.served_window.window_end": "literal en app/data_gaps.py:276",
+        "coverage.served_window.window_start": "literal en app/data_gaps.py:275",
+        "coverage.status": "literal en app/api.py:933",
         "interval": "literal en app/api.py:931",
         "rows": "literal en app/api.py:932",
         "symbol": "literal en app/api.py:930"
@@ -26739,7 +26801,11 @@
         "app.data_gaps._validated_window",
         "app.data_gaps.blocking_requirement_keys"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "coverage.served_window",
+        "coverage.served_window.window_end",
+        "coverage.served_window.window_start"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -26862,7 +26928,17 @@
       "camino": "/api/cvd/spot",
       "campos": {
         "coverage": "literal en app/api.py:429",
+        "coverage.served_window": "literal en app/api.py:430",
         "data_gaps": "literal en app/api.py:434",
+        "data_gaps.declared": "literal en app/api.py:442",
+        "data_gaps.exchanges": "literal en app/api.py:436",
+        "data_gaps.feed": "literal en app/api.py:435",
+        "data_gaps.market": "literal en app/api.py:437",
+        "data_gaps.status": "literal en app/api.py:441",
+        "data_gaps.symbol": "literal en app/api.py:438",
+        "data_gaps.undeclared_buckets": "literal en app/api.py:443",
+        "data_gaps.window_end": "literal en app/api.py:440",
+        "data_gaps.window_start": "literal en app/api.py:439",
         "interval": "literal en app/api.py:427",
         "rows": "literal en app/api.py:428",
         "symbol": "literal en app/api.py:426"
@@ -26889,7 +26965,11 @@
         "app.data_gaps.declared_gap_windows",
         "app.data_gaps.expected_buckets"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "coverage.served_window",
+        "data_gaps.window_end",
+        "data_gaps.window_start"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -27202,12 +27282,163 @@
       "camino": "/api/dashboard/state",
       "campos": {
         "barriers": "literal en app/api.py:2718",
+        "barriers.active_zone": "literal en app/interpretation.py:1001",
+        "barriers.available": "literal en app/interpretation.py:998",
+        "barriers.current_price": "literal en app/interpretation.py:999",
+        "barriers.decision": "literal en app/interpretation.py:1000",
+        "barriers.intraday_source_interval": "literal en app/scalp_logic.py:1354",
+        "barriers.live_pressure": "literal en app/interpretation.py:1004",
+        "barriers.long_case": "literal en app/interpretation.py:1021",
+        "barriers.method": "literal en app/interpretation.py:1035",
+        "barriers.nearest_resistance": "literal en app/interpretation.py:1003",
+        "barriers.nearest_support": "literal en app/interpretation.py:1002",
+        "barriers.reason": "literal en app/interpretation.py:886",
+        "barriers.short_case": "literal en app/interpretation.py:1028",
+        "barriers.symbol": "literal en app/scalp_logic.py:1353",
+        "barriers.warning": "literal en app/interpretation.py:1057",
+        "barriers.warnings": "literal en app/interpretation.py:1048",
         "cvd_swing": "literal en app/api.py:2717",
+        "cvd_swing.as_of": "literal en app/interpretation.py:643",
+        "cvd_swing.available": "literal en app/interpretation.py:642",
+        "cvd_swing.backtest": "literal en app/interpretation.py:661",
+        "cvd_swing.evidence": "literal en app/interpretation.py:650",
+        "cvd_swing.horizon": "literal en app/interpretation.py:647",
+        "cvd_swing.invalidation": "literal en app/interpretation.py:649",
+        "cvd_swing.method": "literal en app/interpretation.py:673",
+        "cvd_swing.reason": "literal en app/interpretation.py:591",
+        "cvd_swing.reference_levels": "literal en app/interpretation.py:660",
+        "cvd_swing.score": "literal en app/interpretation.py:645",
+        "cvd_swing.sessions": "literal en app/interpretation.py:592",
+        "cvd_swing.signal": "literal en app/interpretation.py:644",
+        "cvd_swing.strength": "literal en app/interpretation.py:646",
+        "cvd_swing.thesis": "literal en app/interpretation.py:648",
+        "cvd_swing.warning": "literal en app/interpretation.py:680",
         "market_memory": "literal en app/api.py:2719",
+        "market_memory.analog_summary": "literal en app/interpretation.py:508",
+        "market_memory.analogs": "literal en app/interpretation.py:507",
+        "market_memory.available": "literal en app/interpretation.py:491",
+        "market_memory.coverage": "literal en app/interpretation.py:492",
+        "market_memory.current": "literal en app/interpretation.py:500",
+        "market_memory.historical_tilt": "literal en app/interpretation.py:499",
+        "market_memory.method": "literal en app/interpretation.py:515",
+        "market_memory.phase": "literal en app/interpretation.py:498",
+        "market_memory.reason": "literal en app/interpretation.py:412",
+        "market_memory.sessions": "literal en app/interpretation.py:411",
+        "market_memory.source": "literal en app/interpretation.py:516",
+        "market_memory.symbol": "literal en app/scalp_logic.py:1676",
+        "market_memory.warning": "literal en app/interpretation.py:517",
         "scalp": "literal en app/api.py:2713",
+        "scalp.absorption": "literal en app/scalp_logic.py:914",
+        "scalp.absorption_context": "literal en app/scalp_logic.py:916",
+        "scalp.absorption_delta_ratio": "literal en app/scalp_logic.py:915",
+        "scalp.basis_bps": "literal en app/scalp_logic.py:866",
+        "scalp.basis_detail": "literal en app/scalp_logic.py:868",
+        "scalp.basis_status": "literal en app/scalp_logic.py:867",
+        "scalp.book_lag_seconds": "literal en app/scalp_logic.py:870",
+        "scalp.book_status": "literal en app/scalp_logic.py:869",
+        "scalp.confidence": "literal en app/scalp_logic.py:846",
+        "scalp.diff_3m": "literal en app/scalp_logic.py:854",
+        "scalp.evidence_coverage_pct": "literal en app/scalp_logic.py:862",
+        "scalp.expected_weight": "literal en app/scalp_logic.py:861",
+        "scalp.fut_delta_1m": "literal en app/scalp_logic.py:848",
+        "scalp.fut_delta_3m": "literal en app/scalp_logic.py:849",
+        "scalp.fut_price": "literal en app/scalp_logic.py:864",
+        "scalp.fut_volume_1m": "literal en app/scalp_logic.py:850",
+        "scalp.imbalance_l1": "literal en app/scalp_logic.py:873",
+        "scalp.imbalance_l10": "literal en app/scalp_logic.py:875",
+        "scalp.imbalance_l5": "literal en app/scalp_logic.py:874",
+        "scalp.liquidation_feed_health": "literal en app/scalp_logic.py:884",
+        "scalp.liquidations_measured": "literal en app/scalp_logic.py:882",
+        "scalp.liquidations_window": "literal en app/scalp_logic.py:883",
+        "scalp.long_liq_5m": "literal en app/scalp_logic.py:878",
+        "scalp.long_score": "literal en app/scalp_logic.py:843",
+        "scalp.measured_weight": "literal en app/scalp_logic.py:860",
+        "scalp.missing_components": "literal en app/scalp_logic.py:863",
+        "scalp.oi_chg_15m_pct": "literal en app/scalp_logic.py:893",
+        "scalp.oi_contributes_direction": "literal en app/scalp_logic.py:907",
+        "scalp.oi_directional_support": "literal en app/scalp_logic.py:904",
+        "scalp.oi_new_positioning": "literal en app/scalp_logic.py:905",
+        "scalp.oi_now": "literal en app/scalp_logic.py:895",
+        "scalp.oi_price_quadrant": "literal en app/scalp_logic.py:902",
+        "scalp.oi_price_status": "literal en app/scalp_logic.py:911",
+        "scalp.oi_reading": "literal en app/scalp_logic.py:903",
+        "scalp.oi_start": "literal en app/scalp_logic.py:894",
+        "scalp.oi_state": "literal en app/scalp_logic.py:901",
+        "scalp.oi_timeframe": "literal en app/scalp_logic.py:906",
+        "scalp.oi_window_end": "literal en app/scalp_logic.py:897",
+        "scalp.oi_window_samples": "literal en app/scalp_logic.py:898",
+        "scalp.oi_window_start": "literal en app/scalp_logic.py:896",
+        "scalp.oi_window_status": "literal en app/scalp_logic.py:899",
+        "scalp.price_move_15m_coverage": "literal en app/scalp_logic.py:910",
+        "scalp.price_move_15m_pct": "literal en app/scalp_logic.py:908",
+        "scalp.price_move_15m_status": "literal en app/scalp_logic.py:909",
+        "scalp.price_move_3m_pct": "literal en app/scalp_logic.py:871",
+        "scalp.reason": "literal en app/scalp_logic.py:847",
+        "scalp.session_vwap": "literal en app/scalp_logic.py:912",
+        "scalp.short_liq_5m": "literal en app/scalp_logic.py:879",
+        "scalp.short_score": "literal en app/scalp_logic.py:844",
+        "scalp.spot_delta_3m": "literal en app/scalp_logic.py:851",
+        "scalp.spot_fut_divergence_norm": "literal en app/scalp_logic.py:859",
+        "scalp.spot_price": "literal en app/scalp_logic.py:865",
+        "scalp.spread_bps": "literal en app/scalp_logic.py:872",
+        "scalp.state": "literal en app/scalp_logic.py:845",
+        "scalp.vwap_dist_pct": "literal en app/scalp_logic.py:913",
+        "scalp.wall_down_pct": "literal en app/scalp_logic.py:877",
+        "scalp.wall_up_pct": "literal en app/scalp_logic.py:876",
         "scalp_persistence": "literal en app/api.py:2715",
+        "scalp_persistence.as_of": "literal en app/api.py:2688",
+        "scalp_persistence.available": "literal en app/api.py:2679",
+        "scalp_persistence.dias": "literal en app/api.py:2687",
+        "scalp_persistence.episodios": "literal en app/api.py:2683",
+        "scalp_persistence.etiqueta": "literal en app/api.py:2689",
+        "scalp_persistence.maximo_min": "literal en app/api.py:2682",
+        "scalp_persistence.mediana_min": "literal en app/api.py:2680",
+        "scalp_persistence.minutos_muestra": "literal en app/api.py:2684",
+        "scalp_persistence.p90_min": "literal en app/api.py:2681",
+        "scalp_persistence.p90_no_accionable_min": "literal en app/api.py:2685",
         "setup": "literal en app/api.py:2716",
+        "setup.daily_flow_source": "literal en app/interpretation.py:201",
+        "setup.daily_slope": "literal en app/interpretation.py:200",
+        "setup.daily_streak": "literal en app/interpretation.py:199",
+        "setup.primary": "literal en app/interpretation.py:202",
+        "setup.setups": "literal en app/interpretation.py:203",
+        "setup.warning": "literal en app/interpretation.py:204",
         "snapshot": "literal en app/api.py:2712",
+        "snapshot.btr_15m": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.btr_1h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.btr_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.cvd_diff_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.cvd_diff_ses": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.cvd_fut_imbalance_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.cvd_nyse_session": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.cvd_session": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.cvd_spot_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.cvd_spot_imbalance_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.cvd_spot_session": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.delta_3min": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.fr_avg": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.liq_ratio_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.long_liq_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.metrics_cutoff_at": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.oi": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.oi_bybit": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.oi_chg_24h_pct": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.oi_vol_24h_ratio": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.pfr_avg": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.pfr_fr_div": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.price": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.price_cutoff_at": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.price_dir_1h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.regime_label": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.regime_logic_version": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.regime_score": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.short_liq_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.spot_vol_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.symbol": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.ts": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.vol_24h": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.whale_intensity": "columna de metrics_snapshot (sql/schema.sql)",
+        "snapshot.whale_label": "columna de metrics_snapshot (sql/schema.sql)",
         "symbol": "literal en app/api.py:2711"
       },
       "campos_pendientes": [],
@@ -27291,7 +27522,17 @@
         "app.setups.classify_oi",
         "app.setups.oi_price_reading"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "scalp.book_lag_seconds",
+        "scalp.liquidations_window",
+        "scalp.oi_start",
+        "scalp.oi_window_end",
+        "scalp.oi_window_samples",
+        "scalp.oi_window_start",
+        "scalp.oi_window_status",
+        "snapshot.metrics_cutoff_at",
+        "snapshot.price_cutoff_at"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -27561,6 +27802,7 @@
       "camino": "/api/delta-profile",
       "campos": {
         "coverage": "literal en app/delta_profile.py:269",
+        "coverage.served_window": "literal en app/delta_profile.py:269",
         "requested_days": "literal en app/delta_profile.py:268",
         "symbol": "literal en app/delta_profile.py:267"
       },
@@ -27591,7 +27833,9 @@
         "app.delta_profile.profile_read",
         "app.delta_profile.value_area"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "coverage.served_window"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -27719,12 +27963,28 @@
       "campos": {
         "as_of": "literal en app/api.py:1311",
         "components": "literal en app/api.py:1315",
+        "components.data_quality": "literal en app/api.py:1301",
+        "components.delta_matrix": "literal en app/api.py:1297",
+        "components.hypothesis": "literal en app/api.py:1299",
+        "components.profile": "literal en app/api.py:1298",
+        "components.scalp": "literal en app/api.py:1300",
+        "components.trend_matrix": "literal en app/api.py:1296",
         "direction": "literal en app/api.py:1313",
         "note": "literal en app/api.py:1332",
         "partial": "literal en app/api.py:1326",
+        "partial.profile_coverage_pct": "literal en app/api.py:1330",
+        "partial.profile_missing_data": "literal en app/api.py:1328",
+        "partial.scalp_coverage_pct": "literal en app/api.py:1329",
+        "partial.scalp_missing_components": "literal en app/api.py:1327",
         "profile": "literal en app/api.py:1312",
         "setup": "literal en app/api.py:1314",
         "source_timestamps": "literal en app/api.py:1316",
+        "source_timestamps.basis_status": "literal en app/api.py:1319",
+        "source_timestamps.book_lag_seconds": "literal en app/api.py:1317",
+        "source_timestamps.book_status": "literal en app/api.py:1318",
+        "source_timestamps.collectors": "literal en app/api.py:1321",
+        "source_timestamps.liquidations_last_event_age_s": "literal en app/api.py:1322",
+        "source_timestamps.liquidations_measured": "literal en app/api.py:1320",
         "symbol": "literal en app/api.py:1310"
       },
       "campos_pendientes": [],
@@ -27874,7 +28134,9 @@
         "app.setups.split_hypothesis"
       ],
       "claves_temporales": [
-        "as_of"
+        "as_of",
+        "source_timestamps.book_lag_seconds",
+        "source_timestamps.liquidations_last_event_age_s"
       ],
       "codigos": [
         {
@@ -28055,6 +28317,9 @@
       "campos": {
         "available": "literal en app/scalp_logic.py:2195",
         "intraday": "literal en app/scalp_logic.py:2201",
+        "intraday.available": "literal en app/scalp_logic.py:2086",
+        "intraday.omitted": "literal en app/scalp_logic.py:2086",
+        "intraday.windows": "literal en app/scalp_logic.py:2086",
         "note": "literal en app/scalp_logic.py:2202",
         "sessions": "literal en app/scalp_logic.py:2196",
         "summary": "literal en app/scalp_logic.py:2198",
@@ -28773,7 +29038,35 @@
         "direction": "literal en app/scalp_logic.py:4838",
         "direction_label": "literal en app/scalp_logic.py:4839",
         "evidence": "literal en app/scalp_logic.py:4860",
+        "evidence.a_favor": "literal en app/scalp_logic.py:4734",
+        "evidence.en_contra": "literal en app/scalp_logic.py:4735",
+        "evidence.neutral": "literal en app/scalp_logic.py:4736",
+        "evidence.no_evaluable": "literal en app/scalp_logic.py:4738",
+        "evidence.pendiente": "literal en app/scalp_logic.py:4737",
         "execution": "literal en app/scalp_logic.py:4858",
+        "execution.bands_note": "literal en app/scalp_logic.py:5169",
+        "execution.cost_components_bps": "literal en app/scalp_logic.py:5138",
+        "execution.cost_components_missing": "literal en app/scalp_logic.py:5139",
+        "execution.cost_to_risk": "literal en app/scalp_logic.py:5143",
+        "execution.cost_to_risk_band": "literal en app/scalp_logic.py:5145",
+        "execution.cost_to_target": "literal en app/scalp_logic.py:5142",
+        "execution.cost_to_target_band": "literal en app/scalp_logic.py:5144",
+        "execution.horizon": "literal en app/scalp_logic.py:5134",
+        "execution.inputs": "literal en app/scalp_logic.py:5147",
+        "execution.missing_inputs": "literal en app/scalp_logic.py:5146",
+        "execution.note": "literal en app/scalp_logic.py:5175",
+        "execution.plan_coherence": "literal en app/scalp_logic.py:5166",
+        "execution.plan_incoherencias": "literal en app/scalp_logic.py:5167",
+        "execution.plan_warning": "literal en app/scalp_logic.py:5168",
+        "execution.profile": "literal en app/scalp_logic.py:5132",
+        "execution.profile_label": "literal en app/scalp_logic.py:5133",
+        "execution.risk_bps": "literal en app/scalp_logic.py:5141",
+        "execution.spread_warn_bps": "literal en app/scalp_logic.py:5159",
+        "execution.spread_warning": "literal en app/scalp_logic.py:5158",
+        "execution.status": "literal en app/scalp_logic.py:5135",
+        "execution.target_bps": "literal en app/scalp_logic.py:5140",
+        "execution.total_cost_bps": "literal en app/scalp_logic.py:5137",
+        "execution.verdict": "literal en app/scalp_logic.py:5136",
         "hypothesis": "literal en app/scalp_logic.py:4837",
         "invalidations": "literal en app/scalp_logic.py:4863",
         "label": "literal en app/scalp_logic.py:4844",
@@ -28783,10 +29076,40 @@
         "profile_coverage_pct": "literal en app/scalp_logic.py:4853",
         "setup": "literal en app/scalp_logic.py:4840",
         "setup_evaluation": "literal en app/scalp_logic.py:4843",
+        "setup_evaluation.confirmation_evaluable": "literal en app/setups.py:1328",
+        "setup_evaluation.confirmation_met": "literal en app/setups.py:1329",
+        "setup_evaluation.confirmation_total": "literal en app/setups.py:1327",
+        "setup_evaluation.coverage_pct": "literal en app/setups.py:1323",
+        "setup_evaluation.critical_evaluable": "literal en app/setups.py:1325",
+        "setup_evaluation.critical_met": "literal en app/setups.py:1326",
+        "setup_evaluation.critical_total": "literal en app/setups.py:1324",
+        "setup_evaluation.cumplidos": "literal en app/setups.py:1318",
+        "setup_evaluation.direction": "literal en app/setups.py:1310",
+        "setup_evaluation.direction_label": "literal en app/setups.py:1311",
+        "setup_evaluation.faltantes": "literal en app/setups.py:1319",
+        "setup_evaluation.invalidaciones": "literal en app/setups.py:1316",
+        "setup_evaluation.label": "literal en app/setups.py:1309",
+        "setup_evaluation.min_confirmations": "literal en app/setups.py:1332",
+        "setup_evaluation.min_coverage_pct": "literal en app/setups.py:1333",
+        "setup_evaluation.missing_confirmation": "literal en app/setups.py:1331",
+        "setup_evaluation.missing_critical": "literal en app/setups.py:1330",
+        "setup_evaluation.no_evaluables": "literal en app/setups.py:1317",
+        "setup_evaluation.note": "literal en app/setups.py:1334",
+        "setup_evaluation.pendientes": "literal en app/setups.py:1315",
+        "setup_evaluation.requisitos": "literal en app/setups.py:1314",
+        "setup_evaluation.requisitos_evaluables": "literal en app/setups.py:1321",
+        "setup_evaluation.requisitos_totales": "literal en app/setups.py:1320",
+        "setup_evaluation.setup": "literal en app/setups.py:1308",
+        "setup_evaluation.state": "literal en app/setups.py:1313",
+        "setup_evaluation.thesis": "literal en app/setups.py:1312",
         "setup_label": "literal en app/scalp_logic.py:4841",
         "setup_observables": "literal en app/scalp_logic.py:4864",
         "setup_state": "literal en app/scalp_logic.py:4842",
         "setup_zone": "literal en app/scalp_logic.py:4865",
+        "setup_zone.breakout_boundary": "literal en app/scalp_logic.py:4869",
+        "setup_zone.zone_center": "literal en app/scalp_logic.py:4868",
+        "setup_zone.zone_high": "literal en app/scalp_logic.py:4867",
+        "setup_zone.zone_low": "literal en app/scalp_logic.py:4866",
         "spread_bps": "literal en app/scalp_logic.py:4859",
         "symbol": "literal en app/api.py:1209",
         "timing": "literal en app/scalp_logic.py:4851"
@@ -28936,7 +29259,11 @@
         "app.setups.setup_observables"
       ],
       "claves_temporales": [
-        "as_of"
+        "as_of",
+        "execution.cost_to_risk",
+        "execution.cost_to_risk_band",
+        "execution.cost_to_target",
+        "execution.cost_to_target_band"
       ],
       "codigos": [
         {
@@ -29453,7 +29780,17 @@
       "camino": "/api/liquidations",
       "campos": {
         "coverage": "literal en app/api.py:429",
+        "coverage.served_window": "literal en app/api.py:430",
         "data_gaps": "literal en app/api.py:434",
+        "data_gaps.declared": "literal en app/api.py:442",
+        "data_gaps.exchanges": "literal en app/api.py:436",
+        "data_gaps.feed": "literal en app/api.py:435",
+        "data_gaps.market": "literal en app/api.py:437",
+        "data_gaps.status": "literal en app/api.py:441",
+        "data_gaps.symbol": "literal en app/api.py:438",
+        "data_gaps.undeclared_buckets": "literal en app/api.py:443",
+        "data_gaps.window_end": "literal en app/api.py:440",
+        "data_gaps.window_start": "literal en app/api.py:439",
         "interval": "literal en app/api.py:427",
         "rows": "literal en app/api.py:428",
         "symbol": "literal en app/api.py:426"
@@ -29480,7 +29817,11 @@
         "app.data_gaps.declared_gap_windows",
         "app.data_gaps.expected_buckets"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "coverage.served_window",
+        "data_gaps.window_end",
+        "data_gaps.window_start"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -29947,7 +30288,17 @@
       "camino": "/api/ohlcv",
       "campos": {
         "coverage": "literal en app/api.py:429",
+        "coverage.served_window": "literal en app/api.py:430",
         "data_gaps": "literal en app/api.py:434",
+        "data_gaps.declared": "literal en app/api.py:442",
+        "data_gaps.exchanges": "literal en app/api.py:436",
+        "data_gaps.feed": "literal en app/api.py:435",
+        "data_gaps.market": "literal en app/api.py:437",
+        "data_gaps.status": "literal en app/api.py:441",
+        "data_gaps.symbol": "literal en app/api.py:438",
+        "data_gaps.undeclared_buckets": "literal en app/api.py:443",
+        "data_gaps.window_end": "literal en app/api.py:440",
+        "data_gaps.window_start": "literal en app/api.py:439",
         "interval": "literal en app/api.py:427",
         "rows": "literal en app/api.py:428",
         "symbol": "literal en app/api.py:426"
@@ -29974,7 +30325,11 @@
         "app.data_gaps.declared_gap_windows",
         "app.data_gaps.expected_buckets"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "coverage.served_window",
+        "data_gaps.window_end",
+        "data_gaps.window_start"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -30110,7 +30465,17 @@
       "camino": "/api/oi",
       "campos": {
         "coverage": "literal en app/api.py:429",
+        "coverage.served_window": "literal en app/api.py:430",
         "data_gaps": "literal en app/api.py:434",
+        "data_gaps.declared": "literal en app/api.py:442",
+        "data_gaps.exchanges": "literal en app/api.py:436",
+        "data_gaps.feed": "literal en app/api.py:435",
+        "data_gaps.market": "literal en app/api.py:437",
+        "data_gaps.status": "literal en app/api.py:441",
+        "data_gaps.symbol": "literal en app/api.py:438",
+        "data_gaps.undeclared_buckets": "literal en app/api.py:443",
+        "data_gaps.window_end": "literal en app/api.py:440",
+        "data_gaps.window_start": "literal en app/api.py:439",
         "interval": "literal en app/api.py:427",
         "rows": "literal en app/api.py:428",
         "symbol": "literal en app/api.py:426"
@@ -30137,7 +30502,11 @@
         "app.data_gaps.declared_gap_windows",
         "app.data_gaps.expected_buckets"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "coverage.served_window",
+        "data_gaps.window_end",
+        "data_gaps.window_start"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -30263,6 +30632,11 @@
       "campos": {
         "available": "literal en app/scalp_logic.py:3113",
         "by_venue": "literal en app/scalp_logic.py:3124",
+        "by_venue.binance_oi_usd": "literal en app/scalp_logic.py:3125",
+        "by_venue.bybit_oi_usd": "literal en app/scalp_logic.py:3126",
+        "by_venue.bybit_share_of_two_venues_pct": "literal en app/scalp_logic.py:3130",
+        "by_venue.note": "literal en app/scalp_logic.py:3133",
+        "by_venue.two_venue_total_usd": "literal en app/scalp_logic.py:3127",
         "coverage": "literal en app/scalp_logic.py:3121",
         "oi_latest_ts": "literal en app/scalp_logic.py:3118",
         "oi_total_usd": "literal en app/scalp_logic.py:3114",
@@ -30397,13 +30771,19 @@
       "campos": {
         "as_of": "literal en app/scalp_logic.py:5904",
         "counts": "literal en app/scalp_logic.py:5910",
+        "counts.neutral": "literal en app/scalp_logic.py:5833",
+        "counts.reacumulacion_silenciosa": "literal en app/scalp_logic.py:5833",
+        "counts.redistribucion_silenciosa": "literal en app/scalp_logic.py:5833",
         "horizons": "literal en app/scalp_logic.py:5908",
         "location": "literal en app/scalp_logic.py:5906",
         "note": "literal en app/scalp_logic.py:5911",
         "price": "literal en app/scalp_logic.py:5905",
         "summary": "literal en app/scalp_logic.py:5909",
         "symbol": "literal en app/scalp_logic.py:5903",
-        "value_area": "literal en app/scalp_logic.py:5907"
+        "value_area": "literal en app/scalp_logic.py:5907",
+        "value_area.poc": "literal en app/scalp_logic.py:5907",
+        "value_area.vah": "literal en app/scalp_logic.py:5907",
+        "value_area.val": "literal en app/scalp_logic.py:5907"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -30979,6 +31359,9 @@
       "campos": {
         "collectors": "literal en app/scalp_logic.py:5299",
         "contexts": "literal en app/scalp_logic.py:5300",
+        "contexts.intraday": "literal en app/scalp_logic.py:5302",
+        "contexts.macro": "literal en app/scalp_logic.py:5303",
+        "contexts.scalp": "literal en app/scalp_logic.py:5301",
         "metrics": "literal en app/scalp_logic.py:3964",
         "note": "literal en app/scalp_logic.py:3965"
       },
@@ -31396,9 +31779,18 @@
       "camino": "/api/reference-levels",
       "campos": {
         "current_day": "literal en app/scalp_logic.py:3237",
+        "current_day.high": "literal en app/scalp_logic.py:3237",
+        "current_day.low": "literal en app/scalp_logic.py:3237",
+        "current_day.open": "literal en app/scalp_logic.py:3237",
         "note": "literal en app/scalp_logic.py:3244",
         "opens": "literal en app/scalp_logic.py:3238",
+        "opens.daily": "literal en app/scalp_logic.py:3239",
+        "opens.monthly": "literal en app/scalp_logic.py:3241",
+        "opens.weekly": "literal en app/scalp_logic.py:3240",
         "previous_day": "literal en app/scalp_logic.py:3236",
+        "previous_day.close": "literal en app/scalp_logic.py:3236",
+        "previous_day.high": "literal en app/scalp_logic.py:3236",
+        "previous_day.low": "literal en app/scalp_logic.py:3236",
         "sessions_today_utc": "literal en app/scalp_logic.py:3243",
         "symbol": "literal en app/scalp_logic.py:3235"
       },
@@ -32449,9 +32841,9 @@
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:100",
             "harness/checks/K43-foto-unica.sh:158",
-            "harness/checks/K80-la-matriz-cambia-de-universo.sh:113",
-            "harness/checks/K80-la-matriz-cambia-de-universo.sh:114",
-            "harness/checks/K80-la-matriz-cambia-de-universo.sh:156"
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:169",
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:170",
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:212"
           ],
           "menciones": []
         },
@@ -32524,6 +32916,10 @@
       "camino": "/api/scalp/orderbook",
       "campos": {
         "freshness": "literal en app/api.py:1498",
+        "freshness.age_seconds": "literal en app/ai_context.py:641",
+        "freshness.as_of": "literal en app/ai_context.py:640",
+        "freshness.max_age_seconds": "literal en app/ai_context.py:642",
+        "freshness.status": "literal en app/ai_context.py:639",
         "rows": "literal en app/api.py:1497",
         "symbol": "literal en app/api.py:1496"
       },
@@ -32534,7 +32930,9 @@
         "app.api.validate_symbol"
       ],
       "cierre_indirecto": [],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "freshness.max_age_seconds"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -32740,6 +33138,11 @@
       "campos": {
         "absorption": "literal en app/scalp_logic.py:914",
         "absorption_context": "literal en app/scalp_logic.py:916",
+        "absorption_context.band": "literal en app/scalp_logic.py:150",
+        "absorption_context.reference": "literal en app/scalp_logic.py:154",
+        "absorption_context.robust_z": "literal en app/scalp_logic.py:151",
+        "absorption_context.sample_count": "literal en app/scalp_logic.py:153",
+        "absorption_context.status": "literal en app/scalp_logic.py:152",
         "absorption_delta_ratio": "literal en app/scalp_logic.py:915",
         "basis_bps": "literal en app/scalp_logic.py:866",
         "basis_detail": "literal en app/scalp_logic.py:868",
@@ -34910,6 +35313,13 @@
       "camino": "/api/verdicts",
       "campos": {
         "coverage": "literal en app/api.py:1928",
+        "coverage.served_window": "literal en app/api.py:1928",
+        "coverage.served_window.complete": "literal en app/data_gaps.py:279",
+        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:277",
+        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:278",
+        "coverage.served_window.sources": "literal en app/data_gaps.py:280",
+        "coverage.served_window.window_end": "literal en app/data_gaps.py:276",
+        "coverage.served_window.window_start": "literal en app/data_gaps.py:275",
         "logic_version": "literal en app/api.py:1926",
         "note": "literal en app/api.py:1929",
         "rows": "literal en app/api.py:1927",
@@ -34930,7 +35340,11 @@
         "app.data_gaps._validated_window",
         "app.metrics.session_bounds"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "coverage.served_window",
+        "coverage.served_window.window_end",
+        "coverage.served_window.window_start"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -35163,8 +35577,19 @@
         "available": "literal en app/scalp_logic.py:3585",
         "note": "literal en app/scalp_logic.py:3595",
         "session": "literal en app/scalp_logic.py:3586",
+        "session.hvn": "literal en app/scalp_logic.py:3534",
+        "session.lvn": "literal en app/scalp_logic.py:3535",
+        "session.poc": "literal en app/scalp_logic.py:3531",
+        "session.vah": "literal en app/scalp_logic.py:3532",
+        "session.val": "literal en app/scalp_logic.py:3533",
         "symbol": "literal en app/scalp_logic.py:3583",
-        "vwap": "literal en app/scalp_logic.py:3587"
+        "vwap": "literal en app/scalp_logic.py:3587",
+        "vwap.bands": "literal en app/scalp_logic.py:3590",
+        "vwap.distinct_from": "literal en app/scalp_logic.py:3593",
+        "vwap.market": "literal en app/scalp_logic.py:3591",
+        "vwap.session_convention": "literal en app/scalp_logic.py:3592",
+        "vwap.utc_day": "literal en app/scalp_logic.py:3588",
+        "vwap.weekly": "literal en app/scalp_logic.py:3589"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -35182,7 +35607,9 @@
         "app.scalp_logic.resolve_matrix_as_of"
       ],
       "claves_temporales": [
-        "as_of"
+        "as_of",
+        "vwap.distinct_from",
+        "vwap.utc_day"
       ],
       "codigos": [
         {
@@ -35262,7 +35689,17 @@
       "camino": "/api/whale/delta",
       "campos": {
         "coverage": "literal en app/api.py:429",
+        "coverage.served_window": "literal en app/api.py:430",
         "data_gaps": "literal en app/api.py:434",
+        "data_gaps.declared": "literal en app/api.py:442",
+        "data_gaps.exchanges": "literal en app/api.py:436",
+        "data_gaps.feed": "literal en app/api.py:435",
+        "data_gaps.market": "literal en app/api.py:437",
+        "data_gaps.status": "literal en app/api.py:441",
+        "data_gaps.symbol": "literal en app/api.py:438",
+        "data_gaps.undeclared_buckets": "literal en app/api.py:443",
+        "data_gaps.window_end": "literal en app/api.py:440",
+        "data_gaps.window_start": "literal en app/api.py:439",
         "interval": "literal en app/api.py:427",
         "rows": "literal en app/api.py:428",
         "symbol": "literal en app/api.py:426"
@@ -35286,7 +35723,11 @@
         "app.data_gaps.declared_gap_windows",
         "app.data_gaps.expected_buckets"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "coverage.served_window",
+        "data_gaps.window_end",
+        "data_gaps.window_start"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -35575,11 +36016,16 @@
         "lookback_days": "literal en app/scalp_logic.py:1486",
         "scored_visits": "literal en app/scalp_logic.py:1489",
         "sources": "literal en app/scalp_logic.py:1495",
+        "sources.cvd_spot": "literal en app/scalp_logic.py:1497",
+        "sources.delta_futuros": "literal en app/scalp_logic.py:1496",
+        "sources.no_disponible": "literal en app/scalp_logic.py:1498",
         "summary": "literal en app/scalp_logic.py:1490",
         "symbol": "literal en app/scalp_logic.py:1484",
         "visit_count": "literal en app/scalp_logic.py:1488",
         "visits": "literal en app/scalp_logic.py:1487",
-        "zone": "literal en app/scalp_logic.py:1485"
+        "zone": "literal en app/scalp_logic.py:1485",
+        "zone.high": "literal en app/scalp_logic.py:1485",
+        "zone.low": "literal en app/scalp_logic.py:1485"
       },
       "campos_pendientes": [],
       "cierre": [

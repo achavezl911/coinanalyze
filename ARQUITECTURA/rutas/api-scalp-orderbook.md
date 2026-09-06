@@ -14,11 +14,15 @@ Handler `scalp_orderbook` · `app/api.py:1487` (cuerpo hasta la 1499) · decorad
 
 ## Campos que publica
 
-3 campos derivados. La procedencia dice de donde sale cada uno.
+7 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `freshness` | literal en app/api.py:1498 |
+| `freshness.age_seconds` | literal en app/ai_context.py:641 |
+| `freshness.as_of` | literal en app/ai_context.py:640 |
+| `freshness.max_age_seconds` | literal en app/ai_context.py:642 |
+| `freshness.status` | literal en app/ai_context.py:639 |
 | `rows` | literal en app/api.py:1497 |
 | `symbol` | literal en app/api.py:1496 |
 
@@ -86,9 +90,9 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `freshness.max_age_seconds`
 
 ## Capa DECLARADA
 
