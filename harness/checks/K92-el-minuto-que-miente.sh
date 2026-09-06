@@ -50,6 +50,42 @@
 # ROJO. Es huella positiva -probar que el instrumento SABE decir «completo»-, no basta con
 # que la consulta no falle.
 #
+# ---------------------------------------------------------------------------------
+# LO QUE SE ANIADIO EL 2026-09-06, Y POR QUE.
+#
+# ESTE CHECK SE IBA A PONER VERDE SOLO EL 09-11. Su rojo descansaba sobre UN minuto
+# -2026-09-04T17:16- y la ventana son 7 dias: al salir ese minuto de la ventana, el check
+# habria dicho verde sin que nadie arreglara nada. Un verde por caducidad.
+#
+# 22 NO ERA EL DENOMINADOR. Publicaba «22 minuto(s) tocados ... 21 correcto(s)», y un minuto
+# TOCADO no es un minuto que PUEDA exhibir el defecto. Medido en 140 sobre 7 dias:
+#     22 tocados = 19 el minuto del Stopping (ANTES) + 3 el del Started (DESPUES)
+#   Los 3 DESPUES no pueden mentir por esta via: nacen cortos, el colector entra dentro de
+#   ellos. Y de los 19 ANTES, solo puede mentir aquel cuyo minuto seguia ABIERTO al llegar el
+#   SIGTERM y ya habia CERRADO cuando corrio el drenaje de apagado; si no, o no se escribe
+#   fila, o la que se escribe es de un minuto entero y correcto.
+#   La aproximacion externa de esa condicion es que EL APAGADO CRUCE EL BORDE DEL MINUTO:
+#   minuto(Stopping) != minuto(Started). Medido: **3 de las 21 ventanas cruzan**, y de esas
+#   3 solo una escribio fila para el minuto sospechoso -y MINTIO-. Las otras dos no
+#   escribieron nada.
+#   O sea: 1 de 22 = 4.5 % era una tasa sobre la poblacion equivocada. Sobre la que puede
+#   exhibirlo es 1 de 3 = 33 %, y sobre la que ademas escribio fila, 1 de 1. El defecto NO
+#   es intermitente: es DETERMINISTA. Lo intermitente es la OCASION.
+#
+# POR ESO EL SUJETO NO SE ESTRECHA Y EL CONTADOR SI. Se siguen juzgando los 22 minutos
+# tocados -si uno miente, miente, venga de donde venga-. Lo que cambia es QUE CUENTA COMO
+# PRUEBA DE QUE YA NO PASA: para eso solo valen las ocasiones que podian exhibirlo. Estrechar
+# el sujeto seria el atajo barato; estrechar el contador hace el verde MAS dificil, no menos.
+#
+# LOS TRES ESTADOS, con los tres rc que hay y ni uno mas:
+#   ROJO   VIVO · algun minuto miente dentro de la ventana.
+#   VERDE  REMITIDO Y PROBADO · ninguno miente Y hubo >= K ocasiones que podian exhibirlo.
+#   NOMED  CALLADO SIN PROBAR · ninguno miente pero las ocasiones son menos de K.
+# K tiene un SUELO de 7 ocasiones, que es una constante del fichero y NO una variable de
+# entorno: con menos de 7 ocasiones independientes no se distingue un arreglo de una racha.
+# A una ocasion por semana medida, este check tarda semanas en poder firmar un verde. Es el
+# precio correcto: el anterior lo firmaba en cinco dias sin haber medido nada.
+#
 # Corre contra 140 por prodsql y por el journal. Sin ninguno de los dos, NOMED.
 set -uo pipefail
 B=/srv/coinanalyze/harness
@@ -135,6 +171,12 @@ abiertas=$(printf '%s\n' "$ventanas" | head -1)
 pares=$(printf '%s\n' "$ventanas" | tail -n +2 | grep -E '^[0-9]{4}' || true)
 n_par=$(printf '%s\n' "$pares" | grep -c . || true)
 
+# LAS VENTANAS QUE CRUZAN EL BORDE DEL MINUTO. Son las unicas que pueden hacer que el drenaje
+# de apagado escriba un minuto que estaba abierto cuando llego el SIGTERM. Se calcula del
+# JOURNAL, que es el instrumento externo: la tabla no opina sobre cuando se paro el colector.
+cruzan=$(printf '%s\n' "$pares" | awk '{ if (substr($1,1,16) != substr($2,1,16)) print substr($1,1,16) }')
+n_cruzan=$(printf '%s\n' "$cruzan" | grep -c . || true)
+
 if [ "$n_par" -eq 0 ]; then
   # CERO VENTANAS NO ES CERO DEFECTOS: es que no hay con que medir. Sin ventana no hay
   # segundos caidos, y sin segundos caidos este check no tiene sujeto.
@@ -195,7 +237,7 @@ if [ "$filas" -eq 0 ]; then
 fi
 
 # --- 3 · EL VEREDICTO, Y SU CONTROL ----------------------------------------------------
-mentirosos=''; sujetos=0; sanos=0; control_60=0; control_n=0; detalle=''
+mentirosos=''; sujetos=0; sanos=0; control_60=0; control_n=0; detalle=''; ocasiones=0
 while IFS='|' read -r min caido nf cov; do
   min=$(printf '%s' "$min" | tr -d ' ');   caido=$(printf '%s' "$caido" | tr -d ' ')
   nf=$(printf '%s' "$nf" | tr -d ' ');     cov=$(printf '%s' "$cov" | tr -d ' ')
@@ -210,6 +252,10 @@ while IFS='|' read -r min caido nf cov; do
     continue
   fi
   sujetos=$((sujetos+1))
+  # OCASION = minuto de una ventana que CRUZA el borde y que ademas TIENE fila. Es la unica
+  # poblacion que pudo exhibir el defecto, y por tanto la unica que puede probar que ya no pasa.
+  # No filtra el sujeto: el minuto se sigue juzgando igual, cruce o no cruce.
+  printf '%s\n' "$cruzan" | grep -qx "$min" && ocasiones=$((ocasiones+1))
   permitido=$((60 - caido))
   if [ "$cov" -gt "$permitido" ]; then
     # UNA LINEA POR MINUTO, no separado por espacios: el detalle lleva espacios dentro y
@@ -237,17 +283,30 @@ if [ "$control_60" -eq 0 ]; then
   exit 2
 fi
 
+# EL SUELO ES UNA CONSTANTE DEL FICHERO, no una variable de entorno: si fuera K92_SUELO
+# seria el ajuste barato que este check existe para no tener. Ver la cabecera.
+SUELO=7
+echo "poblacion: $sujetos minuto(s) tocados por $n_par ventana(s) en $DIAS dias · de esas ventanas, $n_cruzan cruzan el borde del minuto · $ocasiones minuto(s) sospechoso(s) CON fila (las ocasiones que pueden exhibirlo)"
+
 if [ -n "$mentirosos" ]; then
   n=$(printf '%s' "$mentirosos" | grep -c . || true)
-  echo "$n minuto(s) de $TABLA declaran MAS cobertura de la que su ventana de parada permite:"
+  echo "ROJO (VIVO): $n minuto(s) de $TABLA declaran MAS cobertura de la que su ventana de parada permite:"
   printf '%s' "$mentirosos" | grep . | head -6 | sed 's/^/  /'
-  echo "  sobre $sujetos minuto(s) tocados por $n_par ventana(s) en $DIAS dias · $sanos correcto(s)"
+  echo "  $n de $ocasiones ocasion(es) que podian exhibirlo. Sobre los $sujetos minutos TOCADOS seria $n de $sujetos,"
+  echo "  que es la tasa sobre la poblacion equivocada: un minuto tocado no es un minuto que pueda mentir."
   echo "  control: $control_60 de $control_n minutos intactos declaran 60, luego la tabla SABE decir completo"
   echo "  se arregla en quien escribe la pata, NO en el MIN del combinado"
   exit 1
 fi
 
-echo "los $sujetos minuto(s) tocados por $n_par ventana(s) declaran cobertura compatible con su parada"
 echo "  control: $control_60 de $control_n minutos intactos declaran 60"
 echo " $detalle"
-exit 0
+if [ "$ocasiones" -ge "$SUELO" ]; then
+  echo "VERDE (REMITIDO Y PROBADO): ningun minuto miente, y hubo $ocasiones ocasion(es) que PODIAN exhibirlo (>= $SUELO)."
+  echo "  ESTO NO DICE QUE NADIE LO ARREGLARA. Dice que la ocasion se dio bastantes veces y no aparecio."
+  exit 0
+fi
+echo "NO MEDIDO (CALLADO SIN PROBAR): ningun minuto miente, pero solo hubo $ocasiones ocasion(es) que podian exhibirlo y hacen falta $SUELO."
+echo "  Los $sujetos minutos tocados NO son prueba: $((sujetos - ocasiones)) de ellos no podian exhibir el defecto ni existiendo."
+echo "  NO es verde: un verde por falta de ocasion es un verde no ganado. NO es rojo: no se ha visto mentir a nadie."
+exit 2

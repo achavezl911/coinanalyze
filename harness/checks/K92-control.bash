@@ -75,6 +75,37 @@ FILA_AUSENTE="2026-09-05T17:16|  5|  0| -1
  2026-09-05T17:17| 14|  0| -1
 $CTRL"
 
+# --- LOS FIXTURES DE LA CADUCIDAD, anadidos el 2026-09-06 ---------------------------------
+# Desde hoy, "ningun minuto miente" NO basta para un verde: hacen falta >= 7 OCASIONES que
+# pudieran exhibirlo. Una ocasion es una ventana que CRUZA el borde del minuto -unica forma de
+# que el drenaje de apagado escriba un minuto que estaba abierto- y cuyo minuto tiene fila.
+# Sin estos fixtures el check no tendria ningun camino a verde y el brazo positivo estaria
+# muerto: un check que solo sabe decir rojo y nomed no mide, veta.
+JOURNAL_7=$(for h in 01 02 03 04 05 06 07; do
+  printf '2026-09-05T%s:16:55+00:00 systemd[1]: Stopping coinalyze-ws.service...\n' "$h"
+  printf '2026-09-05T%s:17:14+00:00 systemd[1]: Started coinalyze-ws.service.\n' "$h"
+done)
+FILAS_7=$(for h in 01 02 03 04 05 06 07; do
+  printf ' 2026-09-05T%s:16|  5|  6| 55\n' "$h"
+  printf ' 2026-09-05T%s:17| 14|  6| 45\n' "$h"
+  printf ' 2026-09-05T%s:13|  0|  6| 60\n' "$h"
+done)
+# El mismo, con SEIS ventanas: una menos que el suelo. Es la frontera, que es donde un umbral
+# se equivoca si esta mal escrito.
+JOURNAL_6=$(printf '%s\n' "$JOURNAL_7" | head -12)
+FILAS_6=$(printf '%s\n' "$FILAS_7" | head -18)
+# Y el que prueba que el CONTADOR no es el sujeto: siete ventanas que NO cruzan el borde.
+# Tienen minutos tocados y filas, pero ninguna pudo exhibir el defecto: no son ocasiones.
+JOURNAL_7NC=$(for h in 01 02 03 04 05 06 07; do
+  printf '2026-09-05T%s:16:20+00:00 systemd[1]: Stopping coinalyze-ws.service...\n' "$h"
+  printf '2026-09-05T%s:16:39+00:00 systemd[1]: Started coinalyze-ws.service.\n' "$h"
+done)
+FILAS_7NC=$(for h in 01 02 03 04 05 06 07; do
+  printf ' 2026-09-05T%s:16| 19|  6| 41\n' "$h"
+  printf ' 2026-09-05T%s:13|  0|  6| 60\n' "$h"
+done)
+FILAS_7NC_MIENTE=$(printf ' 2026-09-05T01:16| 19|  6| 60\n'; printf '%s\n' "$FILAS_7NC" | tail -n +2)
+
 caso() {  # <nombre> <rc> <patron> <journal> <filas> [prodsql] [prod]
   local nombre="$1" esperado="$2" patron="$3" jr="$4" fl="$5"
   local psql="${6:-$DIR/bin/prodsql}" prod="${7:-$DIR/bin/prod}"
@@ -112,12 +143,12 @@ $CTRL"
 
 echo
 echo "NEGATIVO · cuando la cobertura SI se escribe corta"
-caso "N1 cov=55 con 5s de ventana: justo en el limite" 0 "compatible con su parada" \
+caso "N1 cov=55 en el limite: no miente, pero 1 ocasion no prueba" 2 "CALLADO SIN PROBAR" \
      "$JOURNAL_OK" "$FILA_SANA"
 # N2 · los minutos intactos son CONTROL, no sujeto. Se afirma sobre el RECUENTO -«2 minuto(s)
 # tocados» con cuatro filas en la consulta-, porque con el mismo fixture que N1 este caso
 # pasaria siempre que pasara N1 y no probaria nada por su cuenta.
-caso "N2 los 2 intactos no entran en el recuento de sujetos" 0 "los 2 minuto\(s\) tocados" \
+caso "N2 los 2 intactos no entran en el recuento de sujetos" 2 "2 minuto\(s\) tocados" \
      "$JOURNAL_OK" "$FILA_SANA"
 # N3 · sin fila es el caso AUSENTE, que YA se arreglo y no es el sujeto de este check.
 caso "N3 minuto tocado AUSENTE: no es el sujeto" 2 "sin sujeto" \
@@ -129,7 +160,7 @@ echo "LA DESIGUALDAD · declarar de MENOS no es este defecto"
 # minuto declaro covered_seconds=1: el colector tardo en recibir su primer trade despues del
 # arranque. La RESTA EXACTA -exigir cov = 60-19 = 41- daria ROJO aqui, y seria un ROJO
 # FALSO: declarar de menos no es mentir que estas completo. La DESIGUALDAD lo deja pasar.
-caso "D1 cov=1 con 19s de ventana: corto de mas, no miente" 0 "compatible con su parada" \
+caso "D1 cov=1 con 19s de ventana: corto de mas, no miente" 2 "CALLADO SIN PROBAR" \
      "2026-09-03T05:20:39+00:00 systemd[1]: Stopping coinalyze-ws.service...
 2026-09-03T05:20:58+00:00 systemd[1]: Started coinalyze-ws.service." \
      " 2026-09-03T05:20| 19|  3|  1
@@ -211,6 +242,31 @@ if [ "$rc" = "2" ] && printf '%s' "$out" | grep -q "no esta en sql/schema.sql"; 
 else
   fallos=$((fallos+1)); printf '  [FALLA] %-52s rc=%s\n' "E2 tabla inventada" "$rc"
 fi
+
+echo
+echo "LA CADUCIDAD · un verde tiene que GANARSE, y un rojo no puede caducar"
+# Este check se iba a poner VERDE SOLO el 09-11: su rojo descansa sobre un unico minuto y la
+# ventana son 7 dias. Estos brazos cierran las dos formas de mentir por el paso del tiempo.
+caso "K1 siete ocasiones limpias -> VERDE, y ganado"      0 "REMITIDO Y PROBADO" \
+     "$JOURNAL_7" "$FILAS_7"
+caso "K1b y no afirma que nadie lo arreglara"             0 "NO DICE QUE NADIE LO ARREGLARA" \
+     "$JOURNAL_7" "$FILAS_7"
+caso "K2 seis ocasiones, una menos que el suelo -> NOMED" 2 "solo hubo 6 ocasion" \
+     "$JOURNAL_6" "$FILAS_6"
+# K3 · EL BRAZO QUE SEPARA EL SUJETO DEL CONTADOR. Siete ventanas con sus minutos tocados y sus
+# filas, pero NINGUNA cruza el borde: no pudieron exhibir el defecto ni existiendo. Si el check
+# contara "minutos tocados" como prueba, esto saldria VERDE sin haber probado nada, que es
+# exactamente el verde no ganado que esta campania persigue.
+caso "K3 siete ventanas que NO cruzan: 0 ocasiones -> NOMED" 2 "solo hubo 0 ocasion" \
+     "$JOURNAL_7NC" "$FILAS_7NC"
+caso "K3b y lo explica: los tocados no son prueba"        2 "no podian exhibir el defecto" \
+     "$JOURNAL_7NC" "$FILAS_7NC"
+# K4 · Y EL SUJETO NO SE ESTRECHA. Si un minuto miente en una ventana que NO cruza el borde,
+# sigue siendo ROJO. Estrechar el sujeto habria sido el atajo barato -y habria escondido esto-.
+caso "K4 miente sin cruzar el borde: sigue siendo ROJO"    1 "ROJO \(VIVO\)" \
+     "$JOURNAL_7NC" "$FILAS_7NC_MIENTE"
+caso "K4b y publica los DOS denominadores"                 1 "poblacion equivocada" \
+     "$JOURNAL_7NC" "$FILAS_7NC_MIENTE"
 
 echo
 total=$((pasan + fallos))

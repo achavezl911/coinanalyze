@@ -109,6 +109,52 @@ fx_negativo() {
   rafaga "$(fecha 21)" >> "$f"
 }
 
+# --- LOS TRES FIXTURES DE LA CADUCIDAD, anadidos el 2026-09-06 -----------------------
+# El check tenia UN eje -¿recurre?- y por eso podia publicar un rojo caduco y despues un
+# verde no ganado, los dos por el paso del tiempo. Estos tres ejercitan el eje nuevo.
+
+# RECAIDA · EL CASO QUE NO EXISTIA Y QUE ES EL QUE IMPORTA. El par recurrio 11 dias
+# (offsets 20..30), se callo 18 dias (2..19) y VUELVE ayer (offset 1). Tiene que salir ROJO
+# EL PRIMER DIA: la recurrencia ya esta en la ventana, asi que no hay que reacumular nada.
+# Antes, con el check ya en rojo, la vuelta del bug no cambiaba ni una letra de la salida.
+fx_recaida() {
+  local f="$1" k
+  : > "$f"
+  for k in $(seq 1 30); do relleno "$(fecha "$k")" >> "$f"; done
+  for k in $(seq 20 30) 1; do
+    traza "$(fecha "$k")" 13:30 04 >> "$f"
+    traza "$(fecha "$k")" 13:30 18 >> "$f"
+  done
+  rafaga "$(fecha 21)" >> "$f"
+}
+
+# EL CONTRASTE DE LA RECAIDA · el MISMO dia reciente con el par, pero SIN la historia. Aqui
+# el par no recurre (1 dia < 3) y tiene que salir VERDE. Sin este brazo, C7 no probaria que
+# el rojo viene del cruce historia+recencia: podria venir de la aparicion sola.
+fx_recaida_sin_historia() {
+  local f="$1" k
+  : > "$f"
+  for k in $(seq 1 30); do relleno "$(fecha "$k")" >> "$f"; done
+  traza "$(fecha 1)" 13:30 04 >> "$f"
+  traza "$(fecha 1)" 13:30 18 >> "$f"
+  rafaga "$(fecha 21)" >> "$f"
+}
+
+# REMITIDO · el par recurrio 21 dias (offsets 10..30) y lleva 9 ocasiones elegibles limpias
+# (1..9). 9 >= K=7, luego VERDE Y GANADO. Es el unico verde que este check puede firmar.
+# CALLADO · el mismo, con solo 3 limpias (el corte en 4..30). 3 < 7, luego NOMED.
+# El segundo argumento es cuantos dias limpios se dejan detras.
+fx_remitido() {
+  local f="$1" limpias="$2" k
+  : > "$f"
+  for k in $(seq 1 30); do relleno "$(fecha "$k")" >> "$f"; done
+  for k in $(seq $((limpias + 1)) 30); do
+    traza "$(fecha "$k")" 13:30 04 >> "$f"
+    traza "$(fecha "$k")" 13:30 18 >> "$f"
+  done
+  rafaga "$(fecha 21)" >> "$f"
+}
+
 # RUIDOSO · 500 pares distintos en un solo dia. Ninguno recurre, o sea VERDE, pero sirve
 # para lo otro: con K86_TOP=2000 la salida agregada pasa de 13 KB y el corte de 8 KB la
 # parte. El check tiene que decir NO MEDIDO, no inventarse un veredicto.
@@ -169,7 +215,10 @@ printf '%-46s %-18s %-5s  %s\n' "C0 constructor: awk sin '>' ni comilla simple" 
 fx_positivo "$DIR/j-positivo.txt"
 sal=$(corre "$DIR/j-positivo.txt"); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
 juzga "C1 positivo: el par recurre 24 dias" 1 "$rc" \
-  "ROJO: ValueError se repite a las 13:30Z en 24 de 27 dias elegibles" "$out"
+  "ROJO (VIVO): el par recurre Y aparece en la ULTIMA ocasion elegible" "$out"
+# C1a · y la recurrencia sigue publicandose con su denominador: el eje nuevo no se come al viejo.
+juzga "C1a positivo: la recurrencia sigue medida" 1 "$rc" \
+  "recurrencia: ValueError a las 13:30Z en 24 de 27 dias elegibles (umbral 3)" "$out"
 pos_out="$out"
 
 # C1b · y NO se deja ganar por la rafaga. 47 sucesos en 1 dia contra 48 en 24 dias: si el
@@ -191,7 +240,7 @@ juzga "C1c positivo: nombra los 4 no elegibles" 1 "$rc" \
 # --- C2 · CONTROL NEGATIVO ---------------------------------------------------------
 fx_negativo "$DIR/j-negativo.txt"
 sal=$(corre "$DIR/j-negativo.txt"); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
-juzga "C2 negativo: mismo volumen, horas distintas" 0 "$rc" "VERDE: ningun par" "$out"
+juzga "C2 negativo: mismo volumen, horas distintas" 0 "$rc" "VERDE (NO RECURRE): ningun par" "$out"
 
 # C2b · y con el MISMO numero de lineas de excepcion que el positivo. Si los dos brazos no
 # tienen el mismo volumen, lo que separa VERDE de ROJO podria ser el volumen y no la
@@ -222,7 +271,7 @@ printf '%-46s %-18s %-5s  %s\n' "C3 trampa 1: con corte == con TODO=1" "rc=1 y r
 # la version anterior otra vez.
 fx_ruidoso "$DIR/j-ruidoso.txt"
 sal=$(corre "$DIR/j-ruidoso.txt" K86_TOP=10); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
-juzga "C4a ruidoso, TOP=10: cabe y juzga" 0 "$rc" "VERDE: ningun par" "$out"
+juzga "C4a ruidoso, TOP=10: cabe y juzga" 0 "$rc" "VERDE (NO RECURRE): ningun par" "$out"
 juzga "C4b ruidoso, TOP=10: declara lo que oculta" 0 "$rc" "pares (minuto,clase) distintos: 500" "$out"
 sal=$(corre "$DIR/j-ruidoso.txt" K86_TOP=2000); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
 juzga "C4c ruidoso, TOP=2000: el corte -> NO MEDIDO" 2 "$rc" \
@@ -261,9 +310,61 @@ if [ -n "$filtro" ] && [ "$n_ord" -eq 2 ] && [ "$total" -eq 2 ] && [ "$pasa" -eq
 printf '%-46s %-18s %-5s  %s\n' "C6 bin/prod no deniega las dos ordenes" "$pasa de $total pasan" "$est" \
   "filtro extraido de bin/prod: $(printf '%s\n' "$filtro" | grep -c '') lineas, no una copia"
 
+# --- C7 · LA RECAIDA ENROJECE EL PRIMER DIA ---------------------------------------
+fx_recaida "$DIR/j-recaida.txt"
+sal=$(corre "$DIR/j-recaida.txt"); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
+juzga "C7 recaida: 11 dias viejos + 1 de ayer -> ROJO" 1 "$rc" \
+  "ROJO (VIVO): el par recurre Y aparece en la ULTIMA ocasion elegible" "$out"
+# C7b · Y NO tuvo que reacumular el umbral: los 18 dias de silencio de en medio se cuentan y
+# se dicen, pero no impiden el rojo. Si el check exigiera recencia CONSECUTIVA, aqui saldria
+# verde y la vuelta del bug pasaria desapercibida.
+juzga "C7b recaida: el silencio de en medio se declara" 1 "$rc" \
+  "en medio sin el par" "$out"
+
+# C7c · EL CONTRASTE. Mismo dia reciente con el par, sin historia: VERDE. Sin este caso, C7
+# no distinguiria "vuelve un bug estructural" de "hoy fallo algo una vez".
+fx_recaida_sin_historia "$DIR/j-recaida-sola.txt"
+sal=$(corre "$DIR/j-recaida-sola.txt"); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
+juzga "C7c una aparicion SIN historia no es rojo" 0 "$rc" "VERDE (NO RECURRE)" "$out"
+
+# --- C8 · REMITIDO Y PROBADO · el unico verde que este check puede firmar ----------
+fx_remitido "$DIR/j-remitido.txt" 9
+sal=$(corre "$DIR/j-remitido.txt"); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
+juzga "C8 remitido: 21 dias y 9 limpias -> VERDE" 0 "$rc" "VERDE (REMITIDO Y PROBADO)" "$out"
+# C8b · y NO afirma un arreglo que no puede ver. Un check que dijera "arreglado" estaria
+# afirmando algo que no esta en su alcance: solo ve el journal.
+juzga "C8b remitido: no afirma que nadie lo arreglara" 0 "$rc" \
+  "ESTO NO DICE QUE NADIE LO ARREGLARA" "$out"
+
+# --- C9 · CALLADO SIN PROBAR · el estado que antes se pintaba de verde -------------
+# ES EL CASO DE PRODUCCION DE HOY: el par lleva 2 dias sin aparecer y el check anterior
+# habria seguido rojo hasta que la ventana lo olvidara, para despues ponerse verde solo.
+fx_remitido "$DIR/j-callado.txt" 3
+sal=$(corre "$DIR/j-callado.txt"); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
+juzga "C9 callado: 3 limpias de 7 -> NOMED" 2 "$rc" "NO MEDIDO (CALLADO SIN PROBAR)" "$out"
+juzga "C9b callado: dice cuantas faltan" 2 "$rc" "hacen falta 7" "$out"
+# C9c · LA FRONTERA, que es donde un umbral se equivoca. Con 7 limpias exactas: VERDE.
+fx_remitido "$DIR/j-frontera.txt" 7
+sal=$(corre "$DIR/j-frontera.txt"); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
+juzga "C9c frontera: 7 limpias exactas -> VERDE" 0 "$rc" "VERDE (REMITIDO Y PROBADO)" "$out"
+fx_remitido "$DIR/j-frontera6.txt" 6
+sal=$(corre "$DIR/j-frontera6.txt"); rc=$(printf '%s\n' "$sal" | head -1); out=$(printf '%s\n' "$sal" | tail -n +2)
+juzga "C9d frontera: 6 limpias -> NOMED" 2 "$rc" "NO MEDIDO (CALLADO SIN PROBAR)" "$out"
+
+# --- C10 · H2 · LAS DOS PUNTAS, SEPARADAS -----------------------------------------
+# La prosa vieja decia que "la distancia entre los dias elegibles y los dias con el par ES la
+# edad del fallo". Solo vale si los dias sin el par estan al PRINCIPIO. En el fixture de C9
+# hay 6 delante y 3 detras: si se sumaran, el check fecharia el nacimiento 3 dias mas atras
+# de lo que toca. Se exige que los nombre por separado.
+sal=$(corre "$DIR/j-callado.txt"); out=$(printf '%s\n' "$sal" | tail -n +2)
+juzga "C10 H2: las dos puntas se nombran aparte" 2 "$(printf '%s\n' "$sal" | head -1)" \
+  "3 DESPUES del ultimo" "$out"
+juzga "C10b H2: y no fechan el nacimiento" 2 "$(printf '%s\n' "$sal" | head -1)" \
+  "no fechan nada del nacimiento" "$out"
+
 echo
 if [ "$fallos" -eq 0 ]; then
-  echo "11 de 11 controles PASAN. Los dos brazos juzgan, el corte no decide el veredicto,"
+  echo "23 de 23 controles PASAN. Los dos brazos juzgan, el corte no decide el veredicto,"
   echo "y las ordenes que viajan a 140 sobreviven al filtro de bin/prod."
   exit 0
 fi
