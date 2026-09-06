@@ -60,8 +60,16 @@ forma de comprobar la etiqueta seria creersela.
 medir la persistencia** que `/api/scalp/summary` no promete. La ruta cumple; lo que no
 cumple es el rotulo del panel.
 
-**Nadie la llama:** sus rastros son MENCIONES. La serie que hace auditable al scalp no la
-consume nadie.
+**Ya la llama alguien** (2026-09-06): la pinta `static/app.js` en la pestaña `#replay`, que se
+carga A DEMANDA — el resumen de arranque sigue sin pedirla. Hasta ese dia sus rastros eran solo
+MENCIONES y la serie que hace auditable al scalp no la consumia nadie.
+
+**Y desde ese dia publica su propio sobre.** Antes devolvia `{symbol, rows}` a secas: 200 filas
+y ni una palabra sobre si habia mas detras. Ahora lleva `count`, `truncated`, `servida_desde`,
+`servida_hasta` y `ventana_maxima_h`. El ultimo vale **null a proposito**, y el null dice "no
+aplica", no "no lo se": esta ruta **no acepta `since` ni `until`**, asi que el tope de 24 h de
+`LEDGER_MAX_WINDOW` no le toca. Su unico limite es de FILAS. La ventana que publica no es la
+PEDIDA sino la SERVIDA — el `ts` de la fila mas vieja y el de la mas nueva de las que salieron.
 
 
 ## SUPERFICIE

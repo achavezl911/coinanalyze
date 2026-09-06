@@ -22,9 +22,10 @@
 #   A · la consulta que la ruta lleva dentro (`BASE_RATE_SQL`, extraida de app/api.py y no
 #       tecleada aqui) contra otra escrita EN ESTE FICHERO desde la definicion de arriba.
 #       Prueba que la formula publicada es la formula de la definicion.
-#   B · el payload VIVO de /api/dashboard/state contra el brazo A, sobre el arco que el
-#       propio payload declara en `arco_desde`/`arco_hasta`, que es lo que hace la
-#       comparacion EXACTA y no una tolerancia inventada.
+#   B · el payload VIVO de /api/dashboard/state contra el brazo A, sobre LA VENTANA que el
+#       propio payload declara (`ventana_pedida_desde`/`_hasta`) y CONGELANDO el estado de
+#       evaluacion en su `as_of`. Las dos cosas juntas son lo que hace la comparacion una
+#       IGUALDAD EXACTA en vez de una tolerancia inventada.
 #
 # LO QUE PASA MIENTRAS NO ESTE DESPLEGADO, y se dice en vez de callarse: si 140 todavia no
 # publica el bloque, el brazo B no tiene sujeto. Eso NO es un fallo del arreglo y NO enrojece
@@ -41,7 +42,20 @@ API=$REPO/app/api.py
 [ -r "$API" ] || { echo "NO MEDIDO: no se puede leer $API, de donde sale la consulta de la ruta"; exit 2; }
 grep -q 'BASE_RATE_SQL' "$API" || { echo "NO MEDIDO: app/api.py no define BASE_RATE_SQL: la ruta ya no publica la tasa base por este camino"; exit 2; }
 
-TOL=${K95_TOL:-0.0001}   # las cifras se publican con 4 decimales; se comparan con esa misma resolucion
+# NO HAY TOLERANCIA, Y ESO ES EL ARREGLO.
+#
+# LA HABIA: `TOL=0.0001`, con el comentario «se comparan con esa misma resolucion». Y era el
+# defecto: con un margen EXACTAMENTE IGUAL al paso de la resolucion, dos valores que difieren
+# en UNA unidad del ultimo decimal caen justo en el borde y el binario decide por el error de
+# coma flotante — `abs(-0.053 - (-0.0531)) = 0.00010000000000000286 > 0.0001`. Medido por el
+# operador sobre 2 000 valores del rango real: **1 482 de los pares que difieren en una unidad
+# del cuarto decimal fallan la comparacion, el 74.1 %**.
+#
+# SUBIR EL MARGEN LO ESCONDERIA Y ADEMAS AFLOJARIA EL CHECK. La causa no era el margen: era que
+# los dos lados podian diferir de verdad. Congelado el estado de evaluacion (ver abajo), los
+# dos lados ven el MISMO conjunto y la comparacion pasa a ser una IGUALDAD. Se compara en
+# decimal exacto, no en coma flotante: los dos valores salen de un `ROUND(...,4)`, asi que son
+# decimales de cuatro cifras y `Decimal("-0.0531") == Decimal("-0.0531")` es una igualdad.
 
 # --- el arco. Se toma del payload si lo hay, y si no del reloj -------------------------
 # TODO=1 NO ES OPCIONAL AQUI, Y ME MORDIO: `bin/api` corta la salida a 8 KB y el payload de
@@ -57,8 +71,8 @@ except Exception: print('SIN_PAYLOAD'); raise SystemExit
 b=d.get('signal_base_rate')
 if not isinstance(b,dict): print('SIN_BLOQUE'); raise SystemExit
 if not b.get('available'): print('NO_DISPONIBLE|'+str(b.get('motivo'))); raise SystemExit
-print('|'.join(str(b.get(k)) for k in ('arco_desde','arco_hasta','horizonte_min',
-      'ventaja_bruta_pct','ventaja_neta_pct','coste_entrada_pct','n_efectiva','observaciones')))
+print('|'.join(str(b.get(k)) for k in ('ventana_pedida_desde','ventana_pedida_hasta','horizonte_min',
+      'ventaja_bruta_pct','ventaja_neta_pct','coste_entrada_pct','n_efectiva','observaciones','as_of')))
 " 2>/dev/null)
 
 case "$LEIDO" in
@@ -70,25 +84,62 @@ if [ "$LEIDO" = "SIN_BLOQUE" ]; then
   # arco de referencia para el brazo A: 30 dias hasta ahora, que es lo que la ruta pediria
   A_HASTA=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   A_DESDE=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
+  CORTE=$A_HASTA
   HOR=60
 else
   DESPLEGADO=si
-  IFS='|' read -r A_DESDE A_HASTA HOR P_BRUTA P_NETA P_ENTRADA P_NEF P_OBS <<EOF
+  IFS='|' read -r A_DESDE A_HASTA HOR P_BRUTA P_NETA P_ENTRADA P_NEF P_OBS CORTE <<EOF
 $LEIDO
 EOF
 fi
 
+# EL ESTADO DE EVALUACION SE CONGELA, Y ESTA ES LA MITAD DE ESTE REMATE.
+#
+# EL DEFECTO, encontrado por el operador el 2026-09-06 a las 18:19Z: K95 corrido cinco veces
+# seguidas sobre el mismo arbol y la misma base daba rc=0, 0, 0, 1, 1. El payload era estable;
+# lo que se movia era la RECOMPUTACION. El arco si estaba fijado, pero el ESTADO no: la
+# consulta exige `o.status='evaluated'`, y un minuto de DENTRO del arco cuyo horizonte de 60
+# min se completa DESPUES de calcularse el payload entra en la recomputacion y no estaba en el
+# payload. Medido: 24 filas se evaluan cada 5 min y 309 cada hora, sobre 13 843 -y el corte de
+# 5 min mueve `observaciones` de 13 843 a 13 842 y la `t` de 0.074 a 0.073-. Justo el orden del
+# ultimo decimal publicado.
+#
+# LA ELECCION, y es la rama (a): CONGELAR, no tolerar. K95 afirma que la cifra pintada ES la
+# que sale de la tabla. Si acepto que los dos lados pueden diferir, lo mas que puedo afirmar es
+# «se parecen», y eso exige un umbral que hay que rejustificar cada vez que cambie el volumen o
+# el horizonte: una constante con fecha de caducidad y sin nadie vigilandola. Congelar hace la
+# comparacion EXACTA y elimina el umbral en vez de calibrarlo.
+#
+# `finalized_at <= as_of` reproduce EXACTAMENTE el conjunto que el payload vio: el payload
+# filtra `status='evaluated'` en el instante de su calculo, y esas son las filas cuyo
+# `finalized_at` es anterior a ese instante. MEDIDO ANTES DE APOYARME EN ELLO: de las 165 055
+# filas `evaluated` de horizonte 60, **cero** tienen `finalized_at` nulo (las 520 nulas son
+# todas `pending`, que este filtro ya excluye).
+#
+# Y SE ARREGLA UNA SEGUNDA FUGA QUE ENCONTRE AL MIRAR ESTO: el brazo B pasaba
+# `arco_desde`/`arco_hasta` -el minimo y el maximo REALES observados- como si fueran la ventana
+# que la ruta pidio. No lo son: la ruta filtra por `ventana_pedida_*`, y `observed_at <
+# arco_hasta` excluye justo la ultima observacion, que en el payload SI estaba. Una fila de
+# 13 843, o sea otra vez el cuarto decimal. Ahora se usan las dos claves que el payload publica
+# para eso.
+CONGELA="AND o.finalized_at <= '$CORTE'::timestamptz"
+
 # --- BRAZO A · la consulta DE LA RUTA, extraida del repo -------------------------------
-SQL_RUTA=$(python3 - "$API" "$A_DESDE" "$A_HASTA" "$HOR" <<'PY'
+SQL_RUTA=$(python3 - "$API" "$A_DESDE" "$A_HASTA" "$HOR" "$CONGELA" <<'PY'
 import sys, pathlib
 t = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
 sql = t.split('BASE_RATE_SQL = """')[1].split('"""')[0]
+# el congelado se inyecta JUNTO al filtro de estado, que es donde esta la fuga
+viejo = "AND o.status = 'evaluated'"
+if viejo not in sql:
+    sys.exit("K95: no encuentro el filtro de estado en BASE_RATE_SQL")
+sql = sql.replace(viejo, viejo + " " + sys.argv[5], 1)
 print(sql.replace("$1", "'BTCUSDT_PERP.A'")
          .replace("$2", f"'{sys.argv[2]}'::timestamptz")
          .replace("$3", f"'{sys.argv[3]}'::timestamptz")
          .replace("$4", sys.argv[4]))
 PY
-)
+) || { echo "NO MEDIDO: no se pudo preparar la consulta de la ruta ($?)"; exit 2; }
 R_RUTA=$(TODO=1 "$B/bin/prodsql" "$SQL_RUTA" 2>/dev/null | head -1)
 case "$R_RUTA" in
   *'|'*'|'*'|'*) ;;
@@ -107,7 +158,7 @@ WITH p AS (
          o.directional_return_pct, o.market_return_pct,
          (EXTRACT(EPOCH FROM o.window_start)/60/$HOR)::bigint AS blk
   FROM signal_outcome o JOIN signal_observation s ON s.observation_id=o.observation_id
-  WHERE s.symbol='BTCUSDT_PERP.A' AND s.is_periodic IS TRUE AND o.status='evaluated'
+  WHERE s.symbol='BTCUSDT_PERP.A' AND s.is_periodic IS TRUE AND o.status='evaluated' $CONGELA
     AND o.horizon_minutes=$HOR AND o.end_price IS NOT NULL AND s.reference_price IS NOT NULL
     AND s.observed_at >= '$A_DESDE'::timestamptz AND s.observed_at < '$A_HASTA'::timestamptz
 ), pm AS (SELECT blk, AVG(reference_price) pm FROM p GROUP BY 1),
@@ -143,10 +194,20 @@ case "$R_MIA" in
   *) echo "NO MEDIDO: mi consulta no devolvio fila contra 140 (salio '$R_MIA')"; exit 2 ;;
 esac
 
+# IGUALDAD DECIMAL EXACTA, sin epsilon. `Decimal` y no `float`: `float('-0.053')` y
+# `float('-0.0531')` arrastran el error binario que produjo el parpadeo, y aqui no hay ninguna
+# razon para pagarlo -los dos lados son decimales de cuatro cifras salidos de un ROUND-.
+# Se normaliza para que «-0.053» y «-0.0530» sean el mismo numero, que es lo que son: el
+# payload los serializa como float de JSON y el SQL como texto, y la representacion no es el
+# valor. Un valor que no se pueda leer como decimal falla, no pasa: `None` no es igual a nada.
 cmp3() { python3 -c "
 import sys
-a,b,t=float('$1'),float('$2'),float('$TOL')
-sys.exit(0 if abs(a-b)<=t else 1)"; }
+from decimal import Decimal, InvalidOperation
+try:
+    a, b = Decimal('$1'), Decimal('$2')
+except InvalidOperation:
+    sys.exit(1)
+sys.exit(0 if a == b else 1)"; }
 
 FALLOS=""
 # EL ORDEN DE LAS COLUMNAS SE COMPRUEBA ANTES DE LEERLAS. Al añadir `pares_bloque_lado` a la
@@ -182,7 +243,7 @@ BLK=$(TODO=1 "$B/bin/prodsql" "
   SELECT COUNT(*) FROM (
     SELECT (EXTRACT(EPOCH FROM o.window_start)/60/$HOR)::bigint AS blk
     FROM signal_outcome o JOIN signal_observation s ON s.observation_id=o.observation_id
-    WHERE s.symbol='BTCUSDT_PERP.A' AND s.is_periodic IS TRUE AND o.status='evaluated'
+    WHERE s.symbol='BTCUSDT_PERP.A' AND s.is_periodic IS TRUE AND o.status='evaluated' $CONGELA
       AND o.horizon_minutes=$HOR AND o.end_price IS NOT NULL AND s.reference_price IS NOT NULL
       AND s.observed_at >= '$A_DESDE'::timestamptz AND s.observed_at < '$A_HASTA'::timestamptz
     GROUP BY 1

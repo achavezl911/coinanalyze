@@ -47,7 +47,7 @@ echo
 
 echo "NEGATIVO · el arbol sano no puede enrojecer"
 SANO="$DIR/sano"; arbol "$SANO"
-caso "N1 la consulta de la ruta y la del check coinciden" 0 "coinciden sobre" "$SANO"
+caso "N1 la consulta de la ruta y la del check coinciden" 0 "coincide" "$SANO"
 
 echo
 echo "POSITIVO · si la ruta mide otra cosa, tiene que verse"
@@ -89,6 +89,71 @@ p.write_text(cab + 'BASE_RATE_SQL = """' + sql + '"""' + cola, encoding="utf-8")
 PY
 caso "P3 si la ruta cuenta PARES en vez de bloques: ROJO" 1 "NO coincide" "$PARES"
 caso "P4 y lo nombra como lo que es"                      1 "n_efectiva_no_son_bloques|observaciones" "$PARES"
+
+echo
+echo "EL BORDE QUE HACIA PARPADEAR · y el contraste contra el K95 de 64704d4"
+# EL DEFECTO, medido por el operador el 2026-09-06 a las 18:19Z: K95 corrido cinco veces
+# seguidas sobre el mismo arbol y la misma base dio rc=0,0,0,1,1. El comparador tenia un margen
+# EXACTAMENTE IGUAL al paso de la resolucion publicada -TOL=0.0001 sobre cuatro decimales-, asi
+# que dos valores que difieren en UNA unidad del ultimo decimal caian en el borde y decidia el
+# error de coma flotante: abs(-0.053 - (-0.0531)) = 0.00010000000000000286 > 0.0001.
+#
+# SE PRUEBA SOBRE `cmp3`, que es donde vive el borde, sacando la funcion de CADA VERSION del
+# fichero -la de git y la de ahora- en vez de reescribirla. Si el brazo no pudiera enseniar que
+# la version anterior falla con el mismo par, no habria probado que el arreglo arregla algo.
+# `caso` compara VEREDICTOS de un arbol; estos brazos comparan VALORES. Son dos cosas y por eso
+# hay dos ayudantes: llamar a `caso` con tres argumentos dejaba `$4` sin definir y con `set -u`
+# el control moria en vez de fallar. Me paso al escribirlo.
+casov() {  # <nombre> <esperado> <obtenido>
+  if [ "$3" = "$2" ]; then
+    pasan=$((pasan+1)); printf '  [ok   ] %-52s %s\n' "$1" "$3"
+  else
+    fallos=$((fallos+1)); printf '  [FALLA] %-52s esperaba %s, dio %s\n' "$1" "$2" "$3"
+  fi
+}
+
+compara() {  # <fuente del check> <a> <b>  -> rc de su cmp3
+  local src="$1" f; f=$(mktemp)
+  { printf 'set -u\nTOL=${K95_TOL:-0.0001}\n'
+    printf '%s\n' "$src" | sed -n '/^cmp3() {/,/^sys.exit(0 if .*)\"; }$/p'
+    printf 'cmp3 "$1" "$2"\n'
+  } > "$f"
+  bash "$f" "$2" "$3"; local rc=$?; rm -f "$f"; return $rc
+}
+VIEJO_SRC=$(cd "$ORIG" && git show 64704d4:harness/checks/K95-la-tasa-base-que-se-pinta.sh 2>/dev/null || true)
+NUEVO_SRC=$(cat "$CHK")
+if [ -n "$VIEJO_SRC" ]; then
+  compara "$VIEJO_SRC" -0.053 -0.0531 && v=pasa || v=FALLA
+  compara "$NUEVO_SRC" -0.053 -0.0531 && n=pasa || n=FALLA
+  casov "B1 el cmp de 64704d4 FALLA con -0.053 vs -0.0531" "FALLA" "$v"
+  casov "B2 y el nuevo tambien FALLA: ya no se toleran"    "FALLA" "$n"
+else
+  printf '  [....] %-52s\n' "B1/B2 no se pudo sacar 64704d4 de git"
+fi
+# B3 · LA MITAD QUE IMPORTA: el nuevo NO puede rechazar dos escrituras del MISMO numero.
+# «-0.053» y «-0.0530» son el mismo valor; el payload lo serializa como float de JSON y el SQL
+# como texto, y la representacion no es el valor.
+compara "$NUEVO_SRC" -0.0530 -0.053 && n=pasa || n=FALLA
+casov "B3 el nuevo acepta -0.0530 == -0.053"             "pasa"  "$n"
+compara "$NUEVO_SRC" -0.0531 -0.0531 && n=pasa || n=FALLA
+casov "B3b y acepta la igualdad estricta"                "pasa"  "$n"
+# B4 · y NO se ha aflojado: una diferencia de verdad sigue fallando.
+compara "$NUEVO_SRC" -0.0531 -0.0631 && n=pasa || n=FALLA
+casov "B4 una diferencia real sigue fallando"            "FALLA" "$n"
+# B5 · un valor ilegible NO pasa por igual. `None` no es igual a nada.
+compara "$NUEVO_SRC" None -0.0531 && n=pasa || n=FALLA
+casov "B5 un valor ilegible no pasa"                     "FALLA" "$n"
+
+echo
+echo "EL CONGELADO · los dos lados tienen que mirar el mismo conjunto"
+grep -q 'finalized_at <=' "$CHK" && c=si || c=no
+casov "C1 el check acota por finalized_at"               "si" "$c"
+grep -q 'ventana_pedida_desde' "$CHK" && c=si || c=no
+casov "C2 y usa la ventana PEDIDA, no el arco medido"    "si" "$c"
+if [ -n "$VIEJO_SRC" ]; then
+  printf '%s' "$VIEJO_SRC" | grep -q 'finalized_at <=' && c=si || c=no
+  casov "C3 el de 64704d4 NO lo hacia (el contraste)"      "no" "$c"
+fi
 
 echo
 echo "ANTI-FANTASMA · sin sujeto no hay veredicto"

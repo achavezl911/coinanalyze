@@ -871,6 +871,14 @@ footer { padding: 18px; border-top: 1px solid var(--border-soft); color: var(--m
 .hyp-select:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
 .quality-panel { grid-column: span 12; }
 .replay-panel { grid-column: span 12; }
+.auditoria-panel { grid-column: span 12; }
+.auditoria-alcance { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 8px 12px; color: var(--muted); font-size: .72rem; }
+.auditoria-linea { font-variant-numeric: tabular-nums; }
+.auditoria-fila { cursor: pointer; }
+.auditoria-fila:hover, .auditoria-fila:focus { background: rgba(255, 255, 255, .05); outline: none; }
+.auditoria-detalle { padding: 0 12px 12px; }
+.auditoria-detalle h4 { margin: 12px 0 4px; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.auditoria-vacio { margin: 0; color: var(--muted); font-size: .72rem; }
 
 /* Anchos de los paneles de la reorganizacion. La rejilla de seccion es de 12 columnas:
    sin grid-column el panel cae a span 1 y sale como una tira estrecha. */

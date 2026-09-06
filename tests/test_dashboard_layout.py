@@ -125,7 +125,16 @@ def test_overview_is_light_and_stale_responses_are_rejected():
         if endpoint != "passive-flow":
             assert endpoint in refresh
     assert "scalp/alerts" not in refresh
-    assert "scalp/signals" not in JS
+    # ESTA LINEA DECIA `not in JS` -en TODO el fichero- y era la unica del test que no se
+    # limitaba a `refresh`; sus seis hermanas hablan solo del resumen, que es lo que el test
+    # se llama a si mismo: que el arranque sea LIGERO. Desde el 2026-09-06 /api/scalp/signals
+    # se pinta en la pestaña #replay, que se carga A DEMANDA, asi que el arranque sigue sin
+    # pagarla. Se afloja el alcance y se aprieta lo que de verdad importaba: que este en el
+    # cargador de la pestaña y NO en el resumen. Eso es mas fuerte que el `not in JS` viejo,
+    # que solo sabia decir "no esta en ningun sitio".
+    assert "scalp/signals" not in refresh
+    loader = JS[JS.index("async function loadSection") : JS.index("function connectStream")]
+    assert "scalp/signals" in loader
     assert "requestId !== state.refreshSeq" in refresh
 
 
@@ -181,3 +190,36 @@ def test_el_diferencial_spot_fut_es_columna_de_auditoria_no_direccional():
     assert "signClass(r.diff)" not in delta
     # Y se declara que compara mercados de escala distinta.
     assert "escalas distintas" in HTML or "escala distinta" in HTML
+
+
+def test_la_capa_de_auditoria_declara_su_ventana_y_no_agrega_en_el_navegador():
+    """Las cinco rutas del grupo ENCHUFAR se pintan en #replay, y la banda dice el alcance.
+
+    NO anaden superficie de senial -esta medido que no anticipa-: reconstruyen una senial ya
+    emitida. Por eso el test vigila dos cosas y no una: que esten enchufadas, y que lo que se
+    pinta salga del servidor en vez de calcularse aqui.
+    """
+    loader = JS[JS.index("async function loadSection") : JS.index("function connectStream")]
+    for ruta in ("signals/ledger", "signals/replay", "signals/execution",
+                 "signals/visibility", "scalp/signals"):
+        assert ruta in loader, ruta
+    # /api/signals/outcomes se quedo FUERA del grupo a proposito y sigue fuera.
+    assert "signals/outcomes" not in JS
+
+    banda = function_source("bandaAlcance", "agrupaPorObs")
+    # El alcance sale de campos del sobre, no de cuentas hechas aqui.
+    for campo in ("count", "limit", "truncated", "ventana_maxima_h", "servida_desde"):
+        assert campo in banda, campo
+    # CERO no es CERO DEFECTOS: la banda distingue "no hay" de "no se pudo pedir".
+    assert "NO SE PUDO PEDIR" in banda
+    assert "res.ok" in banda
+
+    detalle = function_source("renderAuditoriaDetalle", "renderScalpHistorial")
+    # No se promedia ni se elige un libro: se listan todos, uno por fila.
+    for prohibido in ("reduce(", "Math.min(", "Math.max(", "/ anexos"):
+        assert prohibido not in detalle, prohibido
+
+    assert 'id="auditoria-alcance"' in HTML
+    assert 'id="auditoria-body"' in HTML
+    assert 'id="scalp-historial-alcance"' in HTML
+    assert ".auditoria-panel { grid-column: span 12; }" in CSS

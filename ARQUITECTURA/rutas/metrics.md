@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `prometheus_metrics` · `app/api.py:3103` (cuerpo hasta la 3177) · decorador en la linea 3102.
+Handler `prometheus_metrics` · `app/api.py:3131` (cuerpo hasta la 3205) · decorador en la linea 3130.
 
 ## Parametros de entrada
 
@@ -54,7 +54,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._parse_heartbeat_detail` — `app/api.py:3085`
+- `app.api._parse_heartbeat_detail` — `app/api.py:3113`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (11)</summary>
 
@@ -78,7 +78,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Metrics disabled | `app/api.py:3105` | el propio handler |
+| 404 | Metrics disabled | `app/api.py:3133` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
