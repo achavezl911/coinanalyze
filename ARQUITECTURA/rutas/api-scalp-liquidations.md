@@ -18,9 +18,9 @@ Handler `scalp_liquidations` · `app/api.py:1512` (cuerpo hasta la 1515) · deco
 
 | campo | de donde sale |
 |---|---|
-| `matrix` | literal en app/scalp_logic.py:5379 |
-| `recent` | literal en app/scalp_logic.py:5379 |
-| `symbol` | literal en app/scalp_logic.py:5379 |
+| `matrix` | literal en app/scalp_logic.py:5461 |
+| `recent` | literal en app/scalp_logic.py:5461 |
+| `symbol` | literal en app/scalp_logic.py:5461 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -41,7 +41,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5321`
+- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5403`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
 

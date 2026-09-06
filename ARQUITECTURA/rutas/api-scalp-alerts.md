@@ -68,7 +68,7 @@ Llamadas directas del handler:
 - `app.api.statistical_alerts` — `app/api.py:1583`
 - `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5420`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5502`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 

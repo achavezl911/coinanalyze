@@ -4960,6 +4960,73 @@ def _bps(desde: float | None, hasta: float | None) -> float | None:
     return abs(hasta - desde) / desde * 10_000
 
 
+def coherencia_del_plan(
+    side: str | None, entry: float | None, stop: float | None, target: float | None
+) -> tuple[str, list[str], str | None]:
+    """¿El plan que te dan es posible EN EL LADO QUE DECLARA?
+
+    EL HECHO QUE LA MOTIVA, medido contra produccion el 2026-09-06. Un largo con
+    entrada 79814.3, **stop 80612.4 (ARRIBA) y objetivo 78218.0 (ABAJO)** devolvia
+    `risk_bps=99.99`, `target_bps=200.0` y `cost_to_risk_band` "aceptable", **identicos**
+    a los del mismo plan bien puesto, y sin un solo aviso: comparadas hoja a hoja las dos
+    respuestas, 4 de 139 hojas cambiaban y dos eran los propios parametros de entrada.
+    La causa es `_bps`, que devuelve `abs(hasta-desde)`: una DISTANCIA no tiene lado, asi
+    que llamar «objetivo» a lo que para un largo es una perdida sale gratis.
+
+    AVISA, NO RECHAZA, y es una decision de producto tomada por el operador el
+    2026-09-06. Un 400 rompe a quien ya llama la ruta y convierte un error de dedo en una
+    pantalla en blanco; lo que el trader necesita es que la tarjeta se lo diga. Por eso
+    esto NO lanza, NO cambia ningun campo existente y NO toca los `*_bps`: solo anade.
+
+    LA REGLA, entera: en largo `stop < entry < target`; en corto, al reves. Las dos
+    desigualdades son ESTRICTAS a proposito: un stop pegado a la entrada no es un stop
+    con riesgo cero, es un plan sin riesgo declarable, y pasarlo por bueno seria el mismo
+    silencio en otra forma.
+
+    CUATRO ESTADOS, no dos, por la razon de siempre en este arnes: «no se pudo comprobar»
+    no es «esta bien».
+        SIN LADO      `side` no es long ni short: no hay nada que validar y se dice.
+        SIN DATOS     hay lado pero falta la entrada o faltan los dos extremos.
+        COHERENTE     se comprobo lo que habia y encaja.
+        INCOHERENTE   se comprobo y NO encaja; los nombres van en la lista.
+
+    Devuelve (estado, incoherencias, aviso). `incoherencias` son NOMBRES, no prosa: la
+    leccion de R3 de la bateria es que una ventana declarada en prosa no la puede leer
+    una maquina, y un aviso solo en texto tendria el mismo defecto.
+    """
+    if side not in ("long", "short"):
+        return "SIN LADO", [], None
+    if entry is None or (stop is None and target is None):
+        return "SIN DATOS", [], None
+
+    fallos: list[str] = []
+    if side == "long":
+        if stop is not None and not stop < entry:
+            fallos.append("stop_no_esta_por_debajo_de_la_entrada")
+        if target is not None and not target > entry:
+            fallos.append("objetivo_no_esta_por_encima_de_la_entrada")
+    else:
+        if stop is not None and not stop > entry:
+            fallos.append("stop_no_esta_por_encima_de_la_entrada")
+        if target is not None and not target < entry:
+            fallos.append("objetivo_no_esta_por_debajo_de_la_entrada")
+
+    if not fallos:
+        return "COHERENTE", [], None
+    lado = "largo" if side == "long" else "corto"
+    orden = (
+        "stop < entrada < objetivo" if side == "long" else "objetivo < entrada < stop"
+    )
+    return (
+        "INCOHERENTE",
+        fallos,
+        f"El plan no es posible en {lado}: se esperaba {orden} y llego "
+        f"stop={stop} entrada={entry} objetivo={target}. Los bps de abajo son "
+        "DISTANCIAS y se calculan igual, asi que el R:R que ves no tiene en cuenta "
+        "este fallo.",
+    )
+
+
 def _banda(ratio: float | None, bandas: tuple[tuple[float, str], ...]) -> str | None:
     if ratio is None:
         return None
@@ -5047,6 +5114,12 @@ def execution_assessment(
         )
         status, verdict = "EVALUADO", peor
 
+    # LA COHERENCIA DEL PLAN NO TOCA NADA DE ARRIBA. Se calcula despues de los bps a
+    # proposito: avisar sin romper significa que `status`, `verdict`, `risk_bps`,
+    # `target_bps` y las bandas salen EXACTAMENTE igual que antes de este cambio, y quien
+    # ya consume la ruta no se entera. Lo unico que pasa es que ahora hay tres campos mas.
+    plan_estado, plan_fallos, plan_aviso = coherencia_del_plan(side, entry, stop, target)
+
     aviso = None
     umbral = spec["spread_warn_bps"]
     if spread_bps is not None and spread_bps > umbral:
@@ -5084,6 +5157,15 @@ def execution_assessment(
         },
         "spread_warning": aviso,
         "spread_warn_bps": umbral,
+        # TRES CAMPOS Y NO UNO, siguiendo la gramatica que la ruta ya tiene
+        # (`cost_components_bps` + `cost_components_missing`, `spread_warning` +
+        # `spread_warn_bps`): un estado legible por maquina, la lista de NOMBRES de lo que
+        # falla, y la prosa para la tarjeta. Meterlo dentro de `verdict` habria cambiado el
+        # significado de un campo que ya se consume, que es justo lo que "avisa, no
+        # rechaces" prohibe.
+        "plan_coherence": plan_estado,
+        "plan_incoherencias": plan_fallos,
+        "plan_warning": plan_aviso,
         "bands_note": (
             "Bandas sobre coste/objetivo "
             f"({COST_TO_TARGET_BANDS[0][0]:.0%} aceptable, {COST_TO_TARGET_BANDS[1][0]:.0%} "

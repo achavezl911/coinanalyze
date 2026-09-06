@@ -48,10 +48,20 @@ penc=$(printf '%s' "$payload" | base64 | tr -d '\n')
 err=$(mktemp) || exit 2
 trap 'rm -f "$err"' EXIT INT TERM
 
+# EL `|| rc=$?` NO ES ADORNO, Y SU AUSENCIA HACIA INALCANZABLE TODO LO DE ABAJO.
+# Con `set -e`, una asignacion desde una sustitucion de mandato que falla ABORTA EL GUION
+# EN LA PROPIA ASIGNACION: el `rc=$?` de la linea siguiente, el `cat "$err" >&2` y el grep
+# de ERROR no llegaban a ejecutarse NUNCA. Resultado medido el 2026-09-06:
+#     prodsql "SELECT columna_que_no_existe FROM signal_outcome LIMIT 1"
+#     rc=3 · stdout 0 bytes · stderr 0 BYTES
+# O sea que el arreglo del 09-05 propago el codigo de salida y dejo el diagnostico
+# inalcanzable: la segunda defensa que se escribio abajo no podia correr en el unico caso
+# para el que se escribio. Costo dos vueltas de diagnostico a ciegas.
+# Vigilado por harness/checks/K94-el-canal-que-no-puede-fallar.sh, requisito R2.
+rc=0
 salida=$(ssh -n -o BatchMode=yes -o ConnectTimeout=8 \
   -i "$PROD_SSH_KEY" -o UserKnownHostsFile="$PROD_KNOWN_HOSTS" \
-  "$PROD_SSH_USER@$PROD_HOST" "printf %s $penc | base64 -d | sh" 2>"$err")
-rc=$?
+  "$PROD_SSH_USER@$PROD_HOST" "printf %s $penc | base64 -d | sh" 2>"$err") || rc=$?
 
 printf '%s\n' "$salida" | "$B/bin/_corta"
 

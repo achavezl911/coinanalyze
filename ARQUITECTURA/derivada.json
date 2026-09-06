@@ -1309,8 +1309,8 @@
     },
     "app.scalp_logic._banda": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4963,
-      "sitio": "`app/scalp_logic.py:4963`"
+      "linea": 5030,
+      "sitio": "`app/scalp_logic.py:5030`"
     },
     "app.scalp_logic._beta": {
       "fichero": "app/scalp_logic.py",
@@ -1334,8 +1334,8 @@
     },
     "app.scalp_logic._classify_passive": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5695,
-      "sitio": "`app/scalp_logic.py:5695`"
+      "linea": 5777,
+      "sitio": "`app/scalp_logic.py:5777`"
     },
     "app.scalp_logic._closed_5m_oi_bounds": {
       "fichero": "app/scalp_logic.py",
@@ -1582,6 +1582,11 @@
       "linea": 193,
       "sitio": "`app/scalp_logic.py:193`"
     },
+    "app.scalp_logic.coherencia_del_plan": {
+      "fichero": "app/scalp_logic.py",
+      "linea": 4963,
+      "sitio": "`app/scalp_logic.py:4963`"
+    },
     "app.scalp_logic.compute_scalp_summary": {
       "fichero": "app/scalp_logic.py",
       "linea": 628,
@@ -1589,8 +1594,8 @@
     },
     "app.scalp_logic.compute_swing_score": {
       "fichero": "app/scalp_logic.py",
-      "linea": 6001,
-      "sitio": "`app/scalp_logic.py:6001`"
+      "linea": 6083,
+      "sitio": "`app/scalp_logic.py:6083`"
     },
     "app.scalp_logic.context_metadata": {
       "fichero": "app/scalp_logic.py",
@@ -1624,13 +1629,13 @@
     },
     "app.scalp_logic.execution_assessment": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4972,
-      "sitio": "`app/scalp_logic.py:4972`"
+      "linea": 5039,
+      "sitio": "`app/scalp_logic.py:5039`"
     },
     "app.scalp_logic.execution_cost": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5100,
-      "sitio": "`app/scalp_logic.py:5100`"
+      "linea": 5182,
+      "sitio": "`app/scalp_logic.py:5182`"
     },
     "app.scalp_logic.feed_quality": {
       "fichero": "app/scalp_logic.py",
@@ -1639,8 +1644,8 @@
     },
     "app.scalp_logic.feed_quality_view": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5183,
-      "sitio": "`app/scalp_logic.py:5183`"
+      "linea": 5265,
+      "sitio": "`app/scalp_logic.py:5265`"
     },
     "app.scalp_logic.flow_confirmation": {
       "fichero": "app/scalp_logic.py",
@@ -1694,8 +1699,8 @@
     },
     "app.scalp_logic.market_impact": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5420,
-      "sitio": "`app/scalp_logic.py:5420`"
+      "linea": 5502,
+      "sitio": "`app/scalp_logic.py:5502`"
     },
     "app.scalp_logic.market_memory": {
       "fichero": "app/scalp_logic.py",
@@ -1724,13 +1729,13 @@
     },
     "app.scalp_logic.passive_flow": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5728,
-      "sitio": "`app/scalp_logic.py:5728`"
+      "linea": 5810,
+      "sitio": "`app/scalp_logic.py:5810`"
     },
     "app.scalp_logic.positioning_context": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5525,
-      "sitio": "`app/scalp_logic.py:5525`"
+      "linea": 5607,
+      "sitio": "`app/scalp_logic.py:5607`"
     },
     "app.scalp_logic.price_barriers": {
       "fichero": "app/scalp_logic.py",
@@ -1759,13 +1764,13 @@
     },
     "app.scalp_logic.scalp_absorption": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5226,
-      "sitio": "`app/scalp_logic.py:5226`"
+      "linea": 5308,
+      "sitio": "`app/scalp_logic.py:5308`"
     },
     "app.scalp_logic.scalp_basis": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5382,
-      "sitio": "`app/scalp_logic.py:5382`"
+      "linea": 5464,
+      "sitio": "`app/scalp_logic.py:5464`"
     },
     "app.scalp_logic.scalp_bias_label": {
       "fichero": "app/scalp_logic.py",
@@ -1779,8 +1784,8 @@
     },
     "app.scalp_logic.scalp_liquidations": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5321,
-      "sitio": "`app/scalp_logic.py:5321`"
+      "linea": 5403,
+      "sitio": "`app/scalp_logic.py:5403`"
     },
     "app.scalp_logic.score_component": {
       "fichero": "app/scalp_logic.py",
@@ -1799,8 +1804,8 @@
     },
     "app.scalp_logic.spot_perp_flow": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5604,
-      "sitio": "`app/scalp_logic.py:5604`"
+      "linea": 5686,
+      "sitio": "`app/scalp_logic.py:5686`"
     },
     "app.scalp_logic.structure_detail": {
       "fichero": "app/scalp_logic.py",
@@ -1809,13 +1814,13 @@
     },
     "app.scalp_logic.swing_score": {
       "fichero": "app/scalp_logic.py",
-      "linea": 6152,
-      "sitio": "`app/scalp_logic.py:6152`"
+      "linea": 6234,
+      "sitio": "`app/scalp_logic.py:6234`"
     },
     "app.scalp_logic.trend_matrix": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5846,
-      "sitio": "`app/scalp_logic.py:5846`"
+      "linea": 5928,
+      "sitio": "`app/scalp_logic.py:5928`"
     },
     "app.scalp_logic.volatility_context": {
       "fichero": "app/scalp_logic.py",
@@ -17664,7 +17669,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4963",
+        "sitio": "app/scalp_logic.py:5030",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -17777,7 +17782,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5695",
+        "sitio": "app/scalp_logic.py:5777",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -19624,6 +19629,27 @@
         "total": 17,
         "total_exacto": 10
       },
+      "app.scalp_logic.coherencia_del_plan": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.api.scalp_execution_cost",
+          "app.scalp_logic.execution_assessment",
+          "app.scalp_logic.hypothesis_evidence"
+        ],
+        "por_llamada": [
+          "/api/desk/state",
+          "/api/hypothesis",
+          "/api/scalp/execution-cost"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/scalp_logic.py:4963",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 3,
+        "total_exacto": 3
+      },
       "app.scalp_logic.compute_scalp_summary": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
@@ -19743,7 +19769,7 @@
           "/api/verdicts"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:6001",
+        "sitio": "app/scalp_logic.py:6083",
         "solo_por_tabla": [
           "/api/verdicts"
         ],
@@ -19937,7 +19963,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4972",
+        "sitio": "app/scalp_logic.py:5039",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -19954,7 +19980,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5100",
+        "sitio": "app/scalp_logic.py:5182",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -19997,7 +20023,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5183",
+        "sitio": "app/scalp_logic.py:5265",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -20325,7 +20351,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5420",
+        "sitio": "app/scalp_logic.py:5502",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -20466,7 +20492,7 @@
           "/api/verdicts"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5728",
+        "sitio": "app/scalp_logic.py:5810",
         "solo_por_tabla": [
           "/api/verdicts"
         ],
@@ -20497,7 +20523,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5525",
+        "sitio": "app/scalp_logic.py:5607",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -20731,7 +20757,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5226",
+        "sitio": "app/scalp_logic.py:5308",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -20753,7 +20779,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5382",
+        "sitio": "app/scalp_logic.py:5464",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -20930,7 +20956,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5321",
+        "sitio": "app/scalp_logic.py:5403",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21071,7 +21097,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5604",
+        "sitio": "app/scalp_logic.py:5686",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21190,7 +21216,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:6152",
+        "sitio": "app/scalp_logic.py:6234",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21327,7 +21353,7 @@
           "/api/verdicts"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5846",
+        "sitio": "app/scalp_logic.py:5928",
         "solo_por_tabla": [
           "/api/verdicts"
         ],
@@ -24950,7 +24976,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 308,
+    "funciones_alcanzables": 309,
     "rutas": 68,
     "rutas_con_campos": 62,
     "rutas_sin_campos": 6,
@@ -27742,6 +27768,7 @@
         "app.scalp_logic.baseline_band",
         "app.scalp_logic.basis_quality",
         "app.scalp_logic.classify_absorption",
+        "app.scalp_logic.coherencia_del_plan",
         "app.scalp_logic.compute_scalp_summary",
         "app.scalp_logic.data_quality",
         "app.scalp_logic.delta_matrix",
@@ -27819,6 +27846,7 @@
         "app.scalp_logic.baseline_band",
         "app.scalp_logic.basis_quality",
         "app.scalp_logic.classify_absorption",
+        "app.scalp_logic.coherencia_del_plan",
         "app.scalp_logic.execution_assessment",
         "app.scalp_logic.flow_confirmation",
         "app.scalp_logic.futures_flow_windows",
@@ -28360,18 +28388,18 @@
     {
       "camino": "/api/flow/spot-vs-perp",
       "campos": {
-        "buckets": "literal en app/scalp_logic.py:5686",
-        "buckets_with_both_legs": "literal en app/scalp_logic.py:5687",
-        "coverage_pct": "literal en app/scalp_logic.py:5688",
-        "interval": "literal en app/scalp_logic.py:5684",
-        "reason": "literal en app/scalp_logic.py:5620",
-        "rows": "literal en app/scalp_logic.py:5691",
-        "spot_symbol": "literal en app/scalp_logic.py:5682",
-        "state_counts": "literal en app/scalp_logic.py:5690",
-        "status": "literal en app/scalp_logic.py:5689",
-        "symbol": "literal en app/scalp_logic.py:5681",
-        "unit": "literal en app/scalp_logic.py:5685",
-        "venue": "literal en app/scalp_logic.py:5683"
+        "buckets": "literal en app/scalp_logic.py:5768",
+        "buckets_with_both_legs": "literal en app/scalp_logic.py:5769",
+        "coverage_pct": "literal en app/scalp_logic.py:5770",
+        "interval": "literal en app/scalp_logic.py:5766",
+        "reason": "literal en app/scalp_logic.py:5702",
+        "rows": "literal en app/scalp_logic.py:5773",
+        "spot_symbol": "literal en app/scalp_logic.py:5764",
+        "state_counts": "literal en app/scalp_logic.py:5772",
+        "status": "literal en app/scalp_logic.py:5771",
+        "symbol": "literal en app/scalp_logic.py:5763",
+        "unit": "literal en app/scalp_logic.py:5767",
+        "venue": "literal en app/scalp_logic.py:5765"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -28804,6 +28832,7 @@
         "app.scalp_logic.baseline_band",
         "app.scalp_logic.basis_quality",
         "app.scalp_logic.classify_absorption",
+        "app.scalp_logic.coherencia_del_plan",
         "app.scalp_logic.compute_scalp_summary",
         "app.scalp_logic.delta_matrix",
         "app.scalp_logic.execution_assessment",
@@ -28880,6 +28909,7 @@
         "app.scalp_logic.baseline_band",
         "app.scalp_logic.basis_quality",
         "app.scalp_logic.classify_absorption",
+        "app.scalp_logic.coherencia_del_plan",
         "app.scalp_logic.execution_assessment",
         "app.scalp_logic.flow_confirmation",
         "app.scalp_logic.futures_flow_windows",
@@ -29691,12 +29721,12 @@
     {
       "camino": "/api/market-impact",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:5513",
-        "definition": "literal en app/scalp_logic.py:5515",
-        "limitations": "literal en app/scalp_logic.py:5517",
-        "metric": "literal en app/scalp_logic.py:5514",
-        "symbol": "literal en app/scalp_logic.py:5512",
-        "windows": "literal en app/scalp_logic.py:5516"
+        "as_of": "literal en app/scalp_logic.py:5595",
+        "definition": "literal en app/scalp_logic.py:5597",
+        "limitations": "literal en app/scalp_logic.py:5599",
+        "metric": "literal en app/scalp_logic.py:5596",
+        "symbol": "literal en app/scalp_logic.py:5594",
+        "windows": "literal en app/scalp_logic.py:5598"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -30365,15 +30395,15 @@
     {
       "camino": "/api/passive-flow",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:5822",
-        "counts": "literal en app/scalp_logic.py:5828",
-        "horizons": "literal en app/scalp_logic.py:5826",
-        "location": "literal en app/scalp_logic.py:5824",
-        "note": "literal en app/scalp_logic.py:5829",
-        "price": "literal en app/scalp_logic.py:5823",
-        "summary": "literal en app/scalp_logic.py:5827",
-        "symbol": "literal en app/scalp_logic.py:5821",
-        "value_area": "literal en app/scalp_logic.py:5825"
+        "as_of": "literal en app/scalp_logic.py:5904",
+        "counts": "literal en app/scalp_logic.py:5910",
+        "horizons": "literal en app/scalp_logic.py:5908",
+        "location": "literal en app/scalp_logic.py:5906",
+        "note": "literal en app/scalp_logic.py:5911",
+        "price": "literal en app/scalp_logic.py:5905",
+        "summary": "literal en app/scalp_logic.py:5909",
+        "symbol": "literal en app/scalp_logic.py:5903",
+        "value_area": "literal en app/scalp_logic.py:5907"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -30518,23 +30548,23 @@
     {
       "camino": "/api/positioning",
       "campos": {
-        "age_seconds": "literal en app/scalp_logic.py:5599",
-        "limitations": "literal en app/scalp_logic.py:5600",
-        "long_pct": "literal en app/scalp_logic.py:5585",
-        "median_sample": "literal en app/scalp_logic.py:5593",
-        "percentile_sample": "literal en app/scalp_logic.py:5594",
-        "ratio": "literal en app/scalp_logic.py:5587",
-        "ratio_24h_ago": "literal en app/scalp_logic.py:5588",
-        "ratio_change_24h": "literal en app/scalp_logic.py:5590",
-        "reason": "literal en app/scalp_logic.py:5562",
-        "sample_count": "literal en app/scalp_logic.py:5595",
-        "sample_days": "literal en app/scalp_logic.py:5596",
-        "sample_is_full_month": "literal en app/scalp_logic.py:5597",
-        "short_pct": "literal en app/scalp_logic.py:5586",
-        "status": "literal en app/scalp_logic.py:5583",
-        "symbol": "literal en app/scalp_logic.py:5582",
-        "ts": "literal en app/scalp_logic.py:5598",
-        "unit": "literal en app/scalp_logic.py:5584"
+        "age_seconds": "literal en app/scalp_logic.py:5681",
+        "limitations": "literal en app/scalp_logic.py:5682",
+        "long_pct": "literal en app/scalp_logic.py:5667",
+        "median_sample": "literal en app/scalp_logic.py:5675",
+        "percentile_sample": "literal en app/scalp_logic.py:5676",
+        "ratio": "literal en app/scalp_logic.py:5669",
+        "ratio_24h_ago": "literal en app/scalp_logic.py:5670",
+        "ratio_change_24h": "literal en app/scalp_logic.py:5672",
+        "reason": "literal en app/scalp_logic.py:5644",
+        "sample_count": "literal en app/scalp_logic.py:5677",
+        "sample_days": "literal en app/scalp_logic.py:5678",
+        "sample_is_full_month": "literal en app/scalp_logic.py:5679",
+        "short_pct": "literal en app/scalp_logic.py:5668",
+        "status": "literal en app/scalp_logic.py:5665",
+        "symbol": "literal en app/scalp_logic.py:5664",
+        "ts": "literal en app/scalp_logic.py:5680",
+        "unit": "literal en app/scalp_logic.py:5666"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -30947,8 +30977,8 @@
     {
       "camino": "/api/quality/feeds",
       "campos": {
-        "collectors": "literal en app/scalp_logic.py:5217",
-        "contexts": "literal en app/scalp_logic.py:5218",
+        "collectors": "literal en app/scalp_logic.py:5299",
+        "contexts": "literal en app/scalp_logic.py:5300",
         "metrics": "literal en app/scalp_logic.py:3964",
         "note": "literal en app/scalp_logic.py:3965"
       },
@@ -31721,7 +31751,7 @@
     {
       "camino": "/api/scalp/basis",
       "campos": {
-        "symbol": "literal en app/scalp_logic.py:5414"
+        "symbol": "literal en app/scalp_logic.py:5496"
       },
       "campos_pendientes": [
         "el objeto se expande con **item, que no se resuelve en el arbol: sus campos no se pueden derivar",
@@ -31983,14 +32013,14 @@
     {
       "camino": "/api/scalp/execution-cost",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:5154",
-        "note": "literal en app/scalp_logic.py:5156",
-        "sizes_usd": "literal en app/scalp_logic.py:5153",
-        "stale_after_seconds": "literal en app/scalp_logic.py:5155",
-        "status": "literal en app/scalp_logic.py:5158",
-        "symbol": "literal en app/scalp_logic.py:5151",
-        "unit": "literal en app/scalp_logic.py:5152",
-        "venues": "literal en app/scalp_logic.py:5157"
+        "as_of": "literal en app/scalp_logic.py:5236",
+        "note": "literal en app/scalp_logic.py:5238",
+        "sizes_usd": "literal en app/scalp_logic.py:5235",
+        "stale_after_seconds": "literal en app/scalp_logic.py:5237",
+        "status": "literal en app/scalp_logic.py:5240",
+        "symbol": "literal en app/scalp_logic.py:5233",
+        "unit": "literal en app/scalp_logic.py:5234",
+        "venues": "literal en app/scalp_logic.py:5239"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -32012,6 +32042,7 @@
         "app.scalp_logic.baseline_band",
         "app.scalp_logic.basis_quality",
         "app.scalp_logic.classify_absorption",
+        "app.scalp_logic.coherencia_del_plan",
         "app.scalp_logic.compute_scalp_summary",
         "app.scalp_logic.execution_assessment",
         "app.scalp_logic.execution_cost",
@@ -32041,6 +32072,7 @@
         "app.scalp_logic.baseline_band",
         "app.scalp_logic.basis_quality",
         "app.scalp_logic.classify_absorption",
+        "app.scalp_logic.coherencia_del_plan",
         "app.scalp_logic.load_baselines",
         "app.scalp_logic.resolve_matrix_as_of",
         "app.scalp_logic.scalp_bias_label",
@@ -32393,9 +32425,9 @@
     {
       "camino": "/api/scalp/liquidations",
       "campos": {
-        "matrix": "literal en app/scalp_logic.py:5379",
-        "recent": "literal en app/scalp_logic.py:5379",
-        "symbol": "literal en app/scalp_logic.py:5379"
+        "matrix": "literal en app/scalp_logic.py:5461",
+        "recent": "literal en app/scalp_logic.py:5461",
+        "symbol": "literal en app/scalp_logic.py:5461"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -34439,22 +34471,22 @@
     {
       "camino": "/api/swing-score",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:6167",
-        "as_of_semantics": "literal en app/scalp_logic.py:6168",
-        "bias": "literal en app/scalp_logic.py:6132",
-        "components": "literal en app/scalp_logic.py:6142",
-        "conflicts": "literal en app/scalp_logic.py:6141",
-        "conviction": "literal en app/scalp_logic.py:6134",
-        "evidence_coverage_pct": "literal en app/scalp_logic.py:6138",
-        "horizon": "literal en app/scalp_logic.py:6143",
-        "long_share_pct": "literal en app/scalp_logic.py:6135",
-        "measured_weight": "literal en app/scalp_logic.py:6139",
-        "neutral_share_pct": "literal en app/scalp_logic.py:6137",
-        "note": "literal en app/scalp_logic.py:6144",
-        "score": "literal en app/scalp_logic.py:6133",
-        "short_share_pct": "literal en app/scalp_logic.py:6136",
-        "symbol": "literal en app/scalp_logic.py:6166",
-        "total_weight": "literal en app/scalp_logic.py:6140"
+        "as_of": "literal en app/scalp_logic.py:6249",
+        "as_of_semantics": "literal en app/scalp_logic.py:6250",
+        "bias": "literal en app/scalp_logic.py:6214",
+        "components": "literal en app/scalp_logic.py:6224",
+        "conflicts": "literal en app/scalp_logic.py:6223",
+        "conviction": "literal en app/scalp_logic.py:6216",
+        "evidence_coverage_pct": "literal en app/scalp_logic.py:6220",
+        "horizon": "literal en app/scalp_logic.py:6225",
+        "long_share_pct": "literal en app/scalp_logic.py:6217",
+        "measured_weight": "literal en app/scalp_logic.py:6221",
+        "neutral_share_pct": "literal en app/scalp_logic.py:6219",
+        "note": "literal en app/scalp_logic.py:6226",
+        "score": "literal en app/scalp_logic.py:6215",
+        "short_share_pct": "literal en app/scalp_logic.py:6218",
+        "symbol": "literal en app/scalp_logic.py:6248",
+        "total_weight": "literal en app/scalp_logic.py:6222"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -34720,11 +34752,11 @@
     {
       "camino": "/api/trend-matrix",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:5990",
-        "medium_term_alignment": "literal en app/scalp_logic.py:5992",
-        "note": "literal en app/scalp_logic.py:5993",
-        "symbol": "literal en app/scalp_logic.py:5989",
-        "timeframes": "literal en app/scalp_logic.py:5991"
+        "as_of": "literal en app/scalp_logic.py:6072",
+        "medium_term_alignment": "literal en app/scalp_logic.py:6074",
+        "note": "literal en app/scalp_logic.py:6075",
+        "symbol": "literal en app/scalp_logic.py:6071",
+        "timeframes": "literal en app/scalp_logic.py:6073"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -35926,7 +35958,7 @@
         {
           "funcion": "app.scalp_logic.trend_matrix",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5864"
+          "sitio": "app/scalp_logic.py:5946"
         }
       ],
       "leida_por": [
@@ -36333,12 +36365,12 @@
         {
           "funcion": "app.scalp_logic.scalp_absorption",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5243"
+          "sitio": "app/scalp_logic.py:5325"
         },
         {
           "funcion": "app.scalp_logic.scalp_basis",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5386"
+          "sitio": "app/scalp_logic.py:5468"
         }
       ],
       "leida_por": [
@@ -36469,12 +36501,12 @@
         {
           "funcion": "app.scalp_logic.scalp_liquidations",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5361"
+          "sitio": "app/scalp_logic.py:5443"
         },
         {
           "funcion": "app.scalp_logic.scalp_liquidations",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5374"
+          "sitio": "app/scalp_logic.py:5456"
         }
       ],
       "leida_por": [
@@ -36519,7 +36551,7 @@
         {
           "funcion": "app.scalp_logic.positioning_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5535"
+          "sitio": "app/scalp_logic.py:5617"
         }
       ],
       "leida_por": [
@@ -36958,32 +36990,32 @@
         {
           "funcion": "app.scalp_logic.market_impact",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5444"
+          "sitio": "app/scalp_logic.py:5526"
         },
         {
           "funcion": "app.scalp_logic.spot_perp_flow",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5626"
+          "sitio": "app/scalp_logic.py:5708"
         },
         {
           "funcion": "app.scalp_logic.passive_flow",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5739"
+          "sitio": "app/scalp_logic.py:5821"
         },
         {
           "funcion": "app.scalp_logic.passive_flow",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5769"
+          "sitio": "app/scalp_logic.py:5851"
         },
         {
           "funcion": "app.scalp_logic.trend_matrix",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5855"
+          "sitio": "app/scalp_logic.py:5937"
         },
         {
           "funcion": "app.scalp_logic.trend_matrix",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5912"
+          "sitio": "app/scalp_logic.py:5994"
         },
         {
           "funcion": "app.signal_outcomes.materialize_due_signal_outcomes",
@@ -37150,7 +37182,7 @@
         {
           "funcion": "app.scalp_logic.execution_cost",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5110"
+          "sitio": "app/scalp_logic.py:5192"
         },
         {
           "funcion": "app.signal_execution.load_signal_execution_inputs",
@@ -38051,7 +38083,7 @@
         {
           "funcion": "app.scalp_logic.scalp_basis",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5386"
+          "sitio": "app/scalp_logic.py:5468"
         },
         {
           "funcion": "app.ws_collector.flush_realtime",

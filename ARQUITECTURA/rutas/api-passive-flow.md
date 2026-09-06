@@ -18,15 +18,15 @@ Handler `passive_flow_endpoint` · `app/api.py:1796` (cuerpo hasta la 1799) · d
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5822 |
-| `counts` | literal en app/scalp_logic.py:5828 |
-| `horizons` | literal en app/scalp_logic.py:5826 |
-| `location` | literal en app/scalp_logic.py:5824 |
-| `note` | literal en app/scalp_logic.py:5829 |
-| `price` | literal en app/scalp_logic.py:5823 |
-| `summary` | literal en app/scalp_logic.py:5827 |
-| `symbol` | literal en app/scalp_logic.py:5821 |
-| `value_area` | literal en app/scalp_logic.py:5825 |
+| `as_of` | literal en app/scalp_logic.py:5904 |
+| `counts` | literal en app/scalp_logic.py:5910 |
+| `horizons` | literal en app/scalp_logic.py:5908 |
+| `location` | literal en app/scalp_logic.py:5906 |
+| `note` | literal en app/scalp_logic.py:5911 |
+| `price` | literal en app/scalp_logic.py:5905 |
+| `summary` | literal en app/scalp_logic.py:5909 |
+| `symbol` | literal en app/scalp_logic.py:5903 |
+| `value_area` | literal en app/scalp_logic.py:5907 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -79,13 +79,13 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5728`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5810`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.scalp_logic._atr` — `app/scalp_logic.py:2926`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5695`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5777`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2431`
 - `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4071`

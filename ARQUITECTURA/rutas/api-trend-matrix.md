@@ -18,11 +18,11 @@ Handler `trend_matrix_endpoint` · `app/api.py:1789` (cuerpo hasta la 1792) · d
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5990 |
-| `medium_term_alignment` | literal en app/scalp_logic.py:5992 |
-| `note` | literal en app/scalp_logic.py:5993 |
-| `symbol` | literal en app/scalp_logic.py:5989 |
-| `timeframes` | literal en app/scalp_logic.py:5991 |
+| `as_of` | literal en app/scalp_logic.py:6072 |
+| `medium_term_alignment` | literal en app/scalp_logic.py:6074 |
+| `note` | literal en app/scalp_logic.py:6075 |
+| `symbol` | literal en app/scalp_logic.py:6071 |
+| `timeframes` | literal en app/scalp_logic.py:6073 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -78,7 +78,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5846`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5928`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
 

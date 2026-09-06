@@ -20,18 +20,18 @@ Handler `flow_spot_vs_perp` · `app/api.py:1470` (cuerpo hasta la 1483) · decor
 
 | campo | de donde sale |
 |---|---|
-| `buckets` | literal en app/scalp_logic.py:5686 |
-| `buckets_with_both_legs` | literal en app/scalp_logic.py:5687 |
-| `coverage_pct` | literal en app/scalp_logic.py:5688 |
-| `interval` | literal en app/scalp_logic.py:5684 |
-| `reason` | literal en app/scalp_logic.py:5620 |
-| `rows` | literal en app/scalp_logic.py:5691 |
-| `spot_symbol` | literal en app/scalp_logic.py:5682 |
-| `state_counts` | literal en app/scalp_logic.py:5690 |
-| `status` | literal en app/scalp_logic.py:5689 |
-| `symbol` | literal en app/scalp_logic.py:5681 |
-| `unit` | literal en app/scalp_logic.py:5685 |
-| `venue` | literal en app/scalp_logic.py:5683 |
+| `buckets` | literal en app/scalp_logic.py:5768 |
+| `buckets_with_both_legs` | literal en app/scalp_logic.py:5769 |
+| `coverage_pct` | literal en app/scalp_logic.py:5770 |
+| `interval` | literal en app/scalp_logic.py:5766 |
+| `reason` | literal en app/scalp_logic.py:5702 |
+| `rows` | literal en app/scalp_logic.py:5773 |
+| `spot_symbol` | literal en app/scalp_logic.py:5764 |
+| `state_counts` | literal en app/scalp_logic.py:5772 |
+| `status` | literal en app/scalp_logic.py:5771 |
+| `symbol` | literal en app/scalp_logic.py:5763 |
+| `unit` | literal en app/scalp_logic.py:5767 |
+| `venue` | literal en app/scalp_logic.py:5765 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -55,7 +55,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:5604`
+- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:5686`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
