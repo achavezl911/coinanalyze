@@ -25493,7 +25493,7 @@
         "tests": {
           "llamadas": [],
           "menciones": [
-            "tests/test_metrics_endpoint.py:131",
+            "tests/test_metrics_endpoint.py:222",
             "tests/test_orderbook_frescura.py:116",
             "tests/test_p0_data_integrity.py:111",
             "tests/test_pr22_cvd_semantics.py:1182"
@@ -27619,7 +27619,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_metrics_endpoint.py:162",
+            "tests/test_metrics_endpoint.py:253",
             "tests/test_v121_hardening.py:27",
             "tests/test_v150_desk_snapshot.py:126"
           ],
@@ -31967,7 +31967,7 @@
         "tests": {
           "llamadas": [],
           "menciones": [
-            "tests/test_metrics_endpoint.py:140"
+            "tests/test_metrics_endpoint.py:231"
           ]
         }
       },
@@ -36253,7 +36253,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_metrics_endpoint.py:161"
+            "tests/test_metrics_endpoint.py:252"
           ],
           "menciones": [
             "tests/test_metrics_endpoint.py:3",

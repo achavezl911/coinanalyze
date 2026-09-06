@@ -324,7 +324,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K43-foto-unica.sh:99`, `harness/checks/K43-foto-unica.sh:159`, `harness/checks/K43-foto-unica.sh:160`, `harness/checks/K43-foto-unica.sh:161` _(+10)_ | `harness/checks/K43-foto-unica.sh:167`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:25`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:48` _(+1)_ |
 | **panel** | `static/app.js:1553` | `static/app.js:1379`, `static/app.js:1386` |
 | **readme** | — | `README.md:195`, `README.md:488`, `README.md:502` |
-| **tests** | `tests/test_metrics_endpoint.py:162`, `tests/test_v121_hardening.py:27`, `tests/test_v150_desk_snapshot.py:126` | — |
+| **tests** | `tests/test_metrics_endpoint.py:253`, `tests/test_v121_hardening.py:27`, `tests/test_v150_desk_snapshot.py:126` | — |
 
 **La llama el panel: es superficie de producto.**
 
