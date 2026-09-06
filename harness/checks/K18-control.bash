@@ -114,48 +114,82 @@ sospechosa() {  # <tabla> <filas_espejo> <filas_prod>
   linea 'prodsql'   "SELECT count(\\*) FROM $1" "$3"
 }
 
+# LAS FILAS QUE QUEDAN DENTRO DE LA VENTANA DE RETENCION, que es lo que el discriminante mira.
+# El patron del conteo TOTAL no lleva comodin final, asi que casa la cadena entera y NO puede
+# tragarse esta consulta aunque comparta prefijo. Se dice porque en este mismo fichero un
+# `count(*)` sin escapar ya se comio una consulta que no era la suya.
+dentro() {  # <tabla> <columna> <espejo> <prod>
+  linea 'espejosql' "SELECT count(\\*) FROM $1 WHERE $2 >= now()*" "$3"
+  linea 'prodsql'   "SELECT count(\\*) FROM $1 WHERE $2 >= now()*" "$4"
+}
+
 echo "K18-control · sujeto: $CHK"
 echo
 
-echo "EL ARREGLO · un reemplazo completo no es un borrado"
-G="$DIR/g1"; base; sospechosa zzz_cal 33 29
-linea '*'         'SELECT string_agg(column_name*'    'fetched_at'
-linea 'espejosql' 'SELECT count(DISTINCT fetched_at)*' '1|2026-08-13 17:10:19'
-linea 'prodsql'   'SELECT count(DISTINCT fetched_at)*' '1|2026-09-06 16:30:19'
-caso "N1 reemplazo completo: VERDE"            0 "se REEMPLAZAN enteras" "$G"
-caso "N1b y lo NOMBRA con sus dos sellos"      0 "zzz_cal\(fetched_at:2026-08-13" "$G"
-caso "N1c y cuenta UNA, no tres"               0 "· 1 tabla\(s\) se REEMPLAZAN" "$G"
+echo "EL ARREGLO · lo que borra el borrador declarado no es un borrado sin declarar"
+# El caso real del 2026-09-06: la tabla pierde 4 filas en total y NINGUNA de dentro de la
+# ventana de 30 dias. Las cuatro estaban por debajo del corte, o sea que las borro el DELETE
+# que la cabecera de K18 ya lista como uno de sus nueve borradores.
+G="$DIR/g1"; base; sospechosa macro_event 33 29; dentro macro_event event_at 29 29
+caso "N1 encoge solo por su retencion: VERDE"  0 "encogen SOLO por su retencion" "$G"
+caso "N1b y publica los dos recuentos"         0 "macro_event\(event_at>=now\(\)-30d:29==29,total_33->29\)" "$G"
+caso "N1c y cuenta UNA"                        0 "· 1 tabla\(s\) encogen SOLO" "$G"
 
 echo
-echo "NO LO AFLOJO · un borrado de verdad sigue enrojeciendo"
-# P1 · sellos MEZCLADOS en los dos lados: no es un reemplazo, es una tabla que perdio filas.
-G="$DIR/g2"; base; sospechosa zzz_cal 33 29
-linea '*'         'SELECT string_agg(column_name*'    'fetched_at'
-linea 'espejosql' 'SELECT count(DISTINCT fetched_at)*' '11|2026-08-13 17:10:19'
-linea 'prodsql'   'SELECT count(DISTINCT fetched_at)*' '9|2026-09-06 16:30:19'
-caso "P1 sellos mezclados: ROJO"               1 "zzz_cal\(encoge_sin_declarar:33->29\)" "$G"
-
-# P2 · el MISMO sello en los dos lados y menos filas: es la misma foto, faltan filas.
-G="$DIR/g3"; base; sospechosa zzz_cal 33 29
-linea '*' 'SELECT string_agg(column_name*'    'fetched_at'
-linea '*' 'SELECT count(DISTINCT fetched_at)*' '1|2026-09-06 16:30:19'
-caso "P2 mismo sello, menos filas: ROJO"       1 "encoge_sin_declarar" "$G"
-
-# P3 · sin ninguna columna de tiempo no hay discriminante posible: enrojece.
-G="$DIR/g4"; base; sospechosa zzz_cal 33 29
-linea '*' 'SELECT string_agg(column_name*' ''
-caso "P3 sin columna de tiempo: ROJO"          1 "encoge_sin_declarar" "$G"
-
-# P4 · una tabla de 1 fila tiene "un solo valor distinto" por trivialidad. No exime.
-G="$DIR/g5"; base; sospechosa zzz_cal 3 1
-linea '*'         'SELECT string_agg(column_name*'    'fetched_at'
+echo "EL BRAZO QUE FALTABA · la MAGNITUD entra en la decision"
+# EL CASO QUE EL K18 DE 485cdc4 DEJABA PASAR. Medido sobre aquel check con estos mismos
+# canales de mentira: espejo 33 -> prod 5 daba VERDE diciendo «se REEMPLAZAN enteras».
+# Escenario concreto: un dedazo que ponga `interval '3 days'` en external_macro.py:576.
+G="$DIR/g2"; base; sospechosa macro_event 33 5; dentro macro_event event_at 29 5
+# EL GUION LLEVA TAMBIEN LO QUE EL CHECK VIEJO PREGUNTABA -los sellos de carga-, o el
+# contraste de P5b no seria justo: sin esas lineas el viejo enrojeceria por no poder mirar,
+# no por saber. Al nuevo no le estorban: ya no consulta sellos.
+linea '*'         'SELECT string_agg(column_name*'    'event_at fetched_at'
+linea 'espejosql' 'SELECT count(DISTINCT event_at)*'   '33|2026-08-07 12:30:00'
+linea 'prodsql'   'SELECT count(DISTINCT event_at)*'   '5|2026-09-06 12:30:00'
 linea 'espejosql' 'SELECT count(DISTINCT fetched_at)*' '1|2026-08-13 17:10:19'
 linea 'prodsql'   'SELECT count(DISTINCT fetched_at)*' '1|2026-09-06 16:30:19'
-caso "P4 una sola fila: no se lleva la exencion" 1 "encoge_sin_declarar:3->1" "$G"
+caso "P5 pierde 24 filas DENTRO de la ventana: ROJO" 1 "pierde_filas_DENTRO_de_la_ventana_de_30d:29->5" "$G"
+# P5b · Y LA COMPARACION QUE HACE VALER AL BRAZO: el check ANTERIOR, sacado de git, sobre EL
+# MISMO guion. Si diera lo mismo que el nuevo, este remate no habria cambiado nada.
+if VIEJO=$(cd "$ORIG" && git show 485cdc4:harness/checks/K18-borrado.sh 2>/dev/null) \
+   && [ -n "$VIEJO" ]; then
+  printf '%s' "$VIEJO" > "$DIR/K18-485cdc4.sh"
+  monta "$DIR/h" "$G"
+  outv=$(K18_HARNESS="$DIR/h" bash "$DIR/K18-485cdc4.sh" 2>&1); rcv=$?
+  if [ "$rcv" = 0 ]; then
+    pasan=$((pasan+1)); printf '  [ok   ] %-52s rc=%s (VERDE: el defecto que este remate cierra)\n' \
+      "P5b el K18 de 485cdc4 daba VERDE con esto" "$rcv"
+  else
+    fallos=$((fallos+1)); printf '  [FALLA] %-52s rc=%s: si el viejo ya enrojecia, el brazo no prueba el arreglo\n' \
+      "P5b el K18 de 485cdc4 daba VERDE con esto" "$rcv"
+  fi
+else
+  printf '  [....] %-52s\n' "P5b no se pudo sacar 485cdc4 de git: sin contraste"
+fi
+
+echo
+echo "NO LO AFLOJO · lo que no se puede atribuir al borrador sigue enrojeciendo"
+# P1 · una tabla que encoge y NO tiene retencion declarada: no hay nada que la explique.
+G="$DIR/g3"; base; sospechosa zzz_sin_retencion 33 29
+caso "P1 sin retencion declarada: ROJO"        1 "zzz_sin_retencion\(encoge_sin_declarar:33->29\)" "$G"
+
+# P2 · pierde una sola fila de dentro de la ventana. La magnitud no es la unica regla: si falta
+# UNA de las que deberian seguir vivas, el borrador declarado no lo explica.
+G="$DIR/g4"; base; sospechosa macro_event 33 28; dentro macro_event event_at 29 28
+caso "P2 pierde UNA de dentro de la ventana: ROJO" 1 "pierde_filas_DENTRO_de_la_ventana_de_30d:29->28" "$G"
+
+# P3 · cero filas dentro de la ventana en el espejo: "iguales" no probaria nada.
+G="$DIR/g5"; base; sospechosa macro_event 33 5; dentro macro_event event_at 0 0
+caso "P3 cero dentro de la ventana: no se exime" 1 "cero_filas_dentro_de_30d" "$G"
+
+# P4 · si el canal no contesta el recuento de dentro, NO se exime por defecto.
+G="$DIR/g6"; base; sospechosa macro_event 33 29
+caso "P4 sin recuento de dentro: ROJO"          1 "no_se_pudo_contar_dentro_de_la_ventana" "$G"
 
 echo
 echo "ANTI-FANTASMA · sin canal no hay veredicto"
-G="$DIR/g6"; : > "$G"
+G="$DIR/g7"; : > "$G"
 caso "F1 prodsql no contesta: NOMED"           2 "prodsql no responde" "$G"
 
 echo
