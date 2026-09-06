@@ -31,7 +31,7 @@
 # atribucion "lo hace app/partitioning.py" del ROJO de K18 es falsa. Vigilar que un
 # escritor no baje el ritmo es la familia de K05/K06/K19, no esta.
 set -uo pipefail
-B=/srv/coinanalyze/harness; . "$B/env"
+B=${K18_HARNESS:-/srv/coinanalyze/harness}; . "$B/env"
 
 # tabla:horas:gracia   gracia 27 = 24 de particion diaria + 3 de cadencia
 # futures_trades_agg lleva gracia 6 y no 3 por un motivo medido: la limpieza corre
@@ -71,12 +71,65 @@ sospechosas=$(join \
   <("$B/bin/espejosql" "SELECT relname||' '||reltuples::bigint FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND relname !~ '_p[0-9]{8}\$' AND reltuples > 0 ORDER BY relname" 2>/dev/null | grep -E '^[a-z_]+ [0-9]+$' | sort) \
   <("$B/bin/prodsql" "SELECT relname||' '||reltuples::bigint FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND relname !~ '_p[0-9]{8}\$' AND reltuples > 0 ORDER BY relname" 2>/dev/null | grep -E '^[a-z_]+ [0-9]+$' | sort) \
   2>/dev/null | awk '$3 < $2*0.9 {print $1}')
+# UN REEMPLAZO COMPLETO NO ES UN BORRADO, Y ESTE BRAZO NO SABIA DISTINGUIRLOS.
+#
+# EL HECHO QUE LO MOTIVA, medido el 2026-09-06. K18 se puso ROJO con
+# `macro_event(encoge_sin_declarar:33->29)`. Y lo que compara este brazo NO es produccion
+# antes contra produccion ahora: es EL ESPEJO contra PRODUCCION.
+#     a = espejosql   -> el espejo de 143, congelado el 2026-08-13 17:47Z
+#     b = prodsql     -> 140, ahora
+# `macro_event` es un CALENDARIO que se reemplaza entero en cada refresco: las 33 filas del
+# espejo comparten UN solo `fetched_at` (2026-08-13 17:10) y las 29 de produccion comparten
+# otro (2026-09-06 16:30). No falta ninguna fila: son DOS FOTOS distintas, con 24 dias entre
+# ellas, de una tabla que se sustituye. Y salto hoy y no antes por el prefiltro -b < a*0.9-:
+# a 30 filas no disparaba y a 29 si. Un umbral cruzado sobre una comparacion que no procede.
+#
+# ES EL PATRON DE K80: el mensaje nombraba una causa -«borrado sin declarar»- que no era la
+# real. El arreglo va donde fue el de K80 -que el check sepa DISTINGUIR- y no en ensanchar el
+# umbral ni en exentar la tabla por su nombre.
+#
+# EL DISCRIMINANTE SALE DEL DATO, no de una lista: una tabla cuyo contenido se reemplaza
+# entero tiene TODAS sus filas con un unico sello de carga. Si existe una columna de tiempo
+# con UN SOLO valor distinto en los DOS lados, y esos dos valores DIFIEREN, lo que hay son dos
+# instantaneas de una tabla sustituida, y su diferencia de filas no es un borrado.
+#   · se exige >= 2 filas en los dos lados: con una fila, "un solo valor distinto" es trivial;
+#   · se exige que los dos sellos DIFIERAN: si fueran el mismo, es la misma foto y una
+#     diferencia de filas si seria un borrado;
+#   · `pipeline_heartbeat`, la otra tabla que marca el prefiltro hoy, tiene 11 y 9 valores
+#     distintos de `updated_at`: NO se lleva la exencion, y si algun dia llega aqui, enrojece.
+# Los reemplazos NO se callan: se publican en el mensaje verde con sus dos sellos.
+reemplazos=""; n_reemplazos=0
 for t in $sospechosas; do
   case " $VENTANAS $SUELOS " in *" $t:"*) continue ;; esac
   a=$("$B/bin/espejosql" "SELECT count(*) FROM $t" 2>/dev/null | grep -E '^[0-9]+$' | head -1)
   b=$("$B/bin/prodsql" "SELECT count(*) FROM $t" 2>/dev/null | grep -E '^[0-9]+$' | head -1)
-  [ -n "$a" ] && [ -n "$b" ] && [ "$b" -lt "$a" ] && fallos="$fallos $t(encoge_sin_declarar:$a->$b)"
+  [ -n "$a" ] && [ -n "$b" ] && [ "$b" -lt "$a" ] || continue
+
+  clasif=encoge
+  if [ "$a" -ge 2 ] && [ "$b" -ge 2 ]; then
+    cols=$("$B/bin/prodsql" "SELECT string_agg(column_name, ' ') FROM information_schema.columns
+      WHERE table_name='$t' AND table_schema='public' AND data_type LIKE 'timestamp%'" \
+      2>/dev/null | tr -d '\r' | head -1)
+    for c in $cols; do
+      se=$("$B/bin/espejosql" "SELECT count(DISTINCT $c)||'|'||coalesce(max($c)::text,'-') FROM $t" 2>/dev/null | head -1)
+      sp=$("$B/bin/prodsql"   "SELECT count(DISTINCT $c)||'|'||coalesce(max($c)::text,'-') FROM $t" 2>/dev/null | head -1)
+      [ "${se%%|*}" = "1" ] && [ "${sp%%|*}" = "1" ] && [ "${se#*|}" != "${sp#*|}" ] || continue
+      clasif=reemplazo
+      # EL CONTADOR VA APARTE Y NO SE DEDUCE DEL TEXTO. La primera version contaba con
+      # `wc -w` sobre la cadena y publico «3 tabla(s)» listando UNA: los sellos llevan un
+      # espacio entre fecha y hora, asi que cada entrada son tres palabras. Un recuento
+      # derivado del formato de su propio mensaje se rompe cuando el mensaje cambia.
+      clasif=reemplazo
+      n_reemplazos=$((n_reemplazos + 1))
+      reemplazos="$reemplazos $t($c:${se#*|}->${sp#*|},${a}->${b}filas)"
+      break
+    done
+  fi
+  [ "$clasif" = "reemplazo" ] || fallos="$fallos $t(encoge_sin_declarar:$a->$b)"
 done
 
 [ -z "${fallos// /}" ] || { echo "borrado sin declarar o fuera de ventana:$fallos"; exit 1; }
-echo "9 borradores declarados, 6 ventanas dentro de rango, nada encoge sin declarar"
+printf '9 borradores declarados, 6 ventanas dentro de rango, nada encoge sin declarar'
+[ "$n_reemplazos" -gt 0 ] && printf ' · %d tabla(s) se REEMPLAZAN enteras y por eso su diferencia de filas contra el espejo no es un borrado:%s' \
+  "$n_reemplazos" "$reemplazos"
+printf '\n'
