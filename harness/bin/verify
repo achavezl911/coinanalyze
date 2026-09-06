@@ -76,6 +76,46 @@ for c in "$B"/checks/*.sh; do
   esac
   printf '%-22s %-5s %s\n' "$id" "$estado" "$(printf '%s' "$out" | head -1 | cut -c1-70)"
 done
+# LOS DOS HUECOS QUE QUEDABAN DEL GLOB `checks/*.sh`, cerrados el 2026-09-06.
+#
+# Son los dos que se midieron y se dejaron escritos cuando se cerro el tercero -el tope por
+# check-. Ninguno ha mordido nunca: medido, los 18 ficheros de `checks/` que no casan `*.sh`
+# son TODOS deliberados -controles `.bash`, un `.tsv`, un `.py`- y el unico subdirectorio es
+# `__pycache__`. Pero los dos fallan EN SILENCIO, que es la parte que importa: un check que no
+# corre y del que nadie se entera es peor que uno rojo.
+#
+# EL CRITERIO NO PUEDE SER «TODO LO QUE NO CASE», y esa era la trampa: quejarse de los 18
+# llenaria el marcador de NOMED que no son defectos y enseniaria a ignorarlos. Se avisa solo de
+# lo que **parece un check y no lo es**:
+#   1. un nombre que LLEVA `.sh` pero no TERMINA en `.sh` -un `.sh.bak`, un `.sh~`, un
+#      `.sh.disabled`-: alguien escribio un check y el glob no lo ve;
+#   2. un `.sh` dentro de un subdirectorio: `checks/*.sh` no recurre.
+# Los `.bash` de control, el `.tsv` y el `.py` NO disparan, y eso es deliberado: no llevan `.sh`
+# en el nombre y no estan en un subdirectorio.
+#
+# NO SE INCREMENTA `vistos`, a proposito: `vistos` cuenta CHECKS, y su cero es lo que detecta
+# un arnes desaparecido. Un `.sh.bak` suelto no es un arnes.
+huerfano() {  # <ruta> <motivo>
+  nomed=$((nomed+1))
+  printf '%-22s %-5s %s\n' "$(basename "$1")" NOMED "$2"
+}
+for c in "$B"/checks/*.sh.* "$B"/checks/*.sh~; do
+  [ -e "$c" ] || continue
+  huerfano "$c" "lleva .sh pero no termina en .sh: el glob checks/*.sh no lo ve y no se corrio"
+done
+if command -v find >/dev/null 2>&1; then
+  # `-L` porque checks/ es un ENLACE: sin el, find no entra y el brazo no mediria nada.
+  find -L "$B/checks" -mindepth 2 -name '*.sh' -print 2>/dev/null | while IFS= read -r c; do
+    printf '%-22s %-5s %s\n' "$(basename "$c")" NOMED \
+      "esta en un subdirectorio ($(dirname "${c#"$B/checks/"}")): checks/*.sh no recurre y no se corrio"
+  done
+  n_sub=$(find -L "$B/checks" -mindepth 2 -name '*.sh' 2>/dev/null | grep -c . || true)
+  nomed=$((nomed + n_sub))
+else
+  # Sin `find` este brazo no puede medir, y callarlo seria volver al hueco de antes.
+  huerfano "(sin find)" "no hay 'find' en el PATH: no se pudo mirar si hay checks en subdirectorios"
+fi
+
 # CERO CHECKS NO ES CERO DEFECTOS. Es la misma regla que cada check aplica a su elegible,
 # aplicada al arnes entero: sin sujeto no hay veredicto.
 if [ "$vistos" -eq 0 ]; then

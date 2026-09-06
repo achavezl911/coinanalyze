@@ -151,6 +151,36 @@ caso "V6e los otros tres conservan su veredicto"      "si" \
      "$(grep -qE '^Z01-verde +VERDE' <<<"$out" && grep -qE '^Z02-rojo +ROJO' <<<"$out" && echo si || echo no)"
 
 echo
+echo "LOS DOS HUECOS DEL GLOB · un check que no casa el patron APARECE"
+# LOS DOS QUE QUEDABAN, cerrados el 2026-09-06. Ninguno habia mordido nunca, y los dos fallaban
+# EN SILENCIO. El caso que hace valer a los otros dos es N7: los ficheros que NO son checks
+# -los `.bash` de control, un `.tsv`, un `.py`- NO pueden disparar, o el aviso seria ruido.
+D3="$DIR/glob"; monta "$D3"
+cp "$D3/checks/Z01-verde.sh" "$D3/checks/Z05-olvidado.sh.bak"
+mkdir -p "$D3/checks/sub"
+cp "$D3/checks/Z01-verde.sh" "$D3/checks/sub/Z06-escondido.sh"
+printf '#!/bin/sh\nexit 0\n' > "$D3/checks/Z07-control.bash"
+printf 'ruta\tgrupo\n'                                    > "$D3/checks/Z08-datos.tsv"
+printf 'x = 1\n'                                          > "$D3/checks/Z09-ayuda.py"
+out=$(corre "$VERIFY" "$D3")
+caso "V7 el .sh.bak APARECE y sale NOMED"             "si" \
+     "$(grep -qE '^Z05-olvidado.sh.bak +NOMED' <<<"$out" && echo si || echo no)"
+caso "V7b y dice que el glob no lo ve"                "si" \
+     "$(grep -q 'no termina en .sh' <<<"$out" && echo si || echo no)"
+caso "V8 el .sh del subdirectorio APARECE y sale NOMED" "si" \
+     "$(grep -qE '^Z06-escondido.sh +NOMED' <<<"$out" && echo si || echo no)"
+caso "V8b y dice en que subdirectorio esta"           "si" \
+     "$(grep -q 'esta en un subdirectorio (sub)' <<<"$out" && echo si || echo no)"
+# N7 · SIN ESTE CASO, V7 Y V8 SERIAN UNA MAQUINA DE RUIDO: hoy hay 18 ficheros legitimos en
+# checks/ que no casan *.sh, y quejarse de ellos enseniaria a ignorar el aviso.
+caso "N7 el .bash, el .tsv y el .py NO disparan"      "si" \
+     "$(grep -qE '^Z0[789]' <<<"$out" && echo no || echo si)"
+caso "N7b y los 3 checks de verdad conservan su veredicto" "si" \
+     "$(grep -qE '^Z01-verde +VERDE' <<<"$out" && grep -qE '^Z02-rojo +ROJO' <<<"$out" && echo si || echo no)"
+caso "V9 la cuenta suma los dos huerfanos: 1V 1R 3N"  "si" \
+     "$(grep -qE '^1 VERDE +1 ROJO +3 NOMED' <<<"$out" && echo si || echo no)"
+
+echo
 echo "EL rc · un NOMED no puede salir como exito"
 monta "$B2"; chmod -x "$B2/checks/Z01-verde.sh"
 VERIFY_HARNESS="$B2" sh "$VERIFY" >/dev/null 2>&1; rc=$?
