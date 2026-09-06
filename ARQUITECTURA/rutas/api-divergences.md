@@ -49,8 +49,8 @@ LEE:
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:254`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:275`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:285`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):

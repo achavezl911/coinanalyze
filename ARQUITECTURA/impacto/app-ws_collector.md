@@ -8,22 +8,22 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_write_minute`](#-write-minute) | 230 | 0 | **10** | 17 ↑ | **10** |
-| [`drain_closed_minutes`](#drain-closed-minutes) | 323 | 0 | **0** | 17 ↑ | **0** |
-| [`flush_minute`](#flush-minute) | 311 | 0 | **0** | 17 ↑ | **0** |
-| [`heartbeat_loop`](#heartbeat-loop) | 515 | 0 | **0** | 14 ↑ | **0** |
-| [`binance_consumer`](#binance-consumer) | 424 | 0 | **0** | 12 ↑ | **0** |
-| [`binance_url`](#binance-url) | 208 | 0 | **0** | 12 ↑ | **0** |
-| [`bybit_consumer`](#bybit-consumer) | 466 | 0 | **0** | 12 ↑ | **0** |
-| [`flush_realtime`](#flush-realtime) | 350 | 0 | **12** | 12 | **12** |
-| [`run`](#run) | 575 | 0 | **0** | 12 ↑ | **0** |
-| [`spot_pairs`](#spot-pairs) | 204 | 0 | **0** | 12 ↑ | **0** |
-| [`valid_trade`](#valid-trade) | 213 | 0 | **0** | 12 ↑ | **0** |
+| [`_write_minute`](#-write-minute) | 239 | 0 | **10** | 17 ↑ | **10** |
+| [`drain_closed_minutes`](#drain-closed-minutes) | 333 | 0 | **0** | 17 ↑ | **0** |
+| [`flush_minute`](#flush-minute) | 321 | 0 | **0** | 17 ↑ | **0** |
+| [`heartbeat_loop`](#heartbeat-loop) | 530 | 0 | **0** | 14 ↑ | **0** |
+| [`binance_consumer`](#binance-consumer) | 439 | 0 | **0** | 12 ↑ | **0** |
+| [`binance_url`](#binance-url) | 217 | 0 | **0** | 12 ↑ | **0** |
+| [`bybit_consumer`](#bybit-consumer) | 481 | 0 | **0** | 12 ↑ | **0** |
+| [`flush_realtime`](#flush-realtime) | 365 | 0 | **12** | 12 | **12** |
+| [`run`](#run) | 590 | 0 | **0** | 12 ↑ | **0** |
+| [`spot_pairs`](#spot-pairs) | 213 | 0 | **0** | 12 ↑ | **0** |
+| [`valid_trade`](#valid-trade) | 222 | 0 | **0** | 12 ↑ | **0** |
 | [`segundos_cubiertos`](#segundos-cubiertos) | 46 | 0 | **0** | 10 ↑ | **0** |
 
 ## _write_minute
 
-`app/ws_collector.py:230` · clave completa `app.ws_collector._write_minute`
+`app/ws_collector.py:239` · clave completa `app.ws_collector._write_minute`
 
 **Radio exacto: 10 rutas** de 68 · **cota superior: 17** (mas ancha)
 
@@ -107,7 +107,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## drain_closed_minutes
 
-`app/ws_collector.py:323` · clave completa `app.ws_collector.drain_closed_minutes`
+`app/ws_collector.py:333` · clave completa `app.ws_collector.drain_closed_minutes`
 
 **Radio exacto: 0 rutas** de 68 · **cota superior: 17** (mas ancha)
 
@@ -179,7 +179,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## flush_minute
 
-`app/ws_collector.py:311` · clave completa `app.ws_collector.flush_minute`
+`app/ws_collector.py:321` · clave completa `app.ws_collector.flush_minute`
 
 **Radio exacto: 0 rutas** de 68 · **cota superior: 17** (mas ancha)
 
@@ -251,7 +251,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## heartbeat_loop
 
-`app/ws_collector.py:515` · clave completa `app.ws_collector.heartbeat_loop`
+`app/ws_collector.py:530` · clave completa `app.ws_collector.heartbeat_loop`
 
 **Radio exacto: 0 rutas** de 68 · **cota superior: 14** (mas ancha)
 
@@ -317,7 +317,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## binance_consumer
 
-`app/ws_collector.py:424` · clave completa `app.ws_collector.binance_consumer`
+`app/ws_collector.py:439` · clave completa `app.ws_collector.binance_consumer`
 
 **Radio exacto: 0 rutas** de 68 · **cota superior: 12** (mas ancha)
 
@@ -378,7 +378,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## binance_url
 
-`app/ws_collector.py:208` · clave completa `app.ws_collector.binance_url`
+`app/ws_collector.py:217` · clave completa `app.ws_collector.binance_url`
 
 **Radio exacto: 0 rutas** de 68 · **cota superior: 12** (mas ancha)
 
@@ -439,7 +439,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## bybit_consumer
 
-`app/ws_collector.py:466` · clave completa `app.ws_collector.bybit_consumer`
+`app/ws_collector.py:481` · clave completa `app.ws_collector.bybit_consumer`
 
 **Radio exacto: 0 rutas** de 68 · **cota superior: 12** (mas ancha)
 
@@ -500,7 +500,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## flush_realtime
 
-`app/ws_collector.py:350` · clave completa `app.ws_collector.flush_realtime`
+`app/ws_collector.py:365` · clave completa `app.ws_collector.flush_realtime`
 
 **Radio exacto: 12 rutas** de 68 · **cota superior: 12** (igual al exacto)
 
@@ -571,7 +571,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## run
 
-`app/ws_collector.py:575` · clave completa `app.ws_collector.run`
+`app/ws_collector.py:590` · clave completa `app.ws_collector.run`
 
 **Radio exacto: 0 rutas** de 68 · **cota superior: 12** (mas ancha)
 
@@ -632,7 +632,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## spot_pairs
 
-`app/ws_collector.py:204` · clave completa `app.ws_collector.spot_pairs`
+`app/ws_collector.py:213` · clave completa `app.ws_collector.spot_pairs`
 
 **Radio exacto: 0 rutas** de 68 · **cota superior: 12** (mas ancha)
 
@@ -693,7 +693,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## valid_trade
 
-`app/ws_collector.py:213` · clave completa `app.ws_collector.valid_trade`
+`app/ws_collector.py:222` · clave completa `app.ws_collector.valid_trade`
 
 **Radio exacto: 0 rutas** de 68 · **cota superior: 12** (mas ancha)
 

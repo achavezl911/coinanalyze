@@ -98,10 +98,10 @@ LEE:
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:651`
 - `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
-  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1538`
-  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:802`
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1549`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:813`
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:784`
 - `liquidations` — `sql/schema.sql:174`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:657`
   - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:316`
@@ -132,8 +132,8 @@ LEE:
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:856`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:912`
 - `pipeline_heartbeat` — `sql/schema.sql:1284`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
@@ -141,14 +141,14 @@ LEE:
 - `predicted_funding_rate` — `sql/schema.sql:160`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:654`
 - `scalp_signal_snapshot` — `sql/schema.sql:381`, 16 columnas
-  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1406`
+  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1417`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:254`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:275`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:285`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:391`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:408`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):

@@ -30,7 +30,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:784`
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
 - `market_feed_health` — `sql/schema.sql:1318`, 7 columnas
@@ -47,11 +47,11 @@ LEE:
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:845`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:901`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:856`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:912`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:391`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:408`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):

@@ -34,10 +34,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:784`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:376`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:393`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:391`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:408`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
