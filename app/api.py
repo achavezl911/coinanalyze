@@ -2836,6 +2836,35 @@ FROM v CROSS JOIN actual a
 """
 
 
+# CUANTO DURA LA SEÑAL · la cifra que cambia la LECTURA de la tasa base, no la tasa base.
+#
+# POR QUE ESTA AQUI. Hasta el 2026-09-06 la tarjeta decia «es un problema de ejecucion, no de
+# acierto». La campana de la regla de entrada midio que **ninguna regla alcanzable recupera la
+# ventaja**: el retraso fijo solo la recupera entera cuando k = 60 min, o sea el horizonte
+# completo; la orden limitada es PEOR que no esperar en las 18 celdas medidas en cuanto se
+# contabiliza que hace uno cuando el precio no vuelve; y la razon de fondo es esta cifra.
+# Llamar «de ejecucion» a algo que ninguna ejecucion arregla es un eufemismo.
+#
+# DEFINICION, y viaja con la cifra: *sigue viva en t+1* = el minuto siguiente es periodico, es
+# accionable Y su `direction` es LA MISMA. Las tres condiciones: un minuto accionable del lado
+# contrario no es la misma señal.
+#
+# NO CAMBIA NINGUNA CIFRA DE LA TASA BASE. Es un campo mas, y lo que cambia es la frase.
+SUPERVIVENCIA_SQL = """
+WITH o AS (
+  SELECT observed_minute, direction, actionable,
+         (EXTRACT(EPOCH FROM observed_minute)/60)::bigint AS mi
+  FROM signal_observation
+  WHERE symbol = $1 AND is_periodic IS TRUE
+    AND observed_at >= $2 AND observed_at < $3
+),
+s AS (SELECT mi, direction FROM o WHERE actionable IS TRUE AND direction IN ('long','short'))
+SELECT COUNT(*) AS senales,
+       COUNT(*) FILTER (WHERE f.actionable IS TRUE AND f.direction = s.direction) AS siguen_vivas
+FROM s LEFT JOIN o f ON f.mi = s.mi + 1
+"""
+
+
 async def signal_base_rate(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     """La tasa base de la señal, con su alcance pegado. Es la tarjeta de evidencia.
 
@@ -2912,6 +2941,22 @@ async def signal_base_rate(conn: asyncpg.Connection, symbol: str) -> dict[str, A
             "fuente": "ohlcv daily del mismo simbolo",
         }
 
+    # CERO SEÑALES NO ES UNA SUPERVIVENCIA DE CERO: es que no se pudo medir, y entonces la
+    # frase de la tarjeta no puede apoyarse en ella. Misma regla de tres estados de siempre.
+    supervivencia: dict[str, Any] = {
+        "supervivencia_1min_pct": None,
+        "supervivencia_n": 0,
+        "supervivencia_definicion": (
+            "el minuto siguiente es periodico, accionable y con la MISMA direccion"
+        ),
+    }
+    fs = await conn.fetchrow(SUPERVIVENCIA_SQL, symbol, desde, hasta)
+    if fs is not None and fs["senales"]:
+        supervivencia["supervivencia_n"] = int(fs["senales"])
+        supervivencia["supervivencia_1min_pct"] = round(
+            100.0 * int(fs["siguen_vivas"]) / int(fs["senales"]), 1
+        )
+
     bruta = float(fila["ventaja_bruta_pct"])
     neta = float(fila["ventaja_neta_pct"])
     entrada = float(fila["coste_entrada_pct"])
@@ -2930,6 +2975,7 @@ async def signal_base_rate(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         "t_neta": t_neta,
         "coste_entrada_pct": entrada,
         "coste_entrada_por_obs_pct": float(fila["coste_entrada_por_obs_pct"]),
+        **supervivencia,
         # LA FRASE DE LA TARJETA SE COMPONE AQUI y no en el panel, para que el texto y la
         # cifra no puedan separarse: si alguien cambia el umbral, cambia la frase con el.
         "lectura": (

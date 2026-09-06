@@ -75,7 +75,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K13-vacio-o-rancio.sh:32`, `harness/checks/K13-vacio-o-rancio.sh:33`, `harness/checks/K13-vacio-o-rancio.sh:92`, `harness/checks/K13-vacio-o-rancio.sh:94` _(+4)_ | `harness/checks/K13-vacio-o-rancio.sh:2`, `harness/checks/K43-foto-unica.sh:44`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:71` |
-| **panel** | `static/app.js:1626` | — |
+| **panel** | `static/app.js:1639` | — |
 | **tests** | — | `tests/js/libro_vacio_o_rancio.test.js:4`, `tests/test_orderbook_frescura.py:1`, `tests/test_orderbook_frescura.py:119` |
 
 **La llama el panel: es superficie de producto.**
