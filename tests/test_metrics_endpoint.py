@@ -6,6 +6,7 @@ durante varias versiones. Estos tests ejercitan el endpoint de verdad, no su tex
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -74,14 +75,104 @@ async def test_prometheus_metrics_renders_scalp_runtime_values(monkeypatch: pyte
     assert "coinalyze_scalp_binance_book_reconnect_total 7" in body
 
 
-def test_lag_columns_are_cast_to_float8_so_json_stays_numeric() -> None:
-    """EXTRACT(EPOCH ...) devuelve numeric -> asyncpg da Decimal -> el JSON sale como string."""
+# ---------------------------------------------------------------------------
+# EXTRACT(EPOCH ...) TIENE QUE LLEGAR AL JSON COMO NUMERO, NO COMO Decimal
+# ---------------------------------------------------------------------------
+# LA INTENCION NO CAMBIA Y SIGUE SIENDO BUENA: `EXTRACT(EPOCH ...)` devuelve `numeric`,
+# asyncpg lo entrega como `Decimal`, y un `Decimal` NO es serializable a JSON. Esta regla
+# protege hoy 25 lineas reales de lag, edad y span en tres modulos.
+#
+# LO QUE CAMBIA ES LA REGLA, y el motivo se midio contra el espejo por asyncpg el 2026-09-06
+# -no por psql, que devuelve texto y no distingue-:
+#
+#     sin cast    -> Decimal   json.dumps FALLA
+#     ::numeric   -> Decimal   json.dumps FALLA          <- igual de peligroso que sin cast
+#     ::float8    -> float     json.dumps ok
+#     ::real      -> float     json.dumps ok
+#     ::bigint    -> int       json.dumps ok
+#     ::int       -> int       json.dumps ok
+#
+# O sea que **los casts que salvan del Decimal son varios, no uno**. Exigir literalmente
+# `::float8` no era la regla: era UNO de sus casos.
+#
+# Y POR QUE SE TOCA AHORA, con el caso que lo destapo: `signal_base_rate` usa
+# `(EXTRACT(EPOCH FROM o.window_start)/60/$4)::bigint AS blk` como CLAVE DE AGRUPACION de una
+# cadena de CTEs. `blk` no sale en la respuesta -el SELECT final publica 10 columnas y
+# ninguna es `blk`- y `::bigint` da un `int`, asi que el peligro que esta regla describe no
+# puede materializarse ahi. Pero lo decisivo no es eso: **obedecer la regla literal ROMPE la
+# consulta**. Medido contra 140, la misma consulta con `::float8` en vez de `::bigint`:
+#
+#     ::bigint  -> 605 bloques, 13 717 observaciones, todas las cifras
+#     ::float8  -> 0 bloques, todo null
+#
+# Con un `float8` la clave deja de ser un entero, cada fila cae en su propio grupo, el JOIN
+# entre señal y base no encuentra nada y la tarjeta publicaria `available: false` **sin
+# error**. El cast que la regla exigia no era innecesario: era incorrecto.
+#
+# LO QUE NO SE HACE, y se dice para que nadie lo intente luego: no se afloja a «cualquier
+# cast» -`::numeric` y `::text` siguen fallando- y no hay lista de excepciones por linea ni
+# por nombre de columna, que envejeceria en silencio. La regla se escribe mejor y punto.
+#
+# `\b` al final de la alternancia NO es adorno: sin el, `::INT` casaria dentro de
+# `::INTERVAL`, que no es un numero.
+CASTS_QUE_ASYNCPG_DA_COMO_NUMERO = re.compile(
+    r"::\s*(float8|float4|double\s+precision|real|bigint|integer|int8|int4|int)\b",
+    re.IGNORECASE,
+)
+
+
+def _publica_epoch_sin_cast_numerico(line: str) -> bool:
+    """True si la linea saca un EXTRACT(EPOCH ...) con nombre y NO lo lleva a un tipo que
+    asyncpg entregue como numero nativo de Python."""
+    upper = line.upper()
+    if "EXTRACT(EPOCH" not in upper or " AS " not in upper:
+        return False
+    return CASTS_QUE_ASYNCPG_DA_COMO_NUMERO.search(line) is None
+
+
+def test_extract_epoch_llega_al_json_como_numero_y_no_como_decimal() -> None:
+    """EXTRACT(EPOCH ...) devuelve numeric -> asyncpg da Decimal -> el JSON no se puede serializar.
+
+    (Antes se llamaba `test_lag_columns_are_cast_to_float8_so_json_stays_numeric`. Se renombro
+    porque el nombre decia `float8` y la regla acepta varios tipos: una etiqueta que dice una
+    cosa y un criterio que comprueba otra es justo lo que este arnes persigue.)
+    """
     for name in ("app/api.py", "app/ai_context.py", "app/scalp_logic.py"):
         source = (ROOT / name).read_text(encoding="utf-8")
         for line in source.splitlines():
-            upper = line.upper()
-            if "EXTRACT(EPOCH" in upper and " AS " in upper:
-                assert "::float8" in line, f"{name}: falta cast ::float8 en {line.strip()}"
+            assert not _publica_epoch_sin_cast_numerico(line), (
+                f"{name}: EXTRACT(EPOCH ...) con nombre y sin cast a un tipo que asyncpg "
+                f"entregue como numero (float8/real/bigint/int): {line.strip()}"
+            )
+
+
+def test_el_guardia_del_epoch_sigue_cazando_lo_que_se_escribio_para_cazar() -> None:
+    """EL CONTROL DE LA REGLA, y sin el la regla nueva no se puede defender.
+
+    Al ensanchar un guardia hay que demostrar que sigue atrapando el caso original. Estas
+    son lineas de mentira con veredicto conocido: las cuatro primeras TIENEN que enrojecer.
+    """
+    debe_fallar = [
+        # el caso para el que se escribio la regla: sin cast ninguno
+        "EXTRACT(EPOCH FROM now()-updated_at) AS lag_seconds",
+        # el otro camino al mismo Decimal, y por eso «cualquier cast» no vale
+        "EXTRACT(EPOCH FROM now()-updated_at)::numeric AS lag_seconds",
+        # un cast que no es numero: `::INT` no puede casar dentro de `::INTERVAL`
+        "EXTRACT(EPOCH FROM now()-updated_at)::interval AS ventana",
+        "EXTRACT(EPOCH FROM now()-updated_at)::text AS lag_seconds",
+    ]
+    debe_pasar = [
+        "EXTRACT(EPOCH FROM now()-updated_at)::float8 AS lag_seconds",
+        "EXTRACT(EPOCH FROM now()-ts)::real AS age_seconds",
+        "(EXTRACT(EPOCH FROM o.window_start)/60/$4)::bigint AS blk",
+        "(EXTRACT(EPOCH FROM ts)/86400)::integer AS dia",
+        # sin nombre no publica nada: la regla no aplica
+        "WHERE EXTRACT(EPOCH FROM now()-ts) > 60",
+    ]
+    for linea in debe_fallar:
+        assert _publica_epoch_sin_cast_numerico(linea), f"deberia enrojecer: {linea}"
+    for linea in debe_pasar:
+        assert not _publica_epoch_sin_cast_numerico(linea), f"NO deberia enrojecer: {linea}"
 
 
 @pytest.mark.parametrize(
