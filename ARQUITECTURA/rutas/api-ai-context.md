@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_context` · `app/api.py:2724` (cuerpo hasta la 2737) · decorador en la linea 2723.
+Handler `ai_context` · `app/api.py:2978` (cuerpo hasta la 2991) · decorador en la linea 2977.
 
 ## Parametros de entrada
 
@@ -360,7 +360,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:2733` | el propio handler |
+| 422 | — | `app/api.py:2987` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -372,7 +372,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:214`, `harness/checks/K43-foto-unica.sh:215`, `harness/checks/K43-foto-unica.sh:253` _(+1)_ | `harness/checks/K43-foto-unica.sh:7`, `harness/checks/K43-foto-unica.sh:17`, `harness/checks/K43-foto-unica.sh:251`, `harness/checks/K84-dos-matrices-una-cifra.sh:33` |
 | **readme** | — | `README.md:62`, `README.md:414`, `README.md:518` |
-| **tests** | — | `tests/test_metrics_endpoint.py:131`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:111`, `tests/test_pr22_cvd_semantics.py:1182` |
+| **tests** | — | `tests/test_metrics_endpoint.py:222`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:111`, `tests/test_pr22_cvd_semantics.py:1182` |
 
 **No la llama el panel**, pero si 5 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.

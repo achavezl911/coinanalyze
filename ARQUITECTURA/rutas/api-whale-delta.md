@@ -110,7 +110,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:66`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:103`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:57` | `harness/checks/K52b-la-ruta-no-falla-abierta.sh:6`, `harness/checks/K59-whale-vota-cero.sh:15` |
-| **panel** | `static/app.js:1561` | — |
+| **panel** | `static/app.js:1611` | — |
 | **readme** | — | `README.md:408` |
 | **tests** | — | `tests/test_data_gaps.py:325` |
 

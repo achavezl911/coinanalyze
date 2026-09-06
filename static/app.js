@@ -1315,7 +1315,7 @@ function renderBarriers(result) {
   if (sub) { const delta = asNumber(live.delta_ratio_15m); sub.textContent = `Precio ${money(result.current_price, 2)} · delta 15m ${delta === null ? '—' : pct(delta * 100, 1)} · book ${number(live.book_imbalance_l5, 2)}`; }
 }
 
-function horizonCard({ name, time, action, side, thesis, trigger, invalidation, metric, link, linkText }) {
+function horizonCard({ name, time, action, side, thesis, trigger, invalidation, metric, baseRate, link, linkText }) {
   const node = document.createElement('article');
   node.className = `horizon-card ${side === 'LONG' ? 'positive' : side === 'SHORT' ? 'negative' : 'neutral'}`;
   const head = document.createElement('div');
@@ -1337,7 +1337,11 @@ function horizonCard({ name, time, action, side, thesis, trigger, invalidation, 
   thesisNode.textContent = thesis || 'Sin una ventaja confirmada en este horizonte.';
   const plan = document.createElement('dl');
   plan.className = 'horizon-plan';
-  for (const [label, value] of [['Confirmar', trigger], ['Salir si', invalidation], ['Evidencia', metric]]) {
+  // 'Tasa base' va DESPUES de 'Evidencia' y solo si hay cifra. Un renglon fijo que a veces
+  // dice "—" invita a leer el hueco como un cero; si no hay medida, no hay renglon.
+  const filas = [['Confirmar', trigger], ['Salir si', invalidation], ['Evidencia', metric]];
+  if (baseRate) filas.push(['Tasa base', baseRate]);
+  for (const [label, value] of filas) {
     const row = document.createElement('div');
     const dt = document.createElement('dt');
     const dd = document.createElement('dd');
@@ -1379,6 +1383,51 @@ function renderDecisionBoard(dashboard, trend, swing, structureDetail, confidenc
   const shortHorizon = persistencia.available && persistencia.etiqueta
     ? persistencia.etiqueta
     : 'persistencia sin medida';
+  // LA TASA BASE, CON SU ALCANCE PEGADO. Viene de /api/dashboard/state -> signal_base_rate,
+  // que la mide sobre `signal_outcome`. K95 comprueba que lo que se pinta aqui es lo que sale
+  // de la tabla.
+  //
+  // LO QUE ESTA FRASE NO DICE, Y ES DELIBERADO: no dice «el sistema pierde». Lo medido es que
+  // la señal NO anticipa nada -ni a favor ni en contra: la ventaja neta es 0.0003 % con t
+  // 0.13 sobre 1191 bloques- y que ENTRA AL PEOR PRECIO de su propia ventana. Eso es una
+  // afirmacion sobre la EJECUCION, no sobre el acierto, y la diferencia decide si lo que hay
+  // que arreglar es como se entra o que se decide.
+  //
+  // Y EL ALCANCE VA EN LA MISMA FRASE, no en un tooltip: la unica ventana con señal son ~27
+  // dias que caen en el percentil 95.9 de la historia comparable, y la mitad de esa historia
+  // son ventanas negativas que no hemos visto. Una tasa base medida en el mejor 5 % de dos
+  // años tiene que decir que lo es, o es un numero limpio y falso.
+  const tasaBase = dashboard.signal_base_rate || {};
+  const alcance = tasaBase.alcance || {};
+  const shortBaseRate = tasaBase.available
+    ? [
+        // CUATRO DECIMALES Y NO TRES: con tres, una ventaja neta de 0.0003 se pinta como
+        // "+0.000%" y se lee como un cero redondeado en vez de como la cifra que es.
+        //
+        // DOS COSTES DE ENTRADA Y LOS DOS SE DICEN. El primero va ponderado POR BLOQUE,
+        // igual que la ventaja, y es el que se puede comparar con ella: comparar dos medias
+        // ponderadas de forma distinta no decompone nada. El segundo va por OPERACION, que
+        // es lo que le cuesta a quien opera, porque cada entrada es una observacion y no un
+        // bloque. La diferencia entre 0.0531 y 0.0479 es ponderacion, no señal.
+        `Coste de entrada ${pct(tasaBase.coste_entrada_pct, 4)} por bloque`
+          + (tasaBase.coste_entrada_por_obs_pct === null || tasaBase.coste_entrada_por_obs_pct === undefined
+              ? '' : ` (${pct(tasaBase.coste_entrada_por_obs_pct, 4)} por operación)`)
+          + ` · ventaja neta ${pct(tasaBase.ventaja_neta_pct, 4)}`
+          + (tasaBase.t_neta === null || tasaBase.t_neta === undefined ? '' : ` (t ${number(tasaBase.t_neta, 3)})`),
+        // «BLOQUES» SON BLOQUES DE TIEMPO DISTINTOS, no pares (bloque, lado). Los dos lados
+        // del mismo bloque leen el MISMO tramo de mercado: no son dos muestras de tiempo, y
+        // publicarlos como si lo fueran doblaba la muestra en la unica cifra cuyo proposito
+        // es ser honesta sobre el tamaño de muestra. Encontrado por el operador el 09-06.
+        `sobre ${number(tasaBase.observaciones, 0)} observaciones en ${number(tasaBase.n_efectiva, 0)} bloques distintos de ${number(tasaBase.horizonte_min, 0)} min, ${number(tasaBase.dias_de_arco, 1)} días de arco.`,
+        tasaBase.lectura === 'el coste de entrada se come la ventaja'
+          ? 'El coste de entrada es del orden de la ventaja: es un problema de ejecución, no de acierto.'
+          : 'Hay ventaja direccional medible además del coste de entrada.',
+        alcance.available
+          ? `Alcance: esos ${number(alcance.dias_de_la_ventana, 0)} días están en el percentil ${number(alcance.percentil_de_la_ventana, 1)} de ${number(alcance.ventanas_comparadas, 0)} ventanas comparables (mediana ${pct(alcance.mediana_historica_pct, 2)}); ${number(alcance.ventanas_negativas, 0)} de ellas fueron negativas y no están en la muestra.`
+          : 'Alcance: no se pudo situar la ventana en la historia, así que esta cifra no dice cuán representativa es.',
+      ].join(' ')
+    : `Sin medida${tasaBase.motivo ? ` (${tasaBase.motivo})` : ''}`;
+
   const scalpState = String(scalp.state || '').toLowerCase();
   const shortSide = scalpState.includes('long') ? 'LONG' : scalpState.includes('short') ? 'SHORT' : 'WAIT';
   let shortAction = shortSide === 'WAIT' ? 'ESPERAR' : `VIGILAR ${shortSide}`;
@@ -1447,6 +1496,7 @@ function renderDecisionBoard(dashboard, trend, swing, structureDetail, confidenc
       name: 'Corto plazo', time: shortHorizon, action: shortAction, side: shortAction.includes(shortSide) ? shortSide : 'WAIT',
       thesis: shortThesis, trigger: shortTrigger, invalidation: shortInvalidation,
       metric: `Scalp ${number(scalp.long_score, 0)}L / ${number(scalp.short_score, 0)}S · barrera ${barriers.decision || 'sin lectura'}`,
+      baseRate: shortBaseRate,
       link: '#liquidez', linkText: 'Ver liquidez y barreras',
     }),
     horizonCard({
