@@ -20,7 +20,11 @@ mkdir -p "$DIR/t/app" "$DIR/t/harness/bin" "$DIR/t/sql"
 cp "$ORIG/harness/bin/arquitectura" "$DIR/t/harness/bin/" || exit 2
 cp "$ORIG/sql/schema.sql" "$DIR/t/sql/" || exit 2
 
-SERIE="/api/ohlcv /api/oi /api/liquidations /api/whale/delta /api/daily /api/cvd /api/cvd/spot"
+# RUTAS INVENTADAS, Y ES OBLIGATORIO. Si el fixture nombrara las 7 reales, el detector de
+# consumidores del mapa acreditaria a este control como consumidor suyo: medido, la de ohlcv
+# pasaba de 7 llamadas a 11. Por eso el check acepta K02_SERIE. Ninguno de estos caminos
+# existe en app/api.py, asi que el mapa no puede confundirlos con nada.
+SERIE="/api/zzz-k02-a /api/zzz-k02-b /api/zzz-k02-c /api/zzz-k02-d /api/zzz-k02-e /api/zzz-k02-f /api/zzz-k02-g"
 
 # --- el api.py de mentira --------------------------------------------------------------
 # Cada ruta se genera con tres interruptores: si publica data_gaps (el suelo), con que feed
@@ -54,7 +58,7 @@ printf 'async def record_event_stream_loss(**kw): ...\nasync def record_data_gap
 fallos=0; pasan=0
 caso() {  # <nombre> <rc> <patron>
   local nombre="$1" esperado="$2" patron="$3" out rc ok=1
-  out=$(REPO="$DIR/t" bash "$CHK" 2>&1); rc=$?
+  out=$(REPO="$DIR/t" K02_SERIE="$SERIE" bash "$CHK" 2>&1); rc=$?
   [ "$rc" = "$esperado" ] || ok=0
   if [ -n "$patron" ] && ! printf '%s' "$out" | grep -qE "$patron"; then ok=0; fi
   if [ "$ok" = 1 ]; then
@@ -79,11 +83,11 @@ caso "N1 las 7 publican data_gaps" 0 "los 7 endpoints de serie publican"
 
 # P1 · EL DEFECTO QUE ESTE CHECK EXISTE PARA CAZAR: una serie que sirve cubos y no dice si le
 # falta alguno. Es lo que pasaba cuando K02 se escribio.
-{ ruta /api/ohlcv 0 ohlcv_1min 0
-  for r in /api/oi /api/liquidations /api/whale/delta /api/daily /api/cvd /api/cvd/spot; do
+{ ruta /api/zzz-k02-a 0 ohlcv_1min 0
+  for r in /api/zzz-k02-b /api/zzz-k02-c /api/zzz-k02-d /api/zzz-k02-e /api/zzz-k02-f /api/zzz-k02-g; do
     ruta "$r" 1 ohlcv_1min 0; done; } | monta
 caso "P1 una ruta sin data_gaps enrojece" 1 "NO declaran su ventana"
-caso "P2 y la nombra" 1 "/api/ohlcv"
+caso "P2 y la nombra" 1 "/api/zzz-k02-a"
 
 todas 0 ohlcv_1min 0
 caso "P3 las 7 sin data_gaps: 7 de 7" 1 "7 de 7 endpoints"
@@ -111,7 +115,7 @@ caso "N5 feed con detector: NO se marca como hueca" 0 "enmascarado efectivo: liq
 
 echo
 echo "ANTI-FANTASMA · lo que no se puede medir es NOMED, jamas VERDE"
-{ ruta /api/ohlcv 1 - 0; } | monta
+{ ruta /api/zzz-k02-a 1 - 0; } | monta
 caso "F1 solo 1 de las 7 rutas resuelta: NOMED" 2 "solo se resolvieron"
 
 rm -f "$DIR/t/app/api.py"

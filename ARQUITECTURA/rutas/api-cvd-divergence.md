@@ -110,7 +110,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:102` | `harness/checks/K02-cobertura-hueco.sh:5` |
+| **checks** | `harness/checks/K43-foto-unica.sh:102` | — |
 | **panel** | `static/app.js:1559` | — |
 | **readme** | — | `README.md:405` |
 

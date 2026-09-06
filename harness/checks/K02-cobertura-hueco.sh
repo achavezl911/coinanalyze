@@ -2,7 +2,7 @@
 # K02  la API tiene que declarar el hueco en LOS ENDPOINTS DE SERIE.
 #
 # EL CRITERIO CAMBIO EL 2026-09-06 Y EL VIEJO ESTABA DEL REVES. Enrojecia con «6 de 7
-# endpoints de serie pasan por el enmascarado; sin cubrir: /api/whale/delta» y llevaba ROJO
+# endpoints de serie pasan por el enmascarado; sin cubrir: `whale/delta`» y llevaba ROJO
 # 26 de 27 pasadas guardadas. Al medirlo salio que la ruta acusada es la MEJOR instrumentada
 # de las siete y que dos de las seis «cubiertas» hacen una llamada que no puede enmascarar
 # nada. Las cuatro medidas, cada una con su instrumento:
@@ -17,13 +17,13 @@
 #      que llama desde fuera es app/scalp_collector.py:590 record_event_stream_loss(), para
 #      `liquidations`. NO HAY DETECTOR DE HUECOS PARA spot_trades.
 #
-#   2. POR ESO /api/whale/delta NO ENMASCARA, y esta escrito en app/api.py:1067: seria una
+#   2. POR ESO `whale/delta` NO ENMASCARA, y esta escrito en app/api.py:1067: seria una
 #      llamada hueca. En su lugar declara la cobertura POR CUBO -covered_seconds_min,
 #      short_minutes, unknown_minutes, minutes_present- y es la UNICA de las siete que lo
 #      hace. Declara MAS, no menos.
 #
 #   3. PERO ESE MOTIVO, SOLO, NO DISTINGUE, y por eso no vale como exencion a secas:
-#      /api/cvd/spot (api.py:747-794) usa el MISMO feed `spot_trades` y llama al enmascarado
+#      `cvd/spot` (api.py:747-794) usa el MISMO feed `spot_trades` y llama al enmascarado
 #      igualmente. Su llamada tampoco puede honrarse. Es inofensiva -sin huecos apuntados no
 #      enmascara nada- pero contarla como cobertura era el error del criterio viejo.
 #
@@ -32,7 +32,7 @@
 #      declared_series_response un bloque `coverage` y un `data_gaps` con estado. Medido en
 #      140 el 2026-09-06 con TODO=1 y symbol=BTCUSDT_PERP.A: las siete traen `data_gaps`, y
 #      seis traen coverage.served_window{complete,expected_buckets,observed_buckets};
-#      /api/daily trae `coverage_note` porque su fila es una sesion y no un cubo.
+#      `daily` trae `coverage_note` porque su fila es una sesion y no un cubo.
 #
 # QUE SE GATEA AHORA. El SUELO -toda ruta de serie declara su ventana y su estado de hueco-
 # y no el MECANISMO. Se deriva del arbol: la ruta tiene que devolver declared_series_response.
@@ -40,8 +40,8 @@
 # comprueba. Ademas se CUENTA, sin enrojecer, el instrumento fino de cada una, que es donde
 # esta la informacion que el criterio viejo destruia al reducirlo todo a un si/no.
 #
-# LO QUE ESTE CHECK DEJA DICHO Y NO ARREGLA: /api/cvd/spot lee `spot_trades_agg` -la misma
-# tabla y el mismo WHERE que /api/whale/delta, api.py:761 contra :1029- que tiene
+# LO QUE ESTE CHECK DEJA DICHO Y NO ARREGLA: `cvd/spot` lee `spot_trades_agg` -la misma
+# tabla y el mismo WHERE que `whale/delta`, api.py:761 contra :1029- que tiene
 # covered_seconds, y NO publica cobertura por cubo. Un cubo suyo construido sobre minutos
 # cortos es indistinguible de uno completo. Anadir los cuatro agregados es una copia de lo
 # que ya hace whale/delta, pero cambia la forma de la respuesta -y eso es producto-, asi que
@@ -55,8 +55,15 @@ B=/srv/coinanalyze/harness; . "$B/env"
 REPO=${_REPO_LLAMANTE:-${REPO:-/srv/coinanalyze/repo}}
 API="$REPO/app/api.py"
 # El sujeto sigue escrito a mano y sigue siendo correcto decirlo: son las rutas que sirven
-# una SERIE de cubos. /api/funding-context y /api/oi-context no la sirven (ver K03).
-SERIE="/api/ohlcv /api/oi /api/liquidations /api/whale/delta /api/daily /api/cvd /api/cvd/spot"
+# una SERIE de cubos. `funding-context` y `oi-context` no la sirven (ver K03).
+#
+# SE PUEDE SOBREESCRIBIR, y no es un capricho: un control que ejercite este check tiene que
+# fabricar un api.py con estas rutas dentro, y entonces el detector de consumidores del mapa
+# acredita al FIXTURE como consumidor de rutas reales. Medido: con el control nombrandolas,
+# /api/ohlcv pasaba de 7 llamadas a 11 y /api/cvd de 2 a 4. Con K02_SERIE el control usa
+# nombres inventados y el mapa no se entera de que existe. Es la quinta autocontaminacion de
+# esta campana y la primera que se arregla en el sujeto en vez de en la prosa.
+SERIE=${K02_SERIE:-"/api/ohlcv /api/oi /api/liquidations /api/whale/delta /api/daily /api/cvd /api/cvd/spot"}
 
 [ -r "$API" ] || { echo "NO MEDIDO: no se puede leer app/api.py"; exit 2; }
 command -v python3 >/dev/null 2>&1 || { echo "NO MEDIDO: no hay python3"; exit 2; }
@@ -99,9 +106,9 @@ for fn in ast.walk(arbol):
         continue
     cuerpo = ast.get_source_segment(src, fn) or ""
     # EL SUELO SE RECONOCE POR LO QUE PUBLICA, NO POR A QUIEN LLAMA. La primera version
-    # exigia declared_series_response y dejaba fuera a /api/daily, que llama a
+    # exigia declared_series_response y dejaba fuera a `daily`, que llama a
     # declared_gap_windows() y monta el bloque a mano (api.py:1988). Produccion decia que
-    # /api/daily SI declara, asi que el proxy estaba mal y gano el instrumento.
+    # `daily` SI declara, asi que el proxy estaba mal y gano el instrumento.
     dat = {"suelo": '"data_gaps"' in cuerpo or "'data_gaps'" in cuerpo,
            "enmascara": [], "por_cubo": "covered_seconds" in cuerpo,
            "tablas": sorted(t for t in CON_CS if t in cuerpo)}

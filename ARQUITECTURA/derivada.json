@@ -26456,11 +26456,11 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K02-cobertura-hueco.sh:66",
             "harness/checks/K03-hueco-declarado.sh:46"
           ],
           "menciones": [
-            "harness/checks/K02-cobertura-hueco.sh:5",
+            "harness/checks/K02-cobertura-hueco.sh:63",
             "harness/checks/K31-cubos.py:40",
             "harness/checks/K88-control.bash:324",
             "harness/checks/K88-control.bash:416",
@@ -26733,9 +26733,7 @@
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:102"
           ],
-          "menciones": [
-            "harness/checks/K02-cobertura-hueco.sh:5"
-          ]
+          "menciones": []
         },
         "panel": {
           "llamadas": [
@@ -26753,7 +26751,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 2,
-        "n_menciones": 2,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -26883,11 +26881,10 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K02-cobertura-hueco.sh:66",
             "harness/checks/K03-hueco-declarado.sh:46"
           ],
           "menciones": [
-            "harness/checks/K02-cobertura-hueco.sh:5",
             "harness/checks/K31-cubos.py:40",
             "harness/checks/K88-control.bash:416",
             "harness/checks/K88-control.bash:458"
@@ -26903,7 +26900,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 2,
-        "n_menciones": 5,
+        "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -27043,14 +27040,13 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K02-cobertura-hueco.sh:66",
             "harness/checks/K03-hueco-declarado.sh:161",
             "harness/checks/K03-hueco-declarado.sh:164",
             "harness/checks/K43-foto-unica.sh:102",
             "harness/checks/K43-foto-unica.sh:314"
           ],
           "menciones": [
-            "harness/checks/K02-cobertura-hueco.sh:37",
             "harness/checks/K03-hueco-declarado.sh:8",
             "harness/checks/K03-hueco-declarado.sh:15",
             "harness/checks/K03-hueco-declarado.sh:153",
@@ -27086,7 +27082,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 9,
-        "n_menciones": 10,
+        "n_menciones": 9,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -28537,7 +28533,6 @@
             "harness/checks/K43-foto-unica.sh:142"
           ],
           "menciones": [
-            "harness/checks/K02-cobertura-hueco.sh:24",
             "harness/checks/K03-hueco-declarado.sh:29"
           ]
         },
@@ -28551,7 +28546,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 4,
-        "n_menciones": 2,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -29473,7 +29468,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K02-cobertura-hueco.sh:66",
             "harness/checks/K03-hueco-declarado.sh:46"
           ],
           "menciones": [
@@ -29967,7 +29962,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K02-cobertura-hueco.sh:66",
             "harness/checks/K03-hueco-declarado.sh:46",
             "harness/checks/K20-cincoxx.sh:68",
             "harness/checks/K20-cincoxx.sh:83",
@@ -29975,7 +29970,7 @@
             "harness/checks/K43-foto-unica.sh:102"
           ],
           "menciones": [
-            "harness/checks/K02-cobertura-hueco.sh:11",
+            "harness/checks/K02-cobertura-hueco.sh:63",
             "harness/checks/K03-hueco-declarado.sh:7",
             "harness/checks/K43-foto-unica.sh:336"
           ]
@@ -30130,7 +30125,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K02-cobertura-hueco.sh:66",
             "harness/checks/K03-hueco-declarado.sh:46",
             "harness/checks/K43-foto-unica.sh:103"
           ],
@@ -30295,7 +30290,6 @@
             "harness/checks/K38-referencia-por-tiempo.sh:34"
           ],
           "menciones": [
-            "harness/checks/K02-cobertura-hueco.sh:25",
             "harness/checks/K03-hueco-declarado.sh:30",
             "harness/checks/K38-referencia-por-tiempo.sh:7"
           ]
@@ -30310,7 +30304,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 3,
-        "n_menciones": 4,
+        "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -35278,13 +35272,12 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K02-cobertura-hueco.sh:46",
+            "harness/checks/K02-cobertura-hueco.sh:66",
             "harness/checks/K03-hueco-declarado.sh:46",
             "harness/checks/K43-foto-unica.sh:103",
             "harness/checks/K52b-la-ruta-no-falla-abierta.sh:57"
           ],
           "menciones": [
-            "harness/checks/K02-cobertura-hueco.sh:37",
             "harness/checks/K52b-la-ruta-no-falla-abierta.sh:6",
             "harness/checks/K59-whale-vota-cero.sh:15"
           ]
@@ -35311,7 +35304,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 5,
-        "n_menciones": 5,
+        "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": false
       },
