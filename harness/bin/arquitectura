@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import os
 import re
@@ -1096,7 +1097,18 @@ def consumidores_de(repo: Path, camino: str) -> dict:
                 if not pat.search(RE_BASE_URL.sub(" ", linea)):
                     continue
                 sitio = f"{p.relative_to(repo).as_posix()}:{n}"
-                es_texto = (n in prosa) or bool(RE_COMENTARIO.match(linea)) or p.suffix == ".md"
+                # UN `@app.get("/api/x")` NO ES UNA LLAMADA: es la DECLARACION, o una cita de
+                # ella. `app/api.py` no esta en CONSUMIDORES, asi que si ese texto aparece
+                # aqui es porque alguien lo escribio para BUSCARLO. Caso real y medido:
+                #   tests/test_pr24_daily_historical_integrity.py:89
+                #   body = text[start : text.index('@app.get("/api/snapshot")', start)]
+                # es un test que PARSEA api.py, y el mapa lo acreditaba como consumidor de
+                # /api/snapshot. Por eso la ficha `api-snapshot.md` decia «Nadie la llama» y
+                # parecia mentir: quien mentia era el mapa. La ruta es SUJETO del test, no su
+                # consumidor. Se marca como MENCION, que es lo que es.
+                es_decorador = re.search(r"@\w+\.(get|post|put|delete|patch)\(", linea) is not None
+                es_texto = ((n in prosa) or bool(RE_COMENTARIO.match(linea))
+                            or p.suffix == ".md" or es_decorador)
                 (menciones if es_texto else llamadas).append(sitio)
         if llamadas or menciones:
             out[etiqueta] = {"llamadas": llamadas, "menciones": menciones}
@@ -1356,6 +1368,53 @@ def md_lista(items, vacio="_ninguna_"):
     return "\n".join(f"- {i}" for i in items) if items else vacio
 
 
+MARCA_VERSION = 1
+
+
+def hechos_de(r: dict) -> dict:
+    """Los HECHOS sobre los que la capa declarada puede afirmar algo. Nada mas.
+
+    ESTA FUNCION ES LA MARCA DE AGUA ENTERA, y cada exclusion se gano midiendo:
+
+    · `consumo` entra como PREDICADOS, no como cuentas. Las siete reglas del brazo 5 de K88
+      comparan contra CERO o contra un booleano -`n_llamadas == 0`, `n_menciones == 0`,
+      `sin_ninguno`, `llamada_desde_el_panel`-; NINGUNA compara un numero. Luego el hecho que
+      la prosa puede afirmar es «no la llama nadie», no «la llaman cinco».
+      MEDIDO: con las cuentas dentro, el paquete «rojos viejos» movia SEIS de las diez fichas
+      que toco -todas por `n_menciones` bajando 1 al reescribir una cabecera de check-, y de
+      esas seis solo DOS citaban el censo. Con predicados, las diez quedan quietas.
+
+    · LOS VALORES DE `campos` NO ENTRAN, solo sus CLAVES. `campos` es
+      `{"rows": "literal en app/api.py:428"}`: el valor lleva el numero de linea de `api.py`,
+      asi que un comentario nuevo arriba movia la marca de media casa sin cambiar nada.
+      El hecho es QUE campos publica, no donde esta escrito cada uno.
+
+    · `consumidores` NO ENTRA, por lo mismo: es una lista de `fichero:linea`.
+
+    Lo que queda es lo que el operador propuso en F6 §3 y lo que el brazo 5 vigila:
+    consumo, claves temporales, nombres de campo y tablas leidas.
+    """
+    c = r.get("consumo") or {}
+    campos = r.get("campos") or {}
+    return {
+        "consumo": {
+            "hay_llamadas":   bool(c.get("n_llamadas", 0)),
+            "hay_menciones":  bool(c.get("n_menciones", 0)),
+            "sin_ninguno":    bool(c.get("sin_ninguno")),
+            "solo_mencion":   bool(c.get("solo_mencion")),
+            "desde_el_panel": bool(c.get("llamada_desde_el_panel")),
+        },
+        "claves_temporales": sorted(r.get("claves_temporales") or []),
+        "campos": sorted(campos.keys() if isinstance(campos, dict) else campos),
+        "tablas_lee": sorted(r.get("tablas_lee") or []),
+    }
+
+
+def marca_de(r: dict) -> str:
+    canon = json.dumps(hechos_de(r), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canon.encode("utf-8")).hexdigest()[:16]
+
+
 def escribe(repo: Path, destino: Path, datos: dict) -> list[Path]:
     escritos = []
     (destino / "rutas").mkdir(parents=True, exist_ok=True)
@@ -1363,6 +1422,19 @@ def escribe(repo: Path, destino: Path, datos: dict) -> list[Path]:
     # --- 7a · el JSON, que es la fuente para maquinas y lo que K88 compara -------------
     p = destino / "derivada.json"
     p.write_text(json.dumps(datos, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    escritos.append(p)
+
+    # --- 7a-bis · LA MARCA DE AGUA · el sha de los hechos de cada ruta -----------------
+    # No dice si la ficha declarada es VERDAD -eso es indecidible sobre prosa-. Dice si
+    # alguien la ha MIRADO desde que sus hechos cambiaron. La compara el brazo 6 de K88
+    # contra ARQUITECTURA/declarada/revisado.tsv, que se escribe A MANO.
+    # Se emite aparte de derivada.json a proposito: asi el diff de una regeneracion enseña
+    # en un fichero de 70 lineas QUE rutas movieron un hecho, sin leer 2 MB de JSON.
+    p = destino / "revision.json"
+    p.write_text(json.dumps({
+        "version_marca": MARCA_VERSION,
+        "rutas": {r["camino"]: marca_de(r) for r in datos["rutas"]},
+    }, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
     escritos.append(p)
 
     # --- 7b · un fichero por ruta -----------------------------------------------------

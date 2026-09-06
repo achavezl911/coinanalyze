@@ -52,6 +52,25 @@ rm -rf "$LIMPIO/app/__pycache__" 2>/dev/null
 python3 "$LIMPIO/harness/bin/arquitectura" --repo "$LIMPIO" >/dev/null 2>&1 || {
   echo "NO MEDIDO: el generador no corre sobre la copia"; exit 2; }
 
+# LA MARCA DE AGUA SE SIEMBRA EN EL FIXTURE BASE, y no es un detalle: el brazo 6 dice NOMED
+# si falta revisado.tsv, asi que sin sembrarlo TODOS los casos que esperan rc=0 caerian por
+# ahi y probarian otra cosa. Se siembra AL DIA -copiando revision.json- para que el estado
+# por defecto del fixture sea "nadie tiene nada pendiente" y cada caso induzca lo suyo.
+_sella() {  # <arbol>
+  python3 - "$1" <<'PYS'
+import json, sys
+from pathlib import Path
+t = Path(sys.argv[1])
+rev = json.load(open(t / "ARQUITECTURA/revision.json"))
+p = t / "ARQUITECTURA/declarada/revisado.tsv"
+p.parent.mkdir(parents=True, exist_ok=True)
+p.write_text("# fixture del control: sellos al dia\n"
+             + "".join(f"{c}\t{s}\tdeadbeef\t2026-01-01\n" for c, s in sorted(rev["rutas"].items())),
+             encoding="utf-8")
+PYS
+}
+_sella "$LIMPIO" || { echo "NO MEDIDO: no se pudo sembrar la marca de agua en la copia"; exit 2; }
+
 # caso <nombre> <rc esperado> <patron que DEBE salir en el mensaje> -- el cuerpo muta $T
 caso() {
   local nombre="$1" esperado="$2" patron="$3"; shift 3
@@ -510,6 +529,200 @@ open(p, "w", encoding="utf-8").write(t.replace(m.group(0), '"linea": 99999', 1))
 PYH1
 }
 caso "H1 deriva invisible al brazo 2" 1 "no coincide con la regeneracion" h1
+
+echo
+echo "MARCA DE AGUA · LA NORMALIZACION · el unico sitio donde esto se hunde"
+# Se prueba la funcion `hechos_de` DIRECTAMENTE, no a traves de K88: la pregunta es si la
+# marca distingue un HECHO de un ruido, y eso se contesta sobre la funcion.
+# El elegible sale de GIT, no de una lista: los ficheros que el paquete «rojos viejos»
+# (9ad124a -> 89ab61a) toco en ARQUITECTURA/rutas/.
+norm=$(python3 - "$ORIG" <<'PYN' 2>&1
+import copy, json, subprocess, sys
+from importlib.machinery import SourceFileLoader
+from pathlib import Path
+REPO = Path(sys.argv[1])
+arq = SourceFileLoader("arq", str(REPO / "harness/bin/arquitectura")).load_module()
+def show(c, p):
+    o = subprocess.run(["git", "-C", str(REPO), "show", f"{c}:{p}"], capture_output=True, text=True)
+    return o.stdout if o.returncode == 0 else None
+ANTES, DESPUES = "9ad124a", "89ab61a"
+ta, tb = show(ANTES, "ARQUITECTURA/derivada.json"), show(DESPUES, "ARQUITECTURA/derivada.json")
+if not ta or not tb:
+    print("NOMED no se pueden leer los dos commits"); raise SystemExit
+da, db = json.loads(ta)["rutas"], json.loads(tb)["rutas"]
+a = {r["camino"]: arq.marca_de(r) for r in da}
+b = {r["camino"]: arq.marca_de(r) for r in db}
+por_f = {f"ARQUITECTURA/rutas/{r['declarada']['fichero'].split('/')[-1]}": r["camino"] for r in db}
+tocadas = subprocess.run(["git", "-C", str(REPO), "diff", "--name-only", f"{ANTES}..{DESPUES}",
+                          "--", "ARQUITECTURA/rutas/"], capture_output=True, text=True).stdout.split()
+res = [f for f in tocadas if por_f.get(f)]
+mov = [f for f in res if a[por_f[f]] != b[por_f[f]]]
+print(f"M1 {len(res)} {len(mov)}")
+# el contrario: cambios de HECHO tienen que mover; ruido, no.
+# LA RUTA DE PRUEBA SE ELIGE POR POSICION, NO POR NOMBRE: escribir un camino real
+# aqui hace que el mapa acredite a este control como consumidor suyo, y el barrido
+# AC1 de mas arriba lo caza. Es la septima vez en estas campanas.
+r0 = next(r for r in db if r["tablas_lee"] and r["campos"] and r["consumo"]["n_llamadas"])
+def prueba(mut):
+    r = copy.deepcopy(r0); mut(r)
+    return arq.marca_de(r) != arq.marca_de(r0)
+print("M2", int(prueba(lambda x: x["tablas_lee"].append("zzz_tabla"))))
+print("M3", int(prueba(lambda x: x["campos"].update({"zzz_campo": "literal en app/api.py:1"}))))
+print("M4", int(prueba(lambda x: x["claves_temporales"].append("as_of"))))
+print("M5", int(prueba(lambda x: x["consumo"].update({"n_llamadas": 0}))))
+print("M6", int(prueba(lambda x: x["consumo"].update({"n_menciones": x["consumo"]["n_menciones"] + 3}))))
+print("M7", int(prueba(lambda x: x["campos"].update({k: "literal en app/api.py:9999" for k in x["campos"]}))))
+PYN
+)
+case "$norm" in
+  NOMED*) fallos=$((fallos + 1)); printf '  [FALLA] %-52s %s\n' "la normalizacion no se pudo medir" "$norm" ;;
+  *)
+    leerm() { printf '%s\n' "$norm" | awk -v k="$1" '$1==k{print $2" "$3}'; }
+    set -- $(leerm M1); n_res=${1:-0}; n_mov=${2:-9}
+    # M1 · EL CONTROL QUE DECIDE, y es el que el encargo exige por su nombre. «rojos viejos»
+    # cambio 10 fichas de rutas/ y no cambio ningun hecho: la marca tiene que quedarse quieta
+    # en las diez. Con `consumo` entero dentro se movian SEIS -todas por n_menciones bajando
+    # 1 al reescribir una cabecera-, y por eso `consumo` entra como PREDICADOS.
+    if [ "$n_res" -ge 10 ] && [ "$n_mov" -eq 0 ]; then
+      pasan=$((pasan + 1)); printf '  [ok   ] %-52s %s de %s quietas\n' "M1 rojos viejos no mueve NINGUNA marca" "$n_res" "$n_res"
+    else
+      fallos=$((fallos + 1)); printf '  [FALLA] %-52s %s movidas de %s\n' "M1 rojos viejos no mueve NINGUNA marca" "$n_mov" "$n_res"
+    fi
+    # M2..M5 · EL CONTRARIO, sin el cual M1 no vale nada: un control que solo sabe decir «no
+    # se movio» no controla nada. Es la leccion del derivada.json que compare consigo mismo.
+    for par in "M2:una tabla mas en tablas_lee:1" "M3:un campo nuevo publicado:1" \
+               "M4:una clave temporal nueva:1" "M5:pasa a no tener llamadas:1" \
+               "M6:SOLO cambia el NUMERO de menciones:0" "M7:SOLO se mueven lineas en campos:0"; do
+      k=${par%%:*}; resto=${par#*:}; etq=${resto%:*}; esp=${resto##*:}
+      got=$(printf '%s\n' "$norm" | awk -v k="$k" '$1==k{print $2}')
+      if [ "${got:-x}" = "$esp" ]; then
+        pasan=$((pasan + 1)); printf '  [ok   ] %-52s %s\n' "$k $etq" "$([ "$esp" = 1 ] && echo 'mueve la marca' || echo 'NO la mueve')"
+      else
+        fallos=$((fallos + 1)); printf '  [FALLA] %-52s esperaba %s, dio %s\n' "$k $etq" "$esp" "${got:-nada}"
+      fi
+    done ;;
+esac
+
+echo
+echo "MARCA DE AGUA · EL BRAZO 6"
+# W1 · una ficha cuyos hechos cambiaron sale SIN REVISAR y NO enrojece. Se induce moviendo el
+# sello de una ruta cualquiera: el elegible sale del propio TSV, no de un nombre tecleado.
+w1() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1; _sella "$T"
+       python3 - "$T" <<'PYW'
+import sys
+from pathlib import Path
+p = Path(sys.argv[1]) / "ARQUITECTURA/declarada/revisado.tsv"
+ls = p.read_text(encoding="utf-8").splitlines()
+for i, l in enumerate(ls):
+    if l.startswith("/"):
+        c = l.split("\t"); c[1] = "0000000000000000"; ls[i] = "\t".join(c); break
+p.write_text("\n".join(ls) + "\n", encoding="utf-8")
+PYW
+}
+caso "W1 un sello viejo: SIN REVISAR, y NO enrojece" 0 "1 de [0-9]+ ficha\(s\) SIN REVISAR" w1
+
+# W2 · ANTI-FANTASMA DEL BRAZO: con todos los sellos al dia tiene que decir CERO. Sin este
+# caso, W1 pasaria igual si el brazo dijera "sin revisar" siempre.
+w2() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1; _sella "$T"; }
+caso "W2 todos los sellos al dia: 0 SIN REVISAR" 0 "0 de [0-9]+ ficha\(s\) SIN REVISAR" w2
+
+# W3 · REVISADO.TSV NO PUEDE ENVEJECER EN SILENCIO. Si a una ruta le falta su fila, el brazo
+# no la vigila y tiene que DECIRLO. Es la frase de F6 §3 convertida en caso.
+w3() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1; _sella "$T"
+       python3 - "$T" <<'PYW'
+import sys
+from pathlib import Path
+p = Path(sys.argv[1]) / "ARQUITECTURA/declarada/revisado.tsv"
+ls = [l for l in p.read_text(encoding="utf-8").splitlines()]
+fuera = next(i for i, l in enumerate(ls) if l.startswith("/"))
+del ls[fuera]
+p.write_text("\n".join(ls) + "\n", encoding="utf-8")
+PYW
+}
+caso "W3 una ruta sin fila en revisado.tsv: se dice" 0 "sin fila en revisado.tsv" w3
+
+# W4 · y la otra direccion: un sello de una ruta que ya no existe. Sin este brazo el fichero
+# se vuelve un cementerio que "revisa" fichas que nadie escribe. Es la HUERFANA de K88/K31.
+w4() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1; _sella "$T"
+       printf '/api/zzz-que-no-existe\t0000000000000000\tdeadbeef\t2026-01-01\n' \
+         >> "$T/ARQUITECTURA/declarada/revisado.tsv"; }
+caso "W4 sello HUERFANO -su ruta ya no existe-" 0 "HUERFANO" w4
+
+# W5 · CERO SELLOS NO ES CERO SIN REVISAR. Si el fichero se vacia o cambia de formato,
+# "0 sin revisar" seria indistinguible de "no he leido nada". NOMED, jamas VERDE.
+w5() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+       printf '# solo comentarios\n' > "$T/ARQUITECTURA/declarada/revisado.tsv"; }
+caso "W5 revisado.tsv sin filas: NOMED" 2 "ninguna fila de ruta" w5
+
+w6() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+       rm -f "$T/ARQUITECTURA/declarada/revisado.tsv"; }
+caso "W6 sin revisado.tsv: NOMED" 2 "falta .*revisado.tsv" w6
+
+w7() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+       rm -f "$T/ARQUITECTURA/revision.json"; }
+# W7 · si falta revision.json lo caza el BRAZO 1, no el 6: es un fichero que el
+# generador emite, asi que su ausencia es una deriva contra la regeneracion fresca.
+# La guarda del brazo 6 sigue estando por si alguien lo borra despues de comparar.
+caso "W7 sin revision.json: lo caza el brazo 1 antes" 1 "FALTA en lo commiteado: revision.json" w7
+
+echo
+echo "BRAZO 5 · una frase ENTRECOMILLADA no es una afirmacion"
+# EL FIXTURE ES EL MISMO PARA LOS DOS Y SOLO CAMBIAN LAS COMILLAS. Eso es lo que hace que el
+# par signifique algo: si Q1 pasara por otra razon -por ejemplo porque la frase resulta ser
+# CIERTA-, Q2 fallaria y se veria. Y paso: la primera version elegia una ruta cualquiera del
+# fixture, y como el arbol de mentira no copia static/ ni tests/, TODAS tienen sin_ninguno
+# verdadero y «sin ningun rastro» era cierto siempre. Q1 pasaba sin ejercitar nada.
+# Aqui se le FABRICA un consumidor a la ruta elegida, para que la frase sea FALSA.
+_con_consumidor() {  # deja la ruta elegida con un consumidor real y devuelve su ficha
+  python3 - "$T" <<'PYC'
+import json, sys
+from pathlib import Path
+t = Path(sys.argv[1])
+d = json.load(open(t / "ARQUITECTURA/derivada.json"))
+r = sorted(d["rutas"], key=lambda x: x["camino"])[10]
+(t / "static").mkdir(parents=True, exist_ok=True)
+(t / "static/app.js").write_text("async function x(){ await fetch('%s'); }\n" % r["camino"],
+                                 encoding="utf-8")
+print(r["declarada"]["fichero"])
+PYC
+}
+q1() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+       f=$(_con_consumidor); _esqueleto "$f"
+       python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+       printf '\nEl andamio escribio "sin ningun rastro" cuando el detector fallaba.\n' \
+         >> "$T/ARQUITECTURA/$f"; _sella "$T"; }
+caso "Q1 la formula entre comillas: no afirma, no enrojece" 0 "coincide con la regeneracion" q1
+
+q2() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+       f=$(_con_consumidor); _esqueleto "$f"
+       python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+       printf '\nEsta ruta esta SIN NINGUN RASTRO en el repo.\n' >> "$T/ARQUITECTURA/$f"; _sella "$T"; }
+caso "Q2 la misma frase SIN comillas y en versales: ROJO" 1 "sin ningun rastro" q2
+
+echo "EL DETECTOR · un decorador citado no es una llamada"
+# D1 · un test que PARSEA api.py buscando `@app.get("/api/x")` no es consumidor de esa ruta:
+# es su SUJETO. Medido en el arbol real: afectaba a TRES rutas, no a una.
+d1det() { python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+          r=$(python3 -c '
+import json,sys
+d=json.load(open(sys.argv[1]))
+print(next(x["camino"] for x in d["rutas"] if not x["consumo"]["n_llamadas"]))' "$T/ARQUITECTURA/derivada.json")
+          mkdir -p "$T/tests"
+          printf 'def test_x():\n    body = src.index(\x27@app.get("%s")\x27)\n' "$r" > "$T/tests/test_zzz_parser.py"
+          python3 "$T/harness/bin/arquitectura" --repo "$T" >/dev/null 2>&1
+          python3 - "$T" "$r" <<'PYD'
+import json, sys
+d = json.load(open(sys.argv[1] + "/ARQUITECTURA/derivada.json"))
+r = next(x for x in d["rutas"] if x["camino"] == sys.argv[2])
+print("LLAMADAS", r["consumo"]["n_llamadas"], "MENCIONES", r["consumo"]["n_menciones"], file=sys.stderr)
+raise SystemExit(0 if r["consumo"]["n_llamadas"] == 0 else 1)
+PYD
+}
+if d1det 2>/dev/null; then
+  pasan=$((pasan + 1)); printf '  [ok   ] %-52s\n' "D1 @app.get citado en un test: MENCION, no llamada"
+else
+  fallos=$((fallos + 1)); printf '  [FALLA] %-52s el decorador citado sigue contando como llamada\n' "D1 @app.get citado en un test"
+fi
 
 echo
 total=$((pasan + fallos))

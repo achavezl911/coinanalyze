@@ -27,7 +27,15 @@
 # PostgreSQL: es analisis estatico contra ficheros.
 set -uo pipefail
 
-REPO=${K88_REPO:-/srv/coinanalyze/repo}
+# EL ARBOL LO PUEDE FIJAR EL LLAMANTE, Y NO SOLO POR K88_REPO. El gate de K15 en
+# .github/workflows/ci.yml exporta `REPO=<worktree>` para medir el arbol del PR contra el de
+# main; K88 solo miraba `K88_REPO`, asi que habria medido siempre /srv/coinanalyze/repo -que
+# en el runner no existe- y devuelto NOMED. La funcion contar() del gate convierte un NOMED
+# en 99, o sea que anadir K88 al gate sin esta linea lo habria dejado CIEGO en vez de darle
+# dientes. Lo cazo su control (K15-gate-control.bash, caso G2) antes de entregarlo.
+# K88_REPO manda sobre REPO porque es el que usa su propio control, que necesita fijar el
+# arbol aunque el entorno traiga otro.
+REPO=${K88_REPO:-${REPO:-/srv/coinanalyze/repo}}
 GEN="$REPO/harness/bin/arquitectura"
 DOC="$REPO/ARQUITECTURA"
 API=${K88_API:-$REPO/app/api.py}
@@ -257,14 +265,25 @@ TEMPORAL = [
     (r"sin +ninguna +marca\s+temporal",          "dice 'sin ninguna marca temporal'"),
     (r"INCUMPLE la promesa de frescura",         "dice 'INCUMPLE la promesa de frescura'"),
 ]
+# UNA FRASE ENTRECOMILLADA NO ES UNA AFIRMACION. Es la misma distincion que «una cadena
+# literal no es prosa» de F3d, aplicada aqui. Las siete reglas de arriba eran SENSIBLES A
+# MAYUSCULAS y por eso no cazaban «SIN NINGUN RASTRO» en versales; medido el 2026-09-06, con
+# `IGNORECASE` a secas cazaban ONCE fichas y NUEVE de ellas **solo citan la formula** narrando
+# un fallo pasado -«el andamio escribio "sin consumidor conocido" cuando el detector no
+# veia...»-, que no afirma nada de su ruta. Encenderlo asi metia nueve falsos.
+# Con el descarte del entrecomillado el IGNORECASE ya se puede encender, que es lo que hace
+# esta linea. Se quitan comillas dobles, angulares y acentos graves; el resto se compara.
+RE_CITAS = re.compile(r'"[^"\n]{0,200}"|«[^»\n]{0,200}»|`[^`\n]{0,200}`')
+
 malos = []
 for f in sorted((doc / "declarada").glob("*.md")):
     r = por_slug.get(f.stem)
     if r is None:
         continue
     texto = f.read_text(encoding="utf-8", errors="replace")
+    afirmado = RE_CITAS.sub(" ", texto)
     for pat, ok, etiqueta in REGLAS:
-        if re.search(pat, texto) and not ok(r["consumo"]):
+        if re.search(pat, afirmado, re.IGNORECASE) and not ok(r["consumo"]):
             malos.append(f"{f.name} {etiqueta} y la derivada dice "
                          f"llamadas={r['consumo']['n_llamadas']} "
                          f"menciones={r['consumo']['n_menciones']}")
@@ -309,8 +328,82 @@ if [ -n "$desacuerdos" ]; then
   exit 1
 fi
 
+# --- BRAZO 6 · LA MARCA DE AGUA · ¿alguien ha MIRADO la ficha desde que sus hechos cambiaron?
+#
+# LOS CINCO BRAZOS DE ARRIBA PERSIGUEN AL ULTIMO FALLO. Cada uno nacio de una ceguera
+# concreta: el 1 de una derivada vieja, el 5 de una ficha que contradecia al JSON de su propio
+# commit, la familia TEMPORAL de que las siete reglas del 5 solo miraban el consumo. Una tabla
+# de reglas **enumera lo conocido**, y la proxima ceguera sera de una familia que nadie ha
+# pensado. Este brazo no enumera nada.
+#
+# NO COMPRUEBA SI LA FICHA ES VERDAD -indecidible sobre prosa-. Comprueba si sus HECHOS han
+# cambiado desde que alguien la miro. Cualquier cambio en lo que una ficha puede afirmar
+# levanta la marca, incluida una familia que no exista todavia.
+#
+# LAS DOS PIEZAS:
+#   ARQUITECTURA/revision.json          lo emite el generador: sha de los hechos de cada ruta.
+#   ARQUITECTURA/declarada/revisado.tsv a mano: el sha que tenia cuando alguien la miro.
+# La normalizacion vive en `hechos_de` de harness/bin/arquitectura y cada exclusion se gano
+# midiendo: consumo como PREDICADOS y no cuentas, NOMBRES de campo y no sus numeros de linea.
+#
+# SE CUENTA, NO ENROJECE, igual que la capa declarada incompleta. Una ficha SIN REVISAR no
+# esta mintiendo: esta sin mirar. Lo que SI es ROJO es que el fichero de revisiones no se
+# pueda leer o se quede sin filas: entonces «0 sin revisar» seria indistinguible de «no he
+# mirado nada», que es la trampa de K60 aplicada aqui.
+REVJSON="$DOC/revision.json"
+REVTSV="$DOC/declarada/revisado.tsv"
+if [ ! -r "$REVJSON" ]; then
+  echo "NO MEDIDO: falta $REVJSON; lo emite harness/bin/arquitectura y sin el no hay marca fresca"
+  exit 2
+fi
+if [ ! -r "$REVTSV" ]; then
+  echo "NO MEDIDO: falta $REVTSV, que es quien dice con que hechos se escribio cada ficha"
+  exit 2
+fi
+marca=$(python3 - "$REVJSON" "$REVTSV" "$DOC" <<'PY' 2>&1
+import json, sys
+from pathlib import Path
+rev = json.load(open(sys.argv[1]))
+sellos = {}
+for l in Path(sys.argv[2]).read_text(encoding="utf-8", errors="replace").splitlines():
+    if not l.startswith("/"):
+        continue
+    p = l.split("\t")
+    if len(p) >= 2:
+        sellos[p[0]] = p[1].strip()
+fresca = rev.get("rutas", {})
+if not sellos:
+    print("SINSELLOS"); raise SystemExit
+sin_revisar = sorted(c for c, s in fresca.items() if sellos.get(c) != s)
+# HUERFANOS: un sello de una ruta que ya no existe. Es la otra direccion, y sin ella el
+# fichero se vuelve un cementerio que "revisa" fichas que nadie escribe ya.
+huerfanos = sorted(c for c in sellos if c not in fresca)
+sin_sello = sorted(c for c in fresca if c not in sellos)
+print(f"TOTAL {len(fresca)}")
+print(f"SINSELLO {len(sin_sello)} {' '.join(sin_sello[:6])}")
+print(f"HUERFANOS {len(huerfanos)} {' '.join(huerfanos[:6])}")
+print(f"SINREVISAR {len(sin_revisar)}")
+for c in sin_revisar:
+    print(f"  S {c}")
+PY
+); rc_m=$?
+case "$marca" in
+  SINSELLOS*) echo "NO MEDIDO: $REVTSV no tiene ninguna fila de ruta: o esta vacio o cambio de formato"; exit 2 ;;
+esac
+[ "$rc_m" = "0" ] || { echo "NO MEDIDO: no se pudo leer la marca de agua: $(printf '%s' "$marca" | tail -1 | cut -c1-110)"; exit 2; }
+m_total=$(printf '%s\n' "$marca" | awk '/^TOTAL/{print $2}')
+m_sinsello=$(printf '%s\n' "$marca" | awk '/^SINSELLO/{print $2}')
+m_huerf=$(printf '%s\n' "$marca" | awk '/^HUERFANOS/{print $2}')
+m_sin=$(printf '%s\n' "$marca" | awk '/^SINREVISAR/{print $2}')
+
 echo "ARQUITECTURA/ describe las $n_doc rutas del codigo, coincide con la regeneracion fresca"
 echo "  y los cuatro controles de impacto cuadran con su respuesta conocida"
 printf '  capa DECLARADA: %s completas · %s incompletas · %s sin declarar (de %s). No es ROJO: se cuenta.\n' \
   "$completas" "$incompletas" "$faltan" "$n_doc"
+printf '  MARCA DE AGUA: %s de %s ficha(s) SIN REVISAR -sus hechos cambiaron desde que se escribio su prosa-.\n' \
+  "$m_sin" "$m_total"
+printf '%s\n' "$marca" | sed -n 's/^  S /    /p'
+[ "${m_sinsello:-0}" -eq 0 ] || printf '  %s ruta(s) sin fila en revisado.tsv: siembralas o el brazo no las vigila\n' "$m_sinsello"
+[ "${m_huerf:-0}" -eq 0 ] || printf '  %s sello(s) HUERFANO(S) -su ruta ya no existe-: %s\n' "$m_huerf" "$(printf '%s\n' "$marca" | awk '/^HUERFANOS/{$1="";$2="";print}')"
+printf '  No es ROJO: se cuenta. Una ficha sin revisar no miente, esta sin mirar.\n'
 exit 0
