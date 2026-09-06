@@ -1998,37 +1998,166 @@ BEGIN
 END
 $$;
 
--- REAPLICACION DELIBERADA DEL TRIGGER TRAS EL RENOMBRADO. NO ES UN DUPLICADO, aunque su
--- texto sea identico al de :375-379, y borrarlo deja la tabla viva SIN control de unicidad.
---
--- El motivo esta en :1993-1996: la migracion renombra `liquidations_realtime` a
--- `..._unpartitioned_backup` y asciende `liquidations_realtime__partitioned` a
--- `liquidations_realtime`. O sea que el nombre significa una TABLA DISTINTA aqui y alli:
--- el CREATE TRIGGER de :377 quedo colgado de la tabla vieja -y se fue con ella al
--- renombrarla-, y este de abajo es el que se lo pone a la particionada.
---
--- MEDIDO, no razonado (2026-09-06, PostgreSQL 17.10 en 143, base desechable):
---   se aplica el esquema PREVIO a la particion (91111f6~1) y encima el actual.
---     con estas lineas      -> el trigger queda en liquidations_realtime (relkind=p),
---                              sus 4 particiones, y _unpartitioned_backup  = 6 filas
---     sin estas lineas      -> queda SOLO en _unpartitioned_backup          = 1 fila
---   Sobre una base VACIA los dos casos dan lo mismo, porque sin tablas viejas no hay
---   renombrado: por eso la CI -que crea una base desechable y aplica el fichero,
---   .github/workflows/ci.yml:65-72- es ESTRUCTURALMENTE CIEGA a esto. Aplicar sin error y
---   conservar el trigger son cosas distintas.
---
--- El 2026-09-06 se quitaron de aqui las CUATRO redeclaraciones de funcion que rodeaban a
--- estas lineas -enforce_liquidation_event_unique, ensure_temporal_partitions,
--- drop_expired_temporal_partitions y apply_temporal_retention- porque `CREATE OR REPLACE`
--- con el mismo cuerpo si es un no-op, y el `SELECT ensure_temporal_partitions()` que
--- cerraba el bloque, porque la migracion ya crea las particiones (12 en las dos ramas).
--- Comprobado por el mismo experimento, brazo a brazo. Lo unico que cargaba era esto.
+-- The old liquidation key could be global without ts. The partitioned primary key must
+-- include ts, so this trigger preserves the stronger cross-partition (exchange,event_id)
+-- identity under a transaction advisory lock.
+CREATE OR REPLACE FUNCTION enforce_liquidation_event_unique()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    PERFORM pg_advisory_xact_lock(
+        hashtextextended('liquidation-event:' || NEW.exchange || ':' || NEW.event_id, 0)
+    );
+    IF EXISTS (
+        SELECT 1 FROM liquidations_realtime
+        WHERE exchange = NEW.exchange AND event_id = NEW.event_id
+    ) THEN
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END
+$$;
+
 DROP TRIGGER IF EXISTS liquidations_realtime_event_unique_trigger
     ON liquidations_realtime;
 CREATE TRIGGER liquidations_realtime_event_unique_trigger
 BEFORE INSERT ON liquidations_realtime
 FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique();
 
+CREATE OR REPLACE FUNCTION ensure_temporal_partitions(
+    reference_ts timestamptz DEFAULT now(),
+    days_before integer DEFAULT 1,
+    days_after integer DEFAULT 2
+)
+RETURNS integer
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    managed_table text;
+    partition_day date;
+    child_name text;
+    schema_name text := current_schema();
+    parent_oid regclass;
+    child_oid regclass;
+    created_count integer := 0;
+BEGIN
+    IF days_before < 0 OR days_after < 0 THEN
+        RAISE EXCEPTION 'partition lookaround must be non-negative';
+    END IF;
+    PERFORM pg_advisory_xact_lock(
+        hashtextextended(schema_name || ':ensure_temporal_partitions', 0)
+    );
+    FOREACH managed_table IN ARRAY ARRAY[
+        'futures_trades_realtime', 'spot_trades_realtime', 'orderbook_snapshot',
+        'liquidations_realtime', 'scalp_signal_snapshot'
+    ] LOOP
+        parent_oid := to_regclass(format('%I.%I', schema_name, managed_table));
+        IF parent_oid IS NULL OR NOT EXISTS (
+            SELECT 1 FROM pg_class WHERE oid = parent_oid AND relkind = 'p'
+        ) THEN
+            CONTINUE;
+        END IF;
+        FOR partition_day IN
+            SELECT (reference_ts AT TIME ZONE 'UTC')::date + day_offset
+            FROM generate_series(-days_before, days_after) AS day_offset
+        LOOP
+            child_name := managed_table || '_p' || to_char(partition_day, 'YYYYMMDD');
+            child_oid := to_regclass(format('%I.%I', schema_name, child_name));
+            IF child_oid IS NULL THEN
+                EXECUTE format(
+                    'CREATE TABLE %I.%I PARTITION OF %I.%I FOR VALUES FROM (%L) TO (%L)',
+                    schema_name, child_name, schema_name, managed_table,
+                    partition_day::timestamp AT TIME ZONE 'UTC',
+                    (partition_day + 1)::timestamp AT TIME ZONE 'UTC'
+                );
+                created_count := created_count + 1;
+                child_oid := to_regclass(format('%I.%I', schema_name, child_name));
+            END IF;
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_inherits
+                WHERE inhparent = parent_oid AND inhrelid = child_oid
+            ) THEN
+                RAISE EXCEPTION '% exists but is not a partition of %', child_name, managed_table;
+            END IF;
+        END LOOP;
+    END LOOP;
+    RETURN created_count;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION drop_expired_temporal_partitions(
+    parent_name text,
+    cutoff timestamptz
+)
+RETURNS integer
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    allowed constant text[] := ARRAY[
+        'futures_trades_realtime', 'spot_trades_realtime', 'orderbook_snapshot',
+        'liquidations_realtime', 'scalp_signal_snapshot'
+    ];
+    schema_name text := current_schema();
+    parent_oid regclass;
+    child record;
+    partition_day date;
+    dropped_count integer := 0;
+BEGIN
+    IF NOT parent_name = ANY(allowed) THEN
+        RAISE EXCEPTION 'table is not managed by temporal partitioning: %', parent_name;
+    END IF;
+    parent_oid := to_regclass(format('%I.%I', schema_name, parent_name));
+    IF parent_oid IS NULL OR NOT EXISTS (
+        SELECT 1 FROM pg_class WHERE oid = parent_oid AND relkind = 'p'
+    ) THEN
+        RAISE EXCEPTION '% is not a partitioned table', parent_name;
+    END IF;
+    PERFORM pg_advisory_xact_lock(
+        hashtextextended(schema_name || ':retention:' || parent_name, 0)
+    );
+    FOR child IN
+        SELECT c.relname
+        FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid
+        WHERE i.inhparent = parent_oid
+          AND c.relname ~ ('^' || parent_name || '_p[0-9]{8}$')
+        ORDER BY c.relname
+    LOOP
+        partition_day := to_date(right(child.relname, 8), 'YYYYMMDD');
+        IF (partition_day + 1)::timestamp AT TIME ZONE 'UTC' <= cutoff THEN
+            EXECUTE format('DROP TABLE %I.%I', schema_name, child.relname);
+            dropped_count := dropped_count + 1;
+        END IF;
+    END LOOP;
+    RETURN dropped_count;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION apply_temporal_retention(
+    parent_name text,
+    retention_hours integer
+)
+RETURNS bigint
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    cutoff timestamptz;
+    deleted_count bigint;
+BEGIN
+    IF retention_hours <= 0 THEN
+        RAISE EXCEPTION 'retention_hours must be positive';
+    END IF;
+    cutoff := statement_timestamp() - make_interval(hours => retention_hours);
+    PERFORM ensure_temporal_partitions();
+    PERFORM drop_expired_temporal_partitions(parent_name, cutoff);
+    EXECUTE format('DELETE FROM %I.%I WHERE ts < $1', current_schema(), parent_name)
+        USING cutoff;
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+    RETURN deleted_count;
+END
+$$;
+
+SELECT ensure_temporal_partitions();
 
 INSERT INTO schema_migration(name)
 VALUES ('20260809_temporal_partitioning')

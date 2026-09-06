@@ -2,55 +2,56 @@
 # K16  particiones y retencion con red. app/partitioning.py es lo UNICO del arbol que
 # borra datos por diseno y no lo importa ningun test.
 #
-# EL CRITERIO DE LA DUPLICACION CAMBIO EL 2026-09-06, y esta es la razon. La version
-# anterior enrojecia con «ensure_temporal_partitions declarada 2 veces en schema.sql» y
-# llevaba ROJA 26 de 27 pasadas guardadas sin que nadie actuara. Al medirlo salieron tres
-# cosas que el criterio viejo no podia ver:
+# LO QUE ESTE CHECK LLAMABA «DUPLICADO» NO LO ERA, Y LO DEMUESTRA UN TEST QUE YA EXISTIA.
 #
-#   1. NO ES UN OBJETO DUPLICADO, SON CINCO. En sql/schema.sql hay 123 objetos CREATE y
-#      cinco estan declarados dos veces: las funciones enforce_liquidation_event_unique
-#      (354, 2004), ensure_temporal_partitions (1470, 2028),
-#      drop_expired_temporal_partitions (1541, 2089) y apply_temporal_retention
-#      (1593, 2136), mas el trigger liquidations_realtime_event_unique_trigger (377, 2024).
-#      El check viejo preguntaba por UNO tecleado a mano, asi que solo podia encontrar ese.
+# Hasta el 2026-09-06 K16 enrojecia con «ensure_temporal_partitions declarada 2 veces en
+# schema.sql» y llevaba ROJA 26 de 27 pasadas guardadas. Se midio y salieron CINCO objetos
+# declarados dos veces, no uno. Se pidio puerta para borrar el segundo bloque, se concedio,
+# se borro... y la CI del PR #151 fallo. **La puerta estaba mal concedida y el recorte esta
+# deshecho.** Los dos tests que lo prohibian:
 #
-#   2. LOS CINCO PARES SON SEMANTICAMENTE IDENTICOS. Cuatro son iguales token a token.
-#      El quinto -ensure_temporal_partitions- difiere solo en que la primera parte el
-#      literal de format() en dos cadenas adyacentes y la segunda lo escribe entero;
-#      PostgreSQL las concatena, asi que la cadena resultante es la misma. Medirlo linea a
-#      linea decia «3 de 5 distintas» y las tres diferencias eran saltos de linea.
+#   tests/test_partitioning_postgres.py::test_supported_deployment_path_includes_the_real_partition_migration
+#   tests/test_pr20_semantics.py::test_pr20_schema_preserves_inline_partition_migration_as_exact_prior_transaction
 #
-#   3. GANA LA SEGUNDA, y no se deduce: se le pregunta a 140. pg_get_functiondef conserva
-#      el texto fuente, y esa particion del literal sobrevive en la base:
-#        bool_or(... LIKE '%PARTITION OF %I.%I ''%')        -> f   (la de :1470 NO esta)
-#        bool_or(... LIKE '%PARTITION OF %I.%I FOR VALUES%') -> t   (la de :2028 SI)
-#      Las dos entraron en el MISMO commit, 91111f6 del 2026-08-09 (PR #9).
+# y el motivo esta escrito encima del primero (test_partitioning_postgres.py:245-252):
 #
-# QUE SE GATEA AHORA, Y POR QUE. Una duplicacion con cuerpos identicos no puede producir una
-# base incorrecta: aplique el desplegador la que aplique, el resultado es el mismo. Lo que SI
-# la produce es la DIVERGENCIA -dos cuerpos distintos donde el ultimo pisa al primero en
-# silencio, y editar el equivocado no da error, simplemente no hace nada-. Asi que:
-#   ROJO   si dos declaraciones del mismo objeto DIVERGEN.
-#   ADREDE la reaplicacion con motivo escrito. Ni deuda ni defecto: ver abajo.
-#   CUENTA -sin enrojecer- la duplicacion identica SIN motivo, que es deuda.
-# Los duplicados se DERIVAN del fichero, no se teclean: un sexto duplicado entra solo.
+#   "schema.sql must be self-contained: the production deploy wrapper (deploy-coinalyze,
+#    outside this repo) copies ONLY schema.sql to a scratch path before running `psql -f` on
+#    it -- no sibling sql/migrations/ directory exists there. A relative \ir include would
+#    silently fail to find its target in that environment (psql exits 0 on a missing \ir
+#    target, so ON_ERROR_STOP does not catch it), which would make the deploy wrapper report
+#    success while the real partition migration never ran. The migration is inlined directly
+#    instead."
 #
-# LA PUERTA 1 SE EJERCIO EL 2026-09-06, Y A MEDIAS. Se pidio y se concedio borrar el bloque
-# 2004-2160 entero. NO SE PUDO, y el motivo desmonta la palabra «duplicado»: entre las dos
-# mitades del fichero, `:1993-1996` RENOMBRA las tablas -liquidations_realtime pasa a
-# `..._unpartitioned_backup` y la particionada asciende a `liquidations_realtime`-, asi que el
-# `CREATE TRIGGER` de :377 y el de abajo tienen el MISMO TEXTO y tocan TABLAS DISTINTAS.
-# Medido sobre bases desechables aplicando el esquema previo (91111f6~1) y encima el actual:
-# con esas lineas el trigger de unicidad queda en 6 relaciones; sin ellas, en 1 -solo el
-# backup-, o sea que la tabla VIVA se queda sin control de unicidad.
-# Sobre una base VACIA las dos ramas dan lo mismo, porque sin tablas viejas no hay renombrado.
-# Por eso la CI -que crea una base desechable y aplica el fichero, ci.yml:65-72- es
-# ESTRUCTURALMENTE CIEGA a esto. Se borraron las cuatro redeclaraciones de FUNCION, que si son
-# no-ops, y el `SELECT ensure_temporal_partitions()` del cierre, que tampoco hacia falta.
+# O SEA QUE LAS LINEAS 1631-2165 NO SON UNA DUPLICACION: son
+# sql/migrations/20260809_temporal_partitioning.sql copiado BYTE A BYTE como transaccion
+# previa -535 lineas, de su BEGIN; a su COMMIT;-, y el test lo exige con
+# `assert MIGRATION.strip() in schema`. Los cinco «duplicados» son objetos que esa migracion
+# crea; sus primeras declaraciones (354, 377, 1470, 1541, 1593) estan todas FUERA.
 #
-# DE AHI SALE LA CATEGORIA «ADREDE», y se reconoce por un marcador EN EL FICHERO y no por una
-# lista aqui dentro: quien repita una declaracion a proposito tiene que decir por que encima,
-# y ese texto es la cita. El marcador NO exime a un cuerpo divergente (caso A3 del control).
+# QUE HACE AHORA ESTE CHECK, Y QUE NO HACE:
+#   · EXCLUYE la region incrustada y mide solo lo de FUERA. Medido el 2026-09-06: fuera hay
+#     122 objetos CREATE y CERO duplicados.
+#   · NO comprueba que la region siga igual al fichero de migracion. Se penso hacerlo y se
+#     descarto al medirlo: `MIGRATION.strip() in schema` ya es exactamente esa pregunta, y la
+#     contesta mejor -compara contra el FICHERO, no contra un marcador escrito a mano-.
+#     Duplicar un test dentro de un check no es cobertura, es ruido.
+#   · Los limites de la region se DERIVAN del fichero de migracion, con el mismo instrumento
+#     que el test. Si alguien la mueve, el check la sigue; si alguien la edita, el que
+#     enrojece es el test, que es su sitio.
+#
+# LO QUE SE GATEA, para lo de fuera: la DIVERGENCIA -dos cuerpos distintos donde el ultimo
+# pisa al primero en silencio, y editar el equivocado no da error, simplemente no hace nada-.
+# La duplicacion identica se CUENTA sin enrojecer. Los duplicados se derivan, no se teclean.
+#
+# LO QUE SE MIDIO Y SIGUE VALIENDO, aunque la conclusion fuera mala: entre las dos mitades,
+# `:1993-1996` renombra las tablas, asi que el `CREATE TRIGGER` de :377 y el de dentro de la
+# region tienen el MISMO TEXTO y tocan TABLAS DISTINTAS. Aplicando el esquema previo
+# (91111f6~1) y encima el actual sobre bases desechables: con la region el trigger queda en 6
+# relaciones, sin ella en 1 -solo el backup-. Sobre una base VACIA los dos casos dan lo mismo,
+# porque sin tablas viejas no hay renombrado, y por eso la CI que aplica el fichero a una base
+# desechable (ci.yml:65-72) es ciega a ESA diferencia. Guardado aqui para el dia que alguien
+# cambie el contrato: la region no se puede quitar por rango.
 #
 # Las otras tres comprobaciones no se tocan: la cobertura de tests sobre partitioning, y el
 # oraculo VIVO contra 140 -la funcion existe una sola vez y gestiona las cinco tablas que
@@ -67,11 +68,25 @@ command -v python3 >/dev/null 2>&1 || { echo "NO MEDIDO: no hay python3"; exit 2
 
 fallos=""
 
-# --- 1 · DUPLICADOS DERIVADOS · rojo por DIVERGENCIA, cuenta por duplicacion identica ---
-dup=$(python3 - "$REPO/sql/schema.sql" <<'PY' 2>&1
+# --- 1 · DUPLICADOS DERIVADOS, FUERA DE LA REGION INCRUSTADA ---------------------------
+MIGRACION="$REPO/sql/migrations/20260809_temporal_partitioning.sql"
+[ -r "$MIGRACION" ] || { echo "NO MEDIDO: no se puede leer sql/migrations/20260809_temporal_partitioning.sql, y sin el no se sabe que tramo de schema.sql es la migracion incrustada"; exit 2; }
+dup=$(python3 - "$REPO/sql/schema.sql" "$MIGRACION" <<'PY' 2>&1
 import re, sys
 from pathlib import Path
-L = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace").splitlines()
+texto = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
+L = texto.splitlines()
+
+# LA REGION INCRUSTADA · sus limites salen del FICHERO DE MIGRACION, no de una lista aqui.
+# Es el mismo instrumento que usa el test que la exige, asi que si alguien mueve la region,
+# este check la sigue; y si alguien la edita, el que enrojece es el test, que es su sitio.
+mig = Path(sys.argv[2]).read_text(encoding="utf-8", errors="replace").strip()
+i = texto.find(mig)
+if i < 0:
+    print("SINREGION")
+    raise SystemExit
+r_ini = texto[:i].count("\n") + 1
+r_fin = r_ini + mig.count("\n")
 
 RE_C = re.compile(
     r"^\s*CREATE\s+(?:OR\s+REPLACE\s+)?"
@@ -104,36 +119,24 @@ def tokens(t):
     txt = " ".join(txt.split())
     return re.sub(r"' '", "", txt)
 
+# SOLO LO DE FUERA DE LA REGION. Dentro no se mira, y no por pereza: lo de dentro no es un
+# duplicado sino la migracion copiada byte a byte, y ya lo vigila quien debe (ver cabecera).
 obj = {}
 for n, l in enumerate(L, 1):
+    if r_ini <= n <= r_fin:
+        continue
     m = RE_C.match(l)
     if m:
         obj.setdefault((" ".join(m.group(1).upper().split()), m.group(2).lower()), []).append(n)
 
-# UNA REDECLARACION PUEDE SER DELIBERADA, Y ENTONCES NO ES DEUDA. Lo aprendio este check el
-# 2026-09-06 al ejercer la puerta 1: el par DROP/CREATE TRIGGER de liquidations_realtime
-# tiene el MISMO texto que el de :377 y toca OTRA TABLA, porque entre los dos la migracion
-# renombra `liquidations_realtime`. Borrarlo dejaba la tabla viva sin control de unicidad, y
-# el experimento lo enseño (6 triggers contra 1). Asi que hay una tercera categoria y se
-# reconoce por un marcador EN EL FICHERO, no por una lista aqui dentro: quien escriba la
-# redeclaracion tiene que decir por que, arriba, y ese texto es la cita.
-MARCA = "REAPLICACION DELIBERADA"
-def deliberada(linea):
-    ini = max(0, linea - 30)
-    return MARCA in "\n".join(L[ini:linea - 1])
-
 total = len(obj)
 dups = {k: v for k, v in obj.items() if len(v) > 1}
-diverge, iguales, adrede = [], [], []
+diverge, iguales = [], []
 for (tipo, nom), ls in sorted(dups.items()):
     cuerpos = [tokens(cuerpo(x)) for x in ls]
     etq = f"{tipo.lower()} {nom} ({','.join(map(str, ls))})"
-    if len(set(cuerpos)) > 1:
-        diverge.append(etq)
-    elif all(deliberada(x) for x in ls[1:]):
-        adrede.append(etq)
-    else:
-        iguales.append(etq)
+    (diverge if len(set(cuerpos)) > 1 else iguales).append(etq)
+print(f"REGION {r_ini} {r_fin}")
 print(f"TOTAL {total}")
 print(f"DIVERGEN {len(diverge)}")
 for d in diverge:
@@ -141,18 +144,22 @@ for d in diverge:
 print(f"IGUALES {len(iguales)}")
 for i in iguales:
     print(f"  I {i}")
-print(f"ADREDE {len(adrede)}")
-for a in adrede:
-    print(f"  A {a}")
 PY
 ); rc_dup=$?
 if [ "$rc_dup" != "0" ]; then
   echo "NO MEDIDO: no se pudo analizar schema.sql: $(printf '%s' "$dup" | tail -1 | cut -c1-110)"; exit 2
 fi
+# SI LA REGION NO ESTA, NO SE MIDE. Sin ella no se puede excluir, y el check reportaria como
+# duplicados los cinco objetos que la migracion crea -que es justo el error que costo la
+# puerta-. Ademas, si no esta, el que tiene que hablar es el test, no este check.
+case "$dup" in
+  SINREGION*) echo "NO MEDIDO: sql/schema.sql ya no contiene la migracion incrustada byte a byte; eso lo juzga tests/test_partitioning_postgres.py, no este check"; exit 2 ;;
+esac
+r_ini=$(printf '%s\n' "$dup" | awk '/^REGION/{print $2}')
+r_fin=$(printf '%s\n' "$dup" | awk '/^REGION/{print $3}')
 n_obj=$(printf '%s\n' "$dup" | awk '/^TOTAL/{print $2}')
 n_div=$(printf '%s\n' "$dup" | awk '/^DIVERGEN/{print $2}')
 n_ig=$(printf '%s\n' "$dup" | awk '/^IGUALES/{print $2}')
-n_ad=$(printf '%s\n' "$dup" | awk '/^ADREDE/{print $2}')
 # CERO OBJETOS NO ES CERO DEFECTOS: si el analizador deja de reconocer los CREATE, cero
 # duplicados es indistinguible de un fichero limpio. Sin sujeto, NOMED.
 [ "${n_obj:-0}" -ge 50 ] || { echo "NO MEDIDO: solo $n_obj objetos CREATE en schema.sql; el analizador no esta reconociendolos"; exit 2; }
@@ -177,14 +184,12 @@ for t in $GESTIONADAS; do
 done
 
 [ -z "${fallos# }" ] || { printf '%s\n' "${fallos#; }" | sed 's/^ //'; exit 1; }
-echo "ningun objeto de schema.sql diverge consigo mismo (de $n_obj CREATE), $cubierto test(s) sobre partitioning, y la funcion viva gestiona las 5 tablas"
-if [ "${n_ad:-0}" -gt 0 ]; then
-  printf '  %s reaplicacion(es) DELIBERADA(S), con su motivo escrito encima en schema.sql:\n' "$n_ad"
-  printf '%s\n' "$dup" | sed -n 's/^  A /    /p'
-fi
+echo "ningun objeto de schema.sql diverge consigo mismo (de $n_obj CREATE fuera de la migracion incrustada), $cubierto test(s) sobre partitioning, y la funcion viva gestiona las 5 tablas"
+printf '  la migracion incrustada (lineas %s-%s) NO se mira aqui: es %s copiado byte a byte,\n' \
+  "$r_ini" "$r_fin" "sql/migrations/20260809_temporal_partitioning.sql"
+printf '  y que siga siendolo lo exige tests/test_partitioning_postgres.py:257 con MIGRATION.strip() in schema.\n'
 if [ "${n_ig:-0}" -gt 0 ]; then
-  printf '  DEUDA, no defecto: %s objeto(s) declarados dos veces con el MISMO cuerpo y SIN motivo escrito.\n' "$n_ig"
+  printf '  DEUDA, no defecto: %s objeto(s) FUERA de la region declarados dos veces con el MISMO cuerpo. Se cuenta, no enrojece.\n' "$n_ig"
   printf '%s\n' "$dup" | sed -n 's/^  I /    /p'
-  printf '  Se cuenta, no enrojece. Si la repeticion es a proposito, escribe "%s" encima y di por que.\n' "REAPLICACION DELIBERADA"
 fi
 exit 0
