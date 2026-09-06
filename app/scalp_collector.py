@@ -670,18 +670,28 @@ async def flush_trades(
 PROCESO_INICIADO = time.time()
 
 
-def segundos_cubiertos(ts: int, inicio: float | None = None) -> int:
-    """Segundos del minuto que empieza en ts con el colector ya escuchando."""
+def segundos_cubiertos(ts: int, inicio: float | None = None, fin: float | None = None) -> int:
+    """Segundos del minuto que empieza en ts con el colector ya escuchando.
+
+    `fin` es el instante en que el colector DEJO de escuchar. Sin el, esta funcion solo
+    conocia el ARRANQUE y devolvia 60 para cualquier minuto que empezara despues -incluido
+    el que `drenar_minutos` escribe cuando la parada cruza el borde del minuto-. Es el mismo
+    defecto que K92 midio en `spot_trades_agg` el 2026-09-04T17:16 (cubrio 55 s, dijo 60);
+    esta pata escribe `futures_trades_agg` y lo cometia igual.
+
+    Con `fin=None` el resultado es identico al de antes: es una extension, no un cambio.
+    """
 
     arranque = PROCESO_INICIADO if inicio is None else inicio
-    if ts >= arranque:
-        return 60
-    return max(0, min(60, int(round(ts + 60 - arranque))))
+    desde = ts if ts >= arranque else arranque
+    hasta = ts + 60 if fin is None else min(ts + 60, fin)
+    return max(0, min(60, int(round(hasta - desde))))
 
 
 async def drenar_minutos(
     pool: asyncpg.Pool,
     ownership: ServiceOwnership | None = None,
+    fin: float | None = None,
 ) -> int:
     """Vacia a la base los minutos YA CERRADOS antes de que muera el proceso.
 
@@ -700,7 +710,7 @@ async def drenar_minutos(
         return 0
     async with pool.acquire() as conn:
         async with fenced_transaction(conn, ownership):
-            await _write_trade_rows(conn, "futures_trades_agg", pendientes, realtime=False)
+            await _write_trade_rows(conn, "futures_trades_agg", pendientes, realtime=False, fin=fin)
             await _write_combined_minute(conn, pendientes)
     await TRADE_STORE.ack_minute(pendientes)
     LOGGER.info("scalp_drain_minutes buckets=%d", len(pendientes))
@@ -713,6 +723,7 @@ async def _write_trade_rows(
     snapshots: list[tuple[tuple[str, str, int], TradeBucket]],
     *,
     realtime: bool,
+    fin: float | None = None,
 ) -> None:
     if realtime:
         records = [
@@ -743,7 +754,7 @@ async def _write_trade_rows(
             (
                 datetime.fromtimestamp(ts, UTC), symbol, exchange, 1, "1min",
                 b.buy_vol_usd, b.sell_vol_usd, b.large_buy_usd, b.large_sell_usd, b.trade_count,
-                segundos_cubiertos(ts),
+                segundos_cubiertos(ts, fin=fin),
             )
             for (symbol, exchange, ts), b in snapshots
         ]
@@ -1632,6 +1643,9 @@ async def main() -> None:
             # despues del drenaje del finally.
             await trabajo
     finally:
+        # El instante en que se deja de escuchar, tomado antes de cancelar nada: los
+        # segundos del desmontaje no son cobertura. Misma razon que en ws_collector.
+        parando = time.time()
         espera.cancel()
         for task in tasks:
             task.cancel()
@@ -1647,7 +1661,7 @@ async def main() -> None:
         with contextlib.suppress(asyncio.CancelledError, Exception):
             await trabajo
         try:
-            await drenar_minutos(pool, service_lock)
+            await drenar_minutos(pool, service_lock, fin=parando)
         except Exception:
             LOGGER.exception("scalp_drain_failed")
         await pool.close()
