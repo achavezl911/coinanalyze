@@ -10,4 +10,41 @@ B=/srv/coinanalyze/harness; . "$B/env"
 # que hace que el espejo REPRODUZCA los fallos de zona en vez de taparlos, y vive en el
 # postgresql.conf, no en este canal.
 export PGOPTIONS='-c timezone=UTC'
-psql -X -A -F'|' -t -v ON_ERROR_STOP=1 -q -d "$ESPEJO_DB" -c "$*" 2>&1 | "$B/bin/_corta"
+
+# EL FALLO DEL SQL SE PROPAGA. La version anterior terminaba en
+#     psql ... -c "$*" 2>&1 | "$B/bin/_corta"
+# y tenia los DOS defectos que el operador ya pago en `prodsql` el 2026-09-05, juntos:
+#   · `2>&1` fundia el canal de error con el de datos, asi que una fila cuyo primer campo
+#     empezara por ERROR: era indistinguible de un fallo del motor;
+#   · la tuberia hacia que el rc que ve el llamante fuera el de `_corta`, que sale 0
+#     SIEMPRE, o sea que `espejosql "SELECT no_existe FROM t"` devolvia **0**.
+# Y este canal es peor sitio para ese fallo que produccion: CLAUDE.md §6 paso 5 manda
+# verificar EN EL ESPEJO, asi que cualquier guardia `rc != 0 -> NO MEDIDO` escrito contra
+# el no podia dispararse jamas y una consulta rota llegaba disfrazada de «sin filas».
+# Medido y vigilado por harness/checks/K94-el-canal-que-no-puede-fallar.sh.
+#
+# Aqui no se usa PIPESTATUS a proposito: esto es /bin/sh. Y la asignacion lleva `|| rc=$?`
+# porque con `set -e` una sustitucion de mandato que falla ABORTA EL GUION en la propia
+# asignacion, y entonces ni el rc ni el mensaje llegarian a leerse. Es exactamente lo que
+# le pasaba a `prodsql`, que si propagaba el rc pero se comia el mensaje.
+err=$(mktemp) || exit 2
+trap 'rm -f "$err"' EXIT INT TERM
+
+rc=0
+salida=$(psql -X -A -F'|' -t -v ON_ERROR_STOP=1 -q -d "$ESPEJO_DB" -c "$*" 2>"$err") || rc=$?
+
+printf '%s\n' "$salida" | "$B/bin/_corta"
+
+if [ "$rc" != "0" ]; then
+  cat "$err" >&2
+  exit "$rc"
+fi
+# SEGUNDA DEFENSA, sobre el canal correcto. Un ERROR en stderr no puede venir de una fila:
+# las filas van por stdout. rc=5 lo distingue de un fallo de transporte, igual que en
+# prodsql, para que los dos canales no discrepen -que es lo que dice el comentario de
+# arriba y lo que no se cumplia-.
+if grep -q 'ERROR:' "$err"; then
+  cat "$err" >&2
+  exit 5
+fi
+exit 0
