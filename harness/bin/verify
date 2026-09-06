@@ -103,6 +103,21 @@ for c in "$B"/checks/*.sh.* "$B"/checks/*.sh~; do
   [ -e "$c" ] || continue
   huerfano "$c" "lleva .sh pero no termina en .sh: el glob checks/*.sh no lo ve y no se corrio"
 done
+# EL RESIDUO MAS ESTRECHO, cerrado el 2026-09-06: un fichero SIN EXTENSION NINGUNA -un
+# `K97-algo` a secas- no lleva `.sh` en el nombre, asi que el brazo de arriba no lo veia y
+# seguia desapareciendo en silencio. Lo midio el operador con su banco contra 485cdc4.
+#
+# LA REGLA ES «EMPIEZA POR K Y NO TIENE NI UN PUNTO», y es estrecha a proposito: MEDIDO antes
+# de escribirla, los 19 acompañantes legitimos de checks/ tienen TODOS extension -17 `.bash`,
+# un `.py`, un `.tsv`- y **cero** carecen de ella. Asi que este brazo no puede tocarlos.
+# Lo que SI deja pasar, y se dice: un fichero sin punto que no empiece por K -un `README`-.
+# No parece un check y no se caza; si algun dia alguien llama a un check `deuda`, se perdera.
+for c in "$B"/checks/K*; do
+  [ -f "$c" ] || continue
+  n=$(basename "$c")
+  case "$n" in *.*) continue ;; esac
+  huerfano "$c" "empieza por K y no tiene extension: el glob checks/*.sh no lo ve y no se corrio"
+done
 if command -v find >/dev/null 2>&1; then
   # `-L` porque checks/ es un ENLACE: sin el, find no entra y el brazo no mediria nada.
   find -L "$B/checks" -mindepth 2 -name '*.sh' -print 2>/dev/null | while IFS= read -r c; do

@@ -181,6 +181,36 @@ caso "V9 la cuenta suma los dos huerfanos: 1V 1R 3N"  "si" \
      "$(grep -qE '^1 VERDE +1 ROJO +3 NOMED' <<<"$out" && echo si || echo no)"
 
 echo
+echo "EL TERCER HUECO · un fichero SIN EXTENSION NINGUNA"
+# EL RESIDUO que el operador midio con su banco contra 485cdc4 el 2026-09-06: los dos brazos de
+# arriba cazan lo que LLEVA `.sh` sin terminar en `.sh`, pero un `K97-algo` a secas no lleva `.sh`
+# en el nombre y seguia desapareciendo en silencio. Se usa un arbol aparte para no mover V9.
+D4="$DIR/sinext"; monta "$D4"
+cp "$D4/checks/Z01-verde.sh" "$D4/checks/K97-algo"
+printf 'nada\n' > "$D4/checks/LEEME"
+out=$(corre "$VERIFY" "$D4")
+caso "V10 el K97 sin extension APARECE y sale NOMED"  "si" \
+     "$(grep -qE '^K97-algo +NOMED' <<<"$out" && echo si || echo no)"
+caso "V10b y dice por que: no tiene extension"        "si" \
+     "$(grep -q 'no tiene extension' <<<"$out" && echo si || echo no)"
+# N8 · EL LIMITE DECLARADO, probado para que no sorprenda: la regla es ESTRECHA a proposito y
+# solo mira los que empiezan por K. Un `LEEME` sin punto NO dispara. Si algun dia alguien llama
+# a un check `deuda`, se perdera igual; queda dicho aqui y en el comentario de bin/verify.
+caso "N8 un LEEME sin extension NO dispara (el limite)" "si" \
+     "$(grep -qE '^LEEME' <<<"$out" && echo no || echo si)"
+# N9 · Y LO QUE HACE VALER A V10: sobre el arbol DE VERDAD, la regla no toca a nadie. Se aplica
+# el predicado a checks/ real en vez de correr verify entero, que son minutos.
+n_reales=0; n_mudos=0
+for f in "$ORIG"/harness/checks/K*; do
+  [ -f "$f" ] || continue
+  bn=$(basename "$f"); case "$bn" in *.sh) continue ;; esac
+  n_reales=$((n_reales+1))
+  case "$bn" in *.*) n_mudos=$((n_mudos+1)) ;; esac
+done
+caso "N9 los $n_reales acompaniantes K* de verdad siguen mudos" "si" \
+     "$([ "$n_reales" -gt 0 ] && [ "$n_mudos" = "$n_reales" ] && echo si || echo no)"
+
+echo
 echo "EL rc · un NOMED no puede salir como exito"
 monta "$B2"; chmod -x "$B2/checks/Z01-verde.sh"
 VERIFY_HARNESS="$B2" sh "$VERIFY" >/dev/null 2>&1; rc=$?
