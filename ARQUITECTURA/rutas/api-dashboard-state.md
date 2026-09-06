@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `dashboard_state` · `app/api.py:2947` (cuerpo hasta la 2974) · decorador en la linea 2946.
+Handler `dashboard_state` · `app/api.py:2993` (cuerpo hasta la 3020) · decorador en la linea 2992.
 
 ## Parametros de entrada
 
@@ -18,7 +18,7 @@ Handler `dashboard_state` · `app/api.py:2947` (cuerpo hasta la 2974) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `barriers` | literal en app/api.py:2972 |
+| `barriers` | literal en app/api.py:3018 |
 | `barriers.active_zone` | literal en app/interpretation.py:1001 |
 | `barriers.available` | literal en app/interpretation.py:998 |
 | `barriers.current_price` | literal en app/interpretation.py:999 |
@@ -34,7 +34,7 @@ Handler `dashboard_state` · `app/api.py:2947` (cuerpo hasta la 2974) · decorad
 | `barriers.symbol` | literal en app/scalp_logic.py:1353 |
 | `barriers.warning` | literal en app/interpretation.py:1057 |
 | `barriers.warnings` | literal en app/interpretation.py:1048 |
-| `cvd_swing` | literal en app/api.py:2971 |
+| `cvd_swing` | literal en app/api.py:3017 |
 | `cvd_swing.as_of` | literal en app/interpretation.py:643 |
 | `cvd_swing.available` | literal en app/interpretation.py:642 |
 | `cvd_swing.backtest` | literal en app/interpretation.py:661 |
@@ -50,7 +50,7 @@ Handler `dashboard_state` · `app/api.py:2947` (cuerpo hasta la 2974) · decorad
 | `cvd_swing.strength` | literal en app/interpretation.py:646 |
 | `cvd_swing.thesis` | literal en app/interpretation.py:648 |
 | `cvd_swing.warning` | literal en app/interpretation.py:680 |
-| `market_memory` | literal en app/api.py:2973 |
+| `market_memory` | literal en app/api.py:3019 |
 | `market_memory.analog_summary` | literal en app/interpretation.py:508 |
 | `market_memory.analogs` | literal en app/interpretation.py:507 |
 | `market_memory.available` | literal en app/interpretation.py:491 |
@@ -64,7 +64,7 @@ Handler `dashboard_state` · `app/api.py:2947` (cuerpo hasta la 2974) · decorad
 | `market_memory.source` | literal en app/interpretation.py:516 |
 | `market_memory.symbol` | literal en app/scalp_logic.py:1676 |
 | `market_memory.warning` | literal en app/interpretation.py:517 |
-| `scalp` | literal en app/api.py:2965 |
+| `scalp` | literal en app/api.py:3011 |
 | `scalp.absorption` | literal en app/scalp_logic.py:914 |
 | `scalp.absorption_context` | literal en app/scalp_logic.py:916 |
 | `scalp.absorption_delta_ratio` | literal en app/scalp_logic.py:915 |
@@ -122,7 +122,7 @@ Handler `dashboard_state` · `app/api.py:2947` (cuerpo hasta la 2974) · decorad
 | `scalp.vwap_dist_pct` | literal en app/scalp_logic.py:913 |
 | `scalp.wall_down_pct` | literal en app/scalp_logic.py:877 |
 | `scalp.wall_up_pct` | literal en app/scalp_logic.py:876 |
-| `scalp_persistence` | literal en app/api.py:2967 |
+| `scalp_persistence` | literal en app/api.py:3013 |
 | `scalp_persistence.as_of` | literal en app/api.py:2688 |
 | `scalp_persistence.available` | literal en app/api.py:2679 |
 | `scalp_persistence.dias` | literal en app/api.py:2687 |
@@ -133,20 +133,20 @@ Handler `dashboard_state` · `app/api.py:2947` (cuerpo hasta la 2974) · decorad
 | `scalp_persistence.minutos_muestra` | literal en app/api.py:2684 |
 | `scalp_persistence.p90_min` | literal en app/api.py:2681 |
 | `scalp_persistence.p90_no_accionable_min` | literal en app/api.py:2685 |
-| `setup` | literal en app/api.py:2970 |
+| `setup` | literal en app/api.py:3016 |
 | `setup.daily_flow_source` | literal en app/interpretation.py:201 |
 | `setup.daily_slope` | literal en app/interpretation.py:200 |
 | `setup.daily_streak` | literal en app/interpretation.py:199 |
 | `setup.primary` | literal en app/interpretation.py:202 |
 | `setup.setups` | literal en app/interpretation.py:203 |
 | `setup.warning` | literal en app/interpretation.py:204 |
-| `signal_base_rate` | literal en app/api.py:2969 |
-| `signal_base_rate.as_of` | literal en app/api.py:2874 |
-| `signal_base_rate.dias_pedidos` | literal en app/api.py:2870 |
-| `signal_base_rate.horizonte_min` | literal en app/api.py:2871 |
-| `signal_base_rate.ventana_pedida_desde` | literal en app/api.py:2872 |
-| `signal_base_rate.ventana_pedida_hasta` | literal en app/api.py:2873 |
-| `snapshot` | literal en app/api.py:2964 |
+| `signal_base_rate` | literal en app/api.py:3015 |
+| `signal_base_rate.as_of` | literal en app/api.py:2903 |
+| `signal_base_rate.dias_pedidos` | literal en app/api.py:2899 |
+| `signal_base_rate.horizonte_min` | literal en app/api.py:2900 |
+| `signal_base_rate.ventana_pedida_desde` | literal en app/api.py:2901 |
+| `signal_base_rate.ventana_pedida_hasta` | literal en app/api.py:2902 |
+| `snapshot` | literal en app/api.py:3010 |
 | `snapshot.btr_15m` | columna de metrics_snapshot (sql/schema.sql) |
 | `snapshot.btr_1h` | columna de metrics_snapshot (sql/schema.sql) |
 | `snapshot.btr_24h` | columna de metrics_snapshot (sql/schema.sql) |
@@ -182,7 +182,7 @@ Handler `dashboard_state` · `app/api.py:2947` (cuerpo hasta la 2974) · decorad
 | `snapshot.vol_24h` | columna de metrics_snapshot (sql/schema.sql) |
 | `snapshot.whale_intensity` | columna de metrics_snapshot (sql/schema.sql) |
 | `snapshot.whale_label` | columna de metrics_snapshot (sql/schema.sql) |
-| `symbol` | literal en app/api.py:2963 |
+| `symbol` | literal en app/api.py:3009 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -241,6 +241,7 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 - `m`
 - `o.window_start`
+- `observed_minute`
 
 ## Funciones que la componen
 
@@ -252,7 +253,7 @@ Llamadas directas del handler:
 - `app.api.daily_data` — `app/api.py:494`
 - `app.api.latest_snapshot` — `app/api.py:467`
 - `app.api.scalp_persistence` — `app/api.py:2653`
-- `app.api.signal_base_rate` — `app/api.py:2839`
+- `app.api.signal_base_rate` — `app/api.py:2868`
 - `app.api.validate_symbol` — `app/api.py:222`
 - `app.interpretation.cvd_swing_read` — `app/interpretation.py:578`
 - `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
@@ -322,7 +323,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:99`, `harness/checks/K43-foto-unica.sh:159`, `harness/checks/K43-foto-unica.sh:160`, `harness/checks/K43-foto-unica.sh:161` _(+10)_ | `harness/checks/K43-foto-unica.sh:167`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:25`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:48` _(+1)_ |
-| **panel** | `static/app.js:1553` | `static/app.js:1379`, `static/app.js:1386` |
+| **panel** | `static/app.js:1566` | `static/app.js:1379`, `static/app.js:1386` |
 | **readme** | — | `README.md:195`, `README.md:488`, `README.md:502` |
 | **tests** | `tests/test_metrics_endpoint.py:253`, `tests/test_v121_hardening.py:27`, `tests/test_v150_desk_snapshot.py:126` | — |
 

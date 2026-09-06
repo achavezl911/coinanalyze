@@ -115,7 +115,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:66`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:103` | `harness/checks/K43-foto-unica.sh:44`, `harness/checks/K43-foto-unica.sh:87` |
-| **panel** | `static/app.js:1610`, `static/app.js:1665` | — |
+| **panel** | `static/app.js:1623`, `static/app.js:1678` | — |
 | **readme** | — | `README.md:406` |
 
 **La llama el panel: es superficie de producto.**

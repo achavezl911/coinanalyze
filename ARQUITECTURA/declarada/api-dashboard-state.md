@@ -127,11 +127,34 @@ no señal.
    son el minimo y el maximo reales de `signal_observation` dentro de la ventana pedida, no
    la ventana pedida— para que cualquiera pueda repetir la consulta y salir en el mismo
    sitio. `harness/checks/K95-la-tasa-base-que-se-pinta.sh` hace justo eso.
-2. **La lectura es sobre EJECUCION, no sobre acierto.** Medido en la campana de S3 sobre los
-   tres simbolos, 42 celdas y su placebo: la señal **no anticipa nada, ni a favor ni en
-   contra**, y **entra al peor precio de su propia ventana**. Por eso `lectura` dice «el
-   coste de entrada se come la ventaja» y **no** «el sistema pierde». Son afirmaciones
-   distintas y llevan a arreglos distintos.
+2. **La lectura NO dice ya «es un problema de ejecucion», y el cambio es del 2026-09-06.**
+   Medido en la campana de S3 sobre los tres simbolos, 42 celdas y su placebo: la señal **no
+   anticipa nada, ni a favor ni en contra**, y **entra al peor precio de su propia ventana**.
+   Eso sigue en pie y es lo que dice `lectura`: «el coste de entrada se come la ventaja».
+
+   *Lo que se retiro, y por que.* La tarjeta añadia «**es un problema de ejecucion, no de
+   acierto**», y la campana de la regla de entrada midio que **ninguna regla alcanzable lo
+   recupera**: el retraso fijo solo devuelve el desplazamiento entero a **k = 60 min**, que es
+   el horizonte completo; la orden limitada es **peor que no esperar** en las 18 celdas
+   medidas en cuanto se contabiliza que hace uno cuando el precio no vuelve; y la razon de
+   fondo es que **la señal no dura**. **Llamar «de ejecucion» a algo que ninguna ejecucion
+   arregla es un eufemismo**, y por eso se retiro. **Ninguna cifra de la tasa base cambio: lo
+   que cambio es la lectura.**
+
+   *La cifra nueva, con su denominador y su definicion, porque una tarjeta que exige contexto
+   no puede publicar una cifra sin el:* **`supervivencia_1min_pct`** —el porcentaje de señales
+   que **siguen vivas** un minuto despues—, **`supervivencia_n`** —sobre cuantas corre— y
+   **`supervivencia_definicion`**. *Sigue viva* = el minuto siguiente es periodico, **es
+   accionable** y tiene **la MISMA direccion**; las tres condiciones, porque un minuto
+   accionable del lado contrario no es la misma señal. Medido el 2026-09-06 sobre 30 dias:
+   **BTC 37.1 % (13 899 señales) · ETH 37.2 % (14 186) · SOL 46.0 % (10 434)**.
+
+   *Y lo que la tarjeta NO dice aunque sea la lectura natural:* que «la señal se publica
+   despues del movimiento que nombra». Eso es una **inferencia**. Lo medido es que entra a un
+   precio desplazado y que esperar no lo recupera; la tarjeta dice lo medido.
+
+   *Si la supervivencia no se puede medir*, la tarjeta lo dice y **no afirma** que esperar
+   arreglaria o no arreglaria nada. Es la misma regla de tres estados del resto del bloque.
 3. **El alcance viaja como CAMPO.** La unica ventana en la que la señal existe son ~27 dias
    que caen en el **percentil 95.9** de 737 ventanas comparables, de las que **334 fueron
    negativas**. Una tasa base medida en el mejor 5 % de dos anos tiene que decir que lo es.

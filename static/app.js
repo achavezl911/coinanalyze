@@ -1419,8 +1419,21 @@ function renderDecisionBoard(dashboard, trend, swing, structureDetail, confidenc
         // publicarlos como si lo fueran doblaba la muestra en la unica cifra cuyo proposito
         // es ser honesta sobre el tamaño de muestra. Encontrado por el operador el 09-06.
         `sobre ${number(tasaBase.observaciones, 0)} observaciones en ${number(tasaBase.n_efectiva, 0)} bloques distintos de ${number(tasaBase.horizonte_min, 0)} min, ${number(tasaBase.dias_de_arco, 1)} días de arco.`,
+        // LA FRASE CAMBIO EL 2026-09-06 Y LO QUE CAMBIO ES LA LECTURA, NO LA MEDIDA.
+        // Decia: «El coste de entrada es del orden de la ventaja: es un problema de ejecución,
+        // no de acierto.» La primera mitad sigue medida y sigue aquí. La segunda no se
+        // sostiene: la campaña de la regla de entrada midió que NINGUNA regla alcanzable la
+        // recupera —el retraso fijo solo la recupera entera a k=60 min, que es el horizonte
+        // completo, y la orden limitada es PEOR que no esperar en las 18 celdas medidas—.
+        // Llamar «de ejecución» a algo que ninguna ejecución arregla es un eufemismo.
+        //
+        // Y NO SE DICE «la señal se publica después del movimiento que nombra», aunque sea la
+        // lectura natural: eso es una inferencia. Lo MEDIDO es que entra a un precio
+        // desplazado y que esperar no lo recupera. La tarjeta dice lo medido.
         tasaBase.lectura === 'el coste de entrada se come la ventaja'
-          ? 'El coste de entrada es del orden de la ventaja: es un problema de ejecución, no de acierto.'
+          ? (tasaBase.supervivencia_1min_pct === null || tasaBase.supervivencia_1min_pct === undefined
+              ? 'El coste de entrada se lleva la ventaja. No se pudo medir cuánto dura la señal, así que esta tarjeta no dice si esperar lo arreglaría.'
+              : `El coste de entrada se lleva la ventaja, y NO se arregla cambiando cómo se entra: al minuto siguiente la señal ya no existe en el ${number(100 - tasaBase.supervivencia_1min_pct, 1)} % de los casos (${number(tasaBase.supervivencia_n, 0)} señales; sigue viva = ${tasaBase.supervivencia_definicion}), así que esperar a un precio mejor es operar otra cosa.`)
           : 'Hay ventaja direccional medible además del coste de entrada.',
         alcance.available
           ? `Alcance: esos ${number(alcance.dias_de_la_ventana, 0)} días están en el percentil ${number(alcance.percentil_de_la_ventana, 1)} de ${number(alcance.ventanas_comparadas, 0)} ventanas comparables (mediana ${pct(alcance.mediana_historica_pct, 2)}); ${number(alcance.ventanas_negativas, 0)} de ellas fueron negativas y no están en la muestra.`
