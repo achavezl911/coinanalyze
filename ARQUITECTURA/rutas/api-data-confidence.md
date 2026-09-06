@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `data_confidence` · `app/api.py:2578` (cuerpo hasta la 2582) · decorador en la linea 2577.
+Handler `data_confidence` · `app/api.py:2600` (cuerpo hasta la 2604) · decorador en la linea 2599.
 
 ## Parametros de entrada
 
@@ -18,7 +18,7 @@ Handler `data_confidence` · `app/api.py:2578` (cuerpo hasta la 2582) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `rows` | literal en app/api.py:2582 |
+| `rows` | literal en app/api.py:2604 |
 
 Forma de la respuesta segun el AST: objeto.
 

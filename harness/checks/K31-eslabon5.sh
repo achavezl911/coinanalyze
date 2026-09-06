@@ -165,9 +165,52 @@ npedidas=$(printf '%s' "$pedidas" | wc -w)
 nnp=$(printf '%s' "$NO_PANEL" | wc -w)
 ve=$((npedidas + nb)); nove=$((nd + nhu))
 
-if [ "$nhu" -gt 0 ] || [ "$nm" -gt 0 ]; then
+# --- LAS DISPOSICIONES · quien se hace cargo de cada HUECO ------------------------------
+# EL CRITERIO CAMBIO EL 2026-09-06 Y ESTA ES LA RAZON. Este check llevaba ROJO 26 de 27
+# pasadas guardadas diciendo «N HUECOS REALES», y esa cifra no se movia: contar huecos no es
+# una pregunta que se pueda contestar, porque la respuesta -si una ruta debe llegar al
+# operador- es de producto y no de un check. Un rojo que no se puede resolver deja de ser
+# informacion; es la trampa que K52b tiene escrita en su cabecera.
+#
+# Ahora enrojece por HUECOS SIN DUEÑO. Con las once dispuestas sale VERDE hoy y vuelve a
+# ROJO el dia que aparezca una ruta nueva que no llegue a nadie y que nadie haya mirado --
+# que es la unica pregunta que de verdad queria contestar. Es la misma forma que K16: deriva
+# todo, enrojece por lo que no tiene dueño, y CUENTA lo demas.
+#
+# La disposicion NO se teclea aqui: vive en K31-disposiciones.tsv, con la cita de cada una.
+# Y se comprueban las dos direcciones -hueco sin disposicion, y disposicion sin hueco-,
+# porque una lista que solo se lee en un sentido envejece en el otro.
+# K31_DISP existe para que su control pueda darle un fichero de mentira. Sin un punto de
+# inyeccion no hay forma de inducir «hueco sin dueño» sin tocar el fichero de verdad, y un
+# criterio que solo se puede observar en el estado bueno no esta comprobado.
+DISP="${K31_DISP:-$REPO/harness/checks/K31-disposiciones.tsv}"
+[ -f "$DISP" ] || DISP=/srv/coinanalyze/repo/harness/checks/K31-disposiciones.tsv
+if [ ! -r "$DISP" ]; then
+  echo "NO MEDIDO: no se puede leer K31-disposiciones.tsv, que es quien dice de quien es cada hueco"
+  exit 2
+fi
+huecos_lista=$(printf '%s\n' "$cubos" | sed -n 's/^HUECO: //p' | tr ' ' '\n' | grep -E '^/api/' || true)
+dispuestas=$(grep -E '^/api/' "$DISP" | cut -f1 | sort -u)
+n_disp=$(printf '%s\n' "$dispuestas" | grep -c . || true)
+# CERO DISPOSICIONES NO ES CERO HUECOS SIN DUEÑO: si el fichero se vacia o cambia de formato,
+# "todo dispuesto" seria indistinguible de "no he leido nada". Sin sujeto, NOMED.
+if [ "${n_disp:-0}" -eq 0 ]; then
+  echo "NO MEDIDO: K31-disposiciones.tsv no tiene ninguna linea /api/: o esta vacio o cambio de formato"
+  exit 2
+fi
+sin_dueno=$(comm -23 <(printf '%s\n' "$huecos_lista" | sort -u) <(printf '%s\n' "$dispuestas") | tr '\n' ' ')
+# HUERFANAS: una disposicion de una ruta que ya no es hueco. Es la otra direccion, y sin
+# ella el fichero se convierte en un cementerio que exime a rutas que ya no existen.
+huerfanas_disp=$(comm -13 <(printf '%s\n' "$huecos_lista" | sort -u) <(printf '%s\n' "$dispuestas") | tr '\n' ' ')
+n_sin=$(printf '%s' "$sin_dueno" | wc -w)
+n_huerf=$(printf '%s' "$huerfanas_disp" | wc -w)
+por_grupo=$(grep -E '^/api/' "$DISP" | cut -f2 | sort | uniq -c | awk '{printf "%s %s · ", $1, $2}')
+
+if [ "$n_sin" -gt 0 ] || [ "$n_huerf" -gt 0 ] || [ "$nm" -gt 0 ]; then
   {
-    printf 'ROJO: %d HUECOS REALES de %d rutas' "$nhu" "$total"
+    [ "$n_sin" -gt 0 ] && printf 'ROJO: %d ruta(s) HUECO sin disposicion en K31-disposiciones.tsv:%s' "$n_sin" " $sin_dueno"
+    [ "$n_huerf" -gt 0 ] && printf ' · %d disposicion(es) HUERFANA(S) -su ruta ya no es hueco-:%s' "$n_huerf" " $huerfanas_disp"
+    printf ' · de %d rutas' "$total"
     [ "$nm" -gt 0 ] && printf ' y %d payloads pedidos no mueven un pixel:%s' "$nm" "$mudas"
     printf ' · las %d huerfanas se reparten en %d BUNDLE (su dato llega dentro de otra ruta) · %d DISENO (su productora la consume app/ fuera de api.py) · %d HUECO (nadie)' "$nh" "$nb" "$nd" "$nhu"
     printf ' · segunda lectura, sobre %d de las %d (las %d NO_PANEL no entran, cada una con su cita): %d llegan al operador (%d que pide el panel + %d bundle), %d no (%d diseno + %d hueco)' \
@@ -178,4 +221,4 @@ if [ "$nhu" -gt 0 ] || [ "$nm" -gt 0 ]; then
   } | cut -c1-900
   exit 1
 fi
-echo "las $total rutas de /api/ o las pide el panel o llegan dentro de otra o las consume app/: CERO huecos · $nb bundle · $nd diseno · $ve de $((ve + nove)) llegan al operador (las $nnp NO_PANEL no entran en esa cuenta) · $np payloads probados por mutacion (${segundos}s, payloads de hace ${edad:-0}s) · NO AFIRMA: jsdom no maqueta y el recorrido es un solo estado de UI"
+echo "las $total rutas de /api/ o las pide el panel o llegan dentro de otra o las consume app/ o TIENEN DUEÑO: $nhu hueco(s), los $n_disp dispuestos en K31-disposiciones.tsv ($por_grupo sin huerfanas) · $nb bundle · $nd diseno · $ve de $((ve + nove)) llegan al operador (las $nnp NO_PANEL no entran en esa cuenta) · $np payloads probados por mutacion (${segundos}s, payloads de hace ${edad:-0}s) · NO AFIRMA: jsdom no maqueta y el recorrido es un solo estado de UI"

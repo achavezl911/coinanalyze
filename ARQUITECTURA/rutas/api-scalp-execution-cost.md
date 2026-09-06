@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_execution_cost` · `app/api.py:1373` (cuerpo hasta la 1426) · decorador en la linea 1372.
+Handler `scalp_execution_cost` · `app/api.py:1395` (cuerpo hasta la 1448) · decorador en la linea 1394.
 
 ## Parametros de entrada
 
@@ -83,7 +83,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._slippage_para` — `app/api.py:1429`
+- `app.api._slippage_para` — `app/api.py:1451`
 - `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
@@ -140,9 +140,9 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:1394` | el propio handler |
-| 422 | sizes debe ser una lista de numeros | `app/api.py:1400` | el propio handler |
-| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1402` | el propio handler |
+| 422 | — | `app/api.py:1416` | el propio handler |
+| 422 | sizes debe ser una lista de numeros | `app/api.py:1422` | el propio handler |
+| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1424` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

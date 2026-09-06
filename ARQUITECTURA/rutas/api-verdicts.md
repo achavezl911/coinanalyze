@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `verdicts` · `app/api.py:1827` (cuerpo hasta la 1913) · decorador en la linea 1826.
+Handler `verdicts` · `app/api.py:1849` (cuerpo hasta la 1935) · decorador en la linea 1848.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `verdicts` · `app/api.py:1827` (cuerpo hasta la 1913) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:1906 |
-| `logic_version` | literal en app/api.py:1904 |
-| `note` | literal en app/api.py:1907 |
-| `rows` | literal en app/api.py:1905 |
-| `symbol` | literal en app/api.py:1903 |
+| `coverage` | literal en app/api.py:1928 |
+| `logic_version` | literal en app/api.py:1926 |
+| `note` | literal en app/api.py:1929 |
+| `rows` | literal en app/api.py:1927 |
+| `symbol` | literal en app/api.py:1925 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -34,7 +34,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_verdict_outcome` — `sql/schema.sql:2290`, 10 columnas
+- `daily_verdict_outcome` — `sql/schema.sql:2161`, 10 columnas
   - la llena `app.daily_agg.materialize_daily_verdict_outcomes` (INSERT) — `app/daily_agg.py:507`
 - `daily_verdict_snapshot` — `sql/schema.sql:1099`, 26 columnas
   - la llena `app.daily_agg.persist_verdicts` (INSERT) — `app/daily_agg.py:418`

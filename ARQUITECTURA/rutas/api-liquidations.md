@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_series` · `app/api.py:965` (cuerpo hasta la 1011) · decorador en la linea 964.
+Handler `liquidation_series` · `app/api.py:987` (cuerpo hasta la 1033) · decorador en la linea 986.
 
 ## Parametros de entrada
 

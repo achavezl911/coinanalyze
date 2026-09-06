@@ -150,6 +150,46 @@ EOF
 caso "N5 mismo cuerpo, lineas en blanco en otro sitio" 0 "MISMO cuerpo"
 
 echo
+echo "REAPLICACION DELIBERADA · la tercera categoria, que nacio de ejercer la puerta 1"
+# El par DROP/CREATE TRIGGER de liquidations_realtime tiene el MISMO texto que el de :377 y
+# toca OTRA TABLA, porque entre los dos la migracion renombra `liquidations_realtime`.
+# Medido: con esas lineas el trigger queda en 6 relaciones, sin ellas en 1. No es deuda.
+monta <<EOF
+$(fn f_adrede X)
+-- REAPLICACION DELIBERADA: aqui el nombre significa otra tabla, ver la migracion.
+$(fn f_adrede X)
+EOF
+caso "A1 duplicado CON motivo escrito: no es deuda" 0 "reaplicacion\(es\) DELIBERADA"
+
+# A2 · ANTI-FANTASMA DEL MARCADOR: sin el motivo, el MISMO fixture vuelve a ser deuda. Sin
+# este caso, A1 pasaria igual si el marcador no se leyera nunca.
+monta <<EOF
+$(fn f_adrede X)
+$(fn f_adrede X)
+EOF
+caso "A2 el mismo, SIN motivo: vuelve a ser deuda" 0 "SIN motivo escrito"
+
+# A3 · el marcador no puede ser un salvoconducto: una redeclaracion DIVERGENTE con el motivo
+# escrito sigue siendo ROJO. Escribir "es a proposito" no hace que dos cuerpos distintos
+# dejen de pisarse.
+monta <<EOF
+$(fn f_marcada X)
+-- REAPLICACION DELIBERADA: y aun asi los cuerpos no coinciden.
+$(fn f_marcada Y)
+EOF
+caso "A3 divergente CON motivo: sigue siendo ROJO" 1 "cuerpos DISTINTOS"
+
+# A4 · el marcador tiene alcance: 30 lineas arriba. Uno perdido a 60 lineas no vale, o
+# cualquier "REAPLICACION DELIBERADA" del fichero eximiria a todo lo de debajo.
+monta <<EOF
+-- REAPLICACION DELIBERADA: escrito demasiado lejos.
+$(for i in $(seq 1 40); do echo "-- relleno $i"; done)
+$(fn f_lejos X)
+$(fn f_lejos X)
+EOF
+caso "A4 motivo a 40+ lineas: no exime" 0 "SIN motivo escrito"
+
+echo
 echo "POSITIVO · la divergencia SI enrojece"
 # P1 · dos cuerpos distintos: el ultimo pisa al primero en silencio. Este es el defecto.
 monta <<EOF

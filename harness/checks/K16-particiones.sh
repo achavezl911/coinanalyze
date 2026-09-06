@@ -31,12 +31,26 @@
 # la produce es la DIVERGENCIA -dos cuerpos distintos donde el ultimo pisa al primero en
 # silencio, y editar el equivocado no da error, simplemente no hace nada-. Asi que:
 #   ROJO   si dos declaraciones del mismo objeto DIVERGEN.
-#   CUENTA -sin enrojecer- la duplicacion identica, que es deuda y no defecto vivo.
+#   ADREDE la reaplicacion con motivo escrito. Ni deuda ni defecto: ver abajo.
+#   CUENTA -sin enrojecer- la duplicacion identica SIN motivo, que es deuda.
 # Los duplicados se DERIVAN del fichero, no se teclean: un sexto duplicado entra solo.
 #
-# LO QUE ESTE CHECK NO ARREGLA: el bloque duplicado sigue ahi. Borrarlo es un cambio NO
-# aditivo a sql/schema.sql y eso es la puerta 1 de CLAUDE.md §5, asi que va a la mesa de
-# Alejandro y no lo hago yo.
+# LA PUERTA 1 SE EJERCIO EL 2026-09-06, Y A MEDIAS. Se pidio y se concedio borrar el bloque
+# 2004-2160 entero. NO SE PUDO, y el motivo desmonta la palabra «duplicado»: entre las dos
+# mitades del fichero, `:1993-1996` RENOMBRA las tablas -liquidations_realtime pasa a
+# `..._unpartitioned_backup` y la particionada asciende a `liquidations_realtime`-, asi que el
+# `CREATE TRIGGER` de :377 y el de abajo tienen el MISMO TEXTO y tocan TABLAS DISTINTAS.
+# Medido sobre bases desechables aplicando el esquema previo (91111f6~1) y encima el actual:
+# con esas lineas el trigger de unicidad queda en 6 relaciones; sin ellas, en 1 -solo el
+# backup-, o sea que la tabla VIVA se queda sin control de unicidad.
+# Sobre una base VACIA las dos ramas dan lo mismo, porque sin tablas viejas no hay renombrado.
+# Por eso la CI -que crea una base desechable y aplica el fichero, ci.yml:65-72- es
+# ESTRUCTURALMENTE CIEGA a esto. Se borraron las cuatro redeclaraciones de FUNCION, que si son
+# no-ops, y el `SELECT ensure_temporal_partitions()` del cierre, que tampoco hacia falta.
+#
+# DE AHI SALE LA CATEGORIA «ADREDE», y se reconoce por un marcador EN EL FICHERO y no por una
+# lista aqui dentro: quien repita una declaracion a proposito tiene que decir por que encima,
+# y ese texto es la cita. El marcador NO exime a un cuerpo divergente (caso A3 del control).
 #
 # Las otras tres comprobaciones no se tocan: la cobertura de tests sobre partitioning, y el
 # oraculo VIVO contra 140 -la funcion existe una sola vez y gestiona las cinco tablas que
@@ -96,12 +110,30 @@ for n, l in enumerate(L, 1):
     if m:
         obj.setdefault((" ".join(m.group(1).upper().split()), m.group(2).lower()), []).append(n)
 
+# UNA REDECLARACION PUEDE SER DELIBERADA, Y ENTONCES NO ES DEUDA. Lo aprendio este check el
+# 2026-09-06 al ejercer la puerta 1: el par DROP/CREATE TRIGGER de liquidations_realtime
+# tiene el MISMO texto que el de :377 y toca OTRA TABLA, porque entre los dos la migracion
+# renombra `liquidations_realtime`. Borrarlo dejaba la tabla viva sin control de unicidad, y
+# el experimento lo enseño (6 triggers contra 1). Asi que hay una tercera categoria y se
+# reconoce por un marcador EN EL FICHERO, no por una lista aqui dentro: quien escriba la
+# redeclaracion tiene que decir por que, arriba, y ese texto es la cita.
+MARCA = "REAPLICACION DELIBERADA"
+def deliberada(linea):
+    ini = max(0, linea - 30)
+    return MARCA in "\n".join(L[ini:linea - 1])
+
 total = len(obj)
 dups = {k: v for k, v in obj.items() if len(v) > 1}
-diverge, iguales = [], []
+diverge, iguales, adrede = [], [], []
 for (tipo, nom), ls in sorted(dups.items()):
     cuerpos = [tokens(cuerpo(x)) for x in ls]
-    (diverge if len(set(cuerpos)) > 1 else iguales).append(f"{tipo.lower()} {nom} ({','.join(map(str, ls))})")
+    etq = f"{tipo.lower()} {nom} ({','.join(map(str, ls))})"
+    if len(set(cuerpos)) > 1:
+        diverge.append(etq)
+    elif all(deliberada(x) for x in ls[1:]):
+        adrede.append(etq)
+    else:
+        iguales.append(etq)
 print(f"TOTAL {total}")
 print(f"DIVERGEN {len(diverge)}")
 for d in diverge:
@@ -109,6 +141,9 @@ for d in diverge:
 print(f"IGUALES {len(iguales)}")
 for i in iguales:
     print(f"  I {i}")
+print(f"ADREDE {len(adrede)}")
+for a in adrede:
+    print(f"  A {a}")
 PY
 ); rc_dup=$?
 if [ "$rc_dup" != "0" ]; then
@@ -117,6 +152,7 @@ fi
 n_obj=$(printf '%s\n' "$dup" | awk '/^TOTAL/{print $2}')
 n_div=$(printf '%s\n' "$dup" | awk '/^DIVERGEN/{print $2}')
 n_ig=$(printf '%s\n' "$dup" | awk '/^IGUALES/{print $2}')
+n_ad=$(printf '%s\n' "$dup" | awk '/^ADREDE/{print $2}')
 # CERO OBJETOS NO ES CERO DEFECTOS: si el analizador deja de reconocer los CREATE, cero
 # duplicados es indistinguible de un fichero limpio. Sin sujeto, NOMED.
 [ "${n_obj:-0}" -ge 50 ] || { echo "NO MEDIDO: solo $n_obj objetos CREATE en schema.sql; el analizador no esta reconociendolos"; exit 2; }
@@ -142,7 +178,13 @@ done
 
 [ -z "${fallos# }" ] || { printf '%s\n' "${fallos#; }" | sed 's/^ //'; exit 1; }
 echo "ningun objeto de schema.sql diverge consigo mismo (de $n_obj CREATE), $cubierto test(s) sobre partitioning, y la funcion viva gestiona las 5 tablas"
-printf '  DEUDA, no defecto: %s objeto(s) declarados dos veces con el MISMO cuerpo. Se cuenta, no enrojece.\n' "$n_ig"
-printf '%s\n' "$dup" | sed -n 's/^  I /    /p'
-echo "  borrar el bloque duplicado es un cambio NO aditivo a schema.sql: puerta 1, pendiente de Alejandro"
+if [ "${n_ad:-0}" -gt 0 ]; then
+  printf '  %s reaplicacion(es) DELIBERADA(S), con su motivo escrito encima en schema.sql:\n' "$n_ad"
+  printf '%s\n' "$dup" | sed -n 's/^  A /    /p'
+fi
+if [ "${n_ig:-0}" -gt 0 ]; then
+  printf '  DEUDA, no defecto: %s objeto(s) declarados dos veces con el MISMO cuerpo y SIN motivo escrito.\n' "$n_ig"
+  printf '%s\n' "$dup" | sed -n 's/^  I /    /p'
+  printf '  Se cuenta, no enrojece. Si la repeticion es a proposito, escribe "%s" encima y di por que.\n' "REAPLICACION DELIBERADA"
+fi
 exit 0

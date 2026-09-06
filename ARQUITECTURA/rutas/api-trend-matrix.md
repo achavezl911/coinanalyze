@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trend_matrix_endpoint` · `app/api.py:1767` (cuerpo hasta la 1770) · decorador en la linea 1766.
+Handler `trend_matrix_endpoint` · `app/api.py:1789` (cuerpo hasta la 1792) · decorador en la linea 1788.
 
 ## Parametros de entrada
 

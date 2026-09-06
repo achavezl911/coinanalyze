@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1015` (cuerpo hasta la 1081) · decorador en la linea 1014.
+Handler `whale_delta` · `app/api.py:1037` (cuerpo hasta la 1103) · decorador en la linea 1036.
 
 ## Parametros de entrada
 

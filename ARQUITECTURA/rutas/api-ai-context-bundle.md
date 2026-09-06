@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_context_bundle` · `app/api.py:2719` (cuerpo hasta la 2736) · decorador en la linea 2718.
+Handler `ai_context_bundle` · `app/api.py:2741` (cuerpo hasta la 2758) · decorador en la linea 2740.
 
 ## Parametros de entrada
 
@@ -38,7 +38,7 @@ LEE:
 - `daily_session_agg` — `sql/schema.sql:1032`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
-- `daily_verdict_outcome` — `sql/schema.sql:2290`, 10 columnas
+- `daily_verdict_outcome` — `sql/schema.sql:2161`, 10 columnas
   - la llena `app.daily_agg.materialize_daily_verdict_outcomes` (INSERT) — `app/daily_agg.py:507`
 - `daily_verdict_snapshot` — `sql/schema.sql:1099`, 26 columnas
   - la llena `app.daily_agg.persist_verdicts` (INSERT) — `app/daily_agg.py:418`
@@ -327,7 +327,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:2732` | el propio handler |
+| 422 | — | `app/api.py:2754` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

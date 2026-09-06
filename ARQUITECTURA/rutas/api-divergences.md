@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `divergences_endpoint` · `app/api.py:1813` (cuerpo hasta la 1816) · decorador en la linea 1812.
+Handler `divergences_endpoint` · `app/api.py:1835` (cuerpo hasta la 1838) · decorador en la linea 1834.
 
 ## Parametros de entrada
 

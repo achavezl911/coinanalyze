@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `desk_state` · `app/api.py:1217` (cuerpo hasta la 1315) · decorador en la linea 1216.
+Handler `desk_state` · `app/api.py:1239` (cuerpo hasta la 1337) · decorador en la linea 1238.
 
 ## Parametros de entrada
 
@@ -21,15 +21,15 @@ Handler `desk_state` · `app/api.py:1217` (cuerpo hasta la 1315) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1289 |
-| `components` | literal en app/api.py:1293 |
-| `direction` | literal en app/api.py:1291 |
-| `note` | literal en app/api.py:1310 |
-| `partial` | literal en app/api.py:1304 |
-| `profile` | literal en app/api.py:1290 |
-| `setup` | literal en app/api.py:1292 |
-| `source_timestamps` | literal en app/api.py:1294 |
-| `symbol` | literal en app/api.py:1288 |
+| `as_of` | literal en app/api.py:1311 |
+| `components` | literal en app/api.py:1315 |
+| `direction` | literal en app/api.py:1313 |
+| `note` | literal en app/api.py:1332 |
+| `partial` | literal en app/api.py:1326 |
+| `profile` | literal en app/api.py:1312 |
+| `setup` | literal en app/api.py:1314 |
+| `source_timestamps` | literal en app/api.py:1316 |
+| `symbol` | literal en app/api.py:1310 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -215,9 +215,9 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:1237` | el propio handler |
-| 422 | — | `app/api.py:1241` | el propio handler |
-| 422 | — | `app/api.py:1245` | el propio handler |
+| 422 | — | `app/api.py:1259` | el propio handler |
+| 422 | — | `app/api.py:1263` | el propio handler |
+| 422 | — | `app/api.py:1267` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

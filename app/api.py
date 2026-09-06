@@ -757,12 +757,34 @@ async def cvd_spot(
             """
             WITH grouped AS (
               SELECT date_bin($2::interval, ts, '1970-01-01'::timestamptz) AS bucket,
-                     SUM(buy_vol_usd-sell_vol_usd) AS delta_usd
+                     SUM(buy_vol_usd-sell_vol_usd) AS delta_usd,
+                     -- LAS MISMAS CUATRO QUE /api/whale/delta, y por el mismo motivo: esta
+                     -- ruta lee spot_trades_agg con el MISMO WHERE que ella, o sea la unica
+                     -- tabla -con futures_trades_agg- que declara cobertura por segundo. Sin
+                     -- esto, un cubo construido sobre minutos cortos es indistinguible de uno
+                     -- completo, y `spot_trades` no tiene detector de huecos que lo delate por
+                     -- otra via: data_gap no tiene ni una fila suya (medido en 140).
+                     -- Publicarlo en una ruta y no en la otra era que la misma pregunta
+                     -- tuviera dos respuestas segun por donde entres.
+                     MIN(covered_seconds) AS covered_seconds_min,
+                     count(*) FILTER (WHERE covered_seconds < 60) AS short_minutes,
+                     -- los NULOS aparte: `covered_seconds < 60` no los satisface, y sin esta
+                     -- linea un cubo de legado saldria min=null short=0, IDENTICO a uno
+                     -- completo de verdad. "No falta nada" y "no lo se" no son lo mismo.
+                     count(*) FILTER (WHERE covered_seconds IS NULL) AS unknown_minutes,
+                     -- y las tres de arriba solo saben de minutos PRESENTES: el minuto que no
+                     -- llega a existir como 'combined' no suma en ninguna.
+                     count(*) AS minutes_present
               FROM spot_trades_agg
               WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
               GROUP BY 1 ORDER BY 1 DESC LIMIT $3
             )
-            SELECT bucket,delta_usd,SUM(delta_usd) OVER (ORDER BY bucket) AS cvd
+            -- LAS CUATRO SE ARRASTRAN POR EL SELECT EXTERIOR A MANO. whale/delta hace
+            -- `SELECT * FROM grouped` y aqui el exterior enumera columnas porque necesita la
+            -- ventana del acumulado, asi que una copia ciega de su SQL las habria perdido
+            -- justo aqui, sin error y sin aviso.
+            SELECT bucket,delta_usd,SUM(delta_usd) OVER (ORDER BY bucket) AS cvd,
+                   covered_seconds_min,short_minutes,unknown_minutes,minutes_present
             FROM grouped ORDER BY bucket
             """,
             ws_symbol,

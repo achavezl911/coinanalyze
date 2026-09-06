@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `funding_context_endpoint` · `app/api.py:1603` (cuerpo hasta la 1606) · decorador en la linea 1602.
+Handler `funding_context_endpoint` · `app/api.py:1625` (cuerpo hasta la 1628) · decorador en la linea 1624.
 
 ## Parametros de entrada
 

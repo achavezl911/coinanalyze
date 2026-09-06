@@ -234,7 +234,7 @@ La escriben:
 
 ### daily_verdict_outcome
 
-`sql/schema.sql:2290`, 10 columnas.
+`sql/schema.sql:2161`, 10 columnas.
 
 La escriben:
 
@@ -744,7 +744,7 @@ La escriben:
 
 ### signal_outcome_final_visibility
 
-`sql/schema.sql:2477`, 8 columnas.
+`sql/schema.sql:2348`, 8 columnas.
 
 La escriben:
 

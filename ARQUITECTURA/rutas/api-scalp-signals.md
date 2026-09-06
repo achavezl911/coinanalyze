@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_signals` · `app/api.py:2024` (cuerpo hasta la 2043) · decorador en la linea 2023.
+Handler `scalp_signals` · `app/api.py:2046` (cuerpo hasta la 2065) · decorador en la linea 2045.
 
 ## Parametros de entrada
 
@@ -19,8 +19,8 @@ Handler `scalp_signals` · `app/api.py:2024` (cuerpo hasta la 2043) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `rows` | literal en app/api.py:2043 |
-| `symbol` | literal en app/api.py:2043 |
+| `rows` | literal en app/api.py:2065 |
+| `symbol` | literal en app/api.py:2065 |
 
 Forma de la respuesta segun el AST: objeto.
 
