@@ -46,8 +46,12 @@ for c in "$B"/checks/*.sh; do
   # que no tienen nada que ver y haria que el ultimo muriera por culpa del primero.
   # EL VALOR SALE DE UNA MEDIDA, NO DEL GUSTO, y la medida se puede repetir: con
   # VERIFY_TIEMPOS=1 esta misma linea escribe a stderr cuanto tarda cada check, en segundos.
-  # El tope de 600 s se eligio contra esa tabla, con holgura de varias veces sobre el check
-  # mas lento, para que un dia malo de red no invente un NOMED. Se sube sin tocar el fichero:
+  # MEDIDO ASI el 2026-09-06 sobre los 54 checks (claude/instrumentos-ciegos@8bb4063):
+  #     mediana 1 s · suma 373 s · los seis mas lentos:
+  #     158 K31-eslabon5 · 44 K88 · 42 K20-cincoxx · 22 K60 · 16 K43 · 11 K68
+  # El tope de 600 s es 3.8 veces el mas lento medido: holgura para que un dia malo de red no
+  # invente un NOMED, y aun asi tres ordenes de magnitud por debajo de "para siempre".
+  # Se sube sin tocar el fichero:
   #     VERIFY_TIMEOUT=900 harness/bin/verify
   # Y lo que cuesta, dicho en vez de vendido: con 54 checks, un arnes que se colgara ENTERO
   # tardaria 9 h en terminar. Es infinitamente mejor que no terminar nunca, pero no es gratis.
