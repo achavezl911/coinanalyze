@@ -16,11 +16,18 @@ Handler `verdicts` · `app/api.py:1849` (cuerpo hasta la 1935) · decorador en l
 
 ## Campos que publica
 
-5 campos derivados. La procedencia dice de donde sale cada uno.
+12 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `coverage` | literal en app/api.py:1928 |
+| `coverage.served_window` | literal en app/api.py:1928 |
+| `coverage.served_window.complete` | literal en app/data_gaps.py:279 |
+| `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:277 |
+| `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:278 |
+| `coverage.served_window.sources` | literal en app/data_gaps.py:280 |
+| `coverage.served_window.window_end` | literal en app/data_gaps.py:276 |
+| `coverage.served_window.window_start` | literal en app/data_gaps.py:275 |
 | `logic_version` | literal en app/api.py:1926 |
 | `note` | literal en app/api.py:1929 |
 | `rows` | literal en app/api.py:1927 |
@@ -105,9 +112,11 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `coverage.served_window`
+- `coverage.served_window.window_end`
+- `coverage.served_window.window_start`
 
 ## Capa DECLARADA
 

@@ -17,18 +17,23 @@ Handler `zone_analysis_endpoint` · `app/api.py:1674` (cuerpo hasta la 1687) · 
 
 ## Campos que publica
 
-8 campos derivados. La procedencia dice de donde sale cada uno.
+13 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `lookback_days` | literal en app/scalp_logic.py:1486 |
 | `scored_visits` | literal en app/scalp_logic.py:1489 |
 | `sources` | literal en app/scalp_logic.py:1495 |
+| `sources.cvd_spot` | literal en app/scalp_logic.py:1497 |
+| `sources.delta_futuros` | literal en app/scalp_logic.py:1496 |
+| `sources.no_disponible` | literal en app/scalp_logic.py:1498 |
 | `summary` | literal en app/scalp_logic.py:1490 |
 | `symbol` | literal en app/scalp_logic.py:1484 |
 | `visit_count` | literal en app/scalp_logic.py:1488 |
 | `visits` | literal en app/scalp_logic.py:1487 |
 | `zone` | literal en app/scalp_logic.py:1485 |
+| `zone.high` | literal en app/scalp_logic.py:1485 |
+| `zone.low` | literal en app/scalp_logic.py:1485 |
 
 Forma de la respuesta segun el AST: objeto.
 

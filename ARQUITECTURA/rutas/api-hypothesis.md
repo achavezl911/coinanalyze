@@ -27,7 +27,7 @@ Handler `hypothesis` · `app/api.py:1158` (cuerpo hasta la 1235) · decorador en
 
 ## Campos que publica
 
-24 campos derivados. La procedencia dice de donde sale cada uno.
+82 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
@@ -38,7 +38,35 @@ Handler `hypothesis` · `app/api.py:1158` (cuerpo hasta la 1235) · decorador en
 | `direction` | literal en app/scalp_logic.py:4838 |
 | `direction_label` | literal en app/scalp_logic.py:4839 |
 | `evidence` | literal en app/scalp_logic.py:4860 |
+| `evidence.a_favor` | literal en app/scalp_logic.py:4734 |
+| `evidence.en_contra` | literal en app/scalp_logic.py:4735 |
+| `evidence.neutral` | literal en app/scalp_logic.py:4736 |
+| `evidence.no_evaluable` | literal en app/scalp_logic.py:4738 |
+| `evidence.pendiente` | literal en app/scalp_logic.py:4737 |
 | `execution` | literal en app/scalp_logic.py:4858 |
+| `execution.bands_note` | literal en app/scalp_logic.py:5169 |
+| `execution.cost_components_bps` | literal en app/scalp_logic.py:5138 |
+| `execution.cost_components_missing` | literal en app/scalp_logic.py:5139 |
+| `execution.cost_to_risk` | literal en app/scalp_logic.py:5143 |
+| `execution.cost_to_risk_band` | literal en app/scalp_logic.py:5145 |
+| `execution.cost_to_target` | literal en app/scalp_logic.py:5142 |
+| `execution.cost_to_target_band` | literal en app/scalp_logic.py:5144 |
+| `execution.horizon` | literal en app/scalp_logic.py:5134 |
+| `execution.inputs` | literal en app/scalp_logic.py:5147 |
+| `execution.missing_inputs` | literal en app/scalp_logic.py:5146 |
+| `execution.note` | literal en app/scalp_logic.py:5175 |
+| `execution.plan_coherence` | literal en app/scalp_logic.py:5166 |
+| `execution.plan_incoherencias` | literal en app/scalp_logic.py:5167 |
+| `execution.plan_warning` | literal en app/scalp_logic.py:5168 |
+| `execution.profile` | literal en app/scalp_logic.py:5132 |
+| `execution.profile_label` | literal en app/scalp_logic.py:5133 |
+| `execution.risk_bps` | literal en app/scalp_logic.py:5141 |
+| `execution.spread_warn_bps` | literal en app/scalp_logic.py:5159 |
+| `execution.spread_warning` | literal en app/scalp_logic.py:5158 |
+| `execution.status` | literal en app/scalp_logic.py:5135 |
+| `execution.target_bps` | literal en app/scalp_logic.py:5140 |
+| `execution.total_cost_bps` | literal en app/scalp_logic.py:5137 |
+| `execution.verdict` | literal en app/scalp_logic.py:5136 |
 | `hypothesis` | literal en app/scalp_logic.py:4837 |
 | `invalidations` | literal en app/scalp_logic.py:4863 |
 | `label` | literal en app/scalp_logic.py:4844 |
@@ -48,10 +76,40 @@ Handler `hypothesis` · `app/api.py:1158` (cuerpo hasta la 1235) · decorador en
 | `profile_coverage_pct` | literal en app/scalp_logic.py:4853 |
 | `setup` | literal en app/scalp_logic.py:4840 |
 | `setup_evaluation` | literal en app/scalp_logic.py:4843 |
+| `setup_evaluation.confirmation_evaluable` | literal en app/setups.py:1328 |
+| `setup_evaluation.confirmation_met` | literal en app/setups.py:1329 |
+| `setup_evaluation.confirmation_total` | literal en app/setups.py:1327 |
+| `setup_evaluation.coverage_pct` | literal en app/setups.py:1323 |
+| `setup_evaluation.critical_evaluable` | literal en app/setups.py:1325 |
+| `setup_evaluation.critical_met` | literal en app/setups.py:1326 |
+| `setup_evaluation.critical_total` | literal en app/setups.py:1324 |
+| `setup_evaluation.cumplidos` | literal en app/setups.py:1318 |
+| `setup_evaluation.direction` | literal en app/setups.py:1310 |
+| `setup_evaluation.direction_label` | literal en app/setups.py:1311 |
+| `setup_evaluation.faltantes` | literal en app/setups.py:1319 |
+| `setup_evaluation.invalidaciones` | literal en app/setups.py:1316 |
+| `setup_evaluation.label` | literal en app/setups.py:1309 |
+| `setup_evaluation.min_confirmations` | literal en app/setups.py:1332 |
+| `setup_evaluation.min_coverage_pct` | literal en app/setups.py:1333 |
+| `setup_evaluation.missing_confirmation` | literal en app/setups.py:1331 |
+| `setup_evaluation.missing_critical` | literal en app/setups.py:1330 |
+| `setup_evaluation.no_evaluables` | literal en app/setups.py:1317 |
+| `setup_evaluation.note` | literal en app/setups.py:1334 |
+| `setup_evaluation.pendientes` | literal en app/setups.py:1315 |
+| `setup_evaluation.requisitos` | literal en app/setups.py:1314 |
+| `setup_evaluation.requisitos_evaluables` | literal en app/setups.py:1321 |
+| `setup_evaluation.requisitos_totales` | literal en app/setups.py:1320 |
+| `setup_evaluation.setup` | literal en app/setups.py:1308 |
+| `setup_evaluation.state` | literal en app/setups.py:1313 |
+| `setup_evaluation.thesis` | literal en app/setups.py:1312 |
 | `setup_label` | literal en app/scalp_logic.py:4841 |
 | `setup_observables` | literal en app/scalp_logic.py:4864 |
 | `setup_state` | literal en app/scalp_logic.py:4842 |
 | `setup_zone` | literal en app/scalp_logic.py:4865 |
+| `setup_zone.breakout_boundary` | literal en app/scalp_logic.py:4869 |
+| `setup_zone.zone_center` | literal en app/scalp_logic.py:4868 |
+| `setup_zone.zone_high` | literal en app/scalp_logic.py:4867 |
+| `setup_zone.zone_low` | literal en app/scalp_logic.py:4866 |
 | `spread_bps` | literal en app/scalp_logic.py:4859 |
 | `symbol` | literal en app/api.py:1209 |
 | `timing` | literal en app/scalp_logic.py:4851 |
@@ -262,6 +320,10 @@ en el fichero de la capa declarada y puede corregirla con cita.
 Claves temporales entre los campos que publica:
 
 - `as_of`
+- `execution.cost_to_risk`
+- `execution.cost_to_risk_band`
+- `execution.cost_to_target`
+- `execution.cost_to_target_band`
 
 ## Capa DECLARADA
 

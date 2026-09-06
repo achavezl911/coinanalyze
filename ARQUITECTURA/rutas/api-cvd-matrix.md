@@ -14,13 +14,27 @@ Handler `cvd_matrix_endpoint` · `app/api.py:1803` (cuerpo hasta la 1807) · dec
 
 ## Campos que publica
 
-4 campos derivados. La procedencia dice de donde sale cada uno.
+18 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `as_of` | literal en app/scalp_logic.py:2883 |
 | `symbol` | literal en app/scalp_logic.py:2882 |
 | `window_meta` | literal en app/scalp_logic.py:2885 |
+| `window_meta.acceleration_measured` | literal en app/scalp_logic.py:2890 |
+| `window_meta.as_of` | literal en app/scalp_logic.py:2886 |
+| `window_meta.as_of_semantics` | literal en app/scalp_logic.py:2899 |
+| `window_meta.definition` | literal en app/scalp_logic.py:2893 |
+| `window_meta.freshness_rule` | literal en app/scalp_logic.py:2897 |
+| `window_meta.futures_agg_retention_hours` | literal en app/scalp_logic.py:2896 |
+| `window_meta.futures_realtime_retention_hours` | literal en app/scalp_logic.py:2895 |
+| `window_meta.independent_confirmations` | literal en app/scalp_logic.py:2889 |
+| `window_meta.null_reasons` | literal en app/scalp_logic.py:2898 |
+| `window_meta.reset_timezone` | literal en app/scalp_logic.py:2891 |
+| `window_meta.sources` | literal en app/scalp_logic.py:2894 |
+| `window_meta.venues` | literal en app/scalp_logic.py:2892 |
+| `window_meta.window_type` | literal en app/scalp_logic.py:2887 |
+| `window_meta.windows_are_nested` | literal en app/scalp_logic.py:2888 |
 | `windows` | literal en app/scalp_logic.py:2884 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -128,6 +142,20 @@ Claves temporales entre los campos que publica:
 
 - `as_of`
 - `window_meta`
+- `window_meta.acceleration_measured`
+- `window_meta.as_of`
+- `window_meta.as_of_semantics`
+- `window_meta.definition`
+- `window_meta.freshness_rule`
+- `window_meta.futures_agg_retention_hours`
+- `window_meta.futures_realtime_retention_hours`
+- `window_meta.independent_confirmations`
+- `window_meta.null_reasons`
+- `window_meta.reset_timezone`
+- `window_meta.sources`
+- `window_meta.venues`
+- `window_meta.window_type`
+- `window_meta.windows_are_nested`
 
 ## Capa DECLARADA
 

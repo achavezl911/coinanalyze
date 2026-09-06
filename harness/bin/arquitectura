@@ -580,6 +580,29 @@ def campos_de_retorno(valor, fn: Funcion, funcs, mods, catalogo, prof=0, vistos=
                         "sus campos no se pueden derivar")
             elif isinstance(k, ast.Constant) and isinstance(k.value, str):
                 c.ciertos[k.value] = f"literal en {fn.fichero}:{getattr(k, 'lineno', fn.linea)}"
+                # CAMPOS ANIDADOS, HASTA DOS SALTOS. Hasta el 2026-09-06 `campos` era de UN
+                # SOLO NIVEL, y eso dejaba CIEGA a la marca de agua: el paquete de S3 anadio
+                # `plan_coherence` DENTRO de `execution` en /api/hypothesis -un campo que su
+                # ficha declarada promete- y el brazo 6 de K88 no se movio.
+                #
+                # DOS SALTOS Y NO UNO, medido: con uno, la marca de /api/hypothesis SIGUE sin
+                # moverse entre 311ae3b y fb41b07, porque la cadena es
+                # `execution` -> nombre -> asignacion -> execution_assessment(). Con dos, se
+                # mueve. Con tres y con cuatro sale lo mismo que con dos: satura, asi que mas
+                # profundidad no compra nada y si costaria tiempo de generacion.
+                #
+                # Y NO METE RUIDO, que era la otra mitad de la pregunta: el control negativo
+                # del operador -«rojos viejos» (9ad124a -> 89ab61a) no mueve NINGUNA marca-
+                # sigue dando 0 de 68 con dos saltos. El positivo mueve EXACTAMENTE UNA de
+                # las 68, /api/hypothesis, que es la unica ruta cuya respuesta cambio.
+                if prof < 2:
+                    try:
+                        sub = campos_de_retorno(v, fn, funcs, mods, catalogo, prof + 1, vistos)
+                    except RecursionError:
+                        sub = None
+                    if sub is not None:
+                        for cam, org in sub.ciertos.items():
+                            c.ciertos.setdefault(f"{k.value}.{cam}", org)
             else:
                 c.pendientes.append("una clave del objeto es una expresion, no un literal")
         return c
@@ -1368,7 +1391,12 @@ def md_lista(items, vacio="_ninguna_"):
     return "\n".join(f"- {i}" for i in items) if items else vacio
 
 
-MARCA_VERSION = 1
+# 2 · 2026-09-06 · `campos` pasa a incluir los ANIDADOS hasta dos saltos (dotted). Cambia lo
+#     que entra en el sha, asi que TODOS los sellos de revisado.tsv se resembraron desde los
+#     MISMOS commits que ya citaba su columna 3. Eso es legitimo y no es re-derivar el
+#     historial: el hecho -el derivada.json de aquel commit- no se toca; lo que cambia es la
+#     PROYECCION que se le aplica, y da lo mismo cada vez que se corre.
+MARCA_VERSION = 2
 
 
 def hechos_de(r: dict) -> dict:

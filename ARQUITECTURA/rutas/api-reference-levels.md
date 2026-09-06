@@ -14,14 +14,23 @@ Handler `reference_levels_endpoint` · `app/api.py:1754` (cuerpo hasta la 1757) 
 
 ## Campos que publica
 
-6 campos derivados. La procedencia dice de donde sale cada uno.
+15 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `current_day` | literal en app/scalp_logic.py:3237 |
+| `current_day.high` | literal en app/scalp_logic.py:3237 |
+| `current_day.low` | literal en app/scalp_logic.py:3237 |
+| `current_day.open` | literal en app/scalp_logic.py:3237 |
 | `note` | literal en app/scalp_logic.py:3244 |
 | `opens` | literal en app/scalp_logic.py:3238 |
+| `opens.daily` | literal en app/scalp_logic.py:3239 |
+| `opens.monthly` | literal en app/scalp_logic.py:3241 |
+| `opens.weekly` | literal en app/scalp_logic.py:3240 |
 | `previous_day` | literal en app/scalp_logic.py:3236 |
+| `previous_day.close` | literal en app/scalp_logic.py:3236 |
+| `previous_day.high` | literal en app/scalp_logic.py:3236 |
+| `previous_day.low` | literal en app/scalp_logic.py:3236 |
 | `sessions_today_utc` | literal en app/scalp_logic.py:3243 |
 | `symbol` | literal en app/scalp_logic.py:3235 |
 

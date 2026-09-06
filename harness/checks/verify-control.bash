@@ -31,11 +31,25 @@ fallos=0; pasan=0
 # No se transcribe a mano: se pide el de origin/main. Una copia escrita por mi podria diferir
 # justo en la linea que se quiere contrastar, y entonces V3 no probaria nada.
 VIEJO="$DIR/verify-viejo"
-if ! (cd "$ORIG" && git show origin/main:harness/bin/verify) > "$VIEJO" 2>/dev/null; then
-  echo "NO MEDIDO: no se pudo sacar bin/verify de origin/main; sin el no hay contraste"; exit 2
+# EL COMMIT NO SE TECLEA NI SE FIJA A origin/main: SE BUSCA. La version anterior pedia
+# `origin/main:harness/bin/verify`, y en cuanto el arreglo se fusiono a main el contraste se
+# quedo sin sujeto: este control salia NO MEDIDO entero y dejaba de probar los trece casos.
+# Un control que se invalida a si mismo al fusionarse su propio arreglo es la enfermedad que
+# vigila, en su version mas tonta. Medido el 2026-09-06 a las 10:23Z.
+# Ahora se recorre el historial de bin/verify y se coge el ULTIMO commit en que el fichero
+# TODAVIA NO tenia el arreglo. Eso sigue existiendo aunque main avance.
+VIEJO_SHA=""
+for h in $(cd "$ORIG" && git log --format=%H -- harness/bin/verify 2>/dev/null); do
+  if ! (cd "$ORIG" && git show "$h:harness/bin/verify" 2>/dev/null) | grep -q 'VERIFY_HARNESS'; then
+    VIEJO_SHA="$h"; break
+  fi
+done
+[ -n "$VIEJO_SHA" ] || { echo "NO MEDIDO: no hay ningun commit de bin/verify anterior a VERIFY_HARNESS; sin el no hay contraste"; exit 2; }
+if ! (cd "$ORIG" && git show "$VIEJO_SHA:harness/bin/verify") > "$VIEJO" 2>/dev/null; then
+  echo "NO MEDIDO: no se pudo sacar bin/verify de $VIEJO_SHA"; exit 2
 fi
 chmod +x "$VIEJO" 2>/dev/null || true
-grep -q 'VERIFY_HARNESS' "$VIEJO" && { echo "NO MEDIDO: el verify de origin/main ya trae VERIFY_HARNESS: el contraste no distingue nada"; exit 2; }
+grep -q 'VERIFY_HARNESS' "$VIEJO" && { echo "NO MEDIDO: el verify de $VIEJO_SHA ya trae VERIFY_HARNESS: el contraste no distingue nada"; exit 2; }
 # El viejo tiene B clavado. Se le inyecta el arnes de mentira con un sed sobre la copia, que es
 # el unico modo de correrlo contra otro arbol sin reescribirlo.
 sed -i 's|^B=/srv/coinanalyze/harness$|B=${VERIFY_HARNESS:-/srv/coinanalyze/harness}|' "$VIEJO"
@@ -108,6 +122,33 @@ caso "V4b y cuenta como NOMED"                        "si" \
 outv=$(corre "$VIEJO" "$C")
 caso "V4c el viejo publicaba 0 VERDE 0 ROJO 0 NOMED"  "si" \
      "$(grep -qE '^0 VERDE +0 ROJO +0 NOMED' <<<"$outv" && echo si || echo no)"
+
+echo
+echo "EL RELOJ · un check que no termina no puede llevarse el marcador entero"
+# EL HUECO QUE ESTO CIERRA, medido el 2026-09-06: `verify` no tenia tope por check, asi que
+# un check colgado colgaba verify y NO SE PUBLICABA NINGUNA CIFRA. De los tres huecos que se
+# midieron aquel dia es el unico de esta clase: los otros dos pierden UN check y el resto del
+# marcador sale igual.
+# Se prueba con un tope de 2 s y un check que duerme 30. Si el tope no funcionara, este
+# control se colgaria 30 s: el propio caso tiene un `timeout` de 20 s por encima para que un
+# fallo se vea como fallo y no como una sesion parada.
+D2="$DIR/colgado"; monta "$D2"
+printf '#!/bin/sh\nsleep 30\n' > "$D2/checks/Z04-colgado.sh"
+chmod +x "$D2/checks/Z04-colgado.sh"
+t0=$(date +%s)
+out=$(VERIFY_TIMEOUT=2 timeout 20 sh -c "VERIFY_HARNESS='$D2' sh '$VERIFY' 2>&1")
+dur=$(( $(date +%s) - t0 ))
+caso "V6 verify TERMINA aunque un check no termine"   "si" \
+     "$([ "$dur" -lt 20 ] && echo si || echo no)"
+caso "V6b salen las 4 lineas de check"                "4" "$(lineas_check "$out")"
+caso "V6c el colgado sale NOMED, no ROJO"             "si" \
+     "$(grep -qE '^Z04-colgado +NOMED' <<<"$out" && echo si || echo no)"
+caso "V6d y dice que agoto el tope"                   "si" \
+     "$(grep -q 'agoto el tope' <<<"$out" && echo si || echo no)"
+# V6e · SIN ESTE CASO, V6c NO PRUEBA NADA: si el tope matara tambien a los que terminan,
+# todo saldria NOMED y V6c pasaria igual.
+caso "V6e los otros tres conservan su veredicto"      "si" \
+     "$(grep -qE '^Z01-verde +VERDE' <<<"$out" && grep -qE '^Z02-rojo +ROJO' <<<"$out" && echo si || echo no)"
 
 echo
 echo "EL rc · un NOMED no puede salir como exito"

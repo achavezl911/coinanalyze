@@ -92,18 +92,74 @@ EOF
 }
 
 # --- D · control negativo: la tabla binance-only tiene que seguir siendo binance.
-CUADRE=$("$B/bin/prodsql" "
-  WITH t AS (SELECT (SUM(long_liq)+SUM(short_liq))::numeric v FROM liquidations
-             WHERE interval='5min' AND ts >= now()-interval '4 hours'),
-       r AS (SELECT (SUM(notional_usd))::numeric v FROM liquidations_realtime
-             WHERE exchange='binance' AND ts >= now()-interval '4 hours')
-  SELECT round(100*t.v/NULLIF(r.v,0),1) FROM t,r" 2>/dev/null | tr -d ' ' | head -1)
+#
+# LA VERSION ANTERIOR COMPARABA DOS COSAS QUE NO ERAN COMPARABLES, y se rompio el
+# 2026-09-06 publicando 79.7 % con un mensaje que culpaba a los feeds. Cortaba los dos
+# lados por el MISMO `now()`:
+#     t = liquidations        WHERE interval='5min' AND ts >= now()-interval '4 hours'
+#     r = liquidations_realtime WHERE exchange='binance' AND ts >= now()-...
+# pero `liquidations` es un AGREGADO QUE VA CON RETRASO -medido el 2026-09-06 a las
+# 10:00:16Z: ultimo cubo 09:45, o sea 10.3 min- y `liquidations_realtime` es el stream
+# VIVO. Todo lo que el stream ve en esos minutos y el agregado aun no ha escrito contaba
+# como discrepancia de feeds.
+#
+# MEDIDO, Y REPRODUCE EL NUMERO A LA DECIMA (entregas/ic-instrumentos/k80-causa2-*.out,
+# 9 ventanas de 4 h dentro del horizonte de retencion):
+#     los dos lados cortados en el MISMO borde   ->  99.5 a 100.2 %, 0 de 9 fuera de banda
+#     la tabla cortada 20 min antes              ->  peor caso 79.6 %, 1 de 9 fuera
+#     la tabla cortada 30 min antes              ->  peor caso 62.3 %, 4 de 9 fuera
+# La ventana que lo produce es la de las 05:00, la unica del horizonte con el 12.6 % de su
+# importe en los ultimos 15 minutos y el 20.1 % en los ultimos 20. Las demas, por debajo
+# del 3 %. O sea: hace falta una RAFAGA en el borde, y por eso pasa de vez en cuando.
+#
+# Y HAY UNA SEGUNDA CAUSA QUE EL MENSAJE VIEJO TAMPOCO NOMBRABA, en la direccion contraria:
+# `liquidations_realtime` retiene 12 h (SCALP_TRADE_RETENTION_HOURS). Si la ventana de 4 h
+# se saliera de ese horizonte, el stream vendria recortado y la tabla entera, y el cociente
+# se dispararia por encima de 100. Medido al salirme yo: 262 %, 596 %, 764 % y 1327 %.
+#
+# EL ARREGLO ES QUE LA VENTANA SEA COMPLETA EN LOS DOS LADOS, no que el umbral sea mas
+# ancho. El borde derecho se toma del ULTIMO CUBO COMPLETO de la tabla, que es el ultimo
+# instante sobre el que los dos lados pueden hablar; y el izquierdo se comprueba contra la
+# retencion del stream. Un control negativo que se rompe por el reloj enseña a ignorar al
+# que se rompe por un defecto.
+DCTRL=$("$B/bin/prodsql" "
+  WITH fin AS (
+    SELECT max(ts) + interval '5 minutes' AS f FROM liquidations WHERE interval='5min'
+  ), ret AS (
+    SELECT min(ts) AS m FROM liquidations_realtime WHERE exchange='binance'
+  ), t AS (
+    SELECT (SUM(long_liq)+SUM(short_liq))::numeric v FROM liquidations, fin
+    WHERE interval='5min' AND ts >= fin.f - interval '4 hours' AND ts < fin.f
+  ), r AS (
+    SELECT (SUM(notional_usd))::numeric v FROM liquidations_realtime, fin
+    WHERE exchange='binance' AND ts >= fin.f - interval '4 hours' AND ts < fin.f
+  )
+  SELECT round(100*t.v/NULLIF(r.v,0),1)
+         || '|' || round(extract(epoch FROM (now()-fin.f))/60.0, 1)
+         -- TOKEN EXPLICITO, NO EL CASTEO POR DEFECTO DEL BOOLEANO. Escrito asi porque me
+         -- mordio: dentro de una concatenacion, un boolean da 'true'/'false', y yo compare
+         -- contra 't'/'f' -que es lo que psql imprime en una COLUMNA booleana-. Mi propio
+         -- arreglo publico un NOMED falso a las 10:07Z, cazado por K80-control.bash. Es la
+         -- enfermedad de esta campana cometida al curarla.
+         || '|' || CASE WHEN fin.f - interval '4 hours' >= ret.m THEN 'CUBRE' ELSE 'NO_CUBRE' END
+         || '|' || round(t.v,0) || '|' || round(r.v,0)
+  FROM t, r, fin, ret" 2>/dev/null | tr -d ' ' | head -1)
+CUADRE=$(printf '%s' "$DCTRL" | cut -d'|' -f1)
+DRETRASO=$(printf '%s' "$DCTRL" | cut -d'|' -f2)
+DCUBRE=$(printf '%s' "$DCTRL" | cut -d'|' -f3)
+DTABLA=$(printf '%s' "$DCTRL" | cut -d'|' -f4)
+DSTREAM=$(printf '%s' "$DCTRL" | cut -d'|' -f5)
 case "$CUADRE" in
-  ''|*[!0-9.]*) echo "NO MEDIDO: no se pudo comparar la tabla contra el binance del stream (salio '$CUADRE')"; exit 2 ;;
+  ''|*[!0-9.]*) echo "NO MEDIDO: no se pudo comparar la tabla contra el binance del stream (salio '$DCTRL')"; exit 2 ;;
 esac
+# LA RETENCION SE NOMBRA APARTE, porque es una causa distinta con su propio remedio.
+if [ "$DCUBRE" != "CUBRE" ]; then
+  echo "NO MEDIDO: la ventana de 4 h que termina en el ultimo cubo completo se sale de lo que retiene liquidations_realtime (SCALP_TRADE_RETENTION_HOURS). No es que los feeds discrepen: es que el stream ya no guarda esas horas y la comparacion no se puede hacer"
+  exit 2
+fi
 DESVIO=$(python3 -c "print(round(abs(100.0-float('$CUADRE')),1))")
 python3 -c "import sys; sys.exit(0 if float('$DESVIO')<=15 else 1)" || {
-  echo "NO MEDIDO: CONTROL NEGATIVO ROTO -- la tabla liquidations ya NO cuadra con el binance del stream ($CUADRE % en 4 h). El hueco que mide el brazo A dejaria de ser 'el venue que falta' y pasaria a ser dos feeds que discrepan: la causa que este check atribuye ya no seria la buena"
+  echo "NO MEDIDO: CONTROL NEGATIVO ROTO -- la tabla liquidations no cuadra con el binance del stream ($CUADRE %) SOBRE UNA VENTANA COMPLETA EN LOS DOS LADOS: 4 h que acaban en el ultimo cubo completo de la tabla ($DRETRASO min por detras de now), tabla $DTABLA USD contra stream $DSTREAM USD, retencion del stream cubierta. Descartados el retraso de escritura y la retencion, lo que queda SI es que los dos feeds discrepan, y el hueco que mide el brazo A dejaria de ser 'el venue que falta'"
   exit 2
 }
 
@@ -180,5 +236,5 @@ if [ -n "$FALLOS" ] || [ "$DECLARA" = 0 ]; then
   exit 1
 fi
 
-printf 'las %d ventanas comparables de la matriz cuadran con el total de los DOS venues dentro del %d %%, y cada fila declara que venues cubre. Control negativo vivo: la tabla liquidations sigue siendo el binance del stream al %s %%. Control positivo: %d venues en el arco con %s USD de bybit\n' \
-  "$COMPARADAS" "$UMBRAL" "$CUADRE" "$NVENUES" "$BYBIT"
+printf 'las %d ventanas comparables de la matriz cuadran con el total de los DOS venues dentro del %d %%, y cada fila declara que venues cubre. Control negativo vivo: la tabla liquidations sigue siendo el binance del stream al %s %% sobre una ventana COMPLETA EN LOS DOS LADOS (4 h hasta el ultimo cubo cerrado, %s min por detras de now). Control positivo: %d venues en el arco con %s USD de bybit\n' \
+  "$COMPARADAS" "$UMBRAL" "$CUADRE" "$DRETRASO" "$NVENUES" "$BYBIT"

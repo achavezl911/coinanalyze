@@ -14,12 +14,17 @@ Handler `scalp_summary` · `app/api.py:1107` (cuerpo hasta la 1111) · decorador
 
 ## Campos que publica
 
-58 campos derivados. La procedencia dice de donde sale cada uno.
+63 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `absorption` | literal en app/scalp_logic.py:914 |
 | `absorption_context` | literal en app/scalp_logic.py:916 |
+| `absorption_context.band` | literal en app/scalp_logic.py:150 |
+| `absorption_context.reference` | literal en app/scalp_logic.py:154 |
+| `absorption_context.robust_z` | literal en app/scalp_logic.py:151 |
+| `absorption_context.sample_count` | literal en app/scalp_logic.py:153 |
+| `absorption_context.status` | literal en app/scalp_logic.py:152 |
 | `absorption_delta_ratio` | literal en app/scalp_logic.py:915 |
 | `basis_bps` | literal en app/scalp_logic.py:866 |
 | `basis_detail` | literal en app/scalp_logic.py:868 |

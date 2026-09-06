@@ -14,12 +14,15 @@ Handler `passive_flow_endpoint` · `app/api.py:1796` (cuerpo hasta la 1799) · d
 
 ## Campos que publica
 
-9 campos derivados. La procedencia dice de donde sale cada uno.
+15 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `as_of` | literal en app/scalp_logic.py:5904 |
 | `counts` | literal en app/scalp_logic.py:5910 |
+| `counts.neutral` | literal en app/scalp_logic.py:5833 |
+| `counts.reacumulacion_silenciosa` | literal en app/scalp_logic.py:5833 |
+| `counts.redistribucion_silenciosa` | literal en app/scalp_logic.py:5833 |
 | `horizons` | literal en app/scalp_logic.py:5908 |
 | `location` | literal en app/scalp_logic.py:5906 |
 | `note` | literal en app/scalp_logic.py:5911 |
@@ -27,6 +30,9 @@ Handler `passive_flow_endpoint` · `app/api.py:1796` (cuerpo hasta la 1799) · d
 | `summary` | literal en app/scalp_logic.py:5909 |
 | `symbol` | literal en app/scalp_logic.py:5903 |
 | `value_area` | literal en app/scalp_logic.py:5907 |
+| `value_area.poc` | literal en app/scalp_logic.py:5907 |
+| `value_area.vah` | literal en app/scalp_logic.py:5907 |
+| `value_area.val` | literal en app/scalp_logic.py:5907 |
 
 Forma de la respuesta segun el AST: objeto.
 
