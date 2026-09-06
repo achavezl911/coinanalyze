@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# verify-control · EL INSTRUMENTO CON EL QUE SE MIDE TODO, CONTROLADO POR FIN.
+#
+# EL HECHO QUE LO MOTIVA, medido el 2026-09-06 y encontrado por el operador, no por el arnes:
+# K93-el-camino-de-actualizacion.sh entro en el indice de git como 100644 -el UNICO 100644 de
+# los 53 `.sh` de harness/checks-, y `verify:10` decia `[ -x "$c" ] || continue`. Resultado:
+# el check NO se ejecuto ni una vez dentro de verify aunque a mano diera VERDE, el marcador
+# publico 52 lineas en vez de 53, y **nadie podia saber que faltaba una**. No era este arbol:
+# el modo esta en el indice, asi que un clon nuevo en cualquier sitio tambien lo saltaba.
+#
+# LA FAMILIA ES LA DE SIEMPRE: un instrumento que no puede fallar no controla nada. Un
+# `chmod -x` neutralizaba CUALQUIER check del arnes y la unica cifra del proyecto no decia ni
+# una palabra. Es peor que un rojo: es un check que desaparece.
+#
+# EL BRAZO QUE HACE VALER A LOS DEMAS es V3: el MISMO fixture contra el verify VIEJO -sacado
+# de git, no escrito a mano- tiene que pasar inadvertido. Si el control no puede ensenar que
+# el verify de ayer se comia el check, no esta controlando nada.
+#
+# NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh y este fichero prueba al arnes, no
+# a produccion. Mismo patron que K88-control.bash. Corre sin red y sin base de datos.
+set -uo pipefail
+ORIG=${REPO:-/srv/coinanalyze/repo}
+VERIFY="$ORIG/harness/bin/verify"
+[ -r "$VERIFY" ] || { echo "NO MEDIDO: no encuentro bin/verify en $VERIFY"; exit 2; }
+
+DIR=$(mktemp -d) || exit 2
+[ "${VERIFY_CONTROL_GUARDA:-0}" = "1" ] || trap 'rm -rf "$DIR"' EXIT
+fallos=0; pasan=0
+
+# --- EL VERIFY VIEJO, SACADO DE GIT ------------------------------------------------------
+# No se transcribe a mano: se pide el de origin/main. Una copia escrita por mi podria diferir
+# justo en la linea que se quiere contrastar, y entonces V3 no probaria nada.
+VIEJO="$DIR/verify-viejo"
+if ! (cd "$ORIG" && git show origin/main:harness/bin/verify) > "$VIEJO" 2>/dev/null; then
+  echo "NO MEDIDO: no se pudo sacar bin/verify de origin/main; sin el no hay contraste"; exit 2
+fi
+chmod +x "$VIEJO" 2>/dev/null || true
+grep -q 'VERIFY_HARNESS' "$VIEJO" && { echo "NO MEDIDO: el verify de origin/main ya trae VERIFY_HARNESS: el contraste no distingue nada"; exit 2; }
+# El viejo tiene B clavado. Se le inyecta el arnes de mentira con un sed sobre la copia, que es
+# el unico modo de correrlo contra otro arbol sin reescribirlo.
+sed -i 's|^B=/srv/coinanalyze/harness$|B=${VERIFY_HARNESS:-/srv/coinanalyze/harness}|' "$VIEJO"
+grep -q 'VERIFY_HARNESS' "$VIEJO" || { echo "NO MEDIDO: no se pudo apuntar el verify viejo al arnes de mentira"; exit 2; }
+
+# --- EL ARNES DE MENTIRA ------------------------------------------------------------------
+# Tres checks de juguete con veredictos conocidos, para que la cuenta sea comprobable a mano.
+monta() {  # <dir>
+  rm -rf "$1"; mkdir -p "$1/checks" "$1/estado" "$1/bin"
+  printf '#!/bin/sh\necho "verde de juguete"\nexit 0\n'  > "$1/checks/Z01-verde.sh"
+  printf '#!/bin/sh\necho "rojo de juguete"\nexit 1\n'   > "$1/checks/Z02-rojo.sh"
+  printf '#!/bin/sh\necho "nomed de juguete"\nexit 2\n'  > "$1/checks/Z03-nomed.sh"
+  chmod +x "$1"/checks/*.sh
+}
+
+corre() {  # <binario de verify> <arnes>  -> imprime la salida entera
+  VERIFY_HARNESS="$2" sh "$1" 2>&1
+}
+lineas_check() { grep -cE '^Z[0-9]+' <<<"$1" || true; }
+
+caso() {  # <nombre> <esperado> <obtenido>
+  if [ "$3" = "$2" ]; then
+    pasan=$((pasan+1)); printf '  [ok   ] %-56s %s\n' "$1" "$3"
+  else
+    fallos=$((fallos+1)); printf '  [FALLA] %-56s esperaba %s, dio %s\n' "$1" "$2" "$3"
+  fi
+}
+
+echo "verify-control · sujeto: $VERIFY"
+echo
+
+echo "NEGATIVO · con todo en orden, verify no cambia de comportamiento"
+A="$DIR/sano"; monta "$A"
+out=$(corre "$VERIFY" "$A")
+caso "V1 los 3 checks salen, con su veredicto"        "3" "$(lineas_check "$out")"
+caso "V1b la cuenta es 1 VERDE 1 ROJO 1 NOMED"        "si" \
+     "$(grep -qE '^1 VERDE +1 ROJO +1 NOMED' <<<"$out" && echo si || echo no)"
+
+echo
+echo "POSITIVO · un check sin bit de ejecucion APARECE"
+B2="$DIR/sinbit"; monta "$B2"; chmod -x "$B2/checks/Z01-verde.sh"
+out=$(corre "$VERIFY" "$B2")
+caso "V2 siguen saliendo 3 lineas de check"           "3" "$(lineas_check "$out")"
+caso "V2b el que perdio el bit sale NOMED"            "si" \
+     "$(grep -qE '^Z01-verde +NOMED' <<<"$out" && echo si || echo no)"
+caso "V2c y dice POR QUE, no solo que no pudo"        "si" \
+     "$(grep -q 'sin bit de ejecucion' <<<"$out" && echo si || echo no)"
+caso "V2d la cuenta lo refleja: 0 VERDE 1 ROJO 2 NOMED" "si" \
+     "$(grep -qE '^0 VERDE +1 ROJO +2 NOMED' <<<"$out" && echo si || echo no)"
+
+echo
+echo "EL BRAZO QUE HACE VALER A LOS DEMAS · el verify VIEJO se lo comia en silencio"
+# V3 · MISMO fixture, verify de origin/main. Si esto no ensena la diferencia, V2 no prueba
+# nada: podria estar pasando porque el fixture no ejercita lo que dice.
+outv=$(corre "$VIEJO" "$B2")
+caso "V3 el verify VIEJO solo saca 2 de los 3"        "2" "$(lineas_check "$outv")"
+caso "V3b y el check desaparecido no se nombra"       "si" \
+     "$(grep -q 'Z01-verde' <<<"$outv" && echo no || echo si)"
+caso "V3c el viejo publica 0 VERDE 1 ROJO 1 NOMED"    "si" \
+     "$(grep -qE '^0 VERDE +1 ROJO +1 NOMED' <<<"$outv" && echo si || echo no)"
+
+echo
+echo "ANTI-FANTASMA · sin sujeto no hay veredicto"
+C="$DIR/vacio"; rm -rf "$C"; mkdir -p "$C/checks" "$C/estado"
+out=$(corre "$VERIFY" "$C")
+caso "V4 checks/ sin ningun .sh: se dice, no 0-0-0"   "si" \
+     "$(grep -q 'no hay ningun .sh' <<<"$out" && echo si || echo no)"
+caso "V4b y cuenta como NOMED"                        "si" \
+     "$(grep -qE '^0 VERDE +0 ROJO +1 NOMED' <<<"$out" && echo si || echo no)"
+outv=$(corre "$VIEJO" "$C")
+caso "V4c el viejo publicaba 0 VERDE 0 ROJO 0 NOMED"  "si" \
+     "$(grep -qE '^0 VERDE +0 ROJO +0 NOMED' <<<"$outv" && echo si || echo no)"
+
+echo
+echo "EL rc · un NOMED no puede salir como exito"
+monta "$B2"; chmod -x "$B2/checks/Z01-verde.sh"
+VERIFY_HARNESS="$B2" sh "$VERIFY" >/dev/null 2>&1; rc=$?
+caso "V5 con un check sin bit, verify sale != 0"      "si" "$([ "$rc" -ne 0 ] && echo si || echo no)"
+
+echo
+total=$((pasan+fallos))
+echo "$pasan de $total pasan · $fallos fallan"
+[ "$fallos" -eq 0 ] || exit 1
+exit 0

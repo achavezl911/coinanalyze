@@ -4,11 +4,32 @@
 # fallo medido: confundirlos es como se actua sin fundamento.
 #   salida 0 = VERDE    salida 1 = ROJO (medido)    salida 2 = NOMED (no se pudo medir)
 set -u
-B=/srv/coinanalyze/harness
-rojo=0; verde=0; nomed=0
+# B ES SOBREESCRIBIBLE PARA QUE ESTO SE PUEDA CONTROLAR. verify es el instrumento con el que
+# se mide todo lo demas y hasta hoy era lo unico del arnes sin control propio, precisamente
+# porque su ruta estaba clavada. Su control (checks/verify-control.bash) le monta un arnes de
+# mentira y comprueba que un check sin bit APARECE. En uso normal no cambia nada.
+B=${VERIFY_HARNESS:-/srv/coinanalyze/harness}
+rojo=0; verde=0; nomed=0; vistos=0
 for c in "$B"/checks/*.sh; do
-  [ -x "$c" ] || continue
+  # GLOB SIN EXPANDIR: si no hay ningun .sh, el bucle recibe el patron literal. Se sale y se
+  # dice abajo; callarlo seria "0 VERDE 0 ROJO 0 NOMED" con el arnes entero desaparecido.
+  [ -e "$c" ] || break
+  vistos=$((vistos+1))
   id=$(basename "$c" .sh)
+  # UN CHECK SIN BIT DE EJECUCION ES NOMED, NO UN CHECK QUE NO EXISTE.
+  # Hasta el 2026-09-06 esta linea era `[ -x "$c" ] || continue` y el check DESAPARECIA de la
+  # salida sin decir una palabra. Lo destapo K93, que entro en el indice como 100644 -el unico
+  # 100644 de los 53 .sh- y por eso no corrio ni una vez dentro de verify aunque a mano diera
+  # VERDE: el marcador publico 52 lineas y nadie podia saber que faltaba una.
+  # Un `chmod -x` neutralizaba CUALQUIER check y la unica cifra del proyecto no se enteraba.
+  # Es NOMED y no ROJO porque «no se pudo medir» es literalmente lo que pasa: no hay medida
+  # que declarar. Y NOMED ya arrastra la consecuencia correcta -verify sale != 0 y avisa-,
+  # mientras que una cuarta categoria no cabria en la unica cifra que resume el sistema.
+  if [ ! -x "$c" ]; then
+    nomed=$((nomed+1))
+    printf '%-22s %-5s %s\n' "$id" NOMED 'sin bit de ejecucion: verify no lo corrio (git update-index --chmod=+x)'
+    continue
+  fi
   out=$("$c" 2>&1); rc=$?
   case "$rc" in
     0) estado=VERDE; verde=$((verde+1)) ;;
@@ -17,6 +38,12 @@ for c in "$B"/checks/*.sh; do
   esac
   printf '%-22s %-5s %s\n' "$id" "$estado" "$(printf '%s' "$out" | head -1 | cut -c1-70)"
 done
+# CERO CHECKS NO ES CERO DEFECTOS. Es la misma regla que cada check aplica a su elegible,
+# aplicada al arnes entero: sin sujeto no hay veredicto.
+if [ "$vistos" -eq 0 ]; then
+  nomed=$((nomed+1))
+  printf '%-22s %-5s %s\n' '(ninguno)' NOMED "no hay ningun .sh en $B/checks: verify no tiene que medir"
+fi
 # K63 · EL VEREDICTO NO ES UNA PROPIEDAD DEL SISTEMA, ES DEL PAR SISTEMA-OBSERVADOR.
 # Medido: bajo devops hay 5 ROJO y bajo root 7, o sea que la identidad degradada TAPA
 # rojos reales. Copiar un marcador a una libreta sin la identidad al lado produce

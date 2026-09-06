@@ -132,14 +132,24 @@ jobs:
           # captura ni un payload. Y no se arregla abriendo el netrc: dar a un runner
           # que ejecuta el codigo de cualquier PR las credenciales de produccion es una
           # decision de seguridad que no me corresponde tomar a mi.
-          # LO QUE SE PIERDE, dicho en vez de disimulado: el gate se queda con UN solo
-          # check, K02, que esta ROJO en main y en el PR, o sea que hoy compara 0 con 0
-          # y no protege nada. Ya era casi asi -los dos checks de la lista estaban
-          # ROJOS-, pero ahora es visible. Ponerle dientes pide meter aqui un check que
-          # este VERDE y cuyo sujeto sea el arbol, y eso es alcance del operador.
-          # K31 se sigue midiendo en cada verify del arnes en 143, donde SI hay
-          # credenciales, y sigue en ROJO con sus 27 rutas.
-          CHECKS="harness/checks/K02-cobertura-hueco.sh"
+          # EL GATE TIENE DIENTES DESDE EL 2026-09-06, y la condicion que este comentario
+          # pedia ya se cumple. Decia: «el gate se queda con UN solo check, K02, que esta
+          # ROJO en main y en el PR, o sea que hoy compara 0 con 0 y no protege nada.
+          # Ponerle dientes pide meter aqui un check que este VERDE y cuyo sujeto sea el
+          # arbol, y eso es alcance del operador.» K02 esta VERDE desde la campana de
+          # ROJOS VIEJOS y su sujeto es app/api.py, asi que ya protege.
+          #
+          # SE ANADE K88, y NO K16. Medido, no supuesto:
+          #   · K88 regenera ARQUITECTURA/ desde app/ y sql/ y la compara con lo commiteado.
+          #     Su sujeto es literalmente el arbol y no invoca bin/prod, bin/prodsql ni
+          #     bin/api ni una sola vez. Corre en este runner sin credenciales.
+          #   · K16 SI necesita credenciales: sus brazos 3 y 4 preguntan a 140 por
+          #     pg_proc, y sin prodsql sale NO MEDIDO. La funcion contar() de abajo
+          #     devuelve 99 en cuanto un check queda en NOMED -a proposito-, asi que
+          #     meterlo aqui no daria dientes: dejaria el gate sin poder medir.
+          # K31 tampoco entra, por lo que ya decia el comentario de arriba: su sonda
+          # necesita los payloads de produccion y el runner no puede leer el netrc.
+          CHECKS="harness/checks/K02-cobertura-hueco.sh harness/checks/K88-la-arquitectura-que-miente.sh"
           VENV="$GITHUB_WORKSPACE/.venv/bin/python"
 
           # GUARDIA 1 · el instrumento tiene que existir ANTES de contar. Un check

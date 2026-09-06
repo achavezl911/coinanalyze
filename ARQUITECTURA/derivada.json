@@ -24957,8 +24957,8 @@
     "sin_clave_temporal": 35,
     "sin_consumidor": 6,
     "sin_declarar": 0,
-    "sin_llamada": 12,
-    "solo_mencion": 6,
+    "sin_llamada": 14,
+    "solo_mencion": 8,
     "tablas_alcanzadas": 30,
     "tablas_catalogo": 40
   },
@@ -26242,18 +26242,18 @@
       ],
       "consumidores": {
         "tests": {
-          "llamadas": [
+          "llamadas": [],
+          "menciones": [
             "tests/test_range_validate.py:167"
-          ],
-          "menciones": []
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 1,
-        "n_menciones": 0,
+        "n_llamadas": 0,
+        "n_menciones": 1,
         "sin_ninguno": false,
-        "solo_mencion": false
+        "solo_mencion": true
       },
       "declarada": {
         "completa": true,
@@ -26462,9 +26462,9 @@
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:63",
             "harness/checks/K31-cubos.py:40",
-            "harness/checks/K88-control.bash:324",
-            "harness/checks/K88-control.bash:416",
-            "harness/checks/K88-control.bash:458"
+            "harness/checks/K88-control.bash:343",
+            "harness/checks/K88-control.bash:435",
+            "harness/checks/K88-control.bash:477"
           ]
         },
         "readme": {
@@ -26886,8 +26886,8 @@
           ],
           "menciones": [
             "harness/checks/K31-cubos.py:40",
-            "harness/checks/K88-control.bash:416",
-            "harness/checks/K88-control.bash:458"
+            "harness/checks/K88-control.bash:435",
+            "harness/checks/K88-control.bash:477"
           ]
         },
         "readme": {
@@ -31500,16 +31500,16 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [
+          "llamadas": [],
+          "menciones": [
             "tests/test_metrics_endpoint.py:140"
-          ],
-          "menciones": []
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 4,
-        "n_menciones": 0,
+        "n_llamadas": 3,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32949,9 +32949,9 @@
         "checks": {
           "llamadas": [],
           "menciones": [
-            "harness/checks/K88-control.bash:139",
-            "harness/checks/K88-control.bash:140",
-            "harness/checks/K88-control.bash:457"
+            "harness/checks/K88-control.bash:158",
+            "harness/checks/K88-control.bash:159",
+            "harness/checks/K88-control.bash:476"
           ]
         },
         "readme": {
@@ -33282,7 +33282,7 @@
           "menciones": [
             "harness/checks/K24-replay-del-contexto.sh:19",
             "harness/checks/K31-cubos.py:145",
-            "harness/checks/K88-control.bash:458"
+            "harness/checks/K88-control.bash:477"
           ]
         },
         "tests": {
@@ -34026,18 +34026,18 @@
           ]
         },
         "tests": {
-          "llamadas": [
+          "llamadas": [],
+          "menciones": [
             "tests/test_pr24_daily_historical_integrity.py:89"
-          ],
-          "menciones": []
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 1,
-        "n_menciones": 2,
+        "n_llamadas": 0,
+        "n_menciones": 3,
         "sin_ninguno": false,
-        "solo_mencion": false
+        "solo_mencion": true
       },
       "declarada": {
         "completa": true,
@@ -35059,9 +35059,9 @@
         "checks": {
           "llamadas": [],
           "menciones": [
-            "harness/checks/K88-control.bash:141",
-            "harness/checks/K88-control.bash:435",
-            "harness/checks/K88-control.bash:456"
+            "harness/checks/K88-control.bash:160",
+            "harness/checks/K88-control.bash:454",
+            "harness/checks/K88-control.bash:475"
           ]
         }
       },

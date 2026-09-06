@@ -87,7 +87,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | — | `harness/checks/K88-control.bash:139`, `harness/checks/K88-control.bash:140`, `harness/checks/K88-control.bash:457` |
+| **checks** | — | `harness/checks/K88-control.bash:158`, `harness/checks/K88-control.bash:159`, `harness/checks/K88-control.bash:476` |
 | **readme** | — | `README.md:411` |
 
 **Nadie la llama.** Sus 4 rastros son todos MENCION -comentario,
