@@ -153,7 +153,16 @@ nb=$(leerc bundle); nd=$(leerc diseno); nhu=$(leerc hueco)
 
 # SEGUNDA LECTURA · lo que el operador ve son las que el panel pide MAS las que llegan
 # dentro de otra (bundle). Las NO_PANEL quedan fuera de las dos cuentas a proposito.
+#
+# Y SE DICE SOBRE CUANTAS CORRE, que hasta el 2026-09-06 no se decia. El mensaje ponia
+# «11 HUECOS REALES de 66 rutas ... segunda lectura: 39 llegan al operador, 20 no» y esas
+# dos cifras corren sobre elegibles DISTINTOS: 39+20=59, no 66. Las 7 que faltan son las
+# NO_PANEL -ai/context, ai/context/bundle, ai/profiles, stream, zone/analysis,
+# level/breakout, range/validate-, que ni las pide el panel ni son huerfanas. No era un
+# descuadre, pero poner las dos cifras juntas sin decir su denominador invita a restarlas,
+# y alguien lo resto. Un mensaje que se puede leer mal es un defecto del mensaje.
 npedidas=$(printf '%s' "$pedidas" | wc -w)
+nnp=$(printf '%s' "$NO_PANEL" | wc -w)
 ve=$((npedidas + nb)); nove=$((nd + nhu))
 
 if [ "$nhu" -gt 0 ] || [ "$nm" -gt 0 ]; then
@@ -161,11 +170,12 @@ if [ "$nhu" -gt 0 ] || [ "$nm" -gt 0 ]; then
     printf 'ROJO: %d HUECOS REALES de %d rutas' "$nhu" "$total"
     [ "$nm" -gt 0 ] && printf ' y %d payloads pedidos no mueven un pixel:%s' "$nm" "$mudas"
     printf ' · las %d huerfanas se reparten en %d BUNDLE (su dato llega dentro de otra ruta) · %d DISENO (su productora la consume app/ fuera de api.py) · %d HUECO (nadie)' "$nh" "$nb" "$nd" "$nhu"
-    printf ' · segunda lectura: %d llegan al operador, %d no' "$ve" "$nove"
+    printf ' · segunda lectura, sobre %d de las %d (las %d NO_PANEL no entran, cada una con su cita): %d llegan al operador (%d que pide el panel + %d bundle), %d no (%d diseno + %d hueco)' \
+      "$((ve + nove))" "$total" "$nnp" "$ve" "$npedidas" "$nb" "$nove" "$nd" "$nhu"
     printf ' · %d payloads SI llegan, probados por mutacion en %ss (payloads de hace %ss)\n' "$np" "$segundos" "${edad:-0}"
     printf '%s\n' "$cubos" | grep -E '^(HUECO|DISENO|BUNDLE):'
     printf 'NO AFIRMA: jsdom no maqueta, un display:none se le escapa; y el recorrido es UN SOLO estado de UI\n'
   } | cut -c1-900
   exit 1
 fi
-echo "las $total rutas de /api/ o las pide el panel o llegan dentro de otra o las consume app/: CERO huecos · $nb bundle · $nd diseno · $ve llegan al operador · $np payloads probados por mutacion (${segundos}s, payloads de hace ${edad:-0}s) · NO AFIRMA: jsdom no maqueta y el recorrido es un solo estado de UI"
+echo "las $total rutas de /api/ o las pide el panel o llegan dentro de otra o las consume app/: CERO huecos · $nb bundle · $nd diseno · $ve de $((ve + nove)) llegan al operador (las $nnp NO_PANEL no entran en esa cuenta) · $np payloads probados por mutacion (${segundos}s, payloads de hace ${edad:-0}s) · NO AFIRMA: jsdom no maqueta y el recorrido es un solo estado de UI"

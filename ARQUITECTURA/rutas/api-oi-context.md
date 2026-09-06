@@ -98,7 +98,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K38-referencia-por-tiempo.sh:33`, `harness/checks/K38-referencia-por-tiempo.sh:34` | `harness/checks/K02-cobertura-hueco.sh:25`, `harness/checks/K03-hueco-declarado.sh:30`, `harness/checks/K38-referencia-por-tiempo.sh:7` |
+| **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K38-referencia-por-tiempo.sh:33`, `harness/checks/K38-referencia-por-tiempo.sh:34` | `harness/checks/K03-hueco-declarado.sh:30`, `harness/checks/K38-referencia-por-tiempo.sh:7` |
 | **tests** | — | `tests/test_oi_context_referencia.py:1` |
 
 **No la llama el panel**, pero si 3 linea(s) de codigo fuera de el.
