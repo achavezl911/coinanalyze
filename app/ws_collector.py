@@ -43,13 +43,22 @@ LATE_TRADE_GRACE_SECONDS = 125.0
 PROCESO_INICIADO = time.time()
 
 
-def segundos_cubiertos(ts: int, inicio: float | None = None) -> int:
-    """Segundos del minuto que empieza en ts con el colector ya escuchando."""
+def segundos_cubiertos(ts: int, inicio: float | None = None, fin: float | None = None) -> int:
+    """Segundos del minuto que empieza en ts con el colector ya escuchando.
+
+    `fin` es el instante en que el colector DEJO de escuchar. Sin el, esta funcion solo
+    conocia el ARRANQUE y devolvia 60 para cualquier minuto que empezara despues -incluido
+    el que el drenaje de apagado escribe cuando la parada cruza el borde del minuto-. Medido
+    en 140: el 2026-09-04T17:16 el colector se fue en el segundo 55 y la fila decia 60.
+    K92 lo cazo; el `MIN` del combinado solo lo heredaba.
+
+    Con `fin=None` el resultado es identico al de antes: es una extension, no un cambio.
+    """
 
     arranque = PROCESO_INICIADO if inicio is None else inicio
-    if ts >= arranque:
-        return 60
-    return max(0, min(60, int(round(ts + 60 - arranque))))
+    desde = ts if ts >= arranque else arranque
+    hasta = ts + 60 if fin is None else min(ts + 60, fin)
+    return max(0, min(60, int(round(hasta - desde))))
 REALTIME_MAX_EVENT_AGE_SECONDS = 15.0
 
 
@@ -231,6 +240,7 @@ async def _write_minute(
     pool: asyncpg.Pool,
     ownership: ServiceOwnership | None,
     snapshots: list[tuple[tuple[str, str, int], Bucket]],
+    fin: float | None = None,
 ) -> None:
         records = []
         touched: set[tuple[str, int]] = set()
@@ -243,7 +253,7 @@ async def _write_minute(
                     bucket.inst_buy_usd, bucket.inst_sell_usd,
                     bucket.mid_buy_usd, bucket.mid_sell_usd,
                     bucket.retail_buy_usd, bucket.retail_sell_usd, bucket.trade_count,
-                    segundos_cubiertos(ts),
+                    segundos_cubiertos(ts, fin=fin),
                 )
             )
         try:
@@ -323,6 +333,7 @@ async def flush_minute(
 async def drain_closed_minutes(
     pool: asyncpg.Pool,
     ownership: ServiceOwnership | None = None,
+    fin: float | None = None,
 ) -> int:
     """Vaciado final al apagar. Devuelve cuantos minutos se salvaron.
 
@@ -343,7 +354,11 @@ async def drain_closed_minutes(
     snapshots = await STORE.minute_snapshot(grace=0.0)
     if not snapshots:
         return 0
-    await _write_minute(pool, ownership, snapshots)
+    # `fin` ES LA MITAD QUE FALTABA. El minuto que este drenaje escribe cuando la parada
+    # cruza el borde estaba ABIERTO cuando llego el SIGTERM: el colector cubrio sus primeros
+    # segundos y ninguno mas. Sin `fin` salia con 60 -una fila que miente que esta completa,
+    # que es peor que un hueco porque no la ve nadie-.
+    await _write_minute(pool, ownership, snapshots, fin=fin)
     return len(snapshots)
 
 
@@ -641,13 +656,18 @@ async def run() -> None:
             critical_tasks=tuple(tasks),
         )
     finally:
+        # EL INSTANTE EN QUE SE DEJA DE ESCUCHAR se toma AQUI, antes de cancelar nada: es el
+        # ultimo momento en que los sockets seguian entregando. Tomarlo despues del gather
+        # -o dentro del drenaje- regalaria al minuto los segundos del desmontaje, que es
+        # justo la cobertura que no hubo.
+        parando = time.time()
         for task in tasks:
             task.cancel()
         lock_monitor.cancel()
         await asyncio.gather(*tasks, lock_monitor, return_exceptions=True)
         # ANTES de cerrar el pool: lo que quede en memoria muere con el proceso.
         try:
-            salvados = await drain_closed_minutes(pool, service_lock)
+            salvados = await drain_closed_minutes(pool, service_lock, fin=parando)
             if salvados:
                 LOGGER.info("minute_drain_on_shutdown saved_buckets=%d", salvados)
         except Exception:

@@ -38,7 +38,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:784`
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas

@@ -155,9 +155,9 @@ Y que bucle duerme con cual:
 
 | funcion | constante | valor | sitio |
 |---|---|---|---|
-| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:826` |
+| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:837` |
 | `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:642` |
-| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1352` |
+| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1363` |
 
 ## EL BUCKET CORTO DEL LADO DE LA PARADA · el mismo patron en DOS tablas
 
@@ -338,8 +338,8 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1538`
-- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:802`
+- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1549`
+- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:813`
 
 **Si cambia el contenido o el esquema de `futures_trades_agg`, estas 6 rutas lo notan:**
 
@@ -356,7 +356,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:773`
+- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:784`
 
 **Si cambia el contenido o el esquema de `futures_trades_realtime`, estas 16 rutas lo notan:**
 
@@ -614,7 +614,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:877`
+- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:888`
 
 **Si cambia el contenido o el esquema de `orderbook_depth`, estas 1 rutas lo notan:**
 
@@ -626,8 +626,8 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:845`
-- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:901`
+- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:856`
+- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:912`
 
 **Si cambia el contenido o el esquema de `orderbook_snapshot`, estas 14 rutas lo notan:**
 
@@ -688,7 +688,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1406`
+- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1417`
 
 **Si cambia el contenido o el esquema de `scalp_signal_snapshot`, estas 4 rutas lo notan:**
 
@@ -774,8 +774,8 @@ La escriben:
 La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:663`
-- `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:254`
-- `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:275`
+- `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:264`
+- `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:285`
 
 **Si cambia el contenido o el esquema de `spot_trades_agg`, estas 10 rutas lo notan:**
 
@@ -796,8 +796,8 @@ La escriben:
 
 La escriben:
 
-- `app.ws_collector.flush_realtime` — **INSERT** en `app/ws_collector.py:376`
-- `app.ws_collector.flush_realtime` — **INSERT** en `app/ws_collector.py:393`
+- `app.ws_collector.flush_realtime` — **INSERT** en `app/ws_collector.py:391`
+- `app.ws_collector.flush_realtime` — **INSERT** en `app/ws_collector.py:408`
 
 **Si cambia el contenido o el esquema de `spot_trades_realtime`, estas 12 rutas lo notan:**
 

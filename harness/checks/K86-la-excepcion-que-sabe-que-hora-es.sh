@@ -3,10 +3,39 @@
 #
 # SUJETO   el par (minuto del dia UTC, clase de excepcion) en el journal de una unidad.
 #          NO el conteo de excepciones.
-# ROJO     si algun par (HH:MM, Clase) aparece en >= K86_DIAS_MINIMOS dias ELEGIBLES.
-# VERDE    si ningun par recurre en ese numero de dias.
-# NOMED    si el canal no responde, si no hay dias elegibles, o si el TRANSPORTE
-#          trunco la salida. Un veredicto sobre una base recortada no es un veredicto.
+#
+# DOS PREGUNTAS, NO UNA. Hasta el 2026-09-06 este check solo contestaba la primera, y por eso
+# podia publicar un ROJO CADUCO: el par dejo de aparecer el 09-05 y el check habria seguido
+# rojo hasta el ~10-03 -cuando el ultimo dia con el par saliera de la ventana de 30- para
+# despues ponerse VERDE SOLO, por el paso del tiempo y sin que nadie arreglara nada.
+#
+#   1 ¿RECURRE?     sobre los 30 dias enteros. Es lo que separa un bug estructural de una
+#                   averia de una tarde. NO SE TOCA: es el poder de discriminacion del check.
+#   2 ¿SIGUE VIVO?  sobre las ocasiones RECIENTES. Eje NUEVO, no un estrechamiento del viejo.
+#
+# ROJO   VIVO · el par recurre Y aparece en la ultima ocasion elegible.
+# VERDE  o no recurre, o REMITIDO Y PROBADO: no aparece desde hace >= K ocasiones elegibles.
+# NOMED  CALLADO SIN PROBAR · no aparece, pero las ocasiones limpias son menos de K, asi que
+#        el silencio no esta probado. Tambien si el canal no responde, si no hay dias
+#        elegibles, o si el TRANSPORTE trunco la salida: un veredicto sobre una base
+#        recortada no es un veredicto.
+#
+# LA RECAIDA ENROJECE EL PRIMER DIA, que es lo que antes no pasaba. La recurrencia ya esta
+# demostrada por los 30 dias de historia, asi que UNA SOLA aparicion reciente basta para
+# volver a VIVO: no hay que reacumular el umbral. Antes, con el check ya en rojo, que el bug
+# volviera manana no cambiaba ni una letra de la salida.
+#
+# DE DONDE SALE K, y no sale del color que produce:
+#   p_lo  cota inferior al 95 % de la tasa historica por ocasion. Si el par aparecio en TODAS
+#         las ocasiones activas (v de v), p_lo = 0.05^(1/v) -la regla de tres-; si no,
+#         p_lo = v/activas, que es la estimacion puntual y se dice que lo es.
+#   K     ocasiones limpias necesarias para descartar al 95 % que la tasa siga siendo esa:
+#         K = ceil(ln 0.05 / ln(1 - p_lo)),  con un SUELO de 7.
+#   EL SUELO NO ES UN AJUSTE DE VENTANA y solo puede convertir un VERDE en NOMED, nunca al
+#   reves: con menos de 7 ocasiones independientes no se distingue un arreglo de una racha.
+#   Con una tasa del 100 % siete ocasiones limpias dejan la coincidencia por debajo de 1 en
+#   10^6; con una del 33 %, por debajo del 5 %. Es una constante del fichero A PROPOSITO:
+#   si fuera K86_SUELO seria exactamente el ajuste barato que este check existe para no tener.
 #
 # ELEGIBLE un dia D es elegible PARA UN MINUTO HH:MM si la unidad emitio al menos una
 #          linea de journal -de lo que fuera- en [HH:MM-R, HH:MM+R] de ese dia.
@@ -271,10 +300,70 @@ done
 echo "elegibles para ${minuto}Z (+-$RADIO min, instrumento externo al sujeto): $elegibles de $((DIAS+1)) dias del arco"
 echo "no elegibles, nombrados:${noele:- ninguno}"
 
-if [ "$vistos" -ge "$MINIMO" ]; then
-  echo "ROJO: $clase se repite a las ${minuto}Z en $vistos de $elegibles dias elegibles (umbral $MINIMO). Una excepcion que sabe que hora es no es una averia, es un defecto de diseno."
-  echo "  los $((elegibles - vistos)) elegibles sin el par fechan el nacimiento del fallo: mira el primer dia de la lista de arriba."
+# --- FASE 3 · LAS DOS PUNTAS, Y LAS OCASIONES LIMPIAS -------------------------------
+# H2 · LA FRASE VIEJA ERA FALSA. Decia que "la distancia entre los dias elegibles y los dias
+# con el par ES la edad del fallo", y eso solo vale si los dias sin el par estan al PRINCIPIO
+# del arco. Cuando el par se calla, aparecen dias sin el par tambien al FINAL, y la resta
+# `elegibles - vistos` los metia en el mismo saco: presentaba como "edad del fallo" un numero
+# que incluia el silencio. Ahora se parten por su POSICION y se nombran las dos puntas: la de
+# delante fecha el NACIMIENTO, la de detras es justo la señal de que se callo.
+# SE RECORRE LA LISTA DE ELEGIBLES EN ORDEN, no se comparan cadenas MM-DD. Dos razones, y la
+# primera me mordio al escribirlo: `dl[k]` sale de un `for (k in n)` de awk y su orden es el de
+# INSERCION, que en produccion es cronologico pero en un fixture no tiene por que serlo; con
+# head/tail sobre esa lista el primer y el ultimo dia salian cambiados. La segunda es que
+# MM-DD no ordena a traves del cambio de anio: el 12-31 seria "mayor" que el 01-02.
+# `lista_ele` viene de `sort` y lleva el anio, asi que aqui el orden es el del calendario.
+dias_par=$(printf '%s' "$peor" | awk '{print $5}' | tr ',' '\n' | grep . || true)
+antes=0; despues=0; enmedio=0; limpias_lista=""; visto_par=0
+primer_par=""; ultimo_par=""
+for d in $lista_ele; do
+  md=${d#????-}
+  if printf '%s\n' "$dias_par" | grep -qx "$md"; then
+    [ -n "$primer_par" ] || primer_par=$md
+    ultimo_par=$md
+    visto_par=1
+    # Un elegible sin el par que estaba entre dos CON el par deja de ser "de detras".
+    enmedio=$((enmedio + despues)); despues=0; limpias_lista=""
+  elif [ "$visto_par" = 0 ]; then
+    antes=$((antes+1))
+  else
+    despues=$((despues+1)); limpias_lista="$limpias_lista $d"
+  fi
+done
+echo "puntas: $antes elegible(s) ANTES del primer dia con el par ($primer_par) · $enmedio en medio sin el par · $despues DESPUES del ultimo ($ultimo_par)"
+echo "  los $antes de delante fechan el nacimiento; los $despues de detras son ocasiones LIMPIAS y no fechan nada del nacimiento"
+
+# K, calculado aqui y no elegido: cota de la tasa historica + suelo. Ver la cabecera.
+SUELO=7
+activas=$((vistos + enmedio))
+K=$(python3 -c "
+import math
+v, a, suelo = $vistos, $activas, $SUELO
+if a <= 0:
+    print(suelo); raise SystemExit
+p = 0.05 ** (1.0 / v) if v >= a else v / a
+print(max(suelo, math.ceil(math.log(0.05) / math.log(1 - p))) if 0 < p < 1 else suelo)
+" 2>/dev/null) || K=$SUELO
+
+if [ "$vistos" -lt "$MINIMO" ]; then
+  # No recurre. Aun asi, cero ocasiones no es verde: eso lo cubre el NOMED de mas arriba.
+  echo "VERDE (NO RECURRE): ningun par (minuto,clase) llega a $MINIMO dias elegibles. El peor es $clase a las ${minuto}Z, $vistos de $elegibles."
+  exit 0
+fi
+
+echo "recurrencia: $clase a las ${minuto}Z en $vistos de $elegibles dias elegibles (umbral $MINIMO) · ocasiones limpias tras el ultimo caso: $despues · K=$K (suelo $SUELO)"
+if [ "$despues" -eq 0 ]; then
+  echo "ROJO (VIVO): el par recurre Y aparece en la ULTIMA ocasion elegible ($ultimo_par). Una excepcion que sabe que hora es no es una averia, es un defecto de diseno."
+  echo "  la recurrencia ya esta demostrada, asi que una sola aparicion reciente basta: una recaida enrojece el primer dia."
   exit 1
 fi
-echo "VERDE: ningun par (minuto,clase) recurre en $MINIMO dias elegibles. El peor es $clase a las ${minuto}Z, $vistos de $elegibles."
-exit 0
+if [ "$despues" -ge "$K" ]; then
+  echo "VERDE (REMITIDO Y PROBADO): el par recurrio $vistos veces y lleva $despues ocasiones elegibles limpias, que son >= K=$K."
+  echo "  limpias:$limpias_lista"
+  echo "  ESTO NO DICE QUE NADIE LO ARREGLARA. Dice que la tasa historica ya no explica el silencio. Quien quiera afirmar un arreglo tiene que enseniar el commit."
+  exit 0
+fi
+echo "NO MEDIDO (CALLADO SIN PROBAR): el par recurre ($vistos de $elegibles) pero no aparece desde $ultimo_par."
+echo "  solo hay $despues ocasion(es) elegible(s) limpia(s) y hacen falta $K:$limpias_lista"
+echo "  NO es verde: un verde por falta de prueba es un verde no ganado. NO es rojo: el defecto no se ha vuelto a ver."
+exit 2

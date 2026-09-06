@@ -35,7 +35,7 @@ LEE:
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:773`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:784`
 - `liquidations` — `sql/schema.sql:174`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:657`
   - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:316`

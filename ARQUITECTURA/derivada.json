@@ -4,7 +4,7 @@
       "app.scalp_collector.flush_books": [
         {
           "constante": "SCALP_ORDERBOOK_FLUSH_SECONDS",
-          "sitio": "app/scalp_collector.py:826",
+          "sitio": "app/scalp_collector.py:837",
           "valor": "2"
         }
       ],
@@ -18,7 +18,7 @@
       "app.scalp_collector.persist_scalp_signals": [
         {
           "constante": "SCALP_SIGNAL_INTERVAL_SECONDS",
-          "sitio": "app/scalp_collector.py:1352",
+          "sitio": "app/scalp_collector.py:1363",
           "valor": "10"
         }
       ]
@@ -493,8 +493,8 @@
       "cuadra": true,
       "escritores": [
         "DELETE app/daily_agg.py:663",
-        "INSERT app/ws_collector.py:254",
-        "INSERT app/ws_collector.py:275"
+        "INSERT app/ws_collector.py:264",
+        "INSERT app/ws_collector.py:285"
       ],
       "esperado": "2 INSERT en app/ws_collector.py y 1 DELETE en app/daily_agg.py",
       "pregunta": "quien escribe spot_trades_agg"
@@ -15641,7 +15641,7 @@
           "/api/stream",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:896",
+        "sitio": "app/scalp_collector.py:907",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -15726,7 +15726,7 @@
           "/api/hypothesis",
           "/api/price-barriers"
         ],
-        "sitio": "app/scalp_collector.py:795",
+        "sitio": "app/scalp_collector.py:806",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -15824,7 +15824,7 @@
           "/api/structure",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:766",
+        "sitio": "app/scalp_collector.py:777",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -15905,7 +15905,7 @@
         "por_tabla_k0": [
           "/api/scalp/execution-cost"
         ],
-        "sitio": "app/scalp_collector.py:864",
+        "sitio": "app/scalp_collector.py:875",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -15983,7 +15983,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:710",
+        "sitio": "app/scalp_collector.py:720",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16133,7 +16133,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:988",
+        "sitio": "app/scalp_collector.py:999",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16201,7 +16201,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1098",
+        "sitio": "app/scalp_collector.py:1109",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16269,7 +16269,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1150",
+        "sitio": "app/scalp_collector.py:1161",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16337,7 +16337,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1559",
+        "sitio": "app/scalp_collector.py:1570",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16416,7 +16416,7 @@
           "/api/hypothesis",
           "/api/price-barriers"
         ],
-        "sitio": "app/scalp_collector.py:1528",
+        "sitio": "app/scalp_collector.py:1539",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16489,7 +16489,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:682",
+        "sitio": "app/scalp_collector.py:691",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16575,7 +16575,7 @@
           "/api/stream",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:821",
+        "sitio": "app/scalp_collector.py:832",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16664,7 +16664,7 @@
           "/api/structure",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:954",
+        "sitio": "app/scalp_collector.py:965",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16814,7 +16814,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1044",
+        "sitio": "app/scalp_collector.py:1055",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16883,7 +16883,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1236",
+        "sitio": "app/scalp_collector.py:1247",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16949,7 +16949,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1575",
+        "sitio": "app/scalp_collector.py:1586",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17088,7 +17088,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1452",
+        "sitio": "app/scalp_collector.py:1463",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17168,7 +17168,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1524",
+        "sitio": "app/scalp_collector.py:1535",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17438,7 +17438,7 @@
           "/api/scalp/signals",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:1347",
+        "sitio": "app/scalp_collector.py:1358",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23839,7 +23839,7 @@
           "/api/price-barriers",
           "/api/whale/delta"
         ],
-        "sitio": "app/ws_collector.py:230",
+        "sitio": "app/ws_collector.py:239",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23897,7 +23897,7 @@
           "/api/stream"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ws_collector.py:424",
+        "sitio": "app/ws_collector.py:439",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23946,7 +23946,7 @@
           "/api/stream"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ws_collector.py:208",
+        "sitio": "app/ws_collector.py:217",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23994,7 +23994,7 @@
           "/api/stream"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ws_collector.py:466",
+        "sitio": "app/ws_collector.py:481",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24047,7 +24047,7 @@
           "/api/whale/delta"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ws_collector.py:323",
+        "sitio": "app/ws_collector.py:333",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24108,7 +24108,7 @@
           "/api/whale/delta"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ws_collector.py:311",
+        "sitio": "app/ws_collector.py:321",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24177,7 +24177,7 @@
           "/api/scalp/summary",
           "/api/stream"
         ],
-        "sitio": "app/ws_collector.py:350",
+        "sitio": "app/ws_collector.py:365",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24229,7 +24229,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ws_collector.py:515",
+        "sitio": "app/ws_collector.py:530",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24281,7 +24281,7 @@
           "/api/stream"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ws_collector.py:575",
+        "sitio": "app/ws_collector.py:590",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24375,7 +24375,7 @@
           "/api/stream"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ws_collector.py:204",
+        "sitio": "app/ws_collector.py:213",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24425,7 +24425,7 @@
           "/api/stream"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ws_collector.py:213",
+        "sitio": "app/ws_collector.py:222",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -36820,13 +36820,13 @@
         {
           "funcion": "app.scalp_collector.cleanup_expired_rows",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1538",
+          "sitio": "app/scalp_collector.py:1549",
           "verbo": "DELETE"
         },
         {
           "funcion": "app.scalp_collector._write_combined_minute",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:802",
+          "sitio": "app/scalp_collector.py:813",
           "verbo": "INSERT"
         }
       ],
@@ -36839,12 +36839,12 @@
         {
           "funcion": "app.scalp_collector.cleanup_expired_rows",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1538"
+          "sitio": "app/scalp_collector.py:1549"
         },
         {
           "funcion": "app.scalp_collector._write_combined_minute",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:802"
+          "sitio": "app/scalp_collector.py:813"
         },
         {
           "funcion": "app.scalp_logic.price_barriers",
@@ -36867,7 +36867,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:773",
+          "sitio": "app/scalp_collector.py:784",
           "verbo": "INSERT"
         }
       ],
@@ -36900,7 +36900,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:773"
+          "sitio": "app/scalp_collector.py:784"
         },
         {
           "funcion": "app.scalp_logic._cvd_fut_window",
@@ -37729,7 +37729,7 @@
         {
           "funcion": "app.scalp_collector._write_ladders",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:877",
+          "sitio": "app/scalp_collector.py:888",
           "verbo": "INSERT"
         }
       ],
@@ -37755,13 +37755,13 @@
         {
           "funcion": "app.scalp_collector.flush_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:845",
+          "sitio": "app/scalp_collector.py:856",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.scalp_collector._write_combined_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:901",
+          "sitio": "app/scalp_collector.py:912",
           "verbo": "INSERT"
         }
       ],
@@ -37804,7 +37804,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:901"
+          "sitio": "app/scalp_collector.py:912"
         },
         {
           "funcion": "app.scalp_logic.price_barriers",
@@ -37949,7 +37949,7 @@
         {
           "funcion": "app.scalp_collector.persist_scalp_signals",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1406",
+          "sitio": "app/scalp_collector.py:1417",
           "verbo": "INSERT"
         }
       ],
@@ -38544,13 +38544,13 @@
         {
           "funcion": "app.ws_collector._write_minute",
           "origen": "literal",
-          "sitio": "app/ws_collector.py:254",
+          "sitio": "app/ws_collector.py:264",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.ws_collector._write_minute",
           "origen": "literal",
-          "sitio": "app/ws_collector.py:275",
+          "sitio": "app/ws_collector.py:285",
           "verbo": "INSERT"
         }
       ],
@@ -38603,7 +38603,7 @@
         {
           "funcion": "app.ws_collector._write_minute",
           "origen": "literal",
-          "sitio": "app/ws_collector.py:275"
+          "sitio": "app/ws_collector.py:285"
         }
       ],
       "leida_por": [
@@ -38625,13 +38625,13 @@
         {
           "funcion": "app.ws_collector.flush_realtime",
           "origen": "literal",
-          "sitio": "app/ws_collector.py:376",
+          "sitio": "app/ws_collector.py:391",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.ws_collector.flush_realtime",
           "origen": "literal",
-          "sitio": "app/ws_collector.py:393",
+          "sitio": "app/ws_collector.py:408",
           "verbo": "INSERT"
         }
       ],
@@ -38659,7 +38659,7 @@
         {
           "funcion": "app.ws_collector.flush_realtime",
           "origen": "literal",
-          "sitio": "app/ws_collector.py:393"
+          "sitio": "app/ws_collector.py:408"
         }
       ],
       "leida_por": [
