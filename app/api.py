@@ -2759,18 +2759,49 @@ base AS (
   GROUP BY 1
 ),
 dif AS (
-  SELECT sn.n,
+  SELECT sn.blk, sn.n,
          sn.bruto - (CASE WHEN sn.direction='long' THEN 1 ELSE -1 END)*b.bruto AS d_bruto,
          sn.neto  - (CASE WHEN sn.direction='long' THEN 1 ELSE -1 END)*b.neto  AS d_neto,
          sn.entrada
   FROM senal sn JOIN base b ON b.blk = sn.blk
+),
+-- UN BLOQUE ES UNA FILA, Y ANTES ERAN DOS. `dif` sale de `senal`, que agrupa por
+-- (bloque, LADO), asi que un bloque con señal larga y corta producia DOS filas: 1 191 pares
+-- donde hay 604 bloques. Contarlas como `n_efectiva` publicaba **el doble de la muestra**
+-- en la unica cifra cuyo proposito es ser honesta sobre el tamaño de muestra (P5.2 y P5.3).
+-- Y no es solo la etiqueta: los dos lados del MISMO bloque de 60 min comparten el mismo
+-- tramo de mercado, asi que no son dos muestras independientes de tiempo. Encontrado por el
+-- operador el 2026-09-06; medido: t 0.124 con pares contra 0.052 con bloques, que es el
+-- factor raiz(2) de haber doblado la n. La conclusion no cambia -la ventaja es cero de las
+-- dos formas- pero la cifra publicada tiene que salir de la n buena.
+porbloque AS (
+  SELECT blk, SUM(n) AS n, AVG(d_bruto) AS d_bruto, AVG(d_neto) AS d_neto,
+         AVG(entrada) AS entrada
+  FROM dif GROUP BY blk
 )
 SELECT COUNT(*)                                        AS bloques,
        SUM(n)                                          AS observaciones,
+       (SELECT COUNT(*) FROM dif)                      AS pares_bloque_lado,
        ROUND(AVG(d_bruto)::numeric, 4)                 AS ventaja_bruta_pct,
        ROUND(AVG(d_neto)::numeric, 4)                  AS ventaja_neta_pct,
+       -- EL COSTE DE ENTRADA VA PONDERADO POR BLOQUE, igual que la ventaja, y esa es la
+       -- razon: la frase de la tarjeta COMPARA los dos numeros, y una comparacion entre dos
+       -- medias ponderadas de forma distinta no decompone nada. La ventaja TIENE que ser por
+       -- bloque -el emparejamiento es lo que quita el factor de mercado-, luego el coste
+       -- tambien. Medido: por bloque 0.0531, por observacion 0.0476; la diferencia es
+       -- ponderacion, no señal.
        ROUND(AVG(entrada)::numeric, 4)                 AS coste_entrada_pct,
-       ROUND((AVG(d_neto)/NULLIF(STDDEV_SAMP(d_neto)/SQRT(COUNT(*)),0))::numeric, 2) AS t_neta,
+       -- Y LA OTRA PONDERACION VIAJA AL LADO, porque contesta otra pregunta legitima: cada
+       -- entrada es UNA observacion, no un bloque, asi que esto es lo que le cuesta al que
+       -- opera. Se publica con su propio nombre para que nadie las confunda.
+       -- VA SOBRE `dif` Y NO SOBRE `porbloque`, y esa es toda la diferencia: en `dif` cada
+       -- fila trae su propio n, asi que SUM(entrada*n)/SUM(n) recupera la media POR
+       -- OBSERVACION. Sobre `porbloque` el `entrada` ya viene promediado por bloque y
+       -- ponderarlo por n da una tercera cosa que no es ninguna de las dos: lo escribi asi
+       -- primero y daba 0.0558 donde la medida directa da 0.0476.
+       (SELECT ROUND((SUM(entrada*n)/NULLIF(SUM(n),0))::numeric, 4) FROM dif)
+                                                       AS coste_entrada_por_obs_pct,
+       ROUND((AVG(d_neto)/NULLIF(STDDEV_SAMP(d_neto)/SQRT(COUNT(*)),0))::numeric, 3) AS t_neta,
        -- EL ARCO QUE DE VERDAD SE CUBRE, no el que se pidio. Publicar la ventana PEDIDA como
        -- si fuera la cubierta es el mismo defecto que esta tarjeta existe para no cometer:
        -- se piden 30 dias y la señal solo existe desde el 2026-08-10, asi que decir «30 dias»
@@ -2781,7 +2812,7 @@ SELECT COUNT(*)                                        AS bloques,
        (SELECT MAX(observed_at) FROM signal_observation
         WHERE symbol=$1 AND is_periodic IS TRUE AND observed_at >= $2 AND observed_at < $3)
                                                        AS arco_hasta
-FROM dif
+FROM porbloque
 """
 
 # EL ALCANCE. `ohlcv` daily llega mucho mas atras que la señal -762 dias contra 26.7-, asi
@@ -2888,11 +2919,17 @@ async def signal_base_rate(conn: asyncpg.Connection, symbol: str) -> dict[str, A
     base.update({
         "available": True,
         "observaciones": int(fila["observaciones"]),
+        # n_efectiva SON BLOQUES DE TIEMPO DISTINTOS, no pares (bloque, lado). Los dos lados
+        # del mismo bloque leen el mismo tramo de mercado: no son dos muestras de tiempo.
         "n_efectiva": int(fila["bloques"]),
+        # se publica el recuento de pares para que la distincion sea auditable desde fuera y
+        # no haya que creerse la etiqueta.
+        "pares_bloque_lado": int(fila["pares_bloque_lado"]),
         "ventaja_bruta_pct": bruta,
         "ventaja_neta_pct": neta,
         "t_neta": t_neta,
         "coste_entrada_pct": entrada,
+        "coste_entrada_por_obs_pct": float(fila["coste_entrada_por_obs_pct"]),
         # LA FRASE DE LA TARJETA SE COMPONE AQUI y no en el panel, para que el texto y la
         # cifra no puedan separarse: si alguien cambia el umbral, cambia la frase con el.
         "lectura": (

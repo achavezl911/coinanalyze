@@ -1403,9 +1403,22 @@ function renderDecisionBoard(dashboard, trend, swing, structureDetail, confidenc
     ? [
         // CUATRO DECIMALES Y NO TRES: con tres, una ventaja neta de 0.0003 se pinta como
         // "+0.000%" y se lee como un cero redondeado en vez de como la cifra que es.
-        `Coste de entrada ${pct(tasaBase.coste_entrada_pct, 4)} · ventaja neta ${pct(tasaBase.ventaja_neta_pct, 4)}`
-          + (tasaBase.t_neta === null || tasaBase.t_neta === undefined ? '' : ` (t ${number(tasaBase.t_neta, 2)})`),
-        `sobre ${number(tasaBase.observaciones, 0)} observaciones en ${number(tasaBase.n_efectiva, 0)} bloques de ${number(tasaBase.horizonte_min, 0)} min, ${number(tasaBase.dias_de_arco, 1)} días de arco.`,
+        //
+        // DOS COSTES DE ENTRADA Y LOS DOS SE DICEN. El primero va ponderado POR BLOQUE,
+        // igual que la ventaja, y es el que se puede comparar con ella: comparar dos medias
+        // ponderadas de forma distinta no decompone nada. El segundo va por OPERACION, que
+        // es lo que le cuesta a quien opera, porque cada entrada es una observacion y no un
+        // bloque. La diferencia entre 0.0531 y 0.0479 es ponderacion, no señal.
+        `Coste de entrada ${pct(tasaBase.coste_entrada_pct, 4)} por bloque`
+          + (tasaBase.coste_entrada_por_obs_pct === null || tasaBase.coste_entrada_por_obs_pct === undefined
+              ? '' : ` (${pct(tasaBase.coste_entrada_por_obs_pct, 4)} por operación)`)
+          + ` · ventaja neta ${pct(tasaBase.ventaja_neta_pct, 4)}`
+          + (tasaBase.t_neta === null || tasaBase.t_neta === undefined ? '' : ` (t ${number(tasaBase.t_neta, 3)})`),
+        // «BLOQUES» SON BLOQUES DE TIEMPO DISTINTOS, no pares (bloque, lado). Los dos lados
+        // del mismo bloque leen el MISMO tramo de mercado: no son dos muestras de tiempo, y
+        // publicarlos como si lo fueran doblaba la muestra en la unica cifra cuyo proposito
+        // es ser honesta sobre el tamaño de muestra. Encontrado por el operador el 09-06.
+        `sobre ${number(tasaBase.observaciones, 0)} observaciones en ${number(tasaBase.n_efectiva, 0)} bloques distintos de ${number(tasaBase.horizonte_min, 0)} min, ${number(tasaBase.dias_de_arco, 1)} días de arco.`,
         tasaBase.lectura === 'el coste de entrada se come la ventaja'
           ? 'El coste de entrada es del orden de la ventaja: es un problema de ejecución, no de acierto.'
           : 'Hay ventaja direccional medible además del coste de entrada.',

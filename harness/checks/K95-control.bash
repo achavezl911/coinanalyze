@@ -68,6 +68,29 @@ caso "P1 el coste de entrada mal firmado: ROJO" 1 "NO coincide" "$ROTO"
 caso "P2 y NOMBRA el campo que difiere"         1 "coste_entrada" "$ROTO"
 
 echo
+echo "LA n EFECTIVA SON BLOQUES · el caso que el operador tuvo que encontrar por nosotros"
+# EL DEFECTO: `dif` sale de `senal`, que agrupa por (bloque, LADO), asi que un bloque con
+# señal larga y corta daba DOS filas. La ruta publicaba 1 191 pares llamandolos bloques donde
+# hay 604. Y K95 NO LO CAZABA porque su propia consulta agrupaba igual: las dos coincidian en
+# el mismo error. Ahora K95 pregunta el recuento de bloques a la base POR SEPARADO.
+# Aqui se le quita a la ruta el colapso por bloque -se le hace contar pares otra vez- y K95
+# tiene que enrojecer nombrando la n.
+PARES="$DIR/pares"; arbol "$PARES"
+python3 - "$PARES/app/api.py" <<'PY'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); t = p.read_text(encoding="utf-8")
+cab, resto = t.split('BASE_RATE_SQL = """', 1)
+sql, cola = resto.split('"""', 1)
+assert "FROM porbloque" in sql, "no encuentro el colapso por bloque"
+# se deshace el colapso: la consulta vuelve a agregar sobre `dif`, o sea sobre PARES
+sql = sql.replace("FROM porbloque", "FROM dif")
+sql = sql.replace("(SELECT COUNT(*) FROM dif)", "(SELECT COUNT(*) FROM porbloque)")
+p.write_text(cab + 'BASE_RATE_SQL = """' + sql + '"""' + cola, encoding="utf-8")
+PY
+caso "P3 si la ruta cuenta PARES en vez de bloques: ROJO" 1 "NO coincide" "$PARES"
+caso "P4 y lo nombra como lo que es"                      1 "n_efectiva_no_son_bloques|observaciones" "$PARES"
+
+echo
 echo "ANTI-FANTASMA · sin sujeto no hay veredicto"
 SIN="$DIR/sin"; mkdir -p "$SIN/app"
 printf 'x = 1\n' > "$SIN/app/api.py"

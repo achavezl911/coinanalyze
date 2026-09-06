@@ -123,12 +123,20 @@ c AS (SELECT p.blk, AVG(p.directional_return_pct) br,
       GROUP BY 1),
 b AS (SELECT p.blk, AVG(p.market_return_pct) br, AVG(100.0*(p.end_price-m.pm)/m.pm) ne
       FROM p JOIN pm m ON m.blk=p.blk WHERE p.actionable IS NOT TRUE GROUP BY 1),
-u AS (SELECT l.n, l.br-b.br AS d_br, l.ne-b.ne AS d_ne, l.en FROM l JOIN b ON b.blk=l.blk
+u AS (SELECT l.blk, l.n, l.br-b.br AS d_br, l.ne-b.ne AS d_ne, l.en FROM l JOIN b ON b.blk=l.blk
       UNION ALL
-      SELECT c.n, c.br+b.br AS d_br, c.ne+b.ne AS d_ne, c.en FROM c JOIN b ON b.blk=c.blk)
+      SELECT c.blk, c.n, c.br+b.br AS d_br, c.ne+b.ne AS d_ne, c.en FROM c JOIN b ON b.blk=c.blk),
+-- UNA FILA POR BLOQUE, NO POR (bloque, lado). La primera version de este check agrupaba
+-- igual que la ruta -por par- asi que las dos coincidian EN EL MISMO ERROR y el check no
+-- podia cazarlo: 1 191 pares publicados como si fueran 1 191 bloques, cuando son 604.
+-- Lo encontro el operador, no este check, y es literalmente el riesgo que la cabecera de
+-- este fichero declara: «las dos consultas leen las mismas columnas de las mismas tablas».
+-- Ahora el check agrupa por bloque POR SU CUENTA, asi que si la ruta volviera a contar
+-- pares, los recuentos dejarian de cuadrar.
+w AS (SELECT blk, SUM(n) n, AVG(d_br) d_br, AVG(d_ne) d_ne, AVG(en) en FROM u GROUP BY blk)
 SELECT COUNT(*), SUM(n), ROUND(AVG(d_br)::numeric,4), ROUND(AVG(d_ne)::numeric,4),
        ROUND(AVG(en)::numeric,4)
-FROM u"
+FROM w"
 R_MIA=$(TODO=1 "$B/bin/prodsql" "$SQL_MIA" 2>/dev/null | head -1)
 case "$R_MIA" in
   *'|'*'|'*'|'*) ;;
@@ -141,9 +149,18 @@ a,b,t=float('$1'),float('$2'),float('$TOL')
 sys.exit(0 if abs(a-b)<=t else 1)"; }
 
 FALLOS=""
+# EL ORDEN DE LAS COLUMNAS SE COMPRUEBA ANTES DE LEERLAS. Al añadir `pares_bloque_lado` a la
+# consulta de la ruta, todos los `cut -f` se corrieron una posicion y el check comparo
+# ventaja_bruta contra el recuento de bloques: publico «1191 != -0.0535», que es un ROJO
+# cierto por una razon falsa. Un check que lee por posicion tiene que verificar la posicion.
+N_COLS=$(printf '%s' "$R_RUTA" | tr '|' '\n' | grep -c .)
+[ "$N_COLS" -eq 10 ] || {
+  echo "NO MEDIDO: la consulta de la ruta devuelve $N_COLS columnas y este check espera 10 en un orden fijo (bloques, observaciones, pares, bruta, neta, entrada, entrada_obs, t, arco_desde, arco_hasta). Si el orden cambio, hay que actualizar el check y NO adivinar"
+  exit 2
+}
 RU_NEF=$(echo "$R_RUTA" | cut -d'|' -f1); RU_OBS=$(echo "$R_RUTA" | cut -d'|' -f2)
-RU_BR=$(echo "$R_RUTA" | cut -d'|' -f3);  RU_NE=$(echo "$R_RUTA" | cut -d'|' -f4)
-RU_EN=$(echo "$R_RUTA" | cut -d'|' -f5)
+RU_BR=$(echo "$R_RUTA" | cut -d'|' -f4);  RU_NE=$(echo "$R_RUTA" | cut -d'|' -f5)
+RU_EN=$(echo "$R_RUTA" | cut -d'|' -f6)
 MI_NEF=$(echo "$R_MIA" | cut -d'|' -f1);  MI_OBS=$(echo "$R_MIA" | cut -d'|' -f2)
 MI_BR=$(echo "$R_MIA" | cut -d'|' -f3);   MI_NE=$(echo "$R_MIA" | cut -d'|' -f4)
 MI_EN=$(echo "$R_MIA" | cut -d'|' -f5)
@@ -158,6 +175,24 @@ cmp3 "$RU_EN" "$MI_EN" || FALLOS="$FALLOS coste_entrada($RU_EN!=$MI_EN)"
 [ "${RU_NEF:-0}" -ge 100 ] || { echo "NO MEDIDO: solo $RU_NEF bloque(s) en el arco; con menos de 100 la comparacion no prueba nada"; exit 2; }
 
 # --- BRAZO B · el payload vivo, si lo hay ----------------------------------------------
+# EL RECUENTO SE COMPRUEBA CONTRA SU DEFINICION, no solo entre las dos consultas. Si las dos
+# contaran pares, coincidirian y las dos estarian mal -que es exactamente lo que paso-. Aqui
+# se le pregunta a la base cuantos BLOQUES DISTINTOS hay, sin pasar por ninguna de las dos.
+BLK=$(TODO=1 "$B/bin/prodsql" "
+  SELECT COUNT(*) FROM (
+    SELECT (EXTRACT(EPOCH FROM o.window_start)/60/$HOR)::bigint AS blk
+    FROM signal_outcome o JOIN signal_observation s ON s.observation_id=o.observation_id
+    WHERE s.symbol='BTCUSDT_PERP.A' AND s.is_periodic IS TRUE AND o.status='evaluated'
+      AND o.horizon_minutes=$HOR AND o.end_price IS NOT NULL AND s.reference_price IS NOT NULL
+      AND s.observed_at >= '$A_DESDE'::timestamptz AND s.observed_at < '$A_HASTA'::timestamptz
+    GROUP BY 1
+    HAVING BOOL_OR(s.actionable IS TRUE AND s.direction IN ('long','short'))
+       AND BOOL_OR(s.actionable IS NOT TRUE)) q" 2>/dev/null | tr -d ' ' | head -1)
+case "$BLK" in
+  ''|*[!0-9]*) echo "NO MEDIDO: no se pudo contar los bloques distintos (salio '$BLK')"; exit 2 ;;
+esac
+[ "$RU_NEF" = "$BLK" ] || FALLOS="$FALLOS n_efectiva_no_son_bloques($RU_NEF!=$BLK)"
+
 if [ "$DESPLEGADO" = si ]; then
   cmp3 "$P_BRUTA"   "$RU_BR" || FALLOS="$FALLOS payload_bruta($P_BRUTA!=$RU_BR)"
   cmp3 "$P_NETA"    "$RU_NE" || FALLOS="$FALLOS payload_neta($P_NETA!=$RU_NE)"

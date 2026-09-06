@@ -100,10 +100,26 @@ Declarada el 2026-09-06 en la misma vuelta que la escribe. Es el primer bloque d
 que existe **para que un trader lo lea**, no para que otro proceso lo consuma.
 
 *Que publica:* `ventaja_bruta_pct`, `ventaja_neta_pct`, `t_neta`, `coste_entrada_pct`,
-`observaciones`, `n_efectiva` (BLOQUES, no filas), `arco_desde`/`arco_hasta`,
-`dias_de_arco`, `horizonte_min`, `lectura`, y un objeto `alcance` con
-`percentil_de_la_ventana`, `ventanas_comparadas`, `mediana_historica_pct` y
+`coste_entrada_por_obs_pct`, `observaciones`, `n_efectiva`, `pares_bloque_lado`,
+`arco_desde`/`arco_hasta`, `dias_de_arco`, `horizonte_min`, `lectura`, y un objeto `alcance`
+con `percentil_de_la_ventana`, `ventanas_comparadas`, `mediana_historica_pct` y
 `ventanas_negativas`.
+
+*Y una precision que costo una correccion del operador el 2026-09-06:* **`n_efectiva` son
+BLOQUES DE TIEMPO DISTINTOS**, no pares (bloque, lado). Los dos lados del mismo bloque de 60
+minutos leen el **mismo tramo de mercado**: no son dos muestras independientes de tiempo.
+Publicar los pares como n efectiva **doblaba la muestra** en la unica cifra cuyo proposito es
+ser honesta sobre el tamaño de muestra —P5.2 «¿sobre cuantas operaciones se calcula?» y P5.3
+«¿la muestra solapa ventanas?»—. Medido: **604 bloques contra 1 191 pares**, y el `t` pasa de
+0.124 a 0.049. Por eso `pares_bloque_lado` viaja tambien: para que la distincion se pueda
+auditar desde fuera sin creerse la etiqueta.
+
+*Los DOS costes de entrada, y por que hay dos:* `coste_entrada_pct` va ponderado **por
+bloque**, igual que la ventaja, y es el unico que se puede comparar con ella —dos medias
+ponderadas de forma distinta no decomponen nada—. `coste_entrada_por_obs_pct` va por
+**observacion**, que es lo que le cuesta a quien opera, porque cada entrada es una
+observacion y no un bloque. Medido: **0.0531 frente a 0.0479**; la diferencia es ponderacion,
+no señal.
 
 *Que promete exactamente, y es lo que la separa de un numero bonito:*
 
