@@ -22,13 +22,13 @@
 | `/api/dashboard/state` | GET | 8 | 13 | 43 | [ficha](rutas/api-dashboard-state.md) |
 | `/api/data-confidence` | GET | 1 | 6 | 10 | [ficha](rutas/api-data-confidence.md) |
 | `/api/delta-profile` | GET | 3 | 1 | 11 | [ficha](rutas/api-delta-profile.md) |
-| `/api/desk/state` | GET | 9 | 13 | 76 | [ficha](rutas/api-desk-state.md) |
+| `/api/desk/state` | GET | 9 | 13 | 77 | [ficha](rutas/api-desk-state.md) |
 | `/api/divergences` | GET | 9 | 3 | 7 | [ficha](rutas/api-divergences.md) |
 | `/api/external-macro` | GET | **0 · PENDIENTE** | 6 | 48 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 4 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
 | `/api/healthz` | GET | 7 | 3 | 5 | [ficha](rutas/api-healthz.md) |
-| `/api/hypothesis` | GET | 24 | 12 | 75 | [ficha](rutas/api-hypothesis.md) |
+| `/api/hypothesis` | GET | 24 | 12 | 76 | [ficha](rutas/api-hypothesis.md) |
 | `/api/level/breakout` | GET | 11 | 1 | 13 | [ficha](rutas/api-level-breakout.md) |
 | `/api/liquidation-map` | GET | 16 | 2 | 6 | [ficha](rutas/api-liquidation-map.md) |
 | `/api/liquidations` | GET | 5 | 2 | 11 | [ficha](rutas/api-liquidations.md) |
@@ -49,7 +49,7 @@
 | `/api/scalp/alerts` | GET | 2 | 8 | 26 | [ficha](rutas/api-scalp-alerts.md) |
 | `/api/scalp/basis` | GET | 1 | 2 | 4 | [ficha](rutas/api-scalp-basis.md) |
 | `/api/scalp/delta-matrix` | GET | **0 · PENDIENTE** | 3 | 18 | [ficha](rutas/api-scalp-delta-matrix.md) |
-| `/api/scalp/execution-cost` | GET | 8 | 9 | 30 | [ficha](rutas/api-scalp-execution-cost.md) |
+| `/api/scalp/execution-cost` | GET | 8 | 9 | 31 | [ficha](rutas/api-scalp-execution-cost.md) |
 | `/api/scalp/liquidation-levels` | GET | 7 | 3 | 2 | [ficha](rutas/api-scalp-liquidation-levels.md) |
 | `/api/scalp/liquidations` | GET | 3 | 1 | 2 | [ficha](rutas/api-scalp-liquidations.md) |
 | `/api/scalp/orderbook` | GET | 3 | 1 | 3 | [ficha](rutas/api-scalp-orderbook.md) |

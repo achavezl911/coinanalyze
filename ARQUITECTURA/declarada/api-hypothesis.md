@@ -46,8 +46,31 @@ Acepta `entry`, `target`, `stop`, `size_usd`, `fee_bps_per_side`, `order_type`, 
 es el R:R real, ya con coste?"*—: el R:R y el coste salen de la MISMA llamada, asi que no
 puede haber dos definiciones de coste como avisa **P4.1**.
 
-*Que significa no cumplirlo:* que `invalidations` viniera vacio con una hipotesis activa.
-Una hipotesis que no se puede invalidar no es una hipotesis.
+**PROMESA 4 · dice si el plan que le das es POSIBLE en el lado que declaras.**
+Declarada el 2026-09-06, **antes** de que el codigo la cumpla, porque cambia la forma de la
+respuesta. Publica **`plan_coherence`** —`COHERENTE` · `INCOHERENTE` · `SIN LADO` ·
+`SIN DATOS`—, **`plan_incoherencias`** (lista de NOMBRES, no prosa) y **`plan_warning`**
+(el texto para la tarjeta).
+
+*El hecho que la motiva, medido contra 140 el 2026-09-06 a las 08:11Z:* un largo con
+entrada 79814.3, **stop 80612.4 arriba y objetivo 78218.0 abajo** devolvia `risk_bps 99.99`,
+`target_bps 200.0` y `cost_to_risk_band "aceptable"`, **identicos** a los del mismo plan bien
+puesto, y sin ningun aviso. `_bps` mide una DISTANCIA y una distancia no tiene lado.
+
+*Que promete exactamente:* en largo `stop < entry < target`; en corto, al reves; las dos
+desigualdades estrictas. Si `direction` no es `long` ni `short`, **no hay nada que validar y
+lo dice** (`SIN LADO`) en vez de callar.
+
+*Lo que NO promete, y es la mitad importante:* **no rechaza**. Es una decision de producto
+del operador del 2026-09-06 —un 400 rompe a quien ya la llama y convierte un error de dedo
+en una pantalla en blanco—. `status`, `verdict`, `risk_bps`, `target_bps` y las bandas
+siguen saliendo **exactamente igual que antes**, y `tests/test_plan_coherente.py` lo clava
+comparando el mismo plan declarado como corto (posible) y como largo (imposible): mismas
+distancias, mismos papeles, y todos los campos anteriores identicos.
+
+*Que significa no cumplirlo:* que `invalidations` viniera vacio con una hipotesis activa
+—una hipotesis que no se puede invalidar no es una hipotesis—, o que un plan imposible
+saliera con `plan_coherence` distinto de `INCOHERENTE`.
 
 **P1.9 comprobado, y la bateria tiene razon.** Dice que esta ruta *"llega por bundle, no
 suelta"*, y el panel lo confirma: `state.hypothesisData = componentes.hypothesis` en

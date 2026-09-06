@@ -28,14 +28,14 @@ Handler `scalp_execution_cost` · `app/api.py:1395` (cuerpo hasta la 1448) · de
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5154 |
-| `note` | literal en app/scalp_logic.py:5156 |
-| `sizes_usd` | literal en app/scalp_logic.py:5153 |
-| `stale_after_seconds` | literal en app/scalp_logic.py:5155 |
-| `status` | literal en app/scalp_logic.py:5158 |
-| `symbol` | literal en app/scalp_logic.py:5151 |
-| `unit` | literal en app/scalp_logic.py:5152 |
-| `venues` | literal en app/scalp_logic.py:5157 |
+| `as_of` | literal en app/scalp_logic.py:5236 |
+| `note` | literal en app/scalp_logic.py:5238 |
+| `sizes_usd` | literal en app/scalp_logic.py:5235 |
+| `stale_after_seconds` | literal en app/scalp_logic.py:5237 |
+| `status` | literal en app/scalp_logic.py:5240 |
+| `symbol` | literal en app/scalp_logic.py:5233 |
+| `unit` | literal en app/scalp_logic.py:5234 |
+| `venues` | literal en app/scalp_logic.py:5239 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -78,7 +78,7 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-30 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+31 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
@@ -87,15 +87,15 @@ Llamadas directas del handler:
 - `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:4972`
-- `app.scalp_logic.execution_cost` — `app/scalp_logic.py:5100`
+- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5039`
+- `app.scalp_logic.execution_cost` — `app/scalp_logic.py:5182`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 
-<details><summary>Alcanzables de forma indirecta (23)</summary>
+<details><summary>Alcanzables de forma indirecta (24)</summary>
 
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
-- `app.scalp_logic._banda` — `app/scalp_logic.py:4963`
+- `app.scalp_logic._banda` — `app/scalp_logic.py:5030`
 - `app.scalp_logic._bps` — `app/scalp_logic.py:4956`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
@@ -108,6 +108,7 @@ Llamadas directas del handler:
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
+- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:4963`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
@@ -213,7 +214,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic._utc_now` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.setups._sign` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-setups.md) |
 | `app.scalp_logic._banda` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 6 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 7 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

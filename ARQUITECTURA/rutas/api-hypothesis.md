@@ -127,7 +127,7 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-75 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+76 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
@@ -142,11 +142,11 @@ Llamadas directas del handler:
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 - `app.scalp_logic.setup_confirmation_bundle` — `app/scalp_logic.py:2330`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2283`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5846`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5928`
 - `app.setups.build_setup_context` — `app/setups.py:1100`
 - `app.setups.split_hypothesis` — `app/setups.py:88`
 
-<details><summary>Alcanzables de forma indirecta (62)</summary>
+<details><summary>Alcanzables de forma indirecta (63)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
@@ -156,7 +156,7 @@ Llamadas directas del handler:
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
 - `app.scalp_logic._atr` — `app/scalp_logic.py:2926`
-- `app.scalp_logic._banda` — `app/scalp_logic.py:4963`
+- `app.scalp_logic._banda` — `app/scalp_logic.py:5030`
 - `app.scalp_logic._bps` — `app/scalp_logic.py:4956`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
@@ -186,7 +186,8 @@ Llamadas directas del handler:
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
-- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:4972`
+- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:4963`
+- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5039`
 - `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4419`
 - `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2619`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
@@ -303,7 +304,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic._resample_highs_lows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.spot_flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 51 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 52 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

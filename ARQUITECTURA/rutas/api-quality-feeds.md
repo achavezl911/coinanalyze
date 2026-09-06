@@ -18,8 +18,8 @@ Handler `quality_feeds` · `app/api.py:1341` (cuerpo hasta la 1353) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `collectors` | literal en app/scalp_logic.py:5217 |
-| `contexts` | literal en app/scalp_logic.py:5218 |
+| `collectors` | literal en app/scalp_logic.py:5299 |
+| `contexts` | literal en app/scalp_logic.py:5300 |
 | `metrics` | literal en app/scalp_logic.py:3964 |
 | `note` | literal en app/scalp_logic.py:3965 |
 
@@ -99,7 +99,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5183`
+- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5265`
 
 <details><summary>Alcanzables de forma indirecta (41)</summary>
 

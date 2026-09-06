@@ -46,7 +46,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5226`
+- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5308`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 

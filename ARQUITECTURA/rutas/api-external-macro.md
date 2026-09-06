@@ -81,7 +81,7 @@ Llamadas directas del handler:
 - `app.api.validate_symbol` — `app/api.py:222`
 - `app.external_macro.align_with_internal` — `app/external_macro.py:415`
 - `app.external_macro.external_macro_context` — `app/external_macro.py:437`
-- `app.scalp_logic.swing_score` — `app/scalp_logic.py:6152`
+- `app.scalp_logic.swing_score` — `app/scalp_logic.py:6234`
 
 <details><summary>Alcanzables de forma indirecta (44)</summary>
 
@@ -96,7 +96,7 @@ Llamadas directas del handler:
 - `app.scalp_logic._atr` — `app/scalp_logic.py:2926`
 - `app.scalp_logic._beta` — `app/scalp_logic.py:3269`
 - `app.scalp_logic._binned` — `app/scalp_logic.py:3283`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5695`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5777`
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
 - `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1780`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
@@ -119,15 +119,15 @@ Llamadas directas del handler:
 - `app.scalp_logic._swings` — `app/scalp_logic.py:2212`
 - `app.scalp_logic._tr_series` — `app/scalp_logic.py:2915`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6001`
+- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6083`
 - `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3304`
 - `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4419`
 - `app.scalp_logic.macro_context` — `app/scalp_logic.py:1820`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5728`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5810`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
 - `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2609`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2283`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5846`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5928`
 - `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3539`
 
 </details>

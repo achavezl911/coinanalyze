@@ -93,7 +93,7 @@ Llamadas directas del handler:
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4277`
 - `app.scalp_logic.profile_view` — `app/scalp_logic.py:4498`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5846`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5928`
 
 <details><summary>Alcanzables de forma indirecta (23)</summary>
 

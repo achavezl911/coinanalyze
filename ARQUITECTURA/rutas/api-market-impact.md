@@ -18,12 +18,12 @@ Handler `market_impact_endpoint` · `app/api.py:1142` (cuerpo hasta la 1146) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5513 |
-| `definition` | literal en app/scalp_logic.py:5515 |
-| `limitations` | literal en app/scalp_logic.py:5517 |
-| `metric` | literal en app/scalp_logic.py:5514 |
-| `symbol` | literal en app/scalp_logic.py:5512 |
-| `windows` | literal en app/scalp_logic.py:5516 |
+| `as_of` | literal en app/scalp_logic.py:5595 |
+| `definition` | literal en app/scalp_logic.py:5597 |
+| `limitations` | literal en app/scalp_logic.py:5599 |
+| `metric` | literal en app/scalp_logic.py:5596 |
+| `symbol` | literal en app/scalp_logic.py:5594 |
+| `windows` | literal en app/scalp_logic.py:5598 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,7 +54,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5420`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5502`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
