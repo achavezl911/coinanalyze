@@ -10,17 +10,25 @@
 #
 # FORMATO, separado por tabuladores:   ruta <TAB> grupo <TAB> cita
 #
-# LOS TRES GRUPOS, y lo que significa cada uno:
+# LOS GRUPOS, y lo que significa cada uno:
 #   ENCHUFAR  hay que llevarla al panel. Es trabajo pendiente CON dueño, no un hueco olvidado.
 #             NO se enchufa en esta vuelta: es una campaña propia y va despues de la marca de
 #             agua. Que este aqui significa que alguien decidio que si, no que ya este hecho.
+#   ENCHUFAR_CON_CONDICION
+#             igual que ENCHUFAR, pero enchufarla TAL CUAL pintaria una cifra enganosa. La
+#             condicion va en la cita y es parte de la decision, no una nota al pie.
+#             Se escribe en UN SOLO TOKEN a proposito: la columna 2 es un token y este
+#             fichero no estrena gramatica por un caso. El check no necesita saber que
+#             existe -no ramifica por grupo, solo exige que la ruta TENGA linea-, asi que
+#             anadir el grupo no cuesta ni una linea de codigo; lo unico que cambia es el
+#             recuento por grupo que sale en el mensaje.
 #   RELOJ     hueco reconocido con fecha de revision. Ni se enchufa ni se exime todavia.
 #   EXENTA    no tiene que llegar, y la razon esta escrita y es comprobable.
 #
 # UNA RUTA QUE NO ESTE AQUI Y SALGA HUECO ENROJECE. Esa es toda la mecanica.
 
 /api/signals/ledger	ENCHUFAR	16 campos propios. Que se DECIDIO: observation_id, decision_status, actionable, is_transition, evidence_version. La bateria le da P1.11 P1.6 P1.7 y S1. Sin esto el operador no puede reconstruir por que el sistema dijo lo que dijo.
-/api/signals/outcomes	ENCHUFAR	26 campos propios. Que SALIO: directional_return_pct, up/down_excursion_pct, bars_found contra bars_expected, entry_reference_price. P1.14 P3.3 P3.4 P5.1 P5.2 y S3 -la simetria largos/cortos-, que es el eje que la ronda 1 declaro el mas delator.
+/api/signals/outcomes	ENCHUFAR_CON_CONDICION	26 campos propios. Que SALIO: directional_return_pct, up/down_excursion_pct, bars_found contra bars_expected, entry_reference_price. P1.14 P3.3 P3.4 P5.1 P5.2 y S3. LA CONDICION, decidida el 2026-09-06: la expectativa historica que se pinte tiene que salir de la TABLA signal_outcome, NO de esta ruta tal cual. Medido: la ruta sirve UNA HORA por defecto -su propia respuesta lo declara en since/until, 21:07:44Z..22:07:44Z con count=856- y como maximo 24 h (LEDGER_MAX_WINDOW, app/api.py:2052, aplicado en :2209). Una hora no es una tasa base, y P5.1 pide una tasa base: enchufarla sin la condicion le pintaria al trader la expectativa de un dia con cara de historia.
 /api/signals/execution	ENCHUFAR	26 campos propios. CUANTO COSTO ejecutarla: best_bid_px/best_ask_px, bid/ask_depth_usd, ask_levels_valid y los cubos de 1000/10000/50000/100000. P3.2 y P4.1. Una senal que no se puede ejecutar a su precio no es una senal.
 /api/signals/replay	ENCHUFAR	37 campos propios, la mas de las once. Con QUE INSUMOS se decidio: context_hash, context_version, context_as_of, baseline_3m, bars_15m, first_px_3m/15m. P5.2 P5.3 P5.5. Es la unica via para reproducir una decision pasada.
 /api/signals/visibility	ENCHUFAR	15 campos propios. Si el resultado YA ERA VISIBLE cuando se decidio: final_visibility_id, horizon_minutes, outcome_version. P5.2 P5.4 P5.5. Sin esto no se distingue acertar de mirar el resultado.
