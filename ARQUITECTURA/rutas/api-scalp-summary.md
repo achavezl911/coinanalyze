@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_summary` · `app/api.py:1085` (cuerpo hasta la 1089) · decorador en la linea 1084.
+Handler `scalp_summary` · `app/api.py:1107` (cuerpo hasta la 1111) · decorador en la linea 1106.
 
 ## Parametros de entrada
 
@@ -72,7 +72,7 @@ Handler `scalp_summary` · `app/api.py:1085` (cuerpo hasta la 1089) · decorador
 | `spot_price` | literal en app/scalp_logic.py:865 |
 | `spread_bps` | literal en app/scalp_logic.py:872 |
 | `state` | literal en app/scalp_logic.py:845 |
-| `symbol` | literal en app/api.py:1089 |
+| `symbol` | literal en app/api.py:1111 |
 | `vwap_dist_pct` | literal en app/scalp_logic.py:913 |
 | `wall_down_pct` | literal en app/scalp_logic.py:877 |
 | `wall_up_pct` | literal en app/scalp_logic.py:876 |

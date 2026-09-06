@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `verdicts` · `app/api.py:1827` (cuerpo hasta la 1913) · decorador en la linea 1826.
+Handler `verdicts` · `app/api.py:1849` (cuerpo hasta la 1935) · decorador en la linea 1848.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `verdicts` · `app/api.py:1827` (cuerpo hasta la 1913) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:1906 |
-| `logic_version` | literal en app/api.py:1904 |
-| `note` | literal en app/api.py:1907 |
-| `rows` | literal en app/api.py:1905 |
-| `symbol` | literal en app/api.py:1903 |
+| `coverage` | literal en app/api.py:1928 |
+| `logic_version` | literal en app/api.py:1926 |
+| `note` | literal en app/api.py:1929 |
+| `rows` | literal en app/api.py:1927 |
+| `symbol` | literal en app/api.py:1925 |
 
 Forma de la respuesta segun el AST: objeto.
 

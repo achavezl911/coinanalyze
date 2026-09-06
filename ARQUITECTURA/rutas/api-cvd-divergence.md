@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd_divergence` · `app/api.py:798` (cuerpo hasta la 912) · decorador en la linea 797.
+Handler `cvd_divergence` · `app/api.py:820` (cuerpo hasta la 934) · decorador en la linea 819.
 
 ## Parametros de entrada
 
@@ -20,10 +20,10 @@ Handler `cvd_divergence` · `app/api.py:798` (cuerpo hasta la 912) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:911 |
-| `interval` | literal en app/api.py:909 |
-| `rows` | literal en app/api.py:910 |
-| `symbol` | literal en app/api.py:908 |
+| `coverage` | literal en app/api.py:933 |
+| `interval` | literal en app/api.py:931 |
+| `rows` | literal en app/api.py:932 |
+| `symbol` | literal en app/api.py:930 |
 
 Forma de la respuesta segun el AST: objeto.
 

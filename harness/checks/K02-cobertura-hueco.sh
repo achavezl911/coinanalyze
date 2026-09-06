@@ -205,5 +205,13 @@ printf '%s\n' "$detalle" | sed -n '/^LINEAS|/,$p' | sed 's/^LINEAS|//'
 [ -z "$aviso" ] || echo "$aviso"
 [ -z "${huecas// /}" ] || echo "  DEUDA, no defecto: llamada al enmascarado que su feed no puede honrar (no hay detector): $huecas"
 [ -z "${mejorables// /}" ] || echo "  DEUDA, no defecto: lee una tabla con covered_seconds y no publica cobertura por cubo: $mejorables"
-echo "  la raiz de las dos deudas es la misma y no esta en api.py: falta detector de huecos para spot_trades"
+# LA FRASE DE LA RAIZ SE DERIVA. Decia «las DOS deudas» con el numero tecleado, y el
+# 2026-09-06 una de las dos se arreglo -la gemela spot de cvd publica ya cobertura por cubo-
+# y la frase habria seguido diciendo dos. Es la misma forma que el «7 rutas sin marca
+# temporal» de F6: una cifra en prosa que un cambio en otro sitio deja vieja sin avisar.
+# (El camino completo de esa ruta no se escribe aqui: el detector de consumidores lo
+#  acreditaria como MENCION y el mapa diria que este comentario la consume.)
+n_deudas=$(( $([ -n "${huecas// /}" ] && echo 1 || echo 0) + $([ -n "${mejorables// /}" ] && echo 1 || echo 0) ))
+[ "$n_deudas" -eq 0 ] || printf '  la raiz de esa%s deuda%s no esta en api.py: falta detector de huecos para spot_trades\n' \
+  "$([ "$n_deudas" -gt 1 ] && echo 's')" "$([ "$n_deudas" -gt 1 ] && echo 's')"
 exit 0

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `wyckoff_endpoint` · `app/api.py:1717` (cuerpo hasta la 1721) · decorador en la linea 1716.
+Handler `wyckoff_endpoint` · `app/api.py:1739` (cuerpo hasta la 1743) · decorador en la linea 1738.
 
 ## Parametros de entrada
 

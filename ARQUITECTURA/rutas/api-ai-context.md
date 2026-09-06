@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_context` · `app/api.py:2702` (cuerpo hasta la 2715) · decorador en la linea 2701.
+Handler `ai_context` · `app/api.py:2724` (cuerpo hasta la 2737) · decorador en la linea 2723.
 
 ## Parametros de entrada
 
@@ -360,7 +360,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:2711` | el propio handler |
+| 422 | — | `app/api.py:2733` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

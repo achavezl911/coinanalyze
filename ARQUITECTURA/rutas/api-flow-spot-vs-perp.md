@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `flow_spot_vs_perp` · `app/api.py:1448` (cuerpo hasta la 1461) · decorador en la linea 1447.
+Handler `flow_spot_vs_perp` · `app/api.py:1470` (cuerpo hasta la 1483) · decorador en la linea 1469.
 
 ## Parametros de entrada
 
@@ -79,7 +79,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1456` | el propio handler |
+| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1478` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

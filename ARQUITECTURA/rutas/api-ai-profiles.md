@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_profiles` · `app/api.py:2740` (cuerpo hasta la 2760) · decorador en la linea 2739.
+Handler `ai_profiles` · `app/api.py:2762` (cuerpo hasta la 2782) · decorador en la linea 2761.
 
 ## Parametros de entrada
 
@@ -16,8 +16,8 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `endpoints` | literal en app/api.py:2756 |
-| `profiles` | literal en app/api.py:2742 |
+| `endpoints` | literal en app/api.py:2778 |
+| `profiles` | literal en app/api.py:2764 |
 
 Forma de la respuesta segun el AST: objeto.
 

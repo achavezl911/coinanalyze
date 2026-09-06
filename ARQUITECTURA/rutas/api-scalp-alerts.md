@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_alerts` · `app/api.py:1497` (cuerpo hasta la 1558) · decorador en la linea 1496.
+Handler `scalp_alerts` · `app/api.py:1519` (cuerpo hasta la 1580) · decorador en la linea 1518.
 
 ## Parametros de entrada
 
@@ -18,8 +18,8 @@ Handler `scalp_alerts` · `app/api.py:1497` (cuerpo hasta la 1558) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `alerts` | literal en app/api.py:1558 |
-| `symbol` | literal en app/api.py:1558 |
+| `alerts` | literal en app/api.py:1580 |
+| `symbol` | literal en app/api.py:1580 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -65,7 +65,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.statistical_alerts` — `app/api.py:1561`
+- `app.api.statistical_alerts` — `app/api.py:1583`
 - `app.api.validate_symbol` — `app/api.py:222`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.market_impact` — `app/scalp_logic.py:5420`

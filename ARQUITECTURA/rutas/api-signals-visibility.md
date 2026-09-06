@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_visibility` · `app/api.py:2430` (cuerpo hasta la 2507) · decorador en la linea 2429.
+Handler `signals_visibility` · `app/api.py:2452` (cuerpo hasta la 2529) · decorador en la linea 2451.
 
 ## Parametros de entrada
 
@@ -23,14 +23,14 @@ Handler `signals_visibility` · `app/api.py:2430` (cuerpo hasta la 2507) · deco
 
 | campo | de donde sale |
 |---|---|
-| `certificates` | literal en app/api.py:2506 |
-| `count` | literal en app/api.py:2504 |
-| `limit` | literal en app/api.py:2503 |
-| `since` | literal en app/api.py:2500 |
-| `status` | literal en app/api.py:2502 |
-| `symbol` | literal en app/api.py:2499 |
-| `truncated` | literal en app/api.py:2505 |
-| `until` | literal en app/api.py:2501 |
+| `certificates` | literal en app/api.py:2528 |
+| `count` | literal en app/api.py:2526 |
+| `limit` | literal en app/api.py:2525 |
+| `since` | literal en app/api.py:2522 |
+| `status` | literal en app/api.py:2524 |
+| `symbol` | literal en app/api.py:2521 |
+| `truncated` | literal en app/api.py:2527 |
+| `until` | literal en app/api.py:2523 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -57,8 +57,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2046`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2074`
+- `app.api._utc_iso` — `app/api.py:2068`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2096`
 - `app.api.records` — `app/api.py:235`
 - `app.api.validate_symbol` — `app/api.py:222`
 
@@ -84,12 +84,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:2083` | una funcion de su cierre |
-| 422 | status tiene que ser evaluated o not_evaluable | `app/api.py:2455` | el propio handler |
-| 422 | — | `app/api.py:2463` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2465` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2467` | el propio handler |
-| 422 | — | `app/api.py:2469` | el propio handler |
+| 422 | — | `app/api.py:2105` | una funcion de su cierre |
+| 422 | status tiene que ser evaluated o not_evaluable | `app/api.py:2477` | el propio handler |
+| 422 | — | `app/api.py:2485` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2487` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2489` | el propio handler |
+| 422 | — | `app/api.py:2491` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

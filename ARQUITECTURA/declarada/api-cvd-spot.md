@@ -52,6 +52,27 @@ Es **la gemela spot de `/api/cvd`** y comparte su contrato entero: `symbol`, `in
 `rows = [576]` con `bucket`/`delta_usd`/`cvd`, mas `coverage.served_window` y `data_gaps`.
 Ver la ficha de `/api/cvd` para las tres promesas de la familia.
 
+**PROMESA NUEVA · 2026-09-06 · cada cubo declara CUANTOS SEGUNDOS DE MERCADO lo sostienen.**
+Sus filas traen ademas `covered_seconds_min`, `short_minutes`, `unknown_minutes` y
+`minutes_present`, los cuatro con la misma forma y el mismo significado que en
+`/api/whale/delta` — que hasta hoy era la unica de las siete series que los publicaba.
+
+*Por que aqui y no en las otras seis:* esta ruta lee `spot_trades_agg` con el **mismo
+`WHERE`** que `whale/delta` (`api.py:761` contra `:1029`), y esa es una de las **dos** tablas
+del sistema que declaran cobertura por segundo. Las otras cinco series no leen ninguna de las
+dos, asi que a ellas no se les puede exigir.
+
+*Que significa no cumplirlo, y es lo que pasaba hasta hoy:* un cubo de 5 minutos construido
+sobre minutos cortos —el colector se fue a mitad— era **indistinguible de uno completo**. Y
+aqui no hay red debajo: `spot_trades` no tiene detector de huecos, asi que `data_gap` no
+tiene ni una fila suya (medido en 140) y el enmascarado no puede taparlo por otra via. La
+misma pregunta tenia dos respuestas segun se entrara por `whale/delta` o por aqui.
+
+*Lo que NO promete, y hay que decirlo:* `covered_seconds` dice **QUE** falta, no **CUANTO**.
+La ficha de `whale/delta` lo tiene medido: sobre 21 arranques, la fraccion declarada tiene
+mediana 0.367 y la de volumen observada 0.182. Usar esta marca como factor de escala para
+"reparar" el delta es pasarse.
+
 **PROMESA propia · publica el CVD de spot como serie separada del de futuros, y esa
 separacion es la que hace posible la pregunta.**
 `/api/cvd` (futuros) y esta (spot) son dos rutas y no una con un parametro. La bateria mide
@@ -62,9 +83,27 @@ puede hacer si las dos series se pueden pedir **por separado y con el mismo `int
 pudiendo, pero se perderia la garantia de que las dos usan el mismo bucket — y el diferencial
 de dos series con distinto bucket no significa nada.
 
-**Y es una de las 6 rutas SIN NINGUN RASTRO en el repo** (ver la ficha derivada): nadie la
-llama, ni el panel ni un check. Su dato llega al producto por `/api/cvd/divergence` y por
-`spot_trades_agg`, que leen 10 rutas.
+**El PANEL no la pide, y por eso K31 la marca HUECO.** Pero hasta el 2026-09-06 esta ficha
+decia ademas que nadie la nombraba en el repo, y eso era **falso**: la derivada del mismo
+commit dice `llamadas=2 menciones=4`. La nombran como SUJETO suyo dos checks,
+`K02-cobertura-hueco.sh:66` y `K03-hueco-declarado.sh:46`, mas `K31-cubos.py:40` y
+`README.md:404`.
+
+*Por que sobrevivio esa frase falsa:* el brazo 5 de K88 tiene una regla para ese caso, pero
+**es sensible a mayusculas** y la ficha lo escribia en versales. Medido el 2026-09-06: con
+`IGNORECASE` el brazo caza 11 fichas, de las cuales **9 solo CITAN la formula entre comillas**
+narrando un fallo pasado —no afirman nada de su ruta— y 2 la afirman; y de esas 2, en una
+(`api-snapshot.md`) el que se equivoca es el MAPA, que cuenta como llamada un literal
+`@app.get(...)` dentro de un test que parsea `api.py`. Encenderlo a secas fabricaria nueve
+falsos y uno mas, asi que **no se enciende hoy**: necesita descartar el texto entrecomillado,
+igual que el clasificador de prosa de F3d necesito distinguir una cadena literal de un
+comentario. Queda anotado para la marca de agua.
+
+*Y una nota sobre esta misma frase:* esta escrita en rodeo a proposito. Reproducir aqui la
+formula exacta que el brazo 5 busca haria enrojecer al check **por hablar de el**, que es la
+version en prosa del mismo problema.
+
+Su dato llega al producto por `/api/cvd/divergence` y por `spot_trades_agg`, que leen 10 rutas.
 
 
 ## SUPERFICIE

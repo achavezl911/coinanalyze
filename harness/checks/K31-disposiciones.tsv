@@ -1,0 +1,34 @@
+# DISPOSICIONES DE LAS RUTAS HUECO · quien se hace cargo de cada una y por que.
+#
+# Una ruta HUECO -que sirve datos y no llega a ningun operador- es un hallazgo la primera vez
+# y papel pintado la vigesima. Por eso K31 dejo de enrojecer por CONTARLAS el 2026-09-06:
+# enrojece por las que no tienen DUEÑO. Este fichero es el dueño.
+#
+# Decision de Alejandro, tomada el 2026-09-06 con la evidencia de
+# entregas/20260906-0310-rojos-viejos.md §4 y argumentada en
+# entregas/20260906-0330-rojos-viejos-auditoria.md §5. No la decide un check.
+#
+# FORMATO, separado por tabuladores:   ruta <TAB> grupo <TAB> cita
+#
+# LOS TRES GRUPOS, y lo que significa cada uno:
+#   ENCHUFAR  hay que llevarla al panel. Es trabajo pendiente CON dueño, no un hueco olvidado.
+#             NO se enchufa en esta vuelta: es una campaña propia y va despues de la marca de
+#             agua. Que este aqui significa que alguien decidio que si, no que ya este hecho.
+#   RELOJ     hueco reconocido con fecha de revision. Ni se enchufa ni se exime todavia.
+#   EXENTA    no tiene que llegar, y la razon esta escrita y es comprobable.
+#
+# UNA RUTA QUE NO ESTE AQUI Y SALGA HUECO ENROJECE. Esa es toda la mecanica.
+
+/api/signals/ledger	ENCHUFAR	16 campos propios. Que se DECIDIO: observation_id, decision_status, actionable, is_transition, evidence_version. La bateria le da P1.11 P1.6 P1.7 y S1. Sin esto el operador no puede reconstruir por que el sistema dijo lo que dijo.
+/api/signals/outcomes	ENCHUFAR	26 campos propios. Que SALIO: directional_return_pct, up/down_excursion_pct, bars_found contra bars_expected, entry_reference_price. P1.14 P3.3 P3.4 P5.1 P5.2 y S3 -la simetria largos/cortos-, que es el eje que la ronda 1 declaro el mas delator.
+/api/signals/execution	ENCHUFAR	26 campos propios. CUANTO COSTO ejecutarla: best_bid_px/best_ask_px, bid/ask_depth_usd, ask_levels_valid y los cubos de 1000/10000/50000/100000. P3.2 y P4.1. Una senal que no se puede ejecutar a su precio no es una senal.
+/api/signals/replay	ENCHUFAR	37 campos propios, la mas de las once. Con QUE INSUMOS se decidio: context_hash, context_version, context_as_of, baseline_3m, bars_15m, first_px_3m/15m. P5.2 P5.3 P5.5. Es la unica via para reproducir una decision pasada.
+/api/signals/visibility	ENCHUFAR	15 campos propios. Si el resultado YA ERA VISIBLE cuando se decidio: final_visibility_id, horizon_minutes, outcome_version. P5.2 P5.4 P5.5. Sin esto no se distingue acertar de mirar el resultado.
+/api/scalp/signals	ENCHUFAR	CERO campos propios por NOMBRE, y aun asi es hueco. Es la unica ruta de api.py que lee scalp_signal_snapshot como dato -/metrics solo hace COUNT(*); ai_context.py la lee para /api/ai/context, que es NO_PANEL-. Sus 16 columnas existen por nombre en otras rutas, pero esas publican el valor de AHORA y ella publica 200 filas de HISTORIA (ORDER BY ts DESC LIMIT $2). Lo que no llega no es un campo: es la serie, y P1.6 -la senal de ahora contra la de hace 5 minutos- se contesta con ella.
+
+/api/flow/spot-vs-perp	RELOJ	14 campos propios -perp_delta_ratio, spot_compra_futuros_vende, perp_over_spot_volume, buckets_with_both_legs- o sea dato que no llega por ningun otro sitio. Pero la bateria solo la nombra en la tabla de SOLAPES, sin id de pregunta: es dato nuevo SIN pregunta que lo pida. Revisar cuando la bateria R2 diga si algun trader la pide.
+
+/api/cvd	EXENTA	1 campo propio y es `cvd`, el ACUMULADO. Sus insumos -bucket, delta_usd- ya viajan en rutas que si llegan. Cero preguntas numeradas de la bateria: aparece solo en la tabla de solapes.
+/api/cvd/spot	EXENTA	1 campo propio y es `cvd`, el acumulado, igual que su gemela de futuros. Cero preguntas numeradas. Desde el 2026-09-06 publica ademas cobertura por cubo, que era su deuda medida y ya no lo es.
+/api/liquidations	EXENTA	1 campo propio y es `liquidations`, la CLAVE CONTENEDORA: sus campos internos ya viajan en otras rutas. Cero preguntas numeradas de la bateria.
+/api/scalp/alerts	EXENTA	3 campos propios -alerts, message, priority- y los dos ultimos son PROSA, no numero auditable. No publica su instante, ni la ventana, ni el umbral que la disparo (ver su ficha declarada). Cero preguntas numeradas de la bateria.

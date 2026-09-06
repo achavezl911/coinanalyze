@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `zone_analysis_endpoint` · `app/api.py:1652` (cuerpo hasta la 1665) · decorador en la linea 1651.
+Handler `zone_analysis_endpoint` · `app/api.py:1674` (cuerpo hasta la 1687) · decorador en la linea 1673.
 
 ## Parametros de entrada
 
@@ -87,8 +87,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:1661` | el propio handler |
-| 422 | zone spans more than 3x; narrow it | `app/api.py:1663` | el propio handler |
+| 422 | low must be below high | `app/api.py:1683` | el propio handler |
+| 422 | zone spans more than 3x; narrow it | `app/api.py:1685` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

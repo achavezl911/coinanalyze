@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `swing_score_endpoint` · `app/api.py:1760` (cuerpo hasta la 1763) · decorador en la linea 1759.
+Handler `swing_score_endpoint` · `app/api.py:1782` (cuerpo hasta la 1785) · decorador en la linea 1781.
 
 ## Parametros de entrada
 

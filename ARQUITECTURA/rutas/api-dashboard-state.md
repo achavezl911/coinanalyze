@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `dashboard_state` · `app/api.py:2674` (cuerpo hasta la 2698) · decorador en la linea 2673.
+Handler `dashboard_state` · `app/api.py:2696` (cuerpo hasta la 2720) · decorador en la linea 2695.
 
 ## Parametros de entrada
 
@@ -18,14 +18,14 @@ Handler `dashboard_state` · `app/api.py:2674` (cuerpo hasta la 2698) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `barriers` | literal en app/api.py:2696 |
-| `cvd_swing` | literal en app/api.py:2695 |
-| `market_memory` | literal en app/api.py:2697 |
-| `scalp` | literal en app/api.py:2691 |
-| `scalp_persistence` | literal en app/api.py:2693 |
-| `setup` | literal en app/api.py:2694 |
-| `snapshot` | literal en app/api.py:2690 |
-| `symbol` | literal en app/api.py:2689 |
+| `barriers` | literal en app/api.py:2718 |
+| `cvd_swing` | literal en app/api.py:2717 |
+| `market_memory` | literal en app/api.py:2719 |
+| `scalp` | literal en app/api.py:2713 |
+| `scalp_persistence` | literal en app/api.py:2715 |
+| `setup` | literal en app/api.py:2716 |
+| `snapshot` | literal en app/api.py:2712 |
+| `symbol` | literal en app/api.py:2711 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -88,7 +88,7 @@ Llamadas directas del handler:
 
 - `app.api.daily_data` — `app/api.py:494`
 - `app.api.latest_snapshot` — `app/api.py:467`
-- `app.api.scalp_persistence` — `app/api.py:2631`
+- `app.api.scalp_persistence` — `app/api.py:2653`
 - `app.api.validate_symbol` — `app/api.py:222`
 - `app.interpretation.cvd_swing_read` — `app/interpretation.py:578`
 - `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
