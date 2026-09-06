@@ -19,7 +19,7 @@
 | `/api/cvd/divergence` | GET | 12 | 3 | 9 | [ficha](rutas/api-cvd-divergence.md) |
 | `/api/cvd/spot` | GET | 15 | 2 | 11 | [ficha](rutas/api-cvd-spot.md) |
 | `/api/daily` | GET | 11 | 2 | 13 | [ficha](rutas/api-daily.md) |
-| `/api/dashboard/state` | GET | 159 | 13 | 43 | [ficha](rutas/api-dashboard-state.md) |
+| `/api/dashboard/state` | GET | 165 | 14 | 44 | [ficha](rutas/api-dashboard-state.md) |
 | `/api/data-confidence` | GET | 1 | 6 | 10 | [ficha](rutas/api-data-confidence.md) |
 | `/api/delta-profile` | GET | 4 | 1 | 11 | [ficha](rutas/api-delta-profile.md) |
 | `/api/desk/state` | GET | 25 | 13 | 77 | [ficha](rutas/api-desk-state.md) |
@@ -116,7 +116,7 @@
 | `scalp_signal_snapshot` | 4 | 0 |
 | `signal_execution_snapshot` | 1 | 0 |
 | `signal_observation` | 6 | 0 |
-| `signal_outcome` | 2 | 0 |
+| `signal_outcome` | 3 | 0 |
 | `signal_outcome_final_visibility` | 1 | 0 |
 | `signal_replay_frame` | 1 | 0 |
 | `spot_trades_agg` | 10 | 0 |

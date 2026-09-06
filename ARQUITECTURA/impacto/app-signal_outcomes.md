@@ -10,13 +10,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 |---|---|---|---|---|---|
 | [`materialize_due_signal_outcomes`](#materialize-due-signal-outcomes) | 289 | 0 | **0** | 24 ↑ | **0** |
 | [`_aware_utc`](#-aware-utc) | 57 | 0 | **0** | 10 ↑ | **0** |
-| [`_defer_missing_path`](#-defer-missing-path) | 217 | 0 | **2** | 10 ↑ | **2** |
-| [`_finalize_evaluated`](#-finalize-evaluated) | 241 | 0 | **2** | 10 ↑ | **2** |
-| [`_finalize_not_evaluable`](#-finalize-not-evaluable) | 189 | 0 | **2** | 10 ↑ | **2** |
+| [`_defer_missing_path`](#-defer-missing-path) | 217 | 0 | **3** | 10 ↑ | **3** |
+| [`_finalize_evaluated`](#-finalize-evaluated) | 241 | 0 | **3** | 10 ↑ | **3** |
+| [`_finalize_not_evaluable`](#-finalize-not-evaluable) | 189 | 0 | **3** | 10 ↑ | **3** |
 | [`_finite_positive`](#-finite-positive) | 63 | 0 | **0** | 10 ↑ | **0** |
 | [`compute_path_metrics`](#compute-path-metrics) | 96 | 0 | **0** | 10 ↑ | **0** |
 | [`expected_bar_timestamps`](#expected-bar-timestamps) | 89 | 0 | **0** | 10 ↑ | **0** |
-| [`schedule_signal_outcomes`](#schedule-signal-outcomes) | 155 | 0 | **2** | 10 ↑ | **2** |
+| [`schedule_signal_outcomes`](#schedule-signal-outcomes) | 155 | 0 | **3** | 10 ↑ | **3** |
 | [`outcome_window`](#outcome-window) | 73 | 0 | **0** | 6 ↑ | **0** |
 
 ## materialize_due_signal_outcomes
@@ -170,7 +170,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:217` · clave completa `app.signal_outcomes._defer_missing_path`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 3 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -178,18 +178,19 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 2 rutas · **exacto**
+### Por tabla · k=0 — 3 rutas · **exacto**
 
 Escribe **ella misma**: `signal_outcome`
 
 Y esas tablas las leen:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 
 ### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 2). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 3). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -232,7 +233,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:241` · clave completa `app.signal_outcomes._finalize_evaluated`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 3 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -240,18 +241,19 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 2 rutas · **exacto**
+### Por tabla · k=0 — 3 rutas · **exacto**
 
 Escribe **ella misma**: `signal_outcome`
 
 Y esas tablas las leen:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 
 ### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 2). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 3). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -294,7 +296,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:189` · clave completa `app.signal_outcomes._finalize_not_evaluable`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 3 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -302,18 +304,19 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 2 rutas · **exacto**
+### Por tabla · k=0 — 3 rutas · **exacto**
 
 Escribe **ella misma**: `signal_outcome`
 
 Y esas tablas las leen:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 
 ### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 2). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 3). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -530,7 +533,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:155` · clave completa `app.signal_outcomes.schedule_signal_outcomes`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 3 rutas** de 68 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -538,18 +541,19 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 2 rutas · **exacto**
+### Por tabla · k=0 — 3 rutas · **exacto**
 
 Escribe **ella misma**: `signal_outcome`
 
 Y esas tablas las leen:
 
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 
 ### Por tabla · k<=2 — 10 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 2). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (10 contra 3). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 

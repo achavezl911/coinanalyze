@@ -95,6 +95,42 @@ pinta como si prometiera.
 El control es lo que convierte esto de "seria bonito" en un defecto: no es una limitacion
 del framework ni del dato, es una eleccion de esta ruta.
 
+**PROMESA · `signal_base_rate` · la tasa base de la señal, con su ALCANCE pegado.**
+Declarada el 2026-09-06 en la misma vuelta que la escribe. Es el primer bloque de esta ruta
+que existe **para que un trader lo lea**, no para que otro proceso lo consuma.
+
+*Que publica:* `ventaja_bruta_pct`, `ventaja_neta_pct`, `t_neta`, `coste_entrada_pct`,
+`observaciones`, `n_efectiva` (BLOQUES, no filas), `arco_desde`/`arco_hasta`,
+`dias_de_arco`, `horizonte_min`, `lectura`, y un objeto `alcance` con
+`percentil_de_la_ventana`, `ventanas_comparadas`, `mediana_historica_pct` y
+`ventanas_negativas`.
+
+*Que promete exactamente, y es lo que la separa de un numero bonito:*
+
+1. **La cifra es reproducible.** Publica el arco que MIDIO —`arco_desde`/`arco_hasta`, que
+   son el minimo y el maximo reales de `signal_observation` dentro de la ventana pedida, no
+   la ventana pedida— para que cualquiera pueda repetir la consulta y salir en el mismo
+   sitio. `harness/checks/K95-la-tasa-base-que-se-pinta.sh` hace justo eso.
+2. **La lectura es sobre EJECUCION, no sobre acierto.** Medido en la campana de S3 sobre los
+   tres simbolos, 42 celdas y su placebo: la señal **no anticipa nada, ni a favor ni en
+   contra**, y **entra al peor precio de su propia ventana**. Por eso `lectura` dice «el
+   coste de entrada se come la ventaja» y **no** «el sistema pierde». Son afirmaciones
+   distintas y llevan a arreglos distintos.
+3. **El alcance viaja como CAMPO.** La unica ventana en la que la señal existe son ~27 dias
+   que caen en el **percentil 95.9** de 737 ventanas comparables, de las que **334 fueron
+   negativas**. Una tasa base medida en el mejor 5 % de dos anos tiene que decir que lo es.
+   Por eso `alcance` es un objeto y no una frase: una nota al pie se puede recortar al
+   pintarla, un campo no.
+4. **Cero bloques no es una ventaja de cero.** Sin muestra, `available: false` con su
+   `motivo`. Es la misma regla de tres estados del arnes, aplicada a un payload.
+
+*Que significa no cumplirlo:* que la cifra publicada difiera de la que sale de
+`signal_outcome` sobre el arco que ella misma declara —eso lo caza K95—, o que `alcance`
+desaparezca del payload y la tasa base quede sin contexto.
+
+*Lo que NO promete:* no promete que la ventaja sea estable fuera de ese mes. No se puede
+saber: `signal_observation` empieza el 2026-08-10 y no hay señal antes.
+
 
 ## SUPERFICIE
 

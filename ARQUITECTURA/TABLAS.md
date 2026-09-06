@@ -42,7 +42,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`scalp_signal_snapshot`](#scalp-signal-snapshot) | 1 | 4 | 0 |
 | [`signal_execution_snapshot`](#signal-execution-snapshot) | 1 | 1 | 0 |
 | [`signal_observation`](#signal-observation) | 1 | 6 | 0 |
-| [`signal_outcome`](#signal-outcome) | 4 | 2 | 0 |
+| [`signal_outcome`](#signal-outcome) | 4 | 3 | 0 |
 | [`signal_outcome_final_visibility`](#signal-outcome-final-visibility) | 1 | 1 | 0 |
 | [`signal_replay_frame`](#signal-replay-frame) | 1 | 1 | 0 |
 | [`spot_trades_agg`](#spot-trades-agg) | 3 | 10 | 0 |
@@ -737,8 +737,9 @@ La escriben:
 - `app.signal_outcomes._defer_missing_path` — **UPDATE** en `app/signal_outcomes.py:226`
 - `app.signal_outcomes._finalize_evaluated` — **UPDATE** en `app/signal_outcomes.py:252`
 
-**Si cambia el contenido o el esquema de `signal_outcome`, estas 2 rutas lo notan:**
+**Si cambia el contenido o el esquema de `signal_outcome`, estas 3 rutas lo notan:**
 
+- [`/api/dashboard/state`](rutas/api-dashboard-state.md)
 - [`/api/signals/outcomes`](rutas/api-signals-outcomes.md)
 - [`/api/signals/visibility`](rutas/api-signals-visibility.md)
 

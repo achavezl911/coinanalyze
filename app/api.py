@@ -2692,6 +2692,220 @@ async def scalp_persistence(conn: asyncpg.Connection, symbol: str) -> dict[str, 
     return out
 
 
+# ---------------------------------------------------------------------------
+# LA TASA BASE DE LA SEÑAL · lo que la evidencia dice, en la pantalla
+# ---------------------------------------------------------------------------
+# POR QUE ESTA AQUI Y NO EN UNA RUTA NUEVA. Las seis rutas del grupo ENCHUFAR sirven listas
+# largas -/api/signals/outcomes devuelve 856 observaciones en UNA hora- y una tarjeta no
+# pinta 856 filas: alguien tiene que agregar. Medido el 2026-09-06 para decidir donde:
+#     la consulta pareada de 30 dias, 8 horizontes ...... 1258 ms   (canal: 191 ms)
+#     la misma con UN horizonte ......................... 569 ms
+#     el desplazamiento de entrada solo ................. 355 ms
+#     /api/dashboard/state hoy .......................... 184-224 ms
+# O sea que la cifra NO es cara -crei que costaba decenas de segundos y me equivoque-, pero
+# meterla sin cache TRIPLICARIA el agregado que el panel pide cada 15 s. Con el mismo patron
+# que `scalp_persistence` -cache de 5 min, ver arriba- el coste se amortiza a cero y no hace
+# falta ni ruta nueva ni tabla nueva. La opcion "que agregue el panel" no se descarta por
+# gusto: no cabe por el cable, porque para 30 dias son del orden de un millon de filas.
+#
+# LO QUE LA CIFRA DICE, Y ESTO ES LO QUE HAY QUE NO TORCER. Lo medido en la campana de S3
+# sobre los tres simbolos, 42 celdas y su placebo: la señal **no anticipa nada, ni a favor ni
+# en contra**, y **entra al peor precio de su propia ventana**. Asi que esto NO publica «el
+# sistema pierde». Publica: **el coste de entrada es del orden de la ventaja**, que es una
+# afirmacion sobre la EJECUCION y no sobre el acierto.
+#
+# Y EL ALCANCE VIAJA COMO CAMPO, NO COMO NOTA AL PIE. Una tasa base medida en 26.7 dias que
+# resultan estar en el percentil 95.8 de dos anos de historia **tiene que decir que lo es**,
+# o es un dato que miente (P0). Por eso `alcance` es un objeto del payload y no una frase.
+_BASE_RATE_CACHE: dict[str, tuple[float, dict]] = {}
+BASE_RATE_TTL_S = 300
+BASE_RATE_DIAS = 30
+BASE_RATE_HORIZONTE_MIN = 60
+
+# LAS TRES CIFRAS SALEN DE UNA SOLA PASADA, y los limites del arco entran COMO PARAMETRO en
+# vez de resolverse con now() dentro: asi lo que se publica en `desde`/`hasta` es exactamente
+# lo que se midio, y un check puede REPRODUCIRLO. Con `now()` dentro, cada reejecucion mide
+# otra ventana y ninguna comparacion seria exacta.
+BASE_RATE_SQL = """
+WITH p AS (
+  SELECT s.direction, s.actionable, s.reference_price,
+         o.end_price, o.directional_return_pct, o.market_return_pct,
+         (EXTRACT(EPOCH FROM o.window_start)/60/$4)::bigint AS blk
+  FROM signal_outcome o
+  JOIN signal_observation s ON s.observation_id = o.observation_id
+  WHERE s.symbol = $1 AND s.is_periodic IS TRUE
+    AND o.status = 'evaluated' AND o.horizon_minutes = $4
+    AND o.end_price IS NOT NULL AND s.reference_price IS NOT NULL
+    AND s.observed_at >= $2 AND s.observed_at < $3
+),
+pm AS (SELECT blk, AVG(reference_price) AS pm FROM p GROUP BY blk),
+senal AS (
+  SELECT p.blk, p.direction,
+         AVG(p.directional_return_pct) AS bruto,
+         AVG((CASE WHEN p.direction='long' THEN 1 ELSE -1 END)
+             * 100.0*(p.end_price - m.pm)/m.pm) AS neto,
+         AVG((CASE WHEN p.direction='long' THEN 1 ELSE -1 END)
+             * 100.0*(p.reference_price - m.pm)/m.pm) AS entrada,
+         COUNT(*) AS n
+  FROM p JOIN pm m ON m.blk = p.blk
+  WHERE p.actionable IS TRUE AND p.direction IN ('long','short')
+  GROUP BY 1,2
+),
+base AS (
+  SELECT p.blk, AVG(p.market_return_pct) AS bruto,
+         AVG(100.0*(p.end_price - m.pm)/m.pm) AS neto
+  FROM p JOIN pm m ON m.blk = p.blk
+  WHERE p.actionable IS NOT TRUE
+  GROUP BY 1
+),
+dif AS (
+  SELECT sn.n,
+         sn.bruto - (CASE WHEN sn.direction='long' THEN 1 ELSE -1 END)*b.bruto AS d_bruto,
+         sn.neto  - (CASE WHEN sn.direction='long' THEN 1 ELSE -1 END)*b.neto  AS d_neto,
+         sn.entrada
+  FROM senal sn JOIN base b ON b.blk = sn.blk
+)
+SELECT COUNT(*)                                        AS bloques,
+       SUM(n)                                          AS observaciones,
+       ROUND(AVG(d_bruto)::numeric, 4)                 AS ventaja_bruta_pct,
+       ROUND(AVG(d_neto)::numeric, 4)                  AS ventaja_neta_pct,
+       ROUND(AVG(entrada)::numeric, 4)                 AS coste_entrada_pct,
+       ROUND((AVG(d_neto)/NULLIF(STDDEV_SAMP(d_neto)/SQRT(COUNT(*)),0))::numeric, 2) AS t_neta,
+       -- EL ARCO QUE DE VERDAD SE CUBRE, no el que se pidio. Publicar la ventana PEDIDA como
+       -- si fuera la cubierta es el mismo defecto que esta tarjeta existe para no cometer:
+       -- se piden 30 dias y la señal solo existe desde el 2026-08-10, asi que decir «30 dias»
+       -- seria decir cuatro dias de dato que no hay.
+       (SELECT MIN(observed_at) FROM signal_observation
+        WHERE symbol=$1 AND is_periodic IS TRUE AND observed_at >= $2 AND observed_at < $3)
+                                                       AS arco_desde,
+       (SELECT MAX(observed_at) FROM signal_observation
+        WHERE symbol=$1 AND is_periodic IS TRUE AND observed_at >= $2 AND observed_at < $3)
+                                                       AS arco_hasta
+FROM dif
+"""
+
+# EL ALCANCE. `ohlcv` daily llega mucho mas atras que la señal -762 dias contra 26.7-, asi
+# que se puede decir con una cifra, y no con una impresion, en que percentil cae la unica
+# ventana en la que la señal existe. El instrumento es EXTERNO al dato que se juzga.
+BASE_RATE_ALCANCE_SQL = """
+WITH d AS (
+  SELECT ts::date AS dia, close,
+         LEAD(close, $2) OVER (ORDER BY ts) AS close_fin
+  FROM ohlcv WHERE interval='daily' AND symbol = $1
+),
+v AS (SELECT dia, 100.0*(close_fin-close)/close AS ret FROM d
+      WHERE close_fin IS NOT NULL AND close > 0),
+actual AS (SELECT ret FROM v WHERE dia = $3::date)
+SELECT COUNT(*)                                              AS ventanas,
+       ROUND(MIN(a.ret)::numeric, 2)                         AS ret_de_la_ventana_pct,
+       ROUND((100.0*COUNT(*) FILTER (WHERE v.ret < a.ret)/COUNT(*))::numeric, 1) AS percentil,
+       ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY v.ret)::numeric, 2)     AS mediana_pct,
+       COUNT(*) FILTER (WHERE v.ret < 0)                     AS ventanas_negativas
+FROM v CROSS JOIN actual a
+"""
+
+
+async def signal_base_rate(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+    """La tasa base de la señal, con su alcance pegado. Es la tarjeta de evidencia.
+
+    TRES CIFRAS Y NO UNA, porque una sola no distingue las dos hipotesis que importan:
+      ventaja_bruta   lo que el minuto accionable rinde de mas -o de menos- que el minuto en
+                      que el producto dice que no hay setup, por el lado que el mismo nombra.
+      coste_entrada   donde entra respecto al precio medio de su propia ventana. Positivo =
+                      el largo compra por encima y el corto vende por debajo.
+      ventaja_neta    la misma comparacion midiendo desde el precio medio del bloque. Es la
+                      ventaja DIRECCIONAL, sin el punto de partida.
+    Si `neta` es indistinguible de cero y `bruta` es negativa, lo que se mide no es que la
+    señal se equivoque: es lo que cuesta entrar donde entra.
+
+    `t_neta` viaja al lado a proposito y es el CONTROL de la lectura: sin el, un cero podria
+    ser «no hay efecto» o «no hay muestra», y son cosas distintas.
+
+    Cache de 5 min, mismo patron y mismo motivo que `scalp_persistence`: 30 dias de tasa base
+    no se mueven en los 15 s del refresco del panel, y sin cache esta agregacion correria
+    sobre ~1.3 M filas en cada peticion. El `as_of` es el del CALCULO, no el de la peticion.
+    """
+    ahora = time.monotonic()
+    hit = _BASE_RATE_CACHE.get(symbol)
+    if hit and ahora - hit[0] < BASE_RATE_TTL_S:
+        return hit[1]
+
+    hasta = datetime.now(UTC)
+    desde = hasta - timedelta(days=BASE_RATE_DIAS)
+    fila = await conn.fetchrow(
+        BASE_RATE_SQL, symbol, desde, hasta, BASE_RATE_HORIZONTE_MIN
+    )
+    base: dict[str, Any] = {
+        "dias_pedidos": BASE_RATE_DIAS,
+        "horizonte_min": BASE_RATE_HORIZONTE_MIN,
+        "ventana_pedida_desde": desde.isoformat(),
+        "ventana_pedida_hasta": hasta.isoformat(),
+        "as_of": hasta.isoformat(),
+    }
+    # CERO BLOQUES NO ES UNA VENTAJA DE CERO: es que no se pudo medir. Es la misma regla de
+    # tres estados que sostiene el arnes, aplicada a un payload.
+    if fila is None or not fila["bloques"]:
+        base.update({
+            "available": False,
+            "motivo": "sin bloques con señal y base a la vez en la ventana",
+        })
+        _BASE_RATE_CACHE[symbol] = (ahora, base)
+        return base
+
+    arco_desde = fila["arco_desde"]
+    arco_hasta = fila["arco_hasta"]
+    dias_reales = round((arco_hasta - arco_desde).total_seconds() / 86400.0, 2)
+    base.update({
+        "arco_desde": arco_desde.isoformat(),
+        "arco_hasta": arco_hasta.isoformat(),
+        "dias_de_arco": dias_reales,
+    })
+
+    alcance: dict[str, Any] = {"available": False,
+                              "motivo": "sin historial diario para situar la ventana"}
+    # EL ALCANCE SE SITUA SOBRE EL ARCO REAL, no sobre la ventana pedida. Con la pedida, el
+    # percentil de BTC salia 96.1 y con el arco real 95.8: son tres dias de diferencia y una
+    # cifra distinta. Medido antes de dejarlo asi.
+    fa = await conn.fetchrow(
+        BASE_RATE_ALCANCE_SQL, symbol, max(1, int(dias_reales)), arco_desde.date()
+    )
+    if fa is not None and fa["ventanas"] and fa["percentil"] is not None:
+        alcance = {
+            "available": True,
+            "percentil_de_la_ventana": float(fa["percentil"]),
+            "ventanas_comparadas": int(fa["ventanas"]),
+            "ret_de_la_ventana_pct": float(fa["ret_de_la_ventana_pct"]),
+            "mediana_historica_pct": float(fa["mediana_pct"]),
+            "ventanas_negativas": int(fa["ventanas_negativas"]),
+            "dias_de_la_ventana": max(1, int(dias_reales)),
+            "fuente": "ohlcv daily del mismo simbolo",
+        }
+
+    bruta = float(fila["ventaja_bruta_pct"])
+    neta = float(fila["ventaja_neta_pct"])
+    entrada = float(fila["coste_entrada_pct"])
+    t_neta = None if fila["t_neta"] is None else float(fila["t_neta"])
+    base.update({
+        "available": True,
+        "observaciones": int(fila["observaciones"]),
+        "n_efectiva": int(fila["bloques"]),
+        "ventaja_bruta_pct": bruta,
+        "ventaja_neta_pct": neta,
+        "t_neta": t_neta,
+        "coste_entrada_pct": entrada,
+        # LA FRASE DE LA TARJETA SE COMPONE AQUI y no en el panel, para que el texto y la
+        # cifra no puedan separarse: si alguien cambia el umbral, cambia la frase con el.
+        "lectura": (
+            "el coste de entrada se come la ventaja"
+            if t_neta is not None and abs(t_neta) < 2 and entrada > 0
+            else "hay ventaja direccional medible ademas del coste de entrada"
+        ),
+        "alcance": alcance,
+    })
+    _BASE_RATE_CACHE[symbol] = (ahora, base)
+    return base
+
+
 @app.get("/api/dashboard/state")
 async def dashboard_state(symbol: str) -> dict[str, Any]:
     selected = validate_symbol(symbol)
@@ -2703,6 +2917,7 @@ async def dashboard_state(symbol: str) -> dict[str, Any]:
         barriers = await price_barriers(conn, selected)
         memory = await market_memory(conn, selected)
         persistencia = await scalp_persistence(conn, selected)
+        tasa_base = await signal_base_rate(conn, selected)
         if snap:
             daily_result = await daily_data(conn, selected, 730)
             setup_result = evaluate_setups(snap, daily_result["rows"][-60:])
@@ -2713,6 +2928,8 @@ async def dashboard_state(symbol: str) -> dict[str, Any]:
         "scalp": compute_scalp_summary(ctx),
         # el rotulo de la tarjeta de corto, MEDIDO. Ver scalp_persistence().
         "scalp_persistence": persistencia,
+        # la tasa base de la señal CON SU ALCANCE. Ver signal_base_rate().
+        "signal_base_rate": tasa_base,
         "setup": setup_result,
         "cvd_swing": cvd_swing,
         "barriers": barriers,
