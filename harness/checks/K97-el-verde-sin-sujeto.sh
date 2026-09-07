@@ -115,11 +115,39 @@ monta_falso() {  # $1 = destino   $2 = MUDO|CERO
   done
   chmod 755 "$d/bin/prodsql" "$d/bin/prod" "$d/bin/api"
 }
+# EL TERCER DOBLE · EL CANAL CAIDO DE VERDAD. Los otros dos dicen «la poblacion esta vacia»;
+# este dice «no se pudo preguntar». Sale con rc!=0 y escribe en stderr, que es lo que hace un ssh
+# roto. Sin el no se puede contestar la pregunta de esta vuelta: ¿el sujeto SABE cual de las dos
+# cosas le paso, o las mete en el mismo saco?
+monta_caido() {  # $1 = destino
+  local d="$1" f x
+  mkdir -p "$d/bin"
+  for f in "$B"/*; do
+    case "$(basename "$f")" in bin) continue ;; esac
+    ln -s "$f" "$d/$(basename "$f")" 2>/dev/null || true
+  done
+  for f in "$B"/bin/*; do
+    case "$(basename "$f")" in prodsql|prod|api) continue ;; esac
+    ln -s "$f" "$d/bin/$(basename "$f")" 2>/dev/null || true
+  done
+  for x in prodsql prod api; do
+    printf '#!/bin/sh\nprintf %%s\\n "ssh: connect to host 10.151.1.6 port 22: No route to host" >&2\nexit 255\n' > "$d/bin/$x"
+    sed -i "1a printf '%s\\n' \"\$0\" >> \"\$K97_HUELLA\" 2>/dev/null || true" "$d/bin/$x"
+    chmod 755 "$d/bin/$x"
+  done
+}
 monta_falso "$DIR/mudo" MUDO
 monta_falso "$DIR/cero" CERO
+monta_caido "$DIR/caido"
 VACIO="$DIR/vacio.txt"; : > "$VACIO"
 HUELLA="$DIR/huella.txt"; : > "$HUELLA"
 export K97_HUELLA="$HUELLA"
+
+# El doble CAIDO tiene que fallar de verdad: si saliera con rc=0 estaria diciendo «pregunte y no
+# habia nada», que es justo la otra cosa, y la particion de abajo saldria degenerada.
+s=$("$DIR/caido/bin/prodsql" "SELECT 'canal_ok'" 2>/dev/null); rc=$?
+[ "$rc" != 0 ] || { echo "NO MEDIDO: el doble caido sale rc=0; entonces no es un canal caido"; exit 2; }
+[ -z "$s" ] || { echo "NO MEDIDO: el doble caido escribio '$s' en stdout; un canal caido no devuelve datos"; exit 2; }
 
 # El doble tiene que salir BIEN y MUDO. Si no, todo lo de abajo mide otra cosa.
 for m in mudo cero; do
@@ -162,14 +190,15 @@ ventana_movil() {  # el sujeto son los checks que PUEDEN caducar
 # --- CORRER UN SUJETO CONTRA UN DOBLE ------------------------------------------------------
 # Devuelve el rc del check en la PRIMERA linea y su salida detras. El rc se toma directamente,
 # no detras de una tuberia: `$?` tras un pipe es el del ultimo mandato y no el del sujeto.
-corre_sujeto() {  # $1 = fichero del check   $2 = canal   $3 = mudo|cero
+corre_sujeto() {  # $1 = fichero del check   $2 = canal   $3 = mudo|cero|caido
   local f="$1" can="$2" modo="$3" falso="$DIR/$3" copia="$DIR/$(basename "$f").$3" out rc
   # SE REESCRIBE LA RUTA DEL ARNES EN TODAS SUS FORMAS. La primera version solo cubria la
   # constante desnuda y se le escapaba `B=${K18_HARNESS:-/srv/coinanalyze/harness}`.
   sed -e "s#/srv/coinanalyze/harness#$falso#g" "$f" > "$copia"
   : > "$HUELLA"
   case "$can" in
-    A) out=$(K97_HUELLA="$HUELLA" K86_FIXTURE="$VACIO" timeout -k 5 "$TOPE" bash "$copia" 2>&1); rc=$? ;;
+    A) fx="$VACIO"; [ "$modo" = caido ] && fx="$DIR/no-existe-este-fixture"
+       out=$(K97_HUELLA="$HUELLA" K86_FIXTURE="$fx" timeout -k 5 "$TOPE" bash "$copia" 2>&1); rc=$? ;;
     B) out=$(K97_HUELLA="$HUELLA" K90_PRODSQL="$falso/bin/prodsql" K92_PRODSQL="$falso/bin/prodsql" \
              K92_PROD="$falso/bin/prod" timeout -k 5 "$TOPE" bash "$copia" 2>&1); rc=$? ;;
     *) out=$(K97_HUELLA="$HUELLA" timeout -k 5 "$TOPE" bash "$copia" 2>&1); rc=$? ;;
@@ -179,8 +208,10 @@ corre_sujeto() {  # $1 = fichero del check   $2 = canal   $3 = mudo|cero
   # EL CANAL A NO PASA POR LOS DOBLES -su vacio es un fichero-, asi que su prueba de entrega es
   # que el check declare el fixture en su salida. Sin esta excepcion, el guardia escrito para
   # cazar el sed que no casaba dejaba fuera del censo justo al unico check de canal A.
-  if [ "$can" = A ]; then
+  if [ "$can" = A ] && [ "$modo" != caido ]; then
     printf '%s' "$out" | grep -qF "$VACIO" || rc=99
+  elif [ "$can" = A ]; then
+    :   # con el fixture ilegible no hay nada que declarar; el rc del check ya lo dice
   else
     [ -s "$HUELLA" ] || rc=99
   fi
@@ -190,6 +221,20 @@ corre_sujeto() {  # $1 = fichero del check   $2 = canal   $3 = mudo|cero
 
 # --- EL CENSO ------------------------------------------------------------------------------
 enfermos=""; sanos=0; nojuzg=""; n=0; detalle=""; api_debil=""
+distinguen=""; confunden=""; indistintos=""
+
+# LA FIRMA DE UNA EJECUCION = su rc mas su salida NORMALIZADA. Se normaliza lo que cambia entre
+# dos corridas sin que cambie el comportamiento: la ruta del arbol de mentira -que es distinta
+# para cada doble- y los numeros, porque casi todos los checks imprimen el instante en que
+# corren y dos corridas seguidas nunca darian la misma cadena.
+# LO QUE ESTO NO PRUEBA, y va dicho: dos firmas distintas significan que el sujeto se comporto
+# distinto, no que haya entendido nada. Un check con dos ramas de error que imprimen textos
+# distintos por casualidad saldria como DISTINGUE sin merecerlo. La implicacion solo es segura
+# en un sentido: **firmas iguales demuestran que no puede distinguir.**
+firma() {  # $1 = rc   $2 = salida
+  printf 'rc=%s\n%s\n' "$1" "$2" \
+    | sed -e "s#$DIR[^ ]*#RUTA#g" -e 's/[0-9][0-9.:-]*/#/g' -e 's/[[:space:]][[:space:]]*/ /g'
+}
 for f in "$CHECKS"/*.sh; do
   c=$(basename "$f" .sh)
   case "$c" in K97-*) continue ;; esac       # no se juzga a si mismo: seria un espejo, no un control
@@ -201,10 +246,11 @@ for f in "$CHECKS"/*.sh; do
     continue
   fi
   grep -qE '"?\$B/bin/api|/harness/bin/api' "$f" && api_debil="$api_debil $c"
-  veredicto=SANO; porque=""
+  veredicto=SANO; porque=""; firma_vacio=""
   for modo in mudo cero; do
     sal=$(corre_sujeto "$f" "$can" "$modo")
     rc=$(printf '%s\n' "$sal" | head -1)
+    [ "$modo" = mudo ] && firma_vacio=$(firma "$rc" "$(printf '%s\n' "$sal" | tail -n +2)")
     if [ "$rc" = 99 ]; then
       # NO TOCO EL DOBLE: no se le dio ninguna poblacion vacia, asi que no se le juzga.
       veredicto=NOJUZG; porque="no-llego-al-canal"; break
@@ -219,7 +265,27 @@ for f in "$CHECKS"/*.sh; do
     ENFERMO) enfermos="$enfermos $c";  detalle="$detalle  $c ENFERMO (sale VERDE con el doble $porque)
 " ;;
     NOJUZG)  nojuzg="$nojuzg $c($porque)" ;;
-    *)       sanos=$((sanos+1)) ;;
+    *)
+      # --- LA PARTICION DEL SANO ---------------------------------------------------------
+      # «No salio VERDE» no dice POR QUE. Puede ser que el check declarara su poblacion vacia
+      # -eso es un sano GANADO- o que creyera que se le habia caido el canal -eso es un sano
+      # PRESTADO: el dia que el transporte mejore, o que la consulta devuelva algo parseable,
+      # ese check se pone verde sin haber medido nada-.
+      #
+      # SE DECIDE EJECUTANDO DOS VECES Y COMPARANDO, no leyendo la frase. Si el sujeto se
+      # comporta IGUAL ante «poblacion vacia» y ante «canal caido», es que no puede saber cual
+      # de las dos le paso. Si se comporta distinto, algo distingue.
+      sal=$(corre_sujeto "$f" "$can" caido)
+      rc_c=$(printf '%s\n' "$sal" | head -1)
+      firma_caido=$(firma "$rc_c" "$(printf '%s\n' "$sal" | tail -n +2)")
+      if [ -z "$firma_vacio" ] || [ "$rc_c" = 99 ]; then
+        indistintos="$indistintos $c"; sanos=$((sanos+1))
+      elif [ "$firma_vacio" = "$firma_caido" ]; then
+        confunden="$confunden $c"; sanos=$((sanos+1))
+      else
+        distinguen="$distinguen $c"; sanos=$((sanos+1))
+      fi
+      ;;
   esac
 done
 
@@ -267,7 +333,15 @@ fi
 
 n_enf=$(printf '%s' "$enfermos" | wc -w)
 n_noj=$(printf '%s' "$nojuzg" | wc -w)
-echo "  juzgados ejecutandolos: $((n - n_noj)) de $n · sanos: $sanos · enfermos: $n_enf · no juzgables: $n_noj"
+n_dis=$(printf '%s' "$distinguen" | wc -w)
+  n_con=$(printf '%s' "$confunden" | wc -w)
+  n_ind=$(printf '%s' "$indistintos" | wc -w)
+  echo "  juzgados ejecutandolos: $((n - n_noj)) de $n · sanos: $sanos · enfermos: $n_enf · no juzgables: $n_noj"
+  echo "  LA PARTICION DEL SANO -de $sanos, comparando la corrida con poblacion vacia contra la de canal caido-:"
+  echo "    GANADO   ($n_dis) se comportan DISTINTO ante las dos:$distinguen"
+  echo "    PRESTADO ($n_con) se comportan IGUAL -no pueden saber cual de las dos les paso-:$confunden"
+  [ "$n_ind" -gt 0 ] && echo "    SIN COMPARAR ($n_ind) no se pudo correr una de las dos:$indistintos"
+  echo "    un PRESTADO no esta roto hoy: esta a merced de que el transporte mejore. No se arreglan en esta vuelta."
 [ -n "$nojuzg" ] && echo "  NO JUZGABLES, nombrados con su motivo:$nojuzg"
 [ -n "$detalle" ] && printf '%s' "$detalle"
 

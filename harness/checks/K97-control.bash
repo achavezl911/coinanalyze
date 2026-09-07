@@ -15,7 +15,26 @@ CHK="$ORIG/harness/checks/K97-el-verde-sin-sujeto.sh"
 
 DIR=$(mktemp -d) || exit 2
 [ "${K97_CONTROL_GUARDA:-0}" = "1" ] || trap 'rm -rf "$DIR"' EXIT
-fallos=0; pasan=0
+fallos=0; pasan=0; nocorren=""; nocorren_criticos=""
+
+# EL TOTAL DE BRAZOS SE DECLARA POR ADELANTADO, y esto es el arreglo de un defecto medido por el
+# operador: el titular salia de `pasan+fallos`, o sea SOLO de los que corrieron. Cuando el brazo
+# de regresion no podia correr -por ejemplo en un arbol sin `.git`- el denominador encogia con el
+# y la ultima linea decia **«15 de 15 pasan · 0 fallan»** sin mencionar que habia perdido tres.
+# Y `bin/_corta` trunca a 8000 B, asi que ese titular es justo lo que sobrevive a un corte: la
+# unica linea que alguien lee podia ser la que mas mentia.
+# N1 N1b · P1 P2 P3 · C1 · S1 S2 · V1 V1b · D1 D2 · R1 R1b R2 · G1 G2 G3 G4 G5 · F1 F2 F3
+TOTAL_BRAZOS=23
+# LOS CRITICOS son los que, si no corren, dejan al control sin poder AFIRMAR nada. Hoy es solo el
+# de regresion: es el que prueba que el verde de K97 se debe a los arreglos y no a que el
+# instrumento haya dejado de mirar. Sin el, «pasan» no significa nada y el veredicto es NOMED.
+BRAZOS_CRITICOS="R1 R1b R2"
+
+nocorre() {  # $1 = etiqueta del brazo   $2 = motivo
+  nocorren="$nocorren $1"
+  case " $BRAZOS_CRITICOS " in *" $1 "*) nocorren_criticos="$nocorren_criticos $1" ;; esac
+  printf '  [....] %-56s %s\n' "$1" "$2"
+}
 
 caso() {  # <nombre> <rc esperado> <patron> [VAR=val ...]
   local nombre="$1" esperado="$2" patron="$3"; shift 3
@@ -86,6 +105,21 @@ vivo=$("$B/bin/prodsql" "SELECT 'canal_ok'" 2>/dev/null | tr -d ' ' | head -1)
 viejas=$("$B/bin/prodsql" "SELECT 1 FROM inventada HAVING max(ts) < now() - interval '6 hours'" 2>/dev/null)
 [ -z "$viejas" ] || { echo "paradas: $viejas"; exit 1; }
 echo "las tablas escriben dentro de 6 h"
+exit 0
+EOF
+chmod 755 "$1"; }
+
+# SEPARA · mira el rc del canal ANTES de mirar las filas, asi que sabe decir cual de las dos
+# cosas le paso. Es lo que hace K06-visibilidad desde ayer y lo que NO hace K04-huecos.
+sujeto_separa() { cat > "$1" <<'EOF'
+#!/bin/bash
+DIAS=7
+B=/srv/coinanalyze/harness
+filas=$("$B/bin/prodsql" "SELECT ts FROM inventada WHERE ts > now() - interval '7 days'" 2>/dev/null); rc=$?
+[ "$rc" = 0 ] || { echo "NO MEDIDO: el canal no responde (rc=$rc)"; exit 2; }
+n=$(printf '%s' "$filas" | grep -c . || true)
+[ "$n" -gt 0 ] || { echo "NO MEDIDO: el canal contesto y no habia ni una fila elegible"; exit 2; }
+echo "VERDE: $n filas y ninguna mal"
 exit 0
 EOF
 chmod 755 "$1"; }
@@ -195,8 +229,45 @@ if [ "$viejos_ok" = si ]; then
   # R2 · y con el arbol de HOY, verde. Los dos juntos son la prueba: el instrumento distingue.
   caso "R2 con el arbol de hoy: VERDE"                0 "VERDE: ninguno de los" "K97_CHECKS=$ORIG/harness/checks"
 else
-  printf '  [....] %-56s\n' "R1/R2 no se pudo sacar $BASE de git"
+  # LOS TRES SE DECLARAN UNO A UNO, no como una linea suelta: el recuento final tiene que poder
+  # contarlos, y ademas son criticos, asi que el control saldra NOMED.
+  nocorre R1  "no se pudo sacar $BASE de git (¿arbol sin .git?)"
+  nocorre R1b "no se pudo sacar $BASE de git (¿arbol sin .git?)"
+  nocorre R2  "no se pudo sacar $BASE de git (¿arbol sin .git?)"
 fi
+
+echo
+echo "LA PARTICION DEL SANO · «no salio verde» no dice POR QUE"
+# EL CRITERIO TIENE QUE PODER MOVERSE. Estos dos sujetos no salen VERDE ninguno de los dos -los
+# dos son SANOS para el censo- pero uno SABE cual de las dos cosas le paso y el otro no. Si K97
+# los metiera en el mismo cubo, su particion no seria una particion: seria una etiqueta.
+D9="$DIR/particion"; puebla "$D9"
+sujeto_declara "$D9/Z01-declara.sh"     # mira SOLO si le llegaron filas -> no puede distinguir
+sujeto_separa  "$D9/Z06-separa.sh"      # mira el rc del canal ANTES     -> distingue
+out=$(K97_CHECKS="$D9" bash "$CHK" 2>&1)
+gan=$(printf '%s\n' "$out" | sed -n 's/.*GANADO *([0-9]*) [^:]*://p')
+pre=$(printf '%s\n' "$out" | sed -n 's/.*PRESTADO *([0-9]*) [^:]*://p')
+comprueba() {  # $1 = etiqueta   $2 = si|no
+  if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-56s\n' "$1"
+  else fallos=$((fallos+1)); printf '  [FALLA] %-56s\n' "$1"; fi
+}
+comprueba "G1 el que separa el canal de las filas cae en GANADO" \
+  "$(printf '%s' "$gan" | grep -qw Z06-separa && echo si || echo no)"
+comprueba "G2 el que solo mira las filas cae en PRESTADO" \
+  "$(printf '%s' "$pre" | grep -qw Z01-declara && echo si || echo no)"
+# G3 · EL BRAZO QUE HACE QUE ESTO SEA UNA PARTICION Y NO UNA ETIQUETA: los dos plantados, que
+# para el censo son igual de SANOS, caen en cubos DISTINTOS. Un clasificador que los junte esta
+# tan roto como uno que marcara a todos.
+comprueba "G3 los dos SANOS caen en cubos DISTINTOS" \
+  "$(printf '%s' "$gan" | grep -qw Z06-separa && printf '%s' "$pre" | grep -qw Z01-declara && echo si || echo no)"
+comprueba "G4 y ninguno de los dos aparece en el cubo del otro" \
+  "$(printf '%s' "$gan" | grep -qw Z01-declara || printf '%s' "$pre" | grep -qw Z06-separa; [ $? -ne 0 ] && echo si || echo no)"
+# G5 · la particion suma: GANADO + PRESTADO + SIN COMPARAR = sanos. Un cubo que se pierda por el
+# camino seria la misma enfermedad que este control acaba de arreglar en su propio titular.
+s_tot=$(printf '%s\n' "$out" | sed -n 's/.*· sanos: \([0-9]*\) .*/\1/p' | head -1)
+s_sum=$(( $(printf '%s' "$gan" | wc -w) + $(printf '%s' "$pre" | wc -w) ))
+comprueba "G5 la particion suma: $s_sum de $s_tot sanos" \
+  "$([ "${s_tot:-0}" = "$s_sum" ] && echo si || echo no)"
 
 echo
 echo "ANTI-FANTASMA · el instrumento tiene que probarse a si mismo"
@@ -210,7 +281,24 @@ sujeto_declara "$D7/Z01-declara.sh"
 caso "F3 sin los checks del control positivo: NOMED" 2 "los controles del propio instrumento no cuadran" "K97_CHECKS=$D7"
 
 echo
-total=$((pasan+fallos))
-echo "$pasan de $total pasan · $fallos fallan"
+corridos=$((pasan+fallos))
+n_nc=$(printf '%s' "$nocorren" | wc -w)
+# EL DENOMINADOR ES EL DECLARADO, NO EL QUE SOBREVIVIO. Y los que no corrieron se nombran en la
+# MISMA linea, porque es la unica que sobrevive a un corte de bin/_corta.
+printf '%s de %s brazos declarados pasan · %s fallan · %s no corrieron%s\n' \
+  "$pasan" "$TOTAL_BRAZOS" "$fallos" "$n_nc" "${nocorren:+:$nocorren}"
+if [ "$corridos" -ne "$TOTAL_BRAZOS" ] && [ "$n_nc" -eq 0 ]; then
+  # Ni fallaron ni se declararon como no corridos: entonces el TOTAL_BRAZOS de arriba esta mal.
+  # Un control que no sabe cuantos brazos tiene no puede afirmar que estan todos.
+  echo "NO MEDIDO: declaro $TOTAL_BRAZOS brazos y corrieron $corridos sin que ninguno se declarara ausente."
+  echo "  el recuento del propio control esta mal: se arregla TOTAL_BRAZOS, no se ignora."
+  exit 2
+fi
+if [ -n "${nocorren_criticos// /}" ]; then
+  echo "NO MEDIDO: no corrio el brazo de REGRESION ($nocorren_criticos), que es el que prueba que"
+  echo "  el verde de K97 se debe a los arreglos y no a que el instrumento haya dejado de mirar."
+  echo "  Sin el, «pasan» no significa nada. Esto es NOMED, no un aprobado."
+  exit 2
+fi
 [ "$fallos" -eq 0 ] || exit 1
 exit 0
