@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_signals` · `app/api.py:2046` (cuerpo hasta la 2083) · decorador en la linea 2045.
+Handler `scalp_signals` · `app/api.py:2046` (cuerpo hasta la 2084) · decorador en la linea 2045.
 
 ## Parametros de entrada
 
@@ -15,13 +15,14 @@ Handler `scalp_signals` · `app/api.py:2046` (cuerpo hasta la 2083) · decorador
 
 ## Campos que publica
 
-8 campos derivados. La procedencia dice de donde sale cada uno.
+9 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
+| `as_of` | literal en app/api.py:2082 |
 | `count` | literal en app/api.py:2077 |
 | `limit` | literal en app/api.py:2076 |
-| `rows` | literal en app/api.py:2082 |
+| `rows` | literal en app/api.py:2083 |
 | `servida_desde` | literal en app/api.py:2079 |
 | `servida_hasta` | literal en app/api.py:2080 |
 | `symbol` | literal en app/api.py:2075 |
@@ -46,17 +47,18 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2086`
+- `app.api._utc_iso` — `app/api.py:2087`
 - `app.api.records` — `app/api.py:235`
 - `app.api.validate_symbol` — `app/api.py:222`
 
-<details><summary>Llamadas que salen del arbol o no se resuelven (4)</summary>
+<details><summary>Llamadas que salen del arbol o no se resuelven (5)</summary>
 
 Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para aqui.
 
 - `Query`
 - `app.state.pool.acquire`
 - `conn.fetch`
+- `datetime.now`
 - `len`
 
 </details>
@@ -75,7 +77,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K96-la-auditoria-no-inventa.sh:68` | — |
+| **checks** | `harness/checks/K43-control.bash:61`, `harness/checks/K43-foto-unica.sh:123`, `harness/checks/K96-la-auditoria-no-inventa.sh:68` | — |
 | **panel** | `static/app.js:1714` | — |
 | **readme** | — | `README.md:488`, `README.md:498` |
 | **tests** | — | `tests/test_dashboard_layout.py:130` |
@@ -92,9 +94,9 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `as_of`
 
 ## Capa DECLARADA
 

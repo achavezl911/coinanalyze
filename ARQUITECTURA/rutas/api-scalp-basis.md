@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_basis` · `app/api.py:2561` (cuerpo hasta la 2564) · decorador en la linea 2560.
+Handler `scalp_basis` · `app/api.py:2572` (cuerpo hasta la 2575) · decorador en la linea 2571.
 
 ## Parametros de entrada
 
@@ -83,7 +83,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:100`, `harness/checks/K43-foto-unica.sh:157` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:117`, `harness/checks/K43-foto-unica.sh:176` | — |
 | **panel** | `static/app.js:1679` | — |
 | **readme** | — | `README.md:488`, `README.md:499` |
 | **tests** | `tests/test_v121_hardening.py:28` | — |

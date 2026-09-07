@@ -2079,6 +2079,7 @@ async def scalp_signals(
         "servida_desde": _utc_iso(filas[-1]["ts"]) if filas else None,
         "servida_hasta": _utc_iso(filas[0]["ts"]) if filas else None,
         "ventana_maxima_h": None,
+        "as_of": _utc_iso(datetime.now(UTC)),
         "rows": filas,
     }
 
@@ -2091,6 +2092,12 @@ def _utc_iso(value: datetime | None) -> str | None:
 
 
 LEDGER_MAX_WINDOW = timedelta(hours=24)
+# Y `as_of` ES EL INSTANTE EN QUE SE CONSTRUYO LA RESPUESTA. Lo pide K43 a la familia
+# DEMANDA -las cinco dejan elegir al llamante que pedir, asi que la foto de ambiente no
+# puede saber de antemano que le van a preguntar y cada respuesta tiene que fecharse a si
+# misma-. No es lo mismo que `since`/`until`, que dicen QUE VENTANA se sirvio: `as_of`
+# dice CUANDO se sirvio. Una respuesta cacheada con la ventana correcta y el as_of viejo
+# se distingue; sin as_of, no.
 # EL TOPE SE PUBLICA como `ventana_maxima_h` en el sobre de ledger, execution, replay y
 # visibility. Sin el, quien las pinta no puede distinguir dos cosas que no se parecen:
 # pedir 48 h NO devuelve 24 h recortadas en silencio, devuelve 422 y CERO filas. Un panel
@@ -2192,6 +2199,7 @@ async def signals_ledger(
         "since": _utc_iso(start),
         "until": _utc_iso(end),
         "ventana_maxima_h": int(LEDGER_MAX_WINDOW.total_seconds() // 3600),
+        "as_of": _utc_iso(datetime.now(UTC)),
         "limit": limit,
         "count": len(observations),
         "truncated": truncated,
@@ -2374,6 +2382,7 @@ async def signals_execution(
         "since": _utc_iso(start),
         "until": _utc_iso(end),
         "ventana_maxima_h": int(LEDGER_MAX_WINDOW.total_seconds() // 3600),
+        "as_of": _utc_iso(datetime.now(UTC)),
         "exchange": exchange,
         "limit": limit,
         "count": len(snapshots),
@@ -2460,6 +2469,7 @@ async def signals_replay(
         "since": _utc_iso(start),
         "until": _utc_iso(end),
         "ventana_maxima_h": int(LEDGER_MAX_WINDOW.total_seconds() // 3600),
+        "as_of": _utc_iso(datetime.now(UTC)),
         "limit": limit,
         "count": len(frames),
         "truncated": truncated,
@@ -2549,6 +2559,7 @@ async def signals_visibility(
         "since": _utc_iso(start),
         "until": _utc_iso(end),
         "ventana_maxima_h": int(LEDGER_MAX_WINDOW.total_seconds() // 3600),
+        "as_of": _utc_iso(datetime.now(UTC)),
         "status": status,
         "limit": limit,
         "count": len(certificates),

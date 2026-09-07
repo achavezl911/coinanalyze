@@ -125,7 +125,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:98`, `harness/checks/K43-foto-unica.sh:152` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:115`, `harness/checks/K43-foto-unica.sh:171` | — |
 | **panel** | `static/app.js:1553`, `static/app.js:1655` | — |
 | **tests** | `tests/test_v150_desk_snapshot.py:126` | — |
 

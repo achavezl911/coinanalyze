@@ -89,6 +89,23 @@ CAB=()
 # escrita arriba. Estaba en FOTO y pasaba porque existe la clave oi_context, que es otra
 # cosa -oi_total_usd, windows, zscore_1y- sin bucket ni oi: la serie que el panel pinta
 # quedaba bajo NINGUNA ventana, que es justo lo que este check existe para impedir.
+# LAS CINCO DEL GRUPO ENCHUFAR, asignadas el 2026-09-07 y medidas antes de decidir.
+# El PR #157 las puso en la pestaña #replay. K43 enrojecio el 2026-09-07T00:32:27Z, que es
+# cuando un navegador las pidio por PRIMERA VEZ: medido en el log de nginx de 140 sobre el
+# historico entero, UNA sola peticion externa por ruta desde 10.10.100.93 (iPhone) y todas
+# las demas -443, 599, 907, 568 y 547- del arnes con curl desde 10.10.100.2. Control:
+# /api/healthz tiene 58228 peticiones en 15 dias distintos, o sea que el log SI ve trafico
+# viejo cuando lo hay. NO FUE UNA REGRESION: fue el check funcionando.
+# SON DEMANDA porque el llamante elige QUE pedir -since, until, limit, y ademas exchange en
+# execution y status en visibility-, y la foto de ambiente no puede saber de antemano que
+# ventana le van a pedir. NO SON SERIE: SERIE devuelve BARRAS y su ventana es su coverage;
+# estas devuelven EVENTOS, sin rejilla regular y sin un numero de esperados que exista, asi
+# que meterlas ahi obligaria a inventar esa cifra. NO SON EXENTA: traen cifras de mercado y
+# el panel las pinta en tablas, y una exencion ahi seria la conveniencia que este check
+# prohibe en su linea 23.
+# LES FALTABA EL as_of QUE DEMANDA PIDE. Se anadio en app/api.py en esta misma vuelta, asi
+# que HACE FALTA DESPLEGAR: contra 140 este check sigue ROJO hasta que el release nuevo
+# entre, y contra el espejo ya pasa.
 ASIGNACION="
 /api/data-confidence=FOTO /api/divergences=FOTO /api/external-macro=FOTO
 /api/funding-context=FOTO /api/macro-context=FOTO
@@ -102,6 +119,8 @@ ASIGNACION="
 /api/ohlcv=SERIE /api/cvd/divergence=SERIE /api/daily=SERIE
 /api/delta-profile=SERIE /api/whale/delta=SERIE /api/verdicts=SERIE /api/oi=SERIE
 /api/level/breakout=DEMANDA /api/range/validate=DEMANDA /api/zone/analysis=DEMANDA
+/api/signals/ledger=DEMANDA /api/signals/replay=DEMANDA /api/signals/execution=DEMANDA
+/api/signals/visibility=DEMANDA /api/scalp/signals=DEMANDA
 /api/scalp/execution-cost=DEMANDA /api/desk/state=DEMANDA
 /api/stream=EXENTA /api/healthz=EXENTA /api/symbols=EXENTA
 "

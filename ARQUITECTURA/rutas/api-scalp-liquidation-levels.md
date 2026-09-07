@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_levels` · `app/api.py:2568` (cuerpo hasta la 2624) · decorador en la linea 2567.
+Handler `liquidation_levels` · `app/api.py:2579` (cuerpo hasta la 2635) · decorador en la linea 2578.
 
 ## Parametros de entrada
 
@@ -21,13 +21,13 @@ Handler `liquidation_levels` · `app/api.py:2568` (cuerpo hasta la 2624) · deco
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2620 |
-| `bucket_bps` | literal en app/api.py:2619 |
-| `minutes` | literal en app/api.py:2618 |
-| `rows` | literal en app/api.py:2623 |
-| `symbol` | literal en app/api.py:2617 |
-| `window_end` | literal en app/api.py:2622 |
-| `window_start` | literal en app/api.py:2621 |
+| `as_of` | literal en app/api.py:2631 |
+| `bucket_bps` | literal en app/api.py:2630 |
+| `minutes` | literal en app/api.py:2629 |
+| `rows` | literal en app/api.py:2634 |
+| `symbol` | literal en app/api.py:2628 |
+| `window_end` | literal en app/api.py:2633 |
+| `window_start` | literal en app/api.py:2632 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -85,7 +85,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:96`, `harness/checks/K43-foto-unica.sh:147` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:113`, `harness/checks/K43-foto-unica.sh:166` | — |
 | **panel** | `static/app.js:1681` | — |
 | **readme** | — | `README.md:488`, `README.md:500` |
 | **tests** | `tests/test_v121_hardening.py:29` | — |
