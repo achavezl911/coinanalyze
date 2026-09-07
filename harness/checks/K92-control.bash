@@ -29,9 +29,20 @@ mkdir -p "$DIR/bin"
 cat > "$DIR/bin/prod" <<'PY'
 #!/bin/sh
 printf '%s\n' "${K92C_JOURNAL:-}"
+# El journal de verdad llega con un `awk` que cuenta las lineas SIN filtrar y las marca; sin
+# esta linea el doble dejaria a K92 sin recuento y todo saldria NOMED por la razon equivocada.
+n=${K92C_TOTAL:-}
+[ -n "$n" ] || n=$(printf '%s\n' "${K92C_JOURNAL:-}" | grep -c . || echo 0)
+printf 'K92TOTAL %s\n' "$n"
 exit "${K92C_PRODRC:-0}"
 PY
 chmod +x "$DIR/bin/prod"
+cat > "$DIR/bin/prod-sin-total" <<'PY'
+#!/bin/sh
+printf '%s\n' "${K92C_JOURNAL:-}"
+exit 0
+PY
+chmod +x "$DIR/bin/prod-sin-total"
 cat > "$DIR/bin/prod-roto" <<'PY'
 #!/bin/sh
 echo "ssh: connect to host: No route to host" >&2
@@ -106,12 +117,19 @@ FILAS_7NC=$(for h in 01 02 03 04 05 06 07; do
 done)
 FILAS_7NC_MIENTE=$(printf ' 2026-09-05T01:16| 19|  6| 60\n'; printf '%s\n' "$FILAS_7NC" | tail -n +2)
 
-caso() {  # <nombre> <rc> <patron> <journal> <filas> [prodsql] [prod]
+caso() {  # <nombre> <rc> <patron> <journal> <filas> [prodsql] [prod] [VAR=val ...]
   local nombre="$1" esperado="$2" patron="$3" jr="$4" fl="$5"
   local psql="${6:-$DIR/bin/prodsql}" prod="${7:-$DIR/bin/prod}"
+  # LO QUE QUEDE SON VAR=val EXTRA. Se desplaza DE UNO EN UNO a proposito: `shift 2` con un
+  # solo argumento pendiente FALLA y no desplaza NADA, asi que el `prodsql-roto` de F3 se quedaba
+  # en "$@" y `env` lo EJECUTABA en vez de correr el check. Salia rc=3 -el del doble roto- y
+  # parecia un fallo del sujeto. Me paso al escribirlo.
+  shift 5
+  [ $# -gt 0 ] && shift || true
+  [ $# -gt 0 ] && shift || true
   local out rc
-  out=$(REPO="$ORIG" K92_PRODSQL="$psql" K92_PROD="$prod" \
-        K92C_JOURNAL="$jr" K92C_FILAS="$fl" bash "$CHK" 2>&1); rc=$?
+  out=$(env REPO="$ORIG" K92_PRODSQL="$psql" K92_PROD="$prod" \
+        K92C_JOURNAL="$jr" K92C_FILAS="$fl" "$@" bash "$CHK" 2>&1); rc=$?
   local ok=1
   [ "$rc" = "$esperado" ] || ok=0
   if [ -n "$patron" ] && ! printf '%s' "$out" | grep -qE "$patron"; then ok=0; fi
@@ -267,6 +285,32 @@ caso "K4 miente sin cruzar el borde: sigue siendo ROJO"    1 "ROJO \(VIVO\)" \
      "$JOURNAL_7NC" "$FILAS_7NC_MIENTE"
 caso "K4b y publica los DOS denominadores"                 1 "poblacion equivocada" \
      "$JOURNAL_7NC" "$FILAS_7NC_MIENTE"
+
+echo
+echo "EL TOPE DE journalctl NO PUEDE DECIDIR EL VEREDICTO"
+# Es la TRAMPA 1 de K86 con otra ropa. MEDIDO en 140 el 2026-09-07 con el mismo comando y tres
+# topes: coinalyze-ws da 236 lineas con -n 2000 (no muerde), pero coinalyze-scalp da 2000 EXACTAS
+# -o sea que muerde- y el check medía sobre 3.8 dias diciendo 7, y sobre 10 ventanas de 22.
+# Con el tope a 20000 aparece una SEGUNDA ventana mentirosa que la version anterior no veia.
+caso "T1 el tope MORDIO (lineas == -n): NOMED"           2 "EL TOPE MORDIO" \
+     "$JOURNAL_OK" "$FILA_MIENTE" "$DIR/bin/prodsql" "$DIR/bin/prod" "K92C_TOTAL=2000"
+caso "T1b y dice que hay paradas que no ha visto"        2 "paradas mas viejas que no se han visto" \
+     "$JOURNAL_OK" "$FILA_MIENTE" "$DIR/bin/prodsql" "$DIR/bin/prod" "K92C_TOTAL=2000"
+# T2 · EL NEGATIVO, sin el cual T1 seria una maquina de NOMED: por debajo del tope se mide.
+caso "T2 por debajo del tope: se mide con normalidad"    1 "el tope NO mordio" \
+     "$JOURNAL_OK" "$FILA_MIENTE" "$DIR/bin/prodsql" "$DIR/bin/prod" "K92C_TOTAL=236"
+# T3 · UNA LINEA POR ENCIMA tambien muerde: journalctl nunca devuelve mas de -n, asi que si
+# alguna vez llegan mas es que el doble miente, y el guardia tiene que seguir cerrando.
+caso "T3 por encima del tope: sigue siendo NOMED"        2 "EL TOPE MORDIO" \
+     "$JOURNAL_OK" "$FILA_MIENTE" "$DIR/bin/prodsql" "$DIR/bin/prod" "K92C_TOTAL=2001"
+# T4 · y sin recuento no hay veredicto: si el journal no dice cuantas lineas trajo, no se puede
+# saber si el tope mordio, y eso es NOMED y no un verde.
+caso "T4 sin el recuento del journal: NOMED"             2 "sin el no se sabe si el tope mordio" \
+     "$JOURNAL_OK" "$FILA_MIENTE" "$DIR/bin/prodsql" "$DIR/bin/prod-sin-total"
+# T5 · EL ARCO REALMENTE CUBIERTO se publica, que es la mitad silenciosa del mismo defecto:
+# decir «en 7 dias» cuando el journal solo alcanzo 3.8.
+caso "T5 publica el arco de paradas que de verdad vio"   1 "paradas vistas de 2026-09-05T17:16:55" \
+     "$JOURNAL_OK" "$FILA_MIENTE" "$DIR/bin/prodsql" "$DIR/bin/prod" "K92C_TOTAL=236"
 
 echo
 total=$((pasan + fallos))
