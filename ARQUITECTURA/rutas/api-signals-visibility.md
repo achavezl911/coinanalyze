@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_visibility` · `app/api.py:2489` (cuerpo hasta la 2568) · decorador en la linea 2488.
+Handler `signals_visibility` · `app/api.py:2498` (cuerpo hasta la 2577) · decorador en la linea 2497.
 
 ## Parametros de entrada
 
@@ -23,16 +23,16 @@ Handler `signals_visibility` · `app/api.py:2489` (cuerpo hasta la 2568) · deco
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2562 |
-| `certificates` | literal en app/api.py:2567 |
-| `count` | literal en app/api.py:2565 |
-| `limit` | literal en app/api.py:2564 |
-| `since` | literal en app/api.py:2559 |
-| `status` | literal en app/api.py:2563 |
-| `symbol` | literal en app/api.py:2558 |
-| `truncated` | literal en app/api.py:2566 |
-| `until` | literal en app/api.py:2560 |
-| `ventana_maxima_h` | literal en app/api.py:2561 |
+| `as_of` | literal en app/api.py:2571 |
+| `certificates` | literal en app/api.py:2576 |
+| `count` | literal en app/api.py:2574 |
+| `limit` | literal en app/api.py:2573 |
+| `since` | literal en app/api.py:2568 |
+| `status` | literal en app/api.py:2572 |
+| `symbol` | literal en app/api.py:2567 |
+| `truncated` | literal en app/api.py:2575 |
+| `until` | literal en app/api.py:2569 |
+| `ventana_maxima_h` | literal en app/api.py:2570 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,8 +59,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2087`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2127`
+- `app.api._utc_iso` — `app/api.py:2096`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2136`
 - `app.api.records` — `app/api.py:235`
 - `app.api.validate_symbol` — `app/api.py:222`
 
@@ -86,12 +86,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:2136` | una funcion de su cierre |
-| 422 | status tiene que ser evaluated o not_evaluable | `app/api.py:2514` | el propio handler |
-| 422 | — | `app/api.py:2522` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2524` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2526` | el propio handler |
-| 422 | — | `app/api.py:2528` | el propio handler |
+| 422 | — | `app/api.py:2145` | una funcion de su cierre |
+| 422 | status tiene que ser evaluated o not_evaluable | `app/api.py:2523` | el propio handler |
+| 422 | — | `app/api.py:2531` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2533` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2535` | el propio handler |
+| 422 | — | `app/api.py:2537` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -102,7 +102,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K25-visibilidad-de-lo-final.sh:110`, `harness/checks/K43-control.bash:80`, `harness/checks/K43-foto-unica.sh:123` | — |
-| **panel** | `static/app.js:1713` | — |
+| **panel** | `static/app.js:1718` | — |
 | **tests** | — | `tests/test_signals_visibility.py:1` |
 
 **La llama el panel: es superficie de producto.**

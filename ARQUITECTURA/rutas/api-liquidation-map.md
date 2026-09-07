@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_map_endpoint` · `app/api.py:1632` (cuerpo hasta la 1635) · decorador en la linea 1631.
+Handler `liquidation_map_endpoint` · `app/api.py:1641` (cuerpo hasta la 1644) · decorador en la linea 1640.
 
 ## Parametros de entrada
 
@@ -18,22 +18,22 @@ Handler `liquidation_map_endpoint` · `app/api.py:1632` (cuerpo hasta la 1635) �
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3482 |
-| `atr_1h` | literal en app/scalp_logic.py:3481 |
-| `available` | literal en app/scalp_logic.py:3478 |
-| `bucket_size` | literal en app/scalp_logic.py:3486 |
-| `buckets_total` | literal en app/scalp_logic.py:3491 |
-| `cumulative_within_band` | literal en app/scalp_logic.py:3495 |
-| `current_price` | literal en app/scalp_logic.py:3480 |
-| `levels` | literal en app/scalp_logic.py:3494 |
-| `levels_shown` | literal en app/scalp_logic.py:3492 |
-| `note` | literal en app/scalp_logic.py:3496 |
-| `symbol` | literal en app/scalp_logic.py:3477 |
-| `type` | literal en app/scalp_logic.py:3479 |
-| `window_end` | literal en app/scalp_logic.py:3484 |
-| `window_minutes` | literal en app/scalp_logic.py:3485 |
-| `window_notional` | literal en app/scalp_logic.py:3493 |
-| `window_start` | literal en app/scalp_logic.py:3483 |
+| `as_of` | literal en app/scalp_logic.py:3519 |
+| `atr_1h` | literal en app/scalp_logic.py:3518 |
+| `available` | literal en app/scalp_logic.py:3515 |
+| `bucket_size` | literal en app/scalp_logic.py:3523 |
+| `buckets_total` | literal en app/scalp_logic.py:3528 |
+| `cumulative_within_band` | literal en app/scalp_logic.py:3532 |
+| `current_price` | literal en app/scalp_logic.py:3517 |
+| `levels` | literal en app/scalp_logic.py:3531 |
+| `levels_shown` | literal en app/scalp_logic.py:3529 |
+| `note` | literal en app/scalp_logic.py:3533 |
+| `symbol` | literal en app/scalp_logic.py:3514 |
+| `type` | literal en app/scalp_logic.py:3516 |
+| `window_end` | literal en app/scalp_logic.py:3521 |
+| `window_minutes` | literal en app/scalp_logic.py:3522 |
+| `window_notional` | literal en app/scalp_logic.py:3530 |
+| `window_start` | literal en app/scalp_logic.py:3520 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,7 +59,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3420`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3457`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 

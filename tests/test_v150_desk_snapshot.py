@@ -62,6 +62,10 @@ def test_todos_los_componentes_comparten_el_mismo_ancla(desk: dict[str, Any]) ->
     componentes = desk["components"]
     assert set(componentes) == {
         "trend_matrix", "delta_matrix", "profile", "hypothesis", "scalp", "data_quality",
+        # `reference_levels` entro el 2026-09-07: la tarjeta de decision daba la invalidacion en
+        # prosa y ningun numero. Va en el SNAPSHOT y no en una peticion aparte precisamente para
+        # que caiga bajo este test, que es el que exige que todos compartan el mismo ancla.
+        "reference_levels",
     }
     sellos = {
         nombre: bloque.get("computed_at")

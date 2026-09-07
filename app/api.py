@@ -1276,6 +1276,10 @@ async def desk_state(
         barriers = await price_barriers(conn, selected)
         structure = await structure_detail(conn, selected, as_of)
         observ_bundle = await setup_confirmation_bundle(conn, selected, profile)
+        # DENTRO del `async with`: fuera, la conexion ya se ha devuelto al pool y esto
+        # revienta en ejecucion. Se me escapo a la primera y `py_compile` no lo ve, porque
+        # es sintacticamente valido: el fallo solo aparece al pedir la ruta.
+        niveles = await reference_levels(conn, selected)
     scalp = compute_scalp_summary(ctx)
     view = profile_view(trend, matrix, profile)
     evidence = hypothesis_evidence(
@@ -1299,6 +1303,11 @@ async def desk_state(
         "hypothesis": evidence,
         "scalp": scalp,
         "data_quality": quality,
+        # LOS NIVELES DE REFERENCIA, en el snapshot y no en una peticion aparte, para que
+        # compartan el `computed_at` del resto de la Mesa: un nivel pedido suelto traeria su
+        # propio instante y la tarjeta pintaria dos relojes como si fueran uno.
+        # Son REFERENCIA, no prediccion: nadie deriva de ellos una regla de entrada.
+        "reference_levels": niveles,
     }
     # Cada componente lleva el MISMO `computed_at`: es la prueba de que salieron del mismo
     # calculo. La frescura de cada FUENTE va aparte, porque un dato viejo no se vuelve actual

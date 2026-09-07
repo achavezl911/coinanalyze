@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `wyckoff_endpoint` · `app/api.py:1739` (cuerpo hasta la 1743) · decorador en la linea 1738.
+Handler `wyckoff_endpoint` · `app/api.py:1748` (cuerpo hasta la 1752) · decorador en la linea 1747.
 
 ## Parametros de entrada
 
@@ -108,7 +108,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:118`, `harness/checks/K43-foto-unica.sh:174` | — |
-| **panel** | `static/app.js:1556`, `static/app.js:1658` | — |
+| **panel** | `static/app.js:1561`, `static/app.js:1663` | — |
 | **readme** | — | `README.md:149` |
 | **tests** | `tests/test_wyckoff.py:106` | — |
 

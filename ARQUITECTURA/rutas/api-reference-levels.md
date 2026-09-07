@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `reference_levels_endpoint` · `app/api.py:1754` (cuerpo hasta la 1757) · decorador en la linea 1753.
+Handler `reference_levels_endpoint` · `app/api.py:1763` (cuerpo hasta la 1766) · decorador en la linea 1762.
 
 ## Parametros de entrada
 
@@ -14,25 +14,32 @@ Handler `reference_levels_endpoint` · `app/api.py:1754` (cuerpo hasta la 1757) 
 
 ## Campos que publica
 
-15 campos derivados. La procedencia dice de donde sale cada uno.
+22 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `current_day` | literal en app/scalp_logic.py:3237 |
-| `current_day.high` | literal en app/scalp_logic.py:3237 |
-| `current_day.low` | literal en app/scalp_logic.py:3237 |
-| `current_day.open` | literal en app/scalp_logic.py:3237 |
-| `note` | literal en app/scalp_logic.py:3244 |
-| `opens` | literal en app/scalp_logic.py:3238 |
-| `opens.daily` | literal en app/scalp_logic.py:3239 |
-| `opens.monthly` | literal en app/scalp_logic.py:3241 |
-| `opens.weekly` | literal en app/scalp_logic.py:3240 |
-| `previous_day` | literal en app/scalp_logic.py:3236 |
-| `previous_day.close` | literal en app/scalp_logic.py:3236 |
-| `previous_day.high` | literal en app/scalp_logic.py:3236 |
-| `previous_day.low` | literal en app/scalp_logic.py:3236 |
-| `sessions_today_utc` | literal en app/scalp_logic.py:3243 |
-| `symbol` | literal en app/scalp_logic.py:3235 |
+| `current_day` | literal en app/scalp_logic.py:3262 |
+| `current_day.duracion_min` | literal en app/scalp_logic.py:3264 |
+| `current_day.en_curso` | literal en app/scalp_logic.py:3264 |
+| `current_day.high` | literal en app/scalp_logic.py:3262 |
+| `current_day.low` | literal en app/scalp_logic.py:3262 |
+| `current_day.open` | literal en app/scalp_logic.py:3262 |
+| `current_day.velas` | literal en app/scalp_logic.py:3263 |
+| `current_day.velas_posibles` | literal en app/scalp_logic.py:3263 |
+| `note` | literal en app/scalp_logic.py:3276 |
+| `opens` | literal en app/scalp_logic.py:3265 |
+| `opens.daily` | literal en app/scalp_logic.py:3266 |
+| `opens.monthly` | literal en app/scalp_logic.py:3268 |
+| `opens.weekly` | literal en app/scalp_logic.py:3267 |
+| `previous_day` | literal en app/scalp_logic.py:3260 |
+| `previous_day.close` | literal en app/scalp_logic.py:3260 |
+| `previous_day.en_curso` | literal en app/scalp_logic.py:3261 |
+| `previous_day.high` | literal en app/scalp_logic.py:3260 |
+| `previous_day.low` | literal en app/scalp_logic.py:3260 |
+| `previous_day.velas` | literal en app/scalp_logic.py:3261 |
+| `previous_day.velas_posibles` | literal en app/scalp_logic.py:3261 |
+| `sessions_today_utc` | literal en app/scalp_logic.py:3270 |
+| `symbol` | literal en app/scalp_logic.py:3259 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -84,12 +91,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
 comentario no tiene consumidor, tiene quien habla de ella.
 
-**NINGUN rastro**, ni llamada ni mencion, en `static/app.js`, `static/index.html`,
-`harness/checks`, `tests`, `tools` ni `README.md`.
+| donde | llamadas | menciones |
+|---|---|---|
+| **panel** | — | `static/app.js:2105` |
 
-No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su
-nombre-, pero es la forma exacta del patron que en esta casa se ha repetido nueve
-veces. **Merece una mirada, no una conclusion.**
+**Nadie la llama.** Sus 1 rastros son todos MENCION -comentario,
+docstring o documento-. Es la forma del patron que en esta casa se ha repetido
+nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**
 
 ## Ventana · con que clave la declara (derivado)
 
@@ -124,7 +132,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.reference_levels` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.reference_levels` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.reference_levels_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_absorption` · `app/api.py:1503` (cuerpo hasta la 1508) · decorador en la linea 1502.
+Handler `scalp_absorption` · `app/api.py:1512` (cuerpo hasta la 1517) · decorador en la linea 1511.
 
 ## Parametros de entrada
 
@@ -46,7 +46,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5308`
+- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5345`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
@@ -82,7 +82,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:117`, `harness/checks/K43-foto-unica.sh:175` | — |
-| **panel** | `static/app.js:1627` | — |
+| **panel** | `static/app.js:1632` | — |
 | **tests** | — | `tests/test_metrics_endpoint.py:231` |
 
 **La llama el panel: es superficie de producto.**

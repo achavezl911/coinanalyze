@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_signals` · `app/api.py:2046` (cuerpo hasta la 2084) · decorador en la linea 2045.
+Handler `scalp_signals` · `app/api.py:2055` (cuerpo hasta la 2093) · decorador en la linea 2054.
 
 ## Parametros de entrada
 
@@ -19,15 +19,15 @@ Handler `scalp_signals` · `app/api.py:2046` (cuerpo hasta la 2084) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2082 |
-| `count` | literal en app/api.py:2077 |
-| `limit` | literal en app/api.py:2076 |
-| `rows` | literal en app/api.py:2083 |
-| `servida_desde` | literal en app/api.py:2079 |
-| `servida_hasta` | literal en app/api.py:2080 |
-| `symbol` | literal en app/api.py:2075 |
-| `truncated` | literal en app/api.py:2078 |
-| `ventana_maxima_h` | literal en app/api.py:2081 |
+| `as_of` | literal en app/api.py:2091 |
+| `count` | literal en app/api.py:2086 |
+| `limit` | literal en app/api.py:2085 |
+| `rows` | literal en app/api.py:2092 |
+| `servida_desde` | literal en app/api.py:2088 |
+| `servida_hasta` | literal en app/api.py:2089 |
+| `symbol` | literal en app/api.py:2084 |
+| `truncated` | literal en app/api.py:2087 |
+| `ventana_maxima_h` | literal en app/api.py:2090 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -47,7 +47,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2087`
+- `app.api._utc_iso` — `app/api.py:2096`
 - `app.api.records` — `app/api.py:235`
 - `app.api.validate_symbol` — `app/api.py:222`
 
@@ -78,7 +78,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-control.bash:61`, `harness/checks/K43-foto-unica.sh:123`, `harness/checks/K96-la-auditoria-no-inventa.sh:68` | — |
-| **panel** | `static/app.js:1714` | — |
+| **panel** | `static/app.js:1719` | — |
 | **readme** | — | `README.md:488`, `README.md:498` |
 | **tests** | — | `tests/test_dashboard_layout.py:130` |
 

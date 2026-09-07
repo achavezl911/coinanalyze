@@ -29,14 +29,22 @@ Declara su ventana con estas claves, derivadas de los campos que publica:
 ## PROMESA
 
 
-### NADIE LA LLAMA, y esta medido
+### YA LA USA LA MESA, aunque no por esta puerta (2026-09-07)
 
-Censo sobre `static/app.js`, `static/index.html`, `harness/checks`, `tests`, `tools` y
-`README.md`, con limite de token y separando llamada de mencion: **cero llamadas y cero
-menciones**. Es una de las **seis** rutas del sistema sin ningun rastro.
+Hasta el 2026-09-07 el censo no encontraba ni una llamada ni una mencion: era una de las seis
+rutas del sistema a las que no apuntaba nadie. Y sin embargo contestaba, y sus catorce niveles
+eran CORRECTOS
+-recalculados valor por valor desde `ohlcv` 1min-. El hueco no estaba en la ruta: estaba entre la
+ruta y la mesa, que daba la invalidacion en prosa y ningun numero.
 
-No prueba que este muerta -puede llamarla una IA por su nombre, o algo fuera del repo-,
-pero es la forma exacta del patron que en esta casa se ha repetido nueve veces.
+Hoy el censo da **cero llamadas y una mencion**, y la diferencia es deliberada: los niveles llegan
+a la tarjeta de decision **dentro de `/api/desk/state`** (`components.reference_levels`), no
+pidiendo esta ruta. La razon es que la tarjeta se alimenta de un solo snapshot para que todos sus
+componentes compartan el mismo `computed_at`; un nivel pedido aparte traeria su propio instante y
+la tarjeta pintaria dos relojes como si fueran uno.
+
+**Esta ruta sigue existiendo y sirve lo mismo**, para quien la quiera suelta. Que nadie la LLAME
+ya no es señal de que este muerta: su calculo se usa en cada refresco de la Mesa.
 
 ### Lo que promete
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `context_metadata_endpoint` · `app/api.py:1747` (cuerpo hasta la 1750) · decorador en la linea 1746.
+Handler `context_metadata_endpoint` · `app/api.py:1756` (cuerpo hasta la 1759) · decorador en la linea 1755.
 
 ## Parametros de entrada
 
@@ -18,12 +18,12 @@ Handler `context_metadata_endpoint` · `app/api.py:1747` (cuerpo hasta la 1750) 
 
 | campo | de donde sale |
 |---|---|
-| `calc_version` | literal en app/scalp_logic.py:3624 |
-| `feeds` | literal en app/scalp_logic.py:3626 |
-| `generated_at` | literal en app/scalp_logic.py:3625 |
-| `note` | literal en app/scalp_logic.py:3628 |
-| `symbol` | literal en app/scalp_logic.py:3623 |
-| `venues_note` | literal en app/scalp_logic.py:3627 |
+| `calc_version` | literal en app/scalp_logic.py:3661 |
+| `feeds` | literal en app/scalp_logic.py:3663 |
+| `generated_at` | literal en app/scalp_logic.py:3662 |
+| `note` | literal en app/scalp_logic.py:3665 |
+| `symbol` | literal en app/scalp_logic.py:3660 |
+| `venues_note` | literal en app/scalp_logic.py:3664 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -41,7 +41,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3599`
+- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3636`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `volume_profile_endpoint` · `app/api.py:1639` (cuerpo hasta la 1642) · decorador en la linea 1638.
+Handler `volume_profile_endpoint` · `app/api.py:1648` (cuerpo hasta la 1651) · decorador en la linea 1647.
 
 ## Parametros de entrada
 
@@ -18,23 +18,23 @@ Handler `volume_profile_endpoint` · `app/api.py:1639` (cuerpo hasta la 1642) ·
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3584 |
-| `available` | literal en app/scalp_logic.py:3585 |
-| `note` | literal en app/scalp_logic.py:3595 |
-| `session` | literal en app/scalp_logic.py:3586 |
-| `session.hvn` | literal en app/scalp_logic.py:3534 |
-| `session.lvn` | literal en app/scalp_logic.py:3535 |
-| `session.poc` | literal en app/scalp_logic.py:3531 |
-| `session.vah` | literal en app/scalp_logic.py:3532 |
-| `session.val` | literal en app/scalp_logic.py:3533 |
-| `symbol` | literal en app/scalp_logic.py:3583 |
-| `vwap` | literal en app/scalp_logic.py:3587 |
-| `vwap.bands` | literal en app/scalp_logic.py:3590 |
-| `vwap.distinct_from` | literal en app/scalp_logic.py:3593 |
-| `vwap.market` | literal en app/scalp_logic.py:3591 |
-| `vwap.session_convention` | literal en app/scalp_logic.py:3592 |
-| `vwap.utc_day` | literal en app/scalp_logic.py:3588 |
-| `vwap.weekly` | literal en app/scalp_logic.py:3589 |
+| `as_of` | literal en app/scalp_logic.py:3621 |
+| `available` | literal en app/scalp_logic.py:3622 |
+| `note` | literal en app/scalp_logic.py:3632 |
+| `session` | literal en app/scalp_logic.py:3623 |
+| `session.hvn` | literal en app/scalp_logic.py:3571 |
+| `session.lvn` | literal en app/scalp_logic.py:3572 |
+| `session.poc` | literal en app/scalp_logic.py:3568 |
+| `session.vah` | literal en app/scalp_logic.py:3569 |
+| `session.val` | literal en app/scalp_logic.py:3570 |
+| `symbol` | literal en app/scalp_logic.py:3620 |
+| `vwap` | literal en app/scalp_logic.py:3624 |
+| `vwap.bands` | literal en app/scalp_logic.py:3627 |
+| `vwap.distinct_from` | literal en app/scalp_logic.py:3630 |
+| `vwap.market` | literal en app/scalp_logic.py:3628 |
+| `vwap.session_convention` | literal en app/scalp_logic.py:3629 |
+| `vwap.utc_day` | literal en app/scalp_logic.py:3625 |
+| `vwap.weekly` | literal en app/scalp_logic.py:3626 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -58,12 +58,12 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3539`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3576`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3502`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3539`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
 

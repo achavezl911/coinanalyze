@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `zone_analysis_endpoint` · `app/api.py:1674` (cuerpo hasta la 1687) · decorador en la linea 1673.
+Handler `zone_analysis_endpoint` · `app/api.py:1683` (cuerpo hasta la 1696) · decorador en la linea 1682.
 
 ## Parametros de entrada
 
@@ -92,8 +92,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:1683` | el propio handler |
-| 422 | zone spans more than 3x; narrow it | `app/api.py:1685` | el propio handler |
+| 422 | low must be below high | `app/api.py:1692` | el propio handler |
+| 422 | zone spans more than 3x; narrow it | `app/api.py:1694` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -104,7 +104,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-control.bash:116`, `harness/checks/K43-foto-unica.sh:121`, `harness/checks/K43-foto-unica.sh:282` | — |
-| **panel** | `static/app.js:2863` | — |
+| **panel** | `static/app.js:2953` | — |
 | **tests** | — | `tests/test_p0_data_integrity.py:126` |
 
 **La llama el panel: es superficie de producto.**

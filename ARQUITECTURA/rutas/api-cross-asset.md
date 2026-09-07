@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cross_asset_endpoint` · `app/api.py:1761` (cuerpo hasta la 1764) · decorador en la linea 1760.
+Handler `cross_asset_endpoint` · `app/api.py:1770` (cuerpo hasta la 1773) · decorador en la linea 1769.
 
 ## Parametros de entrada
 
@@ -18,14 +18,14 @@ Handler `cross_asset_endpoint` · `app/api.py:1761` (cuerpo hasta la 1764) · de
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3336 |
-| `available` | literal en app/scalp_logic.py:3338 |
-| `base` | literal en app/scalp_logic.py:3337 |
-| `beta_vs_base` | literal en app/scalp_logic.py:3340 |
-| `correlation` | literal en app/scalp_logic.py:3339 |
-| `note` | literal en app/scalp_logic.py:3342 |
-| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3341 |
-| `symbol` | literal en app/scalp_logic.py:3335 |
+| `as_of` | literal en app/scalp_logic.py:3373 |
+| `available` | literal en app/scalp_logic.py:3375 |
+| `base` | literal en app/scalp_logic.py:3374 |
+| `beta_vs_base` | literal en app/scalp_logic.py:3377 |
+| `correlation` | literal en app/scalp_logic.py:3376 |
+| `note` | literal en app/scalp_logic.py:3379 |
+| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3378 |
+| `symbol` | literal en app/scalp_logic.py:3372 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -49,15 +49,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3304`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3341`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3269`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3283`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3306`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3320`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3256`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3248`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3293`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3285`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
 

@@ -3204,16 +3204,28 @@ async def reference_levels(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         )
 
     async def hl(a, b):
+        # SE CUENTAN LAS VELAS ADEMAS DE LOS EXTREMOS. Un maximo de sesion sacado de un puñado de
+        # velas y uno sacado de la sesion completa no son la misma cifra, y sin el recuento la
+        # tarjeta las presenta igual. Medido el 2026-09-07T17:15Z: asia 480/480, london 540/540 y
+        # new_york 215 de las 540 que dura, porque estaba en curso.
         r = await conn.fetchrow(
-            "SELECT max(high) h, min(low) l FROM ohlcv WHERE symbol=$1 AND interval='1min' "
-            "AND ts >= $2 AND ts < $3",
+            "SELECT max(high) h, min(low) l, count(*) n FROM ohlcv WHERE symbol=$1 "
+            "AND interval='1min' AND ts >= $2 AND ts < $3",
             symbol,
             a,
             b,
         )
-        return (as_float(r["h"]), as_float(r["l"])) if r else (None, None)
+        if not r:
+            return (None, None, 0)
+        return (as_float(r["h"]), as_float(r["l"]), int(r["n"] or 0))
 
-    pd_h, pd_l = await hl(day0 - timedelta(days=1), day0)
+    def caben(a, b):
+        """Minutos de la ventana que YA han pasado. Es el denominador honesto del recuento:
+        para una ventana cerrada es su duracion; para una en curso, lo que va de ella."""
+        fin = min(b, now)
+        return max(0, int((fin - a).total_seconds() // 60)) if fin > a else 0
+
+    pd_h, pd_l, pd_n = await hl(day0 - timedelta(days=1), day0)
     pd_close = as_float(
         await conn.fetchval(
             "SELECT close FROM ohlcv WHERE symbol=$1 AND interval='1min' AND ts >= $2 AND ts < $3 "
@@ -3223,25 +3235,50 @@ async def reference_levels(conn: asyncpg.Connection, symbol: str) -> dict[str, A
             day0,
         )
     )
-    cd_h, cd_l = await hl(day0, now + timedelta(minutes=1))
+    cd_h, cd_l, cd_n = await hl(day0, now + timedelta(minutes=1))
     daily_open = await first_open(day0)
 
     sessions = {}
     for name, a, b in _SESSIONS_UTC:
-        sh, sl = await hl(day0 + timedelta(hours=a), day0 + timedelta(hours=b))
-        sessions[name] = {"high": sh, "low": sl, "window_utc": f"{a:02d}:00-{b:02d}:00"}
+        ini, fin = day0 + timedelta(hours=a), day0 + timedelta(hours=b)
+        sh, sl, sn = await hl(ini, fin)
+        sessions[name] = {
+            "high": sh,
+            "low": sl,
+            "window_utc": f"{a:02d}:00-{b:02d}:00",
+            # `velas` es sobre cuantas se calculo; `velas_posibles` es cuantas cabian ya. Si la
+            # segunda es menor que la duracion de la ventana, la sesion esta EN CURSO y su
+            # extremo puede moverse todavia. Quien pinte esto tiene que poder decirlo.
+            "velas": sn,
+            "velas_posibles": caben(ini, fin),
+            "duracion_min": (b - a) * 60,
+            "en_curso": now < fin,
+        }
 
     return {
         "symbol": symbol,
-        "previous_day": {"high": pd_h, "low": pd_l, "close": pd_close},
-        "current_day": {"high": cd_h, "low": cd_l, "open": daily_open},
+        "previous_day": {"high": pd_h, "low": pd_l, "close": pd_close,
+                         "velas": pd_n, "velas_posibles": 1440, "en_curso": False},
+        "current_day": {"high": cd_h, "low": cd_l, "open": daily_open,
+                        "velas": cd_n, "velas_posibles": caben(day0, day0 + timedelta(days=1)),
+                        "duracion_min": 1440, "en_curso": True},
         "opens": {
             "daily": daily_open,
             "weekly": await first_open(week0),
             "monthly": await first_open(month0),
         },
         "sessions_today_utc": sessions,
-        "note": "niveles desde ohlcv 1min (retencion ~14d; opens fuera de rango = null); dia = UTC",
+        # LA NOTA ANTERIOR DECIA «retencion ~14d» Y ERA FALSA: medido contra la tabla el
+        # 2026-09-07, `ohlcv` 1min va del 2026-07-23 al 2026-09-07, o sea 45.7 dias. Una nota es
+        # una afirmacion como cualquier otra; esta no se habia comprobado nunca. Ahora no declara
+        # una retencion que no controla: dice de donde salen los niveles y que el vacio se sirve
+        # como null, que es lo que si se sostiene.
+        "note": (
+            "niveles recalculables desde ohlcv 1min; dia y sesiones en UTC; "
+            "cada nivel trae `velas` (sobre cuantas se calculo) y `velas_posibles` "
+            "(cuantas cabian ya): si difieren, la ventana sigue abierta. "
+            "Lo que no hay se sirve como null, nunca como cero."
+        ),
     }
 
 

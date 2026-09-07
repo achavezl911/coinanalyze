@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_orderbook` · `app/api.py:1487` (cuerpo hasta la 1499) · decorador en la linea 1486.
+Handler `scalp_orderbook` · `app/api.py:1496` (cuerpo hasta la 1508) · decorador en la linea 1495.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `scalp_orderbook` · `app/api.py:1487` (cuerpo hasta la 1499) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `freshness` | literal en app/api.py:1498 |
+| `freshness` | literal en app/api.py:1507 |
 | `freshness.age_seconds` | literal en app/ai_context.py:641 |
 | `freshness.as_of` | literal en app/ai_context.py:640 |
 | `freshness.max_age_seconds` | literal en app/ai_context.py:642 |
 | `freshness.status` | literal en app/ai_context.py:639 |
-| `rows` | literal en app/api.py:1497 |
-| `symbol` | literal en app/api.py:1496 |
+| `rows` | literal en app/api.py:1506 |
+| `symbol` | literal en app/api.py:1505 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -75,7 +75,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K13-vacio-o-rancio.sh:32`, `harness/checks/K13-vacio-o-rancio.sh:33`, `harness/checks/K13-vacio-o-rancio.sh:92`, `harness/checks/K13-vacio-o-rancio.sh:94` _(+4)_ | `harness/checks/K13-vacio-o-rancio.sh:2`, `harness/checks/K43-foto-unica.sh:44`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:71` |
-| **panel** | `static/app.js:1639` | — |
+| **panel** | `static/app.js:1644` | — |
 | **tests** | — | `tests/js/libro_vacio_o_rancio.test.js:4`, `tests/test_orderbook_frescura.py:1`, `tests/test_orderbook_frescura.py:119` |
 
 **La llama el panel: es superficie de producto.**

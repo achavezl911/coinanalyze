@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `funding_context_endpoint` · `app/api.py:1625` (cuerpo hasta la 1628) · decorador en la linea 1624.
+Handler `funding_context_endpoint` · `app/api.py:1634` (cuerpo hasta la 1637) · decorador en la linea 1633.
 
 ## Parametros de entrada
 
@@ -18,16 +18,16 @@ Handler `funding_context_endpoint` · `app/api.py:1625` (cuerpo hasta la 1628) �
 
 | campo | de donde sale |
 |---|---|
-| `annualized_pct` | literal en app/scalp_logic.py:3405 |
-| `coverage` | literal en app/scalp_logic.py:3407 |
-| `current_pct` | literal en app/scalp_logic.py:3400 |
-| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3402 |
-| `history_avg_pct` | literal en app/scalp_logic.py:3406 |
-| `next_funding_time_utc` | literal en app/scalp_logic.py:3408 |
-| `note` | literal en app/scalp_logic.py:3416 |
-| `predicted_pct` | literal en app/scalp_logic.py:3401 |
-| `regime` | literal en app/scalp_logic.py:3409 |
-| `symbol` | literal en app/scalp_logic.py:3399 |
+| `annualized_pct` | literal en app/scalp_logic.py:3442 |
+| `coverage` | literal en app/scalp_logic.py:3444 |
+| `current_pct` | literal en app/scalp_logic.py:3437 |
+| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3439 |
+| `history_avg_pct` | literal en app/scalp_logic.py:3443 |
+| `next_funding_time_utc` | literal en app/scalp_logic.py:3445 |
+| `note` | literal en app/scalp_logic.py:3453 |
+| `predicted_pct` | literal en app/scalp_logic.py:3438 |
+| `regime` | literal en app/scalp_logic.py:3446 |
+| `symbol` | literal en app/scalp_logic.py:3436 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -50,7 +50,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3347`
+- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3384`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
@@ -86,7 +86,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K43-foto-unica.sh:111`, `harness/checks/K43-foto-unica.sh:161` | `harness/checks/K03-hueco-declarado.sh:29` |
-| **panel** | `static/app.js:1682` | — |
+| **panel** | `static/app.js:1687` | — |
 
 **La llama el panel: es superficie de producto.**
 
