@@ -32925,9 +32925,9 @@
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:117",
             "harness/checks/K43-foto-unica.sh:177",
-            "harness/checks/K80-la-matriz-cambia-de-universo.sh:169",
-            "harness/checks/K80-la-matriz-cambia-de-universo.sh:170",
-            "harness/checks/K80-la-matriz-cambia-de-universo.sh:212"
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:171",
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:172",
+            "harness/checks/K80-la-matriz-cambia-de-universo.sh:214"
           ],
           "menciones": []
         },
