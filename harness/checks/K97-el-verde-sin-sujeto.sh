@@ -233,7 +233,7 @@ corre_sujeto() {  # $1 = fichero del check   $2 = canal   $3 = mudo|cero|caido
 
 # --- EL CENSO ------------------------------------------------------------------------------
 enfermos=""; sanos=0; nojuzg=""; n=0; detalle=""; api_debil=""
-distinguen=""; confunden=""; indistintos=""; por_c1=""; por_c2=""
+distinguen=""; confunden=""; indistintos=""; por_c1=""; por_c2=""; declaran=""
 
 # LA FIRMA DE UNA EJECUCION = su rc mas su salida NORMALIZADA. Se normaliza lo que cambia entre
 # dos corridas sin que cambie el comportamiento: la ruta del arbol de mentira -que es distinta
@@ -330,7 +330,18 @@ for f in "$CHECKS"/*.sh; do
           { [ "$a" != "$d" ] || [ "$b" != "$d" ]; } && echo si || echo no
         }
         d_vieja=$(dist vieja); d_c1=$(dist c1); d_ok=$(dist ok)
-        if [ "$d_ok" = si ]; then
+        # ¿LO DECLARA? La marca tiene que estar en la corrida del canal caido y NO en las de
+        # poblacion vacia. Si estuviera en las dos, el sujeto no habria declarado nada: habria
+        # puesto una etiqueta, y creerse una etiqueta es peor que adivinar.
+        declara=no
+        if printf '%s\n' "$cruda_caido" | grep -q 'NO MEDIDO (CANAL)' \
+           && ! printf '%s\n' "$cruda_mudo" | grep -q 'NO MEDIDO (CANAL)' \
+           && ! printf '%s\n' "$cruda_cero" | grep -q 'NO MEDIDO (CANAL)'; then
+          declara=si
+        fi
+        if [ "$declara" = si ]; then
+          declaran="$declaran $c"; sanos=$((sanos+1))
+        elif [ "$d_ok" = si ]; then
           distinguen="$distinguen $c"; sanos=$((sanos+1))
         else
           confunden="$confunden $c"; sanos=$((sanos+1))
@@ -390,8 +401,10 @@ n_dis=$(printf '%s' "$distinguen" | wc -w)
   n_con=$(printf '%s' "$confunden" | wc -w)
   n_ind=$(printf '%s' "$indistintos" | wc -w)
   echo "  juzgados ejecutandolos: $((n - n_noj)) de $n · sanos: $sanos · enfermos: $n_enf · no juzgables: $n_noj"
+  n_dec=$(printf '%s' "$declaran" | wc -w)
   echo "  LA PARTICION DEL SANO -de $sanos, comparando la corrida con poblacion vacia contra la de canal caido-:"
-  echo "    GANADO   ($n_dis) se comportan DISTINTO ante las dos:$distinguen"
+  echo "    DECLARA  ($n_dec) lo DICEN: sacan «NO MEDIDO (CANAL)» solo cuando el canal cae:$declaran"
+  echo "    GANADO   ($n_dis) no lo dicen, pero se comportan DISTINTO ante las dos:$distinguen"
   echo "    PRESTADO ($n_con) se comportan IGUAL -no pueden saber cual de las dos les paso-:$confunden"
   [ "$n_ind" -gt 0 ] && echo "    SIN COMPARAR ($n_ind) no se pudo correr una de las dos:$indistintos"
   # LAS DOS CAUSAS, POR SEPARADO. Arreglarlas juntas y dar un solo numero no seria puntuable.

@@ -156,7 +156,9 @@ UNION ALL SELECT 'SINTECHO|'||table_name
  GROUP BY table_name HAVING count(DISTINCT column_name)=3
 ORDER BY 1"
 
-salida=$("$B/bin/prodsql" "$SQL" 2>/dev/null)
+# EL rc DEL CANAL YA LLEGABA Y NO SE MIRABA. Una linea: con `bin/prodsql` propagando el
+# fallo desde el 2026-09-05, distinguir «no habia nada» de «no pude preguntar» es esto.
+salida=$("$B/bin/prodsql" "$SQL" 2>/dev/null) || { rc=$?; echo "NO MEDIDO (CANAL): prodsql no contesto (rc=$rc). NO es una poblacion vacia: es que no se pudo preguntar."; exit 2; }
 total=$(printf '%s\n' "$salida" | sed -n 's/^TOTAL|//p' | head -1)
 case "${total:-}" in
   ''|*[!0-9]*) echo "NO MEDIDO: la consulta de tasa no devolvio conteo" >&2; exit 2 ;;

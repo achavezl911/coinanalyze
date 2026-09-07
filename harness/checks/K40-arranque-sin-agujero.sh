@@ -23,7 +23,11 @@ set -uo pipefail
 B=/srv/coinanalyze/harness; . "$B/env"
 LISTON=${K40_LISTON:-1}
 
-arranque=$("$B/bin/prod" 'date -u -d "$(systemctl show coinalyze-scalp -p ActiveEnterTimestamp --value)" +%FT%TZ' 2>/dev/null | tr -d ' \n')
+# EL rc DEL CANAL MORIA EN LA TUBERIA. `$(cmd | tr | head)` devuelve el rc de `head`, asi
+# que el arreglo de bin/prodsql del 2026-09-05 -que propaga el fallo- era inalcanzable
+# aqui. Se captura CRUDO con su guardia y se filtra despues sobre la variable.
+_crudo=$("$B/bin/prod" 'date -u -d "$(systemctl show coinalyze-scalp -p ActiveEnterTimestamp --value)" +%FT%TZ' 2>/dev/null) || { rc=$?; echo "NO MEDIDO (CANAL): prod no contesto (rc=$rc). NO es una poblacion vacia: es que no se pudo preguntar."; exit 2; }
+arranque=$(printf '%s\n' "$_crudo" | tr -d ' \n')
 case "$arranque" in
   20[0-9][0-9]-*T*Z) ;;
   *) echo "NO MEDIDO: no se pudo leer el ultimo arranque de coinalyze-scalp"; exit 2 ;;

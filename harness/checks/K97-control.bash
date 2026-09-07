@@ -23,8 +23,8 @@ fallos=0; pasan=0; nocorren=""; nocorren_criticos=""
 # y la ultima linea decia **«15 de 15 pasan · 0 fallan»** sin mencionar que habia perdido tres.
 # Y `bin/_corta` trunca a 8000 B, asi que ese titular es justo lo que sobrevive a un corte: la
 # unica linea que alguien lee podia ser la que mas mentia.
-# N1 N1b · P1 P2 P3 · C1 · S1 S2 · V1 V1b · D1 D2 · R1 R1b R2 · G1..G11 · F1 F2 F3
-TOTAL_BRAZOS=29
+# N1 N1b · P1 P2 P3 · C1 · S1 S2 · V1 V1b · D1 D2 · R1 R1b R2 · G1..G13 · F1 F2 F3
+TOTAL_BRAZOS=31
 # LOS CRITICOS son los que, si no corren, dejan al control sin poder AFIRMAR nada. Hoy es solo el
 # de regresion: es el que prueba que el verde de K97 se debe a los arreglos y no a que el
 # instrumento haya dejado de mirar. Sin el, «pasan» no significa nada y el veredicto es NOMED.
@@ -166,6 +166,35 @@ B=/srv/coinanalyze/harness
 n=$("$B/bin/prodsql" "SELECT count(*) FROM inventada WHERE ts > now() - interval '7 days'" 2>/dev/null); rc=$?
 [ "$rc" = 0 ] || { echo "NO MEDIDO: el canal no responde"; exit 2; }
 echo "NO MEDIDO: el canal contesto y no habia poblacion"
+exit 2
+EOF
+chmod 755 "$1"; }
+
+# DECLARA DE VERDAD · mira el rc del canal y solo entonces saca la marca. Tiene que caer en
+# DECLARA. Es la pieza que se puso en los ocho checks de esta vuelta.
+sujeto_declara_canal() { cat > "$1" <<'EOF'
+#!/bin/bash
+DIAS=7
+B=/srv/coinanalyze/harness
+filas=$("$B/bin/prodsql" "SELECT ts FROM inventada WHERE ts > now() - interval '7 days'" 2>/dev/null)   || { rc=$?; echo "NO MEDIDO (CANAL): prodsql no contesto (rc=$rc)"; exit 2; }
+n=$(printf '%s' "$filas" | grep -c . || true)
+[ "$n" -gt 0 ] || { echo "NO MEDIDO: cero filas elegibles"; exit 2; }
+echo "VERDE: $n filas"
+exit 0
+EOF
+chmod 755 "$1"; }
+
+# LA ETIQUETA VACIA · saca la marca SIEMPRE, sin mirar el rc de nadie. **No ha declarado nada** y
+# NO puede contar como DECLARA: creerse una etiqueta es peor que adivinar comparando. Es el riesgo
+# que se escribio antes de tocar el codigo, y ademas es lo que me paso de verdad al poner el
+# guardia en el llamante de K70: sacaba «NO MEDIDO (CANAL): rc=1» con el canal SANO, porque el 1
+# era del grep que no casaba.
+sujeto_etiqueta() { cat > "$1" <<'EOF'
+#!/bin/bash
+DIAS=7
+B=/srv/coinanalyze/harness
+filas=$("$B/bin/prodsql" "SELECT ts FROM inventada WHERE ts > now() - interval '7 days'" 2>/dev/null | head -1)
+echo "NO MEDIDO (CANAL): prodsql no contesto"
 exit 2
 EOF
 chmod 755 "$1"; }
@@ -356,6 +385,22 @@ comprueba "G10 frases distintas: GANADO" \
 # G11 · y el ruido del doble no puede colarse en la firma de NADIE: el marcador tiene que estar.
 comprueba "G11 el doble caido marca sus propias lineas" \
   "$(grep -q 'K97-DOBLE:' "$CHK" && echo si || echo no)"
+
+# --- G12/G13 · EL CUBO «DECLARA». Anadido el 2026-09-07 -------------------------------------
+# Desde que `bin/api` y `bin/prodsql` propagan el fallo, un sujeto puede DECIR cual de los dos
+# estados le paso en vez de dejar que K97 lo adivine comparando dos ejecuciones. La marca es
+# `NO MEDIDO (CANAL)` y **tiene que aparecer SOLO con el canal caido**: si sale tambien con la
+# poblacion vacia, no ha declarado nada.
+D12="$DIR/declara"; puebla "$D12"
+sujeto_declara_canal "$D12/Z10-declara-canal.sh"
+sujeto_etiqueta      "$D12/Z11-etiqueta.sh"
+out=$(K97_CHECKS="$D12" bash "$CHK" 2>&1)
+dec=$(printf '%s\n' "$out" | sed -n 's/.*DECLARA *([0-9]*) [^:]*://p')
+comprueba "G12 el que mira el rc y luego marca: DECLARA" \
+  "$(printf '%s' "$dec" | grep -qw Z10-declara-canal && echo si || echo no)"
+# G13 · Y LA ETIQUETA VACIA NO CUELA. Sin este brazo habria cambiado adivinar por creerme.
+comprueba "G13 el que marca SIEMPRE no cuenta como DECLARA" \
+  "$(printf '%s' "$dec" | grep -qw Z11-etiqueta && echo no || echo si)"
 
 echo
 echo "ANTI-FANTASMA · el instrumento tiene que probarse a si mismo"

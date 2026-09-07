@@ -78,7 +78,9 @@ UMBRAL=5          # % de hueco a partir del cual la fila miente de forma visible
 VENUES=$("$B/bin/prodsql" "
   SELECT count(DISTINCT exchange),
          coalesce(sum(notional_usd) FILTER (WHERE exchange='bybit'),0)::bigint
-  FROM liquidations_realtime WHERE ts >= now()-interval '4 hours'" 2>/dev/null | tr -d ' ' | head -1)
+  FROM liquidations_realtime WHERE ts >= now()-interval '4 hours'" 2>/dev/null) || { rc=$?; echo "NO MEDIDO (CANAL): prodsql no contesto (rc=$rc). NO es una poblacion vacia: es que no se pudo preguntar."; exit 2; }
+# El rc del canal moria en la tuberia; ahora se captura crudo y se filtra sobre la variable.
+VENUES=$(printf '%s\n' "$VENUES" | tr -d ' ' | head -1)
 case "$VENUES" in
   [0-9]*\|[0-9]*) : ;;
   *) echo "NO MEDIDO: 140 no contesto por liquidations_realtime: $(printf '%s' "$VENUES" | head -c 100)"; exit 2 ;;

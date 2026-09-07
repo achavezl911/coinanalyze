@@ -62,7 +62,11 @@ UPTIME_MIN=1200                         # por debajo de 20 min la tasa es ruido,
 RELEASE=${K85_RELEASE:-/opt/coinalyze/current}   # arbol que C y D interrogan, en 140
 
 # --- A · CAUSA · el valor que el proceso tiene de verdad ---------------------------------
-pid=$("$B/bin/prod" 'systemctl show -p MainPID --value coinalyze-scalp.service' 2>/dev/null | tr -d ' \n')
+# EL rc DEL CANAL MORIA EN LA TUBERIA. `$(cmd | tr | head)` devuelve el rc de `head`, asi
+# que el arreglo de bin/prodsql del 2026-09-05 -que propaga el fallo- era inalcanzable
+# aqui. Se captura CRUDO con su guardia y se filtra despues sobre la variable.
+_crudo=$("$B/bin/prod" 'systemctl show -p MainPID --value coinalyze-scalp.service' 2>/dev/null) || { rc=$?; echo "NO MEDIDO (CANAL): prod no contesto (rc=$rc). NO es una poblacion vacia: es que no se pudo preguntar."; exit 2; }
+pid=$(printf '%s\n' "$_crudo" | tr -d ' \n')
 case "$pid" in ''|0|*[!0-9]*) echo "NO MEDIDO: no se pudo leer el MainPID de coinalyze-scalp"; exit 2 ;; esac
 
 linea=$("$B/bin/prod" "tr '\\0' '\\n' < /proc/$pid/environ | grep '^BINANCE_BOOK_FORCE_RECONNECT_SECONDS=' || true" 2>/dev/null | head -1)
