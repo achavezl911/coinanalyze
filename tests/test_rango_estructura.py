@@ -4,7 +4,6 @@ Las cifras de los casos son las MEDIDAS contra 140 el 2026-09-07 sobre la ventan
 -viernes 2026-09-04T09:30Z a domingo 2026-09-07T17:00Z- y su control de igual duracion.
 """
 
-import pytest
 
 from app.rango import _pruebas, _veredicto
 
