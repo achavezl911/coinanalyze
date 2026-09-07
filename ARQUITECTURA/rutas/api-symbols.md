@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `symbols` · `app/api.py:610` (cuerpo hasta la 611) · decorador en la linea 609.
+Handler `symbols` · `app/api.py:616` (cuerpo hasta la 617) · decorador en la linea 615.
 
 ## Parametros de entrada
 
@@ -16,8 +16,8 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `asset` | literal en app/api.py:611 |
-| `symbol` | literal en app/api.py:611 |
+| `asset` | literal en app/api.py:617 |
+| `symbol` | literal en app/api.py:617 |
 
 Forma de la respuesta segun el AST: lista, lista de objetos.
 
@@ -45,7 +45,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:125` | — |
-| **panel** | `static/app.js:1896` | — |
+| **panel** | `static/app.js:1915` | — |
 | **tests** | `tests/test_deploy_health_gate.py:180` | `tests/test_deploy_health_gate.py:42`, `tests/test_deploy_health_gate.py:158` |
 
 **La llama el panel: es superficie de producto.**

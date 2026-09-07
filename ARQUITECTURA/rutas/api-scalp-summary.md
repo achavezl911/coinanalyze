@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_summary` · `app/api.py:1107` (cuerpo hasta la 1111) · decorador en la linea 1106.
+Handler `scalp_summary` · `app/api.py:1167` (cuerpo hasta la 1171) · decorador en la linea 1166.
 
 ## Parametros de entrada
 
@@ -81,7 +81,7 @@ Handler `scalp_summary` · `app/api.py:1107` (cuerpo hasta la 1111) · decorador
 | `spot_price` | literal en app/scalp_logic.py:865 |
 | `spread_bps` | literal en app/scalp_logic.py:872 |
 | `state` | literal en app/scalp_logic.py:845 |
-| `symbol` | literal en app/api.py:1111 |
+| `symbol` | literal en app/api.py:1171 |
 | `vwap_dist_pct` | literal en app/scalp_logic.py:913 |
 | `wall_down_pct` | literal en app/scalp_logic.py:877 |
 | `wall_up_pct` | literal en app/scalp_logic.py:876 |
@@ -125,7 +125,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
+- `app.api.validate_symbol` — `app/api.py:228`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 
@@ -136,7 +136,7 @@ Llamadas directas del handler:
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
@@ -146,7 +146,7 @@ Llamadas directas del handler:
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
 - `app.setups._sign` — `app/setups.py:95`
@@ -167,7 +167,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -218,7 +218,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.metrics.current_nyse_start` | 15 | **0** | 14 ↑ | **15** | [impacto](../impacto/app-metrics.md) |

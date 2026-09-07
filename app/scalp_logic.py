@@ -1367,6 +1367,8 @@ async def zone_analysis(
     zone_low: float,
     zone_high: float,
     days: int = 365,
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
 ) -> dict[str, Any]:
     """Caracter de cada visita del precio a una zona: acumulacion, distribucion o rotacion.
 
@@ -1376,19 +1378,22 @@ async def zone_analysis(
     """
     if zone_low >= zone_high:
         raise ValueError("zone_low must be below zone_high")
-    as_of = datetime.now(UTC)
+    # VENTANA ELEGIBLE. El retroceso `days` sigue siendo el defecto; `desde`/`hasta` lo
+    # sustituyen cuando se piden. Sin `hasta`, el fin es ahora y el instante se devuelve.
+    as_of = hasta or datetime.now(UTC)
+    since = desde or (as_of - timedelta(days=days))
     bars = await conn.fetch(
         """
         SELECT ts, open, high, low, close, volume, buy_volume
         FROM ohlcv
         WHERE symbol=$1 AND interval='4hour'
-          AND ts >= $5::timestamptz - make_interval(days => $2)
+          AND ts >= $2
           AND ts + interval '4 hours' <= $5
           AND low <= $4 AND high >= $3
         ORDER BY ts
         """,
         symbol,
-        days,
+        since,
         zone_low,
         zone_high,
         as_of,
@@ -5721,7 +5726,12 @@ async def positioning_context(conn: asyncpg.Connection, symbol: str) -> dict[str
 
 
 async def spot_perp_flow(
-    conn: asyncpg.Connection, symbol: str, interval: str, days: int
+    conn: asyncpg.Connection,
+    symbol: str,
+    interval: str,
+    days: int,
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
 ) -> dict[str, Any]:
     """Delta spot vs perp del MISMO venue (Binance), vela a vela, con historia real.
 
@@ -5739,18 +5749,20 @@ async def spot_perp_flow(
         return {"symbol": symbol, "status": "UNAVAILABLE", "reason": "sin spot mapeado", "rows": []}
     if interval not in {"4hour", "daily"}:
         raise ValueError("unsupported interval for spot_perp_flow")
-    as_of = datetime.now(UTC)
+    # VENTANA ELEGIBLE. `days` sigue siendo el defecto; desde/hasta lo sustituyen.
+    as_of = hasta or datetime.now(UTC)
+    since = desde or (as_of - timedelta(days=days))
     rows = await conn.fetch(
         """
         WITH p AS (
           SELECT ts,close,delta*close AS delta_usd,volume*close AS volume_usd
           FROM ohlcv WHERE symbol=$1 AND interval=$3
-            AND ts >= $5::timestamptz-($4::int*interval '1 day')
+            AND ts >= $4
             AND ts + CASE WHEN $3='4hour' THEN interval '4 hours' ELSE interval '1 day' END <= $5
         ), s AS (
           SELECT ts,delta*close AS delta_usd,volume*close AS volume_usd
           FROM ohlcv WHERE symbol=$2 AND interval=$3
-            AND ts >= $5::timestamptz-($4::int*interval '1 day')
+            AND ts >= $4
             AND ts + CASE WHEN $3='4hour' THEN interval '4 hours' ELSE interval '1 day' END <= $5
         )
         -- LEFT JOIN a proposito: un bucket sin spot debe verse como hueco, no desaparecer.
@@ -5763,7 +5775,7 @@ async def spot_perp_flow(
         symbol,
         spot_symbol,
         interval,
-        days,
+        since,
         as_of,
     )
     out: list[dict[str, Any]] = []

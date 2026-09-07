@@ -8,11 +8,11 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`assert_service_ownership`](#assert-service-ownership) | 301 | 0 | **0** | 62 ↑ | **0** |
-| [`fenced_transaction`](#fenced-transaction) | 333 | 0 | **0** | 62 ↑ | **0** |
-| [`heartbeat`](#heartbeat) | 409 | 1 | **7** | 53 ↑ | **7** |
-| [`heartbeat_owned`](#heartbeat-owned) | 431 | 0 | **0** | 53 ↑ | **0** |
-| [`heartbeat_component`](#heartbeat-component) | 443 | 0 | **7** | 41 ↑ | **7** |
+| [`assert_service_ownership`](#assert-service-ownership) | 301 | 0 | **0** | 63 ↑ | **0** |
+| [`fenced_transaction`](#fenced-transaction) | 333 | 0 | **0** | 63 ↑ | **0** |
+| [`heartbeat`](#heartbeat) | 409 | 1 | **7** | 54 ↑ | **7** |
+| [`heartbeat_owned`](#heartbeat-owned) | 431 | 0 | **0** | 54 ↑ | **0** |
+| [`heartbeat_component`](#heartbeat-component) | 443 | 0 | **7** | 42 ↑ | **7** |
 | [`acquire_service_lock`](#acquire-service-lock) | 262 | 0 | **0** | 21 ↑ | **0** |
 | [`create_pool`](#create-pool) | 162 | 0 | **0** | 21 ↑ | **0** |
 | [`heartbeat_shard`](#heartbeat-shard) | 522 | 0 | **7** | 21 ↑ | **7** |
@@ -36,7 +36,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/db.py:301` · clave completa `app.db.assert_service_ownership`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 62** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 63** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -49,9 +49,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 62 rutas · **cota superior**
+### Por tabla · k<=2 — 63 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (62 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (63 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -124,6 +124,7 @@ Y esas tablas las leen:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/absorption`](../rutas/api-scalp-absorption.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -155,7 +156,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**62 rutas se enteran SOLO por el dato**, sin
+**63 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -190,6 +191,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/absorption`](../rutas/api-scalp-absorption.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -227,7 +229,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:333` · clave completa `app.db.fenced_transaction`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 62** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 63** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -240,9 +242,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 62 rutas · **cota superior**
+### Por tabla · k<=2 — 63 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (62 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (63 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -315,6 +317,7 @@ Y esas tablas las leen:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/absorption`](../rutas/api-scalp-absorption.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -346,7 +349,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**62 rutas se enteran SOLO por el dato**, sin
+**63 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -381,6 +384,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/absorption`](../rutas/api-scalp-absorption.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -418,7 +422,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:409` · clave completa `app.db.heartbeat`
 
-**Radio exacto: 7 rutas** de 68 · **cota superior: 53** (mas ancha)
+**Radio exacto: 7 rutas** de 69 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 1 rutas
 
@@ -440,9 +444,9 @@ Y esas tablas las leen:
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/metrics`](../rutas/metrics.md)
 
-### Por tabla · k<=2 — 53 rutas · **cota superior**
+### Por tabla · k<=2 — 54 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (53 contra 7). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (54 contra 7). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -502,6 +506,7 @@ Y esas tablas las leen:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -524,7 +529,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -558,6 +563,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -586,7 +592,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:431` · clave completa `app.db.heartbeat_owned`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 53** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -599,9 +605,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 53 rutas · **cota superior**
+### Por tabla · k<=2 — 54 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (54 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -659,6 +665,7 @@ Y esas tablas las leen:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -681,7 +688,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**53 rutas se enteran SOLO por el dato**, sin
+**54 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -716,6 +723,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -744,7 +752,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:443` · clave completa `app.db.heartbeat_component`
 
-**Radio exacto: 7 rutas** de 68 · **cota superior: 41** (mas ancha)
+**Radio exacto: 7 rutas** de 69 · **cota superior: 42** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -766,9 +774,9 @@ Y esas tablas las leen:
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/metrics`](../rutas/metrics.md)
 
-### Por tabla · k<=2 — 41 rutas · **cota superior**
+### Por tabla · k<=2 — 42 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (41 contra 7). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (42 contra 7). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -811,6 +819,7 @@ Y esas tablas las leen:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -826,7 +835,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**41 rutas se enteran SOLO por el dato**, sin
+**42 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -856,6 +865,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -877,7 +887,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:262` · clave completa `app.db.acquire_service_lock`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -963,7 +973,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:162` · clave completa `app.db.create_pool`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1048,7 +1058,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:522` · clave completa `app.db.heartbeat_shard`
 
-**Radio exacto: 7 rutas** de 68 · **cota superior: 21** (mas ancha)
+**Radio exacto: 7 rutas** de 69 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1140,7 +1150,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:343` · clave completa `app.db.monitor_service_lock`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1223,7 +1233,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:69` · clave completa `app.db.read_db_identity`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1308,7 +1318,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:235` · clave completa `app.db.sync_market_catalog`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1396,7 +1406,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:792` · clave completa `app.db.mark_feed_shard_degraded`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1478,7 +1488,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:374` · clave completa `app.db.wait_for_stop_or_lock_loss`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 14** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 14** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1544,7 +1554,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:768` · clave completa `app.db.mark_feed_shard_connected`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1606,7 +1616,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:649` · clave completa `app.db._mark_feed_shard_health`
 
-**Radio exacto: 9 rutas** de 68 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 69 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1668,7 +1678,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:599` · clave completa `app.db._mark_feed_unhealthy`
 
-**Radio exacto: 9 rutas** de 68 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 69 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1729,7 +1739,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:571` · clave completa `app.db.mark_feed_connected`
 
-**Radio exacto: 9 rutas** de 68 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 69 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1790,7 +1800,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:629` · clave completa `app.db.mark_feed_degraded`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1844,7 +1854,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:639` · clave completa `app.db.mark_feed_error`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1898,7 +1908,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:817` · clave completa `app.db.mark_feed_shard_error`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1953,7 +1963,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:64` · clave completa `app.db.db_identity`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 7** (mas ancha)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 7** (mas ancha)
 
 ### Por llamada — 1 rutas
 
@@ -2002,7 +2012,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:95` · clave completa `app.db.heartbeat_max_age`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 7** (mas ancha)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 7** (mas ancha)
 
 ### Por llamada — 1 rutas
 
@@ -2051,7 +2061,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:110` · clave completa `app.db.required_heartbeat_failures`
 
-**Radio exacto: 4 rutas** de 68 · **cota superior: 7** (mas ancha)
+**Radio exacto: 4 rutas** de 69 · **cota superior: 7** (mas ancha)
 
 ### Por llamada — 4 rutas
 

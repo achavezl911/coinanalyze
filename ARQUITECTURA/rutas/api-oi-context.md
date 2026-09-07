@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `oi_context_endpoint` · `app/api.py:1777` (cuerpo hasta la 1780) · decorador en la linea 1776.
+Handler `oi_context_endpoint` · `app/api.py:1947` (cuerpo hasta la 1950) · decorador en la linea 1946.
 
 ## Parametros de entrada
 
@@ -18,22 +18,22 @@ Handler `oi_context_endpoint` · `app/api.py:1777` (cuerpo hasta la 1780) · dec
 
 | campo | de donde sale |
 |---|---|
-| `available` | literal en app/scalp_logic.py:3113 |
-| `by_venue` | literal en app/scalp_logic.py:3124 |
-| `by_venue.binance_oi_usd` | literal en app/scalp_logic.py:3125 |
-| `by_venue.bybit_oi_usd` | literal en app/scalp_logic.py:3126 |
-| `by_venue.bybit_share_of_two_venues_pct` | literal en app/scalp_logic.py:3130 |
-| `by_venue.note` | literal en app/scalp_logic.py:3133 |
-| `by_venue.two_venue_total_usd` | literal en app/scalp_logic.py:3127 |
-| `coverage` | literal en app/scalp_logic.py:3121 |
-| `oi_latest_ts` | literal en app/scalp_logic.py:3118 |
-| `oi_total_usd` | literal en app/scalp_logic.py:3114 |
-| `percentile_1y` | literal en app/scalp_logic.py:3122 |
-| `price_latest_ts` | literal en app/scalp_logic.py:3119 |
-| `quadrant_note` | literal en app/scalp_logic.py:3137 |
-| `symbol` | literal en app/scalp_logic.py:3112 |
-| `windows` | literal en app/scalp_logic.py:3120 |
-| `zscore_1y` | literal en app/scalp_logic.py:3123 |
+| `available` | literal en app/scalp_logic.py:3118 |
+| `by_venue` | literal en app/scalp_logic.py:3129 |
+| `by_venue.binance_oi_usd` | literal en app/scalp_logic.py:3130 |
+| `by_venue.bybit_oi_usd` | literal en app/scalp_logic.py:3131 |
+| `by_venue.bybit_share_of_two_venues_pct` | literal en app/scalp_logic.py:3135 |
+| `by_venue.note` | literal en app/scalp_logic.py:3138 |
+| `by_venue.two_venue_total_usd` | literal en app/scalp_logic.py:3132 |
+| `coverage` | literal en app/scalp_logic.py:3126 |
+| `oi_latest_ts` | literal en app/scalp_logic.py:3123 |
+| `oi_total_usd` | literal en app/scalp_logic.py:3119 |
+| `percentile_1y` | literal en app/scalp_logic.py:3127 |
+| `price_latest_ts` | literal en app/scalp_logic.py:3124 |
+| `quadrant_note` | literal en app/scalp_logic.py:3142 |
+| `symbol` | literal en app/scalp_logic.py:3117 |
+| `windows` | literal en app/scalp_logic.py:3125 |
+| `zscore_1y` | literal en app/scalp_logic.py:3128 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -63,8 +63,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3021`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3026`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
 
@@ -73,10 +73,10 @@ Llamadas directas del handler:
 - `app.data_gaps.align_down` — `app/data_gaps.py:232`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:245`
-- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:2978`
-- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:2990`
-- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:2948`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1742`
+- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:2983`
+- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:2995`
+- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:2953`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1747`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>
@@ -93,7 +93,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -140,7 +140,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |

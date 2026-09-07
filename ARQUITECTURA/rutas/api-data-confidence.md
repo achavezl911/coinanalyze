@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `data_confidence` · `app/api.py:2648` (cuerpo hasta la 2652) · decorador en la linea 2647.
+Handler `data_confidence` · `app/api.py:2818` (cuerpo hasta la 2822) · decorador en la linea 2817.
 
 ## Parametros de entrada
 
@@ -18,7 +18,7 @@ Handler `data_confidence` · `app/api.py:2648` (cuerpo hasta la 2652) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `rows` | literal en app/api.py:2652 |
+| `rows` | literal en app/api.py:2822 |
 | `rows.collectors_stale` | asignado en app/ai_context.py:566 |
 | `rows.flow_8h_complete` | asignado en app/ai_context.py:535 |
 | `rows.flow_8h_futures_complete` | asignado en app/ai_context.py:534 |
@@ -86,18 +86,18 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.data_confidence_row` — `app/ai_context.py:497`
-- `app.api.validate_symbol` — `app/api.py:222`
+- `app.api.validate_symbol` — `app/api.py:228`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
 - `app.ai_context.quality_score` — `app/ai_context.py:585`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2431`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2436`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2609`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2614`
 
 </details>
 
@@ -114,7 +114,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -125,7 +125,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:110`, `harness/checks/K43-foto-unica.sh:158` | — |
-| **panel** | `static/app.js:1573`, `static/app.js:1701` | — |
+| **panel** | `static/app.js:1590`, `static/app.js:1718` | — |
 | **readme** | — | `README.md:501` |
 
 **La llama el panel: es superficie de producto.**
@@ -161,7 +161,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |

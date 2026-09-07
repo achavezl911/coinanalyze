@@ -217,6 +217,7 @@
                 <button id="analyzer-tab-range" type="button" role="tab" aria-selected="false" aria-controls="analyzer-range">¿Es un rango?</button>
                 <!-- No es un modelo calibrado: es el conteo de intentos historicos que
                      acabaron rompiendo. Llamarlo "probabilidad" exageraba la evidencia. -->
+                <button id="analyzer-tab-tramo" type="button" role="tab" aria-selected="false" aria-controls="analyzer-tramo">¿Qué pasó en este tramo?</button>
                 <button id="analyzer-tab-breakout" type="button" role="tab" aria-selected="false" aria-controls="analyzer-breakout">Frecuencia histórica de ruptura</button>
               </div>
               <span id="analyzer-sub">Los campos llegan precargados con lo que el panel ya detectó</span>
@@ -250,6 +251,23 @@
                 <span id="range-hint" class="zone-hint">Velas diarias. Sin fechas, usa las últimas 180 sesiones.</span>
               </form>
               <div id="range-body" class="zone-body"></div>
+            </section>
+
+            <!-- LA VENTANA SE ELIGE. Ninguna otra ruta estructural aceptaba un rango: siete
+                 tomaban `symbol` a secas y cuatro un RETROCESO -«hacia atras desde ahora»-, que
+                 no es un rango. Con un retroceso no se puede preguntar por el viernes, y menos
+                 auditar la respuesta manana. Por eso son dos instantes y no un desplegable. -->
+            <section id="analyzer-tramo" class="analyzer-pane" role="tabpanel" aria-labelledby="analyzer-tab-tramo" hidden>
+              <p class="analyzer-lead" id="tramo-sub">Qué estructura estaba ocurriendo — o ninguna</p>
+              <form id="tramo-form" class="zone-form" autocomplete="off">
+                <label for="tramo-desde">Desde</label>
+                <input id="tramo-desde" type="datetime-local" required>
+                <label for="tramo-hasta">Hasta</label>
+                <input id="tramo-hasta" type="datetime-local">
+                <button type="submit">Leer el tramo</button>
+                <span id="tramo-hint" class="zone-hint">Hora UTC. Sin «hasta», llega hasta ahora y se dice el instante exacto que se usó. Se compara siempre contra el tramo anterior de igual duración.</span>
+              </form>
+              <div id="tramo-body" class="zone-body"></div>
             </section>
 
             <section id="analyzer-breakout" class="analyzer-pane" role="tabpanel" aria-labelledby="analyzer-tab-breakout" hidden>

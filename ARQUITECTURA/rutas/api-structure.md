@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `structure` · `app/api.py:1948` (cuerpo hasta la 1951) · decorador en la linea 1947.
+Handler `structure` · `app/api.py:2118` (cuerpo hasta la 2121) · decorador en la linea 2117.
 
 ## Parametros de entrada
 
@@ -56,7 +56,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
+- `app.api.validate_symbol` — `app/api.py:228`
 - `app.scalp_logic.market_structure` — `app/scalp_logic.py:1026`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
@@ -64,12 +64,12 @@ Llamadas directas del handler:
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
 - `app.scalp_logic._cvd_fut_window` — `app/scalp_logic.py:1006`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
 - `app.scalp_logic._pivot_structure` — `app/scalp_logic.py:936`
 - `app.scalp_logic._sign_vote` — `app/scalp_logic.py:954`
 - `app.scalp_logic._structure_layer` — `app/scalp_logic.py:982`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
 
 </details>
 
@@ -85,7 +85,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -96,7 +96,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:114`, `harness/checks/K43-foto-unica.sh:168` | — |
-| **panel** | `static/app.js:1657` | — |
+| **panel** | `static/app.js:1674` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -130,7 +130,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |

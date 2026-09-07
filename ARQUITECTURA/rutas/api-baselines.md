@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `metric_baselines` · `app/api.py:1366` (cuerpo hasta la 1380) · decorador en la linea 1365.
+Handler `metric_baselines` · `app/api.py:1426` (cuerpo hasta la 1440) · decorador en la linea 1425.
 
 ## Parametros de entrada
 
@@ -19,11 +19,11 @@ Handler `metric_baselines` · `app/api.py:1366` (cuerpo hasta la 1380) · decora
 
 | campo | de donde sale |
 |---|---|
-| `fallback_min_ratio` | literal en app/api.py:1374 |
-| `metric` | literal en app/api.py:1373 |
-| `note` | literal en app/api.py:1375 |
-| `symbol` | literal en app/api.py:1372 |
-| `windows` | literal en app/api.py:1379 |
+| `fallback_min_ratio` | literal en app/api.py:1434 |
+| `metric` | literal en app/api.py:1433 |
+| `note` | literal en app/api.py:1435 |
+| `symbol` | literal en app/api.py:1432 |
+| `windows` | literal en app/api.py:1439 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -43,12 +43,12 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
+- `app.api.validate_symbol` — `app/api.py:228`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
 
 </details>
 
@@ -64,7 +64,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -109,7 +109,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.load_baselines` | 14 | **0** | 10 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.metric_baselines` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |

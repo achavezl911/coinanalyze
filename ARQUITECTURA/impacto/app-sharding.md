@@ -15,7 +15,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/sharding.py:13` · clave completa `app.sharding.assigned_symbols`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -76,7 +76,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/sharding.py:6` · clave completa `app.sharding.symbol_shard`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 

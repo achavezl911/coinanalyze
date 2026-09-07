@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_levels` · `app/api.py:2588` (cuerpo hasta la 2644) · decorador en la linea 2587.
+Handler `liquidation_levels` · `app/api.py:2758` (cuerpo hasta la 2814) · decorador en la linea 2757.
 
 ## Parametros de entrada
 
@@ -21,13 +21,13 @@ Handler `liquidation_levels` · `app/api.py:2588` (cuerpo hasta la 2644) · deco
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2640 |
-| `bucket_bps` | literal en app/api.py:2639 |
-| `minutes` | literal en app/api.py:2638 |
-| `rows` | literal en app/api.py:2643 |
-| `symbol` | literal en app/api.py:2637 |
-| `window_end` | literal en app/api.py:2642 |
-| `window_start` | literal en app/api.py:2641 |
+| `as_of` | literal en app/api.py:2810 |
+| `bucket_bps` | literal en app/api.py:2809 |
+| `minutes` | literal en app/api.py:2808 |
+| `rows` | literal en app/api.py:2813 |
+| `symbol` | literal en app/api.py:2807 |
+| `window_end` | literal en app/api.py:2812 |
+| `window_start` | literal en app/api.py:2811 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,8 +54,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:235`
-- `app.api.validate_symbol` — `app/api.py:222`
+- `app.api.records` — `app/api.py:241`
+- `app.api.validate_symbol` — `app/api.py:228`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (7)</summary>
 
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -86,7 +86,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:113`, `harness/checks/K43-foto-unica.sh:166` | — |
-| **panel** | `static/app.js:1686` | — |
+| **panel** | `static/app.js:1703` | — |
 | **readme** | — | `README.md:488`, `README.md:500` |
 | **tests** | `tests/test_v121_hardening.py:29` | — |
 
@@ -124,7 +124,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api.liquidation_levels` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

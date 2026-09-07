@@ -27,7 +27,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/wyckoff.py:183` · clave completa `app.wyckoff._atr_abs`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -52,7 +52,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:42` · clave completa `app.wyckoff._bar_date`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -77,7 +77,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:263` · clave completa `app.wyckoff._bias_read`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -102,7 +102,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:83` · clave completa `app.wyckoff._candidate_rank`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -127,7 +127,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:25` · clave completa `app.wyckoff._clamp`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -152,7 +152,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:54` · clave completa `app.wyckoff._clean_bars`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -177,7 +177,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:197` · clave completa `app.wyckoff._events`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -202,7 +202,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:401` · clave completa `app.wyckoff._phase`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -227,7 +227,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:29` · clave completa `app.wyckoff._quantile`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -252,7 +252,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:66` · clave completa `app.wyckoff._range_bounds`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -277,7 +277,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:251` · clave completa `app.wyckoff._session_date`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -302,7 +302,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:178` · clave completa `app.wyckoff._signed_balance`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -327,7 +327,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:99` · clave completa `app.wyckoff.detect_latest_range`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -352,7 +352,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/wyckoff.py:447` · clave completa `app.wyckoff.wyckoff_auto_read`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 

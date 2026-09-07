@@ -22,19 +22,19 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
 | [`data_gap`](#data-gap) | 12 | 21 | 0 |
 | [`external_macro_observation`](#external-macro-observation) | 2 | 3 | 0 |
-| [`funding_rate`](#funding-rate) | 1 | 3 | 0 |
+| [`funding_rate`](#funding-rate) | 1 | 4 | 0 |
 | [`futures_trades_agg`](#futures-trades-agg) | 2 | 6 | 0 |
 | [`futures_trades_realtime`](#futures-trades-realtime) | 1 | 16 | 0 |
-| [`liquidations`](#liquidations) | 2 | 4 | 0 |
+| [`liquidations`](#liquidations) | 2 | 5 | 0 |
 | [`liquidations_realtime`](#liquidations-realtime) | 1 | 14 | 0 |
 | [`long_short_ratio`](#long-short-ratio) | 2 | 3 | 0 |
 | [`macro_event`](#macro-event) | 2 | 3 | 0 |
 | [`market_feed_health`](#market-feed-health) | 3 | 9 | 0 |
 | [`metric_baseline`](#metric-baseline) | 1 | 14 | 0 |
 | [`metrics_snapshot`](#metrics-snapshot) | 2 | 8 | 0 |
-| [`ohlcv`](#ohlcv) | 4 | 36 | 0 |
+| [`ohlcv`](#ohlcv) | 4 | 37 | 0 |
 | [`oi_bybit`](#oi-bybit) | 1 | 3 | 0 |
-| [`open_interest`](#open-interest) | 1 | 18 | 0 |
+| [`open_interest`](#open-interest) | 1 | 19 | 0 |
 | [`orderbook_depth`](#orderbook-depth) | 1 | 1 | 0 |
 | [`orderbook_snapshot`](#orderbook-snapshot) | 2 | 14 | 0 |
 | [`pipeline_heartbeat`](#pipeline-heartbeat) | 3 | 7 | 1 |
@@ -45,7 +45,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`signal_outcome`](#signal-outcome) | 4 | 3 | 0 |
 | [`signal_outcome_final_visibility`](#signal-outcome-final-visibility) | 1 | 1 | 0 |
 | [`signal_replay_frame`](#signal-replay-frame) | 1 | 1 | 0 |
-| [`spot_trades_agg`](#spot-trades-agg) | 3 | 10 | 0 |
+| [`spot_trades_agg`](#spot-trades-agg) | 3 | 11 | 0 |
 | [`spot_trades_realtime`](#spot-trades-realtime) | 2 | 12 | 0 |
 
 ## LA COBERTURA · que tablas dicen CUANTO del periodo se observo
@@ -326,11 +326,12 @@ La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:651`
 
-**Si cambia el contenido o el esquema de `funding_rate`, estas 3 rutas lo notan:**
+**Si cambia el contenido o el esquema de `funding_rate`, estas 4 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
 - [`/api/funding-context`](rutas/api-funding-context.md)
+- [`/api/rango/estructura`](rutas/api-rango-estructura.md)
 
 ### futures_trades_agg
 
@@ -386,11 +387,12 @@ La escriben:
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:657`
 - `app.ingest.upsert_liquidations` — **INSERT** en `app/ingest.py:316`
 
-**Si cambia el contenido o el esquema de `liquidations`, estas 4 rutas lo notan:**
+**Si cambia el contenido o el esquema de `liquidations`, estas 5 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
 - [`/api/liquidations`](rutas/api-liquidations.md)
+- [`/api/rango/estructura`](rutas/api-rango-estructura.md)
 - [`/api/structure`](rutas/api-structure.md)
 
 ### liquidations_realtime
@@ -526,7 +528,7 @@ La escriben:
 - `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:200`
 - `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:200`
 
-**Si cambia el contenido o el esquema de `ohlcv`, estas 36 rutas lo notan:**
+**Si cambia el contenido o el esquema de `ohlcv`, estas 37 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
@@ -551,6 +553,7 @@ La escriben:
 - [`/api/profile`](rutas/api-profile.md)
 - [`/api/quality/feeds`](rutas/api-quality-feeds.md)
 - [`/api/range/validate`](rutas/api-range-validate.md)
+- [`/api/rango/estructura`](rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](rutas/api-scalp-execution-cost.md)
@@ -587,7 +590,7 @@ La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:645`
 
-**Si cambia el contenido o el esquema de `open_interest`, estas 18 rutas lo notan:**
+**Si cambia el contenido o el esquema de `open_interest`, estas 19 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
@@ -600,6 +603,7 @@ La escriben:
 - [`/api/passive-flow`](rutas/api-passive-flow.md)
 - [`/api/profile`](rutas/api-profile.md)
 - [`/api/quality/feeds`](rutas/api-quality-feeds.md)
+- [`/api/rango/estructura`](rutas/api-rango-estructura.md)
 - [`/api/scalp/alerts`](rutas/api-scalp-alerts.md)
 - [`/api/scalp/delta-matrix`](rutas/api-scalp-delta-matrix.md)
 - [`/api/scalp/execution-cost`](rutas/api-scalp-execution-cost.md)
@@ -777,7 +781,7 @@ La escriben:
 - `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:264`
 - `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:285`
 
-**Si cambia el contenido o el esquema de `spot_trades_agg`, estas 10 rutas lo notan:**
+**Si cambia el contenido o el esquema de `spot_trades_agg`, estas 11 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
@@ -788,6 +792,7 @@ La escriben:
 - [`/api/divergences`](rutas/api-divergences.md)
 - [`/api/hypothesis`](rutas/api-hypothesis.md)
 - [`/api/price-barriers`](rutas/api-price-barriers.md)
+- [`/api/rango/estructura`](rutas/api-rango-estructura.md)
 - [`/api/whale/delta`](rutas/api-whale-delta.md)
 
 ### spot_trades_realtime

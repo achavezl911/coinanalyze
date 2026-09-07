@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `delta_profile_endpoint` · `app/api.py:1655` (cuerpo hasta la 1672) · decorador en la linea 1654.
+Handler `delta_profile_endpoint` · `app/api.py:1781` (cuerpo hasta la 1806) · decorador en la linea 1780.
 
 ## Parametros de entrada
 
@@ -14,17 +14,18 @@ Handler `delta_profile_endpoint` · `app/api.py:1655` (cuerpo hasta la 1672) · 
 | `interval` | `str` | `'4hour'` | no |
 | `days` | `Annotated[int, Query(ge=1, le=400)]` | `90` | no |
 | `price` | `Annotated[float | None, Query(gt=0)]` | `None` | no |
+| `desde` | `str | None` | `None` | no |
+| `hasta` | `str | None` | `None` | no |
 
 ## Campos que publica
 
-4 campos derivados. La procedencia dice de donde sale cada uno.
+3 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/delta_profile.py:269 |
-| `coverage.served_window` | literal en app/delta_profile.py:269 |
-| `requested_days` | literal en app/delta_profile.py:268 |
-| `symbol` | literal en app/delta_profile.py:267 |
+| `coverage` | literal en app/delta_profile.py:274 |
+| `requested_days` | literal en app/delta_profile.py:273 |
+| `symbol` | literal en app/delta_profile.py:272 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -46,12 +47,14 @@ LEE:
 
 ## Funciones que la componen
 
-11 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+13 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
+- `app.api.declara_ventana` — `app/api.py:1571`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.ventana_pedida` — `app/api.py:1538`
 - `app.delta_profile.delta_profile` — `app/delta_profile.py:222`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
@@ -83,8 +86,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:1667` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 422 | hace falta `desde` | `app/api.py:1555` | una funcion de su cierre |
+| 422 | `hasta` sin `desde` no acota nada | `app/api.py:1558` | una funcion de su cierre |
+| 422 | — | `app/api.py:1563` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1565` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1567` | una funcion de su cierre |
+| 422 | — | `app/api.py:1798` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -95,7 +103,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:120` | — |
-| **panel** | `static/app.js:1137` | — |
+| **panel** | `static/app.js:1154` | — |
 | **readme** | — | `README.md:111` |
 | **tests** | `tests/test_dashboard_presentation.py:122` | — |
 
@@ -111,9 +119,9 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-Claves temporales entre los campos que publica:
-
-- `coverage.served_window`
+**Ninguna clave temporal entre los campos derivados.** O no publica marca de
+tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
+mismo que lo primero: la foto de produccion lo decide, no este documento.
 
 ## Capa DECLARADA
 
@@ -131,11 +139,13 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.expected_buckets` | 12 | **0** | 21 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-data_gaps.md) |
+| `app.api.ventana_pedida` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-api.md) |
+| `app.api.declara_ventana` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |
 | `app.api.delta_profile_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.delta_profile._floor_log10` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-delta_profile.md) |
 | `app.delta_profile.bucket_index` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-delta_profile.md) |

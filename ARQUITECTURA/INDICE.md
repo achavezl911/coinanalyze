@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-68 rutas descubiertas en el arbol. Para trabajar sobre una,
+69 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -21,11 +21,11 @@
 | `/api/daily` | GET | 12 | 2 | 13 | [ficha](rutas/api-daily.md) |
 | `/api/dashboard/state` | GET | 165 | 14 | 44 | [ficha](rutas/api-dashboard-state.md) |
 | `/api/data-confidence` | GET | 10 | 6 | 10 | [ficha](rutas/api-data-confidence.md) |
-| `/api/delta-profile` | GET | 4 | 1 | 11 | [ficha](rutas/api-delta-profile.md) |
+| `/api/delta-profile` | GET | 3 | 1 | 13 | [ficha](rutas/api-delta-profile.md) |
 | `/api/desk/state` | GET | 26 | 13 | 78 | [ficha](rutas/api-desk-state.md) |
 | `/api/divergences` | GET | 12 | 3 | 7 | [ficha](rutas/api-divergences.md) |
 | `/api/external-macro` | GET | 1 | 6 | 48 | [ficha](rutas/api-external-macro.md) |
-| `/api/flow/spot-vs-perp` | GET | 12 | 1 | 4 | [ficha](rutas/api-flow-spot-vs-perp.md) |
+| `/api/flow/spot-vs-perp` | GET | 12 | 1 | 6 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
 | `/api/healthz` | GET | 7 | 3 | 5 | [ficha](rutas/api-healthz.md) |
 | `/api/hypothesis` | GET | 82 | 12 | 76 | [ficha](rutas/api-hypothesis.md) |
@@ -44,6 +44,7 @@
 | `/api/profile` | GET | 14 | 5 | 28 | [ficha](rutas/api-profile.md) |
 | `/api/quality/feeds` | GET | 7 | 10 | 43 | [ficha](rutas/api-quality-feeds.md) |
 | `/api/range/validate` | GET | 5 | 1 | 8 | [ficha](rutas/api-range-validate.md) |
+| `/api/rango/estructura` | GET | 51 | 5 | 8 | [ficha](rutas/api-rango-estructura.md) |
 | `/api/reference-levels` | GET | 22 | 1 | 3 | [ficha](rutas/api-reference-levels.md) |
 | `/api/scalp/absorption` | GET | **0 · PENDIENTE** | 2 | 8 | [ficha](rutas/api-scalp-absorption.md) |
 | `/api/scalp/alerts` | GET | 2 | 8 | 26 | [ficha](rutas/api-scalp-alerts.md) |
@@ -71,14 +72,14 @@
 | `/api/verdicts` | GET | 12 | 2 | 7 | [ficha](rutas/api-verdicts.md) |
 | `/api/volatility` | GET | 7 | 2 | 9 | [ficha](rutas/api-volatility.md) |
 | `/api/volume-profile` | GET | 17 | 1 | 6 | [ficha](rutas/api-volume-profile.md) |
-| `/api/whale/delta` | GET | 15 | 2 | 9 | [ficha](rutas/api-whale-delta.md) |
+| `/api/whale/delta` | GET | 5 | 2 | 10 | [ficha](rutas/api-whale-delta.md) |
 | `/api/wyckoff` | GET | 10 | 2 | 22 | [ficha](rutas/api-wyckoff.md) |
-| `/api/zone/analysis` | GET | 13 | 2 | 12 | [ficha](rutas/api-zone-analysis.md) |
+| `/api/zone/analysis` | GET | 8 | 2 | 14 | [ficha](rutas/api-zone-analysis.md) |
 | `/metrics` | GET | **0 · PENDIENTE** | 6 | 1 | [ficha](rutas/metrics.md) |
 
 ## Rutas cuyos campos NO se han podido derivar
 
-5 de 68. Cada una con su motivo en la ficha.
+5 de 69. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
@@ -95,19 +96,19 @@
 | `daily_verdict_snapshot` | 3 | 0 |
 | `data_gap` | 21 | 0 |
 | `external_macro_observation` | 3 | 0 |
-| `funding_rate` | 3 | 0 |
+| `funding_rate` | 4 | 0 |
 | `futures_trades_agg` | 6 | 0 |
 | `futures_trades_realtime` | 16 | 0 |
-| `liquidations` | 4 | 0 |
+| `liquidations` | 5 | 0 |
 | `liquidations_realtime` | 14 | 0 |
 | `long_short_ratio` | 3 | 0 |
 | `macro_event` | 3 | 0 |
 | `market_feed_health` | 9 | 0 |
 | `metric_baseline` | 14 | 0 |
 | `metrics_snapshot` | 8 | 0 |
-| `ohlcv` | 36 | 0 |
+| `ohlcv` | 37 | 0 |
 | `oi_bybit` | 3 | 0 |
-| `open_interest` | 18 | 0 |
+| `open_interest` | 19 | 0 |
 | `orderbook_depth` | 1 | 0 |
 | `orderbook_snapshot` | 14 | 0 |
 | `pipeline_heartbeat` | 7 | 1 |
@@ -118,5 +119,5 @@
 | `signal_outcome` | 3 | 0 |
 | `signal_outcome_final_visibility` | 1 | 0 |
 | `signal_replay_frame` | 1 | 0 |
-| `spot_trades_agg` | 10 | 0 |
+| `spot_trades_agg` | 11 | 0 |
 | `spot_trades_realtime` | 12 | 0 |

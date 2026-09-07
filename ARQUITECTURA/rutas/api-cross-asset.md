@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cross_asset_endpoint` · `app/api.py:1770` (cuerpo hasta la 1773) · decorador en la linea 1769.
+Handler `cross_asset_endpoint` · `app/api.py:1940` (cuerpo hasta la 1943) · decorador en la linea 1939.
 
 ## Parametros de entrada
 
@@ -18,14 +18,14 @@ Handler `cross_asset_endpoint` · `app/api.py:1770` (cuerpo hasta la 1773) · de
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3373 |
-| `available` | literal en app/scalp_logic.py:3375 |
-| `base` | literal en app/scalp_logic.py:3374 |
-| `beta_vs_base` | literal en app/scalp_logic.py:3377 |
-| `correlation` | literal en app/scalp_logic.py:3376 |
-| `note` | literal en app/scalp_logic.py:3379 |
-| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3378 |
-| `symbol` | literal en app/scalp_logic.py:3372 |
+| `as_of` | literal en app/scalp_logic.py:3378 |
+| `available` | literal en app/scalp_logic.py:3380 |
+| `base` | literal en app/scalp_logic.py:3379 |
+| `beta_vs_base` | literal en app/scalp_logic.py:3382 |
+| `correlation` | literal en app/scalp_logic.py:3381 |
+| `note` | literal en app/scalp_logic.py:3384 |
+| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3383 |
+| `symbol` | literal en app/scalp_logic.py:3377 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -48,18 +48,18 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3341`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3346`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3306`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3320`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3293`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3285`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3311`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3325`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3298`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3290`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
 
 </details>
 
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -120,7 +120,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |

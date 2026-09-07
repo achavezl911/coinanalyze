@@ -225,14 +225,19 @@ async def delta_profile(
     interval: str,
     days: int,
     price: float | None = None,
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
 ) -> dict[str, Any]:
     """Perfil por nivel de precio sobre la ventana pedida.
 
     La cobertura real manda: 4h llega a ~300 días y 5min a ~9 (Coinalyze no sirve más 5min
     hacia atrás). Se pide lo que se pueda y la respuesta declara cuántas velas entraron.
     """
-    as_of = datetime.now(UTC)
-    since = as_of - timedelta(days=days)
+    # VENTANA ELEGIBLE. Sin `hasta` el fin es ahora -y se devuelve el instante que se uso, que
+    # es lo unico que permite auditar despues una respuesta de fin abierto-. Con `desde` el
+    # retroceso `days` deja de mandar: se respeta lo pedido.
+    as_of = hasta or datetime.now(UTC)
+    since = desde or (as_of - timedelta(days=days))
     rows = await conn.fetch(
         "SELECT ts, low, high, close, volume, buy_volume FROM ohlcv "
         "WHERE symbol=$1 AND interval=$2 AND ts >= $3 "

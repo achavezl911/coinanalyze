@@ -1269,10 +1269,15 @@ def controles_de_respuesta_conocida(impacto: dict, tablas: dict, ey: dict) -> di
         "por_tabla_k0": i.get("por_tabla_k0", []),
         "por_tabla_k2_cota": len(i.get("por_tabla", [])),
         "rutas_que_leen_spot_trades_agg": lect_spot,
-        "esperado": ("por_tabla_k0 == las 10 lectoras de spot_trades_agg, /api/cvd/spot "
+        # 10 -> 11 el 2026-09-07: /api/rango/estructura lee spot_trades_agg de verdad -es la
+        # pata de CVD spot de su veredicto-, asi que la lectora numero 11 es CORRECTA y el que
+        # estaba desfasado era este literal. Lo que da poder al control no es el 10: es la
+        # IGUALDAD DE CONJUNTOS con las lectoras, la pertenencia de /api/cvd/spot y que la cota
+        # k<=2 sea ESTRICTAMENTE mayor -18 hoy-. Las tres siguen exigiendose intactas.
+        "esperado": ("por_tabla_k0 == las 11 lectoras de spot_trades_agg, /api/cvd/spot "
                      "dentro; y la cota k<=2 es MAYOR, no igual"),
         "cuadra": (i.get("por_tabla_k0", []) == lect_spot
-                   and len(lect_spot) == 10
+                   and len(lect_spot) == 11
                    and "/api/cvd/spot" in lect_spot
                    and len(i.get("por_tabla", [])) > len(lect_spot)),
     }

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_map_endpoint` · `app/api.py:1641` (cuerpo hasta la 1644) · decorador en la linea 1640.
+Handler `liquidation_map_endpoint` · `app/api.py:1767` (cuerpo hasta la 1770) · decorador en la linea 1766.
 
 ## Parametros de entrada
 
@@ -18,22 +18,22 @@ Handler `liquidation_map_endpoint` · `app/api.py:1641` (cuerpo hasta la 1644) �
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3519 |
-| `atr_1h` | literal en app/scalp_logic.py:3518 |
-| `available` | literal en app/scalp_logic.py:3515 |
-| `bucket_size` | literal en app/scalp_logic.py:3523 |
-| `buckets_total` | literal en app/scalp_logic.py:3528 |
-| `cumulative_within_band` | literal en app/scalp_logic.py:3532 |
-| `current_price` | literal en app/scalp_logic.py:3517 |
-| `levels` | literal en app/scalp_logic.py:3531 |
-| `levels_shown` | literal en app/scalp_logic.py:3529 |
-| `note` | literal en app/scalp_logic.py:3533 |
-| `symbol` | literal en app/scalp_logic.py:3514 |
-| `type` | literal en app/scalp_logic.py:3516 |
-| `window_end` | literal en app/scalp_logic.py:3521 |
-| `window_minutes` | literal en app/scalp_logic.py:3522 |
-| `window_notional` | literal en app/scalp_logic.py:3530 |
-| `window_start` | literal en app/scalp_logic.py:3520 |
+| `as_of` | literal en app/scalp_logic.py:3524 |
+| `atr_1h` | literal en app/scalp_logic.py:3523 |
+| `available` | literal en app/scalp_logic.py:3520 |
+| `bucket_size` | literal en app/scalp_logic.py:3528 |
+| `buckets_total` | literal en app/scalp_logic.py:3533 |
+| `cumulative_within_band` | literal en app/scalp_logic.py:3537 |
+| `current_price` | literal en app/scalp_logic.py:3522 |
+| `levels` | literal en app/scalp_logic.py:3536 |
+| `levels_shown` | literal en app/scalp_logic.py:3534 |
+| `note` | literal en app/scalp_logic.py:3538 |
+| `symbol` | literal en app/scalp_logic.py:3519 |
+| `type` | literal en app/scalp_logic.py:3521 |
+| `window_end` | literal en app/scalp_logic.py:3526 |
+| `window_minutes` | literal en app/scalp_logic.py:3527 |
+| `window_notional` | literal en app/scalp_logic.py:3535 |
+| `window_start` | literal en app/scalp_logic.py:3525 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -58,14 +58,14 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3457`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3462`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 
-- `app.scalp_logic._atr` — `app/scalp_logic.py:2926`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:2931`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:2915`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:2920`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -132,7 +132,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._resample_highs_lows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._atr` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |

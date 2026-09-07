@@ -14,7 +14,7 @@
     "/api/daily": "3e6a9bf493ddd78d",
     "/api/dashboard/state": "28ca0d11c46df493",
     "/api/data-confidence": "0369b6e7b8c77797",
-    "/api/delta-profile": "81fb1b0f67022b25",
+    "/api/delta-profile": "7e8fc3e6327119b2",
     "/api/desk/state": "9998d24cd0afc5bd",
     "/api/divergences": "35a889cb8697f1fa",
     "/api/external-macro": "5d42834f5d0ea7fb",
@@ -37,6 +37,7 @@
     "/api/profile": "8eb1233c61208258",
     "/api/quality/feeds": "98c16baa668346a0",
     "/api/range/validate": "a54b47dfcef420cb",
+    "/api/rango/estructura": "b208c7e13706ed81",
     "/api/reference-levels": "7f239cd50d8f58eb",
     "/api/scalp/absorption": "ce95df1d14bf3b65",
     "/api/scalp/alerts": "b7af6dea006a1b75",
@@ -64,9 +65,9 @@
     "/api/verdicts": "7d46a0aea04a88e3",
     "/api/volatility": "212f8ae0ba6d91f8",
     "/api/volume-profile": "86654795311d6300",
-    "/api/whale/delta": "94d05601fc95410e",
+    "/api/whale/delta": "01cad5d6183b8b6b",
     "/api/wyckoff": "a5634651c031dd30",
-    "/api/zone/analysis": "da2b5543806878c9",
+    "/api/zone/analysis": "a2862d1c0a1729db",
     "/metrics": "85fd30d67170fd17"
   },
   "version_marca": 2

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `context_metadata_endpoint` · `app/api.py:1756` (cuerpo hasta la 1759) · decorador en la linea 1755.
+Handler `context_metadata_endpoint` · `app/api.py:1899` (cuerpo hasta la 1902) · decorador en la linea 1898.
 
 ## Parametros de entrada
 
@@ -18,12 +18,12 @@ Handler `context_metadata_endpoint` · `app/api.py:1756` (cuerpo hasta la 1759) 
 
 | campo | de donde sale |
 |---|---|
-| `calc_version` | literal en app/scalp_logic.py:3661 |
-| `feeds` | literal en app/scalp_logic.py:3663 |
-| `generated_at` | literal en app/scalp_logic.py:3662 |
-| `note` | literal en app/scalp_logic.py:3665 |
-| `symbol` | literal en app/scalp_logic.py:3660 |
-| `venues_note` | literal en app/scalp_logic.py:3664 |
+| `calc_version` | literal en app/scalp_logic.py:3666 |
+| `feeds` | literal en app/scalp_logic.py:3668 |
+| `generated_at` | literal en app/scalp_logic.py:3667 |
+| `note` | literal en app/scalp_logic.py:3670 |
+| `symbol` | literal en app/scalp_logic.py:3665 |
+| `venues_note` | literal en app/scalp_logic.py:3669 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -40,8 +40,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3636`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3641`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
 
@@ -55,7 +55,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -101,7 +101,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.context_metadata` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.context_metadata_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

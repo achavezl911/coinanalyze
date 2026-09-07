@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `divergences_endpoint` · `app/api.py:1844` (cuerpo hasta la 1847) · decorador en la linea 1843.
+Handler `divergences_endpoint` · `app/api.py:2014` (cuerpo hasta la 2017) · decorador en la linea 2013.
 
 ## Parametros de entrada
 
@@ -18,18 +18,18 @@ Handler `divergences_endpoint` · `app/api.py:1844` (cuerpo hasta la 1847) · de
 
 | campo | de donde sale |
 |---|---|
-| `available` | literal en app/scalp_logic.py:2195 |
-| `intraday` | literal en app/scalp_logic.py:2201 |
-| `intraday.available` | literal en app/scalp_logic.py:2086 |
-| `intraday.omitted` | literal en app/scalp_logic.py:2086 |
-| `intraday.windows` | literal en app/scalp_logic.py:2086 |
-| `note` | literal en app/scalp_logic.py:2202 |
-| `sessions` | literal en app/scalp_logic.py:2196 |
-| `summary` | literal en app/scalp_logic.py:2198 |
-| `sustained_windows_evaluated` | literal en app/scalp_logic.py:2200 |
-| `symbol` | literal en app/scalp_logic.py:2194 |
-| `windows` | literal en app/scalp_logic.py:2197 |
-| `windows_confirming` | literal en app/scalp_logic.py:2199 |
+| `available` | literal en app/scalp_logic.py:2200 |
+| `intraday` | literal en app/scalp_logic.py:2206 |
+| `intraday.available` | literal en app/scalp_logic.py:2091 |
+| `intraday.omitted` | literal en app/scalp_logic.py:2091 |
+| `intraday.windows` | literal en app/scalp_logic.py:2091 |
+| `note` | literal en app/scalp_logic.py:2207 |
+| `sessions` | literal en app/scalp_logic.py:2201 |
+| `summary` | literal en app/scalp_logic.py:2203 |
+| `sustained_windows_evaluated` | literal en app/scalp_logic.py:2205 |
+| `symbol` | literal en app/scalp_logic.py:2199 |
+| `windows` | literal en app/scalp_logic.py:2202 |
+| `windows_confirming` | literal en app/scalp_logic.py:2204 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -64,15 +64,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2073`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2078`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
-- `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:1958`
-- `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:1945`
-- `app.scalp_logic._slope_pct` — `app/scalp_logic.py:1913`
+- `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:1963`
+- `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:1950`
+- `app.scalp_logic._slope_pct` — `app/scalp_logic.py:1918`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>
@@ -89,7 +89,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -100,7 +100,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:110`, `harness/checks/K43-foto-unica.sh:159` | `harness/checks/K43-foto-unica.sh:212` |
-| **panel** | `static/app.js:1730` | — |
+| **panel** | `static/app.js:1747` | — |
 | **readme** | — | `README.md:281` |
 
 **La llama el panel: es superficie de producto.**
@@ -135,7 +135,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._complete_tail_values` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._intraday_divergences` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |

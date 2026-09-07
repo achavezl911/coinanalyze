@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `flow_spot_vs_perp` · `app/api.py:1479` (cuerpo hasta la 1492) · decorador en la linea 1478.
+Handler `flow_spot_vs_perp` · `app/api.py:1596` (cuerpo hasta la 1618) · decorador en la linea 1595.
 
 ## Parametros de entrada
 
@@ -13,6 +13,8 @@ Handler `flow_spot_vs_perp` · `app/api.py:1479` (cuerpo hasta la 1492) · decor
 | `symbol` | `str` | — | si |
 | `interval` | `str` | `'4hour'` | no |
 | `days` | `Annotated[int, Query(ge=1, le=730)]` | `90` | no |
+| `desde` | `str | None` | `None` | no |
+| `hasta` | `str | None` | `None` | no |
 
 ## Campos que publica
 
@@ -20,18 +22,18 @@ Handler `flow_spot_vs_perp` · `app/api.py:1479` (cuerpo hasta la 1492) · decor
 
 | campo | de donde sale |
 |---|---|
-| `buckets` | literal en app/scalp_logic.py:5805 |
-| `buckets_with_both_legs` | literal en app/scalp_logic.py:5806 |
-| `coverage_pct` | literal en app/scalp_logic.py:5807 |
-| `interval` | literal en app/scalp_logic.py:5803 |
-| `reason` | literal en app/scalp_logic.py:5739 |
-| `rows` | literal en app/scalp_logic.py:5810 |
-| `spot_symbol` | literal en app/scalp_logic.py:5801 |
-| `state_counts` | literal en app/scalp_logic.py:5809 |
-| `status` | literal en app/scalp_logic.py:5808 |
-| `symbol` | literal en app/scalp_logic.py:5800 |
-| `unit` | literal en app/scalp_logic.py:5804 |
-| `venue` | literal en app/scalp_logic.py:5802 |
+| `buckets` | literal en app/scalp_logic.py:5817 |
+| `buckets_with_both_legs` | literal en app/scalp_logic.py:5818 |
+| `coverage_pct` | literal en app/scalp_logic.py:5819 |
+| `interval` | literal en app/scalp_logic.py:5815 |
+| `reason` | literal en app/scalp_logic.py:5749 |
+| `rows` | literal en app/scalp_logic.py:5822 |
+| `spot_symbol` | literal en app/scalp_logic.py:5813 |
+| `state_counts` | literal en app/scalp_logic.py:5821 |
+| `status` | literal en app/scalp_logic.py:5820 |
+| `symbol` | literal en app/scalp_logic.py:5812 |
+| `unit` | literal en app/scalp_logic.py:5816 |
+| `venue` | literal en app/scalp_logic.py:5814 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -49,18 +51,20 @@ LEE:
 
 ## Funciones que la componen
 
-4 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+6 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:5723`
+- `app.api.declara_ventana` — `app/api.py:1571`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.ventana_pedida` — `app/api.py:1538`
+- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:5728`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4456`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4461`
 
 </details>
 
@@ -78,8 +82,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1487` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 422 | hace falta `desde` | `app/api.py:1555` | una funcion de su cierre |
+| 422 | `hasta` sin `desde` no acota nada | `app/api.py:1558` | una funcion de su cierre |
+| 422 | — | `app/api.py:1563` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1565` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1567` | una funcion de su cierre |
+| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1610` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -125,9 +134,11 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.flow_confirmation` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.api.ventana_pedida` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-api.md) |
+| `app.api.declara_ventana` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |
 | `app.api.flow_spot_vs_perp` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.spot_perp_flow` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
 

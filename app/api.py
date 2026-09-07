@@ -30,7 +30,12 @@ from app.ai_context import (
     normalize_profile,
     orderbook_freshness,
 )
-from app.config import SUPPORTED_SYMBOLS, WS_SYMBOL_MAP, get_settings
+from app.config import (
+    SUPPORTED_SYMBOLS,
+    WHALE_THRESHOLD_MAP,
+    WS_SYMBOL_MAP,
+    get_settings,
+)
 from app.daily_agg import (
     DAILY_VERDICT_LOGIC_VERSION,
     DAILY_VERDICT_OUTCOME_VERSION,
@@ -55,6 +60,7 @@ from app.external_macro import align_with_internal, external_macro_context
 from app.interpretation import cvd_swing_read, daily_flow_read, evaluate_setups
 from app.logging_setup import configure_logging
 from app.metrics import session_bounds
+from app.rango import estructura_de_rango
 from app.scalp_logic import (
     ABSORPTION_MIN_RATIO,
     EXECUTION_PROFILES,
@@ -1033,6 +1039,58 @@ async def liquidation_series(
         )
 
 
+def declarar_tramo_no_medible(payload: dict[str, Any], ws_symbol: str) -> None:
+    """EL CERO NO ES UNA RESPUESTA.
+
+    `coverage` y `data_gaps` hablan del FEED y dicen la verdad -llega entero-, pero de ahi un
+    consumidor deducia "medido, y no hubo manos grandes". Es lo contrario: el umbral exige UNA
+    OPERACION SUELTA de `whale_threshold_usd` -5 000 000 USD en BTC- y en spot eso no pasa nunca.
+
+    MEDIDO el 2026-09-07 contra 140, en 7 dias: BTC 0 de 20 118 minutos con tramo, ETH 3 de
+    20 117, SOL 65 de 20 118. Y en metrics_snapshot, 24 h: BTC 0 de 1727 filas con
+    whale_intensity, SOL 1727 de 1727.
+
+    EL CONTROL QUE DECIDE es el FUTURO DEL MISMO BTC en los mismos 7 dias: su umbral es
+    `large_trade_threshold_usd` = 1 000 000 -CINCO VECES MENOR- y dispara 117 de 4 340 minutos.
+    Mismo activo, mismos dias, misma idea de «una operacion grande»: el futuro la ve 117 veces
+    y el spot ninguna. No es que no haya manos grandes; es que este umbral no llega.
+
+    NO SE INVENTA UN UMBRAL. Cual seria el bueno NO SE PUEDE calcular con lo que se guarda: la
+    casa solo tiene agregados por minuto. El unico proxy de operacion suelta -los cubos con
+    trade_count=1- da OCHO casos en toda la historia (2026-07-28..2026-09-06, mayor 7 004 USD,
+    mediana 78), y ocho observaciones no describen ninguna distribucion. ESO es el hallazgo, y
+    se publica junto con lo que haria falta para medirlo.
+
+    Y se CALCULA, no se decreta: 0 de N cubos con tramo lo enciende, 1 de N lo apaga. Por eso
+    SOL, cuyo umbral si se alcanza, no lo lleva. El control se mueve solo, dentro del producto.
+    """
+    servidas = payload.get("rows") or []
+    con_tramo = sum(1 for fila in servidas if (fila.get("whale_delta") or 0) != 0)
+    if not servidas or con_tramo:
+        return
+    payload["tramo_no_medible"] = {
+        "medido": False,
+        "que_pasa": (
+            f"El tramo de operaciones grandes vale cero en los {len(servidas)} cubos servidos. "
+            f"NO significa que no haya manos grandes: significa que con este umbral no se ven."
+        ),
+        "umbral_usd": WHALE_THRESHOLD_MAP[ws_symbol],
+        "umbral_es_por": "UNA OPERACION SUELTA, no el volumen del cubo",
+        "cubos_con_tramo": con_tramo,
+        "cubos_servidos": len(servidas),
+        "para_poder_medirlo": (
+            "haria falta guardar el tamaño de cada operacion -aunque fuese un histograma-; hoy "
+            "solo se guardan agregados por minuto, asi que el umbral correcto NO SE PUEDE "
+            "calcular con los datos que hay."
+        ),
+        "no_vota": (
+            "este tramo no participa en el regimen: whale_classification se abstiene (K59) y "
+            "compute_regime renormaliza sobre los componentes medidos."
+        ),
+    }
+    return payload
+
+
 @app.get("/api/whale/delta")
 async def whale_delta(
     symbol: str,
@@ -1090,7 +1148,7 @@ async def whale_delta(
         # cobertura SI se puede medir contra la cadencia, y por eso este endpoint es el que
         # sale con status "undeclared": faltan buckets y nadie los ha apuntado. Es la
         # diferencia entre "no falta nada" y "no lo estamos mirando".
-        return await declared_series_response(
+        payload = await declared_series_response(
             conn,
             records(rows),
             interval=interval,
@@ -1101,6 +1159,8 @@ async def whale_delta(
             symbol=selected,
             gap_symbol=ws_symbol,
         )
+        declarar_tramo_no_medible(payload, ws_symbol)
+        return payload
 
 
 @app.get("/api/scalp/summary")
@@ -1475,21 +1535,87 @@ def _slippage_para(
     return min(valores) if valores else None
 
 
+def ventana_pedida(
+    desde: str | None, hasta: str | None, *, obligatoria: bool = False
+) -> tuple[datetime | None, datetime | None]:
+    """Traduce `desde`/`hasta` a dos instantes, o revienta con 422 diciendo por que.
+
+    UN SOLO SITIO para las cuatro rutas que aceptan ventana, porque cuatro copias de una
+    validacion son cuatro criterios distintos en cuanto alguien toque uno.
+
+    `hasta` ausente = FIN ABIERTO, hasta ahora. Es deliberado que se pueda: el panel tiene que
+    saber hacer las dos cosas. Lo que no puede pasar es que una respuesta de fin abierto no diga
+    QUE instante uso, porque entonces no se puede volver a pedir cerrada ni auditar.
+
+    La casa ya tenia rango en /api/signals/* con los nombres `since`/`until`. Aqui se usan
+    `desde`/`hasta` porque asi se pidio; los dos vocabularios conviven y conviene unificarlos.
+    """
+    if desde is None and hasta is None:
+        if obligatoria:
+            raise HTTPException(status_code=422, detail="hace falta `desde`")
+        return None, None
+    if desde is None:
+        raise HTTPException(status_code=422, detail="`hasta` sin `desde` no acota nada")
+    try:
+        a = datetime.fromisoformat(desde)
+        b = datetime.fromisoformat(hasta) if hasta else None
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"desde/hasta no son ISO-8601: {exc}") from exc
+    if a.tzinfo is None or (b is not None and b.tzinfo is None):
+        raise HTTPException(status_code=422, detail="desde/hasta necesitan zona horaria explicita")
+    if b is not None and b <= a:
+        raise HTTPException(status_code=422, detail="hasta tiene que ser posterior a desde")
+    return a, b
+
+
+def declara_ventana(payload: dict[str, Any], a: datetime | None, b: datetime | None) -> None:
+    """Echa la ventana que SE USO, no la que se pidio. Con fin abierto son distintas.
+
+    MUTA y devuelve None A PROPOSITO. Devolverla y escribir `return declara_ventana(...)`
+    cambia la productora que K31 lee del AST (K31-cubos.py:99-115): pasaria a ser esta
+    ayudante compartida en vez de la productora real, y tres rutas distintas apareceerian
+    compartiendo origen. Un envoltorio de formato no puede cambiar de quien es el dato.
+    """
+    if a is None:
+        return
+    payload["ventana_servida"] = {
+        "desde": a.isoformat(),
+        "hasta": (b or datetime.now(UTC)).isoformat(),
+        "fin_abierto": b is None,
+        "auditable": b is not None,
+        "nota": (
+            "el retroceso `days` NO se aplico: manda la ventana pedida"
+            if b is not None
+            else "fin abierto: se sirvio hasta el instante de arriba, que es el que hay que "
+                 "repetir para volver a obtener esta respuesta"
+        ),
+    }
+
+
 @app.get("/api/flow/spot-vs-perp")
 async def flow_spot_vs_perp(
     symbol: str,
     interval: str = "4hour",
     days: Annotated[int, Query(ge=1, le=730)] = 90,
+    desde: str | None = None,
+    hasta: str | None = None,
 ) -> dict[str, Any]:
-    """Spot vs perp del mismo venue con historia real (300 d a 4hour, ~2 anios a daily)."""
+    """Spot vs perp del mismo venue con historia real (300 d a 4hour, ~2 anios a daily).
+
+    ACEPTA VENTANA porque acumula flujo: la respuesta depende del periodo, asi que el periodo
+    tiene que poder elegirse. Sin `desde` sigue mandando el retroceso `days`.
+    """
     selected = validate_symbol(symbol)
     if interval not in {"4hour", "daily"}:
         raise HTTPException(
             status_code=422,
             detail="interval debe ser 4hour o daily: son los que Coinalyze sirve con historia",
         )
+    a, b = ventana_pedida(desde, hasta)
     async with app.state.pool.acquire() as conn:
-        return await spot_perp_flow(conn, selected, interval, days)
+        payload = await spot_perp_flow(conn, selected, interval, days, a, b)
+    declara_ventana(payload, a, b)
+    return payload
 
 
 @app.get("/api/scalp/orderbook")
@@ -1657,10 +1783,15 @@ async def delta_profile_endpoint(
     interval: str = "4hour",
     days: Annotated[int, Query(ge=1, le=400)] = 90,
     price: Annotated[float | None, Query(gt=0)] = None,
+    desde: str | None = None,
+    hasta: str | None = None,
 ) -> dict[str, Any]:
     """Volumen y delta por nivel de precio sobre la ventana pedida.
 
     Distinto de /api/volume-profile, que es la sesion UTC en curso sin separar compra de venta.
+
+    ACEPTA VENTANA: el docstring ya decia «sobre la ventana pedida», pero la ventana solo podia
+    terminar en `now()`, o sea que no se pedia: se heredaba.
     """
     selected = validate_symbol(symbol)
     if interval not in DELTA_PROFILE_INTERVALS:
@@ -1668,8 +1799,11 @@ async def delta_profile_endpoint(
             status_code=422,
             detail=f"interval must be one of {sorted(DELTA_PROFILE_INTERVALS)}",
         )
+    a, b = ventana_pedida(desde, hasta)
     async with app.state.pool.acquire() as conn:
-        return await delta_profile(conn, selected, interval, days, price)
+        payload = await delta_profile(conn, selected, interval, days, price, a, b)
+    declara_ventana(payload, a, b)
+    return payload
 
 
 @app.get("/api/price-barriers")
@@ -1685,15 +1819,24 @@ async def zone_analysis_endpoint(
     low: Annotated[float, Query(gt=0)],
     high: Annotated[float, Query(gt=0)],
     days: Annotated[int, Query(ge=7, le=365)] = 365,
+    desde: str | None = None,
+    hasta: str | None = None,
 ) -> dict[str, Any]:
-    """Caracter de una zona de precio: acumulacion, distribucion o rotacion sin caracter."""
+    """Caracter de una zona de precio: acumulacion, distribucion o rotacion sin caracter.
+
+    ACEPTA VENTANA, y es la que mas falta hacia: ya nombraba acumulacion y distribucion, pero
+    solo sabia mirar hacia atras desde ahora, asi que no se le podia preguntar por UN tramo.
+    """
     selected = validate_symbol(symbol)
     if low >= high:
         raise HTTPException(status_code=422, detail="low must be below high")
     if high / low > 3:
         raise HTTPException(status_code=422, detail="zone spans more than 3x; narrow it")
+    a, b = ventana_pedida(desde, hasta)
     async with app.state.pool.acquire() as conn:
-        return await zone_analysis(conn, selected, low, high, days)
+        payload = await zone_analysis(conn, selected, low, high, days, a, b)
+    declara_ventana(payload, a, b)
+    return payload
 
 
 @app.get("/api/range/validate")
@@ -1757,6 +1900,33 @@ async def context_metadata_endpoint(symbol: str) -> dict[str, Any]:
     selected = validate_symbol(symbol)
     async with app.state.pool.acquire() as conn:
         return await context_metadata(conn, selected)
+
+
+@app.get("/api/rango/estructura")
+async def rango_estructura(
+    request: Request,
+    symbol: str,
+    desde: str,
+    hasta: str | None = None,
+) -> dict[str, Any]:
+    """Que estructura estaba ocurriendo ENTRE DOS INSTANTES, con su ventana de control.
+
+    Es la unica ruta estructural que acepta un RANGO. Las once que habia toman `symbol` a secas o
+    un RETROCESO (`days`, `limit`), que es «hacia atras desde ahora» y no un rango: no habia donde
+    escribir la pregunta.
+
+    `hasta` es opcional. Sin el, la ventana acaba AHORA y la respuesta echa el instante que uso,
+    para que se pueda volver a pedir cerrada y dar lo mismo.
+    """
+    rechaza_parametros_desconocidos(request, ("symbol", "desde", "hasta"))
+    selected = validate_symbol(symbol)
+    a, b = ventana_pedida(desde, hasta, obligatoria=True)
+    assert a is not None  # `obligatoria` lo garantiza; lo dice para el comprobador de tipos
+    # `spot_trades_agg` se indexa por el ACTIVO BASE -'BTC'-, no por el simbolo del perpetuo.
+    # `WS_SYMBOL_MAP` es el mapa que la casa ya tiene para eso (app/config.py:122).
+    base = WS_SYMBOL_MAP.get(selected, selected.split("USDT")[0])
+    async with app.state.pool.acquire() as conn:
+        return await estructura_de_rango(conn, selected, base, a, b)
 
 
 @app.get("/api/reference-levels")

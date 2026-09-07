@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_basis` · `app/api.py:2581` (cuerpo hasta la 2584) · decorador en la linea 2580.
+Handler `scalp_basis` · `app/api.py:2751` (cuerpo hasta la 2754) · decorador en la linea 2750.
 
 ## Parametros de entrada
 
@@ -18,7 +18,7 @@ Handler `scalp_basis` · `app/api.py:2581` (cuerpo hasta la 2584) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `symbol` | literal en app/scalp_logic.py:5533 |
+| `symbol` | literal en app/scalp_logic.py:5538 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -51,8 +51,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5501`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5506`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
@@ -73,7 +73,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -84,7 +84,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:117`, `harness/checks/K43-foto-unica.sh:176` | — |
-| **panel** | `static/app.js:1684` | — |
+| **panel** | `static/app.js:1701` | — |
 | **readme** | — | `README.md:488`, `README.md:499` |
 | **tests** | `tests/test_v121_hardening.py:28` | — |
 
@@ -120,7 +120,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.basis_quality` | 10 | **0** | 10 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.scalp_basis` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
