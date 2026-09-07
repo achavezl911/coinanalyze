@@ -115,10 +115,11 @@ PY="$REPO/.venv/bin/python"
 # --- EL CONTRATO, EJECUTADO SOBRE LAS VERSIONES VIVAS ------------------------------------
 # Las versiones salen de 140 -lo que produccion escribe- y el contrato del REPO -lo que
 # signal_visibility declara certificable-. Ninguna de las dos es una lista escrita aqui.
-vivas=$("$B/bin/prodsql" "
+_crudo=$("$B/bin/prodsql" "
   SELECT DISTINCT evidence_version FROM signal_observation
    WHERE created_at >= date_trunc('hour', now()) - interval '1 hour'
-   ORDER BY 1" 2>/dev/null | grep -E '^[0-9]+$' | tr '\n' ' ' | sed 's/ $//')
+   ORDER BY 1" 2>/dev/null) || { rc=$?; echo "NO MEDIDO: prodsql no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
+vivas=$(printf '%s\n' "$_crudo" | grep -E '^[0-9]+$' | tr '\n' ' ' | sed 's/ $//')
 [ -n "$vivas" ] || { echo "NO MEDIDO: 140 no dice que evidence_version esta escribiendo"; exit 2; }
 
 reparto=$(cd "$REPO" && "$PY" - $vivas <<'PY' 2>/dev/null
@@ -259,7 +260,7 @@ TODO=1 "$B/bin/prodsql" "
     AND v.verified_visible_at < timestamptz '$hasta'" 2>/dev/null \
   | grep -E '^[0-9]+\|' > "$ORIGEN"
 
-TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta&limit=$((TOPE_FILAS+1))" > "$CUERPO" 2>/dev/null
+TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta&limit=$((TOPE_FILAS+1))" > "$CUERPO" 2>/dev/null || { rc=$?; echo "NO MEDIDO: la API no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
 [ -s "$CUERPO" ] || { echo "NO MEDIDO: $RUTA no devolvio nada (canal)"; exit 2; }
 
 python3 -c '

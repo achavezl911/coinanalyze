@@ -42,7 +42,7 @@ B=/srv/coinanalyze/harness; . "$B/env"
 RUTA=/api/signals/execution
 TOPE_FILAS=400
 
-ventana=$("$B/bin/prodsql" "
+_crudo=$("$B/bin/prodsql" "
   SELECT o.symbol,
          to_char(date_trunc('hour', s.captured_at) AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:00:00\"Z\"'),
          count(*)
@@ -51,7 +51,8 @@ ventana=$("$B/bin/prodsql" "
     AND s.captured_at <  date_trunc('hour', now())
     AND s.status='valid'
   GROUP BY 1,2 HAVING count(*) BETWEEN 20 AND $TOPE_FILAS
-  ORDER BY 2 DESC, 3 DESC LIMIT 1" 2>/dev/null | grep -E '^[A-Z0-9_.]+\|' | head -1)
+  ORDER BY 2 DESC, 3 DESC LIMIT 1" 2>/dev/null) || { rc=$?; echo "NO MEDIDO: prodsql no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
+ventana=$(printf '%s\n' "$_crudo" | grep -E '^[A-Z0-9_.]+\|' | head -1)
 [ -n "$ventana" ] || { echo "NO MEDIDO: ninguna hora cerrada de las ultimas 5 h tiene entre 20 y $TOPE_FILAS capturas validas"; exit 2; }
 
 simbolo=${ventana%%|*}; resto=${ventana#*|}
@@ -81,7 +82,7 @@ TODO=1 "$B/bin/prodsql" "
     AND s.captured_at < timestamptz '$hasta' AND s.status='valid'" 2>/dev/null \
   | grep -E '^[0-9]+\|' > "$ORIGEN"
 
-cuerpo=$(TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta" 2>/dev/null)
+cuerpo=$(TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta" 2>/dev/null) || { rc=$?; echo "NO MEDIDO: la API no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
 [ -n "$cuerpo" ] || { echo "NO MEDIDO: $RUTA no devolvio nada (canal)"; exit 2; }
 
 printf '%s' "$cuerpo" | python3 -c '

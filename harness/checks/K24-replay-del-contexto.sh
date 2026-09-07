@@ -90,7 +90,7 @@ TOPE_FILAS=400
 PY=/srv/coinanalyze/repo/.venv/bin/python
 [ -x "$PY" ] || { echo "NO MEDIDO: falta $PY, que es de donde sale el nucleo que replica"; exit 2; }
 
-ventana=$("$B/bin/prodsql" "
+_crudo=$("$B/bin/prodsql" "
   SELECT o.symbol,
          to_char(date_trunc('hour', fr.context_as_of) AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:00:00\"Z\"'),
          count(*)
@@ -98,7 +98,8 @@ ventana=$("$B/bin/prodsql" "
   WHERE fr.context_as_of >= now() - interval '5 hours'
     AND fr.context_as_of <  date_trunc('hour', now())
   GROUP BY 1,2 HAVING count(*) BETWEEN 20 AND $TOPE_FILAS
-  ORDER BY 2 DESC, 3 DESC LIMIT 1" 2>/dev/null | grep -E '^[A-Z0-9_.]+\|' | head -1)
+  ORDER BY 2 DESC, 3 DESC LIMIT 1" 2>/dev/null) || { rc=$?; echo "NO MEDIDO: prodsql no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
+ventana=$(printf '%s\n' "$_crudo" | grep -E '^[A-Z0-9_.]+\|' | head -1)
 [ -n "$ventana" ] || { echo "NO MEDIDO: ninguna hora cerrada de las ultimas 5 h tiene entre 20 y $TOPE_FILAS frames"; exit 2; }
 
 simbolo=${ventana%%|*}; resto=${ventana#*|}
@@ -147,9 +148,9 @@ TODO=1 "$B/bin/prodsql" "
     AND fr.context_as_of < timestamptz '$hasta'" 2>/dev/null \
   | grep -E '^[0-9]+\|' > "$ORIGEN"
 
-TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta&limit=$TOPE_FILAS" > "$CUERPO" 2>/dev/null
+TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta&limit=$TOPE_FILAS" > "$CUERPO" 2>/dev/null || { rc=$?; echo "NO MEDIDO: la API no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
 [ -s "$CUERPO" ] || { echo "NO MEDIDO: $RUTA no devolvio nada (canal)"; exit 2; }
-TODO=1 "$B/bin/api" "$RUTA_LEDGER?symbol=$simbolo&since=$led_desde&until=$led_hasta&limit=5000" > "$LIBRO" 2>/dev/null
+TODO=1 "$B/bin/api" "$RUTA_LEDGER?symbol=$simbolo&since=$led_desde&until=$led_hasta&limit=5000" > "$LIBRO" 2>/dev/null || { rc=$?; echo "NO MEDIDO: la API no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
 [ -s "$LIBRO" ] || { echo "NO MEDIDO: $RUTA_LEDGER no devolvio nada (canal)"; exit 2; }
 
 "$PY" -c '

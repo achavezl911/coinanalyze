@@ -1,8 +1,58 @@
 #!/bin/sh
 # api <ruta>           GET a PRODUCCION (nginx 8443 + netrc; nginx pone el token).
 # api --espejo <ruta>  GET al ESPEJO de 143.
+#
+# ---------------------------------------------------------------------------------
+# EL CANAL TIENE QUE PODER DECIR QUE FALLO. Arreglado el 2026-09-07, y es el MISMO defecto que
+# `bin/prodsql` tuvo el 2026-09-05 mas uno propio. Medido por el operador, con su control al lado:
+#
+#   api /api/healthz                          rc=0  5241 B  {"status":"ok",...}
+#   api /api/no-existe-esta-ruta              rc=0    22 B  {"detail":"Not Found"}
+#   api /api/signals/ledger?...&level=1       rc=0    85 B  {"detail":"parametros no reconocidos"}
+#   api /api/signals/ledger?symbol=NOEXISTE   rc=0    27 B  {"detail":"Unknown symbol"}
+#
+# O sea: **el rc no llevaba informacion y el cuerpo de un error llegaba disfrazado de dato.**
+# 16 checks leen por aqui. Cualquier guardia `[ "$rc" = 0 ] || NO MEDIDO` escrito contra este
+# canal era INALCANZABLE, igual que lo eran los de prodsql antes de su arreglo.
+#
+# SON DOS DEFECTOS, NO UNO, y copiar el arreglo de prodsql sin pensar solo cura el primero:
+#
+#   1 · EL RC MORIA EN EL PIPE. La linea terminaba en `| "$B/bin/_corta"`, y en un pipe el rc que
+#       ve el llamante es el del ULTIMO mandato -_corta, que siempre sale 0-. Es literalmente lo
+#       que le pasaba a prodsql con `ssh ... | _corta`. Aqui no se usa PIPESTATUS a proposito:
+#       esto es /bin/sh, no bash. Se captura, se mira, y despues se imprime.
+#
+#   2 · Y ADEMAS `curl -sS` SALE 0 CON UN 404 O UN 422. Para curl, entregar la respuesta de error
+#       ES un exito: el fallo esta en la CAPA DE ARRIBA. Por eso las tres ultimas medidas del
+#       operador dan rc=0. Propagar el rc de curl no basta: hay que mirar el codigo HTTP. Este
+#       segundo defecto prodsql no lo tenia, porque psql si distingue «no pude» de «aqui tienes».
+#
+# QUE SE HACE CON EL CUERPO DE UN ERROR: va a **stderr**, y **stdout queda vacio**. Es lo mismo
+# que hace prodsql (`cat "$err" >&2; exit "$rc"`), y no es un detalle de estilo: los checks ya
+# traen guardias del tipo `[ -n "$cuerpo" ] || NO MEDIDO`, y dejar el cuerpo del error en stdout
+# es justo lo que los mantenia dormidos. Mientras el error y el dato viajen por canales
+# distintos, no se pueden confundir se escriba lo que se escriba en un campo de texto.
+#
+# EL CORTE DE 8 KB SE CONSERVA TAL CUAL. `_corta` sigue en medio del camino del cuerpo bueno:
+# quitarlo habria hecho que algun check pasara de ver 8 KB a ver 400 KB, que es un cambio de
+# comportamiento que nadie pidio.
+#
+# LOS CODIGOS:  rc de curl   fallo de TRANSPORTE (no hubo respuesta)
+#               5            hubo respuesta y el otro lado dijo que NO (HTTP >= 400)
+#               4            falta el netrc o el token del espejo (ya estaba)
+# Vigilado por harness/checks/K94-el-canal-que-no-puede-fallar.sh, que desde hoy tiene a `api`
+# entre sus sujetos.
 set -eu
 B=/srv/coinanalyze/harness; . "$B/env"
+
+cuerpo=$(mktemp) || exit 2
+errf=$(mktemp) || exit 2
+trap 'rm -f "$cuerpo" "$errf"' EXIT INT TERM
+
+# `|| rc=$?` NO ES ADORNO: con `set -e`, una asignacion desde una sustitucion que falla aborta el
+# guion EN LA PROPIA ASIGNACION y todo el diagnostico de abajo se vuelve inalcanzable. Le costo
+# dos vueltas a prodsql y su cabecera lo cuenta.
+rc=0
 if [ "${1:-}" = "--espejo" ]; then
   # El espejo NO tiene nginx delante. En 140 es nginx quien inyecta X-Internal-Token,
   # asi que un curl pelado contra el espejo se come un 403 de app/api.py:196 y el check
@@ -10,8 +60,35 @@ if [ "${1:-}" = "--espejo" ]; then
   # necesitaba el espejo se apanaba con su propia variable; aqui deja de hacer falta.
   shift
   [ -r "$ESPEJO_TOKEN" ] || { echo "falta $ESPEJO_TOKEN (X-Internal-Token del espejo, modo 600)" >&2; exit 4; }
-  curl -sS --max-time 20 -H "X-Internal-Token: $(cat "$ESPEJO_TOKEN")" \
-    "$API_ESPEJO$1" | "$B/bin/_corta"; exit
+  donde="$API_ESPEJO$1"
+  codigo=$(curl -sS --max-time 20 -H "X-Internal-Token: $(cat "$ESPEJO_TOKEN")" \
+    -o "$cuerpo" -w '%{http_code}' "$donde" 2>"$errf") || rc=$?
+else
+  [ -r "$NETRC" ] || { echo "falta $NETRC (auth_basic de nginx, modo 600)" >&2; exit 4; }
+  donde="$API_PROD$1"
+  codigo=$(curl -sS -k --netrc-file "$NETRC" --max-time 20 \
+    -o "$cuerpo" -w '%{http_code}' "$donde" 2>"$errf") || rc=$?
 fi
-[ -r "$NETRC" ] || { echo "falta $NETRC (auth_basic de nginx, modo 600)" >&2; exit 4; }
-curl -sS -k --netrc-file "$NETRC" --max-time 20 "$API_PROD$1" | "$B/bin/_corta"
+
+# 1 · TRANSPORTE. No hubo respuesta: ni cuerpo ni codigo significan nada.
+if [ "$rc" != 0 ]; then
+  echo "api: el transporte fallo (curl rc=$rc) pidiendo $donde" >&2
+  cat "$errf" >&2
+  exit "$rc"
+fi
+
+# 2 · LA CAPA DE ARRIBA. Hubo respuesta y el otro lado dijo que no. El cuerpo es el motivo, no
+# el dato: va a stderr y stdout queda vacio.
+case "${codigo:-000}" in
+  2*|3*) ;;
+  *)
+    echo "api: $donde contesto HTTP $codigo" >&2
+    cat "$errf" >&2
+    "$B/bin/_corta" < "$cuerpo" >&2
+    exit 5 ;;
+esac
+
+# 3 · el cuerpo bueno, cortado igual que siempre.
+cat "$errf" >&2
+"$B/bin/_corta" < "$cuerpo"
+exit 0

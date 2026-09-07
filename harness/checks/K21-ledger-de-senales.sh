@@ -34,7 +34,7 @@ TOPE_FILAS=400
 
 # --- la ventana: se elige con SQL propio, no preguntandole a la ruta ----------------
 # Hora cerrada con >=1 h de margen: ninguna escritura tardia la puede mover ya.
-ventana=$("$B/bin/prodsql" "
+_crudo=$("$B/bin/prodsql" "
   SELECT symbol,
          to_char(date_trunc('hour', observed_at) AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:00:00\"Z\"'),
          count(*)
@@ -44,7 +44,8 @@ ventana=$("$B/bin/prodsql" "
   GROUP BY 1,2
   HAVING count(*) >= 20
   ORDER BY 2 DESC, 3 DESC
-  LIMIT 1" 2>/dev/null | grep -E '^[A-Z0-9_.]+\|' | head -1)
+  LIMIT 1" 2>/dev/null) || { rc=$?; echo "NO MEDIDO: prodsql no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
+ventana=$(printf '%s\n' "$_crudo" | grep -E '^[A-Z0-9_.]+\|' | head -1)
 
 [ -n "$ventana" ] || { echo "NO MEDIDO: ninguna hora cerrada de las ultimas 12 h tiene >=20 observaciones en signal_observation"; exit 2; }
 
@@ -81,7 +82,7 @@ ref=$("$B/bin/prodsql" "
 [ -n "$ref" ] || { echo "NO MEDIDO: la consulta de referencia contra signal_observation no devolvio nada"; exit 2; }
 
 # --- la ruta. TODO=1 porque se verifica que estan TODAS las filas (ver cabecera) ----
-cuerpo=$(TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta" 2>/dev/null)
+cuerpo=$(TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta" 2>/dev/null) || { rc=$?; echo "NO MEDIDO: la API no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
 
 # NO SE OLFATEA EL CUERPO. Este guardia decia case "$cuerpo" in *'404'*) y afirmaba "la
 # capacidad no tiene API" en cuanto la cadena 404 aparecia EN CUALQUIER SITIO del JSON.

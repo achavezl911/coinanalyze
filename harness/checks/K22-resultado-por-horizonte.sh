@@ -30,7 +30,7 @@ RUTA=/api/signals/outcomes
 TOPE_FILAS=600
 MARGEN_HORAS=6
 
-ventana=$("$B/bin/prodsql" "
+_crudo=$("$B/bin/prodsql" "
   SELECT o.symbol,
          to_char(date_trunc('hour', so.window_start) AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:00:00\"Z\"'),
          count(*), count(*) FILTER (WHERE so.status='pending')
@@ -40,7 +40,8 @@ ventana=$("$B/bin/prodsql" "
   GROUP BY 1,2
   HAVING count(*) BETWEEN 20 AND $TOPE_FILAS AND count(*) FILTER (WHERE so.status='pending') = 0
   ORDER BY 2 DESC, 3 DESC
-  LIMIT 1" 2>/dev/null | grep -E '^[A-Z0-9_.]+\|' | head -1)
+  LIMIT 1" 2>/dev/null) || { rc=$?; echo "NO MEDIDO: prodsql no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
+ventana=$(printf '%s\n' "$_crudo" | grep -E '^[A-Z0-9_.]+\|' | head -1)
 
 [ -n "$ventana" ] || { echo "NO MEDIDO: ninguna hora de las ultimas 48 h con margen de $MARGEN_HORAS h tiene entre 20 y $TOPE_FILAS resultados y cero pending"; exit 2; }
 
@@ -96,7 +97,7 @@ TODO=1 "$B/bin/prodsql" "
 
 # TODO=1: se verifica que estan TODAS las filas y que cada una recalcula, asi que un corte
 # de salida recortaria justo la afirmacion. Los frenos son TOPE_FILAS y el conteo de abajo.
-cuerpo=$(TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta" 2>/dev/null)
+cuerpo=$(TODO=1 "$B/bin/api" "$RUTA?symbol=$simbolo&since=$desde&until=$hasta" 2>/dev/null) || { rc=$?; echo "NO MEDIDO: la API no contesto (rc=$rc). Esto NO es una ventana vacia: es que no se pudo preguntar."; exit 2; }
 [ -n "$cuerpo" ] || { echo "NO MEDIDO: $RUTA no devolvio nada (canal)"; exit 2; }
 
 printf '%s' "$cuerpo" | python3 -c '
