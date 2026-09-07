@@ -131,7 +131,19 @@ monta_caido() {  # $1 = destino
     ln -s "$f" "$d/bin/$(basename "$f")" 2>/dev/null || true
   done
   for x in prodsql prod api; do
-    printf '#!/bin/sh\nprintf %%s\\n "ssh: connect to host 10.151.1.6 port 22: No route to host" >&2\nexit 255\n' > "$d/bin/$x"
+    # EL DOBLE MARCA SU PROPIO RUIDO. `corre_sujeto` captura 2>&1, asi que sin marca las lineas
+    # que escribe este doble entran en la firma del SUJETO y parecen comportamiento suyo. Medido
+    # en K76: sus tres corridas eran identicas y salia GANADO por tres lineas que puse yo.
+    #
+    # SE ESCRIBE CON HEREDOC Y NO CON printf ANIDADO. La version anterior lo generaba con
+    # `printf '...printf %%s\\n "..."...'` y la `\n` no sobrevivio al ultimo cambio de escapado:
+    # las tres lineas salian en UNA, unidas por una `n` literal, y esa unica linea se tragaba la
+    # primera del sujeto. Tres capas de escapado son una capa de mas.
+    cat > "$d/bin/$x" <<'DOBLE'
+#!/bin/sh
+echo "K97-DOBLE: ssh: connect to host 10.151.1.6 port 22: No route to host" >&2
+exit 255
+DOBLE
     sed -i "1a printf '%s\\n' \"\$0\" >> \"\$K97_HUELLA\" 2>/dev/null || true" "$d/bin/$x"
     chmod 755 "$d/bin/$x"
   done
@@ -221,7 +233,7 @@ corre_sujeto() {  # $1 = fichero del check   $2 = canal   $3 = mudo|cero|caido
 
 # --- EL CENSO ------------------------------------------------------------------------------
 enfermos=""; sanos=0; nojuzg=""; n=0; detalle=""; api_debil=""
-distinguen=""; confunden=""; indistintos=""; movidos=""
+distinguen=""; confunden=""; indistintos=""; por_c1=""; por_c2=""
 
 # LA FIRMA DE UNA EJECUCION = su rc mas su salida NORMALIZADA. Se normaliza lo que cambia entre
 # dos corridas sin que cambie el comportamiento: la ruta del arbol de mentira -que es distinta
@@ -231,9 +243,23 @@ distinguen=""; confunden=""; indistintos=""; movidos=""
 # distinto, no que haya entendido nada. Un check con dos ramas de error que imprimen textos
 # distintos por casualidad saldria como DISTINGUE sin merecerlo. La implicacion solo es segura
 # en un sentido: **firmas iguales demuestran que no puede distinguir.**
-firma() {  # $1 = rc   $2 = salida
+firma() {  # $1 = rc   $2 = salida   [$3 = vieja|c1  para poder medir cada causa por separado]
+  local modo_f=${3:-ok}
+  # CAUSA 2 · se descartan las lineas que el propio doble escribio. Van marcadas a proposito
+  # (`K97-DOBLE:`) para poder distinguirlas del texto del sujeto. Si el sujeto CITA el error del
+  # canal dentro de su propia frase, esa linea no lleva la marca y sobrevive: eso si es suyo.
+  local filtro='cat'
+  [ "$modo_f" = ok ] && filtro='grep -v ^K97-DOBLE:'
+  # CAUSA 1 · «: 0» y «: » son la misma frase con y sin valor. Los digitos se mapean a `#` y
+  # DESPUES se borra el `#`, para que un hueco relleno y un hueco vacio den la misma firma. Sin
+  # ese segundo paso, dos corridas que solo difieren en un numero interpolado parecian dos
+  # comportamientos. Medido en K80 y K81.
+  local colapso='s/#//g'
+  [ "$modo_f" = vieja ] && colapso='s/^$//'
   printf 'rc=%s\n%s\n' "$1" "$2" \
-    | sed -e "s#$DIR[^ ]*#RUTA#g" -e 's/[0-9][0-9.:-]*/#/g' -e 's/[[:space:]][[:space:]]*/ /g'
+    | eval "$filtro" \
+    | sed -e "s#$DIR[^ ]*#RUTA#g" -e 's/[0-9][0-9.:-]*/#/g' -e "$colapso" \
+          -e 's/[[:space:]][[:space:]]*/ /g'
 }
 for f in "$CHECKS"/*.sh; do
   c=$(basename "$f" .sh)
@@ -246,12 +272,14 @@ for f in "$CHECKS"/*.sh; do
     continue
   fi
   grep -qE '"?\$B/bin/api|/harness/bin/api' "$f" && api_debil="$api_debil $c"
-  veredicto=SANO; porque=""; firma_mudo=""; firma_cero=""
+  veredicto=SANO; porque=""; cruda_mudo=""; cruda_cero=""; rc_mudo=""; rc_cero=""
   for modo in mudo cero; do
     sal=$(corre_sujeto "$f" "$can" "$modo")
     rc=$(printf '%s\n' "$sal" | head -1)
-    # SE GUARDA LA FIRMA DE LOS DOS DOBLES, no solo la de `mudo`. Ver la particion mas abajo.
-    eval "firma_$modo=\$(firma \"\$rc\" \"\$(printf '%s\\n' \"\$sal\" | tail -n +2)\")"
+    # SE GUARDA LA SALIDA CRUDA DE LOS DOS DOBLES. Cruda y no ya firmada, porque abajo hace
+    # falta firmarla de tres maneras distintas para poder atribuir cada movimiento a su causa.
+    eval "cruda_$modo=\$(printf '%s\\n' \"\$sal\" | tail -n +2)"
+    eval "rc_$modo=\$rc"
 
     if [ "$rc" = 99 ]; then
       # NO TOCO EL DOBLE: no se le dio ninguna poblacion vacia, asi que no se le juzga.
@@ -289,15 +317,26 @@ for f in "$CHECKS"/*.sh; do
       # revierte nada: solo devuelve a su sitio a los que estaban de mas en el cubo malo.
       sal=$(corre_sujeto "$f" "$can" caido)
       rc_c=$(printf '%s\n' "$sal" | head -1)
-      firma_caido=$(firma "$rc_c" "$(printf '%s\n' "$sal" | tail -n +2)")
-      if { [ -z "$firma_mudo" ] && [ -z "$firma_cero" ]; } || [ "$rc_c" = 99 ]; then
+      cruda_caido=$(printf '%s\n' "$sal" | tail -n +2)
+      if { [ -z "$rc_mudo" ] && [ -z "$rc_cero" ]; } || [ "$rc_c" = 99 ]; then
         indistintos="$indistintos $c"; sanos=$((sanos+1))
-      elif [ "$firma_mudo" != "$firma_caido" ] || [ "$firma_cero" != "$firma_caido" ]; then
-        distinguen="$distinguen $c"; sanos=$((sanos+1))
-        # LA PARTICION VIEJA, solo para poder publicar cuantos se mueven. No decide nada.
-        [ "$firma_mudo" = "$firma_caido" ] && movidos="$movidos $c"
       else
-        confunden="$confunden $c"; sanos=$((sanos+1))
+        # SE DECIDE TRES VECES PARA PODER ATRIBUIR CADA MOVIMIENTO A SU CAUSA. `dist ok` es el
+        # veredicto; los otros dos solo sirven para publicar cuantos se movieron por que.
+        dist() {  # $1 = vieja|c1|ok
+          local a b d
+          a=$(firma "$rc_mudo" "$cruda_mudo" "$1"); b=$(firma "$rc_cero" "$cruda_cero" "$1")
+          d=$(firma "$rc_c" "$cruda_caido" "$1")
+          { [ "$a" != "$d" ] || [ "$b" != "$d" ]; } && echo si || echo no
+        }
+        d_vieja=$(dist vieja); d_c1=$(dist c1); d_ok=$(dist ok)
+        if [ "$d_ok" = si ]; then
+          distinguen="$distinguen $c"; sanos=$((sanos+1))
+        else
+          confunden="$confunden $c"; sanos=$((sanos+1))
+          [ "$d_vieja" = si ] && [ "$d_c1" = no ] && por_c1="$por_c1 $c"
+          [ "$d_c1" = si ]                        && por_c2="$por_c2 $c"
+        fi
       fi
       ;;
   esac
@@ -355,10 +394,13 @@ n_dis=$(printf '%s' "$distinguen" | wc -w)
   echo "    GANADO   ($n_dis) se comportan DISTINTO ante las dos:$distinguen"
   echo "    PRESTADO ($n_con) se comportan IGUAL -no pueden saber cual de las dos les paso-:$confunden"
   [ "$n_ind" -gt 0 ] && echo "    SIN COMPARAR ($n_ind) no se pudo correr una de las dos:$indistintos"
-  # LA PARTICION VIEJA AL LADO, para que se vea cuantos se mueven y no haya que creerselo.
-  n_mov=$(printf '%s' "$movidos" | wc -w)
-  echo "    con el criterio ANTERIOR -solo el doble MUDO- habrian sido $((n_dis - n_mov)) GANADO y $((n_con + n_mov)) PRESTADO;"
-  echo "    $n_mov se mueven de PRESTADO a GANADO al usar tambien el doble CERO:$movidos"
+  # LAS DOS CAUSAS, POR SEPARADO. Arreglarlas juntas y dar un solo numero no seria puntuable.
+  n_c1=$(printf '%s' "$por_c1" | wc -w)
+  n_c2=$(printf '%s' "$por_c2" | wc -w)
+  echo "    antes de esta vuelta habrian sido $((n_dis + n_c1 + n_c2)) GANADO y $((n_con - n_c1 - n_c2)) PRESTADO."
+  echo "    caen a PRESTADO $((n_c1 + n_c2)), y las DOS causas eran del instrumento:"
+  echo "      por la NORMALIZACION -misma frase, distinto valor interpolado- ($n_c1):$por_c1"
+  echo "      por el RUIDO DEL PROPIO DOBLE metido en la firma del sujeto ($n_c2):$por_c2"
   echo "    un PRESTADO no esta roto hoy: esta a merced de que el transporte mejore. No se arreglan en esta vuelta."
 [ -n "$nojuzg" ] && echo "  NO JUZGABLES, nombrados con su motivo:$nojuzg"
 [ -n "$detalle" ] && printf '%s' "$detalle"

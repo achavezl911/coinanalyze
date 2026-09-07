@@ -274,11 +274,36 @@ declaradas_sin_pedir = sorted(set(asign) - set(pedidas))
 
 cab = ["-H", os.environ["K43_CABECERA"]] if os.environ.get("K43_CABECERA") else []
 
+# LOS EXTRAS QUE CADA RUTA NECESITA, declarados uno a uno. Antes se le pegaban a TODAS, y las
+# cuatro de signals -que rechazan lo que no reconocen- contestaban 422. Vease la cabecera.
+EXTRA = {
+    "/api/level/breakout":  "&level=78800",
+    "/api/range/validate":  "&low=77000&high=80000",
+    "/api/zone/analysis":   "&level=78800&low=77000&high=80000",
+}
+
+no_juzgadas = []   # ruta -> por que no se pudo preguntar. NO son incumplimientos.
+
 def cuerpo(r):
-    out = subprocess.run(["curl", "-sS", "-k", "--netrc-file", netrc] + cab +
-        ["--max-time", "30",
-        base + r + "?symbol=%s&level=78800&low=77000&high=80000" % sim],
-        capture_output=True, text=True).stdout
+    """Devuelve el JSON, o None. Si la peticion FALLA, lo anota y devuelve False.
+
+    None y False no son lo mismo y por eso se distinguen: None es «contesto y no era JSON»,
+    False es «no contesto que si». Confundirlos es exactamente el defecto que este arreglo cierra.
+    """
+    res = subprocess.run(["curl", "-sS", "-k", "--netrc-file", netrc] + cab +
+        ["--max-time", "30", "-o", "-", "-w", "\n%{http_code}",
+        base + r + "?symbol=%s%s" % (sim, EXTRA.get(r, ""))],
+        capture_output=True, text=True)
+    if res.returncode != 0:
+        no_juzgadas.append("%s(transporte rc=%d)" % (r, res.returncode))
+        return False
+    partes = res.stdout.rsplit("\n", 1)
+    codigo = partes[-1].strip() if len(partes) == 2 else ""
+    out = partes[0] if len(partes) == 2 else res.stdout
+    if not codigo.startswith(("2", "3")):
+        # LA RUTA CONTESTO QUE NO. El cuerpo es el motivo, no el dato.
+        no_juzgadas.append("%s(HTTP %s)" % (r, codigo or "?"))
+        return False
     try:
         return json.loads(out)
     except Exception:
@@ -423,6 +448,8 @@ for r in pintadas:
             incumplen.append("%s(FOTO: %s)" % (r, mal))
         continue
     d = cuerpo(r)
+    if d is False:
+        continue      # no se pudo preguntar: ya esta anotada en no_juzgadas, y NO es incumplir
     if not isinstance(d, dict):
         incumplen.append("%s(%s: sin json)" % (r, fam))
     elif fam == "SERIE":
@@ -440,6 +467,16 @@ cola = ""
 if declaradas_sin_pedir:
     cola = " · %d declaradas que ningun navegador pide: %s" % (
         len(declaradas_sin_pedir), " ".join(declaradas_sin_pedir))
+# LAS QUE NO SE PUDIERON PREGUNTAR SE NOMBRAN, y no se cuentan como cumplidoras ni como
+# incumplidoras. Un censo con huecos declarados vale; uno que los tapa, no. Si NINGUNA se pudo
+# preguntar, esto no es un veredicto: es NO MEDIDO.
+if no_juzgadas:
+    cola += " · %d NO JUZGADAS -no se pudo preguntar-: %s" % (
+        len(no_juzgadas), " ".join(no_juzgadas))
+if len(no_juzgadas) >= len(pintadas):
+    print("NO MEDIDO: no se pudo preguntar a ninguna de las %d rutas pintadas%s"
+          % (len(pintadas), cola))
+    raise SystemExit(2)
 if incumplen:
     print("%d de %d rutas que un navegador pide no cumplen lo que su familia promete: %s%s"
           % (len(incumplen), len(pintadas), " ".join(incumplen), cola))

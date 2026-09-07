@@ -23,8 +23,8 @@ fallos=0; pasan=0; nocorren=""; nocorren_criticos=""
 # y la ultima linea decia **«15 de 15 pasan · 0 fallan»** sin mencionar que habia perdido tres.
 # Y `bin/_corta` trunca a 8000 B, asi que ese titular es justo lo que sobrevive a un corte: la
 # unica linea que alguien lee podia ser la que mas mentia.
-# N1 N1b · P1 P2 P3 · C1 · S1 S2 · V1 V1b · D1 D2 · R1 R1b R2 · G1..G8 · F1 F2 F3
-TOTAL_BRAZOS=26
+# N1 N1b · P1 P2 P3 · C1 · S1 S2 · V1 V1b · D1 D2 · R1 R1b R2 · G1..G11 · F1 F2 F3
+TOTAL_BRAZOS=29
 # LOS CRITICOS son los que, si no corren, dejan al control sin poder AFIRMAR nada. Hoy es solo el
 # de regresion: es el que prueba que el verde de K97 se debe a los arreglos y no a que el
 # instrumento haya dejado de mirar. Sin el, «pasan» no significa nada y el veredicto es NOMED.
@@ -139,6 +139,34 @@ case "${n:-}" in
 esac
 echo "VERDE: $n filas y ninguna mal"
 exit 0
+EOF
+chmod 755 "$1"; }
+
+# MISMA FRASE, DISTINTO VALOR · imprime siempre la misma linea con lo que le devolvio el canal
+# interpolado. Con el doble MUDO recibe vacio, con el CERO recibe `0`, con el CAIDO vacio otra vez.
+# **No distingue nada**: es la misma frase. Es el caso de K80 y K81, y el que la normalizacion
+# anterior contaba como GANADO por un `#` de diferencia.
+sujeto_interpola() { cat > "$1" <<'EOF'
+#!/bin/bash
+DIAS=7
+B=/srv/coinanalyze/harness
+n=$("$B/bin/prodsql" "SELECT count(*) FROM inventada WHERE ts > now() - interval '7 days'" 2>/dev/null | tr -d ' ')
+echo "NO MEDIDO: 140 no contesto por inventada: $n"
+exit 2
+EOF
+chmod 755 "$1"; }
+
+# FRASES DISTINTAS · dice una cosa cuando el canal falla y otra cuando contesta vacio. Distingue
+# de verdad, y tiene que salir GANADO. Sin este, el brazo de arriba solo probaria que el criterio
+# sabe decir PRESTADO, que es la mitad facil.
+sujeto_frases() { cat > "$1" <<'EOF'
+#!/bin/bash
+DIAS=7
+B=/srv/coinanalyze/harness
+n=$("$B/bin/prodsql" "SELECT count(*) FROM inventada WHERE ts > now() - interval '7 days'" 2>/dev/null); rc=$?
+[ "$rc" = 0 ] || { echo "NO MEDIDO: el canal no responde"; exit 2; }
+echo "NO MEDIDO: el canal contesto y no habia poblacion"
+exit 2
 EOF
 chmod 755 "$1"; }
 
@@ -304,8 +332,30 @@ comprueba "G6 el que solo distingue con el doble CERO: GANADO" \
 comprueba "G7 y el que no distingue con ninguno sigue PRESTADO" \
   "$(printf '%s' "$pre" | grep -qw Z01-declara && echo si || echo no)"
 # G8 · y la salida publica CUANTOS se mueven, que es lo que hace auditable el cambio de criterio.
-comprueba "G8 publica cuantos se mueven de PRESTADO a GANADO" \
-  "$(printf '%s' "$out" | grep -q 'se mueven de PRESTADO a GANADO' && echo si || echo no)"
+comprueba "G8 publica las dos causas por separado" \
+  "$(printf '%s' "$out" | grep -q 'por la NORMALIZACION' && printf '%s' "$out" | grep -q 'por el RUIDO DEL PROPIO DOBLE' && echo si || echo no)"
+
+# --- G9/G10 · LAS DOS CAUSAS, cada una con su plantado. Anadido el 2026-09-07 ----------------
+# El instrumento se leia mal a si mismo por dos sitios y los dos se prueban aqui:
+#   · CAUSA 1 · la normalizacion no colapsaba «valor ausente» contra «valor cero», asi que la
+#     MISMA frase con distinto interpolado parecia comportamiento distinto. G9 lo planta.
+#   · CAUSA 2 · el ruido del propio doble entraba en la firma del sujeto. No se puede plantar con
+#     un sujeto -es del instrumento, no del sujeto-, y por eso G10 exige lo contrario: que un
+#     sujeto que SI dice dos frases distintas siga saliendo GANADO. Si el filtro del ruido se
+#     hubiera pasado de largo y borrara texto del sujeto, G10 caeria.
+D11="$DIR/causas"; puebla "$D11"
+sujeto_interpola "$D11/Z08-interpola.sh"
+sujeto_frases    "$D11/Z09-frases.sh"
+out=$(K97_CHECKS="$D11" bash "$CHK" 2>&1)
+gan=$(printf '%s\n' "$out" | sed -n 's/.*GANADO *([0-9]*) [^:]*://p')
+pre=$(printf '%s\n' "$out" | sed -n 's/.*PRESTADO *([0-9]*) [^:]*-://p')
+comprueba "G9 misma frase con distinto valor: PRESTADO" \
+  "$(printf '%s' "$pre" | grep -qw Z08-interpola && echo si || echo no)"
+comprueba "G10 frases distintas: GANADO" \
+  "$(printf '%s' "$gan" | grep -qw Z09-frases && echo si || echo no)"
+# G11 · y el ruido del doble no puede colarse en la firma de NADIE: el marcador tiene que estar.
+comprueba "G11 el doble caido marca sus propias lineas" \
+  "$(grep -q 'K97-DOBLE:' "$CHK" && echo si || echo no)"
 
 echo
 echo "ANTI-FANTASMA · el instrumento tiene que probarse a si mismo"

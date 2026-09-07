@@ -14,11 +14,20 @@ Handler `data_confidence` · `app/api.py:2639` (cuerpo hasta la 2643) · decorad
 
 ## Campos que publica
 
-1 campos derivados. La procedencia dice de donde sale cada uno.
+10 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `rows` | literal en app/api.py:2643 |
+| `rows.collectors_stale` | asignado en app/ai_context.py:566 |
+| `rows.flow_8h_complete` | asignado en app/ai_context.py:535 |
+| `rows.flow_8h_futures_complete` | asignado en app/ai_context.py:534 |
+| `rows.flow_8h_spot_complete` | asignado en app/ai_context.py:531 |
+| `rows.flow_8h_spot_end_gap_seconds` | asignado en app/ai_context.py:533 |
+| `rows.flow_8h_spot_source` | asignado en app/ai_context.py:532 |
+| `rows.quality_score` | asignado en app/ai_context.py:578 |
+| `rows.quality_score_basis` | asignado en app/ai_context.py:579 |
+| `rows.status` | asignado en app/ai_context.py:569 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -131,9 +140,10 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `rows.collectors_stale`
+- `rows.flow_8h_spot_end_gap_seconds`
 
 ## Capa DECLARADA
 

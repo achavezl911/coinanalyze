@@ -84,6 +84,38 @@ comprueba "P4 y NO acusa a las otras cuatro (arrastradas: $otras)" \
   "$([ "$otras" -eq 0 ] && echo si || echo no)"
 
 echo
+echo "LA SONDA · preguntar mal no puede leerse como que la ruta incumple"
+# EL DEFECTO QUE SE ARREGLO EL 2026-09-07: `cuerpo()` pedia TODA ruta con `&level&low&high`. Las
+# cuatro de signals rechazan lo que no reconocen y contestan HTTP 422; `curl` sin `-f` entrega el
+# cuerpo y sale 0, asi que el JSON del error pasaba por respuesta y K43 dictaminaba
+# «DEMANDA: sin as_of». El veredicto hablaba de las rutas y en realidad hablaba de su peticion.
+#
+# EL CONTROL SE MUEVE: se hace una copia que vuelve a pegar los extras a TODAS -la forma vieja- y
+# se exige que esas rutas salgan como NO JUZGADAS, **no como incumplidoras**. Una ruta que
+# contesta bien y a la que preguntamos mal no esta incumpliendo nada.
+MAL="$DIR/K43-preguntando-mal.sh"
+sed 's#base + r + "?symbol=%s%s" % (sim, EXTRA.get(r, ""))#base + r + "?symbol=%s\&level=78800\&low=77000\&high=80000" % sim#' "$CHK" > "$MAL"
+if cmp -s "$CHK" "$MAL"; then
+  echo "NO MEDIDO: el sed no cambio nada, asi que este brazo compararia el check consigo mismo"
+  exit 2
+fi
+sal=$(corre "$MAL"); rcm=$(printf '%s\n' "$sal" | head -1); outm=$(printf '%s\n' "$sal" | tail -n +2)
+comprueba "S1 preguntando mal, las rutas salen NO JUZGADAS" \
+  "$(printf '%s' "$outm" | grep -q 'NO JUZGADAS' && echo si || echo no)"
+comprueba "S2 y NO como incumplidoras de su familia" \
+  "$(printf '%s' "$outm" | grep -q 'sin as_of' && echo no || echo si)"
+comprueba "S3 y nombra el codigo que le contestaron" \
+  "$(printf '%s' "$outm" | grep -q 'HTTP 422' && echo si || echo no)"
+# S4 · EL NEGATIVO, sin el cual S1 seria una maquina de «no juzgadas»: preguntando BIEN no puede
+# quedar ninguna sin juzgar.
+sal=$(corre "$CHK"); outb=$(printf '%s\n' "$sal" | tail -n +2)
+comprueba "S4 preguntando bien no queda ninguna sin juzgar" \
+  "$(printf '%s' "$outb" | grep -q 'NO JUZGADAS' && echo no || echo si)"
+# S5 · y las tres rutas de NIVEL siguen recibiendo sus extras: son las unicas que los necesitan.
+comprueba "S5 las tres de nivel conservan sus extras" \
+  "$(grep -q '"/api/zone/analysis":   "&level=78800&low=77000&high=80000"' "$CHK" && echo si || echo no)"
+
+echo
 total=$((pasan+fallos))
 echo "$pasan de $total pasan · $fallos fallan"
 [ "$fallos" -eq 0 ] || exit 1

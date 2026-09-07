@@ -103,7 +103,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-foto-unica.sh:121` | — |
+| **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-control.bash:116`, `harness/checks/K43-foto-unica.sh:121`, `harness/checks/K43-foto-unica.sh:282` | — |
 | **panel** | `static/app.js:2863` | — |
 | **tests** | — | `tests/test_p0_data_integrity.py:126` |
 

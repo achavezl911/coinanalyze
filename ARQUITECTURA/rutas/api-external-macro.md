@@ -14,7 +14,11 @@ Handler `external_macro_endpoint` · `app/api.py:1825` (cuerpo hasta la 1831) ·
 
 ## Campos que publica
 
-**PENDIENTE · no se ha podido derivar ni un campo.**
+1 campos derivados. La procedencia dice de donde sale cada uno.
+
+| campo | de donde sale |
+|---|---|
+| `alignment` | asignado en app/external_macro.py:433 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 

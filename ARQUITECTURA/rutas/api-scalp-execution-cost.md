@@ -24,12 +24,14 @@ Handler `scalp_execution_cost` · `app/api.py:1395` (cuerpo hasta la 1448) · de
 
 ## Campos que publica
 
-8 campos derivados. La procedencia dice de donde sale cada uno.
+10 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `as_of` | literal en app/scalp_logic.py:5236 |
+| `assessment` | asignado en app/api.py:1434 |
 | `note` | literal en app/scalp_logic.py:5238 |
+| `profiles` | asignado en app/api.py:1447 |
 | `sizes_usd` | literal en app/scalp_logic.py:5235 |
 | `stale_after_seconds` | literal en app/scalp_logic.py:5237 |
 | `status` | literal en app/scalp_logic.py:5240 |
