@@ -78,7 +78,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-control.bash:61`, `harness/checks/K43-foto-unica.sh:123`, `harness/checks/K96-la-auditoria-no-inventa.sh:68` | — |
-| **panel** | `static/app.js:1736` | — |
+| **panel** | `static/app.js:1740` | — |
 | **readme** | — | `README.md:488`, `README.md:498` |
 | **tests** | — | `tests/test_dashboard_layout.py:130` |
 

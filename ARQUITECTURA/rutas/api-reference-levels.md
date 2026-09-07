@@ -93,7 +93,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **panel** | — | `static/app.js:2124` |
+| **panel** | — | `static/app.js:2128` |
 
 **Nadie la llama.** Sus 1 rastros son todos MENCION -comentario,
 docstring o documento-. Es la forma del patron que en esta casa se ha repetido

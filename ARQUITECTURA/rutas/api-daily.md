@@ -122,7 +122,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:66`, `harness/checks/K03-hueco-declarado.sh:161`, `harness/checks/K03-hueco-declarado.sh:164`, `harness/checks/K43-foto-unica.sh:119` _(+1)_ | `harness/checks/K03-hueco-declarado.sh:8`, `harness/checks/K03-hueco-declarado.sh:15`, `harness/checks/K03-hueco-declarado.sh:153`, `harness/checks/K03-hueco-declarado.sh:165` _(+1)_ |
-| **panel** | `static/app.js:1579`, `static/app.js:1647`, `static/app.js:1744` | — |
+| **panel** | `static/app.js:1583`, `static/app.js:1651`, `static/app.js:1748` | — |
 | **readme** | — | `README.md:70`, `README.md:90`, `README.md:409` |
 | **tests** | `tests/test_dashboard_presentation.py:83` | `tests/test_data_gaps.py:128` |
 
