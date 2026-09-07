@@ -28973,7 +28973,8 @@
             "harness/checks/K08-que-base.sh:33",
             "harness/checks/K08-que-base.sh:34",
             "harness/checks/K43-control.bash:33",
-            "harness/checks/K43-foto-unica.sh:125"
+            "harness/checks/K43-foto-unica.sh:125",
+            "harness/checks/K94-el-canal-que-no-puede-fallar.sh:134"
           ],
           "menciones": [
             "harness/checks/K05-latidos.sh:2",
@@ -29008,7 +29009,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 10,
+        "n_llamadas": 11,
         "n_menciones": 10,
         "sin_ninguno": false,
         "solo_mencion": false
