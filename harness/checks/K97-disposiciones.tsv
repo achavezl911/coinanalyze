@@ -1,0 +1,15 @@
+# K97-disposiciones · los checks que salen VERDE con la poblacion vacia y NO se arreglan todavia.
+#
+# FORMATO, separado por TABULADORES:   <id del check>	<estado>	<cita: que se midio y cuando>
+#
+# Mismo patron que K31-disposiciones.tsv: un enfermo dispuesto deja de enrojecer a K97 pero SIGUE
+# saliendo en su lista, asi que no desaparece de la vista. Sin disposicion, K97 enrojece.
+#
+# HOY ESTA VACIO A PROPOSITO. El censo del 2026-09-07 encontro tres enfermos -K04-huecos,
+# K06-visibilidad y K18-borrado- y los tres se resolvieron en la misma vuelta: K04 y K06
+# arreglados, y K18 refutado (era un falso positivo del instrumento, ver la entrega). No hay
+# ninguno pendiente que disponer.
+#
+# LO QUE NO VA AQUI: los NO JUZGABLES. Esos no son enfermos, son sujetos a los que este
+# instrumento no sabe darles una poblacion vacia, y K97 los NOMBRA en su salida con su motivo.
+# Taparlos con una disposicion seria justo lo contrario de declararlos.

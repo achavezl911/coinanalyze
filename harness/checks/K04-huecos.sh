@@ -145,6 +145,20 @@ leer() {
   printf '%s' "$n"
 }
 
+# EL DENOMINADOR, ANTES QUE LOS DEFECTOS. Anadido el 2026-09-07 porque K97 midio que este
+# check salia VERDE con `data_gap` VACIA: los tres recuentos daban 0, `fallos` quedaba vacio y
+# publicaba «0 sin resolver, 0 archivados mudos y 0 archivados sin prueba». La misma frase con
+# 50 000 huecos bien resueltos que con la tabla a cero, y desde fuera no se distinguen.
+# CERO DEFECTOS SOBRE CERO FILAS NO ES CERO DEFECTOS: es que no hubo nada que juzgar, y una
+# `data_gap` vacia es justo lo que pasaria si el detector de huecos dejara de escribir, que es
+# el fallo mas grave que puede tener este subsistema.
+total=$(leer total "SELECT count(*) FROM data_gap") || exit 2
+if [ "$total" -eq 0 ]; then
+  echo "NO MEDIDO: data_gap no tiene ni una fila. Cero defectos sobre cero filas no es cero"
+  echo "  defectos: o el detector de huecos dejo de escribir, o esta base no es la de produccion."
+  exit 2
+fi
+
 viejos=$(leer viejos "SELECT count(*) FROM data_gap
           WHERE status='unresolved' AND start_ts < now()-interval '24 hours'") || exit 2
 mudos=$(leer mudos "SELECT count(*) FROM data_gap
@@ -209,5 +223,5 @@ fallos=""
 [ "$mudos" -eq 0 ] || fallos="${fallos:+$fallos; }$mudos archivados SIN motivo escrito"
 [ "$sin_prueba" -eq 0 ] || fallos="${fallos:+$fallos; }$sin_prueba archivados cuya prueba no se sostiene al re-derivarla"
 
-[ -z "$fallos" ] || { echo "$fallos"; exit 1; }
-echo "0 sin resolver de mas de 24 h, 0 archivados mudos y 0 archivados sin prueba re-derivable"
+[ -z "$fallos" ] || { echo "sobre $total fila(s) de data_gap: $fallos"; exit 1; }
+echo "VERDE sobre $total fila(s) de data_gap: 0 sin resolver de mas de 24 h, 0 archivados mudos y 0 archivados sin prueba re-derivable"

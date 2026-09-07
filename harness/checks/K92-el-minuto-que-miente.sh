@@ -133,9 +133,40 @@ esac
 # --- 1 · EL ELEGIBLE · las VENTANAS de parada, del JOURNAL ----------------------------
 # Se piden los DOS marcadores. Se leen con -n acotado a proposito: un journalctl sin limite
 # es la forma mas rapida de arruinar una sesion.
-paradas=$("$PROD" "journalctl -u $UNIT --since '-$DIAS days' --utc -o short-iso --no-hostname -n 2000 | grep -E 'Stopping|Started'" 2>&1); rc=$?
+#
+# EL `-n` NO PUEDE DECIDIR EL VEREDICTO. Es la TRAMPA 1 de K86 con otra ropa -alli era el corte
+# de 8 KB de bin/_corta- y se arregla igual: **si el transporte pudo recortar, NOMED**. No es un
+# cambio de criterio y no toca la poblacion elegible; es un guardia de transporte.
+#
+# MEDIDO EN 140 EL 2026-09-07, el mismo comando con tres topes distintos:
+#   coinalyze-ws.service     -n 200  -> 200 lineas (MORDIO) · 17 ventanas · arco 6.1 d
+#                            -n 2000 -> 236 lineas          · 21 ventanas · arco 6.9 d
+#                            -n 20000-> 236 lineas          · 21 ventanas · arco 6.9 d
+#   coinalyze-scalp.service  -n 2000 -> 2000 lineas (MORDIO)· 10 ventanas · arco 3.8 d
+#                            -n 20000-> 3270 lineas         · 22 ventanas · arco 6.9 d
+# O sea: con la unidad por defecto el tope no muerde y nunca ha mordido, pero con
+# `K92_UNIT=coinalyze-scalp` el check medía sobre 3.8 dias **diciendo que median 7**, y sobre
+# 10 ventanas de 22, sin decir ni una palabra. El control es el propio cuadro: dos `-n` que dan
+# resultados distintos son la prueba de que el tope decide.
+#
+# EL CRITERIO ES `lineas_devueltas == TOPE`, y sale de ese cuadro: journalctl devuelve como
+# mucho TOPE lineas, asi que devolver exactamente TOPE es la firma de que hay mas detras. Se
+# piden las lineas SIN filtrar para poder contarlas -el grep de los marcadores deja 42 de 236 y
+# desde ahi el tope es invisible-, y se cuentan en 140 con un awk que ademas ya filtra: una
+# sola orden, ni una redireccion (bin/prod deniega '>').
+TOPE_N=${K92_TOPE_N:-2000}
+paradas=$("$PROD" "journalctl -u $UNIT --since '-$DIAS days' --utc -o short-iso --no-hostname -n $TOPE_N | awk '{n++} /Stopping|Started/{print} END{printf \"K92TOTAL %d\\n\", n+0}'" 2>&1); rc=$?
 if [ "$rc" != "0" ]; then
   echo "NO MEDIDO: no se pudo leer el journal (rc=$rc): $(printf '%s' "$paradas" | tail -1 | cut -c1-110)"
+  exit 2
+fi
+n_lineas=$(printf '%s\n' "$paradas" | sed -n 's/^K92TOTAL //p' | head -1)
+paradas=$(printf '%s\n' "$paradas" | grep -v '^K92TOTAL ')
+[ -n "${n_lineas:-}" ] || { echo "NO MEDIDO: el journal no devolvio el recuento de lineas; sin el no se sabe si el tope mordio"; exit 2; }
+if [ "$n_lineas" -ge "$TOPE_N" ]; then
+  echo "NO MEDIDO: journalctl devolvio $n_lineas lineas con -n $TOPE_N, o sea que EL TOPE MORDIO"
+  echo "  y hay paradas mas viejas que no se han visto. Un veredicto sobre una base recortada no"
+  echo "  es un veredicto: es la trampa 1 de K86 con otra ropa. Sube K92_TOPE_N o baja K92_DIAS."
   exit 2
 fi
 # EMPAREJAR. Cada `Stopping` se casa con el PRIMER `Started` posterior. Un `Stopping` sin
@@ -286,6 +317,11 @@ fi
 # EL SUELO ES UNA CONSTANTE DEL FICHERO, no una variable de entorno: si fuera K92_SUELO
 # seria el ajuste barato que este check existe para no tener. Ver la cabecera.
 SUELO=7
+# EL ARCO REALMENTE CUBIERTO, de la primera parada vista a la ultima. Decir «en 7 dias» cuando
+# el journal solo alcanzo 3.8 es la mitad silenciosa del mismo defecto que el guardia de arriba.
+arco_desde=$(printf '%s\n' "$pares" | head -1 | cut -c1-19)
+arco_hasta=$(printf '%s\n' "$pares" | tail -1 | awk '{print $2}' | cut -c1-19)
+echo "transporte: $n_lineas lineas de journal con -n $TOPE_N (el tope NO mordio) · paradas vistas de $arco_desde a $arco_hasta"
 echo "poblacion: $sujetos minuto(s) tocados por $n_par ventana(s) en $DIAS dias · de esas ventanas, $n_cruzan cruzan el borde del minuto · $ocasiones minuto(s) sospechoso(s) CON fila (las ocasiones que pueden exhibirlo)"
 
 if [ -n "$mentirosos" ]; then
