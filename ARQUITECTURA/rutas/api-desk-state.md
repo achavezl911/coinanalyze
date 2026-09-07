@@ -244,7 +244,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:105` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:124` | — |
 | **panel** | `static/app.js:1563` | — |
 | **readme** | — | `README.md:34` |
 | **tests** | `tests/test_v150_desk_snapshot.py:128` | — |

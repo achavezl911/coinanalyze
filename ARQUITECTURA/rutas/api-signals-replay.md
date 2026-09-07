@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_replay` · `app/api.py:2396` (cuerpo hasta la 2467) · decorador en la linea 2395.
+Handler `signals_replay` · `app/api.py:2405` (cuerpo hasta la 2477) · decorador en la linea 2404.
 
 ## Parametros de entrada
 
@@ -18,18 +18,19 @@ Handler `signals_replay` · `app/api.py:2396` (cuerpo hasta la 2467) · decorado
 
 ## Campos que publica
 
-8 campos derivados. La procedencia dice de donde sale cada uno.
+9 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `count` | literal en app/api.py:2464 |
-| `frames` | literal en app/api.py:2466 |
-| `limit` | literal en app/api.py:2463 |
-| `since` | literal en app/api.py:2460 |
-| `symbol` | literal en app/api.py:2459 |
-| `truncated` | literal en app/api.py:2465 |
-| `until` | literal en app/api.py:2461 |
-| `ventana_maxima_h` | literal en app/api.py:2462 |
+| `as_of` | literal en app/api.py:2472 |
+| `count` | literal en app/api.py:2474 |
+| `frames` | literal en app/api.py:2476 |
+| `limit` | literal en app/api.py:2473 |
+| `since` | literal en app/api.py:2469 |
+| `symbol` | literal en app/api.py:2468 |
+| `truncated` | literal en app/api.py:2475 |
+| `until` | literal en app/api.py:2470 |
+| `ventana_maxima_h` | literal en app/api.py:2471 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -51,8 +52,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2086`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2120`
+- `app.api._utc_iso` — `app/api.py:2087`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2127`
 - `app.api.records` — `app/api.py:235`
 - `app.api.validate_symbol` — `app/api.py:222`
 
@@ -80,11 +81,11 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:2129` | una funcion de su cierre |
-| 422 | — | `app/api.py:2420` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2422` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2424` | el propio handler |
-| 422 | — | `app/api.py:2426` | el propio handler |
+| 422 | — | `app/api.py:2136` | una funcion de su cierre |
+| 422 | — | `app/api.py:2429` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2431` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2433` | el propio handler |
+| 422 | — | `app/api.py:2435` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -94,7 +95,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K24-replay-del-contexto.sh:87` | — |
+| **checks** | `harness/checks/K24-replay-del-contexto.sh:87`, `harness/checks/K43-control.bash:80`, `harness/checks/K43-foto-unica.sh:122` | — |
 | **panel** | `static/app.js:1711` | — |
 | **tests** | — | `tests/test_signals_replay.py:1` |
 
@@ -112,6 +113,7 @@ en el fichero de la capa declarada y puede corregirla con cita.
 
 Claves temporales entre los campos que publica:
 
+- `as_of`
 - `since`
 - `until`
 

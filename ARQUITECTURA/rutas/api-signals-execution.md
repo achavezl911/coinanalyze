@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_execution` · `app/api.py:2309` (cuerpo hasta la 2382) · decorador en la linea 2308.
+Handler `signals_execution` · `app/api.py:2317` (cuerpo hasta la 2391) · decorador en la linea 2316.
 
 ## Parametros de entrada
 
@@ -19,19 +19,20 @@ Handler `signals_execution` · `app/api.py:2309` (cuerpo hasta la 2382) · decor
 
 ## Campos que publica
 
-9 campos derivados. La procedencia dice de donde sale cada uno.
+10 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `count` | literal en app/api.py:2379 |
-| `exchange` | literal en app/api.py:2377 |
-| `limit` | literal en app/api.py:2378 |
-| `since` | literal en app/api.py:2374 |
-| `snapshots` | literal en app/api.py:2381 |
-| `symbol` | literal en app/api.py:2373 |
-| `truncated` | literal en app/api.py:2380 |
-| `until` | literal en app/api.py:2375 |
-| `ventana_maxima_h` | literal en app/api.py:2376 |
+| `as_of` | literal en app/api.py:2385 |
+| `count` | literal en app/api.py:2388 |
+| `exchange` | literal en app/api.py:2386 |
+| `limit` | literal en app/api.py:2387 |
+| `since` | literal en app/api.py:2382 |
+| `snapshots` | literal en app/api.py:2390 |
+| `symbol` | literal en app/api.py:2381 |
+| `truncated` | literal en app/api.py:2389 |
+| `until` | literal en app/api.py:2383 |
+| `ventana_maxima_h` | literal en app/api.py:2384 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -53,8 +54,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2086`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2120`
+- `app.api._utc_iso` — `app/api.py:2087`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2127`
 - `app.api.records` — `app/api.py:235`
 - `app.api.validate_symbol` — `app/api.py:222`
 
@@ -82,12 +83,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:2129` | una funcion de su cierre |
-| 422 | exchange tiene que ser binance o bybit | `app/api.py:2330` | el propio handler |
-| 422 | — | `app/api.py:2335` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2337` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2339` | el propio handler |
-| 422 | — | `app/api.py:2341` | el propio handler |
+| 422 | — | `app/api.py:2136` | una funcion de su cierre |
+| 422 | exchange tiene que ser binance o bybit | `app/api.py:2338` | el propio handler |
+| 422 | — | `app/api.py:2343` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2345` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2347` | el propio handler |
+| 422 | — | `app/api.py:2349` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -97,7 +98,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K23-coste-de-ejecucion.sh:42` | `harness/checks/K96-la-auditoria-no-inventa.sh:4` |
+| **checks** | `harness/checks/K23-coste-de-ejecucion.sh:42`, `harness/checks/K43-control.bash:80`, `harness/checks/K43-foto-unica.sh:122` | `harness/checks/K96-la-auditoria-no-inventa.sh:4` |
 | **panel** | `static/app.js:1712` | — |
 | **tests** | — | `tests/test_signals_execution.py:1` |
 
@@ -115,6 +116,7 @@ en el fichero de la capa declarada y puede corregirla con cita.
 
 Claves temporales entre los campos que publica:
 
+- `as_of`
 - `since`
 - `until`
 
