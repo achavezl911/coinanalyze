@@ -78,8 +78,9 @@ SIMBOLOS="'BTCUSDT_PERP.A','ETHUSDT_PERP.A','SOLUSDT_PERP.A'"
 # La cobertura mira data_gap en CUALQUIER estado a proposito: se juzga si el sistema
 # vio el hueco, no si lo arreglo.
 serie() {
+  local _crudo
   local intervalo="$1" feed="$2" cadencia="$3" secs="$4"
-  "$B/bin/prodsql" "
+  _crudo=$("$B/bin/prodsql" "
     WITH lim AS (
       SELECT to_timestamp(floor(extract(epoch from greatest(
                (SELECT min(ts) FROM ohlcv WHERE interval='$intervalo'),
@@ -101,7 +102,14 @@ serie() {
         ||'|'|| count(*) FILTER (WHERE ausente)
         ||'|'|| count(*) FILTER (WHERE cubierto)
         ||'|'|| count(*) FILTER (WHERE ausente AND NOT cubierto)
-    FROM j" 2>/dev/null | tr -d ' ' | grep -E '^[0-9]+(\|[0-9]+){4}$' | head -1
+    FROM j" 2>/dev/null)
+  # EL rc DEL CANAL MORIA EN ESTE FILTRO. `... | tr | grep | head` devuelve el rc del
+  # ULTIMO mandato, asi que un canal caido y un `grep` que no casa daban lo mismo: 1.
+  # Se captura crudo, se mira el rc del canal, y se filtra despues. Un solo sitio
+  # cubre TODAS las llamadas de este check.
+  local rc=$?
+  [ "$rc" = 0 ] || { echo "NO MEDIDO (CANAL): prodsql no contesto (rc=$rc). NO es una poblacion vacia: es que no se pudo preguntar." >&2; return 2; }
+  printf '%s\n' "$_crudo" | tr -d ' ' | grep -E '^[0-9]+(\|[0-9]+){4}$' | head -1
 }
 
 # Filas de data_gap que solapan la ventana juzgada. Es el otro lado del control

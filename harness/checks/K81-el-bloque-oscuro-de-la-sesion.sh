@@ -173,7 +173,9 @@ SELECT (SELECT l FROM cierre),
        (SELECT count(DISTINCT session_date) FROM daily_session_agg
           WHERE long_liq_usd IS NOT NULL
             AND session_date > (SELECT l FROM cierre) - 13)
-" 2>/dev/null | tr -d ' ' | head -1)
+" 2>/dev/null) || { rc=$?; echo "NO MEDIDO (CANAL): prodsql no contesto (rc=$rc). NO es una poblacion vacia: es que no se pudo preguntar."; exit 2; }
+# El rc del canal moria en la tuberia; ahora se captura crudo y se filtra sobre la variable.
+SALIDA=$(printf '%s\n' "$SALIDA" | tr -d ' ' | head -1)
 
 [ "$(printf '%s' "$SALIDA" | tr -cd '|' | wc -c)" = "12" ] || {
   echo "NO MEDIDO: 140 no contesto al foco de sesiones: $(printf '%s' "$SALIDA" | head -c 120)"

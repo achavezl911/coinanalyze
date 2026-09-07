@@ -36,7 +36,11 @@ set -uo pipefail
 B=/srv/coinanalyze/harness
 . "$B/env"
 
-existe=$("$B/bin/prodsql" "SELECT to_regclass('public.open_interest_daily') IS NOT NULL" 2>/dev/null | tr -d ' ' | head -1)
+# EL rc DEL CANAL MORIA EN LA TUBERIA. `$(cmd | tr | head)` devuelve el rc de `head`, asi
+# que el arreglo de bin/prodsql del 2026-09-05 -que propaga el fallo- era inalcanzable
+# aqui. Se captura CRUDO con su guardia y se filtra despues sobre la variable.
+_crudo=$("$B/bin/prodsql" "SELECT to_regclass('public.open_interest_daily') IS NOT NULL" 2>/dev/null) || { rc=$?; echo "NO MEDIDO (CANAL): prodsql no contesto (rc=$rc). NO es una poblacion vacia: es que no se pudo preguntar."; exit 2; }
+existe=$(printf '%s\n' "$_crudo" | tr -d ' ' | head -1)
 case "$existe" in
   t) : ;;
   f) echo "NO EXISTE open_interest_daily: el DELETE liso de apply_retention se llevara el 2026-07-23 el 2026-10-21 y la serie empezara un dia mas tarde cada dia, sin que ninguna consulta falle"; exit 1 ;;
