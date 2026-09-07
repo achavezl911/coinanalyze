@@ -409,7 +409,9 @@ function renderDeskAsOf(desk) {
   const asOf = desk && desk.as_of;
   if (!asOf) {
     pill.textContent = 'Snapshot N/D';
-    pill.className = 'live-pill negative';
+    // ESTADO, no direccion: «no llego snapshot» no es una venta. Ver el bloque del vocabulario
+    // de estado en app.css.
+    pill.className = 'live-pill estado-malo';
     pill.title = 'La Mesa no recibió snapshot coherente en este ciclo';
     return;
   }
@@ -417,7 +419,7 @@ function renderDeskAsOf(desk) {
   const parcial = desk.partial || {};
   const faltan = safeArray(parcial.scalp_missing_components).length + safeArray(parcial.profile_missing_data).length;
   pill.textContent = `Snapshot ${dateTime(asOf)} · ${edad}s${faltan ? ` · ${faltan} parcial(es)` : ''}`;
-  pill.className = `live-pill ${edad > 180 || faltan ? 'negative' : 'neutral'}`;
+  pill.className = `live-pill ${edad > 180 || faltan ? 'estado-aviso' : 'neutral'}`;
   pill.title = `Todos los paneles de la Mesa comparten este ancla. `
     + `Evidencia scalp ${number(parcial.scalp_coverage_pct, 0)}% · marcos ${number(parcial.profile_coverage_pct, 0)}%`;
 }
@@ -491,7 +493,9 @@ function renderDeltaMatrix(rows) {
     const complete = r.coverage_status === 'complete';
     const coverage = complete ? 'Completa' : (r.coverage_status === 'unavailable' ? 'Sin datos' : 'Parcial');
     td(tr, r.window, '');
-    const statusCell = td(tr, coverage, complete ? 'positive' : 'negative');
+    // COBERTURA, no direccion: «Parcial» en rojo se leia como una venta. Ese era el
+    // ejemplo con el que Alejandro pidio separar los dos vocabularios.
+    const statusCell = td(tr, coverage, complete ? 'estado-ok' : 'estado-aviso');
     statusCell.title = `Spot: ${r.spot_source || 'sin fuente'} · lag ${number(r.spot_end_gap_seconds, 0)} s`;
     // Lo direccional son las DOS patas y su cuadrante. El diferencial spot-futuros no lo es
     // (medido: su signo es el del CVD de futuros invertido en 93-94% de las sesiones), asi
@@ -890,7 +894,7 @@ function renderDaily(result) {
   }
   renderQuickRead(result);
 }
-function renderHealth(result) { const ok = result.status === 'ok'; $('health-status').textContent = String(result.status || 'unknown').toUpperCase(); $('health-status').className = ok ? 'positive' : 'negative'; const container = $('health-services'); container.replaceChildren(); for (const service of result.services || []) { const item = document.createElement('div'); item.className = 'health-item'; const strong = document.createElement('strong'); strong.textContent = service.service; const span = document.createElement('span'); span.textContent = `${service.status} · lag ${number(service.lag_seconds, 0)} s`; item.append(strong, span); container.append(item); } }
+function renderHealth(result) { const ok = result.status === 'ok'; $('health-status').textContent = String(result.status || 'unknown').toUpperCase(); $('health-status').className = ok ? 'estado-ok' : 'estado-malo'; const container = $('health-services'); container.replaceChildren(); for (const service of result.services || []) { const item = document.createElement('div'); item.className = 'health-item'; const strong = document.createElement('strong'); strong.textContent = service.service; const span = document.createElement('span'); span.textContent = `${service.status} · lag ${number(service.lag_seconds, 0)} s`; item.append(strong, span); container.append(item); } }
 // Arrastrar o hacer zoom sobre el eje de precios DESACTIVA el autoescalado de esa escala en
 // lightweight-charts, y no se reactiva solo. Al cambiar de activo el eje seguia clavado en el
 // rango del anterior: con BTC (~64 000) y luego ETH (~1 870), las velas de ETH quedaban
@@ -997,14 +1001,14 @@ function renderDataConfidence(conf) {
   const row = safeArray(conf.rows)[0];
   const pill = $('data-confidence');
   if (!pill) return;
-  if (!row) { pill.textContent = 'Datos no disponibles'; pill.className = 'live-pill negative'; return; }
+  if (!row) { pill.textContent = 'Datos no disponibles'; pill.className = 'live-pill estado-malo'; return; }
   const flow = row.flow_8h_complete === true ? '8h' : '8h parcial';
   // Interpolar el campo crudo escribia "Sundefined/Fundefined/Bundefined" cuando el conteo
   // de venues no venia: un hueco tiene que leerse como hueco, no como texto roto.
   const venues = v => { const n = asNumber(v); return n === null ? 'N/D' : number(n, 0); };
   pill.textContent = `Datos ${row.status === 'ok' ? 'OK' : 'degradados'} · S${venues(row.spot_venues_live)}/F${venues(row.futures_venues_live)}/B${venues(row.book_venues_live)} · ${flow}`;
   pill.title = `Cobertura 8h: ${row.flow_8h_complete === true ? 'completa' : 'parcial'} · Spot: ${row.flow_8h_spot_source || 'sin fuente'} · lag ${number(row.flow_8h_spot_end_gap_seconds, 0)} s`;
-  pill.className = `live-pill ${row.status === 'ok' ? 'positive' : 'negative'}`;
+  pill.className = `live-pill ${row.status === 'ok' ? 'estado-ok' : 'estado-malo'}`;
 }
 
 function clearSnapshotView() { $('summary').replaceChildren(); $('decision-horizons').replaceChildren(); $('decision-alignment').textContent = 'Actualizando…'; $('decision-alignment').className = 'decision-alignment neutral'; $('price-context').textContent = 'Sin datos'; }
@@ -1036,7 +1040,7 @@ function renderBasisDetails(result) {
   const dl = $('basis-details'); if (!dl) return; dl.replaceChildren();
   const valid = result.basis_bps !== null && result.basis_bps !== undefined;
   rowDL(dl, 'Basis', valid ? `${number(result.basis_bps, 2)} bps` : 'No utilizable', valid ? signClass(result.basis_bps) : 'negative');
-  rowDL(dl, 'Estado', result.status || '—', valid ? 'positive' : 'negative');
+  rowDL(dl, 'Estado', result.status || '—', valid ? 'estado-ok' : 'estado-malo');
   if (!valid && result.reason) rowDL(dl, 'Motivo', result.reason, 'neutral');
   rowDL(dl, 'Futuros', money(result.fut_price, 2), 'neutral');
   rowDL(dl, 'Spot', money(result.spot_price, 2), 'neutral');
@@ -2329,7 +2333,7 @@ function renderMarketImpact(result) {
      [w.net_delta_musd == null ? '—' : `${number(w.net_delta_musd, 2)} M`, 'neutral'],
      [w.price_move_bps == null ? '—' : `${number(w.price_move_bps, 1)} bps`, 'neutral'],
      [ctx.band || 'sin baseline', (ctx.band === 'extremo' || ctx.band === 'alto') ? 'negative' : 'neutral'],
-     [`${w.coverage}${w.coverage_complete ? '' : ' (parcial)'}`, w.coverage_complete ? 'positive' : 'negative']].forEach(x => td(tr, x[0], x[1]));
+     [`${w.coverage}${w.coverage_complete ? '' : ' (parcial)'}`, w.coverage_complete ? 'estado-ok' : 'estado-aviso']].forEach(x => td(tr, x[0], x[1]));
     tr.title = w.reading || '';
     body.append(tr);
   }
@@ -2345,9 +2349,9 @@ function renderQuality(confidence, health) {
     const lag = asNumber(svc.lag_seconds);
     // Una latencia DESCONOCIDA no puede pintarse como sana: `|| 0` la hacia pasar por 0 s.
     [[svc.service, ''],
-     [estado, estado === 'ok' ? 'positive' : 'negative'],
+     [estado, estado === 'ok' ? 'estado-ok' : 'estado-malo'],
      [dateTime(svc.updated_at), 'neutral'],
-     [lag === null ? 'N/D' : `${number(lag, 1)} s`, lag === null || lag > 120 ? 'negative' : 'neutral'],
+     [lag === null ? 'N/D' : `${number(lag, 1)} s`, lag === null || lag > 120 ? 'estado-aviso' : 'neutral'],
      [svc.detail || '—', 'neutral']].forEach(x => td(tr, x[0], x[1]));
     body.append(tr);
   }
@@ -2357,7 +2361,8 @@ function renderQuality(confidence, health) {
   if (pill) {
     const score = asNumber(row.quality_score);
     pill.textContent = score === null ? 'Sin dato' : `Calidad ${number(score, 0)} · ${row.status || ''}`;
-    pill.className = `live-pill ${score !== null && score >= 80 ? 'positive' : 'negative'}`;
+    // CALIDAD DE DATOS, no direccion. El propio title lo dice: es conectividad de colectores.
+    pill.className = `live-pill ${score !== null && score >= 80 ? 'estado-ok' : 'estado-aviso'}`;
     pill.title = 'Conectividad de los colectores, no cobertura de los feeds';
   }
   const errores = $('quality-errors');
@@ -2381,7 +2386,8 @@ function renderQuality(confidence, health) {
 
 // Calidad de FEEDS: un feed es venue + mercado + tipo de dato, no un proceso interno.
 // Los campos que el sistema no puede medir para ese feed se dicen N/D; nunca cero.
-const FEED_STATE_CLASS = { OK: 'positive', PARTIAL: 'neutral', STALE: 'negative', DOWN: 'negative', UNAVAILABLE: 'negative' };
+const FEED_STATE_CLASS = { OK: 'estado-ok', PARTIAL: 'neutral', STALE: 'estado-aviso', DOWN: 'estado-malo', UNAVAILABLE: 'estado-malo' };
+// ESTADO DE UN FEED, no direccion: un feed caido no es una venta.
 function renderFeedQuality(result) {
   const body = $('feeds-body');
   if (!body) return;
@@ -2408,7 +2414,7 @@ function renderFeedQuality(result) {
     td(tr, f.last_ts ? dateTime(f.last_ts) : 'N/D', 'neutral');
     td(tr, lat === null ? 'N/D' : `${number(lat, 1)} s`, 'neutral');
     // Sin cadencia esperada NO hay cobertura que calcular: se dice, no se inventa un 0%.
-    td(tr, cob === null ? 'N/D' : `${number(cob, 0)}%`, cob !== null && cob < 90 ? 'negative' : 'neutral');
+    td(tr, cob === null ? 'N/D' : `${number(cob, 0)}%`, cob !== null && cob < 90 ? 'estado-aviso' : 'neutral');
     td(tr, f.samples_observed == null ? 'N/D' : number(f.samples_observed, 0), 'neutral');
     td(tr, f.samples_expected == null ? 'N/D' : number(f.samples_expected, 0), 'neutral');
     td(tr, hueco === null ? 'N/D' : `${number(hueco, 0)} s`, 'neutral');
@@ -2665,7 +2671,7 @@ function renderGlobalBar(health) {
   const fuentes = $('live-sources');
   if (fuentes) {
     fuentes.textContent = `Fuentes ${sanos}/${services.length || 0}`;
-    fuentes.className = `live-pill ${services.length && sanos === services.length ? 'positive' : 'negative'}`;
+    fuentes.className = `live-pill ${services.length && sanos === services.length ? 'estado-ok' : 'estado-malo'}`;
   }
   const lat = $('live-latency');
   if (lat) {
@@ -2676,14 +2682,14 @@ function renderGlobalBar(health) {
     const desconocidas = lags.length - medidas.length;
     const peor = medidas.length ? Math.max(...medidas) : null;
     lat.textContent = peor === null ? 'Lat N/D' : `Lat ${number(peor, 0)} s${desconocidas ? ` (+${desconocidas} N/D)` : ''}`;
-    lat.className = `live-pill ${peor === null || desconocidas || peor > 120 ? 'negative' : 'neutral'}`;
+    lat.className = `live-pill ${peor === null || desconocidas || peor > 120 ? 'estado-aviso' : 'neutral'}`;
     lat.title = desconocidas ? `${desconocidas} servicio(s) sin latencia publicada` : 'Mayor latencia entre servicios';
   }
   const err = $('live-error');
   if (err) {
     const ultimo = lastEndpointError();
     err.textContent = ultimo ? `Error: ${ultimo.path.split('?')[0]}${ultimo.count > 1 ? ` (+${ultimo.count - 1})` : ''}` : 'Sin errores';
-    err.className = `live-pill ${ultimo ? 'negative' : 'neutral'}`;
+    err.className = `live-pill ${ultimo ? 'estado-malo' : 'neutral'}`;
     err.title = ultimo ? `${ultimo.path} — ${ultimo.message}` : 'Ningún endpoint ha fallado';
   }
 }
@@ -2797,7 +2803,7 @@ function renderExternalMacro(result = {}) {
   const eventKicker = document.createElement('span');
   eventKicker.textContent = `Riesgo de evento · ${eventRisk.level || '—'}`;
   const eventValue = document.createElement('strong');
-  eventValue.className = ['alto', 'elevado'].includes(eventRisk.level) ? 'negative' : 'neutral';
+  eventValue.className = ['alto', 'elevado'].includes(eventRisk.level) ? 'estado-aviso' : 'neutral';
   const next = eventRisk.next_event;
   eventValue.textContent = next ? `${next.title} · ${dateTime(next.event_at)}` : 'Sin evento próximo registrado';
   const eventText = document.createElement('p');

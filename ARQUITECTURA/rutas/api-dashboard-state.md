@@ -323,7 +323,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:116`, `harness/checks/K43-foto-unica.sh:178`, `harness/checks/K43-foto-unica.sh:179`, `harness/checks/K43-foto-unica.sh:180` _(+10)_ | `harness/checks/K43-foto-unica.sh:186`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:25`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:62` _(+1)_ |
-| **panel** | `static/app.js:1588` | `static/app.js:1396`, `static/app.js:1403` |
+| **panel** | `static/app.js:1592` | `static/app.js:1400`, `static/app.js:1407` |
 | **readme** | — | `README.md:195`, `README.md:488`, `README.md:502` |
 | **tests** | `tests/test_metrics_endpoint.py:253`, `tests/test_v121_hardening.py:27`, `tests/test_v150_desk_snapshot.py:130` | — |
 

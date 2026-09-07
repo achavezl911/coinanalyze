@@ -160,7 +160,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:110`, `harness/checks/K43-foto-unica.sh:160` | `harness/checks/K20-cincoxx.sh:2` |
-| **panel** | `static/app.js:1580`, `static/app.js:1746` | — |
+| **panel** | `static/app.js:1584`, `static/app.js:1750` | — |
 | **tests** | `tests/test_dashboard_layout.py:108` | — |
 
 **La llama el panel: es superficie de producto.**

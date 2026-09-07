@@ -27201,7 +27201,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1644"
+            "static/app.js:1648"
           ],
           "menciones": []
         },
@@ -27535,9 +27535,9 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1579",
-            "static/app.js:1647",
-            "static/app.js:1744"
+            "static/app.js:1583",
+            "static/app.js:1651",
+            "static/app.js:1748"
           ],
           "menciones": []
         },
@@ -27949,11 +27949,11 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1588"
+            "static/app.js:1592"
           ],
           "menciones": [
-            "static/app.js:1396",
-            "static/app.js:1403"
+            "static/app.js:1400",
+            "static/app.js:1407"
           ]
         },
         "readme": {
@@ -28116,8 +28116,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1590",
-            "static/app.js:1718"
+            "static/app.js:1594",
+            "static/app.js:1722"
           ],
           "menciones": []
         },
@@ -28291,7 +28291,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1154"
+            "static/app.js:1158"
           ],
           "menciones": []
         },
@@ -28623,7 +28623,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1585"
+            "static/app.js:1589"
           ],
           "menciones": []
         },
@@ -28819,7 +28819,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1747"
+            "static/app.js:1751"
           ],
           "menciones": []
         },
@@ -29018,8 +29018,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1580",
-            "static/app.js:1746"
+            "static/app.js:1584",
+            "static/app.js:1750"
           ],
           "menciones": []
         },
@@ -29334,7 +29334,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1704"
+            "static/app.js:1708"
           ],
           "menciones": []
         }
@@ -29442,8 +29442,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1591",
-            "static/app.js:1719"
+            "static/app.js:1595",
+            "static/app.js:1723"
           ],
           "menciones": []
         },
@@ -30078,7 +30078,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:3236"
+            "static/app.js:3242"
           ],
           "menciones": []
         }
@@ -30497,8 +30497,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1675",
-            "static/app.js:1745"
+            "static/app.js:1679",
+            "static/app.js:1749"
           ],
           "menciones": []
         },
@@ -30615,7 +30615,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1665"
+            "static/app.js:1669"
           ],
           "menciones": []
         }
@@ -30870,7 +30870,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1589"
+            "static/app.js:1593"
           ],
           "menciones": []
         },
@@ -31043,8 +31043,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1645",
-            "static/app.js:1700"
+            "static/app.js:1649",
+            "static/app.js:1704"
           ],
           "menciones": []
         },
@@ -31357,7 +31357,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1676"
+            "static/app.js:1680"
           ],
           "menciones": []
         }
@@ -31485,7 +31485,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1705"
+            "static/app.js:1709"
           ],
           "menciones": []
         }
@@ -31987,10 +31987,10 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1720"
+            "static/app.js:1724"
           ],
           "menciones": [
-            "static/app.js:1716"
+            "static/app.js:1720"
           ]
         },
         "readme": {
@@ -32171,7 +32171,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:3361"
+            "static/app.js:3367"
           ],
           "menciones": []
         },
@@ -32406,7 +32406,7 @@
       "consumidores": {
         "panel": {
           "llamadas": [
-            "static/app.js:3077"
+            "static/app.js:3083"
           ],
           "menciones": []
         },
@@ -32555,7 +32555,7 @@
         "panel": {
           "llamadas": [],
           "menciones": [
-            "static/app.js:2124"
+            "static/app.js:2128"
           ]
         }
       },
@@ -32660,7 +32660,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1649"
+            "static/app.js:1653"
           ],
           "menciones": []
         },
@@ -32921,7 +32921,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1701"
+            "static/app.js:1705"
           ],
           "menciones": []
         },
@@ -33068,7 +33068,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1648"
+            "static/app.js:1652"
           ],
           "menciones": []
         }
@@ -33258,7 +33258,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1664"
+            "static/app.js:1668"
           ],
           "menciones": []
         }
@@ -33454,7 +33454,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1703"
+            "static/app.js:1707"
           ],
           "menciones": []
         },
@@ -33594,7 +33594,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1702"
+            "static/app.js:1706"
           ],
           "menciones": []
         }
@@ -33706,7 +33706,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1661"
+            "static/app.js:1665"
           ],
           "menciones": []
         },
@@ -33823,7 +33823,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1736"
+            "static/app.js:1740"
           ],
           "menciones": []
         },
@@ -34324,7 +34324,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1734"
+            "static/app.js:1738"
           ],
           "menciones": []
         },
@@ -34522,7 +34522,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1732"
+            "static/app.js:1736"
           ],
           "menciones": []
         },
@@ -34897,7 +34897,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1733"
+            "static/app.js:1737"
           ],
           "menciones": []
         },
@@ -35090,7 +35090,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1735"
+            "static/app.js:1739"
           ],
           "menciones": []
         },
@@ -35391,7 +35391,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1763"
+            "static/app.js:1767"
           ],
           "menciones": []
         },
@@ -35513,7 +35513,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1674"
+            "static/app.js:1678"
           ],
           "menciones": []
         }
@@ -35636,8 +35636,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1577",
-            "static/app.js:1679"
+            "static/app.js:1581",
+            "static/app.js:1683"
           ],
           "menciones": []
         }
@@ -35826,8 +35826,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1576",
-            "static/app.js:1678"
+            "static/app.js:1580",
+            "static/app.js:1682"
           ],
           "menciones": []
         }
@@ -35924,7 +35924,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1915"
+            "static/app.js:1919"
           ],
           "menciones": []
         },
@@ -36055,8 +36055,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1575",
-            "static/app.js:1677"
+            "static/app.js:1579",
+            "static/app.js:1681"
           ],
           "menciones": []
         },
@@ -36194,7 +36194,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1731"
+            "static/app.js:1735"
           ],
           "menciones": []
         },
@@ -36574,7 +36574,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1646"
+            "static/app.js:1650"
           ],
           "menciones": []
         },
@@ -36751,8 +36751,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1578",
-            "static/app.js:1680"
+            "static/app.js:1582",
+            "static/app.js:1684"
           ],
           "menciones": []
         },
@@ -36932,7 +36932,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:2972"
+            "static/app.js:2978"
           ],
           "menciones": []
         },
