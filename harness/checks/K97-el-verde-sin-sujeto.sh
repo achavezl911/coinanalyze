@@ -221,7 +221,7 @@ corre_sujeto() {  # $1 = fichero del check   $2 = canal   $3 = mudo|cero|caido
 
 # --- EL CENSO ------------------------------------------------------------------------------
 enfermos=""; sanos=0; nojuzg=""; n=0; detalle=""; api_debil=""
-distinguen=""; confunden=""; indistintos=""
+distinguen=""; confunden=""; indistintos=""; movidos=""
 
 # LA FIRMA DE UNA EJECUCION = su rc mas su salida NORMALIZADA. Se normaliza lo que cambia entre
 # dos corridas sin que cambie el comportamiento: la ruta del arbol de mentira -que es distinta
@@ -246,11 +246,13 @@ for f in "$CHECKS"/*.sh; do
     continue
   fi
   grep -qE '"?\$B/bin/api|/harness/bin/api' "$f" && api_debil="$api_debil $c"
-  veredicto=SANO; porque=""; firma_vacio=""
+  veredicto=SANO; porque=""; firma_mudo=""; firma_cero=""
   for modo in mudo cero; do
     sal=$(corre_sujeto "$f" "$can" "$modo")
     rc=$(printf '%s\n' "$sal" | head -1)
-    [ "$modo" = mudo ] && firma_vacio=$(firma "$rc" "$(printf '%s\n' "$sal" | tail -n +2)")
+    # SE GUARDA LA FIRMA DE LOS DOS DOBLES, no solo la de `mudo`. Ver la particion mas abajo.
+    eval "firma_$modo=\$(firma \"\$rc\" \"\$(printf '%s\\n' \"\$sal\" | tail -n +2)\")"
+
     if [ "$rc" = 99 ]; then
       # NO TOCO EL DOBLE: no se le dio ninguna poblacion vacia, asi que no se le juzga.
       veredicto=NOJUZG; porque="no-llego-al-canal"; break
@@ -272,18 +274,30 @@ for f in "$CHECKS"/*.sh; do
       # PRESTADO: el dia que el transporte mejore, o que la consulta devuelva algo parseable,
       # ese check se pone verde sin haber medido nada-.
       #
-      # SE DECIDE EJECUTANDO DOS VECES Y COMPARANDO, no leyendo la frase. Si el sujeto se
-      # comporta IGUAL ante «poblacion vacia» y ante «canal caido», es que no puede saber cual
-      # de las dos le paso. Si se comporta distinto, algo distingue.
+      # SE DECIDE EJECUTANDO Y COMPARANDO, no leyendo la frase. Si el sujeto se comporta IGUAL
+      # ante «poblacion vacia» y ante «canal caido», es que no puede saber cual de las dos le
+      # paso. Si se comporta distinto, algo distingue.
+      #
+      # Y SE COMPARA CONTRA LOS DOS DOBLES, no contra uno. Arreglado el 2026-09-07: la version
+      # anterior tomaba la firma de «poblacion vacia» SOLO del doble MUDO, y **yo mismo habia
+      # demostrado que MUDO es infiel para un check que CUENTA** -un `count(*)` sobre una tabla
+      # vacia devuelve la linea `0`, no cero lineas-. A esos checks el doble mudo les parecia un
+      # canal roto, su firma coincidia con la del caido, y salian PRESTADO sin serlo.
+      # LA REGLA CORRECTA ES LA QUE YA SE APLICA A LOS ENFERMOS -«enfermo si sale VERDE con
+      # CUALQUIERA de los dos»-, llevada al sano: **distingue si distingue con CUALQUIERA**.
+      # El error iba en la direccion segura -ningun GANADO era PRESTADO-, asi que esto no
+      # revierte nada: solo devuelve a su sitio a los que estaban de mas en el cubo malo.
       sal=$(corre_sujeto "$f" "$can" caido)
       rc_c=$(printf '%s\n' "$sal" | head -1)
       firma_caido=$(firma "$rc_c" "$(printf '%s\n' "$sal" | tail -n +2)")
-      if [ -z "$firma_vacio" ] || [ "$rc_c" = 99 ]; then
+      if { [ -z "$firma_mudo" ] && [ -z "$firma_cero" ]; } || [ "$rc_c" = 99 ]; then
         indistintos="$indistintos $c"; sanos=$((sanos+1))
-      elif [ "$firma_vacio" = "$firma_caido" ]; then
-        confunden="$confunden $c"; sanos=$((sanos+1))
-      else
+      elif [ "$firma_mudo" != "$firma_caido" ] || [ "$firma_cero" != "$firma_caido" ]; then
         distinguen="$distinguen $c"; sanos=$((sanos+1))
+        # LA PARTICION VIEJA, solo para poder publicar cuantos se mueven. No decide nada.
+        [ "$firma_mudo" = "$firma_caido" ] && movidos="$movidos $c"
+      else
+        confunden="$confunden $c"; sanos=$((sanos+1))
       fi
       ;;
   esac
@@ -341,6 +355,10 @@ n_dis=$(printf '%s' "$distinguen" | wc -w)
   echo "    GANADO   ($n_dis) se comportan DISTINTO ante las dos:$distinguen"
   echo "    PRESTADO ($n_con) se comportan IGUAL -no pueden saber cual de las dos les paso-:$confunden"
   [ "$n_ind" -gt 0 ] && echo "    SIN COMPARAR ($n_ind) no se pudo correr una de las dos:$indistintos"
+  # LA PARTICION VIEJA AL LADO, para que se vea cuantos se mueven y no haya que creerselo.
+  n_mov=$(printf '%s' "$movidos" | wc -w)
+  echo "    con el criterio ANTERIOR -solo el doble MUDO- habrian sido $((n_dis - n_mov)) GANADO y $((n_con + n_mov)) PRESTADO;"
+  echo "    $n_mov se mueven de PRESTADO a GANADO al usar tambien el doble CERO:$movidos"
   echo "    un PRESTADO no esta roto hoy: esta a merced de que el transporte mejore. No se arreglan en esta vuelta."
 [ -n "$nojuzg" ] && echo "  NO JUZGABLES, nombrados con su motivo:$nojuzg"
 [ -n "$detalle" ] && printf '%s' "$detalle"

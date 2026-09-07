@@ -23,8 +23,8 @@ fallos=0; pasan=0; nocorren=""; nocorren_criticos=""
 # y la ultima linea decia **«15 de 15 pasan · 0 fallan»** sin mencionar que habia perdido tres.
 # Y `bin/_corta` trunca a 8000 B, asi que ese titular es justo lo que sobrevive a un corte: la
 # unica linea que alguien lee podia ser la que mas mentia.
-# N1 N1b · P1 P2 P3 · C1 · S1 S2 · V1 V1b · D1 D2 · R1 R1b R2 · G1 G2 G3 G4 G5 · F1 F2 F3
-TOTAL_BRAZOS=23
+# N1 N1b · P1 P2 P3 · C1 · S1 S2 · V1 V1b · D1 D2 · R1 R1b R2 · G1..G8 · F1 F2 F3
+TOTAL_BRAZOS=26
 # LOS CRITICOS son los que, si no corren, dejan al control sin poder AFIRMAR nada. Hoy es solo el
 # de regresion: es el que prueba que el verde de K97 se debe a los arreglos y no a que el
 # instrumento haya dejado de mirar. Sin el, «pasan» no significa nada y el veredicto es NOMED.
@@ -119,6 +119,24 @@ filas=$("$B/bin/prodsql" "SELECT ts FROM inventada WHERE ts > now() - interval '
 [ "$rc" = 0 ] || { echo "NO MEDIDO: el canal no responde (rc=$rc)"; exit 2; }
 n=$(printf '%s' "$filas" | grep -c . || true)
 [ "$n" -gt 0 ] || { echo "NO MEDIDO: el canal contesto y no habia ni una fila elegible"; exit 2; }
+echo "VERDE: $n filas y ninguna mal"
+exit 0
+EOF
+chmod 755 "$1"; }
+
+# SOLO CON CERO · cuenta sus filas con un `count(*)`, asi que ante el doble MUDO recibe VACIO
+# -que para el es "no contesto"- y ante el CERO recibe la linea `0` y sabe decir que no habia
+# nada. **Solo distingue con UNO de los dos dobles.** Es exactamente el caso que la particion
+# anterior perdia: comparaba unicamente contra MUDO y lo mandaba a PRESTADO sin serlo.
+sujeto_solo_cero() { cat > "$1" <<'EOF'
+#!/bin/bash
+DIAS=7
+B=/srv/coinanalyze/harness
+n=$("$B/bin/prodsql" "SELECT count(*) FROM inventada WHERE ts > now() - interval '7 days'" 2>/dev/null | tr -d ' ')
+case "${n:-}" in
+  '')  echo "NO MEDIDO: la consulta no devolvio un numero"; exit 2 ;;
+  0)   echo "NO MEDIDO: el canal contesto y no habia ni una fila"; exit 2 ;;
+esac
 echo "VERDE: $n filas y ninguna mal"
 exit 0
 EOF
@@ -268,6 +286,26 @@ s_tot=$(printf '%s\n' "$out" | sed -n 's/.*· sanos: \([0-9]*\) .*/\1/p' | head 
 s_sum=$(( $(printf '%s' "$gan" | wc -w) + $(printf '%s' "$pre" | wc -w) ))
 comprueba "G5 la particion suma: $s_sum de $s_tot sanos" \
   "$([ "${s_tot:-0}" = "$s_sum" ] && echo si || echo no)"
+
+# --- G6/G7 · EL DOBLE FIEL. Anadido el 2026-09-07 -----------------------------------------
+# NINGUNO DE LOS DOS DOBLES ES FIEL PARA TODOS: para `SELECT ts FROM t` lo es MUDO -cero lineas-
+# y para `count(*)` lo es CERO -la linea `0`-. La particion tomaba la firma SOLO de MUDO, asi que
+# a un check que CUENTA le parecia que el canal estaba roto y lo mandaba a PRESTADO. Estos dos
+# brazos son la prueba de que el criterio se mueve: uno distingue solo con CERO y tiene que salir
+# GANADO; el otro no distingue con ninguno y tiene que salir PRESTADO.
+D10="$DIR/dobles"; puebla "$D10"
+sujeto_solo_cero "$D10/Z07-solo-cero.sh"
+sujeto_declara   "$D10/Z01-declara.sh"
+out=$(K97_CHECKS="$D10" bash "$CHK" 2>&1)
+gan=$(printf '%s\n' "$out" | sed -n 's/.*GANADO *([0-9]*) [^:]*://p')
+pre=$(printf '%s\n' "$out" | sed -n 's/.*PRESTADO *([0-9]*) [^:]*-://p')
+comprueba "G6 el que solo distingue con el doble CERO: GANADO" \
+  "$(printf '%s' "$gan" | grep -qw Z07-solo-cero && echo si || echo no)"
+comprueba "G7 y el que no distingue con ninguno sigue PRESTADO" \
+  "$(printf '%s' "$pre" | grep -qw Z01-declara && echo si || echo no)"
+# G8 · y la salida publica CUANTOS se mueven, que es lo que hace auditable el cambio de criterio.
+comprueba "G8 publica cuantos se mueven de PRESTADO a GANADO" \
+  "$(printf '%s' "$out" | grep -q 'se mueven de PRESTADO a GANADO' && echo si || echo no)"
 
 echo
 echo "ANTI-FANTASMA · el instrumento tiene que probarse a si mismo"
