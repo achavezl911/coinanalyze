@@ -11,15 +11,21 @@ from app.rango import _pruebas, _veredicto
 # MEDIDO en 140. Ventana y control, BTCUSDT_PERP.A.
 VENTANA = {
     "velas_1min": 4770, "precio_inicio": 81000.1, "precio_fin": 78989.3, "precio_pct": -2.482,
-    "cvd_spot_usd": -113_600_000.0, "minutos_spot": 9540, "ballena_spot_usd": 0.0,
-    "oi_inicio": 9050.0, "oi_fin": 8520.0, "oi_pct": -5.856, "muestras_oi": 954,
+    "cvd_spot_usd": -113_608_752.0, "minutos_spot": 9540, "ballena_spot_usd": 0.0,
+    "oi_inicio": 9_050_247_714.0, "oi_fin": 8_520_487_323.0, "oi_pct": -5.854, "muestras_oi": 954,
     "funding_medio_pct": 0.2760, "muestras_funding": 954,
-    "liq_largos_usd": 60_900_000.0, "liq_cortos_usd": 20_500_000.0, "muestras_liq": 954,
+    # 482, NO 954: `liquidations` solo escribe cuando hay evento. 954 es el denominador de
+    # open_interest y funding_rate, que van a 5 min completos. Prestar un denominador de otra
+    # tabla es exactamente la clase de cero que esta campaña existe para quitar.
+    "liq_largos_usd": 60_862_490.0, "liq_cortos_usd": 20_465_735.0, "muestras_liq": 482,
 }
+# EL CONTROL ES `desde - duracion` .. `desde` -79.5 h antes del viernes, o sea 2026-09-01T02:00Z-,
+# que es lo que calcula estructura_de_rango. Antes estaba fijado mal y por eso su CVD daba
+# +123.9 M; re-medido da +142.5 M, que es la cifra que dio Alejandro (+143.4 M) y no la mia.
 CONTROL = {
-    "velas_1min": 4530, "precio_pct": 2.337, "cvd_spot_usd": 123_900_000.0, "minutos_spot": 9028,
-    "oi_pct": 5.577, "muestras_oi": 906, "funding_medio_pct": 0.7156, "muestras_funding": 906,
-    "liq_largos_usd": 46_800_000.0, "liq_cortos_usd": 110_200_000.0, "muestras_liq": 906,
+    "velas_1min": 4770, "precio_pct": 3.348, "cvd_spot_usd": 142_531_137.0, "minutos_spot": 9506,
+    "oi_pct": 6.862, "muestras_oi": 954, "funding_medio_pct": 0.7223, "muestras_funding": 954,
+    "liq_largos_usd": 47_656_815.0, "liq_cortos_usd": 112_694_641.0, "muestras_liq": 636,
     "ballena_spot_usd": 0.0,
 }
 
