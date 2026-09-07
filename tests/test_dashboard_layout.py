@@ -223,3 +223,44 @@ def test_la_capa_de_auditoria_declara_su_ventana_y_no_agrega_en_el_navegador():
     assert 'id="auditoria-body"' in HTML
     assert 'id="scalp-historial-alcance"' in HTML
     assert ".auditoria-panel { grid-column: span 12; }" in CSS
+
+
+def test_la_mesa_da_precio_y_declara_el_alcance_de_cada_nivel():
+    """Los niveles llegan a la tarjeta de decision, y cada uno dice sobre cuantas velas se calculo.
+
+    Medido contra `ohlcv` el 2026-09-07T17:15Z: Asia iba sobre sus 480 velas, Londres sobre sus
+    540, y Nueva York sobre 215 de las 540 que dura su ventana. La tarjeta los presentaba igual.
+    """
+    niveles = function_source("nivelesRows", "precio")
+    # llegan por el SNAPSHOT, no por una peticion aparte: comparten `computed_at` con la Mesa.
+    assert "state.desk.components && state.desk.components.reference_levels" in JS
+    for clave in ("asia", "london", "new_york"):
+        assert clave in niveles, clave
+    alcance = function_source("alcance", "renderHypothesis")
+    # LAS TRES CIFRAS: cuantas hay, cuantas cabian, y cuanto dura la ventana. Sin la tercera,
+    # «215 de 216» parece completo y es el 40 % de la sesion.
+    for campo in ("velas", "velas_posibles", "duracion_min"):
+        assert campo in alcance, campo
+    # SON REFERENCIA, NO PREDICCION: ni regla de entrada, ni puntuacion derivada, ni setup nuevo.
+    for prohibido in ("if (s.high <", "rompe", "score +=", "señal", "entrada si"):
+        assert prohibido not in niveles, prohibido
+
+
+def test_la_confianza_se_publica_con_lo_que_ha_valido():
+    """Las DOS cifras, porque una sola se lee mal en las dos direcciones."""
+    conf = function_source("confianzaRow", "renderHypothesis")
+    assert "CONFIANZA_MEDIDA" in JS
+    # frecuencia Y magnitud en la MISMA frase
+    assert "acertado la dirección" in conf and "se movió" in conf
+    assert "sobre ${m.n} observaciones" in conf, "falta el tamaño de muestra por etiqueta"
+    # y `baja` no es un peldaño mas: es la ausencia de apuesta, medido 0 de 23 560 con direccion.
+    assert "SIN dirección" in conf
+    assert "23 560" in conf
+
+
+def test_la_lectura_de_corto_declara_que_es_una_cifra_y_su_complemento():
+    """Medido sobre 22 187 filas: long+short = 100 siempre, corr = -1.0000, cero filas con las dos
+    altas. «62 L / 38 S» se leia como dos mediciones; es un solo numero dicho dos veces."""
+    assert "Sesgo scalp" in JS
+    assert "no una segunda lectura" in JS
+    assert "}L / ${number(scalp.short_score, 0)}S" not in JS, "vuelve a pintarse como dos lecturas"

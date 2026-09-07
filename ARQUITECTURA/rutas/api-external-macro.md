@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `external_macro_endpoint` · `app/api.py:1825` (cuerpo hasta la 1831) · decorador en la linea 1824.
+Handler `external_macro_endpoint` · `app/api.py:1834` (cuerpo hasta la 1840) · decorador en la linea 1833.
 
 ## Parametros de entrada
 
@@ -85,7 +85,7 @@ Llamadas directas del handler:
 - `app.api.validate_symbol` — `app/api.py:222`
 - `app.external_macro.align_with_internal` — `app/external_macro.py:415`
 - `app.external_macro.external_macro_context` — `app/external_macro.py:437`
-- `app.scalp_logic.swing_score` — `app/scalp_logic.py:6234`
+- `app.scalp_logic.swing_score` — `app/scalp_logic.py:6271`
 
 <details><summary>Alcanzables de forma indirecta (44)</summary>
 
@@ -98,9 +98,9 @@ Llamadas directas del handler:
 - `app.external_macro.build_external_macro_context` — `app/external_macro.py:237`
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._atr` — `app/scalp_logic.py:2926`
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3269`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3283`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5777`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3306`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3320`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5814`
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
 - `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1780`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
@@ -108,31 +108,31 @@ Llamadas directas del handler:
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2431`
 - `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1770`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4071`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4041`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4053`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4245`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4108`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4078`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4090`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4282`
 - `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1742`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3256`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3502`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4161`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3293`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3539`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4198`
 - `app.scalp_logic._regime` — `app/scalp_logic.py:1751`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3248`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3285`
 - `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2226`
 - `app.scalp_logic._swings` — `app/scalp_logic.py:2212`
 - `app.scalp_logic._tr_series` — `app/scalp_logic.py:2915`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6083`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3304`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4419`
+- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6120`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3341`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4456`
 - `app.scalp_logic.macro_context` — `app/scalp_logic.py:1820`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5810`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5847`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
 - `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2609`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2283`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5928`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3539`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5965`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3576`
 
 </details>
 
@@ -160,7 +160,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:110`, `harness/checks/K43-foto-unica.sh:160` | `harness/checks/K20-cincoxx.sh:2` |
-| **panel** | `static/app.js:1558`, `static/app.js:1724` | — |
+| **panel** | `static/app.js:1563`, `static/app.js:1729` | — |
 | **tests** | `tests/test_dashboard_layout.py:108` | — |
 
 **La llama el panel: es superficie de producto.**

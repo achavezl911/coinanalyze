@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `daily` · `app/api.py:1946` (cuerpo hasta la 2027) · decorador en la linea 1945.
+Handler `daily` · `app/api.py:1955` (cuerpo hasta la 2036) · decorador en la linea 1954.
 
 ## Parametros de entrada
 
@@ -22,7 +22,7 @@ Handler `daily` · `app/api.py:1946` (cuerpo hasta la 2027) · decorador en la l
 | campo | de donde sale |
 |---|---|
 | `coverage_note` | literal en app/api.py:600 |
-| `data_gaps` | asignado en app/api.py:2010 |
+| `data_gaps` | asignado en app/api.py:2019 |
 | `knowledge_time_replay` | literal en app/api.py:597 |
 | `projection_latest_session_date` | literal en app/api.py:593 |
 | `quick_read` | literal en app/api.py:598 |
@@ -110,7 +110,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:1953` | el propio handler |
+| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:1962` | el propio handler |
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
@@ -122,7 +122,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:66`, `harness/checks/K03-hueco-declarado.sh:161`, `harness/checks/K03-hueco-declarado.sh:164`, `harness/checks/K43-foto-unica.sh:119` _(+1)_ | `harness/checks/K03-hueco-declarado.sh:8`, `harness/checks/K03-hueco-declarado.sh:15`, `harness/checks/K03-hueco-declarado.sh:153`, `harness/checks/K03-hueco-declarado.sh:165` _(+1)_ |
-| **panel** | `static/app.js:1557`, `static/app.js:1625`, `static/app.js:1722` | — |
+| **panel** | `static/app.js:1562`, `static/app.js:1630`, `static/app.js:1727` | — |
 | **readme** | — | `README.md:70`, `README.md:90`, `README.md:409` |
 | **tests** | `tests/test_dashboard_presentation.py:83` | `tests/test_data_gaps.py:128` |
 

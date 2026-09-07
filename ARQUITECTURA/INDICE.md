@@ -22,7 +22,7 @@
 | `/api/dashboard/state` | GET | 165 | 14 | 44 | [ficha](rutas/api-dashboard-state.md) |
 | `/api/data-confidence` | GET | 10 | 6 | 10 | [ficha](rutas/api-data-confidence.md) |
 | `/api/delta-profile` | GET | 4 | 1 | 11 | [ficha](rutas/api-delta-profile.md) |
-| `/api/desk/state` | GET | 25 | 13 | 77 | [ficha](rutas/api-desk-state.md) |
+| `/api/desk/state` | GET | 26 | 13 | 78 | [ficha](rutas/api-desk-state.md) |
 | `/api/divergences` | GET | 12 | 3 | 7 | [ficha](rutas/api-divergences.md) |
 | `/api/external-macro` | GET | 1 | 6 | 48 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 4 | [ficha](rutas/api-flow-spot-vs-perp.md) |
@@ -44,7 +44,7 @@
 | `/api/profile` | GET | 14 | 5 | 28 | [ficha](rutas/api-profile.md) |
 | `/api/quality/feeds` | GET | 7 | 10 | 43 | [ficha](rutas/api-quality-feeds.md) |
 | `/api/range/validate` | GET | 5 | 1 | 8 | [ficha](rutas/api-range-validate.md) |
-| `/api/reference-levels` | GET | 15 | 1 | 3 | [ficha](rutas/api-reference-levels.md) |
+| `/api/reference-levels` | GET | 22 | 1 | 3 | [ficha](rutas/api-reference-levels.md) |
 | `/api/scalp/absorption` | GET | **0 · PENDIENTE** | 2 | 8 | [ficha](rutas/api-scalp-absorption.md) |
 | `/api/scalp/alerts` | GET | 2 | 8 | 26 | [ficha](rutas/api-scalp-alerts.md) |
 | `/api/scalp/basis` | GET | 1 | 2 | 4 | [ficha](rutas/api-scalp-basis.md) |

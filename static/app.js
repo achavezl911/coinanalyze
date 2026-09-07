@@ -1508,7 +1508,12 @@ function renderDecisionBoard(dashboard, trend, swing, structureDetail, confidenc
     horizonCard({
       name: 'Corto plazo', time: shortHorizon, action: shortAction, side: shortAction.includes(shortSide) ? shortSide : 'WAIT',
       thesis: shortThesis, trigger: shortTrigger, invalidation: shortInvalidation,
-      metric: `Scalp ${number(scalp.long_score, 0)}L / ${number(scalp.short_score, 0)}S · barrera ${barriers.decision || 'sin lectura'}`,
+      // UNA CIFRA Y SU COMPLEMENTO, NO DOS LECTURAS. Medido sobre las 22 187 filas de
+      // scalp_signal_snapshot: long+short = 100 en TODAS, corr = -1.0000 exacta, y cero filas
+      // con las dos por encima -o por debajo- de su mediana. «62 L / 38 S» se leia como si dos
+      // mediciones hubieran votado; lo que hay es un solo numero dicho dos veces. Se publica
+      // como lo que es: un sesgo de 0 a 100, con su complemento entre parentesis.
+      metric: `Sesgo scalp ${number(scalp.long_score, 0)}/100 hacia largo (el 'short' es su complemento, no una segunda lectura) · barrera ${barriers.decision || 'sin lectura'}`,
       baseRate: shortBaseRate,
       link: '#liquidez', linkText: 'Ver liquidez y barreras',
     }),
@@ -2094,6 +2099,89 @@ function renderSetupRows(dl, setup) {
   }
 }
 
+
+// --- LA MESA DA PRECIO ---------------------------------------------------------------------
+// Hasta el 2026-09-07 la tarjeta de decision daba la invalidacion en prosa -«el CVD spot gira
+// vendedor»- y NINGUN numero. `/api/reference-levels` existia, contestaba y era correcta -los
+// catorce niveles recalculados desde `ohlcv` 1min cuadran valor por valor- y no llegaba aqui.
+//
+// SON REFERENCIA, NO PREDICCION. No hay ninguna regla de entrada sobre ellos, ninguna puntuacion
+// derivada y ningun setup que los use: esta medido que la señal no anticipa y que ninguna regla
+// de entrada alcanzable le recupera la ventaja, asi que una regla sobre niveles seria una
+// afirmacion nueva sin una sola medida detras.
+function nivelesRows(dl, niveles) {
+  if (!niveles) {
+    rowDL(dl, 'Niveles', 'No llegaron en este snapshot', 'neutral');
+    return;
+  }
+  const pd = niveles.previous_day || {};
+  const cd = niveles.current_day || {};
+  const op = niveles.opens || {};
+  // El dia previo esta CERRADO: su maximo y su minimo ya no se mueven. Se dice, porque es la
+  // diferencia con los de hoy.
+  rowDL(dl, 'Día previo (cerrado)',
+    `${precio(pd.high)} máx · ${precio(pd.low)} mín · ${precio(pd.close)} cierre${alcance(pd)}`, 'neutral');
+  rowDL(dl, 'Hoy (en curso)',
+    `${precio(cd.high)} máx · ${precio(cd.low)} mín · ${precio(cd.open)} apertura${alcance(cd)}`, 'neutral');
+  // Las tres aperturas juntas: cuando dos coinciden no es un error, es que el periodo empieza el
+  // mismo dia -la semanal y la diaria coinciden los lunes-.
+  rowDL(dl, 'Aperturas D/S/M',
+    `${precio(op.daily)} · ${precio(op.weekly)} · ${precio(op.monthly)}`, 'neutral');
+  const ses = niveles.sessions_today_utc || {};
+  for (const [clave, etiqueta] of [['asia', 'Asia'], ['london', 'Londres'], ['new_york', 'Nueva York']]) {
+    const s = ses[clave];
+    if (!s) continue;
+    // EL ALCANCE VA PEGADO AL NIVEL Y NO EN UNA NOTA. Medido el 2026-09-07T17:15Z: Asia iba sobre
+    // sus 480 velas, Londres sobre sus 540, y Nueva York sobre 215 de las 540 que dura. Un maximo
+    // de sesion sacado de un puñado de velas y uno sacado de la sesion completa no son la misma
+    // cifra, y hasta hoy la tarjeta los habria presentado igual.
+    rowDL(dl, `${etiqueta} ${s.window_utc || ''} UTC`,
+      `${precio(s.high)} máx · ${precio(s.low)} mín${alcance(s)}`,
+      s.en_curso ? 'neutral' : 'positive');
+  }
+}
+
+// `precio` y `alcance` son de formato, no de calculo: no derivan nada del nivel.
+function precio(v) {
+  const n = asNumber(v);
+  return n === null ? 'N/D' : number(n, 1);
+}
+function alcance(s) {
+  const v = asNumber(s && s.velas);
+  const posibles = asNumber(s && s.velas_posibles);
+  const dura = asNumber(s && s.duracion_min);
+  if (v === null || posibles === null) return '';
+  // Se dicen las TRES cifras y no una: cuantas velas hay, cuantas cabian ya, y cuanto dura la
+  // ventana entera. Sin la tercera, «215 de 216» parece completo y es el 40 % de la sesion.
+  const cola = dura !== null && posibles < dura ? ` de ${dura} que dura` : '';
+  return ` · sobre ${v} de ${posibles} velas${cola}`;
+}
+
+// --- B · LA ETIQUETA DE CONFIANZA, CON LO QUE HA VALIDO -------------------------------------
+// Medido sobre signal_observation ⋈ signal_outcome a 60 min, BTCUSDT_PERP.A periodicas, del
+// 2026-08-10 al 2026-09-07. Las DOS cifras, porque una sola se lee mal en las dos direcciones:
+// con solo la magnitud, «alta» se lee como «acierta mas»; con solo la frecuencia, se lee como
+// «no vale para nada», cuando SI dice cuanto te juegas.
+const CONFIANZA_MEDIDA = {
+  alta:  { n: 619,   acierto: 45.1, mov: 0.3355 },
+  media: { n: 13717, acierto: 48.6, mov: 0.2730 },
+};
+function confianzaRow(dl, etiqueta) {
+  const e = String(etiqueta || '').toLowerCase();
+  if (e === 'baja') {
+    // `baja` NO es un peldaño mas de la escalera: es la AUSENCIA de apuesta. Medido: de sus
+    // 23 560 observaciones, CERO traen direccion long o short -22 610 neutral y 950
+    // unavailable-. Quien lea «confianza baja» entenderia «apuesta debil»; no hay apuesta.
+    rowDL(dl, 'Confianza', 'baja — que aquí significa SIN dirección: no es una apuesta débil, es que no hay apuesta (0 de 23 560 con dirección)', 'neutral');
+    return;
+  }
+  const m = CONFIANZA_MEDIDA[e];
+  if (!m) { rowDL(dl, 'Confianza', etiqueta || 'N/D', 'neutral'); return; }
+  rowDL(dl, 'Confianza',
+    `${e} — ha acertado la dirección el ${number(m.acierto, 1)} % de las veces y el precio se movió ${number(m.mov, 3)} % de media, sobre ${m.n} observaciones a 60 min`,
+    'neutral');
+}
+
 function renderHypothesis(result) {
   const box = $('hyp-evidence');
   if (!box) return;
@@ -2119,6 +2207,8 @@ function renderHypothesis(result) {
     rowDL(dl, 'Datos', cobertura === null ? 'N/D' : `${number(cobertura, 0)}% de la evidencia`, cobertura !== null && cobertura >= 80 ? 'positive' : 'negative');
     renderExecutionRows(dl, result.execution);
     renderSetupRows(dl, result.setup_evaluation);
+    confianzaRow(dl, (state.desk.components && state.desk.components.scalp || {}).confidence);
+    nivelesRows(dl, state.desk.components && state.desk.components.reference_levels);
   }
   for (const entry of HYP_BUCKETS) {
     const items = safeArray((result.evidence || {})[entry[0]]);

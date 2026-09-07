@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `level_breakout_endpoint` · `app/api.py:1725` (cuerpo hasta la 1735) · decorador en la linea 1724.
+Handler `level_breakout_endpoint` · `app/api.py:1734` (cuerpo hasta la 1744) · decorador en la linea 1733.
 
 ## Parametros de entrada
 
@@ -87,7 +87,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | direction must be 'up' or 'down' | `app/api.py:1733` | el propio handler |
+| 422 | direction must be 'up' or 'down' | `app/api.py:1742` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -98,7 +98,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-foto-unica.sh:121`, `harness/checks/K43-foto-unica.sh:280` | — |
-| **panel** | `static/app.js:3025` | — |
+| **panel** | `static/app.js:3115` | — |
 
 **La llama el panel: es superficie de producto.**
 

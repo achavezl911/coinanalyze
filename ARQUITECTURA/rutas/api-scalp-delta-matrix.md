@@ -68,7 +68,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4277`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4314`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
 
 <details><summary>Alcanzables de forma indirecta (15)</summary>
@@ -78,11 +78,11 @@ Llamadas directas del handler:
 - `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2416`
 - `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2424`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2431`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4071`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4041`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4053`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4245`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4161`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4108`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4078`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4090`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4282`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4198`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2619`
@@ -114,7 +114,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:113`, `harness/checks/K43-foto-unica.sh:165`, `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216`, `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217` _(+2)_ | `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:79` |
-| **panel** | `static/app.js:1626` | — |
+| **panel** | `static/app.js:1631` | — |
 
 **La llama el panel: es superficie de producto.**
 

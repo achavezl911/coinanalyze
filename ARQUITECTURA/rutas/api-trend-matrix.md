@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trend_matrix_endpoint` · `app/api.py:1789` (cuerpo hasta la 1792) · decorador en la linea 1788.
+Handler `trend_matrix_endpoint` · `app/api.py:1798` (cuerpo hasta la 1801) · decorador en la linea 1797.
 
 ## Parametros de entrada
 
@@ -18,11 +18,11 @@ Handler `trend_matrix_endpoint` · `app/api.py:1789` (cuerpo hasta la 1792) · d
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:6072 |
-| `medium_term_alignment` | literal en app/scalp_logic.py:6074 |
-| `note` | literal en app/scalp_logic.py:6075 |
-| `symbol` | literal en app/scalp_logic.py:6071 |
-| `timeframes` | literal en app/scalp_logic.py:6073 |
+| `as_of` | literal en app/scalp_logic.py:6109 |
+| `medium_term_alignment` | literal en app/scalp_logic.py:6111 |
+| `note` | literal en app/scalp_logic.py:6112 |
+| `symbol` | literal en app/scalp_logic.py:6108 |
+| `timeframes` | literal en app/scalp_logic.py:6110 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -78,7 +78,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5928`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5965`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
 
@@ -88,16 +88,16 @@ Llamadas directas del handler:
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2431`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4071`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4041`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4053`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4245`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4161`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4108`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4078`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4090`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4282`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4198`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
 - `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2226`
 - `app.scalp_logic._swings` — `app/scalp_logic.py:2212`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4419`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4456`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
 - `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2609`
 
@@ -126,8 +126,8 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:115`, `harness/checks/K43-foto-unica.sh:171` | — |
-| **panel** | `static/app.js:1553`, `static/app.js:1655` | — |
-| **tests** | `tests/test_v150_desk_snapshot.py:126` | — |
+| **panel** | `static/app.js:1558`, `static/app.js:1660` | — |
+| **tests** | `tests/test_v150_desk_snapshot.py:130` | — |
 
 **La llama el panel: es superficie de producto.**
 

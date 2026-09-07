@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `quality_feeds` · `app/api.py:1341` (cuerpo hasta la 1353) · decorador en la linea 1340.
+Handler `quality_feeds` · `app/api.py:1350` (cuerpo hasta la 1362) · decorador en la linea 1349.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `quality_feeds` · `app/api.py:1341` (cuerpo hasta la 1353) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `collectors` | literal en app/scalp_logic.py:5299 |
-| `contexts` | literal en app/scalp_logic.py:5300 |
-| `contexts.intraday` | literal en app/scalp_logic.py:5302 |
-| `contexts.macro` | literal en app/scalp_logic.py:5303 |
-| `contexts.scalp` | literal en app/scalp_logic.py:5301 |
-| `metrics` | literal en app/scalp_logic.py:3964 |
-| `note` | literal en app/scalp_logic.py:3965 |
+| `collectors` | literal en app/scalp_logic.py:5336 |
+| `contexts` | literal en app/scalp_logic.py:5337 |
+| `contexts.intraday` | literal en app/scalp_logic.py:5339 |
+| `contexts.macro` | literal en app/scalp_logic.py:5340 |
+| `contexts.scalp` | literal en app/scalp_logic.py:5338 |
+| `metrics` | literal en app/scalp_logic.py:4001 |
+| `note` | literal en app/scalp_logic.py:4002 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -102,7 +102,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5265`
+- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5302`
 
 <details><summary>Alcanzables de forma indirecta (41)</summary>
 
@@ -113,32 +113,32 @@ Llamadas directas del handler:
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._feed_status` — `app/scalp_logic.py:3850`
+- `app.scalp_logic._feed_status` — `app/scalp_logic.py:3887`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
 - `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2416`
 - `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2424`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2431`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4071`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4041`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4053`
-- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:3815`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4108`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4078`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4090`
+- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:3852`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4245`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4161`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4282`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4198`
 - `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.data_quality` — `app/scalp_logic.py:3973`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4277`
-- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:3690`
+- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4010`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4314`
+- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:3727`
 - `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2619`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4117`
-- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:3879`
+- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4154`
+- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:3916`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
@@ -173,7 +173,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:112`, `harness/checks/K43-foto-unica.sh:164` | `harness/checks/K43-foto-unica.sh:43`, `harness/checks/K43-foto-unica.sh:200`, `harness/checks/K43-foto-unica.sh:211` |
-| **panel** | `static/app.js:1698` | `static/app.js:1694` |
+| **panel** | `static/app.js:1703` | `static/app.js:1699` |
 | **readme** | — | `README.md:32` |
 
 **La llama el panel: es superficie de producto.**

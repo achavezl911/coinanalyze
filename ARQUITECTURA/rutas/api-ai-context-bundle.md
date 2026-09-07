@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_context_bundle` · `app/api.py:3080` (cuerpo hasta la 3097) · decorador en la linea 3079.
+Handler `ai_context_bundle` · `app/api.py:3089` (cuerpo hasta la 3106) · decorador en la linea 3088.
 
 ## Parametros de entrada
 
@@ -193,10 +193,10 @@ Llamadas directas del handler:
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
 - `app.scalp_logic._atr` — `app/scalp_logic.py:2926`
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3269`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3283`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3306`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3320`
 - `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:2978`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5777`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5814`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
 - `app.scalp_logic._closes_1min` — `app/scalp_logic.py:2905`
@@ -208,32 +208,32 @@ Llamadas directas del handler:
 - `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2640`
 - `app.scalp_logic._dsr` — `app/scalp_logic.py:2275`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._feed_status` — `app/scalp_logic.py:3850`
+- `app.scalp_logic._feed_status` — `app/scalp_logic.py:3887`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
 - `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2416`
 - `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2424`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2431`
 - `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1770`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4071`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4041`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4053`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4108`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4078`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4090`
 - `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:1958`
-- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:3815`
+- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:3852`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4245`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4282`
 - `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:2990`
 - `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:2948`
 - `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1742`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3256`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3293`
 - `app.scalp_logic._pivot_structure` — `app/scalp_logic.py:936`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3502`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3539`
 - `app.scalp_logic._realized_vol` — `app/scalp_logic.py:2934`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4161`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4198`
 - `app.scalp_logic._regime` — `app/scalp_logic.py:1751`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
 - `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:1945`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3248`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3285`
 - `app.scalp_logic._sign_vote` — `app/scalp_logic.py:954`
 - `app.scalp_logic._slope_pct` — `app/scalp_logic.py:1913`
 - `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2226`
@@ -246,45 +246,45 @@ Llamadas directas del handler:
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6083`
-- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3599`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3304`
+- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6120`
+- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3636`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3341`
 - `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2699`
-- `app.scalp_logic.data_quality` — `app/scalp_logic.py:3973`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4277`
+- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4010`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4314`
 - `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2073`
-- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:3690`
-- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5265`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4419`
-- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3347`
+- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:3727`
+- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5302`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4456`
+- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3384`
 - `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2619`
 - `app.scalp_logic.horizon_structure` — `app/scalp_logic.py:1679`
 - `app.scalp_logic.liquidation_burst` — `app/scalp_logic.py:1696`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3420`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3457`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
 - `app.scalp_logic.macro_context` — `app/scalp_logic.py:1820`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5502`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5539`
 - `app.scalp_logic.market_memory` — `app/scalp_logic.py:1660`
 - `app.scalp_logic.market_structure` — `app/scalp_logic.py:1026`
-- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4117`
-- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:3879`
+- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4154`
+- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:3916`
 - `app.scalp_logic.oi_context` — `app/scalp_logic.py:3021`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5810`
-- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5607`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5847`
+- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5644`
 - `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1235`
 - `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3191`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
-- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5308`
-- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5464`
+- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5345`
+- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5501`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
-- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5403`
+- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5440`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
 - `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2609`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2283`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5928`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5965`
 - `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3141`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3539`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3576`
 - `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1606`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
@@ -330,7 +330,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:3093` | el propio handler |
+| 422 | — | `app/api.py:3102` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

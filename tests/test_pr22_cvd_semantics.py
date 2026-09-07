@@ -174,7 +174,16 @@ def test_pr24_new_signal_observation_has_evidence_version_5() -> None:
 
 
 class _NoopConnection:
-    pass
+    """Conexion que no hace nada. Desde el 2026-09-07 `/api/desk/state` calcula tambien los
+    niveles de referencia dentro de su `async with`, asi que el doble tiene que saber contestar
+    a lo que `reference_levels` pregunta. Devolver None y cero velas es lo correcto aqui: este
+    test mide el ANCLA COMPARTIDA, no los precios."""
+
+    async def fetchrow(self, *_a, **_k):
+        return {"h": None, "l": None, "n": 0}
+
+    async def fetchval(self, *_a, **_k):
+        return None
 
 
 async def _delta_rows(
