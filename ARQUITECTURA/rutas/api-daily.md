@@ -17,11 +17,12 @@ Handler `daily` · `app/api.py:1946` (cuerpo hasta la 2027) · decorador en la l
 
 ## Campos que publica
 
-11 campos derivados. La procedencia dice de donde sale cada uno.
+12 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `coverage_note` | literal en app/api.py:600 |
+| `data_gaps` | asignado en app/api.py:2010 |
 | `knowledge_time_replay` | literal en app/api.py:597 |
 | `projection_latest_session_date` | literal en app/api.py:593 |
 | `quick_read` | literal en app/api.py:598 |

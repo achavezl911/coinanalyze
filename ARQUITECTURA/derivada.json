@@ -25006,9 +25006,9 @@
     "declaradas_incompletas": 0,
     "funciones_alcanzables": 310,
     "rutas": 68,
-    "rutas_con_campos": 62,
-    "rutas_sin_campos": 6,
-    "sin_clave_temporal": 23,
+    "rutas_con_campos": 63,
+    "rutas_sin_campos": 5,
+    "sin_clave_temporal": 22,
     "sin_consumidor": 6,
     "sin_declarar": 0,
     "sin_llamada": 13,
@@ -25078,10 +25078,13 @@
         "absorption": "literal en app/ai_context.py:902",
         "asset": "literal en app/ai_context.py:854",
         "basis": "literal en app/ai_context.py:907",
+        "build_finished_at": "asignado en app/ai_context.py:953",
+        "build_started_at": "asignado en app/ai_context.py:952",
         "context_metadata": "literal en app/ai_context.py:908",
         "cross_asset": "literal en app/ai_context.py:874",
         "cvd_matrix": "literal en app/ai_context.py:868",
         "cvd_swing_90d": "literal en app/ai_context.py:860",
+        "daily_history": "asignado en app/ai_context.py:938",
         "data_confidence": "literal en app/ai_context.py:855",
         "data_quality": "literal en app/ai_context.py:909",
         "delta_matrix": "literal en app/ai_context.py:861",
@@ -25106,15 +25109,20 @@
         "positioning": "literal en app/ai_context.py:891",
         "price_barriers": "literal en app/ai_context.py:878",
         "profile": "literal en app/ai_context.py:852",
+        "recent_signals": "asignado en app/ai_context.py:936",
         "reference_levels": "literal en app/ai_context.py:873",
+        "rough_token_estimate": "asignado en app/ai_context.py:954",
         "scalp": "literal en app/ai_context.py:857",
         "scalp_liquidations": "literal en app/ai_context.py:906",
         "schema_version": "literal en app/ai_context.py:849",
+        "setup": "asignado en app/ai_context.py:934",
         "snapshot": "literal en app/ai_context.py:856",
         "structure_detail": "literal en app/ai_context.py:867",
         "structure_horizons": "literal en app/ai_context.py:866",
+        "swing_score": "asignado en app/ai_context.py:941",
         "symbol": "literal en app/ai_context.py:853",
         "trend_matrix": "literal en app/ai_context.py:870",
+        "verdict_history": "asignado en app/ai_context.py:940",
         "volatility": "literal en app/ai_context.py:872",
         "volume_profile": "literal en app/ai_context.py:877",
         "wyckoff": "literal en app/ai_context.py:892"
@@ -25452,6 +25460,8 @@
         "app.zones.range_validate_read"
       ],
       "claves_temporales": [
+        "build_finished_at",
+        "build_started_at",
         "generated_at"
       ],
       "codigos": [
@@ -25475,7 +25485,7 @@
             "harness/checks/K43-foto-unica.sh:233",
             "harness/checks/K43-foto-unica.sh:234",
             "harness/checks/K43-foto-unica.sh:272",
-            "harness/checks/K43-foto-unica.sh:321"
+            "harness/checks/K43-foto-unica.sh:346"
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:7",
@@ -25617,10 +25627,13 @@
     {
       "camino": "/api/ai/context/bundle",
       "campos": {
+        "build_finished_at": "asignado en app/ai_context.py:998",
+        "build_started_at": "asignado en app/ai_context.py:997",
         "generated_at": "literal en app/ai_context.py:992",
         "interpretation_prompt": "literal en app/ai_context.py:991",
         "local_alerts": "literal en app/ai_context.py:994",
         "profile": "literal en app/ai_context.py:993",
+        "rough_token_estimate": "asignado en app/ai_context.py:999",
         "schema_version": "literal en app/ai_context.py:990",
         "symbols": "literal en app/ai_context.py:995"
       },
@@ -25959,6 +25972,8 @@
         "app.zones.range_validate_read"
       ],
       "claves_temporales": [
+        "build_finished_at",
+        "build_started_at",
         "generated_at"
       ],
       "codigos": [
@@ -27115,6 +27130,7 @@
       "camino": "/api/daily",
       "campos": {
         "coverage_note": "literal en app/api.py:600",
+        "data_gaps": "asignado en app/api.py:2010",
         "knowledge_time_replay": "literal en app/api.py:597",
         "projection_latest_session_date": "literal en app/api.py:593",
         "quick_read": "literal en app/api.py:598",
@@ -27178,14 +27194,14 @@
             "harness/checks/K03-hueco-declarado.sh:161",
             "harness/checks/K03-hueco-declarado.sh:164",
             "harness/checks/K43-foto-unica.sh:119",
-            "harness/checks/K43-foto-unica.sh:333"
+            "harness/checks/K43-foto-unica.sh:358"
           ],
           "menciones": [
             "harness/checks/K03-hueco-declarado.sh:8",
             "harness/checks/K03-hueco-declarado.sh:15",
             "harness/checks/K03-hueco-declarado.sh:153",
             "harness/checks/K03-hueco-declarado.sh:165",
-            "harness/checks/K43-foto-unica.sh:326"
+            "harness/checks/K43-foto-unica.sh:351"
           ]
         },
         "panel": {
@@ -27715,7 +27731,16 @@
     {
       "camino": "/api/data-confidence",
       "campos": {
-        "rows": "literal en app/api.py:2643"
+        "rows": "literal en app/api.py:2643",
+        "rows.collectors_stale": "asignado en app/ai_context.py:566",
+        "rows.flow_8h_complete": "asignado en app/ai_context.py:535",
+        "rows.flow_8h_futures_complete": "asignado en app/ai_context.py:534",
+        "rows.flow_8h_spot_complete": "asignado en app/ai_context.py:531",
+        "rows.flow_8h_spot_end_gap_seconds": "asignado en app/ai_context.py:533",
+        "rows.flow_8h_spot_source": "asignado en app/ai_context.py:532",
+        "rows.quality_score": "asignado en app/ai_context.py:578",
+        "rows.quality_score_basis": "asignado en app/ai_context.py:579",
+        "rows.status": "asignado en app/ai_context.py:569"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -27740,7 +27765,10 @@
         "app.scalp_logic.resolve_matrix_as_of",
         "app.scalp_logic.spot_flow_windows"
       ],
-      "claves_temporales": [],
+      "claves_temporales": [
+        "rows.collectors_stale",
+        "rows.flow_8h_spot_end_gap_seconds"
+      ],
       "codigos": [
         {
           "codigo": 404,
@@ -28487,7 +28515,9 @@
     },
     {
       "camino": "/api/external-macro",
-      "campos": {},
+      "campos": {
+        "alignment": "asignado en app/external_macro.py:433"
+      },
       "campos_pendientes": [
         "la respuesta pasa por dict(), que no se puede seguir",
         "devuelve la variable 'context', cuyo contenido no se resuelve estaticamente"
@@ -29614,7 +29644,8 @@
         "checks": {
           "llamadas": [
             "harness/checks/K31-eslabon5.sh:61",
-            "harness/checks/K43-foto-unica.sh:121"
+            "harness/checks/K43-foto-unica.sh:121",
+            "harness/checks/K43-foto-unica.sh:280"
           ],
           "menciones": []
         },
@@ -29627,7 +29658,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 3,
+        "n_llamadas": 4,
         "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -30407,7 +30438,7 @@
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:63",
             "harness/checks/K03-hueco-declarado.sh:7",
-            "harness/checks/K43-foto-unica.sh:355"
+            "harness/checks/K43-foto-unica.sh:380"
           ]
         },
         "panel": {
@@ -31706,6 +31737,7 @@
           "llamadas": [
             "harness/checks/K31-eslabon5.sh:61",
             "harness/checks/K43-foto-unica.sh:121",
+            "harness/checks/K43-foto-unica.sh:281",
             "harness/checks/K76-la-ventana-que-pides.sh:97"
           ],
           "menciones": []
@@ -31725,7 +31757,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 4,
+        "n_llamadas": 5,
         "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -32456,7 +32488,9 @@
       "camino": "/api/scalp/execution-cost",
       "campos": {
         "as_of": "literal en app/scalp_logic.py:5236",
+        "assessment": "asignado en app/api.py:1434",
         "note": "literal en app/scalp_logic.py:5238",
+        "profiles": "asignado en app/api.py:1447",
         "sizes_usd": "literal en app/scalp_logic.py:5235",
         "stale_after_seconds": "literal en app/scalp_logic.py:5237",
         "status": "literal en app/scalp_logic.py:5240",
@@ -33226,9 +33260,13 @@
         "absorption_context.robust_z": "literal en app/scalp_logic.py:151",
         "absorption_context.sample_count": "literal en app/scalp_logic.py:153",
         "absorption_context.status": "literal en app/scalp_logic.py:152",
+        "absorption_context.threshold_source": "asignado en app/scalp_logic.py:719",
         "absorption_delta_ratio": "literal en app/scalp_logic.py:915",
         "basis_bps": "literal en app/scalp_logic.py:866",
         "basis_detail": "literal en app/scalp_logic.py:868",
+        "basis_detail.basis_bps": "asignado en app/scalp_logic.py:287",
+        "basis_detail.reason": "asignado en app/scalp_logic.py:282",
+        "basis_detail.status": "asignado en app/scalp_logic.py:281",
         "basis_status": "literal en app/scalp_logic.py:867",
         "book_lag_seconds": "literal en app/scalp_logic.py:870",
         "book_status": "literal en app/scalp_logic.py:869",
@@ -36210,7 +36248,9 @@
         "checks": {
           "llamadas": [
             "harness/checks/K31-eslabon5.sh:61",
-            "harness/checks/K43-foto-unica.sh:121"
+            "harness/checks/K43-control.bash:116",
+            "harness/checks/K43-foto-unica.sh:121",
+            "harness/checks/K43-foto-unica.sh:282"
           ],
           "menciones": []
         },
@@ -36229,7 +36269,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 3,
+        "n_llamadas": 5,
         "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false

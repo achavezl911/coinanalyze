@@ -8,8 +8,8 @@
 | ruta | metodo | campos | tablas | funciones | ficha |
 |---|---|---|---|---|---|
 | `/` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/raiz.md) |
-| `/api/ai/context` | GET | 43 | 24 | 165 | [ficha](rutas/api-ai-context.md) |
-| `/api/ai/context/bundle` | GET | 6 | 24 | 166 | [ficha](rutas/api-ai-context-bundle.md) |
+| `/api/ai/context` | GET | 51 | 24 | 165 | [ficha](rutas/api-ai-context.md) |
+| `/api/ai/context/bundle` | GET | 9 | 24 | 166 | [ficha](rutas/api-ai-context-bundle.md) |
 | `/api/ai/profiles` | GET | 14 | 0 | 0 | [ficha](rutas/api-ai-profiles.md) |
 | `/api/baselines` | GET | 5 | 1 | 3 | [ficha](rutas/api-baselines.md) |
 | `/api/context-metadata` | GET | 6 | 0 | 2 | [ficha](rutas/api-context-metadata.md) |
@@ -18,13 +18,13 @@
 | `/api/cvd-matrix` | GET | 18 | 1 | 16 | [ficha](rutas/api-cvd-matrix.md) |
 | `/api/cvd/divergence` | GET | 12 | 3 | 9 | [ficha](rutas/api-cvd-divergence.md) |
 | `/api/cvd/spot` | GET | 15 | 2 | 11 | [ficha](rutas/api-cvd-spot.md) |
-| `/api/daily` | GET | 11 | 2 | 13 | [ficha](rutas/api-daily.md) |
+| `/api/daily` | GET | 12 | 2 | 13 | [ficha](rutas/api-daily.md) |
 | `/api/dashboard/state` | GET | 165 | 14 | 44 | [ficha](rutas/api-dashboard-state.md) |
-| `/api/data-confidence` | GET | 1 | 6 | 10 | [ficha](rutas/api-data-confidence.md) |
+| `/api/data-confidence` | GET | 10 | 6 | 10 | [ficha](rutas/api-data-confidence.md) |
 | `/api/delta-profile` | GET | 4 | 1 | 11 | [ficha](rutas/api-delta-profile.md) |
 | `/api/desk/state` | GET | 25 | 13 | 77 | [ficha](rutas/api-desk-state.md) |
 | `/api/divergences` | GET | 12 | 3 | 7 | [ficha](rutas/api-divergences.md) |
-| `/api/external-macro` | GET | **0 · PENDIENTE** | 6 | 48 | [ficha](rutas/api-external-macro.md) |
+| `/api/external-macro` | GET | 1 | 6 | 48 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 4 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
 | `/api/healthz` | GET | 7 | 3 | 5 | [ficha](rutas/api-healthz.md) |
@@ -49,12 +49,12 @@
 | `/api/scalp/alerts` | GET | 2 | 8 | 26 | [ficha](rutas/api-scalp-alerts.md) |
 | `/api/scalp/basis` | GET | 1 | 2 | 4 | [ficha](rutas/api-scalp-basis.md) |
 | `/api/scalp/delta-matrix` | GET | **0 · PENDIENTE** | 3 | 18 | [ficha](rutas/api-scalp-delta-matrix.md) |
-| `/api/scalp/execution-cost` | GET | 8 | 9 | 31 | [ficha](rutas/api-scalp-execution-cost.md) |
+| `/api/scalp/execution-cost` | GET | 10 | 9 | 31 | [ficha](rutas/api-scalp-execution-cost.md) |
 | `/api/scalp/liquidation-levels` | GET | 7 | 3 | 2 | [ficha](rutas/api-scalp-liquidation-levels.md) |
 | `/api/scalp/liquidations` | GET | 3 | 1 | 2 | [ficha](rutas/api-scalp-liquidations.md) |
 | `/api/scalp/orderbook` | GET | 7 | 1 | 3 | [ficha](rutas/api-scalp-orderbook.md) |
 | `/api/scalp/signals` | GET | 9 | 1 | 3 | [ficha](rutas/api-scalp-signals.md) |
-| `/api/scalp/summary` | GET | 63 | 8 | 24 | [ficha](rutas/api-scalp-summary.md) |
+| `/api/scalp/summary` | GET | 67 | 8 | 24 | [ficha](rutas/api-scalp-summary.md) |
 | `/api/setup` | GET | 8 | 2 | 8 | [ficha](rutas/api-setup.md) |
 | `/api/signals/execution` | GET | 10 | 2 | 4 | [ficha](rutas/api-signals-execution.md) |
 | `/api/signals/ledger` | GET | 9 | 1 | 4 | [ficha](rutas/api-signals-ledger.md) |
@@ -78,10 +78,9 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-6 de 68. Cada una con su motivo en la ficha.
+5 de 68. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
-- `/api/external-macro` — la respuesta pasa por dict(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
 - `/api/scalp/delta-matrix` — lista vacia en el literal: no se puede derivar el elemento
 - `/api/stream` — la respuesta pasa por StreamingResponse(), que no se puede seguir

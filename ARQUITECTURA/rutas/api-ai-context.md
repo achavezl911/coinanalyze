@@ -16,17 +16,20 @@ Handler `ai_context` · `app/api.py:3063` (cuerpo hasta la 3076) · decorador en
 
 ## Campos que publica
 
-43 campos derivados. La procedencia dice de donde sale cada uno.
+51 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `absorption` | literal en app/ai_context.py:902 |
 | `asset` | literal en app/ai_context.py:854 |
 | `basis` | literal en app/ai_context.py:907 |
+| `build_finished_at` | asignado en app/ai_context.py:953 |
+| `build_started_at` | asignado en app/ai_context.py:952 |
 | `context_metadata` | literal en app/ai_context.py:908 |
 | `cross_asset` | literal en app/ai_context.py:874 |
 | `cvd_matrix` | literal en app/ai_context.py:868 |
 | `cvd_swing_90d` | literal en app/ai_context.py:860 |
+| `daily_history` | asignado en app/ai_context.py:938 |
 | `data_confidence` | literal en app/ai_context.py:855 |
 | `data_quality` | literal en app/ai_context.py:909 |
 | `delta_matrix` | literal en app/ai_context.py:861 |
@@ -51,15 +54,20 @@ Handler `ai_context` · `app/api.py:3063` (cuerpo hasta la 3076) · decorador en
 | `positioning` | literal en app/ai_context.py:891 |
 | `price_barriers` | literal en app/ai_context.py:878 |
 | `profile` | literal en app/ai_context.py:852 |
+| `recent_signals` | asignado en app/ai_context.py:936 |
 | `reference_levels` | literal en app/ai_context.py:873 |
+| `rough_token_estimate` | asignado en app/ai_context.py:954 |
 | `scalp` | literal en app/ai_context.py:857 |
 | `scalp_liquidations` | literal en app/ai_context.py:906 |
 | `schema_version` | literal en app/ai_context.py:849 |
+| `setup` | asignado en app/ai_context.py:934 |
 | `snapshot` | literal en app/ai_context.py:856 |
 | `structure_detail` | literal en app/ai_context.py:867 |
 | `structure_horizons` | literal en app/ai_context.py:866 |
+| `swing_score` | asignado en app/ai_context.py:941 |
 | `symbol` | literal en app/ai_context.py:853 |
 | `trend_matrix` | literal en app/ai_context.py:870 |
+| `verdict_history` | asignado en app/ai_context.py:940 |
 | `volatility` | literal en app/ai_context.py:872 |
 | `volume_profile` | literal en app/ai_context.py:877 |
 | `wyckoff` | literal en app/ai_context.py:892 |
@@ -389,6 +397,8 @@ en el fichero de la capa declarada y puede corregirla con cita.
 
 Claves temporales entre los campos que publica:
 
+- `build_finished_at`
+- `build_started_at`
 - `generated_at`
 
 ## Capa DECLARADA

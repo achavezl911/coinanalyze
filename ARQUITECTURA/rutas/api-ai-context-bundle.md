@@ -16,14 +16,17 @@ Handler `ai_context_bundle` · `app/api.py:3080` (cuerpo hasta la 3097) · decor
 
 ## Campos que publica
 
-6 campos derivados. La procedencia dice de donde sale cada uno.
+9 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
+| `build_finished_at` | asignado en app/ai_context.py:998 |
+| `build_started_at` | asignado en app/ai_context.py:997 |
 | `generated_at` | literal en app/ai_context.py:992 |
 | `interpretation_prompt` | literal en app/ai_context.py:991 |
 | `local_alerts` | literal en app/ai_context.py:994 |
 | `profile` | literal en app/ai_context.py:993 |
+| `rough_token_estimate` | asignado en app/ai_context.py:999 |
 | `schema_version` | literal en app/ai_context.py:990 |
 | `symbols` | literal en app/ai_context.py:995 |
 
@@ -355,6 +358,8 @@ en el fichero de la capa declarada y puede corregirla con cita.
 
 Claves temporales entre los campos que publica:
 
+- `build_finished_at`
+- `build_started_at`
 - `generated_at`
 
 ## Capa DECLARADA

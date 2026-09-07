@@ -39,8 +39,8 @@ directorio existe para no repetir.
 ## Cifras de esta regeneracion
 
 - rutas descubiertas: **68**
-- rutas con al menos un campo derivado: **62**
-- rutas sin ningun campo derivado (PENDIENTE, con motivo en su ficha): **6**
+- rutas con al menos un campo derivado: **63**
+- rutas sin ningun campo derivado (PENDIENTE, con motivo en su ficha): **5**
 - funciones alcanzables desde alguna ruta: **310**
 - tablas del catalogo `sql/schema.sql`: **40**
 - tablas alcanzadas desde alguna ruta: **30**

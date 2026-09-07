@@ -526,6 +526,25 @@ def asignaciones(nodo) -> dict[str, ast.AST]:
     return out
 
 
+def claves_puestas(nodo, var: str, mod: str) -> dict[str, str]:
+    """Claves literales que la funcion asigna UNA A UNA sobre `var`: var["k"] = ...
+
+    `asignaciones()` solo ve `nombre = ...`, asi que una funcion que copia un diccionario opaco
+    y le anade claves -el patron de app/external_macro.py:415- no publicaba NI UNA. Estas si se
+    ven en el AST y por tanto se derivan, con su linea. Lo que traiga la copia sigue sin saberse
+    y se sigue declarando aparte.
+    """
+    out: dict[str, str] = {}
+    for n in ast.walk(nodo):
+        if not isinstance(n, ast.Assign) or len(n.targets) != 1:
+            continue
+        d = n.targets[0]
+        if (isinstance(d, ast.Subscript) and isinstance(d.value, ast.Name) and d.value.id == var
+                and isinstance(d.slice, ast.Constant) and isinstance(d.slice.value, str)):
+            out[d.slice.value] = f"asignado en {mod}:{n.lineno}"   # mod ya es la ruta relativa
+    return out
+
+
 def sql_directo_de_tabla(fn: Funcion, catalogo: dict) -> tuple[str, list[str]] | None:
     """Si la funcion hace UN SELECT * (o DISTINCT ON (..) *) sobre UNA sola tabla del
     catalogo, los campos publicados SON las columnas de esa tabla. Es derivacion, no
@@ -636,8 +655,18 @@ def campos_de_retorno(valor, fn: Funcion, funcs, mods, catalogo, prof=0, vistos=
 
     if isinstance(valor, ast.Name):
         asig = asignaciones(fn.nodo)
+        # LAS CLAVES QUE LA FUNCION PONE A MANO SOBRE ESA VARIABLE SI SE VEN, aunque lo que la
+        # variable ya trajera no se pueda seguir. Antes se perdian las dos cosas juntas.
+        # `fn.fichero` y no `fn.mod`: mod es el objeto Modulo, y su repr acabaria en la ficha.
+        # Es la misma procedencia que usan los literales en la linea 601.
+        puestas = claves_puestas(fn.nodo, valor.id, fn.fichero)
         if valor.id in asig and valor.id not in vistos:
-            return campos_de_retorno(asig[valor.id], fn, funcs, mods, catalogo, prof + 1, vistos | {valor.id})
+            sub = campos_de_retorno(asig[valor.id], fn, funcs, mods, catalogo, prof + 1, vistos | {valor.id})
+            for k, orig in puestas.items():
+                sub.ciertos.setdefault(k, orig)
+            return sub
+        for k, orig in puestas.items():
+            c.ciertos.setdefault(k, orig)
         c.pendientes.append(f"devuelve la variable '{valor.id}', cuyo contenido no se resuelve estaticamente")
         return c
 
