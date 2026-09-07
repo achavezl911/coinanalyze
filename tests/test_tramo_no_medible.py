@@ -16,6 +16,7 @@ def declara(sobre, ws):
 
 # MEDIDO en 140 el 2026-09-07: en 24 h, 0 de 1727 filas de BTC traen whale_intensity y
 # 1727 de 1727 de SOL si. Mismo periodo, mismo codigo, distinto umbral.
+# Y en 7 dias de spot: BTC 0 de 20 118 minutos con tramo, ETH 3 de 20 117, SOL 65 de 20 118.
 BTC_A_CERO = {"rows": [{"bucket": i, "whale_delta": 0.0} for i in range(384)]}
 SOL_CON_TRAMO = {"rows": [{"bucket": i, "whale_delta": 0.0} for i in range(383)]
                  + [{"bucket": 383, "whale_delta": -412_000.0}]}

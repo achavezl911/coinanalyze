@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `delta_profile_endpoint` · `app/api.py:1774` (cuerpo hasta la 1799) · decorador en la linea 1773.
+Handler `delta_profile_endpoint` · `app/api.py:1781` (cuerpo hasta la 1806) · decorador en la linea 1780.
 
 ## Parametros de entrada
 
@@ -52,9 +52,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declara_ventana` — `app/api.py:1564`
+- `app.api.declara_ventana` — `app/api.py:1571`
 - `app.api.validate_symbol` — `app/api.py:228`
-- `app.api.ventana_pedida` — `app/api.py:1531`
+- `app.api.ventana_pedida` — `app/api.py:1538`
 - `app.delta_profile.delta_profile` — `app/delta_profile.py:222`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
@@ -87,12 +87,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | hace falta `desde` | `app/api.py:1548` | una funcion de su cierre |
-| 422 | `hasta` sin `desde` no acota nada | `app/api.py:1551` | una funcion de su cierre |
-| 422 | — | `app/api.py:1556` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1558` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1560` | una funcion de su cierre |
-| 422 | — | `app/api.py:1791` | el propio handler |
+| 422 | hace falta `desde` | `app/api.py:1555` | una funcion de su cierre |
+| 422 | `hasta` sin `desde` no acota nada | `app/api.py:1558` | una funcion de su cierre |
+| 422 | — | `app/api.py:1563` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1565` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1567` | una funcion de su cierre |
+| 422 | — | `app/api.py:1798` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -103,7 +103,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:120` | — |
-| **panel** | `static/app.js:1153` | — |
+| **panel** | `static/app.js:1154` | — |
 | **readme** | — | `README.md:111` |
 | **tests** | `tests/test_dashboard_presentation.py:122` | — |
 

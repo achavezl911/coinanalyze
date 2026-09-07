@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `price_barriers_endpoint` · `app/api.py:1803` (cuerpo hasta la 1806) · decorador en la linea 1802.
+Handler `price_barriers_endpoint` · `app/api.py:1810` (cuerpo hasta la 1813) · decorador en la linea 1809.
 
 ## Parametros de entrada
 

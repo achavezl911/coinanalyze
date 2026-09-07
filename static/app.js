@@ -959,10 +959,10 @@ function renderFlowCharts(cvd, oi, whale) {
   for (const id of ['cvd-chart', 'whale-chart']) { try { state.charts[id].timeScale().fitContent(); } catch (_) {} }
 }
 // ESTE COMENTARIO DECIA QUE EL CERO ERA «una lectura valida, no un dato ausente». **Es falso**,
-// y esta medido: el umbral es 5 000 000 USD POR OPERACION SUELTA y en BTC da 0 de 20 116 minutos
-// en 7 dias. El gradiente entre simbolos lo prueba -mismo periodo, umbrales 5 M / 1 M / 200 k ->
-// 0 / 3 / 64 minutos con tramo- y la escala de un print de spot lo remata: sobre los 274 cubos de
-// BTC con UNA sola operacion, la mayor mide 2 291 USD y la mediana 21.
+// y esta medido: el umbral es 5 000 000 USD POR OPERACION SUELTA y en BTC da 0 de 20 118 minutos
+// en 7 dias (ETH 3 de 20 117, SOL 65 de 20 118: baja el umbral y el tramo aparece).
+// Y el control que decide: el FUTURO del mismo BTC, los mismos 7 dias, con un umbral CINCO VECES
+// MENOR -1 000 000-, dispara 117 de 4 340 minutos. El futuro las ve; el spot, ninguna.
 // No es que no haya manos grandes: es que con este umbral NO SE PUEDEN VER.
 // Cual seria el umbral bueno NO SE PUEDE MEDIR con lo que se guarda -solo agregados, nunca la
 // operacion suelta-, asi que la tarjeta lo DECLARA en vez de publicar el cero como respuesta.
@@ -980,11 +980,12 @@ function renderWhaleActivity(bars) {
   // mismas letras que el resto, y el cero NO vota en nada que se derive de el.
   if (!active.length) {
     note.textContent = 'NO SE PUEDE MEDIR con el umbral actual: exige una sola operación de '
-      + '5 000 000 USD, y en BTC eso no ocurre nunca (0 de 20 116 minutos en 7 días). '
-      + 'La mayor operación suelta de spot que se ha podido medir son 2 291 USD, y la mediana 21. '
-      + 'Esto NO significa que no haya manos grandes: significa que no se ven. '
-      + 'Cuál sería el umbral correcto no se puede calcular con lo que se guarda —solo agregados, '
-      + 'nunca la operación suelta—, así que este panel no vota.';
+      + '5 000 000 USD, y en BTC eso no ocurre nunca (0 de 20 118 minutos en 7 días). '
+      + 'El mismo BTC en futuros, esos mismos días y con un umbral cinco veces menor, sí la ve: '
+      + '117 de 4 340 minutos. '
+      + 'Esto NO significa que no haya manos grandes: significa que aquí no se ven. '
+      + 'Cuál sería el umbral correcto no se puede calcular con lo que se guarda —solo agregados '
+      + 'por minuto, nunca la operación suelta—, así que este panel no vota.';
     return;
   }
   const last = active[active.length - 1];

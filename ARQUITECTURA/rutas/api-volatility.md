@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `volatility_endpoint` · `app/api.py:1947` (cuerpo hasta la 1950) · decorador en la linea 1946.
+Handler `volatility_endpoint` · `app/api.py:1954` (cuerpo hasta la 1957) · decorador en la linea 1953.
 
 ## Parametros de entrada
 

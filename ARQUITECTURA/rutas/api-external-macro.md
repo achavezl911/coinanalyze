@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `external_macro_endpoint` · `app/api.py:1997` (cuerpo hasta la 2003) · decorador en la linea 1996.
+Handler `external_macro_endpoint` · `app/api.py:2004` (cuerpo hasta la 2010) · decorador en la linea 2003.
 
 ## Parametros de entrada
 
@@ -160,7 +160,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:110`, `harness/checks/K43-foto-unica.sh:160` | `harness/checks/K20-cincoxx.sh:2` |
-| **panel** | `static/app.js:1579`, `static/app.js:1745` | — |
+| **panel** | `static/app.js:1580`, `static/app.js:1746` | — |
 | **tests** | `tests/test_dashboard_layout.py:108` | — |
 
 **La llama el panel: es superficie de producto.**

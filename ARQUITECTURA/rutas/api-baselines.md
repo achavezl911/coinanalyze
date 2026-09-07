@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `metric_baselines` · `app/api.py:1419` (cuerpo hasta la 1433) · decorador en la linea 1418.
+Handler `metric_baselines` · `app/api.py:1426` (cuerpo hasta la 1440) · decorador en la linea 1425.
 
 ## Parametros de entrada
 
@@ -19,11 +19,11 @@ Handler `metric_baselines` · `app/api.py:1419` (cuerpo hasta la 1433) · decora
 
 | campo | de donde sale |
 |---|---|
-| `fallback_min_ratio` | literal en app/api.py:1427 |
-| `metric` | literal en app/api.py:1426 |
-| `note` | literal en app/api.py:1428 |
-| `symbol` | literal en app/api.py:1425 |
-| `windows` | literal en app/api.py:1432 |
+| `fallback_min_ratio` | literal en app/api.py:1434 |
+| `metric` | literal en app/api.py:1433 |
+| `note` | literal en app/api.py:1435 |
+| `symbol` | literal en app/api.py:1432 |
+| `windows` | literal en app/api.py:1439 |
 
 Forma de la respuesta segun el AST: objeto.
 

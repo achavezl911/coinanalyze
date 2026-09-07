@@ -1046,13 +1046,20 @@ def declarar_tramo_no_medible(payload: dict[str, Any], ws_symbol: str) -> None:
     consumidor deducia "medido, y no hubo manos grandes". Es lo contrario: el umbral exige UNA
     OPERACION SUELTA de `whale_threshold_usd` -5 000 000 USD en BTC- y en spot eso no pasa nunca.
 
-    MEDIDO el 2026-09-07 contra 140: 0 de 20 116 minutos de BTC traen tramo, y en
-    metrics_snapshot 0 de 1727 filas de 24 h traen whale_intensity, contra 1727 de 1727 en SOL.
-    La mayor operacion suelta de spot que se ha podido medir son 2 291 USD; la mediana, 21.
+    MEDIDO el 2026-09-07 contra 140, en 7 dias: BTC 0 de 20 118 minutos con tramo, ETH 3 de
+    20 117, SOL 65 de 20 118. Y en metrics_snapshot, 24 h: BTC 0 de 1727 filas con
+    whale_intensity, SOL 1727 de 1727.
 
-    NO SE INVENTA UN UMBRAL. Cual seria el bueno no se puede calcular con lo que se guarda
-    -agregados por minuto, nunca la operacion suelta-, y ESO es el hallazgo: se publica junto
-    con lo que haria falta para medirlo.
+    EL CONTROL QUE DECIDE es el FUTURO DEL MISMO BTC en los mismos 7 dias: su umbral es
+    `large_trade_threshold_usd` = 1 000 000 -CINCO VECES MENOR- y dispara 117 de 4 340 minutos.
+    Mismo activo, mismos dias, misma idea de «una operacion grande»: el futuro la ve 117 veces
+    y el spot ninguna. No es que no haya manos grandes; es que este umbral no llega.
+
+    NO SE INVENTA UN UMBRAL. Cual seria el bueno NO SE PUEDE calcular con lo que se guarda: la
+    casa solo tiene agregados por minuto. El unico proxy de operacion suelta -los cubos con
+    trade_count=1- da OCHO casos en toda la historia (2026-07-28..2026-09-06, mayor 7 004 USD,
+    mediana 78), y ocho observaciones no describen ninguna distribucion. ESO es el hallazgo, y
+    se publica junto con lo que haria falta para medirlo.
 
     Y se CALCULA, no se decreta: 0 de N cubos con tramo lo enciende, 1 de N lo apaga. Por eso
     SOL, cuyo umbral si se alcanza, no lo lleva. El control se mueve solo, dentro del producto.

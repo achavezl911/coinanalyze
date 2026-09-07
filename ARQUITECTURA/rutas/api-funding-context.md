@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `funding_context_endpoint` · `app/api.py:1753` (cuerpo hasta la 1756) · decorador en la linea 1752.
+Handler `funding_context_endpoint` · `app/api.py:1760` (cuerpo hasta la 1763) · decorador en la linea 1759.
 
 ## Parametros de entrada
 
@@ -86,7 +86,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K43-foto-unica.sh:111`, `harness/checks/K43-foto-unica.sh:161` | `harness/checks/K03-hueco-declarado.sh:29` |
-| **panel** | `static/app.js:1703` | — |
+| **panel** | `static/app.js:1704` | — |
 
 **La llama el panel: es superficie de producto.**
 

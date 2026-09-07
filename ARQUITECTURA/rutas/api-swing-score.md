@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `swing_score_endpoint` · `app/api.py:1954` (cuerpo hasta la 1957) · decorador en la linea 1953.
+Handler `swing_score_endpoint` · `app/api.py:1961` (cuerpo hasta la 1964) · decorador en la linea 1960.
 
 ## Parametros de entrada
 
@@ -157,7 +157,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:115`, `harness/checks/K43-foto-unica.sh:170` | — |
-| **panel** | `static/app.js:1575`, `static/app.js:1677` | — |
+| **panel** | `static/app.js:1576`, `static/app.js:1678` | — |
 
 **La llama el panel: es superficie de producto.**
 

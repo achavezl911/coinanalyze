@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `range_validate_endpoint` · `app/api.py:1836` (cuerpo hasta la 1866) · decorador en la linea 1835.
+Handler `range_validate_endpoint` · `app/api.py:1843` (cuerpo hasta la 1873) · decorador en la linea 1842.
 
 ## Parametros de entrada
 
@@ -85,12 +85,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:1851` | el propio handler |
-| 422 | range spans more than 3x; narrow it | `app/api.py:1853` | el propio handler |
-| 422 | start_date and end_date must come together | `app/api.py:1855` | el propio handler |
-| 422 | start_date must be before end_date | `app/api.py:1858` | el propio handler |
-| 422 | span exceeds the 730 days of history | `app/api.py:1860` | el propio handler |
-| 422 | days + end_days_ago exceeds daily history | `app/api.py:1862` | el propio handler |
+| 422 | low must be below high | `app/api.py:1858` | el propio handler |
+| 422 | range spans more than 3x; narrow it | `app/api.py:1860` | el propio handler |
+| 422 | start_date and end_date must come together | `app/api.py:1862` | el propio handler |
+| 422 | start_date must be before end_date | `app/api.py:1865` | el propio handler |
+| 422 | span exceeds the 730 days of history | `app/api.py:1867` | el propio handler |
+| 422 | days + end_days_ago exceeds daily history | `app/api.py:1869` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -101,7 +101,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-foto-unica.sh:121`, `harness/checks/K43-foto-unica.sh:281`, `harness/checks/K76-la-ventana-que-pides.sh:97` | — |
-| **panel** | `static/app.js:3360` | — |
+| **panel** | `static/app.js:3361` | — |
 | **tests** | — | `tests/test_p0_data_integrity.py:126` |
 
 **La llama el panel: es superficie de producto.**

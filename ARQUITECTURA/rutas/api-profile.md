@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trading_profile` · `app/api.py:1437` (cuerpo hasta la 1453) · decorador en la linea 1436.
+Handler `trading_profile` · `app/api.py:1444` (cuerpo hasta la 1460) · decorador en la linea 1443.
 
 ## Parametros de entrada
 
@@ -19,7 +19,7 @@ Handler `trading_profile` · `app/api.py:1437` (cuerpo hasta la 1453) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1451 |
+| `as_of` | literal en app/api.py:1458 |
 | `bias` | literal en app/scalp_logic.py:4695 |
 | `confidence` | literal en app/scalp_logic.py:4697 |
 | `contradictions` | literal en app/scalp_logic.py:4701 |
@@ -31,7 +31,7 @@ Handler `trading_profile` · `app/api.py:1437` (cuerpo hasta la 1453) · decorad
 | `profile` | literal en app/scalp_logic.py:4693 |
 | `profile_label` | literal en app/scalp_logic.py:4694 |
 | `reference_only` | literal en app/scalp_logic.py:4700 |
-| `symbol` | literal en app/api.py:1450 |
+| `symbol` | literal en app/api.py:1457 |
 | `weights_note` | literal en app/scalp_logic.py:4703 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -139,7 +139,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | — | `app/api.py:1441` | el propio handler |
+| 422 | — | `app/api.py:1448` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

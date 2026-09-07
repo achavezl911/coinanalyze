@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `setup` · `app/api.py:2203` (cuerpo hasta la 2214) · decorador en la linea 2202.
+Handler `setup` · `app/api.py:2210` (cuerpo hasta la 2221) · decorador en la linea 2209.
 
 ## Parametros de entrada
 
@@ -23,8 +23,8 @@ Handler `setup` · `app/api.py:2203` (cuerpo hasta la 2214) · decorador en la l
 | `daily_streak` | literal en app/interpretation.py:199 |
 | `primary` | literal en app/interpretation.py:202 |
 | `setups` | literal en app/interpretation.py:203 |
-| `snapshot_ts` | literal en app/api.py:2212 |
-| `symbol` | literal en app/api.py:2211 |
+| `snapshot_ts` | literal en app/api.py:2219 |
+| `symbol` | literal en app/api.py:2218 |
 | `warning` | literal en app/interpretation.py:204 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -76,7 +76,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | No data | `app/api.py:2208` | el propio handler |
+| 404 | No data | `app/api.py:2215` | el propio handler |
 | 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)

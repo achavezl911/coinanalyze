@@ -37,7 +37,7 @@ import asyncpg
 
 # El tramo «ballena» de spot NO VOTA, y esto no es una omision: esta medido. Ver `whale_no_mide`.
 BALLENA_NO_MEDIBLE = (
-    "el tramo institucional de spot esta a cero en 0 de 20 116 minutos de BTC porque su umbral "
+    "el tramo institucional de spot esta a cero en 0 de 20 118 minutos de BTC porque su umbral "
     "-5 000 000 USD por OPERACION SUELTA, `whale_threshold_usd`- nunca se alcanza en spot. "
     "No es que no haya manos grandes: es que no se pueden ver con este umbral. NO VOTA."
 )

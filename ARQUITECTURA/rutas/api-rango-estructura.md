@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `rango_estructura` · `app/api.py:1899` (cuerpo hasta la 1922) · decorador en la linea 1898.
+Handler `rango_estructura` · `app/api.py:1906` (cuerpo hasta la 1929) · decorador en la linea 1905.
 
 ## Parametros de entrada
 
@@ -105,9 +105,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2299`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2306`
 - `app.api.validate_symbol` — `app/api.py:228`
-- `app.api.ventana_pedida` — `app/api.py:1531`
+- `app.api.ventana_pedida` — `app/api.py:1538`
 - `app.rango.estructura_de_rango` — `app/rango.py:228`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
@@ -134,12 +134,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | hace falta `desde` | `app/api.py:1548` | una funcion de su cierre |
-| 422 | `hasta` sin `desde` no acota nada | `app/api.py:1551` | una funcion de su cierre |
-| 422 | — | `app/api.py:1556` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1558` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1560` | una funcion de su cierre |
-| 422 | — | `app/api.py:2308` | una funcion de su cierre |
+| 422 | hace falta `desde` | `app/api.py:1555` | una funcion de su cierre |
+| 422 | `hasta` sin `desde` no acota nada | `app/api.py:1558` | una funcion de su cierre |
+| 422 | — | `app/api.py:1563` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1565` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1567` | una funcion de su cierre |
+| 422 | — | `app/api.py:2315` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -149,7 +149,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **panel** | `static/app.js:3076` | — |
+| **panel** | `static/app.js:3077` | — |
 | **tests** | — | `tests/test_ventana_elegible.py:71` |
 
 **La llama el panel: es superficie de producto.**

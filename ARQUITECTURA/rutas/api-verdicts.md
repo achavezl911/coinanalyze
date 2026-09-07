@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `verdicts` · `app/api.py:2021` (cuerpo hasta la 2107) · decorador en la linea 2020.
+Handler `verdicts` · `app/api.py:2028` (cuerpo hasta la 2114) · decorador en la linea 2027.
 
 ## Parametros de entrada
 
@@ -20,18 +20,18 @@ Handler `verdicts` · `app/api.py:2021` (cuerpo hasta la 2107) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:2100 |
-| `coverage.served_window` | literal en app/api.py:2100 |
+| `coverage` | literal en app/api.py:2107 |
+| `coverage.served_window` | literal en app/api.py:2107 |
 | `coverage.served_window.complete` | literal en app/data_gaps.py:279 |
 | `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:277 |
 | `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:278 |
 | `coverage.served_window.sources` | literal en app/data_gaps.py:280 |
 | `coverage.served_window.window_end` | literal en app/data_gaps.py:276 |
 | `coverage.served_window.window_start` | literal en app/data_gaps.py:275 |
-| `logic_version` | literal en app/api.py:2098 |
-| `note` | literal en app/api.py:2101 |
-| `rows` | literal en app/api.py:2099 |
-| `symbol` | literal en app/api.py:2097 |
+| `logic_version` | literal en app/api.py:2105 |
+| `note` | literal en app/api.py:2108 |
+| `rows` | literal en app/api.py:2106 |
+| `symbol` | literal en app/api.py:2104 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -97,7 +97,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:120` | `harness/checks/K43-foto-unica.sh:214` |
-| **panel** | `static/app.js:1730` | — |
+| **panel** | `static/app.js:1731` | — |
 | **readme** | — | `README.md:72`, `README.md:276`, `README.md:410` |
 
 **La llama el panel: es superficie de producto.**

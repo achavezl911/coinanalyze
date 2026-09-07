@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `reference_levels_endpoint` · `app/api.py:1926` (cuerpo hasta la 1929) · decorador en la linea 1925.
+Handler `reference_levels_endpoint` · `app/api.py:1933` (cuerpo hasta la 1936) · decorador en la linea 1932.
 
 ## Parametros de entrada
 
@@ -93,7 +93,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **panel** | — | `static/app.js:2123` |
+| **panel** | — | `static/app.js:2124` |
 
 **Nadie la llama.** Sus 1 rastros son todos MENCION -comentario,
 docstring o documento-. Es la forma del patron que en esta casa se ha repetido

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `data_confidence` · `app/api.py:2811` (cuerpo hasta la 2815) · decorador en la linea 2810.
+Handler `data_confidence` · `app/api.py:2818` (cuerpo hasta la 2822) · decorador en la linea 2817.
 
 ## Parametros de entrada
 
@@ -18,7 +18,7 @@ Handler `data_confidence` · `app/api.py:2811` (cuerpo hasta la 2815) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `rows` | literal en app/api.py:2815 |
+| `rows` | literal en app/api.py:2822 |
 | `rows.collectors_stale` | asignado en app/ai_context.py:566 |
 | `rows.flow_8h_complete` | asignado en app/ai_context.py:535 |
 | `rows.flow_8h_futures_complete` | asignado en app/ai_context.py:534 |
@@ -125,7 +125,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:110`, `harness/checks/K43-foto-unica.sh:158` | — |
-| **panel** | `static/app.js:1589`, `static/app.js:1717` | — |
+| **panel** | `static/app.js:1590`, `static/app.js:1718` | — |
 | **readme** | — | `README.md:501` |
 
 **La llama el panel: es superficie de producto.**

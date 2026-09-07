@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_absorption` · `app/api.py:1631` (cuerpo hasta la 1636) · decorador en la linea 1630.
+Handler `scalp_absorption` · `app/api.py:1638` (cuerpo hasta la 1643) · decorador en la linea 1637.
 
 ## Parametros de entrada
 
@@ -82,7 +82,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:117`, `harness/checks/K43-foto-unica.sh:175` | — |
-| **panel** | `static/app.js:1648` | — |
+| **panel** | `static/app.js:1649` | — |
 | **tests** | — | `tests/test_metrics_endpoint.py:231` |
 
 **La llama el panel: es superficie de producto.**

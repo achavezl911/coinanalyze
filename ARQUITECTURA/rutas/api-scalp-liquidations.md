@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_liquidations` · `app/api.py:1640` (cuerpo hasta la 1643) · decorador en la linea 1639.
+Handler `scalp_liquidations` · `app/api.py:1647` (cuerpo hasta la 1650) · decorador en la linea 1646.
 
 ## Parametros de entrada
 
@@ -66,7 +66,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:117`, `harness/checks/K43-foto-unica.sh:177`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:171`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:172` _(+1)_ | — |
-| **panel** | `static/app.js:1701` | — |
+| **panel** | `static/app.js:1702` | — |
 
 **La llama el panel: es superficie de producto.**
 

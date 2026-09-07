@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `volume_profile_endpoint` · `app/api.py:1767` (cuerpo hasta la 1770) · decorador en la linea 1766.
+Handler `volume_profile_endpoint` · `app/api.py:1774` (cuerpo hasta la 1777) · decorador en la linea 1773.
 
 ## Parametros de entrada
 

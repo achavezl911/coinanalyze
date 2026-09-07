@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `quality_feeds` · `app/api.py:1403` (cuerpo hasta la 1415) · decorador en la linea 1402.
+Handler `quality_feeds` · `app/api.py:1410` (cuerpo hasta la 1422) · decorador en la linea 1409.
 
 ## Parametros de entrada
 
@@ -173,7 +173,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:112`, `harness/checks/K43-foto-unica.sh:164` | `harness/checks/K43-foto-unica.sh:43`, `harness/checks/K43-foto-unica.sh:200`, `harness/checks/K43-foto-unica.sh:211` |
-| **panel** | `static/app.js:1719` | `static/app.js:1715` |
+| **panel** | `static/app.js:1720` | `static/app.js:1716` |
 | **readme** | — | `README.md:32` |
 
 **La llama el panel: es superficie de producto.**

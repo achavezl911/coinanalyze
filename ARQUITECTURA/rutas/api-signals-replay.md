@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_replay` · `app/api.py:2577` (cuerpo hasta la 2649) · decorador en la linea 2576.
+Handler `signals_replay` · `app/api.py:2584` (cuerpo hasta la 2656) · decorador en la linea 2583.
 
 ## Parametros de entrada
 
@@ -22,15 +22,15 @@ Handler `signals_replay` · `app/api.py:2577` (cuerpo hasta la 2649) · decorado
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2644 |
-| `count` | literal en app/api.py:2646 |
-| `frames` | literal en app/api.py:2648 |
-| `limit` | literal en app/api.py:2645 |
-| `since` | literal en app/api.py:2641 |
-| `symbol` | literal en app/api.py:2640 |
-| `truncated` | literal en app/api.py:2647 |
-| `until` | literal en app/api.py:2642 |
-| `ventana_maxima_h` | literal en app/api.py:2643 |
+| `as_of` | literal en app/api.py:2651 |
+| `count` | literal en app/api.py:2653 |
+| `frames` | literal en app/api.py:2655 |
+| `limit` | literal en app/api.py:2652 |
+| `since` | literal en app/api.py:2648 |
+| `symbol` | literal en app/api.py:2647 |
+| `truncated` | literal en app/api.py:2654 |
+| `until` | literal en app/api.py:2649 |
+| `ventana_maxima_h` | literal en app/api.py:2650 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -52,8 +52,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2259`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2299`
+- `app.api._utc_iso` — `app/api.py:2266`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2306`
 - `app.api.records` — `app/api.py:241`
 - `app.api.validate_symbol` — `app/api.py:228`
 
@@ -81,11 +81,11 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | — | `app/api.py:2308` | una funcion de su cierre |
-| 422 | — | `app/api.py:2601` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2603` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2605` | el propio handler |
-| 422 | — | `app/api.py:2607` | el propio handler |
+| 422 | — | `app/api.py:2315` | una funcion de su cierre |
+| 422 | — | `app/api.py:2608` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2610` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2612` | el propio handler |
+| 422 | — | `app/api.py:2614` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -96,7 +96,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K24-replay-del-contexto.sh:87`, `harness/checks/K43-control.bash:80`, `harness/checks/K43-foto-unica.sh:122` | — |
-| **panel** | `static/app.js:1732` | — |
+| **panel** | `static/app.js:1733` | — |
 | **tests** | — | `tests/test_signals_replay.py:1` |
 
 **La llama el panel: es superficie de producto.**

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `passive_flow_endpoint` · `app/api.py:1968` (cuerpo hasta la 1971) · decorador en la linea 1967.
+Handler `passive_flow_endpoint` · `app/api.py:1975` (cuerpo hasta la 1978) · decorador en la linea 1974.
 
 ## Parametros de entrada
 
@@ -133,7 +133,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:112`, `harness/checks/K43-foto-unica.sh:163` | — |
-| **panel** | `static/app.js:1675` | — |
+| **panel** | `static/app.js:1676` | — |
 
 **La llama el panel: es superficie de producto.**
 

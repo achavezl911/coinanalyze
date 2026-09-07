@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1088` (cuerpo hasta la 1156) · decorador en la linea 1087.
+Handler `whale_delta` · `app/api.py:1095` (cuerpo hasta la 1163) · decorador en la linea 1094.
 
 ## Parametros de entrada
 
@@ -101,7 +101,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:66`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:120`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:57` | `harness/checks/K52b-la-ruta-no-falla-abierta.sh:6`, `harness/checks/K59-whale-vota-cero.sh:15` |
-| **panel** | `static/app.js:1645` | — |
+| **panel** | `static/app.js:1646` | — |
 | **readme** | — | `README.md:408` |
 | **tests** | — | `tests/test_data_gaps.py:325` |
 

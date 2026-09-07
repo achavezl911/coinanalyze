@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `structure` · `app/api.py:2111` (cuerpo hasta la 2114) · decorador en la linea 2110.
+Handler `structure` · `app/api.py:2118` (cuerpo hasta la 2121) · decorador en la linea 2117.
 
 ## Parametros de entrada
 
@@ -96,7 +96,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:114`, `harness/checks/K43-foto-unica.sh:168` | — |
-| **panel** | `static/app.js:1673` | — |
+| **panel** | `static/app.js:1674` | — |
 
 **La llama el panel: es superficie de producto.**
 
