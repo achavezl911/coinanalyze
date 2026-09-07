@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `level_breakout_endpoint` · `app/api.py:1734` (cuerpo hasta la 1744) · decorador en la linea 1733.
+Handler `level_breakout_endpoint` · `app/api.py:1870` (cuerpo hasta la 1880) · decorador en la linea 1869.
 
 ## Parametros de entrada
 
@@ -29,7 +29,7 @@ Handler `level_breakout_endpoint` · `app/api.py:1734` (cuerpo hasta la 1744) ·
 | `method` | literal en app/breakout.py:307 |
 | `reason` | literal en app/breakout.py:224 |
 | `setup` | literal en app/breakout.py:298 |
-| `symbol` | literal en app/scalp_logic.py:1657 |
+| `symbol` | literal en app/scalp_logic.py:1662 |
 | `warning` | literal en app/breakout.py:320 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -53,8 +53,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.level_breakout` — `app/scalp_logic.py:1632`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.level_breakout` — `app/scalp_logic.py:1637`
 
 <details><summary>Alcanzables de forma indirecta (11)</summary>
 
@@ -86,8 +86,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | direction must be 'up' or 'down' | `app/api.py:1742` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 422 | direction must be 'up' or 'down' | `app/api.py:1878` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -98,7 +98,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-foto-unica.sh:121`, `harness/checks/K43-foto-unica.sh:280` | — |
-| **panel** | `static/app.js:3115` | — |
+| **panel** | `static/app.js:3235` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -132,7 +132,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
 | `app.api.level_breakout_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.breakout._atr` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |

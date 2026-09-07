@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `market_memory_endpoint` · `app/api.py:1851` (cuerpo hasta la 1854) · decorador en la linea 1850.
+Handler `market_memory_endpoint` · `app/api.py:2014` (cuerpo hasta la 2017) · decorador en la linea 2013.
 
 ## Parametros de entrada
 
@@ -29,7 +29,7 @@ Handler `market_memory_endpoint` · `app/api.py:1851` (cuerpo hasta la 1854) · 
 | `reason` | literal en app/interpretation.py:412 |
 | `sessions` | literal en app/interpretation.py:411 |
 | `source` | literal en app/interpretation.py:516 |
-| `symbol` | literal en app/scalp_logic.py:1676 |
+| `symbol` | literal en app/scalp_logic.py:1681 |
 | `warning` | literal en app/interpretation.py:517 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -53,8 +53,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1660`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1665`
 
 <details><summary>Alcanzables de forma indirecta (3)</summary>
 
@@ -76,7 +76,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -122,7 +122,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
 | `app.interpretation._memory_features` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.interpretation.market_memory_read` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-interpretation.md) |

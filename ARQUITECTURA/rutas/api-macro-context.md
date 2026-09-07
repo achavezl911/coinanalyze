@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `macro_context_endpoint` · `app/api.py:1827` (cuerpo hasta la 1830) · decorador en la linea 1826.
+Handler `macro_context_endpoint` · `app/api.py:1990` (cuerpo hasta la 1993) · decorador en la linea 1989.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `macro_context_endpoint` · `app/api.py:1827` (cuerpo hasta la 1830) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:1871 |
-| `conditional_note` | literal en app/scalp_logic.py:1876 |
-| `metrics` | literal en app/scalp_logic.py:1874 |
-| `session_date` | literal en app/scalp_logic.py:1873 |
-| `sessions` | literal en app/scalp_logic.py:1872 |
-| `symbol` | literal en app/scalp_logic.py:1870 |
-| `tension` | literal en app/scalp_logic.py:1875 |
+| `as_of` | literal en app/scalp_logic.py:1876 |
+| `conditional_note` | literal en app/scalp_logic.py:1881 |
+| `metrics` | literal en app/scalp_logic.py:1879 |
+| `session_date` | literal en app/scalp_logic.py:1878 |
+| `sessions` | literal en app/scalp_logic.py:1877 |
+| `symbol` | literal en app/scalp_logic.py:1875 |
+| `tension` | literal en app/scalp_logic.py:1880 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -45,19 +45,19 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1820`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1825`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1780`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1770`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1742`
-- `app.scalp_logic._regime` — `app/scalp_logic.py:1751`
+- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1785`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1775`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1747`
+- `app.scalp_logic._regime` — `app/scalp_logic.py:1756`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
 
 </details>
 
@@ -73,7 +73,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -84,7 +84,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:111`, `harness/checks/K43-foto-unica.sh:162` | — |
-| **panel** | `static/app.js:1658`, `static/app.js:1728` | — |
+| **panel** | `static/app.js:1674`, `static/app.js:1744` | — |
 | **readme** | — | `README.md:278` |
 
 **La llama el panel: es superficie de producto.**
@@ -120,7 +120,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.metrics.current_nyse_start` | 15 | **0** | 14 ↑ | **15** | [impacto](../impacto/app-metrics.md) |

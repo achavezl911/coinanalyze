@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `positioning` · `app/api.py:1150` (cuerpo hasta la 1154) · decorador en la linea 1149.
+Handler `positioning` · `app/api.py:1203` (cuerpo hasta la 1207) · decorador en la linea 1202.
 
 ## Parametros de entrada
 
@@ -18,23 +18,23 @@ Handler `positioning` · `app/api.py:1150` (cuerpo hasta la 1154) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `age_seconds` | literal en app/scalp_logic.py:5718 |
-| `limitations` | literal en app/scalp_logic.py:5719 |
-| `long_pct` | literal en app/scalp_logic.py:5704 |
-| `median_sample` | literal en app/scalp_logic.py:5712 |
-| `percentile_sample` | literal en app/scalp_logic.py:5713 |
-| `ratio` | literal en app/scalp_logic.py:5706 |
-| `ratio_24h_ago` | literal en app/scalp_logic.py:5707 |
-| `ratio_change_24h` | literal en app/scalp_logic.py:5709 |
-| `reason` | literal en app/scalp_logic.py:5681 |
-| `sample_count` | literal en app/scalp_logic.py:5714 |
-| `sample_days` | literal en app/scalp_logic.py:5715 |
-| `sample_is_full_month` | literal en app/scalp_logic.py:5716 |
-| `short_pct` | literal en app/scalp_logic.py:5705 |
-| `status` | literal en app/scalp_logic.py:5702 |
-| `symbol` | literal en app/scalp_logic.py:5701 |
-| `ts` | literal en app/scalp_logic.py:5717 |
-| `unit` | literal en app/scalp_logic.py:5703 |
+| `age_seconds` | literal en app/scalp_logic.py:5723 |
+| `limitations` | literal en app/scalp_logic.py:5724 |
+| `long_pct` | literal en app/scalp_logic.py:5709 |
+| `median_sample` | literal en app/scalp_logic.py:5717 |
+| `percentile_sample` | literal en app/scalp_logic.py:5718 |
+| `ratio` | literal en app/scalp_logic.py:5711 |
+| `ratio_24h_ago` | literal en app/scalp_logic.py:5712 |
+| `ratio_change_24h` | literal en app/scalp_logic.py:5714 |
+| `reason` | literal en app/scalp_logic.py:5686 |
+| `sample_count` | literal en app/scalp_logic.py:5719 |
+| `sample_days` | literal en app/scalp_logic.py:5720 |
+| `sample_is_full_month` | literal en app/scalp_logic.py:5721 |
+| `short_pct` | literal en app/scalp_logic.py:5710 |
+| `status` | literal en app/scalp_logic.py:5707 |
+| `symbol` | literal en app/scalp_logic.py:5706 |
+| `ts` | literal en app/scalp_logic.py:5722 |
+| `unit` | literal en app/scalp_logic.py:5708 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -61,8 +61,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5644`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5649`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -93,7 +93,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:116`, `harness/checks/K43-foto-unica.sh:173` | — |
-| **panel** | `static/app.js:1688` | — |
+| **panel** | `static/app.js:1704` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -128,7 +128,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.positioning_context` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.positioning` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `health` · `app/api.py:3229` (cuerpo hasta la 3283) · decorador en la linea 3228.
+Handler `health` · `app/api.py:3392` (cuerpo hasta la 3446) · decorador en la linea 3391.
 
 ## Parametros de entrada
 
@@ -16,13 +16,13 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `database` | literal en app/api.py:3277 |
-| `governed_services` | literal en app/api.py:3280 |
-| `missing_services` | literal en app/api.py:3278 |
-| `missing_symbols` | literal en app/api.py:3279 |
-| `services` | literal en app/api.py:3281 |
-| `status` | literal en app/api.py:3272 |
-| `symbols` | literal en app/api.py:3282 |
+| `database` | literal en app/api.py:3440 |
+| `governed_services` | literal en app/api.py:3443 |
+| `missing_services` | literal en app/api.py:3441 |
+| `missing_symbols` | literal en app/api.py:3442 |
+| `services` | literal en app/api.py:3444 |
+| `status` | literal en app/api.py:3435 |
+| `symbols` | literal en app/api.py:3445 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:235`
+- `app.api.records` — `app/api.py:241`
 - `app.db.db_identity` — `app/db.py:64`
 - `app.db.heartbeat` — `app/db.py:409`
 - `app.db.heartbeat_max_age` — `app/db.py:95`
@@ -96,7 +96,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:55`, `harness/checks/K05-control.bash:307`, `harness/checks/K05-latidos.sh:127`, `harness/checks/K05-latidos.sh:388` _(+5)_ | `harness/checks/K05-latidos.sh:2`, `harness/checks/K08-que-base.sh:8`, `harness/checks/K43-control.bash:36`, `harness/checks/K43-foto-unica.sh:97` |
-| **panel** | `static/app.js:1574`, `static/app.js:1702` | — |
+| **panel** | `static/app.js:1590`, `static/app.js:1718` | — |
 | **readme** | — | `README.md:413`, `README.md:436` |
 | **tests** | — | `tests/test_cobertura_proveedor.py:7`, `tests/test_deploy_health_gate.py:38`, `tests/test_deploy_health_gate.py:154`, `tests/test_ingest_health.py:232` |
 
@@ -132,7 +132,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.db.heartbeat` | 1 | **7** | 53 ↑ | **7** | [impacto](../impacto/app-db.md) |
+| `app.db.heartbeat` | 1 | **7** | 54 ↑ | **7** | [impacto](../impacto/app-db.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api.health` | 1 | **0** | 7 ↑ | **1** | [impacto](../impacto/app-api.md) |
 | `app.db.db_identity` | 1 | **0** | 7 ↑ | **1** | [impacto](../impacto/app-db.md) |

@@ -32,7 +32,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/setups.py:162` · clave completa `app.setups.classify_oi`
 
-**Radio exacto: 9 rutas** de 68 · **cota superior: 16** (mas ancha)
+**Radio exacto: 9 rutas** de 69 · **cota superior: 16** (mas ancha)
 
 ### Por llamada — 9 rutas
 
@@ -94,7 +94,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/setups.py:228` · clave completa `app.setups.oi_price_reading`
 
-**Radio exacto: 9 rutas** de 68 · **cota superior: 16** (mas ancha)
+**Radio exacto: 9 rutas** de 69 · **cota superior: 16** (mas ancha)
 
 ### Por llamada — 9 rutas
 
@@ -156,7 +156,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/setups.py:95` · clave completa `app.setups._sign`
 
-**Radio exacto: 9 rutas** de 68 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 69 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 9 rutas
 
@@ -187,7 +187,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:805` · clave completa `app.setups._bars_closed_beyond`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -211,7 +211,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:741` · clave completa `app.setups._breakout_frontier`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -235,7 +235,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:798` · clave completa `app.setups._gap_in`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -259,7 +259,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:927` · clave completa `app.setups._last_pivots`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -283,7 +283,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:1003` · clave completa `app.setups._level_defended`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -307,7 +307,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:777` · clave completa `app.setups._norm_bars`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -331,7 +331,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:716` · clave completa `app.setups._obs`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -355,7 +355,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:934` · clave completa `app.setups._pullback`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -379,7 +379,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:891` · clave completa `app.setups._retest_done`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -403,7 +403,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:844` · clave completa `app.setups._returned_inside`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -427,7 +427,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:665` · clave completa `app.setups._structure_event`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -451,7 +451,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:762` · clave completa `app.setups._tolerance`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -475,7 +475,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:1100` · clave completa `app.setups.build_setup_context`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -499,7 +499,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:1218` · clave completa `app.setups.evaluate_setup`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -523,7 +523,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:1057` · clave completa `app.setups.setup_observables`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -547,7 +547,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/setups.py:88` · clave completa `app.setups.split_hypothesis`
 
-**Radio exacto: 2 rutas** de 68 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 69 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 

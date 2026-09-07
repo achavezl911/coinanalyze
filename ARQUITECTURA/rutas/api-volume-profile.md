@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `volume_profile_endpoint` · `app/api.py:1648` (cuerpo hasta la 1651) · decorador en la linea 1647.
+Handler `volume_profile_endpoint` · `app/api.py:1767` (cuerpo hasta la 1770) · decorador en la linea 1766.
 
 ## Parametros de entrada
 
@@ -18,23 +18,23 @@ Handler `volume_profile_endpoint` · `app/api.py:1648` (cuerpo hasta la 1651) ·
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3621 |
-| `available` | literal en app/scalp_logic.py:3622 |
-| `note` | literal en app/scalp_logic.py:3632 |
-| `session` | literal en app/scalp_logic.py:3623 |
-| `session.hvn` | literal en app/scalp_logic.py:3571 |
-| `session.lvn` | literal en app/scalp_logic.py:3572 |
-| `session.poc` | literal en app/scalp_logic.py:3568 |
-| `session.vah` | literal en app/scalp_logic.py:3569 |
-| `session.val` | literal en app/scalp_logic.py:3570 |
-| `symbol` | literal en app/scalp_logic.py:3620 |
-| `vwap` | literal en app/scalp_logic.py:3624 |
-| `vwap.bands` | literal en app/scalp_logic.py:3627 |
-| `vwap.distinct_from` | literal en app/scalp_logic.py:3630 |
-| `vwap.market` | literal en app/scalp_logic.py:3628 |
-| `vwap.session_convention` | literal en app/scalp_logic.py:3629 |
-| `vwap.utc_day` | literal en app/scalp_logic.py:3625 |
-| `vwap.weekly` | literal en app/scalp_logic.py:3626 |
+| `as_of` | literal en app/scalp_logic.py:3626 |
+| `available` | literal en app/scalp_logic.py:3627 |
+| `note` | literal en app/scalp_logic.py:3637 |
+| `session` | literal en app/scalp_logic.py:3628 |
+| `session.hvn` | literal en app/scalp_logic.py:3576 |
+| `session.lvn` | literal en app/scalp_logic.py:3577 |
+| `session.poc` | literal en app/scalp_logic.py:3573 |
+| `session.vah` | literal en app/scalp_logic.py:3574 |
+| `session.val` | literal en app/scalp_logic.py:3575 |
+| `symbol` | literal en app/scalp_logic.py:3625 |
+| `vwap` | literal en app/scalp_logic.py:3629 |
+| `vwap.bands` | literal en app/scalp_logic.py:3632 |
+| `vwap.distinct_from` | literal en app/scalp_logic.py:3635 |
+| `vwap.market` | literal en app/scalp_logic.py:3633 |
+| `vwap.session_convention` | literal en app/scalp_logic.py:3634 |
+| `vwap.utc_day` | literal en app/scalp_logic.py:3630 |
+| `vwap.weekly` | literal en app/scalp_logic.py:3631 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -57,15 +57,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3576`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3581`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3539`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3544`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
 
 </details>
 
@@ -81,7 +81,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -129,7 +129,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |

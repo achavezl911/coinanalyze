@@ -26,7 +26,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/zones.py:519` · clave completa `app.zones._atr_abs`
 
-**Radio exacto: 4 rutas** de 68 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 69 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -52,7 +52,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:499` · clave completa `app.zones._edge_episodes`
 
-**Radio exacto: 4 rutas** de 68 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 69 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -78,7 +78,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:471` · clave completa `app.zones._ols_slope`
 
-**Radio exacto: 4 rutas** de 68 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 69 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -104,7 +104,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:483` · clave completa `app.zones._rotations`
 
-**Radio exacto: 4 rutas** de 68 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 69 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -130,7 +130,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:535` · clave completa `app.zones.range_validate_read`
 
-**Radio exacto: 4 rutas** de 68 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 69 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -156,7 +156,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:104` · clave completa `app.zones._atr_pct`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -179,7 +179,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:100` · clave completa `app.zones._clamp`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -202,7 +202,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:128` · clave completa `app.zones._effort_result`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -225,7 +225,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:394` · clave completa `app.zones._narrative`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -248,7 +248,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:208` · clave completa `app.zones._oi_behaviour`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -271,7 +271,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:121` · clave completa `app.zones._percentile`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -294,7 +294,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:194` · clave completa `app.zones._rejection`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -317,7 +317,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/zones.py:220` · clave completa `app.zones.zone_character_read`
 
-**Radio exacto: 1 rutas** de 68 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

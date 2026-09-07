@@ -8,13 +8,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`at`](#at) | 22 | 0 | **0** | 43 ↑ | **0** |
+| [`at`](#at) | 22 | 0 | **0** | 44 ↑ | **0** |
 
 ## at
 
 `app/cutoffs.py:22` · clave completa `app.cutoffs.ClosedCutoff.at`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 43** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 44** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -27,9 +27,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 43 rutas · **cota superior**
+### Por tabla · k<=2 — 44 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (43 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (44 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -73,6 +73,7 @@ Y esas tablas las leen:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -90,7 +91,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**43 rutas se enteran SOLO por el dato**, sin
+**44 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -120,6 +121,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)

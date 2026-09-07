@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`apply_temporal_retention`](#apply-temporal-retention) | 25 | 0 | **0** | 51 ↑ | **0** |
+| [`apply_temporal_retention`](#apply-temporal-retention) | 25 | 0 | **0** | 52 ↑ | **0** |
 | [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 20 | 0 | **0** | 21 ↑ | **0** |
 
 ## apply_temporal_retention
 
 `app/partitioning.py:25` · clave completa `app.partitioning.apply_temporal_retention`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 51** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 52** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -28,9 +28,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 51 rutas · **cota superior**
+### Por tabla · k<=2 — 52 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (51 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (52 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -87,6 +87,7 @@ Y esas tablas las leen:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
@@ -107,7 +108,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**51 rutas se enteran SOLO por el dato**, sin
+**52 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -142,6 +143,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
@@ -168,7 +170,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/partitioning.py:20` · clave completa `app.partitioning.ensure_temporal_partitions`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 

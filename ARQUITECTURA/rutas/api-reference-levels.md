@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `reference_levels_endpoint` · `app/api.py:1763` (cuerpo hasta la 1766) · decorador en la linea 1762.
+Handler `reference_levels_endpoint` · `app/api.py:1926` (cuerpo hasta la 1929) · decorador en la linea 1925.
 
 ## Parametros de entrada
 
@@ -18,28 +18,28 @@ Handler `reference_levels_endpoint` · `app/api.py:1763` (cuerpo hasta la 1766) 
 
 | campo | de donde sale |
 |---|---|
-| `current_day` | literal en app/scalp_logic.py:3262 |
-| `current_day.duracion_min` | literal en app/scalp_logic.py:3264 |
-| `current_day.en_curso` | literal en app/scalp_logic.py:3264 |
-| `current_day.high` | literal en app/scalp_logic.py:3262 |
-| `current_day.low` | literal en app/scalp_logic.py:3262 |
-| `current_day.open` | literal en app/scalp_logic.py:3262 |
-| `current_day.velas` | literal en app/scalp_logic.py:3263 |
-| `current_day.velas_posibles` | literal en app/scalp_logic.py:3263 |
-| `note` | literal en app/scalp_logic.py:3276 |
-| `opens` | literal en app/scalp_logic.py:3265 |
-| `opens.daily` | literal en app/scalp_logic.py:3266 |
-| `opens.monthly` | literal en app/scalp_logic.py:3268 |
-| `opens.weekly` | literal en app/scalp_logic.py:3267 |
-| `previous_day` | literal en app/scalp_logic.py:3260 |
-| `previous_day.close` | literal en app/scalp_logic.py:3260 |
-| `previous_day.en_curso` | literal en app/scalp_logic.py:3261 |
-| `previous_day.high` | literal en app/scalp_logic.py:3260 |
-| `previous_day.low` | literal en app/scalp_logic.py:3260 |
-| `previous_day.velas` | literal en app/scalp_logic.py:3261 |
-| `previous_day.velas_posibles` | literal en app/scalp_logic.py:3261 |
-| `sessions_today_utc` | literal en app/scalp_logic.py:3270 |
-| `symbol` | literal en app/scalp_logic.py:3259 |
+| `current_day` | literal en app/scalp_logic.py:3267 |
+| `current_day.duracion_min` | literal en app/scalp_logic.py:3269 |
+| `current_day.en_curso` | literal en app/scalp_logic.py:3269 |
+| `current_day.high` | literal en app/scalp_logic.py:3267 |
+| `current_day.low` | literal en app/scalp_logic.py:3267 |
+| `current_day.open` | literal en app/scalp_logic.py:3267 |
+| `current_day.velas` | literal en app/scalp_logic.py:3268 |
+| `current_day.velas_posibles` | literal en app/scalp_logic.py:3268 |
+| `note` | literal en app/scalp_logic.py:3281 |
+| `opens` | literal en app/scalp_logic.py:3270 |
+| `opens.daily` | literal en app/scalp_logic.py:3271 |
+| `opens.monthly` | literal en app/scalp_logic.py:3273 |
+| `opens.weekly` | literal en app/scalp_logic.py:3272 |
+| `previous_day` | literal en app/scalp_logic.py:3265 |
+| `previous_day.close` | literal en app/scalp_logic.py:3265 |
+| `previous_day.en_curso` | literal en app/scalp_logic.py:3266 |
+| `previous_day.high` | literal en app/scalp_logic.py:3265 |
+| `previous_day.low` | literal en app/scalp_logic.py:3265 |
+| `previous_day.velas` | literal en app/scalp_logic.py:3266 |
+| `previous_day.velas_posibles` | literal en app/scalp_logic.py:3266 |
+| `sessions_today_utc` | literal en app/scalp_logic.py:3275 |
+| `symbol` | literal en app/scalp_logic.py:3264 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -62,8 +62,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3191`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3196`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
@@ -83,7 +83,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -93,7 +93,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **panel** | — | `static/app.js:2105` |
+| **panel** | — | `static/app.js:2123` |
 
 **Nadie la llama.** Sus 1 rastros son todos MENCION -comentario,
 docstring o documento-. Es la forma del patron que en esta casa se ha repetido
@@ -130,7 +130,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.reference_levels` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.reference_levels_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |

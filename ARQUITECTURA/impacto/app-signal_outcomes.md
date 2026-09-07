@@ -23,7 +23,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/signal_outcomes.py:289` · clave completa `app.signal_outcomes.materialize_due_signal_outcomes`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 24** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -112,7 +112,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:57` · clave completa `app.signal_outcomes._aware_utc`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -170,7 +170,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:217` · clave completa `app.signal_outcomes._defer_missing_path`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -233,7 +233,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:241` · clave completa `app.signal_outcomes._finalize_evaluated`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -296,7 +296,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:189` · clave completa `app.signal_outcomes._finalize_not_evaluable`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -359,7 +359,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:63` · clave completa `app.signal_outcomes._finite_positive`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -417,7 +417,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:96` · clave completa `app.signal_outcomes.compute_path_metrics`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -475,7 +475,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:89` · clave completa `app.signal_outcomes.expected_bar_timestamps`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -533,7 +533,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:155` · clave completa `app.signal_outcomes.schedule_signal_outcomes`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 10** (mas ancha)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -598,7 +598,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_outcomes.py:73` · clave completa `app.signal_outcomes.outcome_window`
 
-**Radio exacto: 0 rutas** de 68 · **cota superior: 6** (mas ancha)
+**Radio exacto: 0 rutas** de 69 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 0 rutas
 

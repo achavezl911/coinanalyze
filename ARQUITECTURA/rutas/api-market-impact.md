@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `market_impact_endpoint` · `app/api.py:1142` (cuerpo hasta la 1146) · decorador en la linea 1141.
+Handler `market_impact_endpoint` · `app/api.py:1195` (cuerpo hasta la 1199) · decorador en la linea 1194.
 
 ## Parametros de entrada
 
@@ -18,12 +18,12 @@ Handler `market_impact_endpoint` · `app/api.py:1142` (cuerpo hasta la 1146) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5632 |
-| `definition` | literal en app/scalp_logic.py:5634 |
-| `limitations` | literal en app/scalp_logic.py:5636 |
-| `metric` | literal en app/scalp_logic.py:5633 |
-| `symbol` | literal en app/scalp_logic.py:5631 |
-| `windows` | literal en app/scalp_logic.py:5635 |
+| `as_of` | literal en app/scalp_logic.py:5637 |
+| `definition` | literal en app/scalp_logic.py:5639 |
+| `limitations` | literal en app/scalp_logic.py:5641 |
+| `metric` | literal en app/scalp_logic.py:5638 |
+| `symbol` | literal en app/scalp_logic.py:5636 |
+| `windows` | literal en app/scalp_logic.py:5640 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -53,16 +53,16 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5539`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5544`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
 
 </details>
 
@@ -78,7 +78,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -89,7 +89,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:116`, `harness/checks/K43-foto-unica.sh:172` | — |
-| **panel** | `static/app.js:1648` | — |
+| **panel** | `static/app.js:1664` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -123,7 +123,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |

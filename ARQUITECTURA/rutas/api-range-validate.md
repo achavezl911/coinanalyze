@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `range_validate_endpoint` · `app/api.py:1700` (cuerpo hasta la 1730) · decorador en la linea 1699.
+Handler `range_validate_endpoint` · `app/api.py:1836` (cuerpo hasta la 1866) · decorador en la linea 1835.
 
 ## Parametros de entrada
 
@@ -24,11 +24,11 @@ Handler `range_validate_endpoint` · `app/api.py:1700` (cuerpo hasta la 1730) ·
 
 | campo | de donde sale |
 |---|---|
-| `from` | literal en app/scalp_logic.py:1599 |
-| `prior_bars` | literal en app/scalp_logic.py:1601 |
-| `symbol` | literal en app/scalp_logic.py:1596 |
-| `to` | literal en app/scalp_logic.py:1600 |
-| `window_days` | literal en app/scalp_logic.py:1598 |
+| `from` | literal en app/scalp_logic.py:1604 |
+| `prior_bars` | literal en app/scalp_logic.py:1606 |
+| `symbol` | literal en app/scalp_logic.py:1601 |
+| `to` | literal en app/scalp_logic.py:1605 |
+| `window_days` | literal en app/scalp_logic.py:1603 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -56,8 +56,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.range_validate` — `app/scalp_logic.py:1507`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.range_validate` — `app/scalp_logic.py:1512`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
@@ -84,13 +84,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:1715` | el propio handler |
-| 422 | range spans more than 3x; narrow it | `app/api.py:1717` | el propio handler |
-| 422 | start_date and end_date must come together | `app/api.py:1719` | el propio handler |
-| 422 | start_date must be before end_date | `app/api.py:1722` | el propio handler |
-| 422 | span exceeds the 730 days of history | `app/api.py:1724` | el propio handler |
-| 422 | days + end_days_ago exceeds daily history | `app/api.py:1726` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 422 | low must be below high | `app/api.py:1851` | el propio handler |
+| 422 | range spans more than 3x; narrow it | `app/api.py:1853` | el propio handler |
+| 422 | start_date and end_date must come together | `app/api.py:1855` | el propio handler |
+| 422 | start_date must be before end_date | `app/api.py:1858` | el propio handler |
+| 422 | span exceeds the 730 days of history | `app/api.py:1860` | el propio handler |
+| 422 | days + end_days_ago exceeds daily history | `app/api.py:1862` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -101,7 +101,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-foto-unica.sh:121`, `harness/checks/K43-foto-unica.sh:281`, `harness/checks/K76-la-ventana-que-pides.sh:97` | — |
-| **panel** | `static/app.js:3240` | — |
+| **panel** | `static/app.js:3360` | — |
 | **tests** | — | `tests/test_p0_data_integrity.py:126` |
 
 **La llama el panel: es superficie de producto.**
@@ -138,7 +138,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
 | `app.zones._atr_abs` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
 | `app.zones._edge_episodes` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |

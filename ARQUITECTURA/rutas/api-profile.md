@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trading_profile` · `app/api.py:1384` (cuerpo hasta la 1400) · decorador en la linea 1383.
+Handler `trading_profile` · `app/api.py:1437` (cuerpo hasta la 1453) · decorador en la linea 1436.
 
 ## Parametros de entrada
 
@@ -19,20 +19,20 @@ Handler `trading_profile` · `app/api.py:1384` (cuerpo hasta la 1400) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1398 |
-| `bias` | literal en app/scalp_logic.py:4690 |
-| `confidence` | literal en app/scalp_logic.py:4692 |
-| `contradictions` | literal en app/scalp_logic.py:4696 |
-| `coverage_pct` | literal en app/scalp_logic.py:4693 |
-| `invalidation` | literal en app/scalp_logic.py:4702 |
-| `layers` | literal en app/scalp_logic.py:4694 |
-| `missing_data` | literal en app/scalp_logic.py:4697 |
-| `net_score` | literal en app/scalp_logic.py:4691 |
-| `profile` | literal en app/scalp_logic.py:4688 |
-| `profile_label` | literal en app/scalp_logic.py:4689 |
-| `reference_only` | literal en app/scalp_logic.py:4695 |
-| `symbol` | literal en app/api.py:1397 |
-| `weights_note` | literal en app/scalp_logic.py:4698 |
+| `as_of` | literal en app/api.py:1451 |
+| `bias` | literal en app/scalp_logic.py:4695 |
+| `confidence` | literal en app/scalp_logic.py:4697 |
+| `contradictions` | literal en app/scalp_logic.py:4701 |
+| `coverage_pct` | literal en app/scalp_logic.py:4698 |
+| `invalidation` | literal en app/scalp_logic.py:4707 |
+| `layers` | literal en app/scalp_logic.py:4699 |
+| `missing_data` | literal en app/scalp_logic.py:4702 |
+| `net_score` | literal en app/scalp_logic.py:4696 |
+| `profile` | literal en app/scalp_logic.py:4693 |
+| `profile_label` | literal en app/scalp_logic.py:4694 |
+| `reference_only` | literal en app/scalp_logic.py:4700 |
+| `symbol` | literal en app/api.py:1450 |
+| `weights_note` | literal en app/scalp_logic.py:4703 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -89,11 +89,11 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4314`
-- `app.scalp_logic.profile_view` — `app/scalp_logic.py:4535`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5965`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4319`
+- `app.scalp_logic.profile_view` — `app/scalp_logic.py:4540`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5977`
 
 <details><summary>Alcanzables de forma indirecta (23)</summary>
 
@@ -101,25 +101,25 @@ Llamadas directas del handler:
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._flow_bias` — `app/scalp_logic.py:4522`
-- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2416`
-- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2424`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2431`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4108`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4078`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4090`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4282`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4198`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._flow_bias` — `app/scalp_logic.py:4527`
+- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2421`
+- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2429`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2436`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4113`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4083`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4095`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4287`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4203`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2226`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2212`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2231`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2217`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4456`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2619`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4461`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2624`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2609`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2614`
 
 </details>
 
@@ -138,8 +138,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:1388` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 422 | — | `app/api.py:1441` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -186,7 +186,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |

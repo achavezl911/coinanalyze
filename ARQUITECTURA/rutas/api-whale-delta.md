@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1037` (cuerpo hasta la 1103) · decorador en la linea 1036.
+Handler `whale_delta` · `app/api.py:1088` (cuerpo hasta la 1156) · decorador en la linea 1087.
 
 ## Parametros de entrada
 
@@ -16,25 +16,15 @@ Handler `whale_delta` · `app/api.py:1037` (cuerpo hasta la 1103) · decorador e
 
 ## Campos que publica
 
-15 campos derivados. La procedencia dice de donde sale cada uno.
+5 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:429 |
-| `coverage.served_window` | literal en app/api.py:430 |
-| `data_gaps` | literal en app/api.py:434 |
-| `data_gaps.declared` | literal en app/api.py:442 |
-| `data_gaps.exchanges` | literal en app/api.py:436 |
-| `data_gaps.feed` | literal en app/api.py:435 |
-| `data_gaps.market` | literal en app/api.py:437 |
-| `data_gaps.status` | literal en app/api.py:441 |
-| `data_gaps.symbol` | literal en app/api.py:438 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:443 |
-| `data_gaps.window_end` | literal en app/api.py:440 |
-| `data_gaps.window_start` | literal en app/api.py:439 |
-| `interval` | literal en app/api.py:427 |
-| `rows` | literal en app/api.py:428 |
-| `symbol` | literal en app/api.py:426 |
+| `coverage` | literal en app/api.py:435 |
+| `data_gaps` | literal en app/api.py:440 |
+| `interval` | literal en app/api.py:433 |
+| `rows` | literal en app/api.py:434 |
+| `symbol` | literal en app/api.py:432 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -64,15 +54,16 @@ LEE:
 
 ## Funciones que la componen
 
-9 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+10 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:349`
-- `app.api.historical_interval_value` — `app/api.py:228`
-- `app.api.records` — `app/api.py:235`
-- `app.api.validate_symbol` — `app/api.py:222`
+- `app.api.declarar_tramo_no_medible` — `app/api.py:1042`
+- `app.api.declared_series_response` — `app/api.py:355`
+- `app.api.historical_interval_value` — `app/api.py:234`
+- `app.api.records` — `app/api.py:241`
+- `app.api.validate_symbol` — `app/api.py:228`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
@@ -98,8 +89,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:231` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:237` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -110,7 +101,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:66`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:120`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:57` | `harness/checks/K52b-la-ruta-no-falla-abierta.sh:6`, `harness/checks/K59-whale-vota-cero.sh:15` |
-| **panel** | `static/app.js:1629` | — |
+| **panel** | `static/app.js:1645` | — |
 | **readme** | — | `README.md:408` |
 | **tests** | — | `tests/test_data_gaps.py:325` |
 
@@ -126,11 +117,9 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-Claves temporales entre los campos que publica:
-
-- `coverage.served_window`
-- `data_gaps.window_end`
-- `data_gaps.window_start`
+**Ninguna clave temporal entre los campos derivados.** O no publica marca de
+tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
+mismo que lo primero: la foto de produccion lo decide, no este documento.
 
 ## Capa DECLARADA
 
@@ -148,7 +137,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
@@ -157,6 +146,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.declared_series_response` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.api.declarar_tramo_no_medible` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.api.whale_delta` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

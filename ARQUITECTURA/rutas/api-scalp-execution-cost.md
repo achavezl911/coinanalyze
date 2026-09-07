@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_execution_cost` · `app/api.py:1404` (cuerpo hasta la 1457) · decorador en la linea 1403.
+Handler `scalp_execution_cost` · `app/api.py:1457` (cuerpo hasta la 1510) · decorador en la linea 1456.
 
 ## Parametros de entrada
 
@@ -28,16 +28,16 @@ Handler `scalp_execution_cost` · `app/api.py:1404` (cuerpo hasta la 1457) · de
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5273 |
-| `assessment` | asignado en app/api.py:1443 |
-| `note` | literal en app/scalp_logic.py:5275 |
-| `profiles` | asignado en app/api.py:1456 |
-| `sizes_usd` | literal en app/scalp_logic.py:5272 |
-| `stale_after_seconds` | literal en app/scalp_logic.py:5274 |
-| `status` | literal en app/scalp_logic.py:5277 |
-| `symbol` | literal en app/scalp_logic.py:5270 |
-| `unit` | literal en app/scalp_logic.py:5271 |
-| `venues` | literal en app/scalp_logic.py:5276 |
+| `as_of` | literal en app/scalp_logic.py:5278 |
+| `assessment` | asignado en app/api.py:1496 |
+| `note` | literal en app/scalp_logic.py:5280 |
+| `profiles` | asignado en app/api.py:1509 |
+| `sizes_usd` | literal en app/scalp_logic.py:5277 |
+| `stale_after_seconds` | literal en app/scalp_logic.py:5279 |
+| `status` | literal en app/scalp_logic.py:5282 |
+| `symbol` | literal en app/scalp_logic.py:5275 |
+| `unit` | literal en app/scalp_logic.py:5276 |
+| `venues` | literal en app/scalp_logic.py:5281 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -85,24 +85,24 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._slippage_para` — `app/api.py:1460`
-- `app.api.validate_symbol` — `app/api.py:222`
+- `app.api._slippage_para` — `app/api.py:1513`
+- `app.api.validate_symbol` — `app/api.py:228`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5076`
-- `app.scalp_logic.execution_cost` — `app/scalp_logic.py:5219`
+- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5081`
+- `app.scalp_logic.execution_cost` — `app/scalp_logic.py:5224`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 
 <details><summary>Alcanzables de forma indirecta (24)</summary>
 
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
-- `app.scalp_logic._banda` — `app/scalp_logic.py:5067`
-- `app.scalp_logic._bps` — `app/scalp_logic.py:4993`
+- `app.scalp_logic._banda` — `app/scalp_logic.py:5072`
+- `app.scalp_logic._bps` — `app/scalp_logic.py:4998`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
@@ -110,12 +110,12 @@ Llamadas directas del handler:
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
-- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:5000`
+- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:5005`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
-- `app.scalp_logic.walk_book` — `app/scalp_logic.py:4915`
+- `app.scalp_logic.walk_book` — `app/scalp_logic.py:4920`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
@@ -142,10 +142,10 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | — | `app/api.py:1425` | el propio handler |
-| 422 | sizes debe ser una lista de numeros | `app/api.py:1431` | el propio handler |
-| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1433` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 422 | — | `app/api.py:1478` | el propio handler |
+| 422 | sizes debe ser una lista de numeros | `app/api.py:1484` | el propio handler |
+| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1486` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -156,7 +156,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:124` | — |
-| **panel** | `static/app.js:1647` | — |
+| **panel** | `static/app.js:1663` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -191,7 +191,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.metrics.current_nyse_start` | 15 | **0** | 14 ↑ | **15** | [impacto](../impacto/app-metrics.md) |

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `passive_flow_endpoint` · `app/api.py:1805` (cuerpo hasta la 1808) · decorador en la linea 1804.
+Handler `passive_flow_endpoint` · `app/api.py:1968` (cuerpo hasta la 1971) · decorador en la linea 1967.
 
 ## Parametros de entrada
 
@@ -18,21 +18,21 @@ Handler `passive_flow_endpoint` · `app/api.py:1805` (cuerpo hasta la 1808) · d
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5941 |
-| `counts` | literal en app/scalp_logic.py:5947 |
-| `counts.neutral` | literal en app/scalp_logic.py:5870 |
-| `counts.reacumulacion_silenciosa` | literal en app/scalp_logic.py:5870 |
-| `counts.redistribucion_silenciosa` | literal en app/scalp_logic.py:5870 |
-| `horizons` | literal en app/scalp_logic.py:5945 |
-| `location` | literal en app/scalp_logic.py:5943 |
-| `note` | literal en app/scalp_logic.py:5948 |
-| `price` | literal en app/scalp_logic.py:5942 |
-| `summary` | literal en app/scalp_logic.py:5946 |
-| `symbol` | literal en app/scalp_logic.py:5940 |
-| `value_area` | literal en app/scalp_logic.py:5944 |
-| `value_area.poc` | literal en app/scalp_logic.py:5944 |
-| `value_area.vah` | literal en app/scalp_logic.py:5944 |
-| `value_area.val` | literal en app/scalp_logic.py:5944 |
+| `as_of` | literal en app/scalp_logic.py:5953 |
+| `counts` | literal en app/scalp_logic.py:5959 |
+| `counts.neutral` | literal en app/scalp_logic.py:5882 |
+| `counts.reacumulacion_silenciosa` | literal en app/scalp_logic.py:5882 |
+| `counts.redistribucion_silenciosa` | literal en app/scalp_logic.py:5882 |
+| `horizons` | literal en app/scalp_logic.py:5957 |
+| `location` | literal en app/scalp_logic.py:5955 |
+| `note` | literal en app/scalp_logic.py:5960 |
+| `price` | literal en app/scalp_logic.py:5954 |
+| `summary` | literal en app/scalp_logic.py:5958 |
+| `symbol` | literal en app/scalp_logic.py:5952 |
+| `value_area` | literal en app/scalp_logic.py:5956 |
+| `value_area.poc` | literal en app/scalp_logic.py:5956 |
+| `value_area.vah` | literal en app/scalp_logic.py:5956 |
+| `value_area.val` | literal en app/scalp_logic.py:5956 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -84,29 +84,29 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5847`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5859`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:2926`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5814`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2398`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2431`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4108`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4078`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4090`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4282`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3539`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4198`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:2931`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5826`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2436`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4113`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4083`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4095`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4287`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3544`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4203`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:2915`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:2920`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4456`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2404`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2609`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3576`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4461`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2614`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3581`
 
 </details>
 
@@ -122,7 +122,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -133,7 +133,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:112`, `harness/checks/K43-foto-unica.sh:163` | — |
-| **panel** | `static/app.js:1659` | — |
+| **panel** | `static/app.js:1675` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -167,7 +167,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |

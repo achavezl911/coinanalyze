@@ -8,13 +8,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`get_settings`](#get-settings) | 291 | 3 | **0** | 53 ↑ | **3** |
+| [`get_settings`](#get-settings) | 291 | 3 | **0** | 54 ↑ | **3** |
 
 ## get_settings
 
 `app/config.py:291` · clave completa `app.config.get_settings`
 
-**Radio exacto: 3 rutas** de 68 · **cota superior: 54** (mas ancha)
+**Radio exacto: 3 rutas** de 69 · **cota superior: 55** (mas ancha)
 
 ### Por llamada — 3 rutas
 
@@ -29,9 +29,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 53 rutas · **cota superior**
+### Por tabla · k<=2 — 54 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (54 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -89,6 +89,7 @@ Y esas tablas las leen:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -111,7 +112,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**51 rutas se enteran SOLO por el dato**, sin
+**52 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
@@ -144,6 +145,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
 - [`/api/reference-levels`](../rutas/api-reference-levels.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)

@@ -958,9 +958,14 @@ function renderFlowCharts(cvd, oi, whale) {
   renderWhaleActivity(whaleBars);
   for (const id of ['cvd-chart', 'whale-chart']) { try { state.charts[id].timeScale().fitContent(); } catch (_) {} }
 }
-// Casi todas las ventanas valen cero porque no cruzo ninguna orden del tamano whale: es una
-// lectura valida, no un dato ausente. Pero una linea plana en cero gasta un panel entero
-// para decirlo, asi que con menos de dos ventanas activas se resume en texto.
+// ESTE COMENTARIO DECIA QUE EL CERO ERA «una lectura valida, no un dato ausente». **Es falso**,
+// y esta medido: el umbral es 5 000 000 USD POR OPERACION SUELTA y en BTC da 0 de 20 116 minutos
+// en 7 dias. El gradiente entre simbolos lo prueba -mismo periodo, umbrales 5 M / 1 M / 200 k ->
+// 0 / 3 / 64 minutos con tramo- y la escala de un print de spot lo remata: sobre los 274 cubos de
+// BTC con UNA sola operacion, la mayor mide 2 291 USD y la mediana 21.
+// No es que no haya manos grandes: es que con este umbral NO SE PUEDEN VER.
+// Cual seria el umbral bueno NO SE PUEDE MEDIR con lo que se guarda -solo agregados, nunca la
+// operacion suelta-, asi que la tarjeta lo DECLARA en vez de publicar el cero como respuesta.
 function renderWhaleActivity(bars) {
   const chart = $('whale-chart');
   const note = $('whale-note');
@@ -971,6 +976,17 @@ function renderWhaleActivity(bars) {
   note.hidden = !quiet;
   if (!quiet) { try { state.charts['whale-chart'].resize(chart.clientWidth, chart.clientHeight); } catch (_) {} return; }
   if (!bars.length) { note.textContent = 'Sin ventanas medidas en el periodo.'; return; }
+  // CERO ACTIVAS NO ES «no hubo manos grandes»: es que el instrumento no llega. Se dice con las
+  // mismas letras que el resto, y el cero NO vota en nada que se derive de el.
+  if (!active.length) {
+    note.textContent = 'NO SE PUEDE MEDIR con el umbral actual: exige una sola operación de '
+      + '5 000 000 USD, y en BTC eso no ocurre nunca (0 de 20 116 minutos en 7 días). '
+      + 'La mayor operación suelta de spot que se ha podido medir son 2 291 USD, y la mediana 21. '
+      + 'Esto NO significa que no haya manos grandes: significa que no se ven. '
+      + 'Cuál sería el umbral correcto no se puede calcular con lo que se guarda —solo agregados, '
+      + 'nunca la operación suelta—, así que este panel no vota.';
+    return;
+  }
   const last = active[active.length - 1];
   const detail = last ? ` La última fue ${money(last.value)} el ${new Date(last.time * 1000).toLocaleString('es-MX', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })} UTC.` : '';
   note.textContent = `${active.length} de ${bars.length} ventanas de 15 min con órdenes de tamaño whale.${detail}`;
@@ -1819,8 +1835,8 @@ function initSectionNav() {
   state.showSection = show;
 }
 // Los tres analizadores comparten panel: eran tres tarjetas casi vacias apiladas.
-const ANALYZER_TABS = [['zone', 'analyzer-tab-zone', 'analyzer-zone'], ['range', 'analyzer-tab-range', 'analyzer-range'], ['breakout', 'analyzer-tab-breakout', 'analyzer-breakout']];
-const ANALYZER_INPUTS = ['zone-low', 'zone-high', 'range-low', 'range-high', 'range-start', 'range-end', 'breakout-level'];
+const ANALYZER_TABS = [['zone', 'analyzer-tab-zone', 'analyzer-zone'], ['range', 'analyzer-tab-range', 'analyzer-range'], ['breakout', 'analyzer-tab-breakout', 'analyzer-breakout'], ['tramo', 'analyzer-tab-tramo', 'analyzer-tramo']];
+const ANALYZER_INPUTS = ['zone-low', 'zone-high', 'range-low', 'range-high', 'range-start', 'range-end', 'breakout-level', 'tramo-desde', 'tramo-hasta'];
 function showAnalyzer(key) {
   for (const [name, tabId, paneId] of ANALYZER_TABS) {
     const tab = $(tabId);
@@ -1879,6 +1895,8 @@ async function boot() {
     if (zoneForm) zoneForm.addEventListener('submit', event => { submitZone(event).catch(error => console.error(error)); });
     const rangeForm = $('range-form');
     if (rangeForm) rangeForm.addEventListener('submit', event => { submitRange(event).catch(error => console.error(error)); });
+    const tramoForm = $('tramo-form');
+    if (tramoForm) tramoForm.addEventListener('submit', event => { submitTramo(event).catch(error => console.error(error)); });
     const breakoutForm = $('breakout-form');
     if (breakoutForm) breakoutForm.addEventListener('submit', event => { submitBreakout(event).catch(error => console.error(error)); });
     initAnalyzer();
@@ -2956,6 +2974,108 @@ async function submitZone(event) {
     return;
   }
   renderZone(result);
+}
+
+// ---------------- Que estructura estaba ocurriendo en un tramo ----------------
+// NO ES SUPERFICIE DE SENAL. Es LECTURA de lo que ya paso: no hay regla de entrada, ni
+// puntuacion, ni «probabilidad de que continue». La respuesta es un NOMBRE y sus pruebas.
+//
+// Y tiene que poder decir NINGUNA. Un veredicto que siempre elige una de las opciones que
+// sabe nombrar no esta leyendo: esta repartiendo.
+// Los mismos tres tonos que ya usa el analizador de zona (ZONE_LABEL): no hay clase nueva.
+const TRAMO_TONO = {
+  distribucion: 'negative', bajista: 'negative',
+  acumulacion: 'positive', alcista: 'positive',
+  cierre: 'neutral', posicionamiento: 'neutral',
+};
+const TRAMO_NOMBRE = {
+  compatible_con_distribucion: ['Compatible con distribución', 'negative'],
+  compatible_con_acumulacion: ['Compatible con acumulación', 'positive'],
+  desapalancamiento: ['Desapalancamiento', 'negative'],
+  equilibrio_sin_ventaja: ['Equilibrio sin ventaja', 'neutral'],
+  ninguna: ['NINGUNA de las que la casa sabe nombrar', 'neutral'],
+};
+function tramoEmpty(text) {
+  const body = $('tramo-body');
+  if (!body) return;
+  const div = document.createElement('div');
+  div.className = 'zone-empty';
+  div.textContent = text;
+  body.replaceChildren(div);
+}
+function tramoLinea(padre, clase, texto) {
+  const div = document.createElement('div');
+  div.className = clase;
+  div.textContent = texto;
+  padre.append(div);
+  return div;
+}
+// Un instante local escrito por el operador se manda con su desfase real, no «como si» fuese
+// UTC: la ventana del viernes es 09:30Z y confundir la zona la mueve horas enteras.
+function tramoISO(valor) {
+  if (!valor) return null;
+  const d = new Date(valor);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+function renderTramo(res) {
+  const body = $('tramo-body');
+  if (!body) return;
+  body.replaceChildren();
+  const v = res.veredicto || {};
+  const pruebas = safeArray(res.pruebas);
+  const votan = pruebas.filter(p => p.vota);
+  const ventana = res.ventana || {};
+
+  const card = document.createElement('article');
+  card.className = 'zone-visit';
+  const [nombre, cls] = TRAMO_NOMBRE[v.estructura] || [String(v.estructura || '—'), 'neutral'];
+  tramoLinea(card, `zone-verdict ${cls}`, nombre);
+  // `fin_abierto` viene en la RAIZ de la respuesta, no dentro de `ventana`. Leerlo del sitio
+  // equivocado no rompe nada: simplemente el aviso no sale nunca, que es peor.
+  tramoLinea(card, 'zone-meta', `${ventana.desde || '—'} → ${ventana.hasta || '—'}`
+    + (res.fin_abierto ? ' · fin abierto: este es el instante que se usó' : ' · fin fijo: auditable')
+    + ' · contra el tramo anterior de igual duración');
+  // EL DENOMINADOR VA DELANTE, no en una nota al pie: «5 de 6» y «3 de 6» son veredictos
+  // distintos aunque salga el mismo nombre.
+  tramoLinea(card, 'zone-meta', `Votaron ${votan.length} de ${pruebas.length} pruebas`);
+  if (v.porque) tramoLinea(card, 'zone-meta', v.porque);
+  body.append(card);
+
+  // UNA POR UNA, y a favor de que vota cada una. Las que no se pudieron medir dicen por que:
+  // un hueco relleno con un cero es la forma mas barata de que una prueba ausente parezca una
+  // prueba en contra.
+  for (const p of pruebas) {
+    const fila = document.createElement('article');
+    fila.className = 'zone-visit';
+    const tono = p.vota ? (TRAMO_TONO[p.vota] || 'neutral') : 'neutral';
+    tramoLinea(fila, `zone-verdict ${tono}`,
+      `${String(p.prueba || '').replace(/_/g, ' ')} · ${p.vota ? `vota ${p.vota}` : 'NO VOTA'}`);
+    if (p.dice) tramoLinea(fila, 'zone-meta', p.dice);
+    if (!p.vota) {
+      tramoLinea(fila, 'zone-meta', p.no_vota_porque || 'no se pudo medir en esta ventana');
+    }
+    body.append(fila);
+  }
+  // NO ES UNA PREDICCION, y se dice con las mismas letras que el resto.
+  if (v.no_es_prediccion) {
+    const pie = document.createElement('div');
+    pie.className = 'zone-empty';
+    pie.textContent = v.no_es_prediccion;
+    body.append(pie);
+  }
+}
+async function submitTramo(event) {
+  if (event) event.preventDefault();
+  const desde = tramoISO(($('tramo-desde') || {}).value);
+  const hasta = tramoISO(($('tramo-hasta') || {}).value);
+  if (!desde) { tramoEmpty('Introduce al menos el instante inicial.'); return; }
+  if (hasta && hasta <= desde) { tramoEmpty('El final tiene que ser posterior al inicio.'); return; }
+  tramoEmpty('Leyendo el tramo…');
+  let query = `symbol=${encodeURIComponent(state.symbol)}&desde=${encodeURIComponent(desde)}`;
+  if (hasta) query += `&hasta=${encodeURIComponent(hasta)}`;
+  const res = await maybe(`/api/rango/estructura?${query}`, null);
+  if (!res) { tramoEmpty('No se pudo leer el tramo. Revisa el panel de salud de datos.'); return; }
+  renderTramo(res);
 }
 
 // ---------------- Frecuencia historica de ruptura (fase 3) ----------------

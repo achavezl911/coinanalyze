@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `zone_analysis_endpoint` · `app/api.py:1683` (cuerpo hasta la 1696) · decorador en la linea 1682.
+Handler `zone_analysis_endpoint` · `app/api.py:1810` (cuerpo hasta la 1832) · decorador en la linea 1809.
 
 ## Parametros de entrada
 
@@ -14,26 +14,23 @@ Handler `zone_analysis_endpoint` · `app/api.py:1683` (cuerpo hasta la 1696) · 
 | `low` | `Annotated[float, Query(gt=0)]` | — | si |
 | `high` | `Annotated[float, Query(gt=0)]` | — | si |
 | `days` | `Annotated[int, Query(ge=7, le=365)]` | `365` | no |
+| `desde` | `str | None` | `None` | no |
+| `hasta` | `str | None` | `None` | no |
 
 ## Campos que publica
 
-13 campos derivados. La procedencia dice de donde sale cada uno.
+8 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `lookback_days` | literal en app/scalp_logic.py:1486 |
-| `scored_visits` | literal en app/scalp_logic.py:1489 |
-| `sources` | literal en app/scalp_logic.py:1495 |
-| `sources.cvd_spot` | literal en app/scalp_logic.py:1497 |
-| `sources.delta_futuros` | literal en app/scalp_logic.py:1496 |
-| `sources.no_disponible` | literal en app/scalp_logic.py:1498 |
-| `summary` | literal en app/scalp_logic.py:1490 |
-| `symbol` | literal en app/scalp_logic.py:1484 |
-| `visit_count` | literal en app/scalp_logic.py:1488 |
-| `visits` | literal en app/scalp_logic.py:1487 |
-| `zone` | literal en app/scalp_logic.py:1485 |
-| `zone.high` | literal en app/scalp_logic.py:1485 |
-| `zone.low` | literal en app/scalp_logic.py:1485 |
+| `lookback_days` | literal en app/scalp_logic.py:1491 |
+| `scored_visits` | literal en app/scalp_logic.py:1494 |
+| `sources` | literal en app/scalp_logic.py:1500 |
+| `summary` | literal en app/scalp_logic.py:1495 |
+| `symbol` | literal en app/scalp_logic.py:1489 |
+| `visit_count` | literal en app/scalp_logic.py:1493 |
+| `visits` | literal en app/scalp_logic.py:1492 |
+| `zone` | literal en app/scalp_logic.py:1490 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,12 +51,14 @@ LEE:
 
 ## Funciones que la componen
 
-12 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+14 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:222`
+- `app.api.declara_ventana` — `app/api.py:1564`
+- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.ventana_pedida` — `app/api.py:1531`
 - `app.scalp_logic.zone_analysis` — `app/scalp_logic.py:1364`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
@@ -91,9 +90,14 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:224` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:1692` | el propio handler |
-| 422 | zone spans more than 3x; narrow it | `app/api.py:1694` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 422 | hace falta `desde` | `app/api.py:1548` | una funcion de su cierre |
+| 422 | `hasta` sin `desde` no acota nada | `app/api.py:1551` | una funcion de su cierre |
+| 422 | — | `app/api.py:1556` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1558` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1560` | una funcion de su cierre |
+| 422 | low must be below high | `app/api.py:1825` | el propio handler |
+| 422 | zone spans more than 3x; narrow it | `app/api.py:1827` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -104,7 +108,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-control.bash:116`, `harness/checks/K43-foto-unica.sh:121`, `harness/checks/K43-foto-unica.sh:282` | — |
-| **panel** | `static/app.js:2953` | — |
+| **panel** | `static/app.js:2971` | — |
 | **tests** | — | `tests/test_p0_data_integrity.py:126` |
 
 **La llama el panel: es superficie de producto.**
@@ -139,9 +143,11 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 62 | **0** | 0 | **62** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
+| `app.api.ventana_pedida` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-api.md) |
+| `app.api.declara_ventana` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |
 | `app.api.zone_analysis_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.zone_analysis` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.zones._atr_pct` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-zones.md) |
