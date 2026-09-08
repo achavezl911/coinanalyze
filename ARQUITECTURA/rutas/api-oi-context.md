@@ -45,16 +45,16 @@ LEE:
 
 - `daily_session_agg` — `sql/schema.sql:1032`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
 - `oi_bybit` — `sql/schema.sql:97`, 7 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:648`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 
 ## Funciones que la componen
 

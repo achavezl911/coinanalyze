@@ -194,7 +194,7 @@ LEE:
 
 - `daily_session_agg` — `sql/schema.sql:1032`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
 - `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
   - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1549`
   - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:813`
@@ -207,17 +207,17 @@ LEE:
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
 - `metric_baseline` — `sql/schema.sql:1265`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:780`
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
 - `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:856`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:912`
@@ -229,7 +229,7 @@ LEE:
   - la llena `app.signal_outcomes._defer_missing_path` (UPDATE) — `app/signal_outcomes.py:226`
   - la llena `app.signal_outcomes._finalize_evaluated` (UPDATE) — `app/signal_outcomes.py:252`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:285`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas

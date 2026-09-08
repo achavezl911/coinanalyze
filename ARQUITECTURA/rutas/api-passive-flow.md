@@ -56,12 +56,12 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):

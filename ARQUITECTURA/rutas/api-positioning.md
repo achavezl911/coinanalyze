@@ -45,7 +45,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `long_short_ratio` — `sql/schema.sql:187`, 6 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:660`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:678`
   - la llena `app.ingest.upsert_long_short` (INSERT) — `app/ingest.py:357`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por

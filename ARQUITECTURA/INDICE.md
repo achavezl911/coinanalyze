@@ -12,7 +12,7 @@
 | `/api/ai/context/bundle` | GET | 9 | 24 | 166 | [ficha](rutas/api-ai-context-bundle.md) |
 | `/api/ai/profiles` | GET | 14 | 0 | 0 | [ficha](rutas/api-ai-profiles.md) |
 | `/api/baselines` | GET | 5 | 1 | 3 | [ficha](rutas/api-baselines.md) |
-| `/api/carry/matriz` | GET | 15 | 1 | 5 | [ficha](rutas/api-carry-matriz.md) |
+| `/api/carry/matriz` | GET | 16 | 1 | 7 | [ficha](rutas/api-carry-matriz.md) |
 | `/api/context-metadata` | GET | 6 | 0 | 2 | [ficha](rutas/api-context-metadata.md) |
 | `/api/cross-asset` | GET | 8 | 1 | 9 | [ficha](rutas/api-cross-asset.md) |
 | `/api/cvd` | GET | 15 | 2 | 11 | [ficha](rutas/api-cvd.md) |

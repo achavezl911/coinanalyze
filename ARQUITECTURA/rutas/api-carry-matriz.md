@@ -15,25 +15,26 @@ Handler `carry_matriz` · `app/api.py:1168` (cuerpo hasta la 1183) · decorador 
 
 ## Campos que publica
 
-15 campos derivados. La procedencia dice de donde sale cada uno.
+16 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/carry.py:157 |
-| `cobertura` | literal en app/carry.py:144 |
-| `cobertura.celdas_esperadas` | literal en app/carry.py:145 |
-| `cobertura.celdas_sin_funding` | literal en app/carry.py:146 |
-| `cobertura.celdas_sin_oi` | literal en app/carry.py:147 |
-| `cobertura.nota` | literal en app/carry.py:150 |
-| `coste` | literal en app/carry.py:141 |
-| `desde` | literal en app/carry.py:139 |
-| `dias_pedidos` | literal en app/carry.py:137 |
-| `dias_servidos` | literal en app/carry.py:138 |
-| `funding_por_dia` | literal en app/carry.py:142 |
-| `hasta` | literal en app/carry.py:140 |
-| `oi_por_dia` | literal en app/carry.py:143 |
-| `simbolos` | literal en app/carry.py:136 |
-| `unidades` | literal en app/carry.py:156 |
+| `as_of` | literal en app/carry.py:206 |
+| `cobertura` | literal en app/carry.py:192 |
+| `cobertura.celdas_esperadas` | literal en app/carry.py:193 |
+| `cobertura.celdas_sin_funding` | literal en app/carry.py:194 |
+| `cobertura.celdas_sin_oi` | literal en app/carry.py:195 |
+| `cobertura.nota` | literal en app/carry.py:198 |
+| `coste` | literal en app/carry.py:188 |
+| `desde` | literal en app/carry.py:186 |
+| `dias_pedidos` | literal en app/carry.py:184 |
+| `dias_servidos` | literal en app/carry.py:185 |
+| `funding_por_dia` | literal en app/carry.py:189 |
+| `hasta` | literal en app/carry.py:187 |
+| `oi_por_dia` | literal en app/carry.py:190 |
+| `simbolos` | literal en app/carry.py:183 |
+| `sin_dato` | literal en app/carry.py:191 |
+| `unidades` | literal en app/carry.py:205 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -45,23 +46,25 @@ LEE:
 
 - `daily_session_agg` — `sql/schema.sql:1032`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
 
 ## Funciones que la componen
 
-5 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+7 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2326`
-- `app.carry.matriz_de_carry` — `app/carry.py:73`
+- `app.carry.matriz_de_carry` — `app/carry.py:98`
 
-<details><summary>Alcanzables de forma indirecta (3)</summary>
+<details><summary>Alcanzables de forma indirecta (5)</summary>
 
-- `app.carry._pct` — `app/carry.py:41`
-- `app.carry.coste_de_carry` — `app/carry.py:45`
-- `app.carry.quien_paga` — `app/carry.py:62`
+- `app.carry._iso` — `app/carry.py:66`
+- `app.carry._pct` — `app/carry.py:62`
+- `app.carry.celda_completa` — `app/carry.py:52`
+- `app.carry.coste_de_carry` — `app/carry.py:70`
+- `app.carry.quien_paga` — `app/carry.py:87`
 
 </details>
 
@@ -129,7 +132,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.rechaza_parametros_desconocidos` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.api.carry_matriz` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.carry._iso` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-carry.md) |
 | `app.carry._pct` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-carry.md) |
+| `app.carry.celda_completa` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-carry.md) |
 | `app.carry.coste_de_carry` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-carry.md) |
 | `app.carry.matriz_de_carry` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-carry.md) |
 | `app.carry.quien_paga` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-carry.md) |

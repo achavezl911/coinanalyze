@@ -302,12 +302,30 @@ async def backfill(conn: asyncpg.Connection, symbols: tuple[str, ...], lookback:
     for offset in range(lookback):
         session_date_value = latest - timedelta(days=offset)
         for symbol in symbols:
-            exists = await conn.fetchval(
-                "SELECT 1 FROM daily_session_agg WHERE symbol=$1 AND session_date=$2",
+            # NO BASTA CON SABER SI LA FILA EXISTE: hace falta saber si esta COMPLETA.
+            # Antes se preguntaba `SELECT 1` y se saltaba toda fila existente de mas de dos
+            # dias, asi que una sesion calculada mientras su fuente iba a medias quedaba
+            # congelada para siempre. Las tres del 2026-08-28 decian «219 de 288» con la fuente
+            # ya completa a una consulta de distancia, y el panel lo repetia.
+            fila = await conn.fetchrow(
+                """
+                SELECT (cvd_spot_usd IS NULL OR cvd_fut_usd IS NULL OR price_open IS NULL
+                        OR oi_open IS NULL OR fr_avg IS NULL OR cvd_fut_2v_usd IS NULL
+                        OR long_liq_usd IS NULL) AS incompleta
+                FROM daily_session_agg WHERE symbol=$1 AND session_date=$2
+                """,
                 symbol,
                 session_date_value,
             )
-            if exists and offset >= 2:
+            # Pasadas sus dos oportunidades solo se revisa lo que quedo incompleto. Una fila
+            # completa no se toca: recalcularla no puede mejorarla.
+            #
+            # Y NO PUEDE PERDER UN DATO BUENO: el upsert usa COALESCE(nuevo, viejo) para
+            # `session_coverage_version IN (1,2)`, que es la version que se escribe hoy (2).
+            # El dia que suba a 3 mandara EXCLUDED y una revision tardia SI podria convertir en
+            # NULL lo que una fuente ya podada no puede recalcular; eso tiene que entrar en la
+            # decision de subirla.
+            if fila is not None and offset >= 2 and not fila["incompleta"]:
                 continue
             if await compute_session(conn, symbol, WS_SYMBOL_MAP[symbol], session_date_value):
                 inserted += 1

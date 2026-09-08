@@ -42,9 +42,9 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
 - `metric_baseline` — `sql/schema.sql:1265`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:780`
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):

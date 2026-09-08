@@ -110,3 +110,36 @@ async def test_una_celda_con_pocas_muestras_se_marca_incompleta():
     d27 = next(d for d in m["funding_por_dia"] if d["fecha"] == "2026-08-27")
     assert d27["valores"]["BTCUSDT_PERP.A"]["muestras"] == 288
     assert d27["valores"]["BTCUSDT_PERP.A"]["completo"] is True
+
+
+@pytest.mark.asyncio
+async def test_cada_hueco_dice_DE_CUANDO_es_su_afirmacion():
+    """CRITERIO 1. Una celda vacia sigue siendo `null` -no se le cambia la forma, que es lo que
+    consumen el panel y el promedio- pero la respuesta dice APARTE cuando se calculo la fila que
+    la dejo vacia. Sin eso, «no pude medir» se lee como «no hay dato», y a veces el dato existe
+    desde entonces: las tres filas del 2026-08-28 decian 219 de 288 con la fuente ya completa.
+
+    Mi primer intento metio la fecha DENTRO de la celda y rompio tres tests a la vez: el promedio
+    empezaba a contar celdas sin valor y el panel habria pintado un hueco como un numero. Un
+    cambio de forma se propaga a todos los consumidores; un campo al lado, no.
+    """
+    import datetime
+
+    class ConHueco(ConexionDeDosDias):
+        async def fetch(self, *a, **k):
+            filas = await super().fetch(*a, **k)
+            for f in filas:
+                f["updated_at"] = datetime.datetime(2026, 8, 30, 13, 0, tzinfo=datetime.UTC)
+            return filas
+
+    simbolos = ["BTCUSDT_PERP.A"]
+    m = await matriz_de_carry(ConHueco(simbolos), simbolos, 15)
+    huecos = [x for x in m["sin_dato"] if x["grupo"] == "funding"]
+    assert len(huecos) == 1, m["sin_dato"]
+    assert huecos[0]["fecha"] == "2026-08-28"
+    assert huecos[0]["medido_el"].startswith("2026-08-30T13:00")
+    assert huecos[0]["muestras_cuando_se_calculo"] == 219
+    assert "219 de 288" in huecos[0]["por_que"]
+    # LA CELDA NO CAMBIA DE FORMA: sigue siendo null.
+    dia = next(d for d in m["funding_por_dia"] if d["fecha"] == "2026-08-28")
+    assert dia["valores"]["BTCUSDT_PERP.A"] is None

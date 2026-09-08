@@ -37,9 +37,9 @@ LEE:
 
 - `daily_session_agg` — `sql/schema.sql:1032`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:670`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
 - `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 
 ## Funciones que la componen
