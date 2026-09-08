@@ -87,8 +87,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 422 | hace falta `desde` | `app/api.py:1575` | una funcion de su cierre |
-| 422 | `hasta` sin `desde` no acota nada | `app/api.py:1578` | una funcion de su cierre |
+| 422 | hace falta «desde» | `app/api.py:1575` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1578` | una funcion de su cierre |
 | 422 | — | `app/api.py:1583` | una funcion de su cierre |
 | 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1585` | una funcion de su cierre |
 | 422 | hasta tiene que ser posterior a desde | `app/api.py:1587` | una funcion de su cierre |

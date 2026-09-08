@@ -3280,7 +3280,7 @@ async def reference_levels(conn: asyncpg.Connection, symbol: str) -> dict[str, A
         # como null, que es lo que si se sostiene.
         "note": (
             "niveles recalculables desde ohlcv 1min; dia y sesiones en UTC; "
-            "cada nivel trae `velas` (sobre cuantas se calculo) y `velas_posibles` "
+            "cada nivel trae «velas» (sobre cuantas se calculo) y «velas_posibles» "
             "(cuantas cabian ya): si difieren, la ventana sigue abierta. "
             "Lo que no hay se sirve como null, nunca como cero."
         ),

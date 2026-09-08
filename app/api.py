@@ -1419,9 +1419,9 @@ async def desk_state(
             "profile_coverage_pct": view.get("coverage_pct"),
         },
         "note": (
-            "`as_of` es el cutoff de tiempo de evento compartido por trend y delta, no un "
+            "«as_of» es el cutoff de tiempo de evento compartido por trend y delta, no un "
             "snapshot MVCC atomico de las sentencias autocommit. Los estados parciales NO se "
-            "ocultan: se declaran en `partial` y en el propio bloque."
+            "ocultan: se declaran en «partial» y en el propio bloque."
         ),
     }
 
@@ -1572,10 +1572,10 @@ def ventana_pedida(
     """
     if desde is None and hasta is None:
         if obligatoria:
-            raise HTTPException(status_code=422, detail="hace falta `desde`")
+            raise HTTPException(status_code=422, detail="hace falta «desde»")
         return None, None
     if desde is None:
-        raise HTTPException(status_code=422, detail="`hasta` sin `desde` no acota nada")
+        raise HTTPException(status_code=422, detail="«hasta» sin «desde» no acota nada")
     try:
         a = datetime.fromisoformat(desde)
         b = datetime.fromisoformat(hasta) if hasta else None
@@ -1604,7 +1604,7 @@ def declara_ventana(payload: dict[str, Any], a: datetime | None, b: datetime | N
         "fin_abierto": b is None,
         "auditable": b is not None,
         "nota": (
-            "el retroceso `days` NO se aplico: manda la ventana pedida"
+            "el retroceso «days» NO se aplico: manda la ventana pedida"
             if b is not None
             else "fin abierto: se sirvio hasta el instante de arriba, que es el que hay que "
                  "repetir para volver a obtener esta respuesta"

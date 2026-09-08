@@ -1025,8 +1025,13 @@ footer { padding: var(--sp-6); border-top: 1px solid var(--border-soft); color: 
 .section-links-secundario a:hover, .section-links-secundario a.active { opacity: 1; }
 
 @media (min-width: 1900px) {
-  /* En el escalon ancho los dos heatmaps de dias caben al lado del de precio. */
-  .heat-panel { grid-column: span 4; }
+  /* LOS DE DIAS NO SE ESTRECHAN AQUI, y lo digo porque lo hice mal la campaña pasada: les puse
+     `span 4` creyendo que mas ancho total permitia mas columnas de paneles. Con CATORCE columnas
+     de datos dentro es al reves —el panel caia de 806 px a 1856 a 556 px a 1920, y a 1920 se
+     cortaban 50 de 84 celdas y las 28 fechas, medido—. Se quedan en media fila.
+     El de precio SI puede: tiene doce filas y una sola columna, asi que estrecharlo no le quita
+     nada. */
+  .heat-panel { grid-column: span 6; }
   .liqprice-panel { grid-column: span 4; }
   .carry-panel { grid-column: span 12; }
 }

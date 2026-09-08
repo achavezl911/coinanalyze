@@ -3033,7 +3033,7 @@ function textoEn(id, texto, clase) {
 
 // Un hueco NO es un cero. Cuando una celda no tiene dato se pinta vacia y se marca, para que
 // nadie la lea como «ese dia no se pago funding»: no se midio, que es otra cosa.
-function celdaHeat(valor, escala, sufijo) {
+function celdaHeat(valor, escala, sufijo, factor) {
   const div = document.createElement('div');
   div.className = 'heat-celda';
   if (valor === null || valor === undefined || valor.pct_8h === undefined && valor.chg_pct === undefined) {
@@ -3047,14 +3047,18 @@ function celdaHeat(valor, escala, sufijo) {
   div.style.background = f >= 0
     ? `rgba(47,213,138,${(0.10 + 0.55 * f).toFixed(3)})`
     : `rgba(255,105,120,${(0.10 + 0.55 * -f).toFixed(3)})`;
-  div.textContent = v === 0 ? '0' : v.toFixed(v > 1 || v < -1 ? 1 : 4).replace(/0+$/, '');
+  // Se PINTA escalado -el funding en milesimas de % por 8 h- para que quepan tres caracteres
+  // en vez de seis. El dato no cambia: el `title` lleva el valor crudo con su unidad.
+  const pintado = v * (factor || 1);
+  div.textContent = pintado === 0 ? '0'
+    : pintado.toFixed(Math.abs(pintado) >= 10 ? 0 : 1);
   div.title = `${v}${sufijo} sobre ${valor.muestras} muestras de 5 min`
     + (valor.completo ? '' : ' — DIA INCOMPLETO');
   if (!valor.completo) div.classList.add('heat-parcial');
   return div;
 }
 
-function pintaHeat(idCaja, filas, simbolos, campo, sufijo) {
+function pintaHeat(idCaja, filas, simbolos, campo, sufijo, factor) {
   const caja = $(idCaja);
   if (!caja) return { vacias: 0, total: 0 };
   caja.replaceChildren();
@@ -3069,7 +3073,13 @@ function pintaHeat(idCaja, filas, simbolos, campo, sufijo) {
   const escala = vals.length ? (vals[Math.floor(vals.length * 0.9)] || vals[vals.length - 1]) : 0;
   const tabla = document.createElement('div');
   tabla.className = 'heat-rejilla';
-  tabla.style.gridTemplateColumns = `72px repeat(${filas.length}, minmax(0, 1fr))`;
+  // `minmax(min-content, 1fr)` y NO `minmax(0, 1fr)`: el cero es el permiso para que la
+  // columna encoja por debajo de su contenido, y con `text-overflow: ellipsis` eso corta el
+  // numero. Cuando se corta, celdas que valen cosas distintas se ven iguales y el heatmap
+  // deja de poder leerse. `min-content` no es un ancho ajustado a la letra de hoy: es la
+  // primitiva que dice «nunca mas estrecho que lo que hay dentro», asi que sigue valiendo
+  // si el texto crece. Si aun asi no cabe, `.heatmap` se desplaza (overflow-x: auto).
+  tabla.style.gridTemplateColumns = `72px repeat(${filas.length}, minmax(min-content, 1fr))`;
   const cab = document.createElement('div');
   cab.className = 'heat-cab';
   tabla.append(cab);
@@ -3089,7 +3099,7 @@ function pintaHeat(idCaja, filas, simbolos, campo, sufijo) {
       total++;
       const v = f.valores[s];
       if (!v) vacias++;
-      tabla.append(celdaHeat(v, escala, sufijo));
+      tabla.append(celdaHeat(v, escala, sufijo, factor));
     }
   }
   caja.append(tabla);
@@ -3124,14 +3134,19 @@ function renderCarry(m) {
     + 'Sin componer: el funding se cobra sobre el nocional, no sobre el beneficio.');
 
   const simbolos = m.simbolos || [];
-  const f = pintaHeat('heat-funding', m.funding_por_dia || [], simbolos, 'pct_8h', ' % por 8 h');
-  textoEn('heat-funding-sub', servido);
+  // MILESIMAS DE % POR 8 H, y rotulado en el encabezado, en la ventana y en cada celda.
+  const f = pintaHeat('heat-funding', m.funding_por_dia || [], simbolos, 'pct_8h',
+                      ' % por 8 h', 1000);
+  textoEn('heat-funding-sub', `milésimas de % por 8 h · ${servido}`);
   textoEn('heat-funding-note',
-    `% por período de 8 h. ${f.total - f.vacias} de ${f.total} celdas con dato; `
+    `Cada celda es el funding medio del día en MILÉSIMAS DE % POR PERÍODO DE 8 H: «6.7» son `
+    + `0.0067 %. El valor crudo está en el título de cada celda. `
+    + `${f.total - f.vacias} de ${f.total} celdas con dato; `
     + `${f.vacias} sin medir, y van vacías —no a cero—. Verde: pagan los largos.`);
 
-  const o = pintaHeat('heat-oi', m.oi_por_dia || [], simbolos, 'chg_pct', ' %');
-  textoEn('heat-oi-sub', servido);
+  // El de OI NO se escala: sus valores ya son cortos y estan en % de verdad.
+  const o = pintaHeat('heat-oi', m.oi_por_dia || [], simbolos, 'chg_pct', ' %', 1);
+  textoEn('heat-oi-sub', `% de cambio · ${servido}`);
   textoEn('heat-oi-note',
     `Cambio de apertura a cierre de sesión. ${o.total - o.vacias} de ${o.total} celdas con dato; `
     + `${o.vacias} sin medir. Verde: se montan posiciones.`);

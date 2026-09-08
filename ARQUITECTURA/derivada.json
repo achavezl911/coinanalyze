@@ -28548,13 +28548,13 @@
         },
         {
           "codigo": 422,
-          "detalle": "hace falta `desde`",
+          "detalle": "hace falta «desde»",
           "donde": "app/api.py:1575",
           "propio": false
         },
         {
           "codigo": 422,
-          "detalle": "`hasta` sin `desde` no acota nada",
+          "detalle": "«hasta» sin «desde» no acota nada",
           "donde": "app/api.py:1578",
           "propio": false
         },
@@ -29445,13 +29445,13 @@
         },
         {
           "codigo": 422,
-          "detalle": "hace falta `desde`",
+          "detalle": "hace falta «desde»",
           "donde": "app/api.py:1575",
           "propio": false
         },
         {
           "codigo": 422,
-          "detalle": "`hasta` sin `desde` no acota nada",
+          "detalle": "«hasta» sin «desde» no acota nada",
           "donde": "app/api.py:1578",
           "propio": false
         },
@@ -30387,7 +30387,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:3506"
+            "static/app.js:3521"
           ],
           "menciones": []
         }
@@ -30532,7 +30532,7 @@
             "static/app.js:1662"
           ],
           "menciones": [
-            "static/app.js:3140"
+            "static/app.js:3155"
           ]
         },
         "panel-html": {
@@ -32494,7 +32494,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:3631"
+            "static/app.js:3646"
           ],
           "menciones": []
         },
@@ -32691,13 +32691,13 @@
         },
         {
           "codigo": 422,
-          "detalle": "hace falta `desde`",
+          "detalle": "hace falta «desde»",
           "donde": "app/api.py:1575",
           "propio": false
         },
         {
           "codigo": 422,
-          "detalle": "`hasta` sin `desde` no acota nada",
+          "detalle": "«hasta» sin «desde» no acota nada",
           "donde": "app/api.py:1578",
           "propio": false
         },
@@ -32730,7 +32730,7 @@
         "panel": {
           "llamadas": [
             "static/app.js:1590",
-            "static/app.js:3347"
+            "static/app.js:3362"
           ],
           "menciones": []
         },
@@ -37206,13 +37206,13 @@
         },
         {
           "codigo": 422,
-          "detalle": "hace falta `desde`",
+          "detalle": "hace falta «desde»",
           "donde": "app/api.py:1575",
           "propio": false
         },
         {
           "codigo": 422,
-          "detalle": "`hasta` sin `desde` no acota nada",
+          "detalle": "«hasta» sin «desde» no acota nada",
           "donde": "app/api.py:1578",
           "propio": false
         },
