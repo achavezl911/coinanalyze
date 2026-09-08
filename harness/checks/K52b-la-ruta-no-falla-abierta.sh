@@ -170,7 +170,7 @@ def juzgable(inicio):
     return None
 
 # --- 3 · EL ELEGIBLE SALE DEL JOURNAL, no de lo servido (costura 1) -------------------
-sin_declarar, cubiertos = [], 0
+sin_declarar, cubiertos, pendientes = [], 0, []
 for a in arranques:
     if a < corte or a + ancho > ahora - ASIENTO or a < suelo:
         continue
@@ -186,19 +186,49 @@ for a in arranques:
     # bucket que servia short_minutes=0 y minutes_present=14 de 15, y este check lo acuso de no
     # declararlo cuando el que no podia verlo era el contador.
     #
-    # `missing_minutes` con valor NULO no es cero: significa «el cubo aun no ha terminado», y
-    # entonces el arranque no es juzgable por esta via. Se trata como no declarado a proposito:
-    # si el cubo no se ha cerrado, `juzgable()` ya lo habra exento mas arriba.
-    cortos = por_inicio[inicio].get("short_minutes") or 0
-    crudo_ausentes = por_inicio[inicio].get("missing_minutes")
+    # ─── TRES ESTADOS, Y EL DEL MEDIO NO ES UNA CONDENA ─────────────────────────────────
+    #
+    # LA FRASE QUE ESTABA AQUI ERA FALSA, y la escribi yo: decia que si el cubo no se ha
+    # cerrado «juzgable() ya lo habra exento mas arriba». NO LO HACE. Los dos asentamientos
+    # son DISTINTOS y no se hablan:
+    #     este check   ASIENTO = 6 min, contra el ARRANQUE (`a + ancho > ahora - ASIENTO`)
+    #     la ruta      10 min, contra el FIN DEL CUBO (`cubo + ancho <= now() - 10`)
+    # Como un arranque puede caer en el primer segundo de su cubo, el check llega a juzgar
+    # hasta CUATRO MINUTOS antes de que la ruta pueda contestar. Inducido y medido:
+    #     ahora 22:35:17Z · cubo 22:12->22:27 · arranque 22:12:47Z
+    #     juzga:    22:27:47 <= 22:29:17 SI      rellena: 22:27:17 <= 22:25:17 NO -> NULO
+    # Un rojo falso, intermitente y dependiente del reloj: de los que se miran una vez, salen
+    # verdes al reintentar, y ensenan a ignorar el que si lo es.
+    #
+    # NO SE ARREGLA HACIENDO QUE 6 Y 10 COINCIDAN. Dos constantes que casan por acuerdo se
+    # separan solas la proxima vez que alguien toque una -es lo que le paso a K18 con su
+    # ventana copiada y a SESSION_MIN_COVERAGE_RATIO contra MUESTRAS_MINIMAS_DIA-. SE LE
+    # PREGUNTA A LA FILA: si la ruta pone NULO, la ruta esta diciendo «todavia no puedo
+    # contestar», y eso es un NO JUZGABLE, no un silencio.
+    #
+    # Y HAY QUE DISTINGUIR DOS NULOS, que es la regla de K03 otra vez:
+    #     el campo NO ESTA          -> la ruta no publica esto: NO es excusa, se condena
+    #     el campo esta y vale NULO -> la ruta no puede contestar aun: no juzgable
+    # Sin esa distincion, este check se pondria VERDE contra la respuesta vieja -que no trae
+    # el campo- y eso seria aflojarlo, no arreglarlo.
+    fila_cubo = por_inicio[inicio]
+    cortos = fila_cubo.get("short_minutes") or 0
+    publica_ausentes = "missing_minutes" in fila_cubo
+    crudo_ausentes = fila_cubo.get("missing_minutes")
     ausentes = crudo_ausentes or 0
-    if cortos + ausentes < 1:
+    if cortos + ausentes >= 1:
+        cubiertos += 1
+    elif publica_ausentes and crudo_ausentes is None:
+        # NO JUZGABLE: la ruta publica el campo y dice que aun no puede contestar. No suma a
+        # `cubiertos`, asi que si TODOS los arranques cayeran aqui el check sale NO MEDIDO y
+        # no verde, que es lo que corresponde.
+        pendientes.append(f"{a:%H:%M:%SZ} en el bucket {inicio:%H:%M}")
+    else:
         sin_declarar.append(
             f"el arranque de {a:%H:%M:%SZ} cae en el bucket {inicio:%H:%M}, que sirve "
-            f"short_minutes={cortos} y missing_minutes={crudo_ausentes}"
+            f"short_minutes={cortos} y missing_minutes="
+            + ("None" if publica_ausentes else "SIN PUBLICAR")
         )
-    else:
-        cubiertos += 1
 
 # --- CONTROL POSITIVO: el bucket tranquilo no se marca --------------------------------
 exentos, tranquilos, control_malo, marcados_sin_arranque = {}, 0, [], []
@@ -239,6 +269,10 @@ if tranquilos == 0:
 legado = sum(1 for f in filas if (f.get("unknown_minutes") or 0) > 0)
 if marcados_sin_arranque:
     exentos["cortos que el journal no explica"] = len(marcados_sin_arranque)
+if pendientes:
+    # Se declara con su motivo, como los otros tres. Un no-juzgado que no se cuenta es un
+    # silencio, y este check existe justamente para que no los haya.
+    exentos["arranques cuyo cubo aun no puede contestar (la ruta sirve missing_minutes nulo)"] = len(pendientes)
 detalle = ", ".join(f"{n} {m}" for m, n in sorted(exentos.items())) or "ninguno"
 print(f"la ruta distingue las tres cosas EJECUTANDOLA, y el ELEGIBLE SALE DEL JOURNAL: los {cubiertos} arranques juzgables tienen un bucket que los declara, {tranquilos} buckets sin arranque salen limpios -control positivo- y {legado} de legado dicen unknown_minutes en vez de pasar por completos. Corte {corte:%m-%d %H:%MZ}, suelo del journal {suelo:%m-%d %H:%MZ}, arco de {horas} h sobre {len(filas)} buckets. NO JUZGADOS y declarados: {detalle}. La marca dice QUE falta, no CUANTO")
 ' "$JOURNAL" "$CUERPO" "$RUTA" "$horas"

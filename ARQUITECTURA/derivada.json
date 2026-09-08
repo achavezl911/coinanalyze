@@ -27728,11 +27728,11 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_whale_delta_minutes_postgres.py:280"
+            "tests/test_whale_delta_minutes_postgres.py:283"
           ],
           "menciones": [
             "tests/test_whale_delta_minutes_postgres.py:199",
-            "tests/test_whale_delta_minutes_postgres.py:262"
+            "tests/test_whale_delta_minutes_postgres.py:265"
           ]
         }
       },

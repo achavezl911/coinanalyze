@@ -203,13 +203,16 @@ async def test_cero_filas_tiene_firma_propia_y_no_se_lee_como_completo(conn, mon
 BUCKET_VIVO_MIN = 15
 
 
-def _bucket_reciente(minutos_atras: int) -> datetime:
-    """Un cubo alineado a 15 min que termina hace `minutos_atras`. Sirve para el brazo del cubo
-    que TODAVIA SE ESTA LLENANDO, que es el falso positivo que este arreglo tenia que evitar."""
-    ahora = datetime.now(UTC)
-    fin = ahora - timedelta(minutes=minutos_atras)
-    inicio = fin.replace(second=0, microsecond=0) - timedelta(minutes=15)
-    return inicio - timedelta(minutes=inicio.minute % 15)
+def _bucket_en_curso() -> datetime:
+    """EL cubo que contiene a AHORA, alineado a la misma rejilla que `date_bin`.
+
+    Por construccion no ha terminado, asi que la ruta no puede contestar sobre el y tiene que
+    servir missing_minutes NULO. La primera version restaba 15 minutos y alineaba DESPUES, con
+    lo que el cubo podia acabar hasta 14 minutos antes de lo que yo creia: pasaba o fallaba
+    segun el minuto del reloj en que corriera la suite. Paso varias veces por suerte antes de
+    fallar, que es exactamente la clase de test que no sirve."""
+    ahora = datetime.now(UTC).replace(second=0, microsecond=0)
+    return ahora - timedelta(minutes=ahora.minute % 15)
 
 
 async def test_el_minuto_ausente_SE_DECLARA_y_el_completo_no(conn, monkeypatch):
@@ -242,7 +245,7 @@ async def test_un_cubo_que_TODAVIA_SE_LLENA_no_declara_hueco(conn, monkeypatch):
     un minuto, o sea dentro del margen de asentamiento: tiene que salir con missing_minutes NULO,
     que significa «todavia no se puede decir» y NO cero.
     """
-    inicio = _bucket_reciente(1)
+    inicio = _bucket_en_curso()
     for i in range(3):
         ts = inicio + timedelta(minutes=i)
         await _minuto(conn, ts, "binance", 1, 60)
