@@ -42,9 +42,9 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `daily_verdict_outcome` — `sql/schema.sql:2290`, 10 columnas
-  - la llena `app.daily_agg.materialize_daily_verdict_outcomes` (INSERT) — `app/daily_agg.py:507`
+  - la llena `app.daily_agg.materialize_daily_verdict_outcomes` (INSERT) — `app/daily_agg.py:525`
 - `daily_verdict_snapshot` — `sql/schema.sql:1099`, 26 columnas
-  - la llena `app.daily_agg.persist_verdicts` (INSERT) — `app/daily_agg.py:418`
+  - la llena `app.daily_agg.persist_verdicts` (INSERT) — `app/daily_agg.py:436`
 
 ## Funciones que la componen
 

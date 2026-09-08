@@ -41,7 +41,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`

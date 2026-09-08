@@ -492,7 +492,7 @@
     "spot_trades_agg": {
       "cuadra": true,
       "escritores": [
-        "DELETE app/daily_agg.py:663",
+        "DELETE app/daily_agg.py:681",
         "INSERT app/ws_collector.py:264",
         "INSERT app/ws_collector.py:285"
       ],
@@ -1129,25 +1129,35 @@
       "linea": 46,
       "sitio": "`app/breakout.py:46`"
     },
+    "app.carry._iso": {
+      "fichero": "app/carry.py",
+      "linea": 66,
+      "sitio": "`app/carry.py:66`"
+    },
     "app.carry._pct": {
-      "fichero": "app/carry.py",
-      "linea": 41,
-      "sitio": "`app/carry.py:41`"
-    },
-    "app.carry.coste_de_carry": {
-      "fichero": "app/carry.py",
-      "linea": 45,
-      "sitio": "`app/carry.py:45`"
-    },
-    "app.carry.matriz_de_carry": {
-      "fichero": "app/carry.py",
-      "linea": 73,
-      "sitio": "`app/carry.py:73`"
-    },
-    "app.carry.quien_paga": {
       "fichero": "app/carry.py",
       "linea": 62,
       "sitio": "`app/carry.py:62`"
+    },
+    "app.carry.celda_completa": {
+      "fichero": "app/carry.py",
+      "linea": 52,
+      "sitio": "`app/carry.py:52`"
+    },
+    "app.carry.coste_de_carry": {
+      "fichero": "app/carry.py",
+      "linea": 70,
+      "sitio": "`app/carry.py:70`"
+    },
+    "app.carry.matriz_de_carry": {
+      "fichero": "app/carry.py",
+      "linea": 98,
+      "sitio": "`app/carry.py:98`"
+    },
+    "app.carry.quien_paga": {
+      "fichero": "app/carry.py",
+      "linea": 87,
+      "sitio": "`app/carry.py:87`"
     },
     "app.config.get_settings": {
       "fichero": "app/config.py",
@@ -4448,6 +4458,24 @@
         "total": 1,
         "total_exacto": 1
       },
+      "app.carry._iso": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.api.carry_matriz",
+          "app.carry.matriz_de_carry"
+        ],
+        "por_llamada": [
+          "/api/carry/matriz"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/carry.py:66",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
       "app.carry._pct": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
@@ -4459,7 +4487,25 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/carry.py:41",
+        "sitio": "app/carry.py:62",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.carry.celda_completa": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.api.carry_matriz",
+          "app.carry.matriz_de_carry"
+        ],
+        "por_llamada": [
+          "/api/carry/matriz"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/carry.py:52",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4477,7 +4523,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/carry.py:45",
+        "sitio": "app/carry.py:70",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4494,7 +4540,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/carry.py:73",
+        "sitio": "app/carry.py:98",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4512,7 +4558,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/carry.py:62",
+        "sitio": "app/carry.py:87",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -5096,7 +5142,7 @@
           "/api/scalp/execution-cost",
           "/api/scalp/summary"
         ],
-        "sitio": "app/daily_agg.py:727",
+        "sitio": "app/daily_agg.py:745",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -5329,7 +5375,7 @@
           "/api/zone/analysis",
           "/metrics"
         ],
-        "sitio": "app/daily_agg.py:627",
+        "sitio": "app/daily_agg.py:645",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -5891,7 +5937,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/daily_agg.py:799",
+        "sitio": "app/daily_agg.py:817",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -6246,7 +6292,7 @@
           "/api/ai/context/bundle",
           "/api/verdicts"
         ],
-        "sitio": "app/daily_agg.py:503",
+        "sitio": "app/daily_agg.py:521",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -6428,7 +6474,7 @@
           "/api/ai/context/bundle",
           "/api/verdicts"
         ],
-        "sitio": "app/daily_agg.py:335",
+        "sitio": "app/daily_agg.py:353",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -6609,7 +6655,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/daily_agg.py:713",
+        "sitio": "app/daily_agg.py:731",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -6790,7 +6836,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/daily_agg.py:558",
+        "sitio": "app/daily_agg.py:576",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -6968,7 +7014,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/daily_agg.py:613",
+        "sitio": "app/daily_agg.py:631",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -25510,7 +25556,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 324,
+    "funciones_alcanzables": 326,
     "rutas": 70,
     "rutas_con_campos": 65,
     "rutas_sin_campos": 5,
@@ -26803,32 +26849,37 @@
     {
       "camino": "/api/carry/matriz",
       "campos": {
-        "as_of": "literal en app/carry.py:157",
-        "cobertura": "literal en app/carry.py:144",
-        "cobertura.celdas_esperadas": "literal en app/carry.py:145",
-        "cobertura.celdas_sin_funding": "literal en app/carry.py:146",
-        "cobertura.celdas_sin_oi": "literal en app/carry.py:147",
-        "cobertura.nota": "literal en app/carry.py:150",
-        "coste": "literal en app/carry.py:141",
-        "desde": "literal en app/carry.py:139",
-        "dias_pedidos": "literal en app/carry.py:137",
-        "dias_servidos": "literal en app/carry.py:138",
-        "funding_por_dia": "literal en app/carry.py:142",
-        "hasta": "literal en app/carry.py:140",
-        "oi_por_dia": "literal en app/carry.py:143",
-        "simbolos": "literal en app/carry.py:136",
-        "unidades": "literal en app/carry.py:156"
+        "as_of": "literal en app/carry.py:206",
+        "cobertura": "literal en app/carry.py:192",
+        "cobertura.celdas_esperadas": "literal en app/carry.py:193",
+        "cobertura.celdas_sin_funding": "literal en app/carry.py:194",
+        "cobertura.celdas_sin_oi": "literal en app/carry.py:195",
+        "cobertura.nota": "literal en app/carry.py:198",
+        "coste": "literal en app/carry.py:188",
+        "desde": "literal en app/carry.py:186",
+        "dias_pedidos": "literal en app/carry.py:184",
+        "dias_servidos": "literal en app/carry.py:185",
+        "funding_por_dia": "literal en app/carry.py:189",
+        "hasta": "literal en app/carry.py:187",
+        "oi_por_dia": "literal en app/carry.py:190",
+        "simbolos": "literal en app/carry.py:183",
+        "sin_dato": "literal en app/carry.py:191",
+        "unidades": "literal en app/carry.py:205"
       },
       "campos_pendientes": [],
       "cierre": [
         "app.api.rechaza_parametros_desconocidos",
+        "app.carry._iso",
         "app.carry._pct",
+        "app.carry.celda_completa",
         "app.carry.coste_de_carry",
         "app.carry.matriz_de_carry",
         "app.carry.quien_paga"
       ],
       "cierre_indirecto": [
+        "app.carry._iso",
         "app.carry._pct",
+        "app.carry.celda_completa",
         "app.carry.coste_de_carry",
         "app.carry.quien_paga"
       ],
@@ -37486,7 +37537,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:670",
+          "sitio": "app/daily_agg.py:688",
           "verbo": "DELETE"
         }
       ],
@@ -37509,32 +37560,32 @@
         {
           "funcion": "app.carry.matriz_de_carry",
           "origen": "literal",
-          "sitio": "app/carry.py:78"
+          "sitio": "app/carry.py:103"
         },
         {
           "funcion": "app.daily_agg.backfill",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:306"
+          "sitio": "app/daily_agg.py:312"
         },
         {
           "funcion": "app.daily_agg.persist_verdicts",
           "origen": "constante DAILY_ROWS_QUERY",
-          "sitio": "app/daily_agg.py:318"
+          "sitio": "app/daily_agg.py:336"
         },
         {
           "funcion": "app.daily_agg.persist_verdicts",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:346"
+          "sitio": "app/daily_agg.py:364"
         },
         {
           "funcion": "app.daily_agg.materialize_daily_verdict_outcomes",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:507"
+          "sitio": "app/daily_agg.py:525"
         },
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:670"
+          "sitio": "app/daily_agg.py:688"
         },
         {
           "funcion": "app.external_macro.external_macro_context",
@@ -37632,7 +37683,7 @@
         {
           "funcion": "app.daily_agg.materialize_daily_verdict_outcomes",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:507",
+          "sitio": "app/daily_agg.py:525",
           "verbo": "INSERT"
         }
       ],
@@ -37660,7 +37711,7 @@
         {
           "funcion": "app.daily_agg.persist_verdicts",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:418",
+          "sitio": "app/daily_agg.py:436",
           "verbo": "INSERT"
         }
       ],
@@ -37678,7 +37729,7 @@
         {
           "funcion": "app.daily_agg.materialize_daily_verdict_outcomes",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:507"
+          "sitio": "app/daily_agg.py:525"
         }
       ],
       "leida_por": [
@@ -37869,7 +37920,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:651",
+          "sitio": "app/daily_agg.py:669",
           "verbo": "DELETE"
         }
       ],
@@ -37877,7 +37928,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:651"
+          "sitio": "app/daily_agg.py:669"
         },
         {
           "funcion": "app.daily_agg.compute_session",
@@ -38046,7 +38097,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:657",
+          "sitio": "app/daily_agg.py:675",
           "verbo": "DELETE"
         },
         {
@@ -38065,7 +38116,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:657"
+          "sitio": "app/daily_agg.py:675"
         },
         {
           "funcion": "app.daily_agg.compute_session",
@@ -38186,7 +38237,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:660",
+          "sitio": "app/daily_agg.py:678",
           "verbo": "DELETE"
         },
         {
@@ -38200,7 +38251,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:660"
+          "sitio": "app/daily_agg.py:678"
         },
         {
           "funcion": "app.scalp_logic.positioning_context",
@@ -38300,7 +38351,7 @@
         {
           "funcion": "app.daily_agg._store_baseline",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:780",
+          "sitio": "app/daily_agg.py:798",
           "verbo": "INSERT"
         }
       ],
@@ -38334,7 +38385,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:666",
+          "sitio": "app/daily_agg.py:684",
           "verbo": "DELETE"
         },
         {
@@ -38378,12 +38429,12 @@
         {
           "funcion": "app.daily_agg.persist_verdicts",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:358"
+          "sitio": "app/daily_agg.py:376"
         },
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:666"
+          "sitio": "app/daily_agg.py:684"
         },
         {
           "funcion": "app.signal_ledger.persist_signal_observations",
@@ -38408,7 +38459,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:637",
+          "sitio": "app/daily_agg.py:655",
           "verbo": "DELETE"
         },
         {
@@ -38469,22 +38520,22 @@
         {
           "funcion": "app.daily_agg.persist_verdicts",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:398"
+          "sitio": "app/daily_agg.py:416"
         },
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:637"
+          "sitio": "app/daily_agg.py:655"
         },
         {
           "funcion": "app.daily_agg._store_baseline",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/daily_agg.py:741"
+          "sitio": "app/daily_agg.py:759"
         },
         {
           "funcion": "app.daily_agg._store_baseline",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:741"
+          "sitio": "app/daily_agg.py:759"
         },
         {
           "funcion": "app.daily_agg.compute_session",
@@ -38733,7 +38784,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:648",
+          "sitio": "app/daily_agg.py:666",
           "verbo": "DELETE"
         }
       ],
@@ -38741,7 +38792,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:648"
+          "sitio": "app/daily_agg.py:666"
         },
         {
           "funcion": "app.metrics.compute_snapshot",
@@ -38766,7 +38817,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:645",
+          "sitio": "app/daily_agg.py:663",
           "verbo": "DELETE"
         }
       ],
@@ -38779,7 +38830,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:645"
+          "sitio": "app/daily_agg.py:663"
         },
         {
           "funcion": "app.daily_agg.compute_session",
@@ -39032,7 +39083,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:654",
+          "sitio": "app/daily_agg.py:672",
           "verbo": "DELETE"
         }
       ],
@@ -39040,7 +39091,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:654"
+          "sitio": "app/daily_agg.py:672"
         },
         {
           "funcion": "app.metrics.compute_snapshot",
@@ -39654,7 +39705,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:663",
+          "sitio": "app/daily_agg.py:681",
           "verbo": "DELETE"
         },
         {
@@ -39694,7 +39745,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:663"
+          "sitio": "app/daily_agg.py:681"
         },
         {
           "funcion": "app.daily_agg.compute_session",
@@ -39806,13 +39857,13 @@
         {
           "funcion": "app.daily_agg.persist_verdicts",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:459",
+          "sitio": "app/daily_agg.py:477",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:674",
+          "sitio": "app/daily_agg.py:692",
           "verbo": "DELETE"
         }
       ],
@@ -39820,7 +39871,7 @@
         {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:674"
+          "sitio": "app/daily_agg.py:692"
         }
       ]
     },
@@ -39885,13 +39936,13 @@
         {
           "funcion": "app.daily_agg.rollup_open_interest_daily",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/daily_agg.py:582",
+          "sitio": "app/daily_agg.py:600",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.daily_agg.rollup_open_interest_daily",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:582",
+          "sitio": "app/daily_agg.py:600",
           "verbo": "INSERT"
         }
       ],

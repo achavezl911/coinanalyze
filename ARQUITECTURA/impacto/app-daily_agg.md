@@ -8,23 +8,23 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_store_baseline`](#-store-baseline) | 727 | 0 | **14** | 55 ↑ | **14** |
-| [`refresh_baselines`](#refresh-baselines) | 713 | 0 | **0** | 55 ↑ | **0** |
-| [`apply_retention`](#apply-retention) | 627 | 0 | **52** | 53 ↑ | **52** |
+| [`_store_baseline`](#-store-baseline) | 745 | 0 | **14** | 55 ↑ | **14** |
+| [`refresh_baselines`](#refresh-baselines) | 731 | 0 | **0** | 55 ↑ | **0** |
+| [`apply_retention`](#apply-retention) | 645 | 0 | **52** | 53 ↑ | **52** |
 | [`backfill`](#backfill) | 299 | 0 | **0** | 53 ↑ | **0** |
 | [`compute_session`](#compute-session) | 141 | 0 | **21** | 53 ↑ | **21** |
-| [`cycle`](#cycle) | 799 | 0 | **0** | 53 ↑ | **0** |
+| [`cycle`](#cycle) | 817 | 0 | **0** | 53 ↑ | **0** |
 | [`latest_closed_session_date`](#latest-closed-session-date) | 45 | 0 | **0** | 53 ↑ | **0** |
-| [`materialize_daily_verdict_outcomes`](#materialize-daily-verdict-outcomes) | 503 | 0 | **3** | 53 ↑ | **3** |
-| [`persist_verdicts`](#persist-verdicts) | 335 | 0 | **3** | 53 ↑ | **3** |
-| [`rollup_open_interest_daily`](#rollup-open-interest-daily) | 558 | 0 | **0** | 53 ↑ | **0** |
-| [`ventana_barrido_5m`](#ventana-barrido-5m) | 613 | 0 | **0** | 53 ↑ | **0** |
+| [`materialize_daily_verdict_outcomes`](#materialize-daily-verdict-outcomes) | 521 | 0 | **3** | 53 ↑ | **3** |
+| [`persist_verdicts`](#persist-verdicts) | 353 | 0 | **3** | 53 ↑ | **3** |
+| [`rollup_open_interest_daily`](#rollup-open-interest-daily) | 576 | 0 | **0** | 53 ↑ | **0** |
+| [`ventana_barrido_5m`](#ventana-barrido-5m) | 631 | 0 | **0** | 53 ↑ | **0** |
 | [`_coverage_complete`](#-coverage-complete) | 73 | 0 | **0** | 21 ↑ | **0** |
 | [`_expected_session_samples`](#-expected-session-samples) | 64 | 0 | **0** | 21 ↑ | **0** |
 
 ## _store_baseline
 
-`app/daily_agg.py:727` · clave completa `app.daily_agg._store_baseline`
+`app/daily_agg.py:745` · clave completa `app.daily_agg._store_baseline`
 
 **Radio exacto: 14 rutas** de 70 · **cota superior: 55** (mas ancha)
 
@@ -201,7 +201,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## refresh_baselines
 
-`app/daily_agg.py:713` · clave completa `app.daily_agg.refresh_baselines`
+`app/daily_agg.py:731` · clave completa `app.daily_agg.refresh_baselines`
 
 **Radio exacto: 0 rutas** de 70 · **cota superior: 55** (mas ancha)
 
@@ -363,7 +363,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## apply_retention
 
-`app/daily_agg.py:627` · clave completa `app.daily_agg.apply_retention`
+`app/daily_agg.py:645` · clave completa `app.daily_agg.apply_retention`
 
 **Radio exacto: 52 rutas** de 70 · **cota superior: 53** (mas ancha)
 
@@ -910,7 +910,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## cycle
 
-`app/daily_agg.py:799` · clave completa `app.daily_agg.cycle`
+`app/daily_agg.py:817` · clave completa `app.daily_agg.cycle`
 
 **Radio exacto: 0 rutas** de 70 · **cota superior: 53** (mas ancha)
 
@@ -1223,7 +1223,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## materialize_daily_verdict_outcomes
 
-`app/daily_agg.py:503` · clave completa `app.daily_agg.materialize_daily_verdict_outcomes`
+`app/daily_agg.py:521` · clave completa `app.daily_agg.materialize_daily_verdict_outcomes`
 
 **Radio exacto: 3 rutas** de 70 · **cota superior: 53** (mas ancha)
 
@@ -1385,7 +1385,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## persist_verdicts
 
-`app/daily_agg.py:335` · clave completa `app.daily_agg.persist_verdicts`
+`app/daily_agg.py:353` · clave completa `app.daily_agg.persist_verdicts`
 
 **Radio exacto: 3 rutas** de 70 · **cota superior: 53** (mas ancha)
 
@@ -1547,7 +1547,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## rollup_open_interest_daily
 
-`app/daily_agg.py:558` · clave completa `app.daily_agg.rollup_open_interest_daily`
+`app/daily_agg.py:576` · clave completa `app.daily_agg.rollup_open_interest_daily`
 
 **Radio exacto: 0 rutas** de 70 · **cota superior: 53** (mas ancha)
 
@@ -1707,7 +1707,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## ventana_barrido_5m
 
-`app/daily_agg.py:613` · clave completa `app.daily_agg.ventana_barrido_5m`
+`app/daily_agg.py:631` · clave completa `app.daily_agg.ventana_barrido_5m`
 
 **Radio exacto: 0 rutas** de 70 · **cota superior: 53** (mas ancha)
 

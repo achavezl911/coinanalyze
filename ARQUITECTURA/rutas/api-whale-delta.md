@@ -48,7 +48,7 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:285`
 

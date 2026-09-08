@@ -38,9 +38,9 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:651`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
 - `predicted_funding_rate` — `sql/schema.sql:160`, 7 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:654`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:672`
 
 ## Funciones que la componen
 

@@ -82,19 +82,19 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:651`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
 - `liquidations` — `sql/schema.sql:174`, 5 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:657`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:675`
   - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:316`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:637`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:645`
-- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
+- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:285`
 

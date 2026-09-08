@@ -30,7 +30,7 @@ LEE:
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
 - `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
-  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:856`

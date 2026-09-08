@@ -207,7 +207,7 @@ del **arranque**. El minuto del arranque se cubre bien; el de la parada no.
 La escriben:
 
 - `app.daily_agg.compute_session` — **INSERT** en `app/daily_agg.py:206`
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:670`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:688`
 
 **Si cambia el contenido o el esquema de `daily_session_agg`, estas 21 rutas lo notan:**
 
@@ -239,7 +239,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.materialize_daily_verdict_outcomes` — **INSERT** en `app/daily_agg.py:507`
+- `app.daily_agg.materialize_daily_verdict_outcomes` — **INSERT** en `app/daily_agg.py:525`
 
 **Si cambia el contenido o el esquema de `daily_verdict_outcome`, estas 3 rutas lo notan:**
 
@@ -253,7 +253,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.persist_verdicts` — **INSERT** en `app/daily_agg.py:418`
+- `app.daily_agg.persist_verdicts` — **INSERT** en `app/daily_agg.py:436`
 
 **Si cambia el contenido o el esquema de `daily_verdict_snapshot`, estas 3 rutas lo notan:**
 
@@ -325,7 +325,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:651`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:669`
 
 **Si cambia el contenido o el esquema de `funding_rate`, estas 4 rutas lo notan:**
 
@@ -385,7 +385,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:657`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:675`
 - `app.ingest.upsert_liquidations` — **INSERT** en `app/ingest.py:316`
 
 **Si cambia el contenido o el esquema de `liquidations`, estas 5 rutas lo notan:**
@@ -427,7 +427,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:660`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:678`
 - `app.ingest.upsert_long_short` — **INSERT** en `app/ingest.py:357`
 
 **Si cambia el contenido o el esquema de `long_short_ratio`, estas 3 rutas lo notan:**
@@ -479,7 +479,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg._store_baseline` — **INSERT** en `app/daily_agg.py:780`
+- `app.daily_agg._store_baseline` — **INSERT** en `app/daily_agg.py:798`
 
 **Si cambia el contenido o el esquema de `metric_baseline`, estas 14 rutas lo notan:**
 
@@ -504,7 +504,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:666`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:684`
 - `app.metrics.insert_snapshot` — **INSERT** en `app/metrics.py:683`
 
 **Si cambia el contenido o el esquema de `metrics_snapshot`, estas 8 rutas lo notan:**
@@ -524,7 +524,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:637`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:655`
 - `app.ingest.upsert_ohlcv` — **INSERT** en `app/ingest.py:154`
 - `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:200`
 - `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:200`
@@ -575,7 +575,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:648`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:666`
 
 **Si cambia el contenido o el esquema de `oi_bybit`, estas 3 rutas lo notan:**
 
@@ -589,7 +589,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:645`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:663`
 
 **Si cambia el contenido o el esquema de `open_interest`, estas 19 rutas lo notan:**
 
@@ -679,7 +679,7 @@ Rutas que ESCRIBEN en `pipeline_heartbeat`: `/api/healthz`
 
 La escriben:
 
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:654`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:672`
 
 **Si cambia el contenido o el esquema de `predicted_funding_rate`, estas 3 rutas lo notan:**
 
@@ -778,7 +778,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:663`
+- `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:681`
 - `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:264`
 - `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:285`
 
@@ -827,11 +827,11 @@ necesariamente un fallo -puede ser estado interno-, pero es exactamente la forma
 del patron que en esta casa se ha repetido nueve veces: algo que existe, parece
 completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
-- `daily_verdict` — la escriben 2: `app/daily_agg.py:459`, `app/daily_agg.py:674`
+- `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
 - `market_assets` — la escriben 1: `app/db.py:247`
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`
-- `open_interest_daily` — la escriben 2: `app/daily_agg.py:582`, `app/daily_agg.py:582`
+- `open_interest_daily` — la escriben 2: `app/daily_agg.py:600`, `app/daily_agg.py:600`
 - `service_ownership` — la escriben 1: `app/db.py:283`
 - `signal_research_bundle_visibility` — la escriben 1: `app/signal_visibility.py:229`
 - `signal_walk_forward_manifest` — la escriben 1: `app/signal_walk_forward.py:596`

@@ -33,13 +33,38 @@ from typing import Any
 import asyncpg
 
 PAGOS_POR_DIA = 3
-# Un funding medido sobre menos de un tercio del dia no describe el dia: son 288 cubos de 5 min
-# en 24 h, asi que por debajo de 96 la media es de otra cosa y la celda se declara incompleta.
-MUESTRAS_MINIMAS_DIA = 96
+
+# EL UMBRAL NO SE ELIGE AQUI: SE HEREDA DE QUIEN DECIDE.
+#
+# Aqui habia un `MUESTRAS_MINIMAS_DIA = 96` -el 33 % de los 288 cubos de 5 min de un dia- que
+# escribi el 2026-09-08 sin mirar que usaba el agregador. El agregador usa
+# `SESSION_MIN_COVERAGE_RATIO = 0.95` (daily_agg.py:55) y NO PUBLICA un grupo por debajo de eso,
+# asi que toda celda que llega aqui con valor tiene ya >= 274 muestras y mi `n >= 96` ERA
+# SIEMPRE CIERTO: no era un umbral laxo, era un umbral MUERTO que daba tranquilidad sin medir
+# nada.
+#
+# Manda el del agregador porque es el unico que decide algo -si el numero existe-; este solo
+# ponia una etiqueta sobre un numero que aquel ya habia dejado pasar. Dos criterios para la
+# misma pregunta es exactamente como se llega a que uno de los dos no sirva.
+from app.daily_agg import SESSION_MIN_COVERAGE_RATIO  # noqa: E402
+
+
+def celda_completa(muestras: int, esperadas: int) -> bool:
+    """La MISMA regla que aplica el agregador para decidir si publica. Un solo sitio."""
+    return esperadas > 0 and muestras * 100 >= esperadas * int(SESSION_MIN_COVERAGE_RATIO * 100)
+
+
+# 288 cubos de 5 min en 24 h. Se pasa como esperadas para que la regla sea la de arriba y no
+# otra escrita al lado.
+CUBOS_5M_POR_DIA = 288
 
 
 def _pct(v: Any) -> float | None:
     return None if v is None else float(v)
+
+
+def _iso(v: Any) -> str | None:
+    return None if v is None else v.isoformat()
 
 
 def coste_de_carry(fr_8h: float | None) -> dict[str, float | None]:
@@ -76,7 +101,7 @@ async def matriz_de_carry(
     filas = await conn.fetch(
         """
         SELECT symbol, session_date, fr_avg, funding_5m_samples,
-               oi_open, oi_close, oi_5m_samples
+               oi_open, oi_close, oi_5m_samples, updated_at
         FROM daily_session_agg
         WHERE symbol = ANY($1::text[]) AND session_date > current_date - $2::int
         ORDER BY session_date, symbol
@@ -92,6 +117,12 @@ async def matriz_de_carry(
     fechas = sorted(por_dia)
     esperadas = len(fechas) * len(simbolos)
     sin_funding = sin_oi = 0
+    # CADA HUECO CON LA FECHA DE SU AFIRMACION. Una celda vacia sigue siendo `null` -no se le
+    # cambia la forma, que es lo que consumen el panel y el promedio-, pero aqui al lado queda
+    # dicho CUANDO se calculo la fila que la dejo vacia. Sin eso, «no pude medir» se lee como
+    # «no hay dato», y a veces el dato existe desde entonces: las tres filas del 2026-08-28
+    # decian 219 de 288 con la fuente ya completa.
+    sin_dato: list[dict[str, Any]] = []
 
     funding_por_dia, oi_por_dia = [], []
     for fecha in fechas:
@@ -104,17 +135,33 @@ async def matriz_de_carry(
             if fr is None:
                 sin_funding += 1
                 fila_f[s] = None
+                sin_dato.append({
+                    "fecha": fecha.isoformat(), "symbol": s, "grupo": "funding",
+                    "medido_el": _iso(d.get("updated_at")),
+                    "muestras_cuando_se_calculo": n_fr,
+                    "por_que": (
+                        f"tenia {n_fr} de {CUBOS_5M_POR_DIA} muestras cuando se calculo, y el "
+                        f"agregador no publica por debajo del "
+                        f"{int(SESSION_MIN_COVERAGE_RATIO * 100)} %"
+                    ),
+                })
             else:
                 fila_f[s] = {"pct_8h": round(fr, 6), "muestras": n_fr,
-                             "completo": n_fr >= MUESTRAS_MINIMAS_DIA}
+                             "completo": celda_completa(n_fr, CUBOS_5M_POR_DIA)}
             oi_i, oi_f = _pct(d.get("oi_open")), _pct(d.get("oi_close"))
             n_oi = int(d.get("oi_5m_samples") or 0)
             if oi_i is None or oi_f is None or oi_i == 0:
                 sin_oi += 1
                 fila_o[s] = None
+                sin_dato.append({
+                    "fecha": fecha.isoformat(), "symbol": s, "grupo": "interes_abierto",
+                    "medido_el": _iso(d.get("updated_at")),
+                    "muestras_cuando_se_calculo": n_oi,
+                    "por_que": f"tenia {n_oi} de {CUBOS_5M_POR_DIA} muestras cuando se calculo",
+                })
             else:
                 fila_o[s] = {"chg_pct": round(100.0 * (oi_f / oi_i - 1.0), 3),
-                             "muestras": n_oi, "completo": n_oi >= MUESTRAS_MINIMAS_DIA}
+                             "muestras": n_oi, "completo": celda_completa(n_oi, CUBOS_5M_POR_DIA)}
         funding_por_dia.append({"fecha": fecha.isoformat(), "valores": fila_f})
         oi_por_dia.append({"fecha": fecha.isoformat(), "valores": fila_o})
 
@@ -141,6 +188,7 @@ async def matriz_de_carry(
         "coste": coste,
         "funding_por_dia": funding_por_dia,
         "oi_por_dia": oi_por_dia,
+        "sin_dato": sin_dato,
         "cobertura": {
             "celdas_esperadas": esperadas,
             "celdas_sin_funding": sin_funding,
@@ -150,7 +198,8 @@ async def matriz_de_carry(
             "nota": (
                 f"servidos {len(fechas)} de {dias} dias pedidos; "
                 f"{sin_funding} de {esperadas} celdas sin funding y {sin_oi} sin interes abierto. "
-                "Las celdas sin dato van vacias, NUNCA a cero."
+                "Las celdas sin dato van vacias, NUNCA a cero, y «sin_dato» dice de "
+                "CUANDO es esa afirmacion: la fuente puede haberse completado despues."
             ),
         },
         "unidades": "funding en % por periodo de 8 h, sin multiplicar por cien (COLA.md 77)",
