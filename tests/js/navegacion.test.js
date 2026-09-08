@@ -10,10 +10,35 @@ const { sectionIds, navLinks } = leerIndexHtml();
 
 const { todosLosIds } = leerIndexHtml();
 
-test('el index.html declara las ocho secciones de la reorganizacion', () => {
-  assert.deepEqual([...sectionIds], [
-    'mesa', 'estructura', 'flujo', 'derivados', 'liquidez', 'contexto', 'calidad', 'replay',
-  ]);
+// EL ORDEN ES EL DE «MESA DE POSICION», 2026-09-08, y cambio por una tesis y no por gusto:
+// para dias-a-semanas en perpetuos el funding es el GASTO principal -se paga tres veces al dia
+// se mire o no-, asi que `coste` va segundo, delante de la estructura. Y `liquidez` -libro,
+// absorcion de 3 min, coste de ejecucion- baja al final, a una segunda lista rotulada «para
+// ejecutar, no para decidir»: no se borra, deja de competir por la atencion.
+const ORDEN_ESPERADO = [
+  'mesa', 'coste', 'estructura', 'flujo', 'derivados', 'calidad', 'replay', 'contexto', 'liquidez',
+];
+
+test('el index.html declara las nueve secciones de la reorganizacion, en su orden', () => {
+  assert.deepEqual([...sectionIds], ORDEN_ESPERADO);
+});
+
+// EL CHECK QUE FALTABA, y es el que hace que este fichero no vuelva a acusar al documento de un
+// fallo del lector: la navegacion y las secciones tienen que ser EL MISMO CONJUNTO. Da igual en
+// cuantas listas este repartido el menu.
+test('la navegacion y las secciones son el mismo conjunto', () => {
+  const enNav = new Set(navLinks.map(h => h.slice(1)));
+  const enDoc = new Set(sectionIds);
+  const soloNav = [...enNav].filter(id => !enDoc.has(id));
+  const soloDoc = [...enDoc].filter(id => !enNav.has(id));
+  assert.deepEqual(soloNav, [], `enlaces a secciones que no existen: ${soloNav}`);
+  assert.deepEqual(soloDoc, [], `secciones sin enlace, inalcanzables: ${soloDoc}`);
+});
+
+test('el coste va antes que la estructura', () => {
+  // No es cosmetica: si vuelve a quedar detras, el dashboard ha vuelto a tener la señal como eje.
+  assert.ok(sectionIds.indexOf('coste') < sectionIds.indexOf('estructura'));
+  assert.equal(sectionIds.indexOf('coste'), 1);
 });
 
 test('cada enlace de la navegacion superior apunta a un elemento existente', () => {

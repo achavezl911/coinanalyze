@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_execution_cost` · `app/api.py:1464` (cuerpo hasta la 1517) · decorador en la linea 1463.
+Handler `scalp_execution_cost` · `app/api.py:1484` (cuerpo hasta la 1537) · decorador en la linea 1483.
 
 ## Parametros de entrada
 
@@ -29,9 +29,9 @@ Handler `scalp_execution_cost` · `app/api.py:1464` (cuerpo hasta la 1517) · de
 | campo | de donde sale |
 |---|---|
 | `as_of` | literal en app/scalp_logic.py:5278 |
-| `assessment` | asignado en app/api.py:1503 |
+| `assessment` | asignado en app/api.py:1523 |
 | `note` | literal en app/scalp_logic.py:5280 |
-| `profiles` | asignado en app/api.py:1516 |
+| `profiles` | asignado en app/api.py:1536 |
 | `sizes_usd` | literal en app/scalp_logic.py:5277 |
 | `stale_after_seconds` | literal en app/scalp_logic.py:5279 |
 | `status` | literal en app/scalp_logic.py:5282 |
@@ -85,8 +85,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._slippage_para` — `app/api.py:1520`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api._slippage_para` — `app/api.py:1540`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5081`
@@ -142,10 +142,10 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | — | `app/api.py:1485` | el propio handler |
-| 422 | sizes debe ser una lista de numeros | `app/api.py:1491` | el propio handler |
-| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1493` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 422 | — | `app/api.py:1505` | el propio handler |
+| 422 | sizes debe ser una lista de numeros | `app/api.py:1511` | el propio handler |
+| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1513` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -156,7 +156,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:124` | — |
-| **panel** | `static/app.js:1668` | — |
+| **panel** | `static/app.js:1691` | — |
 
 **La llama el panel: es superficie de producto.**
 

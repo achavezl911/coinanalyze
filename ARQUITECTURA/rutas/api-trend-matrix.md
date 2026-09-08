@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trend_matrix_endpoint` · `app/api.py:1968` (cuerpo hasta la 1971) · decorador en la linea 1967.
+Handler `trend_matrix_endpoint` · `app/api.py:1988` (cuerpo hasta la 1991) · decorador en la linea 1987.
 
 ## Parametros de entrada
 
@@ -77,7 +77,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5977`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
@@ -115,7 +115,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -126,7 +126,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:115`, `harness/checks/K43-foto-unica.sh:171` | — |
-| **panel** | `static/app.js:1579`, `static/app.js:1681` | — |
+| **panel** | `static/app.js:1579`, `static/app.js:1704` | — |
 | **tests** | `tests/test_v150_desk_snapshot.py:130` | — |
 
 **La llama el panel: es superficie de producto.**

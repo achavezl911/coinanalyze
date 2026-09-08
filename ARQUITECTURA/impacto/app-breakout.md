@@ -23,7 +23,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/breakout.py:58` · clave completa `app.breakout._atr`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -46,7 +46,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/breakout.py:330` · clave completa `app.breakout._confirmation_checks`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -69,7 +69,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/breakout.py:77` · clave completa `app.breakout._delta_usd`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -92,7 +92,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/breakout.py:187` · clave completa `app.breakout._rate`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -115,7 +115,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/breakout.py:149` · clave completa `app.breakout.attempt_features`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -138,7 +138,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/breakout.py:215` · clave completa `app.breakout.breakout_read`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -161,7 +161,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/breakout.py:173` · clave completa `app.breakout.build_corpus`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -184,7 +184,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/breakout.py:125` · clave completa `app.breakout.classify_outcome`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -207,7 +207,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/breakout.py:90` · clave completa `app.breakout.find_attempts`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -230,7 +230,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/breakout.py:46` · clave completa `app.breakout.wilson_ci`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

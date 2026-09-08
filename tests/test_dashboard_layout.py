@@ -41,16 +41,25 @@ def function_source(name, next_name):
 
 def test_dashboard_has_unique_ids_and_market_reading_order():
     parsed = parsed_dashboard()
-    # Orden de lectura de la reorganizacion: primero la decision, al final la validacion.
+    # ORDEN DE LECTURA DE «MESA DE POSICION», 2026-09-08. Cambio por una tesis, no por gusto:
+    # para dias-a-semanas en perpetuos el funding es el GASTO principal -se paga tres veces al
+    # dia se mire o no-, asi que va en segundo lugar, delante de la estructura. Y `liquidez`
+    # -libro, absorcion de 3 min, coste de ejecucion- baja al final: no se borra, deja de
+    # competir por la atencion de quien opera en dias.
+    #
+    # ESTE TEST NO SE AFLOJA AL ACTUALIZARLO: sigue exigiendo que el orden del DOCUMENTO y el
+    # de la NAVEGACION sean identicos, que es lo unico que impide que un enlace lleve a una
+    # seccion que no esta donde se cree.
     expected = [
         "mesa",
+        "coste",
         "estructura",
         "flujo",
         "derivados",
-        "liquidez",
-        "contexto",
         "calidad",
         "replay",
+        "contexto",
+        "liquidez",
     ]
     assert parsed.section_ids == expected
     assert parsed.section_links == expected

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_levels` · `app/api.py:2758` (cuerpo hasta la 2814) · decorador en la linea 2757.
+Handler `liquidation_levels` · `app/api.py:2778` (cuerpo hasta la 2834) · decorador en la linea 2777.
 
 ## Parametros de entrada
 
@@ -21,13 +21,13 @@ Handler `liquidation_levels` · `app/api.py:2758` (cuerpo hasta la 2814) · deco
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2810 |
-| `bucket_bps` | literal en app/api.py:2809 |
-| `minutes` | literal en app/api.py:2808 |
-| `rows` | literal en app/api.py:2813 |
-| `symbol` | literal en app/api.py:2807 |
-| `window_end` | literal en app/api.py:2812 |
-| `window_start` | literal en app/api.py:2811 |
+| `as_of` | literal en app/api.py:2830 |
+| `bucket_bps` | literal en app/api.py:2829 |
+| `minutes` | literal en app/api.py:2828 |
+| `rows` | literal en app/api.py:2833 |
+| `symbol` | literal en app/api.py:2827 |
+| `window_end` | literal en app/api.py:2832 |
+| `window_start` | literal en app/api.py:2831 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,8 +54,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:241`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.records` — `app/api.py:242`
+- `app.api.validate_symbol` — `app/api.py:229`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (7)</summary>
 
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -86,7 +86,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:113`, `harness/checks/K43-foto-unica.sh:166` | — |
-| **panel** | `static/app.js:1707` | — |
+| **panel** | `static/app.js:1730` | — |
 | **readme** | — | `README.md:488`, `README.md:500` |
 | **tests** | `tests/test_v121_hardening.py:29` | — |
 

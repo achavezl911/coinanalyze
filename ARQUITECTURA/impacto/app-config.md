@@ -8,13 +8,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`get_settings`](#get-settings) | 291 | 3 | **0** | 54 ↑ | **3** |
+| [`get_settings`](#get-settings) | 291 | 3 | **0** | 55 ↑ | **3** |
 
 ## get_settings
 
 `app/config.py:291` · clave completa `app.config.get_settings`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 55** (mas ancha)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 3 rutas
 
@@ -29,9 +29,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 54 rutas · **cota superior**
+### Por tabla · k<=2 — 55 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (54 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -59,6 +59,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -112,9 +113,10 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)

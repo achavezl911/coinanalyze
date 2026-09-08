@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `daily` · `app/api.py:2125` (cuerpo hasta la 2206) · decorador en la linea 2124.
+Handler `daily` · `app/api.py:2145` (cuerpo hasta la 2226) · decorador en la linea 2144.
 
 ## Parametros de entrada
 
@@ -21,18 +21,18 @@ Handler `daily` · `app/api.py:2125` (cuerpo hasta la 2206) · decorador en la l
 
 | campo | de donde sale |
 |---|---|
-| `coverage_note` | literal en app/api.py:606 |
-| `data_gaps` | asignado en app/api.py:2189 |
-| `knowledge_time_replay` | literal en app/api.py:603 |
-| `projection_latest_session_date` | literal en app/api.py:599 |
-| `quick_read` | literal en app/api.py:604 |
-| `rows` | literal en app/api.py:595 |
-| `sources` | literal en app/api.py:605 |
-| `streak` | literal en app/api.py:593 |
-| `streak_source` | literal en app/api.py:594 |
-| `symbol` | literal en app/api.py:592 |
-| `temporal_semantics` | literal en app/api.py:602 |
-| `through_session_date` | literal en app/api.py:596 |
+| `coverage_note` | literal en app/api.py:607 |
+| `data_gaps` | asignado en app/api.py:2209 |
+| `knowledge_time_replay` | literal en app/api.py:604 |
+| `projection_latest_session_date` | literal en app/api.py:600 |
+| `quick_read` | literal en app/api.py:605 |
+| `rows` | literal en app/api.py:596 |
+| `sources` | literal en app/api.py:606 |
+| `streak` | literal en app/api.py:594 |
+| `streak_source` | literal en app/api.py:595 |
+| `symbol` | literal en app/api.py:593 |
+| `temporal_semantics` | literal en app/api.py:603 |
+| `through_session_date` | literal en app/api.py:597 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -71,15 +71,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._session_window` — `app/api.py:454`
-- `app.api.daily_data` — `app/api.py:500`
-- `app.api.mask_gapped_series_rows` — `app/api.py:245`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api._session_window` — `app/api.py:455`
+- `app.api.daily_data` — `app/api.py:501`
+- `app.api.mask_gapped_series_rows` — `app/api.py:246`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:197`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
-- `app.api.records` — `app/api.py:241`
+- `app.api.records` — `app/api.py:242`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
@@ -110,8 +110,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2132` | el propio handler |
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2152` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -122,7 +122,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:66`, `harness/checks/K03-hueco-declarado.sh:161`, `harness/checks/K03-hueco-declarado.sh:164`, `harness/checks/K43-foto-unica.sh:119` _(+1)_ | `harness/checks/K03-hueco-declarado.sh:8`, `harness/checks/K03-hueco-declarado.sh:15`, `harness/checks/K03-hueco-declarado.sh:153`, `harness/checks/K03-hueco-declarado.sh:165` _(+1)_ |
-| **panel** | `static/app.js:1583`, `static/app.js:1651`, `static/app.js:1748` | — |
+| **panel** | `static/app.js:1583`, `static/app.js:1674`, `static/app.js:1771` | — |
 | **readme** | — | `README.md:70`, `README.md:90`, `README.md:409` |
 | **tests** | `tests/test_dashboard_presentation.py:83` | `tests/test_data_gaps.py:128` |
 
@@ -161,7 +161,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
-| `app.metrics.session_bounds` | 2 | **0** | 52 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
+| `app.metrics.session_bounds` | 2 | **0** | 53 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |

@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-69 rutas descubiertas en el arbol. Para trabajar sobre una,
+70 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -12,6 +12,7 @@
 | `/api/ai/context/bundle` | GET | 9 | 24 | 166 | [ficha](rutas/api-ai-context-bundle.md) |
 | `/api/ai/profiles` | GET | 14 | 0 | 0 | [ficha](rutas/api-ai-profiles.md) |
 | `/api/baselines` | GET | 5 | 1 | 3 | [ficha](rutas/api-baselines.md) |
+| `/api/carry/matriz` | GET | 15 | 1 | 5 | [ficha](rutas/api-carry-matriz.md) |
 | `/api/context-metadata` | GET | 6 | 0 | 2 | [ficha](rutas/api-context-metadata.md) |
 | `/api/cross-asset` | GET | 8 | 1 | 9 | [ficha](rutas/api-cross-asset.md) |
 | `/api/cvd` | GET | 15 | 2 | 11 | [ficha](rutas/api-cvd.md) |
@@ -79,7 +80,7 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-5 de 69. Cada una con su motivo en la ficha.
+5 de 70. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
@@ -91,7 +92,7 @@
 
 | tabla | la leen | la escriben |
 |---|---|---|
-| `daily_session_agg` | 20 | 0 |
+| `daily_session_agg` | 21 | 0 |
 | `daily_verdict_outcome` | 3 | 0 |
 | `daily_verdict_snapshot` | 3 | 0 |
 | `data_gap` | 21 | 0 |

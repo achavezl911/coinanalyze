@@ -70,22 +70,40 @@ class Node {
   walk(out = []) { out.push(this); for (const c of this.children) if (c.walk) c.walk(out); return out; }
 }
 
-/** Lee del HTML real la navegacion y las secciones conmutables.
+/** Lee del HTML real las secciones conmutables y la navegacion que lleva a ellas.
  *
- * Las "secciones" del dashboard son EXACTAMENTE los destinos de `.section-links`: eso es lo
- * que `initSectionNav()` conmuta. El documento tiene otros `<section id=...>` anidados
- * (summary, analyzer-*) que no son pestanas; contarlos daria una lista que no corresponde a
- * la navegacion.
+ * QUE CUENTA COMO SECCION: un `<section class="market-section">` del documento. Eso es lo que
+ * `initSectionNav()` oculta y muestra. La navegacion -en cuantas listas haga falta- es COMO SE
+ * LLEGA a ellas, y los dos conjuntos tienen que coincidir; comprobarlo es un test con nombre
+ * (`la navegacion y las secciones son el mismo conjunto`).
+ *
+ * ANTES ESTO SE LEIA DEL NAV, Y DEL PRIMERO: `html.match(...)` sin `/g` devuelve solo la
+ * primera coincidencia. Mientras hubo un unico `<nav class="section-links">` funciono y nadie
+ * lo noto; cuando la reorganizacion partio el nav en dos, el lector perdio `#liquidez` -que
+ * existe, se pinta y se navega- y el test acuso al documento de no tenerla.
+ * Un instrumento que mide una FORMA del documento deja de medir en cuanto la forma cambia, y
+ * no avisa: avisa de otra cosa, que es peor.
+ *
+ * El orden es el DEL DOCUMENTO, que es el de lectura y el que recorre el teclado.
  */
+/** La parte PURA: de texto a listas. Se saca aparte para poder probar el lector sin tener que
+ *  romper el index.html de verdad — un instrumento que solo se puede comprobar estropeando el
+ *  sujeto no se comprueba nunca. */
+function leerSecciones(html) {
+  // TODAS las listas de navegacion, no la primera: /g y matchAll.
+  const navLinks = [...html.matchAll(/<nav[^>]*class="[^"]*section-links[^"]*"[\s\S]*?<\/nav>/g)]
+    .flatMap(bloque => [...bloque[0].matchAll(/href="#([^"]+)"/g)].map(m => `#${m[1]}`));
+  // Las secciones salen del DOCUMENTO. `[^"]*` y no `[a-z]+` a proposito: una seccion con un id
+  // raro tiene que aparecer en la lista para poder acusarla, no desaparecer del censo.
+  const sectionIds = [...html.matchAll(/<section id="([^"]+)" class="[^"]*market-section[^"]*"/g)]
+    .map(m => m[1]);
+  const todosLosIds = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
+  return { sectionIds, navLinks, todosLosIds };
+}
+
 function leerIndexHtml() {
   const html = fs.readFileSync(INDEX_HTML, 'utf8');
-  const bloque = html.match(/<nav[^>]*class="[^"]*section-links[^"]*"[\s\S]*?<\/nav>/);
-  const navLinks = bloque
-    ? [...bloque[0].matchAll(/href="#([^"]+)"/g)].map(m => `#${m[1]}`)
-    : [];
-  const sectionIds = navLinks.map(hash => hash.slice(1));
-  const todosLosIds = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
-  return { html, sectionIds, navLinks, todosLosIds };
+  return { html, ...leerSecciones(html) };
 }
 
 /** Documento de mentira poblado con las secciones y enlaces del index.html real. */
@@ -156,4 +174,4 @@ function cargarApp(extras = {}) {
   return contexto;
 }
 
-module.exports = { cargarApp, crearDocumento, leerIndexHtml, Node, APP_JS, INDEX_HTML, RAIZ };
+module.exports = { cargarApp, crearDocumento, leerIndexHtml, Node, APP_JS, INDEX_HTML, RAIZ, leerSecciones};

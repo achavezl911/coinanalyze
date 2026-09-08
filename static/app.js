@@ -1582,6 +1582,12 @@ async function refreshOverview(forceContext = false) {
     maybe(`/api/wyckoff?symbol=${q}`, { available: false }),
     maybe(`/api/daily?symbol=${q}&days=60`, { rows: [] }),
     maybe(`/api/external-macro?symbol=${q}`, { available: false }),
+    // EL COSTE Y EL VEREDICTO VAN EN EL TRAMO LENTO a proposito: son gasto y lectura de lo que
+    // ya paso, no un tick. Y el veredicto se pide con una ventana de 7 dias porque el horizonte
+    // declarado es dias-a-semanas; la respuesta echa el instante que uso, asi que la lectura de
+    // la portada se puede volver a pedir cerrada y auditar.
+    maybe(`/api/carry/matriz?dias=15`, null),
+    maybe(`/api/rango/estructura?symbol=${q}&desde=${encodeURIComponent(desdePortada())}`, null),
     // UN solo snapshot para la Mesa: perfil, hipotesis, matrices y calidad salen del MISMO
     // calculo y comparten `as_of`. Antes eran dos peticiones que recalculaban trend_matrix,
     // delta_matrix y scalp_context por separado, cada una con su propio `now()`.
@@ -1599,7 +1605,11 @@ async function refreshOverview(forceContext = false) {
   if (requestId !== state.refreshSeq) return;
   if (context) {
     let desk;
-    [state.trend, state.swing, state.structureDetail, state.wyckoff, state.daily, state.externalMacro, desk] = context;
+    let carry, tramo;
+    [state.trend, state.swing, state.structureDetail, state.wyckoff, state.daily,
+     state.externalMacro, carry, tramo, desk] = context;
+    state.carry = carry;
+    state.tramo = tramo;
     state.desk = desk || {};
     const componentes = state.desk.components || {};
     // El perfil y la hipotesis salen del snapshot, no de dos peticiones independientes.
@@ -1617,6 +1627,10 @@ async function refreshOverview(forceContext = false) {
   state.dashboard = dashboard;
   state.confidence = confidence;
   state.health = health;
+  // DESPUES de asignar `state.dashboard`: la portada lee de ahi la tasa base. Pintarla
+  // antes hacia que declarase un hueco que no existia.
+  renderCarry(state.carry);
+  renderPortada(state.tramo, state.carry);
   renderGlobalBar(health);
   const snapshot = dashboard.snapshot;
   const scalp = dashboard.scalp || {};
@@ -1641,6 +1655,15 @@ async function loadSection(id, force = false) {
   if (!force && Date.now() - (state.viewLoadedAt[id] || 0) < 30000) return;
   const symbol = state.symbol;
   const q = encodeURIComponent(symbol);
+  if (id === 'coste') {
+    // El coste y sus dos heatmaps de dias ya los pinta el refresco general -van en el tramo
+    // lento junto al veredicto-. Aqui solo hace falta el mapa por precio, que es de esta
+    // seccion y de ninguna otra.
+    renderLiqPrecio(await maybe(`/api/liquidation-map?symbol=${q}`, null));
+    if (symbol !== state.symbol) return;
+    state.viewLoadedAt[id] = Date.now();
+    return;
+  }
   if (id === 'flujo') {
     const [cvd, oi, whale, daily, delta, absorption] = await Promise.all([
       // Desde 2026-08-26 la ruta sirve sobre con coverage (K43: una serie declara su
@@ -2981,6 +3004,247 @@ async function submitZone(event) {
     return;
   }
   renderZone(result);
+}
+
+// ═══ PORTADA, COSTE Y LOS TRES HEATMAPS ═════════════════════════════════════════════════════
+// El eje del panel pasa de la SEÑAL al COSTE. Para dias-a-semanas en perpetuos el funding no es
+// un indicador de sentimiento: es el gasto, y se paga tres veces al dia se mire o no.
+//
+// NO HAY SUPERFICIE DE SEÑAL NUEVA AQUI. Ni una regla de entrada, ni una puntuacion, ni una
+// probabilidad de que algo continue. Todo lo que se pinta ya lo calculaba una ruta.
+
+// La ventana por defecto de la portada: SIETE DIAS, porque el horizonte declarado es
+// dias-a-semanas. Se echa el instante que se uso, para que la lectura se pueda repetir.
+const PORTADA_DIAS = 7;
+// El inicio se ALINEA al minuto: una ventana que empieza en un instante con segundos no se
+// puede volver a pedir igual, y entonces la portada no es auditable.
+function desdePortada() {
+  const d = new Date(Date.now() - PORTADA_DIAS * 86400000);
+  d.setSeconds(0, 0);
+  return d.toISOString();
+}
+
+function textoEn(id, texto, clase) {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = texto;
+  if (clase !== undefined) el.className = clase;
+}
+
+// Un hueco NO es un cero. Cuando una celda no tiene dato se pinta vacia y se marca, para que
+// nadie la lea como «ese dia no se pago funding»: no se midio, que es otra cosa.
+function celdaHeat(valor, escala, sufijo) {
+  const div = document.createElement('div');
+  div.className = 'heat-celda';
+  if (valor === null || valor === undefined || valor.pct_8h === undefined && valor.chg_pct === undefined) {
+    div.classList.add('heat-vacia');
+    div.textContent = '';
+    div.title = 'sin dato medido en esa sesión — no es un cero';
+    return div;
+  }
+  const v = valor.pct_8h !== undefined ? valor.pct_8h : valor.chg_pct;
+  const f = escala > 0 ? Math.max(-1, Math.min(1, v / escala)) : 0;
+  div.style.background = f >= 0
+    ? `rgba(47,213,138,${(0.10 + 0.55 * f).toFixed(3)})`
+    : `rgba(255,105,120,${(0.10 + 0.55 * -f).toFixed(3)})`;
+  div.textContent = v === 0 ? '0' : v.toFixed(v > 1 || v < -1 ? 1 : 4).replace(/0+$/, '');
+  div.title = `${v}${sufijo} sobre ${valor.muestras} muestras de 5 min`
+    + (valor.completo ? '' : ' — DIA INCOMPLETO');
+  if (!valor.completo) div.classList.add('heat-parcial');
+  return div;
+}
+
+function pintaHeat(idCaja, filas, simbolos, campo, sufijo) {
+  const caja = $(idCaja);
+  if (!caja) return { vacias: 0, total: 0 };
+  caja.replaceChildren();
+  const vals = [];
+  for (const f of filas) for (const s of simbolos) {
+    const v = f.valores[s];
+    if (v) vals.push(Math.abs(v[campo]));
+  }
+  // La escala sale del percentil 90 de lo que HAY, no de un maximo fijo: un maximo inventado
+  // pintaria de un color u otro segun el mes.
+  vals.sort((a, b) => a - b);
+  const escala = vals.length ? (vals[Math.floor(vals.length * 0.9)] || vals[vals.length - 1]) : 0;
+  const tabla = document.createElement('div');
+  tabla.className = 'heat-rejilla';
+  tabla.style.gridTemplateColumns = `72px repeat(${filas.length}, minmax(0, 1fr))`;
+  const cab = document.createElement('div');
+  cab.className = 'heat-cab';
+  tabla.append(cab);
+  for (const f of filas) {
+    const d = document.createElement('div');
+    d.className = 'heat-cab';
+    d.textContent = f.fecha.slice(5);
+    tabla.append(d);
+  }
+  let vacias = 0, total = 0;
+  for (const s of simbolos) {
+    const et = document.createElement('div');
+    et.className = 'heat-etiqueta';
+    et.textContent = s.replace('USDT_PERP.A', '');
+    tabla.append(et);
+    for (const f of filas) {
+      total++;
+      const v = f.valores[s];
+      if (!v) vacias++;
+      tabla.append(celdaHeat(v, escala, sufijo));
+    }
+  }
+  caja.append(tabla);
+  return { vacias, total };
+}
+
+
+function renderCarry(m) {
+  if (!m || !m.coste) return;
+  const cuerpo = $('carry-body');
+  if (cuerpo) {
+    cuerpo.replaceChildren();
+    for (const c of m.coste) {
+      const tr = document.createElement('tr');
+      // El coste se pinta en el vocabulario de ESTADO y no en el de direccion: pagar mas no es
+      // «bajista». Es gasto.
+      const cel = (txt, cls) => { const td = document.createElement('td'); td.textContent = txt; if (cls) td.className = cls; tr.append(td); };
+      cel(c.symbol.replace('USDT_PERP.A', ''));
+      cel(c.por_8h === null ? 'NO MEDIDO' : `${c.por_8h.toFixed(5)} %`);
+      cel(c.a_7d === null ? '—' : `${c.a_7d.toFixed(3)} %`);
+      cel(c.a_30d === null ? '—' : `${c.a_30d.toFixed(3)} %`, 'carry-destacado');
+      cel(c.anual === null ? '—' : `${c.anual.toFixed(2)} %`);
+      cel(c.quien_paga);
+      cel(String(c.dias_promediados));
+      cuerpo.append(tr);
+    }
+  }
+  // LA VENTANA QUE SE SIRVE, no la que se pidio, y en la propia tarjeta.
+  const servido = `${m.dias_servidos} de ${m.dias_pedidos} días · ${m.desde || '—'} a ${m.hasta || '—'}`;
+  textoEn('carry-sub', servido);
+  textoEn('carry-note', `${m.unidades}. ${m.cobertura.nota} `
+    + 'Sin componer: el funding se cobra sobre el nocional, no sobre el beneficio.');
+
+  const simbolos = m.simbolos || [];
+  const f = pintaHeat('heat-funding', m.funding_por_dia || [], simbolos, 'pct_8h', ' % por 8 h');
+  textoEn('heat-funding-sub', servido);
+  textoEn('heat-funding-note',
+    `% por período de 8 h. ${f.total - f.vacias} de ${f.total} celdas con dato; `
+    + `${f.vacias} sin medir, y van vacías —no a cero—. Verde: pagan los largos.`);
+
+  const o = pintaHeat('heat-oi', m.oi_por_dia || [], simbolos, 'chg_pct', ' %');
+  textoEn('heat-oi-sub', servido);
+  textoEn('heat-oi-note',
+    `Cambio de apertura a cierre de sesión. ${o.total - o.vacias} de ${o.total} celdas con dato; `
+    + `${o.vacias} sin medir. Verde: se montan posiciones.`);
+}
+
+// EL TERCER HEATMAP no se construyo: /api/liquidation-map ya lo servia y su propio docstring ya
+// decia que NO es un mapa proyectado. Aqui solo se le sube el sitio y se rotula su ventana.
+function renderLiqPrecio(mapa) {
+  const caja = $('heat-liq');
+  if (!caja) return;
+  caja.replaceChildren();
+  if (!mapa || mapa.available === false) {
+    textoEn('heat-liq-sub', 'NO MEDIDO');
+    textoEn('heat-liq-note', 'La ruta no pudo servir el mapa en este ciclo.');
+    return;
+  }
+  const filas = safeArray(mapa.levels);
+  const ventana = mapa.window_minutes;
+  // LA VENTANA QUE SIRVE, no la que se pidio: el diseño hablaba de 24 h y la ruta sirve 180
+  // min. Ademas `liquidations_realtime` solo guarda 12.2 h, asi que rotular «24 h» seria
+  // falso por partida doble. Se rotula lo que llega.
+  textoEn('heat-liq-sub', ventana ? `últimas ${ventana} min · precio ${money(asNumber(mapa.current_price), 0)}`
+                                  : 'ventana declarada por la ruta');
+  if (!filas.length) {
+    textoEn('heat-liq-note', 'Sin liquidaciones en la ventana servida. Es una lectura, no un hueco: '
+      + 'la ruta contestó y no hubo eventos.');
+    return;
+  }
+  const max = Math.max(...filas.map(f => Math.abs(asNumber(f.long_liq) || 0) + Math.abs(asNumber(f.short_liq) || 0)));
+  const rej = document.createElement('div');
+  rej.className = 'heat-precio-rejilla';
+  for (const f of filas) {
+    const l = asNumber(f.long_liq) || 0, s = asNumber(f.short_liq) || 0;
+    const fila = document.createElement('div');
+    fila.className = 'heat-precio-fila';
+    const px = document.createElement('span');
+    px.className = 'heat-precio-nivel';
+    // `money()` ABREVIA -\$79.7K- y con cubos de 79 USD los doce niveles salian como dos
+    // etiquetas repetidas: medido, 12 niveles y 2 textos distintos. La tarjeta existe para
+    // decir EN QUE NIVEL revento, asi que aqui hace falta el numero entero.
+    px.textContent = number(asNumber(f.price), 0);
+    const barra = document.createElement('span');
+    barra.className = 'heat-precio-barra';
+    const bl = document.createElement('i');
+    bl.className = 'heat-precio-long';
+    bl.style.width = `${max ? (100 * l / max).toFixed(1) : 0}%`;
+    const bs = document.createElement('i');
+    bs.className = 'heat-precio-short';
+    bs.style.width = `${max ? (100 * s / max).toFixed(1) : 0}%`;
+    barra.append(bl, bs);
+    fila.append(px, barra);
+    fila.title = `${money(l, 0)} de largos y ${money(s, 0)} de cortos reventados en este nivel`;
+    rej.append(fila);
+  }
+  caja.append(rej);
+  // La nota la escribe la RUTA. Reescribirla con mis palabras seria arriesgarme a decir
+  // algo distinto de lo que mide.
+  textoEn('heat-liq-note',
+    `${filas.length} de ${mapa.buckets_total} niveles con liquidaciones. ${mapa.note || ''}`);
+}
+
+function renderPortada(res, matriz) {
+  // LA TASA BASE SUBE, y se pinta aunque el veredicto no haya llegado: es lo que menos deberia
+  // depender de que otra cosa conteste. Se leen los MISMOS campos que la tarjeta de siempre
+  // (dashboard.signal_base_rate); aqui no se recalcula ni se reinterpreta nada.
+  const tb = (state.dashboard || {}).signal_base_rate || {};
+  textoEn('portada-tasa', tb.available
+    ? `Lo que está medido que vale la señal: ventaja neta ${pct(tb.ventaja_neta_pct, 4)}`
+      + (tb.t_neta === null || tb.t_neta === undefined ? '' : ` (t ${number(tb.t_neta, 2)})`)
+      + ` sobre ${number(tb.n_efectiva, 0)} bloques distintos.`
+      + ' Ninguna regla de entrada de esta pantalla se apoya en ella.'
+    : 'La tasa base de la señal NO se pudo medir en este ciclo.');
+  if (!res) return;
+  const v = res.veredicto || {};
+  const pruebas = safeArray(res.pruebas);
+  const votan = pruebas.filter(p => p.vota).length;
+  const nombre = (TRAMO_NOMBRE[v.estructura] || [String(v.estructura || '—'), 'neutral']);
+  textoEn('portada-veredicto', nombre[0], `zone-verdict ${nombre[1]}`);
+  const w = res.ventana || {};
+  textoEn('portada-ventana', `${w.desde || '—'} → ${w.hasta || '—'}`
+    + (res.fin_abierto ? ' · fin abierto' : ' · fin fijo'));
+  // EL DENOMINADOR VA ARRIBA, no en una nota: «5 de 6» y «3 de 6» son veredictos distintos.
+  textoEn('portada-porque', `Votaron ${votan} de ${pruebas.length} pruebas. ${v.porque || ''}`);
+
+  const cifra = (clave) => pruebas.find(p => p.prueba === clave) || {};
+  const precio = cifra('progreso_precio'), oi = cifra('interes_abierto'), liq = cifra('liquidaciones');
+  textoEn('portada-precio', (w.precio_pct === null || w.precio_pct === undefined) ? 'NO MEDIDO' : `${w.precio_pct > 0 ? '+' : ''}${w.precio_pct} %`,
+    `portada-valor ${w.precio_pct > 0 ? 'positive' : w.precio_pct < 0 ? 'negative' : 'neutral'}`);
+  textoEn('portada-precio-pie', precio.cifra || `sobre ${w.velas_1min || 0} velas de 1 min`);
+  textoEn('portada-oi', (w.oi_pct === null || w.oi_pct === undefined) ? 'NO MEDIDO' : `${w.oi_pct > 0 ? '+' : ''}${w.oi_pct} %`,
+    `portada-valor ${w.oi_pct > 0 ? 'positive' : w.oi_pct < 0 ? 'negative' : 'neutral'}`);
+  textoEn('portada-oi-pie', oi.cifra || `sobre ${w.muestras_oi || 0} muestras`);
+
+  const c = matriz && safeArray(matriz.coste).find(x => x.symbol === state.symbol);
+  textoEn('portada-carry', !c || c.a_30d === null ? 'NO MEDIDO' : `${c.a_30d.toFixed(3)} %`, 'portada-valor');
+  textoEn('portada-carry-pie', !c || c.a_30d === null
+    ? 'sin días medidos de funding'
+    : `${c.quien_paga} · ${c.por_8h.toFixed(5)} % por 8 h sobre ${c.dias_promediados} días`);
+
+  textoEn('portada-liq', liq.cifra ? liq.cifra.split(' sobre ')[0] : 'NO MEDIDO', 'portada-valor');
+  textoEn('portada-liq-pie', liq.cifra ? liq.cifra.split(' sobre ').slice(1).join(' sobre ') : '');
+
+  // LA CAPA DE HONESTIDAD, ARRIBA Y NO ABAJO. Es el mejor activo del producto.
+  const mudas = pruebas.filter(p => !p.vota);
+  // La frase de «no es predicción» la pone la RUTA. Yo solo añado lo que la ruta no sabe: qué
+  // pruebas se quedaron sin medir. Repetir su frase con otras palabras sería ruido justo en la
+  // línea que más importa.
+  textoEn('portada-honestidad',
+    (v.no_es_prediccion || '')
+    + (mudas.length
+        ? ` · ${mudas.length} de ${pruebas.length} prueba(s) NO se pudieron medir: `
+          + mudas.map(p => `${p.prueba.replace(/_/g, ' ')} (${p.no_vota_porque || 'sin motivo declarado'})`).join(' · ')
+        : ' · las ' + pruebas.length + ' pruebas se pudieron medir.'));
 }
 
 // ---------------- Que estructura estaba ocurriendo en un tramo ----------------

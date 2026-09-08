@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `price_barriers_endpoint` · `app/api.py:1810` (cuerpo hasta la 1813) · decorador en la linea 1809.
+Handler `price_barriers_endpoint` · `app/api.py:1830` (cuerpo hasta la 1833) · decorador en la linea 1829.
 
 ## Parametros de entrada
 
@@ -68,7 +68,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1235`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
@@ -94,7 +94,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_basis` · `app/api.py:2751` (cuerpo hasta la 2754) · decorador en la linea 2750.
+Handler `scalp_basis` · `app/api.py:2771` (cuerpo hasta la 2774) · decorador en la linea 2770.
 
 ## Parametros de entrada
 
@@ -51,7 +51,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5506`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
@@ -73,7 +73,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -84,7 +84,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:117`, `harness/checks/K43-foto-unica.sh:176` | — |
-| **panel** | `static/app.js:1705` | — |
+| **panel** | `static/app.js:1728` | — |
 | **readme** | — | `README.md:488`, `README.md:499` |
 | **tests** | `tests/test_v121_hardening.py:28` | — |
 

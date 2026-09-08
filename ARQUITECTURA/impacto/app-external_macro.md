@@ -30,7 +30,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/external_macro.py:472` · clave completa `app.external_macro._get`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -94,7 +94,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/external_macro.py:113` · clave completa `app.external_macro.parse_bls_calendar`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -158,7 +158,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/external_macro.py:88` · clave completa `app.external_macro.parse_coinglass_etf`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -222,7 +222,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/external_macro.py:150` · clave completa `app.external_macro.parse_fomc_calendar`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -286,7 +286,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/external_macro.py:58` · clave completa `app.external_macro.parse_fred_csv`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -350,7 +350,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/external_macro.py:74` · clave completa `app.external_macro.parse_stablecoin_history`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -414,7 +414,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/external_macro.py:478` · clave completa `app.external_macro.refresh_external_macro`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -484,7 +484,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/external_macro.py:190` · clave completa `app.external_macro._direction`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -509,7 +509,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/external_macro.py:205` · clave completa `app.external_macro._metric`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -534,7 +534,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/external_macro.py:184` · clave completa `app.external_macro._pct_change`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -559,7 +559,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/external_macro.py:232` · clave completa `app.external_macro._pillar`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -584,7 +584,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/external_macro.py:146` · clave completa `app.external_macro._plain_html`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 3** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 3** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -627,7 +627,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/external_macro.py:197` · clave completa `app.external_macro._state`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -652,7 +652,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/external_macro.py:103` · clave completa `app.external_macro._unfold_ics`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 3** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 3** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -695,7 +695,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/external_macro.py:415` · clave completa `app.external_macro.align_with_internal`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -720,7 +720,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/external_macro.py:237` · clave completa `app.external_macro.build_external_macro_context`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -745,7 +745,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/external_macro.py:437` · clave completa `app.external_macro.external_macro_context`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 

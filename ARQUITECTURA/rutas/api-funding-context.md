@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `funding_context_endpoint` · `app/api.py:1760` (cuerpo hasta la 1763) · decorador en la linea 1759.
+Handler `funding_context_endpoint` · `app/api.py:1780` (cuerpo hasta la 1783) · decorador en la linea 1779.
 
 ## Parametros de entrada
 
@@ -49,7 +49,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.funding_context` — `app/scalp_logic.py:3389`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -86,7 +86,8 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K43-foto-unica.sh:111`, `harness/checks/K43-foto-unica.sh:161` | `harness/checks/K03-hueco-declarado.sh:29` |
-| **panel** | `static/app.js:1708` | — |
+| **panel** | `static/app.js:1731` | — |
+| **tests** | `tests/test_funding_una_sola_escala.py:87` | `tests/test_funding_una_sola_escala.py:12` |
 
 **La llama el panel: es superficie de producto.**
 

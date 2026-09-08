@@ -19,7 +19,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/delta_profile.py:79` · clave completa `app.delta_profile._floor_log10`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -42,7 +42,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/delta_profile.py:69` · clave completa `app.delta_profile.bucket_index`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -65,7 +65,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/delta_profile.py:56` · clave completa `app.delta_profile.bucket_size`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -88,7 +88,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/delta_profile.py:222` · clave completa `app.delta_profile.delta_profile`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -111,7 +111,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/delta_profile.py:115` · clave completa `app.delta_profile.profile_read`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -134,7 +134,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/delta_profile.py:92` · clave completa `app.delta_profile.value_area`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `range_validate_endpoint` · `app/api.py:1843` (cuerpo hasta la 1873) · decorador en la linea 1842.
+Handler `range_validate_endpoint` · `app/api.py:1863` (cuerpo hasta la 1893) · decorador en la linea 1862.
 
 ## Parametros de entrada
 
@@ -56,7 +56,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.range_validate` — `app/scalp_logic.py:1512`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
@@ -84,13 +84,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:1858` | el propio handler |
-| 422 | range spans more than 3x; narrow it | `app/api.py:1860` | el propio handler |
-| 422 | start_date and end_date must come together | `app/api.py:1862` | el propio handler |
-| 422 | start_date must be before end_date | `app/api.py:1865` | el propio handler |
-| 422 | span exceeds the 730 days of history | `app/api.py:1867` | el propio handler |
-| 422 | days + end_days_ago exceeds daily history | `app/api.py:1869` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 422 | low must be below high | `app/api.py:1878` | el propio handler |
+| 422 | range spans more than 3x; narrow it | `app/api.py:1880` | el propio handler |
+| 422 | start_date and end_date must come together | `app/api.py:1882` | el propio handler |
+| 422 | start_date must be before end_date | `app/api.py:1885` | el propio handler |
+| 422 | span exceeds the 730 days of history | `app/api.py:1887` | el propio handler |
+| 422 | days + end_days_ago exceeds daily history | `app/api.py:1889` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -101,7 +101,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:61`, `harness/checks/K43-foto-unica.sh:121`, `harness/checks/K43-foto-unica.sh:281`, `harness/checks/K76-la-ventana-que-pides.sh:97` | — |
-| **panel** | `static/app.js:3367` | — |
+| **panel** | `static/app.js:3631` | — |
 | **tests** | — | `tests/test_p0_data_integrity.py:126` |
 
 **La llama el panel: es superficie de producto.**

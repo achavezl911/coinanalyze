@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd_divergence` · `app/api.py:826` (cuerpo hasta la 940) · decorador en la linea 825.
+Handler `cvd_divergence` · `app/api.py:827` (cuerpo hasta la 941) · decorador en la linea 826.
 
 ## Parametros de entrada
 
@@ -20,18 +20,18 @@ Handler `cvd_divergence` · `app/api.py:826` (cuerpo hasta la 940) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:939 |
-| `coverage.served_window` | literal en app/api.py:939 |
+| `coverage` | literal en app/api.py:940 |
+| `coverage.served_window` | literal en app/api.py:940 |
 | `coverage.served_window.complete` | literal en app/data_gaps.py:279 |
 | `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:277 |
 | `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:278 |
 | `coverage.served_window.sources` | literal en app/data_gaps.py:280 |
 | `coverage.served_window.window_end` | literal en app/data_gaps.py:276 |
 | `coverage.served_window.window_start` | literal en app/data_gaps.py:275 |
-| `coverage.status` | literal en app/api.py:939 |
-| `interval` | literal en app/api.py:937 |
-| `rows` | literal en app/api.py:938 |
-| `symbol` | literal en app/api.py:936 |
+| `coverage.status` | literal en app/api.py:940 |
+| `interval` | literal en app/api.py:938 |
+| `rows` | literal en app/api.py:939 |
+| `symbol` | literal en app/api.py:937 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -76,10 +76,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.historical_interval_value` — `app/api.py:234`
-- `app.api.mask_gapped_series_rows` — `app/api.py:245`
-- `app.api.records` — `app/api.py:241`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.historical_interval_value` — `app/api.py:235`
+- `app.api.mask_gapped_series_rows` — `app/api.py:246`
+- `app.api.records` — `app/api.py:242`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:245`
 
@@ -107,8 +107,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:237` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:238` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -119,7 +119,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:119` | — |
-| **panel** | `static/app.js:1648` | — |
+| **panel** | `static/app.js:1671` | — |
 | **readme** | — | `README.md:405` |
 
 **La llama el panel: es superficie de producto.**

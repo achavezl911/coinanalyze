@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_orderbook` · `app/api.py:1622` (cuerpo hasta la 1634) · decorador en la linea 1621.
+Handler `scalp_orderbook` · `app/api.py:1642` (cuerpo hasta la 1654) · decorador en la linea 1641.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `scalp_orderbook` · `app/api.py:1622` (cuerpo hasta la 1634) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `freshness` | literal en app/api.py:1633 |
+| `freshness` | literal en app/api.py:1653 |
 | `freshness.age_seconds` | literal en app/ai_context.py:641 |
 | `freshness.as_of` | literal en app/ai_context.py:640 |
 | `freshness.max_age_seconds` | literal en app/ai_context.py:642 |
 | `freshness.status` | literal en app/ai_context.py:639 |
-| `rows` | literal en app/api.py:1632 |
-| `symbol` | literal en app/api.py:1631 |
+| `rows` | literal en app/api.py:1652 |
+| `symbol` | literal en app/api.py:1651 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -46,8 +46,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.orderbook_freshness` — `app/ai_context.py:634`
-- `app.api.records` — `app/api.py:241`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.records` — `app/api.py:242`
+- `app.api.validate_symbol` — `app/api.py:229`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (4)</summary>
 
@@ -64,7 +64,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -75,7 +75,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K13-vacio-o-rancio.sh:32`, `harness/checks/K13-vacio-o-rancio.sh:33`, `harness/checks/K13-vacio-o-rancio.sh:92`, `harness/checks/K13-vacio-o-rancio.sh:94` _(+4)_ | `harness/checks/K13-vacio-o-rancio.sh:2`, `harness/checks/K43-foto-unica.sh:44`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:71` |
-| **panel** | `static/app.js:1665` | — |
+| **panel** | `static/app.js:1688` | — |
 | **tests** | — | `tests/js/libro_vacio_o_rancio.test.js:4`, `tests/test_orderbook_frescura.py:1`, `tests/test_orderbook_frescura.py:119` |
 
 **La llama el panel: es superficie de producto.**

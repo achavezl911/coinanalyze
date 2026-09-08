@@ -16,7 +16,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/signal_replay.py:90` · clave completa `app.signal_replay.persist_signal_replay_frame`
 
-**Radio exacto: 1 rutas** de 69 · **cota superior: 10** (mas ancha)
+**Radio exacto: 1 rutas** de 70 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -79,7 +79,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_replay.py:76` · clave completa `app.signal_replay.replay_context_as_of`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -139,7 +139,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_replay.py:49` · clave completa `app.signal_replay.canonical_json_object`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 6** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 0 rutas
 

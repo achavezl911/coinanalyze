@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_signals` · `app/api.py:2225` (cuerpo hasta la 2263) · decorador en la linea 2224.
+Handler `scalp_signals` · `app/api.py:2245` (cuerpo hasta la 2283) · decorador en la linea 2244.
 
 ## Parametros de entrada
 
@@ -19,15 +19,15 @@ Handler `scalp_signals` · `app/api.py:2225` (cuerpo hasta la 2263) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2261 |
-| `count` | literal en app/api.py:2256 |
-| `limit` | literal en app/api.py:2255 |
-| `rows` | literal en app/api.py:2262 |
-| `servida_desde` | literal en app/api.py:2258 |
-| `servida_hasta` | literal en app/api.py:2259 |
-| `symbol` | literal en app/api.py:2254 |
-| `truncated` | literal en app/api.py:2257 |
-| `ventana_maxima_h` | literal en app/api.py:2260 |
+| `as_of` | literal en app/api.py:2281 |
+| `count` | literal en app/api.py:2276 |
+| `limit` | literal en app/api.py:2275 |
+| `rows` | literal en app/api.py:2282 |
+| `servida_desde` | literal en app/api.py:2278 |
+| `servida_hasta` | literal en app/api.py:2279 |
+| `symbol` | literal en app/api.py:2274 |
+| `truncated` | literal en app/api.py:2277 |
+| `ventana_maxima_h` | literal en app/api.py:2280 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -47,9 +47,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2266`
-- `app.api.records` — `app/api.py:241`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api._utc_iso` — `app/api.py:2286`
+- `app.api.records` — `app/api.py:242`
+- `app.api.validate_symbol` — `app/api.py:229`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (5)</summary>
 
@@ -67,7 +67,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -78,9 +78,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-control.bash:61`, `harness/checks/K43-foto-unica.sh:123`, `harness/checks/K96-la-auditoria-no-inventa.sh:68` | — |
-| **panel** | `static/app.js:1740` | — |
+| **panel** | `static/app.js:1763` | — |
 | **readme** | — | `README.md:488`, `README.md:498` |
-| **tests** | — | `tests/test_dashboard_layout.py:130` |
+| **tests** | — | `tests/test_dashboard_layout.py:139` |
 
 **La llama el panel: es superficie de producto.**
 

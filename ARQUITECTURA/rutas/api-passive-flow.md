@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `passive_flow_endpoint` · `app/api.py:1975` (cuerpo hasta la 1978) · decorador en la linea 1974.
+Handler `passive_flow_endpoint` · `app/api.py:1995` (cuerpo hasta la 1998) · decorador en la linea 1994.
 
 ## Parametros de entrada
 
@@ -84,7 +84,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5859`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
@@ -122,7 +122,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -133,7 +133,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:112`, `harness/checks/K43-foto-unica.sh:163` | — |
-| **panel** | `static/app.js:1680` | — |
+| **panel** | `static/app.js:1703` | — |
 
 **La llama el panel: es superficie de producto.**
 

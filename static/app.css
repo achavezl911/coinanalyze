@@ -971,3 +971,62 @@ footer { padding: var(--sp-6); border-top: 1px solid var(--border-soft); color: 
 .estado-ok   { color: var(--cyan)   !important; }
 .estado-aviso{ color: var(--amber)  !important; }
 .estado-malo { color: var(--violet) !important; }
+
+/* ═══ PORTADA · treinta segundos ══════════════════════════════════════════════════════════════
+   Va la primera y ocupa la fila entera A PROPOSITO: es lo unico que tiene que leerse sin
+   buscar. El detalle no desaparece, baja. */
+.portada-panel { grid-column: span 12; padding: var(--sp-6); }
+.portada-porque { color: var(--muted); font-size: var(--fs-strong); margin-top: var(--sp-2); }
+.portada-cifras {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-0); background: var(--border-soft); margin-top: var(--sp-5);
+}
+.portada-cifras > div { background: var(--surface); padding: var(--sp-5); }
+.portada-valor { font-size: var(--fs-hero); font-weight: 700; letter-spacing: -.02em; margin-top: var(--sp-2); }
+.portada-pie { color: var(--muted); font-size: var(--fs-small); margin-top: var(--sp-2); }
+
+/* ═══ COSTE Y HEATMAPS ════════════════════════════════════════════════════════════════════════ */
+.carry-panel { grid-column: span 12; }
+.heat-panel { grid-column: span 6; }
+.liqprice-panel { grid-column: span 6; }
+.carry-destacado { font-weight: 700; color: var(--text); }
+
+.heatmap { padding: var(--sp-4); overflow-x: auto; }
+.heat-rejilla { display: grid; gap: var(--sp-0); min-width: 0; }
+.heat-cab, .heat-etiqueta {
+  font-size: var(--fs-micro); color: var(--muted); padding: var(--sp-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.heat-etiqueta { font-weight: 700; color: var(--text); }
+.heat-celda {
+  font-size: var(--fs-micro); text-align: center; padding: var(--sp-2) var(--sp-1);
+  background: var(--surface-soft); border-radius: 2px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+/* UNA CELDA SIN DATO NO SE PINTA COMO UN CERO. Va rayada y vacia: se tiene que ver que ahi no
+   se midio, porque un cero ahi se leeria como «ese dia no se pago funding», que es falso. */
+.heat-vacia {
+  background: repeating-linear-gradient(45deg, var(--surface-soft), var(--surface-soft) 3px,
+              var(--surface) 3px, var(--surface) 6px);
+}
+/* Un dia a medias tampoco es un dia: se marca en vez de pasar por completo. */
+.heat-parcial { outline: 1px dashed var(--amber); outline-offset: -1px; }
+
+.heat-precio-rejilla { display: flex; flex-direction: column; gap: var(--sp-0); }
+.heat-precio-fila { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: var(--sp-4); align-items: center; }
+.heat-precio-nivel { font-size: var(--fs-micro); color: var(--muted); text-align: right; }
+.heat-precio-barra { display: flex; height: 10px; background: var(--surface-soft); border-radius: 2px; overflow: hidden; }
+.heat-precio-long { background: var(--green); }
+.heat-precio-short { background: var(--red); }
+
+/* La lista secundaria de secciones: sigue estando, deja de competir. */
+.nav-title-secundario { margin-top: var(--sp-6); }
+.section-links-secundario a { opacity: .72; }
+.section-links-secundario a:hover, .section-links-secundario a.active { opacity: 1; }
+
+@media (min-width: 1900px) {
+  /* En el escalon ancho los dos heatmaps de dias caben al lado del de precio. */
+  .heat-panel { grid-column: span 4; }
+  .liqprice-panel { grid-column: span 4; }
+  .carry-panel { grid-column: span 12; }
+}

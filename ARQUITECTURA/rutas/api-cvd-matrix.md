@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd_matrix_endpoint` · `app/api.py:1982` (cuerpo hasta la 1986) · decorador en la linea 1981.
+Handler `cvd_matrix_endpoint` · `app/api.py:2002` (cuerpo hasta la 2006) · decorador en la linea 2001.
 
 ## Parametros de entrada
 
@@ -79,7 +79,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2704`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
 
@@ -113,7 +113,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -174,7 +174,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
-| `app.config.get_settings` | 3 | **0** | 54 ↑ | **3** | [impacto](../impacto/app-config.md) |
+| `app.config.get_settings` | 3 | **0** | 55 ↑ | **3** | [impacto](../impacto/app-config.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |
