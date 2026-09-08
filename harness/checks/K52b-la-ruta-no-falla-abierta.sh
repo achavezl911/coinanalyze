@@ -65,7 +65,17 @@ trap 'rm -f "$JOURNAL" "$CUERPO"' EXIT
 # LA RUTA VA PRIMERO y ella fija el arco; el journal se pide para ESE arco. Al reves -que
 # era como estaba, con 6 h fijas contra 24 h servidas- las dos ventanas se separan solas
 # con el reloj, y el operador puso fecha exacta a cuando eso habria enrojecido.
-TODO=1 "$B/bin/api" "$RUTA?symbol=$SIMBOLO&interval=15min&limit=96" > "$CUERPO" 2>/dev/null
+# DOS GANCHOS PARA PODER REPETIR LA DEMOSTRACION CUANDO EL CALENDARIO YA NO AYUDE. El bucket
+# que destapo esto -el arranque de 2026-09-08T04:25:46Z- sale de la ventana de 24 h a las
+# 2026-09-09T04:15Z, y a partir de ahi este check se pone VERDE SIN QUE NADIE ARREGLE NADA. Un
+# verde asi no prueba nada. Con estos dos se le puede dar la respuesta VIEJA guardada y ver que
+# sigue condenando, que es lo unico que demuestra que el check no se aflojo.
+# Sin ellos puestos, el comportamiento es exactamente el de siempre.
+if [ -n "${K52B_CUERPO:-}" ]; then
+  cp "$K52B_CUERPO" "$CUERPO"
+else
+  TODO=1 "$B/bin/api" "$RUTA?symbol=$SIMBOLO&interval=15min&limit=96" > "$CUERPO" 2>/dev/null
+fi
 [ -s "$CUERPO" ] || { echo "NO MEDIDO: $RUTA no devolvio nada (canal)"; exit 2; }
 
 horas=$(python3 -c '
@@ -82,7 +92,11 @@ print(max(1, math.ceil((datetime.now(UTC) - min(b)).total_seconds() / 3600) + 1)
 
 # Dos consultas en una: la PRIMERA linea del journal es su suelo real -si roto, el suelo
 # sube y hay buckets que no se pueden juzgar- y despues los arranques.
-"$B/bin/prod" "journalctl -u $UNIDAD --since '$horas hours ago' --no-pager -o short-iso --utc -n 3000 2>/dev/null | head -1; journalctl -u $UNIDAD --since '$horas hours ago' --no-pager -o short-iso --utc -n 3000 2>/dev/null | grep -E 'Started $UNIDAD'" 2>/dev/null > "$JOURNAL"
+if [ -n "${K52B_JOURNAL:-}" ]; then
+  cp "$K52B_JOURNAL" "$JOURNAL"
+else
+  "$B/bin/prod" "journalctl -u $UNIDAD --since '$horas hours ago' --no-pager -o short-iso --utc -n 3000 2>/dev/null | head -1; journalctl -u $UNIDAD --since '$horas hours ago' --no-pager -o short-iso --utc -n 3000 2>/dev/null | grep -E 'Started $UNIDAD'" 2>/dev/null > "$JOURNAL"
+fi
 [ -s "$JOURNAL" ] || { echo "NO MEDIDO: el journal de 140 no devolvio nada para $UNIDAD en $horas h"; exit 2; }
 
 python3 -c '
@@ -166,9 +180,23 @@ for a in arranques:
         continue
     if juzgable(inicio) is not None:
         continue
+    # CORTO **O** AUSENTE. `short_minutes` es un agregado sobre las filas PRESENTES del cubo,
+    # asi que un minuto que no llego a existir no suma en el ni podra nunca: preguntarle solo a
+    # el era preguntar por la mitad del mundo. El 2026-09-08 el arranque de 04:25:46Z cayo en un
+    # bucket que servia short_minutes=0 y minutes_present=14 de 15, y este check lo acuso de no
+    # declararlo cuando el que no podia verlo era el contador.
+    #
+    # `missing_minutes` con valor NULO no es cero: significa «el cubo aun no ha terminado», y
+    # entonces el arranque no es juzgable por esta via. Se trata como no declarado a proposito:
+    # si el cubo no se ha cerrado, `juzgable()` ya lo habra exento mas arriba.
     cortos = por_inicio[inicio].get("short_minutes") or 0
-    if cortos < 1:
-        sin_declarar.append(f"el arranque de {a:%H:%M:%SZ} cae en el bucket {inicio:%H:%M}, que sirve short_minutes={cortos}")
+    crudo_ausentes = por_inicio[inicio].get("missing_minutes")
+    ausentes = crudo_ausentes or 0
+    if cortos + ausentes < 1:
+        sin_declarar.append(
+            f"el arranque de {a:%H:%M:%SZ} cae en el bucket {inicio:%H:%M}, que sirve "
+            f"short_minutes={cortos} y missing_minutes={crudo_ausentes}"
+        )
     else:
         cubiertos += 1
 

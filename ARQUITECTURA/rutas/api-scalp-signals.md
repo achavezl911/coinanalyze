@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_signals` · `app/api.py:2245` (cuerpo hasta la 2283) · decorador en la linea 2244.
+Handler `scalp_signals` · `app/api.py:2308` (cuerpo hasta la 2346) · decorador en la linea 2307.
 
 ## Parametros de entrada
 
@@ -19,15 +19,15 @@ Handler `scalp_signals` · `app/api.py:2245` (cuerpo hasta la 2283) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2281 |
-| `count` | literal en app/api.py:2276 |
-| `limit` | literal en app/api.py:2275 |
-| `rows` | literal en app/api.py:2282 |
-| `servida_desde` | literal en app/api.py:2278 |
-| `servida_hasta` | literal en app/api.py:2279 |
-| `symbol` | literal en app/api.py:2274 |
-| `truncated` | literal en app/api.py:2277 |
-| `ventana_maxima_h` | literal en app/api.py:2280 |
+| `as_of` | literal en app/api.py:2344 |
+| `count` | literal en app/api.py:2339 |
+| `limit` | literal en app/api.py:2338 |
+| `rows` | literal en app/api.py:2345 |
+| `servida_desde` | literal en app/api.py:2341 |
+| `servida_hasta` | literal en app/api.py:2342 |
+| `symbol` | literal en app/api.py:2337 |
+| `truncated` | literal en app/api.py:2340 |
+| `ventana_maxima_h` | literal en app/api.py:2343 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -47,7 +47,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2286`
+- `app.api._utc_iso` — `app/api.py:2349`
 - `app.api.records` — `app/api.py:242`
 - `app.api.validate_symbol` — `app/api.py:229`
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `carry_matriz` · `app/api.py:1168` (cuerpo hasta la 1183) · decorador en la linea 1167.
+Handler `carry_matriz` · `app/api.py:1231` (cuerpo hasta la 1246) · decorador en la linea 1230.
 
 ## Parametros de entrada
 
@@ -55,7 +55,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2326`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2389`
 - `app.carry.matriz_de_carry` — `app/carry.py:98`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 422 | — | `app/api.py:2335` | una funcion de su cierre |
+| 422 | — | `app/api.py:2398` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

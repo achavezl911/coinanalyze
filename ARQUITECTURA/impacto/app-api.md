@@ -10,94 +10,94 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 |---|---|---|---|---|---|
 | [`validate_symbol`](#validate-symbol) | 229 | 63 | **0** | 0 | **63** |
 | [`records`](#records) | 242 | 22 | **0** | 7 ↑ | **22** |
-| [`health`](#health) | 3419 | 1 | **0** | 7 ↑ | **1** |
+| [`health`](#health) | 3482 | 1 | **0** | 7 ↑ | **1** |
 | [`historical_interval_value`](#historical-interval-value) | 235 | 7 | **0** | 0 | **7** |
 | [`lifespan`](#lifespan) | 151 | 0 | **0** | 7 ↑ | **0** |
 | [`mask_gapped_series_rows`](#mask-gapped-series-rows) | 246 | 7 | **0** | 0 | **7** |
-| [`rechaza_parametros_desconocidos`](#rechaza-parametros-desconocidos) | 2326 | 7 | **0** | 0 | **7** |
-| [`_utc_iso`](#-utc-iso) | 2286 | 6 | **0** | 0 | **6** |
+| [`rechaza_parametros_desconocidos`](#rechaza-parametros-desconocidos) | 2389 | 7 | **0** | 0 | **7** |
+| [`_utc_iso`](#-utc-iso) | 2349 | 6 | **0** | 0 | **6** |
 | [`declared_series_response`](#declared-series-response) | 356 | 6 | **0** | 0 | **6** |
-| [`ventana_pedida`](#ventana-pedida) | 1558 | 4 | **0** | 0 | **4** |
+| [`ventana_pedida`](#ventana-pedida) | 1621 | 4 | **0** | 0 | **4** |
 | [`daily_data`](#daily-data) | 501 | 3 | **0** | 0 | **3** |
-| [`declara_ventana`](#declara-ventana) | 1591 | 3 | **0** | 0 | **3** |
+| [`declara_ventana`](#declara-ventana) | 1654 | 3 | **0** | 0 | **3** |
 | [`latest_snapshot`](#latest-snapshot) | 474 | 3 | **0** | 0 | **3** |
 | [`_session_window`](#-session-window) | 455 | 2 | **0** | 0 | **2** |
-| [`_parse_heartbeat_detail`](#-parse-heartbeat-detail) | 3323 | 1 | **0** | 0 | **1** |
-| [`_slippage_para`](#-slippage-para) | 1540 | 1 | **0** | 0 | **1** |
-| [`ai_context`](#ai-context) | 3262 | 1 | **0** | 0 | **1** |
-| [`ai_context_bundle`](#ai-context-bundle) | 3279 | 1 | **0** | 0 | **1** |
-| [`ai_profiles`](#ai-profiles) | 3300 | 1 | **0** | 0 | **1** |
-| [`carry_matriz`](#carry-matriz) | 1168 | 1 | **0** | 0 | **1** |
-| [`context_metadata_endpoint`](#context-metadata-endpoint) | 1919 | 1 | **0** | 0 | **1** |
-| [`cross_asset_endpoint`](#cross-asset-endpoint) | 1960 | 1 | **0** | 0 | **1** |
+| [`_parse_heartbeat_detail`](#-parse-heartbeat-detail) | 3386 | 1 | **0** | 0 | **1** |
+| [`_slippage_para`](#-slippage-para) | 1603 | 1 | **0** | 0 | **1** |
+| [`ai_context`](#ai-context) | 3325 | 1 | **0** | 0 | **1** |
+| [`ai_context_bundle`](#ai-context-bundle) | 3342 | 1 | **0** | 0 | **1** |
+| [`ai_profiles`](#ai-profiles) | 3363 | 1 | **0** | 0 | **1** |
+| [`carry_matriz`](#carry-matriz) | 1231 | 1 | **0** | 0 | **1** |
+| [`context_metadata_endpoint`](#context-metadata-endpoint) | 1982 | 1 | **0** | 0 | **1** |
+| [`cross_asset_endpoint`](#cross-asset-endpoint) | 2023 | 1 | **0** | 0 | **1** |
 | [`cvd`](#cvd) | 706 | 1 | **0** | 0 | **1** |
-| [`cvd_divergence`](#cvd-divergence) | 827 | 1 | **0** | 0 | **1** |
-| [`cvd_matrix_endpoint`](#cvd-matrix-endpoint) | 2002 | 1 | **0** | 0 | **1** |
-| [`cvd_spot`](#cvd-spot) | 754 | 1 | **0** | 0 | **1** |
-| [`daily`](#daily) | 2145 | 1 | **0** | 0 | **1** |
-| [`dashboard_state`](#dashboard-state) | 3231 | 1 | **0** | 0 | **1** |
-| [`data_confidence`](#data-confidence) | 2838 | 1 | **0** | 0 | **1** |
-| [`declarar_tramo_no_medible`](#declarar-tramo-no-medible) | 1043 | 1 | **0** | 0 | **1** |
-| [`delta_profile_endpoint`](#delta-profile-endpoint) | 1801 | 1 | **0** | 0 | **1** |
-| [`desk_state`](#desk-state) | 1319 | 1 | **0** | 0 | **1** |
-| [`divergences_endpoint`](#divergences-endpoint) | 2034 | 1 | **0** | 0 | **1** |
-| [`external_macro_endpoint`](#external-macro-endpoint) | 2024 | 1 | **0** | 0 | **1** |
-| [`flow_spot_vs_perp`](#flow-spot-vs-perp) | 1616 | 1 | **0** | 0 | **1** |
-| [`funding_context_endpoint`](#funding-context-endpoint) | 1780 | 1 | **0** | 0 | **1** |
-| [`hypothesis`](#hypothesis) | 1238 | 1 | **0** | 0 | **1** |
-| [`index`](#index) | 3533 | 1 | **0** | 0 | **1** |
-| [`level_breakout_endpoint`](#level-breakout-endpoint) | 1897 | 1 | **0** | 0 | **1** |
-| [`liquidation_levels`](#liquidation-levels) | 2778 | 1 | **0** | 0 | **1** |
-| [`liquidation_map_endpoint`](#liquidation-map-endpoint) | 1787 | 1 | **0** | 0 | **1** |
-| [`liquidation_series`](#liquidation-series) | 994 | 1 | **0** | 0 | **1** |
-| [`macro_context_endpoint`](#macro-context-endpoint) | 2017 | 1 | **0** | 0 | **1** |
-| [`market_impact_endpoint`](#market-impact-endpoint) | 1222 | 1 | **0** | 0 | **1** |
-| [`market_memory_endpoint`](#market-memory-endpoint) | 2041 | 1 | **0** | 0 | **1** |
-| [`metric_baselines`](#metric-baselines) | 1446 | 1 | **0** | 0 | **1** |
+| [`cvd_divergence`](#cvd-divergence) | 868 | 1 | **0** | 0 | **1** |
+| [`cvd_matrix_endpoint`](#cvd-matrix-endpoint) | 2065 | 1 | **0** | 0 | **1** |
+| [`cvd_spot`](#cvd-spot) | 767 | 1 | **0** | 0 | **1** |
+| [`daily`](#daily) | 2208 | 1 | **0** | 0 | **1** |
+| [`dashboard_state`](#dashboard-state) | 3294 | 1 | **0** | 0 | **1** |
+| [`data_confidence`](#data-confidence) | 2901 | 1 | **0** | 0 | **1** |
+| [`declarar_tramo_no_medible`](#declarar-tramo-no-medible) | 1084 | 1 | **0** | 0 | **1** |
+| [`delta_profile_endpoint`](#delta-profile-endpoint) | 1864 | 1 | **0** | 0 | **1** |
+| [`desk_state`](#desk-state) | 1382 | 1 | **0** | 0 | **1** |
+| [`divergences_endpoint`](#divergences-endpoint) | 2097 | 1 | **0** | 0 | **1** |
+| [`external_macro_endpoint`](#external-macro-endpoint) | 2087 | 1 | **0** | 0 | **1** |
+| [`flow_spot_vs_perp`](#flow-spot-vs-perp) | 1679 | 1 | **0** | 0 | **1** |
+| [`funding_context_endpoint`](#funding-context-endpoint) | 1843 | 1 | **0** | 0 | **1** |
+| [`hypothesis`](#hypothesis) | 1301 | 1 | **0** | 0 | **1** |
+| [`index`](#index) | 3596 | 1 | **0** | 0 | **1** |
+| [`level_breakout_endpoint`](#level-breakout-endpoint) | 1960 | 1 | **0** | 0 | **1** |
+| [`liquidation_levels`](#liquidation-levels) | 2841 | 1 | **0** | 0 | **1** |
+| [`liquidation_map_endpoint`](#liquidation-map-endpoint) | 1850 | 1 | **0** | 0 | **1** |
+| [`liquidation_series`](#liquidation-series) | 1035 | 1 | **0** | 0 | **1** |
+| [`macro_context_endpoint`](#macro-context-endpoint) | 2080 | 1 | **0** | 0 | **1** |
+| [`market_impact_endpoint`](#market-impact-endpoint) | 1285 | 1 | **0** | 0 | **1** |
+| [`market_memory_endpoint`](#market-memory-endpoint) | 2104 | 1 | **0** | 0 | **1** |
+| [`metric_baselines`](#metric-baselines) | 1509 | 1 | **0** | 0 | **1** |
 | [`ohlcv`](#ohlcv) | 642 | 1 | **0** | 0 | **1** |
-| [`oi`](#oi) | 945 | 1 | **0** | 0 | **1** |
-| [`oi_context_endpoint`](#oi-context-endpoint) | 1967 | 1 | **0** | 0 | **1** |
-| [`passive_flow_endpoint`](#passive-flow-endpoint) | 1995 | 1 | **0** | 0 | **1** |
-| [`positioning`](#positioning) | 1230 | 1 | **0** | 0 | **1** |
-| [`price_barriers_endpoint`](#price-barriers-endpoint) | 1830 | 1 | **0** | 0 | **1** |
-| [`prometheus_metrics`](#prometheus-metrics) | 3341 | 1 | **0** | 0 | **1** |
-| [`quality_feeds`](#quality-feeds) | 1430 | 1 | **0** | 0 | **1** |
-| [`range_validate_endpoint`](#range-validate-endpoint) | 1863 | 1 | **0** | 0 | **1** |
-| [`rango_estructura`](#rango-estructura) | 1926 | 1 | **0** | 0 | **1** |
-| [`reference_levels_endpoint`](#reference-levels-endpoint) | 1953 | 1 | **0** | 0 | **1** |
-| [`scalp_absorption`](#scalp-absorption) | 1658 | 1 | **0** | 0 | **1** |
-| [`scalp_alerts`](#scalp-alerts) | 1674 | 1 | **0** | 0 | **1** |
-| [`scalp_basis`](#scalp-basis) | 2771 | 1 | **0** | 0 | **1** |
-| [`scalp_delta_matrix`](#scalp-delta-matrix) | 1195 | 1 | **0** | 0 | **1** |
-| [`scalp_execution_cost`](#scalp-execution-cost) | 1484 | 1 | **0** | 0 | **1** |
-| [`scalp_liquidations`](#scalp-liquidations) | 1667 | 1 | **0** | 0 | **1** |
-| [`scalp_orderbook`](#scalp-orderbook) | 1642 | 1 | **0** | 0 | **1** |
-| [`scalp_persistence`](#scalp-persistence) | 2891 | 1 | **0** | 0 | **1** |
-| [`scalp_signals`](#scalp-signals) | 2245 | 1 | **0** | 0 | **1** |
-| [`scalp_summary`](#scalp-summary) | 1187 | 1 | **0** | 0 | **1** |
-| [`setup`](#setup) | 2230 | 1 | **0** | 0 | **1** |
-| [`signal_base_rate`](#signal-base-rate) | 3106 | 1 | **0** | 0 | **1** |
-| [`signals_execution`](#signals-execution) | 2516 | 1 | **0** | 0 | **1** |
-| [`signals_ledger`](#signals-ledger) | 2342 | 1 | **0** | 0 | **1** |
-| [`signals_outcomes`](#signals-outcomes) | 2430 | 1 | **0** | 0 | **1** |
-| [`signals_replay`](#signals-replay) | 2604 | 1 | **0** | 0 | **1** |
-| [`signals_visibility`](#signals-visibility) | 2688 | 1 | **0** | 0 | **1** |
+| [`oi`](#oi) | 986 | 1 | **0** | 0 | **1** |
+| [`oi_context_endpoint`](#oi-context-endpoint) | 2030 | 1 | **0** | 0 | **1** |
+| [`passive_flow_endpoint`](#passive-flow-endpoint) | 2058 | 1 | **0** | 0 | **1** |
+| [`positioning`](#positioning) | 1293 | 1 | **0** | 0 | **1** |
+| [`price_barriers_endpoint`](#price-barriers-endpoint) | 1893 | 1 | **0** | 0 | **1** |
+| [`prometheus_metrics`](#prometheus-metrics) | 3404 | 1 | **0** | 0 | **1** |
+| [`quality_feeds`](#quality-feeds) | 1493 | 1 | **0** | 0 | **1** |
+| [`range_validate_endpoint`](#range-validate-endpoint) | 1926 | 1 | **0** | 0 | **1** |
+| [`rango_estructura`](#rango-estructura) | 1989 | 1 | **0** | 0 | **1** |
+| [`reference_levels_endpoint`](#reference-levels-endpoint) | 2016 | 1 | **0** | 0 | **1** |
+| [`scalp_absorption`](#scalp-absorption) | 1721 | 1 | **0** | 0 | **1** |
+| [`scalp_alerts`](#scalp-alerts) | 1737 | 1 | **0** | 0 | **1** |
+| [`scalp_basis`](#scalp-basis) | 2834 | 1 | **0** | 0 | **1** |
+| [`scalp_delta_matrix`](#scalp-delta-matrix) | 1258 | 1 | **0** | 0 | **1** |
+| [`scalp_execution_cost`](#scalp-execution-cost) | 1547 | 1 | **0** | 0 | **1** |
+| [`scalp_liquidations`](#scalp-liquidations) | 1730 | 1 | **0** | 0 | **1** |
+| [`scalp_orderbook`](#scalp-orderbook) | 1705 | 1 | **0** | 0 | **1** |
+| [`scalp_persistence`](#scalp-persistence) | 2954 | 1 | **0** | 0 | **1** |
+| [`scalp_signals`](#scalp-signals) | 2308 | 1 | **0** | 0 | **1** |
+| [`scalp_summary`](#scalp-summary) | 1250 | 1 | **0** | 0 | **1** |
+| [`setup`](#setup) | 2293 | 1 | **0** | 0 | **1** |
+| [`signal_base_rate`](#signal-base-rate) | 3169 | 1 | **0** | 0 | **1** |
+| [`signals_execution`](#signals-execution) | 2579 | 1 | **0** | 0 | **1** |
+| [`signals_ledger`](#signals-ledger) | 2405 | 1 | **0** | 0 | **1** |
+| [`signals_outcomes`](#signals-outcomes) | 2493 | 1 | **0** | 0 | **1** |
+| [`signals_replay`](#signals-replay) | 2667 | 1 | **0** | 0 | **1** |
+| [`signals_visibility`](#signals-visibility) | 2751 | 1 | **0** | 0 | **1** |
 | [`snapshot`](#snapshot) | 622 | 1 | **0** | 0 | **1** |
-| [`statistical_alerts`](#statistical-alerts) | 1738 | 1 | **0** | 0 | **1** |
-| [`stream`](#stream) | 3524 | 1 | **0** | 0 | **1** |
-| [`stream_generator`](#stream-generator) | 3476 | 1 | **0** | 0 | **1** |
-| [`structure`](#structure) | 2138 | 1 | **0** | 0 | **1** |
-| [`structure_detail_endpoint`](#structure-detail-endpoint) | 2010 | 1 | **0** | 0 | **1** |
-| [`swing_score_endpoint`](#swing-score-endpoint) | 1981 | 1 | **0** | 0 | **1** |
+| [`statistical_alerts`](#statistical-alerts) | 1801 | 1 | **0** | 0 | **1** |
+| [`stream`](#stream) | 3587 | 1 | **0** | 0 | **1** |
+| [`stream_generator`](#stream-generator) | 3539 | 1 | **0** | 0 | **1** |
+| [`structure`](#structure) | 2201 | 1 | **0** | 0 | **1** |
+| [`structure_detail_endpoint`](#structure-detail-endpoint) | 2073 | 1 | **0** | 0 | **1** |
+| [`swing_score_endpoint`](#swing-score-endpoint) | 2044 | 1 | **0** | 0 | **1** |
 | [`symbols`](#symbols) | 617 | 1 | **0** | 0 | **1** |
-| [`trading_profile`](#trading-profile) | 1464 | 1 | **0** | 0 | **1** |
-| [`trend_matrix_endpoint`](#trend-matrix-endpoint) | 1988 | 1 | **0** | 0 | **1** |
-| [`verdicts`](#verdicts) | 2048 | 1 | **0** | 0 | **1** |
-| [`volatility_endpoint`](#volatility-endpoint) | 1974 | 1 | **0** | 0 | **1** |
-| [`volume_profile_endpoint`](#volume-profile-endpoint) | 1794 | 1 | **0** | 0 | **1** |
-| [`whale_delta`](#whale-delta) | 1096 | 1 | **0** | 0 | **1** |
-| [`wyckoff_endpoint`](#wyckoff-endpoint) | 1911 | 1 | **0** | 0 | **1** |
-| [`zone_analysis_endpoint`](#zone-analysis-endpoint) | 1837 | 1 | **0** | 0 | **1** |
+| [`trading_profile`](#trading-profile) | 1527 | 1 | **0** | 0 | **1** |
+| [`trend_matrix_endpoint`](#trend-matrix-endpoint) | 2051 | 1 | **0** | 0 | **1** |
+| [`verdicts`](#verdicts) | 2111 | 1 | **0** | 0 | **1** |
+| [`volatility_endpoint`](#volatility-endpoint) | 2037 | 1 | **0** | 0 | **1** |
+| [`volume_profile_endpoint`](#volume-profile-endpoint) | 1857 | 1 | **0** | 0 | **1** |
+| [`whale_delta`](#whale-delta) | 1137 | 1 | **0** | 0 | **1** |
+| [`wyckoff_endpoint`](#wyckoff-endpoint) | 1974 | 1 | **0** | 0 | **1** |
+| [`zone_analysis_endpoint`](#zone-analysis-endpoint) | 1900 | 1 | **0** | 0 | **1** |
 
 ## validate_symbol
 
@@ -256,7 +256,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## health
 
-`app/api.py:3419` · clave completa `app.api.health`
+`app/api.py:3482` · clave completa `app.api.health`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 7** (mas ancha)
 
@@ -413,7 +413,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## rechaza_parametros_desconocidos
 
-`app/api.py:2326` · clave completa `app.api.rechaza_parametros_desconocidos`
+`app/api.py:2389` · clave completa `app.api.rechaza_parametros_desconocidos`
 
 **Radio exacto: 7 rutas** de 70 · **cota superior: 7** (igual al exacto)
 
@@ -442,7 +442,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _utc_iso
 
-`app/api.py:2286` · clave completa `app.api._utc_iso`
+`app/api.py:2349` · clave completa `app.api._utc_iso`
 
 **Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
 
@@ -498,7 +498,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## ventana_pedida
 
-`app/api.py:1558` · clave completa `app.api.ventana_pedida`
+`app/api.py:1621` · clave completa `app.api.ventana_pedida`
 
 **Radio exacto: 4 rutas** de 70 · **cota superior: 4** (igual al exacto)
 
@@ -549,7 +549,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## declara_ventana
 
-`app/api.py:1591` · clave completa `app.api.declara_ventana`
+`app/api.py:1654` · clave completa `app.api.declara_ventana`
 
 **Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
@@ -623,7 +623,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _parse_heartbeat_detail
 
-`app/api.py:3323` · clave completa `app.api._parse_heartbeat_detail`
+`app/api.py:3386` · clave completa `app.api._parse_heartbeat_detail`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -646,7 +646,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _slippage_para
 
-`app/api.py:1540` · clave completa `app.api._slippage_para`
+`app/api.py:1603` · clave completa `app.api._slippage_para`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -669,7 +669,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## ai_context
 
-`app/api.py:3262` · clave completa `app.api.ai_context`
+`app/api.py:3325` · clave completa `app.api.ai_context`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -692,7 +692,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## ai_context_bundle
 
-`app/api.py:3279` · clave completa `app.api.ai_context_bundle`
+`app/api.py:3342` · clave completa `app.api.ai_context_bundle`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -715,7 +715,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## ai_profiles
 
-`app/api.py:3300` · clave completa `app.api.ai_profiles`
+`app/api.py:3363` · clave completa `app.api.ai_profiles`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -738,7 +738,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## carry_matriz
 
-`app/api.py:1168` · clave completa `app.api.carry_matriz`
+`app/api.py:1231` · clave completa `app.api.carry_matriz`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -761,7 +761,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## context_metadata_endpoint
 
-`app/api.py:1919` · clave completa `app.api.context_metadata_endpoint`
+`app/api.py:1982` · clave completa `app.api.context_metadata_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -784,7 +784,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## cross_asset_endpoint
 
-`app/api.py:1960` · clave completa `app.api.cross_asset_endpoint`
+`app/api.py:2023` · clave completa `app.api.cross_asset_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -830,7 +830,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## cvd_divergence
 
-`app/api.py:827` · clave completa `app.api.cvd_divergence`
+`app/api.py:868` · clave completa `app.api.cvd_divergence`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -853,7 +853,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## cvd_matrix_endpoint
 
-`app/api.py:2002` · clave completa `app.api.cvd_matrix_endpoint`
+`app/api.py:2065` · clave completa `app.api.cvd_matrix_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -876,7 +876,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## cvd_spot
 
-`app/api.py:754` · clave completa `app.api.cvd_spot`
+`app/api.py:767` · clave completa `app.api.cvd_spot`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -899,7 +899,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## daily
 
-`app/api.py:2145` · clave completa `app.api.daily`
+`app/api.py:2208` · clave completa `app.api.daily`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -922,7 +922,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## dashboard_state
 
-`app/api.py:3231` · clave completa `app.api.dashboard_state`
+`app/api.py:3294` · clave completa `app.api.dashboard_state`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -945,7 +945,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## data_confidence
 
-`app/api.py:2838` · clave completa `app.api.data_confidence`
+`app/api.py:2901` · clave completa `app.api.data_confidence`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -968,7 +968,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## declarar_tramo_no_medible
 
-`app/api.py:1043` · clave completa `app.api.declarar_tramo_no_medible`
+`app/api.py:1084` · clave completa `app.api.declarar_tramo_no_medible`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -991,7 +991,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## delta_profile_endpoint
 
-`app/api.py:1801` · clave completa `app.api.delta_profile_endpoint`
+`app/api.py:1864` · clave completa `app.api.delta_profile_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1014,7 +1014,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## desk_state
 
-`app/api.py:1319` · clave completa `app.api.desk_state`
+`app/api.py:1382` · clave completa `app.api.desk_state`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1037,7 +1037,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## divergences_endpoint
 
-`app/api.py:2034` · clave completa `app.api.divergences_endpoint`
+`app/api.py:2097` · clave completa `app.api.divergences_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1060,7 +1060,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## external_macro_endpoint
 
-`app/api.py:2024` · clave completa `app.api.external_macro_endpoint`
+`app/api.py:2087` · clave completa `app.api.external_macro_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1083,7 +1083,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## flow_spot_vs_perp
 
-`app/api.py:1616` · clave completa `app.api.flow_spot_vs_perp`
+`app/api.py:1679` · clave completa `app.api.flow_spot_vs_perp`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1106,7 +1106,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## funding_context_endpoint
 
-`app/api.py:1780` · clave completa `app.api.funding_context_endpoint`
+`app/api.py:1843` · clave completa `app.api.funding_context_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1129,7 +1129,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## hypothesis
 
-`app/api.py:1238` · clave completa `app.api.hypothesis`
+`app/api.py:1301` · clave completa `app.api.hypothesis`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1152,7 +1152,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## index
 
-`app/api.py:3533` · clave completa `app.api.index`
+`app/api.py:3596` · clave completa `app.api.index`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1175,7 +1175,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## level_breakout_endpoint
 
-`app/api.py:1897` · clave completa `app.api.level_breakout_endpoint`
+`app/api.py:1960` · clave completa `app.api.level_breakout_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1198,7 +1198,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## liquidation_levels
 
-`app/api.py:2778` · clave completa `app.api.liquidation_levels`
+`app/api.py:2841` · clave completa `app.api.liquidation_levels`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1221,7 +1221,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## liquidation_map_endpoint
 
-`app/api.py:1787` · clave completa `app.api.liquidation_map_endpoint`
+`app/api.py:1850` · clave completa `app.api.liquidation_map_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1244,7 +1244,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## liquidation_series
 
-`app/api.py:994` · clave completa `app.api.liquidation_series`
+`app/api.py:1035` · clave completa `app.api.liquidation_series`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1267,7 +1267,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## macro_context_endpoint
 
-`app/api.py:2017` · clave completa `app.api.macro_context_endpoint`
+`app/api.py:2080` · clave completa `app.api.macro_context_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1290,7 +1290,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## market_impact_endpoint
 
-`app/api.py:1222` · clave completa `app.api.market_impact_endpoint`
+`app/api.py:1285` · clave completa `app.api.market_impact_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1313,7 +1313,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## market_memory_endpoint
 
-`app/api.py:2041` · clave completa `app.api.market_memory_endpoint`
+`app/api.py:2104` · clave completa `app.api.market_memory_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1336,7 +1336,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## metric_baselines
 
-`app/api.py:1446` · clave completa `app.api.metric_baselines`
+`app/api.py:1509` · clave completa `app.api.metric_baselines`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1382,7 +1382,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## oi
 
-`app/api.py:945` · clave completa `app.api.oi`
+`app/api.py:986` · clave completa `app.api.oi`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1405,7 +1405,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## oi_context_endpoint
 
-`app/api.py:1967` · clave completa `app.api.oi_context_endpoint`
+`app/api.py:2030` · clave completa `app.api.oi_context_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1428,7 +1428,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## passive_flow_endpoint
 
-`app/api.py:1995` · clave completa `app.api.passive_flow_endpoint`
+`app/api.py:2058` · clave completa `app.api.passive_flow_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1451,7 +1451,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## positioning
 
-`app/api.py:1230` · clave completa `app.api.positioning`
+`app/api.py:1293` · clave completa `app.api.positioning`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1474,7 +1474,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## price_barriers_endpoint
 
-`app/api.py:1830` · clave completa `app.api.price_barriers_endpoint`
+`app/api.py:1893` · clave completa `app.api.price_barriers_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1497,7 +1497,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## prometheus_metrics
 
-`app/api.py:3341` · clave completa `app.api.prometheus_metrics`
+`app/api.py:3404` · clave completa `app.api.prometheus_metrics`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1520,7 +1520,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## quality_feeds
 
-`app/api.py:1430` · clave completa `app.api.quality_feeds`
+`app/api.py:1493` · clave completa `app.api.quality_feeds`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1543,7 +1543,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## range_validate_endpoint
 
-`app/api.py:1863` · clave completa `app.api.range_validate_endpoint`
+`app/api.py:1926` · clave completa `app.api.range_validate_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1566,7 +1566,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## rango_estructura
 
-`app/api.py:1926` · clave completa `app.api.rango_estructura`
+`app/api.py:1989` · clave completa `app.api.rango_estructura`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1589,7 +1589,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## reference_levels_endpoint
 
-`app/api.py:1953` · clave completa `app.api.reference_levels_endpoint`
+`app/api.py:2016` · clave completa `app.api.reference_levels_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1612,7 +1612,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_absorption
 
-`app/api.py:1658` · clave completa `app.api.scalp_absorption`
+`app/api.py:1721` · clave completa `app.api.scalp_absorption`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1635,7 +1635,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_alerts
 
-`app/api.py:1674` · clave completa `app.api.scalp_alerts`
+`app/api.py:1737` · clave completa `app.api.scalp_alerts`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1658,7 +1658,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_basis
 
-`app/api.py:2771` · clave completa `app.api.scalp_basis`
+`app/api.py:2834` · clave completa `app.api.scalp_basis`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1681,7 +1681,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_delta_matrix
 
-`app/api.py:1195` · clave completa `app.api.scalp_delta_matrix`
+`app/api.py:1258` · clave completa `app.api.scalp_delta_matrix`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1704,7 +1704,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_execution_cost
 
-`app/api.py:1484` · clave completa `app.api.scalp_execution_cost`
+`app/api.py:1547` · clave completa `app.api.scalp_execution_cost`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1727,7 +1727,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_liquidations
 
-`app/api.py:1667` · clave completa `app.api.scalp_liquidations`
+`app/api.py:1730` · clave completa `app.api.scalp_liquidations`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1750,7 +1750,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_orderbook
 
-`app/api.py:1642` · clave completa `app.api.scalp_orderbook`
+`app/api.py:1705` · clave completa `app.api.scalp_orderbook`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1773,7 +1773,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_persistence
 
-`app/api.py:2891` · clave completa `app.api.scalp_persistence`
+`app/api.py:2954` · clave completa `app.api.scalp_persistence`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1796,7 +1796,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_signals
 
-`app/api.py:2245` · clave completa `app.api.scalp_signals`
+`app/api.py:2308` · clave completa `app.api.scalp_signals`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1819,7 +1819,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_summary
 
-`app/api.py:1187` · clave completa `app.api.scalp_summary`
+`app/api.py:1250` · clave completa `app.api.scalp_summary`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1842,7 +1842,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## setup
 
-`app/api.py:2230` · clave completa `app.api.setup`
+`app/api.py:2293` · clave completa `app.api.setup`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1865,7 +1865,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signal_base_rate
 
-`app/api.py:3106` · clave completa `app.api.signal_base_rate`
+`app/api.py:3169` · clave completa `app.api.signal_base_rate`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1888,7 +1888,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_execution
 
-`app/api.py:2516` · clave completa `app.api.signals_execution`
+`app/api.py:2579` · clave completa `app.api.signals_execution`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1911,7 +1911,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_ledger
 
-`app/api.py:2342` · clave completa `app.api.signals_ledger`
+`app/api.py:2405` · clave completa `app.api.signals_ledger`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1934,7 +1934,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_outcomes
 
-`app/api.py:2430` · clave completa `app.api.signals_outcomes`
+`app/api.py:2493` · clave completa `app.api.signals_outcomes`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1957,7 +1957,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_replay
 
-`app/api.py:2604` · clave completa `app.api.signals_replay`
+`app/api.py:2667` · clave completa `app.api.signals_replay`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1980,7 +1980,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_visibility
 
-`app/api.py:2688` · clave completa `app.api.signals_visibility`
+`app/api.py:2751` · clave completa `app.api.signals_visibility`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2026,7 +2026,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## statistical_alerts
 
-`app/api.py:1738` · clave completa `app.api.statistical_alerts`
+`app/api.py:1801` · clave completa `app.api.statistical_alerts`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2049,7 +2049,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## stream
 
-`app/api.py:3524` · clave completa `app.api.stream`
+`app/api.py:3587` · clave completa `app.api.stream`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2072,7 +2072,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## stream_generator
 
-`app/api.py:3476` · clave completa `app.api.stream_generator`
+`app/api.py:3539` · clave completa `app.api.stream_generator`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2095,7 +2095,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## structure
 
-`app/api.py:2138` · clave completa `app.api.structure`
+`app/api.py:2201` · clave completa `app.api.structure`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2118,7 +2118,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## structure_detail_endpoint
 
-`app/api.py:2010` · clave completa `app.api.structure_detail_endpoint`
+`app/api.py:2073` · clave completa `app.api.structure_detail_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2141,7 +2141,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## swing_score_endpoint
 
-`app/api.py:1981` · clave completa `app.api.swing_score_endpoint`
+`app/api.py:2044` · clave completa `app.api.swing_score_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2187,7 +2187,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## trading_profile
 
-`app/api.py:1464` · clave completa `app.api.trading_profile`
+`app/api.py:1527` · clave completa `app.api.trading_profile`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2210,7 +2210,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## trend_matrix_endpoint
 
-`app/api.py:1988` · clave completa `app.api.trend_matrix_endpoint`
+`app/api.py:2051` · clave completa `app.api.trend_matrix_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2233,7 +2233,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## verdicts
 
-`app/api.py:2048` · clave completa `app.api.verdicts`
+`app/api.py:2111` · clave completa `app.api.verdicts`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2256,7 +2256,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## volatility_endpoint
 
-`app/api.py:1974` · clave completa `app.api.volatility_endpoint`
+`app/api.py:2037` · clave completa `app.api.volatility_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2279,7 +2279,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## volume_profile_endpoint
 
-`app/api.py:1794` · clave completa `app.api.volume_profile_endpoint`
+`app/api.py:1857` · clave completa `app.api.volume_profile_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2302,7 +2302,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## whale_delta
 
-`app/api.py:1096` · clave completa `app.api.whale_delta`
+`app/api.py:1137` · clave completa `app.api.whale_delta`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2325,7 +2325,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## wyckoff_endpoint
 
-`app/api.py:1911` · clave completa `app.api.wyckoff_endpoint`
+`app/api.py:1974` · clave completa `app.api.wyckoff_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2348,7 +2348,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## zone_analysis_endpoint
 
-`app/api.py:1837` · clave completa `app.api.zone_analysis_endpoint`
+`app/api.py:1900` · clave completa `app.api.zone_analysis_endpoint`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 

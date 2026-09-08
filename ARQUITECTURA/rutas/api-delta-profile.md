@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `delta_profile_endpoint` · `app/api.py:1801` (cuerpo hasta la 1826) · decorador en la linea 1800.
+Handler `delta_profile_endpoint` · `app/api.py:1864` (cuerpo hasta la 1889) · decorador en la linea 1863.
 
 ## Parametros de entrada
 
@@ -52,9 +52,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declara_ventana` — `app/api.py:1591`
+- `app.api.declara_ventana` — `app/api.py:1654`
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.api.ventana_pedida` — `app/api.py:1558`
+- `app.api.ventana_pedida` — `app/api.py:1621`
 - `app.delta_profile.delta_profile` — `app/delta_profile.py:222`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
@@ -87,12 +87,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1575` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1578` | una funcion de su cierre |
-| 422 | — | `app/api.py:1583` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1585` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1587` | una funcion de su cierre |
-| 422 | — | `app/api.py:1818` | el propio handler |
+| 422 | hace falta «desde» | `app/api.py:1638` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1641` | una funcion de su cierre |
+| 422 | — | `app/api.py:1646` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1648` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1650` | una funcion de su cierre |
+| 422 | — | `app/api.py:1881` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

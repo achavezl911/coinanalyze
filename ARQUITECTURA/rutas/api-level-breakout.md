@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `level_breakout_endpoint` · `app/api.py:1897` (cuerpo hasta la 1907) · decorador en la linea 1896.
+Handler `level_breakout_endpoint` · `app/api.py:1960` (cuerpo hasta la 1970) · decorador en la linea 1959.
 
 ## Parametros de entrada
 
@@ -87,7 +87,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 422 | direction must be 'up' or 'down' | `app/api.py:1905` | el propio handler |
+| 422 | direction must be 'up' or 'down' | `app/api.py:1968` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

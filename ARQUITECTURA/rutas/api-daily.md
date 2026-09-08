@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `daily` · `app/api.py:2145` (cuerpo hasta la 2226) · decorador en la linea 2144.
+Handler `daily` · `app/api.py:2208` (cuerpo hasta la 2289) · decorador en la linea 2207.
 
 ## Parametros de entrada
 
@@ -22,7 +22,7 @@ Handler `daily` · `app/api.py:2145` (cuerpo hasta la 2226) · decorador en la l
 | campo | de donde sale |
 |---|---|
 | `coverage_note` | literal en app/api.py:607 |
-| `data_gaps` | asignado en app/api.py:2209 |
+| `data_gaps` | asignado en app/api.py:2272 |
 | `knowledge_time_replay` | literal en app/api.py:604 |
 | `projection_latest_session_date` | literal en app/api.py:600 |
 | `quick_read` | literal en app/api.py:605 |
@@ -110,7 +110,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2152` | el propio handler |
+| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2215` | el propio handler |
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)

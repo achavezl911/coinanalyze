@@ -191,3 +191,107 @@ async def test_cero_filas_tiene_firma_propia_y_no_se_lee_como_completo(conn, mon
     assert sobre["rows"] == []
     assert sobre["data_gaps"]["status"] == "no_data"
     assert sobre["coverage"]["served_window"] is None
+
+
+# ═══ EL MINUTO AUSENTE, DECLARADO · 2026-09-08 ═══════════════════════════════════════════════
+#
+# Los brazos de arriba fijan el DIAGNOSTICO: los tres campos viejos no distinguen 14 de 15.
+# Estos fijan el ARREGLO, y son de las DOS rutas porque `/api/cvd/spot` lee la misma tabla con
+# el mismo WHERE y publica los mismos contadores: publicarlo en una y no en la otra seria que la
+# misma pregunta tuviera dos respuestas segun por donde entres.
+
+BUCKET_VIVO_MIN = 15
+
+
+def _bucket_reciente(minutos_atras: int) -> datetime:
+    """Un cubo alineado a 15 min que termina hace `minutos_atras`. Sirve para el brazo del cubo
+    que TODAVIA SE ESTA LLENANDO, que es el falso positivo que este arreglo tenia que evitar."""
+    ahora = datetime.now(UTC)
+    fin = ahora - timedelta(minutes=minutos_atras)
+    inicio = fin.replace(second=0, microsecond=0) - timedelta(minutes=15)
+    return inicio - timedelta(minutes=inicio.minute % 15)
+
+
+async def test_el_minuto_ausente_SE_DECLARA_y_el_completo_no(conn, monkeypatch):
+    """CRITERIO 1 y 2. La adulteracion se enseña ANTES de mirar la ruta, con el censo del dato."""
+    await _bucket(conn, BUCKET_A, hueco_en=MINUTO_DEL_ARRANQUE)
+    await _bucket(conn, BUCKET_B, hueco_en=None)
+
+    # 1 · LA ADULTERACION OCURRIO, y se ve en el dato y no en el veredicto.
+    assert await _censo(conn, BUCKET_A) == {"binance": 15, "bybit": 14, "combined": 14}
+    assert await _censo(conn, BUCKET_B) == {"binance": 15, "bybit": 15, "combined": 15}
+
+    a, b = (await _servir(conn, monkeypatch))["rows"]
+    # 2 · el que tiene el hueco lo DECLARA; el completo dice cero, que no es lo mismo que nada.
+    assert a["minutes_expected"] == 15 and b["minutes_expected"] == 15
+    assert a["missing_minutes"] == 1, a
+    assert b["missing_minutes"] == 0, b
+    # 3 · y los tres viejos siguen sin poder verlo: el arreglo no los cambia, los COMPLETA.
+    assert _viejos(a) == _viejos(b) == (60, 0, 0)
+
+
+async def test_un_cubo_que_TODAVIA_SE_LLENA_no_declara_hueco(conn, monkeypatch):
+    """EL FALSO POSITIVO QUE HABIA QUE EVITAR, y es el aviso que iba antes que el arreglo.
+
+    El ultimo cubo de CADA respuesta tiene menos minutos de los que tendra: aun no han pasado.
+    Contarlos como hueco habria sacado un falso positivo en el 100 % de las respuestas, en las
+    tres monedas y en las dos rutas.
+
+    Y el criterio NO es posicional -«el ultimo no cuenta» se cae con otro limit, otro interval o
+    con otro orden-: es TEMPORAL. Aqui se planta un cubo con solo tres minutos que termina hace
+    un minuto, o sea dentro del margen de asentamiento: tiene que salir con missing_minutes NULO,
+    que significa «todavia no se puede decir» y NO cero.
+    """
+    inicio = _bucket_reciente(1)
+    for i in range(3):
+        ts = inicio + timedelta(minutes=i)
+        await _minuto(conn, ts, "binance", 1, 60)
+        await _minuto(conn, ts, "bybit", 1, 60)
+        await _minuto(conn, ts, "combined", 2, 60)
+
+    filas = (await _servir(conn, monkeypatch))["rows"]
+    fila = next(f for f in filas if f["bucket"] == inicio)
+    assert fila["minutes_present"] == 3
+    assert fila["missing_minutes"] is None, (
+        f"un cubo que aun se llena declaro {fila['missing_minutes']} minutos de hueco: "
+        "eso es un falso positivo en cada respuesta"
+    )
+
+
+async def test_la_OTRA_ruta_declara_lo_mismo(conn, monkeypatch):
+    """A2 · `/api/cvd/spot` lee la misma tabla con el mismo WHERE. Las dos, o ninguna.
+
+    Y va aparte a proposito: su SELECT exterior ENUMERA las columnas -necesita la ventana del
+    acumulado- mientras que whale/delta hace `SELECT * FROM grouped`. Añadir los campos solo al
+    WITH los habria publicado en una ruta y perdido en la otra SIN ERROR Y SIN AVISO, que es lo
+    que su propio comentario avisa. Esta prueba es lo unico que caza esa perdida.
+    """
+    await _bucket(conn, BUCKET_A, hueco_en=MINUTO_DEL_ARRANQUE)
+    await _bucket(conn, BUCKET_B, hueco_en=None)
+    assert await _censo(conn, BUCKET_A) == {"binance": 15, "bybit": 14, "combined": 14}
+
+    monkeypatch.setattr(api.app.state, "pool", _PoolDePega(conn), raising=False)
+    sobre = await api.cvd_spot(symbol=SIMBOLO, interval="15min", limit=384)
+    filas = sobre["rows"]
+    assert filas != [], "la otra ruta no devolvio filas"
+    a = next(f for f in filas if f["bucket"] == BUCKET_A)
+    b = next(f for f in filas if f["bucket"] == BUCKET_B)
+    assert "missing_minutes" in a, (
+        "el SELECT exterior de /api/cvd/spot perdio la columna: es la trampa que su propio "
+        "comentario anuncia, y pasa sin error"
+    )
+    assert a["missing_minutes"] == 1 and b["missing_minutes"] == 0
+    assert a["minutes_expected"] == b["minutes_expected"] == 15
+
+
+async def test_el_esperado_sale_del_INTERVAL_y_no_de_una_constante(conn, monkeypatch):
+    """Las dos rutas sirven anchos distintos por defecto -15 min y 5 min-, asi que un numero
+    fijo seria correcto en una y falso en la otra. Se pide el MISMO dato con otro ancho."""
+    await _bucket(conn, BUCKET_A, hueco_en=MINUTO_DEL_ARRANQUE)
+    monkeypatch.setattr(api.app.state, "pool", _PoolDePega(conn), raising=False)
+    sobre = await api.whale_delta(symbol=SIMBOLO, interval="5min", limit=384)
+    for f in sobre["rows"]:
+        assert f["minutes_expected"] == 5, f
+    # el minuto 05:20 cae en el cubo de 5 min que empieza en 05:20
+    hueco = next(f for f in sobre["rows"] if f["bucket"] == BUCKET_A + timedelta(minutes=5))
+    assert hueco["missing_minutes"] == 1, hueco

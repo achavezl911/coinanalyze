@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1096` (cuerpo hasta la 1164) · decorador en la linea 1095.
+Handler `whale_delta` · `app/api.py:1137` (cuerpo hasta la 1227) · decorador en la linea 1136.
 
 ## Parametros de entrada
 
@@ -59,7 +59,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declarar_tramo_no_medible` — `app/api.py:1043`
+- `app.api.declarar_tramo_no_medible` — `app/api.py:1084`
 - `app.api.declared_series_response` — `app/api.py:356`
 - `app.api.historical_interval_value` — `app/api.py:235`
 - `app.api.records` — `app/api.py:242`

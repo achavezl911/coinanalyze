@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `health` · `app/api.py:3419` (cuerpo hasta la 3473) · decorador en la linea 3418.
+Handler `health` · `app/api.py:3482` (cuerpo hasta la 3536) · decorador en la linea 3481.
 
 ## Parametros de entrada
 
@@ -16,13 +16,13 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `database` | literal en app/api.py:3467 |
-| `governed_services` | literal en app/api.py:3470 |
-| `missing_services` | literal en app/api.py:3468 |
-| `missing_symbols` | literal en app/api.py:3469 |
-| `services` | literal en app/api.py:3471 |
-| `status` | literal en app/api.py:3462 |
-| `symbols` | literal en app/api.py:3472 |
+| `database` | literal en app/api.py:3530 |
+| `governed_services` | literal en app/api.py:3533 |
+| `missing_services` | literal en app/api.py:3531 |
+| `missing_symbols` | literal en app/api.py:3532 |
+| `services` | literal en app/api.py:3534 |
+| `status` | literal en app/api.py:3525 |
+| `symbols` | literal en app/api.py:3535 |
 
 Forma de la respuesta segun el AST: objeto.
 
