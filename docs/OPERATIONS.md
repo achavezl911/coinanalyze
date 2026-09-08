@@ -55,7 +55,8 @@ cat /var/lib/coinalyze/deployment.json
 | Release activo | `/opt/coinalyze/current` → `releases/<sha>` |
 | Estado del deploy | `/var/lib/coinalyze/deployment.json` |
 | Log del wrapper | `/var/log/coinalyze/deploy.log` |
-| Backups pre-deploy (BD) | `/var/backups/coinalyze/predeploy-<sha>-<ts>.sql.gz` (retención 14 d) |
+| Backups pre-deploy (BD) | `/var/backups/coinalyze/predeploy-<sha>-<ts>.sql.gz` — **viven 3 días** (`PREDEPLOY_RETENTION_DAYS`, `scripts/backup.sh`) |
+| Backups cifrados diarios | `/var/backups/coinalyze/coinalyze-full-*.tar.gz.enc` — **viven 14 días** (`BACKUP_RETENTION_DAYS`) |
 | Servicios | `systemctl status coinalyze-api|-ingest|-ws|-scalp|-daily|-ai-bridge` |
 | Smoke manual | `sudo -n /usr/local/sbin/deploy-coinalyze status` |
 
