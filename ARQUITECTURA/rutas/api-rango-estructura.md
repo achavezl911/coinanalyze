@@ -134,8 +134,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 422 | hace falta `desde` | `app/api.py:1575` | una funcion de su cierre |
-| 422 | `hasta` sin `desde` no acota nada | `app/api.py:1578` | una funcion de su cierre |
+| 422 | hace falta «desde» | `app/api.py:1575` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1578` | una funcion de su cierre |
 | 422 | — | `app/api.py:1583` | una funcion de su cierre |
 | 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1585` | una funcion de su cierre |
 | 422 | hasta tiene que ser posterior a desde | `app/api.py:1587` | una funcion de su cierre |
@@ -149,7 +149,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **panel** | `static/app.js:1590`, `static/app.js:3347` | — |
+| **panel** | `static/app.js:1590`, `static/app.js:3362` | — |
 | **tests** | `tests/test_funding_una_sola_escala.py:87` | `tests/test_funding_una_sola_escala.py:13`, `tests/test_ventana_elegible.py:71` |
 
 **La llama el panel: es superficie de producto.**

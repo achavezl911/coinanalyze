@@ -38,7 +38,7 @@ import asyncpg
 # El tramo «ballena» de spot NO VOTA, y esto no es una omision: esta medido. Ver `whale_no_mide`.
 BALLENA_NO_MEDIBLE = (
     "el tramo institucional de spot esta a cero en 0 de 20 118 minutos de BTC porque su umbral "
-    "-5 000 000 USD por OPERACION SUELTA, `whale_threshold_usd`- nunca se alcanza en spot. "
+    "-5 000 000 USD por OPERACION SUELTA, «whale_threshold_usd»- nunca se alcanza en spot. "
     "No es que no haya manos grandes: es que no se pueden ver con este umbral. NO VOTA."
 )
 
@@ -203,7 +203,7 @@ def _veredicto(pruebas: list[dict[str, Any]]) -> dict[str, Any]:
 
     if cierre and baja >= 2:
         nombre = "desapalancamiento"
-        porque = ("el precio cae, el spot vende y **el interes abierto cae con ellos**. No es "
+        porque = ("el precio cae, el spot vende y el interes abierto cae con ellos. No es "
                   "distribucion: en una distribucion alguien compra lo que otro vende y el OI "
                   "aguanta. Aqui las posiciones se CIERRAN. Esta casa no tenia nombre para esto "
                   "-su vocabulario era acumulacion, distribucion o equilibrio- y forzarlo a uno "

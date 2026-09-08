@@ -72,4 +72,6 @@ def test_la_ruta_de_rango_exige_desde_y_las_otras_tres_no():
     retroceso al que caer, las otras si."""
     with pytest.raises(HTTPException) as exc:
         ventana_pedida(None, None, obligatoria=True)
-    assert "hace falta `desde`" in str(exc.value.detail)
+    # Comillas angulares y NO acentos graves: el `detail` de un 422 es un valor publicado, y el
+    # panel lo pinta con textContent, asi que la marca de markdown se veria tal cual.
+    assert "hace falta «desde»" in str(exc.value.detail)
