@@ -55,6 +55,26 @@ SH
     } > "$1/bin/$canal"
     chmod +x "$1/bin/$canal"
   done
+  # `prod` responde las VENTANAS APLICADAS. Va aparte de la tabla de patrones porque tiene que
+  # contestar varias lineas y la tabla sirve una sola. Por defecto devuelve lo que produccion
+  # aplicaba el 2026-09-08; K18C_ENV y K18C_DEFECTOS lo mueven.
+  cat > "$1/bin/prod" <<'SH'
+#!/bin/bash
+q="$*"
+case "$q" in
+  *environ*)   printf '%s\n' "${K18C_ENV-REALTIME_RETENTION_HOURS=2
+SCALP_MINUTE_RETENTION_HOURS=168
+SCALP_ORDERBOOK_RETENTION_HOURS=6
+SCALP_SIGNAL_RETENTION_HOURS=72
+SCALP_TRADE_RETENTION_HOURS=12}" ;;
+  *config.py*) printf '%s\n' "${K18C_DEFECTOS-REALTIME_RETENTION_HOURS=2
+SCALP_MINUTE_RETENTION_HOURS=36
+SCALP_ORDERBOOK_RETENTION_HOURS=6
+SCALP_SIGNAL_RETENTION_HOURS=72
+SCALP_TRADE_RETENTION_HOURS=6}" ;;
+esac
+SH
+  chmod +x "$1/bin/prod"
 }
 
 caso() {  # <nombre> <rc esperado> <patron> <guion>
@@ -191,6 +211,66 @@ echo
 echo "ANTI-FANTASMA · sin canal no hay veredicto"
 G="$DIR/g7"; : > "$G"
 caso "F1 prodsql no contesta: NOMED"           2 "prodsql no responde" "$G"
+
+# ═══ LA VENTANA · brazos añadidos el 2026-09-08 ═══════════════════════════════════════════
+#
+# QUE ESTABA MAL Y ESTOS BRAZOS IMPIDEN QUE VUELVA: K18 llevaba las seis ventanas COPIADAS A
+# MANO. Produccion aplicaba 12/6/12/72/2/168 y el check creia 6/6/6/72/2/36: TRES DE LAS SEIS
+# discrepaban. Solo una estaba roja; las otras dos pasaban por suerte, esperando el dia en que
+# su span creciera lo bastante para acusar en falso tambien.
+#
+# EL RIESGO DEL ARREGLO, Y ES EL QUE ESTOS BRAZOS MIRAN DE FRENTE: si el check pregunta la
+# ventana al mismo sitio del que la toma el podador, podria volverse tautologico y aprobar
+# siempre. NO LO ES, y V4-V6 lo demuestran: lo que se compara es una CONFIGURACION contra un
+# HECHO MEDIDO EN LA BASE, asi que un podador muerto -span por encima de su ventana- condena.
+guion_ventana() {  # <fichero> <span de futures_trades_agg> <span de futures_trades_realtime>
+  cat > "$1" <<EOG
+prodsql	*canal_ok*	canal_ok
+prodsql	*min(ts)*futures_trades_agg*	$2
+prodsql	*min(ts)*futures_trades_realtime*	$3
+prodsql	*min(ts)*liquidations_realtime*	13.4
+prodsql	*min(ts)*orderbook_snapshot*	7.5
+prodsql	*min(ts)*scalp_signal_snapshot*	73.5
+prodsql	*min(ts)*spot_trades_realtime*	2.5
+prodsql	*pipeline_heartbeat*	99
+EOG
+}
+
+casov() {  # <nombre> <rc esperado> <patron> <span_agg> <span_ftr> [VAR=valor ...]
+  local nombre="$1" esperado="$2" patron="$3" agg="$4" ftr="$5"; shift 5
+  local out rc ok=1
+  guion_ventana "$DIR/gv" "$agg" "$ftr"
+  monta "$DIR/h" "$DIR/gv"
+  out=$(env "$@" K18_HARNESS="$DIR/h" bash "$CHK" 2>&1); rc=$?
+  [ "$rc" = "$esperado" ] || ok=0
+  if [ -n "$patron" ] && ! printf '%s' "$out" | grep -qE "$patron"; then ok=0; fi
+  if [ "$ok" = 1 ]; then
+    pasan=$((pasan+1)); printf '  [ok   ] %-52s rc=%s\n' "$nombre" "$rc"
+  else
+    fallos=$((fallos+1))
+    printf '  [FALLA] %-52s rc=%s (esperaba %s, patron /%s/)\n      %s\n' \
+      "$nombre" "$rc" "$esperado" "$patron" "$(printf '%s' "$out" | head -1 | cut -c1-150)"
+  fi
+}
+
+printf '\nLA VENTANA · se lee de produccion, no se copia\n'
+casov "V1 usa la ventana APLICADA (168) y no la vieja (36)" 0 'futures_trades_agg=168h' 54.6 13.5
+casov "V2 span por debajo de su regimen: NO es defecto"     0 'aun_por_debajo_de_su_regimen' 54.6 13.5
+casov "V3 span justo bajo el techo 168+6"                   0 '' 173.9 13.5
+casov "V4 span POR ENCIMA del techo: CONDENA"               1 'retiene_de_mas:175h_vs_168h' 175 13.5
+casov "V5 la de 12 h condena a 40 h (12+27=39)"             1 'futures_trades_realtime\(retiene_de_mas' 54.6 40
+casov "V6 podador muerto: span enorme"                      1 'retiene_de_mas:900h' 900 13.5
+
+printf '\nLA VENTANA · si cambia en produccion, el check la sigue\n'
+casov "V7 si produccion baja a 24 h, 54.6 pasa a condenar"  1 'retiene_de_mas:54.6h_vs_24h' 54.6 13.5 \
+  K18C_ENV='SCALP_MINUTE_RETENTION_HOURS=24
+SCALP_TRADE_RETENTION_HOURS=12
+SCALP_ORDERBOOK_RETENTION_HOURS=6
+SCALP_SIGNAL_RETENTION_HOURS=72
+REALTIME_RETENTION_HOURS=2'
+casov "V8 sin variable, cae al default del release (36)"    1 'retiene_de_mas:54.6h_vs_36h' 54.6 13.5 K18C_ENV=''
+casov "V9 sin ninguna fuente: NO MEDIDO, no rojo"           2 'NO MEDIDO' 54.6 13.5 K18C_ENV='' K18C_DEFECTOS=''
+
 
 echo
 total=$((pasan+fallos))
