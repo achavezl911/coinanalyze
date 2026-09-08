@@ -2,14 +2,65 @@
 set -Eeuo pipefail
 umask 077
 
-[[ $EUID -eq 0 ]] || { echo 'Ejecutar como root.' >&2; exit 1; }
+BACKUP_DIR_POR_DEFECTO=/var/backups/coinalyze
+BACKUP_DIR=${BACKUP_DIR:-$BACKUP_DIR_POR_DEFECTO}
 
-BACKUP_DIR=${BACKUP_DIR:-/var/backups/coinalyze}
+# ROOT SIEMPRE, salvo para podar un directorio que NO es el de produccion. Respaldar toca
+# Postgres y la llave de cifrado, y podar BORRA ficheros: la guarda tiene motivo. Pero si no se
+# pudiera podar un directorio de mentira sin ser root, la poda no se podria PROBAR en CI, y un
+# test que siempre se salta no guarda nada. La guarda se afina, no se quita.
+if [[ $EUID -ne 0 ]]; then
+  if [[ ${1:-} != --solo-podar || $BACKUP_DIR == "$BACKUP_DIR_POR_DEFECTO" ]]; then
+    echo 'Ejecutar como root.' >&2
+    exit 1
+  fi
+fi
 BACKUP_KEY_FILE=${BACKUP_ENCRYPTION_KEY_FILE:-/etc/coinalyze/backup.key}
 BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-14}
+# LOS VOLCADOS PRE-DESPLIEGUE VIVEN MENOS QUE LOS CIFRADOS, y son dos vidas distintas a
+# proposito. El cifrado es la copia de seguridad de verdad y se guarda dos semanas. El
+# pre-despliegue solo sirve para revertir EL despliegue que acaba de pasar, asi que a los tres
+# dias ya no lo va a usar nadie -y pesa 419 MB de media, con ~2.8 despliegues al dia medidos el
+# 2026-09-08: 1.17 GB diarios si nadie los borra-. Decision de Alejandro, 2026-09-08.
+PREDEPLOY_RETENTION_DAYS=${PREDEPLOY_RETENTION_DAYS:-3}
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 FINAL_NAME="coinalyze-full-${STAMP}.tar.gz.enc"
 FINAL_PATH="$BACKUP_DIR/$FINAL_NAME"
+
+# Poda una CLASE de respaldo: sus patrones de nombre y su vida, ambos recibidos.
+# `-maxdepth 1 -type f` y patrones anclados por prefijo: la poda no sale del directorio de
+# respaldos ni toca nada que no lleve uno de estos nombres.
+podar_clase() {
+  local dias="$1"; shift
+  local expr=()
+  for patron in "$@"; do
+    ((${#expr[@]})) && expr+=( -o )
+    expr+=( -name "$patron" )
+  done
+  find "$BACKUP_DIR" -maxdepth 1 -type f \( "${expr[@]}" \) -mtime "+$dias" -delete
+}
+
+# LAS DOS CLASES Y SUS DOS VIDAS. Añadir una tercera es añadir una llamada, no tocar logica.
+podar_respaldos() {
+  podar_clase "$BACKUP_RETENTION_DAYS" \
+    'coinalyze-full-*.tar.gz.enc' \
+    'coinalyze-full-*.tar.gz.enc.sha256' \
+    'coinalyze-*.dump'
+  # El `.sha256` va aunque hoy el wrapper no lo escriba: si algun dia lo escribe, se poda con su
+  # volcado en vez de quedarse huerfano acumulandose, que es como empezo este defecto.
+  podar_clase "$PREDEPLOY_RETENTION_DAYS" \
+    'predeploy-*.sql.gz' \
+    'predeploy-*.sql.gz.sha256'
+}
+
+# SOLO PODAR, sin respaldar. Existe para poder EJERCITAR la poda plantando ficheros: correr el
+# script entero pide credenciales de Postgres y la llave de cifrado, asi que sin esta puerta la
+# poda no se podria probar nunca. Es el mismo codigo que corre el servicio diario.
+if [[ ${1:-} == --solo-podar ]]; then
+  [[ -d "$BACKUP_DIR" ]] || { echo "No existe $BACKUP_DIR" >&2; exit 1; }
+  podar_respaldos
+  exit 0
+fi
 
 for name in PG_HOST PG_PORT PG_USER PG_DB PG_PASSWORD; do
   [[ -n "${!name:-}" ]] || { echo "Falta $name para el respaldo." >&2; exit 1; }
@@ -128,8 +179,6 @@ openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
   chmod 0600 "$FINAL_NAME.sha256"
 )
 
-find "$BACKUP_DIR" -maxdepth 1 -type f \
-  \( -name 'coinalyze-full-*.tar.gz.enc' -o -name 'coinalyze-full-*.tar.gz.enc.sha256' -o -name 'coinalyze-*.dump' \) \
-  -mtime "+$BACKUP_RETENTION_DAYS" -delete
+podar_respaldos
 
 echo "$FINAL_PATH"
