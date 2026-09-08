@@ -33,15 +33,62 @@
 set -uo pipefail
 B=${K18_HARNESS:-/srv/coinanalyze/harness}; . "$B/env"
 
-# tabla:horas:gracia   gracia 27 = 24 de particion diaria + 3 de cadencia
-# futures_trades_agg lleva gracia 6 y no 3 por un motivo medido: la limpieza corre
-# con asyncio.sleep(3600) (scalp_collector.py:1487), o sea una vez por hora, y CADA
-# REINICIO DEL COLECTOR REINICIA ESE CONTADOR DESDE CERO. El 2026-08-25, con cuatro
-# despliegues en el dia, el span llego a 39.18 h con 36 declaradas sin que hubiera
-# ningun fallo de retencion: simplemente la limpieza no habia llegado a correr. Con
-# gracia 3 el check oscilaba en el borde, y un check que parpadea es ruido. Con 6
-# tolera seis ciclos perdidos y sigue cazando un atasco de verdad (42 h o mas).
-VENTANAS="futures_trades_realtime:6:27 orderbook_snapshot:6:27 liquidations_realtime:6:27 scalp_signal_snapshot:72:27 spot_trades_realtime:2:27 futures_trades_agg:36:6"
+# ═══ LA VENTANA NO SE COPIA: SE PREGUNTA ════════════════════════════════════════════
+#
+# QUE ESTABA MAL, medido el 2026-09-08. Este check llevaba las seis ventanas escritas a
+# mano -`futures_trades_agg:36`- y produccion aplicaba otra cosa. TRES DE LAS SEIS
+# discrepaban, no una:
+#     futures_trades_realtime   K18 decia  6 h   produccion aplica  12 h
+#     liquidations_realtime     K18 decia  6 h   produccion aplica  12 h
+#     futures_trades_agg        K18 decia 36 h   produccion aplica 168 h
+#     orderbook_snapshot, scalp_signal_snapshot, spot_trades_realtime: coincidian
+# Solo la tercera estaba ROJA porque su span (54.6 h) pasaba el techo 36+6. Las otras dos
+# pasaban POR SUERTE: con span 13.5 h y techo 6+27=33 todavia entraban. El dia que
+# llegaran a 33 h -legitimamente, porque su ventana es 12- habrian acusado igual de falso.
+# UNA COPIA NO TIENE FORMA DE SABER QUE QUEDO VIEJA: ese es el defecto, no el numero.
+#
+# DE DONDE SALE AHORA, y es la misma fuente de la que la toma el podador:
+#   1 · el ENTORNO EFECTIVO del proceso que poda, leido de /proc/<pid>/environ. No el
+#       fichero de entorno: si el fichero cambio y el servicio no se reinicio, lo que se
+#       APLICA es lo que el proceso tiene cargado.
+#   2 · si la variable no esta puesta, el `Field(default=...)` del config.py DEL RELEASE
+#       DESPLEGADO, que es el codigo que corre. No el del repo de 143: pueden diferir.
+#   3 · si no se puede leer ninguna de las dos, NO MEDIDO. Un check que no sabe contra
+#       que juzga no juzga.
+#
+# NO ES TAUTOLOGICO, y es el riesgo real de este arreglo: lo que se compara NO son dos
+# configuraciones, sino UNA CONFIGURACION contra UN HECHO MEDIDO EN LA BASE. El podador
+# puede estar muerto, mal apuntado o filtrando otra columna, y entonces el span crece por
+# encima de la ventana configurada y esto condena. Comprobado plantando el defecto: con la
+# ventana de produccion intacta y el span forzado por encima del techo, sale rc=1.
+#
+# LO QUE SIGUE ESCRITO A MANO, Y POR QUE:
+#   · LA GRACIA. No es configuracion de produccion: es la tolerancia de ESTE check, y
+#     tiene que decidirla el check. gracia 27 = 24 de particion diaria + 3 de cadencia.
+#     futures_trades_agg lleva 6 y no 3 por un motivo medido: la limpieza corre con
+#     asyncio.sleep(3600) (scalp_collector.py:1487) y CADA REINICIO DEL COLECTOR REINICIA
+#     ESE CONTADOR. El 2026-08-25, con cuatro despliegues en el dia, el span llego a
+#     39.18 h con 36 declaradas sin que hubiera fallo: la limpieza no habia llegado a
+#     correr. Con gracia 3 el check parpadeaba, y un check que parpadea es ruido.
+#   · EL MAPA tabla -> variable. Es CABLEADO, no un valor: dice que podador cubre que
+#     tabla, y sale de las lineas que la cabecera de arriba ya cita una por una. Derivarlo
+#     parseando scalp_collector.py seria mas fragil que escribirlo, y un cambio de cableado
+#     es un cambio de codigo que se ve en la revision, no una deriva silenciosa.
+#
+# EL SUELO `borra_de_mas` SE RETIRA COMO CONDENA, y hay que decir que se pierde. Con la
+# ventana de verdad, futures_trades_agg tiene 54.6 h de span sobre 168 declaradas: esta
+# LEGITIMAMENTE por debajo porque su ventana se amplio hace poco y aun no ha acumulado su
+# regimen. El check NO PUEDE SABER cuando cambio una ventana, asi que no puede distinguir
+# «se esta llenando» de «lo han vaciado», y condenar por estar debajo convierte una
+# ampliacion legitima en un rojo. Se queda como OBSERVACION en la salida, visible y sin
+# condenar. LO QUE SE PIERDE, dicho: si una de estas seis tablas se vaciara, este brazo ya
+# no lo dice; el barrido contra el espejo tampoco, porque salta las que estan aqui
+# (linea del `case` mas abajo). Una tabla sin `min(ts)` SI sigue condenando.
+#
+# tabla:variable_de_entorno:gracia
+VENTANAS="futures_trades_realtime:SCALP_TRADE_RETENTION_HOURS:27 orderbook_snapshot:SCALP_ORDERBOOK_RETENTION_HOURS:27 liquidations_realtime:SCALP_TRADE_RETENTION_HOURS:27 scalp_signal_snapshot:SCALP_SIGNAL_RETENTION_HOURS:27 spot_trades_realtime:REALTIME_RETENTION_HOURS:27 futures_trades_agg:SCALP_MINUTE_RETENTION_HOURS:6"
+VARS_RETENCION='^(SCALP_(TRADE|MINUTE|ORDERBOOK|SIGNAL)_RETENTION_HOURS|REALTIME_RETENTION_HOURS)='
+
 # Tablas sin retencion automatica y su suelo de filas esperado.
 SUELOS="pipeline_heartbeat:12"
 # RETENCION DECLARADA, subida de la cabecera a DATO porque el check LA USA -no por ordenar-.
@@ -53,16 +100,54 @@ RETENCIONES="macro_event:event_at:30"
 vivo=$("$B/bin/prodsql" "SELECT 'canal_ok'" 2>/dev/null | tr -d ' ' | head -1)
 [ "$vivo" = "canal_ok" ] || { echo "NO MEDIDO: prodsql no responde"; exit 2; }
 
+# --- LAS VENTANAS QUE PRODUCCION APLICA -------------------------------------------------------
+# Se leen de los DOS servicios que podan y se exige que coincidan: si uno arranco con un
+# entorno y el otro con otro, no hay «la ventana», hay dos, y eso hay que verlo.
+leer_entorno() {
+  "$B/bin/prod" "tr '\0' '\n' < /proc/\$(systemctl show $1 -p MainPID --value)/environ 2>/dev/null | grep -E '$VARS_RETENCION' | sort" 2>/dev/null \
+    | grep -E "$VARS_RETENCION" | sort
+}
+ENV_SCALP=$(leer_entorno coinalyze-scalp)
+ENV_DAILY=$(leer_entorno coinalyze-daily)
+# Los `Field(default=...)` del RELEASE DESPLEGADO, para las variables que no esten puestas.
+DEFECTOS=$("$B/bin/prod" "grep -oE '(SCALP_(TRADE|MINUTE|ORDERBOOK|SIGNAL)_RETENTION_HOURS|REALTIME_RETENTION_HOURS): int = Field\(default=[0-9]+' /opt/coinalyze/current/app/config.py | sed 's/: int = Field(default=/=/'" 2>/dev/null \
+  | grep -E "$VARS_RETENCION" | sort)
+
+[ -n "$ENV_SCALP$ENV_DAILY$DEFECTOS" ] || {
+  echo "NO MEDIDO: no se pudo leer de 140 ninguna ventana de retencion aplicada"
+  exit 2
+}
+if [ -n "$ENV_SCALP" ] && [ -n "$ENV_DAILY" ] && [ "$ENV_SCALP" != "$ENV_DAILY" ]; then
+  echo "NO MEDIDO: coinalyze-scalp y coinalyze-daily corren con ventanas distintas; no hay UNA ventana que juzgar"
+  exit 2
+fi
+
+# valor efectivo de una variable: entorno del proceso, y si no, el default del release.
+ventana_de() {
+  local v
+  v=$(printf '%s\n' "$ENV_SCALP" "$ENV_DAILY" | grep -m1 "^$1=" | cut -d= -f2)
+  [ -n "$v" ] || v=$(printf '%s\n' "$DEFECTOS" | grep -m1 "^$1=" | cut -d= -f2)
+  printf '%s' "$v"
+}
+
 fallos=""
+observaciones=""
 for item in $VENTANAS; do
-  t=${item%%:*}; resto=${item#*:}; w=${resto%%:*}; gracia=${resto#*:}
+  t=${item%%:*}; resto=${item#*:}; var=${resto%%:*}; gracia=${resto#*:}
+  w=$(ventana_de "$var")
+  # SIN VENTANA NO SE JUZGA. Suponer un valor aqui es volver a la copia a mano por la
+  # puerta de atras, y ademas con un numero que nadie ha decidido.
+  case "$w" in ''|*[!0-9]*) fallos="$fallos $t(sin_ventana_aplicada:$var)"; continue ;; esac
   span=$("$B/bin/prodsql" "SELECT round(extract(epoch FROM now()-min(ts))/3600,1) FROM $t" 2>/dev/null | grep -E '^[0-9.]+$' | head -1)
   [ -n "$span" ] || { fallos="$fallos $t(sin_min_ts)"; continue; }
   techo=$((w + gracia))
-  # awk porque span lleva decimales. Suelo: la mitad de la ventana; por debajo,
-  # algo esta borrando de mas o la tabla se acaba de vaciar.
-  veredicto=$(awk -v s="$span" -v w="$w" -v techo="$techo" 'BEGIN{ if (s > techo) print "retiene_de_mas"; else if (s < w/2) print "borra_de_mas"; else print "ok" }')
-  [ "$veredicto" = "ok" ] || fallos="$fallos $t($veredicto:${span}h_vs_${w}h)"
+  # Solo el TECHO condena. Estar por debajo de la ventana no es un defecto: una ventana
+  # recien ampliada tarda dias en llenarse, y este check no puede saber cuando cambio.
+  if awk -v s="$span" -v techo="$techo" 'BEGIN{ exit !(s > techo) }'; then
+    fallos="$fallos $t(retiene_de_mas:${span}h_vs_${w}h+${gracia}h)"
+  elif awk -v s="$span" -v w="$w" 'BEGIN{ exit !(s < w/2) }'; then
+    observaciones="$observaciones $t(${span}h_de_${w}h:aun_por_debajo_de_su_regimen)"
+  fi
 done
 
 for item in $SUELOS; do
@@ -140,7 +225,13 @@ for t in $sospechosas; do
 done
 
 [ -z "${fallos// /}" ] || { echo "borrado sin declarar o fuera de ventana:$fallos"; exit 1; }
-printf '9 borradores declarados, 6 ventanas dentro de rango, nada encoge sin declarar'
+usadas=""
+for item in $VENTANAS; do
+  t=${item%%:*}; resto=${item#*:}; var=${resto%%:*}
+  usadas="$usadas $t=$(ventana_de "$var")h"
+done
+printf '9 borradores declarados, 6 ventanas dentro de rango LEIDAS DE PRODUCCION (%s ), nada encoge sin declarar' "$usadas"
+[ -z "${observaciones// /}" ] || printf ' · por debajo de su regimen y NO es defecto:%s' "$observaciones"
 [ "$n_retenidos" -gt 0 ] && printf ' · %d tabla(s) encogen SOLO por su retencion declarada: dentro de la ventana los dos lados tienen las MISMAS filas:%s' \
   "$n_retenidos" "$retenidos"
 printf '\n'
