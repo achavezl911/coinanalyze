@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `positioning` · `app/api.py:1210` (cuerpo hasta la 1214) · decorador en la linea 1209.
+Handler `positioning` · `app/api.py:1230` (cuerpo hasta la 1234) · decorador en la linea 1229.
 
 ## Parametros de entrada
 
@@ -61,7 +61,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5649`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -93,7 +93,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:116`, `harness/checks/K43-foto-unica.sh:173` | — |
-| **panel** | `static/app.js:1709` | — |
+| **panel** | `static/app.js:1732` | — |
 
 **La llama el panel: es superficie de producto.**
 

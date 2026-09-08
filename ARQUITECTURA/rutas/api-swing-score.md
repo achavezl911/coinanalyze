@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `swing_score_endpoint` · `app/api.py:1961` (cuerpo hasta la 1964) · decorador en la linea 1960.
+Handler `swing_score_endpoint` · `app/api.py:1981` (cuerpo hasta la 1984) · decorador en la linea 1980.
 
 ## Parametros de entrada
 
@@ -88,7 +88,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.swing_score` — `app/scalp_logic.py:6283`
 
 <details><summary>Alcanzables de forma indirecta (38)</summary>
@@ -146,7 +146,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -157,7 +157,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:115`, `harness/checks/K43-foto-unica.sh:170` | — |
-| **panel** | `static/app.js:1580`, `static/app.js:1682` | — |
+| **panel** | `static/app.js:1580`, `static/app.js:1705` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -193,7 +193,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.swing_score` | 2 | **0** | 52 ↑ | **2** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.swing_score` | 2 | **0** | 53 ↑ | **2** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |

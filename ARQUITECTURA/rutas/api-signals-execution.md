@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_execution` · `app/api.py:2496` (cuerpo hasta la 2570) · decorador en la linea 2495.
+Handler `signals_execution` · `app/api.py:2516` (cuerpo hasta la 2590) · decorador en la linea 2515.
 
 ## Parametros de entrada
 
@@ -23,16 +23,16 @@ Handler `signals_execution` · `app/api.py:2496` (cuerpo hasta la 2570) · decor
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2564 |
-| `count` | literal en app/api.py:2567 |
-| `exchange` | literal en app/api.py:2565 |
-| `limit` | literal en app/api.py:2566 |
-| `since` | literal en app/api.py:2561 |
-| `snapshots` | literal en app/api.py:2569 |
-| `symbol` | literal en app/api.py:2560 |
-| `truncated` | literal en app/api.py:2568 |
-| `until` | literal en app/api.py:2562 |
-| `ventana_maxima_h` | literal en app/api.py:2563 |
+| `as_of` | literal en app/api.py:2584 |
+| `count` | literal en app/api.py:2587 |
+| `exchange` | literal en app/api.py:2585 |
+| `limit` | literal en app/api.py:2586 |
+| `since` | literal en app/api.py:2581 |
+| `snapshots` | literal en app/api.py:2589 |
+| `symbol` | literal en app/api.py:2580 |
+| `truncated` | literal en app/api.py:2588 |
+| `until` | literal en app/api.py:2582 |
+| `ventana_maxima_h` | literal en app/api.py:2583 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,10 +54,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2266`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2306`
-- `app.api.records` — `app/api.py:241`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api._utc_iso` — `app/api.py:2286`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2326`
+- `app.api.records` — `app/api.py:242`
+- `app.api.validate_symbol` — `app/api.py:229`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (12)</summary>
 
@@ -82,13 +82,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | — | `app/api.py:2315` | una funcion de su cierre |
-| 422 | exchange tiene que ser binance o bybit | `app/api.py:2517` | el propio handler |
-| 422 | — | `app/api.py:2522` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2524` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2526` | el propio handler |
-| 422 | — | `app/api.py:2528` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 422 | — | `app/api.py:2335` | una funcion de su cierre |
+| 422 | exchange tiene que ser binance o bybit | `app/api.py:2537` | el propio handler |
+| 422 | — | `app/api.py:2542` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2544` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2546` | el propio handler |
+| 422 | — | `app/api.py:2548` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -99,7 +99,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K23-coste-de-ejecucion.sh:42`, `harness/checks/K43-control.bash:80`, `harness/checks/K43-foto-unica.sh:122` | `harness/checks/K96-la-auditoria-no-inventa.sh:4` |
-| **panel** | `static/app.js:1738` | — |
+| **panel** | `static/app.js:1761` | — |
 | **tests** | — | `tests/test_signals_execution.py:1` |
 
 **La llama el panel: es superficie de producto.**
@@ -138,8 +138,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.api._utc_iso` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.signals_execution` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

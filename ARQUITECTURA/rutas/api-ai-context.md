@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_context` · `app/api.py:3242` (cuerpo hasta la 3255) · decorador en la linea 3241.
+Handler `ai_context` · `app/api.py:3262` (cuerpo hasta la 3275) · decorador en la linea 3261.
 
 ## Parametros de entrada
 
@@ -183,7 +183,7 @@ Llamadas directas del handler:
 
 - `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:820`
 - `app.ai_context.normalize_profile` — `app/ai_context.py:185`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 
 <details><summary>Alcanzables de forma indirecta (162)</summary>
 
@@ -367,8 +367,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | — | `app/api.py:3251` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 422 | — | `app/api.py:3271` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -418,8 +418,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
-| `app.config.get_settings` | 3 | **0** | 54 ↑ | **3** | [impacto](../impacto/app-config.md) |
-| `app.interpretation.evaluate_setups` | 4 | **0** | 52 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
+| `app.config.get_settings` | 3 | **0** | 55 ↑ | **3** | [impacto](../impacto/app-config.md) |
+| `app.interpretation.evaluate_setups` | 4 | **0** | 53 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |

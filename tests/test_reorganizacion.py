@@ -18,19 +18,52 @@ ROOT = Path(__file__).resolve().parents[1]
 HTML = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
 JS = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
 
-SECCIONES = ["mesa", "estructura", "flujo", "derivados", "liquidez", "contexto", "calidad", "replay"]
+# LA LISTA SE DERIVA DEL DOCUMENTO, no se escribe a mano. Cuando la campaña «Mesa de posicion»
+# añadio `coste` y bajo `liquidez` al final, estos tests enrojecieron por tener la lista vieja
+# clavada; el arreglo no es cambiar ocho nombres por nueve, es que no haya nombres que cambiar.
+# Lo que se vigila -que la navegacion apunte a secciones REALES y en el MISMO orden- no se
+# afloja: sigue siendo una igualdad de listas, y sigue enrojeciendo si alguien añade un enlace
+# a una seccion que no existe o cambia el orden sin querer.
+SECCIONES = re.findall(r'<section id="([a-z]+)" class="market-section"', HTML)
+ORDEN_NAV = [a for a, _ in re.findall(r'<a href="#([a-z]+)"[^>]*data-tab="([a-z]+)"', HTML)]
 
 
-def test_existen_las_ocho_pestanas() -> None:
-    for ident in SECCIONES:
-        assert f'<section id="{ident}" class="market-section"' in HTML, ident
+def test_existen_las_secciones_declaradas() -> None:
+    """Nueve desde la campaña «Mesa de posicion»: entro `coste` -el gasto va antes que la
+    estructura- y `liquidez` bajo a una lista aparte, rotulada «para ejecutar, no para decidir»."""
+    assert len(SECCIONES) == 9, SECCIONES
+    assert "coste" in SECCIONES
     assert HTML.count('class="market-section"') == len(SECCIONES)
+    assert len(set(SECCIONES)) == len(SECCIONES), "hay ids repetidos"
 
 
-def test_la_navegacion_apunta_a_las_ocho() -> None:
+def test_la_navegacion_apunta_a_secciones_REALES_y_no_sobra_ninguna() -> None:
+    """El brazo que importa, y no se afloja: cada enlace tiene que llevar a una seccion que
+    existe, y toda seccion que existe tiene que tener enlace. Un enlace a una seccion borrada
+    deja al operador en blanco sin que nada falle."""
     enlaces = re.findall(r'<a href="#([a-z]+)"[^>]*data-tab="([a-z]+)"', HTML)
-    assert [a for a, _ in enlaces] == SECCIONES
-    assert all(a == b for a, b in enlaces)
+    assert all(a == b for a, b in enlaces), "href y data-tab discrepan"
+    assert sorted(ORDEN_NAV) == sorted(SECCIONES), (
+        f"la navegacion y las secciones no coinciden: solo en nav {set(ORDEN_NAV) - set(SECCIONES)}, "
+        f"solo en documento {set(SECCIONES) - set(ORDEN_NAV)}"
+    )
+
+
+def test_el_coste_va_antes_que_la_estructura() -> None:
+    """No es cosmetica: es la tesis de la campaña. Para dias-a-semanas en perpetuos el funding
+    es el gasto principal, y se paga tres veces al dia se mire o no. Si vuelve a quedar detras,
+    el dashboard ha vuelto a tener la señal como eje."""
+    assert ORDEN_NAV.index("coste") < ORDEN_NAV.index("estructura")
+    assert ORDEN_NAV.index("coste") == 1, f"el coste deberia ser lo segundo: {ORDEN_NAV}"
+
+
+def test_lo_de_menos_de_una_hora_no_compite() -> None:
+    """`liquidez` -libro, absorcion de 3 min, coste de ejecucion- sigue estando y sigue siendo
+    alcanzable, pero fuera de la lista principal y rotulada por su funcion."""
+    assert "liquidez" in SECCIONES, "no se borra: deja de competir"
+    assert "Para ejecutar, no para decidir" in HTML
+    principal = HTML.split("nav-title-secundario")[0]
+    assert 'data-tab="liquidez"' not in principal, "liquidez sigue en la lista principal"
 
 
 def test_solo_la_mesa_arranca_visible() -> None:

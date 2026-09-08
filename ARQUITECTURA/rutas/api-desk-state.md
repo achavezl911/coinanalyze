@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `desk_state` · `app/api.py:1299` (cuerpo hasta la 1406) · decorador en la linea 1298.
+Handler `desk_state` · `app/api.py:1319` (cuerpo hasta la 1426) · decorador en la linea 1318.
 
 ## Parametros de entrada
 
@@ -21,32 +21,32 @@ Handler `desk_state` · `app/api.py:1299` (cuerpo hasta la 1406) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1380 |
-| `components` | literal en app/api.py:1384 |
-| `components.data_quality` | literal en app/api.py:1365 |
-| `components.delta_matrix` | literal en app/api.py:1361 |
-| `components.hypothesis` | literal en app/api.py:1363 |
-| `components.profile` | literal en app/api.py:1362 |
-| `components.reference_levels` | literal en app/api.py:1370 |
-| `components.scalp` | literal en app/api.py:1364 |
-| `components.trend_matrix` | literal en app/api.py:1360 |
-| `direction` | literal en app/api.py:1382 |
-| `note` | literal en app/api.py:1401 |
-| `partial` | literal en app/api.py:1395 |
-| `partial.profile_coverage_pct` | literal en app/api.py:1399 |
-| `partial.profile_missing_data` | literal en app/api.py:1397 |
-| `partial.scalp_coverage_pct` | literal en app/api.py:1398 |
-| `partial.scalp_missing_components` | literal en app/api.py:1396 |
-| `profile` | literal en app/api.py:1381 |
-| `setup` | literal en app/api.py:1383 |
-| `source_timestamps` | literal en app/api.py:1385 |
-| `source_timestamps.basis_status` | literal en app/api.py:1388 |
-| `source_timestamps.book_lag_seconds` | literal en app/api.py:1386 |
-| `source_timestamps.book_status` | literal en app/api.py:1387 |
-| `source_timestamps.collectors` | literal en app/api.py:1390 |
-| `source_timestamps.liquidations_last_event_age_s` | literal en app/api.py:1391 |
-| `source_timestamps.liquidations_measured` | literal en app/api.py:1389 |
-| `symbol` | literal en app/api.py:1379 |
+| `as_of` | literal en app/api.py:1400 |
+| `components` | literal en app/api.py:1404 |
+| `components.data_quality` | literal en app/api.py:1385 |
+| `components.delta_matrix` | literal en app/api.py:1381 |
+| `components.hypothesis` | literal en app/api.py:1383 |
+| `components.profile` | literal en app/api.py:1382 |
+| `components.reference_levels` | literal en app/api.py:1390 |
+| `components.scalp` | literal en app/api.py:1384 |
+| `components.trend_matrix` | literal en app/api.py:1380 |
+| `direction` | literal en app/api.py:1402 |
+| `note` | literal en app/api.py:1421 |
+| `partial` | literal en app/api.py:1415 |
+| `partial.profile_coverage_pct` | literal en app/api.py:1419 |
+| `partial.profile_missing_data` | literal en app/api.py:1417 |
+| `partial.scalp_coverage_pct` | literal en app/api.py:1418 |
+| `partial.scalp_missing_components` | literal en app/api.py:1416 |
+| `profile` | literal en app/api.py:1401 |
+| `setup` | literal en app/api.py:1403 |
+| `source_timestamps` | literal en app/api.py:1405 |
+| `source_timestamps.basis_status` | literal en app/api.py:1408 |
+| `source_timestamps.book_lag_seconds` | literal en app/api.py:1406 |
+| `source_timestamps.book_status` | literal en app/api.py:1407 |
+| `source_timestamps.collectors` | literal en app/api.py:1410 |
+| `source_timestamps.liquidations_last_event_age_s` | literal en app/api.py:1411 |
+| `source_timestamps.liquidations_measured` | literal en app/api.py:1409 |
+| `symbol` | literal en app/api.py:1399 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -129,7 +129,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.data_quality` — `app/scalp_logic.py:4015`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4319`
@@ -233,10 +233,10 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | — | `app/api.py:1319` | el propio handler |
-| 422 | — | `app/api.py:1323` | el propio handler |
-| 422 | — | `app/api.py:1327` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 422 | — | `app/api.py:1339` | el propio handler |
+| 422 | — | `app/api.py:1343` | el propio handler |
+| 422 | — | `app/api.py:1347` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -247,7 +247,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:124` | — |
-| **panel** | `static/app.js:1589` | — |
+| **panel** | `static/app.js:1595` | — |
 | **readme** | — | `README.md:34` |
 | **tests** | `tests/test_v150_desk_snapshot.py:132` | `tests/test_pr22_cvd_semantics.py:177` |
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `metric_baselines` · `app/api.py:1426` (cuerpo hasta la 1440) · decorador en la linea 1425.
+Handler `metric_baselines` · `app/api.py:1446` (cuerpo hasta la 1460) · decorador en la linea 1445.
 
 ## Parametros de entrada
 
@@ -19,11 +19,11 @@ Handler `metric_baselines` · `app/api.py:1426` (cuerpo hasta la 1440) · decora
 
 | campo | de donde sale |
 |---|---|
-| `fallback_min_ratio` | literal en app/api.py:1434 |
-| `metric` | literal en app/api.py:1433 |
-| `note` | literal en app/api.py:1435 |
-| `symbol` | literal en app/api.py:1432 |
-| `windows` | literal en app/api.py:1439 |
+| `fallback_min_ratio` | literal en app/api.py:1454 |
+| `metric` | literal en app/api.py:1453 |
+| `note` | literal en app/api.py:1455 |
+| `symbol` | literal en app/api.py:1452 |
+| `windows` | literal en app/api.py:1459 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -43,7 +43,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
@@ -64,7 +64,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

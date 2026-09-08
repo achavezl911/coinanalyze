@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_alerts` · `app/api.py:1654` (cuerpo hasta la 1715) · decorador en la linea 1653.
+Handler `scalp_alerts` · `app/api.py:1674` (cuerpo hasta la 1735) · decorador en la linea 1673.
 
 ## Parametros de entrada
 
@@ -18,8 +18,8 @@ Handler `scalp_alerts` · `app/api.py:1654` (cuerpo hasta la 1715) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `alerts` | literal en app/api.py:1715 |
-| `symbol` | literal en app/api.py:1715 |
+| `alerts` | literal en app/api.py:1735 |
+| `symbol` | literal en app/api.py:1735 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -65,8 +65,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.statistical_alerts` — `app/api.py:1718`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.statistical_alerts` — `app/api.py:1738`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.market_impact` — `app/scalp_logic.py:5544`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
@@ -114,7 +114,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

@@ -8,7 +8,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`evaluate_setups`](#evaluate-setups) | 139 | 4 | **0** | 52 ↑ | **4** |
+| [`evaluate_setups`](#evaluate-setups) | 139 | 4 | **0** | 53 ↑ | **4** |
 | [`number`](#number) | 10 | 13 | **0** | 3 ↑ | **13** |
 | [`_barrier_candidates`](#-barrier-candidates) | 684 | 6 | **0** | 0 | **6** |
 | [`_barrier_zones`](#-barrier-zones) | 779 | 6 | **0** | 0 | **6** |
@@ -25,7 +25,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/interpretation.py:139` · clave completa `app.interpretation.evaluate_setups`
 
-**Radio exacto: 4 rutas** de 69 · **cota superior: 52** (mas ancha)
+**Radio exacto: 4 rutas** de 70 · **cota superior: 53** (mas ancha)
 
 ### Por llamada — 4 rutas
 
@@ -41,9 +41,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 52 rutas · **cota superior**
+### Por tabla · k<=2 — 53 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (52 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -69,6 +69,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -120,9 +121,10 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**48 rutas se enteran SOLO por el dato**, sin
+**49 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -178,7 +180,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/interpretation.py:10` · clave completa `app.interpretation.number`
 
-**Radio exacto: 13 rutas** de 69 · **cota superior: 14** (mas ancha)
+**Radio exacto: 13 rutas** de 70 · **cota superior: 14** (mas ancha)
 
 ### Por llamada — 13 rutas
 
@@ -231,7 +233,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/interpretation.py:684` · clave completa `app.interpretation._barrier_candidates`
 
-**Radio exacto: 6 rutas** de 69 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
 
 ### Por llamada — 6 rutas
 
@@ -259,7 +261,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:779` · clave completa `app.interpretation._barrier_zones`
 
-**Radio exacto: 6 rutas** de 69 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
 
 ### Por llamada — 6 rutas
 
@@ -287,7 +289,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:877` · clave completa `app.interpretation.price_barrier_read`
 
-**Radio exacto: 6 rutas** de 69 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
 
 ### Por llamada — 6 rutas
 
@@ -315,7 +317,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:372` · clave completa `app.interpretation._memory_features`
 
-**Radio exacto: 4 rutas** de 69 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 70 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -341,7 +343,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:400` · clave completa `app.interpretation.market_memory_read`
 
-**Radio exacto: 4 rutas** de 69 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 70 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -367,7 +369,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:521` · clave completa `app.interpretation._cvd_observation`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -392,7 +394,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:570` · clave completa `app.interpretation._cvd_side`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -417,7 +419,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:368` · clave completa `app.interpretation._percentile`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -442,7 +444,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:578` · clave completa `app.interpretation.cvd_swing_read`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -467,7 +469,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:208` · clave completa `app.interpretation.daily_flow_read`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 

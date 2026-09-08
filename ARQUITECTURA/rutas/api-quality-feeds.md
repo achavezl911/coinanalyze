@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `quality_feeds` · `app/api.py:1410` (cuerpo hasta la 1422) · decorador en la linea 1409.
+Handler `quality_feeds` · `app/api.py:1430` (cuerpo hasta la 1442) · decorador en la linea 1429.
 
 ## Parametros de entrada
 
@@ -101,7 +101,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5307`
 
 <details><summary>Alcanzables de forma indirecta (41)</summary>
@@ -162,7 +162,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -173,7 +173,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:112`, `harness/checks/K43-foto-unica.sh:164` | `harness/checks/K43-foto-unica.sh:43`, `harness/checks/K43-foto-unica.sh:200`, `harness/checks/K43-foto-unica.sh:211` |
-| **panel** | `static/app.js:1724` | `static/app.js:1720` |
+| **panel** | `static/app.js:1747` | `static/app.js:1743` |
 | **readme** | — | `README.md:32` |
 
 **La llama el panel: es superficie de producto.**

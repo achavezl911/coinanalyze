@@ -17,7 +17,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 
 | tabla | escritores en el arbol | rutas que la leen | rutas que la escriben |
 |---|---|---|---|
-| [`daily_session_agg`](#daily-session-agg) | 2 | 20 | 0 |
+| [`daily_session_agg`](#daily-session-agg) | 2 | 21 | 0 |
 | [`daily_verdict_outcome`](#daily-verdict-outcome) | 1 | 3 | 0 |
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
 | [`data_gap`](#data-gap) | 12 | 21 | 0 |
@@ -209,10 +209,11 @@ La escriben:
 - `app.daily_agg.compute_session` — **INSERT** en `app/daily_agg.py:206`
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:670`
 
-**Si cambia el contenido o el esquema de `daily_session_agg`, estas 20 rutas lo notan:**
+**Si cambia el contenido o el esquema de `daily_session_agg`, estas 21 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](rutas/api-carry-matriz.md)
 - [`/api/daily`](rutas/api-daily.md)
 - [`/api/dashboard/state`](rutas/api-dashboard-state.md)
 - [`/api/desk/state`](rutas/api-desk-state.md)

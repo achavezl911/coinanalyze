@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_delta_matrix` · `app/api.py:1175` (cuerpo hasta la 1198) · decorador en la linea 1174.
+Handler `scalp_delta_matrix` · `app/api.py:1195` (cuerpo hasta la 1218) · decorador en la linea 1194.
 
 ## Parametros de entrada
 
@@ -67,7 +67,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4319`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
 
@@ -103,7 +103,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -114,7 +114,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:113`, `harness/checks/K43-foto-unica.sh:165`, `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216`, `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217` _(+2)_ | `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:79` |
-| **panel** | `static/app.js:1652` | — |
+| **panel** | `static/app.js:1675` | — |
 
 **La llama el panel: es superficie de producto.**
 

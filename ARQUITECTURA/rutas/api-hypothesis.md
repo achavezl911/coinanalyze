@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `hypothesis` · `app/api.py:1218` (cuerpo hasta la 1295) · decorador en la linea 1217.
+Handler `hypothesis` · `app/api.py:1238` (cuerpo hasta la 1315) · decorador en la linea 1237.
 
 ## Parametros de entrada
 
@@ -31,7 +31,7 @@ Handler `hypothesis` · `app/api.py:1218` (cuerpo hasta la 1295) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1270 |
+| `as_of` | literal en app/api.py:1290 |
 | `context` | literal en app/scalp_logic.py:4892 |
 | `counts` | literal en app/scalp_logic.py:4903 |
 | `data_coverage_pct` | literal en app/scalp_logic.py:4894 |
@@ -111,7 +111,7 @@ Handler `hypothesis` · `app/api.py:1218` (cuerpo hasta la 1295) · decorador en
 | `setup_zone.zone_high` | literal en app/scalp_logic.py:4909 |
 | `setup_zone.zone_low` | literal en app/scalp_logic.py:4908 |
 | `spread_bps` | literal en app/scalp_logic.py:4901 |
-| `symbol` | literal en app/api.py:1269 |
+| `symbol` | literal en app/api.py:1289 |
 | `timing` | literal en app/scalp_logic.py:4893 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -190,7 +190,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4319`
 - `app.scalp_logic.hypothesis_evidence` — `app/scalp_logic.py:4732`
@@ -287,11 +287,11 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | — | `app/api.py:1241` | el propio handler |
-| 422 | — | `app/api.py:1245` | el propio handler |
-| 422 | — | `app/api.py:1249` | el propio handler |
-| 422 | — | `app/api.py:1253` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 422 | — | `app/api.py:1261` | el propio handler |
+| 422 | — | `app/api.py:1265` | el propio handler |
+| 422 | — | `app/api.py:1269` | el propio handler |
+| 422 | — | `app/api.py:1273` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

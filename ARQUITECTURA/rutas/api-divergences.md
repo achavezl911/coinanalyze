@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `divergences_endpoint` · `app/api.py:2014` (cuerpo hasta la 2017) · decorador en la linea 2013.
+Handler `divergences_endpoint` · `app/api.py:2034` (cuerpo hasta la 2037) · decorador en la linea 2033.
 
 ## Parametros de entrada
 
@@ -64,7 +64,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2078`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
@@ -89,7 +89,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -100,7 +100,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:110`, `harness/checks/K43-foto-unica.sh:159` | `harness/checks/K43-foto-unica.sh:212` |
-| **panel** | `static/app.js:1751` | — |
+| **panel** | `static/app.js:1774` | — |
 | **readme** | — | `README.md:281` |
 
 **La llama el panel: es superficie de producto.**

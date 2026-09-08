@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_reconcile_persisted_cadence`](#-reconcile-persisted-cadence) | 453 | 0 | **0** | 53 ↑ | **0** |
-| [`barrido_cadencia_persistido`](#barrido-cadencia-persistido) | 568 | 0 | **0** | 52 ↑ | **0** |
-| [`finite`](#finite) | 46 | 0 | **0** | 52 ↑ | **0** |
-| [`rollup_ohlcv_5m`](#rollup-ohlcv-5m) | 184 | 0 | **37** | 52 ↑ | **37** |
-| [`rows_for`](#rows-for) | 89 | 0 | **0** | 52 ↑ | **0** |
-| [`upsert_ohlcv`](#upsert-ohlcv) | 101 | 0 | **37** | 52 ↑ | **37** |
-| [`valid_ts`](#valid-ts) | 59 | 0 | **0** | 52 ↑ | **0** |
-| [`ventana_barrido_cadencia`](#ventana-barrido-cadencia) | 538 | 0 | **0** | 52 ↑ | **0** |
+| [`_reconcile_persisted_cadence`](#-reconcile-persisted-cadence) | 453 | 0 | **0** | 54 ↑ | **0** |
+| [`barrido_cadencia_persistido`](#barrido-cadencia-persistido) | 568 | 0 | **0** | 53 ↑ | **0** |
+| [`finite`](#finite) | 46 | 0 | **0** | 53 ↑ | **0** |
+| [`rollup_ohlcv_5m`](#rollup-ohlcv-5m) | 184 | 0 | **37** | 53 ↑ | **37** |
+| [`rows_for`](#rows-for) | 89 | 0 | **0** | 53 ↑ | **0** |
+| [`upsert_ohlcv`](#upsert-ohlcv) | 101 | 0 | **37** | 53 ↑ | **37** |
+| [`valid_ts`](#valid-ts) | 59 | 0 | **0** | 53 ↑ | **0** |
+| [`ventana_barrido_cadencia`](#ventana-barrido-cadencia) | 538 | 0 | **0** | 53 ↑ | **0** |
 | [`_reconcile_response_cadence`](#-reconcile-response-cadence) | 619 | 0 | **0** | 48 ↑ | **0** |
 | [`_coverage_heartbeat_detail`](#-coverage-heartbeat-detail) | 687 | 0 | **0** | 42 ↑ | **0** |
 | [`publish_snapshot`](#publish-snapshot) | 367 | 0 | **0** | 42 ↑ | **0** |
@@ -34,7 +34,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/ingest.py:453` · clave completa `app.ingest._reconcile_persisted_cadence`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 53** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -47,9 +47,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 53 rutas · **cota superior**
+### Por tabla · k<=2 — 54 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (54 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -77,6 +77,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
@@ -129,11 +130,12 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**53 rutas se enteran SOLO por el dato**, sin
+**54 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
@@ -192,7 +194,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:568` · clave completa `app.ingest.barrido_cadencia_persistido`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 52** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 53** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -205,9 +207,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 52 rutas · **cota superior**
+### Por tabla · k<=2 — 53 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (52 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -234,6 +236,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -285,11 +288,12 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -347,7 +351,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:46` · clave completa `app.ingest.finite`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 52** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 53** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -360,9 +364,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 52 rutas · **cota superior**
+### Por tabla · k<=2 — 53 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (52 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -390,6 +394,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -441,11 +446,12 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -503,7 +509,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:184` · clave completa `app.ingest.rollup_ohlcv_5m`
 
-**Radio exacto: 37 rutas** de 69 · **cota superior: 52** (mas ancha)
+**Radio exacto: 37 rutas** de 70 · **cota superior: 53** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -555,9 +561,9 @@ Y esas tablas las leen:
 - [`/api/wyckoff`](../rutas/api-wyckoff.md)
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 
-### Por tabla · k<=2 — 52 rutas · **cota superior**
+### Por tabla · k<=2 — 53 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (52 contra 37). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (53 contra 37). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -584,6 +590,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -635,11 +642,12 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -697,7 +705,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:89` · clave completa `app.ingest.rows_for`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 52** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 53** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -710,9 +718,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 52 rutas · **cota superior**
+### Por tabla · k<=2 — 53 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (52 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -740,6 +748,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -791,11 +800,12 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -853,7 +863,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:101` · clave completa `app.ingest.upsert_ohlcv`
 
-**Radio exacto: 37 rutas** de 69 · **cota superior: 52** (mas ancha)
+**Radio exacto: 37 rutas** de 70 · **cota superior: 53** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -905,9 +915,9 @@ Y esas tablas las leen:
 - [`/api/wyckoff`](../rutas/api-wyckoff.md)
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 
-### Por tabla · k<=2 — 52 rutas · **cota superior**
+### Por tabla · k<=2 — 53 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (52 contra 37). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (53 contra 37). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -934,6 +944,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -985,11 +996,12 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -1047,7 +1059,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:59` · clave completa `app.ingest.valid_ts`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 52** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 53** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1060,9 +1072,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 52 rutas · **cota superior**
+### Por tabla · k<=2 — 53 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (52 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1090,6 +1102,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -1141,11 +1154,12 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -1203,7 +1217,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:538` · clave completa `app.ingest.ventana_barrido_cadencia`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 52** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 53** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1216,9 +1230,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 52 rutas · **cota superior**
+### Por tabla · k<=2 — 53 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (52 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1244,6 +1258,7 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -1295,11 +1310,12 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
@@ -1357,7 +1373,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:619` · clave completa `app.ingest._reconcile_response_cadence`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 48** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 48** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1496,7 +1512,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:687` · clave completa `app.ingest._coverage_heartbeat_detail`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 42** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 42** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1622,7 +1638,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:367` · clave completa `app.ingest.publish_snapshot`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 42** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 42** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1748,7 +1764,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:746` · clave completa `app.ingest.ingest_ohlcv_cycle`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 40** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 40** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1866,7 +1882,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:649` · clave completa `app.ingest._liquidation_history_observation`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1931,7 +1947,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:814` · clave completa `app.ingest.ingest_metrics_cycle`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1996,7 +2012,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:66` · clave completa `app.ingest.source_response_buckets`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2061,7 +2077,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:293` · clave completa `app.ingest.upsert_liquidations`
 
-**Radio exacto: 5 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 5 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2133,7 +2149,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:326` · clave completa `app.ingest.upsert_long_short`
 
-**Radio exacto: 3 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 3 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2203,7 +2219,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:240` · clave completa `app.ingest.upsert_ohlc_metric`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2268,7 +2284,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:1032` · clave completa `app.ingest.run`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 7** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 7** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2319,7 +2335,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:1006` · clave completa `app.ingest.run_aligned_feed`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 7** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 7** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2370,7 +2386,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:997` · clave completa `app.ingest.seconds_until_aligned_run`
 
-**Radio exacto: 0 rutas** de 69 · **cota superior: 7** (mas ancha)
+**Radio exacto: 0 rutas** de 70 · **cota superior: 7** (mas ancha)
 
 ### Por llamada — 0 rutas
 

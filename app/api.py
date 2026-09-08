@@ -30,6 +30,7 @@ from app.ai_context import (
     normalize_profile,
     orderbook_freshness,
 )
+from app.carry import matriz_de_carry
 from app.config import (
     SUPPORTED_SYMBOLS,
     WHALE_THRESHOLD_MAP,
@@ -1161,6 +1162,25 @@ async def whale_delta(
         )
         declarar_tramo_no_medible(payload, ws_symbol)
         return payload
+
+
+@app.get("/api/carry/matriz")
+async def carry_matriz(
+    request: Request,
+    dias: Annotated[int, Query(ge=2, le=90)] = 15,
+) -> dict[str, Any]:
+    """LO QUE CUESTA ESTAR DENTRO: funding y cambio de interes abierto, por simbolo y por dia.
+
+    NO LLEVA `symbol` A PROPOSITO: lo que sirve es la MATRIZ de los tres perpetuos a la vez, que
+    es justo lo que ninguna ruta daba -las que hay son todas de un simbolo-. Pedirla simbolo a
+    simbolo serian tres peticiones para pintar una tarjeta.
+
+    Devuelve `dias_servidos` junto a `dias_pedidos` y el recuento de celdas sin dato: un panel
+    que pida mas historia de la que hay no se pinta, se declara.
+    """
+    rechaza_parametros_desconocidos(request, ("dias",))
+    async with app.state.pool.acquire() as conn:
+        return await matriz_de_carry(conn, list(SUPPORTED_SYMBOLS), dias)
 
 
 @app.get("/api/scalp/summary")

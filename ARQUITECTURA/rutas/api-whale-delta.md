@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1095` (cuerpo hasta la 1163) · decorador en la linea 1094.
+Handler `whale_delta` · `app/api.py:1096` (cuerpo hasta la 1164) · decorador en la linea 1095.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `whale_delta` · `app/api.py:1095` (cuerpo hasta la 1163) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:435 |
-| `data_gaps` | literal en app/api.py:440 |
-| `interval` | literal en app/api.py:433 |
-| `rows` | literal en app/api.py:434 |
-| `symbol` | literal en app/api.py:432 |
+| `coverage` | literal en app/api.py:436 |
+| `data_gaps` | literal en app/api.py:441 |
+| `interval` | literal en app/api.py:434 |
+| `rows` | literal en app/api.py:435 |
+| `symbol` | literal en app/api.py:433 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,11 +59,11 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declarar_tramo_no_medible` — `app/api.py:1042`
-- `app.api.declared_series_response` — `app/api.py:355`
-- `app.api.historical_interval_value` — `app/api.py:234`
-- `app.api.records` — `app/api.py:241`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.declarar_tramo_no_medible` — `app/api.py:1043`
+- `app.api.declared_series_response` — `app/api.py:356`
+- `app.api.historical_interval_value` — `app/api.py:235`
+- `app.api.records` — `app/api.py:242`
+- `app.api.validate_symbol` — `app/api.py:229`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
@@ -89,8 +89,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:237` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:238` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -101,7 +101,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:66`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:120`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:57` | `harness/checks/K52b-la-ruta-no-falla-abierta.sh:6`, `harness/checks/K59-whale-vota-cero.sh:15` |
-| **panel** | `static/app.js:1650` | — |
+| **panel** | `static/app.js:1673` | — |
 | **readme** | — | `README.md:408` |
 | **tests** | — | `tests/test_data_gaps.py:325` |
 

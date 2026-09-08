@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_map_endpoint` · `app/api.py:1767` (cuerpo hasta la 1770) · decorador en la linea 1766.
+Handler `liquidation_map_endpoint` · `app/api.py:1787` (cuerpo hasta la 1790) · decorador en la linea 1786.
 
 ## Parametros de entrada
 
@@ -58,7 +58,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3462`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -93,10 +93,11 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
+| **panel** | `static/app.js:1662` | `static/app.js:3140` |
+| **panel-html** | `static/index.html:221` | — |
 | **tests** | — | `tests/test_liquidation_map_ventana.py:1` |
 
-**No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
-Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
+**La llama el panel: es superficie de producto.**
 
 ## Ventana · con que clave la declara (derivado)
 

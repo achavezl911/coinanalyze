@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `structure_detail_endpoint` · `app/api.py:1990` (cuerpo hasta la 1993) · decorador en la linea 1989.
+Handler `structure_detail_endpoint` · `app/api.py:2010` (cuerpo hasta la 2013) · decorador en la linea 2009.
 
 ## Parametros de entrada
 
@@ -46,7 +46,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2288`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -86,7 +86,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:114`, `harness/checks/K43-foto-unica.sh:169` | `harness/checks/K31-eslabon5.sh:29` |
-| **panel** | `static/app.js:1581`, `static/app.js:1683` | — |
+| **panel** | `static/app.js:1581`, `static/app.js:1706` | — |
 
 **La llama el panel: es superficie de producto.**
 

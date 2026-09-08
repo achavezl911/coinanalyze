@@ -79,13 +79,21 @@
       <p class="nav-title">Secciones</p>
       <nav class="section-links">
         <a href="#mesa" class="active" data-tab="mesa"><span>01</span>Mesa de operación</a>
-        <a href="#estructura" class="" data-tab="estructura"><span>02</span>Estructura</a>
-        <a href="#flujo" class="" data-tab="flujo"><span>03</span>Flujo</a>
-        <a href="#derivados" class="" data-tab="derivados"><span>04</span>Derivados</a>
-        <a href="#liquidez" class="" data-tab="liquidez"><span>05</span>Liquidez y ejecución</a>
-        <a href="#contexto" class="" data-tab="contexto"><span>06</span>Contexto</a>
-        <a href="#calidad" class="" data-tab="calidad"><span>07</span>Calidad de datos</a>
-        <a href="#replay" class="" data-tab="replay"><span>08</span>Replay y validación</a>
+        <!-- EL COSTE VA EN 02, delante de la estructura. Para dias-a-semanas en perpetuos el
+             funding no es sentimiento: es el gasto, y se paga tres veces al dia se mire o no. -->
+        <a href="#coste" class="" data-tab="coste"><span>02</span>Lo que cuesta estar dentro</a>
+        <a href="#estructura" class="" data-tab="estructura"><span>03</span>Estructura</a>
+        <a href="#flujo" class="" data-tab="flujo"><span>04</span>Flujo</a>
+        <a href="#derivados" class="" data-tab="derivados"><span>05</span>Derivados</a>
+        <a href="#calidad" class="" data-tab="calidad"><span>06</span>Calidad de datos</a>
+        <a href="#replay" class="" data-tab="replay"><span>07</span>Replay y validación</a>
+        <a href="#contexto" class="" data-tab="contexto"><span>08</span>Contexto</a>
+      </nav>
+      <!-- LO DE MENOS DE UNA HORA, APARTE Y ROTULADO POR SU FUNCION. No se borra: deja de
+           competir. Se mira cuando ya se decidio y toca colocar la orden, no para decidir. -->
+      <p class="nav-title nav-title-secundario">Para ejecutar, no para decidir</p>
+      <nav class="section-links section-links-secundario">
+        <a href="#liquidez" class="" data-tab="liquidez"><span>09</span>Liquidez y ejecución</a>
       </nav>
       <div class="nav-legend">
         <p><i class="legend-dot up"></i>Presión compradora</p>
@@ -96,6 +104,29 @@
 
     <main>
       <section id="mesa" class="market-section">
+        <!-- ═══ PORTADA · treinta segundos ═════════════════════════════════════════════════
+             El veredicto del tramo con SU RECUENTO DE PRUEBAS, y las cuatro cifras que deciden.
+             No hay ninguna regla de entrada aqui y no se añade ninguna: esto es LECTURA de lo
+             que ya paso. El detalle no desaparece, baja. -->
+        <article class="panel portada-panel">
+          <header>
+            <h3 id="portada-veredicto">Leyendo el tramo…</h3>
+            <span id="portada-ventana">—</span>
+          </header>
+          <p class="portada-porque" id="portada-porque"></p>
+          <div class="portada-cifras">
+            <div><p class="eyebrow">Precio en la ventana</p><p class="portada-valor" id="portada-precio">—</p><p class="portada-pie" id="portada-precio-pie"></p></div>
+            <div><p class="eyebrow">Interés abierto</p><p class="portada-valor" id="portada-oi">—</p><p class="portada-pie" id="portada-oi-pie"></p></div>
+            <!-- LA CIFRA QUE MAS OPERACIONES DECIDE EN ESTE HORIZONTE, y hasta hoy estaba
+                 enterrada en «Derivados» presentada como lectura de posicionamiento. -->
+            <div><p class="eyebrow">Cuesta estar dentro · 30 días</p><p class="portada-valor" id="portada-carry">—</p><p class="portada-pie" id="portada-carry-pie"></p></div>
+            <div><p class="eyebrow">Liquidados en la ventana</p><p class="portada-valor" id="portada-liq">—</p><p class="portada-pie" id="portada-liq-pie"></p></div>
+          </div>
+          <p class="panel-note" id="portada-honestidad"></p>
+          <!-- LO QUE ESTA MEDIDO QUE VALE LA SEÑAL, arriba y no al final. Son los mismos
+               campos que ya pintaba la tarjeta de la tasa base, que sigue donde estaba. -->
+          <p class="panel-note portada-tasa" id="portada-tasa"></p>
+        </article>
         <header class="section-heading">
           <span class="section-number">01</span>
           <div>
@@ -184,9 +215,53 @@
         <section id="summary" class="summary-grid" aria-label="Indicadores esenciales"></section>
       </section>
 
-      <section id="estructura" class="market-section" hidden>
+      <!-- ═══ 02 · LO QUE CUESTA ESTAR DENTRO ══════════════════════════════════════════
+           Seccion propia y no una nota al pie. Los dos heatmaps salen de /api/carry/matriz, que
+           es la unica ruta que da los tres simbolos por dia; el tercero -liquidaciones por
+           precio- NO se construyo: ya existia en /api/liquidation-map desde antes.
+           CADA TARJETA ROTULA LA VENTANA QUE SIRVE, no la que pidio. -->
+      <section id="coste" class="market-section" hidden>
         <header class="section-heading">
           <span class="section-number">02</span>
+          <div>
+            <p class="section-kicker">GASTO</p>
+            <h2>Lo que cuesta estar dentro</h2>
+            <p>El funding se paga tres veces al día se mire o no. En días-a-semanas es el gasto principal, no un indicador de sentimiento.</p>
+          </div>
+        </header>
+        <div class="context-grid">
+          <article class="panel carry-panel">
+            <header><h3>Coste de carry por símbolo</h3><span id="carry-sub">—</span></header>
+            <table class="mini-table" id="carry-tabla">
+              <thead><tr><th>Símbolo</th><th>por 8 h</th><th>7 días</th><th>30 días</th><th>anual</th><th>quién paga</th><th>días</th></tr></thead>
+              <tbody id="carry-body"></tbody>
+            </table>
+            <p class="panel-note" id="carry-note"></p>
+          </article>
+          <article class="panel heat-panel">
+            <header><h3>Funding por día</h3><span id="heat-funding-sub">—</span></header>
+            <div id="heat-funding" class="heatmap"></div>
+            <p class="panel-note" id="heat-funding-note"></p>
+          </article>
+          <article class="panel heat-panel">
+            <header><h3>Cambio de interés abierto por día</h3><span id="heat-oi-sub">—</span></header>
+            <div id="heat-oi" class="heatmap"></div>
+            <p class="panel-note" id="heat-oi-note"></p>
+          </article>
+          <article class="panel heat-panel liqprice-panel">
+            <header><h3>Dónde reventó ya</h3><span id="heat-liq-sub">—</span></header>
+            <div id="heat-liq" class="heatmap heatmap-precio"></div>
+            <!-- NO es un mapa de liquidaciones al estilo del que se vende: aquellos estiman
+                 donde PODRIA reventar y necesitan la distribucion de apalancamiento, que este
+                 sistema no guarda. Esto es lo que YA revento, por precio. -->
+            <p class="panel-note" id="heat-liq-note"></p>
+          </article>
+        </div>
+      </section>
+
+      <section id="estructura" class="market-section" hidden>
+        <header class="section-heading">
+          <span class="section-number">03</span>
           <div>
             <p class="section-kicker">UBICACIÓN</p>
             <h2>Estructura</h2>
@@ -309,7 +384,7 @@
 
       <section id="flujo" class="market-section" hidden>
         <header class="section-heading">
-          <span class="section-number">03</span>
+          <span class="section-number">04</span>
           <div>
             <p class="section-kicker">OFERTA Y DEMANDA</p>
             <h2>Flujo</h2>
@@ -366,7 +441,7 @@
 
       <section id="derivados" class="market-section" hidden>
         <header class="section-heading">
-          <span class="section-number">04</span>
+          <span class="section-number">05</span>
           <div>
             <p class="section-kicker">POSICIONAMIENTO</p>
             <h2>Derivados</h2>
@@ -408,55 +483,94 @@
         </div>
       </section>
 
-      <section id="liquidez" class="market-section" hidden>
+      <section id="calidad" class="market-section" hidden>
         <header class="section-heading">
-          <span class="section-number">05</span>
+          <span class="section-number">06</span>
           <div>
-            <p class="section-kicker">COSTE REAL</p>
-            <h2>Liquidez y ejecución</h2>
-            <p>Libro, profundidad y coste estimado de entrar.</p>
+            <p class="section-kicker">INTEGRIDAD</p>
+            <h2>Calidad de datos</h2>
+            <p>Estado de cada fuente antes de leer cualquier métrica.</p>
           </div>
         </header>
 
         <div class="context-grid">
-          <article class="panel matrix-panel book-panel">
-            <header><h3>Order book</h3><span>bid share = bid/(bid+ask), 0-1</span></header>
-            <div class="table-scroll"><table><thead><tr><th>Venue</th><th>Spread</th><th title="bid/(bid+ask) del mejor nivel. 0.5 = equilibrio, &gt;0.5 mas bid">L1 bid share</th><th title="bid/(bid+ask) sumando 5 niveles">L5 bid share</th><th title="bid/(bid+ask) sumando 10 niveles. En el venue combinado la profundidad se suma pero el spread es el del venue mas estrecho">L10 bid share</th><th>Muro arriba</th><th>Muro abajo</th></tr></thead><tbody id="orderbook-body"></tbody></table></div>
-            <p class="source-note" id="orderbook-note"></p>
-          </article>
-
-        <article class="panel execution-panel">
-          <header><div><h3>Coste de ejecución</h3><span>Slippage por tamaño, por venue</span></div></header>
-          <div class="table-scroll"><table><thead><tr><th>Venue</th><th>Lado</th><th>Tamaño</th><th>Precio medio</th><th>Slippage</th><th>Niveles</th><th>Estado</th></tr></thead><tbody id="execution-body"></tbody></table></div>
+        <!-- Tres niveles SEPARADOS. Antes un solo panel titulado "Fuentes de datos" listaba
+             procesos internos: un colector vivo no es un feed, y un feed completo no
+             garantiza que la métrica que se apoya en él sea utilizable. -->
+        <article class="panel quality-panel">
+          <header><div><h3>Salud de servicios</h3><span>Procesos internos: API, ingest, WebSockets, scalp, daily y PostgreSQL</span></div><span id="quality-global" class="live-pill">—</span></header>
+          <div class="table-scroll"><table><thead><tr><th>Servicio</th><th>Estado</th><th>Último latido</th><th>Latencia</th><th>Detalle</th></tr></thead><tbody id="quality-body"></tbody></table></div>
+          <div id="quality-errors" class="tfprofile-notes"></div>
         </article>
 
-        <article class="panel impact-panel">
-          <header><div><h3>Impacto de mercado</h3><span>bps por millón de delta neto</span></div></header>
-          <div class="table-scroll"><table><thead><tr><th>Ventana</th><th>Impacto</th><th>Delta neto</th><th>Movimiento</th><th>Banda</th><th>Cobertura</th></tr></thead><tbody id="impact-body"></tbody></table></div>
+        <article class="panel quality-panel feeds-panel">
+          <header><div><h3>Calidad de feeds</h3><span id="feeds-sub">Feeds reales de mercado: venue, mercado y tipo de dato</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Exchange</th><th>Mercado</th><th>Símbolo</th><th>Tipo de dato</th><th>Estado</th><th>Último ts</th><th>Latencia</th><th>Cobertura</th><th>Muestras</th><th>Esperadas</th><th>Hueco int.</th><th>Fuentes ausentes</th><th>Último error</th></tr></thead><tbody id="feeds-body"></tbody></table></div>
+          <small class="tfprofile-foot">La cobertura solo se calcula donde existe cadencia esperada. Los feeds de eventos (liquidaciones) no la tienen: su estado sale del latido del colector, no de la antigüedad del último evento.</small>
         </article>
 
-          <article class="panel profile-panel">
-            <header>
-              <div><h3>Perfil de volumen y delta</h3><span id="profile-sub">Dónde se negoció y de qué lado</span></div>
-              <div id="profile-windows" class="chart-mode" aria-label="Ventana del perfil">
-                <button type="button" data-interval="4hour" data-days="30">30 d</button>
-                <button type="button" data-interval="4hour" data-days="90" class="active">90 d</button>
-                <button type="button" data-interval="4hour" data-days="300">300 d</button>
-                <button type="button" data-interval="5min" data-days="9">Intradía</button>
-              </div>
-            </header>
-            <div class="profile-layout">
-              <div id="profile-chart" class="profile-chart"></div>
-              <dl id="profile-stats" class="metric-list compact"></dl>
-            </div>
-            <p id="profile-note" class="panel-note"></p>
-          </article>
+        <article class="panel quality-panel metrics-quality-panel">
+          <header><div><h3>Calidad por métrica</h3><span>Estado de cada métrica publicada, no del feed que la alimenta</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Métrica</th><th>Temporalidad</th><th>Estado</th><th>Cobertura</th><th>Fuente</th><th>Latencia</th></tr></thead><tbody id="metrics-quality-body"></tbody></table></div>
+        </article>
         </div>
+
+        <section class="health-band" aria-label="Estado del sistema">
+          <header><div><p class="section-kicker">SISTEMA</p><h3>Pipeline de datos</h3></div><span id="health-status"></span></header>
+          <div id="health-services" class="health-grid"></div>
+        </section>
       </section>
 
+      <section id="replay" class="market-section" hidden>
+        <header class="section-heading">
+          <span class="section-number">07</span>
+          <div>
+            <p class="section-kicker">VALIDACIÓN</p>
+            <h2>Replay y validación</h2>
+            <p>Qué pasó después de cada veredicto registrado.</p>
+          </div>
+        </header>
+
+        <div class="context-grid">
+        <article class="panel replay-panel">
+          <header><div><h3>Veredictos registrados</h3><span>Y el retorno realizado después</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Sesión</th><th>Sesgo</th><th>Score</th><th>Convicción</th><th>Régimen</th><th>Ret. 7s</th><th>Ret. 14s</th></tr></thead><tbody id="replay-body"></tbody></table></div>
+          <small class="tfprofile-foot">Historial de veredictos ya emitidos. No es una promesa de rentabilidad ni un backtest.</small>
+        </article>
+
+        <!-- LA CAPA DE AUDITORIA. No anade superficie de señal: esta medido que la señal no
+             anticipa y que ninguna regla de entrada alcanzable le recupera la ventaja. Sirve
+             para lo otro, que si se puede hacer: coger una señal YA EMITIDA y reconstruir por
+             que se dijo, con que entradas, que habria costado ejecutarla y si su desenlace ya
+             era visible cuando se decidio -que es la puerta P5 entera-. -->
+        <article class="panel auditoria-panel">
+          <header><div><h3>Auditoría de una señal</h3><span>Por qué se dijo, con qué entradas, qué habría costado y si el desenlace ya se veía</span></div></header>
+          <p class="auditoria-alcance" id="auditoria-alcance">Cargando el alcance…</p>
+          <div class="table-scroll"><table>
+            <thead><tr>
+              <th>Observación</th><th>Lado</th><th>Contexto</th><th>Lógica</th>
+              <th>Libros</th><th>Certificados</th>
+            </tr></thead>
+            <tbody id="auditoria-body"></tbody>
+          </table></div>
+          <div id="auditoria-detalle" class="auditoria-detalle"><p class="auditoria-vacio">Elige una observación de la tabla para reconstruirla.</p></div>
+          <small class="tfprofile-foot">Cada cifra dice sobre cuántos elementos corre. «Libros» y «Certificados» son RECUENTOS de las filas que cada ruta publica para esa observación, no un resumen de ellas: el detalle las lista una por una tal como llegan. <strong>Un 0 en «Certificados» no es un defecto:</strong> un certificado solo existe cuando el horizonte ya se cumplió y se verificó, y los horizontes llegan a 240 min, así que en una ventana de 1 h la mayoría de las observaciones son demasiado recientes para tenerlo. Medido el 2026-09-06 sobre la ventana por defecto: cruzan 134/134 con replay, 134/134 con execution y <strong>26/134 (19.4 %) con visibility</strong>.</small>
+        </article>
+
+        <article class="panel auditoria-panel">
+          <header><div><h3>Historial crudo del scalp</h3><span>Lo que la señal veía, sin ventana de tiempo</span></div></header>
+          <p class="auditoria-alcance" id="scalp-historial-alcance">Cargando el alcance…</p>
+          <div class="table-scroll"><table>
+            <thead><tr><th>ts</th><th>Estado</th><th>Long</th><th>Short</th><th>Confianza</th><th>Libro</th><th>Basis bps</th><th>Motivo</th></tr></thead>
+            <tbody id="scalp-historial-body"></tbody>
+          </table></div>
+          <small class="tfprofile-foot">Esta ruta no acepta ventana de tiempo: su único límite es de filas. La banda de arriba dice qué tramo cubren las que llegaron.</small>
+        </article>
+        </div>
+      </section>
       <section id="contexto" class="market-section" hidden>
         <header class="section-heading">
-          <span class="section-number">06</span>
+          <span class="section-number">08</span>
           <div>
             <p class="section-kicker">HORIZONTE MAYOR</p>
             <h2>Contexto</h2>
@@ -514,91 +628,52 @@
         </div>
       </section>
 
-      <section id="calidad" class="market-section" hidden>
+      <section id="liquidez" class="market-section" hidden>
         <header class="section-heading">
-          <span class="section-number">07</span>
+          <span class="section-number">09</span>
           <div>
-            <p class="section-kicker">INTEGRIDAD</p>
-            <h2>Calidad de datos</h2>
-            <p>Estado de cada fuente antes de leer cualquier métrica.</p>
+            <p class="section-kicker">COSTE REAL</p>
+            <h2>Liquidez y ejecución</h2>
+            <p>Libro, profundidad y coste estimado de entrar.</p>
           </div>
         </header>
 
         <div class="context-grid">
-        <!-- Tres niveles SEPARADOS. Antes un solo panel titulado "Fuentes de datos" listaba
-             procesos internos: un colector vivo no es un feed, y un feed completo no
-             garantiza que la métrica que se apoya en él sea utilizable. -->
-        <article class="panel quality-panel">
-          <header><div><h3>Salud de servicios</h3><span>Procesos internos: API, ingest, WebSockets, scalp, daily y PostgreSQL</span></div><span id="quality-global" class="live-pill">—</span></header>
-          <div class="table-scroll"><table><thead><tr><th>Servicio</th><th>Estado</th><th>Último latido</th><th>Latencia</th><th>Detalle</th></tr></thead><tbody id="quality-body"></tbody></table></div>
-          <div id="quality-errors" class="tfprofile-notes"></div>
+          <article class="panel matrix-panel book-panel">
+            <header><h3>Order book</h3><span>bid share = bid/(bid+ask), 0-1</span></header>
+            <div class="table-scroll"><table><thead><tr><th>Venue</th><th>Spread</th><th title="bid/(bid+ask) del mejor nivel. 0.5 = equilibrio, &gt;0.5 mas bid">L1 bid share</th><th title="bid/(bid+ask) sumando 5 niveles">L5 bid share</th><th title="bid/(bid+ask) sumando 10 niveles. En el venue combinado la profundidad se suma pero el spread es el del venue mas estrecho">L10 bid share</th><th>Muro arriba</th><th>Muro abajo</th></tr></thead><tbody id="orderbook-body"></tbody></table></div>
+            <p class="source-note" id="orderbook-note"></p>
+          </article>
+
+        <article class="panel execution-panel">
+          <header><div><h3>Coste de ejecución</h3><span>Slippage por tamaño, por venue</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Venue</th><th>Lado</th><th>Tamaño</th><th>Precio medio</th><th>Slippage</th><th>Niveles</th><th>Estado</th></tr></thead><tbody id="execution-body"></tbody></table></div>
         </article>
 
-        <article class="panel quality-panel feeds-panel">
-          <header><div><h3>Calidad de feeds</h3><span id="feeds-sub">Feeds reales de mercado: venue, mercado y tipo de dato</span></div></header>
-          <div class="table-scroll"><table><thead><tr><th>Exchange</th><th>Mercado</th><th>Símbolo</th><th>Tipo de dato</th><th>Estado</th><th>Último ts</th><th>Latencia</th><th>Cobertura</th><th>Muestras</th><th>Esperadas</th><th>Hueco int.</th><th>Fuentes ausentes</th><th>Último error</th></tr></thead><tbody id="feeds-body"></tbody></table></div>
-          <small class="tfprofile-foot">La cobertura solo se calcula donde existe cadencia esperada. Los feeds de eventos (liquidaciones) no la tienen: su estado sale del latido del colector, no de la antigüedad del último evento.</small>
+        <article class="panel impact-panel">
+          <header><div><h3>Impacto de mercado</h3><span>bps por millón de delta neto</span></div></header>
+          <div class="table-scroll"><table><thead><tr><th>Ventana</th><th>Impacto</th><th>Delta neto</th><th>Movimiento</th><th>Banda</th><th>Cobertura</th></tr></thead><tbody id="impact-body"></tbody></table></div>
         </article>
 
-        <article class="panel quality-panel metrics-quality-panel">
-          <header><div><h3>Calidad por métrica</h3><span>Estado de cada métrica publicada, no del feed que la alimenta</span></div></header>
-          <div class="table-scroll"><table><thead><tr><th>Métrica</th><th>Temporalidad</th><th>Estado</th><th>Cobertura</th><th>Fuente</th><th>Latencia</th></tr></thead><tbody id="metrics-quality-body"></tbody></table></div>
-        </article>
-        </div>
-
-        <section class="health-band" aria-label="Estado del sistema">
-          <header><div><p class="section-kicker">SISTEMA</p><h3>Pipeline de datos</h3></div><span id="health-status"></span></header>
-          <div id="health-services" class="health-grid"></div>
-        </section>
-      </section>
-
-      <section id="replay" class="market-section" hidden>
-        <header class="section-heading">
-          <span class="section-number">08</span>
-          <div>
-            <p class="section-kicker">VALIDACIÓN</p>
-            <h2>Replay y validación</h2>
-            <p>Qué pasó después de cada veredicto registrado.</p>
-          </div>
-        </header>
-
-        <div class="context-grid">
-        <article class="panel replay-panel">
-          <header><div><h3>Veredictos registrados</h3><span>Y el retorno realizado después</span></div></header>
-          <div class="table-scroll"><table><thead><tr><th>Sesión</th><th>Sesgo</th><th>Score</th><th>Convicción</th><th>Régimen</th><th>Ret. 7s</th><th>Ret. 14s</th></tr></thead><tbody id="replay-body"></tbody></table></div>
-          <small class="tfprofile-foot">Historial de veredictos ya emitidos. No es una promesa de rentabilidad ni un backtest.</small>
-        </article>
-
-        <!-- LA CAPA DE AUDITORIA. No anade superficie de señal: esta medido que la señal no
-             anticipa y que ninguna regla de entrada alcanzable le recupera la ventaja. Sirve
-             para lo otro, que si se puede hacer: coger una señal YA EMITIDA y reconstruir por
-             que se dijo, con que entradas, que habria costado ejecutarla y si su desenlace ya
-             era visible cuando se decidio -que es la puerta P5 entera-. -->
-        <article class="panel auditoria-panel">
-          <header><div><h3>Auditoría de una señal</h3><span>Por qué se dijo, con qué entradas, qué habría costado y si el desenlace ya se veía</span></div></header>
-          <p class="auditoria-alcance" id="auditoria-alcance">Cargando el alcance…</p>
-          <div class="table-scroll"><table>
-            <thead><tr>
-              <th>Observación</th><th>Lado</th><th>Contexto</th><th>Lógica</th>
-              <th>Libros</th><th>Certificados</th>
-            </tr></thead>
-            <tbody id="auditoria-body"></tbody>
-          </table></div>
-          <div id="auditoria-detalle" class="auditoria-detalle"><p class="auditoria-vacio">Elige una observación de la tabla para reconstruirla.</p></div>
-          <small class="tfprofile-foot">Cada cifra dice sobre cuántos elementos corre. «Libros» y «Certificados» son RECUENTOS de las filas que cada ruta publica para esa observación, no un resumen de ellas: el detalle las lista una por una tal como llegan. <strong>Un 0 en «Certificados» no es un defecto:</strong> un certificado solo existe cuando el horizonte ya se cumplió y se verificó, y los horizontes llegan a 240 min, así que en una ventana de 1 h la mayoría de las observaciones son demasiado recientes para tenerlo. Medido el 2026-09-06 sobre la ventana por defecto: cruzan 134/134 con replay, 134/134 con execution y <strong>26/134 (19.4 %) con visibility</strong>.</small>
-        </article>
-
-        <article class="panel auditoria-panel">
-          <header><div><h3>Historial crudo del scalp</h3><span>Lo que la señal veía, sin ventana de tiempo</span></div></header>
-          <p class="auditoria-alcance" id="scalp-historial-alcance">Cargando el alcance…</p>
-          <div class="table-scroll"><table>
-            <thead><tr><th>ts</th><th>Estado</th><th>Long</th><th>Short</th><th>Confianza</th><th>Libro</th><th>Basis bps</th><th>Motivo</th></tr></thead>
-            <tbody id="scalp-historial-body"></tbody>
-          </table></div>
-          <small class="tfprofile-foot">Esta ruta no acepta ventana de tiempo: su único límite es de filas. La banda de arriba dice qué tramo cubren las que llegaron.</small>
-        </article>
+          <article class="panel profile-panel">
+            <header>
+              <div><h3>Perfil de volumen y delta</h3><span id="profile-sub">Dónde se negoció y de qué lado</span></div>
+              <div id="profile-windows" class="chart-mode" aria-label="Ventana del perfil">
+                <button type="button" data-interval="4hour" data-days="30">30 d</button>
+                <button type="button" data-interval="4hour" data-days="90" class="active">90 d</button>
+                <button type="button" data-interval="4hour" data-days="300">300 d</button>
+                <button type="button" data-interval="5min" data-days="9">Intradía</button>
+              </div>
+            </header>
+            <div class="profile-layout">
+              <div id="profile-chart" class="profile-chart"></div>
+              <dl id="profile-stats" class="metric-list compact"></dl>
+            </div>
+            <p id="profile-note" class="panel-note"></p>
+          </article>
         </div>
       </section>
+
     </main>
   </div>
 

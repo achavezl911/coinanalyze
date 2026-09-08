@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_ledger` · `app/api.py:2322` (cuerpo hasta la 2386) · decorador en la linea 2321.
+Handler `signals_ledger` · `app/api.py:2342` (cuerpo hasta la 2406) · decorador en la linea 2341.
 
 ## Parametros de entrada
 
@@ -22,15 +22,15 @@ Handler `signals_ledger` · `app/api.py:2322` (cuerpo hasta la 2386) · decorado
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2381 |
-| `count` | literal en app/api.py:2383 |
-| `limit` | literal en app/api.py:2382 |
-| `observations` | literal en app/api.py:2385 |
-| `since` | literal en app/api.py:2378 |
-| `symbol` | literal en app/api.py:2377 |
-| `truncated` | literal en app/api.py:2384 |
-| `until` | literal en app/api.py:2379 |
-| `ventana_maxima_h` | literal en app/api.py:2380 |
+| `as_of` | literal en app/api.py:2401 |
+| `count` | literal en app/api.py:2403 |
+| `limit` | literal en app/api.py:2402 |
+| `observations` | literal en app/api.py:2405 |
+| `since` | literal en app/api.py:2398 |
+| `symbol` | literal en app/api.py:2397 |
+| `truncated` | literal en app/api.py:2404 |
+| `until` | literal en app/api.py:2399 |
+| `ventana_maxima_h` | literal en app/api.py:2400 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -50,10 +50,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2266`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2306`
-- `app.api.records` — `app/api.py:241`
-- `app.api.validate_symbol` — `app/api.py:228`
+- `app.api._utc_iso` — `app/api.py:2286`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2326`
+- `app.api.records` — `app/api.py:242`
+- `app.api.validate_symbol` — `app/api.py:229`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (10)</summary>
 
@@ -76,12 +76,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:230` | una funcion de su cierre |
-| 422 | — | `app/api.py:2315` | una funcion de su cierre |
-| 422 | — | `app/api.py:2343` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2345` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2347` | el propio handler |
-| 422 | — | `app/api.py:2349` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 422 | — | `app/api.py:2335` | una funcion de su cierre |
+| 422 | — | `app/api.py:2363` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2365` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2367` | el propio handler |
+| 422 | — | `app/api.py:2369` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -92,7 +92,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K21-ledger-de-senales.sh:32`, `harness/checks/K24-replay-del-contexto.sh:88`, `harness/checks/K43-control.bash:80`, `harness/checks/K43-foto-unica.sh:122` | `harness/checks/K24-replay-del-contexto.sh:19`, `harness/checks/K31-cubos.py:145`, `harness/checks/K88-control.bash:477` |
-| **panel** | `static/app.js:1736` | — |
+| **panel** | `static/app.js:1759` | — |
 | **tests** | — | `tests/test_signals_ledger.py:1` |
 
 **La llama el panel: es superficie de producto.**
@@ -131,8 +131,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.api._utc_iso` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.signals_ledger` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

@@ -92,7 +92,12 @@ async def _ventana(conn: asyncpg.Connection, symbol: str, base: str, a: datetime
         "oi_inicio": oi_i, "oi_fin": oi_f,
         "oi_pct": None if not (oi_i and oi_f) else round(100.0 * (oi_f / oi_i - 1.0), 3),
         "muestras_oi": int(d.get("n_oi") or 0),
-        "funding_medio_pct": None if f("funding") is None else round(f("funding") * 100.0, 4),
+        # SIN *100: `fr_close` YA es un porcentaje por periodo de 8 h. Multiplicarlo daba
+        # 0.276 % por 8 h = 302 % anual. La casa ya lo tenia bien en scalp_logic.py:3447,
+        # que anualiza con `cur * 3 * 365` sobre el valor crudo.
+        # Y el campo cambia de nombre A PROPOSITO: `_pct` a secas no dice el PERIODO, y por
+        # eso se leia como «falta pasarlo a porcentaje». Ahora lo dice.
+        "funding_medio_pct_8h": None if f("funding") is None else round(f("funding"), 6),
         "muestras_funding": int(d.get("n_fund") or 0),
         "liq_largos_usd": f("liq_long"), "liq_cortos_usd": f("liq_short"),
         "muestras_liq": int(d.get("n_liq") or 0),
@@ -162,15 +167,16 @@ def _pruebas(v: dict[str, Any], c: dict[str, Any]) -> list[dict[str, Any]]:
     # 5 · FUNDING. Dice quien PAGA, que es posicionamiento y no direccion. Vota «posicionamiento»
     # y no alcista/bajista a proposito: un funding positivo con el precio cayendo significa que
     # los largos pagan Y pierden, y llamar a eso «alcista» seria leerlo al reves.
-    if v["funding_medio_pct"] is None:
+    if v["funding_medio_pct_8h"] is None:
         out.append(_prueba("funding", "sin muestras de funding", None, "N/D",
                            "funding_rate no tiene filas de 5min en el rango"))
     else:
-        cifra = f'{v["funding_medio_pct"]:+.4f}% sobre {v["muestras_funding"]} muestras'
-        if c.get("funding_medio_pct") is not None:
-            cifra += f' · control {c["funding_medio_pct"]:+.4f}%'
+        cifra = (f'{v["funding_medio_pct_8h"]:+.5f}% por 8 h sobre '
+                 f'{v["muestras_funding"]} muestras')
+        if c.get("funding_medio_pct_8h") is not None:
+            cifra += f' · control {c["funding_medio_pct_8h"]:+.5f}%'
         out.append(_prueba("funding",
-                           "pagan los largos" if v["funding_medio_pct"] > 0 else "pagan los cortos",
+                           "pagan los largos" if v["funding_medio_pct_8h"] > 0 else "pagan los cortos",
                            "posicionamiento", cifra))
 
     # 6 · BALLENA DE SPOT. NO VOTA, y se dice por que. El cero esta MEDIDO como no medible.
