@@ -194,28 +194,66 @@ PAREJAS="
 # techos de K37 (linea 148) y las excepciones de K41. Una excepcion vieja no puede
 # seguir cubriendo un fallo nuevo.
 
-# --- K46 · EL CONJUNTO QUE SE EVALUA SALE DEL LOG, NO DEL TEXTO DEL PANEL ---
-# Hasta el 2026-08-26 el denominador salia de un grep -o sobre app.js, y ahi caen las
-# menciones en COMENTARIOS: 2 de las 49 lo eran (linea 392 sobre /api/profile y 1611 sobre
-# /api/quality/feeds). Eso metio a /api/profile entre "las 37 que el panel pinta" cuando
-# el panel no la pide NUNCA -113 peticiones en todo el historico, las 113 nuestras con
-# curl-. El texto del panel no puede ser la fuente de verdad de lo que el panel pide.
+# --- LA POBLACION SALE DEL ARBOL, Y ES LA SEGUNDA VEZ QUE SE MUEVE ---
 #
-# El cliente NO se identifica por una sola IP. Medido sobre el historico entero: hay
-# CUATRO navegadores -10.10.100.101 con 446138 peticiones (Firefox/Windows), 10.10.100.73
-# con 5578, 10.10.100.99 con 116 (iPhone) y 10.10.100.100 con 112 (Mac)- y un solo cliente
-# de curl, 10.10.100.2, que somos nosotros con 8084. Filtrar por la IP del navegador
-# principal dejaria fuera tres dispositivos reales; el criterio es "navegador y no el
-# arnes", que es lo que se quiere decir y no depende de que nadie cambie de sitio.
+# HASTA EL 2026-08-26 salia de un grep -o sobre app.js, y se movio al log de nginx por un motivo
+# REAL y bien medido que queda escrito porque es historia y explica el rodeo: aquel grep cogia
+# las menciones en COMENTARIOS -2 de las 49 lo eran, la linea 392 sobre /api/profile y la 1611
+# sobre quality/feeds-, y eso metio a /api/profile entre "las 37 que el panel pinta" cuando el
+# panel no la pide NUNCA: 113 peticiones en todo el historico, las 113 nuestras con curl.
 #
-# LA VENTANA ES TODO EL LOG RETENIDO, y esto NO es pereza: /api/quality/feeds vive dentro
-# de la pestana "calidad" (app.js:1609) y /api/divergences dentro de "contexto"
-# (app.js:1625), o sea que solo se piden cuando el operador abre esa pestana. Medido: las
-# dos, mas /api/verdicts, no las pide un navegador desde el 21/Ago -quality/feeds en 10
-# dias distintos, divergences y verdicts en 8-, mientras las otras 30 llegan al 25/Ago.
-# Con una ventana de un dia habrian desaparecido del denominador tres rutas VIVAS -y dos
-# de ellas son justo los dos huecos de FOTO que quedan pendientes-, o sea que el check se
-# habria puesto mas verde por no mirar. Una pestana cerrada no es una ruta muerta.
+# DESDE EL 2026-09-09 vuelve a salir del arbol, y la conclusion de entonces -"el texto del panel
+# no puede ser la fuente de verdad de lo que el panel pide"- se corrige aqui: el fallo no era la
+# FUENTE, era el CENSO. Un grep -o no distingue una llamada de un comentario; quitar los
+# comentarios antes de extraer, si. Medido el 2026-09-09 con el censo de abajo: las dos unicas
+# menciones que hoy quedan solo en comentario son /api/profile (392) y reference-levels (2151),
+# y las dos se excluyen solas. El defecto que motivo el cambio de 2026-08-26 esta cerrado por
+# construccion, no por suerte.
+#
+# POR QUE HABIA QUE VOLVER. Tres cosas medidas el 2026-09-09, no tres opiniones:
+#   a) NO ERA REPRODUCIBLE. El denominador era "lo que alguien pidio", asi que el mismo codigo
+#      sin tocar una linea podia dar otro numero manana porque alguien abrio una pestana.
+#      COLA.md 84 registra que este check cambio de motivo entero sin que nadie lo tocara.
+#   b) SE QUEDABA CORTO POR ARRIBA. El log ve 42 rutas y el panel puede pedir 44. Las dos que
+#      faltaban -level/breakout y range/validate- viven detras de un boton que ningun navegador
+#      ha pulsado, y no entraban en el denominador aunque les faltase familia igual que al resto.
+#   c) DEPENDIA DE LA RETENCION. /etc/logrotate.d/nginx dice daily y rotate 14: son CATORCE DIAS,
+#      no "todo el historico" como decia esta misma prosa. Y el filo se ve en una sola ruta:
+#      liquidation-map -que es UNO de los tres huecos que este check condena- se sostenia con 12
+#      peticiones, 8 en access.log y 4 en access.log.1. Catorce dias sin que nadie abra ese panel
+#      y K43 habria condenado DOS rutas en vez de tres, con el mismo defecto intacto. Un
+#      denominador que encoge solo pone el check mas verde por no mirar.
+#
+# Y el motivo que lo hacia urgente y no es de este check: el arnes entero se apoya en poder
+# comparar una pasada de verify con la siguiente. Un denominador que se mueve solo rompe esa
+# comparacion para todos los demas.
+#
+# EL CENSO NO DEPENDE DE COMO SE LLAME A LA RUTA, y eso es a proposito. Hoy conviven CUATRO
+# convocatorias en app.js -maybe() 49 veces, pedir() 5, api() 1 y new EventSource() 1-. Un censo
+# por nombre de funcion se habria dejado fuera las cinco de signals, que usan pedir(). Se pesca
+# el LITERAL de ruta dentro de una cadena, fuera de comentarios. Verificado el 2026-09-09 por la
+# via contraria: de los 44 literales, 44 estan dentro de una de esas cuatro llamadas -0 falsos
+# positivos- y ninguna llamada trae una ruta que el censo no vea -0 omisiones-.
+#
+# LO QUE EL CENSO NO VE, medido y no supuesto (2026-09-09):
+#   · interpolacion DENTRO del camino: 0 ocurrencias. La variable va siempre despues del ?.
+#     El dia que alguien escriba una ruta con la variable en el camino, el censo la partira y
+#     hay que enterarse aqui.
+#   · rutas fuera de app.js: index.html no anade ninguna y manual.html no menciona ninguna.
+#   · /api/ai/context: no aparece en static/ ni una vez. El panel no lo pide todavia, y que
+#     llegue a pedirlo es lo que mide K44, no esta unidad.
+#
+# EL LOG SE QUEDA, Y NO DECIDE NADA. Se conserva por una razon y no por inercia: contesta algo
+# que el arbol no puede contestar -de las rutas que el panel PUEDE pedir, cuales se estan
+# pidiendo de verdad- y ya venia en la misma llamada. Va como cola informativa. Si el ssh falla
+# o el log sale vacio, el check SIGUE midiendo: cuando el log era el denominador eso era NO
+# MEDIDO, y ahora no lo es.
+#
+# El cliente NO se identifica por una sola IP. Medido sobre el log retenido: hay CUATRO
+# navegadores -10.10.100.101 con 446138 peticiones (Firefox/Windows), 10.10.100.73 con 5578,
+# 10.10.100.99 con 116 (iPhone) y 10.10.100.100 con 112 (Mac)- y un solo cliente de curl,
+# 10.10.100.2, que somos nosotros con 8084. Filtrar por la IP del navegador principal dejaria
+# fuera tres dispositivos reales; el criterio es "navegador y no el arnes".
 # OJO AL MEDIRLO: los ficheros rotados hay que leerlos en orden CRONOLOGICO. El glob
 # access.log.*.gz los da en orden lexicografico, o sea .10 .11 .12 .13 .14 .2 .3, asi que
 # quedarse con la ultima fecha vista da la de un fichero VIEJO para toda ruta que no
@@ -227,15 +265,17 @@ $1 != ARNES && /Mozilla/ { p = $7; sub(/\?.*/, "", p); if (p ~ /^\/api\//) c[p]+
 END { for (i in c) printf "%d %s\n", c[i], i }
 AWK
 )
-PEDIDAS=$("$B/bin/prod" "{ zcat /var/log/nginx/access.log.*.gz; cat /var/log/nginx/access.log.1 /var/log/nginx/access.log; } 2>/dev/null | awk -v ARNES=$ARNES_IP '$LOG_AWK' | sort -rn" 2>/dev/null)
+# K43_PEDIDAS inyecta el log -vacia incluida, por eso el guion es simple y no :-. El control
+# la usa para ensenar que un log vacio YA NO para el check, que es el cambio que importa.
+PEDIDAS=${K43_PEDIDAS-$("$B/bin/prod" "{ zcat /var/log/nginx/access.log.*.gz; cat /var/log/nginx/access.log.1 /var/log/nginx/access.log; } 2>/dev/null | awk -v ARNES=$ARNES_IP '$LOG_AWK' | sort -rn" 2>/dev/null)}
 
 foto=$(curl -sS -k --netrc-file "$NETRC" "${CAB[@]}" --max-time 60 \
        "$API_PROD/api/ai/context?symbol=$SIM" 2>/dev/null)
 [ -n "$foto" ] || { echo "NO MEDIDO: /api/ai/context no respondio"; exit 2; }
 
 printf '%s' "$foto" | PEDIDAS="$PEDIDAS" SIM="$SIM" ASIGNACION="$ASIGNACION" PAREJAS="$PAREJAS" \
-  NETRC="$NETRC" API_PROD="$API_PROD" K43_CABECERA="${K43_CABECERA:-}" python3 -c '
-import json, os, subprocess, sys
+  NETRC="$NETRC" API_PROD="$API_PROD" REPO="$REPO" K43_CABECERA="${K43_CABECERA:-}" K43_APP_JS="${K43_APP_JS:-$REPO/static/app.js}" python3 -c '
+import json, os, re, subprocess, sys
 from datetime import datetime
 
 foto = json.load(sys.stdin)
@@ -254,23 +294,44 @@ for linea in os.environ["PAREJAS"].strip().splitlines():
     parejas.setdefault(ruta.split("#")[0], []).append(
         (ruta.partition("#")[2], clave, [e for e in env.split(",") if e]))
 
+# LA POBLACION · del arbol y no del log. Vease la cabecera para el porque.
+# Los comentarios se quitan ANTES de extraer: eso es lo que le faltaba al censo de 2026-08-26.
+COMILLAS = chr(96) + chr(39) + chr(34)
+fuente = open(os.environ["K43_APP_JS"], encoding="utf-8", errors="replace").read()
+fuente = re.sub(r"/\*.*?\*/", " ", fuente, flags=re.S)
+_lineas = []
+for _l in fuente.splitlines():
+    _m = re.search(r"(?<!:)//", _l)
+    _lineas.append(_l[:_m.start()] if _m else _l)
+panel = sorted({m.group(1).rstrip("/") for m in re.finditer(
+    "[" + COMILLAS + "](/api/[^" + COMILLAS + r"?\s]*)", "\n".join(_lineas))})
+
+# EL CONTROL POSITIVO VIVE DENTRO DEL CHECK, no solo en la entrega de quien lo escribio. Si el
+# censo dejara de encontrar las rutas que el panel pide en CADA refresco, estaria roto, y un
+# censo roto diria "ninguna sin familia" sobre cero rutas, que es un verde sin sujeto. Las dos
+# de control no dependen de que nadie abra una pestana: son la portada.
+CONTROL = ["/api/dashboard/state", "/api/ohlcv"]
+faltan_control = [r for r in CONTROL if r not in panel]
+if faltan_control or len(panel) < 30:
+    print("NO MEDIDO: el censo de %s da %d rutas (suelo 30) y le faltan los controles %s: "
+          "el censo esta roto y lo que diga no vale"
+          % (os.environ["K43_APP_JS"], len(panel), ",".join(faltan_control) or "ninguno"))
+    raise SystemExit(2)
+
+# EL LOG, YA SIN VOTO. Contesta otra pregunta -de lo que el panel puede pedir, que se pide de
+# verdad- y por eso se conserva. Si viene vacio, no pasa nada: no es el denominador.
 pedidas = {}
 for linea in os.environ["PEDIDAS"].strip().splitlines():
     n, _, r = linea.strip().partition(" ")
     if n.isdigit() and r.startswith("/api/"):
         pedidas[r] = int(n)
-# Sin esta guarda el criterio se cumpliria SOLO: un log rotado, un ssh que falla o un
-# filtro que no engancha dejan el conjunto vacio, y "todas las rutas cumplen" seria cierto
-# sobre cero rutas. Con el historico de hoy son 33 rutas y 446k peticiones, asi que estos
-# suelos no aprietan; estan para distinguir "no hay fallos" de "no hay medicion".
-if sum(pedidas.values()) < 1000 or len(pedidas) < 10:
-    print("NO MEDIDO: el log de nginx solo da %d peticiones de navegador en %d rutas; "
-          "sin eso el denominador no es de fiar" % (sum(pedidas.values()), len(pedidas)))
-    raise SystemExit(2)
 # /api/ai/context es el sobre, no una cifra pintada: no se le exige familia porque ES la
 # ventana. Que el panel llegue a pedirla es lo que mide K44, no esta unidad.
-pintadas = [r for r in sorted(pedidas) if r != "/api/ai/context"]
-declaradas_sin_pedir = sorted(set(asign) - set(pedidas))
+pintadas = [r for r in panel if r != "/api/ai/context"]
+# LA OTRA DIRECCION. Un conjunto que solo se mira por un lado no esta medido: si la asignacion
+# guarda rutas que el panel ya no llama, es un cementerio y hay que podarlo.
+declaradas_sin_llamada = sorted(set(asign) - set(panel))
+nunca_pedidas = sorted(r for r in pintadas if r not in pedidas)
 
 cab = ["-H", os.environ["K43_CABECERA"]] if os.environ.get("K43_CABECERA") else []
 
@@ -459,29 +520,38 @@ for r in pintadas:
     elif fam == "DEMANDA" and not any(k in d for k in ("as_of", "generated_at", "snapshot_ts")):
         incumplen.append("%s(DEMANDA: sin as_of)" % r)
 
-if sin_familia:
-    print("%d rutas que el panel pinta no tienen familia asignada: %s"
-          % (len(sin_familia), " ".join(sin_familia)))
-    raise SystemExit(1)
+# LA COLA SE CONSTRUYE ANTES DE CONDENAR, y no despues. Este check va a estar ROJO mientras
+# queden rutas sin familia; si la otra direccion se imprimiera solo en el camino del VERDE,
+# el cementerio no se veria nunca y volveriamos a tener un conjunto medido por un lado.
 cola = ""
-if declaradas_sin_pedir:
-    cola = " · %d declaradas que ningun navegador pide: %s" % (
-        len(declaradas_sin_pedir), " ".join(declaradas_sin_pedir))
+if declaradas_sin_llamada:
+    cola = " · CEMENTERIO: %d con familia que el panel ya NO llama: %s" % (
+        len(declaradas_sin_llamada), " ".join(declaradas_sin_llamada))
+else:
+    cola = " · 0 en el cementerio: toda familia declarada la llama el panel"
+if nunca_pedidas:
+    cola += (" · informativo, no criterio: %d que el panel puede pedir y ningun navegador "
+             "pidio en los 14 dias que retiene el log: %s"
+             % (len(nunca_pedidas), " ".join(nunca_pedidas)))
 # LAS QUE NO SE PUDIERON PREGUNTAR SE NOMBRAN, y no se cuentan como cumplidoras ni como
 # incumplidoras. Un censo con huecos declarados vale; uno que los tapa, no. Si NINGUNA se pudo
 # preguntar, esto no es un veredicto: es NO MEDIDO.
 if no_juzgadas:
     cola += " · %d NO JUZGADAS -no se pudo preguntar-: %s" % (
         len(no_juzgadas), " ".join(no_juzgadas))
+if sin_familia:
+    print("%d de las %d rutas que el panel puede pedir no tienen familia asignada: %s%s"
+          % (len(sin_familia), len(pintadas), " ".join(sin_familia), cola))
+    raise SystemExit(1)
 if len(no_juzgadas) >= len(pintadas):
-    print("NO MEDIDO: no se pudo preguntar a ninguna de las %d rutas pintadas%s"
+    print("NO MEDIDO: no se pudo preguntar a ninguna de las %d rutas que el panel pide%s"
           % (len(pintadas), cola))
     raise SystemExit(2)
 if incumplen:
-    print("%d de %d rutas que un navegador pide no cumplen lo que su familia promete: %s%s"
+    print("%d de %d rutas que el panel puede pedir no cumplen lo que su familia promete: %s%s"
           % (len(incumplen), len(pintadas), " ".join(incumplen), cola))
     raise SystemExit(1)
-print(("las %d rutas que un navegador pide estan cubiertas: %d en la foto con sus nombres "
+print(("las %d rutas que el panel puede pedir estan cubiertas: %d en la foto con sus nombres "
        "de campo dentro de la clave declarada, %d series con coverage, %d bajo demanda con "
        "as_of propio, %d exentas con cita"
        % (len(pintadas),
