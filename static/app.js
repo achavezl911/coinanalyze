@@ -3047,11 +3047,28 @@ function celdaHeat(valor, escala, sufijo, factor) {
   div.style.background = f >= 0
     ? `rgba(47,213,138,${(0.10 + 0.55 * f).toFixed(3)})`
     : `rgba(255,105,120,${(0.10 + 0.55 * -f).toFixed(3)})`;
-  // Se PINTA escalado -el funding en milesimas de % por 8 h- para que quepan tres caracteres
-  // en vez de seis. El dato no cambia: el `title` lleva el valor crudo con su unidad.
+  // Se PINTA escalado -el FUNDING en milesimas de % por 8 h; el de OI entra con factor 1 y no
+  // se escala- para que quepan pocos caracteres. El dato no cambia: el `title` lleva el valor
+  // crudo con su unidad.
+  //
+  // DOS DECIMALES POR DEBAJO DE 10, Y NO UNO. Con uno, dias que valen cosas distintas se
+  // pintaban con el MISMO texto. Medido el 2026-09-09 sobre el payload real de /api/carry/matriz
+  // (15 dias x 3 simbolos = 45 celdas con dato en cada mapa):
+  //     un decimal  -> funding 6 pares indistinguibles · OI 10
+  //     dos         -> funding 0                       · OI  2
+  // Se eligio DOS y no TRES a sabiendas: tres deja OI en 4 pares -no en 0- y cuesta un caracter
+  // en TODAS las celdas. LO QUE SE SACRIFICA, dicho: sobreviven 2 pares en el mapa de OI, dias
+  // que difieren en menos de 0.005 puntos porcentuales. Por encima de 10 se siguen pintando 0
+  // decimales, que es lo que conserva el ancho cuando hay un pico.
+  //
+  // Y UN VALOR QUE NO ES CERO NO SE PINTA COMO UN CERO. Con un decimal, un funding de
+  // -0.000025 % por 8 h salia «-0.0»: un cero pintado donde no hay un cero es una afirmacion
+  // falsa sobre el mercado, no un redondeo. Ahora sale «≈0» y el signo lo sigue diciendo el
+  // color de fondo, que ya lo decia. El crudo sigue entero en el `title`.
   const pintado = v * (factor || 1);
-  div.textContent = pintado === 0 ? '0'
-    : pintado.toFixed(Math.abs(pintado) >= 10 ? 0 : 1);
+  const texto = pintado === 0 ? '0'
+    : (Math.abs(pintado) >= 10 ? pintado.toFixed(0) : pintado.toFixed(2));
+  div.textContent = Number(texto) === 0 && pintado !== 0 ? '≈0' : texto;
   div.title = `${v}${sufijo} sobre ${valor.muestras} muestras de 5 min`
     + (valor.completo ? '' : ' — DIA INCOMPLETO');
   if (!valor.completo) div.classList.add('heat-parcial');
@@ -3075,10 +3092,17 @@ function pintaHeat(idCaja, filas, simbolos, campo, sufijo, factor) {
   tabla.className = 'heat-rejilla';
   // `minmax(min-content, 1fr)` y NO `minmax(0, 1fr)`: el cero es el permiso para que la
   // columna encoja por debajo de su contenido, y con `text-overflow: ellipsis` eso corta el
-  // numero. Cuando se corta, celdas que valen cosas distintas se ven iguales y el heatmap
-  // deja de poder leerse. `min-content` no es un ancho ajustado a la letra de hoy: es la
-  // primitiva que dice «nunca mas estrecho que lo que hay dentro», asi que sigue valiendo
-  // si el texto crece. Si aun asi no cabe, `.heatmap` se desplaza (overflow-x: auto).
+  // numero. `min-content` no es un ancho ajustado a la letra de hoy: es la primitiva que dice
+  // «nunca mas estrecho que lo que hay dentro», asi que sigue valiendo si el texto crece. Si aun
+  // asi no cabe, `.heatmap` se desplaza (overflow-x: auto).
+  //
+  // ESTA LINEA DECIA «cuando se corta, celdas que valen cosas distintas se ven iguales y el
+  // heatmap deja de poder leerse», y era CIERTA DEL RECORTE Y FALSA DEL REDONDEO. Quien la leia
+  // entendia que arreglado el recorte ya no habia dos celdas iguales, y no es lo que pasa: son
+  // dos propiedades distintas y esta columna solo cierra una. Medido el 2026-09-09 con chromium
+  // sobre la rejilla real: CERO celdas recortadas -o sea que esta parte funciona- y aun asi 16
+  // pares de dias con valores distintos pintados con el mismo texto, 6 en funding y 10 en OI.
+  // El recorte lo cierra este `min-content`; el redondeo lo cierra el formato de celdaHeat.
   tabla.style.gridTemplateColumns = `72px repeat(${filas.length}, minmax(min-content, 1fr))`;
   const cab = document.createElement('div');
   cab.className = 'heat-cab';
@@ -3139,8 +3163,9 @@ function renderCarry(m) {
                       ' % por 8 h', 1000);
   textoEn('heat-funding-sub', `milésimas de % por 8 h · ${servido}`);
   textoEn('heat-funding-note',
-    `Cada celda es el funding medio del día en MILÉSIMAS DE % POR PERÍODO DE 8 H: «6.7» son `
-    + `0.0067 %. El valor crudo está en el título de cada celda. `
+    `Cada celda es el funding medio del día en MILÉSIMAS DE % POR PERÍODO DE 8 H: «6.74» son `
+    + `0.00674 %. «≈0» es un valor distinto de cero que redondea a cero, no un cero. `
+    + `El valor crudo está en el título de cada celda. `
     + `${f.total - f.vacias} de ${f.total} celdas con dato; `
     + `${f.vacias} sin medir, y van vacías —no a cero—. Verde: pagan los largos.`);
 
