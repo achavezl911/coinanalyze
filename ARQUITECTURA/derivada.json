@@ -26900,19 +26900,27 @@
           "llamadas": [
             "static/app.js:1589"
           ],
-          "menciones": []
+          "menciones": [
+            "static/app.js:3055"
+          ]
         },
         "panel-html": {
           "llamadas": [
             "static/index.html:219"
           ],
           "menciones": []
+        },
+        "tests": {
+          "llamadas": [],
+          "menciones": [
+            "tests/js/heatmap_celda.test.js:25"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 2,
-        "n_menciones": 0,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -30449,7 +30457,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:3521"
+            "static/app.js:3546"
           ],
           "menciones": []
         }
@@ -30594,7 +30602,7 @@
             "static/app.js:1662"
           ],
           "menciones": [
-            "static/app.js:3155"
+            "static/app.js:3180"
           ]
         },
         "panel-html": {
@@ -32558,7 +32566,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:3646"
+            "static/app.js:3671"
           ],
           "menciones": []
         },
@@ -32794,7 +32802,7 @@
         "panel": {
           "llamadas": [
             "static/app.js:1590",
-            "static/app.js:3362"
+            "static/app.js:3387"
           ],
           "menciones": []
         },

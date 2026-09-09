@@ -92,8 +92,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **panel** | `static/app.js:1589` | — |
+| **panel** | `static/app.js:1589` | `static/app.js:3055` |
 | **panel-html** | `static/index.html:219` | — |
+| **tests** | — | `tests/js/heatmap_celda.test.js:25` |
 
 **La llama el panel: es superficie de producto.**
 

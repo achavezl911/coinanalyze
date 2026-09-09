@@ -149,7 +149,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **panel** | `static/app.js:1590`, `static/app.js:3362` | — |
+| **panel** | `static/app.js:1590`, `static/app.js:3387` | — |
 | **tests** | `tests/test_funding_una_sola_escala.py:87` | `tests/test_funding_una_sola_escala.py:13`, `tests/test_ventana_elegible.py:71` |
 
 **La llama el panel: es superficie de producto.**

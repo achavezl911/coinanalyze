@@ -373,7 +373,20 @@ main { width: 100%; min-width: 0; max-width: 1680px; padding: 0 var(--sp-7) var(
 .levels-panel { display: flex; flex-direction: column; }
 .levels-panel .metric-list { display: flex; flex: 1; flex-direction: column; justify-content: space-between; }
 .metric-list { margin: 0; padding: var(--sp-2) var(--sp-5) var(--sp-5); }
-.metric-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-4); padding: var(--sp-4) 0; border-bottom: 1px solid var(--border-soft); }
+/* LA ETIQUETA NUNCA ENCOGE POR DEBAJO DE SU PALABRA, y el valor es el que cede.
+   Estaba al reves: la pista del VALOR era `auto` -sin tope, crece con su contenido- y la de la
+   ETIQUETA `minmax(0, 1fr)`, donde ese 0 es permiso explicito para encoger hasta cero. Cuando el
+   valor era largo la etiqueta se quedaba en 0 px y su texto, que no tiene overflow, se pintaba
+   ENCIMA del valor: dos textos sobre los mismos pixeles.
+   Medido el 2026-09-09 con chromium 152 sobre la portada real y payloads reales de 140, 12
+   anchuras x 3 etiquetas de confianza = 36 combinaciones: 6 rotas, 5 con solape de pixeles de
+   hasta 596 px2. Y forzando el mismo valor de 129 caracteres en TODAS las filas de .metric-list,
+   22 de 22 filas rompian en alguna anchura (130 de 264 combinaciones): el defecto era de la
+   REGLA, no de la fila Confianza, que es solo donde se veia.
+   `auto` para el dt es minmax(min-content, auto): nunca por debajo de lo que hay dentro.
+   `minmax(0, 1fr)` para el dd le da el resto y le deja partir en varias lineas, que es lo que
+   tiene que hacer un texto largo. El dd sigue alineado a la derecha. */
+.metric-list > div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-4); padding: var(--sp-4) 0; border-bottom: 1px solid var(--border-soft); }
 .metric-list > div:last-child { border-bottom: 0; }
 .metric-list dt { color: var(--muted); font-size: var(--fs-small); }
 .metric-list dd { margin: 0; font-size: var(--fs-small); font-weight: 720; text-align: right; }
