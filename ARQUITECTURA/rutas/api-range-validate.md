@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `range_validate_endpoint` · `app/api.py:1863` (cuerpo hasta la 1893) · decorador en la linea 1862.
+Handler `range_validate_endpoint` · `app/api.py:1926` (cuerpo hasta la 1956) · decorador en la linea 1925.
 
 ## Parametros de entrada
 
@@ -85,12 +85,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:1878` | el propio handler |
-| 422 | range spans more than 3x; narrow it | `app/api.py:1880` | el propio handler |
-| 422 | start_date and end_date must come together | `app/api.py:1882` | el propio handler |
-| 422 | start_date must be before end_date | `app/api.py:1885` | el propio handler |
-| 422 | span exceeds the 730 days of history | `app/api.py:1887` | el propio handler |
-| 422 | days + end_days_ago exceeds daily history | `app/api.py:1889` | el propio handler |
+| 422 | low must be below high | `app/api.py:1941` | el propio handler |
+| 422 | range spans more than 3x; narrow it | `app/api.py:1943` | el propio handler |
+| 422 | start_date and end_date must come together | `app/api.py:1945` | el propio handler |
+| 422 | start_date must be before end_date | `app/api.py:1948` | el propio handler |
+| 422 | span exceeds the 730 days of history | `app/api.py:1950` | el propio handler |
+| 422 | days + end_days_ago exceeds daily history | `app/api.py:1952` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_orderbook` · `app/api.py:1642` (cuerpo hasta la 1654) · decorador en la linea 1641.
+Handler `scalp_orderbook` · `app/api.py:1705` (cuerpo hasta la 1717) · decorador en la linea 1704.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `scalp_orderbook` · `app/api.py:1642` (cuerpo hasta la 1654) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `freshness` | literal en app/api.py:1653 |
+| `freshness` | literal en app/api.py:1716 |
 | `freshness.age_seconds` | literal en app/ai_context.py:641 |
 | `freshness.as_of` | literal en app/ai_context.py:640 |
 | `freshness.max_age_seconds` | literal en app/ai_context.py:642 |
 | `freshness.status` | literal en app/ai_context.py:639 |
-| `rows` | literal en app/api.py:1652 |
-| `symbol` | literal en app/api.py:1651 |
+| `rows` | literal en app/api.py:1715 |
+| `symbol` | literal en app/api.py:1714 |
 
 Forma de la respuesta segun el AST: objeto.
 

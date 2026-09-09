@@ -750,6 +750,19 @@ async def cvd(
         )
 
 
+# MARGEN DE ASENTAMIENTO de spot_trades_agg, en minutos. Un cubo no declara minutos ausentes
+# hasta que ha terminado Y ha pasado este margen, porque el colector escribe con retraso y su
+# ultimo minuto tarda en aparecer.
+#
+# MEDIDO, no elegido: `now() - max(ts)` en cinco muestras separadas 20 s el 2026-09-08T21:1xZ dio
+# 3.34, 3.68, 4.02, 3.36 y 3.70 minutos, y las TRES monedas dieron exactamente el mismo valor en
+# cada muestra -mismo colector, mismo volcado-. Diez minutos son mas del doble del peor caso.
+#
+# Si el colector se cae y el frente se retrasa mas de esto, los cubos de esa franja SI saldran
+# con hueco. Es lo correcto: entonces el dato falta de verdad y quien lea la serie tiene que
+# saberlo.
+MINUTOS_DE_ASENTAMIENTO = 10
+
 @app.get("/api/cvd/spot")
 async def cvd_spot(
     symbol: str,
@@ -781,22 +794,50 @@ async def cvd_spot(
                      count(*) FILTER (WHERE covered_seconds IS NULL) AS unknown_minutes,
                      -- y las tres de arriba solo saben de minutos PRESENTES: el minuto que no
                      -- llega a existir como 'combined' no suma en ninguna.
+                     -- K52c/2026-09-08: LOS MINUTOS QUE NO ESTAN. Las tres cuentas de
+                     -- arriba son agregados SOBRE LAS FILAS DEL CUBO, y ningun agregado puede
+                     -- ver una fila que no esta en el grupo. No estan mal calculadas: contestan
+                     -- otra pregunta. Para ver un minuto AUSENTE hace falta un ESPERADO, y el
+                     -- esperado no esta en los datos: esta en el ancho del cubo.
+                     --
+                     -- SALE DE $2 Y NO DE UNA CONSTANTE: /api/whale/delta sirve cubos de 15 min
+                     -- y /api/cvd/spot de 5, asi que un numero fijo seria correcto en una ruta
+                     -- y falso en la otra.
+                     (EXTRACT(EPOCH FROM $2::interval) / 60)::int AS minutes_expected,
+                     -- Y SOLO SI EL CUBO YA TERMINO Y SE ASENTO. El ultimo cubo de CADA
+                     -- respuesta tiene menos minutos de los que tendra -aun no han pasado- y
+                     -- contarlo como hueco sacaria un falso positivo en el 100 % de las
+                     -- respuestas. El criterio es TEMPORAL y no posicional: «el ultimo no
+                     -- cuenta» se cae con otro limit, otro interval o si el orden cambia; esto
+                     -- vale igual sea cual sea la posicion de la fila.
+                     -- NULL significa «todavia no se puede decir», que NO es cero.
+                     CASE WHEN date_bin($2::interval, ts, '1970-01-01'::timestamptz) + $2::interval
+                               <= now() - make_interval(mins => $4)
+                          THEN GREATEST((EXTRACT(EPOCH FROM $2::interval) / 60)::int - count(*), 0)
+                     END AS missing_minutes,
                      count(*) AS minutes_present
               FROM spot_trades_agg
               WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
               GROUP BY 1 ORDER BY 1 DESC LIMIT $3
             )
-            -- LAS CUATRO SE ARRASTRAN POR EL SELECT EXTERIOR A MANO. whale/delta hace
+            -- LAS SEIS SE ARRASTRAN POR EL SELECT EXTERIOR A MANO. whale/delta hace
             -- `SELECT * FROM grouped` y aqui el exterior enumera columnas porque necesita la
             -- ventana del acumulado, asi que una copia ciega de su SQL las habria perdido
             -- justo aqui, sin error y sin aviso.
             SELECT bucket,delta_usd,SUM(delta_usd) OVER (ORDER BY bucket) AS cvd,
-                   covered_seconds_min,short_minutes,unknown_minutes,minutes_present
+                   covered_seconds_min,short_minutes,unknown_minutes,minutes_present,
+                   -- LAS DOS NUEVAS, A MANO Y AQUI: el comentario de arriba avisa de que este
+                   -- SELECT enumera columnas, asi que añadirlas solo al WITH las habria perdido
+                   -- en esta ruta sin error y sin aviso, y la misma pregunta habria tenido dos
+                   -- respuestas segun por donde entres. Que es justo lo que este bloque existe
+                   -- para impedir.
+                   minutes_expected,missing_minutes
             FROM grouped ORDER BY bucket
             """,
             ws_symbol,
             bucket,
             limit,
+            MINUTOS_DE_ASENTAMIENTO,
         )
         result = records(rows)
         await mask_gapped_series_rows(
@@ -1126,6 +1167,27 @@ async def whale_delta(
                      -- ninguna de las tres, y el bucket sale IDENTICO a uno completo.
                      -- count(*) es exacto: la PK (symbol,exchange,interval,ts) hace que
                      -- cada minuto aparezca una sola vez bajo este WHERE.
+                     -- K52c/2026-09-08: LOS MINUTOS QUE NO ESTAN. Las tres cuentas de
+                     -- arriba son agregados SOBRE LAS FILAS DEL CUBO, y ningun agregado puede
+                     -- ver una fila que no esta en el grupo. No estan mal calculadas: contestan
+                     -- otra pregunta. Para ver un minuto AUSENTE hace falta un ESPERADO, y el
+                     -- esperado no esta en los datos: esta en el ancho del cubo.
+                     --
+                     -- SALE DE $2 Y NO DE UNA CONSTANTE: /api/whale/delta sirve cubos de 15 min
+                     -- y /api/cvd/spot de 5, asi que un numero fijo seria correcto en una ruta
+                     -- y falso en la otra.
+                     (EXTRACT(EPOCH FROM $2::interval) / 60)::int AS minutes_expected,
+                     -- Y SOLO SI EL CUBO YA TERMINO Y SE ASENTO. El ultimo cubo de CADA
+                     -- respuesta tiene menos minutos de los que tendra -aun no han pasado- y
+                     -- contarlo como hueco sacaria un falso positivo en el 100 % de las
+                     -- respuestas. El criterio es TEMPORAL y no posicional: «el ultimo no
+                     -- cuenta» se cae con otro limit, otro interval o si el orden cambia; esto
+                     -- vale igual sea cual sea la posicion de la fila.
+                     -- NULL significa «todavia no se puede decir», que NO es cero.
+                     CASE WHEN date_bin($2::interval, ts, '1970-01-01'::timestamptz) + $2::interval
+                               <= now() - make_interval(mins => $4)
+                          THEN GREATEST((EXTRACT(EPOCH FROM $2::interval) / 60)::int - count(*), 0)
+                     END AS missing_minutes,
                      count(*) AS minutes_present
               FROM spot_trades_agg
               WHERE symbol=$1 AND exchange='combined' AND venue_count=2 AND interval='1min'
@@ -1135,6 +1197,7 @@ async def whale_delta(
             ws_symbol,
             bucket,
             limit,
+            MINUTOS_DE_ASENTAMIENTO,
         )
         # LA MARCA NO ES UN FACTOR DE ESCALA, y quien la use para "reparar" el volumen se
         # pasa. Medido sobre los 21 arranques del 2026-08-26 con bucket presente: la
