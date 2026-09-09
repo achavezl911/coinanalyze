@@ -119,7 +119,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K20-cincoxx.sh:83` _(+2)_ | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K43-foto-unica.sh:380` |
+| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K20-cincoxx.sh:83` _(+5)_ | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K43-foto-unica.sh:441` |
 | **panel** | `static/app.js:1599` | — |
 | **readme** | — | `README.md:402` |
 | **tests** | — | `tests/test_p1_timeframes_and_spot.py:52` |

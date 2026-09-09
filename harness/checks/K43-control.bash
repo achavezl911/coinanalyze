@@ -26,6 +26,8 @@ DIR=$(mktemp -d) || exit 2
 [ "${K43_CONTROL_GUARDA:-0}" = "1" ] || trap 'rm -rf "$DIR"' EXIT
 fallos=0; pasan=0
 
+QUITADA_ESPERADA=/api/scalp/signals   # la que usa el positivo; N1 la necesita por delante
+
 echo "K43-control · sujeto: $CHK"
 echo
 
@@ -49,12 +51,20 @@ comprueba() {  # $1 = etiqueta   $2 = si|no
   else fallos=$((fallos+1)); printf '  [FALLA] %-58s\n' "$1"; fi
 }
 
-echo "NEGATIVO · con la tabla entera, NINGUNA ruta se queda sin familia"
+echo "NEGATIVO · con la tabla entera, la ruta del positivo NO sale sin familia"
 sal=$(corre "$CHK"); rc0=$(printf '%s\n' "$sal" | head -1); out0=$(printf '%s\n' "$sal" | tail -n +2)
 # OJO: K43 puede estar ROJO por otra razon -hoy lo esta, por «sin as_of», que es una promesa
 # incumplida y no una familia ausente-. Lo que este brazo afirma es solo lo segundo.
-comprueba "N1 con la tabla entera: ninguna 'sin familia'" \
-  "$(printf '%s' "$out0" | grep -q 'no tienen familia asignada' && echo no || echo si)"
+#
+# N1 SE REESCRIBIO EL 2026-09-09 Y NO SE AFLOJO. Decia «ninguna ruta sale sin familia», y era
+# cierto cuando se escribio; hoy hay TRES que no tienen familia -carry/matriz, liquidation-map y
+# rango/estructura- y son un ROJO legitimo, asi que la frase vieja convertia un hallazgo real en
+# un fallo del control. Lo que N1 tiene que sostener es la LINEA BASE DEL POSITIVO: que la ruta
+# que P1-P3 van a quitar NO aparece sin familia mientras su asignacion siga puesta. Sin eso, P3
+# -«nombra justo la que se quito»- podria ser cierto por casualidad. El criterio no baja: sigue
+# habiendo un negativo, y ahora apunta a lo que el positivo necesita.
+comprueba "N1 con la tabla entera: $QUITADA_ESPERADA no sale sin familia" \
+  "$(printf '%s' "$out0" | grep -q "no tienen familia asignada.*$QUITADA_ESPERADA" && echo no || echo si)"
 
 echo
 echo "POSITIVO · se quita UNA asignacion y tiene que enrojecer NOMBRANDOLA"
@@ -114,6 +124,57 @@ comprueba "S4 preguntando bien no queda ninguna sin juzgar" \
 # S5 · y las tres rutas de NIVEL siguen recibiendo sus extras: son las unicas que los necesitan.
 comprueba "S5 las tres de nivel conservan sus extras" \
   "$(grep -q '"/api/zone/analysis":   "&level=78800&low=77000&high=80000"' "$CHK" && echo si || echo no)"
+
+echo
+echo "LA POBLACION · de donde sale el denominador, y que pasa si esa fuente se rompe"
+# ANADIDO EL 2026-09-09, cuando la poblacion dejo de salir del log de nginx -un registro de
+# visitas- y paso a salir de static/app.js. Un cambio de denominador puede aflojar un check sin
+# que se note: basta con que el censo nuevo encuentre menos, o nada. B2 y B3 son el corazon,
+# porque un censo roto que dijera «0 sin familia» seria un VERDE sobre cero rutas, que es
+# exactamente la enfermedad que este check condena en otros.
+corre_env() {  # $1 = fichero del check, resto = VAR=valor   -> rc en la primera linea
+  local f="$1"; shift
+  local out rc
+  out=$(env "$@" timeout -k 10 400 bash "$f" 2>&1); rc=$?
+  printf '%s\n' "$rc"
+  printf '%s\n' "$out"
+}
+printf 'const nada = 1;\n' > "$DIR/sin-rutas.js"
+grep -v '/api/ohlcv'   "$ORIG/static/app.js" > "$DIR/sin-control.js"
+grep -v '/api/wyckoff' "$ORIG/static/app.js" > "$DIR/sin-wyckoff.js"
+
+comprueba "B1 la salida DICE el denominador, no solo el numerador" \
+  "$(printf '%s' "$out0" | grep -qE 'de las [0-9]+ rutas que el panel puede pedir' && echo si || echo no)"
+
+sal=$(corre_env "$CHK" K43_APP_JS="$DIR/sin-rutas.js")
+rcb=$(printf '%s\n' "$sal" | head -1); outb2=$(printf '%s\n' "$sal" | tail -n +2)
+comprueba "B2 censo vacio: NO MEDIDO y no VERDE (rc=$rcb)" \
+  "$([ "$rcb" = 2 ] && printf '%s' "$outb2" | grep -q 'da 0 rutas' && echo si || echo no)"
+
+sal=$(corre_env "$CHK" K43_APP_JS="$DIR/sin-control.js")
+rcb=$(printf '%s\n' "$sal" | head -1); outb3=$(printf '%s\n' "$sal" | tail -n +2)
+comprueba "B3 falta una ruta de CONTROL: NO MEDIDO (rc=$rcb)" \
+  "$([ "$rcb" = 2 ] && printf '%s' "$outb3" | grep -q 'faltan los controles /api/ohlcv' && echo si || echo no)"
+
+# B4 · EL CAMBIO QUE MAS IMPORTA. Con el log de denominador, un log vacio era NO MEDIDO: el
+# check dejaba de medir porque no habia visitas. Ahora el log no decide, asi que sigue midiendo.
+sal=$(corre_env "$CHK" K43_PEDIDAS="")
+rcb=$(printf '%s\n' "$sal" | head -1); outb4=$(printf '%s\n' "$sal" | tail -n +2)
+comprueba "B4 log VACIO: sigue midiendo, no NO MEDIDO (rc=$rcb)" \
+  "$([ "$rcb" != 2 ] && printf '%s' "$outb4" | grep -qE 'de las [0-9]+ rutas' && echo si || echo no)"
+
+# B5 · la reproducibilidad, que era el defecto entero. Dos pasadas seguidas, misma primera linea.
+b5a=$(printf '%s' "$out0" | head -1)
+sal=$(corre "$CHK"); b5b=$(printf '%s\n' "$sal" | tail -n +2 | head -1)
+comprueba "B5 dos pasadas seguidas dan la MISMA primera linea" \
+  "$([ -n "$b5a" ] && [ "$b5a" = "$b5b" ] && echo si || echo no)"
+
+# B6 · LA OTRA DIRECCION. Hoy el cementerio vale 0, y un cero solo vale si el brazo sabe no
+# valerlo: se le quita una ruta al panel dejandole la familia puesta y tiene que delatarla.
+sal=$(corre_env "$CHK" K43_APP_JS="$DIR/sin-wyckoff.js")
+outb6=$(printf '%s\n' "$sal" | tail -n +2)
+comprueba "B6 con familia y sin llamada: la delata como CEMENTERIO" \
+  "$(printf '%s' "$outb6" | grep -q 'CEMENTERIO: 1 con familia que el panel ya NO llama: /api/wyckoff' && echo si || echo no)"
 
 echo
 total=$((pasan+fallos))
