@@ -40,12 +40,27 @@
 # comprueba. Ademas se CUENTA, sin enrojecer, el instrumento fino de cada una, que es donde
 # esta la informacion que el criterio viejo destruia al reducirlo todo a un si/no.
 #
-# LO QUE ESTE CHECK DEJA DICHO Y NO ARREGLA: `cvd/spot` lee `spot_trades_agg` -la misma
-# tabla y el mismo WHERE que `whale/delta`, api.py:761 contra :1029- que tiene
-# covered_seconds, y NO publica cobertura por cubo. Un cubo suyo construido sobre minutos
-# cortos es indistinguible de uno completo. Anadir los cuatro agregados es una copia de lo
-# que ya hace whale/delta, pero cambia la forma de la respuesta -y eso es producto-, asi que
-# va a la mesa de Alejandro y no lo decido yo.
+# LO QUE SIGUE SIENDO VERDAD: `cvd/spot` lee `spot_trades_agg` -la misma tabla y el mismo
+# WHERE que `whale/delta`- que tiene covered_seconds. Las dos rutas contestan sobre el mismo
+# dato, asi que lo que declare una tiene que declararlo la otra o la misma pregunta tendria
+# dos respuestas segun por donde se entre.
+#
+# LO QUE YA NO ES VERDAD, y estaba escrito aqui en presente hasta el 2026-09-09. Este parrafo
+# decia que `cvd/spot` NO publica cobertura por cubo, que por eso un cubo suyo construido
+# sobre minutos cortos es indistinguible de uno completo, y que anadir los agregados «va a la
+# mesa de Alejandro y no lo decido yo». Las tres cosas dejaron de ser ciertas: la decision se
+# tomo, se ejecuto y esta desplegada.
+#
+# MEDIDO CONTRA LA RESPUESTA SERVIDA POR 140 -no contra el fuente, que dice lo que el codigo
+# pretende y no lo que llega al consumidor-, el 2026-09-09 con
+#     GET /api/cvd/spot?symbol=BTCUSDT_PERP.A&interval=5min&limit=576
+# cada cubo trae NUEVE campos, y SEIS son de cobertura:
+#     covered_seconds_min · short_minutes · unknown_minutes
+#     minutes_present · minutes_expected · missing_minutes
+# -los otros tres son bucket, delta_usd y cvd-. `minutes_expected` es el denominador contra el
+# que se leen los otros, y `missing_minutes` distingue NULO de 0. O sea que hoy un cubo
+# con minutos cortos, uno con minutos AUSENTES y uno completo se distinguen los tres mirando
+# solo la fila.
 #
 # K03 mide otra cosa y las dos hacen falta: K03 pregunta si la RESPUESTA declara el hueco con
 # ventana y estado; esta pregunta si la ruta tiene por donde declararlo.

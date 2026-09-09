@@ -1,13 +1,22 @@
 #!/bin/bash
-# K08  la aplicacion tiene que saber -y decir- a que base se conecto. Hoy no lo sabe:
-# en app/db.py create_pool, lo PRIMERO que ocurre tras conectar es sync_market_catalog
-# (que ESCRIBE en market_assets y symbols) y despues ensure_temporal_partitions (que
-# crea particiones por DDL). No hay ninguna lectura de verificacion antes de escribir.
+# K08  la aplicacion tiene que saber -y decir- a que base se conecto. HOY LO SABE Y LO DICE,
+# y este check existe para que siga siendo asi.
 #
-# Medido el 2026-08-25: app/db.py no menciona current_database() ni current_setting
-# NI UNA VEZ, y /api/healthz no publica ninguna identidad de base. O sea que un
-# despliegue apuntando a la base equivocada no se distingue de uno bueno: escribe
-# igual, y encima escribe ANTES de que nadie pueda mirar.
+# POR QUE SE ESCRIBIO, y esto es historia y no se borra. Medido el 2026-08-25: app/db.py no
+# mencionaba current_database() ni current_setting NI UNA VEZ, y /api/healthz no publicaba
+# ninguna identidad de base. En create_pool lo PRIMERO que ocurria tras conectar era
+# sync_market_catalog -que ESCRIBE en market_assets y symbols- y despues
+# ensure_temporal_partitions -que crea particiones por DDL-: ninguna lectura de verificacion
+# antes de escribir. O sea que un despliegue apuntando a la base equivocada no se distinguia
+# de uno bueno: escribia igual, y encima escribia ANTES de que nadie pudiera mirar.
+#
+# MEDIDO EL 2026-09-09, cada afirmacion por la via que le toca:
+#   1. el FICHERO: app/db.py:72-78 consulta current_database(), host(inet_server_addr()),
+#      inet_server_port() y current_setting('server_version').
+#   2. la RESPUESTA SERVIDA por 140 -no el fuente-: GET /api/healthz trae un bloque
+#      `database` con database, db_user, db_host, db_port y server_version.
+# Las dos senales que este check exige estan, y por eso esta VERDE. La cabecera decia lo
+# contrario en presente hasta hoy.
 #
 # Dos senales, y la segunda es la que importa de verdad:
 #   1. app/db.py consulta la identidad de la base en algun sitio.

@@ -116,7 +116,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K02-cobertura-hueco.sh:66`, `harness/checks/K03-hueco-declarado.sh:46` | `harness/checks/K31-cubos.py:40`, `harness/checks/K88-control.bash:435`, `harness/checks/K88-control.bash:477` |
+| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46` | `harness/checks/K02-cobertura-hueco.sh:56`, `harness/checks/K31-cubos.py:40`, `harness/checks/K88-control.bash:435`, `harness/checks/K88-control.bash:477` |
 | **readme** | — | `README.md:404` |
 | **tests** | `tests/test_whale_delta_minutes_postgres.py:283` | `tests/test_whale_delta_minutes_postgres.py:199`, `tests/test_whale_delta_minutes_postgres.py:265` |
 

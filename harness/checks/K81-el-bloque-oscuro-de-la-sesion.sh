@@ -75,10 +75,16 @@
 #     ciclo. Lo que murio es el CONTRATO, no el dato.
 #   · NO comparte causa con cvd_swing_90d, aunque comparta fecha. Las dos series se cruzan el
 #     2026-08-10 EN DIRECCIONES OPUESTAS: long_liq_usd deja de escribirse ese dia y
-#     session_coverage_version EMPIEZA ese dia (22 sesiones, 66 filas). Disparador comun -el
-#     mismo endurecimiento- y DOS mecanismos. Ademas cvd_swing_90d se cura SOLO: exige
-#     CVD_LOOKBACK_SESSIONS+CVD_SIGNAL_WINDOW = 93 sesiones completas y solo hay 22, asi que
-#     se enciende hacia el 2026-11-11. Escribirle codigo seria trabajar contra el calendario.
+#     session_coverage_version EMPIEZA ese dia; eran 22 sesiones y 66 filas cuando se escribio
+#     esta linea. Disparador comun -el mismo endurecimiento- y DOS mecanismos. Ademas
+#     cvd_swing_90d se cura SOLO: exige CVD_LOOKBACK_SESSIONS+CVD_SIGNAL_WINDOW = 93 sesiones
+#     completas, y esa cuenta SUBE SOLA, asi que cualquier numero escrito aqui nace caducado.
+#     Medido el 2026-09-09 en 140, que es el unico sitio donde vale mirarlo:
+#       SELECT count(DISTINCT session_date), count(*) FROM daily_session_agg
+#        WHERE session_coverage_version IS NOT NULL   ->  30 | 90   (del 2026-08-10 al 2026-09-08)
+#     30 sesiones en 30 dias: una por dia, sin huecos. Faltan 63, o sea que se enciende hacia el
+#     2026-11-11 -la MISMA fecha que daba esta linea contando 22-: subio la cuenta y no la
+#     conclusion. Escribirle codigo seria trabajar contra el calendario.
 #
 # LOS BRAZOS, Y POR QUE EL SUJETO YA NO ES UNA FECHA. Las dos versiones anteriores de este
 # check se corrigieron a si mismas y esta es la tercera correccion, la que mas importa:

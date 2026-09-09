@@ -224,10 +224,25 @@ for a in arranques:
         # no verde, que es lo que corresponde.
         pendientes.append(f"{a:%H:%M:%SZ} en el bucket {inicio:%H:%M}")
     else:
+        # EL MENSAJE DICE EL VALOR, NO UN LITERAL. Aqui habia escrito
+        #     ("None" if publica_ausentes else "SIN PUBLICAR")
+        # que escribia la palabra `None` FUESE CUAL FUESE el numero que traia la fila. Esa rama
+        # es hoy inalcanzable contra produccion y se alcanzara el dia en que el productor se
+        # rompa -que es justo el dia en que hace falta que el mensaje mande a buscar la causa
+        # buena-. Un diagnostico que miente cuando por fin se dispara es peor que no tenerlo,
+        # porque se le cree.
+        #
+        # El unico valor alcanzable hoy es 0: se llega aqui con `cortos + ausentes < 1`, y si la
+        # ruta publica el campo no puede ser NULO porque ese caso se fue por la rama de arriba.
+        # Aun asi se IMPRIME el valor y no un cero cableado, que seria el mismo defecto otra vez.
+        #
+        # Y los dos estados se conservan porque mandan a mirar sitios distintos:
+        #     SIN PUBLICAR -> la ruta no sirve el campo: se mira el productor
+        #     un numero    -> la ruta lo sirve y dice eso: se mira por que no declaro el arranque
         sin_declarar.append(
             f"el arranque de {a:%H:%M:%SZ} cae en el bucket {inicio:%H:%M}, que sirve "
             f"short_minutes={cortos} y missing_minutes="
-            + ("None" if publica_ausentes else "SIN PUBLICAR")
+            + (repr(crudo_ausentes) if publica_ausentes else "SIN PUBLICAR")
         )
 
 # --- CONTROL POSITIVO: el bucket tranquilo no se marca --------------------------------
