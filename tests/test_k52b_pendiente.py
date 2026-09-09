@@ -59,12 +59,12 @@ def _cubo(inicio: datetime, missing, *, present: int = 15, short: int = 0) -> di
     return fila
 
 
-def _monta(tmp_path: Path, missing) -> tuple[Path, Path]:
+def _monta(tmp_path: Path, missing, *, minutos_atras: int = 8) -> tuple[Path, Path]:
     """Un arco de 24 h de cubos completos y, al final, EL CASO: un cubo que cerró hace 8 minutos
     —dentro del asentamiento de la ruta y fuera del del check— con un arranque a los 30 s de
     abrirse. Ese es el hueco entre los dos márgenes."""
     ahora = datetime.now(UTC)
-    inicio = ahora - timedelta(minutes=8) - ANCHO
+    inicio = ahora - timedelta(minutes=minutos_atras) - ANCHO
     arranque = inicio + timedelta(seconds=30)
 
     filas, t = [], inicio - timedelta(hours=24)
@@ -143,3 +143,16 @@ def test_un_pendiente_no_envenena_a_los_demas_y_se_DECLARA(tmp_path):
     r = _correr(cuerpo, journal)
     assert r.returncode == 0, r.stdout[:300]
     assert "aun no puede contestar" in r.stdout, r.stdout[:400]
+
+def test_el_mensaje_dice_el_VALOR_y_no_una_palabra_fija(tmp_path):
+    """EL CONTROL EN LA OTRA DIRECCION. Aqui la ruta SI publica el campo y dice 0: el cubo esta
+    asentado, ha contestado, y aun asi no declara el arranque. Eso es un fallo de verdad y el
+    mensaje tiene que mandar a mirar al sitio bueno diciendo QUE valor traia la fila.
+
+    Antes escribia la palabra `None` fuese cual fuese el numero. Sin este brazo, dejar el literal
+    puesto pasaria igual que arreglarlo: el otro test solo mira el caso del campo ausente.
+    """
+    r = _correr(*_monta(tmp_path, 0, minutos_atras=60))
+    assert r.returncode == 1, r.stdout[:300]
+    assert "missing_minutes=0" in r.stdout, r.stdout[:400]
+    assert "SIN PUBLICAR" not in r.stdout, "dijo «no lo publica» de un campo que SI publica"

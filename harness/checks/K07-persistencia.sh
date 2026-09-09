@@ -1,10 +1,21 @@
 #!/bin/bash
-# K07  el CI tiene que probar la persistencia. Hoy no la prueba: los 16
-# tests/*_postgres.py hacen pytest.skip en tiempo de ejecucion si falta
-# TEST_DATABASE_URL, y ci.yml no la define NI UNA VEZ. Son 167 tests -toda la
-# persistencia- que no se ejecutan nunca. Medido el 2026-08-25:
+# K07  el CI tiene que probar la persistencia. HOY LA PRUEBA, y este check existe para que siga
+# haciendolo: el dia que ci.yml deje de levantar la base, los tests de persistencia se volveran a
+# saltar EN SILENCIO -pytest.skip no es un fallo- y el unico sitio donde se vera es aqui.
+#
+# POR QUE SE ESCRIBIO, y esto es historia y no se borra. Medido el 2026-08-25: los 16
+# tests/*_postgres.py hacian pytest.skip en tiempo de ejecucion si faltaba TEST_DATABASE_URL, y
+# ci.yml no la definia NI UNA VEZ. Eran 167 tests -toda la persistencia- que no se ejecutaban nunca.
 #   pytest tests/*_postgres.py --collect-only -q  ->  167 tests collected
 #   grep -c TEST_DATABASE_URL .github/workflows/ci.yml  ->  0
+#
+# MEDIDO EL 2026-09-09, repitiendo esos dos comandos contra el repo de hoy:
+#   grep -c TEST_DATABASE_URL .github/workflows/ci.yml  ->  1   (la define en ci.yml:89)
+#   ls tests/*_postgres.py | wc -l                      ->  20  (eran 16)
+#   pytest tests/*_postgres.py --collect-only -q        ->  227 tests collected  (eran 167)
+# y el propio check, corrido hoy, contesta: «ci.yml define TEST_DATABASE_URL y el ultimo CI de
+# main paso 1599 tests saltando 0». Esta cabecera decia lo contrario en presente hasta hoy: un
+# check VERDE cuya primera linea afirmaba el defecto que acababa de declarar ausente.
 #
 # El criterio NO es "cuantos tests se recolectan": un test con skip se recolecta
 # igual sin ejecutarse, asi que un suelo de recolectados se cumple habiendo probado
