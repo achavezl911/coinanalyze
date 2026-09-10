@@ -39,8 +39,21 @@ fallos=""
 [ "$(grep -c 'current_database()\|current_setting' "$API")" -ge 1 ] \
   || fallos="$fallos app/db.py no consulta nunca la identidad de la base"
 
-cuerpo=$(curl -sS -k --netrc-file "$NETRC" --max-time 20 "$API_PROD/api/healthz" 2>/dev/null)
+# POR EL CANAL DE LA CASA Y CON TODO=1. Antes iba por `curl` a pelo, que es la razon por la
+# que hasta hoy NO le cortaba nada: `_corta` solo muerde lo que pasa por bin/api. Eso lo
+# dejaba a salvo por accidente, no por diseno -y el dia que alguien lo pasara al canal, como
+# es natural, healthz se parte por la mitad sin avisar-. Medido el 2026-09-10: healthz sirve
+# 5237 B de los 8000 del techo, o sea unos 7 servicios de margen a 385 B por servicio.
+# El guardia de abajo es el MISMO de K05:138, no uno nuevo.
+cuerpo=$(TODO=1 "$B/bin/api" /api/healthz 2>/dev/null)
 [ -n "$cuerpo" ] || { echo "NO MEDIDO: /api/healthz no respondio"; exit 2; }
+case "$cuerpo" in
+  *"[CORTADO:"*)
+    echo "NO MEDIDO: el transporte corto la respuesta de healthz. $(printf '%s' "$cuerpo" \
+      | grep -o '\[CORTADO:[^]]*\]'). No es un healthz malo: es JSON partido, y juzgarlo\
+ seria hacer depender el veredicto del transporte."
+    exit 2 ;;
+esac
 
 publicada=$(printf '%s' "$cuerpo" | python3 -c '
 import sys, json

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `rango_estructura` · `app/api.py:1989` (cuerpo hasta la 2012) · decorador en la linea 1988.
+Handler `rango_estructura` · `app/api.py:2052` (cuerpo hasta la 2075) · decorador en la linea 2051.
 
 ## Parametros de entrada
 
@@ -105,9 +105,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2389`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2452`
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.api.ventana_pedida` — `app/api.py:1621`
+- `app.api.ventana_pedida` — `app/api.py:1666`
 - `app.rango.estructura_de_rango` — `app/rango.py:234`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
@@ -134,12 +134,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1638` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1641` | una funcion de su cierre |
-| 422 | — | `app/api.py:1646` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1648` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1650` | una funcion de su cierre |
-| 422 | — | `app/api.py:2398` | una funcion de su cierre |
+| 422 | hace falta «desde» | `app/api.py:1683` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1686` | una funcion de su cierre |
+| 422 | — | `app/api.py:1691` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1693` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1695` | una funcion de su cierre |
+| 422 | — | `app/api.py:2461` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

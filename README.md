@@ -264,7 +264,7 @@ salía como acumulación siempre que los futuros vendieran más (36 sesiones as�
   desde `futures_trades_agg`. Alinea los venues, pero **no corrige la asimetría de escala**:
   el perp seguirá pesando ~10× más que el spot. Solo se puebla **hacia adelante** — depende
   de una tabla que se retiene horas, no meses. `SCALP_MINUTE_RETENTION_HOURS`
-  (36 h) existe para que el job diario alcance a leer la sesión completa.
+  (168 h) existe para que el job diario alcance a leer la sesión completa.
 - La tabla diaria muestra la procedencia de cada columna y el **percentil** de cada valor
   frente a toda la historia guardada. Se retiró la columna Whale: era $0 en el 98% de las
   sesiones porque los umbrales por trade casi nunca se cruzan con dos venues.

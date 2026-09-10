@@ -2745,7 +2745,7 @@ async def cvd_matrix(
     rtf_obs = obs(rtf_lo)
     # EL FUTURO NO TENIA EL RESPALDO QUE EL SPOT YA TENIA. pick_fut cortaba por la retencion
     # del realtime (12 h) y devolvia insufficient_retention SIN MIRAR futures_trades_agg, que
-    # guarda 36 h: la ventana de 24 h salia nula con el minuto en la base -- medido el
+    # guarda 168 h: la ventana de 24 h salia nula con el minuto en la base -- medido el
     # 2026-09-01, 1436 de 1440 minutos, y de los 4 que faltaban 3 eran el borde de cola que
     # esta misma cola de realtime cubre. Ahora la ventana que el realtime no alcanza cae al
     # MISMO empalme que usa el spot. Lo que el realtime SI cubre no cambia de fuente ni de

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `setup` · `app/api.py:2293` (cuerpo hasta la 2304) · decorador en la linea 2292.
+Handler `setup` · `app/api.py:2356` (cuerpo hasta la 2367) · decorador en la linea 2355.
 
 ## Parametros de entrada
 
@@ -23,8 +23,8 @@ Handler `setup` · `app/api.py:2293` (cuerpo hasta la 2304) · decorador en la l
 | `daily_streak` | literal en app/interpretation.py:199 |
 | `primary` | literal en app/interpretation.py:202 |
 | `setups` | literal en app/interpretation.py:203 |
-| `snapshot_ts` | literal en app/api.py:2302 |
-| `symbol` | literal en app/api.py:2301 |
+| `snapshot_ts` | literal en app/api.py:2365 |
+| `symbol` | literal en app/api.py:2364 |
 | `warning` | literal en app/interpretation.py:204 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -49,8 +49,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.daily_data` — `app/api.py:501`
-- `app.api.latest_snapshot` — `app/api.py:474`
+- `app.api.daily_data` — `app/api.py:544`
+- `app.api.latest_snapshot` — `app/api.py:517`
 - `app.api.validate_symbol` — `app/api.py:229`
 - `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
 
@@ -76,8 +76,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | No data | `app/api.py:2298` | el propio handler |
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 404 | No data | `app/api.py:2361` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

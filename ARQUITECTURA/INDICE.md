@@ -15,10 +15,10 @@
 | `/api/carry/matriz` | GET | 18 | 1 | 10 | [ficha](rutas/api-carry-matriz.md) |
 | `/api/context-metadata` | GET | 6 | 0 | 2 | [ficha](rutas/api-context-metadata.md) |
 | `/api/cross-asset` | GET | 8 | 1 | 9 | [ficha](rutas/api-cross-asset.md) |
-| `/api/cvd` | GET | 15 | 2 | 11 | [ficha](rutas/api-cvd.md) |
+| `/api/cvd` | GET | 16 | 2 | 12 | [ficha](rutas/api-cvd.md) |
 | `/api/cvd-matrix` | GET | 18 | 1 | 16 | [ficha](rutas/api-cvd-matrix.md) |
 | `/api/cvd/divergence` | GET | 12 | 3 | 9 | [ficha](rutas/api-cvd-divergence.md) |
-| `/api/cvd/spot` | GET | 15 | 2 | 11 | [ficha](rutas/api-cvd-spot.md) |
+| `/api/cvd/spot` | GET | 16 | 2 | 12 | [ficha](rutas/api-cvd-spot.md) |
 | `/api/daily` | GET | 12 | 2 | 13 | [ficha](rutas/api-daily.md) |
 | `/api/dashboard/state` | GET | 165 | 14 | 44 | [ficha](rutas/api-dashboard-state.md) |
 | `/api/data-confidence` | GET | 10 | 6 | 10 | [ficha](rutas/api-data-confidence.md) |
@@ -30,21 +30,21 @@
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
 | `/api/healthz` | GET | 7 | 3 | 5 | [ficha](rutas/api-healthz.md) |
 | `/api/hypothesis` | GET | 82 | 12 | 76 | [ficha](rutas/api-hypothesis.md) |
-| `/api/level/breakout` | GET | 11 | 1 | 13 | [ficha](rutas/api-level-breakout.md) |
+| `/api/level/breakout` | GET | 1 | 1 | 15 | [ficha](rutas/api-level-breakout.md) |
 | `/api/liquidation-map` | GET | 16 | 2 | 6 | [ficha](rutas/api-liquidation-map.md) |
-| `/api/liquidations` | GET | 15 | 2 | 11 | [ficha](rutas/api-liquidations.md) |
+| `/api/liquidations` | GET | 16 | 2 | 12 | [ficha](rutas/api-liquidations.md) |
 | `/api/macro-context` | GET | 7 | 1 | 10 | [ficha](rutas/api-macro-context.md) |
 | `/api/market-impact` | GET | 6 | 2 | 7 | [ficha](rutas/api-market-impact.md) |
 | `/api/market-memory` | GET | 13 | 1 | 5 | [ficha](rutas/api-market-memory.md) |
-| `/api/ohlcv` | GET | 15 | 2 | 11 | [ficha](rutas/api-ohlcv.md) |
-| `/api/oi` | GET | 15 | 2 | 11 | [ficha](rutas/api-oi.md) |
+| `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
+| `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
 | `/api/oi-context` | GET | 16 | 4 | 12 | [ficha](rutas/api-oi-context.md) |
 | `/api/passive-flow` | GET | 15 | 3 | 20 | [ficha](rutas/api-passive-flow.md) |
 | `/api/positioning` | GET | 17 | 1 | 3 | [ficha](rutas/api-positioning.md) |
 | `/api/price-barriers` | GET | 15 | 5 | 8 | [ficha](rutas/api-price-barriers.md) |
 | `/api/profile` | GET | 14 | 5 | 28 | [ficha](rutas/api-profile.md) |
 | `/api/quality/feeds` | GET | 7 | 10 | 43 | [ficha](rutas/api-quality-feeds.md) |
-| `/api/range/validate` | GET | 5 | 1 | 8 | [ficha](rutas/api-range-validate.md) |
+| `/api/range/validate` | GET | 1 | 1 | 10 | [ficha](rutas/api-range-validate.md) |
 | `/api/rango/estructura` | GET | 51 | 5 | 8 | [ficha](rutas/api-rango-estructura.md) |
 | `/api/reference-levels` | GET | 22 | 1 | 3 | [ficha](rutas/api-reference-levels.md) |
 | `/api/scalp/absorption` | GET | **0 · PENDIENTE** | 2 | 8 | [ficha](rutas/api-scalp-absorption.md) |
@@ -73,9 +73,9 @@
 | `/api/verdicts` | GET | 12 | 2 | 7 | [ficha](rutas/api-verdicts.md) |
 | `/api/volatility` | GET | 7 | 2 | 9 | [ficha](rutas/api-volatility.md) |
 | `/api/volume-profile` | GET | 17 | 1 | 6 | [ficha](rutas/api-volume-profile.md) |
-| `/api/whale/delta` | GET | 5 | 2 | 10 | [ficha](rutas/api-whale-delta.md) |
+| `/api/whale/delta` | GET | 5 | 2 | 11 | [ficha](rutas/api-whale-delta.md) |
 | `/api/wyckoff` | GET | 10 | 2 | 22 | [ficha](rutas/api-wyckoff.md) |
-| `/api/zone/analysis` | GET | 8 | 2 | 14 | [ficha](rutas/api-zone-analysis.md) |
+| `/api/zone/analysis` | GET | 1 | 2 | 16 | [ficha](rutas/api-zone-analysis.md) |
 | `/metrics` | GET | **0 · PENDIENTE** | 6 | 1 | [ficha](rutas/metrics.md) |
 
 ## Rutas cuyos campos NO se han podido derivar

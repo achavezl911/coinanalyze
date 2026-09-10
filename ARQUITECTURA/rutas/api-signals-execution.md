@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_execution` · `app/api.py:2579` (cuerpo hasta la 2653) · decorador en la linea 2578.
+Handler `signals_execution` · `app/api.py:2642` (cuerpo hasta la 2716) · decorador en la linea 2641.
 
 ## Parametros de entrada
 
@@ -23,16 +23,16 @@ Handler `signals_execution` · `app/api.py:2579` (cuerpo hasta la 2653) · decor
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2647 |
-| `count` | literal en app/api.py:2650 |
-| `exchange` | literal en app/api.py:2648 |
-| `limit` | literal en app/api.py:2649 |
-| `since` | literal en app/api.py:2644 |
-| `snapshots` | literal en app/api.py:2652 |
-| `symbol` | literal en app/api.py:2643 |
-| `truncated` | literal en app/api.py:2651 |
-| `until` | literal en app/api.py:2645 |
-| `ventana_maxima_h` | literal en app/api.py:2646 |
+| `as_of` | literal en app/api.py:2710 |
+| `count` | literal en app/api.py:2713 |
+| `exchange` | literal en app/api.py:2711 |
+| `limit` | literal en app/api.py:2712 |
+| `since` | literal en app/api.py:2707 |
+| `snapshots` | literal en app/api.py:2715 |
+| `symbol` | literal en app/api.py:2706 |
+| `truncated` | literal en app/api.py:2714 |
+| `until` | literal en app/api.py:2708 |
+| `ventana_maxima_h` | literal en app/api.py:2709 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,8 +54,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2349`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2389`
+- `app.api._utc_iso` — `app/api.py:2412`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2452`
 - `app.api.records` — `app/api.py:242`
 - `app.api.validate_symbol` — `app/api.py:229`
 
@@ -83,12 +83,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 422 | — | `app/api.py:2398` | una funcion de su cierre |
-| 422 | exchange tiene que ser binance o bybit | `app/api.py:2600` | el propio handler |
-| 422 | — | `app/api.py:2605` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2607` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2609` | el propio handler |
-| 422 | — | `app/api.py:2611` | el propio handler |
+| 422 | — | `app/api.py:2461` | una funcion de su cierre |
+| 422 | exchange tiene que ser binance o bybit | `app/api.py:2663` | el propio handler |
+| 422 | — | `app/api.py:2668` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2670` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2672` | el propio handler |
+| 422 | — | `app/api.py:2674` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -138,8 +138,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.api.rechaza_parametros_desconocidos` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
-| `app.api._utc_iso` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.signals_execution` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

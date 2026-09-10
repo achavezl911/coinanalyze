@@ -63,7 +63,7 @@ acumulación / distribución / "solo cambió la magnitud".
 | `ohlcv` 1min, OI, funding, `spot_trades_agg` | 14 días | detalle intradía |
 | `ohlcv` daily | **730 días** | memoria estructural/análogos de 2 años; ~2,200 filas para 3 símbolos |
 | `ohlcv` 5min | **400 días** | fuente compacta para pivotes 4h; no se infla a 2 años innecesariamente |
-| `futures_trades_agg` | **36 h** (`SCALP_MINUTE_RETENTION_HOURS`) | subido a propósito para que el job diario cubra una sesión de 24 h |
+| `futures_trades_agg` | **168 h** (`SCALP_MINUTE_RETENTION_HOURS`) | subido a propósito para que el job diario cubra una sesión de 24 h |
 | `futures_trades_realtime`, `liquidations_realtime` | 12 h | |
 | `spot_trades_realtime` | 2 h | |
 | `orderbook_snapshot` | 6 h | |

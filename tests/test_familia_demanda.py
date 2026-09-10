@@ -17,11 +17,14 @@ import pytest
 
 import app.api as api_module
 from app.api import (
+    level_breakout_endpoint,
+    range_validate_endpoint,
     scalp_signals,
     signals_execution,
     signals_ledger,
     signals_replay,
     signals_visibility,
+    zone_analysis_endpoint,
 )
 from app.config import SUPPORTED_SYMBOLS
 
@@ -48,6 +51,17 @@ class _Pool:
         class Conn:
             async def fetch(self, *_a, **_k):
                 return []
+
+            # 2026-09-10 · `fetchrow` y `fetchval` se anaden al doble porque las tres rutas
+            # destapadas en COLA 106 los usan. El doble tiene que modelar la conexion, no la
+            # parte de la conexion que hacia falta el dia que se escribio: sin esto, el brazo
+            # de zone/analysis fallaba con AttributeError y no por lo que quiere medir.
+            # Devuelven vacio a proposito: aqui se mide el SOBRE, no el contenido.
+            async def fetchrow(self, *_a, **_k):
+                return None
+
+            async def fetchval(self, *_a, **_k):
+                return None
 
         class Ctx:
             async def __aenter__(self):
@@ -121,3 +135,44 @@ async def test_outcomes_sigue_SIN_as_of() -> None:
         signals_outcomes, request=peticion, symbol=SIM, since=DESDE, until=HASTA
     )
     assert not any(k in d for k in CLAVES_DEMANDA), "outcomes no entraba en el grupo ENCHUFAR"
+
+
+# ── LAS TRES QUE APARECIERON AL ASIGNAR LAS HUERFANAS (COLA 106), arregladas el 2026-09-10 ─────
+# Llevaban tapadas detras de la salida temprana de K43 por «sin familia». Ninguna publicaba el
+# instante en que contestaba, y las tres estan en DEMANDA porque su contenido depende de lo que
+# elige quien pregunta: un nivel, un rango, una zona.
+LAS_TRES = (
+    ("zone/analysis", zone_analysis_endpoint,
+     {"symbol": SIM, "low": 77000.0, "high": 80000.0}),
+    ("range/validate", range_validate_endpoint,
+     {"symbol": SIM, "low": 77000.0, "high": 80000.0}),
+    ("level/breakout", level_breakout_endpoint,
+     {"symbol": SIM, "level": 78800.0}),
+)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("nombre,fn,kwargs", LAS_TRES)
+async def test_las_tres_destapadas_traen_su_as_of(nombre, fn, kwargs) -> None:
+    d = await _llamar(fn, **kwargs)
+    assert any(k in d for k in CLAVES_DEMANDA), f"{nombre} no cumple DEMANDA"
+
+
+@pytest.mark.asyncio
+async def test_el_as_of_de_las_tres_es_el_INSTANTE_y_no_la_VENTANA() -> None:
+    """LA TRAMPA DE ESTE PUNTO, y por eso tiene brazo propio.
+
+    `/api/range/validate` ya traia `from` y `to` -las fechas del tramo que valida- y era muy
+    facil subir el `to` y llamarlo `as_of`. No vale: medido el 2026-09-10, ese `to` era
+    2026-09-09, la ultima sesion CERRADA, o sea que el sello habria nacido con un dia de
+    atraso. El instante de la respuesta se toma del reloj, y se comprueba contra el reloj.
+    """
+    antes = datetime.now(UTC)
+    d = await _llamar(range_validate_endpoint, symbol=SIM, low=77000.0, high=80000.0)
+    despues = datetime.now(UTC)
+    visto = datetime.fromisoformat(d["as_of"].replace("Z", "+00:00"))
+    assert antes <= visto <= despues, f"as_of={d['as_of']} fuera de [{antes}, {despues}]"
+    if d.get("to"):
+        assert d["as_of"][:10] >= str(d["to"]), (
+            "el as_of no puede ser anterior al fin de la ventana que dice haber mirado"
+        )

@@ -68,7 +68,7 @@ SCALP_ORDERBOOK_RETENTION_HOURS=6
 SCALP_SIGNAL_RETENTION_HOURS=72
 SCALP_TRADE_RETENTION_HOURS=12}" ;;
   *config.py*) printf '%s\n' "${K18C_DEFECTOS-REALTIME_RETENTION_HOURS=2
-SCALP_MINUTE_RETENTION_HOURS=36
+SCALP_MINUTE_RETENTION_HOURS=168
 SCALP_ORDERBOOK_RETENTION_HOURS=6
 SCALP_SIGNAL_RETENTION_HOURS=72
 SCALP_TRADE_RETENTION_HOURS=6}" ;;
@@ -268,7 +268,13 @@ SCALP_TRADE_RETENTION_HOURS=12
 SCALP_ORDERBOOK_RETENTION_HOURS=6
 SCALP_SIGNAL_RETENTION_HOURS=72
 REALTIME_RETENTION_HOURS=2'
-casov "V8 sin variable, cae al default del release (36)"    1 'retiene_de_mas:54.6h_vs_36h' 54.6 13.5 K18C_ENV=''
+# 2026-09-10 · V8 tenia el 36 escrito porque ese era el default del release. Al alinearlo a
+# 168 el brazo se caia: 54.6 h ya no pasa un techo de 168. Lo que V8 prueba NO es cuanto vale
+# el default, es que esa FUENTE se lee cuando no hay entorno, asi que ahora se le inyecta el
+# valor y deja de ser rehen de lo que decida produccion. No baja lo que exige: sigue siendo
+# un positivo que condena.
+casov "V8 sin variable, cae al default del release"        1 'retiene_de_mas:54.6h_vs_36h' 54.6 13.5 \
+  K18C_ENV='' K18C_DEFECTOS='SCALP_MINUTE_RETENTION_HOURS=36'
 casov "V9 sin ninguna fuente: NO MEDIDO, no rojo"           2 'NO MEDIDO' 54.6 13.5 K18C_ENV='' K18C_DEFECTOS=''
 
 

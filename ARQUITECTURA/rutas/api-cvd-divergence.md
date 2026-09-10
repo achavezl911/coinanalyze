@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd_divergence` · `app/api.py:868` (cuerpo hasta la 982) · decorador en la linea 867.
+Handler `cvd_divergence` · `app/api.py:911` (cuerpo hasta la 1025) · decorador en la linea 910.
 
 ## Parametros de entrada
 
@@ -20,18 +20,18 @@ Handler `cvd_divergence` · `app/api.py:868` (cuerpo hasta la 982) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:981 |
-| `coverage.served_window` | literal en app/api.py:981 |
+| `coverage` | literal en app/api.py:1024 |
+| `coverage.served_window` | literal en app/api.py:1024 |
 | `coverage.served_window.complete` | literal en app/data_gaps.py:279 |
 | `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:277 |
 | `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:278 |
 | `coverage.served_window.sources` | literal en app/data_gaps.py:280 |
 | `coverage.served_window.window_end` | literal en app/data_gaps.py:276 |
 | `coverage.served_window.window_start` | literal en app/data_gaps.py:275 |
-| `coverage.status` | literal en app/api.py:981 |
-| `interval` | literal en app/api.py:979 |
-| `rows` | literal en app/api.py:980 |
-| `symbol` | literal en app/api.py:978 |
+| `coverage.status` | literal en app/api.py:1024 |
+| `interval` | literal en app/api.py:1022 |
+| `rows` | literal en app/api.py:1023 |
+| `symbol` | literal en app/api.py:1021 |
 
 Forma de la respuesta segun el AST: objeto.
 

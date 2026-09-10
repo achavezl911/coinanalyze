@@ -183,7 +183,7 @@ class Settings(BaseSettings):
     # La sesion NYSE dura 24h y el job diario corre cada hora, asi que hay que cubrirla
     # entera con holgura. Va separado de SCALP_TRADE_RETENTION_HOURS porque los buckets
     # de 1 min son ~300x mas baratos de retener que los de 5 s.
-    SCALP_MINUTE_RETENTION_HOURS: int = Field(default=36, ge=26, le=168)
+    SCALP_MINUTE_RETENTION_HOURS: int = Field(default=168, ge=26, le=168)
     SCALP_ORDERBOOK_RETENTION_HOURS: int = Field(default=6, ge=1, le=72)
     SCALP_SIGNAL_INTERVAL_SECONDS: int = Field(default=10, ge=2, le=60)
     SCALP_SIGNAL_RETENTION_HOURS: int = Field(default=72, ge=1, le=720)

@@ -54,7 +54,8 @@ def test_la_matriz_distingue_ventana_movil_de_vela_cerrada() -> None:
     matriz = source.split("async def scalp_delta_matrix")[1].split("@app.get")[0]
     assert '("18m", 1080)' in matriz
     assert "VENTANA MOVIL" in matriz.upper()
-    # 3d no puede entrar: futures_trades_agg retiene 36 h y solo daria `partial`.
+    # 3d no puede entrar: futures_trades_agg retiene 168 h y aun asi 3d solo daria
+    # `partial`, porque la ventana movil de 3 dias necesita el arco entero.
     assert '("3d"' not in matriz
 
 
