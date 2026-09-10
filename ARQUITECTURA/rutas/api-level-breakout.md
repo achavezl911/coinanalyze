@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `level_breakout_endpoint` · `app/api.py:1960` (cuerpo hasta la 1970) · decorador en la linea 1959.
+Handler `level_breakout_endpoint` · `app/api.py:2021` (cuerpo hasta la 2033) · decorador en la linea 2020.
 
 ## Parametros de entrada
 
@@ -16,23 +16,15 @@ Handler `level_breakout_endpoint` · `app/api.py:1960` (cuerpo hasta la 1970) ·
 
 ## Campos que publica
 
-11 campos derivados. La procedencia dice de donde sale cada uno.
+1 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `available` | literal en app/breakout.py:295 |
-| `base_rate` | literal en app/breakout.py:299 |
-| `conditional_rates` | literal en app/breakout.py:300 |
-| `confirmation` | literal en app/breakout.py:301 |
-| `direction` | literal en app/breakout.py:297 |
-| `level` | literal en app/breakout.py:296 |
-| `method` | literal en app/breakout.py:307 |
-| `reason` | literal en app/breakout.py:224 |
-| `setup` | literal en app/breakout.py:298 |
-| `symbol` | literal en app/scalp_logic.py:1662 |
-| `warning` | literal en app/breakout.py:320 |
+| `as_of` | asignado en app/api.py:1956 |
 
-Forma de la respuesta segun el AST: objeto.
+**Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
+
+- devuelve la variable 'payload', cuyo contenido no se resuelve estaticamente
 
 Tipo declarado en la firma: `dict[str, Any]`.
 
@@ -48,16 +40,18 @@ LEE:
 
 ## Funciones que la componen
 
-13 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+15 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
+- `app.api.sella_respuesta` — `app/api.py:1944`
 - `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.level_breakout` — `app/scalp_logic.py:1637`
 
-<details><summary>Alcanzables de forma indirecta (11)</summary>
+<details><summary>Alcanzables de forma indirecta (12)</summary>
 
+- `app.api._utc_iso` — `app/api.py:2412`
 - `app.breakout._atr` — `app/breakout.py:58`
 - `app.breakout._confirmation_checks` — `app/breakout.py:330`
 - `app.breakout._delta_usd` — `app/breakout.py:77`
@@ -87,7 +81,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 422 | direction must be 'up' or 'down' | `app/api.py:1968` | el propio handler |
+| 422 | direction must be 'up' or 'down' | `app/api.py:2029` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -112,9 +106,9 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `as_of`
 
 ## Capa DECLARADA
 
@@ -134,6 +128,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
+| `app.api._utc_iso` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
+| `app.api.sella_respuesta` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |
 | `app.api.level_breakout_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.breakout._atr` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |
 | `app.breakout._confirmation_checks` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |

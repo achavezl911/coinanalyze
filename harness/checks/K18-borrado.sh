@@ -10,7 +10,7 @@
 #       scalp_signal_snapshot   72 h   scalp_collector.py:1475  config.py:189
 #       spot_trades_realtime     2 h   daily_agg.py:594         config.py:199
 #   DELETE directo
-#       futures_trades_agg      36 h   scalp_collector.py:1459  config.py:186
+#       futures_trades_agg     168 h   scalp_collector.py:1459  config.py:186
 #       metrics_snapshot     N dias    daily_agg.py:583
 #       macro_event         30 dias    external_macro.py:576
 #       external_api_rate_event        coinalyze.py:68

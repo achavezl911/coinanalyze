@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `reference_levels_endpoint` · `app/api.py:2016` (cuerpo hasta la 2019) · decorador en la linea 2015.
+Handler `reference_levels_endpoint` · `app/api.py:2079` (cuerpo hasta la 2082) · decorador en la linea 2078.
 
 ## Parametros de entrada
 

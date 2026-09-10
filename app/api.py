@@ -353,6 +353,46 @@ GAP_STATUS_UNDECLARED = "undeclared"
 MAX_BUCKET_SWEEP = 20000
 
 
+def minutos_de_las_filas(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Lo que el sobre tiene que decir sobre los MINUTOS que sus filas declaran ausentes.
+
+    EL SOBRE Y LA FILA HABLAN DE COSAS DISTINTAS CON LA MISMA PALABRA, y hasta el 2026-09-10
+    la unidad habia que adivinarla: `coverage.served_window.complete` cuenta CUBOS -estan los
+    384 que se esperaban- y `missing_minutes` de cada fila cuenta MINUTOS dentro de SU cubo
+    -14 de 15-. Las dos afirmaciones son ciertas a la vez y no se contradicen. Por eso el sobre
+    declara ahora su `unit` y, al lado, cuantos cubos traen minutos ausentes y cuantos minutos
+    son en total. `complete` NO cambia de significado: sigue siendo cosa de cubos.
+
+    LOS TRES ESTADOS DEL CONTADOR POR FILA, medidos en 140 el 2026-09-10 sobre las 576 filas de
+    /api/whale/delta?interval=5min: 573 traen un entero 0, 1 trae un entero 1, y **2 traen
+    NULO** -los dos cubos mas recientes, que todavia se estan llenando-. Un NULO NO es un cero:
+    es «no se pudo medir», y sumarlo como cero seria inventar un dato tranquilizador justo en
+    los cubos donde menos se sabe. Se cuenta aparte y se declara.
+    """
+    con_falta = minutos = sin_medir = 0
+    declaran = False
+    for fila in rows:
+        if "missing_minutes" not in fila:
+            continue
+        declaran = True
+        valor = fila["missing_minutes"]
+        if valor is None:
+            sin_medir += 1
+        elif valor > 0:
+            con_falta += 1
+            minutos += valor
+    if not declaran:
+        # La serie no publica minutos por fila. Se dice la unidad igual: el que lee no tiene
+        # por que saber de antemano en que habla este bloque.
+        return {"unit": "bucket"}
+    return {
+        "unit": "bucket",
+        "buckets_con_minutos_incompletos": con_falta,
+        "missing_minutes_total": minutos,
+        "buckets_con_minutos_sin_medir": sin_medir,
+    }
+
+
 async def declared_series_response(
     conn: asyncpg.Connection,
     rows: list[dict[str, Any]],
@@ -379,7 +419,9 @@ async def declared_series_response(
             "symbol": symbol,
             "interval": interval,
             "rows": rows,
-            "coverage": {"served_window": None},
+            # served_window a null y la unidad dicha igual: la ausencia de ventana no
+            # convierte el bloque en mudo sobre en que habla.
+            "coverage": {"served_window": None, "unit": "bucket"},
             "data_gaps": {
                 "feed": feed,
                 "exchanges": list(exchanges),
@@ -437,6 +479,7 @@ async def declared_series_response(
             "served_window": coverage_entry(
                 window_start, window_end, sources=((feed, esperados, len(starts)),)
             )
+            | minutos_de_las_filas(rows)
         },
         "data_gaps": {
             "feed": feed,
@@ -1260,8 +1303,10 @@ async def scalp_delta_matrix(symbol: str) -> list[dict[str, Any]]:
     # 18m es una VENTANA MOVIL de 1080 s, no la vela de 18 m: para la vela cerrada y
     # alineada a medianoche UTC esta /api/ohlcv?interval=18min. Son cosas distintas y el
     # dashboard no debe mezclarlas.
-    # 3d no entra aqui: futures_trades_agg retiene 36 h (SCALP_MINUTE_RETENTION_HOURS), asi
-    # que solo podria devolver `partial`. El horizonte de varios dias vive en daily_session_agg.
+    # 3d no entra aqui: futures_trades_agg retiene 168 h (SCALP_MINUTE_RETENTION_HOURS, 7
+    # dias), y aun asi 3d solo podria devolver `partial` porque la ventana movil de 3 dias
+    # necesita el arco entero y esta tabla lo pierde por abajo con la poda. El horizonte de
+    # varios dias vive en daily_session_agg.
     windows = [
         ("15s", 15),
         ("30s", 30),
@@ -1896,6 +1941,22 @@ async def price_barriers_endpoint(symbol: str) -> dict[str, Any]:
         return await price_barriers(conn, selected)
 
 
+def sella_respuesta(payload: dict[str, Any]) -> dict[str, Any]:
+    """El instante en que se CONTESTO. Es lo unico que promete la familia DEMANDA de K43.
+
+    NO ES LA VENTANA, y la confusion es facil y cara. `/api/range/validate` trae ademas `from`
+    y `to` -las fechas del tramo que valido- y `/api/zone/analysis` trae su ventana declarada:
+    esas dicen DE QUE habla la respuesta, y `as_of` dice CUANDO se contesto. Medido el
+    2026-09-10, el `to` de range/validate era 2026-09-09 -la ultima sesion CERRADA-, asi que
+    tomarlo por el instante de la respuesta habria publicado un sello con un dia de atraso.
+
+    El nombre no es nuevo: `as_of` es el que ya usan las demas DEMANDA de la casa y el primero
+    que K43 busca.
+    """
+    payload["as_of"] = _utc_iso(datetime.now(UTC))
+    return payload
+
+
 @app.get("/api/zone/analysis")
 async def zone_analysis_endpoint(
     symbol: str,
@@ -1919,7 +1980,7 @@ async def zone_analysis_endpoint(
     async with app.state.pool.acquire() as conn:
         payload = await zone_analysis(conn, selected, low, high, days, a, b)
     declara_ventana(payload, a, b)
-    return payload
+    return sella_respuesta(payload)
 
 
 @app.get("/api/range/validate")
@@ -1951,9 +2012,9 @@ async def range_validate_endpoint(
     elif days + end_days_ago > 730:
         raise HTTPException(status_code=422, detail="days + end_days_ago exceeds daily history")
     async with app.state.pool.acquire() as conn:
-        return await range_validate(
+        return sella_respuesta(await range_validate(
             conn, selected, low, high, days, end_days_ago, start_date, end_date
-        )
+        ))
 
 
 @app.get("/api/level/breakout")
@@ -1967,7 +2028,9 @@ async def level_breakout_endpoint(
     if direction not in {"up", "down"}:
         raise HTTPException(status_code=422, detail="direction must be 'up' or 'down'")
     async with app.state.pool.acquire() as conn:
-        return await level_breakout(conn, selected, level, direction == "up")
+        return sella_respuesta(
+            await level_breakout(conn, selected, level, direction == "up")
+        )
 
 
 @app.get("/api/wyckoff")

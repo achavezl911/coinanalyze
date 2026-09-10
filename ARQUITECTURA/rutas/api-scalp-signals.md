@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_signals` · `app/api.py:2308` (cuerpo hasta la 2346) · decorador en la linea 2307.
+Handler `scalp_signals` · `app/api.py:2371` (cuerpo hasta la 2409) · decorador en la linea 2370.
 
 ## Parametros de entrada
 
@@ -19,15 +19,15 @@ Handler `scalp_signals` · `app/api.py:2308` (cuerpo hasta la 2346) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2344 |
-| `count` | literal en app/api.py:2339 |
-| `limit` | literal en app/api.py:2338 |
-| `rows` | literal en app/api.py:2345 |
-| `servida_desde` | literal en app/api.py:2341 |
-| `servida_hasta` | literal en app/api.py:2342 |
-| `symbol` | literal en app/api.py:2337 |
-| `truncated` | literal en app/api.py:2340 |
-| `ventana_maxima_h` | literal en app/api.py:2343 |
+| `as_of` | literal en app/api.py:2407 |
+| `count` | literal en app/api.py:2402 |
+| `limit` | literal en app/api.py:2401 |
+| `rows` | literal en app/api.py:2408 |
+| `servida_desde` | literal en app/api.py:2404 |
+| `servida_hasta` | literal en app/api.py:2405 |
+| `symbol` | literal en app/api.py:2400 |
+| `truncated` | literal en app/api.py:2403 |
+| `ventana_maxima_h` | literal en app/api.py:2406 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -47,7 +47,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2349`
+- `app.api._utc_iso` — `app/api.py:2412`
 - `app.api.records` — `app/api.py:242`
 - `app.api.validate_symbol` — `app/api.py:229`
 
@@ -116,7 +116,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.api._utc_iso` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.api.scalp_signals` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

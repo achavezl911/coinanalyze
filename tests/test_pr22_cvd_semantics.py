@@ -1093,8 +1093,9 @@ async def test_k83_cvd_matrix_publica_futuros_cuando_solo_el_empalme_cubre(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     cutoff = datetime(2026, 9, 1, 3, 0, tzinfo=UTC)
-    # El realtime llega a 12 h y el agregado a 36 h: la 8h la sirve el realtime, la 24h solo
-    # el empalme, y la 3d no la puede servir nadie.
+    # El realtime llega a 12 h y el agregado a 168 h: la 8h la sirve el realtime, la 24h solo
+    # el empalme, y la 3d no la puede servir nadie -este test la fija con arcos propios, no
+    # con la retencion real-.
     realtime_arc = timedelta(hours=12)
     agg_arc = timedelta(hours=36)
 

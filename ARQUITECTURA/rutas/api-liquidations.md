@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_series` · `app/api.py:1035` (cuerpo hasta la 1081) · decorador en la linea 1034.
+Handler `liquidation_series` · `app/api.py:1078` (cuerpo hasta la 1124) · decorador en la linea 1077.
 
 ## Parametros de entrada
 
@@ -16,25 +16,26 @@ Handler `liquidation_series` · `app/api.py:1035` (cuerpo hasta la 1081) · deco
 
 ## Campos que publica
 
-15 campos derivados. La procedencia dice de donde sale cada uno.
+16 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:436 |
-| `coverage.served_window` | literal en app/api.py:437 |
-| `data_gaps` | literal en app/api.py:441 |
-| `data_gaps.declared` | literal en app/api.py:449 |
-| `data_gaps.exchanges` | literal en app/api.py:443 |
-| `data_gaps.feed` | literal en app/api.py:442 |
-| `data_gaps.market` | literal en app/api.py:444 |
-| `data_gaps.status` | literal en app/api.py:448 |
-| `data_gaps.symbol` | literal en app/api.py:445 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:450 |
-| `data_gaps.window_end` | literal en app/api.py:447 |
-| `data_gaps.window_start` | literal en app/api.py:446 |
-| `interval` | literal en app/api.py:434 |
-| `rows` | literal en app/api.py:435 |
-| `symbol` | literal en app/api.py:433 |
+| `coverage` | literal en app/api.py:478 |
+| `coverage.served_window` | literal en app/api.py:479 |
+| `coverage.unit` | literal en app/api.py:424 |
+| `data_gaps` | literal en app/api.py:484 |
+| `data_gaps.declared` | literal en app/api.py:492 |
+| `data_gaps.exchanges` | literal en app/api.py:486 |
+| `data_gaps.feed` | literal en app/api.py:485 |
+| `data_gaps.market` | literal en app/api.py:487 |
+| `data_gaps.status` | literal en app/api.py:491 |
+| `data_gaps.symbol` | literal en app/api.py:488 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:493 |
+| `data_gaps.window_end` | literal en app/api.py:490 |
+| `data_gaps.window_start` | literal en app/api.py:489 |
+| `interval` | literal en app/api.py:476 |
+| `rows` | literal en app/api.py:477 |
+| `symbol` | literal en app/api.py:475 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -68,19 +69,20 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-11 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+12 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:356`
+- `app.api.declared_series_response` — `app/api.py:396`
 - `app.api.historical_interval_value` — `app/api.py:235`
 - `app.api.mask_gapped_series_rows` — `app/api.py:246`
 - `app.api.records` — `app/api.py:242`
 - `app.api.validate_symbol` — `app/api.py:229`
 
-<details><summary>Alcanzables de forma indirecta (6)</summary>
+<details><summary>Alcanzables de forma indirecta (7)</summary>
 
+- `app.api.minutos_de_las_filas` — `app/api.py:356`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
@@ -164,6 +166,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.mask_gapped_series_rows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.declared_series_response` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.api.minutos_de_las_filas` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.liquidation_series` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

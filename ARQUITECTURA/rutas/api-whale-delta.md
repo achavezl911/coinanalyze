@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1137` (cuerpo hasta la 1227) · decorador en la linea 1136.
+Handler `whale_delta` · `app/api.py:1180` (cuerpo hasta la 1270) · decorador en la linea 1179.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `whale_delta` · `app/api.py:1137` (cuerpo hasta la 1227) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:436 |
-| `data_gaps` | literal en app/api.py:441 |
-| `interval` | literal en app/api.py:434 |
-| `rows` | literal en app/api.py:435 |
-| `symbol` | literal en app/api.py:433 |
+| `coverage` | literal en app/api.py:478 |
+| `data_gaps` | literal en app/api.py:484 |
+| `interval` | literal en app/api.py:476 |
+| `rows` | literal en app/api.py:477 |
+| `symbol` | literal en app/api.py:475 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,19 +54,20 @@ LEE:
 
 ## Funciones que la componen
 
-10 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+11 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declarar_tramo_no_medible` — `app/api.py:1084`
-- `app.api.declared_series_response` — `app/api.py:356`
+- `app.api.declarar_tramo_no_medible` — `app/api.py:1127`
+- `app.api.declared_series_response` — `app/api.py:396`
 - `app.api.historical_interval_value` — `app/api.py:235`
 - `app.api.records` — `app/api.py:242`
 - `app.api.validate_symbol` — `app/api.py:229`
 
-<details><summary>Alcanzables de forma indirecta (5)</summary>
+<details><summary>Alcanzables de forma indirecta (6)</summary>
 
+- `app.api.minutos_de_las_filas` — `app/api.py:356`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
@@ -103,7 +104,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:152`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:57` | `harness/checks/K52b-la-ruta-no-falla-abierta.sh:6`, `harness/checks/K59-whale-vota-cero.sh:15` |
 | **panel** | `static/app.js:1673` | — |
 | **readme** | — | `README.md:408` |
-| **tests** | — | `tests/test_data_gaps.py:325` |
+| **tests** | — | `tests/test_data_gaps.py:325`, `tests/test_sobre_unidad_bucket.py:3`, `tests/test_sobre_unidad_bucket.py:9` |
 
 **La llama el panel: es superficie de producto.**
 
@@ -146,6 +147,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.declared_series_response` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.api.minutos_de_las_filas` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.declarar_tramo_no_medible` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.api.whale_delta` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
