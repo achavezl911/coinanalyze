@@ -23,6 +23,12 @@ class ConexionDeDosDias:
     def __init__(self, simbolos):
         self.simbolos = simbolos
 
+    async def fetchval(self, *_a, **_k):
+        # `current_date` DEL MOTOR, que es quien evalua el WHERE de la consulta. Fija a
+        # proposito: con el reloj real, la ventana declarada se movia cada dia y estos tests
+        # pasarian o fallarian segun la fecha en vez de segun el codigo.
+        return date(2026, 8, 28)
+
     async def fetch(self, *_a, **_k):
         filas = []
         for s in self.simbolos:
@@ -143,3 +149,41 @@ async def test_cada_hueco_dice_DE_CUANDO_es_su_afirmacion():
     # LA CELDA NO CAMBIA DE FORMA: sigue siendo null.
     dia = next(d for d in m["funding_por_dia"] if d["fecha"] == "2026-08-28")
     assert dia["valores"]["BTCUSDT_PERP.A"] is None
+
+
+# LA VENTANA EN EL VOCABULARIO DE LA CASA, anadida el 2026-09-10 con la familia SERIE de K43.
+# `cobertura` ya decia lo mismo con otras palabras, pero con un agujero: sus `celdas_esperadas`
+# salen de los dias SERVIDOS, asi que un dia que falta del todo encoge el denominador y la
+# cobertura se lee como completa. `served_window` cuenta contra los dias PEDIDOS y por eso lo ve.
+@pytest.mark.asyncio
+async def test_la_ventana_declarada_cuenta_contra_lo_PEDIDO_y_no_contra_lo_SERVIDO():
+    simbolos = ["BTCUSDT_PERP.A"]
+    m = await matriz_de_carry(ConexionDeDosDias(simbolos), simbolos, 15)
+    v = m["coverage"]["served_window"]
+    # los cinco nombres que K43 exige de una SERIE, y su forma
+    for k in ("window_start", "window_end", "expected_buckets", "observed_buckets", "complete"):
+        assert k in v, k
+    # 15 dias pedidos que acaban el 2026-08-28 -> [2026-08-14, 2026-08-29)
+    assert v["window_start"].startswith("2026-08-14"), v["window_start"]
+    assert v["window_end"].startswith("2026-08-29"), v["window_end"]
+    # dos patas x 15 dias x 1 simbolo. NO 2, que es lo que sirvio: ahi esta la diferencia.
+    assert v["expected_buckets"] == 30, v
+    # de los dos dias servidos, el del 2026-08-28 no trae ni funding ni OI: 1 y 1.
+    assert v["observed_buckets"] == 2, v
+    assert v["complete"] is False
+    # Y CADA PATA DICE LO SUYO, que es de lo que sirve `sources`: si algun dia falla solo una,
+    # se puede ir a la que fallo en vez de a la suma.
+    assert v["sources"]["funding_dia_simbolo"] == {"expected_buckets": 15, "observed_buckets": 1}
+    assert v["sources"]["oi_dia_simbolo"] == {"expected_buckets": 15, "observed_buckets": 1}
+
+
+@pytest.mark.asyncio
+async def test_la_ventana_nueva_no_le_quita_nada_al_panel():
+    """El contrato con static/app.js: renderCarry lee estos diez y ninguno puede desaparecer."""
+    simbolos = ["BTCUSDT_PERP.A"]
+    m = await matriz_de_carry(ConexionDeDosDias(simbolos), simbolos, 15)
+    for campo in ("cobertura", "coste", "desde", "dias_pedidos", "dias_servidos",
+                  "funding_por_dia", "hasta", "oi_por_dia", "simbolos", "unidades"):
+        assert campo in m, campo
+    # y `cobertura` conserva su forma: se anadio al lado, no se sustituyo
+    assert set(m["cobertura"]) == {"celdas_esperadas", "celdas_sin_funding", "celdas_sin_oi", "nota"}

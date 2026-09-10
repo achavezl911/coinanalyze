@@ -81,7 +81,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:117`, `harness/checks/K43-foto-unica.sh:175` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:149`, `harness/checks/K43-foto-unica.sh:211` | — |
 | **panel** | `static/app.js:1676` | — |
 | **tests** | — | `tests/test_metrics_endpoint.py:231` |
 

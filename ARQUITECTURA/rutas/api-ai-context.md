@@ -378,7 +378,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:273`, `harness/checks/K43-foto-unica.sh:274`, `harness/checks/K43-foto-unica.sh:330` _(+1)_ | `harness/checks/K43-foto-unica.sh:7`, `harness/checks/K43-foto-unica.sh:17`, `harness/checks/K43-foto-unica.sh:243`, `harness/checks/K43-foto-unica.sh:328` _(+1)_ |
+| **checks** | `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:309`, `harness/checks/K43-foto-unica.sh:310`, `harness/checks/K43-foto-unica.sh:366` _(+1)_ | `harness/checks/K43-foto-unica.sh:7`, `harness/checks/K43-foto-unica.sh:17`, `harness/checks/K43-foto-unica.sh:73`, `harness/checks/K43-foto-unica.sh:279` _(+2)_ |
 | **readme** | — | `README.md:62`, `README.md:414`, `README.md:518` |
 | **tests** | — | `tests/test_metrics_endpoint.py:222`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:111`, `tests/test_pr22_cvd_semantics.py:1191` |
 
@@ -423,9 +423,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.metrics.current_nyse_start` | 15 | **0** | 14 ↑ | **15** | [impacto](../impacto/app-metrics.md) |
-| `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.expected_buckets` | 12 | **0** | 21 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic.compute_scalp_summary` | 9 | **0** | 24 ↑ | **9** | [impacto](../impacto/app-scalp_logic.md) |

@@ -104,18 +104,18 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.data_gaps.recover_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1272` | 0 | **21** | 21 | **21** |
 | [`app.data_gaps.blocking_requirement_keys`](impacto/app-data_gaps.md) | `app/data_gaps.py:108` | 20 | **0** | 14 ↑ | **20** |
 | [`app.scalp_collector._write_combined_realtime`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:777` | 0 | **16** | 21 ↑ | **16** |
+| [`app.data_gaps._aware_utc`](impacto/app-data_gaps.md) | `app/data_gaps.py:67` | 15 | **0** | 21 ↑ | **15** |
+| [`app.data_gaps._validated_window`](impacto/app-data_gaps.md) | `app/data_gaps.py:73` | 15 | **0** | 21 ↑ | **15** |
 | [`app.metrics.current_nyse_start`](impacto/app-metrics.md) | `app/metrics.py:20` | 15 | **0** | 14 ↑ | **15** |
 | [`app.daily_agg._store_baseline`](impacto/app-daily_agg.md) | `app/daily_agg.py:745` | 0 | **14** | 55 ↑ | **14** |
-| [`app.data_gaps._aware_utc`](impacto/app-data_gaps.md) | `app/data_gaps.py:67` | 14 | **0** | 21 ↑ | **14** |
-| [`app.data_gaps._validated_window`](impacto/app-data_gaps.md) | `app/data_gaps.py:73` | 14 | **0** | 21 ↑ | **14** |
 | [`app.scalp_logic.load_baselines`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:158` | 14 | **0** | 10 ↑ | **14** |
 | [`app.scalp_collector._write_combined_books`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:907` | 0 | **14** | 19 ↑ | **14** |
 | [`app.scalp_collector.flush_books`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:832` | 0 | **14** | 19 ↑ | **14** |
 | [`app.scalp_collector.flush_liquidations`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:965` | 0 | **14** | 19 ↑ | **14** |
+| [`app.data_gaps.coverage_entry`](impacto/app-data_gaps.md) | `app/data_gaps.py:253` | 14 | **0** | 0 | **14** |
 | [`app.scalp_logic._resample_highs_lows`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1197` | 14 | **0** | 0 | **14** |
 | [`app.scalp_logic.baseline_band`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:134` | 13 | **0** | 10 ↑ | **13** |
 | [`app.interpretation.number`](impacto/app-interpretation.md) | `app/interpretation.py:10` | 13 | **0** | 3 ↑ | **13** |
-| [`app.data_gaps.coverage_entry`](impacto/app-data_gaps.md) | `app/data_gaps.py:253` | 13 | **0** | 0 | **13** |
 | [`app.scalp_logic._flow_windows`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2436` | 13 | **0** | 0 | **13** |
 | [`app.scalp_logic.spot_flow_windows`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2614` | 13 | **0** | 0 | **13** |
 | [`app.data_gaps.expected_buckets`](impacto/app-data_gaps.md) | `app/data_gaps.py:245` | 12 | **0** | 21 ↑ | **12** |
@@ -421,12 +421,12 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.breakout.classify_outcome`](impacto/app-breakout.md) | `app/breakout.py:125` | 1 | **0** | 0 | **1** |
 | [`app.breakout.find_attempts`](impacto/app-breakout.md) | `app/breakout.py:90` | 1 | **0** | 0 | **1** |
 | [`app.breakout.wilson_ci`](impacto/app-breakout.md) | `app/breakout.py:46` | 1 | **0** | 0 | **1** |
-| [`app.carry._iso`](impacto/app-carry.md) | `app/carry.py:66` | 1 | **0** | 0 | **1** |
-| [`app.carry._pct`](impacto/app-carry.md) | `app/carry.py:62` | 1 | **0** | 0 | **1** |
-| [`app.carry.celda_completa`](impacto/app-carry.md) | `app/carry.py:52` | 1 | **0** | 0 | **1** |
-| [`app.carry.coste_de_carry`](impacto/app-carry.md) | `app/carry.py:70` | 1 | **0** | 0 | **1** |
-| [`app.carry.matriz_de_carry`](impacto/app-carry.md) | `app/carry.py:98` | 1 | **0** | 0 | **1** |
-| [`app.carry.quien_paga`](impacto/app-carry.md) | `app/carry.py:87` | 1 | **0** | 0 | **1** |
+| [`app.carry._iso`](impacto/app-carry.md) | `app/carry.py:67` | 1 | **0** | 0 | **1** |
+| [`app.carry._pct`](impacto/app-carry.md) | `app/carry.py:63` | 1 | **0** | 0 | **1** |
+| [`app.carry.celda_completa`](impacto/app-carry.md) | `app/carry.py:53` | 1 | **0** | 0 | **1** |
+| [`app.carry.coste_de_carry`](impacto/app-carry.md) | `app/carry.py:71` | 1 | **0** | 0 | **1** |
+| [`app.carry.matriz_de_carry`](impacto/app-carry.md) | `app/carry.py:99` | 1 | **0** | 0 | **1** |
+| [`app.carry.quien_paga`](impacto/app-carry.md) | `app/carry.py:88` | 1 | **0** | 0 | **1** |
 | [`app.delta_profile._floor_log10`](impacto/app-delta_profile.md) | `app/delta_profile.py:79` | 1 | **0** | 0 | **1** |
 | [`app.delta_profile.bucket_index`](impacto/app-delta_profile.md) | `app/delta_profile.py:69` | 1 | **0** | 0 | **1** |
 | [`app.delta_profile.bucket_size`](impacto/app-delta_profile.md) | `app/delta_profile.py:56` | 1 | **0** | 0 | **1** |

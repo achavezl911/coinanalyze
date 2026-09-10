@@ -10,8 +10,8 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 |---|---|---|---|---|---|
 | [`reconcile_cadence_coverage`](#reconcile-cadence-coverage) | 474 | 0 | **21** | 48 ↑ | **21** |
 | [`blocking_requirement_keys`](#blocking-requirement-keys) | 108 | 20 | **0** | 14 ↑ | **20** |
-| [`_aware_utc`](#-aware-utc) | 67 | 14 | **0** | 21 ↑ | **14** |
-| [`_validated_window`](#-validated-window) | 73 | 14 | **0** | 21 ↑ | **14** |
+| [`_aware_utc`](#-aware-utc) | 67 | 15 | **0** | 21 ↑ | **15** |
+| [`_validated_window`](#-validated-window) | 73 | 15 | **0** | 21 ↑ | **15** |
 | [`expected_buckets`](#expected-buckets) | 245 | 12 | **0** | 21 ↑ | **12** |
 | [`from_record`](#from-record) | 1140 | 0 | **0** | 21 ↑ | **0** |
 | [`_cubierto_por_otro_detector`](#-cubierto-por-otro-detector) | 439 | 0 | **0** | 21 ↑ | **0** |
@@ -29,7 +29,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`recover_gap`](#recover-gap) | 1272 | 0 | **21** | 21 | **21** |
 | [`recover_unresolved_gaps`](#recover-unresolved-gaps) | 1333 | 0 | **0** | 21 ↑ | **0** |
 | [`validate_recovery`](#validate-recovery) | 1176 | 0 | **0** | 21 ↑ | **0** |
-| [`coverage_entry`](#coverage-entry) | 253 | 13 | **0** | 0 | **13** |
+| [`coverage_entry`](#coverage-entry) | 253 | 14 | **0** | 0 | **14** |
 | [`declared_gap_windows`](#declared-gap-windows) | 197 | 7 | **0** | 0 | **7** |
 | [`align_down`](#align-down) | 232 | 4 | **0** | 0 | **4** |
 
@@ -281,14 +281,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:67` · clave completa `app.data_gaps._aware_utc`
 
-**Radio exacto: 14 rutas** de 70 · **cota superior: 25** (mas ancha)
+**Radio exacto: 15 rutas** de 70 · **cota superior: 26** (mas ancha)
 
-### Por llamada — 14 rutas
+### Por llamada — 15 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
@@ -362,14 +363,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:73` · clave completa `app.data_gaps._validated_window`
 
-**Radio exacto: 14 rutas** de 70 · **cota superior: 25** (mas ancha)
+**Radio exacto: 15 rutas** de 70 · **cota superior: 26** (mas ancha)
 
-### Por llamada — 14 rutas
+### Por llamada — 15 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
@@ -437,7 +439,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 21 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 22 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## expected_buckets
 
@@ -1904,14 +1906,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:253` · clave completa `app.data_gaps.coverage_entry`
 
-**Radio exacto: 13 rutas** de 70 · **cota superior: 13** (igual al exacto)
+**Radio exacto: 14 rutas** de 70 · **cota superior: 14** (igual al exacto)
 
-### Por llamada — 13 rutas
+### Por llamada — 14 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
@@ -1933,7 +1936,7 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 16 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 18 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## declared_gap_windows
 

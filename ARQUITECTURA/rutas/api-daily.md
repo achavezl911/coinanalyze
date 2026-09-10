@@ -121,7 +121,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:161`, `harness/checks/K03-hueco-declarado.sh:164`, `harness/checks/K43-foto-unica.sh:119` _(+1)_ | `harness/checks/K03-hueco-declarado.sh:8`, `harness/checks/K03-hueco-declarado.sh:15`, `harness/checks/K03-hueco-declarado.sh:153`, `harness/checks/K03-hueco-declarado.sh:165` _(+1)_ |
+| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:161`, `harness/checks/K03-hueco-declarado.sh:164`, `harness/checks/K43-foto-unica.sh:151` _(+1)_ | `harness/checks/K03-hueco-declarado.sh:8`, `harness/checks/K03-hueco-declarado.sh:15`, `harness/checks/K03-hueco-declarado.sh:153`, `harness/checks/K03-hueco-declarado.sh:165` _(+1)_ |
 | **panel** | `static/app.js:1583`, `static/app.js:1674`, `static/app.js:1771` | — |
 | **readme** | — | `README.md:70`, `README.md:90`, `README.md:409` |
 | **tests** | `tests/test_dashboard_presentation.py:83` | `tests/test_data_gaps.py:128` |
@@ -165,8 +165,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
 | `app.api.mask_gapped_series_rows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |

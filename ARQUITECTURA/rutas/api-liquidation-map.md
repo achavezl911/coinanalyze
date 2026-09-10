@@ -92,7 +92,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
+| **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:157`, `harness/checks/K43-foto-unica.sh:210` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:72`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
 | **panel** | `static/app.js:1662` | `static/app.js:3180` |
 | **panel-html** | `static/index.html:221` | — |
 | **tests** | — | `tests/test_liquidation_map_ventana.py:1` |

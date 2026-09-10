@@ -8,16 +8,16 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_iso`](#-iso) | 66 | 1 | **0** | 0 | **1** |
-| [`_pct`](#-pct) | 62 | 1 | **0** | 0 | **1** |
-| [`celda_completa`](#celda-completa) | 52 | 1 | **0** | 0 | **1** |
-| [`coste_de_carry`](#coste-de-carry) | 70 | 1 | **0** | 0 | **1** |
-| [`matriz_de_carry`](#matriz-de-carry) | 98 | 1 | **0** | 0 | **1** |
-| [`quien_paga`](#quien-paga) | 87 | 1 | **0** | 0 | **1** |
+| [`_iso`](#-iso) | 67 | 1 | **0** | 0 | **1** |
+| [`_pct`](#-pct) | 63 | 1 | **0** | 0 | **1** |
+| [`celda_completa`](#celda-completa) | 53 | 1 | **0** | 0 | **1** |
+| [`coste_de_carry`](#coste-de-carry) | 71 | 1 | **0** | 0 | **1** |
+| [`matriz_de_carry`](#matriz-de-carry) | 99 | 1 | **0** | 0 | **1** |
+| [`quien_paga`](#quien-paga) | 88 | 1 | **0** | 0 | **1** |
 
 ## _iso
 
-`app/carry.py:66` · clave completa `app.carry._iso`
+`app/carry.py:67` · clave completa `app.carry._iso`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -40,7 +40,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _pct
 
-`app/carry.py:62` · clave completa `app.carry._pct`
+`app/carry.py:63` · clave completa `app.carry._pct`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -63,7 +63,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## celda_completa
 
-`app/carry.py:52` · clave completa `app.carry.celda_completa`
+`app/carry.py:53` · clave completa `app.carry.celda_completa`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -86,7 +86,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## coste_de_carry
 
-`app/carry.py:70` · clave completa `app.carry.coste_de_carry`
+`app/carry.py:71` · clave completa `app.carry.coste_de_carry`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -109,7 +109,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## matriz_de_carry
 
-`app/carry.py:98` · clave completa `app.carry.matriz_de_carry`
+`app/carry.py:99` · clave completa `app.carry.matriz_de_carry`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -132,7 +132,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## quien_paga
 
-`app/carry.py:87` · clave completa `app.carry.quien_paga`
+`app/carry.py:88` · clave completa `app.carry.quien_paga`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 

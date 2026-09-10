@@ -27,7 +27,7 @@ pinta: se DECLARA. Aqui se devuelve `dias_pedidos` y `dias_servidos`, cada celda
 de muestras, y las que no existen viajan como `null` -nunca como cero- con el recuento aparte.
 """
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import asyncpg
@@ -47,6 +47,7 @@ PAGOS_POR_DIA = 3
 # ponia una etiqueta sobre un numero que aquel ya habia dejado pasar. Dos criterios para la
 # misma pregunta es exactamente como se llega a que uno de los dos no sirva.
 from app.daily_agg import SESSION_MIN_COVERAGE_RATIO  # noqa: E402
+from app.data_gaps import coverage_entry  # noqa: E402
 
 
 def celda_completa(muestras: int, esperadas: int) -> bool:
@@ -116,6 +117,16 @@ async def matriz_de_carry(
 
     fechas = sorted(por_dia)
     esperadas = len(fechas) * len(simbolos)
+    # LA VENTANA QUE SE PIDIO, no la que se sirvio. `current_date` se lee del motor y no del
+    # reloj de este proceso porque es el motor quien la evalua ahi arriba: si los dos no
+    # coincidieran, la ventana declarada no seria la consultada.
+    # Y las celdas ESPERADAS salen de `dias`, no de `len(fechas)`: si un dia entero falta en la
+    # base no aparece en `fechas`, asi que `esperadas` encoge con el hueco y `complete` diria
+    # que si. Con la ventana pedida delante, un dia que falta se ve.
+    hoy = await conn.fetchval("SELECT current_date")
+    fin_ventana = datetime(hoy.year, hoy.month, hoy.day, tzinfo=UTC) + timedelta(days=1)
+    ini_ventana = fin_ventana - timedelta(days=dias)
+    celdas_pedidas = dias * len(simbolos)
     sin_funding = sin_oi = 0
     # CADA HUECO CON LA FECHA DE SU AFIRMACION. Una celda vacia sigue siendo `null` -no se le
     # cambia la forma, que es lo que consumen el panel y el promedio-, pero aqui al lado queda
@@ -189,6 +200,21 @@ async def matriz_de_carry(
         "funding_por_dia": funding_por_dia,
         "oi_por_dia": oi_por_dia,
         "sin_dato": sin_dato,
+        # LA VENTANA, EN EL VOCABULARIO DE LA CASA. `cobertura` de aqui abajo se queda tal
+        # cual -el panel la lee y no se le cambia la forma-; esto es lo MISMO dicho como lo
+        # dicen las otras series, que es lo que permite compararlas sin traducir a mano.
+        # Las dos patas van separadas: un promedio que necesita funding Y open interest no
+        # esta completo si le falta una, y `sources` deja dicho cual.
+        "coverage": {
+            "served_window": coverage_entry(
+                ini_ventana,
+                fin_ventana,
+                sources=(
+                    ("funding_dia_simbolo", celdas_pedidas, esperadas - sin_funding),
+                    ("oi_dia_simbolo", celdas_pedidas, esperadas - sin_oi),
+                ),
+            )
+        },
         "cobertura": {
             "celdas_esperadas": esperadas,
             "celdas_sin_funding": sin_funding,

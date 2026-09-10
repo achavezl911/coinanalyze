@@ -15,26 +15,28 @@ Handler `carry_matriz` · `app/api.py:1231` (cuerpo hasta la 1246) · decorador 
 
 ## Campos que publica
 
-16 campos derivados. La procedencia dice de donde sale cada uno.
+18 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/carry.py:206 |
-| `cobertura` | literal en app/carry.py:192 |
-| `cobertura.celdas_esperadas` | literal en app/carry.py:193 |
-| `cobertura.celdas_sin_funding` | literal en app/carry.py:194 |
-| `cobertura.celdas_sin_oi` | literal en app/carry.py:195 |
-| `cobertura.nota` | literal en app/carry.py:198 |
-| `coste` | literal en app/carry.py:188 |
-| `desde` | literal en app/carry.py:186 |
-| `dias_pedidos` | literal en app/carry.py:184 |
-| `dias_servidos` | literal en app/carry.py:185 |
-| `funding_por_dia` | literal en app/carry.py:189 |
-| `hasta` | literal en app/carry.py:187 |
-| `oi_por_dia` | literal en app/carry.py:190 |
-| `simbolos` | literal en app/carry.py:183 |
-| `sin_dato` | literal en app/carry.py:191 |
-| `unidades` | literal en app/carry.py:205 |
+| `as_of` | literal en app/carry.py:232 |
+| `cobertura` | literal en app/carry.py:218 |
+| `cobertura.celdas_esperadas` | literal en app/carry.py:219 |
+| `cobertura.celdas_sin_funding` | literal en app/carry.py:220 |
+| `cobertura.celdas_sin_oi` | literal en app/carry.py:221 |
+| `cobertura.nota` | literal en app/carry.py:224 |
+| `coste` | literal en app/carry.py:199 |
+| `coverage` | literal en app/carry.py:208 |
+| `coverage.served_window` | literal en app/carry.py:209 |
+| `desde` | literal en app/carry.py:197 |
+| `dias_pedidos` | literal en app/carry.py:195 |
+| `dias_servidos` | literal en app/carry.py:196 |
+| `funding_por_dia` | literal en app/carry.py:200 |
+| `hasta` | literal en app/carry.py:198 |
+| `oi_por_dia` | literal en app/carry.py:201 |
+| `simbolos` | literal en app/carry.py:194 |
+| `sin_dato` | literal en app/carry.py:202 |
+| `unidades` | literal en app/carry.py:231 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -50,21 +52,24 @@ LEE:
 
 ## Funciones que la componen
 
-7 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+10 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2389`
-- `app.carry.matriz_de_carry` — `app/carry.py:98`
+- `app.carry.matriz_de_carry` — `app/carry.py:99`
 
-<details><summary>Alcanzables de forma indirecta (5)</summary>
+<details><summary>Alcanzables de forma indirecta (8)</summary>
 
-- `app.carry._iso` — `app/carry.py:66`
-- `app.carry._pct` — `app/carry.py:62`
-- `app.carry.celda_completa` — `app/carry.py:52`
-- `app.carry.coste_de_carry` — `app/carry.py:70`
-- `app.carry.quien_paga` — `app/carry.py:87`
+- `app.carry._iso` — `app/carry.py:67`
+- `app.carry._pct` — `app/carry.py:63`
+- `app.carry.celda_completa` — `app/carry.py:53`
+- `app.carry.coste_de_carry` — `app/carry.py:71`
+- `app.carry.quien_paga` — `app/carry.py:88`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
 
 </details>
 
@@ -92,6 +97,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
+| **checks** | `harness/checks/K43-control.bash:144`, `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:391` | `harness/checks/K43-control.bash:139`, `harness/checks/K43-foto-unica.sh:79`, `harness/checks/K43-foto-unica.sh:388` |
 | **panel** | `static/app.js:1589` | `static/app.js:3055` |
 | **panel-html** | `static/index.html:219` | — |
 | **tests** | — | `tests/js/heatmap_celda.test.js:25` |
@@ -111,6 +117,7 @@ en el fichero de la capa declarada y puede corregirla con cita.
 Claves temporales entre los campos que publica:
 
 - `as_of`
+- `coverage.served_window`
 
 ## Capa DECLARADA
 
@@ -131,6 +138,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
+| `app.data_gaps._aware_utc` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.rechaza_parametros_desconocidos` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.api.carry_matriz` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.carry._iso` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-carry.md) |

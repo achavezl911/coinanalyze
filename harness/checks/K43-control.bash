@@ -104,7 +104,11 @@ echo "LA SONDA · preguntar mal no puede leerse como que la ruta incumple"
 # se exige que esas rutas salgan como NO JUZGADAS, **no como incumplidoras**. Una ruta que
 # contesta bien y a la que preguntamos mal no esta incumpliendo nada.
 MAL="$DIR/K43-preguntando-mal.sh"
-sed 's#base + r + "?symbol=%s%s" % (sim, EXTRA.get(r, ""))#base + r + "?symbol=%s\&level=78800\&low=77000\&high=80000" % sim#' "$CHK" > "$MAL"
+# 2026-09-10 · este `sed` apuntaba a la expresion ENTERA de la url. Al aparecer CONSULTA -las
+# rutas que no aceptan `symbol`- esa expresion pasa a dos lineas y el sed dejo de morder; el
+# control lo canto solo y salio NO MEDIDO en vez de dar un aprobado falso. Se reapunta a la rama
+# `else`, que es la que este brazo quiere estropear, y lo que exige no cambia.
+sed 's#else "symbol=%s%s" % (sim, EXTRA.get(r, ""))#else "symbol=%s\&level=78800\&low=77000\&high=80000" % sim#' "$CHK" > "$MAL"
 if cmp -s "$CHK" "$MAL"; then
   echo "NO MEDIDO: el sed no cambio nada, asi que este brazo compararia el check consigo mismo"
   exit 2
@@ -112,8 +116,13 @@ fi
 sal=$(corre "$MAL"); rcm=$(printf '%s\n' "$sal" | head -1); outm=$(printf '%s\n' "$sal" | tail -n +2)
 comprueba "S1 preguntando mal, las rutas salen NO JUZGADAS" \
   "$(printf '%s' "$outm" | grep -q 'NO JUZGADAS' && echo si || echo no)"
+# 2026-09-10 · S2 preguntaba si aparecia «sin as_of» EN NINGUN SITIO, y eso valia cuando ninguna
+# ruta fallaba por ese motivo de verdad. Hoy fallan tres -level/breakout, range/validate y
+# zone/analysis, destapadas al asignar las huerfanas-, asi que el brazo condenaba por culpa de
+# rutas que no son las suyas. Se le acota el sujeto a las que ESTE brazo maltrata a proposito.
+# No baja lo que exige: sigue siendo «a la que preguntamos mal no se la llama incumplidora».
 comprueba "S2 y NO como incumplidoras de su familia" \
-  "$(printf '%s' "$outm" | grep -q 'sin as_of' && echo no || echo si)"
+  "$(printf '%s' "$outm" | grep -qE '/api/(signals/[a-z]+|scalp/signals)\(DEMANDA' && echo no || echo si)"
 comprueba "S3 y nombra el codigo que le contestaron" \
   "$(printf '%s' "$outm" | grep -q 'HTTP 422' && echo si || echo no)"
 # S4 · EL NEGATIVO, sin el cual S1 seria una maquina de «no juzgadas»: preguntando BIEN no puede
@@ -124,6 +133,27 @@ comprueba "S4 preguntando bien no queda ninguna sin juzgar" \
 # S5 · y las tres rutas de NIVEL siguen recibiendo sus extras: son las unicas que los necesitan.
 comprueba "S5 las tres de nivel conservan sus extras" \
   "$(grep -q '"/api/zone/analysis":   "&level=78800&low=77000&high=80000"' "$CHK" && echo si || echo no)"
+
+echo
+echo "LA CONSULTA · una ruta que no acepta symbol no se puede leer como incumplidora"
+# ANADIDO EL 2026-09-10 con CONSULTA. /api/carry/matriz cubre los TRES perpetuos y rechaza
+# `symbol` con un 422. Si el check le pega la peticion generica, ese 422 se leeria como «no
+# cumple su familia» cuando lo que fallo fue la PREGUNTA. Se quita su linea de CONSULTA y tiene
+# que salir NO JUZGADA -no incumplidora-, que es la misma exigencia que S1-S3 para las de signals.
+SINQ="$DIR/K43-sin-consulta.sh"
+sed 's#"/api/carry/matriz": "dias=15",##' "$CHK" > "$SINQ"
+if cmp -s "$CHK" "$SINQ"; then
+  echo "NO MEDIDO: el sed no cambio nada, asi que este brazo compararia el check consigo mismo"
+  exit 2
+fi
+sal=$(corre "$SINQ"); outq=$(printf '%s\n' "$sal" | tail -n +2)
+comprueba "Q1 sin su CONSULTA, carry/matriz sale NO JUZGADA" \
+  "$(printf '%s' "$outq" | grep -q 'NO JUZGADAS.*carry/matriz' && echo si || echo no)"
+comprueba "Q2 y NO como incumplidora de SERIE" \
+  "$(printf '%s' "$outq" | grep -q 'carry/matriz(SERIE' && echo no || echo si)"
+# EL NEGATIVO: con su CONSULTA puesta, no puede quedarse sin juzgar.
+comprueba "Q3 con su CONSULTA, SI se la juzga" \
+  "$(printf '%s' "$out0" | grep -q 'NO JUZGADAS.*carry/matriz' && echo no || echo si)"
 
 echo
 echo "LA POBLACION · de donde sale el denominador, y que pasa si esa fuente se rompe"
@@ -143,8 +173,12 @@ printf 'const nada = 1;\n' > "$DIR/sin-rutas.js"
 grep -v '/api/ohlcv'   "$ORIG/static/app.js" > "$DIR/sin-control.js"
 grep -v '/api/wyckoff' "$ORIG/static/app.js" > "$DIR/sin-wyckoff.js"
 
+# 2026-09-10 · B1 buscaba el denominador en el mensaje de «sin familia», y ese mensaje ya no se
+# imprime porque ya no hay ninguna. El denominador no se ha perdido: se ha mudado a la cola, que
+# lo dice por los DOS caminos y aunque valga cero. El brazo se reapunta ahi, y de paso exige mas
+# que antes -antes solo salia por el camino del rojo por familia ausente-.
 comprueba "B1 la salida DICE el denominador, no solo el numerador" \
-  "$(printf '%s' "$out0" | grep -qE 'de las [0-9]+ rutas que el panel puede pedir' && echo si || echo no)"
+  "$(printf '%s' "$out0" | grep -qE 'SIN FAMILIA: [0-9]+ de [0-9]+ del censo' && echo si || echo no)"
 
 sal=$(corre_env "$CHK" K43_APP_JS="$DIR/sin-rutas.js")
 rcb=$(printf '%s\n' "$sal" | head -1); outb2=$(printf '%s\n' "$sal" | tail -n +2)
@@ -160,8 +194,9 @@ comprueba "B3 falta una ruta de CONTROL: NO MEDIDO (rc=$rcb)" \
 # check dejaba de medir porque no habia visitas. Ahora el log no decide, asi que sigue midiendo.
 sal=$(corre_env "$CHK" K43_PEDIDAS="")
 rcb=$(printf '%s\n' "$sal" | head -1); outb4=$(printf '%s\n' "$sal" | tail -n +2)
+# 2026-09-10 · mismo motivo que B1: el denominador se lee ahora de la cola.
 comprueba "B4 log VACIO: sigue midiendo, no NO MEDIDO (rc=$rcb)" \
-  "$([ "$rcb" != 2 ] && printf '%s' "$outb4" | grep -qE 'de las [0-9]+ rutas' && echo si || echo no)"
+  "$([ "$rcb" != 2 ] && printf '%s' "$outb4" | grep -qE 'SIN FAMILIA: [0-9]+ de [0-9]+ del censo' && echo si || echo no)"
 
 # B5 · la reproducibilidad, que era el defecto entero. Dos pasadas seguidas, misma primera linea.
 b5a=$(printf '%s' "$out0" | head -1)
@@ -174,7 +209,7 @@ comprueba "B5 dos pasadas seguidas dan la MISMA primera linea" \
 sal=$(corre_env "$CHK" K43_APP_JS="$DIR/sin-wyckoff.js")
 outb6=$(printf '%s\n' "$sal" | tail -n +2)
 comprueba "B6 con familia y sin llamada: la delata como CEMENTERIO" \
-  "$(printf '%s' "$outb6" | grep -q 'CEMENTERIO: 1 con familia que el panel ya NO llama: /api/wyckoff' && echo si || echo no)"
+  "$(printf '%s' "$outb6" | grep -qE 'CEMENTERIO: 1 de [0-9]+ con familia que el panel ya NO llama: /api/wyckoff' && echo si || echo no)"
 
 echo
 total=$((pasan+fallos))

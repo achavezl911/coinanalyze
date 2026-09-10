@@ -65,7 +65,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:117`, `harness/checks/K43-foto-unica.sh:177`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:171`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:172` _(+1)_ | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:149`, `harness/checks/K43-foto-unica.sh:213`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:171`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:172` _(+1)_ | — |
 | **panel** | `static/app.js:1729` | — |
 
 **La llama el panel: es superficie de producto.**
