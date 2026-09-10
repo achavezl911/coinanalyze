@@ -159,7 +159,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:110`, `harness/checks/K43-foto-unica.sh:160` | `harness/checks/K20-cincoxx.sh:2` |
+| **checks** | `harness/checks/K43-foto-unica.sh:142`, `harness/checks/K43-foto-unica.sh:195` | `harness/checks/K20-cincoxx.sh:2` |
 | **panel** | `static/app.js:1584`, `static/app.js:1773` | — |
 | **tests** | `tests/test_dashboard_layout.py:117` | — |
 

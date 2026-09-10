@@ -100,7 +100,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:120`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:57` | `harness/checks/K52b-la-ruta-no-falla-abierta.sh:6`, `harness/checks/K59-whale-vota-cero.sh:15` |
+| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:152`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:57` | `harness/checks/K52b-la-ruta-no-falla-abierta.sh:6`, `harness/checks/K59-whale-vota-cero.sh:15` |
 | **panel** | `static/app.js:1673` | — |
 | **readme** | — | `README.md:408` |
 | **tests** | — | `tests/test_data_gaps.py:325` |
@@ -139,10 +139,10 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.expected_buckets` | 12 | **0** | 21 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.coverage_entry` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.declared_series_response` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |

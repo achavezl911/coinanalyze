@@ -85,7 +85,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K43-foto-unica.sh:111`, `harness/checks/K43-foto-unica.sh:161` | `harness/checks/K03-hueco-declarado.sh:29` |
+| **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K43-foto-unica.sh:143`, `harness/checks/K43-foto-unica.sh:196` | `harness/checks/K03-hueco-declarado.sh:29` |
 | **panel** | `static/app.js:1731` | — |
 | **tests** | `tests/test_funding_una_sola_escala.py:87` | `tests/test_funding_una_sola_escala.py:12` |
 
@@ -123,10 +123,10 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps._aware_utc` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 14 | **0** | 21 ↑ | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.expected_buckets` | 12 | **0** | 21 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.coverage_entry` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.align_down` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic.funding_context` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.funding_context_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |

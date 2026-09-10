@@ -113,7 +113,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:113`, `harness/checks/K43-foto-unica.sh:165`, `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216`, `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217` _(+2)_ | `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:79` |
+| **checks** | `harness/checks/K43-foto-unica.sh:145`, `harness/checks/K43-foto-unica.sh:200`, `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216`, `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217` _(+2)_ | `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:79` |
 | **panel** | `static/app.js:1675` | — |
 
 **La llama el panel: es superficie de producto.**

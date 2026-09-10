@@ -64,6 +64,38 @@ CAB=()
 [ -n "${K43_CABECERA:-}" ] && CAB=(-H "$K43_CABECERA")
 
 # --- LA ASIGNACION. Una linea por ruta, con la familia y el motivo medido. ---
+#
+# LAS TRES ULTIMAS EN ENTRAR, 2026-09-10, y por que cada una esta donde esta. La decision de
+# producto es de Alejandro (COLA.md 102 a); lo de aqui abajo es la MEDIDA que la sostiene, para
+# que la sesion siguiente no tenga que deducirla ni volver a pedirla.
+#
+#   /api/liquidation-map = FOTO. Solo depende de `symbol`, y YA VIVE DENTRO DEL SOBRE. Medido
+#   campo a campo contra /api/ai/context el 2026-09-10: los 16 nombres de la ruta y los 16 de la
+#   clave `liquidation_map` son el MISMO conjunto -cero en la ruta que falten en el sobre, cero
+#   en el sobre que sobren-, que es exactamente lo que FOTO exige (compara NOMBRES, no valores).
+#   Por eso su pareja de abajo no lleva lista de exclusion: no hay nada que excluir. CUMPLIO SIN
+#   TOCAR UNA LINEA DE app/.
+#
+#   /api/carry/matriz = SERIE. Devuelve `funding_por_dia` y `oi_por_dia`: una sucesion de cubos
+#   diarios. NO PUEDE SER FOTO por dos medidas: no lleva `symbol` -cubre los tres perpetuos a la
+#   vez, y por eso ademas necesita su linea en CONSULTA- y su tamano lo elige quien pregunta:
+#   2007 B con dias=2, 8160 con el defecto de 15 y 43267 con dias=90. Meter eso en cada refresco
+#   del sobre es el error de categoria que este mismo fichero nombra mas arriba. Y NO ES DEMANDA:
+#   `dias` es un RETROCESO -la misma forma que `limit` en las series de K03-, mientras que DEMANDA
+#   esta definida para «un nivel, un rango, un perfil», y aqui no se elige ninguno. Es la unica
+#   de las tres que NO cumplia: le faltaba `coverage.served_window`, y se le anadio en
+#   app/carry.py TRADUCIENDO lo que ya calculaba con otros nombres.
+#
+#   /api/rango/estructura = DEMANDA. Es la definicion literal: exige `desde` y acepta `hasta`,
+#   o sea que la respuesta depende de un RANGO que elige el operador, y la foto no puede saber
+#   que le vas a preguntar. Medido el 2026-09-10: su primer nivel trae `as_of`, que es lo unico
+#   que DEMANDA pide. CUMPLIO SIN TOCAR UNA LINEA DE app/ -lo unico que hizo falta fue que este
+#   check supiera mandarle el `desde` obligatorio, que es arreglar la PREGUNTA y no el criterio-.
+#
+#   NOTA DE ALCANCE: esto cierra las tres huerfanas, NO deja K43 en verde. Al quitarlas de en
+#   medio aparecieron TRES incumplimientos que llevaban tapados detras de la salida temprana por
+#   «sin familia»: /api/level/breakout, /api/range/validate y /api/zone/analysis, las tres
+#   DEMANDA y las tres sin `as_of`. No son de este expediente y no se han tocado.
 # desk/state y scalp/execution-cost estan en DEMANDA y no en FOTO, y NO por su firma: los
 # dos declaran symbol como unico parametro obligatorio. Es por medicion contra 140:
 # desk/state con direction=long y direction=short devuelve cuerpos distintos (22159 B vs
@@ -122,6 +154,9 @@ ASIGNACION="
 /api/signals/ledger=DEMANDA /api/signals/replay=DEMANDA /api/signals/execution=DEMANDA
 /api/signals/visibility=DEMANDA /api/scalp/signals=DEMANDA
 /api/scalp/execution-cost=DEMANDA /api/desk/state=DEMANDA
+/api/liquidation-map=FOTO
+/api/carry/matriz=SERIE
+/api/rango/estructura=DEMANDA
 /api/stream=EXENTA /api/healthz=EXENTA /api/symbols=EXENTA
 "
 # EXENTAS, con su motivo: stream es SSE -empuje continuo, no una foto y no puede
@@ -172,6 +207,7 @@ PAREJAS="
 /api/market-impact             | market_impact          |
 /api/positioning               | positioning            |
 /api/wyckoff                   | wyckoff                |
+/api/liquidation-map           | liquidation_map        |
 /api/scalp/absorption          | absorption             |
 /api/scalp/basis               | basis                  | symbol
 /api/scalp/liquidations        | scalp_liquidations     | symbol
@@ -276,7 +312,7 @@ foto=$(curl -sS -k --netrc-file "$NETRC" "${CAB[@]}" --max-time 60 \
 printf '%s' "$foto" | PEDIDAS="$PEDIDAS" SIM="$SIM" ASIGNACION="$ASIGNACION" PAREJAS="$PAREJAS" \
   NETRC="$NETRC" API_PROD="$API_PROD" REPO="$REPO" K43_CABECERA="${K43_CABECERA:-}" K43_APP_JS="${K43_APP_JS:-$REPO/static/app.js}" python3 -c '
 import json, os, re, subprocess, sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 foto = json.load(sys.stdin)
 claves = set(foto)
@@ -341,6 +377,18 @@ EXTRA = {
     "/api/level/breakout":  "&level=78800",
     "/api/range/validate":  "&low=77000&high=80000",
     "/api/zone/analysis":   "&level=78800&low=77000&high=80000",
+    # `desde` es OBLIGATORIO aqui, y es justo lo que hace DEMANDA a esta ruta: la respuesta
+    # depende de un RANGO que elige quien pregunta. Se pide relativo -30 dias- para que no
+    # caduque: una fecha fija se iria alejando sola hasta pedir una ventana que no existe.
+    "/api/rango/estructura": "&desde=" + (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00Z"),
+}
+
+# LAS QUE NO ACEPTAN `symbol`. La peticion generica del check es `?symbol=<sim>`, y una ruta que
+# rechaza lo que no reconoce contesta 422 a eso. Aqui se declara la consulta ENTERA.
+# /api/carry/matriz es la unica hoy: cubre los TRES perpetuos a la vez, asi que `symbol` no
+# significa nada para ella -y esa es tambien una de las dos razones por las que no puede ser FOTO-.
+CONSULTA = {
+    "/api/carry/matriz": "dias=15",
 }
 
 no_juzgadas = []   # ruta -> por que no se pudo preguntar. NO son incumplimientos.
@@ -353,7 +401,8 @@ def cuerpo(r):
     """
     res = subprocess.run(["curl", "-sS", "-k", "--netrc-file", netrc] + cab +
         ["--max-time", "30", "-o", "-", "-w", "\n%{http_code}",
-        base + r + "?symbol=%s%s" % (sim, EXTRA.get(r, ""))],
+        base + r + "?" + (CONSULTA[r] if r in CONSULTA
+                          else "symbol=%s%s" % (sim, EXTRA.get(r, "")))],
         capture_output=True, text=True)
     if res.returncode != 0:
         no_juzgadas.append("%s(transporte rc=%d)" % (r, res.returncode))
@@ -523,12 +572,16 @@ for r in pintadas:
 # LA COLA SE CONSTRUYE ANTES DE CONDENAR, y no despues. Este check va a estar ROJO mientras
 # queden rutas sin familia; si la otra direccion se imprimiera solo en el camino del VERDE,
 # el cementerio no se veria nunca y volveriamos a tener un conjunto medido por un lado.
-cola = ""
+# LAS DOS DIRECCIONES VAN SIEMPRE, CON DENOMINADOR Y AUNQUE VALGAN CERO. Un cero que no se
+# imprime no es un cero medido: es un silencio, y el lector no puede distinguirlo de «no lo he
+# mirado». Por eso las dos cuentas salen en la linea de veredicto por los DOS caminos, el del
+# rojo y el del verde.
+cola = " · SIN FAMILIA: %d de %d del censo" % (len(sin_familia), len(pintadas))
 if declaradas_sin_llamada:
-    cola = " · CEMENTERIO: %d con familia que el panel ya NO llama: %s" % (
-        len(declaradas_sin_llamada), " ".join(declaradas_sin_llamada))
+    cola += " · CEMENTERIO: %d de %d con familia que el panel ya NO llama: %s" % (
+        len(declaradas_sin_llamada), len(asign), " ".join(declaradas_sin_llamada))
 else:
-    cola = " · 0 en el cementerio: toda familia declarada la llama el panel"
+    cola += " · CEMENTERIO: 0 de %d: toda familia declarada la llama el panel" % len(asign)
 if nunca_pedidas:
     cola += (" · informativo, no criterio: %d que el panel puede pedir y ningun navegador "
              "pidio en los 14 dias que retiene el log: %s"
