@@ -97,7 +97,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-control.bash:144`, `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:391` | `harness/checks/K43-control.bash:139`, `harness/checks/K43-foto-unica.sh:79`, `harness/checks/K43-foto-unica.sh:388` |
+| **checks** | `harness/checks/K43-control.bash:144`, `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:412` | `harness/checks/K43-control.bash:139`, `harness/checks/K43-foto-unica.sh:79`, `harness/checks/K43-foto-unica.sh:409` |
 | **panel** | `static/app.js:1589` | `static/app.js:3055` |
 | **panel-html** | `static/index.html:219` | — |
 | **tests** | — | `tests/js/heatmap_celda.test.js:25` |

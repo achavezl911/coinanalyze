@@ -5,11 +5,14 @@
 # Mismo patron que K31-disposiciones.tsv: un enfermo dispuesto deja de enrojecer a K97 pero SIGUE
 # saliendo en su lista, asi que no desaparece de la vista. Sin disposicion, K97 enrojece.
 #
-# HOY ESTA VACIO A PROPOSITO. El censo del 2026-09-07 encontro tres enfermos -K04-huecos,
+# ESTUVO VACIO HASTA EL 2026-09-10. El censo del 2026-09-07 encontro tres enfermos -K04-huecos,
 # K06-visibilidad y K18-borrado- y los tres se resolvieron en la misma vuelta: K04 y K06
-# arreglados, y K18 refutado (era un falso positivo del instrumento, ver la entrega). No hay
-# ninguno pendiente que disponer.
+# arreglados, y K18 refutado (era un falso positivo del instrumento, ver la entrega).
+#
+# LA PRIMERA FILA ES DEL 2026-09-10 y NO es un enfermo que se deja sin arreglar: es un verde CON
+# sujeto. Lo que K97 le vacia a K43 no es su poblacion. La cita lo dice con sus cifras.
 #
 # LO QUE NO VA AQUI: los NO JUZGABLES. Esos no son enfermos, son sujetos a los que este
 # instrumento no sabe darles una poblacion vacia, y K97 los NOMBRA en su salida con su motivo.
 # Taparlos con una disposicion seria justo lo contrario de declararlos.
+K43-foto-unica	VERDE_CON_SUJETO	K97 sustituye prodsql, prod y api (K97:70-80) y de esos tres K43 solo usa bin/prod, en su linea 306, para el log de nginx. Sus 44 rutas las pide con curl contra 140, que K97 no toca: lo vaciado es el canal INFORMATIVO, no la poblacion. Medido el 2026-09-10: K43 juzga 44 de 44 (22 FOTO + 8 SERIE + 11 DEMANDA + 3 EXENTA). Y cuando su poblacion de VERDAD se vacia, K43 NO vota verde: sale NO MEDIDO rc=2, ejecutado en los brazos B2 y B3 de K43-control.bash (28 de 28 el 2026-09-10). Desde ese mismo dia, ademas, con el canal mudo la salida lo DICE -brazos L1-L4- en vez de afirmar que nadie pidio nada. SE REVISA si K43 pasa a leer su censo por un canal a 140: entonces el plantado de K97 si le quitaria el sujeto y esta fila dejaria de valer.

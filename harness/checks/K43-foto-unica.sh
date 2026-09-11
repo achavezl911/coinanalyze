@@ -301,15 +301,34 @@ $1 != ARNES && /Mozilla/ { p = $7; sub(/\?.*/, "", p); if (p ~ /^\/api\//) c[p]+
 END { for (i in c) printf "%d %s\n", c[i], i }
 AWK
 )
-# K43_PEDIDAS inyecta el log -vacia incluida, por eso el guion es simple y no :-. El control
-# la usa para ensenar que un log vacio YA NO para el check, que es el cambio que importa.
-PEDIDAS=${K43_PEDIDAS-$("$B/bin/prod" "{ zcat /var/log/nginx/access.log.*.gz; cat /var/log/nginx/access.log.1 /var/log/nginx/access.log; } 2>/dev/null | awk -v ARNES=$ARNES_IP '$LOG_AWK' | sort -rn" 2>/dev/null)}
+# DE DONDE VIENE ESTE DATO, Y POR QUE HACE FALTA DECIRLO. La linea informativa del final
+# afirma que ciertas rutas no las pidio ningun navegador. Ese dato llega por un canal
+# DISTINTO del que da el criterio, y hasta el 2026-09-10 una sustitucion de mandato que
+# fallaba devolvia cadena vacia: exactamente lo mismo que un log sin peticiones. Con el
+# canal caido la linea no decia «no pude mirar», decia «ninguna de las 44 la pidio nadie»
+# -medido: 44 de 44, la afirmacion falsa mas grande que ese renglon puede hacer-.
+#
+# Se captura CRUDO y se guarda el rc del canal (receta A8). Las tuberias del mandato van
+# DENTRO de la cadena que ejecuta 140, asi que este rc es el de bin/prod y no el de un
+# filtro que lo suplanta.
+#
+# K43_PEDIDAS sigue inyectando el log -vacia incluida, por eso el guion es simple y no :-,
+# y ahora el sobre DICE que el dato vino inyectado: un doble no puede pasar por el canal.
+if [ "${K43_PEDIDAS+puesta}" = puesta ]; then
+  PEDIDAS=$K43_PEDIDAS
+  PEDIDAS_ORIGEN=inyectado
+else
+  PEDIDAS=$("$B/bin/prod" "{ zcat /var/log/nginx/access.log.*.gz; cat /var/log/nginx/access.log.1 /var/log/nginx/access.log; } 2>/dev/null | awk -v ARNES=$ARNES_IP '$LOG_AWK' | sort -rn" 2>/dev/null)
+  _rc_log=$?
+  if [ "$_rc_log" -ne 0 ]; then PEDIDAS=""; PEDIDAS_ORIGEN="mudo:$_rc_log"
+  else PEDIDAS_ORIGEN=canal; fi
+fi
 
 foto=$(curl -sS -k --netrc-file "$NETRC" "${CAB[@]}" --max-time 60 \
        "$API_PROD/api/ai/context?symbol=$SIM" 2>/dev/null)
 [ -n "$foto" ] || { echo "NO MEDIDO: /api/ai/context no respondio"; exit 2; }
 
-printf '%s' "$foto" | PEDIDAS="$PEDIDAS" SIM="$SIM" ASIGNACION="$ASIGNACION" PAREJAS="$PAREJAS" \
+printf '%s' "$foto" | PEDIDAS="$PEDIDAS" PEDIDAS_ORIGEN="$PEDIDAS_ORIGEN" SIM="$SIM" ASIGNACION="$ASIGNACION" PAREJAS="$PAREJAS" \
   NETRC="$NETRC" API_PROD="$API_PROD" REPO="$REPO" K43_CABECERA="${K43_CABECERA:-}" K43_APP_JS="${K43_APP_JS:-$REPO/static/app.js}" python3 -c '
 import json, os, re, subprocess, sys
 from datetime import datetime, timedelta
@@ -356,8 +375,10 @@ if faltan_control or len(panel) < 30:
 
 # EL LOG, YA SIN VOTO. Contesta otra pregunta -de lo que el panel puede pedir, que se pide de
 # verdad- y por eso se conserva. Si viene vacio, no pasa nada: no es el denominador.
+origen_log = os.environ.get("PEDIDAS_ORIGEN", "canal")
+crudas = [x for x in os.environ["PEDIDAS"].strip().splitlines() if x.strip()]
 pedidas = {}
-for linea in os.environ["PEDIDAS"].strip().splitlines():
+for linea in crudas:
     n, _, r = linea.strip().partition(" ")
     if n.isdigit() and r.startswith("/api/"):
         pedidas[r] = int(n)
@@ -582,10 +603,33 @@ if declaradas_sin_llamada:
         len(declaradas_sin_llamada), len(asign), " ".join(declaradas_sin_llamada))
 else:
     cola += " · CEMENTERIO: 0 de %d: toda familia declarada la llama el panel" % len(asign)
-if nunca_pedidas:
-    cola += (" · informativo, no criterio: %d que el panel puede pedir y ningun navegador "
-             "pidio en los 14 dias que retiene el log: %s"
-             % (len(nunca_pedidas), " ".join(nunca_pedidas)))
+# LO QUE ESTA LINEA PUEDE AFIRMAR DEPENDE DE SI PUDO MIRAR, y por eso el origen manda sobre
+# el contenido. Cinco salidas distintas, y NINGUNA cambia el veredicto: el criterio de K43 se
+# mide por otro canal y ya se midio entero cuando se llega aqui.
+#   canal mudo          -> no se afirma nada sobre peticiones
+#   canal sin ninguna   -> ES un hecho, y se publica como tal
+#   canal ilegible      -> contesto, y lo que contesto no se pudo leer
+#   canal con datos     -> la cuenta de siempre, ahora con denominador
+#   dato inyectado      -> se marca, porque no vino del canal
+marca = " [dato INYECTADO por K43_PEDIDAS, no leido del canal]" if origen_log == "inyectado" else ""
+if origen_log.startswith("mudo:"):
+    cola += (" · EL LOG NO SE PUDO MIRAR (bin/prod rc=%s): esta linea NO dice nada sobre "
+             "peticiones, ni que las haya ni que no" % origen_log.split(":", 1)[1])
+elif crudas and not pedidas:
+    cola += (" · el log contesto %d linea(s) y NINGUNA se pudo leer: el formato no es el que "
+             "espera el filtro, asi que no se afirma nada sobre peticiones%s"
+             % (len(crudas), marca))
+elif not pedidas:
+    cola += (" · el log CONTESTO y no registra NINGUNA peticion de navegador en su ventana. "
+             "Es un hecho, no un fallo del canal: 0 de %d rutas pedidas alguna vez%s"
+             % (len(pintadas), marca))
+elif nunca_pedidas:
+    cola += (" · informativo, no criterio: %d de %d que el panel puede pedir y ningun navegador "
+             "pidio en los 14 dias que retiene el log: %s%s"
+             % (len(nunca_pedidas), len(pintadas), " ".join(nunca_pedidas), marca))
+else:
+    cola += (" · informativo, no criterio: 0 de %d sin pedir: el log vio pasar las %d en su "
+             "ventana%s" % (len(pintadas), len(pintadas), marca))
 # LAS QUE NO SE PUDIERON PREGUNTAR SE NOMBRAN, y no se cuentan como cumplidoras ni como
 # incumplidoras. Un censo con huecos declarados vale; uno que los tapa, no. Si NINGUNA se pudo
 # preguntar, esto no es un veredicto: es NO MEDIDO.

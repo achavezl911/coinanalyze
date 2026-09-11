@@ -192,10 +192,16 @@ comprueba "B3 falta una ruta de CONTROL: NO MEDIDO (rc=$rcb)" \
 
 # B4 · EL CAMBIO QUE MAS IMPORTA. Con el log de denominador, un log vacio era NO MEDIDO: el
 # check dejaba de medir porque no habia visitas. Ahora el log no decide, asi que sigue midiendo.
+#
+# 2026-09-10 · LA ETIQUETA SE PRECISA Y EL BRAZO NO CAMBIA. Lo que planta esto no es «un log
+# vacio»: es una INYECCION vacia, y desde hoy son estados distintos -el check dice cual de los
+# dos es-. El brazo sigue exigiendo lo mismo, que es que el check SIGA MIDIENDO; lo que se
+# corrige es lo que el rotulo afirmaba plantar. Los estados del log se prueban en LOS SEIS
+# ESTADOS, mas abajo.
 sal=$(corre_env "$CHK" K43_PEDIDAS="")
 rcb=$(printf '%s\n' "$sal" | head -1); outb4=$(printf '%s\n' "$sal" | tail -n +2)
 # 2026-09-10 · mismo motivo que B1: el denominador se lee ahora de la cola.
-comprueba "B4 log VACIO: sigue midiendo, no NO MEDIDO (rc=$rcb)" \
+comprueba "B4 inyeccion VACIA: sigue midiendo, no NO MEDIDO (rc=$rcb)" \
   "$([ "$rcb" != 2 ] && printf '%s' "$outb4" | grep -qE 'SIN FAMILIA: [0-9]+ de [0-9]+ del censo' && echo si || echo no)"
 
 # B5 · la reproducibilidad, que era el defecto entero. Dos pasadas seguidas, misma primera linea.
@@ -210,6 +216,76 @@ sal=$(corre_env "$CHK" K43_APP_JS="$DIR/sin-wyckoff.js")
 outb6=$(printf '%s\n' "$sal" | tail -n +2)
 comprueba "B6 con familia y sin llamada: la delata como CEMENTERIO" \
   "$(printf '%s' "$outb6" | grep -qE 'CEMENTERIO: 1 de [0-9]+ con familia que el panel ya NO llama: /api/wyckoff' && echo si || echo no)"
+
+echo
+echo "LOS SEIS ESTADOS DEL LOG · el veredicto NO cambia; lo que tiene que cambiar es la SALIDA"
+# ANADIDO EL 2026-09-10. La linea informativa de K43 afirma que ciertas rutas no las pidio
+# ningun navegador. Ese dato viene por un canal DISTINTO del que da el criterio, y hasta hoy una
+# sustitucion de mandato que fallaba devolvia cadena vacia: lo mismo que un log sin peticiones.
+# Medido: con el canal caido la linea decia «44 que el panel puede pedir y ningun navegador
+# pidio» -44 de 44, la afirmacion falsa mas grande que ese renglon puede hacer-.
+#
+# SE COMPARAN SALIDAS Y NO `rc` A PROPOSITO: el veredicto no cambia entre estos estados, porque
+# el criterio de K43 se mide por otro canal y ya se midio entero. Un control que los separase por
+# el rc estaria midiendo otra cosa (A36).
+#
+# El arnes de mentira solo necesita dos piezas: K43 usa `$B/env` (linea 56) y `$B/bin/prod`.
+montalog() {  # $1 = dir  $2 = rc del prod falso  $3 = lo que escribe
+  rm -rf "$1"; mkdir -p "$1/bin"
+  printf %s\\n ". /srv/coinanalyze/harness/env" > "$1/env"
+  { printf %s\\n "#!/bin/bash"
+    printf %s\\n "printf 'LLAMADO\\n' >> $1/senal"
+    printf "printf '%%s\\n' '%s'\\n" "$3"
+    printf %s\\n "exit $2"
+  } > "$1/bin/prod"
+  chmod +x "$1/bin/prod"
+  : > "$1/senal"
+}
+copialog() {  # $1 = dir del arnes falso
+  local f="$1/K43.sh"
+  sed "s#^B=/srv/coinanalyze/harness; . \"\$B/env\"#B=$1; . \"\$B/env\"#" "$CHK" > "$f"
+  if cmp -s "$CHK" "$f"; then echo "SED-NO-MORDIO" >&2; return 1; fi
+  printf %s\\n "$f"
+}
+
+montalog "$DIR/mudo" 3 ""
+fm=$(copialog "$DIR/mudo") || exit 2
+salm=$(corre "$fm"); rcm=$(printf %s\\n "$salm" | head -1); outm=$(printf %s\\n "$salm" | tail -n +2)
+comprueba "L0 el plantado ocurrio: el prod de mentira se llamo" \
+  "$([ -s "$DIR/mudo/senal" ] && echo si || echo no)"
+comprueba "L1 canal MUDO: dice que NO pudo mirar, y no afirma nada" \
+  "$(printf %s "$outm" | grep -q "EL LOG NO SE PUDO MIRAR (bin/prod rc=3)" && echo si || echo no)"
+comprueba "L2 canal MUDO: NO dice que nadie pidio nada" \
+  "$(printf %s "$outm" | grep -q "ningun navegador pidio" && echo no || echo si)"
+
+montalog "$DIR/vacio" 0 ""
+fv=$(copialog "$DIR/vacio") || exit 2
+salv=$(corre "$fv"); rcv=$(printf %s\\n "$salv" | head -1); outv=$(printf %s\\n "$salv" | tail -n +2)
+comprueba "L3 canal CONTESTA y cero peticiones: lo publica como HECHO" \
+  "$(printf %s "$outv" | grep -q "el log CONTESTO y no registra NINGUNA peticion" && echo si || echo no)"
+
+# EL BRAZO QUE JUSTIFICA LA CAMPANA: antes estos dos daban la MISMA linea.
+# Se comparan las SALIDAS ENTERAS y no un trozo extraido: cualquier recorte mio podria
+# igualarlas por accidente, y B5 ya prueba que dos pasadas de la misma configuracion dan la
+# misma linea, asi que una diferencia aqui sale del estado plantado y no del reloj.
+comprueba "L4 MUDO y CERO-PETICIONES dan salidas DISTINTAS" \
+  "$([ "$outm" != "$outv" ] && echo si || echo no)"
+# ...y el veredicto NO cambia entre ellos, que es la decision del operador.
+comprueba "L5 y el VEREDICTO no cambia entre los dos (rc $rcm vs $rcv)" \
+  "$([ "$rcm" = "$rcv" ] && echo si || echo no)"
+
+montalog "$DIR/ileg" 0 "zcat: access.log.2.gz: No such file"
+fi_=$(copialog "$DIR/ileg") || exit 2
+sali=$(corre "$fi_"); outi=$(printf %s\\n "$sali" | tail -n +2)
+comprueba "L6 canal contesta ILEGIBLE: lo dice y no afirma nada" \
+  "$(printf %s "$outi" | grep -q "NINGUNA se pudo leer" && echo si || echo no)"
+
+sal7=$(corre_env "$CHK" K43_PEDIDAS="")
+out7=$(printf %s\\n "$sal7" | tail -n +2)
+comprueba "L7 dato INYECTADO: el sobre dice que no vino del canal" \
+  "$(printf %s "$out7" | grep -q "dato INYECTADO por K43_PEDIDAS" && echo si || echo no)"
+comprueba "L8 canal REAL con datos: la cuenta lleva denominador" \
+  "$(printf %s "$out0" | grep -qE "informativo, no criterio: [0-9]+ de [0-9]+" && echo si || echo no)"
 
 echo
 total=$((pasan+fallos))
