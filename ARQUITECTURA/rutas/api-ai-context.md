@@ -378,11 +378,11 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:328`, `harness/checks/K43-foto-unica.sh:329`, `harness/checks/K43-foto-unica.sh:387` _(+1)_ | `harness/checks/K43-foto-unica.sh:7`, `harness/checks/K43-foto-unica.sh:17`, `harness/checks/K43-foto-unica.sh:73`, `harness/checks/K43-foto-unica.sh:279` _(+2)_ |
+| **checks** | `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K43-foto-unica.sh:328`, `harness/checks/K43-foto-unica.sh:329`, `harness/checks/K43-foto-unica.sh:387` _(+5)_ | `harness/checks/K43-foto-unica.sh:7`, `harness/checks/K43-foto-unica.sh:17`, `harness/checks/K43-foto-unica.sh:73`, `harness/checks/K43-foto-unica.sh:279` _(+4)_ |
 | **readme** | — | `README.md:62`, `README.md:414`, `README.md:518` |
 | **tests** | — | `tests/test_metrics_endpoint.py:222`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:111`, `tests/test_pr22_cvd_semantics.py:1192` |
 
-**No la llama el panel**, pero si 5 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 9 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
