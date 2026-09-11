@@ -94,7 +94,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K21-ledger-de-senales.sh:32`, `harness/checks/K24-replay-del-contexto.sh:88`, `harness/checks/K43-control.bash:90`, `harness/checks/K43-foto-unica.sh:154` | `harness/checks/K24-replay-del-contexto.sh:19`, `harness/checks/K31-cubos.py:145`, `harness/checks/K88-control.bash:477` |
-| **panel** | `static/app.js:1759` | — |
+| **panel** | `static/app.js:1829` | — |
 | **tests** | — | `tests/test_signals_ledger.py:1` |
 
 **La llama el panel: es superficie de producto.**

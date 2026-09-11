@@ -99,7 +99,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K22-resultado-por-horizonte.sh:29` | `harness/checks/K31-cubos.py:145` |
-| **tests** | — | `tests/test_dashboard_layout.py:215`, `tests/test_familia_demanda.py:126`, `tests/test_signals_outcomes.py:1` |
+| **tests** | — | `tests/test_dashboard_layout.py:223`, `tests/test_familia_demanda.py:126`, `tests/test_signals_outcomes.py:1` |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.

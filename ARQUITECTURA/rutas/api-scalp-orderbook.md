@@ -75,10 +75,15 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K13-vacio-o-rancio.sh:32`, `harness/checks/K13-vacio-o-rancio.sh:33`, `harness/checks/K13-vacio-o-rancio.sh:92`, `harness/checks/K13-vacio-o-rancio.sh:94` _(+4)_ | `harness/checks/K13-vacio-o-rancio.sh:2`, `harness/checks/K43-foto-unica.sh:44`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:71` |
-| **panel** | `static/app.js:1688` | — |
+| **panel-sobre** | `static/app.js:223` | — |
 | **tests** | — | `tests/js/libro_vacio_o_rancio.test.js:4`, `tests/test_orderbook_frescura.py:1`, `tests/test_orderbook_frescura.py:119` |
 
 **La llama el panel: es superficie de producto.**
+
+**Pero NO con una peticion propia:** su dato llega dentro de `/api/ai/context`,
+en la clave que `K43` le declara en su tabla `PAREJAS`. Al depurar eso importa:
+**no busques una peticion suya en el log de nginx**, no la hay -la del sobre las
+trae todas-, y su instante es el `generated_at` del sobre y no uno propio.
 
 ## Ventana · con que clave la declara (derivado)
 

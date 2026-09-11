@@ -1,7 +1,7 @@
 {
   "rutas": {
     "/": "af7169de1004d5d5",
-    "/api/ai/context": "fc3da57b7c42ae2e",
+    "/api/ai/context": "d024cb1db8015912",
     "/api/ai/context/bundle": "9aa61258a377e6cd",
     "/api/ai/profiles": "ad9a131d635d5b79",
     "/api/baselines": "7915503ee67aca87",

@@ -126,10 +126,15 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:147`, `harness/checks/K43-foto-unica.sh:206` | — |
-| **panel** | `static/app.js:1579`, `static/app.js:1704` | — |
+| **panel-sobre** | `static/app.js:1632`, `static/app.js:1771` | — |
 | **tests** | `tests/test_v150_desk_snapshot.py:130` | — |
 
 **La llama el panel: es superficie de producto.**
+
+**Pero NO con una peticion propia:** su dato llega dentro de `/api/ai/context`,
+en la clave que `K43` le declara en su tabla `PAREJAS`. Al depurar eso importa:
+**no busques una peticion suya en el log de nginx**, no la hay -la del sobre las
+trae todas-, y su instante es el `generated_at` del sobre y no uno propio.
 
 ## Ventana · con que clave la declara (derivado)
 
