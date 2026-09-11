@@ -4,16 +4,35 @@
 # Lo que se descubrio al medirlo (2026-08-25) y que la unidad no decia: NO hay un
 # sitio que declare que borra el sistema. Hay CINCO mecanismos en cinco ficheros:
 #   apply_temporal_retention (funcion SQL, tira PARTICIONES enteras)
-#       futures_trades_realtime  6 h   scalp_collector.py:1452  config.py:181
-#       orderbook_snapshot       6 h   scalp_collector.py:1465  config.py:187
-#       liquidations_realtime    6 h   scalp_collector.py:1470  config.py:181
-#       scalp_signal_snapshot   72 h   scalp_collector.py:1475  config.py:189
-#       spot_trades_realtime     2 h   daily_agg.py:594         config.py:199
+#       futures_trades_realtime 12 h   scalp_collector.py:1542  config.py:181
+#       orderbook_snapshot       6 h   scalp_collector.py:1555  config.py:187
+#       liquidations_realtime   12 h   scalp_collector.py:1560  config.py:181
+#       scalp_signal_snapshot   72 h   scalp_collector.py:1565  config.py:189
+#       spot_trades_realtime     2 h   daily_agg.py:695         config.py:204
 #   DELETE directo
-#       futures_trades_agg     168 h   scalp_collector.py:1459  config.py:186
-#       metrics_snapshot     N dias    daily_agg.py:583
+#       futures_trades_agg     168 h   scalp_collector.py:1549  config.py:186
+#       metrics_snapshot     N dias    daily_agg.py:684
 #       macro_event         30 dias    external_macro.py:576
 #       external_api_rate_event        coinalyze.py:68
+#
+# ESTA TABLA SE CORRIGIO ENTERA EL 2026-09-11, y las dos clases de error que tenia valen mas
+# que la correccion:
+#   · DOS VENTANAS DECIAN 6 h -futures_trades_realtime y liquidations_realtime- y produccion
+#     aplica 12 h en las dos. El propio check lo imprime tres renglones mas abajo, porque LEE
+#     LAS VENTANAS DE PRODUCCION desde el 2026-09-05: el criterio estaba bien y lo que mentia
+#     era el mapa. Anteanoche se corrigio aqui la fila de futures_trades_agg -36 h -> 168- y
+#     NO se miraron las otras cinco: arreglar la fila que a uno le senalan y no correr la
+#     medida sobre la poblacion entera es la receta A19, cometida en esta misma tabla.
+#   · SIETE DE LAS NUEVE CITAS `fichero:linea` APUNTABAN A OTRO SITIO. Las cinco de
+#     scalp_collector decian 1452-1475 y el bloque de borrado vive en 1540-1567; ninguna de
+#     las siete lineas citadas hablaba de retencion. Las DOS que si eran correctas
+#     -external_macro.py:576 y coinalyze.py:68- son el control positivo de esa medida.
+#
+# POR QUE ESTAS CITAS SE PUDREN Y EL CRITERIO NO. Un numero de linea envejece con cada commit
+# que anade codigo por encima, y NADIE se entera: el fichero sigue teniendo esa linea, asi que
+# un barrido que solo compruebe que la linea EXISTE las da por buenas -es el limite medido del
+# brazo B del barrido del operador-. Por eso estas citas son una cortesia para leer el codigo y
+# NO son de donde sale el veredicto: las ventanas se leen de produccion, abajo.
 #
 # DOS cosas se comprueban, y las dos EJECUTAN:
 # 1. Cada tabla con ventana declarada mantiene una ventana coherente. Coherente NO

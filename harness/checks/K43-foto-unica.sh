@@ -565,7 +565,13 @@ def cubre(r):
                           % (len(faltan), clave, ",".join(faltan[:6])))
     return "; ".join(fallos) if fallos else None
 
+# LAS DOS FORMAS DE CUMPLIR SERIE SE CUENTAN POR SEPARADO, porque el rotulo de abajo decia
+# «N series con coverage» contando las ASIGNADAS y sin haber mirado ninguna. Medido el
+# 2026-09-11: de las 8 asignadas, 7 traen coverage.served_window y `daily` NO tiene la clave
+# -cumple por la excepcion que este mismo check le declara en VENTANA_POR_FILA-. O sea que el
+# criterio estaba bien y lo que mentia era el rotulo, y se arregla CONTANDO y no suavizando.
 sin_familia, incumplen = [], []
+serie_por_cobertura, serie_por_fila = [], []
 for r in pintadas:
     fam = asign.get(r)
     if fam is None:
@@ -587,6 +593,10 @@ for r in pintadas:
         mal = declara_ventana(d, r)
         if mal:
             incumplen.append("%s(SERIE: %s)" % (r, mal))
+        elif r in VENTANA_POR_FILA:
+            serie_por_fila.append(r)
+        else:
+            serie_por_cobertura.append(r)
     elif fam == "DEMANDA" and not any(k in d for k in ("as_of", "generated_at", "snapshot_ts")):
         incumplen.append("%s(DEMANDA: sin as_of)" % r)
 
@@ -648,12 +658,20 @@ if incumplen:
     print("%d de %d rutas que el panel puede pedir no cumplen lo que su familia promete: %s%s"
           % (len(incumplen), len(pintadas), " ".join(incumplen), cola))
     raise SystemExit(1)
+# LAS DOS FORMAS DE CUMPLIR VAN EN LA MISMA LINEA (A34): una en el verde y otra escondida no
+# es medir en las dos direcciones. Y las series se cuentan MEDIDAS, no asignadas.
 print(("las %d rutas que el panel puede pedir estan cubiertas: %d en la foto con sus nombres "
-       "de campo dentro de la clave declarada, %d series con coverage, %d bajo demanda con "
-       "as_of propio, %d exentas con cita"
+       "de campo dentro de la clave declarada, %d series de %d asignadas con su ventana "
+       "declarada -%d por coverage.served_window y %d por fila, que es la excepcion que este "
+       "check declara en VENTANA_POR_FILA para %s-, %d bajo demanda con as_of propio, "
+       "%d exentas con cita"
        % (len(pintadas),
           sum(1 for r in pintadas if asign[r] == "FOTO"),
+          len(serie_por_cobertura) + len(serie_por_fila),
           sum(1 for r in pintadas if asign[r] == "SERIE"),
+          len(serie_por_cobertura),
+          len(serie_por_fila),
+          " ".join(serie_por_fila) or "ninguna",
           sum(1 for r in pintadas if asign[r] == "DEMANDA"),
           sum(1 for r in pintadas if asign[r] == "EXENTA"))) + cola)
 '
