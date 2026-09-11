@@ -29916,8 +29916,8 @@
             "harness/checks/K05-latidos.sh:388",
             "harness/checks/K08-control.bash:37",
             "harness/checks/K08-control.bash:63",
-            "harness/checks/K08-que-base.sh:61",
-            "harness/checks/K08-que-base.sh:62",
+            "harness/checks/K08-que-base.sh:71",
+            "harness/checks/K08-que-base.sh:72",
             "harness/checks/K43-control.bash:35",
             "harness/checks/K43-foto-unica.sh:160",
             "harness/checks/K94-el-canal-que-no-puede-fallar.sh:134"

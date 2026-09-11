@@ -14,7 +14,17 @@
 #   1. el FICHERO: app/db.py:72-78 consulta current_database(), host(inet_server_addr()),
 #      inet_server_port() y current_setting('server_version').
 #   2. la RESPUESTA SERVIDA por 140 -no el fuente-: GET /api/healthz trae un bloque
-#      `database` con database, db_user, db_host, db_port y server_version.
+#      `database` con SEIS campos. Van enumerados Y CONTADOS a proposito, y el numero es la
+#      mitad que importa: hasta el 2026-09-11 esta linea enumeraba CINCO -se le habia quedado
+#      fuera `schema_fingerprint`- y **el residuo fue invisible justamente por enumerar sin
+#      decir cuantos**: un grep de «cinco|seis|N campos» sobre el arnes daba CERO, porque el
+#      numero no estaba escrito en ninguna parte. Medido el 2026-09-11 contra la respuesta
+#      servida, EN LAS DOS DIRECCIONES:
+#        los SEIS que sirve:  database · db_user · db_host · db_port · server_version ·
+#                             schema_fingerprint
+#        enumerados aqui y NO servidos:  NINGUNO -conjunto vacio-
+#      Que la direccion inversa este VACIA es la prueba de que aquello era una OMISION y no un
+#      desajuste: no sobraba nada, faltaba uno.
 # Las dos senales que este check exige estan, y por eso esta VERDE. La cabecera decia lo
 # contrario en presente hasta hoy.
 #
