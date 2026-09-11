@@ -8,6 +8,10 @@ const state = {
   refreshTimer: null, refreshSeq: 0, activeSection: 'mesa', viewLoadedAt: {},
   dashboard: {}, confidence: { rows: [] }, health: { status: 'degraded', services: [] },
   trend: {}, swing: {}, structureDetail: {}, wyckoff: {}, externalMacro: {}, daily: { rows: [] }, lastContextAt: 0,
+  // EL SOBRE. Una respuesta atomica con UN generated_at, de la que sale TODO lo que K43
+  // marca FOTO. Antes cada tarjeta pedia su ruta suelta y resolvia su propio instante, asi
+  // que la pantalla daba a entender que todo estaba igual de fresco cuando no lo estaba.
+  sobre: null, sobreAt: 0, sobrePendiente: null,
   priceMode: 'intraday', priceBars: [],
   profileWindow: { interval: '4hour', days: 90 },
   // Perfil de trading: cambia QUE temporalidad manda, nunca los datos brutos.
@@ -174,6 +178,53 @@ async function maybe(path, fallback) {
     console.error('endpoint fallo', path, error);
     return fallback;
   }
+}
+// EL SOBRE, UNA VEZ POR REFRESCO. Se comparte entre refreshOverview y loadView: si dos
+// pestanas lo piden a la vez, la segunda espera a la promesa de la primera en vez de abrir
+// otra peticion. Sin esto, "una vez por refresco" seria "una vez por pestana".
+async function pedirSobre(q, force = false) {
+  if (!force && state.sobre && Date.now() - state.sobreAt < 15000) return state.sobre;
+  if (state.sobrePendiente) return state.sobrePendiente;
+  state.sobrePendiente = maybe(`/api/ai/context?symbol=${q}`, null).then(res => {
+    if (res) { state.sobre = res; state.sobreAt = Date.now(); }
+    state.sobrePendiente = null;
+    pintarEdadFoto();
+    return state.sobre;
+  });
+  return state.sobrePendiente;
+}
+// LA EDAD, UNA. Las tarjetas FOTO no publican una edad cada una: publican la del sobre,
+// que es el unico instante que comparten. Si no hay sobre, lo dice en vez de callar.
+function pintarEdadFoto() {
+  const pill = $('foto-edad');
+  if (!pill) return;
+  const gen = state.sobre && state.sobre.generated_at;
+  if (!gen) { pill.textContent = 'Foto —'; pill.className = 'live-pill'; pill.title = 'No se pudo leer /api/ai/context'; return; }
+  const seg = Math.max(0, Math.round((Date.now() - Date.parse(gen)) / 1000));
+  pill.textContent = `Foto ${seg < 90 ? `${seg}s` : `${Math.round(seg / 60)}min`}`;
+  pill.className = `live-pill ${seg <= 90 ? 'positive' : seg <= 300 ? 'neutral' : 'negative'}`;
+  pill.title = `Edad de /api/ai/context (generated_at ${gen}). UNA para todas las tarjetas FOTO.`;
+}
+// Lee una seccion del sobre. `fallback` es el MISMO que usaba la llamada suelta que
+// sustituye, para que la tarjeta no distinga entre "no hubo sobre" y "no hubo ruta".
+function delSobre(clave, fallback) {
+  const s = state.sobre;
+  if (!s || s[clave] === undefined || s[clave] === null) return fallback;
+  return s[clave];
+}
+// LOS DOS ADAPTADORES, y solo dos. El sobre trae el MISMO dato con otro envase; el envase
+// se traduce aqui y NINGUNA funcion de pintado cambia, que es lo que garantiza que no se
+// pierde un campo. Medido campo a campo el 2026-09-11 contra las rutas servidas.
+function sobreConfianza(fallback) {
+  const d = delSobre('data_confidence', null);
+  return d ? { rows: [d] } : fallback;   // la ruta envuelve en rows[]; el sobre da la fila
+}
+function sobreOrderbook(fallback) {
+  const ob = delSobre('orderbook', null);
+  if (!ob) return fallback;
+  // la ruta da rows[] por exchange; el sobre da una clave por exchange + freshness
+  const rows = Object.keys(ob).filter(k => k !== 'freshness').map(k => ob[k]);
+  return { rows, freshness: ob.freshness, symbol: state.symbol };
 }
 function lastEndpointError() {
   const entries = Object.entries(state.errors || {});
@@ -1576,12 +1627,14 @@ async function refreshOverview(forceContext = false) {
   const contextExpired = forceContext || Date.now() - state.lastContextAt > 60000;
   // El rollup diario cambia una vez por sesion: va en el tramo lento, no en el de 15 s.
   const contextRequest = contextExpired ? Promise.all([
-    maybe(`/api/trend-matrix?symbol=${q}`, { timeframes: {} }),
-    maybe(`/api/swing-score?symbol=${q}`, {}),
-    maybe(`/api/structure-detail?symbol=${q}`, { horizons: {} }),
-    maybe(`/api/wyckoff?symbol=${q}`, { available: false }),
+    // FASE 1 · LAS CINCO FOTO DE ESTE TRAMO SALEN DEL SOBRE, no de cinco rutas sueltas.
+    // El sobre se pide UNA vez arriba y estas cinco lecturas son sincronas sobre el.
+    pedirSobre(q).then(() => delSobre('trend_matrix', { timeframes: {} })),
+    pedirSobre(q).then(() => delSobre('swing_score', {})),
+    pedirSobre(q).then(() => delSobre('structure_detail', { horizons: {} })),
+    pedirSobre(q).then(() => delSobre('wyckoff', { available: false })),
     maybe(`/api/daily?symbol=${q}&days=60`, { rows: [] }),
-    maybe(`/api/external-macro?symbol=${q}`, { available: false }),
+    pedirSobre(q).then(() => delSobre('external_macro_context', { available: false })),
     // EL COSTE Y EL VEREDICTO VAN EN EL TRAMO LENTO a proposito: son gasto y lectura de lo que
     // ya paso, no un tick. Y el veredicto se pide con una ventana de 7 dias porque el horizonte
     // declarado es dias-a-semanas; la respuesta echa el instante que uso, asi que la lectura de
@@ -1594,12 +1647,21 @@ async function refreshOverview(forceContext = false) {
     // Va en el tramo lento (60 s): es jerarquia y contexto, no un tick.
     maybe(`/api/desk/state?symbol=${q}&profile=${encodeURIComponent(state.tradingProfile)}&direction=${encodeURIComponent(state.direction)}&setup=${encodeURIComponent(state.setup)}`, { components: {} }),
   ]) : null;
-  const [dashboard, ohlcv, confidence, health] = await Promise.all([
+  // EL SOBRE VA PRIMERO Y SOLO UNA VEZ POR REFRESCO. De el sale data-confidence.
+  //
+  // `/api/dashboard/state` SIGUE PIDIENDOSE SUELTA, y es una decision medida, no un olvido:
+  // la ruta devuelve NUEVE claves y el sobre solo cubre SIETE. `scalp_persistence` y
+  // `signal_base_rate` no estan en el sobre por ningun camino -buscados en las 49 claves y
+  // en sus hijos- y el panel las pinta las dos. Moverla costaria esas dos cifras, y el
+  // criterio de esta fase es que ninguna tarjeta pierda un campo. Ampliar el sobre es
+  // backend y es otra fase.
+  await pedirSobre(q, contextExpired);
+  const [dashboard, ohlcv, health] = await Promise.all([
     maybe(`/api/dashboard/state?symbol=${q}`, { snapshot: null, scalp: {}, setup: { setups: [] } }),
     maybe(`/api/ohlcv?symbol=${q}&interval=5min&limit=576`, { rows: [] }),
-    maybe(`/api/data-confidence?symbol=${q}`, { rows: [] }),
     maybe('/api/healthz', { status: 'degraded', services: [] }),
   ]);
+  const confidence = sobreConfianza({ rows: [] });
   const context = contextRequest ? await contextRequest : null;
   if (symbol !== state.symbol) return;
   if (requestId !== state.refreshSeq) return;
@@ -1659,7 +1721,8 @@ async function loadSection(id, force = false) {
     // El coste y sus dos heatmaps de dias ya los pinta el refresco general -van en el tramo
     // lento junto al veredicto-. Aqui solo hace falta el mapa por precio, que es de esta
     // seccion y de ninguna otra.
-    renderLiqPrecio(await maybe(`/api/liquidation-map?symbol=${q}`, null));
+    await pedirSobre(q);
+    renderLiqPrecio(delSobre('liquidation_map', null));
     if (symbol !== state.symbol) return;
     state.viewLoadedAt[id] = Date.now();
     return;
@@ -1672,8 +1735,12 @@ async function loadSection(id, force = false) {
       maybe(`/api/oi?symbol=${q}&interval=15min&limit=384`, { rows: [] }),
       maybe(`/api/whale/delta?symbol=${q}&interval=15min&limit=384`, { rows: [] }),
       maybe(`/api/daily?symbol=${q}&days=60`, { rows: [], streak: 0 }),
+      // LA MATRIZ DE DELTA SIGUE SUELTA, medido: la ruta sirve DOCE ventanas y el sobre
+      // solo CINCO -15s, 1m, 3m, 5m, 15m-. Moverla perderia 30s, 18m, 30m, 1h, 4h, 8h y 1d,
+      // que renderDeltaMatrix pinta como filas. Los campos por fila son los mismos; lo que
+      // falta son FILAS, que es justo lo que una comparacion de nombres no ve.
       maybe(`/api/scalp/delta-matrix?symbol=${q}`, []),
-      maybe(`/api/scalp/absorption?symbol=${q}`, []),
+      pedirSobre(q).then(() => delSobre('absorption', [])),
     ]);
     if (symbol !== state.symbol) return;
     renderFlowCharts(filasDe(cvd), null, filasDe(whale));
@@ -1685,11 +1752,11 @@ async function loadSection(id, force = false) {
       // Sin freshness en el respaldo A PROPOSITO: si la peticion falla, el panel no
       // puede afirmar "no hay libro" ni "el libro es viejo". Lo que dice es que no hubo
       // lectura, que es lo unico cierto.
-      maybe(`/api/scalp/orderbook?symbol=${q}`, { rows: [] }),
+      pedirSobre(q).then(() => sobreOrderbook({ rows: [] })),
       // El perfil viaja al coste: el horizonte decide el umbral de AVISO de spread y con que
       // objetivo se compara el coste. Sin el, un swing recibia lectura de intradia.
       maybe(`/api/scalp/execution-cost?symbol=${q}&profile=${encodeURIComponent(state.tradingProfile)}`, { venues: [] }),
-      maybe(`/api/market-impact?symbol=${q}`, { windows: [] }),
+      pedirSobre(q).then(() => delSobre('market_impact', { windows: [] })),
     ]);
     if (symbol !== state.symbol) return;
     renderOrderbook(orderbook);
@@ -1698,13 +1765,13 @@ async function loadSection(id, force = false) {
     await loadDeltaProfile();
   } else if (id === 'estructura') {
     const [structure, macro, passive, trend, swing, structureDetail, wyckoff] = await Promise.all([
-      maybe(`/api/structure?symbol=${q}`, { layers: [] }),
-      maybe(`/api/macro-context?symbol=${q}`, { metrics: [] }),
-      maybe(`/api/passive-flow?symbol=${q}`, { horizons: {} }),
-      maybe(`/api/trend-matrix?symbol=${q}`, { timeframes: {} }),
-      maybe(`/api/swing-score?symbol=${q}`, {}),
-      maybe(`/api/structure-detail?symbol=${q}`, { horizons: {} }),
-      maybe(`/api/wyckoff?symbol=${q}`, { available: false }),
+      pedirSobre(q).then(() => delSobre('market_structure', { layers: [] })),
+      pedirSobre(q).then(() => delSobre('macro_context', { metrics: [] })),
+      pedirSobre(q).then(() => delSobre('passive_flow', { horizons: {} })),
+      pedirSobre(q).then(() => delSobre('trend_matrix', { timeframes: {} })),
+      pedirSobre(q).then(() => delSobre('swing_score', {})),
+      pedirSobre(q).then(() => delSobre('structure_detail', { horizons: {} })),
+      pedirSobre(q).then(() => delSobre('wyckoff', { available: false })),
     ]);
     if (symbol !== state.symbol) return;
     state.trend = trend;
@@ -1725,11 +1792,14 @@ async function loadSection(id, force = false) {
   } else if (id === 'derivados') {
     const [oi, basis, liq, liqLevels, funding, positioning] = await Promise.all([
       maybe(`/api/oi?symbol=${q}&interval=15min&limit=384`, { rows: [] }),
-      maybe(`/api/scalp/basis?symbol=${q}`, {}),
-      maybe(`/api/scalp/liquidations?symbol=${q}`, { matrix: [] }),
+      pedirSobre(q).then(() => delSobre('basis', {})),
+      pedirSobre(q).then(() => delSobre('scalp_liquidations', { matrix: [] })),
+      // LOS NIVELES SIGUEN SUELTOS, medido: la ruta sirve DIECISEIS filas con limit=50 y el
+      // sobre solo OCHO. renderLiquidationLevels las mapea TODAS, asi que moverla borraria
+      // ocho cubos de precio de la tabla.
       maybe(`/api/scalp/liquidation-levels?symbol=${q}&minutes=60&bucket_bps=10&limit=50`, { rows: [] }),
-      maybe(`/api/funding-context?symbol=${q}`, {}),
-      maybe(`/api/positioning?symbol=${q}`, {}),
+      pedirSobre(q).then(() => delSobre('funding_context', {})),
+      pedirSobre(q).then(() => delSobre('positioning', {})),
     ]);
     if (symbol !== state.symbol) return;
     renderOiChart(filasDe(oi));
@@ -1742,9 +1812,9 @@ async function loadSection(id, force = false) {
     // Tres niveles distintos y tres fuentes distintas: servicios (healthz), feeds de
     // mercado y metricas publicadas (/api/quality/feeds).
     const [confidence, health, quality] = await Promise.all([
-      maybe(`/api/data-confidence?symbol=${q}`, { rows: [] }),
+      pedirSobre(q).then(() => sobreConfianza({ rows: [] })),
       maybe('/api/healthz', { status: 'degraded', services: [] }),
-      maybe(`/api/quality/feeds?symbol=${q}`, { feeds: [], metrics: [] }),
+      pedirSobre(q).then(() => delSobre('feed_quality', { feeds: [], metrics: [] })),
     ]);
     if (symbol !== state.symbol) return;
     renderQuality(confidence, health);
@@ -1769,9 +1839,9 @@ async function loadSection(id, force = false) {
   } else if (id === 'contexto') {
     const [daily, macro, externalMacro, divergences] = await Promise.all([
       maybe(`/api/daily?symbol=${q}&days=60`, { rows: [], streak: 0 }),
-      maybe(`/api/macro-context?symbol=${q}`, { metrics: [] }),
-      maybe(`/api/external-macro?symbol=${q}`, { available: false }),
-      maybe(`/api/divergences?symbol=${q}`, { available: false, windows: {} }),
+      pedirSobre(q).then(() => delSobre('macro_context', { metrics: [] })),
+      pedirSobre(q).then(() => delSobre('external_macro_context', { available: false })),
+      pedirSobre(q).then(() => delSobre('divergences', { available: false, windows: {} })),
     ]);
     if (symbol !== state.symbol) return;
     const setup = state.dashboard.setup || { setups: [] };

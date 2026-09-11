@@ -103,5 +103,7 @@ def test_dashboard_exposes_automatic_module_and_daily_chart_mode() -> None:
     js = (root / "static" / "app.js").read_text(encoding="utf-8")
     assert 'id="wyckoff-body"' in html
     assert 'id="price-mode-wyckoff"' in html
-    assert "/api/wyckoff?symbol=" in js
+    # FASE 1 (2026-09-11): wyckoff ya no se pide suelta, sale del SOBRE por su clave.
+    assert "delSobre('wyckoff'" in js
+    assert "/api/wyckoff?symbol=" not in js
     assert "WYK soporte" in js and "WYK resistencia" in js

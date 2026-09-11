@@ -114,7 +114,11 @@ def test_external_macro_is_separate_from_internal_percentiles_and_dom_safe():
     assert "body.replaceChildren()" in render
     assert ".innerHTML" not in render
     refresh = JS[JS.index("async function refreshOverview") : JS.index("async function loadSection")]
-    assert "/api/external-macro?symbol=${q}" in refresh
+    # FASE 1 (2026-09-11): el resumen ya no pide `/api/external-macro` suelta; la saca del
+    # SOBRE, que es UNA respuesta con UN generated_at. La afirmacion que importa no cambia
+    # -que el resumen trae el macro externo-, cambia de DONDE.
+    assert "external_macro_context" in refresh
+    assert "/api/external-macro?symbol=${q}" not in refresh
 
 
 def test_price_barriers_have_a_full_width_safe_panel():
@@ -128,11 +132,15 @@ def test_price_barriers_have_a_full_width_safe_panel():
 
 def test_overview_is_light_and_stale_responses_are_rejected():
     refresh = JS[JS.index("async function refreshOverview") : JS.index("async function loadSection")]
-    for endpoint in ("dashboard/state", "ohlcv", "data-confidence", "healthz"):
+    # FASE 1 (2026-09-11): de estas cuatro, `data-confidence` paso al SOBRE y las otras tres
+    # siguen sueltas -dashboard/state porque el sobre no trae `scalp_persistence` ni
+    # `signal_base_rate`, que el panel pinta; ohlcv y healthz porque no son FOTO-.
+    for endpoint in ("dashboard/state", "ohlcv", "healthz"):
         assert endpoint in refresh
-    for endpoint in ("passive-flow", "trend-matrix", "swing-score", "structure-detail"):
-        if endpoint != "passive-flow":
-            assert endpoint in refresh
+    assert "sobreConfianza" in refresh
+    # Y las tres del tramo lento: mismo dato, ahora por su clave del sobre.
+    for clave in ("trend_matrix", "swing_score", "structure_detail"):
+        assert clave in refresh
     assert "scalp/alerts" not in refresh
     # ESTA LINEA DECIA `not in JS` -en TODO el fichero- y era la unica del test que no se
     # limitaba a `refresh`; sus seis hermanas hablan solo del resumen, que es lo que el test
