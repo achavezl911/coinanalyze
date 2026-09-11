@@ -26109,7 +26109,11 @@
             "harness/checks/K43-foto-unica.sh:328",
             "harness/checks/K43-foto-unica.sh:329",
             "harness/checks/K43-foto-unica.sh:387",
-            "harness/checks/K43-foto-unica.sh:477"
+            "harness/checks/K43-foto-unica.sh:477",
+            "harness/checks/K44-control.bash:112",
+            "harness/checks/K44-control.bash:134",
+            "harness/checks/K44-control.bash:140",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:76"
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:7",
@@ -26117,6 +26121,8 @@
             "harness/checks/K43-foto-unica.sh:73",
             "harness/checks/K43-foto-unica.sh:279",
             "harness/checks/K43-foto-unica.sh:385",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:5",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:11",
             "harness/checks/K84-dos-matrices-una-cifra.sh:33"
           ]
         },
@@ -26140,8 +26146,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 5,
-        "n_menciones": 13,
+        "n_llamadas": 9,
+        "n_menciones": 15,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -28404,6 +28410,9 @@
             "harness/checks/K43-foto-unica.sh:219",
             "harness/checks/K43-foto-unica.sh:220",
             "harness/checks/K43-foto-unica.sh:368",
+            "harness/checks/K44-control.bash:126",
+            "harness/checks/K44-control.bash:132",
+            "harness/checks/K44-control.bash:141",
             "harness/checks/K90-control.bash:132",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:63",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:82",
@@ -28447,7 +28456,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 19,
+        "n_llamadas": 22,
         "n_menciones": 10,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -31367,7 +31376,9 @@
             "harness/checks/K43-control.bash:173",
             "harness/checks/K43-control.bash:191",
             "harness/checks/K43-foto-unica.sh:151",
-            "harness/checks/K43-foto-unica.sh:368"
+            "harness/checks/K43-foto-unica.sh:368",
+            "harness/checks/K44-control.bash:113",
+            "harness/checks/K44-control.bash:127"
           ],
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:78",
@@ -31396,7 +31407,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 10,
+        "n_llamadas": 12,
         "n_menciones": 5,
         "sin_ninguno": false,
         "solo_mencion": false
