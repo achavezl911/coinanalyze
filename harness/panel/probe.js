@@ -133,6 +133,54 @@ process.on('unhandledRejection', morir);
     const r = await conducir(t, 'replay', 300);
     (r.texto !== base.texto ? vivas : mudas).push(p);
   }
+  // 3b · LA VIA DEL SOBRE (2026-09-11) · el panel dejo de pedir sueltas 19 rutas de FOTO y
+  // las lee de /api/ai/context. Mutar `/api/data-confidence` ya no mueve un pixel -nadie la
+  // pide- y la sonda la daba por no-cableada: un rojo FALSO, porque el dato SI llega, por
+  // dentro del sobre.
+  //
+  // NO SE ACREDITA POR TABLA, SE MIDE IGUAL QUE TODO LO DEMAS: se muta LA CLAVE de esa ruta
+  // DENTRO del sobre y se mira si la pantalla cambia. Mismo criterio que el eslabon 6
+  // -mutar el origen y buscar la marca en el DOM-, solo cambia donde vive el origen.
+  //
+  // La traduccion ruta->clave NO se inventa aqui: se lee de la tabla PAREJAS que K43 ya
+  // declara y mantiene. Si K43 cambia una pareja, esta sonda la sigue sola.
+  const SOBRE = '/api/ai/context';
+  const urlSobre = urls.find(u => u.split('?')[0] === SOBRE);
+  const porSobre = [];
+  salida.sobre_pedido = Boolean(urlSobre);
+  if (urlSobre && fs.existsSync(path.join(FIX, fixtureName(urlSobre)))) {
+    let parejas = new Map();
+    try {
+      const k43 = fs.readFileSync(path.join(process.env.REPO || '/srv/coinanalyze/repo',
+        'harness/checks/K43-foto-unica.sh'), 'utf8');
+      const bloque = k43.match(/\nPAREJAS="\n([\s\S]*?)\n"\n/);
+      for (const ln of (bloque ? bloque[1] : '').split('\n')) {
+        const c = ln.split('|').map(x => x.trim());
+        if (!c[0] || !c[0].startsWith('/api/') || !c[1]) continue;
+        const ruta = c[0].split('#')[0];
+        if (!parejas.has(ruta)) parejas.set(ruta, []);
+        parejas.get(ruta).push(c[1]);
+      }
+    } catch (e) { salida.sobre_parejas_error = String(e.message || e).slice(0, 120); }
+    salida.sobre_parejas = parejas.size;
+    for (const [ruta, claves] of parejas) {
+      if (pedidas.includes(ruta)) continue;   // la sigue pidiendo suelta: ya esta medida
+      const t = (url, body) => {
+        if (url.split('?')[0] !== SOBRE) return body;
+        const o = JSON.parse(body);
+        let toco = false;
+        for (const k of claves) {
+          if (o[k] !== undefined && o[k] !== null) { o[k] = mutar(o[k]); toco = true; }
+        }
+        return toco ? JSON.stringify(o) : body;
+      };
+      const r = await conducir(t, 'replay', 300);
+      if (r.texto !== base.texto) { porSobre.push(ruta); vivas.push(ruta); }
+    }
+  }
+  salida.llegan_por_el_sobre = [...new Set(porSobre)].sort();
+  salida.rutas_pedidas = [...new Set([...pedidas, ...porSobre])].sort();
+
   salida.payloads_probados = vivas.length + mudas.length;
   salida.llegan_a_la_pantalla = [...new Set(vivas)].sort();
   salida.no_llegan = [...new Set(mudas)].sort();

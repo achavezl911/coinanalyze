@@ -365,6 +365,33 @@ panel = sorted({m.group(1).rstrip("/") for m in re.finditer(
 # censo dejara de encontrar las rutas que el panel pide en CADA refresco, estaria roto, y un
 # censo roto diria "ninguna sin familia" sobre cero rutas, que es un verde sin sujeto. Las dos
 # de control no dependen de que nadie abra una pestana: son la portada.
+# LA VIA DEL SOBRE (2026-09-11). Desde la fase 1 el panel NO NOMBRA las rutas de FOTO cuyo
+# dato lee de /api/ai/context: las pide por dentro del sobre. Contando solo literales el
+# censo cayo de 44 a 26 y este check se quedo MUDO por su propio suelo -correctamente, pero
+# por el motivo equivocado: no se rompio el censo, cambio la FORMA de pedir-.
+# Una ruta cuyo dato viaja en el sobre EL PANEL LA PUEDE PEDIR, que es justo lo que este
+# censo cuenta. La traduccion ruta->clave NO se inventa: es la tabla PAREJAS de aqui arriba,
+# que este check ya declara y mantiene.
+#
+# POR QUE SE ACREDITA POR LA TABLA Y NO POR BUSCAR LA CLAVE EN EL FUENTE. El primer intento
+# acreditaba una ruta si su clave aparecia entrecomillada en app.js. SU PROPIO CONTROL LO
+# TUMBO: quitando del panel la lectura de `wyckoff` -0 lecturas del sobre y 0 peticiones
+# sueltas- el censo seguia dando 44, porque el literal `wyckoff` aparece entrecomillado por
+# otros motivos (ids, nombres de estado). Era un credito FALSO, y una pregunta que este
+# check no tiene por que contestar: SI EL PANEL LEE esa clave se mide mutandola dentro del
+# sobre y mirando la pantalla, y eso lo hace K31. Aqui la pregunta es otra -que rutas PUEDE
+# pedir el panel- y para esa, el sobre las trae todas.
+#
+# EL SOBRE NO ENTRA EN EL CENSO COMO UNA RUTA MAS. Es el TRANSPORTE de la familia FOTO; las
+# rutas que viajan dentro se cuentan una a una, y contarlo ademas seria contar dos veces el
+# mismo camino -y obligaria a inventarle una familia que no le corresponde-.
+SOBRE = "/api/ai/context"
+if SOBRE in panel:
+    for _ruta in parejas:
+        if _ruta not in panel:
+            panel.append(_ruta)
+    panel = sorted(r for r in panel if r != SOBRE)
+
 CONTROL = ["/api/dashboard/state", "/api/ohlcv"]
 faltan_control = [r for r in CONTROL if r not in panel]
 if faltan_control or len(panel) < 30:
