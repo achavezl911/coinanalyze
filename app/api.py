@@ -2447,14 +2447,34 @@ LEDGER_COLUMNS = """
 # distintas. Medido en 140 sobre las 270 342 filas de signal_observation del arco
 # 2026-08-10T15:20:16Z..2026-09-11T04:30:32Z (3 simbolos):
 #
-#     direction_flip        2 170   long<->short. Ventaja medida +9.28 pp sobre una moneda
-#     opinion_taken        80 801   neutral -> long/short                 +4.24 pp
-#     opinion_dropped      80 801   long/short -> neutral                 +4.24 pp
-#     availability_change  17 030   alguno de los dos lados es 'unavailable'
+#     direction_flip        2 170   long<->short
+#     opinion_taken        80 801   neutral -> long/short
+#     opinion_dropped      80 801   long/short -> neutral
+#     availability_change  17 030   la direccion cambia y uno de los dos lados es 'unavailable'
 #     same_direction        6 504   la direccion NO cambia; cambia `state`
 #     not_a_transition     83 036   is_transition = false
 #                         -------
 #                         270 342   = el total de la tabla. Cubos disjuntos y exhaustivos.
+#
+# LA VENTAJA DIRECCIONAL, Y SOLO PARA LOS DOS CUBOS QUE ALGUIEN MIDIO. Es la tabla de gradacion
+# de COLA.md 110 §3, h=1 min, ventaja sobre una moneda lanzada sobre las MISMAS filas. Cada
+# cifra de aqui abajo senala la fila de la que sale, y la poblacion de esa fila ES este cubo:
+#
+#     direction_flip   +9.28 pp   COLA 110 §3 fila A «giro REAL long<->short», n=2 160
+#     opinion_taken    +4.24 pp   COLA 110 §3 fila B «toma opinion», n=80 592
+#
+# Y LO QUE NO SE PUEDE ESCRIBIR, que es lo que importa:
+#   · `opinion_dropped` NO TIENE CIFRA PROPIA. COLA 110 lo cuenta en su §2 -«abandona op.
+#     long/short -> neutral, 80 695»- pero esa tabla NO trae columna de ventaja, y la de §3 no
+#     tiene fila para el. Lo unico que el bloque le atribuye es el RANGO de la oscilacion
+#     ENTERA -«oscilacion neutral 161 388 casos, ventaja +0.94..+4.24 pp»-, cuya poblacion es
+#     `opinion_taken` + `opinion_dropped` juntos, no este cubo solo. Asi que es un RANGO
+#     COMPARTIDO y no un punto: ponerle +4.24 seria atribuirle la medida de su hermano.
+#   · `availability_change`, `same_direction` y `not_a_transition` no tienen ninguna cifra en
+#     COLA 110, y por eso aqui tampoco. La fila C de §3 -«otra transicion», n=9 564- no declara
+#     que poblacion es, y 9 564 no coincide con ninguno de estos cubos: no se le atribuye.
+#     `same_direction` ademas es el cubo que el propio bloque 110 declara NO haber medido
+#     («LO QUE NO MIDE ESTE BLOQUE», punto 3: el `state`).
 #
 # ESTO ES INFORMACION DE CONTEXTO, NO UNA SENAL DE ENTRADA, y esta MEDIDO que no paga: el mejor
 # subconjunto -direction_flip- da +1.71 bps brutos en su mejor horizonte contra 4.013 bps de
@@ -2465,15 +2485,34 @@ LEDGER_COLUMNS = """
 # NO SE RECALCULA NADA. El tipo sale de `direction` y de la `direction` de la fila anterior del
 # MISMO simbolo, las dos ya guardadas. `is_transition` y `decision_fingerprint` no se tocan:
 # redefinir la transicion partiria la serie historica en dos.
+# LAS DESCRIPCIONES TIENEN QUE SER EXCLUYENTES ENTRE SI, y la primera version no lo era: dos
+# pares de descripciones se cumplian a la vez y lo unico que desempataba era el ORDEN de los
+# `WHEN` del CASE, que el consumidor no ve. Un vocabulario cuyo desempate esta escondido no es
+# cerrado: es ambiguo. Los dos solapes, medidos sobre las 270 697 filas del arco
+# 2026-08-10T15:20:16Z..2026-09-11T05:24:00Z:
+#
+#   VIVO, 13 filas · `unavailable -> unavailable` con is_transition. La direccion no cambia Y
+#     uno de los dos lados es unavailable, asi que cumplia las dos descripciones. Se afina
+#     `availability_change` exigiendo que la direccion CAMBIE. Son 13 de 15 pares posibles: se
+#     enumeraron los 15 y es el UNICO que se solapaba.
+#   LATENTE, 3 filas · la primerisima observacion de cada simbolo no tiene anterior Y no es
+#     transicion, asi que cumplia `not_a_transition` y `no_predecessor` a la vez. Las 3 tienen
+#     is_transition=false, o sea que hoy ninguna llega a la rama de `no_predecessor`: la
+#     ambiguedad esta en el TEXTO y no en el reparto. Se declara igual, y se afina exigiendo
+#     que haya transicion que clasificar.
+#
+# Con estas tres frases, quien lea el vocabulario puede predecir el cubo de cualquier fila sin
+# leer el SQL. El CASE no se toca: lo que estaba mal era lo que se publicaba, no el reparto.
 TIPOS_DE_TRANSICION = {
     "direction_flip": "la direccion paso de long a short o al reves",
     "opinion_taken": "la direccion paso de neutral a long o short",
     "opinion_dropped": "la direccion paso de long o short a neutral",
-    "availability_change": "uno de los dos lados de la comparacion es unavailable",
-    "same_direction": "hubo transicion y la direccion NO cambio: lo que cambio es el state",
+    "availability_change": "la direccion CAMBIO y uno de los dos lados es unavailable",
+    "same_direction": "hubo transicion y la direccion NO cambio -incluido unavailable a "
+                      "unavailable-: lo que cambio es el state",
     "not_a_transition": "is_transition es false: no hay salto de casilla que clasificar",
-    "no_predecessor": "no hay observacion anterior de este simbolo, asi que no se puede "
-                      "determinar. Se declara en vez de adivinarse",
+    "no_predecessor": "hubo transicion y no hay observacion anterior de este simbolo, asi que "
+                      "no se puede determinar de que tipo fue. Se declara en vez de adivinarse",
 }
 TIPOS_NOTA = (
     "Informacion de CONTEXTO, no una senal de entrada: medido que el mejor de estos tipos "

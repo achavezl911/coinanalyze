@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2493`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2532`
 - `app.carry.matriz_de_carry` — `app/carry.py:99`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
@@ -87,7 +87,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 422 | — | `app/api.py:2502` | una funcion de su cierre |
+| 422 | — | `app/api.py:2541` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

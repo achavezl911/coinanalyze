@@ -2,9 +2,12 @@
 
 POR QUE EXISTE. `is_transition` es un booleano, y bajo ese unico bit conviven poblaciones que
 miden cosas distintas y estan medidas (COLA.md 110): el giro long<->short son 2 170 casos en el
-arco 2026-08-10..2026-09-11 con una ventaja de +9.28 pp sobre una moneda, y la oscilacion
-alrededor de neutral son 161 621 con +4.24. Quien lee «transicion» no puede saber cual tiene
-delante. La ruta deriva ahora el TIPO, sin tocar `is_transition` ni el fingerprint.
+arco 2026-08-10..2026-09-11 y COLA 110 §3 fila A le mide +9.28 pp de ventaja sobre una moneda,
+mientras que la oscilacion alrededor de neutral son 161 621 casos a los que ese mismo bloque
+atribuye un RANGO, +0.94..+4.24 pp, sobre la oscilacion ENTERA -y no un punto a cada mitad: su
+§3 tiene fila para «toma opinion» y NO la tiene para «abandona op.»-. Quien lee «transicion» no
+puede saber cual tiene delante. La ruta deriva ahora el TIPO, sin tocar `is_transition` ni el
+fingerprint.
 
 LO QUE ESTAS PRUEBAS FIJAN, y la segunda es la que no podia cazar ningun control de tabla:
 
@@ -180,6 +183,38 @@ async def test_los_cuatro_tipos_de_la_medida_salen_donde_tienen_que_salir(conn) 
     assert _tipo(d, 3) == "opinion_dropped"
     assert _tipo(d, 4) == "availability_change"
     assert _tipo(d, 5) == "same_direction"
+
+
+@pytest.mark.asyncio
+async def test_unavailable_a_unavailable_cae_en_UN_solo_cubo_y_se_puede_predecir(conn) -> None:
+    """EL SOLAPE QUE HABIA EN LAS DESCRIPCIONES, y son 13 filas de verdad.
+
+    `unavailable -> unavailable` con is_transition cumple «la direccion NO cambio» Y cumplia
+    «uno de los dos lados es unavailable», asi que las dos descripciones publicadas valian para
+    la misma fila y lo unico que desempataba era el orden de los WHEN, que el consumidor no ve.
+    Medido en 140 sobre 270 697 filas del arco 2026-08-10T15:20:16Z..2026-09-11T05:24:00Z: son
+    13 filas en los 3 simbolos, y de los 15 pares (previa -> actual) que existen con transicion
+    es el UNICO que se solapaba -se enumeraron los 15, no se comparo un conteo-.
+
+    El reparto NO cambia: sigue siendo `same_direction`. Lo que cambia es que ahora la
+    descripcion de `availability_change` exige que la direccion CAMBIE, asi que se puede
+    predecir sin leer el SQL.
+    """
+    await _observacion(conn, 0, "neutral", transicion=False)
+    await _observacion(conn, 1, "unavailable", transicion=True)
+    await _observacion(conn, 2, "unavailable", transicion=True, state="trend")
+
+    d = await _pide(conn, BASE, BASE + timedelta(minutes=30))
+    assert _tipo(d, 1) == "availability_change", "neutral -> unavailable si cambia de direccion"
+    assert _tipo(d, 2) == "same_direction", "unavailable -> unavailable NO cambia de direccion"
+
+    # Y LA DESAMBIGUACION TIENE QUE SEGUIR PUBLICADA. Es un criterio sobre TEXTO y por eso es
+    # debil (A3): no caza una reescritura que diga lo mismo con otras palabras. Esta para que
+    # nadie la borre por descuido, no para probar el reparto -eso lo prueban las dos lineas de
+    # arriba, que son comportamiento-.
+    assert "CAMBIO" in d["transition_types"]["availability_change"], \
+        "sin exigir que la direccion cambie, esta descripcion vuelve a solaparse con same_direction"
+    assert "unavailable" in d["transition_types"]["same_direction"]
 
 
 @pytest.mark.asyncio

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `data_confidence` · `app/api.py:3048` (cuerpo hasta la 3052) · decorador en la linea 3047.
+Handler `data_confidence` · `app/api.py:3087` (cuerpo hasta la 3091) · decorador en la linea 3086.
 
 ## Parametros de entrada
 
@@ -18,7 +18,7 @@ Handler `data_confidence` · `app/api.py:3048` (cuerpo hasta la 3052) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `rows` | literal en app/api.py:3052 |
+| `rows` | literal en app/api.py:3091 |
 | `rows.collectors_stale` | asignado en app/ai_context.py:566 |
 | `rows.flow_8h_complete` | asignado en app/ai_context.py:535 |
 | `rows.flow_8h_futures_complete` | asignado en app/ai_context.py:534 |

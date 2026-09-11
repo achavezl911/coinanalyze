@@ -105,7 +105,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2493`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2532`
 - `app.api.validate_symbol` — `app/api.py:229`
 - `app.api.ventana_pedida` — `app/api.py:1666`
 - `app.rango.estructura_de_rango` — `app/rango.py:234`
@@ -139,7 +139,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | 422 | — | `app/api.py:1691` | una funcion de su cierre |
 | 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1693` | una funcion de su cierre |
 | 422 | hasta tiene que ser posterior a desde | `app/api.py:1695` | una funcion de su cierre |
-| 422 | — | `app/api.py:2502` | una funcion de su cierre |
+| 422 | — | `app/api.py:2541` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

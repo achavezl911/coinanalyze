@@ -636,8 +636,8 @@
     },
     "app.api._parse_heartbeat_detail": {
       "fichero": "app/api.py",
-      "linea": 3533,
-      "sitio": "`app/api.py:3533`"
+      "linea": 3572,
+      "sitio": "`app/api.py:3572`"
     },
     "app.api._session_window": {
       "fichero": "app/api.py",
@@ -656,18 +656,18 @@
     },
     "app.api.ai_context": {
       "fichero": "app/api.py",
-      "linea": 3472,
-      "sitio": "`app/api.py:3472`"
+      "linea": 3511,
+      "sitio": "`app/api.py:3511`"
     },
     "app.api.ai_context_bundle": {
       "fichero": "app/api.py",
-      "linea": 3489,
-      "sitio": "`app/api.py:3489`"
+      "linea": 3528,
+      "sitio": "`app/api.py:3528`"
     },
     "app.api.ai_profiles": {
       "fichero": "app/api.py",
-      "linea": 3510,
-      "sitio": "`app/api.py:3510`"
+      "linea": 3549,
+      "sitio": "`app/api.py:3549`"
     },
     "app.api.carry_matriz": {
       "fichero": "app/api.py",
@@ -716,13 +716,13 @@
     },
     "app.api.dashboard_state": {
       "fichero": "app/api.py",
-      "linea": 3441,
-      "sitio": "`app/api.py:3441`"
+      "linea": 3480,
+      "sitio": "`app/api.py:3480`"
     },
     "app.api.data_confidence": {
       "fichero": "app/api.py",
-      "linea": 3048,
-      "sitio": "`app/api.py:3048`"
+      "linea": 3087,
+      "sitio": "`app/api.py:3087`"
     },
     "app.api.declara_ventana": {
       "fichero": "app/api.py",
@@ -771,8 +771,8 @@
     },
     "app.api.health": {
       "fichero": "app/api.py",
-      "linea": 3629,
-      "sitio": "`app/api.py:3629`"
+      "linea": 3668,
+      "sitio": "`app/api.py:3668`"
     },
     "app.api.historical_interval_value": {
       "fichero": "app/api.py",
@@ -786,8 +786,8 @@
     },
     "app.api.index": {
       "fichero": "app/api.py",
-      "linea": 3743,
-      "sitio": "`app/api.py:3743`"
+      "linea": 3782,
+      "sitio": "`app/api.py:3782`"
     },
     "app.api.latest_snapshot": {
       "fichero": "app/api.py",
@@ -801,8 +801,8 @@
     },
     "app.api.liquidation_levels": {
       "fichero": "app/api.py",
-      "linea": 2988,
-      "sitio": "`app/api.py:2988`"
+      "linea": 3027,
+      "sitio": "`app/api.py:3027`"
     },
     "app.api.liquidation_map_endpoint": {
       "fichero": "app/api.py",
@@ -876,8 +876,8 @@
     },
     "app.api.prometheus_metrics": {
       "fichero": "app/api.py",
-      "linea": 3551,
-      "sitio": "`app/api.py:3551`"
+      "linea": 3590,
+      "sitio": "`app/api.py:3590`"
     },
     "app.api.quality_feeds": {
       "fichero": "app/api.py",
@@ -896,8 +896,8 @@
     },
     "app.api.rechaza_parametros_desconocidos": {
       "fichero": "app/api.py",
-      "linea": 2493,
-      "sitio": "`app/api.py:2493`"
+      "linea": 2532,
+      "sitio": "`app/api.py:2532`"
     },
     "app.api.records": {
       "fichero": "app/api.py",
@@ -921,8 +921,8 @@
     },
     "app.api.scalp_basis": {
       "fichero": "app/api.py",
-      "linea": 2981,
-      "sitio": "`app/api.py:2981`"
+      "linea": 3020,
+      "sitio": "`app/api.py:3020`"
     },
     "app.api.scalp_delta_matrix": {
       "fichero": "app/api.py",
@@ -946,8 +946,8 @@
     },
     "app.api.scalp_persistence": {
       "fichero": "app/api.py",
-      "linea": 3101,
-      "sitio": "`app/api.py:3101`"
+      "linea": 3140,
+      "sitio": "`app/api.py:3140`"
     },
     "app.api.scalp_signals": {
       "fichero": "app/api.py",
@@ -971,33 +971,33 @@
     },
     "app.api.signal_base_rate": {
       "fichero": "app/api.py",
-      "linea": 3316,
-      "sitio": "`app/api.py:3316`"
+      "linea": 3355,
+      "sitio": "`app/api.py:3355`"
     },
     "app.api.signals_execution": {
       "fichero": "app/api.py",
-      "linea": 2726,
-      "sitio": "`app/api.py:2726`"
+      "linea": 2765,
+      "sitio": "`app/api.py:2765`"
     },
     "app.api.signals_ledger": {
       "fichero": "app/api.py",
-      "linea": 2509,
-      "sitio": "`app/api.py:2509`"
+      "linea": 2548,
+      "sitio": "`app/api.py:2548`"
     },
     "app.api.signals_outcomes": {
       "fichero": "app/api.py",
-      "linea": 2640,
-      "sitio": "`app/api.py:2640`"
+      "linea": 2679,
+      "sitio": "`app/api.py:2679`"
     },
     "app.api.signals_replay": {
       "fichero": "app/api.py",
-      "linea": 2814,
-      "sitio": "`app/api.py:2814`"
+      "linea": 2853,
+      "sitio": "`app/api.py:2853`"
     },
     "app.api.signals_visibility": {
       "fichero": "app/api.py",
-      "linea": 2898,
-      "sitio": "`app/api.py:2898`"
+      "linea": 2937,
+      "sitio": "`app/api.py:2937`"
     },
     "app.api.snapshot": {
       "fichero": "app/api.py",
@@ -1011,13 +1011,13 @@
     },
     "app.api.stream": {
       "fichero": "app/api.py",
-      "linea": 3734,
-      "sitio": "`app/api.py:3734`"
+      "linea": 3773,
+      "sitio": "`app/api.py:3773`"
     },
     "app.api.stream_generator": {
       "fichero": "app/api.py",
-      "linea": 3686,
-      "sitio": "`app/api.py:3686`"
+      "linea": 3725,
+      "sitio": "`app/api.py:3725`"
     },
     "app.api.structure": {
       "fichero": "app/api.py",
@@ -2603,7 +2603,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3533",
+        "sitio": "app/api.py:3572",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2688,7 +2688,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3472",
+        "sitio": "app/api.py:3511",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2703,7 +2703,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3489",
+        "sitio": "app/api.py:3528",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2718,7 +2718,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3510",
+        "sitio": "app/api.py:3549",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2874,7 +2874,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3441",
+        "sitio": "app/api.py:3480",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2889,7 +2889,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3048",
+        "sitio": "app/api.py:3087",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3067,7 +3067,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3629",
+        "sitio": "app/api.py:3668",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -3137,7 +3137,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3743",
+        "sitio": "app/api.py:3782",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3221,7 +3221,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:2988",
+        "sitio": "app/api.py:3027",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3473,7 +3473,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3551",
+        "sitio": "app/api.py:3590",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3547,7 +3547,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:2493",
+        "sitio": "app/api.py:2532",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3687,7 +3687,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:2981",
+        "sitio": "app/api.py:3020",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3764,7 +3764,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3101",
+        "sitio": "app/api.py:3140",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3847,7 +3847,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3316",
+        "sitio": "app/api.py:3355",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3862,7 +3862,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:2726",
+        "sitio": "app/api.py:2765",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3877,7 +3877,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:2509",
+        "sitio": "app/api.py:2548",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3892,7 +3892,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:2640",
+        "sitio": "app/api.py:2679",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3907,7 +3907,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:2814",
+        "sitio": "app/api.py:2853",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3922,7 +3922,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:2898",
+        "sitio": "app/api.py:2937",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3969,7 +3969,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3734",
+        "sitio": "app/api.py:3773",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3986,7 +3986,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3686",
+        "sitio": "app/api.py:3725",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25672,17 +25672,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3742,
+      "decorador_linea": 3781,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3744,
+      "fin": 3783,
       "forma": [],
       "handler": "app.api.index",
       "impacto_del_handler": 1,
-      "linea": 3743,
+      "linea": 3782,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -26098,7 +26098,7 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:3481",
+          "donde": "app/api.py:3520",
           "propio": true
         }
       ],
@@ -26157,19 +26157,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3471,
+      "decorador_linea": 3510,
       "familia_ventana": {
         "candidata": null,
         "por": "parametros ['bucket_bps', 'profile', 'symbol']: no encaja en 1/2/3 sin leerla"
       },
       "fichero": "app/api.py",
-      "fin": 3485,
+      "fin": 3524,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.ai_context",
       "impacto_del_handler": 1,
-      "linea": 3472,
+      "linea": 3511,
       "llama_directo": [
         "app.ai_context.build_ai_symbol_context",
         "app.ai_context.normalize_profile",
@@ -26612,7 +26612,7 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:3502",
+          "donde": "app/api.py:3541",
           "propio": true
         }
       ],
@@ -26650,19 +26650,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3488,
+      "decorador_linea": 3527,
       "familia_ventana": {
         "candidata": null,
         "por": "parametros ['bucket_bps', 'profile', 'symbols']: no encaja en 1/2/3 sin leerla"
       },
       "fichero": "app/api.py",
-      "fin": 3506,
+      "fin": 3545,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.ai_context_bundle",
       "impacto_del_handler": 1,
-      "linea": 3489,
+      "linea": 3528,
       "llama_directo": [
         "app.ai_context.build_ai_context",
         "app.ai_context.normalize_profile",
@@ -26749,20 +26749,20 @@
     {
       "camino": "/api/ai/profiles",
       "campos": {
-        "endpoints": "literal en app/api.py:3526",
-        "profiles": "literal en app/api.py:3512",
-        "profiles.default": "literal en app/api.py:3514",
-        "profiles.default.purpose": "literal en app/api.py:3514",
-        "profiles.default.recommended_for": "literal en app/api.py:3514",
-        "profiles.lite": "literal en app/api.py:3513",
-        "profiles.lite.purpose": "literal en app/api.py:3513",
-        "profiles.lite.recommended_for": "literal en app/api.py:3513",
-        "profiles.max": "literal en app/api.py:3519",
-        "profiles.max.purpose": "literal en app/api.py:3520",
-        "profiles.max.recommended_for": "literal en app/api.py:3523",
-        "profiles.pro": "literal en app/api.py:3515",
-        "profiles.pro.purpose": "literal en app/api.py:3516",
-        "profiles.pro.recommended_for": "literal en app/api.py:3517"
+        "endpoints": "literal en app/api.py:3565",
+        "profiles": "literal en app/api.py:3551",
+        "profiles.default": "literal en app/api.py:3553",
+        "profiles.default.purpose": "literal en app/api.py:3553",
+        "profiles.default.recommended_for": "literal en app/api.py:3553",
+        "profiles.lite": "literal en app/api.py:3552",
+        "profiles.lite.purpose": "literal en app/api.py:3552",
+        "profiles.lite.recommended_for": "literal en app/api.py:3552",
+        "profiles.max": "literal en app/api.py:3558",
+        "profiles.max.purpose": "literal en app/api.py:3559",
+        "profiles.max.recommended_for": "literal en app/api.py:3562",
+        "profiles.pro": "literal en app/api.py:3554",
+        "profiles.pro.purpose": "literal en app/api.py:3555",
+        "profiles.pro.recommended_for": "literal en app/api.py:3556"
       },
       "campos_pendientes": [],
       "cierre": [],
@@ -26803,19 +26803,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3509,
+      "decorador_linea": 3548,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3530,
+      "fin": 3569,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.ai_profiles",
       "impacto_del_handler": 1,
-      "linea": 3510,
+      "linea": 3549,
       "llama_directo": [],
       "llama_fuera": [],
       "metodos": [
@@ -26973,7 +26973,7 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2502",
+          "donde": "app/api.py:2541",
           "propio": false
         }
       ],
@@ -28125,7 +28125,7 @@
     {
       "camino": "/api/dashboard/state",
       "campos": {
-        "barriers": "literal en app/api.py:3466",
+        "barriers": "literal en app/api.py:3505",
         "barriers.active_zone": "literal en app/interpretation.py:1001",
         "barriers.available": "literal en app/interpretation.py:998",
         "barriers.current_price": "literal en app/interpretation.py:999",
@@ -28141,7 +28141,7 @@
         "barriers.symbol": "literal en app/scalp_logic.py:1353",
         "barriers.warning": "literal en app/interpretation.py:1057",
         "barriers.warnings": "literal en app/interpretation.py:1048",
-        "cvd_swing": "literal en app/api.py:3465",
+        "cvd_swing": "literal en app/api.py:3504",
         "cvd_swing.as_of": "literal en app/interpretation.py:643",
         "cvd_swing.available": "literal en app/interpretation.py:642",
         "cvd_swing.backtest": "literal en app/interpretation.py:661",
@@ -28157,7 +28157,7 @@
         "cvd_swing.strength": "literal en app/interpretation.py:646",
         "cvd_swing.thesis": "literal en app/interpretation.py:648",
         "cvd_swing.warning": "literal en app/interpretation.py:680",
-        "market_memory": "literal en app/api.py:3467",
+        "market_memory": "literal en app/api.py:3506",
         "market_memory.analog_summary": "literal en app/interpretation.py:508",
         "market_memory.analogs": "literal en app/interpretation.py:507",
         "market_memory.available": "literal en app/interpretation.py:491",
@@ -28171,7 +28171,7 @@
         "market_memory.source": "literal en app/interpretation.py:516",
         "market_memory.symbol": "literal en app/scalp_logic.py:1681",
         "market_memory.warning": "literal en app/interpretation.py:517",
-        "scalp": "literal en app/api.py:3459",
+        "scalp": "literal en app/api.py:3498",
         "scalp.absorption": "literal en app/scalp_logic.py:914",
         "scalp.absorption_context": "literal en app/scalp_logic.py:916",
         "scalp.absorption_delta_ratio": "literal en app/scalp_logic.py:915",
@@ -28229,31 +28229,31 @@
         "scalp.vwap_dist_pct": "literal en app/scalp_logic.py:913",
         "scalp.wall_down_pct": "literal en app/scalp_logic.py:877",
         "scalp.wall_up_pct": "literal en app/scalp_logic.py:876",
-        "scalp_persistence": "literal en app/api.py:3461",
-        "scalp_persistence.as_of": "literal en app/api.py:3136",
-        "scalp_persistence.available": "literal en app/api.py:3127",
-        "scalp_persistence.dias": "literal en app/api.py:3135",
-        "scalp_persistence.episodios": "literal en app/api.py:3131",
-        "scalp_persistence.etiqueta": "literal en app/api.py:3137",
-        "scalp_persistence.maximo_min": "literal en app/api.py:3130",
-        "scalp_persistence.mediana_min": "literal en app/api.py:3128",
-        "scalp_persistence.minutos_muestra": "literal en app/api.py:3132",
-        "scalp_persistence.p90_min": "literal en app/api.py:3129",
-        "scalp_persistence.p90_no_accionable_min": "literal en app/api.py:3133",
-        "setup": "literal en app/api.py:3464",
+        "scalp_persistence": "literal en app/api.py:3500",
+        "scalp_persistence.as_of": "literal en app/api.py:3175",
+        "scalp_persistence.available": "literal en app/api.py:3166",
+        "scalp_persistence.dias": "literal en app/api.py:3174",
+        "scalp_persistence.episodios": "literal en app/api.py:3170",
+        "scalp_persistence.etiqueta": "literal en app/api.py:3176",
+        "scalp_persistence.maximo_min": "literal en app/api.py:3169",
+        "scalp_persistence.mediana_min": "literal en app/api.py:3167",
+        "scalp_persistence.minutos_muestra": "literal en app/api.py:3171",
+        "scalp_persistence.p90_min": "literal en app/api.py:3168",
+        "scalp_persistence.p90_no_accionable_min": "literal en app/api.py:3172",
+        "setup": "literal en app/api.py:3503",
         "setup.daily_flow_source": "literal en app/interpretation.py:201",
         "setup.daily_slope": "literal en app/interpretation.py:200",
         "setup.daily_streak": "literal en app/interpretation.py:199",
         "setup.primary": "literal en app/interpretation.py:202",
         "setup.setups": "literal en app/interpretation.py:203",
         "setup.warning": "literal en app/interpretation.py:204",
-        "signal_base_rate": "literal en app/api.py:3463",
-        "signal_base_rate.as_of": "literal en app/api.py:3351",
-        "signal_base_rate.dias_pedidos": "literal en app/api.py:3347",
-        "signal_base_rate.horizonte_min": "literal en app/api.py:3348",
-        "signal_base_rate.ventana_pedida_desde": "literal en app/api.py:3349",
-        "signal_base_rate.ventana_pedida_hasta": "literal en app/api.py:3350",
-        "snapshot": "literal en app/api.py:3458",
+        "signal_base_rate": "literal en app/api.py:3502",
+        "signal_base_rate.as_of": "literal en app/api.py:3390",
+        "signal_base_rate.dias_pedidos": "literal en app/api.py:3386",
+        "signal_base_rate.horizonte_min": "literal en app/api.py:3387",
+        "signal_base_rate.ventana_pedida_desde": "literal en app/api.py:3388",
+        "signal_base_rate.ventana_pedida_hasta": "literal en app/api.py:3389",
+        "snapshot": "literal en app/api.py:3497",
         "snapshot.btr_15m": "columna de metrics_snapshot (sql/schema.sql)",
         "snapshot.btr_1h": "columna de metrics_snapshot (sql/schema.sql)",
         "snapshot.btr_24h": "columna de metrics_snapshot (sql/schema.sql)",
@@ -28289,7 +28289,7 @@
         "snapshot.vol_24h": "columna de metrics_snapshot (sql/schema.sql)",
         "snapshot.whale_intensity": "columna de metrics_snapshot (sql/schema.sql)",
         "snapshot.whale_label": "columna de metrics_snapshot (sql/schema.sql)",
-        "symbol": "literal en app/api.py:3457"
+        "symbol": "literal en app/api.py:3496"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -28464,19 +28464,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3440,
+      "decorador_linea": 3479,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3468,
+      "fin": 3507,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.dashboard_state",
       "impacto_del_handler": 1,
-      "linea": 3441,
+      "linea": 3480,
       "llama_directo": [
         "app.api.daily_data",
         "app.api.latest_snapshot",
@@ -28532,7 +28532,7 @@
     {
       "camino": "/api/data-confidence",
       "campos": {
-        "rows": "literal en app/api.py:3052",
+        "rows": "literal en app/api.py:3091",
         "rows.collectors_stale": "asignado en app/ai_context.py:566",
         "rows.flow_8h_complete": "asignado en app/ai_context.py:535",
         "rows.flow_8h_futures_complete": "asignado en app/ai_context.py:534",
@@ -28619,19 +28619,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3047,
+      "decorador_linea": 3086,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3052,
+      "fin": 3091,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.data_confidence",
       "impacto_del_handler": 1,
-      "linea": 3048,
+      "linea": 3087,
       "llama_directo": [
         "app.ai_context.data_confidence_row",
         "app.api.validate_symbol"
@@ -29879,13 +29879,13 @@
     {
       "camino": "/api/healthz",
       "campos": {
-        "database": "literal en app/api.py:3677",
-        "governed_services": "literal en app/api.py:3680",
-        "missing_services": "literal en app/api.py:3678",
-        "missing_symbols": "literal en app/api.py:3679",
-        "services": "literal en app/api.py:3681",
-        "status": "literal en app/api.py:3672",
-        "symbols": "literal en app/api.py:3682"
+        "database": "literal en app/api.py:3716",
+        "governed_services": "literal en app/api.py:3719",
+        "missing_services": "literal en app/api.py:3717",
+        "missing_symbols": "literal en app/api.py:3718",
+        "services": "literal en app/api.py:3720",
+        "status": "literal en app/api.py:3711",
+        "symbols": "literal en app/api.py:3721"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -29966,19 +29966,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3628,
+      "decorador_linea": 3667,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3683,
+      "fin": 3722,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.health",
       "impacto_del_handler": 7,
-      "linea": 3629,
+      "linea": 3668,
       "llama_directo": [
         "app.api.records",
         "app.db.db_identity",
@@ -32906,7 +32906,7 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2502",
+          "donde": "app/api.py:2541",
           "propio": false
         }
       ],
@@ -33478,19 +33478,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 2980,
+      "decorador_linea": 3019,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 2984,
+      "fin": 3023,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.scalp_basis",
       "impacto_del_handler": 1,
-      "linea": 2981,
+      "linea": 3020,
       "llama_directo": [
         "app.api.validate_symbol",
         "app.scalp_logic.scalp_basis"
@@ -33937,13 +33937,13 @@
     {
       "camino": "/api/scalp/liquidation-levels",
       "campos": {
-        "as_of": "literal en app/api.py:3040",
-        "bucket_bps": "literal en app/api.py:3039",
-        "minutes": "literal en app/api.py:3038",
-        "rows": "literal en app/api.py:3043",
-        "symbol": "literal en app/api.py:3037",
-        "window_end": "literal en app/api.py:3042",
-        "window_start": "literal en app/api.py:3041"
+        "as_of": "literal en app/api.py:3079",
+        "bucket_bps": "literal en app/api.py:3078",
+        "minutes": "literal en app/api.py:3077",
+        "rows": "literal en app/api.py:3082",
+        "symbol": "literal en app/api.py:3076",
+        "window_end": "literal en app/api.py:3081",
+        "window_start": "literal en app/api.py:3080"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -34011,19 +34011,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 2987,
+      "decorador_linea": 3026,
       "familia_ventana": {
         "candidata": 2,
         "por": "pide ['limit']: coverage de su propia serie"
       },
       "fichero": "app/api.py",
-      "fin": 3044,
+      "fin": 3083,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.liquidation_levels",
       "impacto_del_handler": 1,
-      "linea": 2988,
+      "linea": 3027,
       "llama_directo": [
         "app.api.records",
         "app.api.validate_symbol"
@@ -34764,16 +34764,16 @@
     {
       "camino": "/api/signals/execution",
       "campos": {
-        "as_of": "literal en app/api.py:2794",
-        "count": "literal en app/api.py:2797",
-        "exchange": "literal en app/api.py:2795",
-        "limit": "literal en app/api.py:2796",
-        "since": "literal en app/api.py:2791",
-        "snapshots": "literal en app/api.py:2799",
-        "symbol": "literal en app/api.py:2790",
-        "truncated": "literal en app/api.py:2798",
-        "until": "literal en app/api.py:2792",
-        "ventana_maxima_h": "literal en app/api.py:2793"
+        "as_of": "literal en app/api.py:2833",
+        "count": "literal en app/api.py:2836",
+        "exchange": "literal en app/api.py:2834",
+        "limit": "literal en app/api.py:2835",
+        "since": "literal en app/api.py:2830",
+        "snapshots": "literal en app/api.py:2838",
+        "symbol": "literal en app/api.py:2829",
+        "truncated": "literal en app/api.py:2837",
+        "until": "literal en app/api.py:2831",
+        "ventana_maxima_h": "literal en app/api.py:2832"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -34798,37 +34798,37 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2502",
+          "donde": "app/api.py:2541",
           "propio": false
         },
         {
           "codigo": 422,
           "detalle": "exchange tiene que ser binance o bybit",
-          "donde": "app/api.py:2747",
+          "donde": "app/api.py:2786",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2752",
+          "donde": "app/api.py:2791",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "since/until necesitan zona horaria explicita",
-          "donde": "app/api.py:2754",
+          "donde": "app/api.py:2793",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "until tiene que ser posterior a since",
-          "donde": "app/api.py:2756",
+          "donde": "app/api.py:2795",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2758",
+          "donde": "app/api.py:2797",
           "propio": true
         }
       ],
@@ -34875,19 +34875,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 2725,
+      "decorador_linea": 2764,
       "familia_ventana": {
         "candidata": 3,
         "por": "pide ['since']: el operador elige el momento"
       },
       "fichero": "app/api.py",
-      "fin": 2800,
+      "fin": 2839,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.signals_execution",
       "impacto_del_handler": 1,
-      "linea": 2726,
+      "linea": 2765,
       "llama_directo": [
         "app.api._utc_iso",
         "app.api.rechaza_parametros_desconocidos",
@@ -34966,17 +34966,17 @@
     {
       "camino": "/api/signals/ledger",
       "campos": {
-        "as_of": "literal en app/api.py:2607",
-        "count": "literal en app/api.py:2613",
-        "limit": "literal en app/api.py:2608",
-        "observations": "literal en app/api.py:2615",
-        "since": "literal en app/api.py:2604",
-        "symbol": "literal en app/api.py:2603",
-        "transition_types": "literal en app/api.py:2611",
-        "transition_types_nota": "literal en app/api.py:2612",
-        "truncated": "literal en app/api.py:2614",
-        "until": "literal en app/api.py:2605",
-        "ventana_maxima_h": "literal en app/api.py:2606"
+        "as_of": "literal en app/api.py:2646",
+        "count": "literal en app/api.py:2652",
+        "limit": "literal en app/api.py:2647",
+        "observations": "literal en app/api.py:2654",
+        "since": "literal en app/api.py:2643",
+        "symbol": "literal en app/api.py:2642",
+        "transition_types": "literal en app/api.py:2650",
+        "transition_types_nota": "literal en app/api.py:2651",
+        "truncated": "literal en app/api.py:2653",
+        "until": "literal en app/api.py:2644",
+        "ventana_maxima_h": "literal en app/api.py:2645"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -35001,31 +35001,31 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2502",
+          "donde": "app/api.py:2541",
           "propio": false
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2530",
+          "donde": "app/api.py:2569",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "since/until necesitan zona horaria explicita",
-          "donde": "app/api.py:2532",
+          "donde": "app/api.py:2571",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "until tiene que ser posterior a since",
-          "donde": "app/api.py:2534",
+          "donde": "app/api.py:2573",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2536",
+          "donde": "app/api.py:2575",
           "propio": true
         }
       ],
@@ -35075,19 +35075,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 2508,
+      "decorador_linea": 2547,
       "familia_ventana": {
         "candidata": 3,
         "por": "pide ['since']: el operador elige el momento"
       },
       "fichero": "app/api.py",
-      "fin": 2616,
+      "fin": 2655,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.signals_ledger",
       "impacto_del_handler": 1,
-      "linea": 2509,
+      "linea": 2548,
       "llama_directo": [
         "app.api._utc_iso",
         "app.api.rechaza_parametros_desconocidos",
@@ -35156,14 +35156,14 @@
     {
       "camino": "/api/signals/outcomes",
       "campos": {
-        "count": "literal en app/api.py:2709",
-        "horizon": "literal en app/api.py:2707",
-        "limit": "literal en app/api.py:2708",
-        "outcomes": "literal en app/api.py:2711",
-        "since": "literal en app/api.py:2705",
-        "symbol": "literal en app/api.py:2704",
-        "truncated": "literal en app/api.py:2710",
-        "until": "literal en app/api.py:2706"
+        "count": "literal en app/api.py:2748",
+        "horizon": "literal en app/api.py:2746",
+        "limit": "literal en app/api.py:2747",
+        "outcomes": "literal en app/api.py:2750",
+        "since": "literal en app/api.py:2744",
+        "symbol": "literal en app/api.py:2743",
+        "truncated": "literal en app/api.py:2749",
+        "until": "literal en app/api.py:2745"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -35187,37 +35187,37 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2502",
+          "donde": "app/api.py:2541",
           "propio": false
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2661",
+          "donde": "app/api.py:2700",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2669",
+          "donde": "app/api.py:2708",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "since/until necesitan zona horaria explicita",
-          "donde": "app/api.py:2671",
+          "donde": "app/api.py:2710",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "until tiene que ser posterior a since",
-          "donde": "app/api.py:2673",
+          "donde": "app/api.py:2712",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2675",
+          "donde": "app/api.py:2714",
           "propio": true
         }
       ],
@@ -35258,19 +35258,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 2639,
+      "decorador_linea": 2678,
       "familia_ventana": {
         "candidata": 3,
         "por": "pide ['since']: el operador elige el momento"
       },
       "fichero": "app/api.py",
-      "fin": 2712,
+      "fin": 2751,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.signals_outcomes",
       "impacto_del_handler": 1,
-      "linea": 2640,
+      "linea": 2679,
       "llama_directo": [
         "app.api._utc_iso",
         "app.api.rechaza_parametros_desconocidos",
@@ -35348,15 +35348,15 @@
     {
       "camino": "/api/signals/replay",
       "campos": {
-        "as_of": "literal en app/api.py:2881",
-        "count": "literal en app/api.py:2883",
-        "frames": "literal en app/api.py:2885",
-        "limit": "literal en app/api.py:2882",
-        "since": "literal en app/api.py:2878",
-        "symbol": "literal en app/api.py:2877",
-        "truncated": "literal en app/api.py:2884",
-        "until": "literal en app/api.py:2879",
-        "ventana_maxima_h": "literal en app/api.py:2880"
+        "as_of": "literal en app/api.py:2920",
+        "count": "literal en app/api.py:2922",
+        "frames": "literal en app/api.py:2924",
+        "limit": "literal en app/api.py:2921",
+        "since": "literal en app/api.py:2917",
+        "symbol": "literal en app/api.py:2916",
+        "truncated": "literal en app/api.py:2923",
+        "until": "literal en app/api.py:2918",
+        "ventana_maxima_h": "literal en app/api.py:2919"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -35381,31 +35381,31 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2502",
+          "donde": "app/api.py:2541",
           "propio": false
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2838",
+          "donde": "app/api.py:2877",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "since/until necesitan zona horaria explicita",
-          "donde": "app/api.py:2840",
+          "donde": "app/api.py:2879",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "until tiene que ser posterior a since",
-          "donde": "app/api.py:2842",
+          "donde": "app/api.py:2881",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2844",
+          "donde": "app/api.py:2883",
           "propio": true
         }
       ],
@@ -35450,19 +35450,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 2813,
+      "decorador_linea": 2852,
       "familia_ventana": {
         "candidata": 3,
         "por": "pide ['since']: el operador elige el momento"
       },
       "fichero": "app/api.py",
-      "fin": 2886,
+      "fin": 2925,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.signals_replay",
       "impacto_del_handler": 1,
-      "linea": 2814,
+      "linea": 2853,
       "llama_directo": [
         "app.api._utc_iso",
         "app.api.rechaza_parametros_desconocidos",
@@ -35534,16 +35534,16 @@
     {
       "camino": "/api/signals/visibility",
       "campos": {
-        "as_of": "literal en app/api.py:2971",
-        "certificates": "literal en app/api.py:2976",
-        "count": "literal en app/api.py:2974",
-        "limit": "literal en app/api.py:2973",
-        "since": "literal en app/api.py:2968",
-        "status": "literal en app/api.py:2972",
-        "symbol": "literal en app/api.py:2967",
-        "truncated": "literal en app/api.py:2975",
-        "until": "literal en app/api.py:2969",
-        "ventana_maxima_h": "literal en app/api.py:2970"
+        "as_of": "literal en app/api.py:3010",
+        "certificates": "literal en app/api.py:3015",
+        "count": "literal en app/api.py:3013",
+        "limit": "literal en app/api.py:3012",
+        "since": "literal en app/api.py:3007",
+        "status": "literal en app/api.py:3011",
+        "symbol": "literal en app/api.py:3006",
+        "truncated": "literal en app/api.py:3014",
+        "until": "literal en app/api.py:3008",
+        "ventana_maxima_h": "literal en app/api.py:3009"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -35568,37 +35568,37 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2502",
+          "donde": "app/api.py:2541",
           "propio": false
         },
         {
           "codigo": 422,
           "detalle": "status tiene que ser evaluated o not_evaluable",
-          "donde": "app/api.py:2923",
+          "donde": "app/api.py:2962",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2931",
+          "donde": "app/api.py:2970",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "since/until necesitan zona horaria explicita",
-          "donde": "app/api.py:2933",
+          "donde": "app/api.py:2972",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": "until tiene que ser posterior a since",
-          "donde": "app/api.py:2935",
+          "donde": "app/api.py:2974",
           "propio": true
         },
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:2937",
+          "donde": "app/api.py:2976",
           "propio": true
         }
       ],
@@ -35643,19 +35643,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 2897,
+      "decorador_linea": 2936,
       "familia_ventana": {
         "candidata": 3,
         "por": "pide ['since']: el operador elige el momento"
       },
       "fichero": "app/api.py",
-      "fin": 2977,
+      "fin": 3016,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.signals_visibility",
       "impacto_del_handler": 1,
-      "linea": 2898,
+      "linea": 2937,
       "llama_directo": [
         "app.api._utc_iso",
         "app.api.rechaza_parametros_desconocidos",
@@ -35944,17 +35944,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3733,
+      "decorador_linea": 3772,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3739,
+      "fin": 3778,
       "forma": [],
       "handler": "app.api.stream",
       "impacto_del_handler": 1,
-      "linea": 3734,
+      "linea": 3773,
       "llama_directo": [
         "app.api.stream_generator"
       ],
@@ -37585,7 +37585,7 @@
         {
           "codigo": 404,
           "detalle": "Metrics disabled",
-          "donde": "app/api.py:3553",
+          "donde": "app/api.py:3592",
           "propio": true
         }
       ],
@@ -37628,17 +37628,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3550,
+      "decorador_linea": 3589,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3625,
+      "fin": 3664,
       "forma": [],
       "handler": "app.api.prometheus_metrics",
       "impacto_del_handler": 1,
-      "linea": 3551,
+      "linea": 3590,
       "llama_directo": [
         "app.api._parse_heartbeat_detail"
       ],
@@ -38184,17 +38184,17 @@
         {
           "funcion": "app.api.liquidation_levels",
           "origen": "literal",
-          "sitio": "app/api.py:2998"
+          "sitio": "app/api.py:3037"
         },
         {
           "funcion": "app.api.prometheus_metrics",
           "origen": "literal",
-          "sitio": "app/api.py:3570"
+          "sitio": "app/api.py:3609"
         },
         {
           "funcion": "app.api.stream_generator",
           "origen": "literal",
-          "sitio": "app/api.py:3703"
+          "sitio": "app/api.py:3742"
         },
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
@@ -38316,12 +38316,12 @@
         {
           "funcion": "app.api.liquidation_levels",
           "origen": "literal",
-          "sitio": "app/api.py:2998"
+          "sitio": "app/api.py:3037"
         },
         {
           "funcion": "app.api.prometheus_metrics",
           "origen": "literal",
-          "sitio": "app/api.py:3570"
+          "sitio": "app/api.py:3609"
         },
         {
           "funcion": "app.scalp_logic.market_structure",
@@ -38559,12 +38559,12 @@
         {
           "funcion": "app.api.prometheus_metrics",
           "origen": "literal",
-          "sitio": "app/api.py:3564"
+          "sitio": "app/api.py:3603"
         },
         {
           "funcion": "app.api.health",
           "origen": "literal",
-          "sitio": "app/api.py:3654"
+          "sitio": "app/api.py:3693"
         },
         {
           "funcion": "app.api.latest_snapshot",
@@ -38640,12 +38640,12 @@
         {
           "funcion": "app.api.liquidation_levels",
           "origen": "literal",
-          "sitio": "app/api.py:2998"
+          "sitio": "app/api.py:3037"
         },
         {
           "funcion": "app.api.signal_base_rate",
           "origen": "constante BASE_RATE_ALCANCE_SQL",
-          "sitio": "app/api.py:3270"
+          "sitio": "app/api.py:3309"
         },
         {
           "funcion": "app.api.ohlcv",
@@ -39111,12 +39111,12 @@
         {
           "funcion": "app.api.prometheus_metrics",
           "origen": "literal",
-          "sitio": "app/api.py:3570"
+          "sitio": "app/api.py:3609"
         },
         {
           "funcion": "app.api.stream_generator",
           "origen": "literal",
-          "sitio": "app/api.py:3714"
+          "sitio": "app/api.py:3753"
         },
         {
           "funcion": "app.scalp_collector._write_combined_books",
@@ -39184,12 +39184,12 @@
         {
           "funcion": "app.api.prometheus_metrics",
           "origen": "literal",
-          "sitio": "app/api.py:3557"
+          "sitio": "app/api.py:3596"
         },
         {
           "funcion": "app.api.health",
           "origen": "literal",
-          "sitio": "app/api.py:3648"
+          "sitio": "app/api.py:3687"
         },
         {
           "funcion": "app.db.heartbeat_component",
@@ -39284,7 +39284,7 @@
         {
           "funcion": "app.api.prometheus_metrics",
           "origen": "literal",
-          "sitio": "app/api.py:3570"
+          "sitio": "app/api.py:3609"
         }
       ],
       "leida_por": [
@@ -39308,7 +39308,7 @@
         {
           "funcion": "app.api.signals_execution",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2766"
+          "sitio": "app/api.py:2805"
         },
         {
           "funcion": "app.signal_execution._compatible_observations_cte",
@@ -39379,47 +39379,47 @@
         {
           "funcion": "app.api.signals_ledger",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2560"
+          "sitio": "app/api.py:2599"
         },
         {
           "funcion": "app.api.signals_ledger",
           "origen": "literal",
-          "sitio": "app/api.py:2566"
+          "sitio": "app/api.py:2605"
         },
         {
           "funcion": "app.api.signals_outcomes",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2683"
+          "sitio": "app/api.py:2722"
         },
         {
           "funcion": "app.api.signals_execution",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2766"
+          "sitio": "app/api.py:2805"
         },
         {
           "funcion": "app.api.signals_replay",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2852"
+          "sitio": "app/api.py:2891"
         },
         {
           "funcion": "app.api.signals_visibility",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2945"
+          "sitio": "app/api.py:2984"
         },
         {
           "funcion": "app.api.scalp_persistence",
           "origen": "constante PERSISTENCIA_SQL",
-          "sitio": "app/api.py:3077"
+          "sitio": "app/api.py:3116"
         },
         {
           "funcion": "app.api.signal_base_rate",
           "origen": "constante BASE_RATE_SQL",
-          "sitio": "app/api.py:3178"
+          "sitio": "app/api.py:3217"
         },
         {
           "funcion": "app.api.signal_base_rate",
           "origen": "constante SUPERVIVENCIA_SQL",
-          "sitio": "app/api.py:3302"
+          "sitio": "app/api.py:3341"
         },
         {
           "funcion": "app.signal_attribution._attribution_cte",
@@ -39588,17 +39588,17 @@
         {
           "funcion": "app.api.signals_outcomes",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2683"
+          "sitio": "app/api.py:2722"
         },
         {
           "funcion": "app.api.signals_visibility",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2945"
+          "sitio": "app/api.py:2984"
         },
         {
           "funcion": "app.api.signal_base_rate",
           "origen": "constante BASE_RATE_SQL",
-          "sitio": "app/api.py:3178"
+          "sitio": "app/api.py:3217"
         },
         {
           "funcion": "app.signal_attribution._attribution_cte",
@@ -39701,7 +39701,7 @@
         {
           "funcion": "app.api.signals_visibility",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2945"
+          "sitio": "app/api.py:2984"
         },
         {
           "funcion": "app.signal_visibility._certify_final_outcomes_once",
@@ -39732,7 +39732,7 @@
         {
           "funcion": "app.api.signals_replay",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/api.py:2852"
+          "sitio": "app/api.py:2891"
         },
         {
           "funcion": "app.signal_attribution._attribution_cte",
@@ -39972,7 +39972,7 @@
         {
           "funcion": "app.api.stream_generator",
           "origen": "literal",
-          "sitio": "app/api.py:3692"
+          "sitio": "app/api.py:3731"
         },
         {
           "funcion": "app.scalp_logic.scalp_context",
