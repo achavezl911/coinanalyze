@@ -2441,6 +2441,47 @@ LEDGER_COLUMNS = """
     long_score, short_score, evidence_coverage_pct, metrics_snapshot_ts,
     regime_score, regime_label, regime_logic_version
 """
+# EL TIPO DE TRANSICION · vocabulario CERRADO, y va DENTRO de la respuesta a proposito.
+#
+# `is_transition` es un booleano, y bajo ese unico bit conviven poblaciones que miden cosas
+# distintas. Medido en 140 sobre las 270 342 filas de signal_observation del arco
+# 2026-08-10T15:20:16Z..2026-09-11T04:30:32Z (3 simbolos):
+#
+#     direction_flip        2 170   long<->short. Ventaja medida +9.28 pp sobre una moneda
+#     opinion_taken        80 801   neutral -> long/short                 +4.24 pp
+#     opinion_dropped      80 801   long/short -> neutral                 +4.24 pp
+#     availability_change  17 030   alguno de los dos lados es 'unavailable'
+#     same_direction        6 504   la direccion NO cambia; cambia `state`
+#     not_a_transition     83 036   is_transition = false
+#                         -------
+#                         270 342   = el total de la tabla. Cubos disjuntos y exhaustivos.
+#
+# ESTO ES INFORMACION DE CONTEXTO, NO UNA SENAL DE ENTRADA, y esta MEDIDO que no paga: el mejor
+# subconjunto -direction_flip- da +1.71 bps brutos en su mejor horizonte contra 4.013 bps de
+# comision maker de Bybit sin VIP; la comision de equilibrio serian 0.855 bps por lado. Le falta
+# un factor 2.3 contra el maker y 6.4 contra el taker (COLA.md 110). Por eso ningun nombre de
+# aqui dice «entrada», «oportunidad» ni «senal»: dicen QUE cambio de casilla la clasificacion.
+#
+# NO SE RECALCULA NADA. El tipo sale de `direction` y de la `direction` de la fila anterior del
+# MISMO simbolo, las dos ya guardadas. `is_transition` y `decision_fingerprint` no se tocan:
+# redefinir la transicion partiria la serie historica en dos.
+TIPOS_DE_TRANSICION = {
+    "direction_flip": "la direccion paso de long a short o al reves",
+    "opinion_taken": "la direccion paso de neutral a long o short",
+    "opinion_dropped": "la direccion paso de long o short a neutral",
+    "availability_change": "uno de los dos lados de la comparacion es unavailable",
+    "same_direction": "hubo transicion y la direccion NO cambio: lo que cambio es el state",
+    "not_a_transition": "is_transition es false: no hay salto de casilla que clasificar",
+    "no_predecessor": "no hay observacion anterior de este simbolo, asi que no se puede "
+                      "determinar. Se declara en vez de adivinarse",
+}
+TIPOS_NOTA = (
+    "Informacion de CONTEXTO, no una senal de entrada: medido que el mejor de estos tipos "
+    "no cubre la comision minorista (COLA.md 110). El tipo de una observacion es el MISMO se "
+    "pida la ventana que se pida: se deriva de la fila anterior de la tabla, no de la anterior "
+    "de la respuesta."
+)
+
 LEDGER_TIMESTAMPS = (
     "observed_at",
     "observed_minute",
@@ -2498,11 +2539,50 @@ async def signals_ledger(
         )
 
     async with app.state.pool.acquire() as conn:
+        # EL LAG CORRE FUERA DE LA VENTANA PEDIDA, y esa es toda la gracia. Si se calculara
+        # sobre las filas de la respuesta, la PRIMERA de cada respuesta no tendria anterior y su
+        # tipo dependeria de la ventana: la misma observacion saldria `no_predecessor` pedida de
+        # una forma y `direction_flip` pedida de otra. Y no seria una rareza: le pasaria a la
+        # primera fila de CADA peticion.
+        #
+        # No hace falta recorrer el historico entero del simbolo: basta con arrastrar UNA fila
+        # anterior al inicio de la ventana. Medido en 140 el 2026-09-11 sobre una ventana de 1 h
+        # (161 filas): recorrer la particion entera cuesta 19 182 y hace Parallel Seq Scan de
+        # 97 470 filas; arrastrar la anterior cuesta 1 713 y usa indice sobre 162. Y las dos dan
+        # el MISMO tipo en las 161 filas, 0 discrepancias -por eso se elige la barata-.
+        #
+        # El `max(observed_at) < $2` coge el instante de la predecesora, y el `>=` incluye todas
+        # las filas de ese instante: si hubiera empate, la de verdad esta entre ellas y el orden
+        # por (observed_at, observation_id) la elige. `COALESCE` a $2 para la primerisima
+        # observacion del simbolo, que no tiene anterior y sale `no_predecessor`.
         rows = await conn.fetch(
             f"""
-            SELECT {LEDGER_COLUMNS}
-            FROM signal_observation
-            WHERE symbol=$1 AND observed_at >= $2 AND observed_at < $3
+            WITH base AS (
+              SELECT {LEDGER_COLUMNS},
+                     LAG(direction) OVER w AS prev_direction
+              FROM signal_observation
+              WHERE symbol=$1
+                AND observed_at >= COALESCE(
+                      (SELECT max(observed_at) FROM signal_observation
+                        WHERE symbol=$1 AND observed_at < $2), $2)
+                AND observed_at < $3
+              WINDOW w AS (PARTITION BY symbol ORDER BY observed_at, observation_id)
+            )
+            SELECT {LEDGER_COLUMNS},
+                   CASE
+                     WHEN NOT is_transition THEN 'not_a_transition'
+                     WHEN prev_direction IS NULL THEN 'no_predecessor'
+                     WHEN direction = prev_direction THEN 'same_direction'
+                     WHEN direction IN ('long','short')
+                          AND prev_direction IN ('long','short') THEN 'direction_flip'
+                     WHEN prev_direction = 'neutral'
+                          AND direction IN ('long','short') THEN 'opinion_taken'
+                     WHEN direction = 'neutral'
+                          AND prev_direction IN ('long','short') THEN 'opinion_dropped'
+                     ELSE 'availability_change'
+                   END AS transition_type
+            FROM base
+            WHERE observed_at >= $2
             ORDER BY observed_at, observation_id
             LIMIT $4
             """,
@@ -2526,6 +2606,10 @@ async def signals_ledger(
         "ventana_maxima_h": int(LEDGER_MAX_WINDOW.total_seconds() // 3600),
         "as_of": _utc_iso(datetime.now(UTC)),
         "limit": limit,
+        # EL VOCABULARIO VIAJA CON EL DATO. Un tipo que hay que adivinar desde fuera no es un
+        # vocabulario cerrado: es una convencion no escrita.
+        "transition_types": TIPOS_DE_TRANSICION,
+        "transition_types_nota": TIPOS_NOTA,
         "count": len(observations),
         "truncated": truncated,
         "observations": observations,

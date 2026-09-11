@@ -59,7 +59,7 @@
 | `/api/scalp/summary` | GET | 67 | 8 | 24 | [ficha](rutas/api-scalp-summary.md) |
 | `/api/setup` | GET | 8 | 2 | 8 | [ficha](rutas/api-setup.md) |
 | `/api/signals/execution` | GET | 10 | 2 | 4 | [ficha](rutas/api-signals-execution.md) |
-| `/api/signals/ledger` | GET | 9 | 1 | 4 | [ficha](rutas/api-signals-ledger.md) |
+| `/api/signals/ledger` | GET | 11 | 1 | 4 | [ficha](rutas/api-signals-ledger.md) |
 | `/api/signals/outcomes` | GET | 8 | 2 | 4 | [ficha](rutas/api-signals-outcomes.md) |
 | `/api/signals/replay` | GET | 9 | 2 | 4 | [ficha](rutas/api-signals-replay.md) |
 | `/api/signals/visibility` | GET | 10 | 3 | 4 | [ficha](rutas/api-signals-visibility.md) |

@@ -11,11 +11,11 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`validate_symbol`](#validate-symbol) | 229 | 63 | **0** | 0 | **63** |
 | [`records`](#records) | 242 | 22 | **0** | 7 ↑ | **22** |
 | [`_utc_iso`](#-utc-iso) | 2412 | 9 | **0** | 0 | **9** |
-| [`health`](#health) | 3545 | 1 | **0** | 7 ↑ | **1** |
+| [`health`](#health) | 3629 | 1 | **0** | 7 ↑ | **1** |
 | [`historical_interval_value`](#historical-interval-value) | 235 | 7 | **0** | 0 | **7** |
 | [`lifespan`](#lifespan) | 151 | 0 | **0** | 7 ↑ | **0** |
 | [`mask_gapped_series_rows`](#mask-gapped-series-rows) | 246 | 7 | **0** | 0 | **7** |
-| [`rechaza_parametros_desconocidos`](#rechaza-parametros-desconocidos) | 2452 | 7 | **0** | 0 | **7** |
+| [`rechaza_parametros_desconocidos`](#rechaza-parametros-desconocidos) | 2493 | 7 | **0** | 0 | **7** |
 | [`declared_series_response`](#declared-series-response) | 396 | 6 | **0** | 0 | **6** |
 | [`minutos_de_las_filas`](#minutos-de-las-filas) | 356 | 6 | **0** | 0 | **6** |
 | [`ventana_pedida`](#ventana-pedida) | 1666 | 4 | **0** | 0 | **4** |
@@ -24,11 +24,11 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`latest_snapshot`](#latest-snapshot) | 517 | 3 | **0** | 0 | **3** |
 | [`sella_respuesta`](#sella-respuesta) | 1944 | 3 | **0** | 0 | **3** |
 | [`_session_window`](#-session-window) | 498 | 2 | **0** | 0 | **2** |
-| [`_parse_heartbeat_detail`](#-parse-heartbeat-detail) | 3449 | 1 | **0** | 0 | **1** |
+| [`_parse_heartbeat_detail`](#-parse-heartbeat-detail) | 3533 | 1 | **0** | 0 | **1** |
 | [`_slippage_para`](#-slippage-para) | 1648 | 1 | **0** | 0 | **1** |
-| [`ai_context`](#ai-context) | 3388 | 1 | **0** | 0 | **1** |
-| [`ai_context_bundle`](#ai-context-bundle) | 3405 | 1 | **0** | 0 | **1** |
-| [`ai_profiles`](#ai-profiles) | 3426 | 1 | **0** | 0 | **1** |
+| [`ai_context`](#ai-context) | 3472 | 1 | **0** | 0 | **1** |
+| [`ai_context_bundle`](#ai-context-bundle) | 3489 | 1 | **0** | 0 | **1** |
+| [`ai_profiles`](#ai-profiles) | 3510 | 1 | **0** | 0 | **1** |
 | [`carry_matriz`](#carry-matriz) | 1274 | 1 | **0** | 0 | **1** |
 | [`context_metadata_endpoint`](#context-metadata-endpoint) | 2045 | 1 | **0** | 0 | **1** |
 | [`cross_asset_endpoint`](#cross-asset-endpoint) | 2086 | 1 | **0** | 0 | **1** |
@@ -37,8 +37,8 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`cvd_matrix_endpoint`](#cvd-matrix-endpoint) | 2128 | 1 | **0** | 0 | **1** |
 | [`cvd_spot`](#cvd-spot) | 810 | 1 | **0** | 0 | **1** |
 | [`daily`](#daily) | 2271 | 1 | **0** | 0 | **1** |
-| [`dashboard_state`](#dashboard-state) | 3357 | 1 | **0** | 0 | **1** |
-| [`data_confidence`](#data-confidence) | 2964 | 1 | **0** | 0 | **1** |
+| [`dashboard_state`](#dashboard-state) | 3441 | 1 | **0** | 0 | **1** |
+| [`data_confidence`](#data-confidence) | 3048 | 1 | **0** | 0 | **1** |
 | [`declarar_tramo_no_medible`](#declarar-tramo-no-medible) | 1127 | 1 | **0** | 0 | **1** |
 | [`delta_profile_endpoint`](#delta-profile-endpoint) | 1909 | 1 | **0** | 0 | **1** |
 | [`desk_state`](#desk-state) | 1427 | 1 | **0** | 0 | **1** |
@@ -47,9 +47,9 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`flow_spot_vs_perp`](#flow-spot-vs-perp) | 1724 | 1 | **0** | 0 | **1** |
 | [`funding_context_endpoint`](#funding-context-endpoint) | 1888 | 1 | **0** | 0 | **1** |
 | [`hypothesis`](#hypothesis) | 1346 | 1 | **0** | 0 | **1** |
-| [`index`](#index) | 3659 | 1 | **0** | 0 | **1** |
+| [`index`](#index) | 3743 | 1 | **0** | 0 | **1** |
 | [`level_breakout_endpoint`](#level-breakout-endpoint) | 2021 | 1 | **0** | 0 | **1** |
-| [`liquidation_levels`](#liquidation-levels) | 2904 | 1 | **0** | 0 | **1** |
+| [`liquidation_levels`](#liquidation-levels) | 2988 | 1 | **0** | 0 | **1** |
 | [`liquidation_map_endpoint`](#liquidation-map-endpoint) | 1895 | 1 | **0** | 0 | **1** |
 | [`liquidation_series`](#liquidation-series) | 1078 | 1 | **0** | 0 | **1** |
 | [`macro_context_endpoint`](#macro-context-endpoint) | 2143 | 1 | **0** | 0 | **1** |
@@ -62,32 +62,32 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`passive_flow_endpoint`](#passive-flow-endpoint) | 2121 | 1 | **0** | 0 | **1** |
 | [`positioning`](#positioning) | 1338 | 1 | **0** | 0 | **1** |
 | [`price_barriers_endpoint`](#price-barriers-endpoint) | 1938 | 1 | **0** | 0 | **1** |
-| [`prometheus_metrics`](#prometheus-metrics) | 3467 | 1 | **0** | 0 | **1** |
+| [`prometheus_metrics`](#prometheus-metrics) | 3551 | 1 | **0** | 0 | **1** |
 | [`quality_feeds`](#quality-feeds) | 1538 | 1 | **0** | 0 | **1** |
 | [`range_validate_endpoint`](#range-validate-endpoint) | 1987 | 1 | **0** | 0 | **1** |
 | [`rango_estructura`](#rango-estructura) | 2052 | 1 | **0** | 0 | **1** |
 | [`reference_levels_endpoint`](#reference-levels-endpoint) | 2079 | 1 | **0** | 0 | **1** |
 | [`scalp_absorption`](#scalp-absorption) | 1766 | 1 | **0** | 0 | **1** |
 | [`scalp_alerts`](#scalp-alerts) | 1782 | 1 | **0** | 0 | **1** |
-| [`scalp_basis`](#scalp-basis) | 2897 | 1 | **0** | 0 | **1** |
+| [`scalp_basis`](#scalp-basis) | 2981 | 1 | **0** | 0 | **1** |
 | [`scalp_delta_matrix`](#scalp-delta-matrix) | 1301 | 1 | **0** | 0 | **1** |
 | [`scalp_execution_cost`](#scalp-execution-cost) | 1592 | 1 | **0** | 0 | **1** |
 | [`scalp_liquidations`](#scalp-liquidations) | 1775 | 1 | **0** | 0 | **1** |
 | [`scalp_orderbook`](#scalp-orderbook) | 1750 | 1 | **0** | 0 | **1** |
-| [`scalp_persistence`](#scalp-persistence) | 3017 | 1 | **0** | 0 | **1** |
+| [`scalp_persistence`](#scalp-persistence) | 3101 | 1 | **0** | 0 | **1** |
 | [`scalp_signals`](#scalp-signals) | 2371 | 1 | **0** | 0 | **1** |
 | [`scalp_summary`](#scalp-summary) | 1293 | 1 | **0** | 0 | **1** |
 | [`setup`](#setup) | 2356 | 1 | **0** | 0 | **1** |
-| [`signal_base_rate`](#signal-base-rate) | 3232 | 1 | **0** | 0 | **1** |
-| [`signals_execution`](#signals-execution) | 2642 | 1 | **0** | 0 | **1** |
-| [`signals_ledger`](#signals-ledger) | 2468 | 1 | **0** | 0 | **1** |
-| [`signals_outcomes`](#signals-outcomes) | 2556 | 1 | **0** | 0 | **1** |
-| [`signals_replay`](#signals-replay) | 2730 | 1 | **0** | 0 | **1** |
-| [`signals_visibility`](#signals-visibility) | 2814 | 1 | **0** | 0 | **1** |
+| [`signal_base_rate`](#signal-base-rate) | 3316 | 1 | **0** | 0 | **1** |
+| [`signals_execution`](#signals-execution) | 2726 | 1 | **0** | 0 | **1** |
+| [`signals_ledger`](#signals-ledger) | 2509 | 1 | **0** | 0 | **1** |
+| [`signals_outcomes`](#signals-outcomes) | 2640 | 1 | **0** | 0 | **1** |
+| [`signals_replay`](#signals-replay) | 2814 | 1 | **0** | 0 | **1** |
+| [`signals_visibility`](#signals-visibility) | 2898 | 1 | **0** | 0 | **1** |
 | [`snapshot`](#snapshot) | 665 | 1 | **0** | 0 | **1** |
 | [`statistical_alerts`](#statistical-alerts) | 1846 | 1 | **0** | 0 | **1** |
-| [`stream`](#stream) | 3650 | 1 | **0** | 0 | **1** |
-| [`stream_generator`](#stream-generator) | 3602 | 1 | **0** | 0 | **1** |
+| [`stream`](#stream) | 3734 | 1 | **0** | 0 | **1** |
+| [`stream_generator`](#stream-generator) | 3686 | 1 | **0** | 0 | **1** |
 | [`structure`](#structure) | 2264 | 1 | **0** | 0 | **1** |
 | [`structure_detail_endpoint`](#structure-detail-endpoint) | 2136 | 1 | **0** | 0 | **1** |
 | [`swing_score_endpoint`](#swing-score-endpoint) | 2107 | 1 | **0** | 0 | **1** |
@@ -289,7 +289,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## health
 
-`app/api.py:3545` · clave completa `app.api.health`
+`app/api.py:3629` · clave completa `app.api.health`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 7** (mas ancha)
 
@@ -446,7 +446,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## rechaza_parametros_desconocidos
 
-`app/api.py:2452` · clave completa `app.api.rechaza_parametros_desconocidos`
+`app/api.py:2493` · clave completa `app.api.rechaza_parametros_desconocidos`
 
 **Radio exacto: 7 rutas** de 70 · **cota superior: 7** (igual al exacto)
 
@@ -681,7 +681,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _parse_heartbeat_detail
 
-`app/api.py:3449` · clave completa `app.api._parse_heartbeat_detail`
+`app/api.py:3533` · clave completa `app.api._parse_heartbeat_detail`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -727,7 +727,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## ai_context
 
-`app/api.py:3388` · clave completa `app.api.ai_context`
+`app/api.py:3472` · clave completa `app.api.ai_context`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -750,7 +750,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## ai_context_bundle
 
-`app/api.py:3405` · clave completa `app.api.ai_context_bundle`
+`app/api.py:3489` · clave completa `app.api.ai_context_bundle`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -773,7 +773,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## ai_profiles
 
-`app/api.py:3426` · clave completa `app.api.ai_profiles`
+`app/api.py:3510` · clave completa `app.api.ai_profiles`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -980,7 +980,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## dashboard_state
 
-`app/api.py:3357` · clave completa `app.api.dashboard_state`
+`app/api.py:3441` · clave completa `app.api.dashboard_state`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1003,7 +1003,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## data_confidence
 
-`app/api.py:2964` · clave completa `app.api.data_confidence`
+`app/api.py:3048` · clave completa `app.api.data_confidence`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1210,7 +1210,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## index
 
-`app/api.py:3659` · clave completa `app.api.index`
+`app/api.py:3743` · clave completa `app.api.index`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1256,7 +1256,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## liquidation_levels
 
-`app/api.py:2904` · clave completa `app.api.liquidation_levels`
+`app/api.py:2988` · clave completa `app.api.liquidation_levels`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1555,7 +1555,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## prometheus_metrics
 
-`app/api.py:3467` · clave completa `app.api.prometheus_metrics`
+`app/api.py:3551` · clave completa `app.api.prometheus_metrics`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1716,7 +1716,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_basis
 
-`app/api.py:2897` · clave completa `app.api.scalp_basis`
+`app/api.py:2981` · clave completa `app.api.scalp_basis`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1831,7 +1831,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_persistence
 
-`app/api.py:3017` · clave completa `app.api.scalp_persistence`
+`app/api.py:3101` · clave completa `app.api.scalp_persistence`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1923,7 +1923,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signal_base_rate
 
-`app/api.py:3232` · clave completa `app.api.signal_base_rate`
+`app/api.py:3316` · clave completa `app.api.signal_base_rate`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1946,7 +1946,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_execution
 
-`app/api.py:2642` · clave completa `app.api.signals_execution`
+`app/api.py:2726` · clave completa `app.api.signals_execution`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1969,7 +1969,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_ledger
 
-`app/api.py:2468` · clave completa `app.api.signals_ledger`
+`app/api.py:2509` · clave completa `app.api.signals_ledger`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -1992,7 +1992,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_outcomes
 
-`app/api.py:2556` · clave completa `app.api.signals_outcomes`
+`app/api.py:2640` · clave completa `app.api.signals_outcomes`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2015,7 +2015,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_replay
 
-`app/api.py:2730` · clave completa `app.api.signals_replay`
+`app/api.py:2814` · clave completa `app.api.signals_replay`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2038,7 +2038,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## signals_visibility
 
-`app/api.py:2814` · clave completa `app.api.signals_visibility`
+`app/api.py:2898` · clave completa `app.api.signals_visibility`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2107,7 +2107,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## stream
 
-`app/api.py:3650` · clave completa `app.api.stream`
+`app/api.py:3734` · clave completa `app.api.stream`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
@@ -2130,7 +2130,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## stream_generator
 
-`app/api.py:3602` · clave completa `app.api.stream_generator`
+`app/api.py:3686` · clave completa `app.api.stream_generator`
 
 **Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
 
