@@ -39,13 +39,26 @@ fallos=""
 [ "$(grep -c 'current_database()\|current_setting' "$API")" -ge 1 ] \
   || fallos="$fallos app/db.py no consulta nunca la identidad de la base"
 
-# POR EL CANAL DE LA CASA Y CON TODO=1. Antes iba por `curl` a pelo, que es la razon por la
-# que hasta hoy NO le cortaba nada: `_corta` solo muerde lo que pasa por bin/api. Eso lo
-# dejaba a salvo por accidente, no por diseno -y el dia que alguien lo pasara al canal, como
-# es natural, healthz se parte por la mitad sin avisar-. Medido el 2026-09-10: healthz sirve
-# 5237 B de los 8000 del techo, o sea unos 7 servicios de margen a 385 B por servicio.
-# El guardia de abajo es el MISMO de K05:138, no uno nuevo.
-cuerpo=$(TODO=1 "$B/bin/api" /api/healthz 2>/dev/null)
+# POR EL CANAL DE LA CASA, Y SIN TODO=1 A PROPOSITO. Aqui hubo un guardia que no podia
+# dispararse, y merece quedar escrito porque el fallo era de forma y no de codigo:
+#
+#   el 2026-09-10 esto pedia CON `TODO=1` y ademas guardaba contra `[CORTADO:`. Las dos
+#   mitades se cancelaban: `_corta` linea 4 es `[ "${TODO:-0}" = "1" ] && exec cat`, o sea que
+#   con TODO=1 NO HAY CORTE NUNCA y la marca no puede aparecer. El comentario decia que era
+#   «el mismo guardia de K05:138»: cierto del codigo y FALSO del patron, porque K05:127 pide
+#   SIN TODO=1 y por eso el suyo si dispara. Proteccion simple mas adorno, no proteccion doble.
+#
+# Se elige dejar el guardia ALCANZABLE y no retirarlo, con la medida delante: healthz sirve
+# 5237 B de los 8000 del techo -margen 2763 B, unos 7 servicios a 385 B cada uno-, asi que hoy
+# el cuerpo llega entero igual. LO QUE CUESTA, dicho: el dia que healthz pase de 8000, este
+# check dejara de medir y dira por que. Se acepta: un lector que sigue juzgando mientras el
+# canal ya no puede llevar la carga no esta protegido, esta callado. Y K05 caeria a la vez, asi
+# que la senal sale por dos sitios.
+#
+# NO se puede inducir bajando el techo: `_corta` sourcea harness/env ANTES de leer MAX_BYTES y
+# env:20 lo fija en 8000, asi que `MAX_BYTES=100` desde fuera NO manda. El control lo induce
+# por el unico camino que queda: un cuerpo mayor que el techo.
+cuerpo=$("$B/bin/api" /api/healthz 2>/dev/null)
 [ -n "$cuerpo" ] || { echo "NO MEDIDO: /api/healthz no respondio"; exit 2; }
 case "$cuerpo" in
   *"[CORTADO:"*)

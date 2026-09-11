@@ -95,7 +95,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K03-hueco-declarado.sh:55`, `harness/checks/K05-control.bash:307`, `harness/checks/K05-latidos.sh:127`, `harness/checks/K05-latidos.sh:388` _(+5)_ | `harness/checks/K05-latidos.sh:2`, `harness/checks/K08-que-base.sh:6`, `harness/checks/K08-que-base.sh:16`, `harness/checks/K43-control.bash:38` _(+1)_ |
+| **checks** | `harness/checks/K03-hueco-declarado.sh:55`, `harness/checks/K05-control.bash:307`, `harness/checks/K05-latidos.sh:127`, `harness/checks/K05-latidos.sh:388` _(+7)_ | `harness/checks/K05-latidos.sh:2`, `harness/checks/K08-control.bash:6`, `harness/checks/K08-control.bash:40`, `harness/checks/K08-que-base.sh:6` _(+3)_ |
 | **panel** | `static/app.js:1601`, `static/app.js:1746` | — |
 | **readme** | — | `README.md:413`, `README.md:436` |
 | **tests** | — | `tests/test_cobertura_proveedor.py:7`, `tests/test_deploy_health_gate.py:38`, `tests/test_deploy_health_gate.py:154`, `tests/test_ingest_health.py:232` |
