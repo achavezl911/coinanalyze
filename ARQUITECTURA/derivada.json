@@ -26105,26 +26105,44 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K31-eslabon5.sh:60",
+            "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:328",
             "harness/checks/K43-foto-unica.sh:329",
-            "harness/checks/K43-foto-unica.sh:387",
-            "harness/checks/K43-foto-unica.sh:477",
+            "harness/checks/K43-foto-unica.sh:388",
+            "harness/checks/K43-foto-unica.sh:414",
+            "harness/checks/K43-foto-unica.sh:504",
             "harness/checks/K44-control.bash:112",
             "harness/checks/K44-control.bash:134",
             "harness/checks/K44-control.bash:140",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:76"
           ],
           "menciones": [
+            "harness/checks/K31-eslabon5.sh:60",
+            "harness/checks/K31-eslabon5.sh:172",
             "harness/checks/K43-foto-unica.sh:7",
             "harness/checks/K43-foto-unica.sh:17",
             "harness/checks/K43-foto-unica.sh:73",
             "harness/checks/K43-foto-unica.sh:279",
-            "harness/checks/K43-foto-unica.sh:385",
+            "harness/checks/K43-foto-unica.sh:369",
+            "harness/checks/K43-foto-unica.sh:412",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:5",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:11",
             "harness/checks/K84-dos-matrices-una-cifra.sh:33"
           ]
+        },
+        "panel": {
+          "llamadas": [
+            "static/app.js:188",
+            "static/app.js:202",
+            "static/app.js:206"
+          ],
+          "menciones": []
+        },
+        "panel-html": {
+          "llamadas": [
+            "static/index.html:67"
+          ],
+          "menciones": []
         },
         "readme": {
           "llamadas": [],
@@ -26145,9 +26163,9 @@
         }
       },
       "consumo": {
-        "llamada_desde_el_panel": false,
-        "n_llamadas": 9,
-        "n_menciones": 15,
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 14,
+        "n_menciones": 18,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -26625,7 +26643,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K31-eslabon5.sh:60"
+            "harness/checks/K31-eslabon5.sh:65"
           ],
           "menciones": []
         },
@@ -26778,7 +26796,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K31-eslabon5.sh:60"
+            "harness/checks/K31-eslabon5.sh:65"
           ],
           "menciones": []
         },
@@ -26988,25 +27006,25 @@
           "llamadas": [
             "harness/checks/K43-control.bash:144",
             "harness/checks/K43-foto-unica.sh:158",
-            "harness/checks/K43-foto-unica.sh:412"
+            "harness/checks/K43-foto-unica.sh:439"
           ],
           "menciones": [
             "harness/checks/K43-control.bash:139",
             "harness/checks/K43-foto-unica.sh:79",
-            "harness/checks/K43-foto-unica.sh:409"
+            "harness/checks/K43-foto-unica.sh:436"
           ]
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1589"
+            "static/app.js:1642"
           ],
           "menciones": [
-            "static/app.js:3055"
+            "static/app.js:3125"
           ]
         },
         "panel-html": {
           "llamadas": [
-            "static/index.html:219"
+            "static/index.html:222"
           ],
           "menciones": []
         },
@@ -27665,7 +27683,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1671"
+            "static/app.js:1734"
           ],
           "menciones": []
         },
@@ -28000,21 +28018,21 @@
             "harness/checks/K03-hueco-declarado.sh:161",
             "harness/checks/K03-hueco-declarado.sh:164",
             "harness/checks/K43-foto-unica.sh:151",
-            "harness/checks/K43-foto-unica.sh:489"
+            "harness/checks/K43-foto-unica.sh:516"
           ],
           "menciones": [
             "harness/checks/K03-hueco-declarado.sh:8",
             "harness/checks/K03-hueco-declarado.sh:15",
             "harness/checks/K03-hueco-declarado.sh:153",
             "harness/checks/K03-hueco-declarado.sh:165",
-            "harness/checks/K43-foto-unica.sh:482"
+            "harness/checks/K43-foto-unica.sh:509"
           ]
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1583",
-            "static/app.js:1674",
-            "static/app.js:1771"
+            "static/app.js:1636",
+            "static/app.js:1737",
+            "static/app.js:1841"
           ],
           "menciones": []
         },
@@ -28409,7 +28427,7 @@
             "harness/checks/K43-foto-unica.sh:218",
             "harness/checks/K43-foto-unica.sh:219",
             "harness/checks/K43-foto-unica.sh:220",
-            "harness/checks/K43-foto-unica.sh:368",
+            "harness/checks/K43-foto-unica.sh:395",
             "harness/checks/K44-control.bash:126",
             "harness/checks/K44-control.bash:132",
             "harness/checks/K44-control.bash:141",
@@ -28430,11 +28448,12 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1598"
+            "static/app.js:1660"
           ],
           "menciones": [
-            "static/app.js:1400",
-            "static/app.js:1407"
+            "static/app.js:1451",
+            "static/app.js:1458",
+            "static/app.js:1652"
           ]
         },
         "readme": {
@@ -28448,7 +28467,7 @@
         "tests": {
           "llamadas": [
             "tests/test_metrics_endpoint.py:253",
-            "tests/test_v121_hardening.py:27",
+            "tests/test_v121_hardening.py:31",
             "tests/test_v150_desk_snapshot.py:130"
           ],
           "menciones": []
@@ -28457,7 +28476,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 22,
-        "n_menciones": 10,
+        "n_menciones": 11,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -28595,10 +28614,9 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1600",
-            "static/app.js:1745"
+            "static/app.js:219"
           ],
           "menciones": []
         },
@@ -28611,8 +28629,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 4,
+        "llega_dentro_del_sobre": true,
+        "n_llamadas": 3,
         "n_menciones": 1,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -28772,7 +28792,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1158"
+            "static/app.js:1209"
           ],
           "menciones": []
         },
@@ -29104,7 +29124,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1595"
+            "static/app.js:1648"
           ],
           "menciones": []
         },
@@ -29296,9 +29316,9 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1774"
+            "static/app.js:1844"
           ],
           "menciones": []
         },
@@ -29311,8 +29331,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
         "n_menciones": 1,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -29495,24 +29517,28 @@
             "harness/checks/K20-cincoxx.sh:2"
           ]
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1584",
-            "static/app.js:1773"
+            "static/app.js:1637",
+            "static/app.js:1843"
           ],
           "menciones": []
         },
         "tests": {
           "llamadas": [
-            "tests/test_dashboard_layout.py:117"
+            "tests/test_dashboard_layout.py:121"
           ],
-          "menciones": []
+          "menciones": [
+            "tests/test_dashboard_layout.py:117"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 5,
-        "n_menciones": 1,
+        "n_menciones": 2,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -29811,9 +29837,9 @@
             "harness/checks/K03-hueco-declarado.sh:29"
           ]
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1731"
+            "static/app.js:1801"
           ],
           "menciones": []
         },
@@ -29828,8 +29854,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 5,
         "n_menciones": 2,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -29934,8 +29962,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1601",
-            "static/app.js:1746"
+            "static/app.js:1662",
+            "static/app.js:1816"
           ],
           "menciones": []
         },
@@ -30559,9 +30587,9 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K31-eslabon5.sh:61",
+            "harness/checks/K31-eslabon5.sh:66",
             "harness/checks/K43-foto-unica.sh:153",
-            "harness/checks/K43-foto-unica.sh:398"
+            "harness/checks/K43-foto-unica.sh:425"
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:97"
@@ -30569,7 +30597,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:3546"
+            "static/app.js:3616"
           ],
           "menciones": []
         }
@@ -30712,16 +30740,20 @@
           ]
         },
         "panel": {
-          "llamadas": [
-            "static/app.js:1662"
-          ],
+          "llamadas": [],
           "menciones": [
-            "static/app.js:3180"
+            "static/app.js:3250"
           ]
         },
         "panel-html": {
           "llamadas": [
-            "static/index.html:221"
+            "static/index.html:224"
+          ],
+          "menciones": []
+        },
+        "panel-sobre": {
+          "llamadas": [
+            "static/app.js:1725"
           ],
           "menciones": []
         },
@@ -30734,8 +30766,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 6,
         "n_menciones": 5,
+        "peticion_propia_del_panel": true,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -31005,10 +31039,10 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1702",
-            "static/app.js:1772"
+            "static/app.js:1769",
+            "static/app.js:1842"
           ],
           "menciones": []
         },
@@ -31021,8 +31055,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 4,
         "n_menciones": 1,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -31123,17 +31159,19 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1692"
+            "static/app.js:1759"
           ],
           "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
         "n_menciones": 0,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -31372,23 +31410,23 @@
             "harness/checks/K03-hueco-declarado.sh:46",
             "harness/checks/K20-cincoxx.sh:68",
             "harness/checks/K20-cincoxx.sh:83",
-            "harness/checks/K31-eslabon5.sh:64",
+            "harness/checks/K31-eslabon5.sh:69",
             "harness/checks/K43-control.bash:173",
             "harness/checks/K43-control.bash:191",
             "harness/checks/K43-foto-unica.sh:151",
-            "harness/checks/K43-foto-unica.sh:368",
+            "harness/checks/K43-foto-unica.sh:395",
             "harness/checks/K44-control.bash:113",
             "harness/checks/K44-control.bash:127"
           ],
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:78",
             "harness/checks/K03-hueco-declarado.sh:7",
-            "harness/checks/K43-foto-unica.sh:511"
+            "harness/checks/K43-foto-unica.sh:538"
           ]
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1599"
+            "static/app.js:1661"
           ],
           "menciones": []
         },
@@ -31564,8 +31602,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1672",
-            "static/app.js:1727"
+            "static/app.js:1735",
+            "static/app.js:1794"
           ],
           "menciones": []
         },
@@ -31876,17 +31914,19 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1703"
+            "static/app.js:1770"
           ],
           "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
         "n_menciones": 0,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32004,17 +32044,19 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1732"
+            "static/app.js:1802"
           ],
           "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
         "n_menciones": 0,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32288,7 +32330,7 @@
         "panel": {
           "llamadas": [],
           "menciones": [
-            "static/app.js:392"
+            "static/app.js:443"
           ]
         },
         "tests": {
@@ -32506,12 +32548,16 @@
           ]
         },
         "panel": {
-          "llamadas": [
-            "static/app.js:1747"
-          ],
+          "llamadas": [],
           "menciones": [
-            "static/app.js:1743"
+            "static/app.js:1813"
           ]
+        },
+        "panel-sobre": {
+          "llamadas": [
+            "static/app.js:1817"
+          ],
+          "menciones": []
         },
         "readme": {
           "llamadas": [],
@@ -32522,8 +32568,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
         "n_menciones": 3,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32678,9 +32726,9 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K31-eslabon5.sh:61",
+            "harness/checks/K31-eslabon5.sh:66",
             "harness/checks/K43-foto-unica.sh:153",
-            "harness/checks/K43-foto-unica.sh:399",
+            "harness/checks/K43-foto-unica.sh:426",
             "harness/checks/K76-la-ventana-que-pides.sh:97"
           ],
           "menciones": [
@@ -32689,7 +32737,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:3671"
+            "static/app.js:3741"
           ],
           "menciones": []
         },
@@ -32925,7 +32973,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:159",
-            "harness/checks/K43-foto-unica.sh:404"
+            "harness/checks/K43-foto-unica.sh:431"
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:89"
@@ -32933,8 +32981,8 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1590",
-            "static/app.js:3387"
+            "static/app.js:1643",
+            "static/app.js:3457"
           ],
           "menciones": []
         },
@@ -33086,7 +33134,7 @@
         "panel": {
           "llamadas": [],
           "menciones": [
-            "static/app.js:2151"
+            "static/app.js:2221"
           ]
         }
       },
@@ -33189,9 +33237,9 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1676"
+            "static/app.js:1743"
           ],
           "menciones": []
         },
@@ -33204,8 +33252,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
         "n_menciones": 1,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -33450,9 +33500,9 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1728"
+            "static/app.js:1795"
           ],
           "menciones": []
         },
@@ -33465,15 +33515,17 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_v121_hardening.py:28"
+            "tests/test_v121_hardening.py:36"
           ],
           "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 4,
         "n_menciones": 2,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -33599,7 +33651,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1675"
+            "static/app.js:1742"
           ],
           "menciones": []
         }
@@ -33789,7 +33841,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1691"
+            "static/app.js:1758"
           ],
           "menciones": []
         }
@@ -33985,7 +34037,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1730"
+            "static/app.js:1800"
           ],
           "menciones": []
         },
@@ -33998,7 +34050,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_v121_hardening.py:29"
+            "tests/test_v121_hardening.py:32"
           ],
           "menciones": []
         }
@@ -34123,17 +34175,19 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1729"
+            "static/app.js:1796"
           ],
           "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 6,
         "n_menciones": 0,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -34235,9 +34289,9 @@
             "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:71"
           ]
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1688"
+            "static/app.js:223"
           ],
           "menciones": []
         },
@@ -34252,8 +34306,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 9,
         "n_menciones": 6,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -34355,7 +34411,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1763"
+            "static/app.js:1833"
           ],
           "menciones": []
         },
@@ -34369,7 +34425,7 @@
         "tests": {
           "llamadas": [],
           "menciones": [
-            "tests/test_dashboard_layout.py:139"
+            "tests/test_dashboard_layout.py:147"
           ]
         }
       },
@@ -34856,7 +34912,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1761"
+            "static/app.js:1831"
           ],
           "menciones": []
         },
@@ -35056,7 +35112,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1759"
+            "static/app.js:1829"
           ],
           "menciones": []
         },
@@ -35244,7 +35300,7 @@
         "tests": {
           "llamadas": [],
           "menciones": [
-            "tests/test_dashboard_layout.py:215",
+            "tests/test_dashboard_layout.py:223",
             "tests/test_familia_demanda.py:126",
             "tests/test_signals_outcomes.py:1"
           ]
@@ -35431,7 +35487,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1760"
+            "static/app.js:1830"
           ],
           "menciones": []
         },
@@ -35624,7 +35680,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1762"
+            "static/app.js:1832"
           ],
           "menciones": []
         },
@@ -35915,7 +35971,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K20-cincoxx.sh:126",
-            "harness/checks/K31-eslabon5.sh:60",
+            "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:160"
           ],
           "menciones": [
@@ -35925,7 +35981,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1790"
+            "static/app.js:1860"
           ],
           "menciones": []
         },
@@ -36045,17 +36101,19 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1701"
+            "static/app.js:1768"
           ],
           "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
         "n_menciones": 0,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -36168,18 +36226,20 @@
             "harness/checks/K31-eslabon5.sh:29"
           ]
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1581",
-            "static/app.js:1706"
+            "static/app.js:1634",
+            "static/app.js:1773"
           ],
           "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 4,
         "n_menciones": 1,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -36358,18 +36418,20 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1580",
-            "static/app.js:1705"
+            "static/app.js:1633",
+            "static/app.js:1772"
           ],
           "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 4,
         "n_menciones": 0,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -36458,7 +36520,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1942"
+            "static/app.js:2012"
           ],
           "menciones": []
         },
@@ -36587,10 +36649,10 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1579",
-            "static/app.js:1704"
+            "static/app.js:1632",
+            "static/app.js:1771"
           ],
           "menciones": []
         },
@@ -36603,8 +36665,10 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 5,
         "n_menciones": 0,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -36726,7 +36790,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1758"
+            "static/app.js:1828"
           ],
           "menciones": []
         },
@@ -37108,7 +37172,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:1673"
+            "static/app.js:1736"
           ],
           "menciones": []
         },
@@ -37287,10 +37351,10 @@
           ],
           "menciones": []
         },
-        "panel": {
+        "panel-sobre": {
           "llamadas": [
-            "static/app.js:1582",
-            "static/app.js:1707"
+            "static/app.js:1635",
+            "static/app.js:1774"
           ],
           "menciones": []
         },
@@ -37302,15 +37366,17 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_wyckoff.py:106"
+            "tests/test_wyckoff.py:108"
           ],
           "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
+        "llega_dentro_del_sobre": true,
         "n_llamadas": 7,
         "n_menciones": 1,
+        "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -37461,10 +37527,10 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K31-eslabon5.sh:61",
+            "harness/checks/K31-eslabon5.sh:66",
             "harness/checks/K43-control.bash:135",
             "harness/checks/K43-foto-unica.sh:153",
-            "harness/checks/K43-foto-unica.sh:400"
+            "harness/checks/K43-foto-unica.sh:427"
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:97"
@@ -37472,7 +37538,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/app.js:3001"
+            "static/app.js:3071"
           ],
           "menciones": []
         },

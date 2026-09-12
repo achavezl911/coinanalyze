@@ -23,12 +23,17 @@ def test_scalp_logic_is_pure_of_fastapi_static_mounts() -> None:
 
 def test_frontend_wires_v120_backend_endpoints() -> None:
     source = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+    # FASE 1 (2026-09-11): de las tres, `scalp/basis` paso al SOBRE. Las otras dos siguen
+    # pidiendose sueltas y es medido, no olvido: el sobre no cubre `scalp_persistence` ni
+    # `signal_base_rate` de dashboard/state, y de liquidation-levels solo trae 8 de las 16
+    # filas. Lo que el test fija -que el panel trae esos tres datos- no cambia.
     for endpoint in (
         "/api/dashboard/state",
-        "/api/scalp/basis",
         "/api/scalp/liquidation-levels",
     ):
         assert endpoint in source
+    assert "delSobre('basis'" in source
+    assert "/api/scalp/basis" not in source
     markup = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
     assert "basis-details" in markup
     assert "market-memory" in markup

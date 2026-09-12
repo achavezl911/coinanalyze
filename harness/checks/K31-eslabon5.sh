@@ -57,6 +57,11 @@ PY="${VENV_PY:-$REPO/.venv/bin/python}"
 # parece correcta y no lo es: el case busca *" /api/stream "* y detras de /api/stream
 # habia un \n, asi que la excepcion no casaba y la ruta se contaba como huerfana. Una
 # ruta de mas en el veredicto por un espacio en blanco.
+# /api/ai/context SIGUE AQUI Y YA NO ES «la que el panel no pide»: desde la fase 1 SI la
+# pide, y es lo unico que pide para toda la familia FOTO. Sigue fuera de las dos cuentas
+# porque es el TRANSPORTE, no una tarjeta: las rutas que viajan dentro ya se cuentan una a
+# una -la sonda muta su clave dentro del sobre y mira si la pantalla se mueve-, y contar
+# ademas el sobre seria contar dos veces el mismo camino.
 NO_PANEL=$(echo /api/ai/context /api/ai/context/bundle /api/ai/profiles /api/stream \
                 /api/zone/analysis /api/level/breakout /api/range/validate)
 # SE PINTAN EN CANVAS, fuera del alcance del DOM. Medido: mutar el payload entero no
@@ -161,7 +166,18 @@ nb=$(leerc bundle); nd=$(leerc diseno); nhu=$(leerc hueco)
 # level/breakout, range/validate-, que ni las pide el panel ni son huerfanas. No era un
 # descuadre, pero poner las dos cifras juntas sin decir su denominador invita a restarlas,
 # y alguien lo resto. Un mensaje que se puede leer mal es un defecto del mensaje.
-npedidas=$(printf '%s' "$pedidas" | wc -w)
+# LAS NO_PANEL FUERA TAMBIEN DE ESTA CUENTA. La cabecera ya lo declaraba -«las NO_PANEL
+# quedan fuera de las dos cuentas a proposito»- y hasta la fase 1 se cumplia SOLO, porque
+# ninguna llegaba a `pedidas`: medido, el arbol de origin/main trae 40 rutas pedidas y CERO
+# NO_PANEL dentro. Desde que el panel pide el sobre, /api/ai/context SI llega, y sin esta
+# exclusion la segunda lectura contaria el TRANSPORTE como si fuera una tarjeta mas: daba
+# «49 de 62» donde el mismo panel, contado igual que antes, da 48 de 61.
+pedidas_cuenta=""
+for r in $pedidas; do
+  case " $NO_PANEL " in *" $r "*) continue ;; esac
+  pedidas_cuenta="$pedidas_cuenta $r"
+done
+npedidas=$(printf '%s' "$pedidas_cuenta" | wc -w)
 nnp=$(printf '%s' "$NO_PANEL" | wc -w)
 ve=$((npedidas + nb)); nove=$((nd + nhu))
 

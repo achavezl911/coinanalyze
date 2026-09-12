@@ -340,7 +340,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K31-eslabon5.sh:60` | — |
+| **checks** | `harness/checks/K31-eslabon5.sh:65` | — |
 | **readme** | — | `README.md:415`, `README.md:519` |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.

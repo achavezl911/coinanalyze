@@ -1128,6 +1128,7 @@ def consumidores_de(repo: Path, camino: str) -> dict:
     if camino == "/":
         return {}
     pat = re.compile(r"(?<![\w/])" + re.escape(camino) + r"(?![\w/-])")
+    sobre = sitios_del_sobre(repo, camino)
     out: dict[str, dict] = {}
     for etiqueta, rel in CONSUMIDORES:
         base = repo / rel
@@ -1164,20 +1165,105 @@ def consumidores_de(repo: Path, camino: str) -> dict:
                 (menciones if es_texto else llamadas).append(sitio)
         if llamadas or menciones:
             out[etiqueta] = {"llamadas": llamadas, "menciones": menciones}
+    if sobre:
+        out["panel-sobre"] = {"llamadas": sobre, "menciones": []}
     return out
+
+
+SOBRE_RUTA = "/api/ai/context"
+
+
+def parejas_del_sobre(repo: Path) -> dict:
+    """ruta -> claves con las que viaja dentro del sobre.
+
+    LA TABLA NO SE INVENTA AQUI: es la `PAREJAS` que `K43-foto-unica.sh` ya declara y
+    mantiene, la misma que usa la sonda de K31. Si K43 cambia una pareja, este generador la
+    sigue solo. Duplicarla seria tener dos verdades y que una envejeciera.
+    """
+    try:
+        texto = (repo / "harness/checks/K43-foto-unica.sh").read_text(
+            encoding="utf-8", errors="replace")
+    except Exception:
+        return {}
+    m = re.search(r"\nPAREJAS=\"\n(.*?)\n\"\n", texto, re.S)
+    if not m:
+        return {}
+    out: dict[str, list[str]] = {}
+    for linea in m.group(1).splitlines():
+        cols = [c.strip() for c in linea.split("|")]
+        if len(cols) < 2 or not cols[0].startswith("/api/") or not cols[1]:
+            continue
+        out.setdefault(cols[0].split("#")[0], []).append(cols[1])
+    return out
+
+
+def sitios_del_sobre(repo: Path, camino: str) -> list[str]:
+    """Donde el panel LEE esta ruta por dentro del sobre. Vacio si no la lee.
+
+    POR QUE EXISTE. Desde la fase 1 el panel no nombra las rutas de FOTO cuyo dato saca de
+    `/api/ai/context`: las recibe dentro. Contando solo literales, DIECIOCHO rutas que el
+    panel pinta AHORA MISMO pasaban a `llamada_desde_el_panel: false`, y su ficha las
+    declaraba «instrumento interno — o una ruta que el panel dejo de usar y nadie retiro».
+    Una capa que miente en prosa es peor que un check mudo: el check se mira, la ficha SE
+    CITA.
+
+    NO SE ACREDITA POR PERTENECER A LA TABLA. Se exige una LINEA DE CODIGO que lea la clave,
+    y se devuelve su `fichero:linea` como cualquier otra llamada. La razon esta medida: en el
+    remate 1 se intento acreditar con «la clave aparece entrecomillada» y su control lo tumbo
+    -quitando la lectura de `wyckoff` el censo seguia dandola por buena, porque ese literal
+    aparece por otros motivos-.
+
+    EL ACOPLAMIENTO QUE ESTO TIENE, declarado: se pide que la linea lleve la clave
+    ENTRECOMILLADA COMO ARGUMENTO y ademas nombre al sobre. Si el panel cambia la FORMA de
+    leerlo, esto deja de casar y las fichas vuelven a decir `false` — que es el fallo seguro,
+    no el peligroso.
+    """
+    claves = parejas_del_sobre(repo).get(camino) or []
+    if not claves:
+        return []
+    app = repo / "static/app.js"
+    try:
+        texto = app.read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        return []
+    # si el panel no pide el sobre, no hay via que contar: el arbol de antes de la fase 1
+    # pasa por aqui sin que cambie un byte de la capa.
+    if not re.search(r"(?<![\w/])" + re.escape(SOBRE_RUTA) + r"(?![\w/-])", texto):
+        return []
+    sitios = []
+    for n, linea in enumerate(texto.splitlines(), 1):
+        if RE_COMENTARIO.match(linea) or "sobre" not in linea.lower():
+            continue
+        if any(re.search(r"\(\s*['\"]" + re.escape(c) + r"['\"]", linea) for c in claves):
+            sitios.append(f"static/app.js:{n}")
+    return sitios
 
 
 def resume_consumo(cons: dict) -> dict:
     """Aplana el detalle para poder contar sin recorrer la estructura entera."""
     llamadas = [s for v in cons.values() for s in v["llamadas"]]
     menciones = [s for v in cons.values() for s in v["menciones"]]
-    en_panel = any(k in cons and cons[k]["llamadas"] for k in ("panel", "panel-html"))
-    return {
+    suelta = any(k in cons and cons[k]["llamadas"] for k in ("panel", "panel-html"))
+    por_sobre = bool(cons.get("panel-sobre", {}).get("llamadas"))
+    # LAS DOS VIAS SON «la llama el panel», y se guardan POR SEPARADO porque no son lo mismo
+    # para quien depure: con peticion propia hay una linea en el log de nginx que ver, y por
+    # el sobre no la hay -la del sobre las trae todas- y el instante es el `generated_at` del
+    # sobre, no uno propio.
+    en_panel = suelta or por_sobre
+    out = {
         "n_llamadas": len(llamadas), "n_menciones": len(menciones),
         "llamada_desde_el_panel": en_panel,
         "solo_mencion": bool(menciones) and not llamadas,
         "sin_ninguno": not llamadas and not menciones,
     }
+    # LOS DOS CAMPOS NUEVOS SOLO EXISTEN DONDE APLICAN, y no es cosmetica: asi la capa de un
+    # arbol en el que el panel no pide el sobre sale BYTE A BYTE igual que antes de tocar
+    # esto. Medido: con los campos siempre presentes, las 70 rutas de origin/main movian su
+    # `consumo` sin que cambiara ni un valor. Ausencia significa `false`.
+    if por_sobre:
+        out["peticion_propia_del_panel"] = suelta
+        out["llega_dentro_del_sobre"] = True
+    return out
 
 
 def claves_temporales_de(campos: dict) -> list[str]:
@@ -2086,6 +2172,17 @@ def md_ruta(r: dict, datos: dict) -> str:
         A("")
         if c["llamada_desde_el_panel"]:
             A("**La llama el panel: es superficie de producto.**")
+            # LAS DOS VIAS SE DISTINGUEN EN LA PROSA, no solo en el booleano: para quien
+            # depure no son lo mismo.
+            if c.get("llega_dentro_del_sobre") and not c.get("peticion_propia_del_panel"):
+                A("")
+                A(f"**Pero NO con una peticion propia:** su dato llega dentro de `{SOBRE_RUTA}`,")
+                A("en la clave que `K43` le declara en su tabla `PAREJAS`. Al depurar eso importa:")
+                A("**no busques una peticion suya en el log de nginx**, no la hay -la del sobre las")
+                A("trae todas-, y su instante es el `generated_at` del sobre y no uno propio.")
+            elif c.get("llega_dentro_del_sobre"):
+                A("")
+                A(f"Y por **dos** caminos a la vez: con peticion propia **y** dentro de `{SOBRE_RUTA}`.")
         elif c["solo_mencion"]:
             A(f"**Nadie la llama.** Sus {c['n_menciones']} rastros son todos MENCION -comentario,")
             A("docstring o documento-. Es la forma del patron que en esta casa se ha repetido")
