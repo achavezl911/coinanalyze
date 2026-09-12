@@ -1,0 +1,20 @@
+# K45 · EXCEPCIONES · ruta <TAB> elemento <TAB> cita
+#
+# ESTO NO ES UNA LISTA DE PERDONES. Cada linea es una AFIRMACION FALSABLE que K45 vuelve a
+# comprobar en CADA corrida:
+#
+#     «esta ruta no llega al operador porque el panel NO TIENE HUECO para ella»
+#
+# El check busca `id="<elemento>"` en static/index.html:
+#   · si NO esta  -> la afirmacion se sostiene y la excepcion VALE
+#   · si SI esta  -> la excepcion queda ANULADA y la ruta condena igual
+#   · y si la ruta SI llega, la excepcion es HUERFANA y tambien condena
+#
+# POR QUE ASI. Para excusar una tarjeta ROTA habria que RETIRAR SU HUECO DE LA PAGINA, que es
+# un cambio visible del producto que pasa por PR, por CI y por la vista de quien la usa. No
+# se puede excusar en silencio anadiendo un nombre aqui.
+#
+# EL 2026-09-12 ESTE FICHERO ESTA VACIO A PROPOSITO, y esa es la medida que lo justifica:
+# LAS 22 RUTAS FOTO LLEGAN, 22 de 22, medidas mutando y mirando el DOM sobre 9 secciones.
+# No hay ninguna excepcion legitima hoy. Que este vacio es lo que hace que la primera que se
+# anada sea imposible de pasar por alto.
