@@ -8,6 +8,10 @@ from pathlib import Path
 
 import pytest
 
+# El panel puede ser N modulos: la fuente se descubre, no se supone. Ver
+# tests/panel_fuentes.py — con UN fichero, FUENTE es byte a byte static/app.js.
+from panel_fuentes import FUENTE as PANEL_FUENTE
+
 from app.scalp_logic import (
     FEED_DEFINITIONS,
     GAP_MEASURABLE_TABLES,
@@ -20,7 +24,7 @@ from app.scalp_logic import (
 
 RAIZ = Path(__file__).resolve().parent.parent
 HTML = (RAIZ / "static" / "index.html").read_text(encoding="utf-8")
-JS = (RAIZ / "static" / "app.js").read_text(encoding="utf-8")
+JS = PANEL_FUENTE
 
 SECCION = HTML.split('<section id="calidad"')[1].split("</section>\n\n      <section")[0]
 

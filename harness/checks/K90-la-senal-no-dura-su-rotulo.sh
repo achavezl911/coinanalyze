@@ -50,6 +50,34 @@ command -v python3 >/dev/null 2>&1 || { echo "NO MEDIDO: no hay python3"; exit 2
 # Es la mitad barata del check y no necesita red. Si alguien vuelve a poner un rango
 # literal en la tarjeta, esto lo caza sin preguntar a nadie.
 [ -r "$APPJS" ] || { echo "NO MEDIDO: no encuentro $APPJS"; exit 2; }
+
+# ESTE BRAZO FALLABA ABIERTO, y se vio midiendolo: con `static/app.js` vaciado a 14 bytes
+# este check seguia dando VERDE. El `grep` de abajo solo condena cuando ENCUENTRA el literal;
+# si no encuentra nada -porque el panel esta vacio, o porque desde la FASE 2 la tarjeta vive
+# en OTRO modulo- el `if` no entra y se sigue al resto como si el brazo hubiera aprobado.
+# Aprobar sin poder ver lo que se juzga es la categoria cara.
+#
+# LAS DOS MITADES DEL ARREGLO:
+#  1 · el sujeto ya no es un fichero: son TODAS las fuentes que el panel declara, descubiertas
+#      del HTML por `bin/panel-fuentes`. Asi el corte en N modulos no lo deja ciego.
+#  2 · y antes de juzgar se comprueba que la TARJETA esta ahi. Si no aparece, esto no es
+#      «no hay literal»: es «no se donde mirar», y sale NO MEDIDO.
+if [ -z "${K90_APPJS:-}" ]; then
+  _pf=$(mktemp); _pferr=$(mktemp)
+  if "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --cat > "$_pf" 2>"$_pferr"; then
+    APPJS="$_pf"
+  else
+    echo "NO MEDIDO: no se pudieron descubrir las fuentes del panel: $(head -c 200 "$_pferr")"
+    rm -f "$_pf" "$_pferr"; exit 2
+  fi
+  rm -f "$_pferr"
+fi
+ancla=$(grep -cE "name: *'Corto plazo'" "$APPJS")
+if [ "$ancla" -eq 0 ]; then
+  echo "NO MEDIDO: no encuentro la tarjeta 'Corto plazo' en las fuentes del panel"
+  echo "  ($(  "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --n 2>/dev/null || echo '?') fichero(s) descubierto(s)); sin la tarjeta, este brazo no sabe donde mirar"
+  exit 2
+fi
 literal=$(grep -oE "name: *'Corto plazo', *time: *'[^']*[0-9][^']*'" "$APPJS" | head -1)
 if [ -n "$literal" ]; then
   echo "la tarjeta de corto vuelve a llevar un horizonte ESCRITO A MANO: $literal"

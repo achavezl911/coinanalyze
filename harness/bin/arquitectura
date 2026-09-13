@@ -1008,8 +1008,14 @@ def lee_declarada(destino: Path, camino: str) -> dict:
 # --- lo que en el encargo llamamos "declarado" pero SI se puede medir -------------------
 # La superficie de producto no es una opinion: es quien la llama. Se deriva con un grep
 # sobre los consumidores reales, y asi no envejece.
+# `panel` NO es una ruta fija: son las fuentes que el HTML declara, descubiertas por
+# `bin/panel-fuentes`. Con `static/app.js` escrito a mano aqui, el dia que la FASE 2 parta el
+# panel en modulos esta capa habria dicho de medio panel «No la llama el panel … es
+# instrumento interno o una ruta que el panel dejo de usar y nadie retiro» —y un mapa que
+# miente es peor que ninguno, porque nadie lo audita: se CITA—. Es la misma factura que ya se
+# pago el 2026-09-11 con el sobre, cobrada antes esta vez.
 CONSUMIDORES = (
-    ("panel", "static/app.js"),
+    ("panel", "static/app.js"),          # sustituido en tiempo de ejecucion por las fuentes
     ("panel-html", "static/index.html"),
     ("checks", "harness/checks"),
     ("tests", "tests"),
@@ -1133,7 +1139,12 @@ def consumidores_de(repo: Path, camino: str) -> dict:
     for etiqueta, rel in CONSUMIDORES:
         base = repo / rel
         ficheros = []
-        if base.is_file():
+        if etiqueta == "panel":
+            # LA EXCEPCION DECLARADA: el panel se DESCUBRE, no se supone. Si el descubrimiento
+            # falla se cae al fichero de siempre y NO se inventa una lista vacia, que seria
+            # exactamente el «nadie la llama» falso que esto viene a evitar.
+            ficheros = [repo / f for f in fuentes_del_panel(repo)] or ([base] if base.is_file() else [])
+        elif base.is_file():
             ficheros = [base]
         elif base.is_dir():
             ficheros = [p for p in sorted(base.rglob("*"))
@@ -1171,6 +1182,27 @@ def consumidores_de(repo: Path, camino: str) -> dict:
 
 
 SOBRE_RUTA = "/api/ai/context"
+
+
+def fuentes_del_panel(repo: Path) -> list[str]:
+    """Los ficheros que el panel declara, via bin/panel-fuentes. Rutas relativas al repo.
+
+    UNA SOLA IMPLEMENTACION del descubrimiento, compartida con los checks y con la sonda de
+    jsdom. Si esto devolviera una lista vacia en silencio, la capa diria que nadie llama a
+    nada; por eso quien llama se cae al fichero de siempre cuando el descubrimiento falla.
+    """
+    import subprocess
+    bin_pf = repo / "harness/bin/panel-fuentes"
+    if not bin_pf.is_file():
+        return []
+    try:
+        r = subprocess.run([sys.executable, str(bin_pf), "--repo", str(repo)],
+                           capture_output=True, text=True, timeout=60)
+    except Exception:
+        return []
+    if r.returncode != 0:
+        return []
+    return [x.strip() for x in r.stdout.splitlines() if x.strip()]
 
 
 def parejas_del_sobre(repo: Path) -> dict:
@@ -1221,21 +1253,31 @@ def sitios_del_sobre(repo: Path, camino: str) -> list[str]:
     claves = parejas_del_sobre(repo).get(camino) or []
     if not claves:
         return []
-    app = repo / "static/app.js"
-    try:
-        texto = app.read_text(encoding="utf-8", errors="replace")
-    except Exception:
+    # SE RECORREN TODAS LAS FUENTES DEL PANEL, no un fichero. Y la cita que se publica lleva
+    # el fichero DE VERDAD, que es lo unico util para quien vaya a abrirlo: con la ruta fija,
+    # el dia del corte esto habria dicho «ninguna» y las dieciocho rutas del sobre habrian
+    # vuelto a `llamada_desde_el_panel: false`.
+    rels = fuentes_del_panel(repo) or ["static/app.js"]
+    textos = []
+    for rel in rels:
+        try:
+            textos.append((rel, (repo / rel).read_text(encoding="utf-8", errors="replace")))
+        except Exception:
+            continue
+    if not textos:
         return []
     # si el panel no pide el sobre, no hay via que contar: el arbol de antes de la fase 1
     # pasa por aqui sin que cambie un byte de la capa.
-    if not re.search(r"(?<![\w/])" + re.escape(SOBRE_RUTA) + r"(?![\w/-])", texto):
+    pat_sobre = re.compile(r"(?<![\w/])" + re.escape(SOBRE_RUTA) + r"(?![\w/-])")
+    if not any(pat_sobre.search(t) for _r, t in textos):
         return []
     sitios = []
-    for n, linea in enumerate(texto.splitlines(), 1):
-        if RE_COMENTARIO.match(linea) or "sobre" not in linea.lower():
-            continue
-        if any(re.search(r"\(\s*['\"]" + re.escape(c) + r"['\"]", linea) for c in claves):
-            sitios.append(f"static/app.js:{n}")
+    for rel, texto in textos:
+        for n, linea in enumerate(texto.splitlines(), 1):
+            if RE_COMENTARIO.match(linea) or "sobre" not in linea.lower():
+                continue
+            if any(re.search(r"\(\s*['\"]" + re.escape(c) + r"['\"]", linea) for c in claves):
+                sitios.append(f"{rel}:{n}")
     return sitios
 
 

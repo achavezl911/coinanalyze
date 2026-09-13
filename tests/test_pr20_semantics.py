@@ -5,6 +5,10 @@ from pathlib import Path
 
 import pytest
 
+# El panel puede ser N modulos: la fuente se descubre, no se supone. Ver
+# tests/panel_fuentes.py — con UN fichero, FUENTE es byte a byte static/app.js.
+from panel_fuentes import FUENTE as PANEL_FUENTE
+
 import app.daily_agg as daily_agg
 import app.metrics as metrics
 from app.daily_agg import (
@@ -130,7 +134,7 @@ def test_pr20_missing_price_does_not_match_lateral_setup_predicates() -> None:
 
 
 def test_pr20_frontend_renders_missing_price_direction_as_nd() -> None:
-    source = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+    source = PANEL_FUENTE
     assert "function priceDirection1h(value)" in source
     assert "return '1 h N/D'" in source
     assert "priceDirection1h(s.price_dir_1h)" in source

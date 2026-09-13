@@ -95,7 +95,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K24-replay-del-contexto.sh:87`, `harness/checks/K43-control.bash:90`, `harness/checks/K43-foto-unica.sh:154` | — |
+| **checks** | `harness/checks/K24-replay-del-contexto.sh:87`, `harness/checks/K43-control.bash:90`, `harness/checks/K43-foto-unica.sh:162` | — |
 | **panel** | `static/app.js:1830` | — |
 | **tests** | — | `tests/test_signals_replay.py:1` |
 

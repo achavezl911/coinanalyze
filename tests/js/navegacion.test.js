@@ -4,7 +4,7 @@
 const fs = require('node:fs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { cargarApp, leerIndexHtml, APP_JS } = require('./harness');
+const { cargarApp, leerIndexHtml, fuentePanel } = require('./harness');
 
 const { sectionIds, navLinks } = leerIndexHtml();
 
@@ -51,7 +51,7 @@ test('cada enlace de la navegacion superior apunta a un elemento existente', () 
 test('cada destino de .horizon-link apunta a una seccion existente', () => {
   // Los enlaces de las tarjetas de horizonte se generan en JS (`link: '#...'`), asi que el
   // destino se lee del propio codigo: es exactamente el que acabara en el href.
-  const fuente = fs.readFileSync(APP_JS, 'utf8');
+  const fuente = fuentePanel();
   const destinos = [...fuente.matchAll(/link:\s*'#([a-z0-9_-]+)'/gi)].map(m => m[1]);
   assert.ok(destinos.length >= 3, 'no se encontro ningun destino de horizon-link');
   for (const destino of destinos) {

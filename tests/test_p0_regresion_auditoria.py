@@ -8,6 +8,10 @@ from __future__ import annotations
 
 import math
 
+# El panel puede ser N modulos: la fuente se descubre, no se supone. Ver
+# tests/panel_fuentes.py — con UN fichero, FUENTE es byte a byte static/app.js.
+from panel_fuentes import FUENTE as PANEL_FUENTE
+
 from app.scalp_logic import as_float, basis_quality, compute_scalp_summary, profile_view, walk_book
 
 
@@ -165,21 +169,15 @@ def test_rollup_requires_all_constituent_minutes() -> None:
 
 
 def test_frontend_surfaces_endpoint_error() -> None:
-    from pathlib import Path
 
-    source = (Path(__file__).resolve().parents[1] / "static" / "app.js").read_text(
-        encoding="utf-8"
-    )
+    source = PANEL_FUENTE
     assert "state.errors[path]" in source
     assert "function lastEndpointError" in source
 
 
 def test_liquidation_null_is_not_zero() -> None:
-    from pathlib import Path
 
-    source = (Path(__file__).resolve().parents[1] / "static" / "app.js").read_text(
-        encoding="utf-8"
-    )
+    source = PANEL_FUENTE
     bloque = source.split("function renderLiquidations")[1].split("function ")[0]
     assert "asNumber(r.long_liq) || 0" not in bloque
     assert "Sin dato" in bloque

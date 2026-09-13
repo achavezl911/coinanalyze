@@ -118,7 +118,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:151` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:159` | — |
 | **panel** | `static/app.js:1734` | — |
 | **readme** | — | `README.md:405` |
 

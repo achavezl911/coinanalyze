@@ -3,6 +3,10 @@ from __future__ import annotations
 import math
 from datetime import UTC, datetime, timedelta
 
+# El panel puede ser N modulos: la fuente se descubre, no se supone. Ver
+# tests/panel_fuentes.py — con UN fichero, FUENTE es byte a byte static/app.js.
+from panel_fuentes import FUENTE as PANEL_FUENTE
+
 from app.wyckoff import detect_latest_range, wyckoff_auto_read
 
 
@@ -100,7 +104,7 @@ def test_dashboard_exposes_automatic_module_and_daily_chart_mode() -> None:
 
     root = Path(__file__).resolve().parents[1]
     html = (root / "static" / "index.html").read_text(encoding="utf-8")
-    js = (root / "static" / "app.js").read_text(encoding="utf-8")
+    js = PANEL_FUENTE
     assert 'id="wyckoff-body"' in html
     assert 'id="price-mode-wyckoff"' in html
     # FASE 1 (2026-09-11): wyckoff ya no se pide suelta, sale del SOBRE por su clave.

@@ -3,6 +3,10 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+# El panel puede ser N modulos: la fuente se descubre, no se supone. Ver
+# tests/panel_fuentes.py — con UN fichero, FUENTE es byte a byte static/app.js.
+from panel_fuentes import FUENTE as PANEL_FUENTE
+
 from scripts.calibrate_signals import select_samples
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,7 +26,7 @@ def test_scalp_logic_is_pure_of_fastapi_static_mounts() -> None:
 
 
 def test_frontend_wires_v120_backend_endpoints() -> None:
-    source = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+    source = PANEL_FUENTE
     # FASE 1 (2026-09-11): de las tres, `scalp/basis` paso al SOBRE. Las otras dos siguen
     # pidiendose sueltas y es medido, no olvido: el sobre no cubre `scalp_persistence` ni
     # `signal_base_rate` de dashboard/state, y de liquidation-levels solo trae 8 de las 16
@@ -42,7 +46,7 @@ def test_frontend_wires_v120_backend_endpoints() -> None:
 
 
 def test_frontend_discards_stale_symbol_responses_and_clears_old_data() -> None:
-    source = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+    source = PANEL_FUENTE
     assert "const symbol = state.symbol" in source
     assert "if (symbol !== state.symbol) return" in source
     assert "clearSymbolView();" in source

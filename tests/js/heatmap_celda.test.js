@@ -12,7 +12,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const { cargarApp, APP_JS } = require('./harness');
+const { cargarApp, fuentePanel } = require('./harness');
 
 const app = cargarApp();
 
@@ -95,7 +95,7 @@ test('un dia incompleto se marca en vez de pasar por completo', () => {
 // —`scrollWidth > clientWidth` en la banda 1366-2560—, que no corre en CI porque necesita
 // chromium y una replica con payloads. Esto solo evita la recaida literal.
 test('la rejilla no vuelve a permitir columnas mas estrechas que su contenido (DEBIL)', () => {
-  const fuente = fs.readFileSync(APP_JS, 'utf8');
+  const fuente = fuentePanel();
   const m = fuente.match(/gridTemplateColumns\s*=\s*`72px repeat\(\$\{[^}]+\}, minmax\(([^,]+),/);
   assert.ok(m, 'no se encontro la plantilla de columnas del heatmap');
   assert.equal(m[1].trim(), 'min-content');

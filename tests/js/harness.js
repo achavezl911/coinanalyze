@@ -13,9 +13,32 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
+const { execFileSync } = require('node:child_process');
+
 const RAIZ = path.join(__dirname, '..', '..');
-const APP_JS = path.join(RAIZ, 'static', 'app.js');
 const INDEX_HTML = path.join(RAIZ, 'static', 'index.html');
+
+// EL PANEL PUEDE SER N MODULOS, Y AQUI SE EJECUTA DE VERDAD -no se grepea-. Si esto leyera
+// `static/app.js` a pelo, el dia del corte la VM evaluaria la ENTRADA -unos `import` y poco
+// mas- y los 75 tests de node medirian un panel vacio. La lista NO se escribe aqui: la
+// descubre `harness/bin/panel-fuentes` del <script> del HTML. Se cachea porque cada test
+// monta su contexto y no vamos a arrancar python una vez por test.
+let _fuente = null;
+function fuentePanel() {
+  if (_fuente !== null) return _fuente;
+  const py = process.env.VENV_PY || path.join(RAIZ, '.venv', 'bin', 'python');
+  try {
+    _fuente = execFileSync(py, [path.join(RAIZ, 'harness', 'bin', 'panel-fuentes'),
+                                '--repo', RAIZ, '--cat'],
+                           { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  } catch (e) {
+    // SIN SUJETO NO SE INVENTA UNO: que reviente y que los tests fallen en ROJO, no que
+    // pasen sobre un panel vacio.
+    throw new Error('no se pudieron descubrir las fuentes del panel: '
+                    + (e.stderr || e.message || '').toString().slice(0, 300));
+  }
+  return _fuente;
+}
 
 class ClassList {
   constructor(node) { this.node = node; this.set = new Set(); }
@@ -164,7 +187,7 @@ function cargarApp(extras = {}) {
   // Las declaraciones `function` de nivel superior si quedan como propiedades del global,
   // pero `const`/`let` viven en el ambito lexico del script y no serian accesibles desde
   // fuera. El epilogo se evalua DENTRO de ese mismo ambito y las publica.
-  const fuente = fs.readFileSync(APP_JS, 'utf8');
+  const fuente = fuentePanel();
   const epilogo = '\n;__hook.state = state; __hook.COLORS = COLORS;'
     + ' __hook.FALLBACK_SECTION = FALLBACK_SECTION; __hook.MAX_SEGMENTS = MAX_SEGMENTS;'
     + ' __hook.EXEC_CLASS = EXEC_CLASS; __hook.FLOW_QUADRANTS = FLOW_QUADRANTS;\n';
@@ -174,4 +197,4 @@ function cargarApp(extras = {}) {
   return contexto;
 }
 
-module.exports = { cargarApp, crearDocumento, leerIndexHtml, Node, APP_JS, INDEX_HTML, RAIZ, leerSecciones};
+module.exports = { cargarApp, crearDocumento, leerIndexHtml, Node, fuentePanel, INDEX_HTML, RAIZ, leerSecciones};

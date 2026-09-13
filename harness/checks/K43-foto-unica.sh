@@ -53,7 +53,15 @@
 # los nombres de campo son los mismos y esto pasa, pero son 8 filas contra 50. Eso lo
 # tiene que ver K44 cuando el panel deje de pedir las partes, no este subconjunto.
 set -uo pipefail
-B=/srv/coinanalyze/harness; . "$B/env"
+B=/srv/coinanalyze/harness
+# `harness/env` fija REPO=/srv/coinanalyze/repo, asi que hasta hoy este check NO SE PODIA
+# APUNTAR A OTRO ARBOL: pasarle REPO= no servia de nada y su brazo de control media siempre
+# el repo de verdad. Se guarda el que pida quien llama y se restaura despues -es el mismo
+# patron que K90 ya usaba-. Con REPO sin definir, que es como lo corre `verify`, no cambia
+# nada: se queda con el de `env`.
+_repo_pedido=${REPO:-}
+. "$B/env"
+REPO=${_repo_pedido:-$REPO}
 SIM=${K43_SIMBOLO:-BTCUSDT_PERP.A}
 # Por defecto mide 140, que es lo que cuenta. K43_API y K43_CABECERA lo apuntan al espejo
 # para poder ver el efecto de un cambio ANTES de desplegarlo -el espejo no tiene nginx
@@ -327,6 +335,23 @@ fi
 foto=$(curl -sS -k --netrc-file "$NETRC" "${CAB[@]}" --max-time 60 \
        "$API_PROD/api/ai/context?symbol=$SIM" 2>/dev/null)
 [ -n "$foto" ] || { echo "NO MEDIDO: /api/ai/context no respondio"; exit 2; }
+
+
+# EL SUJETO NO ES UN FICHERO, SON LAS FUENTES QUE EL PANEL DECLARA. `bin/panel-fuentes` las
+# descubre leyendo el <script> de static/index.html y siguiendo los imports; hoy devuelve UN
+# fichero y su concatenacion es byte a byte `static/app.js`, asi que el veredicto no se mueve.
+# El dia que la FASE 2 parta el panel, esto sigue midiendo el panel ENTERO en vez del trozo
+# que conserve el nombre viejo. Si el descubrimiento falla, NO se sigue con media medida.
+_panel_fuentes() {
+  local destino; destino=$(mktemp)
+  local err; err=$(mktemp)
+  if "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --cat > "$destino" 2>"$err"; then
+    rm -f "$err"; printf '%s' "$destino"; return 0
+  fi
+  echo "NO MEDIDO: no se pudieron descubrir las fuentes del panel: $(head -c 200 "$err")" >&2
+  rm -f "$destino" "$err"; return 2
+}
+if [ -z "${K43_APP_JS:-}" ]; then K43_APP_JS=$(_panel_fuentes) || exit 2; fi
 
 printf '%s' "$foto" | PEDIDAS="$PEDIDAS" PEDIDAS_ORIGEN="$PEDIDAS_ORIGEN" SIM="$SIM" ASIGNACION="$ASIGNACION" PAREJAS="$PAREJAS" \
   NETRC="$NETRC" API_PROD="$API_PROD" REPO="$REPO" K43_CABECERA="${K43_CABECERA:-}" K43_APP_JS="${K43_APP_JS:-$REPO/static/app.js}" python3 -c '
