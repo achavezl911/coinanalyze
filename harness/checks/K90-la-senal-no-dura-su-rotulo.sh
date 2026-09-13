@@ -49,8 +49,13 @@ command -v python3 >/dev/null 2>&1 || { echo "NO MEDIDO: no hay python3"; exit 2
 # --- 1 · EL PANEL YA NO PUEDE LLEVAR EL ROTULO ESCRITO A MANO --------------------------
 # Es la mitad barata del check y no necesita red. Si alguien vuelve a poner un rango
 # literal en la tarjeta, esto lo caza sin preguntar a nadie.
-[ -r "$APPJS" ] || { echo "NO MEDIDO: no encuentro $APPJS"; exit 2; }
-
+# EL GUARDIA DE LECTURA VA DESPUES DEL DESCUBRIMIENTO, no antes. Estaba antes y era VESTIGIAL:
+# comprobaba `static/app.js` —la ruta por defecto— y exigia que existiera un fichero cuyo
+# CONTENIDO ya no se usaba. Fallaba cerrado, asi que no mentia; pero el 2026-09-13, al partir
+# el panel en once ficheros bajo static/js/, ese fichero dejo de existir y **K90 se apago**:
+# `NO MEDIDO: no encuentro /srv/coinanalyze/repo/static/app.js`. Un arnes que se calla justo
+# cuando el sujeto cambia no es un arnes. Lo dejo anotado la auditoria de COLA 119 como R1.
+#
 # ESTE BRAZO FALLABA ABIERTO, y se vio midiendolo: con `static/app.js` vaciado a 14 bytes
 # este check seguia dando VERDE. El `grep` de abajo solo condena cuando ENCUENTRA el literal;
 # si no encuentra nada -porque el panel esta vacio, o porque desde la FASE 2 la tarjeta vive
@@ -72,6 +77,7 @@ if [ -z "${K90_APPJS:-}" ]; then
   fi
   rm -f "$_pferr"
 fi
+[ -r "$APPJS" ] || { echo "NO MEDIDO: no puedo leer las fuentes del panel ($APPJS)"; exit 2; }
 ancla=$(grep -cE "name: *'Corto plazo'" "$APPJS")
 if [ "$ancla" -eq 0 ]; then
   echo "NO MEDIDO: no encuentro la tarjeta 'Corto plazo' en las fuentes del panel"

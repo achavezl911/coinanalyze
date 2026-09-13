@@ -92,7 +92,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:66`, `harness/checks/K43-foto-unica.sh:161`, `harness/checks/K43-foto-unica.sh:450` | `harness/checks/K43-foto-unica.sh:105` |
-| **panel** | `static/app.js:3616` | — |
+| **panel** | `static/js/10-contexto-y-estructura.js:864` | — |
 
 **La llama el panel: es superficie de producto.**
 

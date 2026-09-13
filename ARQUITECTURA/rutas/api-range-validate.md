@@ -96,7 +96,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:66`, `harness/checks/K43-foto-unica.sh:161`, `harness/checks/K43-foto-unica.sh:451`, `harness/checks/K76-la-ventana-que-pides.sh:97` | `harness/checks/K43-foto-unica.sh:105` |
-| **panel** | `static/app.js:3741` | — |
+| **panel** | `static/js/11-rango-wyckoff-y-sesion.js:125` | — |
 | **tests** | — | `tests/test_familia_demanda.py:165`, `tests/test_p0_data_integrity.py:126` |
 
 **La llama el panel: es superficie de producto.**

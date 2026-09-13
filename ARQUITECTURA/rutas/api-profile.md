@@ -150,7 +150,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | — | `harness/checks/K31-cubos.py:62`, `harness/checks/K43-foto-unica.sh:43`, `harness/checks/K43-foto-unica.sh:117`, `harness/checks/K43-foto-unica.sh:245` _(+2)_ |
-| **panel** | — | `static/app.js:443` |
+| **panel** | — | `static/js/04-flujo-y-libro.js:111` |
 | **tests** | `tests/test_v150_desk_snapshot.py:130` | — |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.

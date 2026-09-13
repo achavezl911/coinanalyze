@@ -125,7 +125,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:150`, `harness/checks/K43-foto-unica.sh:201` | — |
-| **panel-sobre** | `static/app.js:219` | — |
+| **panel-sobre** | `static/js/02-canal.js:66` | — |
 | **readme** | — | `README.md:501` |
 
 **La llama el panel: es superficie de producto.**

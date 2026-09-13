@@ -122,7 +122,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K20-cincoxx.sh:83` _(+7)_ | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K43-foto-unica.sh:563` |
-| **panel** | `static/app.js:1661` | — |
+| **panel** | `static/js/07-decision-y-ciclos.js:236` | — |
 | **readme** | — | `README.md:402` |
 | **tests** | — | `tests/test_p1_timeframes_and_spot.py:52` |
 
