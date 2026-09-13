@@ -322,7 +322,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:156`, `harness/checks/K43-foto-unica.sh:222`, `harness/checks/K43-foto-unica.sh:223`, `harness/checks/K43-foto-unica.sh:224` _(+18)_ | `harness/checks/K43-foto-unica.sh:230`, `harness/checks/K46-campos.js:6`, `harness/checks/K46-el-campo-que-no-llega.sh:10`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13` _(+3)_ |
+| **checks** | `harness/checks/K43-foto-unica.sh:156`, `harness/checks/K43-foto-unica.sh:222`, `harness/checks/K43-foto-unica.sh:223`, `harness/checks/K43-foto-unica.sh:224` _(+18)_ | `harness/checks/K43-foto-unica.sh:230`, `harness/checks/K72-campos.js:6`, `harness/checks/K72-el-campo-que-no-llega.sh:10`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13` _(+3)_ |
 | **panel** | `static/js/07-decision-y-ciclos.js:235` | `static/js/07-decision-y-ciclos.js:26`, `static/js/07-decision-y-ciclos.js:33`, `static/js/07-decision-y-ciclos.js:227` |
 | **readme** | — | `README.md:195`, `README.md:488`, `README.md:502` |
 | **tests** | `tests/test_metrics_endpoint.py:253`, `tests/test_v121_hardening.py:35`, `tests/test_v150_desk_snapshot.py:130` | — |

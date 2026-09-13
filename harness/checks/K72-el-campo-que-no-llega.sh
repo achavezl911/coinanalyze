@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# K46 · EL CAMPO QUE EL BACKEND SIRVE Y LA TARJETA DEJA DE PINTAR
+# K72 · EL CAMPO QUE EL BACKEND SIRVE Y LA TARJETA DEJA DE PINTAR
 #
 # QUE VIGILA. Que los campos que la FASE 3a puso en pantalla sigan LLEGANDO a ella. No que el
 # backend los sirva -eso ya lo vigilan otros-, ni que el panel los nombre -nombrar no es
@@ -34,9 +34,9 @@ CANONICO=/srv/coinanalyze/repo/harness/panel
 [ -f "$PANEL/render.js" ] || PANEL="$CANONICO"
 MODULOS="$PANEL/node_modules"
 [ -d "$MODULOS" ] || MODULOS="$CANONICO/node_modules"
-CACHE="${K46_FIXTURES:-${K31_FIXTURES:-/srv/coinanalyze/harness/estado/k31-fixtures}}"
-GUION="${K46_GUION:-$REPO/harness/checks/K46-campos.js}"
-[ -f "$GUION" ] || GUION=/srv/coinanalyze/repo/harness/checks/K46-campos.js
+CACHE="${K72_FIXTURES:-${K31_FIXTURES:-/srv/coinanalyze/harness/estado/k31-fixtures}}"
+GUION="${K72_GUION:-$REPO/harness/checks/K72-campos.js}"
+[ -f "$GUION" ] || GUION=/srv/coinanalyze/repo/harness/checks/K72-campos.js
 
 command -v node >/dev/null || { echo "NO MEDIDO: no hay node en esta maquina"; exit 2; }
 [ -d "$MODULOS" ]          || { echo "NO MEDIDO: falta jsdom; correr npm install en $PANEL"; exit 2; }
@@ -44,7 +44,7 @@ command -v node >/dev/null || { echo "NO MEDIDO: no hay node en esta maquina"; e
 [ -d "$CACHE" ]            || { echo "NO MEDIDO: no hay payloads en $CACHE; sin payloads no hay medicion"; exit 2; }
 
 err=$(mktemp)
-salida=$(cd "$PANEL" && REPO="$REPO" NODE_PATH="$MODULOS" K46_FIXTURES="$CACHE" \
+salida=$(cd "$PANEL" && REPO="$REPO" NODE_PATH="$MODULOS" K72_FIXTURES="$CACHE" \
          timeout 1500 node "$GUION" 2>"$err")
 rc=$?
 if [ -z "$salida" ]; then

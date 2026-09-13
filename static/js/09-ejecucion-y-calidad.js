@@ -126,16 +126,22 @@ function renderOiVenue(respuesta, contexto) {
     pie.textContent = 'Reparto por venue: no servido.';
     return;
   }
+  // LA PRECISION ES LA DE LA CASA PARA EL OI, y no una mia. El OI se pinta en la portada con
+  // `money(s.oi)` -un decimal, el que trae money() por defecto- en 04-flujo-y-libro.js.
+  // La primera version forzaba `money(v, 0)` y el resultado era una tarjeta que existe para
+  // que el OI NO se lea mal y que NO CUADRABA CONSIGO MISMA: pintaba «$8B · $4B · total $12B ·
+  // bybit 34.1 %», y a esa precision 4 de 12 son 33, no 34.1. Con el decimal de la casa
+  // -8.1 · 4.2 · 12.3- el 34.1 % sale de dividir lo que se ve.
   const partes = [];
   for (const [k, v] of Object.entries(bv)) {
     const m = /^(\w+)_oi_usd$/.exec(k);
-    if (m && asNumber(v) !== null) partes.push(`${m[1]} ${money(v, 0)}`);
+    if (m && asNumber(v) !== null) partes.push(`${m[1]} ${money(v)}`);
   }
   const share = asNumber(bv.bybit_share_of_two_venues_pct);
   const total = asNumber(bv.two_venue_total_usd);
   const cabeza = partes.length ? partes.join(' · ') : 'sin desglose por venue';
   const cola = [
-    total === null ? null : `total ${money(total, 0)}`,
+    total === null ? null : `total ${money(total)}`,
     share === null ? null : `bybit ${number(share, 1)} % de los dos`,
   ].filter(Boolean).join(' · ');
   pie.textContent = `Reparto: ${cabeza}${cola ? ' · ' + cola : ''}`;
