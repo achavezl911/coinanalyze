@@ -173,8 +173,8 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:152`, `harness/checks/K43-foto-unica.sh:207` | `harness/checks/K43-foto-unica.sh:43` |
-| **panel** | — | `static/js/07-decision-y-ciclos.js:388` |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:392` | — |
+| **panel** | — | `static/js/07-decision-y-ciclos.js:394` |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:398` | — |
 | **readme** | — | `README.md:32` |
 
 **La llama el panel: es superficie de producto.**

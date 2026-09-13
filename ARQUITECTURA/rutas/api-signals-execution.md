@@ -99,7 +99,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K23-coste-de-ejecucion.sh:42`, `harness/checks/K43-control.bash:90`, `harness/checks/K43-foto-unica.sh:162` | `harness/checks/K96-la-auditoria-no-inventa.sh:4` |
-| **panel** | `static/js/07-decision-y-ciclos.js:406` | — |
+| **panel** | `static/js/07-decision-y-ciclos.js:412` | — |
 | **tests** | — | `tests/test_signals_execution.py:1` |
 
 **La llama el panel: es superficie de producto.**
