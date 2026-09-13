@@ -82,7 +82,11 @@
 
 set -u
 B=/srv/coinanalyze/harness
+# igual que en K43: `env` fija REPO y sin esto el check no se puede apuntar a un arbol de
+# prueba, asi que su brazo de control mediria siempre el repo de verdad y no probaria nada.
+_repo_pedido=${REPO:-}
 . "$B/env"
+REPO=${_repo_pedido:-$REPO}
 SIMBOLO=BTCUSDT_PERP.A
 
 # ------------------------------------------------------- el plan, derivado del dato vivo
@@ -163,7 +167,22 @@ print(e.get("status"))
 }
 
 # --- A · PANTALLA: renderExecutionRows tiene que consultar cost_components_missing.
-APP="$REPO/static/app.js"
+
+# EL SUJETO NO ES UN FICHERO, SON LAS FUENTES QUE EL PANEL DECLARA. `bin/panel-fuentes` las
+# descubre leyendo el <script> de static/index.html y siguiendo los imports; hoy devuelve UN
+# fichero y su concatenacion es byte a byte `static/app.js`, asi que el veredicto no se mueve.
+# El dia que la FASE 2 parta el panel, esto sigue midiendo el panel ENTERO en vez del trozo
+# que conserve el nombre viejo. Si el descubrimiento falla, NO se sigue con media medida.
+_panel_fuentes() {
+  local destino; destino=$(mktemp)
+  local err; err=$(mktemp)
+  if "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --cat > "$destino" 2>"$err"; then
+    rm -f "$err"; printf '%s' "$destino"; return 0
+  fi
+  echo "NO MEDIDO: no se pudieron descubrir las fuentes del panel: $(head -c 200 "$err")" >&2
+  rm -f "$destino" "$err"; return 2
+}
+APP=$(_panel_fuentes) || exit 2
 [ -r "$APP" ] || { echo "NO MEDIDO: no se puede leer $APP"; exit 2; }
 CUERPO=$(awk '/^function renderExecutionRows\(/{d=1} d{print} d&&/^\}/{exit}' "$APP")
 [ -n "$CUERPO" ] || { echo "NO MEDIDO: no se encontro la funcion renderExecutionRows en $APP; el brazo de pantalla no sabe donde mirar"; exit 2; }

@@ -17,6 +17,34 @@ function fixtureName(urlPath) {
   return urlPath.replace(/^\//, '').replace(/[^A-Za-z0-9._-]/g, '_') + '.json';
 }
 
+// EL SUJETO YA NO ES UN FICHERO: son las fuentes que el panel DECLARA. Antes esto leia
+// `static/app.js` a pelo, y el dia que la FASE 2 lo parta en modulos habria seguido montando
+// un DOM con la ENTRADA de 69 bytes: la sonda no habria fallado, habria medido un panel
+// vacio -y todo lo que cuelga de ella, K31 y K45, habria dado veredictos sobre nada-.
+//
+// La lista NO se escribe aqui: la descubre `bin/panel-fuentes` leyendo el <script> del HTML
+// y siguiendo los imports. Una sola implementacion para bash, python y node; dos serian dos
+// verdades y una envejeceria.
+//
+// Se cachea por REPO porque la sonda hace 40+ renders por corrida y no vamos a pagar 40
+// arranques de python para leer lo mismo.
+let _fuentesCache = null;
+function fuentesDelPanel() {
+  if (_fuentesCache !== null) return _fuentesCache;
+  const py = process.env.VENV_PY || path.join(REPO, '.venv/bin/python');
+  const bin = path.join(REPO, 'harness/bin/panel-fuentes');
+  try {
+    _fuentesCache = execFileSync(py, [bin, '--repo', REPO, '--cat'],
+                                 { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  } catch (e) {
+    // SIN SUJETO NO SE INVENTA UNO. Que reviente aqui y que la sonda lo publique como su
+    // `error`, que es lo que el check convierte en NO MEDIDO.
+    const detalle = (e.stderr || e.message || '').toString().slice(0, 300);
+    throw new Error('no se pudieron descubrir las fuentes del panel: ' + detalle);
+  }
+  return _fuentesCache;
+}
+
 // EL RELOJ SE CONGELA, Y NO ES UN DETALLE. Medido: dos renders identicos del mismo
 // payload dan textos distintos -"497s" vs "501s"-, porque el panel pinta antiguedades
 // contra Date.now(). Con el reloj vivo, CUALQUIER diferencia de DOM se explica por el
@@ -37,7 +65,7 @@ function freezeClock(w, ms) {
 
 async function render({ mode, fixtures, settleMs = 4000, onFetch = null, frozenAt = null, transform = null }) {
   const html = fs.readFileSync(path.join(REPO, 'static/index.html'), 'utf8');
-  const appjs = fs.readFileSync(path.join(REPO, 'static/app.js'), 'utf8');
+  const appjs = fuentesDelPanel();
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'http://localhost/', pretendToBeVisual: true });
   const w = dom.window;
 

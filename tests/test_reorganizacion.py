@@ -11,12 +11,16 @@ from pathlib import Path
 
 import pytest
 
+# El panel puede ser N modulos: la fuente se descubre, no se supone. Ver
+# tests/panel_fuentes.py — con UN fichero, FUENTE es byte a byte static/app.js.
+from panel_fuentes import FUENTE as PANEL_FUENTE
+
 from app.scalp_logic import HYPOTHESES, hypothesis_evidence
 from app.setups import split_hypothesis
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
-JS = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+JS = PANEL_FUENTE
 
 # LA LISTA SE DERIVA DEL DOCUMENTO, no se escribe a mano. Cuando la campaña «Mesa de posicion»
 # añadio `coste` y bajo `liquidez` al final, estos tests enrojecieron por tener la lista vieja

@@ -322,10 +322,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:148`, `harness/checks/K43-foto-unica.sh:214`, `harness/checks/K43-foto-unica.sh:215`, `harness/checks/K43-foto-unica.sh:216` _(+14)_ | `harness/checks/K43-foto-unica.sh:222`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:25`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:62` _(+1)_ |
+| **checks** | `harness/checks/K43-foto-unica.sh:156`, `harness/checks/K43-foto-unica.sh:222`, `harness/checks/K43-foto-unica.sh:223`, `harness/checks/K43-foto-unica.sh:224` _(+14)_ | `harness/checks/K43-foto-unica.sh:230`, `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:25`, `harness/checks/K95-la-tasa-base-que-se-pinta.sh:62` _(+1)_ |
 | **panel** | `static/app.js:1660` | `static/app.js:1451`, `static/app.js:1458`, `static/app.js:1652` |
 | **readme** | — | `README.md:195`, `README.md:488`, `README.md:502` |
-| **tests** | `tests/test_metrics_endpoint.py:253`, `tests/test_v121_hardening.py:31`, `tests/test_v150_desk_snapshot.py:130` | — |
+| **tests** | `tests/test_metrics_endpoint.py:253`, `tests/test_v121_hardening.py:35`, `tests/test_v150_desk_snapshot.py:130` | — |
 
 **La llama el panel: es superficie de producto.**
 

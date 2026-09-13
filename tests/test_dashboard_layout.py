@@ -2,10 +2,14 @@ import re
 from html.parser import HTMLParser
 from pathlib import Path
 
+# El panel puede ser N modulos: la fuente se descubre, no se supone. Ver
+# tests/panel_fuentes.py — con UN fichero, FUENTE es byte a byte static/app.js.
+from panel_fuentes import FUENTE as PANEL_FUENTE
+
 ROOT = Path(__file__).resolve().parents[1]
 HTML = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
 CSS = (ROOT / "static" / "app.css").read_text(encoding="utf-8")
-JS = (ROOT / "static" / "app.js").read_text(encoding="utf-8")
+JS = PANEL_FUENTE
 
 
 class DashboardParser(HTMLParser):

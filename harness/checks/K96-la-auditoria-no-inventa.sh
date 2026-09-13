@@ -17,7 +17,23 @@
 # Comprueba lo unico que se puede comprobar sin canal: que el nombre exista en el origen.
 set -uo pipefail
 REPO=${K96_REPO:-/srv/coinanalyze/repo}
-JS="$REPO/static/app.js"
+B=${K96_HARNESS:-/srv/coinanalyze/harness}
+
+# EL SUJETO NO ES UN FICHERO, SON LAS FUENTES QUE EL PANEL DECLARA. `bin/panel-fuentes` las
+# descubre leyendo el <script> de static/index.html y siguiendo los imports; hoy devuelve UN
+# fichero y su concatenacion es byte a byte `static/app.js`, asi que el veredicto no se mueve.
+# El dia que la FASE 2 parta el panel, esto sigue midiendo el panel ENTERO en vez del trozo
+# que conserve el nombre viejo. Si el descubrimiento falla, NO se sigue con media medida.
+_panel_fuentes() {
+  local destino; destino=$(mktemp)
+  local err; err=$(mktemp)
+  if "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --cat > "$destino" 2>"$err"; then
+    rm -f "$err"; printf '%s' "$destino"; return 0
+  fi
+  echo "NO MEDIDO: no se pudieron descubrir las fuentes del panel: $(head -c 200 "$err")" >&2
+  rm -f "$destino" "$err"; return 2
+}
+JS=$(_panel_fuentes) || exit 2
 PY="$REPO/app/api.py"
 for f in "$JS" "$PY"; do
   [ -r "$f" ] || { echo "NO MEDIDO: no se puede leer $f"; exit 2; }

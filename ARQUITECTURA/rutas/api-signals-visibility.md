@@ -101,7 +101,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K25-visibilidad-de-lo-final.sh:110`, `harness/checks/K43-control.bash:90`, `harness/checks/K43-foto-unica.sh:155` | — |
+| **checks** | `harness/checks/K25-visibilidad-de-lo-final.sh:110`, `harness/checks/K43-control.bash:90`, `harness/checks/K43-foto-unica.sh:163` | — |
 | **panel** | `static/app.js:1832` | — |
 | **tests** | — | `tests/test_signals_visibility.py:1` |
 

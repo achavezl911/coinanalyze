@@ -26106,11 +26106,11 @@
         "checks": {
           "llamadas": [
             "harness/checks/K31-eslabon5.sh:65",
-            "harness/checks/K43-foto-unica.sh:328",
-            "harness/checks/K43-foto-unica.sh:329",
-            "harness/checks/K43-foto-unica.sh:388",
-            "harness/checks/K43-foto-unica.sh:414",
-            "harness/checks/K43-foto-unica.sh:504",
+            "harness/checks/K43-foto-unica.sh:336",
+            "harness/checks/K43-foto-unica.sh:337",
+            "harness/checks/K43-foto-unica.sh:413",
+            "harness/checks/K43-foto-unica.sh:439",
+            "harness/checks/K43-foto-unica.sh:529",
             "harness/checks/K44-control.bash:112",
             "harness/checks/K44-control.bash:134",
             "harness/checks/K44-control.bash:140",
@@ -26121,10 +26121,10 @@
             "harness/checks/K31-eslabon5.sh:172",
             "harness/checks/K43-foto-unica.sh:7",
             "harness/checks/K43-foto-unica.sh:17",
-            "harness/checks/K43-foto-unica.sh:73",
-            "harness/checks/K43-foto-unica.sh:279",
-            "harness/checks/K43-foto-unica.sh:369",
-            "harness/checks/K43-foto-unica.sh:412",
+            "harness/checks/K43-foto-unica.sh:81",
+            "harness/checks/K43-foto-unica.sh:287",
+            "harness/checks/K43-foto-unica.sh:394",
+            "harness/checks/K43-foto-unica.sh:437",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:5",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:11",
             "harness/checks/K84-dos-matrices-una-cifra.sh:33"
@@ -27005,13 +27005,13 @@
         "checks": {
           "llamadas": [
             "harness/checks/K43-control.bash:144",
-            "harness/checks/K43-foto-unica.sh:158",
-            "harness/checks/K43-foto-unica.sh:439"
+            "harness/checks/K43-foto-unica.sh:166",
+            "harness/checks/K43-foto-unica.sh:464"
           ],
           "menciones": [
             "harness/checks/K43-control.bash:139",
-            "harness/checks/K43-foto-unica.sh:79",
-            "harness/checks/K43-foto-unica.sh:436"
+            "harness/checks/K43-foto-unica.sh:87",
+            "harness/checks/K43-foto-unica.sh:461"
           ]
         },
         "panel": {
@@ -27677,7 +27677,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:151"
+            "harness/checks/K43-foto-unica.sh:159"
           ],
           "menciones": []
         },
@@ -28017,15 +28017,15 @@
             "harness/checks/K02-cobertura-hueco.sh:81",
             "harness/checks/K03-hueco-declarado.sh:161",
             "harness/checks/K03-hueco-declarado.sh:164",
-            "harness/checks/K43-foto-unica.sh:151",
-            "harness/checks/K43-foto-unica.sh:516"
+            "harness/checks/K43-foto-unica.sh:159",
+            "harness/checks/K43-foto-unica.sh:541"
           ],
           "menciones": [
             "harness/checks/K03-hueco-declarado.sh:8",
             "harness/checks/K03-hueco-declarado.sh:15",
             "harness/checks/K03-hueco-declarado.sh:153",
             "harness/checks/K03-hueco-declarado.sh:165",
-            "harness/checks/K43-foto-unica.sh:509"
+            "harness/checks/K43-foto-unica.sh:534"
           ]
         },
         "panel": {
@@ -28046,7 +28046,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_dashboard_presentation.py:83"
+            "tests/test_dashboard_presentation.py:87"
           ],
           "menciones": [
             "tests/test_data_gaps.py:128"
@@ -28419,27 +28419,27 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:148",
-            "harness/checks/K43-foto-unica.sh:214",
-            "harness/checks/K43-foto-unica.sh:215",
-            "harness/checks/K43-foto-unica.sh:216",
-            "harness/checks/K43-foto-unica.sh:217",
-            "harness/checks/K43-foto-unica.sh:218",
-            "harness/checks/K43-foto-unica.sh:219",
-            "harness/checks/K43-foto-unica.sh:220",
-            "harness/checks/K43-foto-unica.sh:395",
+            "harness/checks/K43-foto-unica.sh:156",
+            "harness/checks/K43-foto-unica.sh:222",
+            "harness/checks/K43-foto-unica.sh:223",
+            "harness/checks/K43-foto-unica.sh:224",
+            "harness/checks/K43-foto-unica.sh:225",
+            "harness/checks/K43-foto-unica.sh:226",
+            "harness/checks/K43-foto-unica.sh:227",
+            "harness/checks/K43-foto-unica.sh:228",
+            "harness/checks/K43-foto-unica.sh:420",
             "harness/checks/K44-control.bash:126",
             "harness/checks/K44-control.bash:132",
             "harness/checks/K44-control.bash:141",
             "harness/checks/K90-control.bash:132",
-            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:63",
-            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:82",
+            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:91",
+            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:110",
             "harness/checks/K95-la-tasa-base-que-se-pinta.sh:66",
             "harness/checks/K95-la-tasa-base-que-se-pinta.sh:79",
             "harness/checks/K95-la-tasa-base-que-se-pinta.sh:271"
           ],
           "menciones": [
-            "harness/checks/K43-foto-unica.sh:222",
+            "harness/checks/K43-foto-unica.sh:230",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13",
             "harness/checks/K95-la-tasa-base-que-se-pinta.sh:25",
             "harness/checks/K95-la-tasa-base-que-se-pinta.sh:62",
@@ -28467,7 +28467,7 @@
         "tests": {
           "llamadas": [
             "tests/test_metrics_endpoint.py:253",
-            "tests/test_v121_hardening.py:31",
+            "tests/test_v121_hardening.py:35",
             "tests/test_v150_desk_snapshot.py:130"
           ],
           "menciones": []
@@ -28609,8 +28609,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:142",
-            "harness/checks/K43-foto-unica.sh:193"
+            "harness/checks/K43-foto-unica.sh:150",
+            "harness/checks/K43-foto-unica.sh:201"
           ],
           "menciones": []
         },
@@ -28786,7 +28786,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:152"
+            "harness/checks/K43-foto-unica.sh:160"
           ],
           "menciones": []
         },
@@ -28804,7 +28804,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_dashboard_presentation.py:122"
+            "tests/test_dashboard_presentation.py:126"
           ],
           "menciones": []
         }
@@ -29118,7 +29118,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:156"
+            "harness/checks/K43-foto-unica.sh:164"
           ],
           "menciones": []
         },
@@ -29311,8 +29311,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:142",
-            "harness/checks/K43-foto-unica.sh:194"
+            "harness/checks/K43-foto-unica.sh:150",
+            "harness/checks/K43-foto-unica.sh:202"
           ],
           "menciones": []
         },
@@ -29510,8 +29510,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:142",
-            "harness/checks/K43-foto-unica.sh:195"
+            "harness/checks/K43-foto-unica.sh:150",
+            "harness/checks/K43-foto-unica.sh:203"
           ],
           "menciones": [
             "harness/checks/K20-cincoxx.sh:2"
@@ -29526,10 +29526,10 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_dashboard_layout.py:121"
+            "tests/test_dashboard_layout.py:125"
           ],
           "menciones": [
-            "tests/test_dashboard_layout.py:117"
+            "tests/test_dashboard_layout.py:121"
           ]
         }
       },
@@ -29830,8 +29830,8 @@
         "checks": {
           "llamadas": [
             "harness/checks/K03-hueco-declarado.sh:47",
-            "harness/checks/K43-foto-unica.sh:143",
-            "harness/checks/K43-foto-unica.sh:196"
+            "harness/checks/K43-foto-unica.sh:151",
+            "harness/checks/K43-foto-unica.sh:204"
           ],
           "menciones": [
             "harness/checks/K03-hueco-declarado.sh:29"
@@ -29947,7 +29947,7 @@
             "harness/checks/K08-que-base.sh:71",
             "harness/checks/K08-que-base.sh:72",
             "harness/checks/K43-control.bash:35",
-            "harness/checks/K43-foto-unica.sh:160",
+            "harness/checks/K43-foto-unica.sh:168",
             "harness/checks/K94-el-canal-que-no-puede-fallar.sh:134"
           ],
           "menciones": [
@@ -29957,7 +29957,7 @@
             "harness/checks/K08-que-base.sh:6",
             "harness/checks/K08-que-base.sh:16",
             "harness/checks/K43-control.bash:38",
-            "harness/checks/K43-foto-unica.sh:129"
+            "harness/checks/K43-foto-unica.sh:137"
           ]
         },
         "panel": {
@@ -30327,9 +30327,9 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:109",
-            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:120",
-            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:140"
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:113",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:124",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:144"
           ],
           "menciones": [
             "harness/checks/K31-cubos.py:62",
@@ -30588,11 +30588,11 @@
         "checks": {
           "llamadas": [
             "harness/checks/K31-eslabon5.sh:66",
-            "harness/checks/K43-foto-unica.sh:153",
-            "harness/checks/K43-foto-unica.sh:425"
+            "harness/checks/K43-foto-unica.sh:161",
+            "harness/checks/K43-foto-unica.sh:450"
           ],
           "menciones": [
-            "harness/checks/K43-foto-unica.sh:97"
+            "harness/checks/K43-foto-unica.sh:105"
           ]
         },
         "panel": {
@@ -30730,12 +30730,12 @@
           "llamadas": [
             "harness/checks/K42-mapa-liquidaciones-cuadra.sh:43",
             "harness/checks/K42-mapa-liquidaciones-cuadra.sh:44",
-            "harness/checks/K43-foto-unica.sh:157",
-            "harness/checks/K43-foto-unica.sh:210"
+            "harness/checks/K43-foto-unica.sh:165",
+            "harness/checks/K43-foto-unica.sh:218"
           ],
           "menciones": [
             "harness/checks/K42-mapa-liquidaciones-cuadra.sh:8",
-            "harness/checks/K43-foto-unica.sh:72",
+            "harness/checks/K43-foto-unica.sh:80",
             "harness/checks/K80-la-matriz-cambia-de-universo.sh:31"
           ]
         },
@@ -31034,8 +31034,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:143",
-            "harness/checks/K43-foto-unica.sh:197"
+            "harness/checks/K43-foto-unica.sh:151",
+            "harness/checks/K43-foto-unica.sh:205"
           ],
           "menciones": []
         },
@@ -31154,8 +31154,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:148",
-            "harness/checks/K43-foto-unica.sh:207"
+            "harness/checks/K43-foto-unica.sh:156",
+            "harness/checks/K43-foto-unica.sh:215"
           ],
           "menciones": []
         },
@@ -31413,15 +31413,15 @@
             "harness/checks/K31-eslabon5.sh:69",
             "harness/checks/K43-control.bash:173",
             "harness/checks/K43-control.bash:191",
-            "harness/checks/K43-foto-unica.sh:151",
-            "harness/checks/K43-foto-unica.sh:395",
+            "harness/checks/K43-foto-unica.sh:159",
+            "harness/checks/K43-foto-unica.sh:420",
             "harness/checks/K44-control.bash:113",
             "harness/checks/K44-control.bash:127"
           ],
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:78",
             "harness/checks/K03-hueco-declarado.sh:7",
-            "harness/checks/K43-foto-unica.sh:538"
+            "harness/checks/K43-foto-unica.sh:563"
           ]
         },
         "panel": {
@@ -31593,11 +31593,11 @@
           "llamadas": [
             "harness/checks/K02-cobertura-hueco.sh:81",
             "harness/checks/K03-hueco-declarado.sh:46",
-            "harness/checks/K43-foto-unica.sh:152"
+            "harness/checks/K43-foto-unica.sh:160"
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:44",
-            "harness/checks/K43-foto-unica.sh:119"
+            "harness/checks/K43-foto-unica.sh:127"
           ]
         },
         "panel": {
@@ -31909,8 +31909,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:144",
-            "harness/checks/K43-foto-unica.sh:198"
+            "harness/checks/K43-foto-unica.sh:152",
+            "harness/checks/K43-foto-unica.sh:206"
           ],
           "menciones": []
         },
@@ -32039,8 +32039,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:148",
-            "harness/checks/K43-foto-unica.sh:208"
+            "harness/checks/K43-foto-unica.sh:156",
+            "harness/checks/K43-foto-unica.sh:216"
           ],
           "menciones": []
         },
@@ -32321,10 +32321,10 @@
           "menciones": [
             "harness/checks/K31-cubos.py:62",
             "harness/checks/K43-foto-unica.sh:43",
-            "harness/checks/K43-foto-unica.sh:109",
-            "harness/checks/K43-foto-unica.sh:237",
-            "harness/checks/K43-foto-unica.sh:238",
-            "harness/checks/K43-foto-unica.sh:245"
+            "harness/checks/K43-foto-unica.sh:117",
+            "harness/checks/K43-foto-unica.sh:245",
+            "harness/checks/K43-foto-unica.sh:246",
+            "harness/checks/K43-foto-unica.sh:253"
           ]
         },
         "panel": {
@@ -32540,8 +32540,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:144",
-            "harness/checks/K43-foto-unica.sh:199"
+            "harness/checks/K43-foto-unica.sh:152",
+            "harness/checks/K43-foto-unica.sh:207"
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:43"
@@ -32727,12 +32727,12 @@
         "checks": {
           "llamadas": [
             "harness/checks/K31-eslabon5.sh:66",
-            "harness/checks/K43-foto-unica.sh:153",
-            "harness/checks/K43-foto-unica.sh:426",
+            "harness/checks/K43-foto-unica.sh:161",
+            "harness/checks/K43-foto-unica.sh:451",
             "harness/checks/K76-la-ventana-que-pides.sh:97"
           ],
           "menciones": [
-            "harness/checks/K43-foto-unica.sh:97"
+            "harness/checks/K43-foto-unica.sh:105"
           ]
         },
         "panel": {
@@ -32972,11 +32972,11 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:159",
-            "harness/checks/K43-foto-unica.sh:431"
+            "harness/checks/K43-foto-unica.sh:167",
+            "harness/checks/K43-foto-unica.sh:456"
           ],
           "menciones": [
-            "harness/checks/K43-foto-unica.sh:89"
+            "harness/checks/K43-foto-unica.sh:97"
           ]
         },
         "panel": {
@@ -33232,8 +33232,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:149",
-            "harness/checks/K43-foto-unica.sh:211"
+            "harness/checks/K43-foto-unica.sh:157",
+            "harness/checks/K43-foto-unica.sh:219"
           ],
           "menciones": []
         },
@@ -33495,8 +33495,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:149",
-            "harness/checks/K43-foto-unica.sh:212"
+            "harness/checks/K43-foto-unica.sh:157",
+            "harness/checks/K43-foto-unica.sh:220"
           ],
           "menciones": []
         },
@@ -33515,7 +33515,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_v121_hardening.py:36"
+            "tests/test_v121_hardening.py:40"
           ],
           "menciones": []
         }
@@ -33638,8 +33638,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:145",
-            "harness/checks/K43-foto-unica.sh:200",
+            "harness/checks/K43-foto-unica.sh:153",
+            "harness/checks/K43-foto-unica.sh:208",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217",
             "harness/checks/K84-dos-matrices-una-cifra.sh:86",
@@ -33835,7 +33835,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:156"
+            "harness/checks/K43-foto-unica.sh:164"
           ],
           "menciones": []
         },
@@ -34030,8 +34030,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:145",
-            "harness/checks/K43-foto-unica.sh:201"
+            "harness/checks/K43-foto-unica.sh:153",
+            "harness/checks/K43-foto-unica.sh:209"
           ],
           "menciones": []
         },
@@ -34050,7 +34050,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_v121_hardening.py:32"
+            "tests/test_v121_hardening.py:36"
           ],
           "menciones": []
         }
@@ -34167,8 +34167,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:149",
-            "harness/checks/K43-foto-unica.sh:213",
+            "harness/checks/K43-foto-unica.sh:157",
+            "harness/checks/K43-foto-unica.sh:221",
             "harness/checks/K80-la-matriz-cambia-de-universo.sh:171",
             "harness/checks/K80-la-matriz-cambia-de-universo.sh:172",
             "harness/checks/K80-la-matriz-cambia-de-universo.sh:214"
@@ -34278,10 +34278,10 @@
             "harness/checks/K13-vacio-o-rancio.sh:33",
             "harness/checks/K13-vacio-o-rancio.sh:92",
             "harness/checks/K13-vacio-o-rancio.sh:94",
-            "harness/checks/K43-foto-unica.sh:146",
-            "harness/checks/K43-foto-unica.sh:202",
-            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:89",
-            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:97"
+            "harness/checks/K43-foto-unica.sh:154",
+            "harness/checks/K43-foto-unica.sh:210",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:93",
+            "harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:101"
           ],
           "menciones": [
             "harness/checks/K13-vacio-o-rancio.sh:2",
@@ -34404,8 +34404,8 @@
           "llamadas": [
             "harness/checks/K43-control.bash:29",
             "harness/checks/K43-control.bash:71",
-            "harness/checks/K43-foto-unica.sh:155",
-            "harness/checks/K96-la-auditoria-no-inventa.sh:68"
+            "harness/checks/K43-foto-unica.sh:163",
+            "harness/checks/K96-la-auditoria-no-inventa.sh:84"
           ],
           "menciones": []
         },
@@ -34425,7 +34425,7 @@
         "tests": {
           "llamadas": [],
           "menciones": [
-            "tests/test_dashboard_layout.py:147"
+            "tests/test_dashboard_layout.py:151"
           ]
         }
       },
@@ -34904,7 +34904,7 @@
           "llamadas": [
             "harness/checks/K23-coste-de-ejecucion.sh:42",
             "harness/checks/K43-control.bash:90",
-            "harness/checks/K43-foto-unica.sh:154"
+            "harness/checks/K43-foto-unica.sh:162"
           ],
           "menciones": [
             "harness/checks/K96-la-auditoria-no-inventa.sh:4"
@@ -35102,7 +35102,7 @@
             "harness/checks/K21-ledger-de-senales.sh:32",
             "harness/checks/K24-replay-del-contexto.sh:88",
             "harness/checks/K43-control.bash:90",
-            "harness/checks/K43-foto-unica.sh:154"
+            "harness/checks/K43-foto-unica.sh:162"
           ],
           "menciones": [
             "harness/checks/K24-replay-del-contexto.sh:19",
@@ -35300,7 +35300,7 @@
         "tests": {
           "llamadas": [],
           "menciones": [
-            "tests/test_dashboard_layout.py:223",
+            "tests/test_dashboard_layout.py:227",
             "tests/test_familia_demanda.py:126",
             "tests/test_signals_outcomes.py:1"
           ]
@@ -35481,7 +35481,7 @@
           "llamadas": [
             "harness/checks/K24-replay-del-contexto.sh:87",
             "harness/checks/K43-control.bash:90",
-            "harness/checks/K43-foto-unica.sh:154"
+            "harness/checks/K43-foto-unica.sh:162"
           ],
           "menciones": []
         },
@@ -35674,7 +35674,7 @@
           "llamadas": [
             "harness/checks/K25-visibilidad-de-lo-final.sh:110",
             "harness/checks/K43-control.bash:90",
-            "harness/checks/K43-foto-unica.sh:155"
+            "harness/checks/K43-foto-unica.sh:163"
           ],
           "menciones": []
         },
@@ -35972,7 +35972,7 @@
           "llamadas": [
             "harness/checks/K20-cincoxx.sh:126",
             "harness/checks/K31-eslabon5.sh:65",
-            "harness/checks/K43-foto-unica.sh:160"
+            "harness/checks/K43-foto-unica.sh:168"
           ],
           "menciones": [
             "harness/checks/K20-cincoxx.sh:124",
@@ -36096,8 +36096,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:146",
-            "harness/checks/K43-foto-unica.sh:203"
+            "harness/checks/K43-foto-unica.sh:154",
+            "harness/checks/K43-foto-unica.sh:211"
           ],
           "menciones": []
         },
@@ -36219,8 +36219,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:146",
-            "harness/checks/K43-foto-unica.sh:204"
+            "harness/checks/K43-foto-unica.sh:154",
+            "harness/checks/K43-foto-unica.sh:212"
           ],
           "menciones": [
             "harness/checks/K31-eslabon5.sh:29"
@@ -36413,8 +36413,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:147",
-            "harness/checks/K43-foto-unica.sh:205"
+            "harness/checks/K43-foto-unica.sh:155",
+            "harness/checks/K43-foto-unica.sh:213"
           ],
           "menciones": []
         },
@@ -36514,7 +36514,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:160"
+            "harness/checks/K43-foto-unica.sh:168"
           ],
           "menciones": []
         },
@@ -36644,8 +36644,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:147",
-            "harness/checks/K43-foto-unica.sh:206"
+            "harness/checks/K43-foto-unica.sh:155",
+            "harness/checks/K43-foto-unica.sh:214"
           ],
           "menciones": []
         },
@@ -36784,7 +36784,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:152"
+            "harness/checks/K43-foto-unica.sh:160"
           ],
           "menciones": []
         },
@@ -37162,7 +37162,7 @@
           "llamadas": [
             "harness/checks/K02-cobertura-hueco.sh:81",
             "harness/checks/K03-hueco-declarado.sh:46",
-            "harness/checks/K43-foto-unica.sh:152",
+            "harness/checks/K43-foto-unica.sh:160",
             "harness/checks/K52b-la-ruta-no-falla-abierta.sh:57"
           ],
           "menciones": [
@@ -37346,8 +37346,8 @@
           "llamadas": [
             "harness/checks/K43-control.bash:174",
             "harness/checks/K43-control.bash:218",
-            "harness/checks/K43-foto-unica.sh:150",
-            "harness/checks/K43-foto-unica.sh:209"
+            "harness/checks/K43-foto-unica.sh:158",
+            "harness/checks/K43-foto-unica.sh:217"
           ],
           "menciones": []
         },
@@ -37366,7 +37366,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_wyckoff.py:108"
+            "tests/test_wyckoff.py:112"
           ],
           "menciones": []
         }
@@ -37529,11 +37529,11 @@
           "llamadas": [
             "harness/checks/K31-eslabon5.sh:66",
             "harness/checks/K43-control.bash:135",
-            "harness/checks/K43-foto-unica.sh:153",
-            "harness/checks/K43-foto-unica.sh:427"
+            "harness/checks/K43-foto-unica.sh:161",
+            "harness/checks/K43-foto-unica.sh:452"
           ],
           "menciones": [
-            "harness/checks/K43-foto-unica.sh:97"
+            "harness/checks/K43-foto-unica.sh:105"
           ]
         },
         "panel": {

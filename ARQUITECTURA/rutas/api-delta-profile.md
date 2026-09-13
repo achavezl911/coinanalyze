@@ -102,10 +102,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:152` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:160` | — |
 | **panel** | `static/app.js:1209` | — |
 | **readme** | — | `README.md:111` |
-| **tests** | `tests/test_dashboard_presentation.py:122` | — |
+| **tests** | `tests/test_dashboard_presentation.py:126` | — |
 
 **La llama el panel: es superficie de producto.**
 

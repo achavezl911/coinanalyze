@@ -4,10 +4,10 @@
 const fs = require('node:fs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { cargarApp, APP_JS } = require('./harness');
+const { cargarApp, fuentePanel } = require('./harness');
 
 const app = cargarApp();
-const FUENTE = fs.readFileSync(APP_JS, 'utf8');
+const FUENTE = fuentePanel();  // N modulos: la fuente se descubre, no se supone
 
 // Sin plan de operacion no hay veredicto: es lo que devuelve el backend.
 const SIN_EVALUAR = {

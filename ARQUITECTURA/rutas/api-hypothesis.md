@@ -301,7 +301,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:109`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:120`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:140` | `harness/checks/K31-cubos.py:62`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:5` |
+| **checks** | `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:113`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:124`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:144` | `harness/checks/K31-cubos.py:62`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:5` |
 | **tests** | `tests/test_v150_desk_snapshot.py:130` | — |
 
 **No la llama el panel**, pero si 4 linea(s) de codigo fuera de el.
