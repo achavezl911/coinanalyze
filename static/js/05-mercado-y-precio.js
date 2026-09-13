@@ -94,7 +94,34 @@ function renderMarketMemory(result) {
   $('memory-sub').textContent = `${number(coverage.days, 0)} días · ${coverage.from || '—'} a ${coverage.to || '—'}`;
 }
 
-function renderSetups(result) { const container = $('setups'); container.replaceChildren(); const setups = result.setups || []; if (!setups.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Sin evaluación disponible.'; container.append(e); return; } for (const item of setups) { const stateClass = item.state === 'activo' ? 'active' : item.state === 'vigilancia' ? 'watch' : 'inactive'; const node = document.createElement('article'); node.className = `setup ${stateClass}`; const title = document.createElement('div'); title.className = 'setup-title'; const name = document.createElement('span'); name.textContent = `${item.id} · ${item.name}`; const score = document.createElement('span'); score.className = 'setup-score'; score.textContent = `${item.confidence}/100`; title.append(name, score); const bias = document.createElement('div'); bias.className = 'setup-bias'; bias.textContent = `${String(item.state).toUpperCase()} · ${item.bias}`; node.append(title, bias); const matches = (item.matched || []).slice(0, 3); if (matches.length) { const ul = document.createElement('ul'); ul.className = 'setup-details'; for (const text of matches) { const li = document.createElement('li'); li.textContent = text; ul.append(li); } node.append(ul); } if (item.state !== 'inactivo' && item.reading) { const reading = document.createElement('div'); reading.className = 'setup-reading'; reading.textContent = item.reading; node.append(reading); } container.append(node); } }
+function renderSetups(result) { const container = $('setups'); container.replaceChildren(); const setups = result.setups || []; if (!setups.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Sin evaluación disponible.'; container.append(e); return; } for (const item of setups) { const stateClass = item.state === 'activo' ? 'active' : item.state === 'vigilancia' ? 'watch' : 'inactive'; const node = document.createElement('article'); node.className = `setup ${stateClass}`; const title = document.createElement('div'); title.className = 'setup-title'; const name = document.createElement('span'); name.textContent = `${item.id} · ${item.name}`; const score = document.createElement('span'); score.className = 'setup-score'; score.textContent = `${item.confidence}/100`; title.append(name, score); const bias = document.createElement('div'); bias.className = 'setup-bias'; bias.textContent = `${String(item.state).toUpperCase()} · ${item.bias}`; node.append(title, bias); const matches = (item.matched || []).slice(0, 3); if (matches.length) { const ul = document.createElement('ul'); ul.className = 'setup-details'; for (const text of matches) { const li = document.createElement('li'); li.textContent = text; ul.append(li); } node.append(ul); } if (item.state !== 'inactivo' && item.reading) { const reading = document.createElement('div'); reading.className = 'setup-reading'; reading.textContent = item.reading; node.append(reading); }
+    // FOLLOW · lo que le FALTA, lo que lo INVALIDA y su HORIZONTE. El backend los sirve desde
+    // antes de esta campana -`missing`, `invalidation`, `horizon` en cada setup- y la tarjeta
+    // no los pintaba: era exactamente «lo servido que no se ve».
+    //
+    // AUSENTE SE VE COMO AUSENTE, y es la parte que hay que mirar dos veces: un setup sin
+    // `missing` NO es un setup al que no le falte nada -eso seria leer un hueco como un cero-.
+    // Por eso se distingue «no le falta nada» (lista vacia, que el backend SI sirve cuando el
+    // setup esta completo) de «no lo dice» (la clave no viene).
+    const falta = document.createElement('div');
+    falta.className = 'setup-falta';
+    if (!Object.hasOwn(item, 'missing')) falta.textContent = 'Le falta: no declarado.';
+    else if (!safeArray(item.missing).length) falta.textContent = 'Le falta: nada, cumple todo lo suyo.';
+    else falta.textContent = `Le falta: ${safeArray(item.missing).join(' · ')}`;
+    node.append(falta);
+
+    const invalida = document.createElement('div');
+    invalida.className = 'setup-invalida';
+    invalida.textContent = item.invalidation
+      ? `Se invalida si: ${item.invalidation}`
+      : 'Se invalida si: no declarado.';
+    node.append(invalida);
+
+    const horizonte = document.createElement('div');
+    horizonte.className = 'setup-horizonte';
+    horizonte.textContent = item.horizon ? `Horizonte: ${item.horizon}` : 'Horizonte: no declarado.';
+    node.append(horizonte);
+    container.append(node); } }
 
 function renderMarketReading(result, trend, swing, divergences, confidence, setup) {
   const body = $('market-reading');

@@ -98,6 +98,52 @@ function renderOiChart(oi) {
   try { state.charts['oi-chart'].timeScale().fitContent(); } catch (_) {}
 }
 
+// DE QUE VENUE ES ESTA SERIE · la tarjeta existe desde el primer commit del repo y nunca lo
+// dijo. Ahora lo dice, y lo dice CON LO QUE EL BACKEND DECLARA, no con un literal:
+//   · la serie: `data_gaps.exchanges` de /api/oi. Si manana la fuente cambia, cambia sola.
+//   · el reparto: `oi_context.by_venue` del sobre, que trae los dos venues, su total y su
+//     `note` con el ALCANCE -que venues cubre y cuales no-. El alcance se PUBLICA tal cual
+//     lo declara el backend en vez de reescribirlo aqui, que seria volver al literal.
+// SI NADIE LO DECLARA, LA TARJETA DICE QUE NO LO SABE. No se pone un venue por defecto: una
+// serie atribuida al venue equivocado es peor que una serie sin atribuir.
+function renderOiVenue(respuesta, contexto) {
+  const cab = $('oi-venue');
+  if (cab) {
+    const ex = ((respuesta || {}).data_gaps || {}).exchanges;
+    const venues = safeArray(ex).filter(Boolean);
+    cab.textContent = venues.length
+      ? `${venues.join(' + ')} · 15 min · eje UTC`
+      : 'venue no declarado · 15 min · eje UTC';
+    cab.title = venues.length
+      ? `La fuente la declara /api/oi en data_gaps.exchanges: ${venues.join(', ')}`
+      : '/api/oi no declara de que venue es la serie, asi que la tarjeta no lo afirma';
+  }
+  const pie = $('oi-venue-reparto');
+  if (!pie) return;
+  const bv = (contexto || {}).by_venue;
+  if (!bv) {
+    // AUSENTE SE VE COMO AUSENTE: ni vacio ni cero.
+    pie.textContent = 'Reparto por venue: no servido.';
+    return;
+  }
+  const partes = [];
+  for (const [k, v] of Object.entries(bv)) {
+    const m = /^(\w+)_oi_usd$/.exec(k);
+    if (m && asNumber(v) !== null) partes.push(`${m[1]} ${money(v, 0)}`);
+  }
+  const share = asNumber(bv.bybit_share_of_two_venues_pct);
+  const total = asNumber(bv.two_venue_total_usd);
+  const cabeza = partes.length ? partes.join(' · ') : 'sin desglose por venue';
+  const cola = [
+    total === null ? null : `total ${money(total, 0)}`,
+    share === null ? null : `bybit ${number(share, 1)} % de los dos`,
+  ].filter(Boolean).join(' · ');
+  pie.textContent = `Reparto: ${cabeza}${cola ? ' · ' + cola : ''}`;
+  // EL ALCANCE, con las palabras del backend. Es lo que impide leer el reparto como si
+  // fuera el mercado entero.
+  if (bv.note) pie.textContent += ` — ${bv.note}`;
+}
+
 // Reparte la evidencia respecto de la hipotesis que puso el operador. No emite ordenes:
 // solo dice que la apoya, que la contradice y que falta por ocurrir.
 const HYP_BUCKETS = [

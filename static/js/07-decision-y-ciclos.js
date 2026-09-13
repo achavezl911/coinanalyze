@@ -365,7 +365,7 @@ async function loadSection(id, force = false) {
     presetAnalyzer(state.dashboard.barriers, state.wyckoff);
     renderDecisionBoard(state.dashboard, trend, swing, structureDetail, state.confidence, state.externalMacro);
   } else if (id === 'derivados') {
-    const [oi, basis, liq, liqLevels, funding, positioning] = await Promise.all([
+    const [oi, basis, liq, liqLevels, funding, positioning, oiContexto] = await Promise.all([
       maybe(`/api/oi?symbol=${q}&interval=15min&limit=384`, { rows: [] }),
       pedirSobre(q).then(() => delSobre('basis', {})),
       pedirSobre(q).then(() => delSobre('scalp_liquidations', { matrix: [] })),
@@ -375,8 +375,14 @@ async function loadSection(id, force = false) {
       maybe(`/api/scalp/liquidation-levels?symbol=${q}&minutes=60&bucket_bps=10&limit=50`, { rows: [] }),
       pedirSobre(q).then(() => delSobre('funding_context', {})),
       pedirSobre(q).then(() => delSobre('positioning', {})),
+      // EL REPARTO POR VENUE del OI. No esta en /api/oi: vive en `oi_context` del sobre, que
+      // ya se pide una vez por refresco. El panel no lo usaba: cero menciones antes de hoy.
+      pedirSobre(q).then(() => delSobre('oi_context', null)),
     ]);
     if (symbol !== state.symbol) return;
+    // A renderOiChart se le sigue dando SOLO las filas -no se toca-, y el venue se pinta
+    // aparte con la respuesta ENTERA, que es donde el backend lo declara.
+    renderOiVenue(oi, oiContexto);
     renderOiChart(filasDe(oi));
     renderBasisDetails(basis);
     renderLiquidations(liq);

@@ -472,9 +472,14 @@
 
         <div class="context-grid">
           <article class="panel chart-panel oi-panel">
-            <header><h3>Open Interest</h3><span>15 min · eje UTC</span></header>
+            <!-- EL VENUE NO VA ESCRITO AQUI A PROPOSITO. La serie de OI es de UN venue, y
+                 cual es lo DECLARA el backend (`data_gaps.exchanges` de /api/oi). Si se
+                 escribiera aqui, el dia que la fuente cambiara la tarjeta seguiria diciendo
+                 lo de siempre. Lo rellena renderOiVenue(). -->
+            <header><h3>Open Interest</h3><span id="oi-venue">15 min · eje UTC</span></header>
             <div id="oi-chart" class="chart chart-compact"></div>
             <p class="source-note" id="oi-gaps"></p>
+            <p class="source-note" id="oi-venue-reparto"></p>
           </article>
 
         <article class="panel funding-panel">

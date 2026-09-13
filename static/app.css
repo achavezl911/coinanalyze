@@ -652,6 +652,12 @@ tbody tr:hover { background: rgba(98, 168, 255, .045); }
 .setup-bias { margin-top: var(--sp-2); color: var(--muted); font-size: var(--fs-micro); }
 .setup-details { margin: var(--sp-3) 0 0; padding-left: var(--sp-6); color: #b1b8c0; font-size: var(--fs-micro); line-height: 1.45; }
 .setup-reading { margin-top: var(--sp-3); color: #c0c6cd; font-size: var(--fs-micro); line-height: 1.45; }
+/* FOLLOW · lo que le falta, lo que lo invalida y su horizonte. Tres renglones con el mismo
+   peso visual que la lectura: son condiciones, no adorno. `setup-falta` va un punto mas
+   claro porque es lo unico accionable de los tres. */
+.setup-falta { margin-top: var(--sp-3); color: #c8cfd6; font-size: var(--fs-micro); line-height: 1.45; }
+.setup-invalida { margin-top: var(--sp-2); color: #a8aeb6; font-size: var(--fs-micro); line-height: 1.45; }
+.setup-horizonte { margin-top: var(--sp-2); color: var(--muted); font-size: var(--fs-micro); }
 
 .market-reading { padding: var(--sp-5); }
 .market-memory { padding: var(--sp-5); }

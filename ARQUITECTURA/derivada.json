@@ -26114,7 +26114,8 @@
             "harness/checks/K44-control.bash:112",
             "harness/checks/K44-control.bash:134",
             "harness/checks/K44-control.bash:140",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:76"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:76",
+            "harness/checks/K46-campos.js:26"
           ],
           "menciones": [
             "harness/checks/K31-eslabon5.sh:60",
@@ -26164,7 +26165,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 14,
+        "n_llamadas": 15,
         "n_menciones": 18,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -28032,7 +28033,7 @@
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:211",
             "static/js/07-decision-y-ciclos.js:312",
-            "static/js/07-decision-y-ciclos.js:416"
+            "static/js/07-decision-y-ciclos.js:422"
           ],
           "menciones": []
         },
@@ -28431,6 +28432,10 @@
             "harness/checks/K44-control.bash:126",
             "harness/checks/K44-control.bash:132",
             "harness/checks/K44-control.bash:141",
+            "harness/checks/K46-campos.js:16",
+            "harness/checks/K46-campos.js:20",
+            "harness/checks/K46-campos.js:22",
+            "harness/checks/K46-campos.js:30",
             "harness/checks/K90-control.bash:132",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:97",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:116",
@@ -28440,6 +28445,8 @@
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:230",
+            "harness/checks/K46-campos.js:6",
+            "harness/checks/K46-el-campo-que-no-llega.sh:10",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13",
             "harness/checks/K95-la-tasa-base-que-se-pinta.sh:25",
             "harness/checks/K95-la-tasa-base-que-se-pinta.sh:62",
@@ -28475,8 +28482,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 22,
-        "n_menciones": 11,
+        "n_llamadas": 26,
+        "n_menciones": 13,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -29318,7 +29325,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:419"
+            "static/js/07-decision-y-ciclos.js:425"
           ],
           "menciones": []
         },
@@ -29520,7 +29527,7 @@
         "panel-sobre": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:212",
-            "static/js/07-decision-y-ciclos.js:418"
+            "static/js/07-decision-y-ciclos.js:424"
           ],
           "menciones": []
         },
@@ -29963,7 +29970,7 @@
         "panel": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:237",
-            "static/js/07-decision-y-ciclos.js:391"
+            "static/js/07-decision-y-ciclos.js:397"
           ],
           "menciones": []
         },
@@ -31042,7 +31049,7 @@
         "panel-sobre": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:344",
-            "static/js/07-decision-y-ciclos.js:417"
+            "static/js/07-decision-y-ciclos.js:423"
           ],
           "menciones": []
         },
@@ -31593,7 +31600,8 @@
           "llamadas": [
             "harness/checks/K02-cobertura-hueco.sh:81",
             "harness/checks/K03-hueco-declarado.sh:46",
-            "harness/checks/K43-foto-unica.sh:160"
+            "harness/checks/K43-foto-unica.sh:160",
+            "harness/checks/K46-campos.js:24"
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:44",
@@ -31603,7 +31611,18 @@
         "panel": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:310",
-            "static/js/07-decision-y-ciclos.js:369"
+            "static/js/07-decision-y-ciclos.js:369",
+            "static/js/09-ejecucion-y-calidad.js:118",
+            "static/js/09-ejecucion-y-calidad.js:119"
+          ],
+          "menciones": [
+            "static/js/07-decision-y-ciclos.js:378",
+            "static/js/09-ejecucion-y-calidad.js:103"
+          ]
+        },
+        "panel-html": {
+          "llamadas": [
+            "static/index.html:476"
           ],
           "menciones": []
         },
@@ -31616,8 +31635,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 5,
-        "n_menciones": 3,
+        "n_llamadas": 9,
+        "n_menciones": 5,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32550,12 +32569,12 @@
         "panel": {
           "llamadas": [],
           "menciones": [
-            "static/js/07-decision-y-ciclos.js:388"
+            "static/js/07-decision-y-ciclos.js:394"
           ]
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:392"
+            "static/js/07-decision-y-ciclos.js:398"
           ],
           "menciones": []
         },
@@ -33134,7 +33153,7 @@
         "panel": {
           "llamadas": [],
           "menciones": [
-            "static/js/09-ejecucion-y-calidad.js:200"
+            "static/js/09-ejecucion-y-calidad.js:246"
           ]
         }
       },
@@ -34411,7 +34430,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:408"
+            "static/js/07-decision-y-ciclos.js:414"
           ],
           "menciones": []
         },
@@ -34912,7 +34931,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:406"
+            "static/js/07-decision-y-ciclos.js:412"
           ],
           "menciones": []
         },
@@ -35112,7 +35131,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:404"
+            "static/js/07-decision-y-ciclos.js:410"
           ],
           "menciones": []
         },
@@ -35487,7 +35506,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:405"
+            "static/js/07-decision-y-ciclos.js:411"
           ],
           "menciones": []
         },
@@ -35680,7 +35699,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:407"
+            "static/js/07-decision-y-ciclos.js:413"
           ],
           "menciones": []
         },
@@ -36790,7 +36809,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:403"
+            "static/js/07-decision-y-ciclos.js:409"
           ],
           "menciones": []
         },
