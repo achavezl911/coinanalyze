@@ -5,6 +5,7 @@ rompe, esto lo dice AQUI y no en forma de nueve suites que aprueban sin sujeto.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -19,16 +20,22 @@ def _corre(repo: Path, *args: str):
                           capture_output=True, text=True, timeout=120)
 
 
-def test_hoy_descubre_el_panel_y_es_el_fichero_de_siempre() -> None:
-    """Con UN fichero, la concatenacion tiene que ser byte a byte `static/app.js`.
+def test_lo_descubierto_es_EXACTAMENTE_lo_que_declara_el_html() -> None:
+    """El descubridor devuelve los `<script>` del HTML, TODOS y EN ORDEN, y `--cat` los une.
 
-    Es lo que permite exigir la regresion EXACTA en vez de «parecida».
+    ESTE TEST DECIA OTRA COSA HASTA EL 2026-09-13: exigia que `FUENTE` fuera byte a byte
+    `static/app.js`, porque entonces el panel era UN fichero. La FASE 2 lo partio en once y
+    ese fichero ya no existe, asi que la afirmacion vieja no se pudo relajar: se quedo sin
+    sujeto. **No se borro la asercion: se reapunto** a lo que ahora sostiene la medida —que
+    lo descubierto sea exactamente lo declarado, en orden, y que la concatenacion sea la
+    suma de esos ficheros y no de otros—. Sin esto, el descubridor podria saltarse uno o
+    reordenarlos y nadie se enteraria: en scripts clasicos el ORDEN es el contrato.
     """
-    # SE COMPARA CONTRA EL FICHERO DE VERDAD, leido aqui a proposito. Mi propio parcheador
-    # automatico convirtio esta linea en `FUENTE == FUENTE` -una tautologia que pasa siempre-
-    # y eso es exactamente aflojar un criterio hasta que deje de condenar. Restaurada.
     assert FICHEROS, "el descubridor no encontro ninguna fuente del panel"
-    assert (RAIZ / "static" / "app.js").read_text(encoding="utf-8") == FUENTE
+    html = (RAIZ / "static" / "index.html").read_text(encoding="utf-8")
+    declarados = re.findall(r'<script\b[^>]*\bsrc="/static/(js/[^"]+)"', html)
+    assert [f.relative_to(RAIZ).as_posix() for f in FICHEROS] == [f"static/{d}" for d in declarados]
+    assert "".join(f.read_text(encoding="utf-8") for f in FICHEROS) == FUENTE
 
 
 def _arbol_de_modulos(tmp: Path) -> Path:

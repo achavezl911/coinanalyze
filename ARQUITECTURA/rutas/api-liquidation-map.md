@@ -93,9 +93,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:165`, `harness/checks/K43-foto-unica.sh:218` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:80`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
-| **panel** | — | `static/app.js:3250` |
-| **panel-html** | `static/index.html:224` | — |
-| **panel-sobre** | `static/app.js:1725` | — |
+| **panel** | — | `static/js/10-contexto-y-estructura.js:498` |
+| **panel-html** | `static/index.html:242` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:300` | — |
 | **tests** | — | `tests/test_liquidation_map_ventana.py:1` |
 
 **La llama el panel: es superficie de producto.**

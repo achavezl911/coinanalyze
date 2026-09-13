@@ -108,7 +108,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-control.bash:174`, `harness/checks/K43-control.bash:218`, `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:217` | — |
-| **panel-sobre** | `static/app.js:1635`, `static/app.js:1774` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:210`, `static/js/07-decision-y-ciclos.js:349` | — |
 | **readme** | — | `README.md:149` |
 | **tests** | `tests/test_wyckoff.py:112` | — |
 

@@ -7,17 +7,34 @@ de jsdom y el generador de la capa declarada. Si cada uno lleva su ruta escrita,
 corte unos se callan, otros condenan en falso y el mapa MIENTE -y esa es la cara: un check
 mudo se declara, un rojo se investiga, un mapa que miente SE CREE-.
 
-EL CONTRATO QUE ESTE FICHERO IMPLEMENTA, y que la FASE 2 tiene que cumplir:
+EL CONTRATO, TAL Y COMO LA FASE 2 LO CUMPLIO EL 2026-09-13:
 
-  1 · `static/index.html` declara el panel con UN UNICO punto de entrada:
-          <script type="module" src="/static/app.js"></script>
-  2 · los modulos se resuelven entre si con `import`/`export ... from` RELATIVO
-      (`./x.js`, `../y/z.js`), todos bajo `static/`.
-  3 · `vendor/` NO es el panel: es tercero y va como <script> clasico aparte. Se excluye
-      POR SU PREFIJO, que es una regla y no una lista de nombres.
-  4 · nadie lleva la lista de modulos escrita a mano. SE DESCUBRE: se lee el <script> del
-      HTML y se sigue el grafo de imports. Llevar la lista a mano seria cambiar una forma
-      rigida por otra.
+  1 · `static/index.html` declara el panel con N `<script defer src="/static/js/NN-....js">`
+      CLASICOS, en ORDEN DE DOCUMENTO. Hoy son once.
+  2 · NO hay modulos ES y NO hay imports entre ellos: los scripts clasicos comparten el
+      ambito global, que es lo que el panel necesita. El orden de las etiquetas ES el orden
+      del fichero del que salieron, y no se reordena: un `const` de primer nivel solo existe
+      a partir del script que lo declara.
+  3 · `vendor/` NO es el panel: es tercero y va en su propia etiqueta. Se excluye POR SU
+      PREFIJO, que es una regla y no una lista de nombres.
+  4 · nadie lleva la lista escrita a mano. SE DESCUBRE del HTML. Llevar la lista a mano
+      seria cambiar una forma rigida por otra.
+
+POR QUE NO SON MODULOS ES · LAS DOS RAMAS ESTAN MEDIDAS Y DESCARTADAS (COLA 119)
+
+  · con `import` DE EFECTO (`import './x.js';`) el panel sale MUERTO: los modulos ES NO
+    comparten ambito, asi que una funcion declarada en un trozo no existe para los demas.
+  · con `import` CON NOMBRES el `--cat` de aqui abajo declara NO MEDIDO -y hace bien: una
+    concatenacion no puede representar nombres atados-. Con el se apagan la sonda de jsdom y
+    los 75 tests de node, o sea que se reabriria el agujero que la campana del 09-12 cerro.
+  · y la politica de seguridad de produccion prohibe ademas un `importmap`, que es inline y
+    no hay `unsafe-inline` ni `nonce` ni `hash`: los especificadores tendrian que ser
+    relativos de todas formas.
+
+  El soporte de `type="module"` e imports relativos SE CONSERVA en el codigo de abajo: esta
+  medido que la politica de produccion los serviria (COLA 119), y si algun dia el panel se
+  mueve a modulos de verdad, el descubridor ya sabe seguir el grafo. Lo que NO se conserva es
+  la afirmacion de que ESA sea la forma del panel: no lo es.
 
 VIABILIDAD EN PRODUCCION, MEDIDA EL 2026-09-13 Y NO SUPUESTA:
   · `app/api.py:3786` monta `StaticFiles` en /static -nginx NO sirve los ficheros: su

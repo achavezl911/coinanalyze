@@ -7,7 +7,25 @@
   <title>Coinalyze Operator</title>
   <link rel="stylesheet" href="/static/app.css">
   <script defer src="/static/vendor/lightweight-charts-5.2.0.min.js"></script>
-  <script defer src="/static/app.js"></script>
+  <!-- EL PANEL, EN N FICHEROS · FASE 2, 2026-09-13. `<script defer>` CLASICOS y no
+       modulos ES: con `import` de efecto los trozos NO comparten ambito y el panel sale
+       muerto; con `import` con nombres el concatenador del arnes declara NO MEDIDO y se
+       apagan la sonda de jsdom y los 75 tests de node (COLA 119). Los clasicos comparten
+       el ambito global, se ejecutan EN ORDEN DE DOCUMENTO y `defer` no bloquea el pintado.
+       EL ORDEN DE ESTAS LINEAS ES EL ORDEN DEL FICHERO ORIGINAL y no se reordena: un
+       `const` de primer nivel solo existe a partir del script que lo declara.
+       harness/bin/panel-fuentes los descubre de aqui; no hay ninguna lista escrita a mano. -->
+  <script defer src="/static/js/01-estado-y-formato.js"></script>
+  <script defer src="/static/js/02-canal.js"></script>
+  <script defer src="/static/js/03-graficos.js"></script>
+  <script defer src="/static/js/04-flujo-y-libro.js"></script>
+  <script defer src="/static/js/05-mercado-y-precio.js"></script>
+  <script defer src="/static/js/06-perfiles-y-niveles.js"></script>
+  <script defer src="/static/js/07-decision-y-ciclos.js"></script>
+  <script defer src="/static/js/08-arranque.js"></script>
+  <script defer src="/static/js/09-ejecucion-y-calidad.js"></script>
+  <script defer src="/static/js/10-contexto-y-estructura.js"></script>
+  <script defer src="/static/js/11-rango-wyckoff-y-sesion.js"></script>
 </head>
 <body>
   <!-- La barra usa grid-template-areas: cada bloque declara SU area, asi que anadir un
