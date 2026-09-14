@@ -26115,7 +26115,10 @@
             "harness/checks/K44-control.bash:134",
             "harness/checks/K44-control.bash:140",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:76",
-            "harness/checks/K72-campos.js:43"
+            "harness/checks/K72-campos.js:43",
+            "harness/checks/K72-campos.js:53",
+            "harness/checks/K72-campos.js:59",
+            "harness/checks/K72-campos.js:66"
           ],
           "menciones": [
             "harness/checks/K31-eslabon5.sh:60",
@@ -26135,7 +26138,12 @@
           "llamadas": [
             "static/js/02-canal.js:35",
             "static/js/02-canal.js:49",
-            "static/js/02-canal.js:53"
+            "static/js/02-canal.js:53",
+            "static/js/10-contexto-y-estructura.js:912",
+            "static/js/10-contexto-y-estructura.js:937",
+            "static/js/10-contexto-y-estructura.js:947",
+            "static/js/10-contexto-y-estructura.js:966",
+            "static/js/10-contexto-y-estructura.js:976"
           ],
           "menciones": []
         },
@@ -26165,7 +26173,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 15,
+        "n_llamadas": 23,
         "n_menciones": 18,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -28435,7 +28443,7 @@
             "harness/checks/K72-campos.js:18",
             "harness/checks/K72-campos.js:25",
             "harness/checks/K72-campos.js:31",
-            "harness/checks/K72-campos.js:51",
+            "harness/checks/K72-campos.js:75",
             "harness/checks/K90-control.bash:132",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:97",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:116",

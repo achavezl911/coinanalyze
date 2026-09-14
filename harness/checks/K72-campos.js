@@ -46,6 +46,30 @@ const CAMPOS = [
       o.oi_context.by_venue.note = MARCA;
       return true;
     }, true],
+  // LOS TRES DE LA FASE 3b. El censo POR VALOR los dio NO SE VE con suelo de azar 0.0%, se
+  // pintaron, y desde hoy los cubre esta red. La marca viaja como CLAVE -no como valor- en los
+  // dos primeros: la tarjeta escribe el nombre de la ventana, asi que marcando la clave la
+  // marca acaba en el DOM; marcando el numero solo saldria «—», que no distingue nada.
+  ['cross_asset.correlation', '/api/ai/context', 'la tarjeta Relativo entre activos: la correlacion por ventana',
+    o => {
+      if (!o.cross_asset || !o.cross_asset.correlation || typeof o.cross_asset.correlation !== 'object') return false;
+      o.cross_asset.correlation[MARCA] = { eth: 1 };
+      return true;
+    }, true],
+  ['volatility.realized_vol_annualized_pct', '/api/ai/context', 'la tarjeta Volatilidad: la vol. realizada por ventana',
+    o => {
+      const v = o.volatility && o.volatility.realized_vol_annualized_pct;
+      if (!v || typeof v !== 'object') return false;
+      v[MARCA] = 1;
+      return true;
+    }, true],
+  ['operator_read.invalidates_long', '/api/ai/context', 'la tarjeta Que invalida la lectura: las condiciones del largo',
+    o => {
+      const op = o.operator_read;
+      if (!op || !Array.isArray(op.invalidates_long) || !op.invalidates_long.length) return false;
+      op.invalidates_long[0] = MARCA;
+      return true;
+    }, true],
   // EL CONTROL, en la misma pasada. Un campo que la tarjeta NO pinta: si llegara, este check
   // diria que si a cualquier cosa y su VERDE no valdria nada.
   ['setup.daily_flow_source', '/api/dashboard/state', 'CONTROL: campo que la tarjeta NO pinta',
@@ -84,7 +108,7 @@ async function texto(transform) {
   //     servido y pintado      -> bien
   //     servido y NO pintado   -> ROJO, con su nombre
   //     NO servido             -> no se juzga, y se DICE en la linea de veredicto
-  const perdidos = [], control = [], noServidos = [];
+  const perdidos = [], control = [], noServidos = [], juzgadosQue = [];
   for (const [campo, ruta, que, planta, esperado] of CAMPOS) {
     let planto = false;
     const t = (url, body) => {
@@ -97,6 +121,7 @@ async function texto(transform) {
     try { llega = (await texto(t)).includes(MARCA); }
     catch (e) { console.log(`NO MEDIDO: el panel reventó midiendo ${campo}: ${String(e && e.message || e).split('\n')[0]}`); process.exit(2); }
     if (!planto) { noServidos.push(campo); continue; }
+    if (esperado) juzgadosQue.push(que);
     if (esperado && !llega) perdidos.push(`${campo} (${que}, de ${ruta})`);
     if (!esperado && llega) control.push(campo);
   }
@@ -111,7 +136,7 @@ async function texto(transform) {
     ? ` · ${noServidos.length} NO SE JUZGA(N) porque el backend no los sirvio hoy: ` +
       `${noServidos.join(' ')} -un plantado que no ocurre no es una perdida-`
     : '';
-  const juzgados = CAMPOS.length - 1 - noServidos.filter(c => !c.startsWith('setup.daily_flow_source')).length;
+  const juzgados = juzgadosQue.length;
 
   if (perdidos.length) {
     console.log(`ROJO: ${perdidos.length} campo(s) que el backend SIRVE dejaron de llegar a su ` +
@@ -124,9 +149,12 @@ async function texto(transform) {
       `no hay nada que juzgar${cola}`);
     process.exit(2);
   }
-  console.log(`los ${juzgados} campos servidos hoy llegan ESCRITOS a su tarjeta: lo que le ` +
-    'falta a cada setup, lo que lo invalida, su horizonte, el venue de la serie de OI y el ' +
-    'alcance del reparto por venue. Medido mutando el payload que la tarjeta lee -no el que ' +
+  // RESIDUO R1 (COLA 121): esta linea ENUMERABA CINCO COSAS FIJAS pasara lo que pasara. Si un
+  // campo no venia servido, `juzgados` bajaba a 4 y la frase seguia nombrando los cinco: el
+  // check se atribuia una cobertura que no habia medido, que es el mismo defecto que la 3a
+  // persiguio en otros. La lista se construye AHORA de los que de verdad se juzgaron.
+  console.log(`los ${juzgados} campos servidos hoy llegan ESCRITOS a su tarjeta: ` +
+    `${juzgadosQue.join(' · ')}. Medido mutando el payload que la tarjeta lee -no el que ` +
     'uno supondria- y buscando la marca en el DOM, con el control de un campo NO pintado ' +
     `saliendo \`false\` en la misma pasada${cola}`);
   process.exit(0);
