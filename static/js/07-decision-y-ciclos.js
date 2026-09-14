@@ -438,6 +438,8 @@ async function loadSection(id, force = false) {
     renderCrossAsset();
     renderVolatilidad();
     renderInvalida();
+    renderPerfilVolumen();
+    renderLiqBurst();
     renderHealth(state.health);
   }
   state.viewLoadedAt[id] = Date.now();

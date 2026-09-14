@@ -12,16 +12,32 @@
 # `data_gaps.exchanges`, que es un campo dentro de una ruta de la familia SERIE. Un bloque
 # puede seguir llegando entero mientras el campo que a uno le importa se cae.
 #
-# COMO MIDE · MUTACION CON MARCA, y no un grep. Se sustituye el valor del campo por una cadena
-# reconocible en el payload que la tarjeta LEE DE VERDAD -que no siempre es el que uno
-# supondria: los setups los trae la ruta suelta y no el sobre, aunque el sobre tambien los
-# tenga- y se busca ESA cadena en el texto del DOM. Buscar el valor original no valdria:
-# puede coincidir con cualquier otro numero de la pagina.
+# COMO MIDE · MUTACION, y no un grep. Siempre se muta el payload que la tarjeta LEE DE VERDAD
+# -que no siempre es el que uno supondria: los setups los trae la ruta suelta y no el sobre,
+# aunque el sobre tambien los tenga-. Hay DOS MODOS y el segundo existe por un defecto que tuvo
+# este check:
 #
-# EL CONTROL QUE SOSTIENE A LOS DEMAS, y corre en la MISMA pasada: junto a los campos que si
-# se pintan va uno que la tarjeta NO pinta (`setup.daily_flow_source`). Si ese tambien
-# llegara, este check estaria diciendo que si a todo. Tiene que salir `llega=false`, y si sale
-# `true` el veredicto es NO MEDIDO -el instrumento esta roto- y no VERDE.
+#   MARCA    se sustituye el valor por una cadena reconocible y se busca ESA cadena en el DOM.
+#            Vale para textos y listas de textos. Buscar el valor ORIGINAL no valdria: puede
+#            coincidir con cualquier otro numero o rotulo de la pagina.
+#   NUMERO   se muta el valor y se exige que cambie el TEXTO DEL CONTENEDOR de su tarjeta -o de
+#            SU FILA-. No se busca ningun valor, asi que no hay coincidencia posible.
+#
+# POR QUE HIZO FALTA EL SEGUNDO. La version anterior marcaba las cifras anadiendo una CLAVE al
+# objeto de ventanas. Eso prueba que la tarjeta ENUMERA las ventanas, NO que escriba sus
+# numeros: con la celda del numero borrada, o con el valor escrito como un «—» fijo, el check
+# decia VERDE y su linea seguia afirmando que la cifra llegaba ESCRITA.
+#
+# Y POR QUE ALGUNAS FILAS SE VIGILAN UNA A UNA: una fila DERIVADA enmascara a las suyas. En la
+# rafaga de liquidaciones, «Rafaga vs mediana» usa `total` y `baseline_5m`, asi que con la fila
+# del Total sin su cifra el texto de la TARJETA seguia moviendose y el check no condenaba. Por
+# eso esas cinco apuntan a `fila-liq-*` y no al contenedor.
+#
+# LOS DOS CONTROLES QUE SOSTIENEN A LOS DEMAS, uno por modo y en la MISMA pasada: junto a los
+# campos que si se pintan van `setup.daily_flow_source` (marca) y `operator_read.edge` (numero),
+# dos campos SERVIDOS que ninguna tarjeta pinta. Si cualquiera de los dos llegara, este check
+# estaria diciendo que si a todo: tienen que salir `llega=false`, y si salen `true` el veredicto
+# es NO MEDIDO -el instrumento esta roto- y no VERDE.
 set -uo pipefail
 
 B=/srv/coinanalyze/harness
