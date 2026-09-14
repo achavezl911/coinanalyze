@@ -434,6 +434,12 @@ async function loadSection(id, force = false) {
     renderMarketReading(state.dashboard.cvd_swing, state.trend, state.swing, divergences, state.confidence, setup);
     renderDaily(daily);
     renderDivergences(divergences);
+    // Del sobre que esta vista YA pidio arriba: no abren peticion nueva.
+    renderCrossAsset();
+    renderVolatilidad();
+    renderInvalida();
+    renderPerfilVolumen();
+    renderLiqBurst();
     renderHealth(state.health);
   }
   state.viewLoadedAt[id] = Date.now();

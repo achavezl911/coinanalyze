@@ -869,3 +869,250 @@ async function submitBreakout(event) {
   renderBreakout(result);
 }
 
+// ---------------- Lo que el sobre servia y no se veia (fase 3b) ----------------
+// Las tres tarjetas de abajo leen del SOBRE YA CACHEADO (`state.sobre`): ninguna abre una
+// peticion nueva. No se usa `delSobre`, que colapsa `undefined` y `null` en el mismo
+// fallback, porque aqui la diferencia importa.
+//
+// AUSENTE, NULO, VACIO Y CERO NO SE PARECEN. Un campo que el backend no declara no es lo
+// mismo que uno declarado sin valor, y ninguno de los dos es un cero. `cross_asset` de hoy
+// sirve `relative_strength_vs_base_pct: {1h: null, 4h: null, 24h: null}`: pintarlo como
+// «0.00%» o como «—» diria que la fuerza relativa es plana cuando lo que pasa es que no hay
+// dato. Cada celda dice cual de los cuatro es.
+function faltaDe(obj, clave) {
+  if (!obj || !Object.hasOwn(obj, clave)) return 'no declarado';
+  const v = obj[clave];
+  if (v === null) return 'nulo';
+  if (Array.isArray(v) ? !v.length : (v && typeof v === 'object' && !Object.keys(v).length)) return 'vacío';
+  return null;                       // hay valor: lo pinta quien llama
+}
+// una fila de .metric-list: la casa la escribe como <div><dt>/<dd> dentro de un <dl>.
+// `id` es OPCIONAL y existe para que la red pueda vigilar UNA FILA y no la tarjeta entera.
+// Hizo falta porque una fila DERIVADA enmascara a las suyas: en la rafaga de liquidaciones,
+// «Rafaga vs mediana» usa `total` y `baseline_5m`, asi que con la fila del Total sin su cifra
+// el texto de la tarjeta SEGUIA moviendose al mutar `total` y el check no condenaba. Mi propio
+// plantado C7 lo encontro.
+function filaDl(dl, etiqueta, valor, clase, id) {
+  const d = document.createElement('div');
+  if (id) d.id = id;
+  const k = document.createElement('dt'); k.textContent = etiqueta;
+  const v = document.createElement('dd'); if (clase) v.className = clase; v.textContent = valor;
+  d.append(k, v); dl.append(d);
+}
+// una celda de ventana: o el numero, o cual de los cuatro estados es
+function celdaVentana(mapa, w, fmt) {
+  if (mapa === undefined) return 'no declarado';
+  if (mapa === null) return 'nulo';
+  const f = faltaDe(mapa, w);
+  return f === null ? fmt(mapa[w]) : f;
+}
+
+// LA UNIDAD NO SE SUPONE: se publica la nota que sirve el backend, tal cual.
+function renderCrossAsset() {
+  const body = $('cross-asset-body'); if (!body) return;
+  body.replaceChildren();
+  const sub = $('cross-asset-sub'); const nota = $('cross-asset-note');
+  const ca = state.sobre ? state.sobre.cross_asset : undefined;
+  if (!ca) {
+    if (sub) sub.textContent = state.sobre ? (ca === null ? 'nulo en el sobre' : 'no declarado en el sobre') : 'sin sobre';
+    if (nota) nota.textContent = 'Fuente: /api/ai/context · cross_asset';
+    return;
+  }
+  const corr = ca.correlation, beta = ca.beta_vs_base, rs = ca.relative_strength_vs_base_pct;
+  const ventanas = [...new Set([corr, beta, rs].flatMap(m => (m && typeof m === 'object') ? Object.keys(m) : []))];
+  for (const w of ventanas) {
+    const tr = document.createElement('tr');
+    // correlation llega por activo -{eth, sol}-, no como escalar: se listan los activos.
+    const c = celdaVentana(corr, w, v => (v && typeof v === 'object')
+      ? Object.entries(v).map(([a, x]) => `${a} ${number(x, 2)}`).join(' · ')
+      : number(v, 2));
+    td(tr, w, '');
+    td(tr, c, 'neutral');
+    td(tr, celdaVentana(beta, w, v => number(v, 2)), 'neutral');
+    td(tr, celdaVentana(rs, w, v => pct(v, 2)), typeof (rs || {})[w] === 'number' ? signClass(rs[w]) : 'neutral');
+    body.append(tr);
+  }
+  if (!ventanas.length) { const tr = document.createElement('tr'); td(tr, 'Sin ventanas servidas', ''); body.append(tr); }
+  if (sub) {
+    // EL BASE ES EL PROPIO SIMBOLO en el sobre de hoy: entonces beta = 1 y fuerza relativa
+    // nula son ARITMETICA, no lectura de mercado. Callarlo seria publicar un numero vacio.
+    const mismo = ca.base && ca.symbol && ca.base === ca.symbol;
+    sub.textContent = ca.available === false ? 'no disponible'
+      : `base ${ca.base || 'no declarada'}${mismo ? ' · es el propio símbolo: beta 1 y fuerza relativa son triviales' : ''}`;
+  }
+  if (nota) nota.textContent = `${ca.note || 'el backend no declara nota'} · /api/ai/context · cross_asset`;
+}
+
+function renderVolatilidad() {
+  const body = $('volatilidad-body'); if (!body) return;
+  body.replaceChildren();
+  const sub = $('volatilidad-sub'); const nota = $('volatilidad-note');
+  const vo = state.sobre ? state.sobre.volatility : undefined;
+  if (!vo) {
+    if (sub) sub.textContent = state.sobre ? (vo === null ? 'nulo en el sobre' : 'no declarado en el sobre') : 'sin sobre';
+    if (nota) nota.textContent = 'Fuente: /api/ai/context · volatility';
+    return;
+  }
+  const fila = (etiqueta, valor, clase) => filaDl(body, etiqueta, valor, clase);
+  // EL ATR SE PINTA. La primera version decia en el subtitulo «ATR se publica en su propia
+  // tarjeta» y ERA FALSO: lo daba por visto un `grep atr` que casaba `matrix`, `matriz`,
+  // `cuatro` y `atras`. La unica mencion real del panel es `reaction_atr` en
+  // 06-perfiles-y-niveles.js:242, que es una reaccion medida EN MULTIPLOS de ATR -«reaccion
+  // mediana de 1.83 ATR»-, no el ATR. Marcado: mutar volatility.atr.1h.atr no cambiaba ni un
+  // texto de la pantalla. Ninguna tarjeta puede decir que un dato esta en otro sitio si una
+  // marca no lo demuestra.
+  //
+  // LAS DOS UNIDADES SALEN DEL CODIGO QUE LAS PRODUCE, app/scalp_logic.py:3153-3154:
+  //     "atr":     round(a, 4)                     -> en precio, la moneda del simbolo
+  //     "atr_pct": round(a / close * 100, 3)       -> por ciento del cierre
+  // Van en la MISMA fila y rotuladas, que es lo contrario de ponerlas lado a lado sin decir
+  // que mide cada una.
+  const atr = vo.atr;
+  const faltaAtr = faltaDe(vo, 'atr');
+  if (faltaAtr) fila('ATR', faltaAtr, 'neutral');
+  else for (const tf of Object.keys(atr)) {
+    const a = atr[tf] || {};
+    const abs = faltaDe(a, 'atr') || number(a.atr, 2);
+    const rel = faltaDe(a, 'atr_pct') || `${number(a.atr_pct, 3)}% del cierre`;
+    fila(`ATR · ${tf}`, `${abs} · ${rel}`, 'neutral');
+  }
+  const rv = vo.realized_vol_annualized_pct;
+  for (const w of (rv && typeof rv === 'object') ? Object.keys(rv) : []) {
+    fila(`Vol. realizada anualizada · ${w}`, celdaVentana(rv, w, v => `${number(v, 1)}%`), 'neutral');
+  }
+  if (!rv || typeof rv !== 'object') fila('Vol. realizada anualizada', faltaDe(vo, 'realized_vol_annualized_pct') || '—', 'neutral');
+  fila('Percentil de rango diario · 1 año', faltaDe(vo, 'daily_range_percentile_1y') || `${number(vo.daily_range_percentile_1y, 1)}%`, 'neutral');
+  // compression_score: `# <1 comprimido` en app/scalp_logic.py:3186. El umbral es del backend,
+  // no mio: por eso se rotula con el 1 y no con un adjetivo inventado.
+  const comp = faltaDe(vo, 'compression_score');
+  fila('Compresión ATR(5)/ATR(20) 1h', comp || `${number(vo.compression_score, 3)} · ${vo.compression_score < 1 ? 'comprimido (<1)' : 'sin comprimir (≥1)'}`,
+    comp ? 'neutral' : (vo.compression_score < 1 ? 'positive' : 'neutral'));
+  const re = faltaDe(vo, 'range_expansion');
+  fila('Expansión de rango', re || (vo.range_expansion ? 'sí' : 'no'), re ? 'neutral' : (vo.range_expansion ? 'positive' : 'neutral'));
+  if (sub) sub.textContent = `${Object.keys(atr && typeof atr === 'object' ? atr : {}).length} marcos de ATR`;
+  if (nota) {
+    nota.textContent = `${vo.note || 'el backend no declara nota'} · ATR: valor en precio y `
+      + `% del cierre (app/scalp_logic.py:3153-3154) · /api/ai/context · volatility`;
+  }
+}
+
+function renderInvalida() {
+  const body = $('invalida-body'); if (!body) return;
+  body.replaceChildren();
+  const sub = $('invalida-sub'); const nota = $('invalida-note');
+  const op = state.sobre ? state.sobre.operator_read : undefined;
+  if (!op) {
+    if (sub) sub.textContent = state.sobre ? (op === null ? 'nulo en el sobre' : 'no declarado en el sobre') : 'sin sobre';
+    if (nota) nota.textContent = 'Fuente: /api/ai/context · operator_read';
+    return;
+  }
+  const grupo = (etiqueta, clave) => {
+    const falta = faltaDe(op, clave);
+    filaDl(body, etiqueta, falta || `${op[clave].length} condiciones`, 'neutral');
+    // Los codigos se publican TAL CUAL los sirve el backend. No los traduzco: inventar un
+    // rotulo para `book_l5_turns_offer_dominant` seria suponer que mide lo que me parece.
+    (falta ? [] : op[clave]).forEach((c, i) => filaDl(body, `${i + 1}`, c, ''));
+  };
+  grupo('Invalida el largo', 'invalidates_long');
+  grupo('Invalida el corto', 'invalidates_short');
+  // `spread_warning_note` va en la nota al pie, abajo.
+  if (sub) sub.textContent = op.bias ? `sesgo ${op.bias}` : 'sesgo no declarado';
+  // ESTO NO ES UNA SENAL VIVA. Las dos listas son constantes en app/ai_context.py:750: el
+  // backend sirve siempre las mismas tres por lado, no dependen del mercado de hoy. Pintarlas
+  // como si cambiaran seria mentir por omision.
+  const aviso = 'Lista fija del backend (app/ai_context.py:750): no cambia con el mercado, es el criterio de invalidación, no una medida.';
+  if (nota) nota.textContent = `${aviso}${op.spread_warning_note ? ' · ' + op.spread_warning_note : ''}`;
+}
+
+// EL PERFIL DE VOLUMEN Y SU VWAP, que NO es el VWAP que ya se pinta. `04-flujo-y-libro.js:74`
+// escribe `scalp.session_vwap`, y este bloque declara por si mismo que es OTRO en
+// `vwap.distinct_from`: «scalp.session_vwap (usa sesion NYSE y trades en vivo; puede diferir
+// ~1%)». Marcado: mutar volume_profile.vwap.utc_day o volume_profile.session.poc no cambiaba
+// ni un texto de la pantalla. Que sean dos VWAP distintos es la razon de pintarlo CON SU
+// CONVENCION al lado, no la razon de callarlo -que fue lo que dije en la entrega anterior-.
+function renderPerfilVolumen() {
+  const body = $('perfil-vol-body'); if (!body) return;
+  body.replaceChildren();
+  const sub = $('perfil-vol-sub'); const nota = $('perfil-vol-note');
+  const vp = state.sobre ? state.sobre.volume_profile : undefined;
+  if (!vp) {
+    if (sub) sub.textContent = state.sobre ? (vp === null ? 'nulo en el sobre' : 'no declarado en el sobre') : 'sin sobre';
+    if (nota) nota.textContent = 'Fuente: /api/ai/context · volume_profile';
+    return;
+  }
+  const fila = (etiqueta, valor, clase) => filaDl(body, etiqueta, valor, clase);
+  const ses = vp.session, vw = vp.vwap;
+  const faltaSes = faltaDe(vp, 'session');
+  if (faltaSes) fila('Perfil de sesión', faltaSes, 'neutral');
+  else {
+    for (const [k, r] of [['poc', 'POC'], ['vah', 'VAH'], ['val', 'VAL']]) {
+      fila(r, faltaDe(ses, k) || money(ses[k], 2), 'neutral');
+    }
+    // HVN y LVN son LISTAS: vacia y ausente no son lo mismo, y ninguna es un cero.
+    for (const [k, r] of [['hvn', 'HVN · nodos de alto volumen'], ['lvn', 'LVN · nodos de bajo volumen']]) {
+      const f = faltaDe(ses, k);
+      fila(r, f || ses[k].map(x => money(x, 2)).join(' · '), 'neutral');
+    }
+  }
+  const faltaVw = faltaDe(vp, 'vwap');
+  if (faltaVw) fila('VWAP', faltaVw, 'neutral');
+  else {
+    fila('VWAP día', faltaDe(vw, 'utc_day') || money(vw.utc_day, 2), 'neutral');
+    fila('VWAP semana', faltaDe(vw, 'weekly') || money(vw.weekly, 2), 'neutral');
+    const fb = faltaDe(vw, 'bands');
+    if (fb) fila('Bandas σ', fb, 'neutral');
+    else for (const [k, r] of [['plus_1sigma', '+1σ'], ['minus_1sigma', '−1σ'], ['plus_2sigma', '+2σ'], ['minus_2sigma', '−2σ']]) {
+      fila(`VWAP ${r}`, faltaDe(vw.bands, k) || money(vw.bands[k], 2), 'neutral');
+    }
+  }
+  if (sub) {
+    // El mercado y la convencion NO se suponen: los declara el propio bloque.
+    const m = vw && vw.market, c = vw && vw.session_convention;
+    sub.textContent = vp.available === false ? 'no disponible'
+      : `${m || 'mercado no declarado'} · ${c || 'convención no declarada'}`;
+  }
+  if (nota) {
+    const d = vw && vw.distinct_from;
+    nota.textContent = `${vp.note || 'el backend no declara nota'}`
+      + `${d ? ` · NO es el mismo VWAP que «VWAP sesión»: ${d}` : ''} · /api/ai/context · volume_profile`;
+  }
+}
+
+// LA RAFAGA DE LIQUIDACIONES. Unidades leidas de la consulta que las produce,
+// app/scalp_logic.py:1701-1727: long_liq/short_liq/total son SUM(notional_usd) de los ultimos
+// 5 minutos, `events` es COUNT(*) de eventos, y baseline_5m es la MEDIANA -percentile_cont
+// (0.5)- del total por bucket de 5 min en las 3 horas anteriores. Por eso la comparacion que
+// importa se rotula con esas dos ventanas y no con un adjetivo.
+function renderLiqBurst() {
+  const body = $('liq-burst-body'); if (!body) return;
+  body.replaceChildren();
+  const sub = $('liq-burst-sub'); const nota = $('liq-burst-note');
+  const lb = state.sobre ? state.sobre.liq_burst : undefined;
+  if (!lb) {
+    if (sub) sub.textContent = state.sobre ? (lb === null ? 'nulo en el sobre' : 'no declarado en el sobre') : 'sin sobre';
+    if (nota) nota.textContent = 'Fuente: /api/ai/context · liq_burst';
+    return;
+  }
+  // Cada fila lleva su id: la de abajo es DERIVADA de `total` y `baseline_5m`, y sin ids la red
+  // no sabria distinguir «el Total perdio su cifra» de «el Total sigue ahi».
+  const fila = (etiqueta, valor, clase, id) => filaDl(body, etiqueta, valor, clase, id);
+  fila('Largos liquidados', faltaDe(lb, 'long_liq') || money(lb.long_liq, 2), 'negative', 'fila-liq-largos');
+  fila('Cortos liquidados', faltaDe(lb, 'short_liq') || money(lb.short_liq, 2), 'positive', 'fila-liq-cortos');
+  fila('Total', faltaDe(lb, 'total') || money(lb.total, 2), 'neutral', 'fila-liq-total');
+  fila('Eventos', faltaDe(lb, 'events') || number(lb.events, 0), 'neutral', 'fila-liq-eventos');
+  fila('Mediana por 5 min en 3 h', faltaDe(lb, 'baseline_5m') || money(lb.baseline_5m, 2), 'neutral', 'fila-liq-mediana');
+  // La razon contra la mediana es lo que dice si esto es una cascada; se calcula aqui y se
+  // rotula con lo que compara. Si la mediana es 0 NO se divide: se dice.
+  const t = lb.total, b = lb.baseline_5m;
+  const razon = (typeof t === 'number' && typeof b === 'number')
+    ? (b > 0 ? `${number(t / b, 2)}× la mediana` : 'sin mediana con la que comparar (0 en 3 h)')
+    : 'no calculable';
+  fila('Ráfaga vs mediana', razon, (typeof t === 'number' && typeof b === 'number' && b > 0 && t / b >= 3) ? 'negative' : 'neutral', 'fila-liq-razon');
+  if (sub) sub.textContent = `ventana ${lb.window || 'no declarada'}`;
+  if (nota) {
+    nota.textContent = 'Nocional en USD de liquidaciones (SUM notional_usd); la mediana es '
+      + 'percentile_cont(0.5) de los buckets de 5 min de las 3 h anteriores '
+      + '(app/scalp_logic.py:1701-1727) · /api/ai/context · liq_burst';
+  }
+}
+
