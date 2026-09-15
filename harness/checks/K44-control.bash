@@ -247,6 +247,63 @@ comprueba "E12a NO MEDIDO, rc=2 (rc=$rc)" "$([ "$rc" = 2 ] && echo si || echo no
 comprueba "E12b y nombra los testigos que no encuentra" \
   "$(printf '%s' "${SALIDA[E12]}" | grep -q 'buscador de claves no encuentra' && echo si || echo no)"
 
+# ── LA AFIRMACION ES LO QUE EL PANEL LEE (COLA 124, remate) ──────────────────────────────────
+# De /api/scalp/liquidation-levels el panel pinta TODAS las filas y publica su cuenta; de los
+# metadatos solo usa `minutes`, con reserva de 60. La primera version de esta excepcion
+# afirmaba que la ruta declara minutes/bucket_bps/window_start/window_end y el sobre no, y eso
+# se refuta por algo que el panel NO LEE: los dos brazos de abajo salian AL REVES.
+LIQ_RUTA='{"minutes":60,"bucket_bps":10,"window_start":"a","window_end":"b","rows":[1,2,3,4,5,6,7,8,9]}'
+TESTIGOS='"symbol":"TEST","snapshot":{},"scalp":{},"setup":{}'
+# A · los cuatro metadatos DENTRO del sobre, y el tope del sobre INTACTO (8 de 9 filas).
+# Los metadatos entran DONDE ENTRARIAN de verdad: dentro del propio bloque del sobre, junto a
+# sus filas -que siguen topadas en 8 de 9-. Ponerlos al nivel alto del sobre no reproduce nada:
+# la version de 333b359b ya buscaba ACOTADA dentro de `liquidation_levels` y no los veria.
+SOBRE_META="{$TESTIGOS,\"liquidation_levels\":{\"minutes\":60,\"bucket_bps\":10,\"window_start\":\"a\",\"window_end\":\"b\",\"rows\":[1,2,3,4,5,6,7,8]}}"
+# B · TODAS las filas de la ruta dentro del sobre, y NINGUN metadato.
+SOBRE_FILAS="{$TESTIGOS,\"liquidation_levels\":[1,2,3,4,5,6,7,8,9]}"
+# C · por debajo del tope: las dos cuentas coinciden y los payloads no distinguen.
+LIQ_CORTA='{"minutes":60,"rows":[1,2,3,4,5]}'
+SOBRE_CORTA="{$TESTIGOS,\"liquidation_levels\":[1,2,3,4,5]}"
+
+liqmonta() {  # $1 = dir   $2 = json del sobre   $3 = json de la ruta
+  monta "$1" 0 "VISITAS 900
+450 /api/ai/context
+101 /api/scalp/liquidation-levels"
+  plantada "$1" _sobre.json "$2"
+  plantada "$1" "_api_scalp_liquidation-levels.json" "$3"
+}
+
+echo
+echo "E13 · los CUATRO METADATOS en el sobre y el tope intacto: sigue EXCUSADA"
+liqmonta "$DIR/e13" "$SOBRE_META" "$LIQ_RUTA"
+f=$(copia "$DIR/e13") || exit 2
+corre E13 "$f" K44_PAYLOADS="$DIR/e13/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E13a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E13b y la razon son las FILAS, no los metadatos" \
+  "$(printf '%s' "${SALIDA[E13]}" | grep -q 'la ruta sirve 9 filas .* y el sobre `liquidation_levels` solo 8' && echo si || echo no)"
+
+echo
+echo "E14 · TODAS las filas dentro del sobre y sin metadatos: la ruta ya sobra, CONDENA"
+liqmonta "$DIR/e14" "$SOBRE_FILAS" "$LIQ_RUTA"
+f=$(copia "$DIR/e14") || exit 2
+corre E14 "$f" K44_PAYLOADS="$DIR/e14/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E14a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E14b y dice EXCEPCION ANULADA" \
+  "$(printf '%s' "${SALIDA[E14]}" | grep -q 'EXCEPCION ANULADA' && echo si || echo no)"
+comprueba "E14c E13 y E14 dan veredictos CONTRARIOS con la misma ruta" \
+  "$([ "${SALIDA[E13]}" != "${SALIDA[E14]}" ] && echo si || echo no)"
+
+echo
+echo "E15 · cuentas IGUALES por debajo del tope: condena, pero DICE de que depende esa condena"
+liqmonta "$DIR/e15" "$SOBRE_CORTA" "$LIQ_CORTA"
+f=$(copia "$DIR/e15") || exit 2
+corre E15 "$f" K44_PAYLOADS="$DIR/e15/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E15a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E15b y da las dos cuentas" \
+  "$(printf '%s' "${SALIDA[E15]}" | grep -q 'la ruta da 5 filas y el sobre 5' && echo si || echo no)"
+comprueba "E15c y AVISA de que la igualdad tambien sale con el tope sin morder" \
+  "$(printf '%s' "${SALIDA[E15]}" | grep -q 'antes de retirar la peticion suelta hay que mirar un dia con mas niveles' && echo si || echo no)"
+
 # ── LOS SEIS, DOS A DOS ──────────────────────────────────────────────────────────────────────
 echo
 echo "LOS SEIS ESTADOS · si dos dan la MISMA salida, no distingue lo que dice distinguir"

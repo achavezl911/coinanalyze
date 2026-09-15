@@ -294,11 +294,25 @@ function filaDeClave(base, mut, clave) {
   catch (e) { console.log('NO MEDIDO: el panel no arranca: ' + String(e && e.message || e).split('\n')[0]); process.exit(2); }
   if (base.todo.includes(MARCA)) { console.log('NO MEDIDO: la marca ya esta en el DOM sin mutar nada'); process.exit(2); }
   if (base.todo.length < 1000) { console.log(`NO MEDIDO: el DOM son ${base.todo.length} B; no hay pantalla que medir`); process.exit(2); }
-  // RESIDUO R-c DE COLA 122. Un contenedor que NO EXISTE no puede juzgarse -seria un ROJO por
-  // un id mal escrito aqui-, pero ANTES esto APAGABA EL CHECK ENTERO: `exit 2` antes de juzgar
-  // a nadie, asi que quitar una tarjeta dejaba sin vigilancia a las otras cuatro y la linea no
-  // nombraba ni una. Ahora los demas se juzgan igual y los campos del ausente salen NOMBRADOS
-  // con su razon. Nunca callados: un campo que no se juzga y no se dice es un campo sin red.
+  // RESIDUO R-c DE COLA 122, Y SU REMATE (COLA 124 punto 2).
+  //
+  // Primero esto APAGABA EL CHECK ENTERO: `exit 2` antes de juzgar a nadie, asi que quitar una
+  // tarjeta dejaba sin vigilancia a las otras. Se arreglo dejando los campos del ausente SIN
+  // JUZGAR y nombrados... y eso abrio un agujero peor: RETIRAR LA TARJETA DE UN CAMPO SERVIDO
+  // DABA DOS VEREDICTOS OPUESTOS. Los campos por CONTENEDOR salian «no se juzga» y K72 podia
+  // quedar VERDE; los campos por MARCA no tienen contenedor y la MISMA retirada los condenaba.
+  // Medido: sin la tarjeta de «Que invalida la lectura» salia ROJO por sus dos campos; sin la
+  // de «Volatilidad y compresion», VERDE con 25 juzgados y 6 sin juzgar. El mismo acto.
+  //
+  // Y quitar la tarjeta es la forma MAS COMPLETA de que un campo servido deje de llegar, que es
+  // justo lo que K72 existe para condenar. Nadie mas lo mira: K45 vigila RUTAS, y `volatility`
+  // no es una ruta.
+  //
+  // AHORA UN CONTENEDOR AUSENTE NO EXCUSA: se juzga contra EL DOCUMENTO ENTERO, que es la misma
+  // vara que usan los campos por marca. Y eso distingue las dos causas que antes se confundian:
+  //     el dato SIGUE en la pagina  ->  el id de ESTA lista esta mal -> NO MEDIDO (error mio)
+  //     el dato NO esta en ninguna  ->  la tarjeta se fue de verdad  -> ROJO (defecto del panel)
+  // Sin esa segunda vara, un id mal escrito aqui condenaria al panel por un fallo del check.
   const ausentes = new Set([...base.cont].filter(([, v]) => v === null).map(([id]) => id));
 
   // UN PLANTADO QUE NO OCURRE NO ES UN ROJO, y esto lo cazo la auditoria del operador. Si el
@@ -307,12 +321,9 @@ function filaDeClave(base, mut, clave) {
   //     servido y pintado      -> bien
   //     servido y NO pintado   -> ROJO, con su nombre
   //     NO servido             -> no se juzga, y se DICE en la linea de veredicto
-  const perdidos = [], control = [], noServidos = [], juzgadosQue = [], sinTarjeta = [];
+  const perdidos = [], control = [], noServidos = [], juzgadosQue = [];
+  const idMal = [], controlSinEjercer = [];
   for (const [campo, ruta, que, planta, esperado, contenedor, claves] of CAMPOS) {
-    if (contenedor && ausentes.has(contenedor)) {
-      sinTarjeta.push(`${campo} (su tarjeta \`#${contenedor}\` no existe en el DOM)`);
-      continue;
-    }
     let planto = false, ks = null;
     const t = (url, body) => {
       if (url.split('?')[0] !== ruta) return body;
@@ -331,6 +342,20 @@ function filaDeClave(base, mut, clave) {
       process.exit(2);
     }
     let llega, detalle = '';
+    if (contenedor && ausentes.has(contenedor)) {                // LA TARJETA NO ESTA
+      const enLaPagina = f.todo !== base.todo;
+      if (enLaPagina) {
+        // El dato sigue pintandose en algun sitio: el id de la tabla de arriba esta mal. Es un
+        // fallo DE ESTE CHECK y no del panel, y por eso no puede condenar a nadie.
+        idMal.push(`${campo} (dice \`#${contenedor}\`, que no existe, pero su dato SI llega a la pagina)`);
+        continue;
+      }
+      if (!esperado) { controlSinEjercer.push(`${campo} (su tarjeta \`#${contenedor}\` no esta)`); continue; }
+      juzgadosQue.push(que);
+      perdidos.push(`${campo} (${que}, de ${ruta}; su tarjeta \`#${contenedor}\` NO ESTA EN LA ` +
+        `PAGINA y su dato no llega a ninguna otra parte del documento)`);
+      continue;
+    }
     if (contenedor && claves) {                                  // modo MAPA
       const b = base.cont.get(contenedor), m = f.cont.get(contenedor);
       const mudas = [], sinRotulo = [];
@@ -357,6 +382,16 @@ function filaDeClave(base, mut, clave) {
     if (!esperado && llega) control.push(campo);
   }
 
+  // UN ERROR DE ESTA LISTA NO PUEDE CONDENAR AL PANEL. Si un contenedor no existe pero el dato
+  // SI llega a la pagina, lo que esta mal es el id escrito aqui arriba. Sale NO MEDIDO y se
+  // nombra: arreglar el check es gratis, condenar al panel por un id mal escrito no lo es.
+  if (idMal.length) {
+    console.log(`NO MEDIDO: ${idMal.length} campo(s) apuntan a un contenedor que no existe en el ` +
+      `DOM y SIN EMBARGO su dato si llega a la pagina, asi que el id mal escrito esta en la ` +
+      `tabla de este check y no en el panel: ${idMal.join(' · ')}. Este check no condena al ` +
+      'panel por un fallo suyo.');
+    process.exit(2);
+  }
   if (control.length) {
     console.log('NO MEDIDO: el control se colo -%s llega a la pantalla y no deberia-, asi que '
       .replace('%s', control.join(' ')) +
@@ -367,11 +402,15 @@ function filaDeClave(base, mut, clave) {
     ? ` · ${noServidos.length} NO SE JUZGA(N) porque el backend no los sirvio hoy: ` +
       `${noServidos.join(' ')} -un plantado que no ocurre no es una perdida-`
     : '';
-  // Los campos cuya tarjeta no existe SE NOMBRAN. Antes apagaban el check entero (R-c).
-  if (sinTarjeta.length) {
-    cola += ` · ${sinTarjeta.length} NO SE JUZGA(N) porque SU TARJETA NO ESTA EN LA PAGINA: ` +
-      `${sinTarjeta.join(' · ')} -los demas campos si se han juzgado; una tarjeta que falta no ` +
-      `deja sin red a las otras, pero SUS campos se quedan sin vigilar y por eso van nombrados-`;
+  // UN CONTROL QUE NO SE EJERCE NO DEJA EL VEREDICTO EN VERDE. `operator_read.edge` se mide
+  // contra la tarjeta «Que invalida la lectura»: si esa tarjeta se va, el control del modo
+  // NUMERO deja de existir y las demas medidas por contenedor quedan sin validar. Eso NO puede
+  // acabar en VERDE. Si ademas hay perdidas, el ROJO se mantiene -se sostiene en evidencia que
+  // no depende de ese control- pero la linea lo dice entero.
+  if (controlSinEjercer.length) {
+    cola += ` · AVISO: ${controlSinEjercer.length} CONTROL(ES) NO SE HAN PODIDO EJERCER: ` +
+      `${controlSinEjercer.join(' · ')} -sin ese control, lo que este check mide POR CONTENEDOR ` +
+      `queda sin validar-`;
   }
   const juzgados = juzgadosQue.length;
 
@@ -384,6 +423,14 @@ function filaDeClave(base, mut, clave) {
   if (!juzgados) {
     console.log('NO MEDIDO: el backend no sirvio hoy ninguno de los campos vigilados, asi que ' +
       `no hay nada que juzgar${cola}`);
+    process.exit(2);
+  }
+  // Sin perdidas pero con un control sin ejercer NO hay VERDE: sin control no hay medida.
+  if (controlSinEjercer.length) {
+    console.log(`NO MEDIDO: los ${juzgados} campos juzgados llegan, pero ` +
+      `${controlSinEjercer.length} control(es) no se han podido ejercer, asi que este check no ` +
+      'puede afirmar que sabe decir que NO. Sin control no hay medida, retire quien retire su ' +
+      `tarjeta${cola}`);
     process.exit(2);
   }
   // RESIDUO R1 (COLA 121): esta linea ENUMERABA CINCO COSAS FIJAS pasara lo que pasara, asi que

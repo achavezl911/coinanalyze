@@ -88,10 +88,11 @@
 #   FALTAN  la RUTA sirve esas claves y el SOBRE no las tiene en ningun nivel.
 #   MENOS   el valor del SOBRE tiene estrictamente MENOS elementos que el de la ruta.
 # Las claves del sobre salen de las PAREJAS de K43, que es la traduccion declarada.
+#   FILAS   el SOBRE trae menos FILAS que la ruta pedida COMO LA PIDE EL PANEL.
 EXCEPCIONES="
 /api/dashboard/state          | FALTAN | scalp_persistence,signal_base_rate          |
 /api/scalp/delta-matrix       | MENOS  |                                             | delta_matrix
-/api/scalp/liquidation-levels | FALTAN | minutes,bucket_bps,window_start,window_end  | liquidation_levels
+/api/scalp/liquidation-levels | FILAS  |                                             | liquidation_levels
 "
 # LO QUE CADA UNA AFIRMA, medido el 2026-09-14 23:0xZ con bin/api contra 140:
 #   dashboard/state      scalp_persistence y signal_base_rate: en la ruta SI, en el sobre NO.
@@ -99,18 +100,31 @@ EXCEPCIONES="
 #                        setup SI aparecen en el sobre. Sin ese control, un buscador roto
 #                        excusaria cualquier ruta diciendo que no encuentra nada.
 #   delta-matrix         la ruta sirve 12 ventanas y el sobre 5 (PROFILE_LIMITS, ai_context.py).
-#   liquidation-levels   la ruta declara la ventana y el bucket con que se pidio
-#                        -minutes, bucket_bps, window_start, window_end-; en el sobre el valor
-#                        es una LISTA PELADA que no declara ninguno. Y no es cosa mia: esas
-#                        siete claves son EXACTAMENTE la columna de exclusiones que K43 ya le
-#                        tiene puesta a esta ruta en PAREJAS. La busqueda va DENTRO de
-#                        `liquidation_levels` y no por todo el sobre: `window_start` y
-#                        `window_end` SI existen en el sobre -nueve sitios, todos bajo
-#                        `oi_context.coverage.*`- y no son esto. Un nombre que coincide no es
-#                        el mismo dato, que es la leccion de la FASE 3b.
-#                        NO uso «el sobre trae menos filas»: hoy los dos traen 5 y esa
-#                        afirmacion seria FALSA -el tope de 8 solo se ve con mas de ocho
-#                        niveles-. Una excusa que solo es cierta algunos dias no es una excusa.
+#   liquidation-levels   el sobre trae MENOS FILAS que la ruta. Es lo que el panel LEE:
+#                        `renderLiquidationLevels` mapea TODAS las filas y publica su cuenta
+#                        («N niveles»); de los metadatos solo usa `minutes`, y con reserva de
+#                        60. Medido 2026-09-15 01:1xZ: ruta 9 filas con el limit del panel,
+#                        sobre 8. El tope del sobre esta mordiendo.
+#
+#                        MI PRIMERA VERSION AFIRMABA OTRA COSA Y ERA REFUTABLE POR ALGO QUE EL
+#                        PANEL NO LEE: decia que la ruta declara `minutes`, `bucket_bps`,
+#                        `window_start` y `window_end` y el sobre no. Con esos cuatro metidos
+#                        en el sobre y el tope intacto, la excusa salia ANULADA y K44 condenaba
+#                        -y el panel habria seguido perdiendo filas si soltara la ruta-; y con
+#                        TODAS las filas dentro del sobre pero sin metadatos salia VIVA y K44
+#                        excusaba -y la ruta ya sobraba-. Los dos veredictos al reves.
+#                        La afirmacion de una excusa es LO QUE EL PANEL LEE y el sobre no le da.
+#
+#                        LA RUTA SE PIDE COMO LA PIDE EL PANEL, y el `limit` no se copia a mano:
+#                        sale del propio log de nginx, que guarda la query entera. Con el
+#                        `limit` por defecto la ruta da 5 filas y con el del panel 9: comparar
+#                        contra la peticion equivocada es comparar otra cosa.
+#
+#                        CUANDO NO SE DISTINGUE, SE DICE. Por debajo del tope las dos cuentas
+#                        coinciden -el 2026-09-14 eran 5 y 5- y ese dia los payloads NO separan
+#                        «el sobre lo trae todo» de «el tope no ha mordido». La excusa se
+#                        sostiene contra el TOPE, se declara la reserva, y NO se cambia por otra
+#                        afirmacion que si se vea ese dia.
 #
 # CONTROL: harness/checks/K44-control.bash. No lleva .sh a proposito: bin/verify globea *.sh.
 set -uo pipefail
@@ -144,12 +158,21 @@ fi
 #
 # LA HORA LA PONE 140. El log de nginx va en hora LOCAL (-0600), no en UTC, asi que no se hace
 # aritmetica de husos desde aqui: se le piden a 140 las etiquetas de hora que quiere aceptar.
+# SOLO SE PIDEN LAS QUERIES DE LAS RUTAS CON EXCEPCION, no las de las 22: acota la salida del
+# canal y deja claro para que se leen. El awk NO puede llevar `>` ni `<`: `bin/prod` los ve como
+# una redireccion a fichero y DENIEGA el mandato entero (rc=3). Por eso se emiten todas las
+# variantes con su cuenta y la mas frecuente se elige aqui, con `sort -rn`.
+RUTAS_EX=$(printf '%s\n' "$EXCEPCIONES" | awk -F'|' 'NF>1 {gsub(/ /,"",$1); if ($1!="") printf "|%s", $1} END {printf "|"}')
 LOG_CMD="
   horas=\$(for i in \$(seq 0 $((VENTANA_H-1))); do date -d \"-\$i hours\" +%d/%b/%Y:%H; done | tr '\n' '|' | sed 's/|\$//')
   cat /var/log/nginx/access.log.1 /var/log/nginx/access.log 2>/dev/null \
     | grep -a Mozilla | grep -av '^$ARNES_IP ' \
     | awk -v H=\"\$horas\" 'BEGIN{n=split(H,a,\"|\")} { for(i=1;i<=n;i++) if (index(\$4,a[i])==2) { print; break } }' \
-    | awk '{ visitas++; p=\$7; sub(/\?.*/, \"\", p); if (p ~ /^\/api\//) c[p]++ } END { printf \"VISITAS %d\n\", visitas+0; for (i in c) printf \"%d %s\n\", c[i], i }'"
+    | awk -v EX='$RUTAS_EX' '{ visitas++; full=\$7; p=full; sub(/\?.*/, \"\", p);
+             if (p ~ /^\/api\//) { c[p]++; if (index(EX, \"|\" p \"|\")) q[full]++ } }
+           END { printf \"VISITAS %d\n\", visitas+0;
+                 for (i in c) printf \"%d %s\n\", c[i], i;
+                 for (i in q) printf \"QUERY %d %s\n\", q[i], i }'"
 
 if [ "${K44_LOG+puesta}" = puesta ]; then
   LOG=$K44_LOG
@@ -180,6 +203,10 @@ if [ "$VISITAS" -lt 1 ]; then
 fi
 
 pedidas=$(printf '%s\n' "$LOG" | awk '$1!="VISITAS" && $1 ~ /^[0-9]+$/ {print}')
+# LA QUERY CON LA QUE EL PANEL PIDE CADA RUTA, sacada del log y no copiada a mano. Sin ella la
+# comparacion de filas se haria contra la peticion equivocada: `liquidation-levels` da 5 filas
+# con el limit por defecto y 9 con el del panel.
+QUERIES=$(printf '%s\n' "$LOG" | awk '$1=="QUERY" {print $2, $3}' | sort -rn)
 n_sobre=$(printf '%s\n' "$pedidas" | awk -v S="$SOBRE" '$2==S {s+=$1} END {print s+0}')
 
 pedidas_foto=""
@@ -241,6 +268,7 @@ if [ -z "$SIMBOLO" ]; then
   exit 2
 fi
 
+COMO_SE_PIDIO=""
 TMPX=$(mktemp -d /tmp/k44.XXXXXX); trap 'rm -rf "$TMPX"' EXIT
 if [ -n "${K44_PAYLOADS:-}" ]; then
   cp "$K44_PAYLOADS"/*.json "$TMPX"/ 2>/dev/null
@@ -249,7 +277,16 @@ else
   TODO=1 timeout 90 "$API" "/api/ai/context?symbol=$SIMBOLO" > "$TMPX/_sobre.json" 2>/dev/null
   while IFS='|' read -r r _t _a _c; do
     r=$(printf '%s' "$r" | tr -d ' '); [ -n "$r" ] || continue
-    TODO=1 timeout 90 "$API" "$r?symbol=$SIMBOLO" > "$TMPX/$(printf '%s' "$r" | tr '/' '_').json" 2>/dev/null
+    # SE PIDE COMO LA PIDE EL PANEL. Si el log trae su query, esa; si no, la minima, y se dice.
+    # `QUERIES` viene ordenado por cuenta descendente: la primera que empiece por la ruta es la
+    # variante que el panel mas usa en la ventana.
+    q=$(printf '%s\n' "$QUERIES" | awk -v R="$r" 'index($2, R"?")==1 {print $2; exit}')
+    if [ -n "$q" ]; then
+      COMO_SE_PIDIO="$COMO_SE_PIDIO $r<-log"
+    else
+      q="$r?symbol=$SIMBOLO"; COMO_SE_PIDIO="$COMO_SE_PIDIO $r<-minima"
+    fi
+    TODO=1 timeout 90 "$API" "$q" > "$TMPX/$(printf '%s' "$r" | tr '/' '_').json" 2>/dev/null
   done <<EOF
 $EXCEPCIONES
 EOF
@@ -338,6 +375,38 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
             print(f"ANULADA\t{ruta}\tel sobre YA trae {' '.join(en_sobre)} {donde}: la excusa es falsa")
         else:
             print(f"VIVA\t{ruta}\tla ruta sirve {' '.join(pedidas_k)} y NO estan {donde}")
+    elif tipo == "FILAS":
+        # LO QUE EL PANEL LEE DE ESTA RUTA SON LAS FILAS: las mapea todas y publica su cuenta.
+        # `rp` puede ser {rows:[...]} o una lista pelada; el valor del sobre, lo mismo.
+        def filas(x):
+            if isinstance(x, dict) and isinstance(x.get("rows"), list): return x["rows"]
+            return x if isinstance(x, list) else None
+        fr, fs = filas(rp), filas(sobre.get(clave))
+        if fs is None:
+            print(f"ANULADA\t{ruta}\tel sobre ya no trae `{clave}` como lista de filas: "
+                  f"la excusa comparaba contra nada")
+        elif fr is None:
+            print(f"NOMED\t{ruta} no devolvio filas legibles, asi que su excusa no se puede reverificar")
+        elif len(fs) < len(fr):
+            print(f"VIVA\t{ruta}\tla ruta sirve {len(fr)} filas -pedida como la pide el panel- y "
+                  f"el sobre `{clave}` solo {len(fs)}: el panel las pinta TODAS y publica su cuenta")
+        elif len(fs) > len(fr):
+            print(f"ANULADA\t{ruta}\tel sobre trae {len(fs)} filas y la ruta {len(fr)}: el sobre ya "
+                  f"le da al panel todo lo que lee de esta ruta, y la peticion suelta sobra")
+        else:
+            # IGUALES: LA EXCUSA NO SE SOSTIENE HOY, Y SE DICE DE QUE DEPENDE ESO. Con la misma
+            # cuenta en los dos lados el sobre le da al panel todo lo que lee, asi que la
+            # peticion suelta no esta justificada en ESTA corrida y condena. Pero la igualdad
+            # tiene DOS causas que estos payloads no separan -que el sobre lo traiga todo, o que
+            # el tope del sobre no haya mordido porque hoy hay pocos niveles-, y la linea lo dice
+            # entero: quien lea este rojo NO debe retirar la peticion suelta sin mirar un dia con
+            # mas niveles que el tope. Condenar es la direccion segura porque la excusa se gana
+            # en cada corrida; callar la ambiguedad seria el defecto.
+            print(f"ANULADA\t{ruta}\tla ruta da {len(fr)} filas y el sobre {len(fs)}: HOY el sobre "
+                  f"le da al panel todo lo que lee, asi que la excusa no se sostiene en esta "
+                  f"corrida. OJO: la igualdad tambien sale cuando el tope del sobre NO ha mordido "
+                  f"porque hoy hay pocos niveles, y estos payloads no separan las dos causas; "
+                  f"antes de retirar la peticion suelta hay que mirar un dia con mas niveles")
     elif tipo == "MENOS":
         val = sobre.get(clave) if clave else None
         nr = len(rp) if isinstance(rp, (list, dict)) else 0
