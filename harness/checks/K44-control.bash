@@ -47,6 +47,16 @@ monta() {  # $1 = dir   $2 = rc del prod falso   $3 = lo que escribe en stdout
   } > "$1/bin/prod"
   chmod +x "$1/bin/prod"
   : > "$1/senal"
+  # LOS PAYLOADS DE LAS EXCEPCIONES. El check baja el sobre y las rutas excusadas para volver a
+  # comprobar cada excusa; aqui se le inyectan con K44_PAYLOADS para no tocar la red. El sobre
+  # de serie trae SOLO los cuatro testigos del buscador -si faltaran, el check saldria NO MEDIDO
+  # diciendo que su buscador esta roto, y ese es justo el brazo que lo protege-.
+  mkdir -p "$1/payloads"
+  printf '%s\n' '{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{}}' > "$1/payloads/_sobre.json"
+}
+# `plantada` sobreescribe un payload concreto del arnes de mentira.
+plantada() {  # $1 = dir   $2 = nombre de fichero   $3 = json
+  printf '%s\n' "$3" > "$1/payloads/$2"
 }
 copia() {  # $1 = dir del arnes falso -> imprime la ruta de la copia
   local f="$1/K44.sh"
@@ -136,16 +146,106 @@ comprueba "E5c y dice 0 peticiones al sobre" \
 # ── E6 · LA REFORMA A MEDIAS ─────────────────────────────────────────────────────────────────
 echo
 echo "E6 · pide el sobre Y ADEMAS sigue pidiendo las partes"
+# LA RUTA DE E6 NO PUEDE TENER EXCEPCION, o dejaria de medir lo que dice medir. Antes plantaba
+# /api/dashboard/state, que desde COLA 124 esta excusada: el brazo habria pasado a VERDE y
+# «E6 falla» habria parecido una regresion del estado 6 cuando era su sujeto mal elegido.
+# /api/wyckoff es FOTO y no tiene excusa, que es exactamente lo que este brazo necesita.
 monta "$DIR/e6" 0 "VISITAS 900
 450 /api/ai/context
-200 /api/dashboard/state"
+200 /api/wyckoff"
 f=$(copia "$DIR/e6") || exit 2
-corre E6 "$f"; rc=$RC
+corre E6 "$f" K44_PAYLOADS="$DIR/e6/payloads" K44_SIMBOLO=TEST; rc=$RC
 comprueba "E6a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
 comprueba "E6b y lo llama REFORMA A MEDIAS, no lo mismo que E5" \
   "$(printf '%s' "${SALIDA[E6]}" | grep -q 'REFORMA A MEDIAS' && echo si || echo no)"
 comprueba "E6c y dice las DOS cifras: las del sobre y las de las partes" \
   "$(printf '%s' "${SALIDA[E6]}" | grep -q 'pide el sobre 450 veces Y ADEMAS sigue pidiendo 200' && echo si || echo no)"
+
+# ── LA EXCEPCION FALSABLE (COLA 124) · cuatro brazos ─────────────────────────────────────────
+# Lo que se prueba aqui no es que la excusa exista: es que SE CAE SOLA. Una excusa que solo
+# alguien puede retirar a mano es una lista de nombres con otro nombre.
+SOBRE_SIN='{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"delta_matrix":[1,2]}'
+SOBRE_CON='{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"delta_matrix":[1,2,3,4,5,6,7,8,9,10,11,12]}'
+RUTA_DM='[1,2,3,4,5,6,7,8,9,10,11,12]'
+
+echo
+echo "E7 · una ruta EXCUSADA con su razon CIERTA no condena"
+monta "$DIR/e7" 0 "VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix"
+plantada "$DIR/e7" _sobre.json "$SOBRE_SIN"
+plantada "$DIR/e7" _api_scalp_delta-matrix.json "$RUTA_DM"
+f=$(copia "$DIR/e7") || exit 2
+corre E7 "$f" K44_PAYLOADS="$DIR/e7/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E7a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E7b NOMBRA la excusa y CONTRA QUE se comprobo" \
+  "$(printf '%s' "${SALIDA[E7]}" | grep -q 'la ruta sirve 12 elementos y el sobre `delta_matrix` solo 2' && echo si || echo no)"
+
+echo
+echo "E8 · LA MISMA ruta con la razon hecha FALSA vuelve a condenar, sin que nadie toque la tabla"
+monta "$DIR/e8" 0 "VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix"
+plantada "$DIR/e8" _sobre.json "$SOBRE_CON"
+plantada "$DIR/e8" _api_scalp_delta-matrix.json "$RUTA_DM"
+f=$(copia "$DIR/e8") || exit 2
+corre E8 "$f" K44_PAYLOADS="$DIR/e8/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E8a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E8b y dice EXCEPCION ANULADA con la cifra que la mato" \
+  "$(printf '%s' "${SALIDA[E8]}" | grep -q 'EXCEPCION ANULADA: el sobre trae 12 y la ruta 12' && echo si || echo no)"
+comprueba "E8c mismo plantado que E7 salvo el sobre, y veredicto CONTRARIO" \
+  "$([ "${SALIDA[E7]}" != "${SALIDA[E8]}" ] && echo si || echo no)"
+
+echo
+echo "E9 · una ruta SIN excusa junto a una excusada: condena, y solo por la que no tiene"
+monta "$DIR/e9" 0 "VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix
+77 /api/wyckoff"
+plantada "$DIR/e9" _sobre.json "$SOBRE_SIN"
+plantada "$DIR/e9" _api_scalp_delta-matrix.json "$RUTA_DM"
+f=$(copia "$DIR/e9") || exit 2
+corre E9 "$f" K44_PAYLOADS="$DIR/e9/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E9a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E9b condena SOLO 1 ruta, la que no tiene excusa" \
+  "$(printf '%s' "${SALIDA[E9]}" | grep -q 'sigue pidiendo 77 veces 1 de las' && echo si || echo no)"
+comprueba "E9c y nombra a wyckoff, no a delta-matrix, como la condenada" \
+  "$(printf '%s' "${SALIDA[E9]}" | grep -q '· /api/wyckoff(77) ·' && echo si || echo no)"
+
+echo
+echo "E10 · la excusa de una ruta que el panel YA NO PIDE sobra, y se dice"
+monta "$DIR/e10" 0 "VISITAS 900
+450 /api/ai/context"
+f=$(copia "$DIR/e10") || exit 2
+corre E10 "$f" K44_PAYLOADS="$DIR/e10/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E10a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E10b y declara las excepciones HUERFANAS por su nombre" \
+  "$(printf '%s' "${SALIDA[E10]}" | grep -q 'HUERFANAS.*dashboard/state.*delta-matrix.*liquidation-levels' && echo si || echo no)"
+
+echo
+echo "E11 · el sobre no se pudo leer: NO se excusa a nadie por defecto"
+monta "$DIR/e11" 0 "VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix"
+rm -f "$DIR/e11/payloads/_sobre.json"
+f=$(copia "$DIR/e11") || exit 2
+corre E11 "$f" K44_PAYLOADS="$DIR/e11/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E11a NO MEDIDO, rc=2 (rc=$rc)" "$([ "$rc" = 2 ] && echo si || echo no)"
+comprueba "E11b y dice que sin reverificar NO se excusa" \
+  "$(printf '%s' "${SALIDA[E11]}" | grep -q 'excusar en silencio' && echo si || echo no)"
+
+echo
+echo "E12 · el BUSCADOR roto no puede excusar a nadie: sobre sin los testigos"
+monta "$DIR/e12" 0 "VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix"
+plantada "$DIR/e12" _sobre.json '{"delta_matrix":[1,2]}'
+plantada "$DIR/e12" _api_scalp_delta-matrix.json "$RUTA_DM"
+f=$(copia "$DIR/e12") || exit 2
+corre E12 "$f" K44_PAYLOADS="$DIR/e12/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E12a NO MEDIDO, rc=2 (rc=$rc)" "$([ "$rc" = 2 ] && echo si || echo no)"
+comprueba "E12b y nombra los testigos que no encuentra" \
+  "$(printf '%s' "${SALIDA[E12]}" | grep -q 'buscador de claves no encuentra' && echo si || echo no)"
 
 # ── LOS SEIS, DOS A DOS ──────────────────────────────────────────────────────────────────────
 echo

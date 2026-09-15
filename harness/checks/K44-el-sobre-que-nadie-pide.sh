@@ -57,12 +57,60 @@
 #     «arreglaria» sin que hubiera nada que arreglar.
 #   3 NO SE PUDO LEER LA LISTA FOTO ........ NOMED. El conjunto no es de este check: sale de la
 #     ASIGNACION de K43. Sin el no hay criterio, y un criterio sobre cero rutas se cumple solo.
-#   4 PIDE EL SOBRE Y CERO PARTES .......... VERDE.
+#   4 PIDE EL SOBRE Y CERO PARTES .......... VERDE. «Cero partes» = cero SIN EXCUSA VIVA; las
+#     excusadas se nombran con la razon contra la que se comprobaron en esta misma corrida.
 #   5 NO PIDE EL SOBRE ..................... ROJO. Es el estado de hoy.
 #   6 PIDE EL SOBRE Y SIGUE PIDIENDO PARTES  ROJO, y es OTRO rojo: en el 5 no ha empezado
 #     nadie; en el 6 alguien empezo y dejo las dos cosas puestas —que cuesta MAS que hoy—.
 #     Las dos condiciones van juntas a proposito: pedir la foto sin dejar de pedir las partes
 #     cumpliria un criterio de una sola mitad siendo falso.
+#
+# ---------------------------------------------------------------------------------
+# LA EXCEPCION NO ES UN NOMBRE EN UNA LISTA: ES UNA AFIRMACION QUE ESTE CHECK VUELVE A
+# COMPROBAR EN CADA CORRIDA. Es el patron que el operador impuso a K45 (COLA 118) traido aqui.
+#
+# EL PROBLEMA QUE RESUELVE. La FASE 1 dejo TRES rutas de FOTO que el panel sigue pidiendo
+# sueltas -y bien-: el sobre NO trae lo que el panel lee de ellas. Medido en COLA 117/118 y otra
+# vez en COLA 123 decision 1. Meterlas en el sobre no es gratis: el sobre NO esta cacheado y se
+# reconstruye entero en 5-6 s por refresco, asi que doce ventanas y cincuenta niveles lo
+# encarecen PARA TODAS las tarjetas. Los restos son un diseno medido; lo que fallaba es que K44
+# no lo sabia y condenaba el comportamiento correcto.
+#
+# CADA EXCEPCION DICE CONTRA QUE SE COMPROBO, y muere sola por dos caminos distintos:
+#
+#   la afirmacion deja de ser cierta  ->  excepcion ANULADA, la ruta CONDENA igual
+#   el panel ya no pide esa ruta      ->  excepcion HUERFANA, sobra, y se DICE (no condena)
+#
+# Nadie tiene que acordarse de nada: el dia que el sobre traiga lo suyo, la excusa se cae y el
+# rojo vuelve. Eso es lo que la hace mejor que cambiar el criterio.
+#
+# LA TABLA · ruta | tipo | argumento | clave del sobre
+#   FALTAN  la RUTA sirve esas claves y el SOBRE no las tiene en ningun nivel.
+#   MENOS   el valor del SOBRE tiene estrictamente MENOS elementos que el de la ruta.
+# Las claves del sobre salen de las PAREJAS de K43, que es la traduccion declarada.
+EXCEPCIONES="
+/api/dashboard/state          | FALTAN | scalp_persistence,signal_base_rate          |
+/api/scalp/delta-matrix       | MENOS  |                                             | delta_matrix
+/api/scalp/liquidation-levels | FALTAN | minutes,bucket_bps,window_start,window_end  | liquidation_levels
+"
+# LO QUE CADA UNA AFIRMA, medido el 2026-09-14 23:0xZ con bin/api contra 140:
+#   dashboard/state      scalp_persistence y signal_base_rate: en la ruta SI, en el sobre NO.
+#                        CONTROL del buscador, en la misma corrida: symbol, snapshot, scalp y
+#                        setup SI aparecen en el sobre. Sin ese control, un buscador roto
+#                        excusaria cualquier ruta diciendo que no encuentra nada.
+#   delta-matrix         la ruta sirve 12 ventanas y el sobre 5 (PROFILE_LIMITS, ai_context.py).
+#   liquidation-levels   la ruta declara la ventana y el bucket con que se pidio
+#                        -minutes, bucket_bps, window_start, window_end-; en el sobre el valor
+#                        es una LISTA PELADA que no declara ninguno. Y no es cosa mia: esas
+#                        siete claves son EXACTAMENTE la columna de exclusiones que K43 ya le
+#                        tiene puesta a esta ruta en PAREJAS. La busqueda va DENTRO de
+#                        `liquidation_levels` y no por todo el sobre: `window_start` y
+#                        `window_end` SI existen en el sobre -nueve sitios, todos bajo
+#                        `oi_context.coverage.*`- y no son esto. Un nombre que coincide no es
+#                        el mismo dato, que es la leccion de la FASE 3b.
+#                        NO uso «el sobre trae menos filas»: hoy los dos traen 5 y esa
+#                        afirmacion seria FALSA -el tope de 8 solo se ve con mas de ocho
+#                        niveles-. Una excusa que solo es cierta algunos dias no es una excusa.
 #
 # CONTROL: harness/checks/K44-control.bash. No lleva .sh a proposito: bin/verify globea *.sh.
 set -uo pipefail
@@ -134,32 +182,219 @@ fi
 pedidas=$(printf '%s\n' "$LOG" | awk '$1!="VISITAS" && $1 ~ /^[0-9]+$/ {print}')
 n_sobre=$(printf '%s\n' "$pedidas" | awk -v S="$SOBRE" '$2==S {s+=$1} END {print s+0}')
 
-partes=""; n_partes=0; rutas_partes=0
+pedidas_foto=""
 while read -r r; do
   [ -n "$r" ] || continue
   n=$(printf '%s\n' "$pedidas" | awk -v R="$r" '$2==R {s+=$1} END {print s+0}')
-  if [ "$n" -gt 0 ]; then
-    partes="$partes $r($n)"
-    n_partes=$((n_partes + n))
-    rutas_partes=$((rutas_partes + 1))
-  fi
+  [ "$n" -gt 0 ] && pedidas_foto="$pedidas_foto$r $n
+"
 done <<EOF
 $FOTO
 EOF
 
-COLA="ventana ${VENTANA_H} h · $VISITAS peticiones de navegador · $N_FOTO rutas en la familia FOTO$MARCA"
+COLA0="ventana ${VENTANA_H} h · $VISITAS peticiones de navegador · $N_FOTO rutas en la familia FOTO"
 
+# --- 2a · EL ESTADO 5 NO PASA POR LAS EXCEPCIONES ------------------------------------------
+# Si el panel NO pide el sobre, excusar una ruta por «el sobre no trae lo suyo» no significa
+# nada: no hay sobre que consultar. Se cuentan TODAS las partes y se condena, que es el estado
+# 5 de siempre. Ademas asi este brazo no depende del canal de payloads.
 if [ "$n_sobre" -lt 1 ]; then
+  n_partes=0; rutas_partes=0; partes=""
+  while read -r r n; do
+    [ -n "$r" ] || continue
+    partes="$partes $r($n)"; n_partes=$((n_partes + n)); rutas_partes=$((rutas_partes + 1))
+  done <<EOF
+$pedidas_foto
+EOF
   echo "el panel NO pide el sobre: 0 peticiones a $SOBRE, y $n_partes a $rutas_partes de las" \
-       "$N_FOTO rutas de FOTO, que es reconstruir la foto en vez de consumirla ·$partes · $COLA"
+       "$N_FOTO rutas de FOTO, que es reconstruir la foto en vez de consumirla ·$partes" \
+       "· $COLA0$MARCA"
   exit 1
 fi
+
+# --- 2b · SIN PARTES NO HAY NADA QUE EXCUSAR -----------------------------------------------
+# Cero rutas sueltas: el VERDE no necesita consultar ningun payload. Mantiene barato el caso
+# bueno, que es el que va a correr casi siempre.
+if [ -z "${pedidas_foto//[$' \t\n']/}" ]; then
+  # LA OTRA DIRECCION, Y SALE GRATIS: si el panel no pide NINGUNA parte, entonces TODAS las
+  # excepciones declaradas sobran. Se dicen por su nombre sin bajar un solo payload. Callarlas
+  # dejaria que una excusa muerta viviera para siempre en la tabla sin que nadie la mire.
+  todas=$(printf '%s\n' "$EXCEPCIONES" | awk -F'|' 'NF>1 {gsub(/ /,"",$1); if ($1!="") printf "%s ", $1}')
+  SOBRAN=""
+  [ -n "${todas// /}" ] && SOBRAN=" · EXCEPCIONES HUERFANAS (el panel ya no pide ninguna parte, las $(printf '%s' "$todas" | wc -w) sobran): $todas"
+  echo "el panel pide el sobre $n_sobre veces y CERO de las $N_FOTO rutas de FOTO: lo que se" \
+       "pinta como foto sale de una sola respuesta con un solo generated_at · $COLA0$MARCA$SOBRAN"
+  exit 0
+fi
+
+# --- 2c · LAS EXCEPCIONES, REVERIFICADAS CONTRA LOS PAYLOADS DE ESTA MISMA CORRIDA ----------
+# Se bajan el sobre y SOLO las rutas que tienen excepcion declarada: cuatro peticiones, no 22.
+# Si el canal de payloads no contesta NO se excusa a nadie por defecto -eso seria la excepcion
+# silenciosa que este mecanismo existe para impedir-: sale NO MEDIDO y se dice cual fallo.
+API=${K44_API:-$B/bin/api}
+SIMBOLO=${K44_SIMBOLO:-$(TODO=1 timeout 60 "$API" /api/symbols 2>/dev/null \
+  | sed -n 's/.*"symbol":"\([^"]*\)".*/\1/p' | head -1)}
+if [ -z "$SIMBOLO" ]; then
+  echo "NO MEDIDO: no se pudo leer ningun simbolo de /api/symbols, asi que las excepciones de" \
+       "este check no se pueden reverificar. Sin reverificarlas NO se excusa a nadie: una" \
+       "excusa que no se comprueba es exactamente lo que este mecanismo existe para impedir."
+  exit 2
+fi
+
+TMPX=$(mktemp -d /tmp/k44.XXXXXX); trap 'rm -rf "$TMPX"' EXIT
+if [ -n "${K44_PAYLOADS:-}" ]; then
+  cp "$K44_PAYLOADS"/*.json "$TMPX"/ 2>/dev/null
+  MARCA="$MARCA [payloads INYECTADOS por K44_PAYLOADS]"
+else
+  TODO=1 timeout 90 "$API" "/api/ai/context?symbol=$SIMBOLO" > "$TMPX/_sobre.json" 2>/dev/null
+  while IFS='|' read -r r _t _a _c; do
+    r=$(printf '%s' "$r" | tr -d ' '); [ -n "$r" ] || continue
+    TODO=1 timeout 90 "$API" "$r?symbol=$SIMBOLO" > "$TMPX/$(printf '%s' "$r" | tr '/' '_').json" 2>/dev/null
+  done <<EOF
+$EXCEPCIONES
+EOF
+fi
+
+VEREDICTOS=$(EXCEPCIONES="$EXCEPCIONES" PEDIDAS_FOTO="$pedidas_foto" TMPX="$TMPX" python3 - <<'PY'
+import json, os, sys
+
+def hojas_claves(o, prof=0, out=None):
+    """todas las claves del arbol, a cualquier nivel"""
+    if out is None: out = set()
+    if prof > 8 or not isinstance(o, (dict, list)): return out
+    if isinstance(o, list):
+        for x in o[:6]: hojas_claves(x, prof + 1, out)
+        return out
+    for k, v in o.items():
+        out.add(k); hojas_claves(v, prof + 1, out)
+    return out
+
+def carga(p):
+    try:
+        with open(p) as f: return json.load(f)
+    except Exception: return None
+
+tmp = os.environ["TMPX"]
+sobre = carga(os.path.join(tmp, "_sobre.json"))
+pedidas = {}
+for ln in os.environ["PEDIDAS_FOTO"].strip().splitlines():
+    if not ln.strip(): continue
+    r, n = ln.rsplit(" ", 1); pedidas[r.strip()] = int(n)
+
+# EL CONTROL DEL BUSCADOR, en la misma corrida. Si `hojas_claves` estuviera rota devolveria
+# vacio y excusaria TODAS las rutas por «el sobre no lo trae». Cuatro claves que el sobre tiene
+# seguro -son las PAREJAS de /api/dashboard/state que SI viajan- tienen que aparecer.
+TESTIGOS = ["symbol", "snapshot", "scalp", "setup"]
+if sobre is None:
+    print("NOMED\tno se pudo leer el sobre, asi que ninguna excepcion se puede reverificar")
+    sys.exit(0)
+cs = hojas_claves(sobre)
+faltan_testigos = [t for t in TESTIGOS if t not in cs]
+if faltan_testigos:
+    print("NOMED\tel buscador de claves no encuentra en el sobre "
+          + " ".join(faltan_testigos) + ", que SI estan: esta roto y excusaria a cualquiera")
+    sys.exit(0)
+
+for ln in os.environ["EXCEPCIONES"].strip().splitlines():
+    if not ln.strip(): continue
+    p = [x.strip() for x in ln.split("|")]
+    while len(p) < 4: p.append("")
+    ruta, tipo, arg, clave = p[0], p[1], p[2], p[3]
+    if not ruta: continue
+    if ruta not in pedidas:
+        print(f"HUERFANA\t{ruta}\tel panel ya no la pide en la ventana: la excepcion sobra")
+        continue
+    rp = carga(os.path.join(tmp, ruta.replace("/", "_") + ".json"))
+    if rp is None:
+        print(f"NOMED\tno se pudo leer {ruta}, asi que su excepcion no se puede reverificar")
+        continue
+    if tipo == "FALTAN":
+        pedidas_k = [k for k in arg.split(",") if k]
+        en_ruta = hojas_claves(rp)
+        no_en_ruta = [k for k in pedidas_k if k not in en_ruta]
+        # EL AMBITO IMPORTA, Y ME MORDIO AL ESCRIBIRLO. Buscar el nombre en TODO el sobre da
+        # falsos positivos por homonimia: `window_start` y `window_end` existen en el sobre
+        # -nueve sitios, todos bajo `oi_context.coverage.*`- y no tienen nada que ver con los
+        # niveles de liquidacion. Con la busqueda global esta excepcion salia ANULADA por un
+        # nombre que coincide. Si la fila declara clave del sobre, se busca DENTRO de ella.
+        if clave:
+            ambito = sobre.get(clave, "<<AUSENTE>>")
+            if ambito == "<<AUSENTE>>" or ambito is None:
+                print(f"ANULADA\t{ruta}\tel sobre ya no trae `{clave}`: la excusa mira dentro de nada")
+                continue
+            if isinstance(ambito, (list, dict)) and len(ambito) == 0:
+                print(f"ANULADA\t{ruta}\t`{clave}` viene VACIA en el sobre: sobre un vacio "
+                      f"cualquier clave falta sola y la excusa se cumpliria por construccion")
+                continue
+            donde = f"dentro de `{clave}` ({len(hojas_claves(ambito))} claves)"
+            en_sobre = [k for k in pedidas_k if k in hojas_claves(ambito)]
+        else:
+            donde = f"en TODO el sobre ({len(cs)} claves, control {' '.join(TESTIGOS)} OK)"
+            en_sobre = [k for k in pedidas_k if k in cs]
+        if no_en_ruta:
+            print(f"ANULADA\t{ruta}\tla RUTA ya no sirve {' '.join(no_en_ruta)}: "
+                  f"la excusa hablaba de algo que ya no existe")
+        elif en_sobre:
+            print(f"ANULADA\t{ruta}\tel sobre YA trae {' '.join(en_sobre)} {donde}: la excusa es falsa")
+        else:
+            print(f"VIVA\t{ruta}\tla ruta sirve {' '.join(pedidas_k)} y NO estan {donde}")
+    elif tipo == "MENOS":
+        val = sobre.get(clave) if clave else None
+        nr = len(rp) if isinstance(rp, (list, dict)) else 0
+        ns = len(val) if isinstance(val, (list, dict)) else 0
+        if val is None:
+            print(f"ANULADA\t{ruta}\tel sobre ya no trae `{clave}`: la excusa comparaba contra nada")
+        elif ns >= nr:
+            print(f"ANULADA\t{ruta}\tel sobre trae {ns} y la ruta {nr}: ya no trae menos, la excusa es falsa")
+        else:
+            print(f"VIVA\t{ruta}\tla ruta sirve {nr} elementos y el sobre `{clave}` solo {ns}")
+    else:
+        print(f"ANULADA\t{ruta}\ttipo de excepcion desconocido: {tipo}")
+PY
+)
+
+if printf '%s\n' "$VEREDICTOS" | grep -q '^NOMED'; then
+  echo "NO MEDIDO: $(printf '%s\n' "$VEREDICTOS" | grep '^NOMED' | cut -f2- | tr '\n' ' ')" \
+       "· sin reverificar las excepciones este check no puede decir si una peticion suelta" \
+       "esta excusada o es un defecto, y dar por buena la excusa seria excusar en silencio.$MARCA"
+  exit 2
+fi
+
+excusadas=""; anuladas=""; huerfanas=""
+partes=""; n_partes=0; rutas_partes=0
+while read -r r n; do
+  [ -n "$r" ] || continue
+  if printf '%s\n' "$VEREDICTOS" | grep -q "^VIVA	$r	"; then
+    razon=$(printf '%s\n' "$VEREDICTOS" | grep "^VIVA	$r	" | cut -f3)
+    excusadas="$excusadas · $r($n): $razon"
+    continue
+  fi
+  motivo=""
+  if printf '%s\n' "$VEREDICTOS" | grep -q "^ANULADA	$r	"; then
+    motivo=" [EXCEPCION ANULADA: $(printf '%s\n' "$VEREDICTOS" | grep "^ANULADA	$r	" | cut -f3)]"
+    anuladas="$anuladas $r"
+  fi
+  partes="$partes $r($n)$motivo"
+  n_partes=$((n_partes + n))
+  rutas_partes=$((rutas_partes + 1))
+done <<EOF
+$pedidas_foto
+EOF
+huerfanas=$(printf '%s\n' "$VEREDICTOS" | grep '^HUERFANA' | cut -f2 | tr '\n' ' ')
+
+COLA="$COLA0$MARCA"
+[ -n "${excusadas// /}" ] && COLA="$COLA · EXCUSADAS Y REVERIFICADAS EN ESTA CORRIDA:$excusadas"
+[ -n "${huerfanas// /}" ] && COLA="$COLA · EXCEPCIONES HUERFANAS (el panel ya no las pide, sobran): $huerfanas"
+
 if [ "$rutas_partes" -gt 0 ]; then
   echo "REFORMA A MEDIAS: el panel pide el sobre $n_sobre veces Y ADEMAS sigue pidiendo" \
-       "$n_partes veces $rutas_partes de las $N_FOTO rutas de FOTO. Las dos cosas a la vez" \
-       "cuestan mas que hoy y el sobre no gobierna la edad de lo que se pinta ·$partes · $COLA"
+       "$n_partes veces $rutas_partes de las $N_FOTO rutas de FOTO SIN EXCUSA VIVA. Las dos" \
+       "cosas a la vez cuestan mas que hoy y el sobre no gobierna la edad de lo que se pinta" \
+       "·$partes · $COLA"
   exit 1
 fi
-echo "el panel pide el sobre $n_sobre veces y CERO de las $N_FOTO rutas de FOTO: lo que se" \
-     "pinta como foto sale de una sola respuesta con un solo generated_at · $COLA"
+echo "el panel pide el sobre $n_sobre veces y CERO de las $N_FOTO rutas de FOTO sin excusa" \
+     "viva: lo que se pinta como foto sale de una sola respuesta con un solo generated_at." \
+     "Cada excusa se ha vuelto a comprobar contra los payloads de ESTA corrida y dice contra" \
+     "que · $COLA"
 exit 0

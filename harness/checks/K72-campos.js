@@ -89,37 +89,28 @@ const CAMPOS = [
     }, true],
 
   // ---- FASE 3b · modo NUMERO (cifras) ----------------------------------------------------
-  ['cross_asset.correlation', SOBRE, 'Relativo entre activos: el NUMERO de la correlacion',
-    o => {
-      const c = o.cross_asset && o.cross_asset.correlation, w = prim(c);
-      if (!w || !c[w] || typeof c[w] !== 'object') return false;
-      const a = prim(c[w]);
-      if (a === undefined || typeof c[w][a] !== 'number') return false;
-      c[w][a] = otro(c[w][a]);
-      return true;
-    }, true, 'cross-asset-body'],
-  ['cross_asset.beta_vs_base', SOBRE, 'Relativo entre activos: el NUMERO de la beta',
-    o => {
-      const b = o.cross_asset && o.cross_asset.beta_vs_base, w = prim(b);
-      if (w === undefined || typeof b[w] !== 'number') return false;
-      b[w] = otro(b[w]);
-      return true;
-    }, true, 'cross-asset-body'],
-  ['cross_asset.relative_strength_vs_base_pct', SOBRE, 'Relativo entre activos: el NUMERO de la fuerza relativa',
-    o => {
-      const r = o.cross_asset && o.cross_asset.relative_strength_vs_base_pct, w = prim(r);
-      // hoy llega {1h:null,4h:null,24h:null}: NO hay numero que mover, asi que no se juzga.
-      if (w === undefined || typeof r[w] !== 'number') return false;
-      r[w] = otro(r[w]);
-      return true;
-    }, true, 'cross-asset-body'],
-  ['volatility.realized_vol_annualized_pct', SOBRE, 'Volatilidad: el NUMERO de la vol. realizada',
-    o => {
-      const v = o.volatility && o.volatility.realized_vol_annualized_pct, w = prim(v);
-      if (w === undefined || typeof v[w] !== 'number') return false;
-      v[w] = otro(v[w]);
-      return true;
-    }, true, 'volatilidad-body'],
+  // ---- MODO MAPA · RESIDUO R-a DE COLA 122 -----------------------------------------------
+  // La version anterior mutaba `prim(mapa)` -LA PRIMERA CLAVE- y con eso daba por bueno que
+  // «la correlacion por ventana llega». Una tarjeta que pintara SOLO la primera ventana pasaba
+  // en VERDE, y la linea afirmaba las tres. Un campo se juzga en TODAS las claves que su
+  // tarjeta pinta, o su linea no puede nombrarlo.
+  //
+  // Se mutan TODAS de una vez y se juzga FILA A FILA: por cada clave tiene que existir una
+  // fila que la NOMBRE y esa fila tiene que haberse movido. Cuesta lo mismo que antes -una
+  // renderizacion por campo- en vez de una por clave.
+  ['cross_asset.correlation', SOBRE, 'Relativo entre activos: el NUMERO de la correlacion, en cada ventana',
+    o => mutaMapa(o, ['cross_asset'], 'correlation'), true, 'cross-asset-body',
+    o => clavesDe(o, ['cross_asset'], 'correlation')],
+  ['cross_asset.beta_vs_base', SOBRE, 'Relativo entre activos: el NUMERO de la beta, en cada ventana',
+    o => mutaMapa(o, ['cross_asset'], 'beta_vs_base'), true, 'cross-asset-body',
+    o => clavesDe(o, ['cross_asset'], 'beta_vs_base')],
+  ['cross_asset.relative_strength_vs_base_pct', SOBRE, 'Relativo entre activos: el NUMERO de la fuerza relativa, en cada ventana',
+    // hoy llega {1h:null,4h:null,24h:null}: NO hay numero que mover, asi que no se juzga.
+    o => mutaMapa(o, ['cross_asset'], 'relative_strength_vs_base_pct'), true, 'cross-asset-body',
+    o => clavesDe(o, ['cross_asset'], 'relative_strength_vs_base_pct')],
+  ['volatility.realized_vol_annualized_pct', SOBRE, 'Volatilidad: el NUMERO de la vol. realizada, en cada ventana',
+    o => mutaMapa(o, ['volatility'], 'realized_vol_annualized_pct'), true, 'volatilidad-body',
+    o => clavesDe(o, ['volatility'], 'realized_vol_annualized_pct')],
   ['volatility.daily_range_percentile_1y', SOBRE, 'Volatilidad: el percentil de rango diario',
     o => {
       if (!o.volatility || typeof o.volatility.daily_range_percentile_1y !== 'number') return false;
@@ -138,20 +129,12 @@ const CAMPOS = [
       o.volatility.range_expansion = !o.volatility.range_expansion;
       return true;
     }, true, 'volatilidad-body'],
-  ['volatility.atr.*.atr', SOBRE, 'Volatilidad: el ATR en precio',
-    o => {
-      const a = o.volatility && o.volatility.atr, tf = prim(a);
-      if (tf === undefined || !a[tf] || typeof a[tf].atr !== 'number') return false;
-      a[tf].atr = otro(a[tf].atr);
-      return true;
-    }, true, 'volatilidad-body'],
-  ['volatility.atr.*.atr_pct', SOBRE, 'Volatilidad: el ATR en % del cierre',
-    o => {
-      const a = o.volatility && o.volatility.atr, tf = prim(a);
-      if (tf === undefined || !a[tf] || typeof a[tf].atr_pct !== 'number') return false;
-      a[tf].atr_pct = otro(a[tf].atr_pct);
-      return true;
-    }, true, 'volatilidad-body'],
+  ['volatility.atr.*.atr', SOBRE, 'Volatilidad: el ATR en precio, en cada marco',
+    o => mutaAnidado(o, ['volatility', 'atr'], 'atr'), true, 'volatilidad-body',
+    o => clavesAnidadas(o, ['volatility', 'atr'], 'atr')],
+  ['volatility.atr.*.atr_pct', SOBRE, 'Volatilidad: el ATR en % del cierre, en cada marco',
+    o => mutaAnidado(o, ['volatility', 'atr'], 'atr_pct'), true, 'volatilidad-body',
+    o => clavesAnidadas(o, ['volatility', 'atr'], 'atr_pct')],
   ['volume_profile.session.poc', SOBRE, 'Perfil de volumen: el POC',
     o => plantaNum(o, ['volume_profile', 'session'], 'poc'), true, 'perfil-vol-body'],
   ['volume_profile.session.vah', SOBRE, 'Perfil de volumen: el VAH',
@@ -219,6 +202,49 @@ function plantaLista(o, camino, clave) {
   p[clave] = p[clave].map(otro);
   return true;
 }
+// --- MAPAS: todas las claves a la vez -------------------------------------------------------
+// `num` muta recursivamente cualquier numero que cuelgue del valor: `correlation` es
+// {ventana: {activo: numero}} y la beta es {ventana: numero}, y las dos tienen que moverse.
+function num(v) {
+  if (typeof v === 'number') return otro(v);
+  if (Array.isArray(v)) return v.map(num);
+  if (v && typeof v === 'object') { const r = {}; for (const k of Object.keys(v)) r[k] = num(v[k]); return r; }
+  return v;
+}
+function tieneNumero(v) {
+  if (typeof v === 'number') return true;
+  if (Array.isArray(v)) return v.some(tieneNumero);
+  if (v && typeof v === 'object') return Object.values(v).some(tieneNumero);
+  return false;
+}
+function clavesDe(o, camino, clave) {
+  const p = baja(o, camino), m = p && p[clave];
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return [];
+  return Object.keys(m).filter(k => tieneNumero(m[k]));
+}
+function mutaMapa(o, camino, clave) {
+  const ks = clavesDe(o, camino, clave);
+  if (!ks.length) return false;
+  const m = baja(o, camino)[clave];
+  for (const k of ks) m[k] = num(m[k]);
+  return true;
+}
+// `volatility.atr` es {marco: {atr, atr_pct}}: la clave de la FILA es el marco y el campo que
+// se juzga es una hoja DENTRO de cada marco. Se muta esa hoja en todos los marcos.
+function clavesAnidadas(o, camino, hoja) {
+  const m = baja(o, camino);
+  if (!m) return [];
+  return Object.keys(m).filter(k => m[k] && typeof m[k][hoja] === 'number');
+}
+function mutaAnidado(o, camino, hoja) {
+  const ks = clavesAnidadas(o, camino, hoja);
+  if (!ks.length) return false;
+  const m = baja(o, camino);
+  for (const k of ks) m[k][hoja] = otro(m[k][hoja]);
+  return true;
+}
+
+const limpia = s => (s || '').replace(/\s+/g, ' ').trim();
 
 async function foto(transform) {
   const r = await render({ mode: 'replay', fixtures: FIX, settleMs: 400, frozenAt: 1756300000000, transform });
@@ -226,15 +252,40 @@ async function foto(transform) {
     l.dispatchEvent(new r.window.MouseEvent('click', { bubbles: true, cancelable: true }));
     await new Promise(res => setTimeout(res, 400));
   }
+  // De cada contenedor se guarda su texto Y EL DE CADA UNA DE SUS FILAS. Las filas son lo que
+  // permite juzgar un mapa EN TODAS SUS CLAVES con UNA sola renderizacion: se mutan todas de
+  // golpe y despues se pregunta, clave a clave, si hay una fila que la nombre y si esa fila se
+  // movio. Sin las filas habria que renderizar una vez por clave -25 renderizaciones mas- y el
+  // check pasaria de dos minutos y medio a mas de seis.
   const cont = new Map();
   for (const [, , , , , id] of CAMPOS) {
     if (!id || cont.has(id)) continue;
     const el = r.document.getElementById(id);
-    cont.set(id, el ? (el.textContent || '').replace(/\s+/g, ' ').trim() : null);
+    // LAS CELDAS SE UNEN CON SEPARADOR. `textContent` de un <tr> las pega sin nada en medio y
+    // la ventana `1h` sale como `1heth 0.76...`: entonces el limite de palabra no casa y el
+    // check decia «ninguna fila NOMBRA 1h» con las tres ventanas escritas en la pantalla.
+    cont.set(id, el === null ? null : {
+      texto: limpia(el.textContent),
+      filas: [...el.children].map(c => c.children.length
+        ? [...c.children].map(x => limpia(x.textContent)).join(' | ')
+        : limpia(c.textContent)),
+    });
   }
   const todo = r.document.body.textContent.replace(/\s+/g, ' ').trim();
   try { r.window.close(); } catch (_) {}
   return { todo, cont };
+}
+
+// ¿hay alguna fila que NOMBRE esta clave, y se movio esa fila?
+// Se exige que la fila la NOMBRE a proposito: un numero que llega sin decir de que ventana o
+// de que marco es TAMPOCO LLEGA -residuo R-b de COLA 122-. La tarjeta escribe «ATR · 5m» y
+// «Vol. realizada anualizada · 1h»: si dejara de escribir el rotulo, aqui no habria fila que
+// mencione la clave y el campo condena, aunque el numero siguiera en pantalla.
+function filaDeClave(base, mut, clave) {
+  const re = new RegExp('(^|[^0-9a-z])' + clave.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^0-9a-z]|$)', 'i');
+  const idx = base.filas.map((t, i) => [t, i]).filter(([t]) => re.test(t)).map(([, i]) => i);
+  if (!idx.length) return { nombrada: false, movida: false };
+  return { nombrada: true, movida: idx.some(i => (mut.filas[i] === undefined) || (mut.filas[i] !== base.filas[i])) };
 }
 
 (async () => {
@@ -243,12 +294,12 @@ async function foto(transform) {
   catch (e) { console.log('NO MEDIDO: el panel no arranca: ' + String(e && e.message || e).split('\n')[0]); process.exit(2); }
   if (base.todo.includes(MARCA)) { console.log('NO MEDIDO: la marca ya esta en el DOM sin mutar nada'); process.exit(2); }
   if (base.todo.length < 1000) { console.log(`NO MEDIDO: el DOM son ${base.todo.length} B; no hay pantalla que medir`); process.exit(2); }
-  // Un contenedor que NO EXISTE no puede juzgarse: seria un ROJO por un id mal escrito aqui.
-  const sinNodo = [...base.cont].filter(([, t]) => t === null).map(([id]) => id);
-  if (sinNodo.length) {
-    console.log(`NO MEDIDO: ${sinNodo.length} contenedor(es) no existen en el DOM: ${sinNodo.join(' ')}`);
-    process.exit(2);
-  }
+  // RESIDUO R-c DE COLA 122. Un contenedor que NO EXISTE no puede juzgarse -seria un ROJO por
+  // un id mal escrito aqui-, pero ANTES esto APAGABA EL CHECK ENTERO: `exit 2` antes de juzgar
+  // a nadie, asi que quitar una tarjeta dejaba sin vigilancia a las otras cuatro y la linea no
+  // nombraba ni una. Ahora los demas se juzgan igual y los campos del ausente salen NOMBRADOS
+  // con su razon. Nunca callados: un campo que no se juzga y no se dice es un campo sin red.
+  const ausentes = new Set([...base.cont].filter(([, v]) => v === null).map(([id]) => id));
 
   // UN PLANTADO QUE NO OCURRE NO ES UN ROJO, y esto lo cazo la auditoria del operador. Si el
   // backend NO SIRVE el campo, no hay nada que marcar: la ausencia de la marca en el DOM no
@@ -256,12 +307,17 @@ async function foto(transform) {
   //     servido y pintado      -> bien
   //     servido y NO pintado   -> ROJO, con su nombre
   //     NO servido             -> no se juzga, y se DICE en la linea de veredicto
-  const perdidos = [], control = [], noServidos = [], juzgadosQue = [];
-  for (const [campo, ruta, que, planta, esperado, contenedor] of CAMPOS) {
-    let planto = false;
+  const perdidos = [], control = [], noServidos = [], juzgadosQue = [], sinTarjeta = [];
+  for (const [campo, ruta, que, planta, esperado, contenedor, claves] of CAMPOS) {
+    if (contenedor && ausentes.has(contenedor)) {
+      sinTarjeta.push(`${campo} (su tarjeta \`#${contenedor}\` no existe en el DOM)`);
+      continue;
+    }
+    let planto = false, ks = null;
     const t = (url, body) => {
       if (url.split('?')[0] !== ruta) return body;
       const o = JSON.parse(body);
+      if (claves) ks = claves(o);            // las claves SE LEEN DEL PAYLOAD, no se suponen
       planto = planta(o) !== false;
       return JSON.stringify(o);
     };
@@ -274,11 +330,30 @@ async function foto(transform) {
       console.log(`NO MEDIDO: mutar ${campo} tumba el panel (DOM ${f.todo.length} de ${base.todo.length})`);
       process.exit(2);
     }
-    const llega = contenedor
-      ? (f.cont.get(contenedor) !== base.cont.get(contenedor))   // modo NUMERO
-      : f.todo.includes(MARCA);                                  // modo MARCA
-    if (esperado) juzgadosQue.push(que);
-    if (esperado && !llega) perdidos.push(`${campo} (${que}, de ${ruta})`);
+    let llega, detalle = '';
+    if (contenedor && claves) {                                  // modo MAPA
+      const b = base.cont.get(contenedor), m = f.cont.get(contenedor);
+      const mudas = [], sinRotulo = [];
+      for (const k of (ks || [])) {
+        const v = filaDeClave(b, m, k);
+        if (!v.nombrada) sinRotulo.push(k);
+        else if (!v.movida) mudas.push(k);
+      }
+      llega = (ks || []).length > 0 && !mudas.length && !sinRotulo.length;
+      if (sinRotulo.length) detalle += `; ninguna fila NOMBRA ${sinRotulo.join(' ')} -un numero sin decir de que ventana o marco es tampoco llega-`;
+      if (mudas.length) detalle += `; la fila de ${mudas.join(' ')} no se movio`;
+      if (llega) juzgadosQue.push(`${que} [${ks.length}: ${ks.join(' ')}]`);
+    } else if (contenedor) {                                     // modo NUMERO
+      llega = f.cont.get(contenedor).texto !== base.cont.get(contenedor).texto;
+      if (esperado) juzgadosQue.push(que);
+    } else {                                                     // modo MARCA
+      llega = f.todo.includes(MARCA);
+      if (esperado) juzgadosQue.push(que);
+    }
+    if (esperado && !llega) {
+      if (contenedor && claves) juzgadosQue.push(`${que} [${(ks || []).length} claves]`);
+      perdidos.push(`${campo} (${que}, de ${ruta}${detalle})`);
+    }
     if (!esperado && llega) control.push(campo);
   }
 
@@ -288,10 +363,16 @@ async function foto(transform) {
       'este check no distingue «se pinta» de «no se pinta» y su verde no valdria nada.');
     process.exit(2);
   }
-  const cola = noServidos.length
+  let cola = noServidos.length
     ? ` · ${noServidos.length} NO SE JUZGA(N) porque el backend no los sirvio hoy: ` +
       `${noServidos.join(' ')} -un plantado que no ocurre no es una perdida-`
     : '';
+  // Los campos cuya tarjeta no existe SE NOMBRAN. Antes apagaban el check entero (R-c).
+  if (sinTarjeta.length) {
+    cola += ` · ${sinTarjeta.length} NO SE JUZGA(N) porque SU TARJETA NO ESTA EN LA PAGINA: ` +
+      `${sinTarjeta.join(' · ')} -los demas campos si se han juzgado; una tarjeta que falta no ` +
+      `deja sin red a las otras, pero SUS campos se quedan sin vigilar y por eso van nombrados-`;
+  }
   const juzgados = juzgadosQue.length;
 
   if (perdidos.length) {
@@ -310,8 +391,10 @@ async function foto(transform) {
   // se juzgaron, y en modo NUMERO «llega» significa que se movio la CIFRA, no su etiqueta.
   console.log(`los ${juzgados} campos servidos hoy llegan ESCRITOS a su tarjeta: ` +
     `${juzgadosQue.join(' · ')}. Medido mutando el payload que la tarjeta lee -no el que ` +
-    'uno supondria-: los textos por marca en el DOM, y las CIFRAS exigiendo que cambie el ' +
-    'texto del contenedor de su tarjeta, que es lo unico que distingue escribir el numero de ' +
-    `escribir solo su rotulo. Dos controles en la misma pasada, uno por modo${cola}`);
+    'uno supondria-: los textos por marca en el DOM; las CIFRAS sueltas exigiendo que cambie ' +
+    'el texto de su fila o de su tarjeta; y los MAPAS mutando TODAS sus claves y exigiendo, ' +
+    'clave a clave, que exista una fila que la NOMBRE y que esa fila se mueva -entre corchetes ' +
+    'van las claves de cada uno, que salen del payload y no de una lista escrita a mano-. ' +
+    `Dos controles en la misma pasada, uno por modo${cola}`);
   process.exit(0);
 })();

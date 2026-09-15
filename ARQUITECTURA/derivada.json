@@ -26111,10 +26111,17 @@
             "harness/checks/K43-foto-unica.sh:413",
             "harness/checks/K43-foto-unica.sh:439",
             "harness/checks/K43-foto-unica.sh:529",
-            "harness/checks/K44-control.bash:112",
-            "harness/checks/K44-control.bash:134",
-            "harness/checks/K44-control.bash:140",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:76",
+            "harness/checks/K44-control.bash:122",
+            "harness/checks/K44-control.bash:144",
+            "harness/checks/K44-control.bash:154",
+            "harness/checks/K44-control.bash:174",
+            "harness/checks/K44-control.bash:187",
+            "harness/checks/K44-control.bash:202",
+            "harness/checks/K44-control.bash:218",
+            "harness/checks/K44-control.bash:228",
+            "harness/checks/K44-control.bash:240",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:124",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:249",
             "harness/checks/K72-campos.js:33"
           ],
           "menciones": [
@@ -26174,7 +26181,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 24,
+        "n_llamadas": 31,
         "n_menciones": 18,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -28438,13 +28445,13 @@
             "harness/checks/K43-foto-unica.sh:227",
             "harness/checks/K43-foto-unica.sh:228",
             "harness/checks/K43-foto-unica.sh:420",
-            "harness/checks/K44-control.bash:126",
-            "harness/checks/K44-control.bash:132",
-            "harness/checks/K44-control.bash:141",
+            "harness/checks/K44-control.bash:136",
+            "harness/checks/K44-control.bash:142",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:92",
             "harness/checks/K72-campos.js:46",
             "harness/checks/K72-campos.js:52",
             "harness/checks/K72-campos.js:58",
-            "harness/checks/K72-campos.js:195",
+            "harness/checks/K72-campos.js:178",
             "harness/checks/K90-control.bash:132",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:97",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:116",
@@ -28454,6 +28461,8 @@
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:230",
+            "harness/checks/K44-control.bash:150",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:286",
             "harness/checks/K72-campos.js:6",
             "harness/checks/K72-el-campo-que-no-llega.sh:10",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13",
@@ -28492,7 +28501,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 26,
-        "n_menciones": 13,
+        "n_menciones": 15,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -31431,8 +31440,8 @@
             "harness/checks/K43-control.bash:191",
             "harness/checks/K43-foto-unica.sh:159",
             "harness/checks/K43-foto-unica.sh:420",
-            "harness/checks/K44-control.bash:113",
-            "harness/checks/K44-control.bash:127"
+            "harness/checks/K44-control.bash:123",
+            "harness/checks/K44-control.bash:137"
           ],
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:78",
@@ -33668,6 +33677,12 @@
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:153",
             "harness/checks/K43-foto-unica.sh:208",
+            "harness/checks/K44-control.bash:175",
+            "harness/checks/K44-control.bash:188",
+            "harness/checks/K44-control.bash:203",
+            "harness/checks/K44-control.bash:229",
+            "harness/checks/K44-control.bash:241",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:93",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217",
             "harness/checks/K84-dos-matrices-una-cifra.sh:86",
@@ -33686,7 +33701,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 7,
+        "n_llamadas": 13,
         "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -34059,7 +34074,8 @@
         "checks": {
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:153",
-            "harness/checks/K43-foto-unica.sh:209"
+            "harness/checks/K43-foto-unica.sh:209",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:94"
           ],
           "menciones": []
         },
@@ -34085,7 +34101,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 4,
+        "n_llamadas": 5,
         "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -36542,7 +36558,9 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K43-foto-unica.sh:168"
+            "harness/checks/K43-foto-unica.sh:168",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:235",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:238"
           ],
           "menciones": []
         },
@@ -36564,7 +36582,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 3,
+        "n_llamadas": 5,
         "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -37375,9 +37393,14 @@
             "harness/checks/K43-control.bash:174",
             "harness/checks/K43-control.bash:218",
             "harness/checks/K43-foto-unica.sh:158",
-            "harness/checks/K43-foto-unica.sh:217"
+            "harness/checks/K43-foto-unica.sh:217",
+            "harness/checks/K44-control.bash:155",
+            "harness/checks/K44-control.bash:204",
+            "harness/checks/K44-control.bash:213"
           ],
-          "menciones": []
+          "menciones": [
+            "harness/checks/K44-control.bash:152"
+          ]
         },
         "panel-sobre": {
           "llamadas": [
@@ -37402,8 +37425,8 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 7,
-        "n_menciones": 1,
+        "n_llamadas": 10,
+        "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
