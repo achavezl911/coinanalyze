@@ -88,11 +88,13 @@
 #   FALTAN  la RUTA sirve esas claves y el SOBRE no las tiene en ningun nivel.
 #   MENOS   el valor del SOBRE tiene estrictamente MENOS elementos que el de la ruta.
 # Las claves del sobre salen de las PAREJAS de K43, que es la traduccion declarada.
-#   FILAS   el SOBRE trae menos FILAS que la ruta pedida COMO LA PIDE EL PANEL.
+#   TOPE    el SOBRE sirve esa clave con un TOPE DE PERFIL menor que el `limit` con que el
+#           panel pide la ruta. El tope NO se copia: se lee en cada corrida del codigo que lo
+#           aplica, y el perfil lo dice el propio sobre.
 EXCEPCIONES="
 /api/dashboard/state          | FALTAN | scalp_persistence,signal_base_rate          |
 /api/scalp/delta-matrix       | MENOS  |                                             | delta_matrix
-/api/scalp/liquidation-levels | FILAS  |                                             | liquidation_levels
+/api/scalp/liquidation-levels | TOPE   | liq_levels                                  | liquidation_levels
 "
 # LO QUE CADA UNA AFIRMA, medido el 2026-09-14 23:0xZ con bin/api contra 140:
 #   dashboard/state      scalp_persistence y signal_base_rate: en la ruta SI, en el sobre NO.
@@ -100,31 +102,38 @@ EXCEPCIONES="
 #                        setup SI aparecen en el sobre. Sin ese control, un buscador roto
 #                        excusaria cualquier ruta diciendo que no encuentra nada.
 #   delta-matrix         la ruta sirve 12 ventanas y el sobre 5 (PROFILE_LIMITS, ai_context.py).
-#   liquidation-levels   el sobre trae MENOS FILAS que la ruta. Es lo que el panel LEE:
-#                        `renderLiquidationLevels` mapea TODAS las filas y publica su cuenta
-#                        («N niveles»); de los metadatos solo usa `minutes`, y con reserva de
-#                        60. Medido 2026-09-15 01:1xZ: ruta 9 filas con el limit del panel,
-#                        sobre 8. El tope del sobre esta mordiendo.
+#   liquidation-levels   el sobre topa `liquidation_levels` en el `liq_levels` de su perfil, y
+#                        ese tope es MENOR que el `limit` con que el panel pide la ruta. Lo que
+#                        el panel LEE son las filas: `renderLiquidationLevels` las mapea TODAS y
+#                        publica su cuenta; de los metadatos solo usa `minutes`, con reserva 60.
 #
-#                        MI PRIMERA VERSION AFIRMABA OTRA COSA Y ERA REFUTABLE POR ALGO QUE EL
-#                        PANEL NO LEE: decia que la ruta declara `minutes`, `bucket_bps`,
-#                        `window_start` y `window_end` y el sobre no. Con esos cuatro metidos
-#                        en el sobre y el tope intacto, la excusa salia ANULADA y K44 condenaba
-#                        -y el panel habria seguido perdiendo filas si soltara la ruta-; y con
-#                        TODAS las filas dentro del sobre pero sin metadatos salia VIVA y K44
-#                        excusaba -y la ruta ya sobraba-. Los dos veredictos al reves.
-#                        La afirmacion de una excusa es LO QUE EL PANEL LEE y el sobre no le da.
+#                        POR QUE EL TOPE Y NO «EL SOBRE TRAE MENOS FILAS». Contar filas hace que
+#                        EL VEREDICTO DEPENDA DE LA HORA: en una hora agitada la ruta trae mas
+#                        que el tope y la excusa vive; en una tranquila los dos traen lo mismo
+#                        -medido 2026-09-15 03:33Z: ruta 4, sobre 4- y la excusa moria, con K44
+#                        condenando el comportamiento correcto. El panel NO SABE de antemano si
+#                        la hora sera tranquila: la peticion suelta esta justificada por diseno
+#                        aunque una hora concreta no lo ensene. Un ROJO que ademas avisa de que
+#                        «hay que mirar un dia con mas niveles» es un rojo sobre el que nadie
+#                        puede actuar, y ensena a leer el rojo de K44 como ruido.
 #
-#                        LA RUTA SE PIDE COMO LA PIDE EL PANEL, y el `limit` no se copia a mano:
-#                        sale del propio log de nginx, que guarda la query entera. Con el
-#                        `limit` por defecto la ruta da 5 filas y con el del panel 9: comparar
-#                        contra la peticion equivocada es comparar otra cosa.
+#                        EL TOPE NO SE COPIA: se lee en CADA CORRIDA de `PROFILE_LIMITS`, en el
+#                        codigo que lo aplica, y el perfil lo dice el propio sobre (`profile`).
+#                        Se lee del RELEASE DESPLEGADO en 140 -que es quien lo aplica- y si el
+#                        canal no contesta, del arbol local, DICIENDO de cual salio. Una ventana
+#                        copiada a mano es lo que hizo que K18 acusara en falso durante semanas.
 #
-#                        CUANDO NO SE DISTINGUE, SE DICE. Por debajo del tope las dos cuentas
-#                        coinciden -el 2026-09-14 eran 5 y 5- y ese dia los payloads NO separan
-#                        «el sobre lo trae todo» de «el tope no ha mordido». La excusa se
-#                        sostiene contra el TOPE, se declara la reserva, y NO se cambia por otra
-#                        afirmacion que si se vea ese dia.
+#                        LA EXCUSA CAE, sin que nadie toque nada, por dos caminos: si alguien
+#                        sube `liq_levels` hasta el `limit` del panel -el sobre ya podria darle
+#                        todo- o si el sobre empieza a servir MAS filas que su propio tope -ese
+#                        tope ya no lo describe-.
+#
+#                        UNA CIFRA QUE PUBLIQUE Y ERA FALSA: dije que «con el `limit` por
+#                        defecto la ruta da 5 filas y con el del panel 9». Los defectos de la
+#                        ruta SON los del panel (app/api.py:3026-3031: minutes=60, bucket_bps=10,
+#                        limit=50). Pedidas espalda con espalda, alternadas, dos rondas
+#                        -2026-09-15 03:33:30Z-: 4 y 4 filas con el MISMO as_of. Aquel 5 y aquel
+#                        9 los separaba el RELOJ, no el `limit`.
 #
 # CONTROL: harness/checks/K44-control.bash. No lleva .sh a proposito: bin/verify globea *.sh.
 set -uo pipefail
@@ -292,7 +301,24 @@ $EXCEPCIONES
 EOF
 fi
 
-VEREDICTOS=$(EXCEPCIONES="$EXCEPCIONES" PEDIDAS_FOTO="$pedidas_foto" TMPX="$TMPX" python3 - <<'PY'
+# EL TOPE DEL SOBRE, LEIDO DE QUIEN LO APLICA. Primero del release desplegado en 140 -ahi es
+# donde el sobre se construye-, y si el canal no contesta, del arbol local. La fuente se declara
+# en la linea: un tope leido del arbol equivocado es una copia con otro nombre.
+TOPES_DE=""
+if [ -n "${K44_LIMITS:-}" ]; then
+  cp "$K44_LIMITS" "$TMPX/_limits.py" 2>/dev/null && TOPES_DE="INYECTADO por K44_LIMITS"
+else
+  _src=$("$B/bin/prod" "sed -n '/^PROFILE_LIMITS/,/^}/p' /opt/coinalyze/current/app/ai_context.py" 2>/dev/null)
+  if printf '%s' "$_src" | grep -q '^PROFILE_LIMITS'; then
+    printf '%s\n' "$_src" > "$TMPX/_limits.py"; TOPES_DE="el release desplegado en 140"
+  elif [ -r "$REPO/app/ai_context.py" ]; then
+    cp "$REPO/app/ai_context.py" "$TMPX/_limits.py"; TOPES_DE="el arbol local $REPO (140 no contesto)"
+  fi
+fi
+[ -s "$TMPX/_limits.py" ] || TOPES_DE=""
+
+VEREDICTOS=$(EXCEPCIONES="$EXCEPCIONES" PEDIDAS_FOTO="$pedidas_foto" TMPX="$TMPX" \
+             QUERIES="$QUERIES" TOPES_DE="$TOPES_DE" python3 - <<'PY'
 import json, os, sys
 
 def hojas_claves(o, prof=0, out=None):
@@ -310,6 +336,34 @@ def carga(p):
     try:
         with open(p) as f: return json.load(f)
     except Exception: return None
+
+def lee_topes():
+    """PROFILE_LIMITS del codigo que lo aplica, por AST. NO se importa `app/`: importarlo
+    abriria el pool, y `app.db.create_pool` ESCRIBE en market_assets y crea particiones."""
+    import ast
+    p = os.path.join(os.environ["TMPX"], "_limits.py")
+    try:
+        arbol = ast.parse(open(p).read())
+    except Exception:
+        return None
+    for n in arbol.body:
+        tgt = None
+        if isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name): tgt = n.target.id
+        elif isinstance(n, ast.Assign) and n.targets and isinstance(n.targets[0], ast.Name): tgt = n.targets[0].id
+        if tgt == "PROFILE_LIMITS":
+            try: return ast.literal_eval(n.value)
+            except Exception: return None
+    return None
+
+def limite_panel(ruta):
+    """el `limit` con que el panel pide la ruta, sacado del log de nginx y no copiado."""
+    import re
+    for ln in (os.environ.get("QUERIES") or "").splitlines():
+        p = ln.split(None, 1)
+        if len(p) != 2 or not p[1].startswith(ruta + "?"): continue
+        m = re.search(r"[?&]limit=(\d+)", p[1])
+        if m: return int(m.group(1))
+    return None
 
 tmp = os.environ["TMPX"]
 sobre = carga(os.path.join(tmp, "_sobre.json"))
@@ -375,6 +429,48 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
             print(f"ANULADA\t{ruta}\tel sobre YA trae {' '.join(en_sobre)} {donde}: la excusa es falsa")
         else:
             print(f"VIVA\t{ruta}\tla ruta sirve {' '.join(pedidas_k)} y NO estan {donde}")
+    elif tipo == "TOPE":
+        # EL TOPE ES LO QUE SEPARA «el sobre lo trae todo» de «el tope no ha mordido», y no
+        # depende de cuantas liquidaciones hubo en la ultima hora.
+        def filas(x):
+            if isinstance(x, dict) and isinstance(x.get("rows"), list): return x["rows"]
+            return x if isinstance(x, list) else None
+        fs = filas(sobre.get(clave))
+        perfil = sobre.get("profile")
+        topes = lee_topes()
+        lim = limite_panel(ruta)
+        falta = []
+        if fs is None: falta.append(f"el sobre no trae `{clave}` como lista de filas")
+        if not perfil: falta.append("el sobre no declara su `profile`")
+        if topes is None: falta.append(f"no se pudo leer PROFILE_LIMITS ({os.environ.get('TOPES_DE') or 'sin fuente'})")
+        elif perfil and perfil not in topes: falta.append(f"PROFILE_LIMITS no tiene el perfil `{perfil}`")
+        if lim is None: falta.append("el log no trae el `limit` con que el panel pide la ruta")
+        if falta:
+            # NO HAY NADA QUE LO SEPARE: se dice, y NO se condena al panel por ello. Un check
+            # que no puede ver su propia afirmacion no tiene derecho a llamar defecto a lo de
+            # enfrente; y esto no apaga el juicio de las demas rutas.
+            print(f"VIVA\t{ruta}\tNO VERIFICABLE EN ESTA CORRIDA: {'; '.join(falta)}. La excusa se "
+                  f"sostiene contra el TOPE del perfil del sobre y NO se cambia por otra que hoy "
+                  f"si se vea; este check lo dice en vez de condenar al panel por no poder mirarlo")
+            continue
+        tope = topes[perfil].get(arg)
+        if not isinstance(tope, int):
+            print(f"VIVA\t{ruta}\tNO VERIFICABLE: el perfil `{perfil}` no declara `{arg}`")
+            continue
+        de = os.environ.get("TOPES_DE") or "fuente no declarada"
+        if len(fs) > tope:
+            print(f"ANULADA\t{ruta}\tel sobre sirve {len(fs)} filas y el perfil `{perfil}` topa en "
+                  f"{tope} ({arg}, leido de {de}): ese tope YA NO describe al sobre y la excusa "
+                  f"se apoyaba en el")
+        elif tope >= lim:
+            print(f"ANULADA\t{ruta}\tel perfil `{perfil}` topa en {tope} ({arg}, leido de {de}) y el "
+                  f"panel pide limit={lim}: el sobre ya puede darle TODO lo que lee, y la "
+                  f"peticion suelta sobra")
+        else:
+            print(f"VIVA\t{ruta}\tel sobre topa `{clave}` en {tope} ({arg} del perfil `{perfil}`, "
+                  f"leido de {de}) y el panel pide limit={lim}: el sobre NO puede darle todo lo "
+                  f"que lee. Hoy trae {len(fs)} filas, por debajo del tope, asi que las cuentas "
+                  f"de esta hora no lo ensenan -y por eso NO son lo que sostiene la excusa-")
     elif tipo == "FILAS":
         # LO QUE EL PANEL LEE DE ESTA RUTA SON LAS FILAS: las mapea todas y publica su cuenta.
         # `rp` puede ser {rows:[...]} o una lista pelada; el valor del sobre, lo mismo.

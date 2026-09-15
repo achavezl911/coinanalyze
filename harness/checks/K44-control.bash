@@ -253,56 +253,103 @@ comprueba "E12b y nombra los testigos que no encuentra" \
 # afirmaba que la ruta declara minutes/bucket_bps/window_start/window_end y el sobre no, y eso
 # se refuta por algo que el panel NO LEE: los dos brazos de abajo salian AL REVES.
 LIQ_RUTA='{"minutes":60,"bucket_bps":10,"window_start":"a","window_end":"b","rows":[1,2,3,4,5,6,7,8,9]}'
-TESTIGOS='"symbol":"TEST","snapshot":{},"scalp":{},"setup":{}'
+TESTIGOS='"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"profile":"default"'
 # A · los cuatro metadatos DENTRO del sobre, y el tope del sobre INTACTO (8 de 9 filas).
 # Los metadatos entran DONDE ENTRARIAN de verdad: dentro del propio bloque del sobre, junto a
 # sus filas -que siguen topadas en 8 de 9-. Ponerlos al nivel alto del sobre no reproduce nada:
 # la version de 333b359b ya buscaba ACOTADA dentro de `liquidation_levels` y no los veria.
 SOBRE_META="{$TESTIGOS,\"liquidation_levels\":{\"minutes\":60,\"bucket_bps\":10,\"window_start\":\"a\",\"window_end\":\"b\",\"rows\":[1,2,3,4,5,6,7,8]}}"
-# B · TODAS las filas de la ruta dentro del sobre, y NINGUN metadato.
+# B · TODAS las filas de la ruta dentro del sobre: NUEVE, por encima del tope de 8.
 SOBRE_FILAS="{$TESTIGOS,\"liquidation_levels\":[1,2,3,4,5,6,7,8,9]}"
-# C · por debajo del tope: las dos cuentas coinciden y los payloads no distinguen.
-LIQ_CORTA='{"minutes":60,"rows":[1,2,3,4,5]}'
-SOBRE_CORTA="{$TESTIGOS,\"liquidation_levels\":[1,2,3,4,5]}"
+# C · HORA TRANQUILA: las dos cuentas iguales y por DEBAJO del tope.
+LIQ_CORTA='{"minutes":60,"rows":[1,2,3]}'
+SOBRE_CORTA="{$TESTIGOS,\"liquidation_levels\":[1,2,3]}"
+# D · HORA AGITADA: la ruta trae 16 y el sobre sus 8. Mismo panel, otra hora.
+LIQ_LARGA='{"minutes":60,"rows":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]}'
+SOBRE_OCHO="{$TESTIGOS,\"liquidation_levels\":[1,2,3,4,5,6,7,8]}"
+
+# EL TOPE SE INYECTA, en vez de leerlo de 140: asi el control no depende del canal ni del
+# release, y puede plantar un tope SUBIDO para ver caer la excusa.
+LIMITS_OK="$DIR/limits-ok.py"
+LIMITS_SUBIDO="$DIR/limits-subido.py"
+printf '%s\n' 'PROFILE_LIMITS = {"lite": {"liq_levels": 5}, "default": {"liq_levels": 8}, "max": {"liq_levels": 25}}' > "$LIMITS_OK"
+printf '%s\n' 'PROFILE_LIMITS = {"lite": {"liq_levels": 5}, "default": {"liq_levels": 50}, "max": {"liq_levels": 80}}' > "$LIMITS_SUBIDO"
 
 liqmonta() {  # $1 = dir   $2 = json del sobre   $3 = json de la ruta
+  # El log lleva la QUERY con el `limit` del panel: el check lo saca de ahi, no de una copia.
   monta "$1" 0 "VISITAS 900
 450 /api/ai/context
-101 /api/scalp/liquidation-levels"
+101 /api/scalp/liquidation-levels
+QUERY 101 /api/scalp/liquidation-levels?symbol=TEST&minutes=60&bucket_bps=10&limit=50"
   plantada "$1" _sobre.json "$2"
   plantada "$1" "_api_scalp_liquidation-levels.json" "$3"
+}
+liqcorre() {  # $1 = etiqueta  $2 = dir  $3 = fichero de topes (o vacio)
+  local f; f=$(copia "$2") || exit 2
+  if [ -n "$3" ]; then
+    corre "$1" "$f" K44_PAYLOADS="$2/payloads" K44_SIMBOLO=TEST K44_LIMITS="$3"
+  else
+    corre "$1" "$f" K44_PAYLOADS="$2/payloads" K44_SIMBOLO=TEST K44_LIMITS=/no/existe
+  fi
 }
 
 echo
 echo "E13 · los CUATRO METADATOS en el sobre y el tope intacto: sigue EXCUSADA"
 liqmonta "$DIR/e13" "$SOBRE_META" "$LIQ_RUTA"
-f=$(copia "$DIR/e13") || exit 2
-corre E13 "$f" K44_PAYLOADS="$DIR/e13/payloads" K44_SIMBOLO=TEST; rc=$RC
+liqcorre E13 "$DIR/e13" "$LIMITS_OK"; rc=$RC
 comprueba "E13a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
-comprueba "E13b y la razon son las FILAS, no los metadatos" \
-  "$(printf '%s' "${SALIDA[E13]}" | grep -q 'la ruta sirve 9 filas .* y el sobre `liquidation_levels` solo 8' && echo si || echo no)"
+comprueba "E13b y la razon es el TOPE del perfil contra el limit del panel" \
+  "$(printf '%s' "${SALIDA[E13]}" | grep -q 'topa `liquidation_levels` en 8 .* y el panel pide limit=50' && echo si || echo no)"
 
 echo
-echo "E14 · TODAS las filas dentro del sobre y sin metadatos: la ruta ya sobra, CONDENA"
+echo "E14 · el sobre sirve MAS filas que su propio tope: ese tope ya no lo describe, CONDENA"
 liqmonta "$DIR/e14" "$SOBRE_FILAS" "$LIQ_RUTA"
-f=$(copia "$DIR/e14") || exit 2
-corre E14 "$f" K44_PAYLOADS="$DIR/e14/payloads" K44_SIMBOLO=TEST; rc=$RC
+liqcorre E14 "$DIR/e14" "$LIMITS_OK"; rc=$RC
 comprueba "E14a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
-comprueba "E14b y dice EXCEPCION ANULADA" \
-  "$(printf '%s' "${SALIDA[E14]}" | grep -q 'EXCEPCION ANULADA' && echo si || echo no)"
+comprueba "E14b y dice ANULADA con las dos cifras que la matan" \
+  "$(printf '%s' "${SALIDA[E14]}" | grep -q 'el sobre sirve 9 filas y el perfil `default` topa en 8' && echo si || echo no)"
 comprueba "E14c E13 y E14 dan veredictos CONTRARIOS con la misma ruta" \
   "$([ "${SALIDA[E13]}" != "${SALIDA[E14]}" ] && echo si || echo no)"
 
+# ── EL VEREDICTO NO DEPENDE DE LA HORA ───────────────────────────────────────────────────────
+# Este par es el punto entero del segundo remate. Mismo panel, mismo tope, mismo `limit`: lo
+# UNICO que cambia entre E15 y E16 es cuantas liquidaciones hubo en la ultima hora. Con el
+# criterio anterior -contar filas- la hora tranquila CONDENABA y la agitada excusaba.
 echo
-echo "E15 · cuentas IGUALES por debajo del tope: condena, pero DICE de que depende esa condena"
+echo "E15 · HORA TRANQUILA: cuentas iguales por debajo del tope (3 y 3) NO condena"
 liqmonta "$DIR/e15" "$SOBRE_CORTA" "$LIQ_CORTA"
-f=$(copia "$DIR/e15") || exit 2
-corre E15 "$f" K44_PAYLOADS="$DIR/e15/payloads" K44_SIMBOLO=TEST; rc=$RC
-comprueba "E15a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
-comprueba "E15b y da las dos cuentas" \
-  "$(printf '%s' "${SALIDA[E15]}" | grep -q 'la ruta da 5 filas y el sobre 5' && echo si || echo no)"
-comprueba "E15c y AVISA de que la igualdad tambien sale con el tope sin morder" \
-  "$(printf '%s' "${SALIDA[E15]}" | grep -q 'antes de retirar la peticion suelta hay que mirar un dia con mas niveles' && echo si || echo no)"
+liqcorre E15 "$DIR/e15" "$LIMITS_OK"; rc=$RC
+comprueba "E15a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E15b y DICE que las cuentas de esta hora no son lo que sostiene la excusa" \
+  "$(printf '%s' "${SALIDA[E15]}" | grep -q 'por debajo del tope, asi que las cuentas de esta hora no lo ensenan' && echo si || echo no)"
+
+echo
+echo "E16 · HORA AGITADA: la ruta trae 16 y el sobre 8. MISMO veredicto que la tranquila"
+liqmonta "$DIR/e16" "$SOBRE_OCHO" "$LIQ_LARGA"
+liqcorre E16 "$DIR/e16" "$LIMITS_OK"; rc=$RC
+comprueba "E16a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E16b MISMO veredicto que E15 con 5 veces mas filas: la hora NO manda" \
+  "$([ "$RC" = 0 ] && printf '%s' "${SALIDA[E16]}" | grep -q 'topa `liquidation_levels` en 8' && echo si || echo no)"
+
+echo
+echo "E17 · LA EXCUSA CAE SOLA: alguien sube liq_levels hasta el limit del panel"
+liqmonta "$DIR/e17" "$SOBRE_CORTA" "$LIQ_CORTA"
+liqcorre E17 "$DIR/e17" "$LIMITS_SUBIDO"; rc=$RC
+comprueba "E17a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E17b y dice que el sobre YA puede darle todo lo que lee" \
+  "$(printf '%s' "${SALIDA[E17]}" | grep -q 'topa en 50 .* y el panel pide limit=50: el sobre ya puede darle TODO' && echo si || echo no)"
+comprueba "E17c mismos payloads que E15 y veredicto CONTRARIO: lo que cambia es el tope" \
+  "$([ "${SALIDA[E15]}" != "${SALIDA[E17]}" ] && echo si || echo no)"
+
+echo
+echo "E18 · sin nada que lo separe: lo DICE, no condena, y no apaga a las demas rutas"
+liqmonta "$DIR/e18" "$SOBRE_CORTA" "$LIQ_CORTA"
+liqcorre E18 "$DIR/e18" ""; rc=$RC
+comprueba "E18a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E18b y lo declara NO VERIFICABLE EN ESTA CORRIDA" \
+  "$(printf '%s' "${SALIDA[E18]}" | grep -q 'NO VERIFICABLE EN ESTA CORRIDA' && echo si || echo no)"
+comprueba "E18c y NO se cambia por otra afirmacion que hoy si se vea" \
+  "$(printf '%s' "${SALIDA[E18]}" | grep -q 'NO se cambia por otra que hoy si se vea' && echo si || echo no)"
 
 # ── LOS SEIS, DOS A DOS ──────────────────────────────────────────────────────────────────────
 echo
