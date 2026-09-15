@@ -341,15 +341,74 @@ comprueba "E17b y dice que el sobre YA puede darle todo lo que lee" \
 comprueba "E17c mismos payloads que E15 y veredicto CONTRARIO: lo que cambia es el tope" \
   "$([ "${SALIDA[E15]}" != "${SALIDA[E17]}" ] && echo si || echo no)"
 
+# ── LO QUE NO SE PUEDE VERIFICAR NO ES UN VERDE (COLA 124, tercer remate) ────────────────────
+# Antes estos casos salian VIVA y K44 daba VERDE. Decirlo en la linea no lo convierte en medida:
+# el marcador cuenta VERDE, y esta campana vino justo a quitar las redes que dicen lo que no
+# midieron. Ahora la ruta queda en un tercer cubo: ni excusa ni condena.
+SOBRE_SINPERFIL='{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"liquidation_levels":[1,2,3]}'
+SOBRE_50="{$TESTIGOS,\"liquidation_levels\":[$(seq -s, 1 50)]}"
+LIQ_50="{\"minutes\":60,\"rows\":[$(seq -s, 1 50)]}"
+LIQ_16='{"minutes":60,"rows":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]}'
+SOBRE_16="{$TESTIGOS,\"liquidation_levels\":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]}"
+# Un log SIN la query del panel: el `limit` no se puede leer.
+liqmonta_sinlimit() {  # $1 = dir   $2 = sobre   $3 = ruta
+  monta "$1" 0 "VISITAS 900
+450 /api/ai/context
+101 /api/scalp/liquidation-levels"
+  plantada "$1" _sobre.json "$2"
+  plantada "$1" "_api_scalp_liquidation-levels.json" "$3"
+}
+
 echo
-echo "E18 · sin nada que lo separe: lo DICE, no condena, y no apaga a las demas rutas"
+echo "E18 · sin fuente para el tope: NO MEDIDO. No condena, pero TAMPOCO da verde"
 liqmonta "$DIR/e18" "$SOBRE_CORTA" "$LIQ_CORTA"
 liqcorre E18 "$DIR/e18" ""; rc=$RC
-comprueba "E18a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E18a NO MEDIDO, rc=2 (rc=$rc)" "$([ "$rc" = 2 ] && echo si || echo no)"
 comprueba "E18b y lo declara NO VERIFICABLE EN ESTA CORRIDA" \
   "$(printf '%s' "${SALIDA[E18]}" | grep -q 'NO VERIFICABLE EN ESTA CORRIDA' && echo si || echo no)"
-comprueba "E18c y NO se cambia por otra afirmacion que hoy si se vea" \
-  "$(printf '%s' "${SALIDA[E18]}" | grep -q 'NO se cambia por otra que hoy si se vea' && echo si || echo no)"
+comprueba "E18c y dice por que no basta con decirlo" \
+  "$(printf '%s' "${SALIDA[E18]}" | grep -q 'contar como medida lo que no se midio' && echo si || echo no)"
+
+echo
+echo "E19 · MAS filas que su tope y un log SIN limit: se decide igual, y CONDENA"
+liqmonta_sinlimit "$DIR/e19" "$SOBRE_50" "$LIQ_50"
+liqcorre E19 "$DIR/e19" "$LIMITS_OK"; rc=$RC
+comprueba "E19a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E19b y dice que se decide SIN el limit del panel" \
+  "$(printf '%s' "${SALIDA[E19]}" | grep -q 'se decide SIN el `limit` del panel' && echo si || echo no)"
+comprueba "E19c con 16 y 16 y sin limit, tambien condena" \
+  "$(liqmonta_sinlimit "$DIR/e19b" "$SOBRE_16" "$LIQ_16"; liqcorre E19b "$DIR/e19b" "$LIMITS_OK"; [ "$RC" = 1 ] && echo si || echo no)"
+
+echo
+echo "E20 · un sobre SIN \`profile\`: no hay tope que leer, NO MEDIDO"
+liqmonta "$DIR/e20" "$SOBRE_SINPERFIL" "$LIQ_CORTA"
+liqcorre E20 "$DIR/e20" "$LIMITS_OK"; rc=$RC
+comprueba "E20a NO MEDIDO, rc=2 (rc=$rc)" "$([ "$rc" = 2 ] && echo si || echo no)"
+comprueba "E20b y nombra lo que falta" \
+  "$(printf '%s' "${SALIDA[E20]}" | grep -q 'el sobre no declara su `profile`' && echo si || echo no)"
+
+echo
+echo "E21 · log SIN limit y filas POR DEBAJO del tope: no se puede decidir, NO MEDIDO"
+liqmonta_sinlimit "$DIR/e21" "$SOBRE_CORTA" "$LIQ_CORTA"
+liqcorre E21 "$DIR/e21" "$LIMITS_OK"; rc=$RC
+comprueba "E21a NO MEDIDO, rc=2 (rc=$rc)" "$([ "$rc" = 2 ] && echo si || echo no)"
+comprueba "E21b y nombra que falta el limit del log" \
+  "$(printf '%s' "${SALIDA[E21]}" | grep -q 'el log no trae el `limit`' && echo si || echo no)"
+
+echo
+echo "E22 · una no verificable JUNTO a una ruta sin excusa: manda la condena"
+monta "$DIR/e22" 0 "VISITAS 900
+450 /api/ai/context
+101 /api/scalp/liquidation-levels
+77 /api/wyckoff"
+plantada "$DIR/e22" _sobre.json "$SOBRE_CORTA"
+plantada "$DIR/e22" "_api_scalp_liquidation-levels.json" "$LIQ_CORTA"
+liqcorre E22 "$DIR/e22" ""; rc=$RC
+comprueba "E22a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E22b condena por wyckoff, que es la que no tiene excusa" \
+  "$(printf '%s' "${SALIDA[E22]}" | grep -q '· /api/wyckoff(77)' && echo si || echo no)"
+comprueba "E22c y la no verificable sale NOMBRADA, no callada" \
+  "$(printf '%s' "${SALIDA[E22]}" | grep -q 'NO SE HAN PODIDO VERIFICAR' && echo si || echo no)"
 
 # ── LOS SEIS, DOS A DOS ──────────────────────────────────────────────────────────────────────
 echo

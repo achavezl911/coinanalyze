@@ -57,6 +57,11 @@
 #     «arreglaria» sin que hubiera nada que arreglar.
 #   3 NO SE PUDO LEER LA LISTA FOTO ........ NOMED. El conjunto no es de este check: sale de la
 #     ASIGNACION de K43. Sin el no hay criterio, y un criterio sobre cero rutas se cumple solo.
+#   3b UNA EXCUSA QUE NO SE PUDO VERIFICAR . NOMED, y NO VERDE. Si falta lo que la sostiene -el
+#     `profile` del sobre, `PROFILE_LIMITS`, el `limit` del log-, esa ruta no se excusa y
+#     TAMPOCO se condena: queda en un tercer cubo. Decirlo en la linea y ademas dar VERDE seria
+#     contar como medida lo que no se midio. Si en la misma corrida hay una ruta suelta SIN
+#     excusa, manda esa condena y las no verificables van nombradas.
 #   4 PIDE EL SOBRE Y CERO PARTES .......... VERDE. «Cero partes» = cero SIN EXCUSA VIVA; las
 #     excusadas se nombran con la razon contra la que se comprobaron en esta misma corrida.
 #   5 NO PIDE EL SOBRE ..................... ROJO. Es el estado de hoy.
@@ -439,30 +444,43 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
         perfil = sobre.get("profile")
         topes = lee_topes()
         lim = limite_panel(ruta)
+        de = os.environ.get("TOPES_DE") or "fuente no declarada"
+        tope = None
+        if topes is not None and perfil and perfil in topes:
+            t = topes[perfil].get(arg)
+            if isinstance(t, int): tope = t
+
+        # LO QUE SE PUEDE DECIDIR CON LO QUE TRAE ESTA CORRIDA, SE DECIDE, Y VA PRIMERO.
+        # Que el sobre sirva MAS filas que su propio tope no necesita el `limit` del panel para
+        # nada: ese tope ya no lo describe y la excusa se apoyaba en el. La version anterior
+        # evaluaba lo que FALTA antes que esto, asi que con un log sin `limit` -y el sobre
+        # sirviendo 50 filas con un tope de 8- salia «no verificable» y K44 quedaba VERDE
+        # teniendo delante lo que hacia falta para condenar.
+        if fs is not None and tope is not None and len(fs) > tope:
+            print(f"ANULADA\t{ruta}\tel sobre sirve {len(fs)} filas y el perfil `{perfil}` topa en "
+                  f"{tope} ({arg}, leido de {de}): ese tope YA NO describe al sobre y la excusa "
+                  f"se apoyaba en el -y esto se decide SIN el `limit` del panel-")
+            continue
+
         falta = []
         if fs is None: falta.append(f"el sobre no trae `{clave}` como lista de filas")
         if not perfil: falta.append("el sobre no declara su `profile`")
-        if topes is None: falta.append(f"no se pudo leer PROFILE_LIMITS ({os.environ.get('TOPES_DE') or 'sin fuente'})")
+        if topes is None: falta.append(f"no se pudo leer PROFILE_LIMITS ({de})")
         elif perfil and perfil not in topes: falta.append(f"PROFILE_LIMITS no tiene el perfil `{perfil}`")
+        elif tope is None: falta.append(f"el perfil `{perfil}` no declara `{arg}`")
         if lim is None: falta.append("el log no trae el `limit` con que el panel pide la ruta")
         if falta:
-            # NO HAY NADA QUE LO SEPARE: se dice, y NO se condena al panel por ello. Un check
-            # que no puede ver su propia afirmacion no tiene derecho a llamar defecto a lo de
-            # enfrente; y esto no apaga el juicio de las demas rutas.
-            print(f"VIVA\t{ruta}\tNO VERIFICABLE EN ESTA CORRIDA: {'; '.join(falta)}. La excusa se "
-                  f"sostiene contra el TOPE del perfil del sobre y NO se cambia por otra que hoy "
-                  f"si se vea; este check lo dice en vez de condenar al panel por no poder mirarlo")
+            # LO QUE NO SE PUEDE VERIFICAR NO CUENTA COMO EXCUSA VIVA. Antes esto salia como
+            # VIVA y K44 daba VERDE: decirlo en la linea no lo convierte en medida, porque el
+            # marcador cuenta VERDE. Es exactamente el defecto que esta campana vino a quitar,
+            # y el propio K44 lo escribe dos ramas mas arriba: «dar por buena la excusa seria
+            # excusar en silencio». Ahora NO da verde y NO condena al panel: la ruta queda en un
+            # tercer cubo y el veredicto lo decide quien tenga algo que decir.
+            print(f"NOVER\t{ruta}\tNO VERIFICABLE EN ESTA CORRIDA: {'; '.join(falta)} (tope leido "
+                  f"de {de}). La excusa se sostiene contra el TOPE del perfil y NO se cambia por "
+                  f"otra que hoy si se vea; pero sin poder mirarla NO cuenta como excusa viva")
             continue
-        tope = topes[perfil].get(arg)
-        if not isinstance(tope, int):
-            print(f"VIVA\t{ruta}\tNO VERIFICABLE: el perfil `{perfil}` no declara `{arg}`")
-            continue
-        de = os.environ.get("TOPES_DE") or "fuente no declarada"
-        if len(fs) > tope:
-            print(f"ANULADA\t{ruta}\tel sobre sirve {len(fs)} filas y el perfil `{perfil}` topa en "
-                  f"{tope} ({arg}, leido de {de}): ese tope YA NO describe al sobre y la excusa "
-                  f"se apoyaba en el")
-        elif tope >= lim:
+        if tope >= lim:
             print(f"ANULADA\t{ruta}\tel perfil `{perfil}` topa en {tope} ({arg}, leido de {de}) y el "
                   f"panel pide limit={lim}: el sobre ya puede darle TODO lo que lee, y la "
                   f"peticion suelta sobra")
@@ -525,13 +543,21 @@ if printf '%s\n' "$VEREDICTOS" | grep -q '^NOMED'; then
   exit 2
 fi
 
-excusadas=""; anuladas=""; huerfanas=""
+excusadas=""; anuladas=""; huerfanas=""; noverificables=""
 partes=""; n_partes=0; rutas_partes=0
 while read -r r n; do
   [ -n "$r" ] || continue
   if printf '%s\n' "$VEREDICTOS" | grep -q "^VIVA	$r	"; then
     razon=$(printf '%s\n' "$VEREDICTOS" | grep "^VIVA	$r	" | cut -f3)
     excusadas="$excusadas · $r($n): $razon"
+    continue
+  fi
+  # EL TERCER CUBO. Una excusa que no se puede verificar NI excusa NI condena: la ruta no entra
+  # en `partes` -no se condena al panel por algo que este check no pudo mirar- pero tampoco
+  # cuenta como excusada, asi que no puede sostener un VERDE.
+  if printf '%s\n' "$VEREDICTOS" | grep -q "^NOVER	$r	"; then
+    razon=$(printf '%s\n' "$VEREDICTOS" | grep "^NOVER	$r	" | cut -f3)
+    noverificables="$noverificables · $r($n): $razon"
     continue
   fi
   motivo=""
@@ -549,14 +575,26 @@ huerfanas=$(printf '%s\n' "$VEREDICTOS" | grep '^HUERFANA' | cut -f2 | tr '\n' '
 
 COLA="$COLA0$MARCA"
 [ -n "${excusadas// /}" ] && COLA="$COLA · EXCUSADAS Y REVERIFICADAS EN ESTA CORRIDA:$excusadas"
+[ -n "${noverificables// /}" ] && COLA="$COLA · EXCUSAS QUE NO SE HAN PODIDO VERIFICAR (no excusan, y no condenan al panel):$noverificables"
 [ -n "${huerfanas// /}" ] && COLA="$COLA · EXCEPCIONES HUERFANAS (el panel ya no las pide, sobran): $huerfanas"
 
+# EL ORDEN IMPORTA. Si en esta corrida hay una ruta suelta SIN excusa, eso es un hecho sobre el
+# panel y manda: el veredicto es esa condena, y las no verificables van nombradas en la linea.
+# Solo cuando no hay nada que condenar, una excusa sin verificar deja el check SIN MEDIDA.
 if [ "$rutas_partes" -gt 0 ]; then
   echo "REFORMA A MEDIAS: el panel pide el sobre $n_sobre veces Y ADEMAS sigue pidiendo" \
        "$n_partes veces $rutas_partes de las $N_FOTO rutas de FOTO SIN EXCUSA VIVA. Las dos" \
        "cosas a la vez cuestan mas que hoy y el sobre no gobierna la edad de lo que se pinta" \
        "·$partes · $COLA"
   exit 1
+fi
+if [ -n "${noverificables// /}" ]; then
+  _n=$(printf '%s\n' "$noverificables" | grep -o ' · ' | grep -c .)
+  echo "NO MEDIDO: ninguna ruta de FOTO queda sin excusa, pero $_n excusa(s) NO SE HAN PODIDO" \
+       "VERIFICAR en esta corrida, asi que este check no ha medido si esas peticiones sueltas" \
+       "estan justificadas. Decirlo en la linea y ademas dar VERDE seria contar como medida lo" \
+       "que no se midio, que es justo lo que esta red existe para no hacer · $COLA"
+  exit 2
 fi
 echo "el panel pide el sobre $n_sobre veces y CERO de las $N_FOTO rutas de FOTO sin excusa" \
      "viva: lo que se pinta como foto sale de una sola respuesta con un solo generated_at." \

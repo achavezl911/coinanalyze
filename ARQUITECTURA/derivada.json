@@ -26121,8 +26121,10 @@
             "harness/checks/K44-control.bash:228",
             "harness/checks/K44-control.bash:240",
             "harness/checks/K44-control.bash:281",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:147",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:286",
+            "harness/checks/K44-control.bash:356",
+            "harness/checks/K44-control.bash:401",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:152",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:291",
             "harness/checks/K72-campos.js:33"
           ],
           "menciones": [
@@ -26182,7 +26184,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 32,
+        "n_llamadas": 34,
         "n_menciones": 18,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -28448,7 +28450,7 @@
             "harness/checks/K43-foto-unica.sh:420",
             "harness/checks/K44-control.bash:136",
             "harness/checks/K44-control.bash:142",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:95",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:100",
             "harness/checks/K72-campos.js:46",
             "harness/checks/K72-campos.js:52",
             "harness/checks/K72-campos.js:58",
@@ -28463,7 +28465,7 @@
           "menciones": [
             "harness/checks/K43-foto-unica.sh:230",
             "harness/checks/K44-control.bash:150",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:377",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:382",
             "harness/checks/K72-campos.js:6",
             "harness/checks/K72-el-campo-que-no-llega.sh:10",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13",
@@ -33683,7 +33685,7 @@
             "harness/checks/K44-control.bash:203",
             "harness/checks/K44-control.bash:229",
             "harness/checks/K44-control.bash:241",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:96",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:101",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217",
             "harness/checks/K84-dos-matrices-una-cifra.sh:86",
@@ -34078,7 +34080,9 @@
             "harness/checks/K43-foto-unica.sh:209",
             "harness/checks/K44-control.bash:282",
             "harness/checks/K44-control.bash:283",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:97"
+            "harness/checks/K44-control.bash:357",
+            "harness/checks/K44-control.bash:402",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:102"
           ],
           "menciones": [
             "harness/checks/K44-control.bash:251"
@@ -34106,7 +34110,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 7,
+        "n_llamadas": 9,
         "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -36564,8 +36568,8 @@
         "checks": {
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:168",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:271",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:274"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:276",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:279"
           ],
           "menciones": []
         },
@@ -37401,7 +37405,9 @@
             "harness/checks/K43-foto-unica.sh:217",
             "harness/checks/K44-control.bash:155",
             "harness/checks/K44-control.bash:204",
-            "harness/checks/K44-control.bash:213"
+            "harness/checks/K44-control.bash:213",
+            "harness/checks/K44-control.bash:403",
+            "harness/checks/K44-control.bash:409"
           ],
           "menciones": [
             "harness/checks/K44-control.bash:152"
@@ -37430,7 +37436,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 10,
+        "n_llamadas": 12,
         "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
