@@ -44,7 +44,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:168`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:276`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:279` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:169`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:278`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:281` | — |
 | **panel** | `static/js/08-arranque.js:160` | — |
 | **tests** | `tests/test_deploy_health_gate.py:180` | `tests/test_deploy_health_gate.py:42`, `tests/test_deploy_health_gate.py:158` |
 

@@ -1,0 +1,504 @@
+#!/usr/bin/env bash
+# =============================================================================
+# deploy-coinalyze v2 — TRUST BOUNDARY for Coinalyze production deployments
+#
+# Key invariants:
+#   * Never switch /opt/coinalyze/current before schema succeeds.
+#   * Quiesce the application DB clients before DDL.
+#   * Never terminate PostgreSQL sessions automatically: fail closed instead.
+#   * Any failure after quiescing restores the prior release and services.
+#   * A rollback is successful only when its smoke test succeeds.
+# =============================================================================
+set -Eeuo pipefail
+export LANG=C.UTF-8 LC_ALL=C.UTF-8
+umask 022
+
+APP_ROOT=/opt/coinalyze
+RELEASES="$APP_ROOT/releases"
+CURRENT="$APP_ROOT/current"
+STATE=/var/lib/coinalyze/deployment.json
+LOGDIR=/var/log/coinalyze
+LOG="$LOGDIR/deploy.log"
+ENV_FILE=/etc/coinalyze/coinalyze.env
+INCOMING=/home/coinalyze-deploy/incoming
+BACKUPDIR=/var/backups/coinalyze
+LOCKFILE=/run/lock/deploy-coinalyze.lock
+
+SERVICES=(coinalyze-api coinalyze-ingest coinalyze-ws coinalyze-scalp coinalyze-daily)
+
+KEEP_RELEASES=5
+SMOKE_TRIES=45
+DB_QUIET_TRIES=20
+DB_QUIET_SLEEP=1
+PG_LOCK_TIMEOUT=15s
+PG_STATEMENT_TIMEOUT=300s
+
+mkdir -p "$LOGDIR"
+touch "$LOG"
+chmod 640 "$LOG"
+
+log(){ printf '%s %s\n' "$(date -u +%FT%TZ)" "$*" | tee -a "$LOG" >&2; }
+die(){ log "ERROR: $*"; exit "${2:-1}"; }
+
+[ "$(id -u)" -eq 0 ] || die "must run as root (via sudo)"
+
+# Serialize wrapper invocations even if somebody bypasses GitHub Actions concurrency.
+exec 9>"$LOCKFILE"
+flock -n 9 || die "another deploy-coinalyze operation is already running" 14
+
+active_sha(){
+  [ -L "$CURRENT" ] && basename "$(readlink -f "$CURRENT")" || true
+}
+
+load_env(){
+  set -a
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+  set +a
+}
+
+write_state(){
+  cat > "$STATE" <<JSON
+{
+  "commit": "$1",
+  "branch": "main",
+  "deployed_at": "$(date -u +%FT%TZ)",
+  "previous_commit": "$2",
+  "deployment_source": "$3"
+}
+JSON
+  chmod 644 "$STATE"
+}
+
+smoke(){
+  local base="http://127.0.0.1:8000" token H=()
+  token="$(sed -n 's/^API_INTERNAL_TOKEN=//p' "$ENV_FILE" | head -1 | tr -d "\"'")"
+  [ -n "$token" ] && H=(-H "X-Internal-Token: $token")
+
+  local i
+  for i in $(seq 1 "$SMOKE_TRIES"); do
+    if curl -fsS "${H[@]}" "$base/api/healthz" >/dev/null 2>&1 \
+       && curl -fsS "${H[@]}" "$base/api/symbols" >/dev/null 2>&1 \
+       && curl -fsS "${H[@]}" "$base/api/ai/profiles" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
+stop_services(){
+  log "stopping application services before schema"
+  systemctl stop "${SERVICES[@]}"
+  local s
+  for s in "${SERVICES[@]}"; do
+    if systemctl is-active --quiet "$s"; then
+      log "service failed to stop: $s"
+      return 1
+    fi
+  done
+  log "application services stopped"
+}
+
+start_services(){
+  systemctl start "${SERVICES[@]}"
+}
+
+restart_services(){
+  systemctl restart "${SERVICES[@]}"
+}
+
+prune_releases(){
+  local d kept=0 all=()
+  while IFS= read -r d; do all+=("$d"); done < <(ls -1dt "$RELEASES"/*/ 2>/dev/null || true)
+  for d in "${all[@]}"; do
+    case "$d" in */legacy-*/) continue ;; esac
+    kept=$((kept+1))
+    [ "$kept" -gt "$KEEP_RELEASES" ] && rm -rf "$d"
+  done
+  return 0
+}
+
+ensure_units(){
+  local u changed=0
+  for u in "${SERVICES[@]}"; do
+    local f="/etc/systemd/system/$u.service"
+    [ -f "$f" ] || continue
+    if ! grep -q "$CURRENT" "$f"; then
+      cp -a "$f" "$f.pre-releases.bak" 2>/dev/null || true
+      sed -i \
+        -e "s#^WorkingDirectory=${APP_ROOT}\$#WorkingDirectory=${CURRENT}#" \
+        -e "s#${APP_ROOT}/\.venv#${CURRENT}/.venv#g" \
+        "$f"
+      changed=1
+    fi
+  done
+  if [ "$changed" = 1 ]; then
+    systemctl daemon-reload
+    log "systemd units repointed to $CURRENT"
+  fi
+}
+
+do_backup(){
+  load_env
+  mkdir -p "$BACKUPDIR"
+  chmod 700 "$BACKUPDIR"
+
+  local out="$BACKUPDIR/predeploy-$1-$(date -u +%Y%m%d%H%M%S).sql.gz"
+  PGPASSWORD="${PG_PASSWORD:-}" pg_dump \
+    -h "${PG_HOST:-127.0.0.1}" \
+    -p "${PG_PORT:-5432}" \
+    -U "${PG_USER:?}" \
+    "${PG_DB:?}" | gzip > "$out" || die "DB backup failed" 5
+
+  log "pre-deploy DB backup: $out"
+  find "$BACKUPDIR" -name 'predeploy-*.sql.gz' -mtime +14 -delete 2>/dev/null || true
+}
+
+# After the core app services are stopped, require that no other client backend
+# using the application DB role remains. Do not terminate sessions automatically.
+wait_db_quiet(){
+  load_env
+  local i count
+
+  for i in $(seq 1 "$DB_QUIET_TRIES"); do
+    count="$(
+      PGPASSWORD="${PG_PASSWORD:-}" psql \
+        -h "${PG_HOST:-127.0.0.1}" \
+        -p "${PG_PORT:-5432}" \
+        -U "${PG_USER:?}" \
+        -d "${PG_DB:?}" \
+        -Atq \
+        -c "SELECT count(*)
+            FROM pg_stat_activity
+            WHERE datname = current_database()
+              AND usename = current_user
+              AND backend_type = 'client backend'
+              AND pid <> pg_backend_pid();" \
+        | tr -d '[:space:]'
+    )"
+
+    if [ "${count:-}" = "0" ]; then
+      log "application DB role is quiescent"
+      return 0
+    fi
+    sleep "$DB_QUIET_SLEEP"
+  done
+
+  log "remaining application-role DB sessions:"
+  PGPASSWORD="${PG_PASSWORD:-}" psql \
+    -h "${PG_HOST:-127.0.0.1}" \
+    -p "${PG_PORT:-5432}" \
+    -U "${PG_USER:?}" \
+    -d "${PG_DB:?}" \
+    -P pager=off \
+    -c "SELECT pid, application_name, client_addr, state,
+               wait_event_type, wait_event,
+               left(query, 120) AS query
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+          AND usename = current_user
+          AND backend_type = 'client backend'
+          AND pid <> pg_backend_pid()
+        ORDER BY pid;" >&2 || true
+
+  return 1
+}
+
+# Apply the candidate release's schema WITHOUT changing current first.
+apply_schema(){
+  local schema_path="$1"
+  [ -f "$schema_path" ] || die "schema file not found: $schema_path" 6
+
+  load_env
+  local tmp="/tmp/coinalyze-schema.$$.sql"
+  install -m 0644 "$schema_path" "$tmp"
+
+  local rc=0
+  PGOPTIONS="-c lock_timeout=${PG_LOCK_TIMEOUT} -c statement_timeout=${PG_STATEMENT_TIMEOUT}" \
+  PGPASSWORD="${PG_PASSWORD:-}" psql \
+    -h "${PG_HOST:-127.0.0.1}" \
+    -p "${PG_PORT:-5432}" \
+    -U "${PG_USER:?}" \
+    -d "${PG_DB:?}" \
+    -v ON_ERROR_STOP=1 \
+    -f "$tmp" || rc=$?
+
+  rm -f "$tmp"
+
+  [ "$rc" -eq 0 ] || return "$rc"
+  log "schema applied"
+}
+
+switch_to(){
+  local target="$1"
+  case "$(readlink -f "$target")" in
+    "$RELEASES"/*) ;;
+    *) die "refusing to switch current outside releases: $target" 11 ;;
+  esac
+  ln -sfn "$target" "$CURRENT.new"
+  mv -Tf "$CURRENT.new" "$CURRENT"
+}
+
+# Roll back to a known release. Return non-zero when the rollback target does
+# not pass smoke; callers MUST NOT claim success in that case.
+do_rollback_to(){
+  local target="$1"
+  [ -n "$target" ] && [ -d "$RELEASES/$target" ] || {
+    log "no valid rollback target ($target)"
+    return 1
+  }
+
+  log "rolling back to $target"
+  switch_to "$RELEASES/$target"
+  ensure_units
+
+  # Services may currently be stopped or running; restart gives a known state.
+  restart_services || return 1
+
+  if smoke; then
+    log "rollback to $target OK"
+    return 0
+  fi
+
+  log "ERROR: rollback smoke failed for $target"
+  return 1
+}
+
+# Deployment failure guard.
+# It is armed only after backup, just before services are quiesced.
+DEPLOY_GUARD_ARMED=0
+DEPLOY_PREV=""
+DEPLOY_SERVICES_QUIESCED=0
+DEPLOY_SWITCHED=0
+DEPLOY_SUCCESS=0
+
+deploy_exit_guard(){
+  local rc=$?
+
+  if [ "$DEPLOY_GUARD_ARMED" = 1 ] && [ "$DEPLOY_SUCCESS" != 1 ]; then
+    trap - EXIT
+    set +e
+
+    log "deployment aborted (rc=$rc); restoring previous release ${DEPLOY_PREV:-none}"
+
+    if [ "$DEPLOY_SWITCHED" = 1 ] && [ -n "$DEPLOY_PREV" ] && [ -d "$RELEASES/$DEPLOY_PREV" ]; then
+      switch_to "$RELEASES/$DEPLOY_PREV"
+    fi
+
+    # If services were stopped, start them. If the candidate had already been
+    # switched in and started, restart after restoring the old symlink so the
+    # processes actually execute the previous release.
+    if [ "$DEPLOY_SWITCHED" = 1 ]; then
+      restart_services
+    elif [ "$DEPLOY_SERVICES_QUIESCED" = 1 ]; then
+      start_services
+    fi
+
+    if [ -n "$DEPLOY_PREV" ] && [ -d "$RELEASES/$DEPLOY_PREV" ]; then
+      if smoke; then
+        log "automatic recovery to $DEPLOY_PREV OK"
+      else
+        log "CRITICAL: automatic recovery smoke FAILED for $DEPLOY_PREV"
+      fi
+    fi
+
+    # deployment.json intentionally remains unchanged on failed deploy.
+    exit "$rc"
+  fi
+
+  trap - EXIT
+  exit "$rc"
+}
+
+trap deploy_exit_guard EXIT
+
+cmd_deploy(){
+  local artifact="$1" expsha="$2" commit="$3"
+
+  [ -n "$artifact" ] && [ -n "$expsha" ] && [ -n "$commit" ] \
+    || die "usage: deploy <artifact> <sha256> <commit>" 2
+
+  case "$(readlink -f "$artifact")" in
+    "$INCOMING"/*) ;;
+    *) die "artifact must live under $INCOMING" 2 ;;
+  esac
+
+  [ -f "$artifact" ] || die "artifact not found: $artifact" 2
+  echo "$commit" | grep -Eq '^[0-9a-f]{7,40}$' || die "bad commit sha: $commit" 2
+
+  local got
+  got="$(sha256sum "$artifact" | awk '{print $1}')"
+  [ "$got" = "$expsha" ] || die "sha256 mismatch (got $got want $expsha)" 3
+  log "checksum OK ($commit)"
+
+  local stage
+  stage="$(mktemp -d "$RELEASES/.stage.XXXXXX")"
+  tar xzf "$artifact" -C "$stage"
+
+  local src="$stage"
+  if [ ! -f "$stage/pyproject.toml" ]; then
+    local only
+    only="$(find "$stage" -maxdepth 1 -mindepth 1 | head -1)"
+    [ -f "$only/pyproject.toml" ] && src="$only"
+  fi
+
+  local p
+  for p in pyproject.toml requirements.lock sql/schema.sql app static scripts/smoke_test.sh; do
+    [ -e "$src/$p" ] || {
+      rm -rf "$stage"
+      die "incomplete artifact, missing $p" 4
+    }
+  done
+
+  local rel="$RELEASES/$commit"
+  rm -rf "$rel"
+  mkdir -p "$rel"
+  cp -a "$src/." "$rel/"
+  rm -rf "$stage"
+
+  python3 -m venv "$rel/.venv"
+  "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q \
+    -r "$rel/requirements.lock" || die "pip requirements failed" 7
+  "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q --no-deps \
+    "$rel" || die "pip package install failed" 7
+
+  # Harden the candidate before it can ever become current.
+  chown -R root:coinalyze "$rel"
+  find "$rel" -path "$rel/.venv" -prune -o -type d -exec chmod 0750 {} + 2>/dev/null || true
+  find "$rel" -path "$rel/.venv" -prune -o -type f -exec chmod 0640 {} + 2>/dev/null || true
+  find "$rel/.venv/bin" -type f -exec chmod 0750 {} + 2>/dev/null || true
+
+  log "release built: $rel"
+
+  local prev
+  prev="$(active_sha)"
+  do_backup "$commit"
+
+  # FIRST-RUN migration: no current symlink yet -> snapshot the live tree.
+  if [ ! -L "$CURRENT" ]; then
+    log "first run: migrating legacy layout into the releases model"
+    if [ -d "$APP_ROOT/app" ]; then
+      local legacy="legacy-$(date -u +%Y%m%d%H%M%S)"
+      mkdir -p "$RELEASES/$legacy"
+      rsync -a --exclude releases --exclude current "$APP_ROOT"/ "$RELEASES/$legacy"/
+      [ -d "$RELEASES/$legacy/.venv" ] \
+        || python3 -m venv "$RELEASES/$legacy/.venv" >/dev/null 2>&1 || true
+      prev="$legacy"
+      log "legacy snapshot: $RELEASES/$legacy"
+    fi
+  fi
+
+  [ -n "$prev" ] && [ -d "$RELEASES/$prev" ] \
+    || die "no valid previous release available before production mutation" 11
+
+  DEPLOY_PREV="$prev"
+  DEPLOY_GUARD_ARMED=1
+
+  # Quiesce application DB clients BEFORE DDL. Arm the service-recovery
+  # flag BEFORE the stop call so even a partial stop is recovered by the EXIT guard.
+  DEPLOY_SERVICES_QUIESCED=1
+  stop_services
+
+  wait_db_quiet || die "application DB sessions remain after service stop; refusing schema apply" 15
+
+  # Candidate schema is applied while current still points to the old release.
+  # This requires migrations to remain rollback-compatible with the previous code.
+  apply_schema "$rel/sql/schema.sql" || die "schema apply failed" 6
+
+  # Only after schema succeeds may the candidate become current.
+  switch_to "$rel"
+  DEPLOY_SWITCHED=1
+  log "current -> $rel"
+
+  ensure_units
+  start_services
+  DEPLOY_SERVICES_QUIESCED=0
+
+  if ! smoke; then
+    die "smoke test failed for $commit" 10
+  fi
+
+  write_state "$commit" "$prev" "github-actions"
+  prune_releases
+
+  DEPLOY_SUCCESS=1
+  DEPLOY_GUARD_ARMED=0
+
+  log "DEPLOY OK $commit (previous $prev)"
+  echo "DEPLOY_OK $commit"
+}
+
+cmd_rollback(){
+  [ -f "$STATE" ] || die "no deployment state to roll back from" 12
+
+  local target
+  target="$(sed -n 's/.*"previous_commit": *"\([^"]*\)".*/\1/p' "$STATE" | head -1)"
+  [ -n "$target" ] && [ "$target" != "none" ] || die "no previous_commit recorded" 12
+
+  local cur
+  cur="$(active_sha)"
+  [ -n "$cur" ] && [ -d "$RELEASES/$cur" ] || die "current release is invalid ($cur)" 12
+
+  if do_rollback_to "$target"; then
+    write_state "$target" "$cur" "manual-rollback"
+    echo "ROLLBACK_OK to $target"
+    return 0
+  fi
+
+  log "rollback target $target failed smoke; restoring original release $cur"
+  if do_rollback_to "$cur"; then
+    log "original release $cur restored after failed rollback"
+  else
+    die "CRITICAL: rollback failed and original release could not be restored" 13
+  fi
+
+  die "rollback target $target failed smoke; original release restored" 13
+}
+
+cmd_status(){
+  echo "active_release: $(active_sha || echo none)"
+  echo "services:"
+  local s
+  for s in "${SERVICES[@]}"; do
+    printf '  %s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null || true)"
+  done
+
+  echo "releases:"
+  local d
+  for d in "$RELEASES"/*/; do
+    [ -d "$d" ] || continue
+    printf '  %s\n' "$(basename "$d")"
+  done
+
+  echo "state:"
+  if [ -f "$STATE" ]; then
+    cat "$STATE"
+  else
+    echo "  (none)"
+  fi
+
+  if smoke; then
+    echo "smoke: OK"
+  else
+    echo "smoke: FAILED"
+    return 1
+  fi
+}
+
+case "${1:-}" in
+  deploy)
+    shift
+    cmd_deploy "${1:-}" "${2:-}" "${3:-}"
+    ;;
+  rollback)
+    cmd_rollback
+    ;;
+  status)
+    cmd_status
+    ;;
+  *)
+    echo "usage: deploy-coinalyze {deploy <artifact> <sha256> <commit>|rollback|status}" >&2
+    exit 64
+    ;;
+esac

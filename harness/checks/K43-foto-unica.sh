@@ -37,7 +37,8 @@
 # fallo; una familia que no cumple lo que promete, tambien.
 #
 # LA PROMESA DE FOTO SE EJECUTA, y hasta el 2026-08-26 no se ejecutaba (auditoria del
-# operador, K45 de COLA): para SERIE y DEMANDA el check pedia la ruta a 140 y miraba la
+# operador, BLOQUE K45 de COLA, de AGOSTO -no el check K99, que es de septiembre-): para SERIE
+# y DEMANDA el check pedia la ruta a 140 y miraba la
 # respuesta, pero para las de FOTO solo comprobaba que EXISTIERA UNA CLAVE CON UN
 # NOMBRE PARECIDO en el sobre, deducido por un heuristico. Cuatro pasaban sin que su
 # contenido estuviera dentro: /api/profile 0 de 29 campos, /api/quality/feeds 14 de 35,
@@ -556,7 +557,7 @@ def declara_ventana(d, ruta=""):
 def _declara_ventana_agregada(d):
     # La promesa de SERIE es "mi ventana es mi coverage". Hasta el 2026-08-26 el check solo
     # miraba que EXISTIERA la clave coverage o la clave data_gaps: el mismo agujero que
-    # tenia FOTO antes de K45, y se cumplia sirviendo coverage:{} o data_gaps:null. Se
+    # tenia FOTO antes del BLOQUE K45 de COLA (agosto), y se cumplia sirviendo coverage:{} o data_gaps:null. Se
     # exige la ventana ENTERA y coherente, con la forma que ya sirven las seis series de
     # K03 por declared_series_response: served_window con inicio, fin, esperados,
     # observados y complete. served_window a null solo vale si el sobre dice ademas que no

@@ -47,6 +47,9 @@ mkdir -p "$LIMPIO/harness/bin" "$LIMPIO/harness/checks" "$LIMPIO/sql"
 cp -r "$ORIG/app" "$LIMPIO/app" 2>/dev/null || { echo "NO MEDIDO: no puedo copiar app/"; exit 2; }
 cp "$ORIG/sql/schema.sql" "$LIMPIO/sql/" 2>/dev/null || { echo "NO MEDIDO: falta sql/schema.sql"; exit 2; }
 cp "$ORIG/harness/bin/arquitectura" "$LIMPIO/harness/bin/" || exit 2
+# `fuentes_del_panel` busca `harness/bin/panel-fuentes` DENTRO del arbol que se le pasa: sin
+# el, el consumidor `panel` sale vacio y los brazos que fabrican un consumidor no muerden.
+cp "$ORIG/harness/bin/panel-fuentes" "$LIMPIO/harness/bin/" || exit 2
 cp "$CHK" "$LIMPIO/harness/checks/" || exit 2
 rm -rf "$LIMPIO/app/__pycache__" 2>/dev/null
 python3 "$LIMPIO/harness/bin/arquitectura" --repo "$LIMPIO" >/dev/null 2>&1 || {
@@ -680,9 +683,16 @@ from pathlib import Path
 t = Path(sys.argv[1])
 d = json.load(open(t / "ARQUITECTURA/derivada.json"))
 r = sorted(d["rutas"], key=lambda x: x["camino"])[10]
-(t / "static").mkdir(parents=True, exist_ok=True)
-(t / "static/app.js").write_text("async function x(){ await fetch('%s'); }\n" % r["camino"],
-                                 encoding="utf-8")
+# LA FORMA ES LA DE HOY, no la de antes de la FASE 2. Escribir `static/app.js` hacia que
+# este control PASARA (53 de 53) midiendo un panel que ya no existe: el generador lo leia
+# porque recorre `static/` entero, pero el consumidor `panel-html` sale del HTML.
+(t / "static/js").mkdir(parents=True, exist_ok=True)
+(t / "static/js/01-panel.js").write_text(
+    "async function x(){ await fetch('%s'); }\n" % r["camino"], encoding="utf-8")
+(t / "static/index.html").write_text(
+    '<!doctype html><html><body>\n'
+    '  <script defer src="/static/js/01-panel.js"></script>\n'
+    '</body></html>\n', encoding="utf-8")
 print(r["declarada"]["fichero"])
 PYC
 }

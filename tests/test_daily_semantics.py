@@ -417,6 +417,13 @@ def test_render_functions_replace_their_container_instead_of_appending() -> None
     # append sin limpiar en el camino normal, que es exactamente como se colo el bug.
     guard = re.compile(r"if\s*\([^)]*\)\s*\{[^{}]*return[^{}]*\}")
     names = list(re.finditer(r"^function (render\w+)", JS, re.M))
+    # EL ANCLA. «Ninguna funcion render* apila» es VERDAD cuando no hay ninguna funcion render*:
+    # con los modulos presentes pero MUDOS este test aprobaba sin sujeto. Es el residuo R2 de
+    # COLA 119, el mismo que K90 ya tenia tapado con su ancla.
+    assert names, (
+        "el panel descubierto no declara NINGUNA funcion render*: o esta vacio o el "
+        "descubridor no encontro sus modulos. Sin sujeto, este test aprobaria solo."
+    )
     offenders: list[str] = []
     for index, match in enumerate(names):
         end = names[index + 1].start() if index + 1 < len(names) else len(JS)

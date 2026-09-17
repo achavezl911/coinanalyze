@@ -92,15 +92,18 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:165`, `harness/checks/K43-foto-unica.sh:218` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:80`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
+| **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:166`, `harness/checks/K43-foto-unica.sh:219` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:81`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
 | **panel** | — | `static/js/10-contexto-y-estructura.js:498` |
-| **panel-html** | `static/index.html:242` | — |
+| **panel-html** | — | `static/index.html:242` |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:300` | — |
 | **tests** | — | `tests/test_liquidation_map_ventana.py:1` |
 
 **La llama el panel: es superficie de producto.**
 
-Y por **dos** caminos a la vez: con peticion propia **y** dentro de `/api/ai/context`.
+**Pero NO con una peticion propia:** su dato llega dentro de `/api/ai/context`,
+en la clave que `K43` le declara en su tabla `PAREJAS`. Al depurar eso importa:
+**no busques una peticion suya en el log de nginx**, no la hay -la del sobre las
+trae todas-, y su instante es el `generated_at` del sobre y no uno propio.
 
 ## Ventana · con que clave la declara (derivado)
 

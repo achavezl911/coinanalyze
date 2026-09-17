@@ -77,10 +77,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-control.bash:29`, `harness/checks/K43-control.bash:71`, `harness/checks/K43-foto-unica.sh:163`, `harness/checks/K96-la-auditoria-no-inventa.sh:84` | — |
+| **checks** | `harness/checks/K43-control.bash:29`, `harness/checks/K43-control.bash:74`, `harness/checks/K43-foto-unica.sh:164`, `harness/checks/K96-la-auditoria-no-inventa.sh:84` | — |
 | **panel** | `static/js/07-decision-y-ciclos.js:414` | — |
 | **readme** | — | `README.md:488`, `README.md:498` |
-| **tests** | — | `tests/test_dashboard_layout.py:151` |
+| **tests** | — | `tests/test_dashboard_layout.py:160` |
 
 **La llama el panel: es superficie de producto.**
 

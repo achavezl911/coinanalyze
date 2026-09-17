@@ -16,8 +16,9 @@
 # quedar las cuatro VERDES con la pantalla haciendo exactamente las mismas peticiones sueltas.
 #
 # EL INSTRUMENTO ES EXTERNO AL SUJETO, y tiene que serlo. Leer `static/app.js` mide su FORMA y
-# cambia con su parche; ademas ahi caen los comentarios -medido al cerrar K45: el criterio «no
-# menciona ninguna ruta de FOTO» se cumplia BORRANDO UN COMENTARIO-. Lo que no comparte forma
+# cambia con su parche; ademas ahi caen los comentarios -medido al cerrar K99, que hasta COLA
+# 124 se llamo K45: el criterio «no menciona ninguna ruta de FOTO» se cumplia BORRANDO UN
+# COMENTARIO-. Lo que no comparte forma
 # con el panel es lo que un navegador pide de verdad.
 #
 # EL FILTRO ES «AGENTE DE NAVEGADOR Y NO LA IP DEL ARNES», el mismo que usa K43, y no una IP:
@@ -72,7 +73,8 @@
 #
 # ---------------------------------------------------------------------------------
 # LA EXCEPCION NO ES UN NOMBRE EN UNA LISTA: ES UNA AFIRMACION QUE ESTE CHECK VUELVE A
-# COMPROBAR EN CADA CORRIDA. Es el patron que el operador impuso a K45 (COLA 118) traido aqui.
+# COMPROBAR EN CADA CORRIDA. Es el patron que el operador impuso a K99 -entonces K45- (COLA
+# 118) traido aqui.
 #
 # EL PROBLEMA QUE RESUELVE. La FASE 1 dejo TRES rutas de FOTO que el panel sigue pidiendo
 # sueltas -y bien-: el sobre NO trae lo que el panel lee de ellas. Medido en COLA 117/118 y otra

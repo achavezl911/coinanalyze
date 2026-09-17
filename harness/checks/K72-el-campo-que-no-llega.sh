@@ -5,8 +5,8 @@
 # backend los sirva -eso ya lo vigilan otros-, ni que el panel los nombre -nombrar no es
 # pintar-: que su valor acabe ESCRITO en el DOM.
 #
-# POR QUE NO BASTA CON K45. `K45` vigila que las 22 rutas de la familia FOTO lleguen al
-# operador, y lo mide mutando el BLOQUE entero. Eso no cubre esto: la tarjeta de setups se
+# POR QUE NO BASTA CON K99 -que hasta COLA 124 se llamo K45-. `K99` vigila que las 22 rutas de
+# la familia FOTO lleguen al operador, y lo mide mutando el BLOQUE entero. Eso no cubre esto: la tarjeta de setups se
 # alimenta de `/api/dashboard/state`, que seguiria pintando `snapshot` y `scalp` aunque
 # `missing`, `invalidation` y `horizon` desaparecieran; y el venue del OI sale de
 # `data_gaps.exchanges`, que es un campo dentro de una ruta de la familia SERIE. Un bloque

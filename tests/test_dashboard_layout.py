@@ -72,6 +72,15 @@ def test_dashboard_has_unique_ids_and_market_reading_order():
 
 def test_javascript_only_references_existing_literal_ids():
     referenced_ids = set(re.findall(r"\$\('([^']+)'\)", JS))
+    # EL ANCLA. Esto es un cuantificador universal sobre el texto del panel, y un universal
+    # sobre el conjunto vacio es VERDADERO: con los modulos presentes pero MUDOS, `referenced_ids`
+    # sale vacio, `missing` tambien, y el test aprueba sin haber mirado nada. Es el mismo agujero
+    # que K90 tapo con su ancla (COLA 119, residuo R2). Aqui el sujeto es «el panel referencia
+    # ids», asi que se exige que referencie alguno ANTES de comprobar que existen.
+    assert referenced_ids, (
+        "el panel descubierto no referencia NINGUN id con $('...'): o esta vacio o el "
+        "descubridor no encontro sus modulos. Sin sujeto, este test aprobaria solo."
+    )
     missing = referenced_ids - set(parsed_dashboard().ids)
     assert not missing
 

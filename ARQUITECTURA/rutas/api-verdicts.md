@@ -96,7 +96,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:160` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:161` | — |
 | **panel** | `static/js/07-decision-y-ciclos.js:409` | — |
 | **readme** | — | `README.md:72`, `README.md:276`, `README.md:410` |
 

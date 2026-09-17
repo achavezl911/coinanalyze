@@ -1,0 +1,43 @@
+#!/bin/bash
+# barre-bases-ci · recoge las bases desechables que dejo cualquier corrida ANTERIOR de CI.
+#
+#     barre-bases-ci <base-de-esta-corrida>
+#
+# POR QUE AL PRINCIPIO Y NO AL FINAL. `ci.yml` ya borraba la suya con `if: always()`, que corre
+# cuando el job TERMINA -bien o mal-, pero una corrida CANCELADA mata al runner y ese paso no
+# llega a ejecutarse. Medido en 143 el 2026-09-16: SIETE bases `ci_*` de corridas que nadie
+# borro. Nadie recogia lo de la corrida anterior. Al empezar es el unico momento en el que se
+# sabe que nadie las esta usando.
+#
+# LA REGLA DE QUE ES «DE CI» ES UN PREFIJO, no una lista de nombres: `ci_`. Se pregunta a
+# `pg_database` -no a un `ls`- y lo que NO empieza por el prefijo NO SE TOCA NUNCA: ahi viven
+# `coinalyze_espejo`, `coinalyze_k01b` y lo que tenga el operador. La base de ESTA corrida
+# tampoco se toca, y va por argumento en vez de recalcularse aqui.
+#
+# `CI_DB_PREFIX` existe para que el control pueda ejercitar ESTE MISMO codigo sobre un prefijo
+# propio sin barrer las de verdad. Cuando se usa, la salida lo dice.
+set -eu
+MIA=${1:-}
+PREFIJO=${CI_DB_PREFIX:-ci_}
+PSQL_HOST=${CI_DB_HOST:---host=/var/run/postgresql}
+
+[ "$PREFIJO" = "ci_" ] || echo "[PREFIJO CAMBIADO a '$PREFIJO' por CI_DB_PREFIX: esto NO es el barrido de produccion]"
+
+# El LIKE lleva el guion bajo escapado: en SQL `_` es un comodin de un caracter, asi que
+# `LIKE 'ci_%'` casaria tambien `ciX...`. Con el escape casa solo lo que empieza por `ci_`.
+patron=$(printf '%s' "$PREFIJO" | sed 's/_/\\_/g')
+viejas=$(psql $PSQL_HOST -d postgres -X -A -t \
+  -c "SELECT datname FROM pg_database WHERE datname LIKE '${patron}%' ORDER BY 1")
+
+n=0
+for db in $viejas; do
+  [ "$db" = "$MIA" ] && { echo "   la de esta corrida, no se toca: $db"; continue; }
+  case "$db" in "$PREFIJO"*) ;; *) continue ;; esac   # cinturon: el prefijo, otra vez
+  dropdb $PSQL_HOST --if-exists "$db"
+  n=$((n+1))
+  echo "   barrida: $db"
+done
+echo "   bases de corridas anteriores recogidas: $n"
+psql $PSQL_HOST -d postgres -X -A -t \
+  -c "SELECT datname FROM pg_database WHERE datname NOT LIKE '${patron}%' ORDER BY 1" \
+  | sed 's/^/   intacta: /'

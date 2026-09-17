@@ -29,6 +29,7 @@ PASOS_CONOCIDOS = {
     "Create venv and install dependencies": "ya montado en 143: .venv/",
     "Ruff (lint)": ".venv/bin/python -m ruff check .",
     "Compile all (syntax check)": ".venv/bin/python -m compileall -q app",
+    "Sweep leftover CI databases": "bash harness/checks/barre-bases-ci-control.bash (el barrido REAL lo hace CI en su corrida)",
     "Create disposable test database": "en 143 la base de test la levanta el propio pytest",
     "Pytest": ".venv/bin/pytest -q",
     "Drop disposable test database": "no aplica en local",

@@ -102,7 +102,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:160` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:161` | — |
 | **panel** | `static/js/06-perfiles-y-niveles.js:114` | — |
 | **readme** | — | `README.md:111` |
 | **tests** | `tests/test_dashboard_presentation.py:126` | — |

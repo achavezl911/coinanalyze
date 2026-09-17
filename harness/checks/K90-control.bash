@@ -39,13 +39,17 @@ fallos=0; pasan=0
 mkdir -p "$DIR/repo/static" "$DIR/repo/app" "$DIR/bin"
 
 # --- el panel de mentira -----------------------------------------------------------------
+# EL PANEL DE MENTIRA LLEVA LA FORMA QUE EL DESCUBRIDOR EXIGE, y el check lo DESCUBRE en vez
+# de recibirlo por `K90_APPJS`. Con el gancho, este control ejercitaba la puerta de inyeccion y
+# no el camino real: exactamente «medir el camino de ayer».
+. "$(dirname "${BASH_SOURCE[0]}")/_panel-de-mentira.bash"
 rotulo_en() {   # $1 = lo que va en `time:`  (vacio = la forma nueva, sin literal)
   if [ -z "$1" ]; then
     printf "      name: 'Corto plazo', time: shortHorizon, action: shortAction,\n" \
-      > "$DIR/repo/static/app.js"
+      | panel_de_mentira "$DIR/repo"
   else
     printf "      name: 'Corto plazo', time: '%s', action: shortAction,\n" "$1" \
-      > "$DIR/repo/static/app.js"
+      | panel_de_mentira "$DIR/repo"
   fi
 }
 
@@ -80,7 +84,7 @@ caso() {  # <nombre> <rc> <patron> <rotulo> <cuerpo> <fila> [prodsql]
   local psql="${7:-$DIR/bin/prodsql}"
   rotulo_en "$rot"
   local out rc
-  out=$(REPO="$DIR/repo" K90_APPJS="$DIR/repo/static/app.js" K90_API="$DIR/bin/api" \
+  out=$(REPO="$DIR/repo" K90_API="$DIR/bin/api" \
         K90_PRODSQL="$psql" K90C_CUERPO="$cuerpo" K90C_FILA="$fila" \
         bash "$CHK" 2>&1); rc=$?
   local ok=1
@@ -158,8 +162,10 @@ echo "SOBREVIVEN · anti-fantasma"
 # NO se induce con `caso`: esa funcion llama a `rotulo_en`, que RECREA el fichero, o sea
 # que el caso no borraba nada y pasaba por no haber inducido la averia. Es el mismo
 # fantasma que este arnes lleva seis paquetes cazando, y lo cometi aqui. Se induce a mano.
-rm -f "$DIR/repo/static/app.js"
-out=$(REPO="$DIR/repo" K90_APPJS="$DIR/repo/static/app.js" K90_API="$DIR/bin/api" \
+# Los modulos EXISTEN y estan MUDOS: sin modulos el descubridor revienta antes y eso seria
+# medir el canal, no el ancla.
+: > "$DIR/repo/static/js/01-panel.js"
+out=$(REPO="$DIR/repo" K90_API="$DIR/bin/api" \
       K90_PRODSQL="$DIR/bin/prodsql" K90C_CUERPO="$CUERPO_OK" K90C_FILA="$FILA_OK" \
       bash "$CHK" 2>&1); rc=$?
 if [ "$rc" = "2" ] && printf '%s' "$out" | grep -q "no encuentro"; then
