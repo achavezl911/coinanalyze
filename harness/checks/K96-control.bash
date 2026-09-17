@@ -11,7 +11,14 @@ set -uo pipefail
 ORIG=${REPO:-/srv/coinanalyze/repo}
 # EL ARBOL DE MENTIRA SE FABRICA CON LA FORMA QUE EL DESCUBRIDOR EXIGE. Hasta COLA 124 este
 # control copiaba UN `static/app.js`, que no existe desde la FASE 2: salia 0 de 7, apagado.
-. "$(dirname "${BASH_SOURCE[0]}")/_panel-de-mentira.bash"
+# SE RESUELVE A ABSOLUTA Y SE COMPRUEBA QUE CARGO, aunque hoy este fichero no haga ningun
+# `cd`: el dia que alguien anada uno, el `source` empezaria a fallar en silencio -es
+# exactamente lo que le paso a K90-control-.
+AQUI=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) || exit 2
+. "$AQUI/_panel-de-mentira.bash" 2>/dev/null
+[ "${PANEL_DE_MENTIRA_CARGADO:-0}" = 1 ] || {
+  echo "NO MEDIDO: no se pudo cargar $AQUI/_panel-de-mentira.bash; sin el, este control"
+  echo "  no puede fabricar el arbol y NO mide nada. No se sigue."; exit 2; }
 CHK="$ORIG/harness/checks/K96-la-auditoria-no-inventa.sh"
 [ -r "$CHK" ] || { echo "NO MEDIDO: no encuentro el check en $CHK"; exit 2; }
 

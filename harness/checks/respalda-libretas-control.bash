@@ -16,6 +16,14 @@
 # NO SE TOCA EL REMOTO DE VERDAD. Se monta un `git init --bare` local y se le pasa por
 # `LIBRETAS_REMOTO`, con su propia copia y su propio `entregas/` de mentira.
 #
+# LA REGLA QUE ESTE CONTROL NO PUEDE HACER CUMPLIR, Y POR ESO SE ESCRIBE: en `entregas/` no
+# se escribe un secreto CON SU FORMA, ni de ejemplo; se enmascara. El candado no distingue
+# un ejemplo de una fuga -y hace bien-, asi que un ejemplo literal para el respaldo de
+# todos. Paso el 2026-09-17 y lo escribi yo.
+#
+# Y ESTE CONTROL NO JUZGA `entregas/`: juzga el CANDADO, con plantados. Lo vivo lo dicen
+# K49 y la unit.
+#
 # NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh.
 set -uo pipefail
 ORIG=${REPO:-/srv/coinanalyze/repo}
@@ -67,7 +75,11 @@ comprueba "R1e el manifiesto nombra los de entregas/ ($n_man)" "$([ "$n_man" -ge
 echo
 echo "R3 · UN SECRETO PLANTADO NIEGA EL PUSH"
 antes=$(git -C "$REMOTO" rev-parse HEAD)
-printf -- '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA\n' > "$ENT/se-colo-una-clave.txt"
+# SE CONSTRUYE EN EJECUCION, no se escribe literal aqui. Este fichero no viaja en el respaldo
+# -solo viajan las libretas y `entregas/`-, pero la cabecera de arriba dice que los ejemplos van
+# enmascarados o construidos, y una regla que su propio autor no cumple no la cumple nadie.
+printf -- '%s%s\nb3BlbnNzaC1rZXktdjEAAAAA\n' '-----BEGIN OPENSSH ' 'PRIVATE KEY-----' \
+  > "$ENT/se-colo-una-clave.txt"
 out=$(corre); rc=$?
 despues=$(git -C "$REMOTO" rev-parse HEAD)
 comprueba "R3a rc distinto de 0 (rc=$rc)" "$([ "$rc" != 0 ] && echo si || echo no)"
@@ -95,15 +107,39 @@ comprueba "R4c y lo nuevo esta en el remoto, no solo el commit" \
   "$([ -s "$DIR/vuelta2/entregas/prediccion.md" ] && echo si || echo no)"
 
 echo
-echo "R5 · EL CONJUNTO REAL, HOY, SALE LIMPIO -si no, no habria que bajar el detector-"
-real=$(mktemp -d)
-( cd /srv/coinanalyze/entregas && find . -type f -size -262144c -print0 | tar --null -cf - -T - ) \
-  | tar -xf - -C "$real" 2>/dev/null
-n_real=$(find "$real" -type f | wc -l)
-"$ORIG/harness/bin/busca-secretos" "$real" >/dev/null 2>&1; rc_real=$?
-comprueba "R5a los $n_real ficheros reales que viajan: sin secretos (rc=$rc_real)" \
-  "$([ "$rc_real" = 0 ] && echo si || echo no)"
-rm -rf "$real"
+echo "R5 · EL CANDADO SE JUZGA CON PLANTADOS, NO CON EL ESTADO VIVO"
+# ESTE BRAZO MEDIA EL DIA, NO EL INSTRUMENTO. Hasta COLA 125 escaneaba el `entregas/` REAL y
+# exigia que saliera limpio, asi que se ponia ROJO por lo que hubiera ahi ese dia -y el
+# 2026-09-17 se puso: `entregas/20260916-2330-canales.md` trae un token de EJEMPLO escrito con
+# su forma real, el candado lo caza y el respaldo se niega, que es EXACTAMENTE lo que promete-.
+# Un control que enrojece porque el sujeto funciona no mide el sujeto: mide el calendario.
+# El estado vivo ya lo dicen K49 y la unit, que es donde tiene que decirse.
+#
+# LA REGLA, PARA QUIEN ESCRIBA LA PROXIMA ENTREGA: en `entregas/` NO SE ESCRIBE UN SECRETO CON
+# SU FORMA, ni de ejemplo. Se enmascara -«ghp_<...>», «BEGIN ... PRIVATE KEY» partido, o la
+# palabra sin el valor-. El candado no distingue un ejemplo de una fuga, y hace bien: quien lo
+# lea desde el repo remoto tampoco podria.
+CORPUS="$DIR/corpus"; mkdir -p "$CORPUS"
+# NEGATIVO: lo que hay de verdad en `entregas/` y NO es un secreto. Si algo de esto disparara,
+# el candado seria ruido y alguien lo apagaria.
+printf 'la prosa habla de password, token y secret sin dar ninguno\n' > "$CORPUS/prosa.md"
+printf 'md5 01b4b06786a7e5572487c97643808db5 publicado como prueba\n' > "$CORPUS/huella.md"
+printf 'PGPASSWORD="$PG_PASSWORD" pg_dump\nAPI_TOKEN=${TOKEN}\n' > "$CORPUS/referencias.sh"
+printf 'un token enmascarado: ghp_<treinta-y-seis-caracteres>\n' > "$CORPUS/enmascarado.md"
+"$ORIG/harness/bin/busca-secretos" "$CORPUS" >/dev/null 2>&1; rc_neg=$?
+comprueba "R5a NEGATIVO: prosa, huella publicada, referencias y enmascarado NO disparan (rc=$rc_neg)" \
+  "$([ "$rc_neg" = 0 ] && echo si || echo no)"
+
+# POSITIVO: el MISMO corpus con UN secreto de forma real. La unica diferencia es ese fichero.
+printf 'GH=ghp_%s\n' "$(printf 'a%.0s' $(seq 1 36))" > "$CORPUS/se-colo.txt"
+salida_pos=$("$ORIG/harness/bin/busca-secretos" "$CORPUS" 2>&1); rc_pos=$?
+comprueba "R5b POSITIVO: el mismo corpus con UN secreto SI dispara (rc=$rc_pos)" \
+  "$([ "$rc_pos" = 1 ] && echo si || echo no)"
+comprueba "R5c y NOMBRA el fichero, no dice solo que hay algo" \
+  "$(printf '%s' "$salida_pos" | grep -q 'se-colo.txt' && echo si || echo no)"
+comprueba "R5d y NO arrastra a los cuatro inocentes" \
+  "$(printf '%s' "$salida_pos" | grep -qE 'prosa.md|huella.md|referencias.sh|enmascarado.md' && echo no || echo si)"
+rm -f "$CORPUS/se-colo.txt"
 
 echo
 total=$((pasan+fallos))

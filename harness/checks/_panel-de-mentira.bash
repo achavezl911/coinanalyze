@@ -19,6 +19,19 @@
 # misma direccion -del HTML a los ficheros- que usa el descubridor.
 #
 # NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh y esto no es un check.
+#
+# COMO SE CARGA, Y POR QUE IMPORTA. Quien lo cargue tiene que resolver su ruta A ABSOLUTA
+# ANTES de cualquier `cd`, y comprobar esta marca despues:
+#
+#     AQUI=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)   # antes de cualquier cd
+#     . "$AQUI/_panel-de-mentira.bash" 2>/dev/null
+#     [ "${PANEL_DE_MENTIRA_CARGADO:-0}" = 1 ] || { echo 'NO MEDIDO: ...'; exit 2; }
+#
+# MEDIDO EL 2026-09-17: `K90-control.bash` hacia `cd "$DIR"` en su linea 36 y cargaba esto
+# en la 45 con un `dirname` SIN resolver. Invocado por ruta ABSOLUTA daba 18 de 18; por ruta
+# RELATIVA desde la raiz del repo, 2 de 18 -y los dos que «pasaban» eran los que esperaban
+# NO MEDIDO-. El `source` fallaba en silencio y el control seguia midiendo la nada.
+PANEL_DE_MENTIRA_CARGADO=1
 
 # panel_de_mentira <destino> [fichero-con-el-js]
 #   Monta <destino>/static/index.html + <destino>/static/js/01-panel.js. Si se le pasa un

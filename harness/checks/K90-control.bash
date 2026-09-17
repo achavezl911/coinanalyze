@@ -31,6 +31,10 @@ ORIG=${K90_CONTROL_REPO:-/srv/coinanalyze/repo}
 CHK="$(cd "$(dirname "$0")" && pwd)/K90-la-senal-no-dura-su-rotulo.sh"
 [ -r "$CHK" ] || { echo "NO MEDIDO: no encuentro el check en $CHK"; exit 2; }
 
+# EL AYUDANTE SE RESUELVE ANTES DE CUALQUIER `cd`. Con `cd "$DIR"` en medio, un
+# `${BASH_SOURCE[0]}` relativo deja de resolver y el `source` falla EN SILENCIO: este
+# control daba 18 de 18 por ruta absoluta y 2 de 18 por ruta relativa desde la raiz.
+AQUI=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) || exit 2
 DIR=$(mktemp -d) || exit 2
 [ "${K90_CONTROL_GUARDA:-0}" = "1" ] || trap 'rm -rf "$DIR"' EXIT
 cd "$DIR" || exit 2          # se demuestra que no depende del cwd
@@ -42,7 +46,13 @@ mkdir -p "$DIR/repo/static" "$DIR/repo/app" "$DIR/bin"
 # EL PANEL DE MENTIRA LLEVA LA FORMA QUE EL DESCUBRIDOR EXIGE, y el check lo DESCUBRE en vez
 # de recibirlo por `K90_APPJS`. Con el gancho, este control ejercitaba la puerta de inyeccion y
 # no el camino real: exactamente «medir el camino de ayer».
-. "$(dirname "${BASH_SOURCE[0]}")/_panel-de-mentira.bash"
+. "$AQUI/_panel-de-mentira.bash" 2>/dev/null
+# SI EL AYUDANTE NO CARGA, ESTE CONTROL PARA. Seguir seria medir la nada: sin
+# `panel_de_mentira` los brazos salen NO MEDIDO por el canal y el resumen dice «2 de 18
+# pasan» como si hubiera medido algo.
+[ "${PANEL_DE_MENTIRA_CARGADO:-0}" = 1 ] || {
+  echo "NO MEDIDO: no se pudo cargar $AQUI/_panel-de-mentira.bash; sin el, este control"
+  echo "  no puede fabricar el panel y NO mide nada. No se sigue."; exit 2; }
 rotulo_en() {   # $1 = lo que va en `time:`  (vacio = la forma nueva, sin literal)
   if [ -z "$1" ]; then
     printf "      name: 'Corto plazo', time: shortHorizon, action: shortAction,\n" \
