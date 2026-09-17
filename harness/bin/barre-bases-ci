@@ -14,30 +14,128 @@
 # `coinalyze_espejo`, `coinalyze_k01b` y lo que tenga el operador. La base de ESTA corrida
 # tampoco se toca, y va por argumento en vez de recalcularse aqui.
 #
+# ── UNA BASE QUE NO SE PUEDE BORRAR NO MATA LA CORRIDA · 2026-09-17, COLA 125 ──────────────
+# Hasta hoy esto llevaba `set -eu` y un `dropdb` a pelo. Medido en la corrida REAL del PR #191
+# -run 35260523435, paso «Sweep leftover CI databases», 25 s-: barrio las cinco que podia y
+# murio en la sexta,
+#
+#     dropdb: error: database removal failed: ERROR:  must be owner of database ci_prosa_3180793
+#     ##[error]Process completed with exit code 1
+#
+# porque `ci_prosa_3180793` y `ci_prosa_3182716` son de root y CI corre como github-runner. Con
+# `set -e` ese `dropdb` fallido aborta el guion y TUMBA EL JOB ENTERO: ruff, pytest, node y todo
+# lo demas dejan de correr. Y seguiria rojo en CADA corrida mientras esas dos existan, que es
+# justo lo contrario de lo que el barrido viene a hacer.
+#
+# LA LINEA QUE SEPARA LOS DOS TIPOS DE FALLO:
+#   · el servidor CONTESTA y se niega con UNA base  -> se NOMBRA, con su dueno y su motivo, se
+#                                                      sigue con las que si son suyas, y el
+#                                                      paso sale 0 diciendo cuantas no pudo
+#   · el canal no contesta, `psql` no esta, o CUALQUIER otro error -> el paso FALLA (rc!=0)
+#
+# La tolerancia va por LISTA BLANCA de motivos -`es_de_esta_base`-, no por «todo lo que no
+# parezca de conexion». Si manana aparece un motivo que nadie ha visto, esto se pone rojo y
+# alguien lo lee, que es lo que hay que hacer con lo desconocido. Tragarse todos los errores
+# por igual seria peor que el `set -e` de ayer: dejaria de barrer en silencio.
+#
+# LO QUE ESTE GUION NO HACE: borrar una base que no es suya. Eso es de Alejandro. Aqui se
+# nombra y se sigue.
+#
 # `CI_DB_PREFIX` existe para que el control pueda ejercitar ESTE MISMO codigo sobre un prefijo
-# propio sin barrer las de verdad. Cuando se usa, la salida lo dice.
-set -eu
+# propio sin barrer las de verdad. Cuando se usa, la salida lo dice. `CI_DB_HOST` es el otro
+# gancho del control: apuntandolo a un directorio de socket donde no escucha nadie se prueba
+# el canal caido de verdad, sin simular nada.
+set -uo pipefail
 MIA=${1:-}
 PREFIJO=${CI_DB_PREFIX:-ci_}
 PSQL_HOST=${CI_DB_HOST:---host=/var/run/postgresql}
 
 [ "$PREFIJO" = "ci_" ] || echo "[PREFIJO CAMBIADO a '$PREFIJO' por CI_DB_PREFIX: esto NO es el barrido de produccion]"
 
+ERR=$(mktemp) || { echo "   FALLO DEL PASO: no hay mktemp"; exit 1; }
+trap 'rm -f "$ERR"' EXIT
+for prog in psql dropdb; do
+  command -v "$prog" >/dev/null || {
+    echo "   FALLO DEL PASO: no hay '$prog' en el PATH. Esto no es «no puedo con una base»: es"
+    echo "   que no hay canal. No se ha barrido nada."; exit 1; }
+done
+
+# El servidor contesta antes que nada, y SE DICE QUIEN BARRE. Si en la corrida del PR #191 el
+# log hubiera puesto «github-runner», el dueno ajeno se habria leido a la primera.
+YO=$(id -un 2>/dev/null || echo '?')
+yo_sql=$(psql $PSQL_HOST -d postgres -X -A -t -c 'SELECT current_user' 2>"$ERR"); rc_yo=$?
+if [ "$rc_yo" != 0 ]; then
+  echo "   FALLO DEL PASO: el canal no contesta (psql salio $rc_yo). No se ha barrido NADA."
+  sed 's/^/   psql: /' "$ERR"
+  exit 1
+fi
+echo "   barre: $YO (sistema) / ${yo_sql:-?} (postgres)"
+
 # El LIKE lleva el guion bajo escapado: en SQL `_` es un comodin de un caracter, asi que
 # `LIKE 'ci_%'` casaria tambien `ciX...`. Con el escape casa solo lo que empieza por `ci_`.
 patron=$(printf '%s' "$PREFIJO" | sed 's/_/\\_/g')
+# El dueno viaja con el nombre: cuando una se resista hay que NOMBRARLO, y preguntarlo despues
+# de un `dropdb` a medias es preguntar por algo que quiza ya no esta.
 viejas=$(psql $PSQL_HOST -d postgres -X -A -t \
-  -c "SELECT datname FROM pg_database WHERE datname LIKE '${patron}%' ORDER BY 1")
+  -c "SELECT datname || '|' || pg_get_userbyid(datdba) FROM pg_database WHERE datname LIKE '${patron}%' ORDER BY 1" \
+  2>"$ERR"); rc_lista=$?
+if [ "$rc_lista" != 0 ]; then
+  echo "   FALLO DEL PASO: el canal se cayo al listar las bases (psql salio $rc_lista)."
+  sed 's/^/   psql: /' "$ERR"
+  exit 1
+fi
 
-n=0
-for db in $viejas; do
+# LISTA BLANCA · el servidor contesto y se nego con ESTA base. Todo lo demas es del paso.
+es_de_esta_base() {
+  case "$1" in
+    *"must be owner"*)                    return 0 ;;
+    *"permission denied"*)                return 0 ;;
+    *"insufficient privilege"*)           return 0 ;;
+    *"is being accessed by other users"*) return 0 ;;
+    *)                                    return 1 ;;
+  esac
+}
+
+n=0; n_no=0; PORQUE=''
+for linea in $viejas; do
+  db=${linea%%|*}
+  dueno=${linea#*|}
+  [ -n "$db" ] || continue
   [ "$db" = "$MIA" ] && { echo "   la de esta corrida, no se toca: $db"; continue; }
   case "$db" in "$PREFIJO"*) ;; *) continue ;; esac   # cinturon: el prefijo, otra vez
-  dropdb $PSQL_HOST --if-exists "$db"
-  n=$((n+1))
-  echo "   barrida: $db"
+  salida=$(dropdb $PSQL_HOST --if-exists "$db" 2>&1); rc_drop=$?
+  if [ "$rc_drop" = 0 ]; then
+    n=$((n+1))
+    echo "   barrida: $db"
+    continue
+  fi
+  motivo=$(printf '%s' "$salida" | tr '\n' ' ' | sed 's/^ *//; s/ *$//; s/  */ /g')
+  if es_de_esta_base "$motivo"; then
+    n_no=$((n_no+1))
+    echo "   NO SE PUDO, y sigo: $db · dueno: $dueno · motivo: $motivo"
+    PORQUE="${PORQUE}   $db · dueno: $dueno · lo intento: ${yo_sql:-$YO} · $motivo"$'\n'
+  else
+    echo "   FALLO DEL PASO: dropdb con $db salio $rc_drop por algo que NO esta en la lista"
+    echo "   blanca de «no puedo con esta base»: $motivo"
+    echo "   recogidas antes de esto: $n. El paso falla a proposito."
+    exit 1
+  fi
 done
-echo "   bases de corridas anteriores recogidas: $n"
-psql $PSQL_HOST -d postgres -X -A -t \
+
+echo "   bases de corridas anteriores recogidas: $n · no se pudo con: $n_no"
+if [ "$n_no" -gt 0 ]; then
+  echo "   por que no se pudo, una por una:"
+  printf '%s' "$PORQUE"
+  echo "   (una base de otro dueno se nombra y se deja: borrarla es de Alejandro, no del CI.)"
+fi
+
+intactas=$(psql $PSQL_HOST -d postgres -X -A -t \
   -c "SELECT datname FROM pg_database WHERE datname NOT LIKE '${patron}%' ORDER BY 1" \
-  | sed 's/^/   intacta: /'
+  2>"$ERR"); rc_int=$?
+if [ "$rc_int" != 0 ]; then
+  echo "   FALLO DEL PASO: el canal se cayo al listar las intactas (psql salio $rc_int)."
+  sed 's/^/   psql: /' "$ERR"
+  exit 1
+fi
+printf '%s\n' "$intactas" | sed 's/^/   intacta: /'
+exit 0
