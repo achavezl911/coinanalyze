@@ -1053,6 +1053,45 @@ RE_BASE_URL = re.compile(
 )
 
 
+def html_sin_comentarios(texto: str) -> str:
+    """El mismo HTML con los tramos `<!-- ... -->` en blanco, conservando las lineas.
+
+    POR QUE HACE FALTA. `RE_COMENTARIO` solo reconoce la linea que EMPIEZA por `<!--`. Los
+    comentarios de `static/index.html` ocupan varias lineas, asi que una ruta escrita en una
+    linea INTERIOR entraba en la capa declarada como LLAMADA desde `panel-html`: el mapa decia
+    que el HTML PIDE una ruta que solo esta NOMBRADA en una nota. Declarado en COLA 120 y no
+    arreglado entonces porque habria tumbado el control A de aquella campana.
+
+    Medido el 2026-09-16 sobre `static/index.html`: dos comentarios multilinea traen rutas en
+    lineas interiores -uno cita /api/carry/matriz y /api/liquidation-map, el otro /api/oi-.
+
+    NO ES UN `grep` NI UN CONJUNTO DE LINEAS: es un barrido con ESTADO que devuelve el MISMO
+    texto con los tramos comentados en blanco, linea a linea. Marcar la linea entera seria
+    pasarse de frenada por el otro lado -es el error que ya cometio `lineas_de_prosa_py` y que
+    su propia cabecera cuenta-: una ruta pedida DE VERDAD en la misma linea que un comentario
+    seguiria siendo una llamada, y con un conjunto de lineas se habria perdido."""
+    fuera = []
+    dentro = False
+    for linea in texto.splitlines():
+        out = []
+        i = 0
+        while i < len(linea):
+            if not dentro:
+                j = linea.find("<!--", i)
+                if j < 0:
+                    out.append(linea[i:]); break
+                out.append(linea[i:j]); out.append(" " * 4)
+                dentro = True; i = j + 4
+            else:
+                j = linea.find("-->", i)
+                if j < 0:
+                    out.append(" " * (len(linea) - i)); i = len(linea)
+                else:
+                    out.append(" " * (j - i + 3)); dentro = False; i = j + 3
+        fuera.append("".join(out))
+    return "\n".join(fuera)
+
+
 def lineas_de_prosa_py(texto: str) -> set:
     """Numeros de linea que son PROSA en un .py.
 
@@ -1156,10 +1195,18 @@ def consumidores_de(repo: Path, camino: str) -> dict:
             except Exception:
                 continue
             prosa = lineas_de_prosa_py(texto) if p.suffix == ".py" else set()
+            # EN HTML, LO QUE VIVE DENTRO DE UN `<!-- -->` ES MENCION, este en la linea que
+            # abre o en cualquiera de las interiores. Se compara contra el texto con los tramos
+            # comentados en blanco: si la ruta desaparece ahi, estaba comentada.
+            limpio = html_sin_comentarios(texto).splitlines() if p.suffix == ".html" else None
             for n, linea in enumerate(texto.splitlines(), 1):
                 # normalizar la base de URL antes de casar: $VAR, ${VAR}, https://host:8443
                 if not pat.search(RE_BASE_URL.sub(" ", linea)):
                     continue
+                en_comentario_html = (
+                    limpio is not None
+                    and not pat.search(RE_BASE_URL.sub(" ", limpio[n - 1] if n - 1 < len(limpio) else ""))
+                )
                 sitio = f"{p.relative_to(repo).as_posix()}:{n}"
                 # UN `@app.get("/api/x")` NO ES UNA LLAMADA: es la DECLARACION, o una cita de
                 # ella. `app/api.py` no esta en CONSUMIDORES, asi que si ese texto aparece
@@ -1172,6 +1219,7 @@ def consumidores_de(repo: Path, camino: str) -> dict:
                 # consumidor. Se marca como MENCION, que es lo que es.
                 es_decorador = re.search(r"@\w+\.(get|post|put|delete|patch)\(", linea) is not None
                 es_texto = ((n in prosa) or bool(RE_COMENTARIO.match(linea))
+                            or en_comentario_html
                             or p.suffix == ".md" or es_decorador)
                 (menciones if es_texto else llamadas).append(sitio)
         if llamadas or menciones:

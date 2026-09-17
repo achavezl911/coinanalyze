@@ -1,15 +1,35 @@
 #!/bin/sh
 # leer <fichero> <patron>       -> lineas que casan, con 3 de contexto, acotado
 # leer <fichero> <ini> <fin>    -> ese rango exacto
-# Existe para que app.js (182 KB), scalp_logic.py (5524 lin), api.py y schema.sql NO
-# entren enteros en el contexto. Si intentas leer uno de esos entero, te para.
+#
+# LA REGLA ES DE TAMANO, Y SALE DE LA PROPIA HERRAMIENTA. Un fichero que NO CABE en lo que el
+# arnes puede escupir -`MAX_BYTES`, el corte de `bin/_corta`- no se lee entero: se pide patron o
+# rango. No se para por una LISTA DE NOMBRES.
+#
+# POR QUE NO LA LISTA. La lista decia `app.js|app.css|scalp_logic.py|api.py|schema.sql|
+# index.html`, y el 2026-09-16 `static/app.js` YA NO EXISTIA -la FASE 2 lo partio en once
+# modulos- mientras `static/js/10-contexto-y-estructura.js` pesaba 58 165 B, MAS que
+# `static/index.html` (44 088 B), que si estaba en la lista. Una lista de nombres envejece con
+# cada refactor y no avisa; el tamano se mide solo.
+#
+# Y POR QUE ESE UMBRAL Y NO OTRO: por debajo de `MAX_BYTES` el fichero cabe entero en la salida,
+# asi que leerlo entero es honesto. Por encima, `_corta` lo truncaria y devolveria un fichero A
+# MEDIAS con una nota al pie -que es peor que un error, porque parece completo-. Parar y pedir
+# un patron devuelve la MISMA informacion con un no por delante.
+#
+# `TODO=1` lo salta, igual que salta el corte, y entonces hay que decir por que.
 set -eu
 B=/srv/coinanalyze/harness; . "$B/env"
 f=${1:?uso: leer <fichero> <patron | ini fin>}
-case "$(basename "$f")" in
-  app.js|app.css|scalp_logic.py|api.py|schema.sql|index.html)
-    [ $# -ge 2 ] || { echo "ese fichero NO se lee entero (regla C1). Da patron o rango." >&2; exit 3; } ;;
-esac
+if [ $# -lt 2 ] && [ "${TODO:-0}" != "1" ] && [ -f "$f" ]; then
+  n=$(wc -c < "$f")
+  lim=${MAX_BYTES:-8000}
+  if [ "$n" -gt "$lim" ]; then
+    echo "ese fichero NO se lee entero (regla C1): $n B, y esta herramienta corta en $lim B." >&2
+    echo "Da patron o rango. Si de verdad lo necesitas entero, TODO=1, y di por que." >&2
+    exit 3
+  fi
+fi
 if   [ $# -eq 3 ]; then sed -n "$2,$3p" "$f" | "$B/bin/_corta"
 elif [ $# -eq 2 ]; then grep -n -C3 -- "$2" "$f" | "$B/bin/_corta"
 else                    "$B/bin/_corta" < "$f"; fi

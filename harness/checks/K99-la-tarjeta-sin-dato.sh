@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# K45 · LA TARJETA QUE SE QUEDA SIN DATO
+# K99 · LA TARJETA QUE SE QUEDA SIN DATO
 #
 # QUE VIGILA. Que cada ruta de la familia FOTO -la que declara K43- siga LLEGANDO AL
 # OPERADOR. No que el panel la pida: que su dato acabe escrito en la pantalla.
@@ -50,9 +50,9 @@ MODULOS="$PANEL/node_modules"
 [ -d "$MODULOS" ] || MODULOS="$CANONICO/node_modules"
 K43="$REPO/harness/checks/K43-foto-unica.sh"
 [ -f "$K43" ] || K43=/srv/coinanalyze/repo/harness/checks/K43-foto-unica.sh
-EXC="${K45_EXC:-$REPO/harness/checks/K45-excepciones.tsv}"
-[ -f "$EXC" ] || EXC=/srv/coinanalyze/repo/harness/checks/K45-excepciones.tsv
-HTML="${K45_HTML:-$REPO/static/index.html}"
+EXC="${K99_EXC:-$REPO/harness/checks/K99-excepciones.tsv}"
+[ -f "$EXC" ] || EXC=/srv/coinanalyze/repo/harness/checks/K99-excepciones.tsv
+HTML="${K99_HTML:-$REPO/static/index.html}"
 
 [ -x "$PY" ]                 || { echo "NO MEDIDO: falta el venv del repo"; exit 2; }
 command -v node >/dev/null   || { echo "NO MEDIDO: no hay node en esta maquina"; exit 2; }
@@ -60,21 +60,21 @@ command -v node >/dev/null   || { echo "NO MEDIDO: no hay node en esta maquina";
 [ -f "$K43" ]                || { echo "NO MEDIDO: no se puede leer K43, que es quien declara la familia FOTO"; exit 2; }
 [ -f "$HTML" ]               || { echo "NO MEDIDO: no se puede leer $HTML"; exit 2; }
 
-# PUERTA PARA EJERCITAR EL CRITERIO SIN PAGAR LA SONDA. `K45_SONDA` sustituye la salida de la
+# PUERTA PARA EJERCITAR EL CRITERIO SIN PAGAR LA SONDA. `K99_SONDA` sustituye la salida de la
 # sonda por un JSON de fichero. Existe porque la sonda tarda ~156 s y sin esta puerta el
 # criterio de las EXCEPCIONES -que es la parte por la que se fuerza el verde- no se podria
 # probar en un control barato. Es el MISMO codigo que corre de verdad: lo unico que cambia es
 # de donde viene el JSON. No afecta a la corrida normal, que no define la variable.
-if [ -n "${K45_SONDA:-}" ]; then
-  [ -f "$K45_SONDA" ] || { echo "NO MEDIDO: K45_SONDA apunta a un fichero que no existe"; exit 2; }
-  salida=$(cat "$K45_SONDA")
+if [ -n "${K99_SONDA:-}" ]; then
+  [ -f "$K99_SONDA" ] || { echo "NO MEDIDO: K99_SONDA apunta a un fichero que no existe"; exit 2; }
+  salida=$(cat "$K99_SONDA")
 else
   # LA CACHE VA A LA RUTA CANONICA Y NO A `$B/estado`. Con `$B` -que es el arnes del arbol
   # desde el que se llame- correr este check DESDE UNA COPIA DEL REPO deja ahi 2.1 MB de
   # payloads de PRODUCCION, y el siguiente `git add -A` se los lleva al repositorio. Me paso
   # haciendo justo eso el 2026-09-12 y lo deshice antes de empujar. Se reusa la cache de K31
   # porque es la MISMA sonda y los mismos payloads: dos copias serian dos verdades.
-  CACHE="${K45_FIXTURES:-${K31_FIXTURES:-/srv/coinanalyze/harness/estado/k31-fixtures}}"
+  CACHE="${K99_FIXTURES:-${K31_FIXTURES:-/srv/coinanalyze/harness/estado/k31-fixtures}}"
   err=$(mktemp)
   salida=$(cd "$PANEL" && REPO="$REPO" NODE_PATH="$MODULOS" K31_FIXTURES="$CACHE" timeout 1500 node probe.js 2>"$err")
   rc=$?
@@ -134,7 +134,7 @@ try:
 except FileNotFoundError:
     pass
 if mal_formadas:
-    print("NO MEDIDO: K45-excepciones.tsv tiene lineas mal formadas (%s): hacen falta "
+    print("NO MEDIDO: K99-excepciones.tsv tiene lineas mal formadas (%s): hacen falta "
           "ruta, elemento y cita" % ",".join(mal_formadas))
     raise SystemExit(2)
 

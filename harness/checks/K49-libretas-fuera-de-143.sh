@@ -102,6 +102,16 @@ for f in "${!VIVAS[@]}"; do
 done
 [ -z "$faltan" ] || { echo "la copia existe pero no trae (o trae vacias):$faltan"; exit 1; }
 
+# `entregas/` TAMBIEN TIENE QUE VOLVER (COLA 124). Las cuatro libretas son el CRITERIO;
+# `entregas/` es el METODO, y hasta hoy vivia solo en el disco de 143. Si el remoto trae las
+# libretas y no el metodo, este check decia VERDE sobre media copia.
+n_entregas=$(find "$TMP/copia/entregas" -type f 2>/dev/null | wc -l)
+if [ "$n_entregas" -eq 0 ]; then
+  echo "la copia trae las libretas pero NO trae entregas/: el metodo -recetas, traspasos," \
+       "auditorias, encargos y predicciones- sigue solo en 143, y esto decia VERDE igual"
+  exit 1
+fi
+
 # Fecha del respaldo: la del ULTIMO COMMIT del destino, no la mtime del clon, que es de
 # hace un segundo y diria que siempre esta fresco.
 commit_epoch=$(git -C "$TMP/copia" log -1 --format=%ct 2>/dev/null)
@@ -168,4 +178,8 @@ fi
 # vivo y publicando tranquilidad sobre una copia que ya no crece. Se suma lo restaurado.
 total=$(( $(wc -c < "$TMP/copia/hechos.tsv") + $(wc -c < "$TMP/copia/COLA.md") \
         + $(wc -c < "$TMP/copia/ESTADO.md") + $(wc -c < "$TMP/copia/CAMBIOS.md") ))
-echo "las 4 libretas RESTAURADAS suman $total B fuera de 143, copia de hace ${horas} h, cuadrada contra su manifiesto (6 ficheros); $desfase"
+b_entregas=$(find "$TMP/copia/entregas" -type f -printf '%s\n' 2>/dev/null | awk '{s+=$1} END{print s+0}')
+n_manifiesto=$(wc -l < "$TMP/copia/SHA256SUMS")
+echo "las 4 libretas RESTAURADAS suman $total B fuera de 143, y entregas/ otros $b_entregas B" \
+     "en $n_entregas ficheros -el metodo, no solo el criterio-; copia de hace ${horas} h," \
+     "cuadrada contra su manifiesto ($n_manifiesto ficheros); $desfase"

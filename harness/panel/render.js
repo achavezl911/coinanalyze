@@ -20,7 +20,7 @@ function fixtureName(urlPath) {
 // EL SUJETO YA NO ES UN FICHERO: son las fuentes que el panel DECLARA. Antes esto leia
 // `static/app.js` a pelo, y el dia que la FASE 2 lo parta en modulos habria seguido montando
 // un DOM con la ENTRADA de 69 bytes: la sonda no habria fallado, habria medido un panel
-// vacio -y todo lo que cuelga de ella, K31 y K45, habria dado veredictos sobre nada-.
+// vacio -y todo lo que cuelga de ella, K31 y K99, habria dado veredictos sobre nada-.
 //
 // La lista NO se escribe aqui: la descubre `bin/panel-fuentes` leyendo el <script> del HTML
 // y siguiendo los imports. Una sola implementacion para bash, python y node; dos serian dos

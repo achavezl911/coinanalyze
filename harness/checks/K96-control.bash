@@ -9,6 +9,16 @@
 # NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh y el sujeto es el criterio.
 set -uo pipefail
 ORIG=${REPO:-/srv/coinanalyze/repo}
+# EL ARBOL DE MENTIRA SE FABRICA CON LA FORMA QUE EL DESCUBRIDOR EXIGE. Hasta COLA 124 este
+# control copiaba UN `static/app.js`, que no existe desde la FASE 2: salia 0 de 7, apagado.
+# SE RESUELVE A ABSOLUTA Y SE COMPRUEBA QUE CARGO, aunque hoy este fichero no haga ningun
+# `cd`: el dia que alguien anada uno, el `source` empezaria a fallar en silencio -es
+# exactamente lo que le paso a K90-control-.
+AQUI=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) || exit 2
+. "$AQUI/_panel-de-mentira.bash" 2>/dev/null
+[ "${PANEL_DE_MENTIRA_CARGADO:-0}" = 1 ] || {
+  echo "NO MEDIDO: no se pudo cargar $AQUI/_panel-de-mentira.bash; sin el, este control"
+  echo "  no puede fabricar el arbol y NO mide nada. No se sigue."; exit 2; }
 CHK="$ORIG/harness/checks/K96-la-auditoria-no-inventa.sh"
 [ -r "$CHK" ] || { echo "NO MEDIDO: no encuentro el check en $CHK"; exit 2; }
 
@@ -31,9 +41,17 @@ caso() {  # <nombre> <rc esperado> <patron> <arbol>
 }
 
 arbol() {  # <destino>
-  mkdir -p "$1/app" "$1/static"
-  cp "$ORIG/app/api.py"    "$1/app/api.py"
-  cp "$ORIG/static/app.js" "$1/static/app.js"
+  mkdir -p "$1/app"
+  cp "$ORIG/app/api.py" "$1/app/api.py"
+  panel_de_mentira_real "$1" "$ORIG"
+}
+# El panel son N modulos: el texto a plantar puede estar en cualquiera. `en_el_panel`
+# encuentra el que lo tiene y devuelve su ruta, o falla diciendolo -que es mejor que
+# plantar en el vacio y creerse el resultado-.
+en_el_panel() {  # <arbol> <texto>
+  local f
+  for f in "$1"/static/js/*.js; do grep -qF -- "$2" "$f" && { printf "%s" "$f"; return 0; }; done
+  echo "NO MEDIDO: el texto a plantar no esta en ningun modulo del panel: $2" >&2; return 1
 }
 
 echo "K96-control · sujeto: $CHK"
@@ -49,7 +67,7 @@ echo "POSITIVO · el defecto que K96 existe para cazar"
 # columna se llama `spread_bps`. En el navegador no se ve -undefined se pinta 'N/D'-, asi que
 # si K96 no lo caza no lo caza nadie.
 INV="$DIR/inventado"; arbol "$INV"
-python3 - "$INV/static/app.js" <<'PY'
+python3 - "$(en_el_panel "$INV" "s.spread_bps == null")" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]); t = p.read_text(encoding="utf-8")
 viejo = "s.spread_bps == null ? 'N/D' : number(s.spread_bps, 2)"
@@ -73,21 +91,25 @@ caso "P3 si la ruta renombra la columna: ROJO"  1 "spread_bps" "$REN"
 echo
 echo "ANTI-FANTASMA · sin sujeto no hay veredicto"
 SINCAPA="$DIR/sincapa"; arbol "$SINCAPA"
-python3 - "$SINCAPA/static/app.js" <<'PY'
+python3 - "$(en_el_panel "$SINCAPA" "async function pedir(")" <<'PY'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]); t = p.read_text(encoding="utf-8")
 i, f = t.index("async function pedir("), t.index("const LEGACY_HYPOTHESIS")
 p.write_text(t[:i] + t[f:], encoding="utf-8")
 PY
-caso "F1 sin capa de auditoria en app.js: NOMED" 2 "no encuentro la capa" "$SINCAPA"
+caso "F1 sin capa de auditoria en el panel: NOMED" 2 "no encuentro la capa" "$SINCAPA"
 
-SINSQL="$DIR/sinsql"; mkdir -p "$SINSQL/app" "$SINSQL/static"
+SINSQL="$DIR/sinsql"; mkdir -p "$SINSQL/app"
 printf 'x = 1\n' > "$SINSQL/app/api.py"
-cp "$ORIG/static/app.js" "$SINSQL/static/app.js"
+panel_de_mentira_real "$SINSQL" "$ORIG"
 caso "F2 sin las columnas en api.py: NOMED"      2 "no encuentro LEDGER_COLUMNS" "$SINSQL"
 
+# F3 · SIN FICHEROS revienta ANTES el DESCUBRIDOR, no la lectura. Hasta COLA 124 este brazo
+# esperaba «no se puede leer»; con el arbol de mentira BIEN FORMADO, lo primero que falta es
+# el `static/index.html` del que salen las fuentes. Sigue siendo NO MEDIDO y sigue sin ser
+# VERDE: lo que cambia es CUAL de los dos porteros habla primero, y el brazo se reapunta.
 VACIO="$DIR/vacio"; mkdir -p "$VACIO"
-caso "F3 sin ficheros: NOMED"                    2 "no se puede leer" "$VACIO"
+caso "F3 sin ficheros: NOMED por el descubridor" 2 "no se pudieron descubrir las fuentes" "$VACIO"
 
 echo
 total=$((pasan+fallos))

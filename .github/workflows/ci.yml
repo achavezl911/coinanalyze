@@ -62,6 +62,16 @@ jobs:
       # DSN POR SOCKET, no por TCP: los tests de takeover abren una segunda conexion con
       # las credenciales que les da el DSN, y con host TCP piden contrasena y fallan con
       # InvalidPasswordError, que tambien es canal disfrazado de codigo.
+      # EL BORRADO DEL FINAL NO CUBRE LA CANCELACION. `if: always()` corre cuando el job
+      # termina -bien o mal-, pero una corrida CANCELADA mata al runner y ese paso no llega a
+      # ejecutarse. Medido el 2026-09-16 en 143: SIETE bases `ci_*` que nadie borro. El barrido
+      # va AL PRINCIPIO porque es el unico momento en el que se sabe que nadie las usa.
+      #
+      # EL CRITERIO VIVE EN `harness/bin/barre-bases-ci`, NO AQUI: asi el control ejercita los
+      # MISMOS BYTES que corre CI, en vez de una copia del criterio escrita en YAML.
+      - name: Sweep leftover CI databases
+        run: bash harness/bin/barre-bases-ci "ci_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+
       - name: Create disposable test database
         id: testdb
         run: |

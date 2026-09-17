@@ -113,7 +113,7 @@ async def test_la_edad_se_pregunta_SIN_el_filtro_de_30s(monkeypatch) -> None:
 
 @pytest.mark.skipif(SIM not in api.SETTINGS.SYMBOLS, reason="el simbolo no esta configurado")
 async def test_la_foto_sirve_el_MISMO_libro_y_tambien_dice_la_edad() -> None:
-    """K43/K45 · la seccion orderbook de /api/ai/context es la otra puerta al mismo dato.
+    """K43 y el BLOQUE K45 de COLA (agosto) · la seccion orderbook de /api/ai/context es la otra puerta al mismo dato.
 
     Hasta el 2026-08-26 esa puerta no tenia el filtro de 30 s ni declaraba frescura: servia
     "lo ultimo que hubiera". Un panel que dejara de pedir /api/scalp/orderbook para beber de

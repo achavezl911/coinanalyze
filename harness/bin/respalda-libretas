@@ -13,7 +13,37 @@
 # harness/secretos/ NO se copia a proposito. Son 1605 bytes regenerables -el nodo entra
 # a 140 sin la clave- y lo irrecuperable es el criterio, no las llaves. harness/env si
 # va: su primera linea dice que ahi no vive ningun secreto.
+#
+# ---------------------------------------------------------------------------------
+# `entregas/` TAMBIEN VIAJA, DESDE COLA 124. Las cuatro libretas son el CRITERIO; `entregas/`
+# es el METODO -la RECETA, los traspasos, los PROMPT, las auditorias, los encargos y las
+# predicciones-. Vivia SOLO en el disco de 143: si 143 se perdia se recuperaban los
+# instrumentos y se perdia como se usan.
+#
+# LO QUE VIAJA SE DECIDE POR UNA REGLA DE TAMANO, NO POR UNA LISTA: viaja todo lo que pesa
+# MENOS DE `ENTREGAS_MAX_B`. Una lista de nombres o de extensiones envejece con cada campana
+# -y las fotos de payload son `.json` y `.jsonl`, las mismas extensiones que algun instrumento-.
+#
+# EL UMBRAL SALE DEL REPARTO MEDIDO, no de un gusto. El 2026-09-16, sobre los 38 793 735 B de
+# `entregas/`, hay un HUECO enorme en la distribucion: el mayor que es prosa o salida de
+# instrumento pesa 99 293 B y el siguiente salta a 1 317 613 B. Con 128 KB, 256 KB o 512 KB el
+# resultado es EL MISMO -561 ficheros y 4 986 969 B viajan; 5 ficheros y 32 MB no-, asi que el
+# umbral esta en un hueco y no en una pendiente. Se toma 262 144 B, el medio.
+#
+# LOS CINCO QUE NO VIAJAN, por su nombre, medidos ese dia:
+#   r1-foto/foto-20260904T220731Z/foto.jsonl        16 102 347 B
+#   20260904-foto-prod-1.json                       13 746 234 B
+#   r2-instrumentos/r3-viejo/analisis.json           1 320 286 B
+#   r1-foto/foto-20260904T220731Z/analisis.json      1 320 286 B
+#   r2-instrumentos/r3-nuevo/analisis.json           1 317 613 B
+# Son FOTOS DE PAYLOAD de produccion: dato, no criterio, y reproducibles pidiendolo otra vez.
+#
+# Y EL RESPALDO SE NIEGA A EMPUJAR SI EN EL CONJUNTO HAY UN SECRETO. El destino es un repo
+# APARTE y un repo es para siempre: un secreto que entra ahi no se quita borrandolo, hay que
+# rotarlo. Lo mira `harness/bin/busca-secretos`, que busca VALORES y no palabras.
 set -uo pipefail
+ENTREGAS=${LIBRETAS_ENTREGAS:-/srv/coinanalyze/entregas}
+ENTREGAS_MAX_B=${ENTREGAS_MAX_B:-262144}
 DESTINO=${LIBRETAS_REMOTO:-https://github.com/achavezl911/coinanalyze-libretas.git}
 COPIA=${LIBRETAS_COPIA:-/srv/coinanalyze/.libretas}
 
@@ -25,6 +55,16 @@ install -m 644 /srv/coinanalyze/harness/ESTADO.md  "$COPIA/ESTADO.md"
 install -m 644 /srv/coinanalyze/CAMBIOS.md         "$COPIA/CAMBIOS.md"
 install -m 644 /srv/coinanalyze/CLAUDE.md          "$COPIA/CLAUDE.md"
 install -m 644 /srv/coinanalyze/harness/env        "$COPIA/env"
+
+# `entregas/` por la REGLA. Se borra primero lo que hubiera para que un fichero RETIRADO del
+# vivo desaparezca tambien de la copia: si no, el respaldo acumularia para siempre y el
+# manifiesto dejaria de describir lo que hay.
+rm -rf "$COPIA/entregas"
+if [ -d "$ENTREGAS" ]; then
+  mkdir -p "$COPIA/entregas"
+  ( cd "$ENTREGAS" && find . -type f -size -"${ENTREGAS_MAX_B}"c -print0 \
+      | tar --null -cf - -T - ) | tar -xf - -C "$COPIA/entregas" || exit 1
+fi
 
 cd "$COPIA" || exit 1
 
@@ -63,6 +103,21 @@ fi
 # el momento acaba tratandose como ruido. Con el manifiesto se verifica lo que de verdad
 # se promete: que lo que vuelve del remoto es byte a byte lo que se mando.
 sha256sum hechos.tsv COLA.md ESTADO.md CAMBIOS.md CLAUDE.md env > SHA256SUMS
+# `entregas/` entra en el MISMO manifiesto: sin eso, K49 probaria que vuelven las libretas y
+# se creeria que tambien vuelve el metodo. `sort` para que el manifiesto sea reproducible.
+if [ -d entregas ]; then
+  find entregas -type f -print0 | sort -z | xargs -0 -r sha256sum >> SHA256SUMS
+fi
+
+# EL CANDADO. Se mira TODO lo que va a viajar -las libretas y `entregas/`- y si hay algo que
+# parezca un secreto NO SE EMPUJA. Va aqui, despues de armar el conjunto y antes del commit:
+# un secreto que llegue al remoto ya no se quita, se rota.
+if ! "$(dirname "$0")/busca-secretos" hechos.tsv COLA.md ESTADO.md CAMBIOS.md CLAUDE.md env \
+       ${ENTREGAS:+entregas} >&2; then
+  echo "respalda-libretas: NO se empuja. El conjunto lleva algo que parece un secreto (arriba)." >&2
+  echo "  Un repo es para siempre: quita el secreto del origen y rota lo que se haya expuesto." >&2
+  exit 1
+fi
 
 # EL CORTE VA DESPUES DEL PUSH, NO ANTES, Y ESA ERA LA AVERIA. Lo de antes era:
 #     git add -A

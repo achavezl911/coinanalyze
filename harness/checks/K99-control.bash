@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# CONTROL DE K45. Ejercita el CRITERIO -sobre todo el de las excepciones, que es la puerta por
-# la que se fuerza el verde- con la puerta `K45_SONDA`, sin pagar los ~156 s de la sonda.
+# CONTROL DE K99. Ejercita el CRITERIO -sobre todo el de las excepciones, que es la puerta por
+# la que se fuerza el verde- con la puerta `K99_SONDA`, sin pagar los ~156 s de la sonda.
 # Los tres controles de campo -regresion contra el arbol de antes de la FASE 1, condena con
 # plantado real, y discriminacion- estan en entregas/20260912-*-tarjeta-perdida.md y se
 # corrieron con la sonda de verdad. Esto guarda el criterio en cada `verify`.
 set -uo pipefail
 R=${REPO:-/srv/coinanalyze/repo}
-CHK="$R/harness/checks/K45-la-tarjeta-sin-dato.sh"
+CHK="$R/harness/checks/K99-la-tarjeta-sin-dato.sh"
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 ok=0; mal=0
 
@@ -47,7 +47,7 @@ PY
 
 caso() {  # $1 nombre · $2 rc esperado · $3 patron esperado en la salida
   local nombre="$1" esp="$2" pat="$3"
-  local out; out=$(K45_SONDA="$T/sonda.json" K45_EXC="$T/exc.tsv" K45_HTML="$T/index.html" \
+  local out; out=$(K99_SONDA="$T/sonda.json" K99_EXC="$T/exc.tsv" K99_HTML="$T/index.html" \
                    REPO="$R" bash "$CHK" 2>&1); local rc=$?
   if [ "$rc" = "$esp" ] && printf '%s' "$out" | grep -qE "$pat"; then
     printf '  [ok   ] %-52s rc=%s\n' "$nombre" "$rc"; ok=$((ok+1))
@@ -93,7 +93,7 @@ caso "V7 excepcion sin cita: NO MEDIDO" 2 "mal formadas"
 
 # V8 · la puerta misma tiene guardia
 : > "$T/exc.tsv"
-out=$(K45_SONDA="$T/no-existe.json" REPO="$R" bash "$CHK" 2>&1); rc=$?
+out=$(K99_SONDA="$T/no-existe.json" REPO="$R" bash "$CHK" 2>&1); rc=$?
 if [ "$rc" = 2 ]; then printf '  [ok   ] %-52s rc=2\n' "V8 puerta a un fichero ausente: NO MEDIDO"; ok=$((ok+1))
 else printf '  [FALLA] V8 puerta a un fichero ausente rc=%s\n' "$rc"; mal=$((mal+1)); fi
 

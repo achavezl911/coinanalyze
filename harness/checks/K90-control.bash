@@ -31,6 +31,10 @@ ORIG=${K90_CONTROL_REPO:-/srv/coinanalyze/repo}
 CHK="$(cd "$(dirname "$0")" && pwd)/K90-la-senal-no-dura-su-rotulo.sh"
 [ -r "$CHK" ] || { echo "NO MEDIDO: no encuentro el check en $CHK"; exit 2; }
 
+# EL AYUDANTE SE RESUELVE ANTES DE CUALQUIER `cd`. Con `cd "$DIR"` en medio, un
+# `${BASH_SOURCE[0]}` relativo deja de resolver y el `source` falla EN SILENCIO: este
+# control daba 18 de 18 por ruta absoluta y 2 de 18 por ruta relativa desde la raiz.
+AQUI=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) || exit 2
 DIR=$(mktemp -d) || exit 2
 [ "${K90_CONTROL_GUARDA:-0}" = "1" ] || trap 'rm -rf "$DIR"' EXIT
 cd "$DIR" || exit 2          # se demuestra que no depende del cwd
@@ -39,13 +43,23 @@ fallos=0; pasan=0
 mkdir -p "$DIR/repo/static" "$DIR/repo/app" "$DIR/bin"
 
 # --- el panel de mentira -----------------------------------------------------------------
+# EL PANEL DE MENTIRA LLEVA LA FORMA QUE EL DESCUBRIDOR EXIGE, y el check lo DESCUBRE en vez
+# de recibirlo por `K90_APPJS`. Con el gancho, este control ejercitaba la puerta de inyeccion y
+# no el camino real: exactamente «medir el camino de ayer».
+. "$AQUI/_panel-de-mentira.bash" 2>/dev/null
+# SI EL AYUDANTE NO CARGA, ESTE CONTROL PARA. Seguir seria medir la nada: sin
+# `panel_de_mentira` los brazos salen NO MEDIDO por el canal y el resumen dice «2 de 18
+# pasan» como si hubiera medido algo.
+[ "${PANEL_DE_MENTIRA_CARGADO:-0}" = 1 ] || {
+  echo "NO MEDIDO: no se pudo cargar $AQUI/_panel-de-mentira.bash; sin el, este control"
+  echo "  no puede fabricar el panel y NO mide nada. No se sigue."; exit 2; }
 rotulo_en() {   # $1 = lo que va en `time:`  (vacio = la forma nueva, sin literal)
   if [ -z "$1" ]; then
     printf "      name: 'Corto plazo', time: shortHorizon, action: shortAction,\n" \
-      > "$DIR/repo/static/app.js"
+      | panel_de_mentira "$DIR/repo"
   else
     printf "      name: 'Corto plazo', time: '%s', action: shortAction,\n" "$1" \
-      > "$DIR/repo/static/app.js"
+      | panel_de_mentira "$DIR/repo"
   fi
 }
 
@@ -80,7 +94,7 @@ caso() {  # <nombre> <rc> <patron> <rotulo> <cuerpo> <fila> [prodsql]
   local psql="${7:-$DIR/bin/prodsql}"
   rotulo_en "$rot"
   local out rc
-  out=$(REPO="$DIR/repo" K90_APPJS="$DIR/repo/static/app.js" K90_API="$DIR/bin/api" \
+  out=$(REPO="$DIR/repo" K90_API="$DIR/bin/api" \
         K90_PRODSQL="$psql" K90C_CUERPO="$cuerpo" K90C_FILA="$fila" \
         bash "$CHK" 2>&1); rc=$?
   local ok=1
@@ -158,8 +172,10 @@ echo "SOBREVIVEN · anti-fantasma"
 # NO se induce con `caso`: esa funcion llama a `rotulo_en`, que RECREA el fichero, o sea
 # que el caso no borraba nada y pasaba por no haber inducido la averia. Es el mismo
 # fantasma que este arnes lleva seis paquetes cazando, y lo cometi aqui. Se induce a mano.
-rm -f "$DIR/repo/static/app.js"
-out=$(REPO="$DIR/repo" K90_APPJS="$DIR/repo/static/app.js" K90_API="$DIR/bin/api" \
+# Los modulos EXISTEN y estan MUDOS: sin modulos el descubridor revienta antes y eso seria
+# medir el canal, no el ancla.
+: > "$DIR/repo/static/js/01-panel.js"
+out=$(REPO="$DIR/repo" K90_API="$DIR/bin/api" \
       K90_PRODSQL="$DIR/bin/prodsql" K90C_CUERPO="$CUERPO_OK" K90C_FILA="$FILA_OK" \
       bash "$CHK" 2>&1); rc=$?
 if [ "$rc" = "2" ] && printf '%s' "$out" | grep -q "no encuentro"; then

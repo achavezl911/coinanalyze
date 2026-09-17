@@ -24,7 +24,7 @@ CHK="$ORIG/harness/checks/K43-foto-unica.sh"
 
 DIR=$(mktemp -d) || exit 2
 [ "${K43_CONTROL_GUARDA:-0}" = "1" ] || trap 'rm -rf "$DIR"' EXIT
-fallos=0; pasan=0
+fallos=0; pasan=0; declarados=0
 
 QUITADA_ESPERADA=/api/scalp/signals   # la que usa el positivo; N1 la necesita por delante
 
@@ -45,6 +45,9 @@ corre() {  # $1 = fichero del check   -> rc en la primera linea, salida detras
   out=$(timeout -k 10 400 bash "$f" 2>&1); rc=$?
   printf '%s\n' "$rc"
   printf '%s\n' "$out"
+}
+declara() {  # lo que este control ya no puede ejercitar, con su medida al lado
+  declarados=$((declarados+1)); printf '  [decl ] %-58s\n         %s\n' "$1" "$2"
 }
 comprueba() {  # $1 = etiqueta   $2 = si|no
   if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-58s\n' "$1"
@@ -169,9 +172,19 @@ corre_env() {  # $1 = fichero del check, resto = VAR=valor   -> rc en la primera
   printf '%s\n' "$rc"
   printf '%s\n' "$out"
 }
+# EL PANEL SON N MODULOS (FASE 2). Hasta COLA 124 estas tres lineas grepeaban
+# `$ORIG/static/app.js`, que ya no existe: los ficheros salian VACIOS y el control moria en
+# `SED-NO-MORDIO` -apagado, sin medir nada-. El censo se toma de donde lo toma el propio check:
+# del descubridor, concatenando los modulos que el HTML declara.
+PANEL_CAT="$DIR/panel.js"
+if ! "${VENV_PY:-$ORIG/.venv/bin/python}" "$ORIG/harness/bin/panel-fuentes" \
+       --repo "$ORIG" --cat > "$PANEL_CAT" 2>"$DIR/pf.err"; then
+  echo "NO MEDIDO: no se pudieron descubrir las fuentes del panel: $(head -c 200 "$DIR/pf.err")"
+  exit 2
+fi
 printf 'const nada = 1;\n' > "$DIR/sin-rutas.js"
-grep -v '/api/ohlcv'   "$ORIG/static/app.js" > "$DIR/sin-control.js"
-grep -v '/api/wyckoff' "$ORIG/static/app.js" > "$DIR/sin-wyckoff.js"
+grep -v '/api/ohlcv'   "$PANEL_CAT" > "$DIR/sin-control.js"
+grep -v '/api/wyckoff' "$PANEL_CAT" > "$DIR/sin-wyckoff.js"
 
 # 2026-09-10 · B1 buscaba el denominador en el mensaje de «sin familia», y ese mensaje ya no se
 # imprime porque ya no hay ninguna. El denominador no se ha perdido: se ha mudado a la cola, que
@@ -212,10 +225,46 @@ comprueba "B5 dos pasadas seguidas dan la MISMA primera linea" \
 
 # B6 · LA OTRA DIRECCION. Hoy el cementerio vale 0, y un cero solo vale si el brazo sabe no
 # valerlo: se le quita una ruta al panel dejandole la familia puesta y tiene que delatarla.
-sal=$(corre_env "$CHK" K43_APP_JS="$DIR/sin-wyckoff.js")
-outb6=$(printf '%s\n' "$sal" | tail -n +2)
-comprueba "B6 con familia y sin llamada: la delata como CEMENTERIO" \
-  "$(printf '%s' "$outb6" | grep -qE 'CEMENTERIO: 1 de [0-9]+ con familia que el panel ya NO llama: /api/wyckoff' && echo si || echo no)"
+# LA RUTA DEL PLANTADO SE DERIVA, NO SE TECLEA. Hasta COLA 124 este brazo quitaba
+# `/api/wyckoff` del panel, y desde la reforma del sobre (FASE 1) esa ruta YA NO ES UN LITERAL
+# del panel: `grep -v` quitaba CERO lineas, el fixture era identico al original y el brazo
+# fallaba por su propio sujeto. Ahora se busca una ruta de FOTO que SI este escrita en el panel;
+# si no queda ninguna, el brazo lo DICE en vez de fallar, porque entonces no hay nada que quitar.
+# LA LISTA FOTO SALE DE LA ASIGNACION DEL PROPIO CHECK, no de una variable que aqui no
+# existe: la primera version de este brazo iteraba sobre `$FOTO`, que en este fichero NO
+# esta definida, asi que el bucle no daba vueltas y el brazo se auto-declaraba «no
+# ejercitable». Un pase silencioso es peor que un fallo.
+FOTO_DEL_CHECK=$(sed -n '/^ASIGNACION="$/,/^"$/p' "$CHK" | tr ' ' '\n' \
+                 | grep '=FOTO$' | sed 's/=FOTO$//' | sort -u)
+[ -n "$FOTO_DEL_CHECK" ] || { echo 'NO MEDIDO: no se pudo leer la ASIGNACION de K43'; exit 2; }
+# Y SE SALTAN LAS RUTAS DE CONTROL DEL CENSO. K43 declara `CONTROL = [...]` y si le falta una
+# de esas sale NO MEDIDO -es su propio anti-fantasma-, asi que quitarla no ejercita el brazo
+# del cementerio sino el de arriba. La lista tambien se lee del check.
+CONTROL_DEL_CHECK=$(grep -oE '^CONTROL = \[.*\]' "$CHK" | grep -oE '/api/[a-z0-9/_-]+' | tr '\n' ' ')
+B6RUTA=$(for r in $FOTO_DEL_CHECK; do
+           case " $CONTROL_DEL_CHECK " in *" $r "*) continue ;; esac
+           grep -qF -- "$r" "$PANEL_CAT" && { printf '%s' "$r"; break; }
+         done)
+if [ -z "${B6RUTA:-}" ]; then
+  declara "B6 NO EJERCITABLE: ninguna ruta de FOTO es literal del panel" \
+          "desde la reforma del sobre el panel las lee de /api/ai/context"
+else
+  grep -v -- "$B6RUTA" "$PANEL_CAT" > "$DIR/sin-una.js"
+  quitadas=$(( $(wc -l < "$PANEL_CAT") - $(wc -l < "$DIR/sin-una.js") ))
+  sal=$(corre_env "$CHK" K43_APP_JS="$DIR/sin-una.js")
+  outb6=$(printf '%s\n' "$sal" | tail -n +2)
+  if printf '%s' "$outb6" | grep -qE "CEMENTERIO: [0-9]+ de [0-9]+ con familia que el panel ya NO llama:.*$B6RUTA"; then
+    comprueba "B6 con familia y sin llamada ($B6RUTA): la delata como CEMENTERIO" si
+  else
+    # NI PASA NI FALLA: SE DECLARA, CON LA MEDIDA. Quitar el literal SI cambia el fichero
+    # -se ven las lineas quitadas- y el cementerio sigue diciendo 0, porque desde la FASE 1 el
+    # censo acredita esa ruta POR EL SOBRE y no por el literal del panel. El brazo perdio su
+    # poder de discriminar por un cambio de diseno ajeno a este control, y aprobarlo seria
+    # exactamente el pase silencioso que esta campana vino a quitar.
+    declara "B6 NO EJERCITABLE hoy ($B6RUTA)" \
+            "quitado el literal ($quitadas linea(s)), el cementerio sigue en 0: el censo la acredita por el sobre"
+  fi
+fi
 
 echo
 echo "LOS SEIS ESTADOS DEL LOG · el veredicto NO cambia; lo que tiene que cambiar es la SALIDA"
@@ -239,11 +288,19 @@ montalog() {  # $1 = dir  $2 = rc del prod falso  $3 = lo que escribe
     printf %s\\n "exit $2"
   } > "$1/bin/prod"
   chmod +x "$1/bin/prod"
+  # EL DESCUBRIDOR TAMBIEN VIVE EN `$B/bin`. Desde la FASE 2, K43 saca el censo del panel
+  # con `$B/bin/panel-fuentes`; sin el en el arnes de mentira, los seis brazos del log
+  # salian NO MEDIDO por el canal y no por lo que dicen medir.
+  ln -sf "$ORIG/harness/bin/panel-fuentes" "$1/bin/panel-fuentes"
   : > "$1/senal"
 }
 copialog() {  # $1 = dir del arnes falso
   local f="$1/K43.sh"
-  sed "s#^B=/srv/coinanalyze/harness; . \"\$B/env\"#B=$1; . \"\$B/env\"#" "$CHK" > "$f"
+  # EL ANCLA SE MIDE, NO SE RECUERDA. Hasta COLA 124 este sed buscaba
+  # `B=/srv/coinanalyze/harness; . "$B/env"` en UNA linea, y en K43 son DOS desde que el
+  # check aprendio a apuntarse a otro arbol: el sed no mordia, `copialog` devolvia 1 y el
+  # control entero moria en SED-NO-MORDIO sin medir nada.
+  sed "s#^B=/srv/coinanalyze/harness\$#B=$1#" "$CHK" > "$f"
   if cmp -s "$CHK" "$f"; then echo "SED-NO-MORDIO" >&2; return 1; fi
   printf %s\\n "$f"
 }
@@ -289,6 +346,6 @@ comprueba "L8 canal REAL con datos: la cuenta lleva denominador" \
 
 echo
 total=$((pasan+fallos))
-echo "$pasan de $total pasan · $fallos fallan"
+echo "$pasan de $total pasan · $fallos fallan${declarados:+ · $declarados DECLARADO(S) sin ejercitar}"
 [ "$fallos" -eq 0 ] || exit 1
 exit 0

@@ -97,9 +97,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-control.bash:144`, `harness/checks/K43-foto-unica.sh:166`, `harness/checks/K43-foto-unica.sh:464` | `harness/checks/K43-control.bash:139`, `harness/checks/K43-foto-unica.sh:87`, `harness/checks/K43-foto-unica.sh:461` |
+| **checks** | `harness/checks/K43-control.bash:147`, `harness/checks/K43-foto-unica.sh:167`, `harness/checks/K43-foto-unica.sh:465` | `harness/checks/K43-control.bash:142`, `harness/checks/K43-foto-unica.sh:88`, `harness/checks/K43-foto-unica.sh:462` |
 | **panel** | `static/js/07-decision-y-ciclos.js:217` | `static/js/10-contexto-y-estructura.js:373` |
-| **panel-html** | `static/index.html:240` | — |
+| **panel-html** | — | `static/index.html:240` |
 | **tests** | — | `tests/js/heatmap_celda.test.js:25` |
 
 **La llama el panel: es superficie de producto.**

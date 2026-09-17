@@ -48,23 +48,21 @@
 #       observable de comportamiento, este brazo es ESTRUCTURAL y lo dice: los tres cast
 #       se mueven juntos o ninguno.
 #
-# DE QUE ARBOL: por omision ruta y base de 140 (solo GET y SELECT de solo lectura; no
-# escribe nada). Con ESPEJO=1 usa la API y la base del espejo de 143. El espejo corre la
-# MISMA zona America/Mexico_City -medido-, asi que reproduce el fallo en vez de taparlo.
+# DE QUE ARBOL: ruta y base de 140, solo GET y SELECT de solo lectura; no escribe nada.
+#
+# EL MODO `ESPEJO=1` SE FUE (COLA 124, punto 9) Y NO SE CAMBIA NADA DE LO QUE MIDE EN 140.
+# Pedia la API por `bin/api --espejo`, o sea a http://127.0.0.1:8001, DONDE NO ESCUCHA NADIE: el
+# espejo de 143 es una base, no un servicio. Ese modo no podia dar una medida, solo un NO MEDIDO
+# por el canal disfrazado de defecto del codigo. `bin/espejosql` sigue existiendo para quien
+# necesite SQL contra el espejo; lo que no existe es la API.
 set -uo pipefail
 
 B=/srv/coinanalyze/harness
 SIMBOLOS="BTCUSDT_PERP.A ETHUSDT_PERP.A SOLUSDT_PERP.A"
 
-if [ "${ESPEJO:-0}" = "1" ]; then
-  sql() { "$B/bin/espejosql" "$1"; }
-  get() { TODO=1 "$B/bin/api" --espejo "$1"; }
-  DONDE="espejo de 143"
-else
-  sql() { "$B/bin/prodsql" "$1"; }
-  get() { TODO=1 "$B/bin/api" "$1"; }
-  DONDE="140"
-fi
+sql() { "$B/bin/prodsql" "$1"; }
+get() { TODO=1 "$B/bin/api" "$1"; }
+DONDE="140"
 
 fallos=()   # lineas de ROJO
 notas=()    # lo que se midio, para que la salida sea citable
