@@ -223,47 +223,78 @@ sal=$(corre "$CHK"); b5b=$(printf '%s\n' "$sal" | tail -n +2 | head -1)
 comprueba "B5 dos pasadas seguidas dan la MISMA primera linea" \
   "$([ -n "$b5a" ] && [ "$b5a" = "$b5b" ] && echo si || echo no)"
 
-# B6 · LA OTRA DIRECCION. Hoy el cementerio vale 0, y un cero solo vale si el brazo sabe no
-# valerlo: se le quita una ruta al panel dejandole la familia puesta y tiene que delatarla.
-# LA RUTA DEL PLANTADO SE DERIVA, NO SE TECLEA. Hasta COLA 124 este brazo quitaba
-# `/api/wyckoff` del panel, y desde la reforma del sobre (FASE 1) esa ruta YA NO ES UN LITERAL
-# del panel: `grep -v` quitaba CERO lineas, el fixture era identico al original y el brazo
-# fallaba por su propio sujeto. Ahora se busca una ruta de FOTO que SI este escrita en el panel;
-# si no queda ninguna, el brazo lo DICE en vez de fallar, porque entonces no hay nada que quitar.
-# LA LISTA FOTO SALE DE LA ASIGNACION DEL PROPIO CHECK, no de una variable que aqui no
-# existe: la primera version de este brazo iteraba sobre `$FOTO`, que en este fichero NO
-# esta definida, asi que el bucle no daba vueltas y el brazo se auto-declaraba «no
-# ejercitable». Un pase silencioso es peor que un fallo.
-FOTO_DEL_CHECK=$(sed -n '/^ASIGNACION="$/,/^"$/p' "$CHK" | tr ' ' '\n' \
-                 | grep '=FOTO$' | sed 's/=FOTO$//' | sort -u)
-[ -n "$FOTO_DEL_CHECK" ] || { echo 'NO MEDIDO: no se pudo leer la ASIGNACION de K43'; exit 2; }
-# Y SE SALTAN LAS RUTAS DE CONTROL DEL CENSO. K43 declara `CONTROL = [...]` y si le falta una
-# de esas sale NO MEDIDO -es su propio anti-fantasma-, asi que quitarla no ejercita el brazo
-# del cementerio sino el de arriba. La lista tambien se lee del check.
+# B6 · LA OTRA DIRECCION: EL CEMENTERIO -rutas CON familia que el panel ya NO llama-. Hoy vale
+# 0, y un cero solo vale si el brazo sabe NO valerlo: se le quita una ruta al panel dejandole la
+# familia puesta, y el check tiene que delatarla POR SU NOMBRE.
+#
+# POR QUE DEJO DE EJERCITARSE, Y ES EL PUNTO DE COLA 125. Este brazo elegia la candidata entre
+# las rutas de **FOTO**, y desde la FASE 1 TODAS las de FOTO viajan dentro del sobre: K43 las
+# RE-ACREDITA por la tabla `PAREJAS` aunque su literal no este en el panel
+# (K43-foto-unica.sh:414-419, `if SOBRE in panel: ... panel.append(_ruta)`). Asi que quitar el
+# literal no movia el cementerio, el brazo se declaraba NO EJERCITABLE en CADA corrida, y nadie
+# podia decir que el cementerio de K43 sepa condenar. La candidata estaba mal elegida, no el
+# brazo: hay 21 rutas con familia que NO viajan en el sobre.
+#
+# LA CANDIDATA SE DERIVA, NO SE TECLEA, con cinco filtros que salen todos del propio check:
+#   1 tiene familia en `ASIGNACION`   si no, no seria cementerio sino «sin familia», otro brazo
+#   2 NO esta en `PAREJAS`            el sobre la re-acreditaria y el plantado no mordería
+#   3 NO esta en `CONTROL`            quitarla da NO MEDIDO, que es justo lo que mide B3
+#   4 ES literal del panel            si no, no hay nada que quitar
+#   5 EL PLANTADO SE COMPRUEBA: quitarla tiene que dejar el panel con EXACTAMENTE UNA ruta
+#     menos, y esa una tiene que ser ella
+# EL FILTRO 5 NO ES UNA HEURISTICA DE PREFIJO, Y LA PRIMERA VERSION SI LO ERA. `grep -v` borra
+# LINEAS, asi que quitar `/api/oi` se lleva por delante `/api/oi-context` -y `/api/oi` quita 6
+# lineas del panel, medido-. Comparar solo contra las rutas de `ASIGNACION` no basta: en el
+# panel hay literales `/api/...` que no tienen familia y tambien se los lleva. Asi que no se
+# adivina: se compara el CONJUNTO de rutas del panel antes y despues, y la diferencia tiene que
+# ser exactamente la candidata. Eso cubre de paso a las de CONTROL -si se fueran, K43 saldria
+# NO MEDIDO y este brazo estaria midiendo el anti-fantasma en vez del cementerio-.
+# Lo que no pasa el filtro se DICE, con su nombre y su motivo.
+ASIG_DEL_CHECK=$(sed -n '/^ASIGNACION="$/,/^"$/p' "$CHK" | tr ' ' '\n' \
+                 | grep '=' | sed 's/=.*//' | grep '^/api/' | sort -u)
+[ -n "$ASIG_DEL_CHECK" ] || { echo 'NO MEDIDO: no se pudo leer la ASIGNACION de K43'; exit 2; }
+PAREJAS_DEL_CHECK=$(sed -n '/^PAREJAS="$/,/^"$/p' "$CHK" \
+                    | awk -F'|' 'NF>1{gsub(/ /,"",$1); if($1!="")print $1}' | sort -u)
 CONTROL_DEL_CHECK=$(grep -oE '^CONTROL = \[.*\]' "$CHK" | grep -oE '/api/[a-z0-9/_-]+' | tr '\n' ' ')
-B6RUTA=$(for r in $FOTO_DEL_CHECK; do
-           case " $CONTROL_DEL_CHECK " in *" $r "*) continue ;; esac
-           grep -qF -- "$r" "$PANEL_CAT" && { printf '%s' "$r"; break; }
-         done)
-if [ -z "${B6RUTA:-}" ]; then
-  declara "B6 NO EJERCITABLE: ninguna ruta de FOTO es literal del panel" \
-          "desde la reforma del sobre el panel las lee de /api/ai/context"
+_PAR=" $(printf '%s' "$PAREJAS_DEL_CHECK" | tr '\n' ' ') "
+rutas_de() { grep -oE '/api/[a-zA-Z0-9/_-]+' "$1" | sort -u; }
+rutas_de "$PANEL_CAT" > "$DIR/rutas-antes.txt"
+B6RUTA=""; B6DESCARTES=""
+for r in $ASIG_DEL_CHECK; do
+  case "$_PAR" in *" $r "*) continue ;; esac
+  case " $CONTROL_DEL_CHECK " in *" $r "*) continue ;; esac
+  grep -qF -- "$r" "$PANEL_CAT" || continue
+  grep -v -- "$r" "$PANEL_CAT" > "$DIR/sin-una.js"
+  rutas_de "$DIR/sin-una.js" > "$DIR/rutas-despues.txt"
+  _perdidas=$(comm -23 "$DIR/rutas-antes.txt" "$DIR/rutas-despues.txt" | tr '\n' ' ')
+  if [ "$(printf '%s' "$_perdidas" | wc -w)" != 1 ] || [ "${_perdidas% }" != "$r" ]; then
+    B6DESCARTES="$B6DESCARTES $r(se-lleva:${_perdidas:-nada})"
+    continue
+  fi
+  B6RUTA=$r; break
+done
+if [ -z "$B6RUTA" ]; then
+  # SOLO AQUI se declara: cuando NO QUEDA NADA QUE PLANTAR. Mientras quede una candidata, este
+  # brazo pasa o falla.
+  declara "B6 NO EJERCITABLE: no queda ninguna ruta que plantar" \
+          "de las $(printf '%s\n' "$ASIG_DEL_CHECK" | wc -l) con familia, ninguna pasa los cinco filtros. Descartadas:${B6DESCARTES:- ninguna}"
 else
-  grep -v -- "$B6RUTA" "$PANEL_CAT" > "$DIR/sin-una.js"
   quitadas=$(( $(wc -l < "$PANEL_CAT") - $(wc -l < "$DIR/sin-una.js") ))
+  # B6a · LA LINEA BASE. Sin ella, B6b podria ser cierto por casualidad -una ruta que ya
+  # estuviera en el cementerio saldria nombrada con plantado y sin el-.
+  comprueba "B6a arbol real: el cementerio NO nombra a $B6RUTA" \
+    "$(printf '%s' "$out0" | grep -q "CEMENTERIO:.*$B6RUTA" && echo no || echo si)"
   sal=$(corre_env "$CHK" K43_APP_JS="$DIR/sin-una.js")
   outb6=$(printf '%s\n' "$sal" | tail -n +2)
-  if printf '%s' "$outb6" | grep -qE "CEMENTERIO: [0-9]+ de [0-9]+ con familia que el panel ya NO llama:.*$B6RUTA"; then
-    comprueba "B6 con familia y sin llamada ($B6RUTA): la delata como CEMENTERIO" si
-  else
-    # NI PASA NI FALLA: SE DECLARA, CON LA MEDIDA. Quitar el literal SI cambia el fichero
-    # -se ven las lineas quitadas- y el cementerio sigue diciendo 0, porque desde la FASE 1 el
-    # censo acredita esa ruta POR EL SOBRE y no por el literal del panel. El brazo perdio su
-    # poder de discriminar por un cambio de diseno ajeno a este control, y aprobarlo seria
-    # exactamente el pase silencioso que esta campana vino a quitar.
-    declara "B6 NO EJERCITABLE hoy ($B6RUTA)" \
-            "quitado el literal ($quitadas linea(s)), el cementerio sigue en 0: el censo la acredita por el sobre"
-  fi
+  comprueba "B6b plantado ($B6RUTA, $quitadas linea(s)): la delata como CEMENTERIO" \
+    "$(printf '%s' "$outb6" | grep -qE "CEMENTERIO: [0-9]+ de [0-9]+ con familia que el panel ya NO llama:.*$B6RUTA" && echo si || echo no)"
+  # B6c · Y NO SE LLEVA A LAS DEMAS POR DELANTE: el cementerio del plantado tiene que valer
+  # EXACTAMENTE uno mas que el del arbol real. Sin esto, un `grep -v` que borrara media docena
+  # de rutas pasaria B6b igual, nombrando la suya entre otras cinco.
+  _c0=$(printf '%s' "$out0"   | grep -oE 'CEMENTERIO: [0-9]+ de' | grep -oE '[0-9]+' | head -1)
+  _c1=$(printf '%s' "$outb6"  | grep -oE 'CEMENTERIO: [0-9]+ de' | grep -oE '[0-9]+' | head -1)
+  comprueba "B6c el cementerio pasa de ${_c0:-?} a ${_c1:-?}: UNA mas, no seis" \
+    "$([ -n "${_c0:-}" ] && [ -n "${_c1:-}" ] && [ "$_c1" = "$(( _c0 + 1 ))" ] && echo si || echo no)"
 fi
 
 echo

@@ -383,15 +383,31 @@ for ln in os.environ["PEDIDAS_FOTO"].strip().splitlines():
 # vacio y excusaria TODAS las rutas por «el sobre no lo trae». Cuatro claves que el sobre tiene
 # seguro -son las PAREJAS de /api/dashboard/state que SI viajan- tienen que aparecer.
 TESTIGOS = ["symbol", "snapshot", "scalp", "setup"]
-if sobre is None:
-    print("NOMED\tno se pudo leer el sobre, asi que ninguna excepcion se puede reverificar")
+
+def sin_verificar_todas(motivo):
+    """UN FALLO GLOBAL YA NO APAGA EL CHECK ENTERO (A54, COLA 125). Sin el sobre no se puede
+    reverificar NINGUNA excusa, y eso se dice ruta por ruta en el TERCER CUBO; pero que el
+    panel pida SUELTA una ruta de FOTO que no tiene excusa ninguna es un hecho que NO necesita
+    el sobre, y esa condena no puede comersela lo que falta. Se emite ademas una linea `NOMED`
+    global para que, cuando no haya nada que condenar, el veredicto sea NO MEDIDO y no VERDE."""
+    for _ln in os.environ["EXCEPCIONES"].strip().splitlines():
+        if not _ln.strip(): continue
+        _r = _ln.split("|")[0].strip()
+        if not _r: continue
+        if _r not in pedidas:
+            print(f"HUERFANA\t{_r}\tel panel ya no la pide en la ventana: la excepcion sobra")
+        else:
+            print(f"NOVER\t{_r}\t{motivo}")
+    print(f"NOMED\t{motivo}")
     sys.exit(0)
+
+if sobre is None:
+    sin_verificar_todas("no se pudo leer el sobre, asi que ninguna excepcion se puede reverificar")
 cs = hojas_claves(sobre)
 faltan_testigos = [t for t in TESTIGOS if t not in cs]
 if faltan_testigos:
-    print("NOMED\tel buscador de claves no encuentra en el sobre "
-          + " ".join(faltan_testigos) + ", que SI estan: esta roto y excusaria a cualquiera")
-    sys.exit(0)
+    sin_verificar_todas("el buscador de claves no encuentra en el sobre "
+                        + " ".join(faltan_testigos) + ", que SI estan: esta roto y excusaria a cualquiera")
 
 for ln in os.environ["EXCEPCIONES"].strip().splitlines():
     if not ln.strip(): continue
@@ -404,7 +420,11 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
         continue
     rp = carga(os.path.join(tmp, ruta.replace("/", "_") + ".json"))
     if rp is None:
-        print(f"NOMED\tno se pudo leer {ruta}, asi que su excepcion no se puede reverificar")
+        # EL TERCER CUBO, NO EL INTERRUPTOR. Esta linea decia `NOMED` y apagaba el check
+        # entero: una ruta ilegible se comia la condena de OTRA que el panel pide suelta y sin
+        # excusa. Lo que no se pudo leer no excusa y no condena -y se dice con su nombre-.
+        print(f"NOVER\t{ruta}\tno se pudo leer su payload en esta corrida, asi que su excusa "
+              f"no se ha podido reverificar: ni excusa ni condena")
         continue
     if tipo == "FALTAN":
         pedidas_k = [k for k in arg.split(",") if k]
@@ -538,12 +558,16 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
 PY
 )
 
-if printf '%s\n' "$VEREDICTOS" | grep -q '^NOMED'; then
-  echo "NO MEDIDO: $(printf '%s\n' "$VEREDICTOS" | grep '^NOMED' | cut -f2- | tr '\n' ' ')" \
-       "· sin reverificar las excepciones este check no puede decir si una peticion suelta" \
-       "esta excusada o es un defecto, y dar por buena la excusa seria excusar en silencio.$MARCA"
-  exit 2
-fi
+# A54 · LO DECIDIBLE VA ANTES QUE LO QUE FALTA, TAMBIEN CUANDO LO QUE FALTA ES UN PAYLOAD.
+# Hasta COLA 125 estas cuatro lineas APAGABAN EL CHECK ENTERO aqui mismo, antes de mirar
+# `partes`: bastaba con que UNA de las tres rutas con excepcion no se pudiera leer en esa
+# corrida. Y en la misma corrida el panel podia estar pidiendo SUELTA otra ruta de FOTO SIN
+# NINGUNA EXCUSA -un hecho sobre el panel que no necesita ese payload para nada-: lo que
+# faltaba de una se comia la condena de otra.
+# Ahora lo que no se pudo leer NO excusa y NO condena: cae en el TERCER CUBO con su nombre
+# -eso lo hace el propio bloque de python, que emite `NOVER` por ruta- y aqui solo queda el
+# aviso GLOBAL, que se dice en la linea y, si no hay nada que condenar, deja NO MEDIDO.
+sin_medir=$(printf '%s\n' "$VEREDICTOS" | grep '^NOMED' | cut -f2- | tr '\n' ' ')
 
 excusadas=""; anuladas=""; huerfanas=""; noverificables=""
 partes=""; n_partes=0; rutas_partes=0
@@ -578,6 +602,7 @@ huerfanas=$(printf '%s\n' "$VEREDICTOS" | grep '^HUERFANA' | cut -f2 | tr '\n' '
 COLA="$COLA0$MARCA"
 [ -n "${excusadas// /}" ] && COLA="$COLA · EXCUSADAS Y REVERIFICADAS EN ESTA CORRIDA:$excusadas"
 [ -n "${noverificables// /}" ] && COLA="$COLA · EXCUSAS QUE NO SE HAN PODIDO VERIFICAR (no excusan, y no condenan al panel):$noverificables"
+[ -n "${sin_medir// /}" ] && COLA="$COLA · LO QUE NO SE PUDO LEER EN ESTA CORRIDA: $sin_medir"
 [ -n "${huerfanas// /}" ] && COLA="$COLA · EXCEPCIONES HUERFANAS (el panel ya no las pide, sobran): $huerfanas"
 
 # EL ORDEN IMPORTA. Si en esta corrida hay una ruta suelta SIN excusa, eso es un hecho sobre el
@@ -590,7 +615,7 @@ if [ "$rutas_partes" -gt 0 ]; then
        "·$partes · $COLA"
   exit 1
 fi
-if [ -n "${noverificables// /}" ]; then
+if [ -n "${noverificables// /}" ] || [ -n "${sin_medir// /}" ]; then
   _n=$(printf '%s\n' "$noverificables" | grep -o ' · ' | grep -c .)
   echo "NO MEDIDO: ninguna ruta de FOTO queda sin excusa, pero $_n excusa(s) NO SE HAN PODIDO" \
        "VERIFICAR en esta corrida, asi que este check no ha medido si esas peticiones sueltas" \

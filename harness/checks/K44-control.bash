@@ -231,8 +231,15 @@ rm -f "$DIR/e11/payloads/_sobre.json"
 f=$(copia "$DIR/e11") || exit 2
 corre E11 "$f" K44_PAYLOADS="$DIR/e11/payloads" K44_SIMBOLO=TEST; rc=$RC
 comprueba "E11a NO MEDIDO, rc=2 (rc=$rc)" "$([ "$rc" = 2 ] && echo si || echo no)"
-comprueba "E11b y dice que sin reverificar NO se excusa" \
-  "$(printf '%s' "${SALIDA[E11]}" | grep -q 'excusar en silencio' && echo si || echo no)"
+# 2026-09-18 · ESTE BRAZO SE RE-APUNTA, Y NO SE AFLOJA. Casaba la frase «excusar en silencio»,
+# que vivia en el `exit 2` que apagaba el check entero en la primera linea del bloque; ese
+# camino se fue con COLA 125 (A54: lo decidible va antes que lo que falta). Lo que E11 tiene que
+# sostener no es una frase: es que NADIE salga excusado cuando no se pudo reverificar, y que lo
+# que no se pudo leer se DIGA. Las dos cosas se comprueban ahora, que es mas que antes.
+comprueba "E11b y NADIE sale excusado" \
+  "$(printf '%s' "${SALIDA[E11]}" | grep -q 'EXCUSADAS Y REVERIFICADAS' && echo no || echo si)"
+comprueba "E11c y NOMBRA lo que no pudo leer" \
+  "$(printf '%s' "${SALIDA[E11]}" | grep -q 'no se pudo leer el sobre' && echo si || echo no)"
 
 echo
 echo "E12 · el BUSCADOR roto no puede excusar a nadie: sobre sin los testigos"
@@ -409,6 +416,213 @@ comprueba "E22b condena por wyckoff, que es la que no tiene excusa" \
   "$(printf '%s' "${SALIDA[E22]}" | grep -q '· /api/wyckoff(77)' && echo si || echo no)"
 comprueba "E22c y la no verificable sale NOMBRADA, no callada" \
   "$(printf '%s' "${SALIDA[E22]}" | grep -q 'NO SE HAN PODIDO VERIFICAR' && echo si || echo no)"
+
+# ── E23-E26 · UN PAYLOAD QUE NO SE PUDO LEER NO SE COME LA CONDENA DE OTRA RUTA (COLA 125) ──
+# EL PUNTO. Hasta hoy, si UNA de las tres rutas con excepcion no se podia leer en la corrida,
+# K44 salia NO MEDIDO ENTERO -y lo hacia ANTES de mirar `partes`-. En esa misma corrida el panel
+# podia estar pidiendo suelta otra ruta de FOTO SIN NINGUNA EXCUSA, que es un hecho sobre el
+# panel que no necesita ese payload para nada. Lo que faltaba de una se comia la condena de otra,
+# que es A54 otra vez y por otra puerta.
+# COMO SE PLANTA «ILEGIBLE»: el fichero EXISTE y no es JSON, que es lo que deja `bin/api` cuando
+# la ruta no contesta -no se borra el fichero, se queda vacio-. Asi el plantado se ve.
+echo
+echo "E23 · la ruta con excusa ILEGIBLE y NADA MAS: no hay nada que condenar -> NO MEDIDO"
+monta "$DIR/e23" 0 "VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix"
+plantada "$DIR/e23" _sobre.json "$SOBRE_SIN"
+plantada "$DIR/e23" "_api_scalp_delta-matrix.json" ""
+f=$(copia "$DIR/e23") || exit 2
+corre E23 "$f" K44_PAYLOADS="$DIR/e23/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E23a NO MEDIDO, rc=2 (rc=$rc)" "$([ "$rc" = 2 ] && echo si || echo no)"
+comprueba "E23b y NOMBRA la ruta que no se pudo leer" \
+  "$(printf '%s' "${SALIDA[E23]}" | grep -q '/api/scalp/delta-matrix(200): no se pudo leer su payload' && echo si || echo no)"
+comprueba "E23c y NO la da por excusada" \
+  "$(printf '%s' "${SALIDA[E23]}" | grep -q 'EXCUSADAS Y REVERIFICADAS' && echo no || echo si)"
+
+echo
+echo "E24 · EL PUNTO · la MISMA ruta ilegible MAS una suelta sin excusa -> ROJO, y nombra las dos"
+monta "$DIR/e24" 0 "VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix
+77 /api/wyckoff"
+plantada "$DIR/e24" _sobre.json "$SOBRE_SIN"
+plantada "$DIR/e24" "_api_scalp_delta-matrix.json" ""
+f=$(copia "$DIR/e24") || exit 2
+corre E24 "$f" K44_PAYLOADS="$DIR/e24/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E24a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E24b condena por /api/wyckoff, que no necesita ese payload" \
+  "$(printf '%s' "${SALIDA[E24]}" | grep -q '· /api/wyckoff(77)' && echo si || echo no)"
+comprueba "E24c y NOMBRA ademas la que no se pudo leer" \
+  "$(printf '%s' "${SALIDA[E24]}" | grep -q '/api/scalp/delta-matrix(200): no se pudo leer su payload' && echo si || echo no)"
+comprueba "E24d y NO condena a la ilegible: no entra en las partes" \
+  "$(printf '%s' "${SALIDA[E24]}" | grep -q '· /api/scalp/delta-matrix(200) ' && echo no || echo si)"
+
+echo
+echo "E25 · CONTROL DE E24 · el MISMO log con el payload LEGIBLE: sigue ROJO, y sin nada sin leer"
+# Sin este brazo, E24 pasaria igual si el check condenara SIEMPRE a wyckoff: lo unico que
+# cambia entre los dos es si ese payload se puede leer.
+monta "$DIR/e25" 0 "VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix
+77 /api/wyckoff"
+plantada "$DIR/e25" _sobre.json "$SOBRE_SIN"
+plantada "$DIR/e25" "_api_scalp_delta-matrix.json" "$RUTA_DM"
+f=$(copia "$DIR/e25") || exit 2
+corre E25 "$f" K44_PAYLOADS="$DIR/e25/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E25a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E25b y NADA queda sin leer" \
+  "$(printf '%s' "${SALIDA[E25]}" | grep -q 'no se pudo leer su payload' && echo no || echo si)"
+comprueba "E25c y delta-matrix SI sale excusada y reverificada" \
+  "$(printf '%s' "${SALIDA[E25]}" | grep -q 'la ruta sirve 12 elementos y el sobre `delta_matrix` solo 2' && echo si || echo no)"
+
+echo
+echo "E26 · el SOBRE ilegible tampoco apaga la condena de una suelta sin excusa"
+# La otra mitad del mismo punto: sin sobre NINGUNA excusa se puede reverificar -y las tres salen
+# nombradas en el tercer cubo- pero `/api/wyckoff` sigue sin tener excusa, y eso se decide con el
+# log. Antes esto era un `exit 2` en la primera linea del bloque.
+monta "$DIR/e26" 0 "VISITAS 900
+450 /api/ai/context
+77 /api/wyckoff"
+plantada "$DIR/e26" _sobre.json ""
+f=$(copia "$DIR/e26") || exit 2
+corre E26 "$f" K44_PAYLOADS="$DIR/e26/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E26a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E26b y dice que el sobre no se pudo leer" \
+  "$(printf '%s' "${SALIDA[E26]}" | grep -q 'no se pudo leer el sobre' && echo si || echo no)"
+comprueba "E26c y las tres excepciones salen como HUERFANAS o sin verificar, no excusadas" \
+  "$(printf '%s' "${SALIDA[E26]}" | grep -q 'EXCUSADAS Y REVERIFICADAS' && echo no || echo si)"
+
+echo
+echo "E27 · y sin sobre y sin nada que condenar, NO MEDIDO (no VERDE)"
+monta "$DIR/e27" 0 "VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix"
+plantada "$DIR/e27" _sobre.json ""
+f=$(copia "$DIR/e27") || exit 2
+corre E27 "$f" K44_PAYLOADS="$DIR/e27/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E27a NO MEDIDO, rc=2 (rc=$rc)" "$([ "$rc" = 2 ] && echo si || echo no)"
+comprueba "E27b y dice lo que no pudo leer" \
+  "$(printf '%s' "${SALIDA[E27]}" | grep -q 'LO QUE NO SE PUDO LEER EN ESTA CORRIDA' && echo si || echo no)"
+
+# ── E28-E33 · LAS OTRAS DOS EXCUSAS CONTRA LA HORA (A53) ────────────────────────────────────
+# COLA 124 rehizo la excusa de liquidation-levels porque su veredicto dependia de la hora: en
+# una hora tranquila las cuentas coincidian, la excusa moria y K44 condenaba un diseno correcto.
+# E15/E16 lo fijan para TOPE. Aqui se hace lo mismo con las OTRAS DOS, que nadie habia atacado.
+#
+# LOS PLANTADOS SON FIJOS Y SE DIFERENCIAN SOLO EN EL DATO DE MERCADO: misma forma, mismas
+# claves, mismo numero de ventanas. Si el veredicto cambiara entre los dos, el check estaria
+# juzgando el mercado y no el panel.
+#
+# DE DONDE SALE LA FORMA, medido el 2026-09-18 sobre el RELEASE DESPLEGADO en 140
+# (/opt/coinalyze/releases/582459337bc7167317b4abca3b9841a3cf65b2cb):
+#   · la ruta delta-matrix devuelve SIEMPRE 12 ventanas: la lista es un literal (api.py:1311-1323)
+#     y el bucle que las recorre hace `rows.append` INCONDICIONAL, sin un solo `continue`
+#     (scalp_logic.py:4319-4458). El numero es una constante del codigo, no de la hora.
+#   · el sobre trae 5: `delta_windows` del perfil (ai_context.py:76), otra constante.
+#   · `scalp_persistence` y `signal_base_rate` son claves LITERALES del dict que devuelve
+#     /api/dashboard/state (api.py:3500-3502): no pueden faltar por falta de dato.
+#   · `delta_matrix` y `liquidation_levels` son entradas literales del sobre (ai_context.py:861
+#     y :925): tampoco pueden faltar por falta de dato.
+# Conclusion MEDIDA: la UNICA ausencia que produccion puede dar hoy sin cambiar codigo es que el
+# payload NO LLEGUE, y eso ya es el tercer cubo (E23-E27). Las ausencias de E30 y E33 SOLO las
+# puede producir un cambio de codigo, y por eso ahi la excusa DEBE morir: es su diseno.
+dm_ruta() {  # $1 = valor del delta en cada ventana. Las 12 del release, siempre las 12.
+  local v="$1" w out=""
+  for w in 15s 30s 1m 3m 5m 15m 18m 30m 1h 4h 8h 1d; do
+    out="$out,{\"window\":\"$w\",\"delta\":$v}"
+  done
+  printf '[%s]' "${out#,}"
+}
+dm_sobre() {  # $1 = valor  $2..= ventanas. El sobre trae las 5 del perfil.
+  local v="$1"; shift
+  local w out=""
+  for w in "$@"; do out="$out,{\"window\":\"$w\",\"delta\":$v}"; done
+  printf '{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"delta_matrix":[%s]}' "${out#,}"
+}
+LOG_DM="VISITAS 900
+450 /api/ai/context
+200 /api/scalp/delta-matrix"
+
+echo
+echo "E28 · MENOS · HORA TRANQUILA (12 ventanas, todas sin dato): EXCUSADA"
+monta "$DIR/e28" 0 "$LOG_DM"
+plantada "$DIR/e28" _sobre.json "$(dm_sobre null 15s 1m 3m 5m 15m)"
+plantada "$DIR/e28" "_api_scalp_delta-matrix.json" "$(dm_ruta null)"
+f=$(copia "$DIR/e28") || exit 2
+corre E28 "$f" K44_PAYLOADS="$DIR/e28/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E28a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E28b la excusa VIVE, con sus dos cifras (12 y 5)" \
+  "$(printf '%s' "${SALIDA[E28]}" | grep -q 'la ruta sirve 12 elementos y el sobre `delta_matrix` solo 5' && echo si || echo no)"
+
+echo
+echo "E29 · MENOS · HORA AGITADA (las MISMAS 12 ventanas, con dato): MISMO VEREDICTO"
+monta "$DIR/e29" 0 "$LOG_DM"
+plantada "$DIR/e29" _sobre.json "$(dm_sobre 91400.5 15s 1m 3m 5m 15m)"
+plantada "$DIR/e29" "_api_scalp_delta-matrix.json" "$(dm_ruta 91400.5)"
+f=$(copia "$DIR/e29") || exit 2
+corre E29 "$f" K44_PAYLOADS="$DIR/e29/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E29a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E29b EL PUNTO: la hora no cambia el veredicto de MENOS (E28=$rc)" \
+  "$([ "$rc" = 0 ] && printf '%s' "${SALIDA[E29]}" | grep -q 'la ruta sirve 12 elementos y el sobre `delta_matrix` solo 5' && echo si || echo no)"
+
+echo
+echo "E30 · MENOS · y SI CAMBIA EL CODIGO -la ruta baja a 5 ventanas- la excusa MUERE"
+# Esta ausencia produccion NO la puede dar: las 12 son un literal. Si un dia la ruta sirve 5,
+# el sobre ya le da todo y la peticion suelta sobra. Sin este brazo, E28/E29 pasarian igual con
+# una excusa que no supiera morir.
+monta "$DIR/e30" 0 "$LOG_DM"
+plantada "$DIR/e30" _sobre.json "$(dm_sobre 91400.5 15s 1m 3m 5m 15m)"
+plantada "$DIR/e30" "_api_scalp_delta-matrix.json" '[{"window":"15s","delta":1},{"window":"1m","delta":1},{"window":"3m","delta":1},{"window":"5m","delta":1},{"window":"15m","delta":1}]'
+f=$(copia "$DIR/e30") || exit 2
+corre E30 "$f" K44_PAYLOADS="$DIR/e30/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E30a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E30b y dice EXCEPCION ANULADA con la cifra que la mato" \
+  "$(printf '%s' "${SALIDA[E30]}" | grep -q 'EXCEPCION ANULADA: el sobre trae 5 y la ruta 5' && echo si || echo no)"
+
+# --- FALTAN · lo mismo con la otra excusa -------------------------------------------------
+DS_TRANQUILA='{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"scalp_persistence":{"available":false,"episodios":0},"signal_base_rate":{"available":false,"n":0}}'
+DS_AGITADA='{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"scalp_persistence":{"available":true,"episodios":6146,"p90_min":4},"signal_base_rate":{"available":true,"n":812,"tasa":0.37}}'
+DS_SIN='{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"scalp_persistence":{"available":true,"episodios":6146}}'
+SOBRE_TESTIGOS='{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{}}'
+LOG_DS="VISITAS 900
+450 /api/ai/context
+200 /api/dashboard/state"
+
+echo
+echo "E31 · FALTAN · HORA TRANQUILA (las dos claves presentes y VACIAS): EXCUSADA"
+monta "$DIR/e31" 0 "$LOG_DS"
+plantada "$DIR/e31" _sobre.json "$SOBRE_TESTIGOS"
+plantada "$DIR/e31" "_api_dashboard_state.json" "$DS_TRANQUILA"
+f=$(copia "$DIR/e31") || exit 2
+corre E31 "$f" K44_PAYLOADS="$DIR/e31/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E31a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E31b la excusa VIVE y dice DONDE busco" \
+  "$(printf '%s' "${SALIDA[E31]}" | grep -q 'la ruta sirve scalp_persistence signal_base_rate y NO estan en TODO el sobre' && echo si || echo no)"
+
+echo
+echo "E32 · FALTAN · HORA AGITADA (las MISMAS claves con dato): MISMO VEREDICTO"
+monta "$DIR/e32" 0 "$LOG_DS"
+plantada "$DIR/e32" _sobre.json "$SOBRE_TESTIGOS"
+plantada "$DIR/e32" "_api_dashboard_state.json" "$DS_AGITADA"
+f=$(copia "$DIR/e32") || exit 2
+corre E32 "$f" K44_PAYLOADS="$DIR/e32/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E32a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E32b EL PUNTO: la hora no cambia el veredicto de FALTAN" \
+  "$([ "$rc" = 0 ] && [ "${SALIDA[E31]}" = "${SALIDA[E32]}" ] && echo si || echo no)"
+
+echo
+echo "E33 · FALTAN · y SI CAMBIA EL CODIGO -la ruta deja de servir una clave- la excusa MUERE"
+# `signal_base_rate` es una clave LITERAL del dict de /api/dashboard/state (api.py:3502): esta
+# ausencia solo la produce un cambio de codigo, y entonces la excusa TIENE que morir.
+monta "$DIR/e33" 0 "$LOG_DS"
+plantada "$DIR/e33" _sobre.json "$SOBRE_TESTIGOS"
+plantada "$DIR/e33" "_api_dashboard_state.json" "$DS_SIN"
+f=$(copia "$DIR/e33") || exit 2
+corre E33 "$f" K44_PAYLOADS="$DIR/e33/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E33a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E33b y NOMBRA la clave que la ruta dejo de servir" \
+  "$(printf '%s' "${SALIDA[E33]}" | grep -q 'la RUTA ya no sirve signal_base_rate' && echo si || echo no)"
 
 # ── LOS SEIS, DOS A DOS ──────────────────────────────────────────────────────────────────────
 echo
