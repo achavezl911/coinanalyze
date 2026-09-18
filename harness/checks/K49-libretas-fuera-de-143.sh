@@ -45,6 +45,7 @@ done
 # escucha. Sin las dos mitades no sirve ninguna.
 UNIT=${K49_UNIT:-coinalyze-libretas.service}
 TIMER=${K49_TIMER:-coinalyze-libretas.timer}
+CORRIDA="sin systemctl en esta maquina: la unit no se ha podido mirar"
 if command -v systemctl >/dev/null 2>&1; then
   carga=$(systemctl show "$UNIT" -p LoadState --value 2>/dev/null)
   case "$carga" in
@@ -52,13 +53,66 @@ if command -v systemctl >/dev/null 2>&1; then
     not-found|"") echo "no hay unit de respaldo instalada ($UNIT): no hay nada empujando las libretas fuera de 143"; exit 1 ;;
     *) echo "NO MEDIDO: LoadState=$carga para $UNIT"; exit 2 ;;
   esac
+  # EL VEREDICTO SALE DE UNA CORRIDA TERMINADA, NO DE LA QUE ESTA CORRIENDO (COLA 125, A58).
+  # MEDIDO: `systemctl show` DENTRO de la corrida de una unit devuelve los valores NEUTROS
+  # -Result=success y ExecMainStatus=0- con `ExecMainExitTimestamp` VACIO, que es la firma.
+  # Estas cuatro lineas leian Result y ExecMainStatus SIN MIRAR NADA MAS, asi que durante los
+  # segundos que dura cada tick DABAN VERDE PASE LO QUE PASE DESPUES. El 2026-09-17 el operador
+  # leyo el respaldo como sano mientras llevaba 21 h fallando en cada tick: lo leyo dentro de
+  # una corrida. Un instrumento cuya respuesta depende de CUANDO se le pregunta no esta
+  # midiendo el sujeto, esta midiendo el reloj -y este mide justo lo que no se puede perder-.
+  #
+  # EL DISCRIMINADOR ES `ActiveState`, Y NO `ExecMainExitTimestamp`. La primera version de este
+  # arreglo usaba el sello de salida -«si tiene valor, hay corrida terminada»- y su propio
+  # control la tumbo: MEDIDO el 2026-09-18 sobre una unit volatil, tras una corrida que sale
+  # BIEN systemd deja `ExecMainExitTimestamp` VACIO igual que durante la corrida, y solo lo
+  # conserva cuando la unit queda en `failed`:
+  #     terminada mal   Result=exit-code ExecMainExitTimestamp=<fecha> ExecMainStatus=1 ActiveState=failed
+  #     terminada bien  Result=success   ExecMainExitTimestamp=        ExecMainStatus=0 ActiveState=inactive
+  #     CORRIENDO       Result=success   ExecMainExitTimestamp=        ExecMainStatus=0 ActiveState=activating
+  # Las dos ultimas son IDENTICAS en `show` salvo por `ActiveState`, y «nunca ha corrido» es
+  # identica a la segunda. Por eso la corrida terminada se lee del JOURNAL, que es el unico
+  # sitio donde una terminacion deja rastro que systemd no borre al arrancar la siguiente.
+  #
+  # LOS CUATRO ESTADOS, Y NINGUNO DE ELLOS ES «VERDE POR DEFECTO»:
+  #   la unit quedo en `failed`            -> ROJO, con su motivo y su fecha
+  #   ultima terminacion del journal: mal  -> ROJO, se este corriendo ahora o no
+  #   ultima terminacion del journal: bien -> se sigue midiendo, y la linea dice CUAL juzgo
+  #   el journal no trae ninguna           -> NO MEDIDO, nunca VERDE
+  estado=$(systemctl show "$UNIT" -p ActiveState --value 2>/dev/null)
   resultado=$(systemctl show "$UNIT" -p Result --value 2>/dev/null)
   salida=$(systemctl show "$UNIT" -p ExecMainStatus --value 2>/dev/null)
-  if [ "$resultado" != "success" ] || [ "$salida" != "0" ]; then
-    motivo=$(journalctl -u "$UNIT" -n 20 --no-pager 2>/dev/null \
-             | grep -iE 'fatal|error|respalda-libretas:' | tail -1 | cut -c1-160)
-    echo "la unit de respaldo FALLO (Result=$resultado ExecMainStatus=$salida): ${motivo:-sin motivo en el journal}"; exit 1
+  fin=$(systemctl show "$UNIT" -p ExecMainExitTimestamp --value 2>/dev/null)
+  motivo_journal() {
+    journalctl -u "$UNIT" -n 20 --no-pager 2>/dev/null \
+      | grep -iE 'fatal|error|respalda-libretas:' | tail -1 | cut -c1-160
+  }
+  if [ "$estado" = failed ]; then
+    echo "la unit de respaldo FALLO (Result=$resultado ExecMainStatus=$salida, corrida terminada" \
+         "${fin:-sin fecha}): $(motivo_journal || true)"; exit 1
   fi
+  case "$estado" in
+    activating|active|reloading|deactivating)
+      COMO="leida DURANTE una corrida (ActiveState=$estado)" ;;
+    *)
+      COMO="leida entre corridas (ActiveState=$estado)" ;;
+  esac
+  ult=$(journalctl -u "$UNIT" -n 500 --no-pager -o short-iso 2>/dev/null \
+        | grep -E 'Deactivated successfully|Succeeded\.|Failed with result' | tail -1)
+  case "$ult" in
+    *"Failed with result"*)
+      echo "la unit de respaldo FALLO en su ULTIMA corrida TERMINADA" \
+           "-$(printf '%s' "$ult" | cut -c1-70)-; $COMO. Durante la corrida systemd devuelve" \
+           "Result=success con ExecMainExitTimestamp vacio, y eso no es un veredicto:" \
+           "$(motivo_journal || true)"; exit 1 ;;
+    *"Deactivated successfully"*|*"Succeeded."*)
+      CORRIDA="ultima corrida TERMINADA $(printf '%s' "$ult" | awk '{print $1}'), bien · $COMO" ;;
+    *)
+      echo "NO MEDIDO: no hay NINGUNA corrida TERMINADA de $UNIT que leer ($COMO," \
+           "ExecMainExitTimestamp='${fin}', y el journal no trae ninguna terminacion en las" \
+           "ultimas 500 lineas). Dar VERDE aqui seria dar por bueno un respaldo del que no" \
+           "consta que haya corrido nunca."; exit 2 ;;
+  esac
   # Y EL TIMER TIENE QUE ESTAR ARMADO. Una unit que "no ha fallado" porque no la lanza
   # nadie es el cero-sin-medicion de K60 aplicado a un respaldo: el veredicto mas
   # tranquilizador posible sobre algo que no esta ocurriendo.
@@ -182,4 +236,4 @@ b_entregas=$(find "$TMP/copia/entregas" -type f -printf '%s\n' 2>/dev/null | awk
 n_manifiesto=$(wc -l < "$TMP/copia/SHA256SUMS")
 echo "las 4 libretas RESTAURADAS suman $total B fuera de 143, y entregas/ otros $b_entregas B" \
      "en $n_entregas ficheros -el metodo, no solo el criterio-; copia de hace ${horas} h," \
-     "cuadrada contra su manifiesto ($n_manifiesto ficheros); $desfase"
+     "cuadrada contra su manifiesto ($n_manifiesto ficheros); $desfase · unit: $CORRIDA"
