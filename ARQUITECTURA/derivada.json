@@ -26189,8 +26189,8 @@
             "harness/checks/K44-control.bash:499",
             "harness/checks/K44-control.bash:544",
             "harness/checks/K44-control.bash:589",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:154",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:293",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:161",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:300",
             "harness/checks/K72-campos.js:33"
           ],
           "menciones": [
@@ -28524,7 +28524,7 @@
             "harness/checks/K44-control.bash:136",
             "harness/checks/K44-control.bash:142",
             "harness/checks/K44-control.bash:590",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:102",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:109",
             "harness/checks/K72-campos.js:46",
             "harness/checks/K72-campos.js:52",
             "harness/checks/K72-campos.js:58",
@@ -28541,7 +28541,7 @@
             "harness/checks/K44-control.bash:150",
             "harness/checks/K44-control.bash:524",
             "harness/checks/K44-control.bash:616",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:384",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:391",
             "harness/checks/K72-campos.js:6",
             "harness/checks/K72-el-campo-que-no-llega.sh:10",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13",
@@ -33778,7 +33778,7 @@
             "harness/checks/K44-control.bash:467",
             "harness/checks/K44-control.bash:500",
             "harness/checks/K44-control.bash:545",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:103",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:110",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217",
             "harness/checks/K84-dos-matrices-una-cifra.sh:86",
@@ -34175,7 +34175,7 @@
             "harness/checks/K44-control.bash:290",
             "harness/checks/K44-control.bash:364",
             "harness/checks/K44-control.bash:409",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:104"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:111"
           ],
           "menciones": [
             "harness/checks/K44-control.bash:258"
@@ -36668,8 +36668,8 @@
         "checks": {
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:169",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:278",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:281"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:285",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:288"
           ],
           "menciones": []
         },

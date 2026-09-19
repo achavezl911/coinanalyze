@@ -62,17 +62,38 @@ if command -v systemctl >/dev/null 2>&1; then
   # una corrida. Un instrumento cuya respuesta depende de CUANDO se le pregunta no esta
   # midiendo el sujeto, esta midiendo el reloj -y este mide justo lo que no se puede perder-.
   #
-  # EL DISCRIMINADOR ES `ActiveState`, Y NO `ExecMainExitTimestamp`. La primera version de este
-  # arreglo usaba el sello de salida -«si tiene valor, hay corrida terminada»- y su propio
-  # control la tumbo: MEDIDO el 2026-09-18 sobre una unit volatil, tras una corrida que sale
-  # BIEN systemd deja `ExecMainExitTimestamp` VACIO igual que durante la corrida, y solo lo
-  # conserva cuando la unit queda en `failed`:
+  # EL DISCRIMINADOR ES `ActiveState` MAS EL JOURNAL, Y NO `ExecMainExitTimestamp`. La primera
+  # version de este arreglo usaba el sello de salida -«si tiene valor, hay corrida terminada»-.
+  #
+  # AQUI ESTUVO ESCRITA UNA MEDIDA FALSA Y SE CORRIGE EN SU SITIO (A59, COLA 126 y 128). Decia,
+  # como MEDIDO, que «tras una corrida que sale BIEN systemd deja ExecMainExitTimestamp VACIO
+  # igual que durante la corrida, y solo lo conserva cuando la unit queda en failed». Eso NO es
+  # una propiedad de salir bien: es lo que le pasa a una unit de prueba QUE NADIE REFERENCIA.
+  # Al quedar inactiva systemd la DESCARGA, y `show` la reconstruye con los valores por defecto,
+  # sello incluido. La unit del respaldo la RETIENE su timer y por eso conserva el sello.
+  #
+  # MEDIDO EL 2026-09-19 EN 143, con dos GEMELAS volatiles identicas salvo en quien las retiene
+  # -que es la variable que decide (A57)-, las dos con `exit 0`, leidas a las 04:50:37Z:
+  #     bash harness/checks/K49-control.bash      (brazo A7, que es de donde sale esta tabla)
+  #     gemela SIN timer   Result=success ExecMainExitTimestamp=              en memoria: 0
+  #     gemela CON timer   Result=success ExecMainExitTimestamp=22:50:37 CST  en memoria: 1
+  # Y la unit REAL, leida entre corridas a las 04:50:16Z con
+  #     systemctl show coinalyze-libretas.service -p ActiveState -p Result -p ExecMainStatus \
+  #       -p ExecMainExitTimestamp -p TriggeredBy
+  #     ActiveState=inactive Result=success ExecMainStatus=0
+  #     ExecMainExitTimestamp=Fri 2026-09-18 22:50:08 CST  TriggeredBy=coinalyze-libretas.timer
+  # o sea que la gemela fiel es la CON, y la tabla de verdad para ESTA unit es:
   #     terminada mal   Result=exit-code ExecMainExitTimestamp=<fecha> ExecMainStatus=1 ActiveState=failed
-  #     terminada bien  Result=success   ExecMainExitTimestamp=        ExecMainStatus=0 ActiveState=inactive
+  #     terminada bien  Result=success   ExecMainExitTimestamp=<fecha> ExecMainStatus=0 ActiveState=inactive
   #     CORRIENDO       Result=success   ExecMainExitTimestamp=        ExecMainStatus=0 ActiveState=activating
-  # Las dos ultimas son IDENTICAS en `show` salvo por `ActiveState`, y «nunca ha corrido» es
-  # identica a la segunda. Por eso la corrida terminada se lee del JOURNAL, que es el unico
-  # sitio donde una terminacion deja rastro que systemd no borre al arrancar la siguiente.
+  #     nunca corrio    Result=success   ExecMainExitTimestamp=        ExecMainStatus=0 ActiveState=inactive
+  #
+  # NINGUN VEREDICTO CAMBIA POR ESTA CORRECCION, y el diseno de abajo se sostiene igual: las dos
+  # ultimas filas siguen siendo IDENTICAS en `show` salvo por `ActiveState`, «nunca ha corrido»
+  # sigue teniendo el sello vacio SIEMPRE, y un `reset-failed` devuelve una unit fallida a la
+  # forma de la segunda fila (brazo A1bis). El sello, solo, no separa esos casos. Por eso la
+  # corrida terminada se lee del JOURNAL, que es el unico sitio donde una terminacion deja
+  # rastro que systemd no borre al arrancar la siguiente.
   #
   # LOS CUATRO ESTADOS, Y NINGUNO DE ELLOS ES «VERDE POR DEFECTO»:
   #   la unit quedo en `failed`            -> ROJO, con su motivo y su fecha
