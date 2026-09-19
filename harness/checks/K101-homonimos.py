@@ -27,6 +27,19 @@ LOS CINCO BRAZOS, y cada uno dice A QUE ALCANCE juzga (A44):
       (`inventario-extra.json`): asi un arbol que aun no esta desplegado se juzga contra
       las claves que produccion ya sirve MAS las que el arbol anade. Sin inventario
       suficiente, NO MEDIDO y nombra lo que no pudo resolver.
+  D2· LOS GRUPOS DEL PROMPT. Una frase que nombre un bloque CON GRUPOS no puede atribuirle
+      los grupos de otro bloque. Se juzga frase a frase, y solo las frases que nombran algun
+      bloque que tenga grupos.
+  E · EL VOCABULARIO. Lo que el glosario declara que un campo PUEDE valer, contra lo que
+      vale donde hay dato. Cubre `publishers`, `not_a_bias` y `bias_without_a_timeframe`.
+      Un `values: null` es «no declarado» y se nombra sin juzgar. Nacio el 2026-09-19 de un
+      agujero medido: el glosario declaraba vocabularios y nadie los contrastaba.
+  F · LOS AGREGADOS. El prompt no puede presentar el resumen de un bloque como si fuera el
+      del vecino. Tambien del 2026-09-19, y tambien de un defecto que ningun otro brazo
+      veia porque el camino citado EXISTIA.
+  G · LAS INVARIANTES. Un «NO discrepa» del glosario es una PROMESA sobre los datos y este
+      brazo la cobra horizonte a horizonte. Del mismo dia: el glosario prometia que
+      structure_horizons.<h>.structure era copia literal de structure_detail, y no lo es.
 
 CONTROL POSITIVO EN CADA BRAZO (A36): si un brazo no llego a mirar ni un sujeto, no dice
 VERDE: dice NO MEDIDO. Un brazo que aprueba sin sujeto es peor que no tenerlo.
@@ -197,6 +210,49 @@ def grupos_por_bloque(sobre):
     return out
 
 
+def brazo_agregados(prompt, sobre, agregados):
+    """F · UN AGREGADO ES DE SU BLOQUE, Y EL PROMPT NO PUEDE PRESTARLO.
+
+    EL DEFECTO QUE LO TRAJO, del 2026-09-18 y escrito por quien escribio este check:
+        «structure_horizons NO tiene esas capas: su "group" es 'med' ..., y su alineacion
+         por marco la resume trend_matrix.medium_term_alignment sobre 4h+8h+1d»
+    `medium_term_alignment` resume los sesgos DE trend_matrix (`mid = [tfs[t]["bias"] ...]`)
+    y structure_horizons no tiene agregado ninguno. Ningun otro brazo lo veia: el camino
+    EXISTE (brazo D lo resuelve) y la frase no nombra ningun grupo (brazo D2 no entra).
+
+    LA REGLA, y es de gramatica y no de semantica: **en la frase donde se cita un AGREGADO,
+    el ultimo nombre de bloque que aparece ANTES de el tiene que ser su propio bloque.** En
+    castellano lo que va delante de «su X» es el poseedor, asi que si delante hay otro
+    bloque, la frase se lo esta atribuyendo. Las menciones que SOLAPAN con el propio camino
+    no cuentan -`trend_matrix` esta dentro de `trend_matrix.medium_term_alignment`-.
+
+    El alcance son los caminos que el glosario declara en `bias_without_a_timeframe`: son
+    justo los resumenes de bloque, que es donde este error se puede cometer.
+    """
+    bloques = [b for b in sobre if b != "interpretation_prompt"]
+    if not agregados or not bloques:
+        return [], 0
+    alternativas = "|".join(sorted(map(re.escape, bloques), key=len, reverse=True))
+    rx_bloque = re.compile(rf"\b({alternativas})\b")
+    fallos, juzgados = [], 0
+    for frase in re.split(r"(?<=\.)\s+|\n", prompt):
+        for camino in agregados:
+            raiz = camino.split(".")[0]
+            for m in re.finditer(re.escape(camino), frase):
+                juzgados += 1
+                previos = [
+                    b for b in rx_bloque.finditer(frase)
+                    if b.end() <= m.start() and not (b.start() >= m.start() and b.end() <= m.end())
+                ]
+                if previos and previos[-1].group(1) != raiz:
+                    fallos.append(
+                        f"la frase presenta {camino} como de '{previos[-1].group(1)}', y ese "
+                        f"agregado resume los campos de '{raiz}' y de ningun otro bloque. "
+                        f"Frase: «{frase.strip()[:200]}»"
+                    )
+    return fallos, juzgados
+
+
 def brazo_grupos(prompt, sobres):
     """EL BRAZO QUE CAZA LA FRASE DE S3: «Mide alineacion micro/mid/macro via
     structure_horizons». structure_horizons NO tiene micro/mid/macro -sus grupos son med y
@@ -331,6 +387,15 @@ def main():
 
     pubs = gloss["publishers"]
     nob = gloss.get("not_a_bias") or []
+    # `bias_without_a_timeframe` fue un mapa de prosa hasta el 2026-09-19 y ahora es una
+    # lista con `values`. Se aceptan las dos formas para que el motor pueda juzgar un sobre
+    # de produccion viejo sin reventar, y la del mapa sale SIN VOCABULARIO -que es justo lo
+    # que era: prosa incontrastable-.
+    swt = gloss.get("bias_without_a_timeframe")
+    if isinstance(swt, dict):
+        swt = [{"path": k, "measures": v, "values": None} for k, v in swt.items()]
+    elif not isinstance(swt, list):
+        swt = []
     rutas_pub = {canon_declarado(p.get("path")): p for p in pubs}
     rutas_nob = {canon_declarado(p.get("path")) for p in nob}
     hojas_declaradas = {r.split(".")[-1].split("[")[0] for r in rutas_pub}
@@ -340,36 +405,67 @@ def main():
     recorre(sobre, [], None, hojas)
     reales = {}
     for c, v, marco in hojas:
-        reales.setdefault(canon(c), {"marcos": set(), "valores": [], "ejemplo": c})
+        d = reales.setdefault(
+            canon(c), {"marcos": set(), "valores": [], "ejemplo": c, "por_marco": {}}
+        )
         if marco:
-            reales[canon(c)]["marcos"].add(marco)
-        reales[canon(c)]["valores"].append(v)
+            d["marcos"].add(marco)
+            d["por_marco"].setdefault(marco, []).append(v)
+        d["valores"].append(v)
 
     rojos, lineas = [], []
 
     # --- A · DECLARADO -> EXISTE
-    # EL TERCER CUBO, y no es un adorno: un bloque que este vacio porque su fuente no
+    # EL TERCER CUBO, y no es un adorno: un contenedor que este vacio porque su fuente no
     # trajo datos -`available: false`- no publica NADA, asi que exigirle sus rutas seria
     # condenar al glosario por una base sin datos. Se NOMBRA y no se juzga. Lo que si es
-    # ROJO es que el bloque ESTE, con contenido, y la ruta declarada no aparezca.
-    def bloque_mudo(ruta):
-        raiz = ruta.split(".")[0].split("[")[0]
-        b = sobre.get(raiz)
-        if b is None:
-            return f"el bloque '{raiz}' no viaja en este sobre"
-        if isinstance(b, dict):
-            if b.get("available") is False:
-                return f"el bloque '{raiz}' viene con available=false"
-            if not b:
-                return f"el bloque '{raiz}' viene vacio"
-        if isinstance(b, list) and not b:
-            return f"el bloque '{raiz}' viene como lista vacia"
+    # ROJO es que el contenedor ESTE, con contenido, y la ruta declarada no aparezca.
+    #
+    # RECORRE EL CAMINO ENTERO Y NO SOLO SU PRIMER TRAMO, y esto se pago: hasta el
+    # 2026-09-19 esta funcion mirava solo la raiz, asi que con
+    # `divergences = {available: true, intraday: {available: false, windows: {}}}` -lo que
+    # produccion sirve cuando en 17 h no hay filas que casen- K101 daba ROJO diciendo que
+    # `divergences.intraday.windows.<h>.divergence` "NO EXISTE", cuando lo que pasaba es
+    # que el SUB-BLOQUE estaba mudo. Un sub-bloque mudo no es una ruta sin declarar (A54).
+    def contenedor_mudo(ruta):
+        nodo, recorrido = sobre, []
+        for tramo in ruta.replace("[i]", ".[i]").split("."):
+            if tramo in ("<h>", "[i]"):
+                # El comodin: si el contenedor esta vacio, es que no hay ni un horizonte.
+                if isinstance(nodo, dict | list) and not nodo:
+                    return f"'{'.'.join(recorrido)}' no trae ningun horizonte"
+                if isinstance(nodo, dict):
+                    nodo = next(iter(nodo.values()))
+                elif isinstance(nodo, list):
+                    nodo = nodo[0]
+                else:
+                    return None
+                recorrido.append(tramo)
+                continue
+            if not isinstance(nodo, dict):
+                return None
+            if tramo not in nodo:
+                # Es la HOJA declarada la que falta, con su contenedor presente y poblado:
+                # eso no es mudez, es una ruta que no existe. Lo juzga quien llama.
+                return None
+            nodo = nodo[tramo]
+            recorrido.append(tramo)
+            camino = ".".join(recorrido)
+            if nodo is None:
+                return f"'{camino}' viene a null"
+            if isinstance(nodo, dict):
+                if nodo.get("available") is False:
+                    return f"'{camino}' viene con available=false"
+                if not nodo:
+                    return f"'{camino}' viene vacio"
+            elif isinstance(nodo, list) and not nodo:
+                return f"'{camino}' viene como lista vacia"
         return None
 
     vistos_a, sin_juzgar_a, sin_datos_a = 0, [], []
     for r, p in sorted(rutas_pub.items()):
         if r not in reales:
-            motivo = bloque_mudo(r)
+            motivo = contenedor_mudo(r)
             if motivo:
                 sin_juzgar_a.append(f"{r} · {motivo}")
             else:
@@ -404,7 +500,7 @@ def main():
             print(f"   sin juzgar · {s}")
         return 2
     mudo_txt = (
-        f" · {len(sin_juzgar_a)} SIN JUZGAR por bloque mudo: {'; '.join(sin_juzgar_a)}"
+        f" · {len(sin_juzgar_a)} SIN JUZGAR por contenedor mudo: {'; '.join(sin_juzgar_a)}"
         if sin_juzgar_a else ""
     )
     sin_datos_txt = (
@@ -515,6 +611,160 @@ def main():
             lineas.append(f"D2 grupos: {g_juzgadas} frases juzgadas")
             for f in g_fallos:
                 rojos.append(f"D2 · {f}")
+        agregados = [
+            canon_declarado(e.get("path")) for e in swt
+            if "." in str(e.get("path", "")) and str(e.get("path")).split(".")[0] in sobre
+        ]
+        f_fallos, f_juzgados = brazo_agregados(prompt, sobre, agregados)
+        if f_juzgados == 0:
+            lineas.append(
+                f"F agregados: NO MEDIDO · el prompt no cita ninguno de los {len(agregados)} "
+                "agregados que el glosario declara"
+            )
+        else:
+            lineas.append(
+                f"F agregados: {f_juzgados} cita(s) de agregado juzgadas sobre "
+                f"{len(agregados)} declarados"
+            )
+            for f in f_fallos:
+                rojos.append(f"F · {f}")
+
+    # --- E · EL VOCABULARIO · lo que el glosario dice que un campo PUEDE valer, contra lo
+    # que vale donde hay dato.
+    #
+    # ESTE BRAZO NACIO DE UN AGUJERO MEDIDO: hasta el 2026-09-19 el glosario declaraba
+    # vocabularios y NADIE los contrastaba, asi que K101 daba VERDE con
+    # divergences.intraday.windows.<h>.divergence declarando alcista/bajista/null mientras
+    # el campo valia 'sin_divergencia' en 18 de los 21 valores presentes.
+    #
+    # SOLO MIRA LOS CAMPOS QUE DECLARAN `values`. Un `values: null` significa «no
+    # declarado» y se NOMBRA sin juzgar: inventar una lista para poder condenar seria peor
+    # que el hueco.
+    #
+    # UN VOCABULARIO PUEDE SER UNA PLANTILLA, y saltarselas no vale. `divergences.summary`
+    # vale cosas como 'bajista_en_2_ventanas': si la plantilla se ignora, ese valor sale
+    # «fuera de vocabulario» y el brazo condena una declaracion CORRECTA -me paso al
+    # escribirlo, el 2026-09-19, y lo cazo el control con los datos de produccion-. Se
+    # traduce a una expresion: `<a|b>` es una alternativa y `N` o `M` es un entero.
+    def a_patron(v):
+        if not isinstance(v, str) or ("<" not in v and "N" not in v and "M" not in v):
+            return None
+        trozos = []
+        for t in v.split("_"):
+            if t.startswith("<") and t.endswith(">"):
+                alt = "|".join(re.escape(x) for x in t[1:-1].split("|"))
+                trozos.append(f"(?:{alt})")
+            elif t in ("N", "M"):
+                trozos.append(r"\d+")
+            else:
+                trozos.append(re.escape(t))
+        patron = "_".join(trozos)
+        return re.compile(f"^{patron}$") if patron != re.escape(v) else None
+
+    # SE CUENTAN DOS DENOMINADORES Y NO UNO. «57 valores contrastados» suena a mucho y
+    # puede ser 57 nulls: en el sobre seco del arbol lo es casi entero. El que dice si el
+    # brazo se ejercito de verdad es el de los valores NO NULOS (A35).
+    vocab_mirados, vocab_no_nulos = 0, 0
+    vocab_sin_declarar, vocab_sin_dato, vocab_patrones = [], [], 0
+    for entrada in [*pubs, *nob, *swt]:
+        r = canon_declarado(entrada.get("path"))
+        vals = entrada.get("values")
+        if vals is None:
+            if "values" in entrada or r in reales:
+                vocab_sin_declarar.append(r)
+            continue
+        patrones = [p for p in (a_patron(v) for v in vals) if p]
+        vocab_patrones += len(patrones)
+        declarados = {
+            json.dumps(v, ensure_ascii=False) for v in vals if a_patron(v) is None
+        }
+        d = reales.get(r)
+        if not d:
+            vocab_sin_dato.append(f"{r} (no hay ni un valor en este sobre)")
+            continue
+        fuera = {}
+        for v in d["valores"]:
+            vocab_mirados += 1
+            if v is not None:
+                vocab_no_nulos += 1
+            j = json.dumps(v, ensure_ascii=False)
+            if j in declarados:
+                continue
+            if isinstance(v, str) and any(p.match(v) for p in patrones):
+                continue
+            fuera[j] = fuera.get(j, 0) + 1
+        if fuera:
+            detalle = ", ".join(f"{k} x{n}" for k, n in sorted(fuera.items()))
+            rojos.append(
+                f"E · {r} vale {detalle} y su vocabulario declarado es "
+                f"{sorted(str(v) for v in vals)} (sobre {len(d['valores'])} valores en este sobre)"
+            )
+    if vocab_no_nulos == 0:
+        lineas.append(
+            f"E vocabulario: NO MEDIDO · {vocab_mirados} valores mirados y NINGUNO no nulo, "
+            "asi que este brazo no se ejercito en este sujeto. "
+            + (f"Sin dato: {'; '.join(vocab_sin_dato)}" if vocab_sin_dato else "")
+        )
+    else:
+        extra = []
+        if vocab_sin_dato:
+            extra.append(f"{len(vocab_sin_dato)} sin dato ({'; '.join(vocab_sin_dato)})")
+        if vocab_sin_declarar:
+            extra.append(
+                f"{len(vocab_sin_declarar)} con el vocabulario SIN DECLARAR y no juzgados "
+                f"({', '.join(sorted(vocab_sin_declarar))})"
+            )
+        if vocab_patrones:
+            extra.append(f"{vocab_patrones} vocabulario(s) declarado(s) como plantilla")
+        lineas.append(
+            f"E vocabulario: {vocab_mirados} valores contrastados, {vocab_no_nulos} de ellos "
+            f"NO NULOS" + (" · " + " · ".join(extra) if extra else "")
+        )
+
+    # --- G · LAS INVARIANTES DECLARADAS SE COMPRUEBAN CON LOS VALORES.
+    #
+    # Cuando el glosario dice de un vecino «NO discrepa», esta haciendo una PROMESA sobre
+    # los datos, no un comentario. Este brazo la cobra: empareja los dos caminos horizonte
+    # a horizonte y condena si difieren.
+    #
+    # EL DEFECTO QUE LO TRAJO: hasta el 2026-09-19 el glosario decia que
+    # structure_horizons.<h>.structure era «una copia literal, sin recalcular nada» de
+    # structure_detail.horizons.<h>.state y que «si algun dia difieren, uno de los dos esta
+    # roto». No es verdad: horizon_structure vuelve a llamar a structure_detail SIN as_of,
+    # con su propio clock_timestamp(), asi que pueden diferir sin que nada este roto. La
+    # medida estaba en la §7 de la entrega del dia anterior y la invariante se publico
+    # igual. Ahora esa promesa, si se escribe, se paga.
+    invariantes, g_mirados = 0, 0
+    for r, p in sorted(rutas_pub.items()):
+        for vecino, texto in (p.get("may_disagree_with") or {}).items():
+            if not str(texto).strip().upper().startswith("NO DISCREPA"):
+                continue
+            invariantes += 1
+            v = canon_declarado(vecino)
+            a, b = reales.get(r), reales.get(v)
+            if not a or not b:
+                continue
+            comunes = sorted(set(a["por_marco"]) & set(b["por_marco"]))
+            for marco in comunes:
+                g_mirados += 1
+                va, vb = a["por_marco"][marco], b["por_marco"][marco]
+                if va != vb:
+                    rojos.append(
+                        f"G · el glosario promete que {r} NO discrepa de {v}, y en {marco} "
+                        f"vale {va} contra {vb}"
+                    )
+    if invariantes == 0:
+        lineas.append("G invariantes: ninguna. El glosario no promete que dos caminos coincidan")
+    elif g_mirados == 0:
+        lineas.append(
+            f"G invariantes: NO MEDIDO · {invariantes} promesa(s) de coincidencia y ningun "
+            "horizonte comun con dato para cobrarlas"
+        )
+    else:
+        lineas.append(
+            f"G invariantes: {invariantes} promesa(s) de coincidencia, {g_mirados} "
+            "horizonte(s) comparados"
+        )
 
     if rojos:
         print(f"ROJO [{sujeto}]: {len(rojos)} defecto(s) · {rojos[0]}")

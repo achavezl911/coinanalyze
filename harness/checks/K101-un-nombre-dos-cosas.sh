@@ -16,7 +16,9 @@
 # el sobre no lo declare. Tampoco mira la pantalla: eso es de quien lea el panel.
 #
 # EL SUJETO SE ELIGE Y SE DICE EN CADA LINEA (K101_SUJETO):
-#   arbol       (por defecto) el sobre se CONSTRUYE en proceso con el codigo de ESTA rama
+#   auto        (por defecto) el espejo si se puede construir, y si no el arbol en seco.
+#               En los dos casos la linea empieza nombrando el sujeto que de verdad juzgo.
+#   arbol       el sobre se CONSTRUYE en proceso con el codigo de ESTA rama
 #               y una conexion que no contesta nada. Sale la FORMA del sobre -que claves
 #               existen- con entradas fijas y sin red. NO abre el pool: `app.db.create_pool`
 #               ESCRIBE en market_assets y symbols y crea particiones por DDL, asi que no
@@ -24,9 +26,31 @@
 #   produccion  el sobre de 140 por /api/ai/context. Es el producto de verdad, pero es el
 #               RELEASE desplegado: si sale ROJO y el arbol sale VERDE, lo que falta es
 #               desplegar, y la linea lo dice con esas palabras.
-#   espejo      no existe como sujeto y se dice: el espejo de 143 es una BASE, no una API,
-#               y ademas esta vacia -medido el 2026-09-18: `symbols` 6 filas y el resto a
-#               cero-, asi que un sobre construido contra ella no tendria valores.
+#   espejo      el sobre construido con el codigo de ESTA rama contra la base espejo de 143.
+#               Es el mejor sujeto que hay sin red y sin esperar al despliegue: trae el
+#               codigo nuevo Y valores de verdad.
+#
+# EL ESPEJO NO ESTA VACIO, Y LO QUE DECIA AQUI ERA FALSO. Hasta el 2026-09-19 esta cabecera
+# y el mensaje de abajo decian «el espejo no tiene datos», apoyados en `n_live_tup` de
+# `pg_stat_user_tables`, que es un ESTIMADO y en esa base vale 0 en todas las tablas menos
+# `symbols`. `count(*)` exacto, medido el 2026-09-19 a las 01:12Z: ohlcv 116895 ·
+# daily_session_agg 1203 · open_interest 17949 · spot_trades_agg 264614 ·
+# futures_trades_realtime 77282 · orderbook_snapshot 103933 · metrics_snapshot 131376.
+# 573 MB. NINGUNA PROSA NI NINGUN VEREDICTO DE UN CHECK SE APOYA EN UN CONTEO ESTIMADO.
+#
+# QUE GANA Y QUE PIERDE EL ESPEJO frente al sobre seco del arbol, medido el 2026-09-19 con
+# el mismo motor:
+#     brazo A   8 de 9 publicadores con dato, contra 7        GANA
+#     brazo B1  13 rutas con horizonte, contra 11             GANA
+#     brazo B2  9 rutas con VALOR, contra 3                   GANA
+#     brazo E   60 valores contrastados, contra 0             GANA (en seco no se ejercita)
+#     brazo D   el sub-brazo de identificadores SUELTOS sigue sin poder juzgar: el espejo
+#               trae 5 bloques mudos y el umbral de «inventario lleno» es 3. Ese sub-brazo
+#               necesita produccion, y cuando el canal contesta se le pasa como inventario.
+# Y LO QUE DECAE CON EL RELOJ, dicho: el espejo es un restore ESTATICO -su ohlcv mas nuevo
+# es del 2026-08-13 17:46Z- y `resolve_matrix_as_of` pregunta `clock_timestamp()`, asi que
+# cada dia que pasa mas ventanas quedan fuera de rango y mas bloques salen mudos. Eso
+# empuja hacia NO MEDIDO, nunca hacia un ROJO falso, pero envejece.
 #
 # EL INVENTARIO DEL BRAZO DEL PROMPT SE AMPLIA A PROPOSITO. Un sobre construido contra una
 # base vacia NO trae las claves de los bloques que dependen de datos -medido: con la base
@@ -50,7 +74,7 @@ AQUI=$(cd "$(dirname "$0")" && pwd)
 B=${VERIFY_HARNESS:-/srv/coinanalyze/harness}
 [ -f "$B/env" ] && . "$B/env"
 REPO=${REPO:-/srv/coinanalyze/repo}
-SUJETO=${K101_SUJETO:-arbol}
+SUJETO=${K101_SUJETO:-auto}
 SIMBOLO=${K101_SIMBOLO:-BTCUSDT_PERP.A}
 MOTOR="$AQUI/K101-homonimos.py"
 PY="$REPO/.venv/bin/python"
@@ -103,12 +127,63 @@ produccion() {
   [ -s "$TMP/prod.json" ] && "$PY" -c "import json,sys; json.load(open(sys.argv[1]))" "$TMP/prod.json" 2>/dev/null
 }
 
+# ---- el sobre del ESPEJO: el codigo de ESTA rama contra la base de 143.
+# SOLO SELECT, y no se importa app.db: `app.db.create_pool` ESCRIBE en market_assets y
+# symbols y crea particiones por DDL. Se conecta con asyncpg a pelo.
+espejo() {
+  cat > "$TMP/mojado.py" <<'PY'
+import asyncio, json, sys
+sys.path.insert(0, sys.argv[1])
+import asyncpg
+
+async def main():
+    from app import ai_context
+    conn = await asyncpg.connect(sys.argv[4])
+    try:
+        p = await ai_context.build_ai_symbol_context(conn, sys.argv[2], profile="max")
+    finally:
+        await conn.close()
+    json.dump(p, open(sys.argv[3], "w"), default=str, ensure_ascii=False)
+
+asyncio.run(main())
+PY
+  "$PY" "$TMP/mojado.py" "$REPO" "$SIMBOLO" "$TMP/espejo.json" \
+        "postgresql:///${ESPEJO_DB:-coinalyze_espejo}?host=/var/run/postgresql" 2>"$TMP/espejo.err"
+}
+
+# EL SUJETO POR DEFECTO ES `auto` Y PREFIERE EL ESPEJO, porque el espejo corre EL MISMO
+# codigo del arbol pero con filas de verdad: gana los brazos B2 y E, que en seco no se
+# ejercitan. Si el espejo no se puede construir -base caida, restore a medias- cae al seco
+# en vez de quedarse en NO MEDIDO, y lo DICE: en los dos casos la primera palabra de la
+# linea es el sujeto que de verdad se juzgo.
+if [ "$SUJETO" = "auto" ]; then
+  if espejo; then
+    SUJETO=espejo
+  else
+    echo "AVISO: la base espejo (${ESPEJO_DB:-coinalyze_espejo}) no dio un sobre"
+    echo "  ($(tail -1 "$TMP/espejo.err" 2>/dev/null)); se juzga el arbol EN SECO, que no"
+    echo "  ejercita los brazos por valor."
+    SUJETO=arbol
+  fi
+fi
+
 case "$SUJETO" in
   espejo)
-    echo "NO MEDIDO: 'espejo' no es un sujeto de K101. El espejo de 143 es una BASE, no"
-    echo "una API, y ademas no tiene datos: un sobre construido contra ella no traeria"
-    echo "valores. Usa K101_SUJETO=arbol (por defecto) o K101_SUJETO=produccion."
-    exit 2
+    [ -s "$TMP/espejo.json" ] || espejo || {
+      echo "NO MEDIDO: no se pudo construir el sobre contra la base espejo"
+      echo "  (${ESPEJO_DB:-coinalyze_espejo}): $(tail -1 "$TMP/espejo.err" 2>/dev/null)"
+      exit 2
+    }
+    EXTRA=""
+    produccion && EXTRA="$TMP/prod.json"
+    [ -n "$EXTRA" ] || {
+      echo "AVISO: el canal de produccion no contesto. El espejo juzga todo menos el"
+      echo "sub-brazo de identificadores SUELTOS del prompt, que necesita un inventario"
+      echo "lleno; lo que no pueda resolver lo dira sin condenar."
+    }
+    # shellcheck disable=SC2086
+    "$PY" "$MOTOR" "espejo (143 · ${ESPEJO_DB:-coinalyze_espejo}, codigo de $(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo '?'))" "$TMP/espejo.json" $EXTRA
+    RC=$?
     ;;
   arbol)
     seco || {
@@ -142,7 +217,8 @@ case "$SUJETO" in
     fi
     ;;
   *)
-    echo "NO MEDIDO: K101_SUJETO='$SUJETO' no existe. Son 'arbol' o 'produccion'."
+    echo "NO MEDIDO: K101_SUJETO='$SUJETO' no existe. Son 'auto' (por defecto), 'arbol',"
+    echo "'espejo' o 'produccion'."
     exit 2
     ;;
 esac

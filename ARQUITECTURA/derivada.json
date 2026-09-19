@@ -26162,8 +26162,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K101-un-nombre-dos-cosas.sh:102",
-            "harness/checks/K101-un-nombre-dos-cosas.sh:132",
+            "harness/checks/K101-un-nombre-dos-cosas.sh:126",
+            "harness/checks/K101-un-nombre-dos-cosas.sh:207",
             "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:337",
             "harness/checks/K43-foto-unica.sh:338",
@@ -26194,7 +26194,7 @@
             "harness/checks/K72-campos.js:33"
           ],
           "menciones": [
-            "harness/checks/K101-un-nombre-dos-cosas.sh:24",
+            "harness/checks/K101-un-nombre-dos-cosas.sh:26",
             "harness/checks/K31-eslabon5.sh:60",
             "harness/checks/K31-eslabon5.sh:172",
             "harness/checks/K43-foto-unica.sh:7",

@@ -97,7 +97,10 @@ def build(
             "publishers y usa 'measures' para decir QUE es. Dos caminos distintos NUNCA se "
             "promedian ni se presentan como confirmacion mutua: 'may_disagree_with' dice "
             "con quien puede chocar y por que. Un null no es un 'neutral' y un 'neutral' no "
-            "es un null: cada publicador declara su vocabulario en 'values'."
+            "es un null: cada publicador declara su vocabulario en 'values', y un "
+            "'values': null significa que ese vocabulario NO esta declarado -no que sea "
+            "libre-. Un campo puede no aparecer en su camino: eso no es null, es que su "
+            "contenedor vino con available=false."
         ),
         "canonical_for_levels": (
             "structure_detail.horizons.<h> es la fuente de los NIVELES -bos_level, "
@@ -114,8 +117,12 @@ def build(
                 "values": ["HH_HL", "LH_LL", "mixed", None],
                 "may_disagree_with": {
                     P_SH_STRUCT: (
-                        "NO discrepa: aquel es una copia literal de este campo. Si algun dia "
-                        "difieren, uno de los dos esta roto"
+                        "MISMO CALCULO, DOS CORTES: aquel no copia este campo, vuelve a "
+                        "evaluarlo. horizon_structure llama a structure_detail SIN as_of, asi "
+                        "que resuelve su propio clock_timestamp(), distinto del corte "
+                        "compartido con el que el sobre llama a este bloque. Con la misma "
+                        "vela cerrada dan lo mismo; si entra una vela entre los dos cortes, "
+                        "pueden diferir SIN que ninguno este roto"
                     ),
                     P_TM_STRUCT: (
                         "SI discrepa: otra profundidad y otra k. Medido el 2026-09-18 23:42Z, "
@@ -129,12 +136,20 @@ def build(
                 "publishes": ESTRUCTURA,
                 "horizons": ah,
                 "measures": (
-                    "COPIA de " + P_SD_STATE + ", sin recalcular nada. Existe para que el "
+                    "el MISMO calculo que " + P_SD_STATE + " -horizon_structure lo pide a "
+                    "structure_detail- pero en una SEGUNDA evaluacion con SU PROPIO corte: se "
+                    "le llama sin as_of, asi que resuelve su propio clock_timestamp(). No es "
+                    "una copia del campo que viaja en este mismo sobre. Existe para que el "
                     "sesgo de este bloque viaje con la estructura de la que sale"
                 ),
                 "values": ["HH_HL", "LH_LL", "mixed", None],
                 "may_disagree_with": {
-                    P_SD_STATE: "NO discrepa: es su origen",
+                    P_SD_STATE: (
+                        "MISMO CALCULO, DOS CORTES: coinciden mientras los dos cortes caigan "
+                        "sobre la misma vela cerrada, y pueden diferir si entra una vela entre "
+                        "ellos, sin que ninguno este roto. No es la copia que decia este "
+                        "glosario hasta el 2026-09-19"
+                    ),
                     P_TM_STRUCT: "SI discrepa: otra profundidad y otra k, igual que con su origen",
                     P_MS_STRUCT: _OTRO_TRAMO,
                 },
@@ -241,9 +256,12 @@ def build(
                     "DIVERGENCIA entre la pendiente del precio y la del CVD spot acumulado "
                     "en esa ventana intradia: 'alcista' = el precio baja mientras el CVD "
                     "sube. NO es una lectura de tendencia; es la contradiccion entre dos "
-                    "series"
+                    "series. 'sin_divergencia' es el valor POR DEFECTO y el caso normal, no "
+                    "una rareza: medido el 2026-09-19 sobre 4 sobres, 18 de los 21 valores "
+                    "presentes. Y una ventana sin barras suficientes no escribe este campo: "
+                    "trae available=false en su lugar"
                 ),
-                "values": ["alcista", "bajista", None],
+                "values": ["alcista", "bajista", "sin_divergencia", None],
                 "may_disagree_with": {
                     P_SH_BIAS: "SI discrepa: aquel es estructura de pivotes",
                     P_TM_BIAS: "SI discrepa: aquel es tendencia",
@@ -286,11 +304,11 @@ def build(
                 "path": "passive_flow.horizons.<h>.reading",
                 "horizons": list(passive_horizons),
                 "measures": (
-                    "CATEGORIA de absorcion pasiva: reacumulacion_silenciosa, "
-                    "redistribucion_silenciosa o neutral. Comparte la palabra 'neutral' con "
-                    "los sesgos y no es un sesgo. Es la unica 'reading' del sobre con "
-                    "vocabulario cerrado: las otras tres son prosa"
+                    "CATEGORIA de absorcion pasiva. Comparte la palabra 'neutral' con los "
+                    "sesgos y no es un sesgo. Es la unica 'reading' del sobre con vocabulario "
+                    "cerrado: las otras tres son prosa"
                 ),
+                "values": ["reacumulacion_silenciosa", "redistribucion_silenciosa", "neutral"],
             },
             {
                 "path": "market_impact.windows[i].reading",
@@ -300,6 +318,7 @@ def build(
                     "ventana. Mismo nombre que passive_flow...reading y para los mismos "
                     "marcos, y no es lo mismo ni tiene vocabulario cerrado"
                 ),
+                "values": None,
             },
             {
                 "path": "divergences.windows.<h>.reading",
@@ -308,11 +327,13 @@ def build(
                     "PROSA libre que explica la divergencia de esa ventana. El dato con "
                     "vocabulario es 'divergence', no esto"
                 ),
+                "values": None,
             },
             {
                 "path": "divergences.intraday.windows.<h>.reading",
                 "horizons": list(intraday_divergence_windows),
                 "measures": "PROSA libre, como la anterior pero de la ventana intradia",
+                "values": None,
             },
             {
                 "path": "structure_detail.horizons.<h>.group",
@@ -322,33 +343,92 @@ def build(
                     "-diario, por daily_session_agg-. El valor 'long' es un grupo, no una "
                     "direccion"
                 ),
+                "values": ["med", "long"],
             },
             {
                 "path": "structure_horizons.<h>.group",
                 "horizons": ah,
-                "measures": "copia del anterior; tampoco es una direccion",
+                "measures": "el mismo grupo del anterior; tampoco es una direccion",
+                "values": ["med", "long"],
             },
         ],
         # SESGOS SIN MARCO. Existen, se llaman 'bias' y NO caben en la comparacion por
         # horizonte porque no tienen uno. Se nombran para que nadie los empareje con los de
         # arriba, y cada uno con SU vocabulario, que tampoco es el mismo.
-        "bias_without_a_timeframe": {
-            "operator_read.bias": "Long/Short/None · lectura de scalp del instante",
-            "swing_score.bias": "LONG/SHORT/NEUTRAL · balance de evidencia a dias-semanas",
-            "trend_matrix.medium_term_alignment": (
-                "alcista/bajista/mixto · resumen de 4h+8h+1d de ESTE bloque, no de los otros"
-            ),
-            "market_structure.alignment": (
-                "alineado_<bias>/mixto · resumen de las tres capas de ESTE bloque"
-            ),
-            "divergences.summary y divergences.intraday.summary": (
-                "sin_divergencia / <bias>_en_N_ventanas / mixta · resumen de SU propio bloque"
-            ),
-            "market_memory_2y.historical_tilt": "LONG/SHORT · sesgo del analogo historico",
-            "external_macro_context.alignment.internal_bias": (
-                "LONG/SHORT/NEUTRAL · copia de swing_score.bias para compararla con el macro "
-                "externo; no es una lectura independiente"
-            ),
-            "wyckoff.bias.bias": "lectura del rango de Wyckoff, no de un marco temporal",
-        },
+        #
+        # ERA UN MAPA DE PROSA Y AHORA ES UNA LISTA CON `values`, y el cambio de forma tiene
+        # un motivo medido: la prosa NO SE PODIA CONTRASTAR, y bajo esa prosa habia CUATRO
+        # vocabularios mal declarados que K101 no podia ver -los cuatro escritos por quien
+        # escribio este fichero el 2026-09-18-:
+        #   operator_read.bias                   decia None      y el codigo escribe "No Trade"
+        #   swing_score.bias                     olvidaba        "SIN_DATOS"
+        #   external_macro_context...internal_bias  lo mismo, porque es su copia en mayusculas
+        #   market_memory_2y.historical_tilt     decia LONG/SHORT y el codigo tiene NEUTRAL
+        # Medido el 2026-09-19 sobre 4 sobres (3 de produccion + el espejo): historical_tilt
+        # sale NEUTRAL en 2 de 4. Consumidores de la forma vieja: NINGUNO -esta clave nacio
+        # el 2026-09-18, no esta desplegada y el motor de K101 no la leia-.
+        "bias_without_a_timeframe": [
+            {
+                "path": "operator_read.bias",
+                "measures": "lectura de scalp del instante, por diferencia de long_score y short_score",
+                "values": ["Long", "Short", "No Trade"],
+            },
+            {
+                "path": "swing_score.bias",
+                "measures": (
+                    "balance de evidencia a dias-semanas. 'SIN_DATOS' NO es 'NEUTRAL': sale "
+                    "cuando ningun componente pudo medirse"
+                ),
+                "values": ["LONG", "SHORT", "NEUTRAL", "SIN_DATOS"],
+            },
+            {
+                "path": "trend_matrix.medium_term_alignment",
+                "measures": (
+                    "resumen de los sesgos de ESTE bloque sobre 4h+8h+1d. NO es la alineacion "
+                    "de structure_horizons -que no tiene ninguna- ni la de market_structure"
+                ),
+                "values": ["alcista", "bajista", "mixto"],
+            },
+            {
+                "path": "market_structure.alignment",
+                "measures": "resumen de las tres capas de ESTE bloque",
+                "values": ["alineado_alcista", "alineado_bajista", "mixto"],
+            },
+            {
+                "path": "divergences.summary",
+                "measures": (
+                    "resumen de las ventanas SOSTENIDAS de este bloque. Lleva DOS cuentas "
+                    "-cuantas confirman y cuantas se evaluaron-, al contrario que el de "
+                    "intraday, que lleva una"
+                ),
+                "values": ["sin_divergencia", "mixta", "<alcista|bajista>_en_N_de_M_ventanas"],
+            },
+            {
+                "path": "divergences.intraday.summary",
+                "measures": "resumen de las ventanas intradia frescas de este bloque",
+                "values": ["sin_divergencia", "mixta", "<alcista|bajista>_en_N_ventanas"],
+            },
+            {
+                "path": "market_memory_2y.historical_tilt",
+                "measures": "sesgo del analogo historico a 2 anos",
+                "values": ["LONG", "SHORT", "NEUTRAL"],
+            },
+            {
+                "path": "external_macro_context.alignment.internal_bias",
+                "measures": (
+                    "copia EN MAYUSCULAS de swing_score.bias para compararla con el macro "
+                    "externo; no es una lectura independiente y arrastra su vocabulario entero"
+                ),
+                "values": ["LONG", "SHORT", "NEUTRAL", "SIN_DATOS"],
+            },
+            {
+                "path": "wyckoff.bias.bias",
+                "measures": (
+                    "lectura del rango de Wyckoff, no de un marco temporal. Su vocabulario NO "
+                    "esta declarado aqui: no lo he medido, y una lista inventada seria peor "
+                    "que el hueco"
+                ),
+                "values": None,
+            },
+        ],
     }

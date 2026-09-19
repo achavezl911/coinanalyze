@@ -95,10 +95,74 @@ else
   printf '  sobre de origin/main NO SE PUDO CONSTRUIR: los brazos A2 y D se declaran sin medir\n'
 fi
 
+# --- EL SOBRE MOJADO · el mismo codigo del arbol contra la base ESPEJO de 143.
+# Hace falta para los brazos que necesitan VALORES: E (vocabulario) y G (invariantes). En
+# seco esos brazos no se ejercitan, y un control que solo corre en seco no puede decir que
+# los cubre. Si el espejo no esta, los brazos que dependen de el se DECLARAN sin medir y se
+# cuentan: callarlos seria exactamente lo que este arnes existe para no hacer.
+sobre_mojado() {  # <raiz-del-arbol> <salida>
+  cat > "$DIR/mojado.py" <<'PY'
+import asyncio, json, sys
+sys.path.insert(0, sys.argv[1])
+import asyncpg
+async def main():
+    from app import ai_context
+    conn = await asyncpg.connect(sys.argv[3])
+    try:
+        p = await ai_context.build_ai_symbol_context(conn, "BTCUSDT_PERP.A", profile="max")
+    finally:
+        await conn.close()
+    json.dump(p, open(sys.argv[2], "w"), default=str, ensure_ascii=False)
+asyncio.run(main())
+PY
+  "$PY" "$DIR/mojado.py" "$1" "$2" \
+        "postgresql:///${ESPEJO_DB:-coinalyze_espejo}?host=/var/run/postgresql" 2>"$DIR/mojado.err"
+}
+MOJADO=""
+if sobre_mojado "$ORIG" "$DIR/mojado.json"; then
+  MOJADO="$DIR/mojado.json"
+  printf '  sobre MOJADO (espejo) %s bytes · sha256 %s\n' \
+    "$(wc -c < "$DIR/mojado.json")" "$(sha256sum "$DIR/mojado.json" | cut -c1-16)"
+else
+  printf '  sobre MOJADO NO SE PUDO CONSTRUIR (%s): los brazos E y G se declaran sin medir\n' \
+    "$(tail -1 "$DIR/mojado.err" 2>/dev/null | cut -c1-90)"
+fi
+
+# --- EL ARBOL ANTERIOR, para los controles positivos de R1-R3. Por defecto el commit en
+# que se midieron los tres defectos; se puede cambiar con K101_CONTROL_PREV.
+PREV=${K101_CONTROL_PREV:-37d8d58}
+mkdir -p "$DIR/prev"
+TIENE_PREV=0
+if git -C "$ORIG" rev-parse --verify --quiet "$PREV" >/dev/null 2>&1 &&
+   git -C "$ORIG" archive "$PREV" app 2>/dev/null | tar -x -C "$DIR/prev" 2>/dev/null; then
+  ln -s "$ORIG/.venv" "$DIR/prev/.venv" 2>/dev/null
+  TIENE_PREV=1
+  printf '  arbol anterior %s · field_disambiguation.py sha256 %s (el de hoy: %s)\n' \
+    "$PREV" "$(sha256sum "$DIR/prev/app/field_disambiguation.py" | cut -c1-12)" \
+    "$(sha256sum "$ORIG/app/field_disambiguation.py" | cut -c1-12)"
+else
+  printf '  arbol anterior %s NO DISPONIBLE: los brazos F1, G1 y E1 se declaran sin medir\n' "$PREV"
+fi
+
+# injertar <raiz-del-arbol> <sobre-datos> <salida>: el glosario y el prompt de UN arbol
+# sobre los DATOS de un sobre. Asi la unica variable entre dos corridas es el texto.
+injertar() {
+  "$PY" - "$1" "$2" "$3" > "$DIR/inj.log" 2>&1 <<'PY'
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from app.ai_context import field_disambiguation
+from app.analysis_prompt import ANALYSIS_PROMPT
+p = json.load(open(sys.argv[2]))
+p["field_disambiguation"] = field_disambiguation()
+p["interpretation_prompt"] = ANALYSIS_PROMPT
+json.dump(p, open(sys.argv[3], "w"), default=str, ensure_ascii=False)
+PY
+}
+
 # plantar <nombre> <script-python>  -> deja $DIR/p.json y enseña la huella antes/despues
 plantar() {
   local nombre="$1"
-  cp "$DIR/base.json" "$DIR/p.json"
+  cp "${3:-$DIR/base.json}" "$DIR/p.json"
   "$PY" - "$DIR/p.json" > "$DIR/p.log" 2>&1 <<PY
 import json, sys
 p = json.load(open(sys.argv[1]))
@@ -112,9 +176,12 @@ PY
     return 1
   fi
   printf '    plantado %-46s sha256 %s -> %s\n' "$nombre" \
-    "$(sha256sum "$DIR/base.json" | cut -c1-12)" "$(sha256sum "$DIR/p.json" | cut -c1-12)"
+    "$(sha256sum "${3:-$DIR/base.json}" | cut -c1-12)" "$(sha256sum "$DIR/p.json" | cut -c1-12)"
   return 0
 }
+
+declarados=0
+declarar() { declarados=$((declarados+1)); printf '  [decl ] %-56s %s\n' "$1" "$2"; }
 
 echo
 echo "=== A · EL CONTROL NEGATIVO Y EL POSITIVO ==="
@@ -122,7 +189,7 @@ caso "A1 el arbol de verdad pasa" 0 "VERDE" "$DIR/base.json"
 if [ -s "$DIR/main.json" ]; then
   caso "A2 origin/main condena (no trae glosario ninguno)" 1 "no trae field_disambiguation" "$DIR/main.json"
 else
-  printf '  [decl ] %-56s sin sobre de origin/main\n' "A2 origin/main condena"
+  declarar "A2 origin/main condena" "sin sobre de origin/main"
 fi
 
 echo
@@ -212,27 +279,146 @@ plantar "C3b la misma frase pero con market_structure -> NO debe condenar" \
   && caso "C3b atribucion CORRECTA -> pasa" 0 "VERDE" "$DIR/p.json"
 
 echo
+echo "=== R1 · F · EL AGREGADO DE UN BLOQUE PRESTADO AL VECINO ==="
+# La frase de 37d8d58 decia «structure_horizons ... su alineacion por marco la resume
+# trend_matrix.medium_term_alignment». Ningun otro brazo la veia: el camino EXISTE (D lo
+# resuelve) y la frase no nombra ningun grupo (D2 no entra).
+plantar "R1a la frase vieja, palabra por palabra" \
+'p["interpretation_prompt"] += ("\nstructure_horizons NO tiene esas capas: su \"group\" es "
+ "'"'"'med'"'"' o '"'"'long'"'"', y su alineacion por marco la resume "
+ "trend_matrix.medium_term_alignment sobre 4h+8h+1d.")' \
+  && caso "R1a agregado prestado -> condena, y nombra los dos bloques" 1 \
+       "F · la frase presenta trend_matrix.medium_term_alignment como de 'structure_horizons'" "$DIR/p.json"
+
+# EL CONTROL DEL CONTROL: la misma cita, con SU bloque delante, tiene que PASAR. Sin esto,
+# R1a pasaria con un brazo que condenara cualquier mencion de medium_term_alignment.
+plantar "R1b la misma cita con trend_matrix delante -> NO debe condenar" \
+'p["interpretation_prompt"] += ("\ntrend_matrix publica su propio resumen: "
+ "trend_matrix.medium_term_alignment sobre 4h+8h+1d.")' \
+  && caso "R1b la cita con su bloque delante -> pasa" 0 "VERDE" "$DIR/p.json"
+
+if [ "$TIENE_PREV" = 1 ]; then
+  injertar "$DIR/prev" "$DIR/base.json" "$DIR/prev-texto.json"
+  caso "R1c el PROMPT ENTERO de $PREV -> condena por F" 1 "F · la frase presenta" "$DIR/prev-texto.json"
+  caso "R1d el PROMPT ENTERO de hoy sobre los mismos datos -> pasa" 0 "VERDE" "$DIR/base.json"
+else
+  declarar "R1c/R1d el prompt entero de $PREV" "sin arbol anterior"
+fi
+
+echo
+echo "=== R2 · G · UNA PROMESA DE COINCIDENCIA SE COBRA CON LOS VALORES ==="
+# 37d8d58 prometia que structure_horizons.<h>.structure era «copia literal» de
+# structure_detail y que «si algun dia difieren, uno de los dos esta roto». No es verdad:
+# horizon_structure re-llama a structure_detail SIN as_of, con su propio corte.
+if [ -n "$MOJADO" ] && [ "$TIENE_PREV" = 1 ]; then
+  for A in prev hoy; do
+    RAIZ="$DIR/prev"; [ "$A" = hoy ] && RAIZ="$ORIG"
+    injertar "$RAIZ" "$MOJADO" "$DIR/g-$A.json"
+    "$PY" - "$DIR/g-$A.json" >/dev/null 2>&1 <<'PY'
+import json, sys
+p = json.load(open(sys.argv[1]))
+h = p["structure_horizons"]["1h"]
+# UN horizonte, y a un valor DEL vocabulario declarado: si lo sacara del vocabulario lo
+# cazaria el brazo E y no se sabria cual de los dos condeno.
+h["structure"] = "LH_LL" if h.get("structure") != "LH_LL" else "HH_HL"
+json.dump(p, open(sys.argv[1], "w"), ensure_ascii=False)
+PY
+  done
+  caso "R2a la promesa de $PREV con la diferencia delante -> condena" 1 \
+       "G · el glosario promete que" "$DIR/g-prev.json"
+  caso "R2b el texto de hoy con LA MISMA diferencia -> pasa" 0 "VERDE" "$DIR/g-hoy.json"
+  # Y el control del control: sin la diferencia, la promesa vieja NO condena. Sin esto, R2a
+  # pasaria con un brazo que condenara la promesa por existir.
+  injertar "$DIR/prev" "$MOJADO" "$DIR/g-prev-limpio.json"
+  caso "R2c la promesa de $PREV SIN diferencia -> no condena por G" 1 "G invariantes: 2 promesa" "$DIR/g-prev-limpio.json"
+else
+  declarar "R2a/R2b/R2c la promesa cobrada con valores" "sin sobre mojado o sin arbol anterior"
+fi
+
+echo
+echo "=== R3/R4c · E · EL VOCABULARIO DECLARADO CONTRA EL QUE EL CAMPO VALE ==="
+if [ -n "$MOJADO" ] && [ "$TIENE_PREV" = 1 ]; then
+  injertar "$DIR/prev" "$MOJADO" "$DIR/e-prev.json"
+  injertar "$ORIG" "$MOJADO" "$DIR/e-hoy.json"
+  # El espejo puede no traer valores de intraday.divergence; se planta uno REAL del codigo
+  # (`scalp_logic` lo escribe por defecto) para que el brazo tenga sujeto en los dos lados.
+  for A in prev hoy; do
+    "$PY" - "$DIR/e-$A.json" >/dev/null 2>&1 <<'PY'
+import json, sys
+p = json.load(open(sys.argv[1]))
+d = p.setdefault("divergences", {}).setdefault("intraday", {})
+d["available"] = True
+d.setdefault("windows", {})["1h"] = {"available": True, "divergence": "sin_divergencia",
+                                     "reading": None, "window_seconds": 3600}
+json.dump(p, open(sys.argv[1], "w"), ensure_ascii=False)
+PY
+  done
+  caso "R3a 'sin_divergencia' contra el vocabulario de $PREV -> condena" 1 \
+       "E · divergences.intraday.windows.<h>.divergence vale" "$DIR/e-prev.json"
+  caso "R3b el MISMO valor contra el vocabulario de hoy -> pasa" 0 "VERDE" "$DIR/e-hoy.json"
+else
+  declarar "R3a/R3b vocabulario viejo contra valor real" "sin sobre mojado o sin arbol anterior"
+fi
+
+# R4c generico: un valor inventado, fuera de CUALQUIER vocabulario declarado.
+plantar "R4c un valor fuera del vocabulario declarado" \
+'p["structure_horizons"]["1h"]["bias"] = "VALOR_INVENTADO"' \
+  && caso "R4c valor fuera de vocabulario -> condena" 1 \
+       "E · structure_horizons.<h>.bias vale .VALOR_INVENTADO" "$DIR/p.json"
+
+# Y el control del control de E: un campo con `values: null` NO se juzga, y se nombra.
+plantar "R4c-b un campo con el vocabulario SIN DECLARAR -> no condena, y lo nombra" \
+'p["wyckoff"]["bias"] = {"bias": "lo_que_sea_inventado"}' \
+  && caso "R4c-b values:null -> pasa nombrandolo" 0 "SIN DECLARAR y no juzgados.*wyckoff" "$DIR/p.json"
+
+echo
+echo "=== R4b · UN SUB-BLOQUE MUDO ES SIN JUZGAR, NO ROJO ==="
+# Lo que produccion sirve cuando en 17 h no hay filas que casen: divergences.available=true
+# y divergences.intraday={available:false, windows:{}}.
+# EL PLANTADO SE HACE SOBRE EL SOBRE SECO, donde `divergences` viene mudo ENTERO, para que
+# la huella CAMBIE de verdad. Hecho sobre el espejo no cambiaba ni un byte -alli el
+# sub-bloque ya venia asi- y un plantado que no mueve nada no prueba nada.
+plantar "R4b padre vivo y sub-bloque intraday mudo" \
+'p["divergences"] = {
+    "available": True,
+    "windows": {"1d": {"available": True, "divergence": "sin_divergencia", "reading": None}},
+    "intraday": {"available": False, "windows": {}},
+}' \
+  && caso "R4b sub-bloque mudo -> VERDE, y lo NOMBRA" 0 \
+       "SIN JUZGAR por contenedor mudo.*divergences.intraday" "$DIR/p.json"
+
+# EL CONTROL DEL CONTROL: el MISMO sub-bloque vivo y poblado, pero sin la hoja declarada,
+# tiene que seguir condenando. Sin esto, R4b pasaria con un brazo que excusara todo.
+plantar "R4b-b el sub-bloque VIVO y poblado pero sin la hoja declarada" \
+'p["divergences"] = {
+    "available": True,
+    "windows": {"1d": {"available": True, "divergence": "sin_divergencia", "reading": None}},
+    "intraday": {"available": True, "windows": {"1h": {"available": True, "otra_cosa": 1}}},
+}' \
+  && caso "R4b-b contenedor vivo sin la hoja -> condena" 1 "NO EXISTE esa ruta" "$DIR/p.json"
+
+echo
 echo "=== D · CONTRA LOS BYTES VIEJOS · cuantos brazos fallan con el defecto delante ==="
 # El sujeto es el sobre de origin/main, que no trae glosario: TODOS los brazos que dependen
 # del glosario mueren en la primera linea. Se cuenta y se dice.
 if [ -s "$DIR/main.json" ]; then
-  viejos=0; viejos_ok=0
-  for s in base main; do :; done
-  for nombre in A1 B1 B2 B3 B4 B5 B6 B7 C1 C2a C2b C3 C3b; do
+  viejos=0
+  for nombre in A1 B1 B2 B3 B4 B5 B6 B7 C1 C2a C2b C3 C3b R1a R1b R4c R4c-b R4b R4b-b; do
     viejos=$((viejos+1))
   done
   out=$("$PY" "$MOTOR" "bytes-viejos" "$DIR/main.json" 2>&1); rc=$?
   printf '  sobre de origin/main -> rc=%s · %s\n' "$rc" "$(printf '%s' "$out" | head -1 | cut -c1-120)"
-  printf '  de los %d brazos de arriba, con los bytes viejos SOBREVIVIRIAN los que esperan\n' "$viejos"
-  printf '  rc=1 (%d de %d) y FALLARIAN los %d que esperan rc=0 -A1, C2a y C3b-, porque el\n' \
-    "$((viejos-3))" "$viejos" 3
+  printf '  de los %d brazos de arriba que corren sobre el sobre SECO, con los bytes viejos\n' "$viejos"
+  printf '  SOBREVIVIRIAN los %d que esperan rc=1 y FALLARIAN los 6 que esperan rc=0\n' \
+    "$((viejos-6))"
+  printf '  -A1, C2a, C3b, R1b, R4c-b y R4b-, porque el\n'
   printf '  sobre viejo no trae glosario y el motor condena en la primera linea: ningun\n'
   printf '  plantado sobre el glosario llega siquiera a ejercitarse. Los que sobreviven NO\n'
   printf '  pasan por la razon buena: pasan porque el sobre entero esta condenado antes.\n'
   # y se COMPRUEBA en vez de decirlo: C3b sobre el sobre viejo tiene que salir ROJO.
   caso "D1 C3b (que espera VERDE) sobre los bytes viejos -> ROJO" 1 "no trae field_disambiguation" "$DIR/main.json"
 else
-  printf '  [decl ] sin sobre de origin/main: el control positivo no se pudo correr\n'
+  declarar "D1 el control positivo contra los bytes viejos" "sin sobre de origin/main"
 fi
 
 echo
@@ -249,13 +435,55 @@ if [ "$rc" = 2 ] && printf '%s' "$out" | grep -q "no existe"; then
 else
   fallos=$((fallos+1)); printf '  [FALLA] %-56s rc=%s\n' "E2 un sujeto inventado -> NO MEDIDO" "$rc"
 fi
+# E3 · EL SUJETO POR DEFECTO ES EL ESPEJO, y la linea tiene que decirlo. Hasta el
+# 2026-09-19 este brazo comprobaba lo contrario -que el espejo se declaraba imposible- con
+# una prosa que se apoyaba en `n_live_tup`, un conteo ESTIMADO que en esa base vale 0. El
+# dato bueno es `count(*)`: 116895 filas en ohlcv, 573 MB.
 out=$(K101_SUJETO=espejo bash "$CHECK" 2>&1); rc=$?
-if [ "$rc" = 2 ] && printf '%s' "$out" | grep -q "no es un sujeto"; then
-  pasan=$((pasan+1)); printf '  [ok   ] %-56s rc=2\n' "E3 el espejo se declara imposible, no se inventa"
+if [ -n "$MOJADO" ] && [ "$rc" = 0 ] && printf '%s' "$out" | grep -q "VERDE \[espejo"; then
+  pasan=$((pasan+1)); printf '  [ok   ] %-56s rc=0\n' "E3 el espejo ES sujeto y la linea lo nombra"
+elif [ -z "$MOJADO" ] && [ "$rc" = 2 ]; then
+  declarar "E3 el espejo ES sujeto" "la base espejo no esta: NO MEDIDO, que es correcto"
 else
-  fallos=$((fallos+1)); printf '  [FALLA] %-56s rc=%s\n' "E3 el espejo se declara imposible" "$rc"
+  fallos=$((fallos+1)); printf '  [FALLA] %-56s rc=%s\n      %s\n' "E3 el espejo ES sujeto" "$rc" "$(printf '%s' "$out" | head -1)"
+fi
+
+# E4 · EL ESPEJO GANA BRAZOS SOBRE EL SECO, y se comprueba en vez de decirse: el brazo E
+# (vocabulario) tiene que mirar MAS valores no nulos en el espejo que en seco.
+if [ -n "$MOJADO" ]; then
+  n_mojado=$("$PY" "$MOTOR" x "$MOJADO" 2>&1 | grep -oE "E vocabulario: [0-9]+ valores contrastados, [0-9]+" | grep -oE "[0-9]+$")
+  n_seco=$("$PY" "$MOTOR" x "$DIR/base.json" 2>&1 | grep -oE "E vocabulario: [0-9]+ valores contrastados, [0-9]+" | grep -oE "[0-9]+$")
+  if [ -n "$n_mojado" ] && [ -n "$n_seco" ] && [ "$n_mojado" -gt "$n_seco" ]; then
+    pasan=$((pasan+1))
+    printf '  [ok   ] %-56s %s no nulos contra %s\n' "E4 el espejo ejercita mas el brazo E que el seco" "$n_mojado" "$n_seco"
+  else
+    fallos=$((fallos+1))
+    printf '  [FALLA] %-56s mojado=%s seco=%s\n' "E4 el espejo ejercita mas el brazo E" "$n_mojado" "$n_seco"
+  fi
+
+  # E5 · Y EL SUJETO `auto` CAE AL SECO CUANDO EL ESPEJO NO ESTA, diciendolo.
+  out=$(ESPEJO_DB=no_existe_esta_base_de_control bash "$CHECK" 2>&1); rc=$?
+  if [ "$rc" = 0 ] && printf '%s' "$out" | grep -q "se juzga el arbol EN SECO" &&
+     printf '%s' "$out" | grep -q "VERDE \[arbol"; then
+    pasan=$((pasan+1)); printf '  [ok   ] %-56s rc=0\n' "E5 auto cae al seco si el espejo no esta, y lo dice"
+  else
+    fallos=$((fallos+1)); printf '  [FALLA] %-56s rc=%s\n' "E5 auto cae al seco y lo dice" "$rc"
+  fi
+
+  # E6 · pero el espejo FORZADO con una base que no existe NO cae: NO MEDIDO.
+  out=$(K101_SUJETO=espejo ESPEJO_DB=no_existe_esta_base_de_control bash "$CHECK" 2>&1); rc=$?
+  if [ "$rc" = 2 ] && printf '%s' "$out" | grep -q "no se pudo construir el sobre contra la base espejo"; then
+    pasan=$((pasan+1)); printf '  [ok   ] %-56s rc=2\n' "E6 espejo forzado sin base -> NO MEDIDO, no cae al seco"
+  else
+    fallos=$((fallos+1)); printf '  [FALLA] %-56s rc=%s\n' "E6 espejo forzado sin base -> NO MEDIDO" "$rc"
+  fi
+else
+  declarar "E4/E5/E6 los brazos del sujeto espejo" "sin sobre mojado"
 fi
 
 echo
+if [ "$declarados" -gt 0 ]; then
+  printf '%d DECLARADOS sin medir (no cuentan como pasados ni como fallados).\n' "$declarados"
+fi
 printf '%d de %d\n' "$pasan" "$((pasan+fallos))"
 [ "$fallos" -eq 0 ]

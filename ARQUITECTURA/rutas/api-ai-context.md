@@ -384,7 +384,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K101-un-nombre-dos-cosas.sh:102`, `harness/checks/K101-un-nombre-dos-cosas.sh:132`, `harness/checks/K31-eslabon5.sh:65`, `harness/checks/K43-foto-unica.sh:337` _(+26)_ | `harness/checks/K101-un-nombre-dos-cosas.sh:24`, `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K31-eslabon5.sh:172`, `harness/checks/K43-foto-unica.sh:7` _(+8)_ |
+| **checks** | `harness/checks/K101-un-nombre-dos-cosas.sh:126`, `harness/checks/K101-un-nombre-dos-cosas.sh:207`, `harness/checks/K31-eslabon5.sh:65`, `harness/checks/K43-foto-unica.sh:337` _(+26)_ | `harness/checks/K101-un-nombre-dos-cosas.sh:26`, `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K31-eslabon5.sh:172`, `harness/checks/K43-foto-unica.sh:7` _(+8)_ |
 | **panel** | `static/js/02-canal.js:35`, `static/js/02-canal.js:49`, `static/js/02-canal.js:53`, `static/js/10-contexto-y-estructura.js:918` _(+8)_ | — |
 | **panel-html** | `static/index.html:85` | — |
 | **readme** | — | `README.md:62`, `README.md:414`, `README.md:518` |
