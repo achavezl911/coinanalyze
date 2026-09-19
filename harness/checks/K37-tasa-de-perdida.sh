@@ -102,6 +102,7 @@
 # es estar sano.
 set -uo pipefail
 B=/srv/coinanalyze/harness
+REPO_LOCAL=${REPO:-/srv/coinanalyze/repo}
 
 # ---------------------------------------------------------------- LA DECLARACION
 # feed | tabla | interval | cadencia_s | techo_%_dia | excepciones | dias | por que ese techo
@@ -124,15 +125,15 @@ B=/srv/coinanalyze/harness
 # SOLA: si el simbolo baja al techo base, el check falla pidiendo que se quite, para
 # que una excepcion vieja no siga cubriendo un fallo nuevo.
 DECLARACION='
-long_short_ratio|long_short_ratio|5min|300|1.00|SOLUSDT_PERP.A=10.00|7|BTC 0.50 y ETH 0.55 en la MISMA ventana y el mismo proveedor: el techo es el doble de lo que este feed ya consigue. SOL va aparte porque LA FUENTE lo publica mas escaso, y esta medido pidiendole a la API las MISMAS 24 h para los dos en UNA sola peticion el 2026-08-26T00:55Z: devolvio 288 de 289 buckets para BTC y 266 de 289 para SOL, 23 que trae para BTC y no para SOL. Nuestra base tenia 266 de SOL y 287 de BTC, o sea EXACTAMENTE lo que llego (a BTC le faltaba el bucket de las 00:55 que el proveedor acababa de publicar): no tiramos nada. Techo 10.00 sobre un 8.04 medido en 7 dias y un maximo diario de 8.68
-funding_rate|funding_rate|5min|300|1.00||7|mide 0.00 en los tres simbolos
-open_interest|open_interest|5min|300|1.00||7|mide 0.00 en los tres simbolos
-oi_bybit|oi_bybit|5min|300|1.00||7|mide 0.00 en los tres simbolos
-predicted_funding_rate|predicted_funding_rate|5min|300|1.00||7|mide 0.00 en los tres simbolos
-ohlcv_1min|ohlcv|1min|60|1.00||7|mide 0.00 en los tres simbolos
-spot_trades_agg|spot_trades_agg|1min|60|1.00||7|mide 0.00 en la ventana; los 13 minutos que le faltan HOY son los MISMOS en los tres simbolos a la vez, o sea que la ausencia es nuestra y no del mercado: mismo defecto que futures_trades_agg, arreglado en K40
-futures_trades_agg|futures_trades_agg|1min|60|1.00||6|SEIS Y NO SIETE porque a esta tabla la PODA le come el borde inferior. La retencion es SCALP_MINUTE_RETENTION_HOURS=168 -y desde el 2026-09-10 el default de app/config.py dice 168 tambien: hasta ese dia decia 36 y NO era el que aplicaba, que es justo lo que se arreglo-, pero quien la aplica es cleanup() (app/scalp_collector.py:1570-1583), un sleep(3600) en bucle desde que ARRANCA el colector: min(ts) va por detras del corte teorico entre 0 y 60 min en marcha normal, y HORAS tras un reinicio o un apagon. MEDIDO el 2026-09-19T15:01:19Z contra 140: min(ts) 09-12 14:07 contra un corte de 09-12 15:01, o sea 54.3 min de retraso, con el colector arrancado a las 03:06:08Z -poda al minuto :06, dato desde el :07-. Por eso el septimo dia de la ventana no esta garantizado y no se cuenta: si se contara, la misma perdida daria VERDE en los primeros minutos de cada dia UTC y ROJO el resto. Que los SEIS sigan estandolo lo vigila la guarda de cobertura. Lo que pierde son nuestros DESPLIEGUES: el 2026-08-25, 19 despliegues y 33 minutos ausentes en 14 rachas, una por despliegue, iguales en los tres simbolos y los tres exchanges. Causa cerrada en K40; la perdida ya hecha se seguira contando 168 h
-liquidations|liquidations|5min|300|NA||7|NO SE SABE si vacio es perdida: no escribe NUNCA una fila 0/0 (0 de 1172 filas en 2 dias) y la ausencia va del 26 al 48 por ciento segun el simbolo, o sea que sigue a la actividad del mercado y no a un fallo
+long_short_ratio|long_short_ratio|5min|300|1.00|SOLUSDT_PERP.A=10.00|7||BTC 0.50 y ETH 0.55 en la MISMA ventana y el mismo proveedor: el techo es el doble de lo que este feed ya consigue. SOL va aparte porque LA FUENTE lo publica mas escaso, y esta medido pidiendole a la API las MISMAS 24 h para los dos en UNA sola peticion el 2026-08-26T00:55Z: devolvio 288 de 289 buckets para BTC y 266 de 289 para SOL, 23 que trae para BTC y no para SOL. Nuestra base tenia 266 de SOL y 287 de BTC, o sea EXACTAMENTE lo que llego (a BTC le faltaba el bucket de las 00:55 que el proveedor acababa de publicar): no tiramos nada. Techo 10.00 sobre un 8.04 medido en 7 dias y un maximo diario de 8.68
+funding_rate|funding_rate|5min|300|1.00||7||mide 0.00 en los tres simbolos
+open_interest|open_interest|5min|300|1.00||7||mide 0.00 en los tres simbolos
+oi_bybit|oi_bybit|5min|300|1.00||7||mide 0.00 en los tres simbolos
+predicted_funding_rate|predicted_funding_rate|5min|300|1.00||7||mide 0.00 en los tres simbolos
+ohlcv_1min|ohlcv|1min|60|1.00||7||mide 0.00 en los tres simbolos
+spot_trades_agg|spot_trades_agg|1min|60|1.00||7||mide 0.00 en la ventana; los 13 minutos que le faltan HOY son los MISMOS en los tres simbolos a la vez, o sea que la ausencia es nuestra y no del mercado: mismo defecto que futures_trades_agg, arreglado en K40
+futures_trades_agg|futures_trades_agg|1min|60|1.00||6|ohlcv:SCALP_MINUTE_RETENTION_HOURS|SEIS Y NO SIETE porque a esta tabla la PODA le come el borde inferior. La retencion es SCALP_MINUTE_RETENTION_HOURS=168 -y desde el 2026-09-10 el default de app/config.py dice 168 tambien: hasta ese dia decia 36 y NO era el que aplicaba, que es justo lo que se arreglo-, pero quien la aplica es cleanup() (app/scalp_collector.py:1570-1583), un sleep(3600) en bucle desde que ARRANCA el colector: min(ts) va por detras del corte teorico entre 0 y 60 min en marcha normal, y HORAS tras un reinicio o un apagon. MEDIDO el 2026-09-19T15:01:19Z contra 140: min(ts) 09-12 14:07 contra un corte de 09-12 15:01, o sea 54.3 min de retraso, con el colector arrancado a las 03:06:08Z -poda al minuto :06, dato desde el :07-. Por eso el septimo dia de la ventana no esta garantizado y no se cuenta: si se contara, la misma perdida daria VERDE en los primeros minutos de cada dia UTC y ROJO el resto. Que los SEIS sigan estandolo lo vigila la guarda de cobertura. Lo que pierde son nuestros DESPLIEGUES: el 2026-08-25, 19 despliegues y 33 minutos ausentes en 14 rachas, una por despliegue, iguales en los tres simbolos y los tres exchanges. Causa cerrada en K40; la perdida ya hecha se seguira contando 168 h
+liquidations|liquidations|5min|300|NA||7||NO SE SABE si vacio es perdida: no escribe NUNCA una fila 0/0 (0 de 1172 filas en 2 dias) y la ausencia va del 26 al 48 por ciento segun el simbolo, o sea que sigue a la actividad del mercado y no a un fallo
 '
 
 # ------------------------------------------------------------------- LA CONSULTA
@@ -141,12 +142,19 @@ liquidations|liquidations|5min|300|NA||7|NO SE SABE si vacio es perdida: no escr
 # cifra no seria repetible.
 # LA VENTANA DE CADA FEED SON SUS `dias` DECLARADOS, contados hacia atras desde la
 # medianoche UTC de hoy. NO sale de `min(ts)`: ese borde se mueve con la poda y por ahi
-# se colaba la hora en el veredicto (ver LA VENTANA, arriba). `min(ts)` solo se lee para
-# COMPROBAR que el dato cubre lo declarado -la guarda de cobertura-. El universo de
-# simbolos sale de 30 dias, no de la ventana, para que un simbolo que se calla
-# aparezca al 100 % de perdida en vez de desaparecer del conteo.
-ramas=""; tablas_declaradas=""; feeds_declarados=""
-while IFS='|' read -r feed tabla ivl cad techo excepciones dias _motivo; do
+# se colaba la hora en el veredicto (ver LA VENTANA, arriba).
+#
+# Y NI EL UNIVERSO DE SIMBOLOS NI EL NACIMIENTO SALEN DE UNA TABLA PODADA. En una tabla
+# sin poda `min(ts)` ES el nacimiento y sirve para las dos cosas; en una podada no es
+# ninguna de las dos, y usarlo dejaba dos agujeros (COLA 128, remate 2):
+#   · un simbolo callado MAS que la retencion se queda sin filas, desaparece del universo
+#     y el feed sale VERDE por haberse callado mas tiempo;
+#   · cuando la poda entra en un hueco, es el HUECO el que se vuelve `min(ts)`, asi que
+#     una perdida pegada al suelo se leia como «el dato no llega» segun la hora.
+# Por eso un feed podado DECLARA de que tabla sin poda salen su universo y su nacimiento
+# (columna `poda`), y el de aqui es el unico `min(ts)` que se lee.
+ramas=""; tablas_declaradas=""; feeds_declarados=""; podados=""; univ_sql=""
+while IFS='|' read -r feed tabla ivl cad techo excepciones dias poda _motivo; do
   [ -n "${feed:-}" ] || continue
   tablas_declaradas="${tablas_declaradas:+$tablas_declaradas,}'$tabla'"
   [ "$techo" = "NA" ] && continue
@@ -158,6 +166,24 @@ while IFS='|' read -r feed tabla ivl cad techo excepciones dias _motivo; do
   esac
   [ "$dias" -ge 1 ] || { echo "NO MEDIDO: el feed '$feed' declara $dias dias de ventana"; exit 2; }
   feeds_declarados="${feeds_declarados:+$feeds_declarados,}('$feed')"
+  # DE DONDE SALE EL UNIVERSO Y EL NACIMIENTO. Sin `poda` declarada, de la propia tabla: ahi
+  # nadie borra, asi que su `min(ts)` es el nacimiento de verdad. Con `poda`, de la tabla que
+  # se declare -que tiene que guardar los 30 dias del universo, y se comprueba-.
+  univ_tabla=$tabla; ajuste=""
+  if [ -n "${poda:-}" ]; then
+    univ_tabla=${poda%%:*}; ajuste=${poda#*:}
+    case "$univ_tabla" in
+      ''|*[!a-z0-9_]*) echo "NO MEDIDO: el feed '$feed' declara una tabla de universo rara ('$univ_tabla')"; exit 2 ;;
+    esac
+    podados="${podados:+$podados }$feed:$univ_tabla:$ajuste:$dias"
+    # LA FUENTE DEL UNIVERSO TIENE QUE GUARDAR LOS 30 DIAS QUE EL UNIVERSO DICE MIRAR. Si un dia
+    # alguien la poda tambien, un simbolo mudo volveria a desaparecer del conteo en silencio, que
+    # es justo el defecto que esta columna vino a quitar. Solo emite fila cuando se queda corta.
+    univ_sql="${univ_sql:+$univ_sql
+}UNION ALL SELECT 'UNIVCORTO|$feed|$univ_tabla|'||to_char(min(ts) AT TIME ZONE 'UTC','YYYY-MM-DD')
+  FROM $univ_tabla WHERE interval='$ivl'
+ HAVING min(ts) > (SELECT fin FROM w) - interval '30 days'"
+  fi
   # El techo es una columna, no una constante: con excepciones se vuelve un CASE por
   # simbolo. techo_base viaja aparte para poder decir cuando una excepcion ya sobra.
   techo_sql="$techo"; lista_exc="NULL"
@@ -179,8 +205,10 @@ while IFS='|' read -r feed tabla ivl cad techo excepciones dias _motivo; do
   # `esp` es ahora una CONSTANTE del feed -dias x 86400 / cadencia- y no una resta contra un
   # borde que se mueve; `obs` barre exactamente ese intervalo. Que los dos salgan del mismo
   # sitio es lo que impide que `perdidos` salga negativo.
-  # `nac` viaja SOLO para la guarda de cobertura: si el dato no llega al suelo declarado, esa
-  # serie no se puede medir y sale NO MEDIDO con su nombre.
+  # `nac` viaja para la guarda de RECIEN NACIDO: un simbolo que aun no ha vivido la ventana no
+  # se puede medir sobre ella. Sale de `$univ_tabla`, que para un feed podado NO es la suya:
+  # asi ni la poda ni un hueco pueden moverlo, que es lo que hacia que la misma perdida saliera
+  # NO MEDIDO a una hora y ROJO a otra.
   ramas="${ramas:+$ramas
   UNION ALL}
   SELECT '$feed'::text feed, b.symbol, coalesce(o.obs,0)::int obs,
@@ -190,7 +218,7 @@ while IFS='|' read -r feed tabla ivl cad techo excepciones dias _motivo; do
          (w.fin - interval '$dias days') desde, b.nac,
          (b.nac > w.fin - interval '$dias days') descubierta
     FROM w,
-         (SELECT symbol, min(ts) nac FROM $tabla
+         (SELECT symbol, min(ts) nac FROM $univ_tabla
            WHERE interval='$ivl' AND ts >= now()-interval '30 days' GROUP BY 1) b
     LEFT JOIN (SELECT t.symbol, count(DISTINCT t.ts) obs
                  FROM $tabla t, w w2
@@ -211,17 +239,19 @@ c AS (SELECT feed, symbol, esp, esp-obs perdidos,
              round((esp-obs)/nullif(esp*cad/86400.0, 0), 1) por_dia, techo,
              techo_base, exceptuado, desde, nac, descubierta
         FROM m)
--- LA SERIE DESCUBIERTA NO ENTRA EN LA CONDENA. Si el dato no llega al suelo declarado, su tasa
--- contaria como perdidos unos buckets que nunca estuvieron: seria un ROJO falso. Sale aparte.
+-- UNA SERIE RECIEN NACIDA NO ENTRA EN LA CONDENA. Si el simbolo aun no ha vivido la ventana, su
+-- tasa contaria como perdidos unos buckets anteriores a su nacimiento: seria un ROJO falso. Sale
+-- aparte. El nacimiento viene de la tabla SIN PODA, asi que esto ya no lo mueve ni un hueco.
 SELECT 'SERIE|'||feed||'|'||symbol||'|'||pct||'|'||techo||'|'||por_dia
   FROM c WHERE NOT descubierta AND pct > techo
 UNION ALL SELECT 'MUERTA|'||feed||'|'||symbol||'|'||pct||'|'||techo_base
   FROM c WHERE NOT descubierta AND exceptuado AND pct <= techo_base
-UNION ALL SELECT 'DESCUBIERTA|'||feed||'|'||symbol||'|'
+UNION ALL SELECT 'NACIENDO|'||feed||'|'||symbol||'|'
                  ||to_char(nac AT TIME ZONE 'UTC','MM-DD HH24:MI')||'|'
                  ||to_char(desde AT TIME ZONE 'UTC','MM-DD HH24:MI')
   FROM c WHERE descubierta
 UNION ALL SELECT 'TOTAL|'||count(*) FROM c
+$univ_sql
 -- UN FEED DECLARADO QUE NO PRODUCE NI UNA SERIE (razon 3 de las tres de arriba). Antes lo
 -- llevaba la rama VACIO (esp <= 0), que con la ventana declarada ya no puede dispararse -esp es
 -- una constante positiva-; y ademas VACIO no cubria el caso de verdad, porque un feed sin NI UNA
@@ -276,26 +306,74 @@ sinserie=$(printf '%s\n' "$salida" | sed -n 's/^SINSERIE|//p' | tr '\n' ' ')
 [ -z "${sinserie% }" ] || fallos="${fallos:+$fallos; }feeds declarados sin NI UNA serie con datos en 30 dias: ${sinserie% }"
 [ -z "${sintecho% }" ] || fallos="${fallos:+$fallos; }tablas de cadencia sin techo declarado: ${sintecho% }"
 
-# LA GUARDA DE COBERTURA. Si el dato de una serie no llega al suelo DECLARADO, su tasa contaria
-# como perdidos unos buckets que nunca estuvieron ahi. Eso no es un ROJO: es que no se puede
-# medir, y se dice con su nombre y con las dos fechas. Es tambien lo que impide que el numero
-# de dias de la declaracion envejezca en silencio el dia que alguien toque la retencion.
-descubiertas=$(printf '%s\n' "$salida" | sed -n 's/^DESCUBIERTA|//p' |
-  awk -F'|' '{printf "%s%s/%s (su dato empieza en %s y la ventana declarada en %s)", (NR>1 ? ", " : ""), $1, $2, $3, $4}')
+# LA GUARDA DE RECIEN NACIDO. Un simbolo que aun no ha vivido la ventana no se puede medir sobre
+# ella: su tasa contaria como perdidos unos buckets anteriores a su nacimiento. No es un ROJO, es
+# que no se puede medir, y se dice con su nombre y las dos fechas. El nacimiento sale de la tabla
+# SIN PODA declarada en `poda`, asi que ni la poda ni un hueco pegado al suelo lo mueven.
+naciendo=$(printf '%s\n' "$salida" | sed -n 's/^NACIENDO|//p' |
+  awk -F'|' '{printf "%s%s/%s (nacio el %s y la ventana empieza el %s)", (NR>1 ? ", " : ""), $1, $2, $3, $4}')
+
+# LA FUENTE DEL UNIVERSO, COMPROBADA. Si la tabla de la que salen los simbolos de un feed podado
+# dejara de guardar los 30 dias, un simbolo mudo volveria a desaparecer del conteo y el feed
+# saldria VERDE por haberse callado mas tiempo. Solo emite fila cuando se queda corta.
+univcorto=$(printf '%s\n' "$salida" | sed -n 's/^UNIVCORTO|//p' |
+  awk -F'|' '{printf "%s%s (su universo sale de %s, que solo llega al %s)", (NR>1 ? ", " : ""), $1, $2, $3}')
+
+# LA RETENCION, LEIDA DE QUIEN LA APLICA Y NO COPIADA. El numero de `dias` es una copia de lo que
+# la poda garantiza, y una ventana copiada a mano es lo que hizo que K18 acusara en falso durante
+# semanas. Se lee en CADA CORRIDA: primero del entorno de 140 -que es lo que de verdad aplica, y
+# gana al default del codigo-, si no del release desplegado, si no del arbol local; y se DICE de
+# cual salio. Un feed podado no puede declarar mas dias enteros de los que su retencion sostiene:
+# con la poda yendo por detras, de R horas salen floor(R/24)-1 dias garantizados.
+#
+# SI NO SE PUEDE LEER DE NINGUN SITIO NO SE BLOQUEA EL VEREDICTO, y es deliberado: la medida del
+# dato sigue siendo valida, y el unico riesgo -que la retencion se hubiera acortado sin que nadie
+# lo viera- ya lo caza el propio dato, porque entonces faltarian dias enteros y la tasa se
+# dispararia. Lo que no se hace es callarlo: la fuente va en la linea, siempre.
+RETEN_DICE=""; reten_falla=""
+for p in $podados; do
+  p_feed=${p%%:*}; p_resto=${p#*:}; p_ajuste=${p_resto#*:}; p_ajuste=${p_ajuste%:*}; p_dias=${p##*:}
+  r_val=""; r_de=""
+  _env=$("$B/bin/prod" "grep -hE '^ *$p_ajuste *=' /etc/coinalyze/coinalyze.env" 2>/dev/null |
+         sed -n "s/^ *$p_ajuste *= *\([0-9][0-9]*\).*/\1/p" | head -1)
+  if [ -n "$_env" ]; then r_val=$_env; r_de="el entorno de 140";
+  else
+    _rel=$("$B/bin/prod" "grep -hE '^ *$p_ajuste *:' /opt/coinalyze/current/app/config.py" 2>/dev/null |
+           sed -n 's/.*default=\([0-9][0-9]*\).*/\1/p' | head -1)
+    if [ -n "$_rel" ]; then r_val=$_rel; r_de="el default del release desplegado";
+    elif [ -r "$REPO_LOCAL/app/config.py" ]; then
+      _loc=$(grep -hE "^ *$p_ajuste *:" "$REPO_LOCAL/app/config.py" 2>/dev/null |
+             sed -n 's/.*default=\([0-9][0-9]*\).*/\1/p' | head -1)
+      [ -n "$_loc" ] && { r_val=$_loc; r_de="el default del arbol local (140 no contesto)"; }
+    fi
+  fi
+  if [ -z "$r_val" ]; then
+    RETEN_DICE="${RETEN_DICE:+$RETEN_DICE; }$p_feed: $p_ajuste NO SE PUDO LEER de ningun sitio"
+  else
+    soporta=$(( r_val / 24 - 1 ))
+    RETEN_DICE="${RETEN_DICE:+$RETEN_DICE; }$p_feed: $p_ajuste=$r_val h leido de $r_de, sostiene $soporta dias y declara $p_dias"
+    [ "$soporta" -ge "$p_dias" ] || reten_falla="${reten_falla:+$reten_falla, }$p_feed ($p_ajuste=$r_val h sostiene $soporta dias enteros y la declaracion pide $p_dias, leido de $r_de)"
+  fi
+done
+
+# TODO LO QUE NO SE PUDO MEDIR, JUNTO Y CON NOMBRES.
+sinmedir=""
+[ -z "$naciendo" ]  || sinmedir="${sinmedir:+$sinmedir; }simbolos que aun no han vivido la ventana: $naciendo"
+[ -z "$univcorto" ] || sinmedir="${sinmedir:+$sinmedir; }la fuente del universo se quedo corta: $univcorto"
+[ -z "$reten_falla" ] || sinmedir="${sinmedir:+$sinmedir; }la retencion desplegada no sostiene los dias declarados: $reten_falla"
 
 # LO DECIDIBLE VA ANTES QUE LO QUE FALTA (A54). Una serie que no se puede medir NO puede comerse
-# la condena de otra que si: si hay algo que condenar, manda la condena y las descubiertas van
-# NOMBRADAS dentro de la misma linea.
+# la condena de otra que si: si hay algo que condenar, manda la condena y lo que no se pudo medir
+# va NOMBRADO dentro de la misma linea.
 if [ -n "$fallos" ]; then
-  echo "$fallos${descubiertas:+; y sin poder medir: $descubiertas} · $DIAS"
+  echo "$fallos${sinmedir:+; y sin poder medir: $sinmedir} · $DIAS${RETEN_DICE:+ · retencion: $RETEN_DICE}"
   printf '%s\n' "$salida" | grep '^SERIE|' | sort -t'|' -k4 -g -r |
     awk -F'|' '{printf "   %-22s %-18s %6s %%/dia   techo %5s %%   %6s buckets/dia\n", $2,$3,$4,$5,$6}'
   exit 1
 fi
-if [ -n "$descubiertas" ]; then
-  echo "NO MEDIDO: el dato no cubre la ventana declarada en $descubiertas. Dar VERDE aqui seria" \
-       "dar por buena una tasa sobre buckets que nunca estuvieron; darle ROJO seria imputarselos." \
-       "· $DIAS"
+if [ -n "$sinmedir" ]; then
+  echo "NO MEDIDO: $sinmedir. No es VERDE -no se ha comprobado nada sobre esas series- y no es" \
+       "ROJO -no hay nada que imputarles-. · $DIAS${RETEN_DICE:+ · retencion: $RETEN_DICE}"
   exit 2
 fi
-echo "$total series por debajo de su techo declarado · $DIAS"
+echo "$total series por debajo de su techo declarado · $DIAS${RETEN_DICE:+ · retencion: $RETEN_DICE}"
