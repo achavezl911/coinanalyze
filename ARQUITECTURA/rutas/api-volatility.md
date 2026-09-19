@@ -18,13 +18,13 @@ Handler `volatility_endpoint` · `app/api.py:2100` (cuerpo hasta la 2103) · dec
 
 | campo | de donde sale |
 |---|---|
-| `atr` | literal en app/scalp_logic.py:3183 |
-| `compression_score` | literal en app/scalp_logic.py:3186 |
-| `daily_range_percentile_1y` | literal en app/scalp_logic.py:3185 |
-| `note` | literal en app/scalp_logic.py:3188 |
-| `range_expansion` | literal en app/scalp_logic.py:3187 |
-| `realized_vol_annualized_pct` | literal en app/scalp_logic.py:3184 |
-| `symbol` | literal en app/scalp_logic.py:3182 |
+| `atr` | literal en app/scalp_logic.py:3285 |
+| `compression_score` | literal en app/scalp_logic.py:3288 |
+| `daily_range_percentile_1y` | literal en app/scalp_logic.py:3287 |
+| `note` | literal en app/scalp_logic.py:3290 |
+| `range_expansion` | literal en app/scalp_logic.py:3289 |
+| `realized_vol_annualized_pct` | literal en app/scalp_logic.py:3286 |
+| `symbol` | literal en app/scalp_logic.py:3284 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -51,16 +51,16 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3146`
+- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3248`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.scalp_logic._atr` — `app/scalp_logic.py:2931`
-- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:2910`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1747`
-- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:2939`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:2920`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3033`
+- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3012`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1798`
+- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3041`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3022`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>

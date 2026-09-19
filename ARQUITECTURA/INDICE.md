@@ -8,8 +8,8 @@
 | ruta | metodo | campos | tablas | funciones | ficha |
 |---|---|---|---|---|---|
 | `/` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/raiz.md) |
-| `/api/ai/context` | GET | 51 | 24 | 165 | [ficha](rutas/api-ai-context.md) |
-| `/api/ai/context/bundle` | GET | 9 | 24 | 166 | [ficha](rutas/api-ai-context-bundle.md) |
+| `/api/ai/context` | GET | 51 | 24 | 167 | [ficha](rutas/api-ai-context.md) |
+| `/api/ai/context/bundle` | GET | 9 | 24 | 168 | [ficha](rutas/api-ai-context-bundle.md) |
 | `/api/ai/profiles` | GET | 14 | 0 | 0 | [ficha](rutas/api-ai-profiles.md) |
 | `/api/baselines` | GET | 5 | 1 | 3 | [ficha](rutas/api-baselines.md) |
 | `/api/carry/matriz` | GET | 18 | 1 | 10 | [ficha](rutas/api-carry-matriz.md) |
@@ -24,7 +24,7 @@
 | `/api/data-confidence` | GET | 10 | 6 | 10 | [ficha](rutas/api-data-confidence.md) |
 | `/api/delta-profile` | GET | 3 | 1 | 13 | [ficha](rutas/api-delta-profile.md) |
 | `/api/desk/state` | GET | 26 | 13 | 78 | [ficha](rutas/api-desk-state.md) |
-| `/api/divergences` | GET | 12 | 3 | 7 | [ficha](rutas/api-divergences.md) |
+| `/api/divergences` | GET | 15 | 3 | 7 | [ficha](rutas/api-divergences.md) |
 | `/api/external-macro` | GET | 1 | 6 | 48 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 6 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
@@ -39,7 +39,7 @@
 | `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
 | `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
 | `/api/oi-context` | GET | 16 | 4 | 12 | [ficha](rutas/api-oi-context.md) |
-| `/api/passive-flow` | GET | 15 | 3 | 20 | [ficha](rutas/api-passive-flow.md) |
+| `/api/passive-flow` | GET | 16 | 3 | 20 | [ficha](rutas/api-passive-flow.md) |
 | `/api/positioning` | GET | 17 | 1 | 3 | [ficha](rutas/api-positioning.md) |
 | `/api/price-barriers` | GET | 15 | 5 | 8 | [ficha](rutas/api-price-barriers.md) |
 | `/api/profile` | GET | 14 | 5 | 28 | [ficha](rutas/api-profile.md) |
@@ -65,11 +65,11 @@
 | `/api/signals/visibility` | GET | 10 | 3 | 4 | [ficha](rutas/api-signals-visibility.md) |
 | `/api/snapshot` | GET | 35 | 1 | 3 | [ficha](rutas/api-snapshot.md) |
 | `/api/stream` | GET | **0 · PENDIENTE** | 3 | 2 | [ficha](rutas/api-stream.md) |
-| `/api/structure` | GET | 4 | 6 | 11 | [ficha](rutas/api-structure.md) |
-| `/api/structure-detail` | GET | 3 | 2 | 11 | [ficha](rutas/api-structure-detail.md) |
+| `/api/structure` | GET | 6 | 6 | 11 | [ficha](rutas/api-structure.md) |
+| `/api/structure-detail` | GET | 6 | 2 | 11 | [ficha](rutas/api-structure-detail.md) |
 | `/api/swing-score` | GET | 16 | 4 | 40 | [ficha](rutas/api-swing-score.md) |
 | `/api/symbols` | GET | 2 | 0 | 0 | [ficha](rutas/api-symbols.md) |
-| `/api/trend-matrix` | GET | 5 | 4 | 20 | [ficha](rutas/api-trend-matrix.md) |
+| `/api/trend-matrix` | GET | 8 | 4 | 20 | [ficha](rutas/api-trend-matrix.md) |
 | `/api/verdicts` | GET | 12 | 2 | 7 | [ficha](rutas/api-verdicts.md) |
 | `/api/volatility` | GET | 7 | 2 | 9 | [ficha](rutas/api-volatility.md) |
 | `/api/volume-profile` | GET | 17 | 1 | 6 | [ficha](rutas/api-volume-profile.md) |

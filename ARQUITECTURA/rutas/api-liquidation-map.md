@@ -18,22 +18,22 @@ Handler `liquidation_map_endpoint` · `app/api.py:1895` (cuerpo hasta la 1898) �
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3524 |
-| `atr_1h` | literal en app/scalp_logic.py:3523 |
-| `available` | literal en app/scalp_logic.py:3520 |
-| `bucket_size` | literal en app/scalp_logic.py:3528 |
-| `buckets_total` | literal en app/scalp_logic.py:3533 |
-| `cumulative_within_band` | literal en app/scalp_logic.py:3537 |
-| `current_price` | literal en app/scalp_logic.py:3522 |
-| `levels` | literal en app/scalp_logic.py:3536 |
-| `levels_shown` | literal en app/scalp_logic.py:3534 |
-| `note` | literal en app/scalp_logic.py:3538 |
-| `symbol` | literal en app/scalp_logic.py:3519 |
-| `type` | literal en app/scalp_logic.py:3521 |
-| `window_end` | literal en app/scalp_logic.py:3526 |
-| `window_minutes` | literal en app/scalp_logic.py:3527 |
-| `window_notional` | literal en app/scalp_logic.py:3535 |
-| `window_start` | literal en app/scalp_logic.py:3525 |
+| `as_of` | literal en app/scalp_logic.py:3626 |
+| `atr_1h` | literal en app/scalp_logic.py:3625 |
+| `available` | literal en app/scalp_logic.py:3622 |
+| `bucket_size` | literal en app/scalp_logic.py:3630 |
+| `buckets_total` | literal en app/scalp_logic.py:3635 |
+| `cumulative_within_band` | literal en app/scalp_logic.py:3639 |
+| `current_price` | literal en app/scalp_logic.py:3624 |
+| `levels` | literal en app/scalp_logic.py:3638 |
+| `levels_shown` | literal en app/scalp_logic.py:3636 |
+| `note` | literal en app/scalp_logic.py:3640 |
+| `symbol` | literal en app/scalp_logic.py:3621 |
+| `type` | literal en app/scalp_logic.py:3623 |
+| `window_end` | literal en app/scalp_logic.py:3628 |
+| `window_minutes` | literal en app/scalp_logic.py:3629 |
+| `window_notional` | literal en app/scalp_logic.py:3637 |
+| `window_start` | literal en app/scalp_logic.py:3627 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,13 +59,13 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3462`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3564`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 
-- `app.scalp_logic._atr` — `app/scalp_logic.py:2931`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:2920`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3033`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3022`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>
@@ -95,7 +95,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:166`, `harness/checks/K43-foto-unica.sh:219` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:81`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
 | **panel** | — | `static/js/10-contexto-y-estructura.js:498` |
 | **panel-html** | — | `static/index.html:242` |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:300` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:308` | — |
 | **tests** | — | `tests/test_liquidation_map_ventana.py:1` |
 
 **La llama el panel: es superficie de producto.**

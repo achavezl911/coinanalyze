@@ -18,12 +18,12 @@ Handler `market_impact_endpoint` · `app/api.py:1330` (cuerpo hasta la 1334) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5637 |
-| `definition` | literal en app/scalp_logic.py:5639 |
-| `limitations` | literal en app/scalp_logic.py:5641 |
-| `metric` | literal en app/scalp_logic.py:5638 |
-| `symbol` | literal en app/scalp_logic.py:5636 |
-| `windows` | literal en app/scalp_logic.py:5640 |
+| `as_of` | literal en app/scalp_logic.py:5739 |
+| `definition` | literal en app/scalp_logic.py:5741 |
+| `limitations` | literal en app/scalp_logic.py:5743 |
+| `metric` | literal en app/scalp_logic.py:5740 |
+| `symbol` | literal en app/scalp_logic.py:5738 |
+| `windows` | literal en app/scalp_logic.py:5742 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,15 +54,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5544`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5646`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
 
 </details>
 
@@ -89,7 +89,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:157`, `harness/checks/K43-foto-unica.sh:216` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:334` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:342` | — |
 
 **La llama el panel: es superficie de producto.**
 

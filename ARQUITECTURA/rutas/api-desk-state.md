@@ -131,17 +131,17 @@ Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4015`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4319`
-- `app.scalp_logic.hypothesis_evidence` — `app/scalp_logic.py:4732`
-- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1235`
-- `app.scalp_logic.profile_view` — `app/scalp_logic.py:4540`
-- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3196`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4117`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4421`
+- `app.scalp_logic.hypothesis_evidence` — `app/scalp_logic.py:4834`
+- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1263`
+- `app.scalp_logic.profile_view` — `app/scalp_logic.py:4642`
+- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3298`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
-- `app.scalp_logic.setup_confirmation_bundle` — `app/scalp_logic.py:2335`
-- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2288`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:5977`
+- `app.scalp_logic.setup_confirmation_bundle` — `app/scalp_logic.py:2437`
+- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2371`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6089`
 - `app.setups.build_setup_context` — `app/setups.py:1100`
 
 <details><summary>Alcanzables de forma indirecta (64)</summary>
@@ -153,45 +153,45 @@ Llamadas directas del handler:
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:2931`
-- `app.scalp_logic._banda` — `app/scalp_logic.py:5072`
-- `app.scalp_logic._bps` — `app/scalp_logic.py:4998`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3033`
+- `app.scalp_logic._banda` — `app/scalp_logic.py:5174`
+- `app.scalp_logic._bps` — `app/scalp_logic.py:5100`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._dsr` — `app/scalp_logic.py:2280`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._dsr` — `app/scalp_logic.py:2363`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
-- `app.scalp_logic._flow_bias` — `app/scalp_logic.py:4527`
-- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2421`
-- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2429`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2436`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4113`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4083`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4095`
+- `app.scalp_logic._flow_bias` — `app/scalp_logic.py:4629`
+- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2523`
+- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2531`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2538`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4215`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4185`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4197`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4287`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4203`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2231`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2217`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:2920`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4389`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4305`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2314`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2300`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3022`
 - `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
-- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:5005`
-- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5081`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4461`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2624`
+- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:5107`
+- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5183`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4563`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2726`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2614`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2716`
 - `app.setups._bars_closed_beyond` — `app/setups.py:805`
 - `app.setups._breakout_frontier` — `app/setups.py:741`
 - `app.setups._gap_in` — `app/setups.py:798`
@@ -247,7 +247,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:165` | — |
-| **panel** | `static/js/07-decision-y-ciclos.js:223` | — |
+| **panel** | `static/js/07-decision-y-ciclos.js:231` | — |
 | **readme** | — | `README.md:34` |
 | **tests** | `tests/test_v150_desk_snapshot.py:132` | `tests/test_pr22_cvd_semantics.py:177` |
 

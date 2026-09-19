@@ -18,7 +18,7 @@ Handler `scalp_basis` · `app/api.py:3020` (cuerpo hasta la 3023) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `symbol` | literal en app/scalp_logic.py:5538 |
+| `symbol` | literal en app/scalp_logic.py:5640 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -52,7 +52,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5506`
+- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5608`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
@@ -84,7 +84,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:221` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:370` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:378` | — |
 | **readme** | — | `README.md:488`, `README.md:499` |
 | **tests** | `tests/test_v121_hardening.py:40` | — |
 

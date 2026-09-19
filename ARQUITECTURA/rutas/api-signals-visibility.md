@@ -102,7 +102,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K25-visibilidad-de-lo-final.sh:110`, `harness/checks/K43-control.bash:93`, `harness/checks/K43-foto-unica.sh:164` | — |
-| **panel** | `static/js/07-decision-y-ciclos.js:413` | — |
+| **panel** | `static/js/07-decision-y-ciclos.js:421` | — |
 | **tests** | — | `tests/test_signals_visibility.py:1` |
 
 **La llama el panel: es superficie de producto.**

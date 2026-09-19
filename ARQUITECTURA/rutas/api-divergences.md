@@ -14,22 +14,25 @@ Handler `divergences_endpoint` · `app/api.py:2160` (cuerpo hasta la 2163) · de
 
 ## Campos que publica
 
-12 campos derivados. La procedencia dice de donde sale cada uno.
+15 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `available` | literal en app/scalp_logic.py:2200 |
-| `intraday` | literal en app/scalp_logic.py:2206 |
-| `intraday.available` | literal en app/scalp_logic.py:2091 |
-| `intraday.omitted` | literal en app/scalp_logic.py:2091 |
-| `intraday.windows` | literal en app/scalp_logic.py:2091 |
-| `note` | literal en app/scalp_logic.py:2207 |
-| `sessions` | literal en app/scalp_logic.py:2201 |
-| `summary` | literal en app/scalp_logic.py:2203 |
-| `sustained_windows_evaluated` | literal en app/scalp_logic.py:2205 |
-| `symbol` | literal en app/scalp_logic.py:2199 |
-| `windows` | literal en app/scalp_logic.py:2202 |
-| `windows_confirming` | literal en app/scalp_logic.py:2204 |
+| `available` | literal en app/scalp_logic.py:2264 |
+| `distinct_from` | literal en app/scalp_logic.py:2290 |
+| `divergence_method` | literal en app/scalp_logic.py:2286 |
+| `intraday` | literal en app/scalp_logic.py:2270 |
+| `intraday.available` | literal en app/scalp_logic.py:2155 |
+| `intraday.omitted` | literal en app/scalp_logic.py:2155 |
+| `intraday.windows` | literal en app/scalp_logic.py:2155 |
+| `note` | literal en app/scalp_logic.py:2271 |
+| `sessions` | literal en app/scalp_logic.py:2265 |
+| `summary` | literal en app/scalp_logic.py:2267 |
+| `sustained_windows_evaluated` | literal en app/scalp_logic.py:2269 |
+| `symbol` | literal en app/scalp_logic.py:2263 |
+| `window_label_note` | literal en app/scalp_logic.py:2282 |
+| `windows` | literal en app/scalp_logic.py:2266 |
+| `windows_confirming` | literal en app/scalp_logic.py:2268 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -65,14 +68,14 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2078`
+- `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2142`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
-- `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:1963`
-- `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:1950`
-- `app.scalp_logic._slope_pct` — `app/scalp_logic.py:1918`
+- `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:2014`
+- `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:2001`
+- `app.scalp_logic._slope_pct` — `app/scalp_logic.py:1969`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>
@@ -100,7 +103,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:151`, `harness/checks/K43-foto-unica.sh:203` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:425` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:433` | — |
 | **readme** | — | `README.md:281` |
 
 **La llama el panel: es superficie de producto.**
@@ -120,9 +123,10 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `distinct_from`
+- `window_label_note`
 
 ## Capa DECLARADA
 

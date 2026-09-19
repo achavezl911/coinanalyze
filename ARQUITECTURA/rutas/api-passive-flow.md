@@ -14,25 +14,26 @@ Handler `passive_flow_endpoint` · `app/api.py:2121` (cuerpo hasta la 2124) · d
 
 ## Campos que publica
 
-15 campos derivados. La procedencia dice de donde sale cada uno.
+16 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5953 |
-| `counts` | literal en app/scalp_logic.py:5959 |
-| `counts.neutral` | literal en app/scalp_logic.py:5882 |
-| `counts.reacumulacion_silenciosa` | literal en app/scalp_logic.py:5882 |
-| `counts.redistribucion_silenciosa` | literal en app/scalp_logic.py:5882 |
-| `horizons` | literal en app/scalp_logic.py:5957 |
-| `location` | literal en app/scalp_logic.py:5955 |
-| `note` | literal en app/scalp_logic.py:5960 |
-| `price` | literal en app/scalp_logic.py:5954 |
-| `summary` | literal en app/scalp_logic.py:5958 |
-| `symbol` | literal en app/scalp_logic.py:5952 |
-| `value_area` | literal en app/scalp_logic.py:5956 |
-| `value_area.poc` | literal en app/scalp_logic.py:5956 |
-| `value_area.vah` | literal en app/scalp_logic.py:5956 |
-| `value_area.val` | literal en app/scalp_logic.py:5956 |
+| `as_of` | literal en app/scalp_logic.py:6055 |
+| `counts` | literal en app/scalp_logic.py:6061 |
+| `counts.neutral` | literal en app/scalp_logic.py:5984 |
+| `counts.reacumulacion_silenciosa` | literal en app/scalp_logic.py:5984 |
+| `counts.redistribucion_silenciosa` | literal en app/scalp_logic.py:5984 |
+| `horizons` | literal en app/scalp_logic.py:6059 |
+| `location` | literal en app/scalp_logic.py:6057 |
+| `note` | literal en app/scalp_logic.py:6062 |
+| `price` | literal en app/scalp_logic.py:6056 |
+| `reading_method` | literal en app/scalp_logic.py:6068 |
+| `summary` | literal en app/scalp_logic.py:6060 |
+| `symbol` | literal en app/scalp_logic.py:6054 |
+| `value_area` | literal en app/scalp_logic.py:6058 |
+| `value_area.poc` | literal en app/scalp_logic.py:6058 |
+| `value_area.vah` | literal en app/scalp_logic.py:6058 |
+| `value_area.val` | literal en app/scalp_logic.py:6058 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -85,28 +86,28 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5859`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5961`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:2931`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5826`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2436`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4113`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4083`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4095`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4287`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3544`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4203`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:2920`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3033`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5928`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2538`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4215`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4185`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4197`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4389`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3646`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4305`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3022`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4461`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2614`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3581`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4563`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2716`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3683`
 
 </details>
 
@@ -133,7 +134,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:153`, `harness/checks/K43-foto-unica.sh:207` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:345` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:353` | — |
 
 **La llama el panel: es superficie de producto.**
 

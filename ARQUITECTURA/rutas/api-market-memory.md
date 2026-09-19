@@ -29,7 +29,7 @@ Handler `market_memory_endpoint` · `app/api.py:2167` (cuerpo hasta la 2170) · 
 | `reason` | literal en app/interpretation.py:412 |
 | `sessions` | literal en app/interpretation.py:411 |
 | `source` | literal en app/interpretation.py:516 |
-| `symbol` | literal en app/scalp_logic.py:1681 |
+| `symbol` | literal en app/scalp_logic.py:1709 |
 | `warning` | literal en app/interpretation.py:517 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -54,7 +54,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1665`
+- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1693`
 
 <details><summary>Alcanzables de forma indirecta (3)</summary>
 

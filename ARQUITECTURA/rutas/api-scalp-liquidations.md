@@ -18,9 +18,9 @@ Handler `scalp_liquidations` · `app/api.py:1775` (cuerpo hasta la 1778) · deco
 
 | campo | de donde sale |
 |---|---|
-| `matrix` | literal en app/scalp_logic.py:5503 |
-| `recent` | literal en app/scalp_logic.py:5503 |
-| `symbol` | literal en app/scalp_logic.py:5503 |
+| `matrix` | literal en app/scalp_logic.py:5605 |
+| `recent` | literal en app/scalp_logic.py:5605 |
+| `symbol` | literal en app/scalp_logic.py:5605 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -41,7 +41,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5445`
+- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5547`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
 
@@ -66,7 +66,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:222`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:171`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:172` _(+1)_ | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:371` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:379` | — |
 
 **La llama el panel: es superficie de producto.**
 

@@ -18,12 +18,12 @@ Handler `context_metadata_endpoint` · `app/api.py:2045` (cuerpo hasta la 2048) 
 
 | campo | de donde sale |
 |---|---|
-| `calc_version` | literal en app/scalp_logic.py:3666 |
-| `feeds` | literal en app/scalp_logic.py:3668 |
-| `generated_at` | literal en app/scalp_logic.py:3667 |
-| `note` | literal en app/scalp_logic.py:3670 |
-| `symbol` | literal en app/scalp_logic.py:3665 |
-| `venues_note` | literal en app/scalp_logic.py:3669 |
+| `calc_version` | literal en app/scalp_logic.py:3768 |
+| `feeds` | literal en app/scalp_logic.py:3770 |
+| `generated_at` | literal en app/scalp_logic.py:3769 |
+| `note` | literal en app/scalp_logic.py:3772 |
+| `symbol` | literal en app/scalp_logic.py:3767 |
+| `venues_note` | literal en app/scalp_logic.py:3771 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -41,7 +41,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3641`
+- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3743`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
 

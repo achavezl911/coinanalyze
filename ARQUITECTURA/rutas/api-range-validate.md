@@ -51,7 +51,7 @@ Llamadas directas del handler:
 
 - `app.api.sella_respuesta` — `app/api.py:1944`
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.range_validate` — `app/scalp_logic.py:1512`
+- `app.scalp_logic.range_validate` — `app/scalp_logic.py:1540`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 

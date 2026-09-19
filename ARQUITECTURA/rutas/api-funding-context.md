@@ -18,16 +18,16 @@ Handler `funding_context_endpoint` · `app/api.py:1888` (cuerpo hasta la 1891) �
 
 | campo | de donde sale |
 |---|---|
-| `annualized_pct` | literal en app/scalp_logic.py:3447 |
-| `coverage` | literal en app/scalp_logic.py:3449 |
-| `current_pct` | literal en app/scalp_logic.py:3442 |
-| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3444 |
-| `history_avg_pct` | literal en app/scalp_logic.py:3448 |
-| `next_funding_time_utc` | literal en app/scalp_logic.py:3450 |
-| `note` | literal en app/scalp_logic.py:3458 |
-| `predicted_pct` | literal en app/scalp_logic.py:3443 |
-| `regime` | literal en app/scalp_logic.py:3451 |
-| `symbol` | literal en app/scalp_logic.py:3441 |
+| `annualized_pct` | literal en app/scalp_logic.py:3549 |
+| `coverage` | literal en app/scalp_logic.py:3551 |
+| `current_pct` | literal en app/scalp_logic.py:3544 |
+| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3546 |
+| `history_avg_pct` | literal en app/scalp_logic.py:3550 |
+| `next_funding_time_utc` | literal en app/scalp_logic.py:3552 |
+| `note` | literal en app/scalp_logic.py:3560 |
+| `predicted_pct` | literal en app/scalp_logic.py:3545 |
+| `regime` | literal en app/scalp_logic.py:3553 |
+| `symbol` | literal en app/scalp_logic.py:3543 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -50,7 +50,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3389`
+- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3491`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
@@ -86,7 +86,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K43-foto-unica.sh:152`, `harness/checks/K43-foto-unica.sh:205` | `harness/checks/K03-hueco-declarado.sh:29` |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:376` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:384` | — |
 | **tests** | `tests/test_funding_una_sola_escala.py:87` | `tests/test_funding_una_sola_escala.py:12` |
 
 **La llama el panel: es superficie de producto.**

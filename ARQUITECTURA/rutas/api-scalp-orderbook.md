@@ -19,10 +19,10 @@ Handler `scalp_orderbook` · `app/api.py:1750` (cuerpo hasta la 1762) · decorad
 | campo | de donde sale |
 |---|---|
 | `freshness` | literal en app/api.py:1761 |
-| `freshness.age_seconds` | literal en app/ai_context.py:641 |
-| `freshness.as_of` | literal en app/ai_context.py:640 |
-| `freshness.max_age_seconds` | literal en app/ai_context.py:642 |
-| `freshness.status` | literal en app/ai_context.py:639 |
+| `freshness.age_seconds` | literal en app/ai_context.py:667 |
+| `freshness.as_of` | literal en app/ai_context.py:666 |
+| `freshness.max_age_seconds` | literal en app/ai_context.py:668 |
+| `freshness.status` | literal en app/ai_context.py:665 |
 | `rows` | literal en app/api.py:1760 |
 | `symbol` | literal en app/api.py:1759 |
 
@@ -45,7 +45,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.orderbook_freshness` — `app/ai_context.py:634`
+- `app.ai_context.orderbook_freshness` — `app/ai_context.py:660`
 - `app.api.records` — `app/api.py:242`
 - `app.api.validate_symbol` — `app/api.py:229`
 
