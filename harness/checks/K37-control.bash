@@ -1,33 +1,39 @@
 #!/usr/bin/env bash
-# K37-control · ¿el veredicto de K37 depende de la HORA a la que se le pregunte?
+# K37-control · ¿el veredicto de K37 depende de algo que no es la perdida?
 #
 #     bash harness/checks/K37-control.bash
 #
-# EL PUNTO (COLA 128, A53). La MISMA perdida de buckets daba VERDE o ROJO segun la hora del dia
-# UTC a la que se corriera K37. MEDIDO en produccion el 2026-09-19T04:59:07Z: los 88 minutos que
-# `futures_trades_agg` perdio el 09-16 salian a 0.895 % con el suelo de la serie en 09-12 04:07
-# y a 1.019 % con el suelo en 09-13 00:00, con los MISMOS 88 perdidos en las dos cuentas. El
-# suelo era `min(ts)`, que en esa tabla no es el nacimiento sino la RETENCION -168 h-, o sea
-# now() menos 7 dias: avanzaba con el reloj y encogia el denominador durante el dia. La cabecera
-# de K37 dice desde agosto que su ventana es de dias cerrados precisamente para que la tasa no
-# dependa de la hora.
+# EL PUNTO, EN DOS EJES. La MISMA perdida de buckets daba veredictos distintos segun
+#   1) LA HORA del dia UTC a la que se corriera K37, y
+#   2) CUANTO FUERA POR DETRAS LA PODA de la tabla.
+# El suelo de cada serie salia de `min(ts)`, y `min(ts)` no es el nacimiento de un feed podado:
+# es donde llego la ultima poda. La poda real es `cleanup()` de app/scalp_collector.py:1570-1583,
+# un `sleep(3600)` en bucle y despues el DELETE de `cleanup_expired_rows` (:1549,
+# `ts < now()-168h`): corre una vez por hora CONTADA DESDE QUE ARRANCA EL COLECTOR, la primera
+# una hora despues de arrancar, y ninguna mientras esta caido. Asi que `min(ts)` va por detras
+# del corte teorico en una cantidad que va de cero a una hora en marcha normal, y de HORAS tras
+# un reinicio. MEDIDO contra 140 el 2026-09-19T15:01:19Z: min(ts) 09-12 14:07, corte teorico
+# 09-12 15:01, retraso 54.3 min; el colector arranco a las 03:06:08Z, poda a los minutos :06 y
+# por eso el dato empieza en :07. El retraso NO es una propiedad: es el arranque.
 #
-# COMO SE MUEVE EL RELOJ, Y POR QUE ASI. No se toca el reloj de la maquina ni el del servidor:
-# se pone una funcion `now()` propia en un esquema DELANTE de `pg_catalog` en el `search_path`,
-# y K37 -que pregunta por `now()` y no por CURRENT_TIMESTAMP- se la come sin enterarse. El reloj
-# vive en una fila, asi que cambiar la hora es un UPDATE.
+# Durante los primeros minutos de cada dia UTC -tantos como el retraso- `min(ts)` cae en el dia
+# ANTERIOR, el suelo baja un dia entero y la misma perdida se mide sobre 7 dias en vez de 6.
 #
-# LO QUE ESTE CONTROL REPRODUCE Y LO QUE NO, dicho aqui y no en una nota al pie. La hora, sola,
-# sobre bytes IDENTICOS, no movia nunca el veredicto viejo: dentro de un mismo dia UTC la
-# ventana no cambia. Lo que lo movia era la RETENCION, que borra filas segun avanza el reloj y
-# arrastra `min(ts)` con ella. Reproducir el actor incluye reproducir lo que lo mueve (A57, A59),
-# asi que cada brazo parte de LA MISMA tabla generada -misma perdida, en los mismos minutos
-# absolutos- y le aplica la retencion que produccion tendria a esa hora. Lo que varia entre los
-# dos brazos de un par es la hora y solo la hora; lo que la hora arrastra es el mecanismo bajo
-# prueba, no una licencia del banco.
+# POR ESO LOS BRAZOS SON UNA MATRIZ y no una pareja: dos horas del MISMO dia UTC por tres
+# retrasos (cero, el medido, y uno de horas), con la MISMA perdida plantada en los MISMOS
+# minutos absolutos. Lo que el sujeto tiene que garantizar no es un veredicto concreto: es que
+# los seis sean EL MISMO. Y se corre con dos perdidas -una que pasa el techo y otra que no- para
+# que «los seis coinciden» no lo cumpla un check que diga siempre lo mismo.
 #
-# LA BASE ES DESECHABLE Y SE BORRA. Nada de esto toca 140 ni el espejo: `createdb` local, las
-# nueve tablas declaradas con su forma minima, y `dropdb` al salir.
+# COMO SE MUEVE EL RELOJ. No se toca el reloj de la maquina ni el del servidor: una funcion
+# `now()` propia en un esquema DELANTE de `pg_catalog` en el `search_path`, y K37 -que pregunta
+# por `now()` y no por CURRENT_TIMESTAMP- se la come sin enterarse. El reloj vive en una fila.
+#
+# COMO SE MUEVE LA PODA. Cada plantado rellena la tabla desde una tabla PRISTINA aplicando
+# `ts >= reloj - 168h - retraso`, que es exactamente lo que produccion tendria a esa hora con esa
+# poda. La perdida se planta en minutos ABSOLUTOS, iguales en los seis.
+#
+# LA BASE ES DESECHABLE Y SE BORRA. Nada de esto toca 140 ni el espejo.
 #
 # NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh.
 set -uo pipefail
@@ -41,23 +47,32 @@ DIR=$(mktemp -d) || exit 2
 limpia() { dropdb --if-exists "$DB" >/dev/null 2>&1; rm -rf "$DIR"; }
 trap limpia EXIT
 fallos=0; pasan=0
-declare -A SALIDA RC
+declare -A SALIDA RC TASA
 comprueba() {  # $1 = etiqueta   $2 = si|no
-  if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-64s\n' "$1"
-  else fallos=$((fallos+1)); printf '  [FALLA] %-64s\n' "$1"; fi
+  if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-66s\n' "$1"
+  else fallos=$((fallos+1)); printf '  [FALLA] %-66s\n' "$1"; fi
 }
 sql() { psql -X -A -t -q -v ON_ERROR_STOP=1 -d "$DB" -c "$1"; }
 
 createdb "$DB" >/dev/null 2>&1 || { echo "NO MEDIDO: no se pudo crear la base desechable $DB"; exit 2; }
 
 # ── EL MUNDO DE MENTIRA ─────────────────────────────────────────────────────────────────────
-# Las nueve tablas que K37 declara, con la forma minima que su consulta necesita. Ocho se quedan
-# vacias a proposito: no aportan series y asi el sujeto es una sola tabla. Si se quedaran FUERA,
-# la consulta ni siquiera compilaria, y ademas la rama SINTECHO las denunciaria.
+# Las nueve tablas que K37 declara, con la forma minima que su consulta necesita. Si alguna se
+# quedara FUERA, la consulta ni compilaria, y ademas la rama SINTECHO la denunciaria.
+#
+# Y LAS OCHO QUE NO SON EL SUJETO SE SIEMBRAN COMPLETAS, con un simbolo y sin un solo hueco. La
+# primera version las dejo VACIAS -«asi el sujeto es una sola tabla»- y eso las ponia en la rama
+# SINSERIE: el check condenaba por ellas, y los brazos que esperaban VERDE fallaban con el sujeto
+# correcto delante. Un mundo de mentira tiene que ser INOCENTE en todo lo que no se esta
+# midiendo. `liquidations` se queda vacia a proposito: su techo es NA, no produce serie y no
+# entra en SINSERIE.
+#   · 5 min -> 2016 buckets en la ventana de 7 dias · 1 min -> 10080. Los dos, exactos.
+#   · a `long_short_ratio` se le siembra SOLO BTC: si se le sembrara SOL -que tiene excepcion de
+#     techo- la excepcion saldria SOBRANTE y volveria a condenar por algo que no es el sujeto.
 psql -X -q -v ON_ERROR_STOP=1 -d "$DB" >/dev/null <<'SQL' || { echo "NO MEDIDO: no se pudo montar el mundo"; exit 2; }
 CREATE SCHEMA reloj;
 CREATE TABLE reloj.ajuste(t timestamptz);
-INSERT INTO reloj.ajuste VALUES ('2026-09-19 04:00:00+00');
+INSERT INTO reloj.ajuste VALUES ('2026-09-19 12:00:00+00');
 CREATE FUNCTION reloj.now() RETURNS timestamptz
   LANGUAGE sql STABLE AS $$ SELECT t FROM reloj.ajuste LIMIT 1 $$;
 CREATE TABLE futures_trades_agg(ts timestamptz, symbol text, "interval" text);
@@ -72,13 +87,21 @@ CREATE TABLE liquidations      (ts timestamptz, symbol text, "interval" text);
 -- La tabla PRISTINA de la que sale cada plantado. Nunca se toca despues de nacer.
 CREATE TABLE base(ts timestamptz);
 INSERT INTO base
-  SELECT g FROM generate_series('2026-09-11 00:00:00+00'::timestamptz,
+  SELECT g FROM generate_series('2026-09-10 00:00:00+00'::timestamptz,
                                 '2026-09-18 23:59:00+00'::timestamptz, interval '1 minute') g;
+-- los siete inocentes, completos y sin un hueco
+INSERT INTO long_short_ratio        SELECT g,'BTCUSDT_PERP.A','5min' FROM generate_series('2026-09-11 00:00:00+00'::timestamptz,'2026-09-18 23:55:00+00'::timestamptz, interval '5 minutes') g;
+INSERT INTO funding_rate            SELECT g,'BTCUSDT_PERP.A','5min' FROM generate_series('2026-09-11 00:00:00+00'::timestamptz,'2026-09-18 23:55:00+00'::timestamptz, interval '5 minutes') g;
+INSERT INTO open_interest           SELECT g,'BTCUSDT_PERP.A','5min' FROM generate_series('2026-09-11 00:00:00+00'::timestamptz,'2026-09-18 23:55:00+00'::timestamptz, interval '5 minutes') g;
+INSERT INTO oi_bybit                SELECT g,'BTCUSDT_PERP.A','5min' FROM generate_series('2026-09-11 00:00:00+00'::timestamptz,'2026-09-18 23:55:00+00'::timestamptz, interval '5 minutes') g;
+INSERT INTO predicted_funding_rate  SELECT g,'BTCUSDT_PERP.A','5min' FROM generate_series('2026-09-11 00:00:00+00'::timestamptz,'2026-09-18 23:55:00+00'::timestamptz, interval '5 minutes') g;
+INSERT INTO ohlcv                   SELECT base.ts,'BTCUSDT_PERP.A','1min' FROM base;
+INSERT INTO spot_trades_agg         SELECT base.ts,'BTCUSDT_PERP.A','1min' FROM base;
 SQL
 
-# EL CANAL DE MENTIRA. K37 llama a "$B/bin/prodsql" y `B` es una constante en su linea 76: se
+# EL CANAL DE MENTIRA. K37 llama a "$B/bin/prodsql" y `B` es una constante en su cabecera: se
 # copia el check cambiando esa linea, y se comprueba que el sed MORDIO -si no, se estaria
-# midiendo el check de verdad contra produccion y el control aprobaria midiendo otra cosa-.
+# midiendo contra produccion y el control aprobaria midiendo otra cosa-.
 mkdir -p "$DIR/bin"
 cat > "$DIR/bin/prodsql" <<EOF
 #!/bin/sh
@@ -92,117 +115,139 @@ if cmp -s "$CHK" "$COPIA"; then echo "NO MEDIDO: el sed del canal NO mordio"; ex
 grep -q "^B=$DIR\$" "$COPIA" || { echo "NO MEDIDO: la copia no apunta al canal de mentira"; exit 2; }
 
 # ── EL PLANTADO ─────────────────────────────────────────────────────────────────────────────
-# Rellena futures_trades_agg desde `base` a la hora $1, con la retencion de 168 h aplicada como
-# la aplicaria produccion, y con $3 minutos ausentes a partir de $2. La perdida se planta en
-# MINUTOS ABSOLUTOS, iguales en los dos brazos de cada par.
-planta() {  # $1 = reloj ISO   $2 = inicio de la perdida   $3 = minutos perdidos
+# $1 reloj ISO · $2 retraso de la poda en minutos · $3 inicio de la perdida · $4 minutos perdidos
+planta() {
   sql "UPDATE reloj.ajuste SET t = '$1'::timestamptz" >/dev/null
   sql "TRUNCATE futures_trades_agg" >/dev/null
   sql "INSERT INTO futures_trades_agg(ts,symbol,\"interval\")
        SELECT ts,'BTCUSDT_PERP.A','1min' FROM base
-        WHERE ts >= '$1'::timestamptz - interval '168 hours'
-          AND NOT (ts >= '$2'::timestamptz
-                   AND ts < '$2'::timestamptz + interval '$3 minutes')" >/dev/null
+        WHERE ts >= '$1'::timestamptz - interval '168 hours' - interval '$2 minutes'
+          AND NOT (ts >= '$3'::timestamptz
+                   AND ts < '$3'::timestamptz + interval '$4 minutes')" >/dev/null
 }
-# LA HUELLA: cuantas filas y que suma. Se toma ANTES y DESPUES de correr K37 para demostrar que
-# el check LEE y no escribe -y K37 corre por un canal que solo sabe hacer SELECT, pero eso es
-# una promesa del canal y esto es la comprobacion-.
 huella() { sql "SELECT count(*)||'/'||coalesce(md5(string_agg(ts::text,',' ORDER BY ts)),'-') FROM futures_trades_agg"; }
+# LA HUELLA SE COMPRUEBA EN CADA BRAZO, no en un acumulador global al final. La version de la
+# entrega anterior guardaba un unico HUELLA_OK y un fallo tardio podia taparse.
 corre() {  # $1 = etiqueta
   local a d
   a=$(huella); SALIDA["$1"]=$(timeout -k 5 120 bash "$COPIA" 2>&1); RC["$1"]=$?; d=$(huella)
-  printf '      %s  reloj=%s  huella %s -> %s\n' "$1" "$(sql "SELECT to_char(reloj.now() AT TIME ZONE 'UTC','MM-DD HH24:MI')")" "$a" "$d"
-  printf '      %s  rc=%s · %s\n' "$1" "${RC[$1]}" "$(printf '%s' "${SALIDA[$1]}" | head -1 | cut -c1-140)"
-  [ "$a" = "$d" ] || { comprueba "$1 · K37 MOVIO la tabla ($a -> $d)" no; return; }
-  HUELLA_OK=1
+  TASA["$1"]=$(printf '%s' "${SALIDA[$1]}" | grep -o '[0-9.]* %/dia' | head -1)
+  printf '      %-14s reloj=%s retraso=%-6s rc=%s tasa=%-10s min(ts)=%s\n' \
+    "$1" "$(sql "SELECT to_char(reloj.now() AT TIME ZONE 'UTC','MM-DD HH24:MI')")" \
+    "$2" "${RC[$1]}" "${TASA[$1]:-—}" \
+    "$(sql "SELECT to_char(min(ts) AT TIME ZONE 'UTC','MM-DD HH24:MI') FROM futures_trades_agg")"
+  [ "$a" = "$d" ] || comprueba "$1 · K37 MOVIO la tabla ($a -> $d)" no
 }
 
-TEMPRANO='2026-09-19 04:00:00+00'
-TARDE='2026-09-19 23:30:00+00'
-PERDIDA='2026-09-16 10:00:00+00'   # bien dentro de los dias enteros, en los dos relojes
+PERDIDA='2026-09-16 10:00:00+00'   # bien dentro de los dias medidos en los seis casos
+TEMPRANO='2026-09-19 00:30:00+00'  # DENTRO del retraso: es donde se colaba el defecto
+TARDE='2026-09-19 12:00:00+00'     # fuera del retraso
 echo "K37-control · sujeto: $CHK"
-echo "   base desechable: $DB · reloj falso por search_path · dias UTC cerrados: 09-12 a 09-19"
-echo "   los dos relojes: $TEMPRANO y $TARDE (el MISMO dia UTC)"
+echo "   base desechable: $DB · reloj falso por search_path · dia UTC 2026-09-19"
+echo "   dos horas: 00:30Z (dentro del retraso) y 12:00Z · tres retrasos: 0, 55 min y 5 h"
 echo
 
-# ── C1/C2 · LA MISMA PERDIDA, DOS HORAS DEL MISMO DIA ───────────────────────────────────────
-# 88 minutos, que es la perdida real del apagon del 09-16. Con el suelo viejo esto daba 0.89 %
-# (VERDE) a las 04:00Z y 1.01 % (ROJO) a las 23:30Z. El brazo no pide un veredicto concreto:
-# pide que los DOS SEAN EL MISMO, que es lo unico que el sujeto tiene que garantizar.
-echo "C1 · 88 minutos perdidos · reloj TEMPRANO (04:00Z)"
-planta "$TEMPRANO" "$PERDIDA" 88; corre C1
-echo "C2 · los MISMOS 88 minutos · reloj TARDIO (23:30Z), mismo dia UTC"
-planta "$TARDE" "$PERDIDA" 88; corre C2
-comprueba "C1/C2a EL PUNTO: el MISMO veredicto a las dos horas (rc ${RC[C1]} y ${RC[C2]})" \
-  "$([ "${RC[C1]}" = "${RC[C2]}" ] && echo si || echo no)"
-comprueba "C1/C2b y la MISMA tasa, no solo el mismo rc" \
-  "$([ "$(printf '%s' "${SALIDA[C1]}" | grep -o '[0-9.]* %/dia' | head -1)" \
-    = "$(printf '%s' "${SALIDA[C2]}" | grep -o '[0-9.]* %/dia' | head -1)" ] && echo si || echo no)"
-comprueba "C1/C2c y la linea dice SOBRE QUE DIAS calculo, en las dos" \
-  "$(printf '%s' "${SALIDA[C1]}" | grep -q '2026-09-12 a 2026-09-19' \
-   && printf '%s' "${SALIDA[C2]}" | grep -q '2026-09-12 a 2026-09-19' && echo si || echo no)"
-comprueba "C1/C2d y dice que a futures_trades_agg le subio el suelo a un dia entero" \
-  "$(printf '%s' "${SALIDA[C1]}" | grep -q 'futures_trades_agg desde 2026-09-13' && echo si || echo no)"
+# ── M · LA MATRIZ · la MISMA perdida, seis mundos ───────────────────────────────────────────
+# 88 minutos, que es la perdida real del apagon del 09-16. El brazo no pide un veredicto
+# concreto: pide que los SEIS sean el mismo.
+echo "M · 88 minutos perdidos · 2 horas x 3 retrasos, MISMA perdida y MISMOS minutos absolutos"
+for caso in "M1:$TEMPRANO:0" "M2:$TARDE:0" "M3:$TEMPRANO:55" "M4:$TARDE:55" "M5:$TEMPRANO:300" "M6:$TARDE:300"; do
+  e=${caso%%:*}; resto=${caso#*:}; reloj=${resto%:*}; lag=${resto##*:}
+  planta "$reloj" "$lag" "$PERDIDA" 88; corre "$e" "${lag} min"
+done
+rc_unicos=$(printf '%s\n' "${RC[M1]}" "${RC[M2]}" "${RC[M3]}" "${RC[M4]}" "${RC[M5]}" "${RC[M6]}" | sort -u | tr '\n' ' ')
+ta_unicos=$(printf '%s\n' "${TASA[M1]}" "${TASA[M2]}" "${TASA[M3]}" "${TASA[M4]}" "${TASA[M5]}" "${TASA[M6]}" | sort -u | tr '\n' ' ')
+comprueba "Ma EL PUNTO: los SEIS dan el mismo veredicto (rc vistos: $rc_unicos)" \
+  "$([ "$(printf '%s' "$rc_unicos" | wc -w)" = 1 ] && echo si || echo no)"
+comprueba "Mb y la MISMA tasa, no solo el mismo rc (tasas vistas: $ta_unicos)" \
+  "$([ "$(printf '%s\n' "${TASA[M1]}" "${TASA[M2]}" "${TASA[M3]}" "${TASA[M4]}" "${TASA[M5]}" "${TASA[M6]}" | sort -u | grep -c .)" = 1 ] && echo si || echo no)"
+comprueba "Mc la pareja que delataba el defecto: 00:30Z y 12:00Z con el retraso MEDIDO (55 min)" \
+  "$([ "${RC[M3]}" = "${RC[M4]}" ] && [ "${TASA[M3]}" = "${TASA[M4]}" ] && echo si || echo no)"
+comprueba "Md y la de un retraso de HORAS, que es lo que deja un reinicio (5 h)" \
+  "$([ "${RC[M5]}" = "${RC[M6]}" ] && [ "${TASA[M5]}" = "${TASA[M6]}" ] && echo si || echo no)"
+comprueba "Me la linea dice sobre que dias calculo, en los seis" \
+  "$(n=0; for e in M1 M2 M3 M4 M5 M6; do printf '%s' "${SALIDA[$e]}" | grep -q '2026-09-12 a 2026-09-19' && n=$((n+1)); done; [ "$n" = 6 ] && echo si || echo no)"
+comprueba "Mf y que a futures_trades_agg le declara una ventana mas corta, en los seis" \
+  "$(n=0; for e in M1 M2 M3 M4 M5 M6; do printf '%s' "${SALIDA[$e]}" | grep -q 'futures_trades_agg desde 2026-09-13 (6 dias declarados)' && n=$((n+1)); done; [ "$n" = 6 ] && echo si || echo no)"
+comprueba "Mg ninguna tasa sale NEGATIVA (esp y obs sobre el mismo intervalo)" \
+  "$(n=0; for e in M1 M2 M3 M4 M5 M6; do printf '%s' "${SALIDA[$e]}" | grep -q -- '-[0-9.]* %/dia' && n=$((n+1)); done; [ "$n" = 0 ] && echo si || echo no)"
 
-# ── C3/C4 · UNA PERDIDA QUE SI PASA EL TECHO: CONDENA A LAS DOS HORAS ───────────────────────
-# Sin este par, «los dos veredictos coinciden» lo cumpliria un check que dijera siempre lo mismo.
+# ── N · LA MISMA MATRIZ CON UNA PERDIDA QUE NO PASA EL TECHO ────────────────────────────────
+# Sin esto, «los seis coinciden» lo cumpliria un check que condenara siempre.
 echo
-echo "C3 · 300 minutos perdidos (3.5 %, muy por encima del techo) · reloj TEMPRANO"
-planta "$TEMPRANO" "$PERDIDA" 300; corre C3
-echo "C4 · los MISMOS 300 · reloj TARDIO"
-planta "$TARDE" "$PERDIDA" 300; corre C4
-comprueba "C3/C4a CONDENA a las dos horas (rc ${RC[C3]} y ${RC[C4]})" \
-  "$([ "${RC[C3]}" = 1 ] && [ "${RC[C4]}" = 1 ] && echo si || echo no)"
-comprueba "C3/C4b con la MISMA tasa en las dos" \
-  "$([ "$(printf '%s' "${SALIDA[C3]}" | grep -o '[0-9.]* %/dia' | head -1)" \
-    = "$(printf '%s' "${SALIDA[C4]}" | grep -o '[0-9.]* %/dia' | head -1)" ] && echo si || echo no)"
+echo "N · 40 minutos perdidos (por debajo del techo) · la MISMA matriz"
+for caso in "N1:$TEMPRANO:0" "N2:$TARDE:0" "N3:$TEMPRANO:55" "N4:$TARDE:55" "N5:$TEMPRANO:300" "N6:$TARDE:300"; do
+  e=${caso%%:*}; resto=${caso#*:}; reloj=${resto%:*}; lag=${resto##*:}
+  planta "$reloj" "$lag" "$PERDIDA" 40; corre "$e" "${lag} min"
+done
+comprueba "Na ABSUELVE en los seis (rc: $(printf '%s' "${RC[N1]}${RC[N2]}${RC[N3]}${RC[N4]}${RC[N5]}${RC[N6]}"))" \
+  "$(n=0; for e in N1 N2 N3 N4 N5 N6; do [ "${RC[$e]}" = 0 ] && n=$((n+1)); done; [ "$n" = 6 ] && echo si || echo no)"
+comprueba "Nb y CONDENA en los seis con la perdida grande: el check sabe decir las dos cosas" \
+  "$(n=0; for e in M1 M2 M3 M4 M5 M6; do [ "${RC[$e]}" = 1 ] && n=$((n+1)); done; [ "$n" = 6 ] && echo si || echo no)"
+comprueba "Nc y el VERDE tambien dice sobre que dias calculo" \
+  "$(printf '%s' "${SALIDA[N4]}" | grep -q 'dias UTC cerrados, 2026-09-12 a 2026-09-19' && echo si || echo no)"
 
-# ── C5/C6 · EL CONTROL POSITIVO · SIN PERDIDA, VERDE A LAS DOS HORAS ───────────────────────
+# ── G · LA GUARDA DE COBERTURA · el numero declarado no puede envejecer en silencio ─────────
+# La ventana es un numero DECLARADO, o sea una copia de lo que la poda hace. Esto es lo que
+# impide que esa copia envejezca: si el dato no llega al suelo declarado, la serie NO se puede
+# medir -contaria como perdidos unos buckets que nunca estuvieron- y sale NO MEDIDO, no VERDE.
 echo
-echo "C5 · 40 minutos perdidos (0.46 %, por debajo del techo) · reloj TEMPRANO"
-planta "$TEMPRANO" "$PERDIDA" 40; corre C5
-echo "C6 · los MISMOS 40 · reloj TARDIO"
-planta "$TARDE" "$PERDIDA" 40; corre C6
-comprueba "C5/C6a ABSUELVE a las dos horas (rc ${RC[C5]} y ${RC[C6]})" \
-  "$([ "${RC[C5]}" = 0 ] && [ "${RC[C6]}" = 0 ] && echo si || echo no)"
-comprueba "C5/C6b y el VERDE tambien dice sobre que dias calculo" \
-  "$(printf '%s' "${SALIDA[C5]}" | grep -q 'dias UTC cerrados, 2026-09-12 a 2026-09-19' && echo si || echo no)"
+echo "G · el dato NO cubre los 6 dias declarados (como si alguien bajara la retencion)"
+sql "UPDATE reloj.ajuste SET t = '$TARDE'::timestamptz" >/dev/null
+sql "TRUNCATE futures_trades_agg" >/dev/null
+sql "INSERT INTO futures_trades_agg(ts,symbol,\"interval\")
+     SELECT ts,'BTCUSDT_PERP.A','1min' FROM base WHERE ts >= '2026-09-14 06:00:00+00'::timestamptz" >/dev/null
+corre G1 "n/a"
+comprueba "G1a NO MEDIDO, rc=2 (rc=${RC[G1]}): no se puede medir, y no es ni VERDE ni ROJO" \
+  "$([ "${RC[G1]}" = 2 ] && echo si || echo no)"
+comprueba "G1b y dice las DOS fechas: donde empieza el dato y donde la ventana declarada" \
+  "$(printf '%s' "${SALIDA[G1]}" | grep -q '09-14 06:00' && printf '%s' "${SALIDA[G1]}" | grep -q '09-13 00:00' && echo si || echo no)"
 
-# ── C7/C8 · EL DIA PARCIAL NO SE MIDE NI POR ARRIBA NI POR ABAJO ───────────────────────────
-# La otra mitad del arreglo, y la trampa que tenia delante: si el suelo sube para los ESPERADOS
-# y no para los OBSERVADOS, las filas del dia parcial se cuentan sin esperarse, los perdidos se
-# van a NEGATIVO y este check da VERDE por debajo de cero. Aqui la perdida se planta ENTERA
-# dentro del dia parcial del reloj temprano (09-12 04:00 -> 09-13 00:00).
-#   · con el suelo viejo: 200 perdidos sobre 9840 = 2.03 % -> ROJO
-#   · con el suelo nuevo: ese tramo no esta ni en esp ni en obs -> 0 perdidos -> VERDE
-# Lo que cuesta y se declara: una perdida del dia parcial no se ve en ESTA pasada. Se vio en las
-# seis anteriores -ese bucket estuvo dentro de la ventana de dias enteros seis dias seguidos-, y
-# es la misma propiedad que la cabecera ya declara para el dia en curso.
+# G2 · Y LO DECIDIBLE VA ANTES (A54): una serie que no se puede medir no se come una condena.
 echo
-echo "C7 · 200 minutos perdidos DENTRO del dia parcial · reloj TEMPRANO"
-planta "$TEMPRANO" '2026-09-12 06:00:00+00' 200; corre C7
-echo "C8 · los MISMOS 200 · reloj TARDIO (para ese reloj ya ni existen: la retencion se los llevo)"
-planta "$TARDE" '2026-09-12 06:00:00+00' 200; corre C8
-comprueba "C7/C8a VERDE a las dos horas: el dia parcial no se imputa (rc ${RC[C7]} y ${RC[C8]})" \
-  "$([ "${RC[C7]}" = 0 ] && [ "${RC[C8]}" = 0 ] && echo si || echo no)"
-comprueba "C7/C8b y NINGUNA tasa sale negativa (obs y esp sobre el mismo intervalo)" \
-  "$(printf '%s%s' "${SALIDA[C7]}" "${SALIDA[C8]}" | grep -q -- '-[0-9.]* %/dia' && echo no || echo si)"
+echo "G2 · una serie descubierta JUNTO a otra que SI pasa el techo: manda la condena"
+sql "INSERT INTO futures_trades_agg(ts,symbol,\"interval\")
+     SELECT ts,'ETHUSDT_PERP.A','1min' FROM base
+      WHERE ts >= '$TARDE'::timestamptz - interval '168 hours'
+        AND NOT (ts >= '$PERDIDA'::timestamptz AND ts < '$PERDIDA'::timestamptz + interval '300 minutes')" >/dev/null
+corre G2 "n/a"
+comprueba "G2a ROJO, rc=1 (rc=${RC[G2]}): la condena de ETH no se la come la de BTC" \
+  "$([ "${RC[G2]}" = 1 ] && echo si || echo no)"
+comprueba "G2b y la descubierta va NOMBRADA en la misma linea" \
+  "$(printf '%s' "${SALIDA[G2]}" | grep -q 'sin poder medir' && printf '%s' "${SALIDA[G2]}" | grep -q 'BTCUSDT_PERP.A' && echo si || echo no)"
 
-# ── C9 · LA HUELLA · K37 NO ESCRIBE ────────────────────────────────────────────────────────
+# ── G3 · EL QUE SE CALLA SIGUE SALIENDO AL 100 % ───────────────────────────────────────────
+# La guarda de cobertura podria haberse llevado por delante lo que el universo de 30 dias vino a
+# proteger: un simbolo que DEJA de escribir. No se lo lleva, y aqui se comprueba. Su nac es viejo
+# -cubre la ventana-, asi que no es «descubierta»: es una serie medible que perdio TODO.
 echo
-comprueba "C9 ningun brazo movio la tabla plantada (huella antes == despues)" \
-  "$([ "${HUELLA_OK:-0}" = 1 ] && echo si || echo no)"
+echo "G3 · un simbolo que se CALLA (dato hasta el 09-11 y nada mas) -> 100 % de perdida"
+sql "UPDATE reloj.ajuste SET t = '$TARDE'::timestamptz" >/dev/null
+sql "TRUNCATE futures_trades_agg" >/dev/null
+sql "INSERT INTO futures_trades_agg(ts,symbol,\"interval\")
+     SELECT ts,'BTCUSDT_PERP.A','1min' FROM base
+      WHERE ts >= '$TARDE'::timestamptz - interval '168 hours'" >/dev/null
+sql "INSERT INTO futures_trades_agg(ts,symbol,\"interval\")
+     SELECT ts,'MUDOUSDT_PERP.A','1min' FROM base WHERE ts < '2026-09-11 00:00:00+00'::timestamptz" >/dev/null
+corre G3 "n/a"
+comprueba "G3a ROJO, rc=1 (rc=${RC[G3]})" "$([ "${RC[G3]}" = 1 ] && echo si || echo no)"
+comprueba "G3b y el mudo sale al 100 %, NO como «sin poder medir»" \
+  "$(printf '%s' "${SALIDA[G3]}" | grep -q 'MUDOUSDT_PERP.A *100.00 %/dia' && echo si || echo no)"
 
-# ── EL CONTROL DEL CONTROL · el reloj falso de verdad enganaba a K37 ───────────────────────
+# ── R · EL CONTROL DEL CONTROL ─────────────────────────────────────────────────────────────
 echo
-echo "   el control del control · si el reloj no se moviera, los pares no medirian nada:"
+echo "R · el control del control: si el reloj o la poda no se movieran, la matriz no mediria nada"
 sql "UPDATE reloj.ajuste SET t = '$TEMPRANO'::timestamptz" >/dev/null
 t1=$(PGOPTIONS='-c search_path=reloj,public,pg_catalog' psql -X -A -t -q -d "$DB" -c "SELECT now() AT TIME ZONE 'UTC'")
 sql "UPDATE reloj.ajuste SET t = '$TARDE'::timestamptz" >/dev/null
 t2=$(PGOPTIONS='-c search_path=reloj,public,pg_catalog' psql -X -A -t -q -d "$DB" -c "SELECT now() AT TIME ZONE 'UTC'")
-printf '      now() con el reloj temprano: %s\n      now() con el reloj tardio:   %s\n' "$t1" "$t2"
-comprueba "C10 el reloj falso SI movio now() (si no, los seis pares serian el mismo)" \
-  "$([ "$t1" != "$t2" ] && echo si || echo no)"
+printf '      now() temprano: %s · now() tardio: %s\n' "$t1" "$t2"
+comprueba "R1 el reloj falso SI movio now()" "$([ "$t1" != "$t2" ] && echo si || echo no)"
+planta "$TEMPRANO" 0 "$PERDIDA" 88;  n0=$(sql "SELECT to_char(min(ts) AT TIME ZONE 'UTC','MM-DD HH24:MI') FROM futures_trades_agg")
+planta "$TEMPRANO" 55 "$PERDIDA" 88; n55=$(sql "SELECT to_char(min(ts) AT TIME ZONE 'UTC','MM-DD HH24:MI') FROM futures_trades_agg")
+printf '      min(ts) con retraso 0: %s · con 55 min: %s\n' "$n0" "$n55"
+comprueba "R2 el retraso SI movio min(ts) de un dia UTC al otro ($n0 -> $n55)" \
+  "$([ "$n0" != "$n55" ] && echo si || echo no)"
 
 echo
 total=$((pasan+fallos))
