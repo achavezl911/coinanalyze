@@ -18,13 +18,13 @@ Handler `macro_context_endpoint` · `app/api.py:2143` (cuerpo hasta la 2146) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:1876 |
-| `conditional_note` | literal en app/scalp_logic.py:1881 |
-| `metrics` | literal en app/scalp_logic.py:1879 |
-| `session_date` | literal en app/scalp_logic.py:1878 |
-| `sessions` | literal en app/scalp_logic.py:1877 |
-| `symbol` | literal en app/scalp_logic.py:1875 |
-| `tension` | literal en app/scalp_logic.py:1880 |
+| `as_of` | literal en app/scalp_logic.py:1927 |
+| `conditional_note` | literal en app/scalp_logic.py:1932 |
+| `metrics` | literal en app/scalp_logic.py:1930 |
+| `session_date` | literal en app/scalp_logic.py:1929 |
+| `sessions` | literal en app/scalp_logic.py:1928 |
+| `symbol` | literal en app/scalp_logic.py:1926 |
+| `tension` | literal en app/scalp_logic.py:1931 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -46,18 +46,18 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1825`
+- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1876`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1785`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
-- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1775`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1747`
-- `app.scalp_logic._regime` — `app/scalp_logic.py:1756`
+- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1836`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
+- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1826`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1798`
+- `app.scalp_logic._regime` — `app/scalp_logic.py:1807`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
 
 </details>
 
@@ -84,7 +84,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:152`, `harness/checks/K43-foto-unica.sh:206` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:344`, `static/js/07-decision-y-ciclos.js:423` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:352`, `static/js/07-decision-y-ciclos.js:431` | — |
 | **readme** | — | `README.md:278` |
 
 **La llama el panel: es superficie de producto.**

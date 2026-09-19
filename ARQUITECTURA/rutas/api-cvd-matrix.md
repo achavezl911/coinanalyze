@@ -18,24 +18,24 @@ Handler `cvd_matrix_endpoint` · `app/api.py:2128` (cuerpo hasta la 2132) · dec
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:2888 |
-| `symbol` | literal en app/scalp_logic.py:2887 |
-| `window_meta` | literal en app/scalp_logic.py:2890 |
-| `window_meta.acceleration_measured` | literal en app/scalp_logic.py:2895 |
-| `window_meta.as_of` | literal en app/scalp_logic.py:2891 |
-| `window_meta.as_of_semantics` | literal en app/scalp_logic.py:2904 |
-| `window_meta.definition` | literal en app/scalp_logic.py:2898 |
-| `window_meta.freshness_rule` | literal en app/scalp_logic.py:2902 |
-| `window_meta.futures_agg_retention_hours` | literal en app/scalp_logic.py:2901 |
-| `window_meta.futures_realtime_retention_hours` | literal en app/scalp_logic.py:2900 |
-| `window_meta.independent_confirmations` | literal en app/scalp_logic.py:2894 |
-| `window_meta.null_reasons` | literal en app/scalp_logic.py:2903 |
-| `window_meta.reset_timezone` | literal en app/scalp_logic.py:2896 |
-| `window_meta.sources` | literal en app/scalp_logic.py:2899 |
-| `window_meta.venues` | literal en app/scalp_logic.py:2897 |
-| `window_meta.window_type` | literal en app/scalp_logic.py:2892 |
-| `window_meta.windows_are_nested` | literal en app/scalp_logic.py:2893 |
-| `windows` | literal en app/scalp_logic.py:2889 |
+| `as_of` | literal en app/scalp_logic.py:2990 |
+| `symbol` | literal en app/scalp_logic.py:2989 |
+| `window_meta` | literal en app/scalp_logic.py:2992 |
+| `window_meta.acceleration_measured` | literal en app/scalp_logic.py:2997 |
+| `window_meta.as_of` | literal en app/scalp_logic.py:2993 |
+| `window_meta.as_of_semantics` | literal en app/scalp_logic.py:3006 |
+| `window_meta.definition` | literal en app/scalp_logic.py:3000 |
+| `window_meta.freshness_rule` | literal en app/scalp_logic.py:3004 |
+| `window_meta.futures_agg_retention_hours` | literal en app/scalp_logic.py:3003 |
+| `window_meta.futures_realtime_retention_hours` | literal en app/scalp_logic.py:3002 |
+| `window_meta.independent_confirmations` | literal en app/scalp_logic.py:2996 |
+| `window_meta.null_reasons` | literal en app/scalp_logic.py:3005 |
+| `window_meta.reset_timezone` | literal en app/scalp_logic.py:2998 |
+| `window_meta.sources` | literal en app/scalp_logic.py:3001 |
+| `window_meta.venues` | literal en app/scalp_logic.py:2999 |
+| `window_meta.window_type` | literal en app/scalp_logic.py:2994 |
+| `window_meta.windows_are_nested` | literal en app/scalp_logic.py:2995 |
+| `windows` | literal en app/scalp_logic.py:2991 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -80,24 +80,24 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2704`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2806`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
 
 <details><summary>Alcanzables de forma indirecta (13)</summary>
 
 - `app.config.get_settings` — `app/config.py:291`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
-- `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2645`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
-- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2421`
-- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2429`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2436`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4113`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4083`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4095`
+- `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2747`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
+- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2523`
+- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2531`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2538`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4215`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4185`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4197`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2624`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2614`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2726`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2716`
 
 </details>
 

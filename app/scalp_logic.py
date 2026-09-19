@@ -979,6 +979,13 @@ def _contiguous_measured_suffix(rows: list, key: str) -> list[tuple[object, floa
     return suffix
 
 
+# EL TRAMO DE CADA CAPA, EN UN SOLO SITIO. Antes eran tres literales sueltos dentro de
+# market_structure; el glosario del sobre (field_disambiguation) los recibe de aqui por
+# argumento, asi que no puede quedarse viejo si alguien mueve un tramo. Los valores son
+# EXACTAMENTE los de antes: esto no cambia ni una lectura.
+_MS_LAYER_HORIZONS = {"micro": "1m-15m", "mid": "30m-4h", "macro": "1d-7d"}
+
+
 def _structure_layer(
     name: str, horizon: str, components: dict, price_structure: str | None
 ) -> dict[str, Any]:
@@ -993,7 +1000,15 @@ def _structure_layer(
         "votes_up": up,
         "votes_total": len(votes),
         "method": "multi_signal_vote",
-        "distinct_from": "structure_detail (pivotes puros por horizonte); esta capa es voto multi-senal",
+        # LOS TRES VECINOS, no uno. Esta linea nombraba solo a structure_detail y dejaba
+        # fuera a trend_matrix, que es el que MAS choca: medido el 2026-09-18 23:42Z, para
+        # el mismo 1d structure_horizons decia bajista y trend_matrix alcista.
+        "distinct_from": (
+            "structure_detail.horizons.<h>.state y structure_horizons.<h>.bias (pivotes "
+            "puros por marco) y trend_matrix.timeframes.<h>.bias (estructura+flujo+momentum "
+            "por marco); esta capa es voto multi-senal sobre un TRAMO de marcos y puede "
+            "discrepar de los tres. Glosario completo en field_disambiguation"
+        ),
         "price_structure": price_structure,
         "price_structure_note": "patron de pivotes del timeframe base de la capa; el resultado del voto es 'bias', no este campo",
         "components": components,
@@ -1089,7 +1104,7 @@ async def market_structure(
     )
     micro = _structure_layer(
         "micro",
-        "1m-15m",
+        _MS_LAYER_HORIZONS["micro"],
         {
             "cvd15m": _sign_vote(await _cvd_fut_window(conn, symbol, 900, cutoff)),
             "px15m": _sign_vote(px_change(m1, 15)),
@@ -1132,7 +1147,7 @@ async def market_structure(
     )
     mid = _structure_layer(
         "mid",
-        "30m-4h",
+        _MS_LAYER_HORIZONS["mid"],
         {
             "cvd1h": _sign_vote(await _cvd_fut_window(conn, symbol, 3600, cutoff)),
             "cvd4h": _sign_vote(await _cvd_fut_window(conn, symbol, 14400, cutoff)),
@@ -1159,7 +1174,7 @@ async def market_structure(
     macro_ps = _pivot_structure(closes_d, closes_d, k=2) if len(closes_d) >= 10 else None
     macro = _structure_layer(
         "macro",
-        "1d-7d",
+        _MS_LAYER_HORIZONS["macro"],
         {
             "px7d": _sign_vote(px7),
             "cvd7d": _sign_vote(cvd7),
@@ -1179,6 +1194,19 @@ async def market_structure(
         "as_of": cutoff.isoformat(),
         "layers": layers,
         "alignment": alignment,
+        # LO QUE ESTE BLOQUE ES Y NO ES. 'alignment' resume LAS TRES CAPAS DE AQUI y nada
+        # mas: no es la alineacion de trend_matrix (que tiene la suya,
+        # medium_term_alignment, sobre 4h+8h+1d) ni la de structure_horizons (que no
+        # publica ninguna). Los tres han dado lecturas distintas el mismo minuto.
+        "bias_method": (
+            "voto multi-senal por capa (micro/mid/macro): cada componente vota y gana la "
+            "mayoria simple, sin pesos. 'alignment' resume SOLO estas tres capas"
+        ),
+        "distinct_from": (
+            "trend_matrix.timeframes.<h>.bias y structure_horizons.<h>.bias miden el sesgo "
+            "por MARCO; estas capas lo miden por TRAMO de marcos y con otros componentes. "
+            "Pueden discrepar: ver field_disambiguation"
+        ),
     }
 
 
@@ -1683,7 +1711,16 @@ async def market_memory(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
 
 async def horizon_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
     """Bias por horizonte DERIVADO de structure_detail (fuente unica de pivotes), para que
-    structure_horizons y structure_detail nunca se contradigan."""
+    structure_horizons y structure_detail nunca se contradigan.
+
+    LA DECLARACION VA DENTRO DE CADA HORIZONTE Y NO EN LA RAIZ DE ESTE MAPA, y no es una
+    preferencia de estilo: este bloque se sirve como un mapa PELADO de etiqueta->lectura, y
+    el consumidor de 140 lo recorre entero tratando CADA clave como un horizonte
+    (`/opt/coinalyze-ai-bridge/src/coinalyze_ai_bridge/analyzer.py:344-350`, leido el
+    2026-09-18). Una clave nueva de primer nivel le aparece como un horizonte mas. Las
+    claves nuevas DENTRO de cada entrada no le afectan: solo lee bias, group, structure y
+    close.
+    """
     det = await structure_detail(conn, symbol)
     bias_map = {"HH_HL": "alcista", "LH_LL": "bajista"}
     out = {}
@@ -1694,6 +1731,20 @@ async def horizon_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, 
             "structure": state,
             "bias": bias_map.get(state),
             "close": d.get("close"),
+            # NO ES EL MISMO 'bias' QUE EL DE trend_matrix, aunque se llamen igual y cubran
+            # los mismos marcos. Medido el 2026-09-18 23:42Z sobre 15 parejas (5 horizontes
+            # x 3 simbolos): 4 OPUESTAS -una alcista y la otra bajista-, 9 con una nula y la
+            # otra con direccion, 1 iguales.
+            "bias_method": (
+                "SOLO estructura de pivotes: HH_HL->alcista, LH_LL->bajista, cualquier otro "
+                "estado -> null. El null dice 'la estructura no es decisiva', no 'neutral'"
+            ),
+            "structure_method": f"copia de structure_detail.horizons.{label}.state",
+            "distinct_from": (
+                f"trend_matrix.timeframes.{label}.bias (mayoria de estructura+flujo+momentum, "
+                "nunca null) y market_structure.layers[].bias (voto multi-senal por tramo). "
+                "PUEDEN DECIR LO CONTRARIO que este campo; glosario en field_disambiguation"
+            ),
         }
     return out
 
@@ -2072,6 +2123,19 @@ async def _intraday_divergences(
         "no a now(). freshness compara el lag contra el tamano de la ventana: en 9m "
         "cuatro minutos de retraso pesan, en 16h no. Para flujo mas fresco que esto "
         "usa la matriz delta (15s-8h, desde las tablas realtime).",
+        # 'divergence' TAMBIEN DICE 'alcista'/'bajista' PARA UN MARCO, igual que los tres
+        # sesgos del sobre, y no es lo mismo: aqui alcista significa que el precio baja
+        # mientras el CVD sube, o sea una CONTRADICCION entre dos series.
+        "divergence_method": (
+            "signo de la contradiccion entre la pendiente del precio y la del CVD spot "
+            "acumulado en la ventana. 'alcista' = el precio baja mientras el CVD sube"
+        ),
+        "distinct_from": (
+            "NO es un sesgo de tendencia: structure_horizons.<h>.bias, "
+            "trend_matrix.timeframes.<h>.bias y market_structure.layers[].bias miden "
+            "tendencia y pueden apuntar al lado contrario sin que ninguno este mal. "
+            "Glosario en field_disambiguation"
+        ),
     }
 
 
@@ -2210,6 +2274,25 @@ async def divergence_scan(
         f"extremos (method) y las de <{SUSTAINED_MIN_SESSIONS} no cuentan para el "
         "resumen. Una divergencia no es una senal de entrada: indica que el "
         "movimiento no esta respaldado por flujo spot, no cuando gira.",
+        # DOS AVISOS DE NOMBRE, los dos medidos en el sobre del 2026-09-18.
+        # 1 · las etiquetas de ESTE mapa no son las de nadie mas: aqui la 's' es SEMANAS
+        #     (2s = 2 semanas), no segundos. Un lector que las pase a segundos se equivoca.
+        # 2 · 'divergence' dice alcista/bajista como los tres sesgos del sobre, y no es un
+        #     sesgo de tendencia.
+        "window_label_note": (
+            "las etiquetas de windows son SESIONES y SEMANAS: 1d..9d son sesiones y 2s, 4s "
+            "y 6s son SEMANAS, no segundos. Las de intraday.windows si son minutos y horas"
+        ),
+        "divergence_method": (
+            "signo de la contradiccion entre la pendiente del precio y la del CVD spot "
+            "acumulado. 'alcista' = el precio baja mientras el CVD sube"
+        ),
+        "distinct_from": (
+            "NO es un sesgo de tendencia: structure_horizons.<h>.bias, "
+            "trend_matrix.timeframes.<h>.bias y market_structure.layers[].bias miden "
+            "tendencia y pueden apuntar al lado contrario sin que ninguno este mal. "
+            "Glosario en field_disambiguation"
+        ),
     }
 
 
@@ -2320,7 +2403,26 @@ async def structure_detail(
         det["timeframe"] = label
         det["group"] = group
         out[label] = det
-    return {"symbol": symbol, "as_of": cutoff.isoformat(), "horizons": out}
+    return {
+        "symbol": symbol,
+        "as_of": cutoff.isoformat(),
+        "horizons": out,
+        # ESTE BLOQUE ES LA CANONICA, Y AHORA LO DICE EL SOBRE Y NO SOLO EL PROMPT. De
+        # aqui salen los niveles que el panel dibuja (BOS/CHoCH/Invalid) y el disparador y
+        # la invalidacion 3D de la Mesa.
+        "state_method": (
+            "estado por PIVOTES de precio con k=2. Intradia sobre 120 barras remuestreadas "
+            "del marco; diario sobre hasta 400 sesiones de daily_session_agg"
+        ),
+        "distinct_from": (
+            "trend_matrix.timeframes.<h>.structure mide lo mismo con OTRA parametrizacion "
+            "-intradia 60 barras, diario k=1 sobre 60 sesiones- y puede decir 'mixed' donde "
+            "esto dice 'LH_LL'; market_structure.layers[].price_structure va por TRAMO de "
+            "marcos. structure_horizons.<h>.structure SI es copia de este campo. "
+            "Glosario en field_disambiguation"
+        ),
+        "canonical_for": "los niveles bos_level, choch_level e invalidation_level",
+    }
 
 
 _CONFIRMATION_TF: dict[str, tuple[str, int]] = {
@@ -5960,6 +6062,16 @@ async def passive_flow(
         "note": "manos silenciosas inferidas por absorcion de flujo agresivo (limites pasivos) + diff spot/fut + "
         "ubicacion en value area + OI. absorbed_usd_per_pct = delta agresivo USD por cada % de precio. "
         "NO detecta icebergs reales (requiere libro por-orden).",
+        # 'reading' NO ES UN SESGO, y hace falta decirlo porque comparte la palabra
+        # 'neutral' con los tres sesgos del sobre: quien barra el sobre por VALOR lo
+        # encuentra al lado de ellos y para el mismo marco.
+        "reading_method": (
+            "absorcion pasiva en la ventana: reacumulacion_silenciosa, "
+            "redistribucion_silenciosa o neutral. NO es una direccion de mercado; comparte "
+            "con los sesgos la palabra 'neutral' y nada mas. Los sesgos por marco son "
+            "structure_horizons.<h>.bias, trend_matrix.timeframes.<h>.bias y "
+            "market_structure.layers[].bias; glosario en field_disambiguation"
+        ),
     }
 
 
@@ -6125,6 +6237,25 @@ async def trend_matrix(
         "CVD spot; intradia vota por el SIGNO de ambas patas (spot y futuros) y marca "
         "conflicto cuando discrepan, en vez de votar por el diferencial spot-futuros, que "
         "el perp domina ~10x. Para holds de 2-3 dias mira 4h/8h/1d alineados.",
+        # LOS DOS CAMPOS DE ESTE BLOQUE QUE TIENEN UN HOMONIMO EN OTRO, dicho aqui dentro
+        # para que no haga falta salir del bloque para saberlo.
+        "bias_method": (
+            "MAYORIA SIMPLE de hasta tres votos: estructura (el 'structure' de ESTE bloque), "
+            "flujo y momentum. Nunca es null; el empate sale 'neutral'. votes_up y "
+            "votes_down dicen con cuantos se decidio"
+        ),
+        "structure_method": (
+            "pivotes de precio con OTRA parametrizacion que structure_detail: intradia k=2 "
+            "sobre 60 barras (la mitad de profundidad) y diario k=1 sobre hasta 60 sesiones"
+        ),
+        "distinct_from": (
+            "structure_horizons.<h>.bias mira SOLO estructura y puede ser null -medido el "
+            "2026-09-18 23:42Z, 4 de 15 parejas OPUESTAS y 9 con una nula-; "
+            "market_structure.layers[].bias es voto multi-senal por TRAMO de marcos; y "
+            "structure_detail.horizons.<h>.state es la ESTRUCTURA CANONICA, la que sostiene "
+            "los niveles. 'medium_term_alignment' resume 4h+8h+1d DE ESTE BLOQUE y no de los "
+            "otros. Glosario en field_disambiguation"
+        ),
     }
 
 

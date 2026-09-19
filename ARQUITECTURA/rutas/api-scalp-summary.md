@@ -136,7 +136,7 @@ Llamadas directas del handler:
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
@@ -146,7 +146,7 @@ Llamadas directas del handler:
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
 - `app.setups._sign` — `app/setups.py:95`

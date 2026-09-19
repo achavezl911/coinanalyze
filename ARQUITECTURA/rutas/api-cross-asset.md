@@ -18,14 +18,14 @@ Handler `cross_asset_endpoint` · `app/api.py:2086` (cuerpo hasta la 2089) · de
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3378 |
-| `available` | literal en app/scalp_logic.py:3380 |
-| `base` | literal en app/scalp_logic.py:3379 |
-| `beta_vs_base` | literal en app/scalp_logic.py:3382 |
-| `correlation` | literal en app/scalp_logic.py:3381 |
-| `note` | literal en app/scalp_logic.py:3384 |
-| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3383 |
-| `symbol` | literal en app/scalp_logic.py:3377 |
+| `as_of` | literal en app/scalp_logic.py:3480 |
+| `available` | literal en app/scalp_logic.py:3482 |
+| `base` | literal en app/scalp_logic.py:3481 |
+| `beta_vs_base` | literal en app/scalp_logic.py:3484 |
+| `correlation` | literal en app/scalp_logic.py:3483 |
+| `note` | literal en app/scalp_logic.py:3486 |
+| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3485 |
+| `symbol` | literal en app/scalp_logic.py:3479 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -49,17 +49,17 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3346`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3448`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3311`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3325`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3298`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3290`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3413`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3427`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3400`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3392`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
 
 </details>
 

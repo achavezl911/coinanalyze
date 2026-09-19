@@ -137,13 +137,19 @@ function renderDecisionBoard(dashboard, trend, swing, structureDetail, confidenc
     .slice(0, 2)
     .map(item => item.name)
     .join(' + ');
+  // C4 · DE DÓNDE SALE ESTE NIVEL, escrito donde se lee. Los dos niveles de esta tarjeta
+  // salen de structure_detail (pivotes k=2, hasta 400 sesiones), que es la MISMA fuente
+  // que dibuja BOS/CHoCH/Invalidación en el gráfico — y NO es la «Estructura» de la tabla
+  // «Tendencia multi-timeframe» de #estructura, que usa otra profundidad y otra k. Sin
+  // decirlo, el operador ve «Mixta» allí y un nivel 3D aquí y no tiene cómo saber que no
+  // se contradicen: son dos cálculos.
   const longTrigger = longSide === 'LONG'
-    ? `Cierre 3D sobre ${money(longFrame.bos_level, 2)}`
+    ? `Cierre 3D sobre ${money(longFrame.bos_level, 2)} (pivotes de structure_detail)`
     : longSide === 'SHORT'
-      ? `Cierre 3D bajo ${money(longFrame.bos_level, 2)}`
+      ? `Cierre 3D bajo ${money(longFrame.bos_level, 2)} (pivotes de structure_detail)`
       : 'Score swing fuera de ±30 y estructura diaria confirmada';
   const longInvalidation = longFrame.invalidation_level != null
-    ? `Tesis inválida al perder ${money(longFrame.invalidation_level, 2)} en 3D`
+    ? `Tesis inválida al perder ${money(longFrame.invalidation_level, 2)} en 3D (pivotes de structure_detail)`
     : 'Sin nivel estructural: no construir posición';
   const analogSummary = memory.analog_summary || {};
   let longThesis = longSide === 'WAIT'
@@ -167,7 +173,9 @@ function renderDecisionBoard(dashboard, trend, swing, structureDetail, confidenc
     horizonCard({
       name: 'Mediano plazo', time: '2 sesiones', action: mediumAction, side: mediumAction.includes(mediumSignal) ? mediumSignal : 'WAIT',
       thesis: [cvd.thesis, externalAlignment.reading].filter(Boolean).join(' '), trigger: mediumTrigger, invalidation: cvd.invalidation,
-      metric: `CVD90 ${number(cvd.score, 1)}/100 · tendencia ${trend.medium_term_alignment || 'sin definir'} · macro ext ${externalRegime}`,
+      // C4 · «tendencia» aquí es medium_term_alignment de trend_matrix (4h+8h+1d de ESA
+      // matriz), no la alineación de capas de «Estructura por capa» ni la de los niveles.
+      metric: `CVD90 ${number(cvd.score, 1)}/100 · tendencia 4h·8h·1D ${trend.medium_term_alignment || 'sin definir'} (trend_matrix) · macro ext ${externalRegime}`,
       link: '#contexto', linkText: 'Ver CVD 90 sesiones',
     }),
     horizonCard({

@@ -18,22 +18,22 @@ Handler `oi_context_endpoint` · `app/api.py:2093` (cuerpo hasta la 2096) · dec
 
 | campo | de donde sale |
 |---|---|
-| `available` | literal en app/scalp_logic.py:3118 |
-| `by_venue` | literal en app/scalp_logic.py:3129 |
-| `by_venue.binance_oi_usd` | literal en app/scalp_logic.py:3130 |
-| `by_venue.bybit_oi_usd` | literal en app/scalp_logic.py:3131 |
-| `by_venue.bybit_share_of_two_venues_pct` | literal en app/scalp_logic.py:3135 |
-| `by_venue.note` | literal en app/scalp_logic.py:3138 |
-| `by_venue.two_venue_total_usd` | literal en app/scalp_logic.py:3132 |
-| `coverage` | literal en app/scalp_logic.py:3126 |
-| `oi_latest_ts` | literal en app/scalp_logic.py:3123 |
-| `oi_total_usd` | literal en app/scalp_logic.py:3119 |
-| `percentile_1y` | literal en app/scalp_logic.py:3127 |
-| `price_latest_ts` | literal en app/scalp_logic.py:3124 |
-| `quadrant_note` | literal en app/scalp_logic.py:3142 |
-| `symbol` | literal en app/scalp_logic.py:3117 |
-| `windows` | literal en app/scalp_logic.py:3125 |
-| `zscore_1y` | literal en app/scalp_logic.py:3128 |
+| `available` | literal en app/scalp_logic.py:3220 |
+| `by_venue` | literal en app/scalp_logic.py:3231 |
+| `by_venue.binance_oi_usd` | literal en app/scalp_logic.py:3232 |
+| `by_venue.bybit_oi_usd` | literal en app/scalp_logic.py:3233 |
+| `by_venue.bybit_share_of_two_venues_pct` | literal en app/scalp_logic.py:3237 |
+| `by_venue.note` | literal en app/scalp_logic.py:3240 |
+| `by_venue.two_venue_total_usd` | literal en app/scalp_logic.py:3234 |
+| `coverage` | literal en app/scalp_logic.py:3228 |
+| `oi_latest_ts` | literal en app/scalp_logic.py:3225 |
+| `oi_total_usd` | literal en app/scalp_logic.py:3221 |
+| `percentile_1y` | literal en app/scalp_logic.py:3229 |
+| `price_latest_ts` | literal en app/scalp_logic.py:3226 |
+| `quadrant_note` | literal en app/scalp_logic.py:3244 |
+| `symbol` | literal en app/scalp_logic.py:3219 |
+| `windows` | literal en app/scalp_logic.py:3227 |
+| `zscore_1y` | literal en app/scalp_logic.py:3230 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -64,7 +64,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3026`
+- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3128`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
 
@@ -73,10 +73,10 @@ Llamadas directas del handler:
 - `app.data_gaps.align_down` — `app/data_gaps.py:232`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:245`
-- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:2983`
-- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:2995`
-- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:2953`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1747`
+- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3085`
+- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3097`
+- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3055`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1798`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>

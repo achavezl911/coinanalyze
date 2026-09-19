@@ -22,7 +22,7 @@ Handler `price_barriers_endpoint` · `app/api.py:1938` (cuerpo hasta la 1941) ·
 | `available` | literal en app/interpretation.py:998 |
 | `current_price` | literal en app/interpretation.py:999 |
 | `decision` | literal en app/interpretation.py:1000 |
-| `intraday_source_interval` | literal en app/scalp_logic.py:1354 |
+| `intraday_source_interval` | literal en app/scalp_logic.py:1382 |
 | `live_pressure` | literal en app/interpretation.py:1004 |
 | `long_case` | literal en app/interpretation.py:1021 |
 | `method` | literal en app/interpretation.py:1035 |
@@ -30,7 +30,7 @@ Handler `price_barriers_endpoint` · `app/api.py:1938` (cuerpo hasta la 1941) ·
 | `nearest_support` | literal en app/interpretation.py:1002 |
 | `reason` | literal en app/interpretation.py:886 |
 | `short_case` | literal en app/interpretation.py:1028 |
-| `symbol` | literal en app/scalp_logic.py:1353 |
+| `symbol` | literal en app/scalp_logic.py:1381 |
 | `warning` | literal en app/interpretation.py:1057 |
 | `warnings` | literal en app/interpretation.py:1048 |
 
@@ -69,7 +69,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1235`
+- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1263`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
@@ -77,7 +77,7 @@ Llamadas directas del handler:
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>

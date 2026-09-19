@@ -68,8 +68,8 @@ Llamadas directas del handler:
 - `app.api.statistical_alerts` — `app/api.py:1846`
 - `app.api.validate_symbol` — `app/api.py:229`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5544`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5646`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 
 <details><summary>Alcanzables de forma indirecta (20)</summary>
@@ -79,7 +79,7 @@ Llamadas directas del handler:
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`

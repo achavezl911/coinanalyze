@@ -48,7 +48,7 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
 
 </details>
 

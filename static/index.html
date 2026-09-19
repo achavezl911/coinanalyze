@@ -293,12 +293,24 @@
         <div class="context-grid">
           <article class="panel matrix-panel structure-panel">
             <header><h3>Estructura por capa</h3><span id="structure-align">Micro · mid · macro</span></header>
-            <div class="table-scroll"><table><thead><tr><th>Capa</th><th>Sesgo</th><th>Pivotes</th><th>Componentes</th></tr></thead><tbody id="structure-body"></tbody></table></div>
+            <div class="table-scroll"><table><thead><tr><th>Capa</th><th>Sesgo (voto)</th><th>Pivotes de la capa</th><th>Componentes</th></tr></thead><tbody id="structure-body"></tbody></table></div>
+            <!-- C4 · DE QUE CALCULO SALE LO QUE ESTA TABLA ENSEÑA. El «Sesgo» de aquí es
+                 un VOTO de 4-5 señales sobre un TRAMO de marcos, y no es el mismo cálculo
+                 que el de la tabla de al lado ni el que sostiene los niveles del gráfico.
+                 Va como texto fijo del HTML y no por JS a propósito: una nota que se pinta
+                 sólo cuando llega el payload desaparece justo el día que el payload falla. -->
+            <p class="panel-note">De <code>market_structure</code>: cada capa es un voto de 4-5 señales (CVD, precio, OI, liquidaciones y pivotes) sobre un <strong>tramo</strong> de marcos. No es el mismo cálculo que el sesgo por marco de «Tendencia multi-timeframe», ni el que dibuja los niveles del gráfico: pueden discrepar sin que ninguno esté mal.</p>
           </article>
 
           <article class="panel matrix-panel trend-panel">
             <header><h3>Tendencia multi-timeframe</h3><span id="trend-sub">15m → 3D</span></header>
-            <div class="table-scroll"><table><thead><tr><th>Marco</th><th>Estructura</th><th>Flujo</th><th>OI</th><th>Momentum</th><th>Sesgo</th></tr></thead><tbody id="trend-body"></tbody></table></div>
+            <div class="table-scroll"><table><thead><tr><th>Marco</th><th>Estructura (de esta matriz)</th><th>Flujo</th><th>OI</th><th>Momentum</th><th>Sesgo (de esta matriz)</th></tr></thead><tbody id="trend-body"></tbody></table></div>
+            <!-- C4 · LA COLUMNA «ESTRUCTURA» DE AQUÍ NO ES LA QUE DIBUJA LOS NIVELES, y la
+                 diferencia es medible: el 2026-09-18 a las 23:42Z, en 1d de BTC, esta
+                 matriz decía «Mixta» y structure_detail —la que pone BOS/CHoCH/Invalid en
+                 el gráfico y escribe el disparador 3D de la Mesa— decía LH/LL. Y en el
+                 mismo minuto los dos «Sesgo» de 1d eran opuestos en BTC y en SOL. -->
+            <p class="panel-note">De <code>trend_matrix</code>: la «Estructura» de esta tabla usa <strong>otra profundidad de pivotes</strong> que la que dibuja BOS / CHoCH / Invalidación en el gráfico y escribe el disparador y la invalidación 3D de la Mesa (<code>structure_detail</code>), y el «Sesgo» mezcla esa estructura con flujo y momentum. Las dos lecturas pueden decir cosas distintas para el mismo marco.</p>
           </article>
 
           <article class="panel barrier-panel">

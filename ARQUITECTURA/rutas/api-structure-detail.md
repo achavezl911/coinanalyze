@@ -14,13 +14,16 @@ Handler `structure_detail_endpoint` · `app/api.py:2136` (cuerpo hasta la 2139) 
 
 ## Campos que publica
 
-3 campos derivados. La procedencia dice de donde sale cada uno.
+6 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:2323 |
-| `horizons` | literal en app/scalp_logic.py:2323 |
-| `symbol` | literal en app/scalp_logic.py:2323 |
+| `as_of` | literal en app/scalp_logic.py:2408 |
+| `canonical_for` | literal en app/scalp_logic.py:2424 |
+| `distinct_from` | literal en app/scalp_logic.py:2417 |
+| `horizons` | literal en app/scalp_logic.py:2409 |
+| `state_method` | literal en app/scalp_logic.py:2413 |
+| `symbol` | literal en app/scalp_logic.py:2407 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -47,19 +50,19 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2288`
+- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2371`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
 
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._dsr` — `app/scalp_logic.py:2280`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1197`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2231`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2217`
+- `app.scalp_logic._dsr` — `app/scalp_logic.py:2363`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2314`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2300`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
 
 </details>
 
@@ -86,7 +89,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:155`, `harness/checks/K43-foto-unica.sh:213` | `harness/checks/K31-eslabon5.sh:29` |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:209`, `static/js/07-decision-y-ciclos.js:348` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:217`, `static/js/07-decision-y-ciclos.js:356` | — |
 
 **La llama el panel: es superficie de producto.**
 
@@ -108,6 +111,7 @@ en el fichero de la capa declarada y puede corregirla con cita.
 Claves temporales entre los campos que publica:
 
 - `as_of`
+- `distinct_from`
 
 ## Capa DECLARADA
 

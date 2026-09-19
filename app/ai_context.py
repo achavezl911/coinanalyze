@@ -13,8 +13,16 @@ from app.daily_agg import (
 )
 from app.db import INGEST_COMPONENT_MAX_AGES, required_heartbeat_failures
 from app.external_macro import align_with_internal, external_macro_context
+from app.field_disambiguation import ENVELOPE_KEY as DISAMBIGUATION_KEY
+from app.field_disambiguation import build as build_field_disambiguation
 from app.interpretation import cvd_swing_read, evaluate_setups
 from app.scalp_logic import (
+    _ALERT_HORIZONS,
+    _DIVERGENCE_WINDOWS,
+    _INTRADAY_WINDOWS,
+    _MS_LAYER_HORIZONS,
+    _PF_HORIZONS,
+    _TREND_TF,
     EXECUTION_PROFILES,
     as_float,
     compute_scalp_summary,
@@ -53,6 +61,24 @@ from app.scalp_logic import passive_flow as _passive_flow
 from app.scalp_logic import trend_matrix as _trend_matrix
 
 AIProfile = Literal["lite", "default", "pro", "max"]
+
+
+def field_disambiguation() -> dict[str, Any]:
+    """El glosario de homonimos del sobre, construido con los horizontes DE LOS CALCULOS.
+
+    Las seis tuplas salen de scalp_logic y no de una copia: si alguien anade un marco a
+    `_TREND_TF` o mueve un tramo de `_MS_LAYER_HORIZONS`, el glosario lo dice sin que nadie
+    se acuerde de editarlo. Es identico para los tres simbolos -no depende de ninguno-, asi
+    que en el bundle viaja una sola vez en la raiz, como el prompt.
+    """
+    return build_field_disambiguation(
+        alert_horizons=tuple(label for label, _u, _g in _ALERT_HORIZONS),
+        trend_timeframes=tuple(label for label, _u, _k in _TREND_TF),
+        layer_horizons=tuple(_MS_LAYER_HORIZONS.values()),
+        intraday_divergence_windows=tuple(label for label, _s in _INTRADAY_WINDOWS),
+        session_divergence_windows=tuple(label for label, _s in _DIVERGENCE_WINDOWS),
+        passive_horizons=tuple(label for label, _s in _PF_HORIZONS),
+    )
 
 PROFILE_LIMITS: dict[AIProfile, dict[str, Any]] = {
     "lite": {
@@ -848,6 +874,12 @@ async def build_ai_symbol_context(
     payload: dict[str, Any] = {
         "schema_version": "ai_context.v2",
         "interpretation_prompt": ANALYSIS_PROMPT,
+        # EL SOBRE SE EXPLICA SOLO. Va JUNTO AL PROMPT y no al final porque quien reciba
+        # esto sin nadie que se lo explique -el bridge, la skill de la mesa, o alguien que
+        # lo pega en una IA por web- tiene que tropezar con el glosario antes que con los
+        # campos. No trae ni un valor calculado: dice que mide cada 'bias' y cada
+        # 'structure' del sobre y de cual de los otros se diferencia.
+        DISAMBIGUATION_KEY: field_disambiguation(),
         "generated_at": datetime.now(UTC).isoformat(),
         "profile": profile,
         "symbol": symbol,
@@ -986,9 +1018,13 @@ async def build_ai_context(
     root_alerts.sort(key=lambda x: prio.get(str(x.get("priority", "")).upper(), 9))
     for _p in symbol_payloads:
         _p.pop("interpretation_prompt", None)  # solo al root, no 3x
+        # El glosario no depende del simbolo: los tres traian el MISMO texto. Sube al root
+        # por la misma razon que el prompt, y ahorra dos copias de ~7 KB.
+        _p.pop(DISAMBIGUATION_KEY, None)
     payload = {
         "schema_version": "ai_context_bundle.v2",
         "interpretation_prompt": ANALYSIS_PROMPT,
+        DISAMBIGUATION_KEY: field_disambiguation(),
         "generated_at": datetime.now(UTC).isoformat(),
         "profile": profile,
         "local_alerts": root_alerts,

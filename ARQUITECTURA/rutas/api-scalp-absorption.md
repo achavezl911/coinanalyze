@@ -46,16 +46,16 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5350`
+- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5452`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2403`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2409`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
 
 </details>
 
@@ -82,7 +82,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:220` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:318` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:326` | — |
 | **tests** | — | `tests/test_metrics_endpoint.py:231` |
 
 **La llama el panel: es superficie de producto.**
