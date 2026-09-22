@@ -6,8 +6,9 @@
 # EL PUNTO (COLA 125, A58). El 2026-09-17 el operador leyo el respaldo de las libretas como
 # SANO mientras llevaba 21 h fallando en cada tick de 5 minutos. No se equivoco de comando: lo
 # leyo DENTRO de una corrida de la unit. Medido: `systemctl show` durante la corrida devuelve
-# los valores NEUTROS -Result=success, ExecMainStatus=0- con `ExecMainExitTimestamp` VACIO, que
-# es la firma. K49 leia Result y ExecMainStatus sin mirar nada mas, asi que durante esos
+# los valores NEUTROS -Result=success, ExecMainStatus=0- con `ExecMainExitTimestamp` VACIO. El
+# sello vacio NO es «la firma» de estar corriendo -sale igual en «nunca ha corrido»-, y llamarselo
+# fue el error de A58. K49 leia Result y ExecMainStatus sin mirar nada mas, asi que durante esos
 # segundos de cada 300 daba VERDE pase lo que pase despues.
 #
 # EL ACTOR ES REAL, NO UN DOBLE DE `systemctl` (A57). Un `systemctl` de mentira en el PATH
@@ -24,6 +25,10 @@
 # NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh.
 set -uo pipefail
 ORIG=${REPO:-/srv/coinanalyze/repo}
+# A ABSOLUTA ANTES DE NADA (A56): el brazo A8j se lee a SI MISMO, y una ruta relativa deja de
+# existir en cuanto alguien meta un `cd` por delante -que es exactamente como K90 aprobo midiendo
+# la nada-. Si no se puede resolver, el brazo lo dira en vez de pasar por silencio.
+YO=$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || true)
 CHK="$ORIG/harness/checks/K49-libretas-fuera-de-143.sh"
 [ -r "$CHK" ] || { echo "NO MEDIDO: no encuentro el check en $CHK"; exit 2; }
 command -v systemctl >/dev/null 2>&1 || { echo "NO MEDIDO: no hay systemctl en esta maquina"; exit 2; }
@@ -31,17 +36,24 @@ command -v systemctl >/dev/null 2>&1 || { echo "NO MEDIDO: no hay systemctl en e
 [ -d /run/systemd/system ] || { echo "NO MEDIDO: no hay /run/systemd/system: esto no es un systemd vivo"; exit 2; }
 
 TIMER_REAL=${K49_CONTROL_TIMER:-coinalyze-libretas.timer}
+UNIT_REAL=${K49_CONTROL_UNIT:-coinalyze-libretas.service}
 U="k49-control-$$.service"
 U2="k49-control-b-$$.service"
+# LAS GEMELAS DE A7, que son el arreglo de A59: la MISMA unit dos veces, y lo unico que cambia
+# entre ellas es QUIEN LA RETIENE -un timer propio-, que es la variable que decide (A57).
+U3="k49-control-sin-$$.service"
+U4="k49-control-con-$$.service"
+T4="k49-control-con-$$.timer"
 SH="/run/k49-control-$$.sh"
 fallos=0; pasan=0
 comprueba() { if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-62s\n' "$1"
               else fallos=$((fallos+1)); printf '  [FALLA] %-62s\n' "$1"; fi; }
 
 limpia() {
-  systemctl stop "$U" "$U2" >/dev/null 2>&1
-  systemctl reset-failed "$U" "$U2" >/dev/null 2>&1
-  rm -f "/run/systemd/system/$U" "/run/systemd/system/$U2" "$SH"
+  systemctl stop "$T4" "$U" "$U2" "$U3" "$U4" >/dev/null 2>&1
+  systemctl reset-failed "$T4" "$U" "$U2" "$U3" "$U4" >/dev/null 2>&1
+  rm -f "/run/systemd/system/$U" "/run/systemd/system/$U2" "/run/systemd/system/$U3" \
+        "/run/systemd/system/$U4" "/run/systemd/system/$T4" "$SH"
   systemctl daemon-reload >/dev/null 2>&1
 }
 trap limpia EXIT
@@ -105,11 +117,29 @@ comprueba "A1d leer K49 NO movio la unit" "$([ "$ANTES" = "$DESPUES" ] && echo s
 
 # ── A1b · LA MISMA CORRIDA FALLIDA, CON `show` YA EN BLANCO ────────────────────────────────
 echo
-echo "A1bis · el fallo sigue siendo fallo aunque `systemctl show` vuelva a los valores NEUTROS"
-# `reset-failed` deja la unit EXACTAMENTE como una que salio bien -o como una que no ha corrido
-# nunca-: Result=success, ExecMainStatus=0, ExecMainExitTimestamp vacio. Si K49 solo mirara
-# `show`, aqui volveria a dar VERDE sobre una corrida que fallo. Es el mismo agujero que el de
-# leer durante la corrida, por la otra puerta.
+# LAS COMILLAS SON SIMPLES Y NO ES UN DETALLE DE ESTILO. Con comillas dobles, los acentos graves
+# de esta linea eran SUSTITUCION DE MANDATO: el rotulo del brazo ejecutaba `systemctl show` en
+# cada corrida y pegaba su salida en el titulo. Llevaba asi desde que nacio el brazo, y lo cazo
+# el rotulo de A8, que hacia lo mismo con un mandato que no existe y salia cortado. Defecto
+# encontrado de paso y arreglado en los dos sitios (COLA 128, remate).
+echo 'A1bis · el fallo sigue siendo fallo aunque `systemctl show` vuelva a los valores NEUTROS'
+# `reset-failed` quita el estado `failed` y pone `Result=success`, asi que el primer
+# discriminante de K49 -«ActiveState = failed»- se queda callado sobre una corrida que fallo. Si
+# K49 solo mirara `show`, aqui volveria a dar VERDE. Es el mismo agujero que el de leer durante
+# la corrida, por la otra puerta.
+#
+# ESTE BRAZO CORRE SOBRE `$U`, QUE NO TIENE TIMER, Y POR ESO NO DESCRIBE A LA UNIT REAL. Lo que
+# aqui habia escrito -sus bytes exactos estan en ffbe4ad- afirmaba que tras un `reset-failed` la
+# unit queda indistinguible de una que termino bien, con el estado de salida a cero y el sello
+# vacio. Eso le pasa a una unit DESCARGABLE (A59); la retenida por un timer conserva
+# `ExecMainStatus=1` y su sello. Lo mide el brazo A8 sobre las dos gemelas.
+#
+# LA FRASE REFUTADA NO SE CITA LITERAL AQUI, Y ES A PROPOSITO: los brazos A8h y A8j comprueban
+# que no aparezca, y una correccion que la copia entre comillas los hace saltar sobre si misma.
+# Se parafrasea y se deja el commit donde mirarla.
+#
+# Lo que A1bis SI demuestra, y sigue valiendo entero: el veredicto aguanta con `show` diciendo
+# `Result=success` y sin `failed`, porque quien decide es el journal.
 systemctl reset-failed "$U" >/dev/null 2>&1 || true
 lee A1bis "$U"
 comprueba "A1bis-a con show en blanco, SIGUE siendo ROJO (rc=$RC)" "$([ "$RC" = 1 ] && echo si || echo no)"
@@ -205,6 +235,153 @@ else
 fi
 systemctl stop "$U2" >/dev/null 2>&1 || true
 systemctl reset-failed "$U2" >/dev/null 2>&1 || true
+
+# ── A7 · A59 · LA GEMELA QUE UN TIMER RETIENE, QUE ES LA FORMA DE LA UNIT REAL ─────────────
+echo
+echo "A7 · A59 · el sello tras una corrida BUENA depende de QUIEN RETIENE la unit, no de como salio"
+# POR QUE ESTE BRAZO EXISTE. Los brazos A1-A6 montan sus units SIN timer, y con units asi se
+# midio -y se escribio en el comentario de K49 y en una entrega- que «tras una corrida que sale
+# BIEN systemd deja el sello vacio y solo lo conserva en failed». Es falso para la unit del
+# respaldo: la suya la RETIENE su timer. Una unit que nadie referencia se DESCARGA al quedar
+# inactiva y `show` la reconstruye con los valores por defecto, sello incluido, asi que lo que
+# se midio fue el instrumento (A59). Aqui se varia LA VARIABLE QUE DECIDE (A57) y nada mas: dos
+# units identicas, mismo guion, mismo `exit 0`, y a una la referencia un timer propio con
+# `OnCalendar=2099-01-01`, que no dispara NUNCA.
+#
+# ESTE BRAZO NO CAMBIA NINGUN VEREDICTO DE K49 -no lo toca: mide systemd- salvo A7d, que si
+# juzga al check, y juzga su PROSA: que no vuelva a afirmar lo que aqui se refuta.
+guion 'exit 0'
+for u in "$U3" "$U4"; do instala "$u"; done
+cat > "/run/systemd/system/$T4" <<EOF
+[Unit]
+Description=control de K49 · timer VOLATIL que REFERENCIA a $U4 y no dispara nunca
+[Timer]
+OnCalendar=2099-01-01 00:00:00
+Unit=$U4
+[Install]
+WantedBy=timers.target
+EOF
+systemctl daemon-reload
+systemctl start "$T4" >/dev/null 2>&1 || true
+
+trig_sin=$(systemctl show "$U3" -p TriggeredBy --value 2>/dev/null)
+trig_con=$(systemctl show "$U4" -p TriggeredBy --value 2>/dev/null)
+sello_virgen=$(systemctl show "$U4" -p ExecMainExitTimestamp --value 2>/dev/null)
+printf '      A7 gemela SIN timer  TriggeredBy=%s\n' "'${trig_sin}'"
+printf '      A7 gemela CON timer  TriggeredBy=%s\n' "'${trig_con}'"
+printf '      A7 la CON, ANTES de correr nunca (nunca corrio, con timer): sello=%s\n' "'${sello_virgen}'"
+comprueba "A7-pre las gemelas difieren SOLO en quien las retiene (una con timer, otra sin)" \
+  "$([ -z "$trig_sin" ] && [ -n "$trig_con" ] && echo si || echo no)"
+comprueba "A7-pre2 y «nunca ha corrido» tiene el sello VACIO aunque la retenga un timer" \
+  "$([ -z "$sello_virgen" ] && echo si || echo no)"
+
+systemctl start "$U3" >/dev/null 2>&1 || true
+systemctl start "$U4" >/dev/null 2>&1 || true
+f_sin=$(foto "$U3"); f_con=$(foto "$U4")
+mem_sin=$(systemctl list-units --all --no-legend --plain "$U3" 2>/dev/null | grep -c .)
+mem_con=$(systemctl list-units --all --no-legend --plain "$U4" 2>/dev/null | grep -c .)
+printf '      A7 SIN timer, tras salir BIEN: %s· en memoria: %s\n' "$f_sin" "$mem_sin"
+printf '      A7 CON timer, tras salir BIEN: %s· en memoria: %s\n' "$f_con" "$mem_con"
+sello_sin=$(systemctl show "$U3" -p ExecMainExitTimestamp --value 2>/dev/null)
+sello_con=$(systemctl show "$U4" -p ExecMainExitTimestamp --value 2>/dev/null)
+# SE PREGUNTA A CADA GEMELA POR SEPARADO. La primera version pego las dos fotos y conto lineas
+# con `grep -c` esperando 2: `foto` ya viene en UNA linea -lleva un `tr '\n' ' '`-, asi que la
+# cuenta era 1 siempre y el brazo fallaba pasara lo que pasara. Lo delato correrlo contra los
+# bytes viejos, donde fallo un brazo que no podia depender de ellos. A60 otra vez, en mi banco.
+comprueba "A7a las dos salieron BIEN de verdad (Result=success en las dos)" \
+  "$(printf '%s' "$f_sin" | grep -q 'Result=success' \
+   && printf '%s' "$f_con" | grep -q 'Result=success' && echo si || echo no)"
+comprueba "A7b reproducido: la SIN timer pierde el sello y systemd la DESCARGA (en memoria=$mem_sin)" \
+  "$([ -z "$sello_sin" ] && [ "$mem_sin" = 0 ] && echo si || echo no)"
+comprueba "A7c LA CORRECCION: la CON timer CONSERVA el sello tras salir bien" \
+  "$([ -n "$sello_con" ] && echo si || echo no)"
+
+# LA GEMELA CON TIMER ES LA FIEL, Y ESO SE COMPRUEBA CONTRA LA UNIT REAL, LEYENDOLA Y NADA MAS.
+# Solo se afirma lo que no depende del instante: que a la real LA REFERENCIA un timer. El sello
+# de la real se imprime como evidencia, pero no se juzga aqui, porque leerla justo dentro de un
+# tick lo daria vacio con todo el derecho -y eso es A53 con otro sujeto-.
+trig_real=$(systemctl show "$UNIT_REAL" -p TriggeredBy --value 2>/dev/null)
+printf '      A7 la unit REAL (solo lectura): TriggeredBy=%s · %s\n' "'${trig_real}'" "$(foto "$UNIT_REAL")"
+comprueba "A7d la unit REAL esta REFERENCIADA por un timer, o sea que la gemela fiel es la CON" \
+  "$([ -n "$trig_real" ] && echo si || echo no)"
+
+# A7e · EL BRAZO QUE JUZGA AL CHECK. La medida falsa no vivia en el codigo: vivia en el
+# comentario, donde ningun brazo miraba. Este mira.
+comprueba "A7e y la PROSA de K49 ya no afirma que una corrida buena deje el sello vacio" \
+  "$(grep -q 'BIEN systemd deja `ExecMainExitTimestamp` VACIO' "$CHK" && echo no || echo si)"
+comprueba "A7f y dice de que depende de verdad: de quien RETIENE la unit" \
+  "$(grep -qi 'RETIENE' "$CHK" && echo si || echo no)"
+
+# Y K49 leido sobre la gemela CON, que es la forma de la real: con su estado ANTES y DESPUES.
+lee A7 "$U4"
+comprueba "A7g K49 sobre la gemela CON no la movio (antes == despues)" \
+  "$([ "$ANTES" = "$DESPUES" ] && echo si || echo no)"
+
+# ── A8 · A59, OTRA VEZ · QUE HACE `reset-failed` A LA UNIT QUE UN TIMER RETIENE ─────────────
+echo
+echo 'A8 · A59 · un reset-failed sobre la gemela RETENIDA no la deja como una que salio bien'
+# POR QUE ESTE BRAZO EXISTE, y es la misma leccion una linea mas abajo. El brazo A1bis hace su
+# `reset-failed` sobre `$U`, que no tiene timer, y de ahi salio una afirmacion -en su comentario
+# y en el de K49- que daba por indistinguibles el estado tras limpiar el fallo y el de una
+# corrida buena. Para la unit del respaldo es falso. Se varia SOLO quien la retiene (A57).
+guion 'exit 1'
+systemctl start "$U3" >/dev/null 2>&1 || true
+systemctl start "$U4" >/dev/null 2>&1 || true
+sleep 1
+f8_sin_a=$(foto "$U3"); f8_con_a=$(foto "$U4")
+printf '      A8 SIN timer, tras FALLAR:        %s\n' "$f8_sin_a"
+printf '      A8 CON timer, tras FALLAR:        %s\n' "$f8_con_a"
+comprueba "A8a las dos fallaron de verdad (failed + ExecMainStatus=1 en las dos)" \
+  "$(printf '%s' "$f8_sin_a" | grep -q 'ActiveState=failed' && printf '%s' "$f8_sin_a" | grep -q 'ExecMainStatus=1' \
+   && printf '%s' "$f8_con_a" | grep -q 'ActiveState=failed' && printf '%s' "$f8_con_a" | grep -q 'ExecMainStatus=1' \
+   && echo si || echo no)"
+systemctl reset-failed "$U3" >/dev/null 2>&1 || true
+systemctl reset-failed "$U4" >/dev/null 2>&1 || true
+sleep 1
+f8_sin_d=$(foto "$U3"); f8_con_d=$(foto "$U4")
+m8_sin=$(systemctl list-units --all --no-legend --plain "$U3" 2>/dev/null | grep -c .)
+m8_con=$(systemctl list-units --all --no-legend --plain "$U4" 2>/dev/null | grep -c .)
+printf '      A8 SIN timer, tras RESET-FAILED:  %s· en memoria: %s\n' "$f8_sin_d" "$m8_sin"
+printf '      A8 CON timer, tras RESET-FAILED:  %s· en memoria: %s\n' "$f8_con_d" "$m8_con"
+# SE LEEN LOS VALORES, NO SE BUSCAN SUBCADENAS EN LA FOTO. Un `grep -v` sobre una linea unica
+# invierte la LINEA y no el match, y por ahi ya se han colado dos brazos que no median nada en
+# esta misma campana. `show --value` devuelve el campo y se compara con `-n` / `-z`.
+s8_sin=$(systemctl show "$U3" -p ExecMainExitTimestamp --value 2>/dev/null)
+s8_con=$(systemctl show "$U4" -p ExecMainExitTimestamp --value 2>/dev/null)
+e8_sin=$(systemctl show "$U3" -p ExecMainStatus --value 2>/dev/null)
+e8_con=$(systemctl show "$U4" -p ExecMainStatus --value 2>/dev/null)
+comprueba "A8b la SIN timer SI queda como una que salio bien (status=$e8_sin sello='' mem=$m8_sin)" \
+  "$([ "$e8_sin" = 0 ] && [ -z "$s8_sin" ] && [ "$m8_sin" = 0 ] && echo si || echo no)"
+comprueba "A8c LA CORRECCION: la CON timer NO (status=$e8_con, sello con fecha)" \
+  "$([ "$e8_con" = 1 ] && [ -n "$s8_con" ] && echo si || echo no)"
+comprueba "A8d y las dos dejan de estar en failed, que es lo que reset-failed SI hace" \
+  "$(printf '%s' "$f8_sin_d" | grep -q 'ActiveState=inactive' \
+   && printf '%s' "$f8_con_d" | grep -q 'ActiveState=inactive' && echo si || echo no)"
+# EL VEREDICTO NO ESTA EN JUEGO, Y SE COMPRUEBA EN VEZ DE AFIRMARSE.
+lee A8 "$U4"
+comprueba "A8e K49 sobre la gemela CON sigue dando ROJO: lo decide el JOURNAL (rc=$RC)" \
+  "$([ "$RC" = 1 ] && echo si || echo no)"
+comprueba "A8f y lo dice: sale de la ULTIMA corrida TERMINADA" \
+  "$(printf '%s' "$OUT" | grep -q 'ULTIMA corrida TERMINADA' && echo si || echo no)"
+comprueba "A8g leer K49 no movio la gemela (antes == despues)" \
+  "$([ "$ANTES" = "$DESPUES" ] && echo si || echo no)"
+# A8h/A8i · LOS BRAZOS QUE JUZGAN LA PROSA, que es donde vivia el defecto las dos veces.
+comprueba "A8h la prosa de K49 ya no dice que reset-failed la deje como la fila de «salio bien»" \
+  "$(grep -q 'reset-failed` devuelve una unit fallida a la' "$CHK" && echo no || echo si)"
+comprueba "A8i y su tabla trae la fila del reset-failed, con ExecMainStatus=1" \
+  "$(grep -q 'tras un reset-failed' "$CHK" && echo si || echo no)"
+# A8j SE AFIRMA EN POSITIVO, y por una razon que costo un brazo. La primera version buscaba la
+# AUSENCIA de la frase refutada en este mismo fichero, y fallaba SIEMPRE: el patron del `grep`
+# ES la frase, asi que el fichero la contiene por construccion. Un brazo que se lee a si mismo no
+# puede afirmar que algo no esta en el. Se comprueba lo que si tiene que estar: que este control
+# DECLARA que su brazo A1bis corre sobre una unit sin timer y por eso no describe a la real.
+comprueba "A8j y ESTE control declara que A1bis mide una unit SIN timer, no la real" \
+  "$([ -r "${YO:-/no/existe}" ] \
+    && { grep -q 'NO TIENE TIMER, Y POR ESO NO DESCRIBE A LA UNIT REAL' "$YO" && echo si || echo no; } \
+    || echo no)"
+
+systemctl stop "$T4" "$U3" "$U4" >/dev/null 2>&1 || true
+systemctl reset-failed "$T4" "$U3" "$U4" >/dev/null 2>&1 || true
 
 # ── EL CONTROL DEL CONTROL · la unit de VERDAD sigue donde estaba ──────────────────────────
 echo

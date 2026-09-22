@@ -54,25 +54,64 @@ if command -v systemctl >/dev/null 2>&1; then
     *) echo "NO MEDIDO: LoadState=$carga para $UNIT"; exit 2 ;;
   esac
   # EL VEREDICTO SALE DE UNA CORRIDA TERMINADA, NO DE LA QUE ESTA CORRIENDO (COLA 125, A58).
-  # MEDIDO: `systemctl show` DENTRO de la corrida de una unit devuelve los valores NEUTROS
-  # -Result=success y ExecMainStatus=0- con `ExecMainExitTimestamp` VACIO, que es la firma.
+  # MEDIDO, y tambien sobre una unit RETENIDA por su timer: `systemctl show` DENTRO de la corrida
+  # devuelve los valores NEUTROS -Result=success y ExecMainStatus=0- con `ExecMainExitTimestamp`
+  # VACIO. Eso NO es «la firma» de estar corriendo, y llamarselo fue el error original (A58): el
+  # sello vacio sale igual en «nunca ha corrido», asi que no identifica nada por si solo. Lo que
+  # separa esos dos es `ActiveState`, y lo que separa una corrida buena de una mala es el journal.
   # Estas cuatro lineas leian Result y ExecMainStatus SIN MIRAR NADA MAS, asi que durante los
   # segundos que dura cada tick DABAN VERDE PASE LO QUE PASE DESPUES. El 2026-09-17 el operador
   # leyo el respaldo como sano mientras llevaba 21 h fallando en cada tick: lo leyo dentro de
   # una corrida. Un instrumento cuya respuesta depende de CUANDO se le pregunta no esta
   # midiendo el sujeto, esta midiendo el reloj -y este mide justo lo que no se puede perder-.
   #
-  # EL DISCRIMINADOR ES `ActiveState`, Y NO `ExecMainExitTimestamp`. La primera version de este
-  # arreglo usaba el sello de salida -«si tiene valor, hay corrida terminada»- y su propio
-  # control la tumbo: MEDIDO el 2026-09-18 sobre una unit volatil, tras una corrida que sale
-  # BIEN systemd deja `ExecMainExitTimestamp` VACIO igual que durante la corrida, y solo lo
-  # conserva cuando la unit queda en `failed`:
-  #     terminada mal   Result=exit-code ExecMainExitTimestamp=<fecha> ExecMainStatus=1 ActiveState=failed
-  #     terminada bien  Result=success   ExecMainExitTimestamp=        ExecMainStatus=0 ActiveState=inactive
-  #     CORRIENDO       Result=success   ExecMainExitTimestamp=        ExecMainStatus=0 ActiveState=activating
-  # Las dos ultimas son IDENTICAS en `show` salvo por `ActiveState`, y «nunca ha corrido» es
-  # identica a la segunda. Por eso la corrida terminada se lee del JOURNAL, que es el unico
-  # sitio donde una terminacion deja rastro que systemd no borre al arrancar la siguiente.
+  # EL DISCRIMINADOR ES `ActiveState` MAS EL JOURNAL, Y NO `ExecMainExitTimestamp`. La primera
+  # version de este arreglo usaba el sello de salida -«si tiene valor, hay corrida terminada»-.
+  #
+  # AQUI ESTUVO ESCRITA UNA MEDIDA FALSA Y SE CORRIGE EN SU SITIO (A59, COLA 126 y 128). Decia,
+  # como MEDIDO, que «tras una corrida que sale BIEN systemd deja ExecMainExitTimestamp VACIO
+  # igual que durante la corrida, y solo lo conserva cuando la unit queda en failed». Eso NO es
+  # una propiedad de salir bien: es lo que le pasa a una unit de prueba QUE NADIE REFERENCIA.
+  # Al quedar inactiva systemd la DESCARGA, y `show` la reconstruye con los valores por defecto,
+  # sello incluido. La unit del respaldo la RETIENE su timer y por eso conserva el sello.
+  #
+  # MEDIDO EL 2026-09-19 EN 143, con dos GEMELAS volatiles identicas salvo en quien las retiene
+  # -que es la variable que decide (A57)-, las dos con `exit 0`, leidas a las 04:50:37Z:
+  #     bash harness/checks/K49-control.bash      (brazo A7, que es de donde sale esta tabla)
+  #     gemela SIN timer   Result=success ExecMainExitTimestamp=              en memoria: 0
+  #     gemela CON timer   Result=success ExecMainExitTimestamp=22:50:37 CST  en memoria: 1
+  # Y la unit REAL, leida entre corridas a las 04:50:16Z con
+  #     systemctl show coinalyze-libretas.service -p ActiveState -p Result -p ExecMainStatus \
+  #       -p ExecMainExitTimestamp -p TriggeredBy
+  #     ActiveState=inactive Result=success ExecMainStatus=0
+  #     ExecMainExitTimestamp=Fri 2026-09-18 22:50:08 CST  TriggeredBy=coinalyze-libretas.timer
+  # o sea que la gemela fiel es la CON. LA TABLA ENTERA, medida sobre ella el 2026-09-19 a las
+  # 06:12:38Z y las 15:05:57Z (brazos A7 y A8 del control, que es de donde sale):
+  #     terminada mal        Result=exit-code sello=<fecha> ExecMainStatus=1 ActiveState=failed
+  #     terminada bien       Result=success   sello=<fecha> ExecMainStatus=0 ActiveState=inactive
+  #     tras un reset-failed Result=success   sello=<fecha> ExecMainStatus=1 ActiveState=inactive
+  #     CORRIENDO            Result=success   sello=        ExecMainStatus=0 ActiveState=activating
+  #     nunca corrio         Result=success   sello=        ExecMainStatus=0 ActiveState=inactive
+  # «CORRIENDO» sale igual venga de un fallo, de una buena o de nada: las tres se midieron.
+  #
+  # LA TERCERA FILA ES LA SEGUNDA CORRECCION DE LA MISMA FAMILIA (COLA 128, remate). Aqui habia
+  # escrito -sus bytes exactos estan en ffbe4ad- que limpiar el fallo con `reset-failed` devolvia
+  # la unit a la forma de la fila «terminada bien». Falso para la unit real, y falso por lo MISMO
+  # que la frase de arriba: se midio sobre una unit que nadie retiene. La frase no se copia
+  # literal aqui a proposito: el brazo A8h comprueba que no aparezca, y una correccion que la
+  # cita entre comillas lo hace saltar sobre si misma. `reset-failed` limpia el estado `failed` y el `Result`, y en una unit descargable
+  # eso se lleva por delante TODO lo demas al recargarla con los valores por defecto; en una
+  # RETENIDA no, y conserva `ExecMainStatus=1` y el sello. Medido con las dos gemelas:
+  #     tras fallar        SIN y CON  failed   exit-code  ExecMainStatus=1  sello=<fecha>
+  #     tras reset-failed  SIN        inactive success    ExecMainStatus=0  sello=       (0 en memoria)
+  #                        CON        inactive success    ExecMainStatus=1  sello=<fecha>(1 en memoria)
+  #
+  # NINGUN VEREDICTO CAMBIA POR NINGUNA DE LAS DOS CORRECCIONES, y el diseno de abajo se sostiene
+  # sin ellas: «CORRIENDO» y «nunca corrio» siguen siendo IDENTICAS en `show` salvo por
+  # `ActiveState`, y el sello sigue sin separar esos dos. Y tras un `reset-failed` la unit ya no
+  # esta `failed` -o sea que el primer discriminante calla- mientras el journal SIGUE trayendo su
+  # `Failed with result`: por eso la corrida terminada se lee del JOURNAL, que es el unico sitio
+  # donde una terminacion deja rastro que systemd no borre al arrancar la siguiente.
   #
   # LOS CUATRO ESTADOS, Y NINGUNO DE ELLOS ES «VERDE POR DEFECTO»:
   #   la unit quedo en `failed`            -> ROJO, con su motivo y su fecha

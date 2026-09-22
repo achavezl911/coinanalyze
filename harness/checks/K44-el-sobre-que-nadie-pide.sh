@@ -98,6 +98,13 @@
 #   TOPE    el SOBRE sirve esa clave con un TOPE DE PERFIL menor que el `limit` con que el
 #           panel pide la ruta. El tope NO se copia: se lee en cada corrida del codigo que lo
 #           aplica, y el perfil lo dice el propio sobre.
+#
+# Y UNA REGLA QUE VALE PARA TODOS LOS TIPOS (COLA 128): si el SOBRE NO TRAE la clave de la que
+# habla la excusa, la excusa SE SOSTIENE. No sirve ese dato, luego el panel no tiene de donde
+# sacarlo y la peticion suelta es necesaria. Antes eso daba tres veredictos distintos segun el
+# tipo -ROJO en MENOS, NO MEDIDO en TOPE, excusa viva en FALTAN-, o sea que el veredicto lo
+# decidia la fila de esta tabla y no el sobre. La clave PRESENTE y VACIA es otra cosa y no se
+# toca: esa depende del mercado, y en FALTAN ademas cumpliria la excusa por construccion.
 EXCEPCIONES="
 /api/dashboard/state          | FALTAN | scalp_persistence,signal_base_rate          |
 /api/scalp/delta-matrix       | MENOS  |                                             | delta_matrix
@@ -409,6 +416,33 @@ if faltan_testigos:
     sin_verificar_todas("el buscador de claves no encuentra en el sobre "
                         + " ".join(faltan_testigos) + ", que SI estan: esta roto y excusaria a cualquiera")
 
+# ── UN SOLO TRATAMIENTO PARA «EL SOBRE NO TRAE LA CLAVE DE LA QUE HABLA LA EXCUSA» ───────────
+# HASTA LA COLA 128 HABIA TRES, Y EL VEREDICTO DEPENDIA DE QUE EXCUSA FUERA Y NO DEL SOBRE.
+# Medido con plantados sobre los payloads reales y el mismo log:
+#     sin `delta_matrix`       (MENOS)  -> ANULADA  -> ROJO,      rc=1
+#     sin `liquidation_levels` (TOPE)   -> NOVER    -> NO MEDIDO, rc=2
+#     sin `scalp_persistence`  (FALTAN) -> es su premisa          rc=0
+# Tres respuestas a la MISMA pregunta sobre el MISMO sobre. Decidido por el operador: LA EXCUSA
+# SE SOSTIENE. Si el sobre no sirve ese dato en ninguna forma, el panel no tiene de donde sacarlo
+# y la peticion suelta es justo lo que la excusa dice que es: necesaria. Que la excusa la mate
+# precisamente el caso en que su premisa es MAS cierta era la version mas cara del defecto.
+#
+# NO ES LO MISMO QUE LA CLAVE VACIA, y por eso la vacia se queda COMO HOY. Ausente = el sobre no
+# publica ese dato, que es una propiedad del CODIGO y no se mueve con la hora. Vacia = el sobre
+# SI lo publica y hoy no trae nada dentro, que es el MERCADO (A53) -y en FALTAN ademas hace que
+# la excusa se cumpla por construccion, que es la guarda de vacuidad que hay unas lineas mas
+# abajo-. Unificar las dos habria borrado esa guarda.
+#
+# LO QUE NO CAMBIA HOY: ninguna de las tres entradas del sobre puede faltar sin tocar codigo
+# -son entradas literales, medido en la COLA 126-, asi que con los payloads reales K44 sigue
+# dando lo que daba. Esto se escribe para el dia en que una se vuelva condicional, que es
+# exactamente cuando ya no se podria decidir con la cabeza fria.
+def sin_esa_clave(ruta, clave, tipo):
+    print(f"VIVA\t{ruta}\tel sobre NO TRAE `{clave}` en absoluto ({tipo}): no sirve ese dato en "
+          f"ninguna forma, asi que el panel no tiene de donde sacarlo y la peticion suelta es "
+          f"NECESARIA. Un solo tratamiento para las tres excusas (COLA 128); la clave PRESENTE "
+          f"y vacia es otra cosa y se trata aparte")
+
 for ln in os.environ["EXCEPCIONES"].strip().splitlines():
     if not ln.strip(): continue
     p = [x.strip() for x in ln.split("|")]
@@ -438,8 +472,7 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
         if clave:
             ambito = sobre.get(clave, "<<AUSENTE>>")
             if ambito == "<<AUSENTE>>" or ambito is None:
-                print(f"ANULADA\t{ruta}\tel sobre ya no trae `{clave}`: la excusa mira dentro de nada")
-                continue
+                sin_esa_clave(ruta, clave, "FALTAN"); continue
             if isinstance(ambito, (list, dict)) and len(ambito) == 0:
                 print(f"ANULADA\t{ruta}\t`{clave}` viene VACIA en el sobre: sobre un vacio "
                       f"cualquier clave falta sola y la excusa se cumpliria por construccion")
@@ -462,7 +495,12 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
         def filas(x):
             if isinstance(x, dict) and isinstance(x.get("rows"), list): return x["rows"]
             return x if isinstance(x, list) else None
-        fs = filas(sobre.get(clave))
+        # AUSENTE Y «NO ES UNA LISTA DE FILAS» SON DOS COSAS Y ANTES CAIAN EN LA MISMA. Que el
+        # sobre no traiga la clave es decidible (la excusa se sostiene); que la traiga con una
+        # forma que no se sabe leer NO lo es, y ese sigue yendo al tercer cubo.
+        bruto = sobre.get(clave, "<<AUSENTE>>")
+        ausente = (bruto == "<<AUSENTE>>" or bruto is None)
+        fs = None if ausente else filas(bruto)
         perfil = sobre.get("profile")
         topes = lee_topes()
         lim = limite_panel(ruta)
@@ -484,8 +522,11 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
                   f"se apoyaba en el -y esto se decide SIN el `limit` del panel-")
             continue
 
+        if ausente:
+            sin_esa_clave(ruta, clave, "TOPE"); continue
+
         falta = []
-        if fs is None: falta.append(f"el sobre no trae `{clave}` como lista de filas")
+        if fs is None: falta.append(f"el sobre trae `{clave}` pero NO como lista de filas")
         if not perfil: falta.append("el sobre no declara su `profile`")
         if topes is None: falta.append(f"no se pudo leer PROFILE_LIMITS ({de})")
         elif perfil and perfil not in topes: falta.append(f"PROFILE_LIMITS no tiene el perfil `{perfil}`")
@@ -517,10 +558,15 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
         def filas(x):
             if isinstance(x, dict) and isinstance(x.get("rows"), list): return x["rows"]
             return x if isinstance(x, list) else None
-        fr, fs = filas(rp), filas(sobre.get(clave))
+        bruto = sobre.get(clave, "<<AUSENTE>>")
+        if bruto == "<<AUSENTE>>" or bruto is None:
+            # EL MISMO TRATAMIENTO QUE LAS OTRAS TRES, aunque hoy no haya ninguna fila FILAS
+            # declarada: dejarlo distinto aqui seria volver a poner el defecto donde nadie mira.
+            sin_esa_clave(ruta, clave, "FILAS"); continue
+        fr, fs = filas(rp), filas(bruto)
         if fs is None:
-            print(f"ANULADA\t{ruta}\tel sobre ya no trae `{clave}` como lista de filas: "
-                  f"la excusa comparaba contra nada")
+            print(f"NOVER\t{ruta}\tel sobre trae `{clave}` pero NO como lista de filas, asi que "
+                  f"su excusa no se puede reverificar: ni excusa ni condena")
         elif fr is None:
             print(f"NOMED\t{ruta} no devolvio filas legibles, asi que su excusa no se puede reverificar")
         elif len(fs) < len(fr):
@@ -544,12 +590,16 @@ for ln in os.environ["EXCEPCIONES"].strip().splitlines():
                   f"porque hoy hay pocos niveles, y estos payloads no separan las dos causas; "
                   f"antes de retirar la peticion suelta hay que mirar un dia con mas niveles")
     elif tipo == "MENOS":
-        val = sobre.get(clave) if clave else None
+        if not clave:
+            print(f"ANULADA\t{ruta}\tla fila MENOS no declara clave del sobre: la tabla esta mal "
+                  f"escrita y no hay nada contra que comparar")
+            continue
+        val = sobre.get(clave, "<<AUSENTE>>")
+        if val == "<<AUSENTE>>" or val is None:
+            sin_esa_clave(ruta, clave, "MENOS"); continue
         nr = len(rp) if isinstance(rp, (list, dict)) else 0
         ns = len(val) if isinstance(val, (list, dict)) else 0
-        if val is None:
-            print(f"ANULADA\t{ruta}\tel sobre ya no trae `{clave}`: la excusa comparaba contra nada")
-        elif ns >= nr:
+        if ns >= nr:
             print(f"ANULADA\t{ruta}\tel sobre trae {ns} y la ruta {nr}: ya no trae menos, la excusa es falsa")
         else:
             print(f"VIVA\t{ruta}\tla ruta sirve {nr} elementos y el sobre `{clave}` solo {ns}")

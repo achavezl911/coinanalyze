@@ -624,6 +624,105 @@ comprueba "E33a ROJO, rc=1 (rc=$rc)" "$([ "$rc" = 1 ] && echo si || echo no)"
 comprueba "E33b y NOMBRA la clave que la ruta dejo de servir" \
   "$(printf '%s' "${SALIDA[E33]}" | grep -q 'la RUTA ya no sirve signal_base_rate' && echo si || echo no)"
 
+# ── E34-E40 · «EL SOBRE NO TRAE LA CLAVE DE LA QUE HABLA LA EXCUSA» (COLA 128) ──────────────
+# EL DEFECTO QUE ATACAN. La MISMA pregunta sobre el MISMO sobre daba tres respuestas segun que
+# excusa fuera: MENOS condenaba (rc=1), TOPE salia al tercer cubo (rc=2) y FALTAN la daba por
+# viva (rc=0). O sea que el veredicto lo decidia la fila de la tabla de excepciones y no el
+# sobre. El criterio unico -decidido por el operador- es que LA EXCUSA SE SOSTIENE.
+#
+# LOS PLANTADOS SON LOS DE E28-E33, con UN SOLO CAMBIO: se quita la clave del sobre. Mismo log,
+# misma ruta, misma forma. Si el veredicto de los tres no coincide, el defecto sigue.
+SOBRE_SIN_DM='{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{}}'
+
+echo
+echo "E34 · MENOS · el sobre NO TRAE \`delta_matrix\`: la excusa SE SOSTIENE"
+monta "$DIR/e34" 0 "$LOG_DM"
+plantada "$DIR/e34" _sobre.json "$SOBRE_SIN_DM"
+plantada "$DIR/e34" "_api_scalp_delta-matrix.json" "$(dm_ruta 91400.5)"
+f=$(copia "$DIR/e34") || exit 2
+corre E34 "$f" K44_PAYLOADS="$DIR/e34/payloads" K44_SIMBOLO=TEST; rc=$RC; RC34=$RC
+comprueba "E34a VERDE, rc=0 (rc=$rc) -antes ANULADA y ROJO-" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E34b y dice su PORQUE: el sobre no sirve ese dato, la suelta es NECESARIA" \
+  "$(printf '%s' "${SALIDA[E34]}" | grep -q 'el sobre NO TRAE `delta_matrix` en absoluto' \
+     && printf '%s' "${SALIDA[E34]}" | grep -q 'NECESARIA' && echo si || echo no)"
+
+echo
+echo "E35 · TOPE · el sobre NO TRAE \`liquidation_levels\`: EL MISMO tratamiento"
+liqmonta "$DIR/e35" "{$TESTIGOS}" "$LIQ_LARGA"
+liqcorre E35 "$DIR/e35" "$LIMITS_OK"; rc=$RC; RC35=$RC
+comprueba "E35a VERDE, rc=0 (rc=$rc) -antes NO VERIFICABLE y rc=2-" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E35b y dice su PORQUE, con LA MISMA frase que MENOS" \
+  "$(printf '%s' "${SALIDA[E35]}" | grep -q 'el sobre NO TRAE `liquidation_levels` en absoluto' && echo si || echo no)"
+
+echo
+echo "E36 · FALTAN · con \`clave\` declarada y AUSENTE: EL MISMO tratamiento"
+# Hoy la fila FALTAN no declara clave del sobre, asi que esta rama NO SE ALCANZA con la tabla
+# real: se inyecta una clave en la copia -y se comprueba que el sed MORDIO-. Sin este brazo, el
+# criterio quedaria unificado solo para las filas de hoy y se rompeia la primera vez que alguien
+# escribiera una clave ahi, que es justo cuando nadie estaria mirando.
+monta "$DIR/e36" 0 "$LOG_DS"
+plantada "$DIR/e36" _sobre.json "$SOBRE_TESTIGOS"
+plantada "$DIR/e36" "_api_dashboard_state.json" "$DS_AGITADA"
+f=$(copia "$DIR/e36") || exit 2
+sed -i 's#| scalp_persistence,signal_base_rate *|$#| scalp_persistence,signal_base_rate | panel_extra#' "$f"
+comprueba "E36-pre el plantado OCURRIO: la fila FALTAN ya declara clave del sobre" \
+  "$(grep -q 'FALTAN | scalp_persistence,signal_base_rate | panel_extra' "$f" && echo si || echo no)"
+corre E36 "$f" K44_PAYLOADS="$DIR/e36/payloads" K44_SIMBOLO=TEST; rc=$RC; RC36=$RC
+comprueba "E36a VERDE, rc=0 (rc=$rc) -antes ANULADA y ROJO-" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E36b y dice su PORQUE, con LA MISMA frase que las otras dos" \
+  "$(printf '%s' "${SALIDA[E36]}" | grep -q 'el sobre NO TRAE `panel_extra` en absoluto' && echo si || echo no)"
+
+echo
+echo "E37 · EL PUNTO · los TRES tipos dan el MISMO veredicto ante la MISMA ausencia"
+# SE CUENTAN BRAZOS, NO APARICIONES. La primera version conto las veces que sale la frase en la
+# concatenacion de los tres y pidio 3: K44 la escribe DOS veces por corrida -en el veredicto por
+# ruta y otra vez en la linea de excusadas-, asi que salian 6 y el brazo fallaba por su propia
+# aritmetica. Es A4 en el control: leer el formato del sujeto como si fuera su contenido.
+n_unif=0
+for _e in E34 E35 E36; do
+  printf '%s' "${SALIDA[$_e]}" | grep -q 'en absoluto' && n_unif=$((n_unif+1))
+done
+comprueba "E37 los 3 tipos dicen la MISMA frase ($n_unif de 3) y los 3 dan rc=0" \
+  "$([ "$n_unif" = 3 ] && [ "$RC34" = 0 ] && [ "$RC35" = 0 ] && [ "$RC36" = 0 ] && echo si || echo no)"
+
+echo
+echo "E38 · LA LISTA VACIA NO SE TOCA · MENOS con \`delta_matrix\` presente y VACIA"
+# Ausente y vacia NO son lo mismo y el criterio nuevo no las mezcla: ausente es una propiedad del
+# codigo, vacia es el mercado (A53). Sin este brazo, unificar de mas pasaria desapercibido.
+monta "$DIR/e38" 0 "$LOG_DM"
+plantada "$DIR/e38" _sobre.json '{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"delta_matrix":[]}'
+plantada "$DIR/e38" "_api_scalp_delta-matrix.json" "$(dm_ruta 91400.5)"
+f=$(copia "$DIR/e38") || exit 2
+corre E38 "$f" K44_PAYLOADS="$DIR/e38/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E38a VERDE, rc=0 (rc=$rc), COMO ANTES" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "E38b y por la via de siempre -12 contra 0-, NO por la de la clave ausente" \
+  "$(printf '%s' "${SALIDA[E38]}" | grep -q 'la ruta sirve 12 elementos y el sobre `delta_matrix` solo 0' \
+     && printf '%s' "${SALIDA[E38]}" | grep -q 'en absoluto' && echo no || echo si)"
+
+echo
+echo "E39 · LA LISTA VACIA NO SE TOCA · FALTAN con el AMBITO presente y VACIO sigue ANULADA"
+# La guarda de vacuidad: sobre un ambito vacio cualquier clave falta sola. Si la unificacion se
+# hubiera llevado por delante este caso, la excusa se cumpliria por construccion.
+monta "$DIR/e39" 0 "$LOG_DS"
+plantada "$DIR/e39" _sobre.json '{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{},"panel_extra":{}}'
+plantada "$DIR/e39" "_api_dashboard_state.json" "$DS_AGITADA"
+f=$(copia "$DIR/e39") || exit 2
+sed -i 's#| scalp_persistence,signal_base_rate *|$#| scalp_persistence,signal_base_rate | panel_extra#' "$f"
+corre E39 "$f" K44_PAYLOADS="$DIR/e39/payloads" K44_SIMBOLO=TEST; rc=$RC
+comprueba "E39a ROJO, rc=1 (rc=$rc), COMO ANTES" "$([ "$rc" = 1 ] && echo si || echo no)"
+comprueba "E39b y por la guarda de vacuidad, no por la clave ausente" \
+  "$(printf '%s' "${SALIDA[E39]}" | grep -q 'viene VACIA en el sobre' && echo si || echo no)"
+
+echo
+echo "E40 · TOPE · la clave PRESENTE pero con una forma que no es una lista de filas: TERCER CUBO"
+# Ausente y «no se sabe leer» caian antes en el mismo saco. Lo primero es decidible; lo segundo
+# no, y sigue sin excusar y sin condenar.
+liqmonta "$DIR/e40" "{$TESTIGOS,\"liquidation_levels\":\"no-soy-una-lista\"}" "$LIQ_LARGA"
+liqcorre E40 "$DIR/e40" "$LIMITS_OK"; rc=$RC
+comprueba "E40a NO MEDIDO, rc=2 (rc=$rc): ni excusa ni condena" "$([ "$rc" = 2 ] && echo si || echo no)"
+comprueba "E40b y lo dice: la trae, pero NO como lista de filas" \
+  "$(printf '%s' "${SALIDA[E40]}" | grep -q 'pero NO como lista de filas' && echo si || echo no)"
+
 # ── LOS SEIS, DOS A DOS ──────────────────────────────────────────────────────────────────────
 echo
 echo "LOS SEIS ESTADOS · si dos dan la MISMA salida, no distingue lo que dice distinguir"
