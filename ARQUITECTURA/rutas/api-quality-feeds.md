@@ -18,13 +18,13 @@ Handler `quality_feeds` · `app/api.py:1538` (cuerpo hasta la 1550) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `collectors` | literal en app/scalp_logic.py:5443 |
-| `contexts` | literal en app/scalp_logic.py:5444 |
-| `contexts.intraday` | literal en app/scalp_logic.py:5446 |
-| `contexts.macro` | literal en app/scalp_logic.py:5447 |
-| `contexts.scalp` | literal en app/scalp_logic.py:5445 |
-| `metrics` | literal en app/scalp_logic.py:4108 |
-| `note` | literal en app/scalp_logic.py:4109 |
+| `collectors` | literal en app/scalp_logic.py:5601 |
+| `contexts` | literal en app/scalp_logic.py:5602 |
+| `contexts.intraday` | literal en app/scalp_logic.py:5604 |
+| `contexts.macro` | literal en app/scalp_logic.py:5605 |
+| `contexts.scalp` | literal en app/scalp_logic.py:5603 |
+| `metrics` | literal en app/scalp_logic.py:4269 |
+| `note` | literal en app/scalp_logic.py:4270 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -96,15 +96,15 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-43 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+44 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5409`
+- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5567`
 
-<details><summary>Alcanzables de forma indirecta (41)</summary>
+<details><summary>Alcanzables de forma indirecta (42)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
@@ -112,38 +112,39 @@ Llamadas directas del handler:
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
-- `app.scalp_logic._feed_status` — `app/scalp_logic.py:3994`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
+- `app.scalp_logic._feed_status` — `app/scalp_logic.py:4155`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
-- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2523`
-- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2531`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2538`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4215`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4185`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4197`
-- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:3959`
+- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2604`
+- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2612`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2619`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4376`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4346`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4358`
+- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4120`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4389`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4305`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4557`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4473`
 - `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4117`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4421`
-- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:3834`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2726`
+- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4278`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4589`
+- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:3995`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2868`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4261`
-- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:4023`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
+- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4429`
+- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:4184`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2716`
+- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2807`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2797`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
@@ -239,7 +240,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic.spot_flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._gap_and_baseline` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._gap_threshold_seconds` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 19 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 20 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

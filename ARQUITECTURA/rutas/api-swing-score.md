@@ -18,22 +18,22 @@ Handler `swing_score_endpoint` · `app/api.py:2107` (cuerpo hasta la 2110) · de
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:6429 |
-| `as_of_semantics` | literal en app/scalp_logic.py:6430 |
-| `bias` | literal en app/scalp_logic.py:6394 |
-| `components` | literal en app/scalp_logic.py:6404 |
-| `conflicts` | literal en app/scalp_logic.py:6403 |
-| `conviction` | literal en app/scalp_logic.py:6396 |
-| `evidence_coverage_pct` | literal en app/scalp_logic.py:6400 |
-| `horizon` | literal en app/scalp_logic.py:6405 |
-| `long_share_pct` | literal en app/scalp_logic.py:6397 |
-| `measured_weight` | literal en app/scalp_logic.py:6401 |
-| `neutral_share_pct` | literal en app/scalp_logic.py:6399 |
-| `note` | literal en app/scalp_logic.py:6406 |
-| `score` | literal en app/scalp_logic.py:6395 |
-| `short_share_pct` | literal en app/scalp_logic.py:6398 |
-| `symbol` | literal en app/scalp_logic.py:6428 |
-| `total_weight` | literal en app/scalp_logic.py:6402 |
+| `as_of` | literal en app/scalp_logic.py:6587 |
+| `as_of_semantics` | literal en app/scalp_logic.py:6588 |
+| `bias` | literal en app/scalp_logic.py:6552 |
+| `components` | literal en app/scalp_logic.py:6562 |
+| `conflicts` | literal en app/scalp_logic.py:6561 |
+| `conviction` | literal en app/scalp_logic.py:6554 |
+| `evidence_coverage_pct` | literal en app/scalp_logic.py:6558 |
+| `horizon` | literal en app/scalp_logic.py:6563 |
+| `long_share_pct` | literal en app/scalp_logic.py:6555 |
+| `measured_weight` | literal en app/scalp_logic.py:6559 |
+| `neutral_share_pct` | literal en app/scalp_logic.py:6557 |
+| `note` | literal en app/scalp_logic.py:6564 |
+| `score` | literal en app/scalp_logic.py:6553 |
+| `short_share_pct` | literal en app/scalp_logic.py:6556 |
+| `symbol` | literal en app/scalp_logic.py:6586 |
+| `total_weight` | literal en app/scalp_logic.py:6560 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -83,54 +83,55 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-40 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+41 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.swing_score` — `app/scalp_logic.py:6414`
+- `app.scalp_logic.swing_score` — `app/scalp_logic.py:6572`
 
-<details><summary>Alcanzables de forma indirecta (38)</summary>
+<details><summary>Alcanzables de forma indirecta (39)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3033`
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3413`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3427`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5928`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3194`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3574`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3588`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:6086`
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
-- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1836`
+- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1894`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._dsr` — `app/scalp_logic.py:2363`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2538`
-- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1826`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4215`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4185`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4197`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4389`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1798`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3400`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3646`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4305`
-- `app.scalp_logic._regime` — `app/scalp_logic.py:1807`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3392`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2314`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2300`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3022`
+- `app.scalp_logic._dsr` — `app/scalp_logic.py:2421`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2619`
+- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1884`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4376`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4346`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4358`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4557`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1856`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3561`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3807`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4473`
+- `app.scalp_logic._regime` — `app/scalp_logic.py:1865`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3553`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2372`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2358`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3183`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6263`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3448`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4563`
-- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1876`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5961`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2716`
-- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2371`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6089`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3683`
+- `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1298`
+- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6421`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3609`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4721`
+- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1934`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:6119`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2797`
+- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2429`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6247`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3844`
 
 </details>
 
@@ -222,7 +223,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic.trend_matrix` | 8 | **0** | 3 ↑ | **8** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.structure_detail` | 7 | **0** | 3 ↑ | **7** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._dsr` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 16 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 17 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

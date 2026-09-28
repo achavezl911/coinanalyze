@@ -23,7 +23,7 @@ Handler `dashboard_state` · `app/api.py:3480` (cuerpo hasta la 3507) · decorad
 | `barriers.available` | literal en app/interpretation.py:998 |
 | `barriers.current_price` | literal en app/interpretation.py:999 |
 | `barriers.decision` | literal en app/interpretation.py:1000 |
-| `barriers.intraday_source_interval` | literal en app/scalp_logic.py:1382 |
+| `barriers.intraday_source_interval` | literal en app/scalp_logic.py:1423 |
 | `barriers.live_pressure` | literal en app/interpretation.py:1004 |
 | `barriers.long_case` | literal en app/interpretation.py:1021 |
 | `barriers.method` | literal en app/interpretation.py:1035 |
@@ -31,7 +31,7 @@ Handler `dashboard_state` · `app/api.py:3480` (cuerpo hasta la 3507) · decorad
 | `barriers.nearest_support` | literal en app/interpretation.py:1002 |
 | `barriers.reason` | literal en app/interpretation.py:886 |
 | `barriers.short_case` | literal en app/interpretation.py:1028 |
-| `barriers.symbol` | literal en app/scalp_logic.py:1381 |
+| `barriers.symbol` | literal en app/scalp_logic.py:1422 |
 | `barriers.warning` | literal en app/interpretation.py:1057 |
 | `barriers.warnings` | literal en app/interpretation.py:1048 |
 | `cvd_swing` | literal en app/api.py:3504 |
@@ -62,7 +62,7 @@ Handler `dashboard_state` · `app/api.py:3480` (cuerpo hasta la 3507) · decorad
 | `market_memory.reason` | literal en app/interpretation.py:412 |
 | `market_memory.sessions` | literal en app/interpretation.py:411 |
 | `market_memory.source` | literal en app/interpretation.py:516 |
-| `market_memory.symbol` | literal en app/scalp_logic.py:1709 |
+| `market_memory.symbol` | literal en app/scalp_logic.py:1750 |
 | `market_memory.warning` | literal en app/interpretation.py:517 |
 | `scalp` | literal en app/api.py:3498 |
 | `scalp.absorption` | literal en app/scalp_logic.py:914 |
@@ -258,8 +258,8 @@ Llamadas directas del handler:
 - `app.interpretation.cvd_swing_read` — `app/interpretation.py:578`
 - `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1693`
-- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1263`
+- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1734`
+- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1304`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 
 <details><summary>Alcanzables de forma indirecta (33)</summary>
@@ -280,18 +280,18 @@ Llamadas directas del handler:
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
 - `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
 - `app.setups._sign` — `app/setups.py:95`

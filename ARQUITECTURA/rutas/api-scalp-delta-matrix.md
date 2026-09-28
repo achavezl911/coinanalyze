@@ -62,32 +62,33 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-18 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+19 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4421`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4589`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 
-<details><summary>Alcanzables de forma indirecta (15)</summary>
+<details><summary>Alcanzables de forma indirecta (16)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
-- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2523`
-- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2531`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2538`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4215`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4185`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4197`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4389`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4305`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
+- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2604`
+- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2612`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2619`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4376`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4346`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4358`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4557`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4473`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2726`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2868`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2716`
+- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2807`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2797`
 
 </details>
 
@@ -113,7 +114,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:154`, `harness/checks/K43-foto-unica.sh:209`, `harness/checks/K44-control.bash:175`, `harness/checks/K44-control.bash:188` _(+16)_ | `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:79` |
+| **checks** | `harness/checks/K43-foto-unica.sh:154`, `harness/checks/K43-foto-unica.sh:209`, `harness/checks/K44-control.bash:175`, `harness/checks/K44-control.bash:188` _(+14)_ | `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:79`, `harness/checks/K84-dos-matrices-una-cifra.sh:13` |
 | **panel** | `static/js/07-decision-y-ciclos.js:325` | — |
 
 **La llama el panel: es superficie de producto.**
@@ -165,6 +166,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic._flow_imbalance` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_rate` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.futures_flow_windows` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.spot_con_guarda` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.delta_matrix` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.scalp_delta_matrix` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

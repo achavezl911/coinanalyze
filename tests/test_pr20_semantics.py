@@ -156,7 +156,10 @@ async def test_pr20_resample_filters_closed_target_before_limit() -> None:
     conn = _ResampleConn()
     cutoff = datetime(2026, 8, 11, 14, 18, tzinfo=UTC)
     await _resample_highs_lows(conn, "BTCUSDT_PERP.A", 14400, 30, "4hour", cutoff)
-    assert "bucket + make_interval(secs => $2::int) <= $5" in conn.query
+    # El corte es el ULTIMO argumento y acota las dos puntas. Desde el 2026-09-28 la consulta
+    # lleva un parametro mas -los segundos de la vela de origen, para saber si la barra tiene
+    # su ultima vela-, asi que el corte es $6 y no $5.
+    assert "bucket + make_interval(secs => $2::int) <= $6" in conn.query
     assert "ORDER BY bucket DESC LIMIT $3" in conn.query
     assert conn.args[-1] == cutoff
 

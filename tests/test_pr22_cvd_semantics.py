@@ -254,6 +254,8 @@ async def _delta_rows(
         # estas pruebas siguen midiendo lo que median.
         return None, None, 0
 
+    # Desde el 2026-09-28 la pata spot de LAS DOS matrices pasa por `spot_con_guarda`, que
+    # pregunta por esta misma puerta: un solo doble sirve para las dos rutas.
     monkeypatch.setattr(scalp_logic, "_gap_and_baseline", sin_hueco_interno)
     monkeypatch.setattr(scalp_logic, "futures_flow_windows", fake_futures_windows)
     monkeypatch.setattr(scalp_logic, "_realtime_flow", fake_futures)
@@ -391,6 +393,8 @@ async def test_pr22_cvd_matrix_uses_one_as_of_for_all_windows(
         # estas pruebas siguen midiendo lo que median.
         return None, None, 0
 
+    # Desde el 2026-09-28 la pata spot de LAS DOS matrices pasa por `spot_con_guarda`, que
+    # pregunta por esta misma puerta: un solo doble sirve para las dos rutas.
     monkeypatch.setattr(scalp_logic, "_gap_and_baseline", sin_hueco_interno)
     monkeypatch.setattr(scalp_logic, "futures_flow_windows", fake_futures_windows)
     monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", no_gaps)
@@ -1155,6 +1159,8 @@ async def test_k83_cvd_matrix_publica_futuros_cuando_solo_el_empalme_cubre(
         # estas pruebas siguen midiendo lo que median.
         return None, None, 0
 
+    # Desde el 2026-09-28 la pata spot de LAS DOS matrices pasa por `spot_con_guarda`, que
+    # pregunta por esta misma puerta: un solo doble sirve para las dos rutas.
     monkeypatch.setattr(scalp_logic, "_gap_and_baseline", sin_hueco_interno)
     monkeypatch.setattr(scalp_logic, "futures_flow_windows", fake_futures_windows)
     monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", no_gaps)
@@ -1284,3 +1290,94 @@ async def test_k84_cvd_matrix_aplica_la_guarda_de_hueco_interno(
     assert cuatro["futures"] is not None
     assert cuatro["futures_status"]["reason"] is None
     assert "internal_gap" in result["window_meta"]["null_reasons"]
+
+
+@pytest.mark.anyio
+async def test_c2_las_dos_matrices_callan_la_misma_pata_spot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """La guarda de hueco interno del SPOT tiene que decidir igual en las dos rutas.
+
+    Hasta el 2026-09-28 solo la aplicaba delta_matrix: con 90 s de spot ausentes, aquella
+    publicaba null y cvd_matrix una cifra, para la MISMA cantidad y el MISMO as_of. Aqui las
+    dos miran las MISMAS filas -el mismo doble- y tienen que decir lo mismo.
+    """
+    cutoff = datetime(2026, 9, 28, 17, 0, tzinfo=UTC)
+    ventanas = [("30m", 1800), ("1h", 3600)]
+
+    async def fake_spot(_conn, _symbol, windows, as_of=None):
+        return {
+            label: {
+                exchange: {
+                    "delta": float(seconds), "volume": seconds * 10.0, "source_rows": 5,
+                    "complete": True, "source": "realtime", "end_gap_seconds": 5.0,
+                    "precision_seconds": 1,
+                }
+                for exchange in ("combined", "binance", "bybit")
+            }
+            for label, seconds in windows
+        }
+
+    async def hueco_de_90s(_conn, table, _symbol, _exchange, _seconds, as_of=None):
+        # 90 s sobre una cadencia cuyo p99 es 10 s: 6 veces el peor hueco real medido en 140
+        # el 2026-09-28 (15.0 s), o sea muy por encima del umbral max(30, 3xp99) = 30 s.
+        # Solo en el SPOT: el hueco de la pata de futuros ya lo cubre otro test.
+        if table == "spot_trades_realtime":
+            return 90.0, 10.0, 500
+        return None, None, 0
+
+    async def sin_empalme(_conn, _symbol, _windows, as_of=None):
+        return {}
+
+    async def fake_cvd(_conn, _table, _symbol, _is_agg, as_of=None):
+        values = {
+            exchange: {
+                label: {"delta": seconds * 2.0, "volume": seconds * 10.0, "n": 1}
+                for label, seconds in scalp_logic._CVD_WINDOWS
+            }
+            for exchange in ("combined", "binance", "bybit")
+        }
+        return values, cutoff - timedelta(days=8), cutoff - timedelta(seconds=5)
+
+    async def no_gaps(_conn, _requirements):
+        return set()
+
+    monkeypatch.setattr(scalp_logic, "spot_flow_windows", fake_spot)
+    monkeypatch.setattr(scalp_logic, "_gap_and_baseline", hueco_de_90s)
+    monkeypatch.setattr(scalp_logic, "futures_flow_windows", sin_empalme)
+    monkeypatch.setattr(scalp_logic, "_cvd_src", fake_cvd)
+    monkeypatch.setattr(scalp_logic, "blocking_requirement_keys", no_gaps)
+
+    async def sin_realtime_de_futuros(_conn, _table, _symbol, _seconds, as_of=None):
+        return {"complete": False, "source_rows": 0, "source": "unavailable"}
+
+    async def sin_baselines(_conn, _symbol, _metric="delta_ratio", as_of=None):
+        return {}
+
+    async def sin_oi(_conn, _symbol, _seconds, as_of=None):
+        return None
+
+    monkeypatch.setattr(scalp_logic, "_realtime_flow", sin_realtime_de_futuros)
+    monkeypatch.setattr(scalp_logic, "load_baselines", sin_baselines)
+    monkeypatch.setattr(scalp_logic, "_oi_change_pct", sin_oi)
+
+    cvd = await scalp_logic.cvd_matrix(
+        _NoopConnection(), "BTCUSDT_PERP.A", cutoff  # type: ignore[arg-type]
+    )
+    delta = await scalp_logic.delta_matrix(
+        _NoopConnection(), "BTCUSDT_PERP.A", ventanas, cutoff  # type: ignore[arg-type]
+    )
+    por_ventana = {fila["window"]: fila for fila in delta}
+
+    for label, _ in ventanas:
+        c = cvd["windows"][label]
+        d = por_ventana[label]
+        assert c["spot"] is None, f"cvd publica spot en {label} con 90 s de hueco"
+        assert d["spot_delta"] is None, f"delta publica spot en {label} con 90 s de hueco"
+        assert c["spot_status"]["reason"] == "internal_gap"
+        assert d["spot_coverage_status"] == "partial"
+        # Y la vara, en las dos, para que el null se pueda leer.
+        assert c["spot_status"]["max_gap_seconds"] == pytest.approx(90.0)
+        assert d["spot_max_gap_seconds"] == pytest.approx(90.0)
+        assert c["spot_status"]["gap_threshold_seconds"] == pytest.approx(30.0)
+        assert d["spot_gap_threshold_seconds"] == pytest.approx(30.0)

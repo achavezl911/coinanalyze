@@ -18,22 +18,22 @@ Handler `passive_flow_endpoint` · `app/api.py:2121` (cuerpo hasta la 2124) · d
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:6055 |
-| `counts` | literal en app/scalp_logic.py:6061 |
-| `counts.neutral` | literal en app/scalp_logic.py:5984 |
-| `counts.reacumulacion_silenciosa` | literal en app/scalp_logic.py:5984 |
-| `counts.redistribucion_silenciosa` | literal en app/scalp_logic.py:5984 |
-| `horizons` | literal en app/scalp_logic.py:6059 |
-| `location` | literal en app/scalp_logic.py:6057 |
-| `note` | literal en app/scalp_logic.py:6062 |
-| `price` | literal en app/scalp_logic.py:6056 |
-| `reading_method` | literal en app/scalp_logic.py:6068 |
-| `summary` | literal en app/scalp_logic.py:6060 |
-| `symbol` | literal en app/scalp_logic.py:6054 |
-| `value_area` | literal en app/scalp_logic.py:6058 |
-| `value_area.poc` | literal en app/scalp_logic.py:6058 |
-| `value_area.vah` | literal en app/scalp_logic.py:6058 |
-| `value_area.val` | literal en app/scalp_logic.py:6058 |
+| `as_of` | literal en app/scalp_logic.py:6213 |
+| `counts` | literal en app/scalp_logic.py:6219 |
+| `counts.neutral` | literal en app/scalp_logic.py:6142 |
+| `counts.reacumulacion_silenciosa` | literal en app/scalp_logic.py:6142 |
+| `counts.redistribucion_silenciosa` | literal en app/scalp_logic.py:6142 |
+| `horizons` | literal en app/scalp_logic.py:6217 |
+| `location` | literal en app/scalp_logic.py:6215 |
+| `note` | literal en app/scalp_logic.py:6220 |
+| `price` | literal en app/scalp_logic.py:6214 |
+| `reading_method` | literal en app/scalp_logic.py:6226 |
+| `summary` | literal en app/scalp_logic.py:6218 |
+| `symbol` | literal en app/scalp_logic.py:6212 |
+| `value_area` | literal en app/scalp_logic.py:6216 |
+| `value_area.poc` | literal en app/scalp_logic.py:6216 |
+| `value_area.vah` | literal en app/scalp_logic.py:6216 |
+| `value_area.val` | literal en app/scalp_logic.py:6216 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -86,28 +86,28 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:5961`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:6119`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3033`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:5928`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2538`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4215`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4185`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4197`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4389`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3646`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4305`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3022`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3194`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:6086`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2619`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4376`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4346`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4358`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4557`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3807`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4473`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3183`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4563`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2716`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3683`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4721`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2797`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3844`
 
 </details>
 

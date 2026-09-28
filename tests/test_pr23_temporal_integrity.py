@@ -223,7 +223,9 @@ async def test_swing_intraday_helpers_use_cutoff_for_both_bounds() -> None:
     assert "ts >= $4::timestamptz-" in binned_query
     assert "ts <= $4" in binned_query
     assert binned_args[-1] == cutoff
-    assert "AND ts <= $5" in resample_query
+    # El corte pasa a $6: desde el 2026-09-28 la consulta lleva tambien los segundos de la vela
+    # de origen. Sigue siendo el ultimo argumento y sigue acotando las dos puntas.
+    assert "AND ts <= $6" in resample_query
     assert resample_args[-1] == cutoff
 
 

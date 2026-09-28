@@ -18,14 +18,14 @@ Handler `trend_matrix_endpoint` · `app/api.py:2114` (cuerpo hasta la 2117) · d
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:6233 |
-| `bias_method` | literal en app/scalp_logic.py:6242 |
-| `distinct_from` | literal en app/scalp_logic.py:6251 |
-| `medium_term_alignment` | literal en app/scalp_logic.py:6235 |
-| `note` | literal en app/scalp_logic.py:6236 |
-| `structure_method` | literal en app/scalp_logic.py:6247 |
-| `symbol` | literal en app/scalp_logic.py:6232 |
-| `timeframes` | literal en app/scalp_logic.py:6234 |
+| `as_of` | literal en app/scalp_logic.py:6391 |
+| `bias_method` | literal en app/scalp_logic.py:6400 |
+| `distinct_from` | literal en app/scalp_logic.py:6409 |
+| `medium_term_alignment` | literal en app/scalp_logic.py:6393 |
+| `note` | literal en app/scalp_logic.py:6394 |
+| `structure_method` | literal en app/scalp_logic.py:6405 |
+| `symbol` | literal en app/scalp_logic.py:6390 |
+| `timeframes` | literal en app/scalp_logic.py:6392 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -81,7 +81,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6089`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6247`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
 
@@ -89,20 +89,20 @@ Llamadas directas del handler:
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2538`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4215`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4185`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4197`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4389`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4305`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2314`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2300`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2619`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4376`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4346`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4358`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4557`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4473`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2372`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2358`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4563`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2716`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4721`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2797`
 
 </details>
 

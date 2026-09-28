@@ -22,18 +22,18 @@ Handler `flow_spot_vs_perp` · `app/api.py:1724` (cuerpo hasta la 1746) · decor
 
 | campo | de donde sale |
 |---|---|
-| `buckets` | literal en app/scalp_logic.py:5919 |
-| `buckets_with_both_legs` | literal en app/scalp_logic.py:5920 |
-| `coverage_pct` | literal en app/scalp_logic.py:5921 |
-| `interval` | literal en app/scalp_logic.py:5917 |
-| `reason` | literal en app/scalp_logic.py:5851 |
-| `rows` | literal en app/scalp_logic.py:5924 |
-| `spot_symbol` | literal en app/scalp_logic.py:5915 |
-| `state_counts` | literal en app/scalp_logic.py:5923 |
-| `status` | literal en app/scalp_logic.py:5922 |
-| `symbol` | literal en app/scalp_logic.py:5914 |
-| `unit` | literal en app/scalp_logic.py:5918 |
-| `venue` | literal en app/scalp_logic.py:5916 |
+| `buckets` | literal en app/scalp_logic.py:6077 |
+| `buckets_with_both_legs` | literal en app/scalp_logic.py:6078 |
+| `coverage_pct` | literal en app/scalp_logic.py:6079 |
+| `interval` | literal en app/scalp_logic.py:6075 |
+| `reason` | literal en app/scalp_logic.py:6009 |
+| `rows` | literal en app/scalp_logic.py:6082 |
+| `spot_symbol` | literal en app/scalp_logic.py:6073 |
+| `state_counts` | literal en app/scalp_logic.py:6081 |
+| `status` | literal en app/scalp_logic.py:6080 |
+| `symbol` | literal en app/scalp_logic.py:6072 |
+| `unit` | literal en app/scalp_logic.py:6076 |
+| `venue` | literal en app/scalp_logic.py:6074 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,12 +59,12 @@ Llamadas directas del handler:
 - `app.api.declara_ventana` — `app/api.py:1699`
 - `app.api.validate_symbol` — `app/api.py:229`
 - `app.api.ventana_pedida` — `app/api.py:1666`
-- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:5830`
+- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:5988`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4563`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4721`
 
 </details>
 
@@ -98,7 +98,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **tests** | — | `tests/test_p0_data_integrity.py:126` |
+| **tests** | — | `tests/test_p0_data_integrity.py:130` |
 
 **Nadie la llama.** Sus 1 rastros son todos MENCION -comentario,
 docstring o documento-. Es la forma del patron que en esta casa se ha repetido

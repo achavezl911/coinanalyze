@@ -55,7 +55,7 @@ Llamadas directas del handler:
 - `app.api.sella_respuesta` — `app/api.py:1944`
 - `app.api.validate_symbol` — `app/api.py:229`
 - `app.api.ventana_pedida` — `app/api.py:1666`
-- `app.scalp_logic.zone_analysis` — `app/scalp_logic.py:1392`
+- `app.scalp_logic.zone_analysis` — `app/scalp_logic.py:1433`
 
 <details><summary>Alcanzables de forma indirecta (11)</summary>
 
@@ -106,7 +106,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:66`, `harness/checks/K43-control.bash:138`, `harness/checks/K43-foto-unica.sh:162`, `harness/checks/K43-foto-unica.sh:453` | `harness/checks/K43-foto-unica.sh:106` |
 | **panel** | `static/js/10-contexto-y-estructura.js:319` | — |
-| **tests** | — | `tests/test_p0_data_integrity.py:126` |
+| **tests** | — | `tests/test_p0_data_integrity.py:130` |
 
 **La llama el panel: es superficie de producto.**
 

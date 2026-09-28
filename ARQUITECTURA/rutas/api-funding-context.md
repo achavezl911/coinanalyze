@@ -18,16 +18,16 @@ Handler `funding_context_endpoint` · `app/api.py:1888` (cuerpo hasta la 1891) �
 
 | campo | de donde sale |
 |---|---|
-| `annualized_pct` | literal en app/scalp_logic.py:3549 |
-| `coverage` | literal en app/scalp_logic.py:3551 |
-| `current_pct` | literal en app/scalp_logic.py:3544 |
-| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3546 |
-| `history_avg_pct` | literal en app/scalp_logic.py:3550 |
-| `next_funding_time_utc` | literal en app/scalp_logic.py:3552 |
-| `note` | literal en app/scalp_logic.py:3560 |
-| `predicted_pct` | literal en app/scalp_logic.py:3545 |
-| `regime` | literal en app/scalp_logic.py:3553 |
-| `symbol` | literal en app/scalp_logic.py:3543 |
+| `annualized_pct` | literal en app/scalp_logic.py:3710 |
+| `coverage` | literal en app/scalp_logic.py:3712 |
+| `current_pct` | literal en app/scalp_logic.py:3705 |
+| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3707 |
+| `history_avg_pct` | literal en app/scalp_logic.py:3711 |
+| `next_funding_time_utc` | literal en app/scalp_logic.py:3713 |
+| `note` | literal en app/scalp_logic.py:3721 |
+| `predicted_pct` | literal en app/scalp_logic.py:3706 |
+| `regime` | literal en app/scalp_logic.py:3714 |
+| `symbol` | literal en app/scalp_logic.py:3704 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -50,7 +50,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3491`
+- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3652`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 

@@ -1,7 +1,7 @@
 {
   "rutas": {
     "/": "af7169de1004d5d5",
-    "/api/ai/context": "d024cb1db8015912",
+    "/api/ai/context": "1dc8d541cf81aeb5",
     "/api/ai/context/bundle": "9aa61258a377e6cd",
     "/api/ai/profiles": "ad9a131d635d5b79",
     "/api/baselines": "7915503ee67aca87",
@@ -9,7 +9,7 @@
     "/api/context-metadata": "415ca52b97122f96",
     "/api/cross-asset": "09caca86c93236b0",
     "/api/cvd": "d31949557ec04947",
-    "/api/cvd-matrix": "288aeefb47676431",
+    "/api/cvd-matrix": "71917cfa55597b27",
     "/api/cvd/divergence": "56dc4f93ddab3107",
     "/api/cvd/spot": "66a57082e7122af6",
     "/api/daily": "3e6a9bf493ddd78d",
@@ -59,7 +59,7 @@
     "/api/snapshot": "af7dd4fc41351b1a",
     "/api/stream": "4d875de5fc57ba8d",
     "/api/structure": "127d9af0f0e345fe",
-    "/api/structure-detail": "696aaaaa78e301c7",
+    "/api/structure-detail": "2d549daae99f6297",
     "/api/swing-score": "58a63266906dea98",
     "/api/symbols": "c45d1fd632bee02a",
     "/api/trend-matrix": "46f0e27e2a3cd72e",
