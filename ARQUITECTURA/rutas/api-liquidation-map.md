@@ -18,22 +18,22 @@ Handler `liquidation_map_endpoint` · `app/api.py:1895` (cuerpo hasta la 1898) �
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3626 |
-| `atr_1h` | literal en app/scalp_logic.py:3625 |
-| `available` | literal en app/scalp_logic.py:3622 |
-| `bucket_size` | literal en app/scalp_logic.py:3630 |
-| `buckets_total` | literal en app/scalp_logic.py:3635 |
-| `cumulative_within_band` | literal en app/scalp_logic.py:3639 |
-| `current_price` | literal en app/scalp_logic.py:3624 |
-| `levels` | literal en app/scalp_logic.py:3638 |
-| `levels_shown` | literal en app/scalp_logic.py:3636 |
-| `note` | literal en app/scalp_logic.py:3640 |
-| `symbol` | literal en app/scalp_logic.py:3621 |
-| `type` | literal en app/scalp_logic.py:3623 |
-| `window_end` | literal en app/scalp_logic.py:3628 |
-| `window_minutes` | literal en app/scalp_logic.py:3629 |
-| `window_notional` | literal en app/scalp_logic.py:3637 |
-| `window_start` | literal en app/scalp_logic.py:3627 |
+| `as_of` | literal en app/scalp_logic.py:3787 |
+| `atr_1h` | literal en app/scalp_logic.py:3786 |
+| `available` | literal en app/scalp_logic.py:3783 |
+| `bucket_size` | literal en app/scalp_logic.py:3791 |
+| `buckets_total` | literal en app/scalp_logic.py:3796 |
+| `cumulative_within_band` | literal en app/scalp_logic.py:3800 |
+| `current_price` | literal en app/scalp_logic.py:3785 |
+| `levels` | literal en app/scalp_logic.py:3799 |
+| `levels_shown` | literal en app/scalp_logic.py:3797 |
+| `note` | literal en app/scalp_logic.py:3801 |
+| `symbol` | literal en app/scalp_logic.py:3782 |
+| `type` | literal en app/scalp_logic.py:3784 |
+| `window_end` | literal en app/scalp_logic.py:3789 |
+| `window_minutes` | literal en app/scalp_logic.py:3790 |
+| `window_notional` | literal en app/scalp_logic.py:3798 |
+| `window_start` | literal en app/scalp_logic.py:3788 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,13 +59,13 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3564`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3725`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3033`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3022`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3194`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3183`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>

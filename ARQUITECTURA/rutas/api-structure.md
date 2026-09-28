@@ -66,12 +66,12 @@ Llamadas directas del handler:
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
 - `app.scalp_logic._cvd_fut_window` — `app/scalp_logic.py:1021`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
 - `app.scalp_logic._pivot_structure` — `app/scalp_logic.py:936`
 - `app.scalp_logic._sign_vote` — `app/scalp_logic.py:954`
 - `app.scalp_logic._structure_layer` — `app/scalp_logic.py:989`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 
 </details>
 

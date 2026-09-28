@@ -100,12 +100,16 @@ def test_la_cobertura_no_se_decide_solo_con_los_extremos() -> None:
     source = (ROOT / "app" / "scalp_logic.py").read_text(encoding="utf-8")
     assert "max_internal_gap" in source
     assert 'item["complete"] = bool(item.get("span_ok")) and not _gap_too_large(' in source
-    # La pata spot de la matriz tambien tiene que pasar por la puerta. El baremo dejo de
-    # ser una constante y la llamada lleva ahora la cadencia medida, asi que se busca el
-    # primer argumento y no el texto exacto: lo que se guarda es que spot_gap PASE por la
-    # puerta, no como se escribe la linea.
-    matrix = source.split("async def delta_matrix")[1]
-    assert re.search(r"_gap_too_large\(\s*spot_gap\b", matrix)
+    # La pata spot de LAS DOS matrices tiene que pasar por la puerta, y por LA MISMA. Hasta el
+    # 2026-09-28 cada ruta tenia su copia del criterio y solo una se lo aplicaba al spot: con
+    # 90 s de spot ausentes, delta_matrix publicaba null y cvd_matrix una cifra, para la misma
+    # cantidad y el mismo as_of. Ahora el criterio vive en `spot_con_guarda` y las dos lo
+    # piden ahi; lo que se guarda es eso, no como se escribe la linea.
+    guarda = source.split("async def spot_con_guarda")[1].split("\nasync def ")[0]
+    assert re.search(r"_gap_too_large\(\s*peor\b", guarda)
+    for ruta in ("delta_matrix", "cvd_matrix"):
+        cuerpo = source.split(f"async def {ruta}")[1].split("\nasync def ")[0]
+        assert "spot_con_guarda(" in cuerpo, f"{ruta} no pide la pata spot por la puerta comun"
     # K84 · Y LA PATA DE FUTUROS DE LA OTRA RUTA, POR LA MISMA. cvd_matrix no aplicaba
     # NINGUNA guarda de hueco, asi que publicaba la cifra que delta_matrix blanqueaba --
     # las dos dentro del mismo /api/ai/context. Volver a quitarla las hace divergir otra vez

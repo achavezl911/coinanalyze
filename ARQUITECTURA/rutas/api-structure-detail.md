@@ -14,16 +14,17 @@ Handler `structure_detail_endpoint` · `app/api.py:2136` (cuerpo hasta la 2139) 
 
 ## Campos que publica
 
-6 campos derivados. La procedencia dice de donde sale cada uno.
+7 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:2408 |
-| `canonical_for` | literal en app/scalp_logic.py:2424 |
-| `distinct_from` | literal en app/scalp_logic.py:2417 |
-| `horizons` | literal en app/scalp_logic.py:2409 |
-| `state_method` | literal en app/scalp_logic.py:2413 |
-| `symbol` | literal en app/scalp_logic.py:2407 |
+| `as_of` | literal en app/scalp_logic.py:2479 |
+| `canonical_for` | literal en app/scalp_logic.py:2505 |
+| `closed_bar_rule` | literal en app/scalp_logic.py:2488 |
+| `distinct_from` | literal en app/scalp_logic.py:2496 |
+| `horizons` | literal en app/scalp_logic.py:2480 |
+| `state_method` | literal en app/scalp_logic.py:2484 |
+| `symbol` | literal en app/scalp_logic.py:2478 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -44,25 +45,26 @@ LEE:
 
 ## Funciones que la componen
 
-11 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+12 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2371`
+- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2429`
 
-<details><summary>Alcanzables de forma indirecta (9)</summary>
+<details><summary>Alcanzables de forma indirecta (10)</summary>
 
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._dsr` — `app/scalp_logic.py:2363`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1225`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2314`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2300`
+- `app.scalp_logic._dsr` — `app/scalp_logic.py:2421`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2372`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2358`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
+- `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1298`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 
 </details>
 
@@ -140,6 +142,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic._swings` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.structure_detail` | 7 | **0** | 3 ↑ | **7** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._dsr` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.bars_incomplete_inside` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.structure_detail_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

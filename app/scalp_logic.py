@@ -1212,6 +1212,8 @@ async def market_structure(
 
 # ---------------- alertas HTF: estructura por horizonte + liquidaciones masivas ----------------
 # (1h/4h/8h intradia por resample de ohlcv 1min; 1d/3d/9d por cierres de daily_session_agg)
+_OHLCV_INTERVAL_SECONDS = {"1min": 60, "5min": 300, "4hour": 14400, "daily": 86400}
+
 _ALERT_HORIZONS = (
     ("1h", 3600, "med"),
     ("4h", 14400, "med"),
@@ -1230,34 +1232,73 @@ async def _resample_highs_lows(
     source_interval: str = "1min",
     as_of: datetime | None = None,
 ) -> list[dict]:
-    """Resamplea exclusivamente buckets TARGET ya cerrados.
+    """Resamplea exclusivamente buckets TARGET ya cerrados Y CON SU ULTIMA VELA.
 
     El collector conserva la vela abierta; esta frontera pertenece al consumidor historico.
     El filtro ocurre ANTES de LIMIT para que la vela abierta no robe una muestra cerrada.
+
+    «CERRADA EN EL CALENDARIO» NO ES «CERRADA CON SU DATO», Y LA DIFERENCIA SE PUBLICABA COMO
+    EL CIERRE DE LA BARRA. `bucket + intervalo <= corte` solo dice que la barra ya termino en
+    el reloj. Si la ultima vela del origen todavia no esta en `ohlcv`, el `close` que sale de
+    aqui es el de la vela ANTERIOR con la etiqueta de la barra entera. Medido por el operador
+    en 140 el 2026-09-28: el sobre de BTC con as_of 17:00:01.326Z publico 83 668.5 como cierre
+    de la barra de 1 h de las 16:00 -en structure_detail Y en structure_horizons-, y los de
+    17:00:21.995Z y 17:00:37.821Z ya publicaban 83 686.4, porque la vela de 1 min de las 16:59
+    aparecio en `ohlcv` entre las 17:00:05.08 y las 17:00:06.07 en las tres monedas.
+
+    LA COLA SE RETIENE, LO DE DENTRO SE DECLARA, y la asimetria esta medida: en 140 el
+    2026-09-28, sobre las 120 barras cerradas mas recientes de cada simbolo, las de 1 h y las
+    de 4 h tenian sus 60 y sus 240 velas -CERO incompletas- y las de 8 h tenian UNA incompleta
+    cada una (178 velas de 480), y NINGUNA de las tres era la de la cola. O sea que lo que el
+    operador cazo es un transitorio de unos 6 s por barra, mientras que un agujero de dentro
+    es viejo y ya no se va a rellenar: retener la cola quita la cifra falsa, y tirar las de
+    dentro reescribiria la serie de pivotes por un agujero de hace dias. Lo de dentro viaja
+    contado en `bars_incomplete_inside` para que el bloque que lo use pueda decirlo.
+
+    Devuelve las barras con `src_last_ts` y `src_rows` para que quien las use pueda declarar
+    sobre que se calculo, y la ultima de la lista SIEMPRE tiene su ultima vela.
     """
     if source_interval not in {"1min", "5min", "4hour", "daily"}:
         raise ValueError("unsupported OHLCV interval")
     cutoff = as_of or datetime.now(UTC)
+    src_secs = _OHLCV_INTERVAL_SECONDS[source_interval]
     rows = await conn.fetch(
         """
         WITH b AS (
           SELECT date_bin(make_interval(secs => $2::int), ts, '1970-01-01'::timestamptz) AS bucket,
                  MAX(high) AS high, MIN(low) AS low,
                  (array_agg(close ORDER BY ts DESC))[1] AS close,
-                 SUM(volume * close) AS volume_usd
+                 SUM(volume * close) AS volume_usd,
+                 MAX(ts) AS src_last_ts, COUNT(*)::bigint AS src_rows
           FROM ohlcv WHERE symbol=$1 AND interval=$4
-            AND ts <= $5
+            AND ts <= $6
           GROUP BY 1
         ), closed AS (
-          SELECT * FROM b
-          WHERE bucket + make_interval(secs => $2::int) <= $5
+          SELECT *,
+                 -- la barra tiene su ULTIMA vela de origen, que es la unica que fija el close
+                 (src_last_ts >= bucket + make_interval(secs => $2::int)
+                                        - make_interval(secs => $5::int)) AS src_complete
+          FROM b
+          WHERE bucket + make_interval(secs => $2::int) <= $6
           ORDER BY bucket DESC LIMIT $3
         )
         SELECT * FROM closed ORDER BY bucket
         """,
-        symbol, secs, limit, source_interval, cutoff,
+        # El CORTE va SIEMPRE el ultimo, y no es casual: tres pruebas comprueban que el ultimo
+        # argumento de esta consulta es el cutoff (test_pr23_temporal_integrity.py:227 entre
+        # ellas), porque ese es el contrato que impide que una ventana se resuelva con otro reloj.
+        symbol, secs, limit, source_interval, src_secs, cutoff,
     )
-    return [dict(r) for r in rows]
+    bares = [dict(r) for r in rows]
+    while bares and not bares[-1].get("src_complete"):
+        bares.pop()
+    return bares
+
+
+def bars_incomplete_inside(bars: list[dict]) -> int:
+    """Cuantas de las barras devueltas no tienen su ultima vela de origen. La cola nunca:
+    `_resample_highs_lows` la quita. Lo que quede aqui son agujeros viejos del feed."""
+    return sum(1 for b in bars if not b.get("src_complete"))
 
 
 async def price_barriers(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
@@ -1709,9 +1750,17 @@ async def market_memory(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]
     return {"symbol": symbol, **market_memory_read([dict(row) for row in reversed(rows)])}
 
 
-async def horizon_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, Any]:
+async def horizon_structure(
+    conn: asyncpg.Connection, symbol: str, as_of: datetime | None = None
+) -> dict[str, Any]:
     """Bias por horizonte DERIVADO de structure_detail (fuente unica de pivotes), para que
     structure_horizons y structure_detail nunca se contradigan.
+
+    EL `as_of` NO ES OPCIONAL CUANDO SE LLAMA DESDE EL SOBRE, y por eso se pasa. Hasta el
+    2026-09-28 esta funcion llamaba a structure_detail SIN corte, asi que resolvia su propio
+    clock_timestamp() y el mismo sobre colgaba de DOS cortes: la copia podia salir de otra
+    vela que su original. Con el corte compartido es la MISMA evaluacion, y el glosario
+    puede volver a prometer que structure_horizons.<h>.structure es copia.
 
     LA DECLARACION VA DENTRO DE CADA HORIZONTE Y NO EN LA RAIZ DE ESTE MAPA, y no es una
     preferencia de estilo: este bloque se sirve como un mapa PELADO de etiqueta->lectura, y
@@ -1721,7 +1770,7 @@ async def horizon_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, 
     claves nuevas DENTRO de cada entrada no le afectan: solo lee bias, group, structure y
     close.
     """
-    det = await structure_detail(conn, symbol)
+    det = await structure_detail(conn, symbol, as_of)
     bias_map = {"HH_HL": "alcista", "LH_LL": "bajista"}
     out = {}
     for label, d in det["horizons"].items():
@@ -1731,6 +1780,10 @@ async def horizon_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, 
             "structure": state,
             "bias": bias_map.get(state),
             "close": d.get("close"),
+            # LA BARRA DE LA QUE SALE ESE CLOSE, para que «es la misma cifra» se pueda
+            # comprobar y no solo prometer. Sale de la MISMA evaluacion que
+            # structure_detail.horizons.<h>, asi que tiene que coincidir con su close_bar_start.
+            "close_bar_start": d.get("close_bar_start"),
             # NO ES EL MISMO 'bias' QUE EL DE trend_matrix, aunque se llamen igual y cubran
             # los mismos marcos. Medido el 2026-09-18 23:42Z sobre 15 parejas (5 horizontes
             # x 3 simbolos): 4 OPUESTAS -una alcista y la otra bajista-, 9 con una nula y la
@@ -1739,7 +1792,12 @@ async def horizon_structure(conn: asyncpg.Connection, symbol: str) -> dict[str, 
                 "SOLO estructura de pivotes: HH_HL->alcista, LH_LL->bajista, cualquier otro "
                 "estado -> null. El null dice 'la estructura no es decisiva', no 'neutral'"
             ),
-            "structure_method": f"copia de structure_detail.horizons.{label}.state",
+            "structure_method": (
+                f"copia de structure_detail.horizons.{label}.state, de la MISMA evaluacion: "
+                "horizon_structure llama a structure_detail con el corte del sobre, no con "
+                "uno propio. Si structure_detail.as_of y envelope_cut.as_of coinciden, este "
+                "campo y su origen NO pueden diferir"
+            ),
             "distinct_from": (
                 f"trend_matrix.timeframes.{label}.bias (mayoria de estructura+flujo+momentum, "
                 "nunca null) y market_structure.layers[].bias (voto multi-senal por tramo). "
@@ -2387,6 +2445,19 @@ async def structure_detail(
             times = [b["bucket"].isoformat() for b in bars]
             close = as_float(bars[-1]["close"]) if bars else None
             det = _structure_from_swings(highs, lows, times, close, k=2)
+            # DE QUE BARRA SALE ESE `close`, dicho. Sin esto no se distingue «el cierre de la
+            # barra de las 16:00» de «el ultimo precio que habia dentro de esa barra», que es
+            # justo lo que se publicaba. `bars_incomplete_inside` cuenta agujeros viejos del
+            # feed: la barra de la COLA ya no puede ser uno, `_resample_highs_lows` la retiene.
+            det["close_bar_start"] = times[-1] if times else None
+            det["close_bar_seconds"] = unit
+            det["close_source_last_ts"] = (
+                bars[-1]["src_last_ts"].isoformat()
+                if bars and bars[-1].get("src_last_ts") is not None
+                else None
+            )
+            det["bars"] = len(bars)
+            det["bars_incomplete_inside"] = bars_incomplete_inside(bars)
         else:
             rows = await conn.fetch(
                 "SELECT session_date, price_close FROM daily_session_agg WHERE symbol=$1 "
@@ -2414,12 +2485,22 @@ async def structure_detail(
             "estado por PIVOTES de precio con k=2. Intradia sobre 120 barras remuestreadas "
             "del marco; diario sobre hasta 400 sesiones de daily_session_agg"
         ),
+        "closed_bar_rule": (
+            "una barra intradia cuenta como CERRADA solo si ademas tiene su ULTIMA vela de "
+            "origen, que es la que fija el close. La barra de la cola se retiene hasta que su "
+            "vela llega -unos segundos tras el borde del marco-, asi que close_bar_start puede "
+            "quedarse un marco atras en vez de publicar un cierre incompleto como cerrado. Los "
+            "agujeros VIEJOS del feed no se tiran, se cuentan en bars_incomplete_inside. Los "
+            "horizontes del grupo 'long' salen de daily_session_agg y no remuestrean velas"
+        ),
         "distinct_from": (
             "trend_matrix.timeframes.<h>.structure mide lo mismo con OTRA parametrizacion "
             "-intradia 60 barras, diario k=1 sobre 60 sesiones- y puede decir 'mixed' donde "
             "esto dice 'LH_LL'; market_structure.layers[].price_structure va por TRAMO de "
-            "marcos. structure_horizons.<h>.structure SI es copia de este campo. "
-            "Glosario en field_disambiguation"
+            "marcos. structure_horizons.<h>.structure y .close SON copia de este bloque, de "
+            "la MISMA evaluacion y bajo el MISMO corte: desde el 2026-09-28 horizon_structure "
+            "recibe el as_of del sobre en vez de resolver el suyo. Glosario en "
+            "field_disambiguation"
         ),
         "canonical_for": "los niveles bos_level, choch_level e invalidation_level",
     }
@@ -2723,6 +2804,67 @@ async def spot_flow_windows(
     return await _flow_windows(conn, symbol, windows, as_of)
 
 
+async def spot_con_guarda(
+    conn: asyncpg.Connection,
+    symbol: str,
+    windows: tuple[tuple[str, int], ...] | list[tuple[str, int]],
+    as_of: datetime | None = None,
+) -> dict[str, dict[str, Any]]:
+    """LA PATA SPOT DE LAS DOS MATRICES, CON SU GUARDA, EN UN SOLO SITIO.
+
+    delta_matrix aplicaba al spot la guarda de hueco interno y cvd_matrix no, asi que con las
+    MISMAS filas delante publicaban cosas distintas para la misma cantidad: medido por el
+    operador el 2026-09-28 con 90 s de spot de ETH ausentes, delta_matrix daba null (partial)
+    en 30m y 1h y cvd_matrix 539 785.52 y 3 048 026.41, contra 499 968.19 y 3 008 209.08 sin
+    el plantado. O sea que la cifra que cvd_matrix publicaba como completa estaba a 39 817.33
+    USD de la verdadera y no lo decia.
+
+    HACIA DONDE SE ARREGLA, DECIDIDO MIDIENDO QUE ES UN HUECO INTERNO DEL SPOT EN LOS DATOS
+    REALES. En 140 el 2026-09-28 17:40Z, sobre TODO lo que retiene spot_trades_realtime
+    (2.65 h, combined con venue_count=2): 1889/1877/1834 huecos en BTC/ETH/SOL, p50 5.0 s,
+    p99 5.0-10.0 s, el PEOR 10.0-15.0 s, y CERO por encima de 30 s. El umbral que deriva
+    _gap_threshold_seconds -max(30, 3xp99)- cae en 30-45 s, o sea POR ENCIMA del peor hueco
+    natural: propagar la guarda no blanquea ni una cifra buena de las 5600 medidas. Y los
+    90 s del plantado son 6 veces el peor hueco real, no la cola de la cadencia.
+    La alternativa -quitarle la guarda a delta_matrix para que las dos publiquen- se
+    DESCARTA por esa misma medida: con 90 s ausentes la suma de la ventana no es la suma de
+    la ventana, y publicarla como completa es falso por 39 817.33 USD.
+
+    La guarda solo se evalua cuando el spot lo sirve el REALTIME. Cuando viene del empalme
+    con el agg de 1 min la cadencia es otra y el umbral de segundos no significa nada; es la
+    misma condicion que delta_matrix ya usaba, y por eso ninguna de sus cifras se mueve.
+    Eso es tambien lo que acota el coste de darsela a cvd_matrix: en 140 el realtime del spot
+    retiene 2.65 h, asi que las ventanas que pasan por aqui son las de 1m a 1h y no las diez.
+    """
+    flows = await spot_flow_windows(conn, symbol, windows, as_of)
+    cutoff = await resolve_matrix_as_of(conn, as_of)
+    medidos: dict[str, tuple[float | None, float | None, int]] = {}
+    for label, seconds in windows:
+        if ((flows.get(label) or {}).get("combined") or {}).get("source") == "realtime":
+            medidos[label] = await _gap_and_baseline(
+                conn, "spot_trades_realtime", symbol, "combined", seconds, cutoff
+            )
+    out: dict[str, dict[str, Any]] = {}
+    for label, _seconds in windows:
+        venues = flows.get(label) or {}
+        combined = venues.get("combined") or {}
+        peor, base, muestras = medidos.get(label, (None, None, 0))
+        umbral, origen = _gap_threshold_seconds(base, muestras)
+        demasiado = _gap_too_large(peor, base, muestras)
+        out[label] = {
+            "venues": venues,
+            "combined": combined,
+            "max_gap_seconds": peor,
+            "gap_baseline_seconds": base,
+            "gap_samples": muestras,
+            "gap_too_large": demasiado,
+            "gap_threshold_seconds": umbral,
+            "gap_threshold_source": origen,
+            "complete": bool(combined.get("complete")) and not demasiado,
+        }
+    return out
+
+
 async def futures_flow_windows(
     conn: asyncpg.Connection,
     symbol: str,
@@ -2813,7 +2955,12 @@ async def cvd_matrix(
     rt_fut, rtf_lo, rtf_hi = await _cvd_src(
         conn, "futures_trades_realtime", symbol, False, cutoff
     )
-    spot_flows = await spot_flow_windows(conn, ws, _CVD_WINDOWS, cutoff)
+    # LA GUARDA DE HUECO INTERNO TAMBIEN EN EL SPOT, Y DESDE EL MISMO SITIO QUE delta_matrix.
+    # Hasta el 2026-09-28 esta ruta se la aplicaba solo a los futuros: con 90 s de spot de ETH
+    # ausentes, delta_matrix decia null y esta publicaba 539 785.52 para la misma cantidad y
+    # el mismo as_of. El por que se arregla HACIA AQUI -y no quitandosela a la otra- esta
+    # medido en el docstring de spot_con_guarda.
+    spot_flows = await spot_con_guarda(conn, ws, _CVD_WINDOWS, cutoff)
     futures_requirements: list[GapRequirement] = []
     for label, seconds in _CVD_WINDOWS:
         start = cutoff - timedelta(seconds=seconds)
@@ -2894,14 +3041,21 @@ async def cvd_matrix(
         fgap, fsource, freason = pick_fut(sec, lab)
         # 'realtime' o el empalme; la distincion importa porque la precision no es la misma.
         from_agg = fsource is not None and fsource != "realtime"
-        spot_window = spot_flows.get(lab) or {}
-        spot_combined = spot_window.get("combined") or {}
-        spot_complete = bool(spot_combined.get("complete"))
+        spot_leg = spot_flows.get(lab) or {}
+        spot_window = spot_leg.get("venues") or {}
+        spot_combined = spot_leg.get("combined") or {}
+        spot_hueco_grande = bool(spot_leg.get("gap_too_large"))
+        spot_complete = bool(spot_leg.get("complete"))
         sgap = spot_combined.get("end_gap_seconds")
         ssource = spot_combined.get("source")
         sreason = (
             "data_gap"
             if spot_combined.get("gap_reason") == "data_gap"
+            # 'internal_gap' es el MISMO nombre que ya usa la pata de futuros de esta ruta
+            # para este mismo fenomeno; delta_matrix lo dice como spot_coverage_status
+            # 'partial' con su spot_max_gap_seconds al lado.
+            else "internal_gap"
+            if spot_hueco_grande
             else None
             if spot_complete
             else (
@@ -2967,6 +3121,13 @@ async def cvd_matrix(
                 "end_gap_seconds": sgap if s is not None else None,
                 "freshness": fresh(sgap) if s is not None else "unavailable",
                 "precision_seconds": spot_combined.get("precision_seconds"),
+                # El hueco interno del spot Y SU VARA, igual que ya los trae la pata de
+                # futuros: sin la vara, "max_gap=90" no dice si eso es mucho o poco. Son los
+                # MISMOS tres numeros que delta_matrix publica como spot_max_gap_seconds y
+                # spot_gap_threshold_*.
+                "max_gap_seconds": spot_leg.get("max_gap_seconds"),
+                "gap_threshold_seconds": spot_leg.get("gap_threshold_seconds"),
+                "gap_threshold_source": spot_leg.get("gap_threshold_source"),
             },
             "futures_status": {
                 "available": f is not None,
@@ -4225,6 +4386,13 @@ async def _gap_and_baseline(
     Va en una sola pasada a proposito: separarlo en dos costaria otra consulta por ventana y
     por ruta en un camino caliente, y ademas dejaria el hueco y su baremo medidos en
     instantes distintos, que es justo el error que este arreglo persigue.
+
+    POR VENTANA Y NO POR LOTE, MEDIDO. La version de esta campana preguntaba por todas las
+    ventanas de una vez -un JOIN contra una lista de ventanas y un lag() con PARTITION BY- para
+    ahorrar viajes. Cronometrado sobre un banco de 3 h de buckets de 5 s: las SEIS consultas
+    sueltas tardan 0.0058 s y la unica por lote 0.0117 s, o sea el DOBLE, porque la particion
+    ordena la union de todas las ventanas en vez de recorrer seis rangos. Menos viajes no es
+    menos tiempo, y una sola implementacion es mejor que dos.
     """
     if table not in {"spot_trades_realtime", "futures_trades_realtime"}:
         raise ValueError("unsupported realtime flow table")
@@ -4425,7 +4593,7 @@ async def delta_matrix(
     as_of: datetime | None = None,
 ) -> list[dict[str, Any]]:
     cutoff = await resolve_matrix_as_of(conn, as_of)
-    spot_windows = await spot_flow_windows(conn, WS_SYMBOL_MAP[symbol], windows, cutoff)
+    spot_windows = await spot_con_guarda(conn, WS_SYMBOL_MAP[symbol], windows, cutoff)
     # La ventana 1d es la que el operador VE con la pata de futuros en blanco (app.js:484
     # pinta este payload). El realtime no la alcanza y futures_trades_agg si: mismo empalme
     # que el spot, y solo para las ventanas que el realtime deja fuera.
@@ -4433,7 +4601,8 @@ async def delta_matrix(
     baselines = await load_baselines(conn, symbol)
     rows: list[dict[str, Any]] = []
     for label, seconds in windows:
-        spot = (spot_windows.get(label) or {}).get("combined") or {}
+        spot_leg = spot_windows.get(label) or {}
+        spot = spot_leg.get("combined") or {}
         futures = await _realtime_flow(
             conn, "futures_trades_realtime", symbol, seconds, cutoff
         )
@@ -4459,22 +4628,11 @@ async def delta_matrix(
                 }
         # El chequeo de huecos solo aplica a la pata servida por realtime (buckets de 5 s).
         # Cuando spot viene del agg de 1 min el umbral de 30 s no significa nada, y la fila
-        # ya lo declara en `spot_source`.
-        spot_gap, spot_base, spot_muestras = (
-            await _gap_and_baseline(
-                conn,
-                "spot_trades_realtime",
-                WS_SYMBOL_MAP[symbol],
-                "combined",
-                seconds,
-                cutoff,
-            )
-            if spot.get("source") == "realtime"
-            else (None, None, 0)
-        )
-        spot_complete = bool(spot.get("complete")) and not _gap_too_large(
-            spot_gap, spot_base, spot_muestras
-        )
+        # ya lo declara en `spot_source`. Lo decide `spot_con_guarda`, que es el MISMO sitio
+        # desde el que lo decide cvd_matrix: dos copias de este criterio fue justo el defecto.
+        spot_gap = spot_leg.get("max_gap_seconds")
+        spot_hueco_grande = bool(spot_leg.get("gap_too_large"))
+        spot_complete = bool(spot_leg.get("complete"))
         futures_complete = bool(futures.get("complete"))
         spot_delta = as_float(spot.get("delta")) if spot_complete else None
         futures_delta = as_float(futures.get("delta")) if futures_complete else None
@@ -4523,7 +4681,7 @@ async def delta_matrix(
                 ),
                 "spot_coverage_status": (
                     "partial"
-                    if _gap_too_large(spot_gap, spot_base, spot_muestras)
+                    if spot_hueco_grande
                     else spot.get("coverage_status", "unavailable")
                 ),
                 "futures_coverage_status": futures.get("coverage_status", "unavailable"),
@@ -4536,8 +4694,8 @@ async def delta_matrix(
                 "spot_max_gap_seconds": spot_gap,
                 # El hueco a secas no se puede leer sin su vara de medir, y la vara ya
                 # no es una constante: sale de la cadencia MEDIDA de la propia serie.
-                "spot_gap_threshold_seconds": _gap_threshold_seconds(spot_base, spot_muestras)[0],
-                "spot_gap_threshold_source": _gap_threshold_seconds(spot_base, spot_muestras)[1],
+                "spot_gap_threshold_seconds": spot_leg.get("gap_threshold_seconds"),
+                "spot_gap_threshold_source": spot_leg.get("gap_threshold_source"),
                 "futures_gap_threshold_seconds": futures.get("gap_threshold_seconds"),
                 "futures_gap_threshold_source": futures.get("gap_threshold_source"),
                 "futures_max_gap_seconds": futures.get("max_gap_seconds"),

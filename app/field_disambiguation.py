@@ -117,12 +117,13 @@ def build(
                 "values": ["HH_HL", "LH_LL", "mixed", None],
                 "may_disagree_with": {
                     P_SH_STRUCT: (
-                        "MISMO CALCULO, DOS CORTES: aquel no copia este campo, vuelve a "
-                        "evaluarlo. horizon_structure llama a structure_detail SIN as_of, asi "
-                        "que resuelve su propio clock_timestamp(), distinto del corte "
-                        "compartido con el que el sobre llama a este bloque. Con la misma "
-                        "vela cerrada dan lo mismo; si entra una vela entre los dos cortes, "
-                        "pueden diferir SIN que ninguno este roto"
+                        "NO DISCREPA, Y AHORA ES UNA PROMESA: aquel sale de la MISMA "
+                        "evaluacion de este bloque. Desde el 2026-09-28 horizon_structure "
+                        "llama a structure_detail con el as_of del sobre en vez de resolver "
+                        "su propio clock_timestamp(), asi que no hay dos cortes que puedan "
+                        "caer sobre velas distintas. Si envelope_cut.as_of y el as_of de este "
+                        "bloque coinciden, structure_horizons.<h>.structure y .close son "
+                        "IGUALES a los de aqui; si difieren, uno de los dos esta roto"
                     ),
                     P_TM_STRUCT: (
                         "SI discrepa: otra profundidad y otra k. Medido el 2026-09-18 23:42Z, "
@@ -136,19 +137,18 @@ def build(
                 "publishes": ESTRUCTURA,
                 "horizons": ah,
                 "measures": (
-                    "el MISMO calculo que " + P_SD_STATE + " -horizon_structure lo pide a "
-                    "structure_detail- pero en una SEGUNDA evaluacion con SU PROPIO corte: se "
-                    "le llama sin as_of, asi que resuelve su propio clock_timestamp(). No es "
-                    "una copia del campo que viaja en este mismo sobre. Existe para que el "
-                    "sesgo de este bloque viaje con la estructura de la que sale"
+                    "COPIA de " + P_SD_STATE + ", de la MISMA evaluacion: horizon_structure "
+                    "se lo pide a structure_detail pasandole el as_of del sobre, asi que no "
+                    "hay una segunda evaluacion con otro corte. Existe para que el sesgo de "
+                    "este bloque viaje con la estructura de la que sale"
                 ),
                 "values": ["HH_HL", "LH_LL", "mixed", None],
                 "may_disagree_with": {
                     P_SD_STATE: (
-                        "MISMO CALCULO, DOS CORTES: coinciden mientras los dos cortes caigan "
-                        "sobre la misma vela cerrada, y pueden diferir si entra una vela entre "
-                        "ellos, sin que ninguno este roto. No es la copia que decia este "
-                        "glosario hasta el 2026-09-19"
+                        "NO DISCREPA: es su copia bajo el MISMO corte. Entre el 2026-09-19 y "
+                        "el 2026-09-28 este glosario decia 'MISMO CALCULO, DOS CORTES' y era "
+                        "cierto -horizon_structure resolvia su propio clock_timestamp()-; ya "
+                        "no lo resuelve. Si estos dos campos difieren, uno esta roto"
                     ),
                     P_TM_STRUCT: "SI discrepa: otra profundidad y otra k, igual que con su origen",
                     P_MS_STRUCT: _OTRO_TRAMO,

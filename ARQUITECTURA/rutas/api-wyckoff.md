@@ -26,7 +26,7 @@ Handler `wyckoff_endpoint` · `app/api.py:2037` (cuerpo hasta la 2041) · decora
 | `method` | literal en app/wyckoff.py:506 |
 | `phase` | literal en app/wyckoff.py:484 |
 | `range` | literal en app/wyckoff.py:482 |
-| `symbol` | literal en app/scalp_logic.py:1662 |
+| `symbol` | literal en app/scalp_logic.py:1703 |
 | `trade_map` | literal en app/wyckoff.py:491 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
@@ -58,7 +58,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1639`
+- `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1680`
 
 <details><summary>Alcanzables de forma indirecta (20)</summary>
 

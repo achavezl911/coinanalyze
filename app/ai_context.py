@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime
 from typing import Any, Literal
 
@@ -843,12 +844,69 @@ def local_alerts(summary: dict[str, Any], confidence: dict[str, Any]) -> list[di
     return alerts
 
 
+@asynccontextmanager
+async def _corte_unico(conn: asyncpg.Connection):
+    """UNA instantanea MVCC para todos los statements del sobre. Devuelve (modo, razon).
+
+    UN `as_of` COMPARTIDO NO ES UN CORTE. Todos los bloques que lo reciben filtran por el
+    MISMO tiempo de evento, pero cada uno lanza su `SELECT` en un instante de reloj de pared
+    distinto contra una base que se esta escribiendo, asi que una fila con `ts <= as_of` que
+    se INSERTA a mitad del armado la ve el bloque tardio y no el temprano. El colector de
+    trades escribe cada bucket de 5 s al menos 3 s DESPUES de cerrarlo y con `ts` = su
+    inicio, o sea que esa fila existe en cada armado. Medido por el operador en 140 el
+    2026-09-28: 126 de 432 parejas de `delta_matrix`/`cvd_matrix` con el MISMO `as_of` y
+    cifras distintas, y la diferencia CONSTANTE en todas las ventanas de cada pata -esa
+    constancia es la firma de UNA fila en el borde, no de dos definiciones distintas-.
+
+    En `REPEATABLE READ` la instantanea se toma en el PRIMER statement de la transaccion, y
+    el primero que lanza el sobre es el `SELECT clock_timestamp()` de `resolve_matrix_as_of`:
+    el corte de tiempo de evento y la instantanea nacen en el mismo instante.
+
+    `READ ONLY` no es decorativo: el sobre entero es de lectura -comprobado contra el espejo
+    de 143, que lo arma igual en los tres modos- y asi un escritor que se colara aqui por
+    descuido falla en vez de escribir dentro de la foto.
+
+    Un DOBLE de conexion no ofrece `transaction()`. Entonces NO hay instantanea, y el sobre
+    lo DICE en `envelope_cut.snapshot` en vez de prometer un corte que no tuvo.
+    """
+    fabrica = getattr(conn, "transaction", None)
+    if fabrica is None:
+        yield "none", "la conexion no ofrece transaction(): es un doble, no una conexion"
+        return
+    tx = fabrica(isolation="repeatable_read", readonly=True)
+    await tx.start()
+    try:
+        yield "repeatable_read", None
+    finally:
+        await tx.rollback()
+
+
 async def build_ai_symbol_context(
     conn: asyncpg.Connection,
     symbol: str,
     *,
     profile: AIProfile = "default",
     bucket_bps: int = 10,
+) -> dict[str, Any]:
+    async with _corte_unico(conn) as (corte_modo, corte_razon):
+        return await _armar_sobre(
+            conn,
+            symbol,
+            profile=profile,
+            bucket_bps=bucket_bps,
+            corte_modo=corte_modo,
+            corte_razon=corte_razon,
+        )
+
+
+async def _armar_sobre(
+    conn: asyncpg.Connection,
+    symbol: str,
+    *,
+    profile: AIProfile,
+    bucket_bps: int,
+    corte_modo: str,
+    corte_razon: str | None,
 ) -> dict[str, Any]:
     # La foto se arma en ~3 s y cada seccion resuelve su propio reloj, asi que un solo
     # instante NO la describe: medido el 2026-08-26 en 140, generated_at cae A MITAD del
@@ -880,6 +938,30 @@ async def build_ai_symbol_context(
         # campos. No trae ni un valor calculado: dice que mide cada 'bias' y cada
         # 'structure' del sobre y de cual de los otros se diferencia.
         DISAMBIGUATION_KEY: field_disambiguation(),
+        # EL CORTE DEL SOBRE, DICHO POR EL SOBRE. Sin esto, «las dos matrices dicen lo
+        # mismo» es una promesa que nadie puede comprobar desde fuera: quien lea el sobre no
+        # sabe si los bloques leyeron las mismas filas o filas de dos instantes. Con esto, un
+        # sobre que no pudo abrir la instantanea lo declara en vez de prometer un corte que
+        # no tuvo.
+        "envelope_cut": {
+            "as_of": matrix_as_of.isoformat(),
+            "snapshot": corte_modo,
+            "snapshot_reason": corte_razon,
+            "meaning": (
+                "UN corte. 'as_of' es el cutoff de tiempo de EVENTO que comparten los "
+                "bloques que lo reciben; 'snapshot'='repeatable_read' dice que ademas TODOS "
+                "los statements de este sobre leyeron la MISMA instantanea MVCC. Hacen "
+                "falta las dos: con solo el as_of, una fila con ts<=as_of escrita a mitad "
+                "del armado la ve el bloque tardio y no el temprano, y dos bloques que "
+                "publican la misma cantidad publican cifras distintas. Con "
+                "'snapshot'='none' no hubo instantanea y esa igualdad NO esta garantizada"
+            ),
+            "same_number_twice": (
+                "bajo 'repeatable_read', delta_matrix y cvd_matrix calculan cada ventana "
+                "comun y cada pata sobre LAS MISMAS filas, y structure_horizons.<h> sale "
+                "de la MISMA evaluacion que structure_detail.horizons.<h>"
+            ),
+        },
         "generated_at": datetime.now(UTC).isoformat(),
         "profile": profile,
         "symbol": symbol,
@@ -895,7 +977,7 @@ async def build_ai_symbol_context(
         ),
         "orderbook": await latest_orderbook(conn, symbol),
         "market_structure": await market_structure(conn, symbol, matrix_as_of),
-        "structure_horizons": await horizon_structure(conn, symbol),
+        "structure_horizons": await horizon_structure(conn, symbol, matrix_as_of),
         "structure_detail": await structure_detail(conn, symbol, matrix_as_of),
         "cvd_matrix": await cvd_matrix(conn, symbol, matrix_as_of),
         "passive_flow": await _passive_flow(conn, symbol, matrix_as_of),

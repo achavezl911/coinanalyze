@@ -51,7 +51,7 @@ Llamadas directas del handler:
 
 - `app.api.sella_respuesta` — `app/api.py:1944`
 - `app.api.validate_symbol` — `app/api.py:229`
-- `app.scalp_logic.range_validate` — `app/scalp_logic.py:1540`
+- `app.scalp_logic.range_validate` — `app/scalp_logic.py:1581`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
@@ -97,7 +97,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:66`, `harness/checks/K43-foto-unica.sh:162`, `harness/checks/K43-foto-unica.sh:452`, `harness/checks/K76-la-ventana-que-pides.sh:95` | `harness/checks/K43-foto-unica.sh:106` |
 | **panel** | `static/js/11-rango-wyckoff-y-sesion.js:125` | — |
-| **tests** | — | `tests/test_familia_demanda.py:165`, `tests/test_p0_data_integrity.py:126` |
+| **tests** | — | `tests/test_familia_demanda.py:165`, `tests/test_p0_data_integrity.py:130` |
 
 **La llama el panel: es superficie de producto.**
 

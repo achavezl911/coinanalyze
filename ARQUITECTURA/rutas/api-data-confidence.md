@@ -19,15 +19,15 @@ Handler `data_confidence` · `app/api.py:3087` (cuerpo hasta la 3091) · decorad
 | campo | de donde sale |
 |---|---|
 | `rows` | literal en app/api.py:3091 |
-| `rows.collectors_stale` | asignado en app/ai_context.py:592 |
-| `rows.flow_8h_complete` | asignado en app/ai_context.py:561 |
-| `rows.flow_8h_futures_complete` | asignado en app/ai_context.py:560 |
-| `rows.flow_8h_spot_complete` | asignado en app/ai_context.py:557 |
-| `rows.flow_8h_spot_end_gap_seconds` | asignado en app/ai_context.py:559 |
-| `rows.flow_8h_spot_source` | asignado en app/ai_context.py:558 |
-| `rows.quality_score` | asignado en app/ai_context.py:604 |
-| `rows.quality_score_basis` | asignado en app/ai_context.py:605 |
-| `rows.status` | asignado en app/ai_context.py:595 |
+| `rows.collectors_stale` | asignado en app/ai_context.py:593 |
+| `rows.flow_8h_complete` | asignado en app/ai_context.py:562 |
+| `rows.flow_8h_futures_complete` | asignado en app/ai_context.py:561 |
+| `rows.flow_8h_spot_complete` | asignado en app/ai_context.py:558 |
+| `rows.flow_8h_spot_end_gap_seconds` | asignado en app/ai_context.py:560 |
+| `rows.flow_8h_spot_source` | asignado en app/ai_context.py:559 |
+| `rows.quality_score` | asignado en app/ai_context.py:605 |
+| `rows.quality_score_basis` | asignado en app/ai_context.py:606 |
+| `rows.status` | asignado en app/ai_context.py:596 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -85,19 +85,19 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.data_confidence_row` — `app/ai_context.py:523`
+- `app.ai_context.data_confidence_row` — `app/ai_context.py:524`
 - `app.api.validate_symbol` — `app/api.py:229`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
-- `app.ai_context.quality_score` — `app/ai_context.py:611`
+- `app.ai_context.quality_score` — `app/ai_context.py:612`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2505`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2538`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2619`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2511`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2716`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2797`
 
 </details>
 
