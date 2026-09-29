@@ -26839,6 +26839,8 @@
           "llamadas": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:126",
             "harness/checks/K101-un-nombre-dos-cosas.sh:207",
+            "harness/checks/K102-mesa.py:415",
+            "harness/checks/K102-mesa.py:429",
             "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:337",
             "harness/checks/K43-foto-unica.sh:338",
@@ -26872,6 +26874,7 @@
           ],
           "menciones": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:26",
+            "harness/checks/K102-mesa.py:410",
             "harness/checks/K31-eslabon5.sh:60",
             "harness/checks/K31-eslabon5.sh:172",
             "harness/checks/K43-foto-unica.sh:7",
@@ -26928,8 +26931,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 45,
-        "n_menciones": 19,
+        "n_llamadas": 47,
+        "n_menciones": 20,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32150,8 +32153,8 @@
     {
       "camino": "/api/mesa/decide",
       "campos": {
-        "build_finished_at": "asignado en app/ai_context.py:1411",
-        "build_started_at": "asignado en app/ai_context.py:1410"
+        "build_finished_at": "asignado en app/ai_context.py:1414",
+        "build_started_at": "asignado en app/ai_context.py:1413"
       },
       "campos_pendientes": [
         "devuelve la variable 'payload', cuyo contenido no se resuelve estaticamente"
@@ -32282,15 +32285,35 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-mesa.py:418"
+            "harness/checks/K102-control.bash:192",
+            "harness/checks/K102-control.bash:194",
+            "harness/checks/K102-decide-lo-primero.sh:42",
+            "harness/checks/K102-decide-lo-primero.sh:70",
+            "harness/checks/K102-decide-lo-primero.sh:73",
+            "harness/checks/K102-decide-lo-primero.sh:78",
+            "harness/checks/K102-mesa.py:414",
+            "harness/checks/K102-mesa.py:415",
+            "harness/checks/K102-mesa.py:422",
+            "harness/checks/K102-mesa.py:429",
+            "harness/checks/K102-mesa.py:546"
           ],
-          "menciones": []
+          "menciones": [
+            "harness/checks/K102-mesa.py:410"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_decide.test.js:189"
+          ],
+          "menciones": [
+            "tests/js/mesa_decide.test.js:30"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 1,
-        "n_menciones": 0,
+        "n_llamadas": 12,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -38769,15 +38792,18 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-mesa.py:289"
+            "harness/checks/K102-mesa.py:354"
           ],
-          "menciones": []
+          "menciones": [
+            "harness/checks/K102-control.bash:174",
+            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:199"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 1,
-        "n_menciones": 0,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },

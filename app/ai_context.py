@@ -1308,9 +1308,12 @@ async def build_mesa_decide(
             "as_of": matrix_as_of.isoformat(),
             "snapshot": corte_modo,
             "snapshot_reason": corte_razon,
+            # SIN COMILLAS INVERSAS: esta cadena SE PUBLICA, y `test_prosa_sin_markdown`
+            # prohibe marcas de markdown en lo publicable -quien lo lea puede estar en un
+            # panel, en un log o en una IA, y ninguno las renderiza-.
             "meaning": (
-                "UN corte. Todo lo que DECIDE ensena -salvo `horizon`, que lo declara- se "
-                "leyo dentro de la MISMA instantanea MVCC y con el MISMO cutoff de evento, "
+                "UN corte. Todo lo que DECIDE ensena -salvo horizon, que lo declara aparte- "
+                "se leyo dentro de la MISMA instantanea MVCC y con el MISMO cutoff de evento, "
                 "asi que dos campos de esta pantalla no pueden salir de dos instantes"
             ),
         },
