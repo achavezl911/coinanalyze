@@ -8,56 +8,56 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`swing_score`](#swing-score) | 6572 | 2 | **0** | 53 ↑ | **2** |
-| [`as_float`](#as-float) | 920 | 37 | **0** | 10 ↑ | **37** |
-| [`resolve_matrix_as_of`](#resolve-matrix-as-of) | 2592 | 24 | **0** | 11 ↑ | **24** |
-| [`_explicit_as_of`](#-explicit-as-of) | 2586 | 25 | **0** | 0 | **25** |
-| [`compute_scalp_summary`](#compute-scalp-summary) | 628 | 9 | **0** | 24 ↑ | **9** |
-| [`scalp_context`](#scalp-context) | 325 | 9 | **0** | 24 ↑ | **9** |
-| [`load_baselines`](#load-baselines) | 158 | 14 | **0** | 10 ↑ | **14** |
-| [`baseline_band`](#baseline-band) | 134 | 13 | **0** | 10 ↑ | **13** |
-| [`basis_quality`](#basis-quality) | 231 | 10 | **0** | 10 ↑ | **10** |
-| [`classify_absorption`](#classify-absorption) | 193 | 10 | **0** | 10 ↑ | **10** |
-| [`_closed_5m_oi_bounds`](#-closed-5m-oi-bounds) | 94 | 9 | **0** | 10 ↑ | **9** |
-| [`_closed_window_move_pct`](#-closed-window-move-pct) | 590 | 9 | **0** | 10 ↑ | **9** |
-| [`_first_present`](#-first-present) | 502 | 9 | **0** | 10 ↑ | **9** |
-| [`_liquidation_window_measured`](#-liquidation-window-measured) | 514 | 9 | **0** | 10 ↑ | **9** |
-| [`_measured_event_sum`](#-measured-event-sum) | 558 | 9 | **0** | 10 ↑ | **9** |
-| [`scalp_bias_label`](#scalp-bias-label) | 292 | 9 | **0** | 10 ↑ | **9** |
-| [`score_component`](#score-component) | 317 | 9 | **0** | 10 ↑ | **9** |
-| [`_resample_highs_lows`](#-resample-highs-lows) | 1227 | 14 | **0** | 0 | **14** |
-| [`_flow_windows`](#-flow-windows) | 2619 | 13 | **0** | 0 | **13** |
-| [`spot_flow_windows`](#spot-flow-windows) | 2797 | 13 | **0** | 0 | **13** |
+| [`swing_score`](#swing-score) | 6572 | 2 | **0** | 54 ↑ | **2** |
+| [`as_float`](#as-float) | 920 | 38 | **0** | 11 ↑ | **38** |
+| [`resolve_matrix_as_of`](#resolve-matrix-as-of) | 2592 | 25 | **0** | 12 ↑ | **25** |
+| [`_explicit_as_of`](#-explicit-as-of) | 2586 | 26 | **0** | 0 | **26** |
+| [`compute_scalp_summary`](#compute-scalp-summary) | 628 | 10 | **0** | 25 ↑ | **10** |
+| [`scalp_context`](#scalp-context) | 325 | 10 | **0** | 25 ↑ | **10** |
+| [`load_baselines`](#load-baselines) | 158 | 15 | **0** | 11 ↑ | **15** |
+| [`baseline_band`](#baseline-band) | 134 | 14 | **0** | 11 ↑ | **14** |
+| [`basis_quality`](#basis-quality) | 231 | 11 | **0** | 11 ↑ | **11** |
+| [`classify_absorption`](#classify-absorption) | 193 | 11 | **0** | 11 ↑ | **11** |
+| [`_closed_5m_oi_bounds`](#-closed-5m-oi-bounds) | 94 | 10 | **0** | 11 ↑ | **10** |
+| [`_closed_window_move_pct`](#-closed-window-move-pct) | 590 | 10 | **0** | 11 ↑ | **10** |
+| [`_first_present`](#-first-present) | 502 | 10 | **0** | 11 ↑ | **10** |
+| [`_liquidation_window_measured`](#-liquidation-window-measured) | 514 | 10 | **0** | 11 ↑ | **10** |
+| [`_measured_event_sum`](#-measured-event-sum) | 558 | 10 | **0** | 11 ↑ | **10** |
+| [`scalp_bias_label`](#scalp-bias-label) | 292 | 10 | **0** | 11 ↑ | **10** |
+| [`score_component`](#score-component) | 317 | 10 | **0** | 11 ↑ | **10** |
+| [`_resample_highs_lows`](#-resample-highs-lows) | 1227 | 15 | **0** | 0 | **15** |
+| [`_flow_windows`](#-flow-windows) | 2619 | 14 | **0** | 0 | **14** |
+| [`spot_flow_windows`](#spot-flow-windows) | 2797 | 14 | **0** | 0 | **14** |
 | [`_gap_and_baseline`](#-gap-and-baseline) | 4376 | 12 | **0** | 0 | **12** |
 | [`_gap_threshold_seconds`](#-gap-threshold-seconds) | 4346 | 12 | **0** | 0 | **12** |
 | [`_gap_too_large`](#-gap-too-large) | 4358 | 12 | **0** | 0 | **12** |
+| [`_contiguous_measured_suffix`](#-contiguous-measured-suffix) | 970 | 11 | **0** | 0 | **11** |
 | [`_oi_change_pct`](#-oi-change-pct) | 4557 | 11 | **0** | 0 | **11** |
 | [`_realtime_flow`](#-realtime-flow) | 4473 | 11 | **0** | 0 | **11** |
+| [`_as_utc_datetime`](#-as-utc-datetime) | 543 | 10 | **0** | 0 | **10** |
 | [`_complete_tail_values`](#-complete-tail-values) | 960 | 10 | **0** | 0 | **10** |
-| [`_contiguous_measured_suffix`](#-contiguous-measured-suffix) | 970 | 10 | **0** | 0 | **10** |
+| [`_coverage_status`](#-coverage-status) | 566 | 10 | **0** | 0 | **10** |
+| [`_structure_from_swings`](#-structure-from-swings) | 2372 | 10 | **0** | 0 | **10** |
+| [`_swings`](#-swings) | 2358 | 10 | **0** | 0 | **10** |
+| [`_utc_now`](#-utc-now) | 68 | 10 | **0** | 0 | **10** |
 | [`flow_confirmation`](#flow-confirmation) | 4721 | 10 | **0** | 0 | **10** |
-| [`_as_utc_datetime`](#-as-utc-datetime) | 543 | 9 | **0** | 0 | **9** |
 | [`_atr`](#-atr) | 3194 | 9 | **0** | 0 | **9** |
-| [`_coverage_status`](#-coverage-status) | 566 | 9 | **0** | 0 | **9** |
-| [`_structure_from_swings`](#-structure-from-swings) | 2372 | 9 | **0** | 0 | **9** |
-| [`_swings`](#-swings) | 2358 | 9 | **0** | 0 | **9** |
 | [`_tr_series`](#-tr-series) | 3183 | 9 | **0** | 0 | **9** |
-| [`_utc_now`](#-utc-now) | 68 | 9 | **0** | 0 | **9** |
+| [`structure_detail`](#structure-detail) | 2429 | 8 | **0** | 3 ↑ | **8** |
 | [`trend_matrix`](#trend-matrix) | 6247 | 8 | **0** | 3 ↑ | **8** |
+| [`_dsr`](#-dsr) | 2421 | 8 | **0** | 0 | **8** |
 | [`_flow_imbalance`](#-flow-imbalance) | 2604 | 8 | **0** | 0 | **8** |
 | [`_flow_rate`](#-flow-rate) | 2612 | 8 | **0** | 0 | **8** |
+| [`bars_incomplete_inside`](#bars-incomplete-inside) | 1298 | 8 | **0** | 0 | **8** |
 | [`futures_flow_windows`](#futures-flow-windows) | 2868 | 8 | **0** | 0 | **8** |
 | [`spot_con_guarda`](#spot-con-guarda) | 2807 | 8 | **0** | 0 | **8** |
-| [`structure_detail`](#structure-detail) | 2429 | 7 | **0** | 3 ↑ | **7** |
-| [`_dsr`](#-dsr) | 2421 | 7 | **0** | 0 | **7** |
 | [`_pct_rank`](#-pct-rank) | 1856 | 7 | **0** | 0 | **7** |
-| [`bars_incomplete_inside`](#bars-incomplete-inside) | 1298 | 7 | **0** | 0 | **7** |
 | [`delta_matrix`](#delta-matrix) | 4589 | 7 | **0** | 0 | **7** |
+| [`price_barriers`](#price-barriers) | 1304 | 7 | **0** | 0 | **7** |
 | [`_profile`](#-profile) | 3807 | 6 | **0** | 0 | **6** |
 | [`cross_asset`](#cross-asset) | 3609 | 5 | **0** | 3 ↑ | **5** |
 | [`macro_context`](#macro-context) | 1934 | 5 | **0** | 3 ↑ | **5** |
 | [`passive_flow`](#passive-flow) | 6119 | 5 | **0** | 3 ↑ | **5** |
-| [`price_barriers`](#price-barriers) | 1304 | 6 | **0** | 0 | **6** |
 | [`volume_profile`](#volume-profile) | 3844 | 6 | **0** | 0 | **6** |
 | [`_beta`](#-beta) | 3574 | 5 | **0** | 0 | **5** |
 | [`_binned`](#-binned) | 3588 | 5 | **0** | 0 | **5** |
@@ -125,7 +125,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/scalp_logic.py:6572` · clave completa `app.scalp_logic.swing_score`
 
-**Radio exacto: 2 rutas** de 70 · **cota superior: 53** (mas ancha)
+**Radio exacto: 2 rutas** de 72 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -139,9 +139,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 53 rutas · **cota superior**
+### Por tabla · k<=2 — 54 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (54 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -189,6 +189,7 @@ Y esas tablas las leen:
 - [`/api/macro-context`](../rutas/api-macro-context.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
@@ -219,7 +220,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**51 rutas se enteran SOLO por el dato**, sin
+**52 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -245,6 +246,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/macro-context`](../rutas/api-macro-context.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
@@ -280,9 +282,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:920` · clave completa `app.scalp_logic.as_float`
 
-**Radio exacto: 37 rutas** de 70 · **cota superior: 44** (mas ancha)
+**Radio exacto: 38 rutas** de 72 · **cota superior: 45** (mas ancha)
 
-### Por llamada — 37 rutas
+### Por llamada — 38 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -302,6 +304,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/macro-context`](../rutas/api-macro-context.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
 - [`/api/positioning`](../rutas/api-positioning.md)
@@ -329,9 +332,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -345,6 +348,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -364,15 +368,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 107 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 109 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## resolve_matrix_as_of
 
 `app/scalp_logic.py:2592` · clave completa `app.scalp_logic.resolve_matrix_as_of`
 
-**Radio exacto: 24 rutas** de 70 · **cota superior: 32** (mas ancha)
+**Radio exacto: 25 rutas** de 72 · **cota superior: 33** (mas ancha)
 
-### Por llamada — 24 rutas
+### Por llamada — 25 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -387,6 +391,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/macro-context`](../rutas/api-macro-context.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
@@ -406,9 +411,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 11 rutas · **cota superior**
+### Por tabla · k<=2 — 12 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (12 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -424,6 +429,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -445,15 +451,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/verdicts`](../rutas/api-verdicts.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 51 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 53 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _explicit_as_of
 
 `app/scalp_logic.py:2586` · clave completa `app.scalp_logic._explicit_as_of`
 
-**Radio exacto: 25 rutas** de 70 · **cota superior: 25** (igual al exacto)
+**Radio exacto: 26 rutas** de 72 · **cota superior: 26** (igual al exacto)
 
-### Por llamada — 25 rutas
+### Por llamada — 26 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -469,6 +475,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/macro-context`](../rutas/api-macro-context.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
@@ -492,15 +499,15 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 32 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 33 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## compute_scalp_summary
 
 `app/scalp_logic.py:628` · clave completa `app.scalp_logic.compute_scalp_summary`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 24** (mas ancha)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 25** (mas ancha)
 
-### Por llamada — 9 rutas
+### Por llamada — 10 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -509,6 +516,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -519,9 +527,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 24 rutas · **cota superior**
+### Por tabla · k<=2 — 25 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (24 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (25 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -542,6 +550,96 @@ Y esas tablas las leen:
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/price-barriers`](../rutas/api-price-barriers.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
+- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
+- [`/api/scalp/liquidation-levels`](../rutas/api-scalp-liquidation-levels.md)
+- [`/api/scalp/liquidations`](../rutas/api-scalp-liquidations.md)
+- [`/api/scalp/orderbook`](../rutas/api-scalp-orderbook.md)
+- [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
+- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
+- [`/api/signals/execution`](../rutas/api-signals-execution.md)
+- [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
+- [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
+- [`/api/signals/replay`](../rutas/api-signals-replay.md)
+- [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
+- [`/api/stream`](../rutas/api-stream.md)
+- [`/api/structure`](../rutas/api-structure.md)
+- [`/metrics`](../rutas/metrics.md)
+
+**15 rutas se enteran SOLO por el dato**, sin
+ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
+
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/price-barriers`](../rutas/api-price-barriers.md)
+- [`/api/scalp/liquidation-levels`](../rutas/api-scalp-liquidation-levels.md)
+- [`/api/scalp/liquidations`](../rutas/api-scalp-liquidations.md)
+- [`/api/scalp/orderbook`](../rutas/api-scalp-orderbook.md)
+- [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
+- [`/api/signals/execution`](../rutas/api-signals-execution.md)
+- [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
+- [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
+- [`/api/signals/replay`](../rutas/api-signals-replay.md)
+- [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
+- [`/api/stream`](../rutas/api-stream.md)
+- [`/api/structure`](../rutas/api-structure.md)
+- [`/metrics`](../rutas/metrics.md)
+
+<sub>k=0 es exacto. La cota k<=2 sube por 16 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## scalp_context
+
+`app/scalp_logic.py:325` · clave completa `app.scalp_logic.scalp_context`
+
+**Radio exacto: 10 rutas** de 72 · **cota superior: 25** (mas ancha)
+
+### Por llamada — 10 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
+- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
+- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 25 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (25 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
+
+- `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
+- `orderbook_snapshot` — la escribe `app.scalp_collector.flush_books`
+- `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
+- `service_ownership` — la escribe `app.db.acquire_service_lock`
+- `signal_observation` — la escribe `app.signal_ledger.persist_signal_observations`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -581,100 +679,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 <sub>k=0 es exacto. La cota k<=2 sube por 14 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## scalp_context
-
-`app/scalp_logic.py:325` · clave completa `app.scalp_logic.scalp_context`
-
-**Radio exacto: 9 rutas** de 70 · **cota superior: 24** (mas ancha)
-
-### Por llamada — 9 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
-- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
-- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 24 rutas · **cota superior**
-
-**Esta cota es MAS ANCHA que el dato exacto** (24 contra 0). Parte de la diferencia puede entrar por un bucle
-de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
-**de afectadas.**
-
-Ella o alguien que la llama hasta k=2 escribe:
-
-- `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
-- `orderbook_snapshot` — la escribe `app.scalp_collector.flush_books`
-- `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
-- `service_ownership` — la escribe `app.db.acquire_service_lock`
-- `signal_observation` — la escribe `app.signal_ledger.persist_signal_observations`
-
-Y esas tablas las leen:
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
-- [`/api/price-barriers`](../rutas/api-price-barriers.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
-- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
-- [`/api/scalp/liquidation-levels`](../rutas/api-scalp-liquidation-levels.md)
-- [`/api/scalp/liquidations`](../rutas/api-scalp-liquidations.md)
-- [`/api/scalp/orderbook`](../rutas/api-scalp-orderbook.md)
-- [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
-- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
-- [`/api/signals/execution`](../rutas/api-signals-execution.md)
-- [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
-- [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
-- [`/api/signals/replay`](../rutas/api-signals-replay.md)
-- [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
-- [`/api/stream`](../rutas/api-stream.md)
-- [`/api/structure`](../rutas/api-structure.md)
-- [`/metrics`](../rutas/metrics.md)
-
-**15 rutas se enteran SOLO por el dato**, sin
-ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
-
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
-- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
-- [`/api/price-barriers`](../rutas/api-price-barriers.md)
-- [`/api/scalp/liquidation-levels`](../rutas/api-scalp-liquidation-levels.md)
-- [`/api/scalp/liquidations`](../rutas/api-scalp-liquidations.md)
-- [`/api/scalp/orderbook`](../rutas/api-scalp-orderbook.md)
-- [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
-- [`/api/signals/execution`](../rutas/api-signals-execution.md)
-- [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
-- [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
-- [`/api/signals/replay`](../rutas/api-signals-replay.md)
-- [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
-- [`/api/stream`](../rutas/api-stream.md)
-- [`/api/structure`](../rutas/api-structure.md)
-- [`/metrics`](../rutas/metrics.md)
-
-<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
 ## load_baselines
 
 `app/scalp_logic.py:158` · clave completa `app.scalp_logic.load_baselines`
 
-**Radio exacto: 14 rutas** de 70 · **cota superior: 21** (mas ancha)
+**Radio exacto: 15 rutas** de 72 · **cota superior: 22** (mas ancha)
 
-### Por llamada — 14 rutas
+### Por llamada — 15 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -685,6 +696,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/absorption`](../rutas/api-scalp-absorption.md)
@@ -698,9 +710,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -714,6 +726,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -733,15 +746,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 18 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 19 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## baseline_band
 
 `app/scalp_logic.py:134` · clave completa `app.scalp_logic.baseline_band`
 
-**Radio exacto: 13 rutas** de 70 · **cota superior: 20** (mas ancha)
+**Radio exacto: 14 rutas** de 72 · **cota superior: 21** (mas ancha)
 
-### Por llamada — 13 rutas
+### Por llamada — 14 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -751,6 +764,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/absorption`](../rutas/api-scalp-absorption.md)
@@ -764,9 +778,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -780,6 +794,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -799,15 +814,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 18 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 19 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## basis_quality
 
 `app/scalp_logic.py:231` · clave completa `app.scalp_logic.basis_quality`
 
-**Radio exacto: 10 rutas** de 70 · **cota superior: 17** (mas ancha)
+**Radio exacto: 11 rutas** de 72 · **cota superior: 18** (mas ancha)
 
-### Por llamada — 10 rutas
+### Por llamada — 11 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -816,6 +831,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -827,9 +843,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -843,6 +859,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -862,15 +879,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 13 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 14 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## classify_absorption
 
 `app/scalp_logic.py:193` · clave completa `app.scalp_logic.classify_absorption`
 
-**Radio exacto: 10 rutas** de 70 · **cota superior: 17** (mas ancha)
+**Radio exacto: 11 rutas** de 72 · **cota superior: 18** (mas ancha)
 
-### Por llamada — 10 rutas
+### Por llamada — 11 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -879,6 +896,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/absorption`](../rutas/api-scalp-absorption.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -890,9 +908,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -906,6 +924,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -925,15 +944,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 13 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 14 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _closed_5m_oi_bounds
 
 `app/scalp_logic.py:94` · clave completa `app.scalp_logic._closed_5m_oi_bounds`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 16** (mas ancha)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 17** (mas ancha)
 
-### Por llamada — 9 rutas
+### Por llamada — 10 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -942,6 +961,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -952,9 +972,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -968,6 +988,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -987,15 +1008,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 10 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _closed_window_move_pct
 
 `app/scalp_logic.py:590` · clave completa `app.scalp_logic._closed_window_move_pct`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 16** (mas ancha)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 17** (mas ancha)
 
-### Por llamada — 9 rutas
+### Por llamada — 10 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -1004,6 +1025,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -1014,9 +1036,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1030,6 +1052,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1049,15 +1072,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _first_present
 
 `app/scalp_logic.py:502` · clave completa `app.scalp_logic._first_present`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 16** (mas ancha)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 17** (mas ancha)
 
-### Por llamada — 9 rutas
+### Por llamada — 10 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -1066,6 +1089,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -1076,9 +1100,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1092,6 +1116,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1111,15 +1136,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _liquidation_window_measured
 
 `app/scalp_logic.py:514` · clave completa `app.scalp_logic._liquidation_window_measured`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 16** (mas ancha)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 17** (mas ancha)
 
-### Por llamada — 9 rutas
+### Por llamada — 10 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -1128,6 +1153,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -1138,9 +1164,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1154,6 +1180,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1173,15 +1200,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _measured_event_sum
 
 `app/scalp_logic.py:558` · clave completa `app.scalp_logic._measured_event_sum`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 16** (mas ancha)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 17** (mas ancha)
 
-### Por llamada — 9 rutas
+### Por llamada — 10 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -1190,6 +1217,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -1200,9 +1228,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1216,6 +1244,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1235,15 +1264,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## scalp_bias_label
 
 `app/scalp_logic.py:292` · clave completa `app.scalp_logic.scalp_bias_label`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 16** (mas ancha)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 17** (mas ancha)
 
-### Por llamada — 9 rutas
+### Por llamada — 10 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -1252,6 +1281,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -1262,9 +1292,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1278,6 +1308,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1297,15 +1328,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## score_component
 
 `app/scalp_logic.py:317` · clave completa `app.scalp_logic.score_component`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 16** (mas ancha)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 17** (mas ancha)
 
-### Por llamada — 9 rutas
+### Por llamada — 10 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -1314,6 +1345,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
@@ -1324,9 +1356,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1340,6 +1372,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -1359,15 +1392,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _resample_highs_lows
 
 `app/scalp_logic.py:1227` · clave completa `app.scalp_logic._resample_highs_lows`
 
-**Radio exacto: 14 rutas** de 70 · **cota superior: 14** (igual al exacto)
+**Radio exacto: 15 rutas** de 72 · **cota superior: 15** (igual al exacto)
 
-### Por llamada — 14 rutas
+### Por llamada — 15 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -1378,6 +1411,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 - [`/api/profile`](../rutas/api-profile.md)
@@ -1395,15 +1429,15 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 20 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 21 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _flow_windows
 
 `app/scalp_logic.py:2619` · clave completa `app.scalp_logic._flow_windows`
 
-**Radio exacto: 13 rutas** de 70 · **cota superior: 13** (igual al exacto)
+**Radio exacto: 14 rutas** de 72 · **cota superior: 14** (igual al exacto)
 
-### Por llamada — 13 rutas
+### Por llamada — 14 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -1414,6 +1448,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
@@ -1436,9 +1471,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2797` · clave completa `app.scalp_logic.spot_flow_windows`
 
-**Radio exacto: 13 rutas** de 70 · **cota superior: 13** (igual al exacto)
+**Radio exacto: 14 rutas** de 72 · **cota superior: 14** (igual al exacto)
 
-### Por llamada — 13 rutas
+### Por llamada — 14 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -1449,6 +1484,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
@@ -1465,13 +1501,13 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 14 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 15 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _gap_and_baseline
 
 `app/scalp_logic.py:4376` · clave completa `app.scalp_logic._gap_and_baseline`
 
-**Radio exacto: 12 rutas** de 70 · **cota superior: 12** (igual al exacto)
+**Radio exacto: 12 rutas** de 72 · **cota superior: 12** (igual al exacto)
 
 ### Por llamada — 12 rutas
 
@@ -1505,7 +1541,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4346` · clave completa `app.scalp_logic._gap_threshold_seconds`
 
-**Radio exacto: 12 rutas** de 70 · **cota superior: 12** (igual al exacto)
+**Radio exacto: 12 rutas** de 72 · **cota superior: 12** (igual al exacto)
 
 ### Por llamada — 12 rutas
 
@@ -1539,7 +1575,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4358` · clave completa `app.scalp_logic._gap_too_large`
 
-**Radio exacto: 12 rutas** de 70 · **cota superior: 12** (igual al exacto)
+**Radio exacto: 12 rutas** de 72 · **cota superior: 12** (igual al exacto)
 
 ### Por llamada — 12 rutas
 
@@ -1569,11 +1605,44 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## _contiguous_measured_suffix
+
+`app/scalp_logic.py:970` · clave completa `app.scalp_logic._contiguous_measured_suffix`
+
+**Radio exacto: 11 rutas** de 72 · **cota superior: 11** (igual al exacto)
+
+### Por llamada — 11 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/structure`](../rutas/api-structure.md)
+- [`/api/structure-detail`](../rutas/api-structure-detail.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 13 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## _oi_change_pct
 
 `app/scalp_logic.py:4557` · clave completa `app.scalp_logic._oi_change_pct`
 
-**Radio exacto: 11 rutas** de 70 · **cota superior: 11** (igual al exacto)
+**Radio exacto: 11 rutas** de 72 · **cota superior: 11** (igual al exacto)
 
 ### Por llamada — 11 rutas
 
@@ -1606,7 +1675,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4473` · clave completa `app.scalp_logic._realtime_flow`
 
-**Radio exacto: 11 rutas** de 70 · **cota superior: 11** (igual al exacto)
+**Radio exacto: 11 rutas** de 72 · **cota superior: 11** (igual al exacto)
 
 ### Por llamada — 11 rutas
 
@@ -1635,11 +1704,43 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## _as_utc_datetime
+
+`app/scalp_logic.py:543` · clave completa `app.scalp_logic._as_utc_datetime`
+
+**Radio exacto: 10 rutas** de 72 · **cota superior: 10** (igual al exacto)
+
+### Por llamada — 10 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
+- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
+- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## _complete_tail_values
 
 `app/scalp_logic.py:960` · clave completa `app.scalp_logic._complete_tail_values`
 
-**Radio exacto: 10 rutas** de 70 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 10 rutas
 
@@ -1667,11 +1768,43 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## _contiguous_measured_suffix
+## _coverage_status
 
-`app/scalp_logic.py:970` · clave completa `app.scalp_logic._contiguous_measured_suffix`
+`app/scalp_logic.py:566` · clave completa `app.scalp_logic._coverage_status`
 
-**Radio exacto: 10 rutas** de 70 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 10** (igual al exacto)
+
+### Por llamada — 10 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
+- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
+- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## _structure_from_swings
+
+`app/scalp_logic.py:2372` · clave completa `app.scalp_logic._structure_from_swings`
+
+**Radio exacto: 10 rutas** de 72 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 10 rutas
 
@@ -1682,8 +1815,8 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/profile`](../rutas/api-profile.md)
-- [`/api/structure`](../rutas/api-structure.md)
 - [`/api/structure-detail`](../rutas/api-structure-detail.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
@@ -1697,13 +1830,77 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## _swings
+
+`app/scalp_logic.py:2358` · clave completa `app.scalp_logic._swings`
+
+**Radio exacto: 10 rutas** de 72 · **cota superior: 10** (igual al exacto)
+
+### Por llamada — 10 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/structure-detail`](../rutas/api-structure-detail.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## _utc_now
+
+`app/scalp_logic.py:68` · clave completa `app.scalp_logic._utc_now`
+
+**Radio exacto: 10 rutas** de 72 · **cota superior: 10** (igual al exacto)
+
+### Por llamada — 10 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
+- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
+- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## flow_confirmation
 
 `app/scalp_logic.py:4721` · clave completa `app.scalp_logic.flow_confirmation`
 
-**Radio exacto: 10 rutas** de 70 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 72 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 10 rutas
 
@@ -1731,42 +1928,11 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 13 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## _as_utc_datetime
-
-`app/scalp_logic.py:543` · clave completa `app.scalp_logic._as_utc_datetime`
-
-**Radio exacto: 9 rutas** de 70 · **cota superior: 9** (igual al exacto)
-
-### Por llamada — 9 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
-- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
-- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
 ## _atr
 
 `app/scalp_logic.py:3194` · clave completa `app.scalp_logic._atr`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 72 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 9 rutas
 
@@ -1793,104 +1959,11 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## _coverage_status
-
-`app/scalp_logic.py:566` · clave completa `app.scalp_logic._coverage_status`
-
-**Radio exacto: 9 rutas** de 70 · **cota superior: 9** (igual al exacto)
-
-### Por llamada — 9 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
-- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
-- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## _structure_from_swings
-
-`app/scalp_logic.py:2372` · clave completa `app.scalp_logic._structure_from_swings`
-
-**Radio exacto: 9 rutas** de 70 · **cota superior: 9** (igual al exacto)
-
-### Por llamada — 9 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/external-macro`](../rutas/api-external-macro.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/profile`](../rutas/api-profile.md)
-- [`/api/structure-detail`](../rutas/api-structure-detail.md)
-- [`/api/swing-score`](../rutas/api-swing-score.md)
-- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 10 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## _swings
-
-`app/scalp_logic.py:2358` · clave completa `app.scalp_logic._swings`
-
-**Radio exacto: 9 rutas** de 70 · **cota superior: 9** (igual al exacto)
-
-### Por llamada — 9 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/external-macro`](../rutas/api-external-macro.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/profile`](../rutas/api-profile.md)
-- [`/api/structure-detail`](../rutas/api-structure-detail.md)
-- [`/api/swing-score`](../rutas/api-swing-score.md)
-- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
 ## _tr_series
 
 `app/scalp_logic.py:3183` · clave completa `app.scalp_logic._tr_series`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 72 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 9 rutas
 
@@ -1917,42 +1990,11 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## _utc_now
+## structure_detail
 
-`app/scalp_logic.py:68` · clave completa `app.scalp_logic._utc_now`
+`app/scalp_logic.py:2429` · clave completa `app.scalp_logic.structure_detail`
 
-**Radio exacto: 9 rutas** de 70 · **cota superior: 9** (igual al exacto)
-
-### Por llamada — 9 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
-- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
-- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## trend_matrix
-
-`app/scalp_logic.py:6247` · clave completa `app.scalp_logic.trend_matrix`
-
-**Radio exacto: 8 rutas** de 70 · **cota superior: 9** (mas ancha)
+**Radio exacto: 8 rutas** de 72 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 8 rutas
 
@@ -1963,9 +2005,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/structure-detail`](../rutas/api-structure-detail.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
-- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
 ### Por tabla · k=0 — 0 rutas · **exacto**
 
@@ -1994,135 +2036,15 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/verdicts`](../rutas/api-verdicts.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 10 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## _flow_imbalance
+## trend_matrix
 
-`app/scalp_logic.py:2604` · clave completa `app.scalp_logic._flow_imbalance`
+`app/scalp_logic.py:6247` · clave completa `app.scalp_logic.trend_matrix`
 
-**Radio exacto: 8 rutas** de 70 · **cota superior: 8** (igual al exacto)
-
-### Por llamada — 8 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/profile`](../rutas/api-profile.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## _flow_rate
-
-`app/scalp_logic.py:2612` · clave completa `app.scalp_logic._flow_rate`
-
-**Radio exacto: 8 rutas** de 70 · **cota superior: 8** (igual al exacto)
+**Radio exacto: 8 rutas** de 72 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 8 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/profile`](../rutas/api-profile.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## futures_flow_windows
-
-`app/scalp_logic.py:2868` · clave completa `app.scalp_logic.futures_flow_windows`
-
-**Radio exacto: 8 rutas** de 70 · **cota superior: 8** (igual al exacto)
-
-### Por llamada — 8 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/profile`](../rutas/api-profile.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## spot_con_guarda
-
-`app/scalp_logic.py:2807` · clave completa `app.scalp_logic.spot_con_guarda`
-
-**Radio exacto: 8 rutas** de 70 · **cota superior: 8** (igual al exacto)
-
-### Por llamada — 8 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/profile`](../rutas/api-profile.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## structure_detail
-
-`app/scalp_logic.py:2429` · clave completa `app.scalp_logic.structure_detail`
-
-**Radio exacto: 7 rutas** de 70 · **cota superior: 8** (mas ancha)
-
-### Por llamada — 7 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -2131,8 +2053,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/structure-detail`](../rutas/api-structure-detail.md)
+- [`/api/profile`](../rutas/api-profile.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
 ### Por tabla · k=0 — 0 rutas · **exacto**
 
@@ -2167,9 +2090,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:2421` · clave completa `app.scalp_logic._dsr`
 
-**Radio exacto: 7 rutas** de 70 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 8 rutas** de 72 · **cota superior: 8** (igual al exacto)
 
-### Por llamada — 7 rutas
+### Por llamada — 8 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -2178,6 +2101,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/structure-detail`](../rutas/api-structure-detail.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 
@@ -2190,13 +2114,163 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## _flow_imbalance
+
+`app/scalp_logic.py:2604` · clave completa `app.scalp_logic._flow_imbalance`
+
+**Radio exacto: 8 rutas** de 72 · **cota superior: 8** (igual al exacto)
+
+### Por llamada — 8 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## _flow_rate
+
+`app/scalp_logic.py:2612` · clave completa `app.scalp_logic._flow_rate`
+
+**Radio exacto: 8 rutas** de 72 · **cota superior: 8** (igual al exacto)
+
+### Por llamada — 8 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## bars_incomplete_inside
+
+`app/scalp_logic.py:1298` · clave completa `app.scalp_logic.bars_incomplete_inside`
+
+**Radio exacto: 8 rutas** de 72 · **cota superior: 8** (igual al exacto)
+
+### Por llamada — 8 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/structure-detail`](../rutas/api-structure-detail.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## futures_flow_windows
+
+`app/scalp_logic.py:2868` · clave completa `app.scalp_logic.futures_flow_windows`
+
+**Radio exacto: 8 rutas** de 72 · **cota superior: 8** (igual al exacto)
+
+### Por llamada — 8 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## spot_con_guarda
+
+`app/scalp_logic.py:2807` · clave completa `app.scalp_logic.spot_con_guarda`
+
+**Radio exacto: 8 rutas** de 72 · **cota superior: 8** (igual al exacto)
+
+### Por llamada — 8 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _pct_rank
 
 `app/scalp_logic.py:1856` · clave completa `app.scalp_logic._pct_rank`
 
-**Radio exacto: 7 rutas** de 70 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 7 rutas** de 72 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -2221,40 +2295,11 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## bars_incomplete_inside
-
-`app/scalp_logic.py:1298` · clave completa `app.scalp_logic.bars_incomplete_inside`
-
-**Radio exacto: 7 rutas** de 70 · **cota superior: 7** (igual al exacto)
-
-### Por llamada — 7 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/external-macro`](../rutas/api-external-macro.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/structure-detail`](../rutas/api-structure-detail.md)
-- [`/api/swing-score`](../rutas/api-swing-score.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
 ## delta_matrix
 
 `app/scalp_logic.py:4589` · clave completa `app.scalp_logic.delta_matrix`
 
-**Radio exacto: 7 rutas** de 70 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 7 rutas** de 72 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -2279,11 +2324,40 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## price_barriers
+
+`app/scalp_logic.py:1304` · clave completa `app.scalp_logic.price_barriers`
+
+**Radio exacto: 7 rutas** de 72 · **cota superior: 7** (igual al exacto)
+
+### Por llamada — 7 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/price-barriers`](../rutas/api-price-barriers.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## _profile
 
 `app/scalp_logic.py:3807` · clave completa `app.scalp_logic._profile`
 
-**Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 6 rutas** de 72 · **cota superior: 6** (igual al exacto)
 
 ### Por llamada — 6 rutas
 
@@ -2311,7 +2385,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3609` · clave completa `app.scalp_logic.cross_asset`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 6** (mas ancha)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 5 rutas
 
@@ -2356,7 +2430,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:1934` · clave completa `app.scalp_logic.macro_context`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 6** (mas ancha)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 5 rutas
 
@@ -2401,7 +2475,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:6119` · clave completa `app.scalp_logic.passive_flow`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 6** (mas ancha)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 5 rutas
 
@@ -2442,39 +2516,11 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 <sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## price_barriers
-
-`app/scalp_logic.py:1304` · clave completa `app.scalp_logic.price_barriers`
-
-**Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
-
-### Por llamada — 6 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/price-barriers`](../rutas/api-price-barriers.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
 ## volume_profile
 
 `app/scalp_logic.py:3844` · clave completa `app.scalp_logic.volume_profile`
 
-**Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 6 rutas** de 72 · **cota superior: 6** (igual al exacto)
 
 ### Por llamada — 6 rutas
 
@@ -2502,7 +2548,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3574` · clave completa `app.scalp_logic._beta`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2529,7 +2575,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3588` · clave completa `app.scalp_logic._binned`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2556,7 +2602,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:6086` · clave completa `app.scalp_logic._classify_passive`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2583,7 +2629,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1894` · clave completa `app.scalp_logic._conditional_outcome`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2610,7 +2656,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1884` · clave completa `app.scalp_logic._forward_returns`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2637,7 +2683,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3561` · clave completa `app.scalp_logic._pearson`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2664,7 +2710,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1865` · clave completa `app.scalp_logic._regime`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2691,7 +2737,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3553` · clave completa `app.scalp_logic._returns`
 
-**Radio exacto: 5 rutas** de 70 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 72 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2718,7 +2764,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:6421` · clave completa `app.scalp_logic.compute_swing_score`
 
-**Radio exacto: 4 rutas** de 70 · **cota superior: 5** (mas ancha)
+**Radio exacto: 4 rutas** de 72 · **cota superior: 5** (mas ancha)
 
 ### Por llamada — 4 rutas
 
@@ -2762,7 +2808,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:4278` · clave completa `app.scalp_logic.data_quality`
 
-**Radio exacto: 4 rutas** de 70 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 72 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -2788,7 +2834,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5804` · clave completa `app.scalp_logic.market_impact`
 
-**Radio exacto: 4 rutas** de 70 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 72 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -2814,7 +2860,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1734` · clave completa `app.scalp_logic.market_memory`
 
-**Radio exacto: 4 rutas** de 70 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 72 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -2840,7 +2886,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3459` · clave completa `app.scalp_logic.reference_levels`
 
-**Radio exacto: 4 rutas** de 70 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 72 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -2866,7 +2912,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5332` · clave completa `app.scalp_logic._banda`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -2891,7 +2937,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5258` · clave completa `app.scalp_logic._bps`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -2916,7 +2962,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3246` · clave completa `app.scalp_logic._buckets_observados`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -2941,7 +2987,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3173` · clave completa `app.scalp_logic._closes_1min`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -2966,7 +3012,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1021` · clave completa `app.scalp_logic._cvd_fut_window`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -2991,7 +3037,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2889` · clave completa `app.scalp_logic._cvd_src`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3016,7 +3062,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4155` · clave completa `app.scalp_logic._feed_status`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3041,7 +3087,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4787` · clave completa `app.scalp_logic._flow_bias`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3066,7 +3112,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2072` · clave completa `app.scalp_logic._intraday_divergences`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3091,7 +3137,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4120` · clave completa `app.scalp_logic._liquidation_feed_quality_status`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3116,7 +3162,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3258` · clave completa `app.scalp_logic._oi_coverage`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3141,7 +3187,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3216` · clave completa `app.scalp_logic._oi_quadrant`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3166,7 +3212,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:936` · clave completa `app.scalp_logic._pivot_structure`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3191,7 +3237,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3202` · clave completa `app.scalp_logic._realized_vol`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3216,7 +3262,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2059` · clave completa `app.scalp_logic._return_stdev_pct`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3241,7 +3287,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:954` · clave completa `app.scalp_logic._sign_vote`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3266,7 +3312,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2027` · clave completa `app.scalp_logic._slope_pct`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3291,7 +3337,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:989` · clave completa `app.scalp_logic._structure_layer`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3316,7 +3362,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5265` · clave completa `app.scalp_logic.coherencia_del_plan`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3341,7 +3387,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3904` · clave completa `app.scalp_logic.context_metadata`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3366,7 +3412,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2948` · clave completa `app.scalp_logic.cvd_matrix`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3391,7 +3437,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2200` · clave completa `app.scalp_logic.divergence_scan`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3416,7 +3462,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5341` · clave completa `app.scalp_logic.execution_assessment`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3441,7 +3487,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3995` · clave completa `app.scalp_logic.feed_quality`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3466,7 +3512,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5567` · clave completa `app.scalp_logic.feed_quality_view`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3491,7 +3537,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3652` · clave completa `app.scalp_logic.funding_context`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3516,7 +3562,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3725` · clave completa `app.scalp_logic.liquidation_map`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3541,7 +3587,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1041` · clave completa `app.scalp_logic.market_structure`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3566,7 +3612,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4429` · clave completa `app.scalp_logic.max_internal_gap`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3591,7 +3637,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4184` · clave completa `app.scalp_logic.metric_quality`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3616,7 +3662,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3289` · clave completa `app.scalp_logic.oi_context`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3641,7 +3687,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5909` · clave completa `app.scalp_logic.positioning_context`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3666,7 +3712,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4800` · clave completa `app.scalp_logic.profile_view`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3691,7 +3737,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5610` · clave completa `app.scalp_logic.scalp_absorption`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3716,7 +3762,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5766` · clave completa `app.scalp_logic.scalp_basis`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3741,7 +3787,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5705` · clave completa `app.scalp_logic.scalp_liquidations`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3766,7 +3812,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3409` · clave completa `app.scalp_logic.volatility_context`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3791,7 +3837,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1680` · clave completa `app.scalp_logic.wyckoff_context`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3816,7 +3862,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1753` · clave completa `app.scalp_logic.horizon_structure`
 
-**Radio exacto: 2 rutas** de 70 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -3840,7 +3886,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4992` · clave completa `app.scalp_logic.hypothesis_evidence`
 
-**Radio exacto: 2 rutas** de 70 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -3864,7 +3910,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1810` · clave completa `app.scalp_logic.liquidation_burst`
 
-**Radio exacto: 2 rutas** de 70 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -3888,7 +3934,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2518` · clave completa `app.scalp_logic.setup_confirmation_bundle`
 
-**Radio exacto: 2 rutas** de 70 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -3912,7 +3958,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5484` · clave completa `app.scalp_logic.execution_cost`
 
-**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -3935,7 +3981,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1706` · clave completa `app.scalp_logic.level_breakout`
 
-**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -3958,7 +4004,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1581` · clave completa `app.scalp_logic.range_validate`
 
-**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -3981,7 +4027,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5988` · clave completa `app.scalp_logic.spot_perp_flow`
 
-**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -4004,7 +4050,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5180` · clave completa `app.scalp_logic.walk_book`
 
-**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -4027,7 +4073,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1433` · clave completa `app.scalp_logic.zone_analysis`
 
-**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

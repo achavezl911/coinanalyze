@@ -8,13 +8,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`configure_logging`](#configure-logging) | 7 | 0 | **0** | 14 ↑ | **0** |
+| [`configure_logging`](#configure-logging) | 7 | 0 | **0** | 15 ↑ | **0** |
 
 ## configure_logging
 
 `app/logging_setup.py:7` · clave completa `app.logging_setup.configure_logging`
 
-**Radio exacto: 0 rutas** de 70 · **cota superior: 14** (mas ancha)
+**Radio exacto: 0 rutas** de 72 · **cota superior: 15** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -27,9 +27,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 14 rutas · **cota superior**
+### Por tabla · k<=2 — 15 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (14 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (15 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -48,6 +48,7 @@ Y esas tablas las leen:
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -56,7 +57,7 @@ Y esas tablas las leen:
 - [`/api/stream`](../rutas/api-stream.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**14 rutas se enteran SOLO por el dato**, sin
+**15 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -66,6 +67,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)

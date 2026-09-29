@@ -71,9 +71,17 @@ RE_IMPORT_CON_NOMBRES = re.compile(
     r"""^[ \t]*(?:import|export)\s+(?!["'])[^;\n]*?\bfrom\s+["']\.{1,2}/[^"']+["']""", re.M)
 
 
-def entradas_del_html(repo: pathlib.Path):
-    """Los <script src="/static/..."> del panel, en el orden en que el HTML los declara."""
-    html = repo / "static" / "index.html"
+def entradas_del_html(repo: pathlib.Path, html_rel: str = "index.html"):
+    """Los <script src="/static/..."> del panel, en el orden en que el HTML los declara.
+
+    `html_rel` EXISTE PORQUE DESDE LA CAMPANA 130 HAY DOS PANTALLAS. `static/index.html` es el
+    panel viejo que sirve `/`, y `static/mesa.html` es la mesa que sirve `/mesa`. Antes de esto
+    el descubridor tenia `index.html` escrito dentro, asi que cualquier instrumento que lo
+    usara juzgaba el panel viejo AUNQUE dijera estar juzgando la mesa -y al reves-. El valor
+    por omision no cambia: quien no pida nada sigue midiendo el panel viejo, y los 28 sitios
+    que ya llamaban aqui siguen viendo lo mismo byte a byte.
+    """
+    html = repo / "static" / html_rel
     if not html.is_file():
         raise SystemExit2(f"no se puede leer {html}")
     texto = html.read_text(encoding="utf-8", errors="replace")
@@ -125,10 +133,10 @@ def grafo(repo: pathlib.Path, entrada: str):
     return orden
 
 
-def fuentes(repo: pathlib.Path):
-    ent = entradas_del_html(repo)
+def fuentes(repo: pathlib.Path, html_rel: str = "index.html"):
+    ent = entradas_del_html(repo, html_rel)
     if not ent:
-        raise SystemExit2("static/index.html no declara ningun <script src=/static/...> "
+        raise SystemExit2(f"static/{html_rel} no declara ningun <script src=/static/...> "
                           "que no sea vendor: no hay panel que medir")
     salida = []
     for rel, tipo in ent:
@@ -151,14 +159,26 @@ def main():
     ap.add_argument("--repo", default="/srv/coinanalyze/repo")
     ap.add_argument("--cat", action="store_true", help="concatena las fuentes, en orden")
     ap.add_argument("--n", action="store_true", help="solo el numero de ficheros")
+    ap.add_argument("--html", default="index.html",
+                    help="QUE pantalla se descubre, relativa a static/. "
+                         "index.html = el panel viejo de `/`; mesa.html = la mesa de `/mesa`")
+    ap.add_argument("--quien", action="store_true",
+                    help="imprime QUE pantalla se ha medido y sus ficheros, y no mas")
     a = ap.parse_args()
     repo = pathlib.Path(a.repo)
     try:
-        lista = fuentes(repo)
+        lista = fuentes(repo, a.html)
     except SystemExit2 as e:
         print(f"NO MEDIDO: {e.motivo}", file=sys.stderr)
         return 2
-    if a.n:
+    if a.quien:
+        # UN INSTRUMENTO QUE DICE A QUIEN MIRA. Desde que hay dos pantallas, «lo mide el
+        # descubridor» ya no identifica al sujeto: hay que nombrarlo.
+        print(f"pantalla: static/{a.html}")
+        print(f"ficheros: {len(lista)}")
+        for rel in lista:
+            print(f"  {rel}")
+    elif a.n:
         print(len(lista))
     elif a.cat:
         piezas = []

@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`assigned_symbols`](#assigned-symbols) | 13 | 0 | **0** | 12 ↑ | **0** |
-| [`symbol_shard`](#symbol-shard) | 6 | 0 | **0** | 12 ↑ | **0** |
+| [`assigned_symbols`](#assigned-symbols) | 13 | 0 | **0** | 13 ↑ | **0** |
+| [`symbol_shard`](#symbol-shard) | 6 | 0 | **0** | 13 ↑ | **0** |
 
 ## assigned_symbols
 
 `app/sharding.py:13` · clave completa `app.sharding.assigned_symbols`
 
-**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -28,9 +28,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 12 rutas · **cota superior**
+### Por tabla · k<=2 — 13 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (12 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (13 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -47,6 +47,7 @@ Y esas tablas las leen:
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -54,7 +55,7 @@ Y esas tablas las leen:
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 - [`/api/stream`](../rutas/api-stream.md)
 
-**12 rutas se enteran SOLO por el dato**, sin
+**13 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -63,6 +64,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -76,7 +78,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/sharding.py:6` · clave completa `app.sharding.symbol_shard`
 
-**Radio exacto: 0 rutas** de 70 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -89,9 +91,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 12 rutas · **cota superior**
+### Por tabla · k<=2 — 13 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (12 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (13 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -108,6 +110,7 @@ Y esas tablas las leen:
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)
@@ -115,7 +118,7 @@ Y esas tablas las leen:
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 - [`/api/stream`](../rutas/api-stream.md)
 
-**12 rutas se enteran SOLO por el dato**, sin
+**13 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -124,6 +127,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/basis`](../rutas/api-scalp-basis.md)

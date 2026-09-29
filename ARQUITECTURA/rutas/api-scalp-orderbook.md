@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_orderbook` · `app/api.py:1750` (cuerpo hasta la 1762) · decorador en la linea 1749.
+Handler `scalp_orderbook` · `app/api.py:1752` (cuerpo hasta la 1764) · decorador en la linea 1751.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `scalp_orderbook` · `app/api.py:1750` (cuerpo hasta la 1762) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `freshness` | literal en app/api.py:1761 |
+| `freshness` | literal en app/api.py:1763 |
 | `freshness.age_seconds` | literal en app/ai_context.py:668 |
 | `freshness.as_of` | literal en app/ai_context.py:667 |
 | `freshness.max_age_seconds` | literal en app/ai_context.py:669 |
 | `freshness.status` | literal en app/ai_context.py:666 |
-| `rows` | literal en app/api.py:1760 |
-| `symbol` | literal en app/api.py:1759 |
+| `rows` | literal en app/api.py:1762 |
+| `symbol` | literal en app/api.py:1761 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -46,8 +46,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.orderbook_freshness` — `app/ai_context.py:661`
-- `app.api.records` — `app/api.py:242`
-- `app.api.validate_symbol` — `app/api.py:229`
+- `app.api.records` — `app/api.py:244`
+- `app.api.validate_symbol` — `app/api.py:231`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (4)</summary>
 
@@ -64,7 +64,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -115,8 +115,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
-| `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.ai_context.orderbook_freshness` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-ai_context.md) |
 | `app.api.scalp_orderbook` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

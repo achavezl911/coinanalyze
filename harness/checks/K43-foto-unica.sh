@@ -346,7 +346,7 @@ foto=$(curl -sS -k --netrc-file "$NETRC" "${CAB[@]}" --max-time 60 \
 _panel_fuentes() {
   local destino; destino=$(mktemp)
   local err; err=$(mktemp)
-  if "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --cat > "$destino" 2>"$err"; then
+  if "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --html index.html --cat > "$destino" 2>"$err"; then
     rm -f "$err"; printf '%s' "$destino"; return 0
   fi
   echo "NO MEDIDO: no se pudieron descubrir las fuentes del panel: $(head -c 200 "$err")" >&2

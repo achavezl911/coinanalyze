@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `stream` · `app/api.py:3773` (cuerpo hasta la 3778) · decorador en la linea 3772.
+Handler `stream` · `app/api.py:3775` (cuerpo hasta la 3780) · decorador en la linea 3774.
 
 ## Parametros de entrada
 
@@ -43,11 +43,11 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.stream_generator` — `app/api.py:3725`
+- `app.api.stream_generator` — `app/api.py:3727`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
-- `app.api.records` — `app/api.py:242`
+- `app.api.records` — `app/api.py:244`
 
 </details>
 
@@ -107,7 +107,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api.stream` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.api.stream_generator` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

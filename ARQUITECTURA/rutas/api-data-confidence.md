@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `data_confidence` · `app/api.py:3087` (cuerpo hasta la 3091) · decorador en la linea 3086.
+Handler `data_confidence` · `app/api.py:3089` (cuerpo hasta la 3093) · decorador en la linea 3088.
 
 ## Parametros de entrada
 
@@ -18,7 +18,7 @@ Handler `data_confidence` · `app/api.py:3087` (cuerpo hasta la 3091) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `rows` | literal en app/api.py:3091 |
+| `rows` | literal en app/api.py:3093 |
 | `rows.collectors_stale` | asignado en app/ai_context.py:593 |
 | `rows.flow_8h_complete` | asignado en app/ai_context.py:562 |
 | `rows.flow_8h_futures_complete` | asignado en app/ai_context.py:561 |
@@ -86,7 +86,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.data_confidence_row` — `app/ai_context.py:524`
-- `app.api.validate_symbol` — `app/api.py:229`
+- `app.api.validate_symbol` — `app/api.py:231`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
@@ -114,7 +114,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -166,16 +166,16 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.as_float` | 37 | **0** | 10 ↑ | **37** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 11 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps.blocking_requirement_keys` | 20 | **0** | 14 ↑ | **20** | [impacto](../impacto/app-data_gaps.md) |
-| `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.spot_flow_windows` | 13 | **0** | 0 | **13** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.db.required_heartbeat_failures` | 4 | **0** | 7 ↑ | **4** | [impacto](../impacto/app-db.md) |
-| `app.ai_context.data_confidence_row` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-ai_context.md) |
-| `app.ai_context.quality_score` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-ai_context.md) |
+| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |
+| `app.scalp_logic._explicit_as_of` | 26 | **0** | 0 | **26** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.spot_flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.db.required_heartbeat_failures` | 5 | **0** | 8 ↑ | **5** | [impacto](../impacto/app-db.md) |
+| `app.ai_context.data_confidence_row` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-ai_context.md) |
+| `app.ai_context.quality_score` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-ai_context.md) |
 | `app.api.data_confidence` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

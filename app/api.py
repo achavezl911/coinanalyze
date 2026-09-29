@@ -21,11 +21,13 @@ from fastapi.responses import FileResponse, JSONResponse, Response, StreamingRes
 from fastapi.staticfiles import StaticFiles
 
 from app.ai_context import (
+    MESA_FRAME_HORIZON,
     ORDERBOOK_EDAD_SQL,
     ORDERBOOK_FRESCAS_SQL,
     ORDERBOOK_MAX_AGE_SECONDS,
     build_ai_context,
     build_ai_symbol_context,
+    build_mesa_decide,
     data_confidence_row,
     normalize_profile,
     orderbook_freshness,
@@ -3776,6 +3778,56 @@ async def stream(request: Request) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.get("/api/mesa/decide")
+async def mesa_decide(symbol: str, frame: str = "scalp") -> dict[str, Any]:
+    """DECIDE, servido ya decidido. Ver el bloque de `ai_context.build_mesa_decide`.
+
+    EL HORIZONTE VA APARTE Y LO DICE. `scalp_persistence` es un agregado de 30 dias con su
+    propio `as_of` y su propia cache de 5 min: meterlo dentro del corte de `build_mesa_decide`
+    le borraria su ventana, que es justo lo que hace falta para no volver a escribir un
+    horizonte a mano -el defecto que D1 midio y que K90 vigila-. Asi que entra declarado con
+    `outside_cut: true` y con el `as_of` del CALCULO, no el de la peticion.
+    """
+    selected = validate_symbol(symbol)
+    if frame not in MESA_FRAME_HORIZON:
+        raise HTTPException(
+            status_code=422,
+            detail=f"frame must be one of: {', '.join(MESA_FRAME_HORIZON)}",
+        )
+    async with app.state.pool.acquire() as conn:
+        payload = await build_mesa_decide(conn, selected, frame=frame)
+        persistencia = await scalp_persistence(conn, selected)
+    # EL HORIZONTE ES LA PERSISTENCIA DE LA SENAL DE CORTO, asi que en un marco que no es
+    # scalp va donde va el resto de la lectura del scalp: en `lectura_scalp`. Poner «mediana 1
+    # min · p90 3 min» bajo el DECIDE de LARGO seria la misma mentira que esta corrigiendo R1,
+    # y ademas la mas facil de creer, porque es una cifra medida.
+    destino = payload["lectura_scalp"] if "lectura_scalp" in payload else payload["decide"]
+    destino["horizon"] = {
+        "value": persistencia.get("etiqueta") if persistencia.get("available") else None,
+        "source_key": "scalp_persistence.etiqueta",
+        # CERO EPISODIOS NO ES UN HORIZONTE DE CERO. Si no se pudo medir, sale el motivo.
+        "status": "ok" if persistencia.get("available") else "ausente",
+        "motivo": persistencia.get("motivo"),
+        "outside_cut": True,
+        "as_of": persistencia.get("as_of"),
+        "dias": persistencia.get("dias"),
+        "mediana_min": persistencia.get("mediana_min"),
+        "p90_min": persistencia.get("p90_min"),
+    }
+    return payload
+
+
+@app.get("/mesa")
+async def mesa() -> FileResponse:
+    """LA MESA DE OPERACION, en su ruta NUEVA.
+
+    `/` NO CAMBIA en esta campana: la mesa convive con el panel viejo y el cambio de `/` lo
+    decide Alejandro cuando la vea en produccion. Queda a UNA LINEA de distancia: cambiar
+    `index.html` por `mesa.html` en el `FileResponse` de `index()`, aqui abajo.
+    """
+    return FileResponse(STATIC_DIR / "mesa.html")
 
 
 @app.get("/")

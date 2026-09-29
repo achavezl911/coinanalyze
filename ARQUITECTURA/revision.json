@@ -29,6 +29,7 @@
     "/api/macro-context": "e5dec7a8e6f784b7",
     "/api/market-impact": "17e6d0f1ec71cf97",
     "/api/market-memory": "d4c87ce33810e95e",
+    "/api/mesa/decide": "7eea1242d6b62890",
     "/api/ohlcv": "755df669804606b2",
     "/api/oi": "25730144cc6c4c3e",
     "/api/oi-context": "13f02ffcd05e723c",
@@ -49,7 +50,7 @@
     "/api/scalp/liquidations": "1e50a523ba011835",
     "/api/scalp/orderbook": "34796aa3b0da2e8a",
     "/api/scalp/signals": "4fbd779b11827011",
-    "/api/scalp/summary": "0b7641d0f24f0d0f",
+    "/api/scalp/summary": "c1a63e62f52ac409",
     "/api/setup": "6bd53f5501333d3a",
     "/api/signals/execution": "8400f4dfba1066c3",
     "/api/signals/ledger": "601991a6851f2fce",
@@ -69,6 +70,7 @@
     "/api/whale/delta": "01cad5d6183b8b6b",
     "/api/wyckoff": "a5634651c031dd30",
     "/api/zone/analysis": "e498076eb757a056",
+    "/mesa": "cd495219affa108a",
     "/metrics": "85fd30d67170fd17"
   },
   "version_marca": 2

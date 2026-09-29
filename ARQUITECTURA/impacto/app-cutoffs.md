@@ -8,13 +8,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`at`](#at) | 22 | 0 | **0** | 44 ↑ | **0** |
+| [`at`](#at) | 22 | 0 | **0** | 45 ↑ | **0** |
 
 ## at
 
 `app/cutoffs.py:22` · clave completa `app.cutoffs.ClosedCutoff.at`
 
-**Radio exacto: 0 rutas** de 70 · **cota superior: 44** (mas ancha)
+**Radio exacto: 0 rutas** de 72 · **cota superior: 45** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -27,9 +27,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 44 rutas · **cota superior**
+### Por tabla · k<=2 — 45 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (44 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (45 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -65,6 +65,7 @@ Y esas tablas las leen:
 - [`/api/liquidations`](../rutas/api-liquidations.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
@@ -91,7 +92,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**44 rutas se enteran SOLO por el dato**, sin
+**45 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -113,6 +114,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/liquidations`](../rutas/api-liquidations.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)

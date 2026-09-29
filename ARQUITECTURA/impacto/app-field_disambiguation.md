@@ -14,7 +14,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/field_disambiguation.py:72` · clave completa `app.field_disambiguation.build`
 
-**Radio exacto: 2 rutas** de 70 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 

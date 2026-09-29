@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-70 rutas descubiertas en el arbol. Para trabajar sobre una,
+72 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -36,6 +36,7 @@
 | `/api/macro-context` | GET | 7 | 1 | 10 | [ficha](rutas/api-macro-context.md) |
 | `/api/market-impact` | GET | 6 | 2 | 7 | [ficha](rutas/api-market-impact.md) |
 | `/api/market-memory` | GET | 13 | 1 | 5 | [ficha](rutas/api-market-memory.md) |
+| `/api/mesa/decide` | GET | 3 | 15 | 52 | [ficha](rutas/api-mesa-decide.md) |
 | `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
 | `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
 | `/api/oi-context` | GET | 16 | 4 | 12 | [ficha](rutas/api-oi-context.md) |
@@ -76,49 +77,51 @@
 | `/api/whale/delta` | GET | 5 | 2 | 11 | [ficha](rutas/api-whale-delta.md) |
 | `/api/wyckoff` | GET | 10 | 2 | 22 | [ficha](rutas/api-wyckoff.md) |
 | `/api/zone/analysis` | GET | 1 | 2 | 16 | [ficha](rutas/api-zone-analysis.md) |
+| `/mesa` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/mesa.md) |
 | `/metrics` | GET | **0 · PENDIENTE** | 6 | 1 | [ficha](rutas/metrics.md) |
 
 ## Rutas cuyos campos NO se han podido derivar
 
-5 de 70. Cada una con su motivo en la ficha.
+6 de 72. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
 - `/api/scalp/delta-matrix` — lista vacia en el literal: no se puede derivar el elemento
 - `/api/stream` — la respuesta pasa por StreamingResponse(), que no se puede seguir
+- `/mesa` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/metrics` — la respuesta pasa por Response(), que no se puede seguir
 
 ## Tablas, y que rutas las tocan
 
 | tabla | la leen | la escriben |
 |---|---|---|
-| `daily_session_agg` | 21 | 0 |
+| `daily_session_agg` | 22 | 0 |
 | `daily_verdict_outcome` | 3 | 0 |
 | `daily_verdict_snapshot` | 3 | 0 |
-| `data_gap` | 21 | 0 |
+| `data_gap` | 22 | 0 |
 | `external_macro_observation` | 3 | 0 |
 | `funding_rate` | 4 | 0 |
-| `futures_trades_agg` | 6 | 0 |
-| `futures_trades_realtime` | 16 | 0 |
+| `futures_trades_agg` | 7 | 0 |
+| `futures_trades_realtime` | 17 | 0 |
 | `liquidations` | 5 | 0 |
-| `liquidations_realtime` | 14 | 0 |
+| `liquidations_realtime` | 15 | 0 |
 | `long_short_ratio` | 3 | 0 |
 | `macro_event` | 3 | 0 |
-| `market_feed_health` | 9 | 0 |
-| `metric_baseline` | 14 | 0 |
-| `metrics_snapshot` | 8 | 0 |
-| `ohlcv` | 37 | 0 |
+| `market_feed_health` | 10 | 0 |
+| `metric_baseline` | 15 | 0 |
+| `metrics_snapshot` | 9 | 0 |
+| `ohlcv` | 38 | 0 |
 | `oi_bybit` | 3 | 0 |
-| `open_interest` | 19 | 0 |
+| `open_interest` | 20 | 0 |
 | `orderbook_depth` | 1 | 0 |
-| `orderbook_snapshot` | 14 | 0 |
-| `pipeline_heartbeat` | 7 | 1 |
+| `orderbook_snapshot` | 15 | 0 |
+| `pipeline_heartbeat` | 8 | 1 |
 | `predicted_funding_rate` | 3 | 0 |
 | `scalp_signal_snapshot` | 4 | 0 |
 | `signal_execution_snapshot` | 1 | 0 |
-| `signal_observation` | 6 | 0 |
+| `signal_observation` | 7 | 0 |
 | `signal_outcome` | 3 | 0 |
 | `signal_outcome_final_visibility` | 1 | 0 |
 | `signal_replay_frame` | 1 | 0 |
-| `spot_trades_agg` | 11 | 0 |
-| `spot_trades_realtime` | 12 | 0 |
+| `spot_trades_agg` | 12 | 0 |
+| `spot_trades_realtime` | 13 | 0 |
