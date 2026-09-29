@@ -433,8 +433,15 @@ main {
   overflow: hidden;
 }
 
+/* EL `width: 0` NO ES UN DETALLE DE ESTILO: SIN EL, LA BARRA MIENTE.
+ * Un div sin anchura declarada ocupa TODO su contenedor. Con la ruta caida -DECIDE sale por
+ * su camino de error y nadie llega a poner `style.width`- esta barra se pintaba VERDE Y LLENA
+ * al lado de un valor «—». O sea: la pantalla afirmaba data_confidence maximo justo cuando no
+ * sabia nada. Se vio en la captura contra produccion del 2026-09-29, y es exactamente el
+ * defecto que esta campana existe para quitar. */
 .dc-relleno {
   height: 100%;
+  width: 0;
   background: var(--verde);
 }
 

@@ -82,8 +82,15 @@ function pintarScan(sobre, nodo) {
     const ev = el('span', 'ev ev-vivo', 'VIVO');
     c.appendChild(ev);
     c.appendChild(el('div', 'titulo', s.state || s.name || s.title || '—'));
-    if (s.confidence) c.appendChild(el('span', 'venue mono', 'confianza ' + s.confidence));
-    if (s.ts) c.appendChild(el('span', 'venue mono', 'hace ' + (edad(s.ts) || 'N/D')));
+    // Dos <span> en linea SIN separador se leen pegados: «confianza bajahace 46 d». Es
+    // cosmetico, pero una pantalla que junta dos hechos distintos en una palabra ya esta
+    // diciendo algo que no es.
+    const pie2 = el('div', 'venue mono');
+    const trozos = [];
+    if (s.confidence) trozos.push('confianza ' + s.confidence);
+    if (s.ts) trozos.push('hace ' + (edad(s.ts) || 'N/D'));
+    pie2.textContent = trozos.join(' · ');
+    if (trozos.length) c.appendChild(pie2);
     caja.appendChild(c);
   });
   return caja;
@@ -93,7 +100,13 @@ function pintarScan(sobre, nodo) {
 function pintarMatriz(sobre, nodo, nodoPie, nodoVenue) {
   const caja = vaciar(nodo);
   if (!sobre.ok) return fallo(caja, sobre);
-  const filas = sobre.datos.rows || sobre.datos.windows || sobre.datos.matrix || [];
+  // `/api/scalp/delta-matrix` DEVUELVE UNA LISTA PELADA, no un objeto con `rows`. Medido
+  // contra 140 el 2026-09-29: 12 ventanas -las 12 exactas del mockup, de 15s a 1d-. La
+  // version anterior buscaba `.rows` y pintaba «la ruta contesto sin ventanas» sobre una
+  // respuesta de 12 filas: un hueco declarado sobre un dato que SI estaba.
+  const filas = Array.isArray(sobre.datos)
+    ? sobre.datos
+    : sobre.datos.rows || sobre.datos.windows || sobre.datos.matrix || [];
   if (!filas.length) return hueco(caja, 'matriz', 'la ruta contesto sin ventanas');
 
   const t = el('table', 'rejilla');
@@ -202,7 +215,17 @@ function panelLibro(sobre) {
   const p = panel('Libro · profundidad', 'binance + bybit (agregado)');
   if (!sobre || !sobre.ok) return fallo(p, sobre || { http: 0, motivo: 'no pedido' });
   const d = sobre.datos;
-  const comb = d.combined || d;
+  // LA RUTA Y EL SOBRE NO TIENEN LA MISMA FORMA, y usar la del sobre aqui pintaba N/D en las
+  // cinco filas sobre un dato que SI venia. `/api/ai/context` trae `orderbook.combined` como
+  // objeto; `/api/scalp/orderbook` trae `rows[]` con una fila POR VENUE -binance, bybit y
+  // combined-, medido contra 140 el 2026-09-29. Se acepta cualquiera de las dos.
+  const filasLibro = Array.isArray(d.rows) ? d.rows : [];
+  const comb =
+    filasLibro.find((r) => r.exchange === 'combined') ||
+    d.combined ||
+    filasLibro[0] ||
+    d;
+  const venues = filasLibro.map((r) => r.exchange).filter((x) => x && x !== 'combined');
   const t = el('table', 'rejilla');
   const filas = [
     ['spread', esNada(comb.spread_bps) ? null : num(comb.spread_bps, 3) + ' bps'],
@@ -230,7 +253,8 @@ function panelLibro(sobre) {
       ' contra un tope de ' +
       (esNada(fr.max_age_seconds) ? 'N/D' : num(fr.max_age_seconds, 0) + ' s') +
       ' · estado ' +
-      (fr.status || 'N/D')
+      (fr.status || 'N/D') +
+      (venues.length ? ' · agregado de ' + venues.length + ': ' + venues.join(' + ') : '')
   );
   // PENDIENTE 1 del operador, declarado en el panel al que afecta.
   hueco(
