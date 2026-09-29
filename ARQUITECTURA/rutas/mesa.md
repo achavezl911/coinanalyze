@@ -50,10 +50,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-mesa.py:428`, `harness/checks/K102-sobre-plantado.py:138`, `harness/checks/K102-sobre-plantado.py:185` | `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:199` |
+| **checks** | `harness/checks/K102-control.bash:300`, `harness/checks/K102-mesa.py:428`, `harness/checks/K102-sobre-plantado.py:138`, `harness/checks/K102-sobre-plantado.py:185` | `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:199` |
 | **tests** | `tests/js/mesa_remate.test.js:81` | — |
 
-**No la llama el panel**, pero si 4 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 5 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

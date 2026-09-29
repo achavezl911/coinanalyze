@@ -19,9 +19,9 @@ Handler `mesa_decide` · `app/api.py:3784` (cuerpo hasta la 3819) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `build_finished_at` | asignado en app/ai_context.py:1475 |
-| `build_started_at` | asignado en app/ai_context.py:1474 |
-| `lectura_scalp` | asignado en app/ai_context.py:1463 |
+| `build_finished_at` | asignado en app/ai_context.py:1506 |
+| `build_started_at` | asignado en app/ai_context.py:1505 |
+| `lectura_scalp` | asignado en app/ai_context.py:1484 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -193,7 +193,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-decide-lo-primero.sh:56`, `harness/checks/K102-decide-lo-primero.sh:80`, `harness/checks/K102-decide-lo-primero.sh:82`, `harness/checks/K102-decide-lo-primero.sh:87` _(+9)_ | `harness/checks/K102-decide-lo-primero.sh:23`, `harness/checks/K102-mesa.py:489`, `harness/checks/K102-mesa.py:656`, `harness/checks/K102-sobre-plantado.py:2` |
+| **checks** | `harness/checks/K102-decide-lo-primero.sh:62`, `harness/checks/K102-decide-lo-primero.sh:86`, `harness/checks/K102-decide-lo-primero.sh:88`, `harness/checks/K102-decide-lo-primero.sh:93` _(+9)_ | `harness/checks/K102-decide-lo-primero.sh:23`, `harness/checks/K102-mesa.py:489`, `harness/checks/K102-mesa.py:499`, `harness/checks/K102-mesa.py:703` _(+1)_ |
 | **tests** | `tests/js/mesa_decide.test.js:189`, `tests/js/mesa_remate.test.js:28` | `tests/js/mesa_decide.test.js:30` |
 
 **No la llama el panel**, pero si 15 linea(s) de codigo fuera de el.
