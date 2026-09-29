@@ -57,15 +57,20 @@ def sobre(frame: str) -> dict:
     evaluable = dc >= 70.0
     es_scalp = frame == "scalp"
 
+    # EL SOBRE PLANTADO TIENE QUE TENER LA MISMA FORMA QUE LA RUTA, o los controles verifican
+    # un contrato que no existe. Aqui se reproducen los DOS veredictos de `build_mesa_decide`:
+    # el del SCALP -que solo depende de la calidad- y el del MARCO.
+    if not evaluable:
+        bias_scalp, src_scalp = "NO EVALUABLE", "data_confidence.quality_score"
+        motivo_scalp = f"data_confidence {dc} < 70"
+    else:
+        bias_scalp, src_scalp, motivo_scalp = bias, "operator_read.bias", None
+
     if not es_scalp:
         display, src = "NO EVALUABLE", "mesa.decide.frame"
-        motivo = ("la lectura del operador (operator_read) se calcula sobre la ventana del "
-                  f"SCALP, asi que no es un veredicto de {frame.upper()}")
-    elif not evaluable:
-        display, src = "NO EVALUABLE", "data_confidence.quality_score"
-        motivo = f"data_confidence {dc} < 70"
+        motivo = f"la lectura del operador es del SCALP, no de {frame.upper()}"
     else:
-        display, src, motivo = bias, "operator_read.bias", None
+        display, src, motivo = bias_scalp, src_scalp, motivo_scalp
 
     d = {
         "schema_version": "mesa.decide.v1",
@@ -137,6 +142,10 @@ def sobre(frame: str) -> dict:
             "aviso": f"lectura del SCALP, no un veredicto de {frame.upper()}",
             "donde": "/mesa#scalp/BTC",
             "ventana": "deltas de 1 y 3 min, libro L5, liquidaciones de 5 min",
+            # SU PROPIO VEREDICTO, igual que lo sirve la ruta. Sin esto el plantado no podria
+            # ejercitar R5 y las capturas ensenarian una tarjeta sin lado.
+            "bias": {"value": bias_scalp, "source_key": src_scalp, "status": "ok",
+                     "raw": bias, "motivo": motivo_scalp},
             **lectura,
         }
     d["build_started_at"] = ahora.isoformat()
