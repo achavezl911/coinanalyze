@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `range_validate_endpoint` · `app/api.py:1987` (cuerpo hasta la 2017) · decorador en la linea 1986.
+Handler `range_validate_endpoint` · `app/api.py:1989` (cuerpo hasta la 2019) · decorador en la linea 1988.
 
 ## Parametros de entrada
 
@@ -24,7 +24,7 @@ Handler `range_validate_endpoint` · `app/api.py:1987` (cuerpo hasta la 2017) ·
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | asignado en app/api.py:1956 |
+| `as_of` | asignado en app/api.py:1958 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -49,13 +49,13 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.sella_respuesta` — `app/api.py:1944`
-- `app.api.validate_symbol` — `app/api.py:229`
+- `app.api.sella_respuesta` — `app/api.py:1946`
+- `app.api.validate_symbol` — `app/api.py:231`
 - `app.scalp_logic.range_validate` — `app/scalp_logic.py:1581`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2412`
+- `app.api._utc_iso` — `app/api.py:2414`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.zones._atr_abs` — `app/zones.py:519`
 - `app.zones._edge_episodes` — `app/zones.py:499`
@@ -79,13 +79,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:2002` | el propio handler |
-| 422 | range spans more than 3x; narrow it | `app/api.py:2004` | el propio handler |
-| 422 | start_date and end_date must come together | `app/api.py:2006` | el propio handler |
-| 422 | start_date must be before end_date | `app/api.py:2009` | el propio handler |
-| 422 | span exceeds the 730 days of history | `app/api.py:2011` | el propio handler |
-| 422 | days + end_days_ago exceeds daily history | `app/api.py:2013` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 422 | low must be below high | `app/api.py:2004` | el propio handler |
+| 422 | range spans more than 3x; narrow it | `app/api.py:2006` | el propio handler |
+| 422 | start_date and end_date must come together | `app/api.py:2008` | el propio handler |
+| 422 | start_date must be before end_date | `app/api.py:2011` | el propio handler |
+| 422 | span exceeds the 730 days of history | `app/api.py:2013` | el propio handler |
+| 422 | days + end_days_ago exceeds daily history | `app/api.py:2015` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -131,8 +131,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
-| `app.interpretation.number` | 13 | **0** | 3 ↑ | **13** | [impacto](../impacto/app-interpretation.md) |
+| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |
 | `app.api._utc_iso` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.zones._atr_abs` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
 | `app.zones._edge_episodes` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |

@@ -8,11 +8,11 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`evaluate_setups`](#evaluate-setups) | 139 | 4 | **0** | 53 ↑ | **4** |
-| [`number`](#number) | 10 | 13 | **0** | 3 ↑ | **13** |
-| [`_barrier_candidates`](#-barrier-candidates) | 684 | 6 | **0** | 0 | **6** |
-| [`_barrier_zones`](#-barrier-zones) | 779 | 6 | **0** | 0 | **6** |
-| [`price_barrier_read`](#price-barrier-read) | 877 | 6 | **0** | 0 | **6** |
+| [`evaluate_setups`](#evaluate-setups) | 139 | 4 | **0** | 54 ↑ | **4** |
+| [`number`](#number) | 10 | 14 | **0** | 3 ↑ | **14** |
+| [`_barrier_candidates`](#-barrier-candidates) | 684 | 7 | **0** | 0 | **7** |
+| [`_barrier_zones`](#-barrier-zones) | 779 | 7 | **0** | 0 | **7** |
+| [`price_barrier_read`](#price-barrier-read) | 877 | 7 | **0** | 0 | **7** |
 | [`_memory_features`](#-memory-features) | 372 | 4 | **0** | 0 | **4** |
 | [`market_memory_read`](#market-memory-read) | 400 | 4 | **0** | 0 | **4** |
 | [`_cvd_observation`](#-cvd-observation) | 521 | 3 | **0** | 0 | **3** |
@@ -25,7 +25,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/interpretation.py:139` · clave completa `app.interpretation.evaluate_setups`
 
-**Radio exacto: 4 rutas** de 70 · **cota superior: 53** (mas ancha)
+**Radio exacto: 4 rutas** de 72 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 4 rutas
 
@@ -41,9 +41,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 53 rutas · **cota superior**
+### Por tabla · k<=2 — 54 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (53 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (54 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -91,6 +91,7 @@ Y esas tablas las leen:
 - [`/api/macro-context`](../rutas/api-macro-context.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
@@ -121,7 +122,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**49 rutas se enteran SOLO por el dato**, sin
+**50 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/carry/matriz`](../rutas/api-carry-matriz.md)
@@ -145,6 +146,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/macro-context`](../rutas/api-macro-context.md)
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
@@ -180,9 +182,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/interpretation.py:10` · clave completa `app.interpretation.number`
 
-**Radio exacto: 13 rutas** de 70 · **cota superior: 14** (mas ancha)
+**Radio exacto: 14 rutas** de 72 · **cota superior: 15** (mas ancha)
 
-### Por llamada — 13 rutas
+### Por llamada — 14 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -194,6 +196,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/level/breakout`](../rutas/api-level-breakout.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 - [`/api/range/validate`](../rutas/api-range-validate.md)
 - [`/api/setup`](../rutas/api-setup.md)
@@ -233,9 +236,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/interpretation.py:684` · clave completa `app.interpretation._barrier_candidates`
 
-**Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 7 rutas** de 72 · **cota superior: 7** (igual al exacto)
 
-### Por llamada — 6 rutas
+### Por llamada — 7 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -244,6 +247,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 
 ### Por tabla · k=0 — 0 rutas · **exacto**
@@ -261,9 +265,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:779` · clave completa `app.interpretation._barrier_zones`
 
-**Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 7 rutas** de 72 · **cota superior: 7** (igual al exacto)
 
-### Por llamada — 6 rutas
+### Por llamada — 7 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -272,6 +276,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 
 ### Por tabla · k=0 — 0 rutas · **exacto**
@@ -289,9 +294,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:877` · clave completa `app.interpretation.price_barrier_read`
 
-**Radio exacto: 6 rutas** de 70 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 7 rutas** de 72 · **cota superior: 7** (igual al exacto)
 
-### Por llamada — 6 rutas
+### Por llamada — 7 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -300,6 +305,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 
 ### Por tabla · k=0 — 0 rutas · **exacto**
@@ -311,13 +317,13 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _memory_features
 
 `app/interpretation.py:372` · clave completa `app.interpretation._memory_features`
 
-**Radio exacto: 4 rutas** de 70 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 72 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -343,7 +349,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:400` · clave completa `app.interpretation.market_memory_read`
 
-**Radio exacto: 4 rutas** de 70 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 72 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -369,7 +375,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:521` · clave completa `app.interpretation._cvd_observation`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -394,7 +400,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:570` · clave completa `app.interpretation._cvd_side`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -419,7 +425,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:368` · clave completa `app.interpretation._percentile`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -444,7 +450,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:578` · clave completa `app.interpretation.cvd_swing_read`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -469,7 +475,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/interpretation.py:208` · clave completa `app.interpretation.daily_flow_read`
 
-**Radio exacto: 3 rutas** de 70 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 

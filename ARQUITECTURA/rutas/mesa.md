@@ -1,33 +1,25 @@
-# `GET /api/context-metadata`
+# `GET /mesa`
 
 > CAPA DERIVADA · **generada** por `harness/bin/arquitectura` desde el AST. No editar a mano:
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `context_metadata_endpoint` · `app/api.py:2047` (cuerpo hasta la 2050) · decorador en la linea 2046.
+Handler `mesa` · `app/api.py:3818` (cuerpo hasta la 3825) · decorador en la linea 3817.
 
 ## Parametros de entrada
 
-| nombre | tipo | por defecto | obligatorio |
-|---|---|---|---|
-| `symbol` | `str` | — | si |
+_ninguno_
 
 ## Campos que publica
 
-6 campos derivados. La procedencia dice de donde sale cada uno.
+**PENDIENTE · no se ha podido derivar ni un campo.**
 
-| campo | de donde sale |
-|---|---|
-| `calc_version` | literal en app/scalp_logic.py:3929 |
-| `feeds` | literal en app/scalp_logic.py:3931 |
-| `generated_at` | literal en app/scalp_logic.py:3930 |
-| `note` | literal en app/scalp_logic.py:3933 |
-| `symbol` | literal en app/scalp_logic.py:3928 |
-| `venues_note` | literal en app/scalp_logic.py:3932 |
+**Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
-Forma de la respuesta segun el AST: objeto.
+- la respuesta pasa por FileResponse(), que no se puede seguir
+- el valor devuelto es un BinOp, que no se analiza estaticamente
 
-Tipo declarado en la firma: `dict[str, Any]`.
+Tipo declarado en la firma: `FileResponse`.
 
 ## Tablas que toca
 
@@ -35,27 +27,20 @@ _ninguna consulta SQL literal en el cierre de esta ruta._
 
 ## Funciones que la componen
 
-2 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+0 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
-
-Llamadas directas del handler:
-
-- `app.api.validate_symbol` — `app/api.py:231`
-- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3904`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
 
 Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para aqui.
 
-- `app.state.pool.acquire`
+- `FileResponse`
 
 </details>
 
 ## Fallos que puede devolver
 
-| codigo | detalle | donde | de quien |
-|---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+_no levanta HTTPException en su cierre. Un fallo aqui sale como 500 del framework._
 
 ## Superficie · quien la consume (medido)
 
@@ -65,11 +50,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **tests** | — | `tests/test_range_validate.py:167` |
+| **checks** | `harness/checks/K102-mesa.py:289` | — |
 
-**Nadie la llama.** Sus 1 rastros son todos MENCION -comentario,
-docstring o documento-. Es la forma del patron que en esta casa se ha repetido
-nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**
+**No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
+Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
 
@@ -81,14 +65,17 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-Claves temporales entre los campos que publica:
-
-- `generated_at`
+**Ninguna clave temporal entre los campos derivados.** O no publica marca de
+tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
+mismo que lo primero: la foto de produccion lo decide, no este documento.
 
 ## Capa DECLARADA
 
-**Declarada** en [`declarada/api-context-metadata.md`](../declarada/api-context-metadata.md) — pregunta del trader,
-familia de ventana decidida, promesa y superficie, cada una con su cita.
+**PENDIENTE de declaracion.** No existe `declarada/mesa.md`.
+
+Que pregunta del trader contesta, a que familia de ventana pertenece y que
+promete NO se derivan del codigo: se escriben a mano. Mientras no esten, esta
+ruta esta descrita pero **no declarada**, y K88 la cuenta.
 
 ## Radio de impacto
 
@@ -101,9 +88,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
-| `app.scalp_logic.context_metadata` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.api.context_metadata_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.api.mesa` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

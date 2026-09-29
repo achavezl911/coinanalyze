@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_levels` · `app/api.py:3027` (cuerpo hasta la 3083) · decorador en la linea 3026.
+Handler `liquidation_levels` · `app/api.py:3029` (cuerpo hasta la 3085) · decorador en la linea 3028.
 
 ## Parametros de entrada
 
@@ -21,13 +21,13 @@ Handler `liquidation_levels` · `app/api.py:3027` (cuerpo hasta la 3083) · deco
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3079 |
-| `bucket_bps` | literal en app/api.py:3078 |
-| `minutes` | literal en app/api.py:3077 |
-| `rows` | literal en app/api.py:3082 |
-| `symbol` | literal en app/api.py:3076 |
-| `window_end` | literal en app/api.py:3081 |
-| `window_start` | literal en app/api.py:3080 |
+| `as_of` | literal en app/api.py:3081 |
+| `bucket_bps` | literal en app/api.py:3080 |
+| `minutes` | literal en app/api.py:3079 |
+| `rows` | literal en app/api.py:3084 |
+| `symbol` | literal en app/api.py:3078 |
+| `window_end` | literal en app/api.py:3083 |
+| `window_start` | literal en app/api.py:3082 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,8 +54,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:242`
-- `app.api.validate_symbol` — `app/api.py:229`
+- `app.api.records` — `app/api.py:244`
+- `app.api.validate_symbol` — `app/api.py:231`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (7)</summary>
 
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -124,8 +124,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
-| `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api.liquidation_levels` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

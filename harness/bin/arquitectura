@@ -1426,10 +1426,17 @@ def controles_de_respuesta_conocida(impacto: dict, tablas: dict, ey: dict) -> di
         "pregunta": "quien escribe liquidations_realtime y quien la lee",
         "escritores": [f"{e['verbo']} {e['sitio']} [{e['origen']}]" for e in esc],
         "rutas_lectoras": len(lect),
-        "esperado": "1 escritor en app/scalp_collector.py:74 y 14 rutas lectoras",
+        # 14 -> 15 el 2026-09-29 (campana 130): `/api/mesa/decide` lee liquidations_realtime DE
+        # VERDAD, por la misma via por la que ya la leia `/api/scalp/summary` -las dos llaman a
+        # `scalp_logic.scalp_context`-, asi que la lectora numero 15 es CORRECTA y el literal
+        # era el desfasado. Comprobado en derivada.json: la lectora nueva es EXACTAMENTE
+        # /api/mesa/decide y el escritor sigue siendo UNO en app/scalp_collector.py:74.
+        # Lo que da poder al control no es el 15: es que el escritor siga siendo uno y en su
+        # sitio. Eso se sigue exigiendo intacto.
+        "esperado": "1 escritor en app/scalp_collector.py:74 y 15 rutas lectoras",
         "cuadra": (len(esc) == 1
                    and esc[0]["sitio"] == "app/scalp_collector.py:74"
-                   and len(lect) == 14),
+                   and len(lect) == 15),
     }
 
     # 4 · _write_minute a k=0: las 10 rutas que leen spot_trades_agg, con /api/cvd/spot
@@ -1450,10 +1457,16 @@ def controles_de_respuesta_conocida(impacto: dict, tablas: dict, ey: dict) -> di
         # estaba desfasado era este literal. Lo que da poder al control no es el 10: es la
         # IGUALDAD DE CONJUNTOS con las lectoras, la pertenencia de /api/cvd/spot y que la cota
         # k<=2 sea ESTRICTAMENTE mayor -18 hoy-. Las tres siguen exigiendose intactas.
-        "esperado": ("por_tabla_k0 == las 11 lectoras de spot_trades_agg, /api/cvd/spot "
+        # 11 -> 12 el 2026-09-29 (campana 130), por el MISMO motivo que el 10 -> 11 de arriba:
+        # `/api/mesa/decide` lee spot_trades_agg de verdad -llama a `scalp_context` y a
+        # `price_barriers`, que ya estaban las dos en esta lista-, asi que la lectora numero 12
+        # es CORRECTA. Las TRES exigencias que dan poder al control se siguen cumpliendo y se
+        # comprobaron una a una al subir el literal: igualdad de conjuntos SI, /api/cvd/spot
+        # dentro SI, y la cota k<=2 sigue siendo ESTRICTAMENTE mayor (19 contra 12).
+        "esperado": ("por_tabla_k0 == las 12 lectoras de spot_trades_agg, /api/cvd/spot "
                      "dentro; y la cota k<=2 es MAYOR, no igual"),
         "cuadra": (i.get("por_tabla_k0", []) == lect_spot
-                   and len(lect_spot) == 11
+                   and len(lect_spot) == 12
                    and "/api/cvd/spot" in lect_spot
                    and len(i.get("por_tabla", [])) > len(lect_spot)),
     }

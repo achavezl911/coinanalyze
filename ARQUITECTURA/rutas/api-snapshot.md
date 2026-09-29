@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `snapshot` · `app/api.py:665` (cuerpo hasta la 681) · decorador en la linea 664.
+Handler `snapshot` · `app/api.py:667` (cuerpo hasta la 683) · decorador en la linea 666.
 
 ## Parametros de entrada
 
@@ -80,9 +80,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.latest_snapshot` — `app/api.py:517`
-- `app.api.records` — `app/api.py:242`
-- `app.api.validate_symbol` — `app/api.py:229`
+- `app.api.latest_snapshot` — `app/api.py:519`
+- `app.api.records` — `app/api.py:244`
+- `app.api.validate_symbol` — `app/api.py:231`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (4)</summary>
 
@@ -99,8 +99,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:231` | una funcion de su cierre |
-| 404 | No data | `app/api.py:671` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 404 | No data | `app/api.py:673` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -150,8 +150,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 63 | **0** | 0 | **63** | [impacto](../impacto/app-api.md) |
-| `app.api.records` | 22 | **0** | 7 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api.latest_snapshot` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |
 | `app.api.snapshot` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

@@ -8,9 +8,9 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`run_certification_cycle`](#run-certification-cycle) | 363 | 0 | **0** | 24 ↑ | **0** |
-| [`certify_final_outcomes`](#certify-final-outcomes) | 347 | 0 | **0** | 10 ↑ | **0** |
-| [`certify_research_bundles`](#certify-research-bundles) | 328 | 0 | **0** | 10 ↑ | **0** |
+| [`run_certification_cycle`](#run-certification-cycle) | 363 | 0 | **0** | 25 ↑ | **0** |
+| [`certify_final_outcomes`](#certify-final-outcomes) | 347 | 0 | **0** | 11 ↑ | **0** |
+| [`certify_research_bundles`](#certify-research-bundles) | 328 | 0 | **0** | 11 ↑ | **0** |
 | [`_aware_utc`](#-aware-utc) | 141 | 0 | **0** | 1 ↑ | **0** |
 | [`_certify_final_outcomes_once`](#-certify-final-outcomes-once) | 249 | 0 | **1** | 1 | **1** |
 | [`_validate_batch_size`](#-validate-batch-size) | 147 | 0 | **0** | 1 ↑ | **0** |
@@ -19,7 +19,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/signal_visibility.py:363` · clave completa `app.signal_visibility.run_certification_cycle`
 
-**Radio exacto: 0 rutas** de 70 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 72 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -32,9 +32,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 24 rutas · **cota superior**
+### Por tabla · k<=2 — 25 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (24 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (25 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -55,6 +55,7 @@ Y esas tablas las leen:
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -73,7 +74,7 @@ Y esas tablas las leen:
 - [`/api/structure`](../rutas/api-structure.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**24 rutas se enteran SOLO por el dato**, sin
+**25 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -83,6 +84,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -107,7 +109,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:347` · clave completa `app.signal_visibility.certify_final_outcomes`
 
-**Radio exacto: 0 rutas** de 70 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 72 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -120,9 +122,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -137,6 +139,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -145,12 +148,13 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**10 rutas se enteran SOLO por el dato**, sin
+**11 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -165,7 +169,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:328` · clave completa `app.signal_visibility.certify_research_bundles`
 
-**Radio exacto: 0 rutas** de 70 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 72 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -178,9 +182,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -195,6 +199,7 @@ Y esas tablas las leen:
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -203,12 +208,13 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**10 rutas se enteran SOLO por el dato**, sin
+**11 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -223,7 +229,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:141` · clave completa `app.signal_visibility._aware_utc`
 
-**Radio exacto: 0 rutas** de 70 · **cota superior: 1** (mas ancha)
+**Radio exacto: 0 rutas** de 72 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -262,7 +268,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:249` · clave completa `app.signal_visibility._certify_final_outcomes_once`
 
-**Radio exacto: 1 rutas** de 70 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -299,7 +305,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:147` · clave completa `app.signal_visibility._validate_batch_size`
 
-**Radio exacto: 0 rutas** de 70 · **cota superior: 1** (mas ancha)
+**Radio exacto: 0 rutas** de 72 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 
