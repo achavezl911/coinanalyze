@@ -295,8 +295,32 @@ else
 import json, sys
 d = json.load(open(sys.argv[1]))
 m = (d.get("observacion") or {}).get("muestras") or []
-antes = [x for x in m if x.get("edad_s") is not None and x["edad_s"] <= 8]
-despues = [x for x in m if x.get("edad_s") is not None and x["edad_s"] > 8]
+TOPE = 8.0
+
+# LA MUESTRA QUE CAE JUSTO EN EL TOPE NO SE JUZGA, Y ESTO ES UN FALLO QUE PAGUE.
+#
+# La pantalla escribe la edad REDONDEADA a un decimal (`num(v.s, 1)`), y este control lee ESE
+# texto. Cuando la edad real es 8.04 la pantalla pone «8,0» -y dice RANCIO, correctamente,
+# porque 8.04 > 8- pero aqui se leia 8.0, que NO es mayor que 8, y la muestra se contaba entre
+# las que NO deberian decir RANCIO. Resultado: el control condenaba una pantalla que acertaba.
+#
+# Es EXACTAMENTE el mismo defecto que R2a -comparar un numero redondeado contra un umbral
+# exacto- cometido esta vez en el propio control. Lo delataron las TRES invocaciones de A56:
+# absoluta y ajena dieron 12 de 12 y la relativa 11 de 12, y la diferencia no era la ruta sino
+# DONDE cayo el muestreo respecto al tope (serie `4.1 5.1 6.1 7.1 8.1R` contra `4 5 6 7 8R`).
+#
+# Asi que se deja una zona muerta de MEDIA UNIDAD del ultimo decimal pintado: lo que cae dentro
+# no se cuenta ni a favor ni en contra, y se DECLARA. Un control que no puede decidir una
+# muestra tiene que decirlo, no adjudicarsela al lado que le convenga.
+ZONA = 0.05
+
+def edad(x):
+    return x.get("edad_s")
+
+antes = [x for x in m if edad(x) is not None and edad(x) < TOPE - ZONA]
+despues = [x for x in m if edad(x) is not None and edad(x) > TOPE + ZONA]
+borde = [x for x in m if edad(x) is not None and abs(edad(x) - TOPE) <= ZONA]
+
 ok = (antes and despues
       and not any(x["dice_rancio"] for x in antes)
       and all(x["dice_rancio"] for x in despues))
@@ -304,6 +328,9 @@ print("  " + ("PASA      " if ok else "MAL       ")
       + "G3 · un DECIDE fresco pasa a RANCIO SOLO             "
       + f"{len(antes)} muestra(s) por debajo del tope sin RANCIO, "
       + f"{len(despues)} por encima con RANCIO")
+if borde:
+    print(f"            {len(borde)} muestra(s) EN EL BORDE (+-{ZONA} s del tope) NO se juzgan: "
+          "la pantalla redondea y el veredicto ahi es indecidible")
 if m:
     print("            serie: "
           + " ".join(f"{x.get('edad_s')}{'R' if x.get('dice_rancio') else '.'}" for x in m[:14]))
