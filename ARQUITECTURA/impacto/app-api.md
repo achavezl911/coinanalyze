@@ -48,7 +48,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`flow_spot_vs_perp`](#flow-spot-vs-perp) | 1726 | 1 | **0** | 0 | **1** |
 | [`funding_context_endpoint`](#funding-context-endpoint) | 1890 | 1 | **0** | 0 | **1** |
 | [`hypothesis`](#hypothesis) | 1348 | 1 | **0** | 0 | **1** |
-| [`index`](#index) | 3829 | 1 | **0** | 0 | **1** |
+| [`index`](#index) | 3834 | 1 | **0** | 0 | **1** |
 | [`level_breakout_endpoint`](#level-breakout-endpoint) | 2023 | 1 | **0** | 0 | **1** |
 | [`liquidation_levels`](#liquidation-levels) | 3029 | 1 | **0** | 0 | **1** |
 | [`liquidation_map_endpoint`](#liquidation-map-endpoint) | 1897 | 1 | **0** | 0 | **1** |
@@ -56,7 +56,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`macro_context_endpoint`](#macro-context-endpoint) | 2145 | 1 | **0** | 0 | **1** |
 | [`market_impact_endpoint`](#market-impact-endpoint) | 1332 | 1 | **0** | 0 | **1** |
 | [`market_memory_endpoint`](#market-memory-endpoint) | 2169 | 1 | **0** | 0 | **1** |
-| [`mesa`](#mesa) | 3818 | 1 | **0** | 0 | **1** |
+| [`mesa`](#mesa) | 3823 | 1 | **0** | 0 | **1** |
 | [`mesa_decide`](#mesa-decide) | 3784 | 1 | **0** | 0 | **1** |
 | [`metric_baselines`](#metric-baselines) | 1556 | 1 | **0** | 0 | **1** |
 | [`ohlcv`](#ohlcv) | 687 | 1 | **0** | 0 | **1** |
@@ -1243,7 +1243,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## index
 
-`app/api.py:3829` · clave completa `app.api.index`
+`app/api.py:3834` · clave completa `app.api.index`
 
 **Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
 
@@ -1427,7 +1427,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## mesa
 
-`app/api.py:3818` · clave completa `app.api.mesa`
+`app/api.py:3823` · clave completa `app.api.mesa`
 
 **Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
 

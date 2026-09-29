@@ -370,7 +370,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.api.flow_spot_vs_perp`](impacto/app-api.md) | `app/api.py:1726` | 1 | **0** | 0 | **1** |
 | [`app.api.funding_context_endpoint`](impacto/app-api.md) | `app/api.py:1890` | 1 | **0** | 0 | **1** |
 | [`app.api.hypothesis`](impacto/app-api.md) | `app/api.py:1348` | 1 | **0** | 0 | **1** |
-| [`app.api.index`](impacto/app-api.md) | `app/api.py:3829` | 1 | **0** | 0 | **1** |
+| [`app.api.index`](impacto/app-api.md) | `app/api.py:3834` | 1 | **0** | 0 | **1** |
 | [`app.api.level_breakout_endpoint`](impacto/app-api.md) | `app/api.py:2023` | 1 | **0** | 0 | **1** |
 | [`app.api.liquidation_levels`](impacto/app-api.md) | `app/api.py:3029` | 1 | **0** | 0 | **1** |
 | [`app.api.liquidation_map_endpoint`](impacto/app-api.md) | `app/api.py:1897` | 1 | **0** | 0 | **1** |
@@ -378,7 +378,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.api.macro_context_endpoint`](impacto/app-api.md) | `app/api.py:2145` | 1 | **0** | 0 | **1** |
 | [`app.api.market_impact_endpoint`](impacto/app-api.md) | `app/api.py:1332` | 1 | **0** | 0 | **1** |
 | [`app.api.market_memory_endpoint`](impacto/app-api.md) | `app/api.py:2169` | 1 | **0** | 0 | **1** |
-| [`app.api.mesa`](impacto/app-api.md) | `app/api.py:3818` | 1 | **0** | 0 | **1** |
+| [`app.api.mesa`](impacto/app-api.md) | `app/api.py:3823` | 1 | **0** | 0 | **1** |
 | [`app.api.mesa_decide`](impacto/app-api.md) | `app/api.py:3784` | 1 | **0** | 0 | **1** |
 | [`app.api.metric_baselines`](impacto/app-api.md) | `app/api.py:1556` | 1 | **0** | 0 | **1** |
 | [`app.api.ohlcv`](impacto/app-api.md) | `app/api.py:687` | 1 | **0** | 0 | **1** |

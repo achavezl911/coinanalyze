@@ -820,8 +820,8 @@
     },
     "app.api.index": {
       "fichero": "app/api.py",
-      "linea": 3829,
-      "sitio": "`app/api.py:3829`"
+      "linea": 3834,
+      "sitio": "`app/api.py:3834`"
     },
     "app.api.latest_snapshot": {
       "fichero": "app/api.py",
@@ -870,8 +870,8 @@
     },
     "app.api.mesa": {
       "fichero": "app/api.py",
-      "linea": 3818,
-      "sitio": "`app/api.py:3818`"
+      "linea": 3823,
+      "sitio": "`app/api.py:3823`"
     },
     "app.api.mesa_decide": {
       "fichero": "app/api.py",
@@ -3321,7 +3321,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3829",
+        "sitio": "app/api.py:3834",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3526,7 +3526,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3818",
+        "sitio": "app/api.py:3823",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26350,10 +26350,10 @@
     "rutas_con_campos": 66,
     "rutas_sin_campos": 6,
     "sin_clave_temporal": 22,
-    "sin_consumidor": 5,
+    "sin_consumidor": 4,
     "sin_declarar": 4,
     "sin_llamada": 13,
-    "solo_mencion": 8,
+    "solo_mencion": 9,
     "tablas_alcanzadas": 30,
     "tablas_catalogo": 40
   },
@@ -26389,17 +26389,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3828,
+      "decorador_linea": 3833,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3830,
+      "fin": 3835,
       "forma": [],
       "handler": "app.api.index",
       "impacto_del_handler": 1,
-      "linea": 3829,
+      "linea": 3834,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -26839,8 +26839,8 @@
           "llamadas": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:126",
             "harness/checks/K101-un-nombre-dos-cosas.sh:207",
-            "harness/checks/K102-mesa.py:415",
-            "harness/checks/K102-mesa.py:429",
+            "harness/checks/K102-mesa.py:494",
+            "harness/checks/K102-mesa.py:508",
             "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:337",
             "harness/checks/K43-foto-unica.sh:338",
@@ -26874,7 +26874,7 @@
           ],
           "menciones": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:26",
-            "harness/checks/K102-mesa.py:410",
+            "harness/checks/K102-mesa.py:489",
             "harness/checks/K31-eslabon5.sh:60",
             "harness/checks/K31-eslabon5.sh:172",
             "harness/checks/K43-foto-unica.sh:7",
@@ -32153,8 +32153,9 @@
     {
       "camino": "/api/mesa/decide",
       "campos": {
-        "build_finished_at": "asignado en app/ai_context.py:1414",
-        "build_started_at": "asignado en app/ai_context.py:1413"
+        "build_finished_at": "asignado en app/ai_context.py:1475",
+        "build_started_at": "asignado en app/ai_context.py:1474",
+        "lectura_scalp": "asignado en app/ai_context.py:1463"
       },
       "campos_pendientes": [
         "devuelve la variable 'payload', cuyo contenido no se resuelve estaticamente"
@@ -32285,25 +32286,31 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-control.bash:192",
-            "harness/checks/K102-control.bash:194",
-            "harness/checks/K102-decide-lo-primero.sh:42",
-            "harness/checks/K102-decide-lo-primero.sh:70",
-            "harness/checks/K102-decide-lo-primero.sh:73",
-            "harness/checks/K102-decide-lo-primero.sh:78",
-            "harness/checks/K102-mesa.py:414",
-            "harness/checks/K102-mesa.py:415",
-            "harness/checks/K102-mesa.py:422",
-            "harness/checks/K102-mesa.py:429",
-            "harness/checks/K102-mesa.py:546"
+            "harness/checks/K102-decide-lo-primero.sh:56",
+            "harness/checks/K102-decide-lo-primero.sh:80",
+            "harness/checks/K102-decide-lo-primero.sh:82",
+            "harness/checks/K102-decide-lo-primero.sh:87",
+            "harness/checks/K102-mesa.py:493",
+            "harness/checks/K102-mesa.py:494",
+            "harness/checks/K102-mesa.py:501",
+            "harness/checks/K102-mesa.py:508",
+            "harness/checks/K102-mesa.py:600",
+            "harness/checks/K102-mesa.py:672",
+            "harness/checks/K102-mesa.py:692",
+            "harness/checks/K102-sobre-plantado.py:166",
+            "harness/checks/K102-sobre-plantado.py:182"
           ],
           "menciones": [
-            "harness/checks/K102-mesa.py:410"
+            "harness/checks/K102-decide-lo-primero.sh:23",
+            "harness/checks/K102-mesa.py:489",
+            "harness/checks/K102-mesa.py:656",
+            "harness/checks/K102-sobre-plantado.py:2"
           ]
         },
         "tests": {
           "llamadas": [
-            "tests/js/mesa_decide.test.js:189"
+            "tests/js/mesa_decide.test.js:189",
+            "tests/js/mesa_remate.test.js:28"
           ],
           "menciones": [
             "tests/js/mesa_decide.test.js:30"
@@ -32312,8 +32319,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 12,
-        "n_menciones": 2,
+        "n_llamadas": 15,
+        "n_menciones": 5,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32335,7 +32342,7 @@
         "por": "parametros ['frame', 'symbol']: no encaja en 1/2/3 sin leerla"
       },
       "fichero": "app/api.py",
-      "fin": 3814,
+      "fin": 3819,
       "forma": [],
       "handler": "app.api.mesa_decide",
       "impacto_del_handler": 1,
@@ -35739,13 +35746,22 @@
           "propio": false
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K102-decide-lo-primero.sh:25",
+            "harness/checks/K102-mesa.py:659",
+            "harness/checks/K102-sobre-plantado.py:115"
+          ]
+        }
+      },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 0,
-        "n_menciones": 0,
-        "sin_ninguno": true,
-        "solo_mencion": false
+        "n_menciones": 3,
+        "sin_ninguno": false,
+        "solo_mencion": true
       },
       "declarada": {
         "completa": true,
@@ -38792,18 +38808,25 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-mesa.py:354"
+            "harness/checks/K102-mesa.py:428",
+            "harness/checks/K102-sobre-plantado.py:138",
+            "harness/checks/K102-sobre-plantado.py:185"
           ],
           "menciones": [
-            "harness/checks/K102-control.bash:174",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:199"
           ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_remate.test.js:81"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 1,
-        "n_menciones": 2,
+        "n_llamadas": 4,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -38819,17 +38842,17 @@
         "fichero": "declarada/mesa.md",
         "secciones": []
       },
-      "decorador_linea": 3817,
+      "decorador_linea": 3822,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3825,
+      "fin": 3830,
       "forma": [],
       "handler": "app.api.mesa",
       "impacto_del_handler": 1,
-      "linea": 3818,
+      "linea": 3823,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"

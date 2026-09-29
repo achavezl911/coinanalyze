@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `mesa_decide` · `app/api.py:3784` (cuerpo hasta la 3814) · decorador en la linea 3783.
+Handler `mesa_decide` · `app/api.py:3784` (cuerpo hasta la 3819) · decorador en la linea 3783.
 
 ## Parametros de entrada
 
@@ -15,12 +15,13 @@ Handler `mesa_decide` · `app/api.py:3784` (cuerpo hasta la 3814) · decorador e
 
 ## Campos que publica
 
-2 campos derivados. La procedencia dice de donde sale cada uno.
+3 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `build_finished_at` | asignado en app/ai_context.py:1414 |
-| `build_started_at` | asignado en app/ai_context.py:1413 |
+| `build_finished_at` | asignado en app/ai_context.py:1475 |
+| `build_started_at` | asignado en app/ai_context.py:1474 |
+| `lectura_scalp` | asignado en app/ai_context.py:1463 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -192,10 +193,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-control.bash:192`, `harness/checks/K102-control.bash:194`, `harness/checks/K102-decide-lo-primero.sh:42`, `harness/checks/K102-decide-lo-primero.sh:70` _(+7)_ | `harness/checks/K102-mesa.py:410` |
-| **tests** | `tests/js/mesa_decide.test.js:189` | `tests/js/mesa_decide.test.js:30` |
+| **checks** | `harness/checks/K102-decide-lo-primero.sh:56`, `harness/checks/K102-decide-lo-primero.sh:80`, `harness/checks/K102-decide-lo-primero.sh:82`, `harness/checks/K102-decide-lo-primero.sh:87` _(+9)_ | `harness/checks/K102-decide-lo-primero.sh:23`, `harness/checks/K102-mesa.py:489`, `harness/checks/K102-mesa.py:656`, `harness/checks/K102-sobre-plantado.py:2` |
+| **tests** | `tests/js/mesa_decide.test.js:189`, `tests/js/mesa_remate.test.js:28` | `tests/js/mesa_decide.test.js:30` |
 
-**No la llama el panel**, pero si 12 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 15 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
