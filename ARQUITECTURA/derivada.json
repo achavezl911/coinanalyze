@@ -32297,8 +32297,8 @@
             "harness/checks/K102-mesa.py:532",
             "harness/checks/K102-mesa.py:647",
             "harness/checks/K102-mesa.py:730",
-            "harness/checks/K102-sobre-plantado.py:166",
-            "harness/checks/K102-sobre-plantado.py:182"
+            "harness/checks/K102-sobre-plantado.py:175",
+            "harness/checks/K102-sobre-plantado.py:191"
           ],
           "menciones": [
             "harness/checks/K102-decide-lo-primero.sh:23",
@@ -35753,7 +35753,7 @@
           "menciones": [
             "harness/checks/K102-decide-lo-primero.sh:25",
             "harness/checks/K102-mesa.py:706",
-            "harness/checks/K102-sobre-plantado.py:115"
+            "harness/checks/K102-sobre-plantado.py:120"
           ]
         }
       },
@@ -38811,8 +38811,8 @@
           "llamadas": [
             "harness/checks/K102-control.bash:300",
             "harness/checks/K102-mesa.py:428",
-            "harness/checks/K102-sobre-plantado.py:138",
-            "harness/checks/K102-sobre-plantado.py:185"
+            "harness/checks/K102-sobre-plantado.py:143",
+            "harness/checks/K102-sobre-plantado.py:194"
           ],
           "menciones": [
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:199"
