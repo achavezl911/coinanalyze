@@ -69,7 +69,7 @@ command -v python3 >/dev/null 2>&1 || { echo "NO MEDIDO: no hay python3"; exit 2
 #      «no hay literal»: es «no se donde mirar», y sale NO MEDIDO.
 if [ -z "${K90_APPJS:-}" ]; then
   _pf=$(mktemp); _pferr=$(mktemp)
-  if "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --cat > "$_pf" 2>"$_pferr"; then
+  if "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --html index.html --cat > "$_pf" 2>"$_pferr"; then
     APPJS="$_pf"
   else
     echo "NO MEDIDO: no se pudieron descubrir las fuentes del panel: $(head -c 200 "$_pferr")"
@@ -81,7 +81,7 @@ fi
 ancla=$(grep -cE "name: *'Corto plazo'" "$APPJS")
 if [ "$ancla" -eq 0 ]; then
   echo "NO MEDIDO: no encuentro la tarjeta 'Corto plazo' en las fuentes del panel"
-  echo "  ($(  "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --n 2>/dev/null || echo '?') fichero(s) descubierto(s)); sin la tarjeta, este brazo no sabe donde mirar"
+  echo "  ($(  "${VENV_PY:-$REPO/.venv/bin/python}" "$B/bin/panel-fuentes" --repo "$REPO" --html index.html --n 2>/dev/null || echo '?') fichero(s) descubierto(s)); sin la tarjeta, este brazo no sabe donde mirar"
   exit 2
 fi
 literal=$(grep -oE "name: *'Corto plazo', *time: *'[^']*[0-9][^']*'" "$APPJS" | head -1)
@@ -191,10 +191,13 @@ malas=''
 [ "$d_ctrl" -gt "$TOL" ] && malas="$malas control(±$d_ctrl)"
 
 if [ -n "$malas" ]; then
-  echo "el panel publica una persistencia que la serie no sostiene:$malas (tolerancia $TOL min)"
+  echo "el panel de \`/\` (static/index.html) publica una persistencia que la serie no sostiene:$malas (tolerancia $TOL min)"
   echo "  $detalle"
   exit 1
 fi
 
-echo "lo publicado coincide con lo medido (tolerancia $TOL min): $detalle"
+# DICE QUE PANTALLA JUZGO. Desde la campana 130 hay DOS -`/` sirve static/index.html y `/mesa`
+# sirve static/mesa.html-, asi que «el panel» ya no identifica a nadie. Este brazo mira el
+# panel VIEJO, que es de donde sale la tarjeta de corto con su rotulo.
+echo "lo publicado coincide con lo medido (tolerancia $TOL min) en el panel de \`/\` (static/index.html): $detalle"
 exit 0
