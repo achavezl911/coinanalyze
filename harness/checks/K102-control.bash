@@ -261,18 +261,59 @@ echo
 #      sobre pedido aparte, asi que el mercado moviendose entre dos peticiones la volvia loca.
 #      Ahora compara contra el cuerpo QUE LA PAGINA RECIBIO, asi que esto le da igual.
 for modo in fiel varia; do
-  extra=""; rot="G1 · redondeo fiel (63385.45 -> '63.385,5')"
+  extra=""; rot="G1 · redondeo fiel (63385.45 -> '63.385,5')"; obs=4
   if [ "$modo" = "varia" ]; then
-    extra="--varia"; rot="G2 · el sobre cambia en CADA peticion"
+    # G2 CON OBSERVACION LARGA A PROPOSITO: con 18 s el refresco de 15 s CAE DENTRO de la
+    # corrida, asi que la pagina recibe DOS respuestas DISTINTAS -`edge` +1 en la segunda- y
+    # pinta la primera. Es exactamente el caso que condenaba una pagina fiel («B3: edge:
+    # pantalla '80,20' / sobre 81.2» con «2 peticion(es) vistas»). Con observacion corta este
+    # gemelo no probaria nada, porque el refresco no llegaria a entrar.
+    extra="--varia"; obs=18
+    rot="G2 · DOS respuestas distintas en la MISMA carga"
   fi
   pkill -f '[K]102-sobre-plantado.py' 2>/dev/null; sleep 1
   # shellcheck disable=SC2086
   nohup "$PY" "$PLANTADO" --puerto 8096 --lag 3 --tope 600 --bias LONG --dc 100 $extra \
     > "$TMP/plantado.log" 2>&1 &
   sleep 3
-  K102_OBSERVA=4 espera PASA "$rot" "" "http://127.0.0.1:8096"
+  K102_OBSERVA=$obs espera PASA "$rot" "" "http://127.0.0.1:8096"
+  if [ "$modo" = "varia" ]; then
+    printf '            %s\n' "$(grep -m1 'el patron de comparacion' "$TMP/sal" | sed 's/^ *//' | cut -c1-140)"
+  fi
   pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
 done
+echo
+
+# ------- P9 · R6 · DECIDE sale del pliegue SOLO en swing y largo ----------------------
+# El plantado va en el BACKEND y devuelve el motivo largo de 211 caracteres que tenia antes:
+# solo afecta a los marcos que NO son scalp -que son los unicos que lo publican- y estira la
+# tarjeta en la columna estrecha de DECIDE. Un plantado de CSS empujaria los TRES marcos y no
+# distinguiria esta regresion de cualquier otra.
+cat > "$TMP/parche.py" <<'PY'
+import pathlib, sys
+f = pathlib.Path(sys.argv[1]); t = f.read_text(encoding="utf-8")
+viejo = '        bias_motivo = f"la lectura del operador es del SCALP, no de {frame.upper()}"'
+nuevo = ('        bias_motivo = (  # PLANTADO K102-control P9\n'
+         '            f"la lectura del operador (operator_read) se calcula sobre la ventana "\n'
+         '            f"del SCALP -deltas de 1 y 3 min, libro L5, liquidaciones de 5 min-, asi "\n'
+         '            f"que no es un veredicto de {frame.upper()}. Se ve como lo que es en "\n'
+         '            f"/mesa#scalp/{WS_SYMBOL_MAP[symbol]}"\n'
+         '        )')
+assert viejo in t, "no encontre la linea del motivo"
+f.write_text(t.replace(viejo, nuevo, 1), encoding="utf-8")
+PY
+if planta "$CTX" "P9 · el motivo largo vuelve, y estira DECIDE en swing y largo"; then
+  ( cd "$REPO" && PG_HOST=/var/run/postgresql PG_PORT=5432 PG_DB=coinalyze_espejo \
+      PG_USER="$(id -un)" PG_PASSWORD= API_INTERNAL_TOKEN=k102p9 \
+      nohup "$PY" -m uvicorn app.api:app --host 127.0.0.1 --port 8095 \
+      > "$TMP/p9.log" 2>&1 & )
+  sleep 8
+  K102_CABECERA="X-Internal-Token: k102p9" K102_OBSERVA=4 \
+    espera CONDENA "B1 tiene que condenar el pliegue en swing/largo" "B1 " "http://127.0.0.1:8095"
+  pkill -f '[u]vicorn app.api:app --host 127.0.0.1 --port 8095' 2>/dev/null
+  sleep 1
+  restaura "$CTX" "$h_ctx"
+fi
 echo
 
 # --------------- G3 · R3 · un DECIDE FRESCO abierto mas alla de su tope dice RANCIO ----
@@ -339,6 +380,94 @@ PY
   if [ "$?" = "0" ]; then pasa=$((pasa + 1)); else falla=$((falla + 1)); fi
 fi
 pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
+echo
+
+# --------- G4 · R5 · la tarjeta del scalp ensena el LADO del scalp cuando lo tiene ------
+# No se puede ver contra el espejo: alli `data_confidence` vale 0, asi que el scalp es NO
+# EVALUABLE y «sin lado» es VERDAD. Hay que forzar la calidad para que la lectura SEA
+# evaluable, y entonces comprobar dos cosas a la vez:
+#   · con calidad 85, swing y largo publican en `lectura_scalp` EL MISMO lado, confirms,
+#     invalidates e invalidation_level que publica scalp -es lo que pide el criterio-;
+#   · con la calidad REAL (0), los tres siguen diciendo «sin lado», que ahi si es cierto.
+# El segundo es el que impide que el arreglo sea «dar lado siempre».
+echo "G4 · la tarjeta del scalp y su lado (con la calidad forzada, y el control con la real)"
+total=$((total + 1))
+"$PY" - <<'PY' > "$TMP/g4.txt" 2>&1
+import asyncio, getpass, json
+import asyncpg
+import app.ai_context as ctx
+
+ORIGINAL = ctx.data_confidence_row
+
+def con_calidad(valor):
+    async def _f(conn, symbol):
+        fila = dict(await ORIGINAL(conn, symbol))
+        fila["quality_score"] = valor
+        fila["status"] = "ok"
+        return fila
+    return _f
+
+def foto(d):
+    dec = d.get("decide") or {}
+    ls = d.get("lectura_scalp")
+    o = ls if ls else dec
+    return {
+        "bias_scalp": ((ls or {}).get("bias") or dec.get("bias") or {}).get("value"),
+        "confirms": [c.get("value") for c in (o.get("confirms") or [])],
+        "n_inval": len([c for c in (o.get("invalidates") or []) if c.get("value")]),
+        "nivel": (o.get("invalidation_level") or {}).get("value"),
+    }
+
+async def main():
+    conn = await asyncpg.connect(
+        f"postgresql://{getpass.getuser()}@/coinalyze_espejo?host=/var/run/postgresql")
+    fallos = []
+    try:
+        # --- con la calidad FORZADA: los tres marcos tienen que coincidir, y tener lado
+        ctx.data_confidence_row = con_calidad(85.0)
+        for sym in ("BTCUSDT_PERP.A", "ETHUSDT_PERP.A", "SOLUSDT_PERP.A"):
+            fotos = {m: foto(await ctx.build_mesa_decide(conn, sym, frame=m))
+                     for m in ("scalp", "swing", "largo")}
+            s = fotos["scalp"]
+            if s["bias_scalp"] not in ("LONG", "SHORT"):
+                fallos.append(f"{sym}: con calidad 85 el scalp sale {s['bias_scalp']}: "
+                              "el control no puede medir nada")
+                continue
+            for m in ("swing", "largo"):
+                if fotos[m] != s:
+                    fallos.append(f"{sym}/{m}: la tarjeta del scalp NO dice lo mismo que scalp: "
+                                  f"{json.dumps(fotos[m], ensure_ascii=False)[:120]}")
+            print(f"  {sym[:3]} calidad 85 -> scalp {s['bias_scalp']}, nivel {s['nivel']}, "
+                  f"{len(s['confirms'])} confirms, {s['n_inval']} invalidates · "
+                  f"swing y largo IDENTICOS: {fotos['swing'] == s and fotos['largo'] == s}")
+        # --- CONTROL con la calidad REAL: «sin lado» tiene que seguir siendo la respuesta
+        ctx.data_confidence_row = ORIGINAL
+        for sym in ("BTCUSDT_PERP.A",):
+            for m in ("scalp", "swing", "largo"):
+                f = foto(await ctx.build_mesa_decide(conn, sym, frame=m))
+                if f["bias_scalp"] != "NO EVALUABLE" or f["nivel"] is not None or f["n_inval"]:
+                    fallos.append(f"CONTROL {sym}/{m}: con la calidad real deberia ser NO "
+                                  f"EVALUABLE y sin lado, y sale {json.dumps(f)[:100]}")
+            print(f"  {sym[:3]} calidad real -> los tres marcos NO EVALUABLE y sin lado: "
+                  f"{not fallos}")
+    finally:
+        ctx.data_confidence_row = ORIGINAL
+        await conn.close()
+    for x in fallos:
+        print("  FALLO:", x)
+    raise SystemExit(1 if fallos else 0)
+
+asyncio.run(main())
+PY
+if [ "$?" = "0" ]; then
+  pasa=$((pasa + 1))
+  echo "  PASA      G4 · la tarjeta del scalp dice su lado cuando lo tiene"
+  sed -n '1,5p' "$TMP/g4.txt"
+else
+  falla=$((falla + 1))
+  echo "  MAL       G4 · la tarjeta del scalp NO dice su lado"
+  sed -n '1,8p' "$TMP/g4.txt"
+fi
 echo
 
 # ------------------------------------------------------------------ P6 · bytes viejos

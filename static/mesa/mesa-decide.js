@@ -341,12 +341,24 @@ function pintarTarjetaScalp(d) {
     return;
   }
   caja.hidden = false;
+  const suSesgo = (ls.bias && !esNada(ls.bias.value)) ? String(ls.bias.value) : null;
   document.getElementById('lectura-scalp-rotulo').textContent =
-    'lectura del ' + String(ls.de_marco || 'scalp').toUpperCase() + ' — NO es el veredicto de '
-    + String(d.frame || '').toUpperCase();
+    'lectura del ' + String(ls.de_marco || 'scalp').toUpperCase()
+    + (suSesgo ? ': ' + suSesgo : '')
+    + ' — NO es el veredicto de ' + String(d.frame || '').toUpperCase();
   document.getElementById('lectura-scalp-aviso').textContent =
     (ls.ventana || '') + (ls.donde ? ' · se ve como lo que es en ' + ls.donde : '');
-  pintarLecturaScalp(ls, vaciar(document.getElementById('lectura-scalp-campos')));
+
+  const campos = vaciar(document.getElementById('lectura-scalp-campos'));
+  // SU VEREDICTO PRIMERO, con su clave. `confirms` e `invalidates` sin decir de que lado son
+  // es medio dato, y era lo que esta tarjeta ensenaba.
+  if (ls.bias) {
+    const c = celda('scalp.bias', 'sesgo del scalp', ls.bias);
+    c.classList.add('sesgo-de-la-lectura');
+    if (ls.bias.motivo) c.appendChild(el('span', 'motivo', ls.bias.motivo));
+    campos.appendChild(c);
+  }
+  pintarLecturaScalp(ls, campos);
 }
 
 /* LA ZONA ES UN RANGO, Y SE PINTA COMO UN RANGO.

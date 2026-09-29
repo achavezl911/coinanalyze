@@ -148,6 +148,63 @@ test('R1 · en SCALP, la lectura del scalp ES el veredicto y se pinta dentro de 
   });
 });
 
+// --- R5 · la tarjeta del scalp ensena el LADO del scalp cuando lo tiene ------------------
+
+['swing', 'largo'].forEach((marco) => {
+  test(`R5 · en ${marco.toUpperCase()} la tarjeta del scalp ensena SU veredicto, no el del marco`, () => {
+    const { ctx, documento } = cargaMesa();
+    const s = sobre(marco);
+    // el scalp SI tiene lado: es lo que la tarjeta tiene que decir
+    s.datos.lectura_scalp.bias = {
+      value: 'SHORT', source_key: 'operator_read.bias', status: 'ok', raw: 'Short', motivo: null,
+    };
+    ctx.pintarDecide(s, nodos(documento));
+    // DECIDE sigue diciendo NO EVALUABLE por el marco
+    assert.strictEqual(documento.getElementById('decide-sesgo').textContent, 'NO EVALUABLE');
+    // y la tarjeta del scalp dice SHORT, en su rotulo y en su celda
+    assert.match(documento.getElementById('lectura-scalp-rotulo').textContent, /SCALP: SHORT/);
+    const c = documento.getElementById('lectura-scalp-campos')
+      .querySelectorAll('[data-campo]')
+      .find((x) => x.getAttribute('data-campo') === 'scalp.bias');
+    assert.ok(c, 'la tarjeta del scalp tiene que traer su propio sesgo');
+    assert.strictEqual(
+      c.querySelectorAll('[data-source-key]')[0].getAttribute('data-source-key'),
+      'operator_read.bias'
+    );
+    assert.match(c.textContent, /SHORT/);
+  });
+
+  test(`R5 · en ${marco.toUpperCase()} el lado del scalp NO se confunde con el del marco`, () => {
+    const { ctx, documento } = cargaMesa();
+    const s = sobre(marco);
+    s.datos.lectura_scalp.bias = { value: 'SHORT', source_key: 'operator_read.bias', status: 'ok' };
+    ctx.pintarDecide(s, nodos(documento));
+    const rot = documento.getElementById('lectura-scalp-rotulo').textContent;
+    // el rotulo tiene que decir las dos cosas: de quien es y de quien NO es
+    assert.match(rot, /SCALP: SHORT/);
+    assert.match(rot, new RegExp('NO es el veredicto de ' + marco.toUpperCase()));
+  });
+});
+
+test('R5 · cuando el scalp NO tiene lado, la tarjeta lo dice y no inventa uno', () => {
+  const { ctx, documento } = cargaMesa();
+  const s = sobre('swing');
+  // es el control: con data_confidence baja el scalp es NO EVALUABLE y «sin lado» es VERDAD
+  s.datos.lectura_scalp.bias = {
+    value: 'NO EVALUABLE', source_key: 'data_confidence.quality_score', status: 'ok',
+    motivo: 'data_confidence 0.0 < 70',
+  };
+  s.datos.lectura_scalp.confirms = [
+    { value: null, status: 'ausente', source_key: 'price_barriers.<lado>_case.rejection',
+      motivo: 'sin lado: el sesgo no es LONG ni SHORT' },
+  ];
+  ctx.pintarDecide(s, nodos(documento));
+  assert.match(documento.getElementById('lectura-scalp-rotulo').textContent, /SCALP: NO EVALUABLE/);
+  const t = documento.getElementById('lectura-scalp-campos').textContent;
+  assert.match(t, /data_confidence 0\.0 < 70/);
+  assert.match(t, /sin lado/);
+});
+
 test('R1 · en SCALP la tarjeta de la lectura del scalp NO existe: seria un duplicado', () => {
   const { ctx, documento } = cargaMesa();
   ctx.pintarDecide(sobre('scalp'), nodos(documento));

@@ -1276,31 +1276,52 @@ async def build_mesa_decide(
     # entre ellas es una campana, no un remate. Aqui solo se deja de mentir.
     es_scalp = frame == "scalp"
 
-    if not es_scalp:
-        bias_display = "NO EVALUABLE"
-        bias_source = "mesa.decide.frame"
-        bias_motivo = (
-            f"la lectura del operador (operator_read) se calcula sobre la ventana del SCALP "
-            f"-deltas de 1 y 3 min, libro L5, liquidaciones de 5 min-, asi que no es un "
-            f"veredicto de {frame.upper()}. Se ve como lo que es en /mesa#scalp/"
-            f"{WS_SYMBOL_MAP[symbol]}"
-        )
-    elif not evaluable:
-        bias_display = "NO EVALUABLE"
-        bias_source = "data_confidence.quality_score"
-        bias_motivo = (
+    # SON DOS VEREDICTOS DISTINTOS Y ANTES ERAN UNO, QUE ES LO QUE ROMPIO LA TARJETA.
+    #
+    #   `bias_scalp`   lo que la lectura del SCALP dice, y solo depende de la CALIDAD del dato
+    #   `bias_display` lo que DECIDE publica en ESTE marco, que ademas depende del marco
+    #
+    # La version anterior calculaba solo el segundo y derivaba el LADO de el. En swing y largo
+    # ese segundo vale NO EVALUABLE por el marco, asi que el lado salia None y `lectura_scalp`
+    # -la tarjeta que existe justo para ensenar lo que el scalp SI sabe- publicaba
+    # «sin lado: el sesgo no es LONG ni SHORT» sobre un scalp que tenia lado.
+    # Medido por el operador con la calidad forzada a 85 en el espejo: el scalp daba SHORT con
+    # sus dos `confirms`, tres `invalidates` e `invalidation_level` 63756.07 (BTC), y la
+    # tarjeta de swing y largo decia «sin lado», confirms [null, null], invalidates [].
+    # O sea: arreglar R1 rompio la tarjeta que R1 creo.
+    #
+    # EL LADO SALE SIEMPRE DEL VEREDICTO DEL SCALP, nunca del de la pantalla. Con la calidad
+    # real del espejo (0) el scalp es NO EVALUABLE y entonces «sin lado» SI es verdad, que es
+    # justo lo que el control comprueba.
+    if not evaluable:
+        bias_scalp = "NO EVALUABLE"
+        bias_scalp_source = "data_confidence.quality_score"
+        bias_scalp_motivo = (
             f"data_confidence {calidad} < {MESA_NO_EVALUABLE_UNDER:g}"
             if calidad is not None
             else "data_confidence.quality_score no llega"
         )
     else:
-        bias_display = {"Long": "LONG", "Short": "SHORT", "No Trade": "NEUTRAL"}.get(
+        bias_scalp = {"Long": "LONG", "Short": "SHORT", "No Trade": "NEUTRAL"}.get(
             bias_crudo, "NEUTRAL"
         )
-        bias_source = "operator_read.bias"
-        bias_motivo = None
+        bias_scalp_source = "operator_read.bias"
+        bias_scalp_motivo = None
 
-    lado = "long" if bias_display == "LONG" else "short" if bias_display == "SHORT" else None
+    if not es_scalp:
+        bias_display = "NO EVALUABLE"
+        bias_source = "mesa.decide.frame"
+        # CORTO A PROPOSITO. El motivo largo que tenia aqui -211 caracteres- vive en la columna
+        # estrecha de DECIDE y estiraba la tarjeta hasta 908 px, sacandola del primer pliegue en
+        # swing y en largo. Lo que decia de mas -la ventana del scalp y donde verlo- lo publica
+        # `lectura_scalp` en su cabecera, que es donde corresponde y donde ya se lee.
+        bias_motivo = f"la lectura del operador es del SCALP, no de {frame.upper()}"
+    else:
+        bias_display = bias_scalp
+        bias_source = bias_scalp_source
+        bias_motivo = bias_scalp_motivo
+
+    lado = "long" if bias_scalp == "LONG" else "short" if bias_scalp == "SHORT" else None
 
     # LA EDAD, y si lo que se ensena esta rancio contra su tope DECLARADO.
     lag = as_float(confidence.get("snapshot_lag_seconds"))
@@ -1468,6 +1489,16 @@ async def build_mesa_decide(
             ),
             "donde": f"/mesa#scalp/{WS_SYMBOL_MAP[symbol]}",
             "ventana": "deltas de 1 y 3 min, libro L5, liquidaciones de 5 min",
+            # SU PROPIO VEREDICTO, que es lo que la hace una lectura y no una lista de campos
+            # sueltos. Sin esto la tarjeta ensenaba `confirms` e `invalidates` sin decir DE QUE
+            # lado son, que es medio dato.
+            "bias": {
+                "value": bias_scalp,
+                "source_key": bias_scalp_source,
+                "status": "ok",
+                "raw": bias_crudo,
+                "motivo": bias_scalp_motivo,
+            },
             **{k: d.pop(k) for k in movidos if k in d},
         }
 

@@ -495,6 +495,30 @@ async def corre(args) -> dict:
             else:
                 out["camino"] = "normal"
 
+            def ids_decide():
+                """Los requestId de las respuestas de /api/mesa/decide vistas hasta AHORA."""
+                return [
+                    e["params"]["requestId"]
+                    for e in s.eventos
+                    if e.get("method") == "Network.responseReceived"
+                    and "/api/mesa/decide" in ((e["params"].get("response") or {}).get("url") or "")
+                ]
+
+            async def lee_cuerpo(ids):
+                """El cuerpo de la ULTIMA respuesta de la lista, que es la que la pagina pinto."""
+                for rid in reversed(ids or []):
+                    try:
+                        r = await s.pide("Network.getResponseBody", requestId=rid)
+                        crudo = (
+                            base64.b64decode(r["body"]).decode("utf-8", "replace")
+                            if r.get("base64Encoded")
+                            else r.get("body", "")
+                        )
+                        return json.loads(crudo)
+                    except (SystemExit2, ValueError, KeyError):
+                        continue
+                return None
+
             def reescribe(url: str):
                 if not args.lento:
                     return None
@@ -547,11 +571,34 @@ async def corre(args) -> dict:
                 # del `try` y era la que reventaba la medida del camino lento: si la pagina no
                 # llego a pintar, aqui se devuelve None y quien lo lea declara NO MEDIDO, en vez
                 # de perder tambien las cifras de tiempo que SI se habian medido.
-                try:
-                    cos = await s.evalua(JS_COSECHA)
-                except SystemExit2 as e:
-                    cos = {"error": f"la cosecha no se pudo leer: {e}"}
-                return d_s, c_s, cos
+                #
+                # Y LA COSECHA Y EL SOBRE SE TOMAN JUNTOS, ATADOS AL MISMO INSTANTE. Esto es el
+                # arreglo de R7 y es la TERCERA vez que esta red condenaba una pagina fiel:
+                # antes la pantalla se cosechaba aqui, luego se observaba 18 s -y el refresco de
+                # 15 s cae DENTRO- y solo despues se leia el cuerpo, que ya era el de la SEGUNDA
+                # respuesta. O sea que comparaba la pantalla de la primera contra el sobre de la
+                # segunda: «B3: edge: pantalla '80,20' / sobre 81.2» sobre una pantalla
+                # impecable, con su propia linea diciendo «2 peticion(es) vistas».
+                #
+                # El guardia del bucle es por si un refresco cae JUSTO durante la cosecha: se
+                # mira la lista de respuestas antes y despues, y si cambio se vuelve a cosechar.
+                # A la tercera se declara en vez de insistir.
+                cos, cuerpo, reintentos = None, None, 0
+                for intento in range(3):
+                    reintentos = intento
+                    ids_antes = ids_decide()
+                    try:
+                        cos = await s.evalua(JS_COSECHA)
+                    except SystemExit2 as e:
+                        cos = {"error": f"la cosecha no se pudo leer: {e}"}
+                        break
+                    if ids_decide() == ids_antes:
+                        cuerpo = await lee_cuerpo(ids_antes)
+                        break
+                else:
+                    cos = {"error": "llegaron refrescos en las 3 cosechas: no se pudo atar "
+                                    "la pantalla a una respuesta concreta"}
+                return d_s, c_s, cos, cuerpo, reintentos
 
             # CARGA 1 = EN FRIO (la cache del navegador esta vacia recien abierto). Las
             # siguientes son EN CALIENTE, en el MISMO navegador: si cada carga abriese su
@@ -562,7 +609,7 @@ async def corre(args) -> dict:
                     # a partir de la segunda se deja la cache trabajar, que es lo que
                     # significa "en caliente"
                     await s.pide("Network.setCacheDisabled", cacheDisabled=False)
-                d_s, c_s, cosecha = await una_carga(primera=(i == 0))
+                d_s, c_s, cosecha, cuerpo_pintado, reint = await una_carga(primera=(i == 0))
                 cargas.append(
                     {"n": i + 1, "clase": "frio" if i == 0 else "caliente",
                      "decide_s": d_s, "completo_s": c_s}
@@ -664,37 +711,23 @@ async def corre(args) -> dict:
             #
             # LO CORRECTO ES EL CUERPO DE LA RESPUESTA QUE LA PAGINA USO, que CDP guarda por
             # `requestId`. Cero peticiones extra, y el patron es EXACTAMENTE lo que se pinto.
+            # Y SE TOMA JUNTO A LA COSECHA, NO DESPUES DE OBSERVAR. Leerlo aqui abajo -como se
+            # hacia- significa leer el cuerpo de la ULTIMA respuesta, y si durante la
+            # observacion entro un refresco esa ya no es la que la pantalla pinto. `una_carga`
+            # devuelve las dos cosas atadas al mismo instante.
             if args.vista != "estado":
-                ids = [
-                    e["params"]["requestId"]
-                    for e in s.eventos
-                    if e.get("method") == "Network.responseReceived"
-                    and "/api/mesa/decide" in ((e["params"].get("response") or {}).get("url") or "")
-                ]
-                sobre = None
-                # La ULTIMA, que es la de la carga que se esta midiendo: con `--repite` hay una
-                # por carga y la pantalla que se cosecha es la de la ultima.
-                for rid in reversed(ids):
-                    try:
-                        r = await s.pide("Network.getResponseBody", requestId=rid)
-                        cuerpo = (
-                            base64.b64decode(r["body"]).decode("utf-8", "replace")
-                            if r.get("base64Encoded")
-                            else r.get("body", "")
-                        )
-                        sobre = json.loads(cuerpo)
-                        break
-                    except (SystemExit2, ValueError, KeyError):
-                        continue
-                out["sobre"] = sobre
-                out["sobre_origen"] = (
-                    f"Network.getResponseBody del requestId de la carga ({len(ids)} peticion(es) "
-                    "a /api/mesa/decide vistas); CERO peticiones extra"
-                )
-                if sobre is None:
+                out["sobre"] = cuerpo_pintado
+                vistas = len(ids_decide())
+                if cuerpo_pintado is None:
                     out["sobre_origen"] = (
-                        f"NO SE PUDO LEER el cuerpo que recibio la pagina ({len(ids)} peticion(es) "
-                        "vistas)"
+                        f"NO SE PUDO LEER el cuerpo que recibio la pagina ({vistas} "
+                        "peticion(es) vistas en toda la corrida)"
+                    )
+                else:
+                    out["sobre_origen"] = (
+                        "Network.getResponseBody del requestId que la pantalla PINTO, leido "
+                        f"junto a la cosecha ({reint} reintento(s) por refresco); {vistas} "
+                        "peticion(es) a /api/mesa/decide en toda la corrida; CERO peticiones extra"
                     )
 
             if args.captura:

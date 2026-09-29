@@ -46,7 +46,13 @@ PY="$REPO/.venv/bin/python"
 TMP="$(mktemp -d)" || exit 2
 trap 'rm -rf "$TMP"' EXIT INT TERM
 
-ACTIVO="${K102_ACTIVO:-BTC}"
+# SE JUZGA **UN** ACTIVO, Y SE ELIGE EL DE MENOS HOLGURA, NO EL COMODO.
+# Medido el 2026-09-29 sobre las 18 vistas (3 marcos x 3 activos x 2 tamanos): la que menos
+# margen tiene es scalp/SOL, con bottom 851 contra una ventana de 900 -49 px-, porque su
+# `scalp.reason` es el texto mas largo de los tres. BTC y ETH van 126 px mas holgados.
+# Juzgar BTC -lo que hacia- es juzgar el caso facil: el dia que DECIDE crezca, rompe por SOL y
+# el check no se entera. Las otras dos no se juzgan aqui, y el veredicto lo DICE.
+ACTIVO="${K102_ACTIVO:-SOL}"
 # 18 s para que la ventana CUBRA la cadencia de refresco de la mesa (15 s) y el brazo B8 pueda
 # exigir haber visto al menos un refresco. Con menos, ese tramo se declara no juzgado.
 OBSERVA="${K102_OBSERVA:-18}"
@@ -105,19 +111,26 @@ corre() {  # corre <ancho> <alto> <marco> <observa> <fichero>
   fi
 }
 
-corre 1920 1080 scalp "$OBSERVA" "$TMP/g.json" || true
-corre 1440 900  scalp 0          "$TMP/p.json" || true
+# LOS TRES MARCOS A LOS DOS TAMANOS. Antes solo se juzgaba el pliegue en SCALP, y en swing y
+# largo se miraba la palabra pero NO el pliegue: por ahi se colo que DECIDE saliera del primer
+# pliegue en esos dos marcos -bottom 1145 en largo/BTC a 1440x900- sin que nada se quejara.
+# El criterio del encargo es «a 1920x1080 y a 1440x900», y no dice «en scalp».
+corre 1920 1080 scalp "$OBSERVA" "$TMP/g.json"  || true
+corre 1440 900  scalp 0          "$TMP/p.json"  || true
 corre 1920 1080 swing 0          "$TMP/sw.json" || true
+corre 1440 900  swing 0          "$TMP/swp.json" || true
 corre 1920 1080 largo 0          "$TMP/lg.json" || true
-for f in "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/lg.json"; do
+corre 1440 900  largo 0          "$TMP/lgp.json" || true
+for f in "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/swp.json" "$TMP/lg.json" "$TMP/lgp.json"; do
   [ -s "$f" ] || { echo "NO MEDIDO: la sonda no midio ($(head -c 150 "$f.err" 2>/dev/null))"; exit 2; }
 done
 
-"$PY" - "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/lg.json" "$SUJETO" "$ACTIVO" <<'PY'
+"$PY" - "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/swp.json" "$TMP/lg.json" \
+       "$TMP/lgp.json" "$SUJETO" "$ACTIVO" <<'PY'
 import json, sys
 
-g, p, sw, lg = (json.load(open(x)) for x in sys.argv[1:5])
-sujeto, activo = sys.argv[5], sys.argv[6]
+g, p, sw, swp, lg, lgp = (json.load(open(x)) for x in sys.argv[1:7])
+sujeto, activo = sys.argv[7], sys.argv[8]
 fallos, lineas = [], []
 
 def cosecha(d, rot):
@@ -127,8 +140,10 @@ def cosecha(d, rot):
         raise SystemExit(2)
     return c
 
-# --- B1 y B2 ---------------------------------------------------------------------------
-for d, rot in ((g, "1920x1080"), (p, "1440x900")):
+# --- B1 y B2 · LOS TRES MARCOS, LOS DOS TAMANOS -----------------------------------------
+for d, rot in ((g, "scalp 1920x1080"), (p, "scalp 1440x900"),
+               (sw, "swing 1920x1080"), (swp, "swing 1440x900"),
+               (lg, "largo 1920x1080"), (lgp, "largo 1440x900")):
     c = cosecha(d, rot)
     pl = c.get("pliegue") or {}
     if not pl.get("visible"):
@@ -139,9 +154,13 @@ for d, rot in ((g, "1920x1080"), (p, "1440x900")):
             f"bottom {pl.get('bottom')}, alto de ventana {pl.get('innerHeight')})"
         )
     else:
+        # LA HOLGURA SE PUBLICA, no solo el si/no. Un «cabe» con 3 px de margen y uno con 300
+        # dicen cosas muy distintas sobre lo que pasara la proxima vez que DECIDE crezca, y el
+        # veredicto binario los cuenta igual.
+        holgura = (pl.get("innerHeight") or 0) - (pl.get("bottom") or 0)
         lineas.append(
             f"{rot}: DECIDE entero en el pliegue (top {pl.get('top'):.0f} -> "
-            f"bottom {pl.get('bottom'):.0f} de {pl.get('innerHeight')})"
+            f"bottom {pl.get('bottom'):.0f} de {pl.get('innerHeight')}, holgura {holgura:.0f} px)"
         )
     s = c.get("sesgo") or {}
     mayor = c.get("letra_mayor_px") or 0
@@ -190,7 +209,7 @@ else:
 # --- B5 --------------------------------------------------------------------------------
 dec = (g.get("sobre") or {}).get("decide") or {}
 ev = (dec.get("evaluable") or {}).get("value")
-texto_sesgo = ((cosecha(g, "1920x1080").get("sesgo") or {}).get("texto") or "").strip()
+texto_sesgo = ((cosecha(g, "scalp 1920x1080").get("sesgo") or {}).get("texto") or "").strip()
 if ev is None:
     fallos.append("B5: el sobre no trae `decide.evaluable`: la regla de <70 no se puede juzgar")
 elif ev is False and texto_sesgo != "NO EVALUABLE":
@@ -319,8 +338,10 @@ else:
 
 # --- EL VEREDICTO, CON SU ALCANCE -------------------------------------------------------
 print(f"K102 · lo que juzgo: {sujeto}")
-print(f"  alcance: activo {activo} · marcos scalp (1920x1080 y 1440x900), swing y largo "
-      f"(1920x1080) · {g.get('barra_de_desplazamiento')}")
+otros = [x for x in ("BTC", "ETH", "SOL") if x != activo]
+print(f"  alcance: los TRES marcos (scalp, swing y largo) a los DOS tamanos (1920x1080 y "
+      f"1440x900), SOLO del activo {activo} · {g.get('barra_de_desplazamiento')}")
+print(f"  NO juzga {' ni '.join(otros)}: se elige {activo} por ser el de menos holgura medida")
 print(f"  el patron de comparacion: {g.get('sobre_origen')}")
 for x in lineas:
     print(f"  {x}")
