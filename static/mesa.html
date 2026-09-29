@@ -8,6 +8,9 @@
          (`style-src 'self'`, `script-src 'self'`), asi que todo va en ficheros servidos por
          `/static`. Tampoco admite `font-src` externo: la tipografia del handoff se sustituye
          por una pila de sistema y se DICE en la vista de estado. Ver mesa.css. -->
+    <!-- Sin esto el navegador pide `/favicon.ico` en CADA carga y se lleva un 404. No es
+         grave, pero es una peticion que no sirve a nadie y ensucia la cuenta de coste. -->
+    <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/static/mesa/mesa.css" />
   </head>
   <body>

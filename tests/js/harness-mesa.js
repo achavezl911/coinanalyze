@@ -68,6 +68,9 @@ class Node {
     this.attributes = {};
     this.style = {};
     this._texto = '';
+    // `hidden` es una PROPIEDAD del elemento, no solo un atributo: la mesa la escribe y la
+    // lee. Nace en false, y quien quiera el estado inicial del HTML lo pone.
+    this.hidden = false;
     this.classList = new ClassList();
   }
   get className() { return this.classList.value; }
@@ -154,7 +157,8 @@ function nuevoDocumento(ids) {
 // Los ids que la mesa toca. Se declaran aqui para que un test que pida uno inexistente falle
 // en vez de recibir null y pasar por casualidad.
 const IDS = [
-  'decide', 'decide-sesgo', 'decide-motivo', 'decide-campos', 'decide-edad',
+  'decide', 'decide-sesgo', 'decide-sello', 'decide-motivo', 'decide-campos', 'decide-edad',
+  'lectura-scalp', 'lectura-scalp-rotulo', 'lectura-scalp-aviso', 'lectura-scalp-campos',
   'conf-escalones', 'conf-palabra', 'conf-clave', 'dc-relleno', 'dc-valor', 'dc-clave',
   'reloj', 'tira', 'scan', 'matriz', 'matriz-pie', 'matriz-venue', 'inspect', 'research',
   'follow', 'learn', 'pie-servicios', 'sel-marco', 'sel-activo', 'ir-estado', 'volver',
