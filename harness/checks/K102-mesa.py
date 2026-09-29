@@ -714,8 +714,22 @@ def main() -> int:
     ap.add_argument("--captura", default=None)
     ap.add_argument("--captura-entera", default=None)
     ap.add_argument("--cabecera", default=os.environ.get("K102_CABECERA") or None)
+    ap.add_argument(
+        "--cabecera-fichero",
+        default=None,
+        help="lee la cabecera de un fichero (modo 600). Asi la credencial de nginx NO aparece "
+             "en la linea de ordenes ni en el entorno del proceso (A55)",
+    )
     ap.add_argument("--salida", default=None, help="escribe el JSON aqui en vez de stdout")
     a = ap.parse_args()
+
+    if a.cabecera_fichero:
+        try:
+            a.cabecera = pathlib.Path(a.cabecera_fichero).read_text(encoding="utf-8").strip()
+        except OSError as e:
+            print(f"NO MEDIDO: no se pudo leer la cabecera de {a.cabecera_fichero}: {e}",
+                  file=sys.stderr)
+            return 2
 
     # UN TECHO DE RELOJ PARA TODA LA CORRIDA. No es cinturon de mas: la corrida del
     # 2026-09-29T04:04Z se colgo 16.5 min y hubo que matarla a mano, sin cifra. Con esto, un
