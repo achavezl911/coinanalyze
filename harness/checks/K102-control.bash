@@ -214,8 +214,17 @@ else
     falla=$((falla + 1))
     echo "  MAL       esperaba rc=2 (NO MEDIDO) sobre un arbol sin mesa y salio rc=$rc_viejo"
   fi
+  # SE MATA POR PATRON, NO POR EL PID DEL SUBSHELL. `( cd X && nohup uvicorn ... & echo $! )`
+  # guarda el pid del PROCESO DE FONDO DEL SUBSHELL, que no siempre es el uvicorn: medido el
+  # 2026-09-29, el `kill` de ese pid dejo vivo un uvicorn en 8097 una hora larga. Un control
+  # que se deja un servidor encendido es un control que ensucia el laboratorio que mide.
+  # Y el patron lleva CORCHETE a proposito: un `pkill -f` sin el casa la linea de ordenes de
+  # quien lo lanza si el texto aparece ahi. Esta sesion ya se mato a si misma una vez por eso.
   [ -f "$TMP/viejo.pid" ] && kill "$(cat "$TMP/viejo.pid")" 2>/dev/null
+  pkill -f "[u]vicorn app.api:app --host 127.0.0.1 --port $PUERTO" 2>/dev/null
   sleep 1
+  vivos=$(ps -eo cmd | grep -cE "[u]vicorn app.api:app --host 127.0.0.1 --port $PUERTO")
+  [ "$vivos" = "0" ] || echo "  AVISO: quedo un uvicorn en $PUERTO; matalo a mano"
 fi
 echo
 
