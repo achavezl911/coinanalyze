@@ -177,10 +177,22 @@ function pintarDecide(sobre, nodos) {
   Array.prototype.forEach.call(nodos.escalones.children, (n, i) => {
     n.classList.toggle('on', i < nivel);
   });
-  nodos.confPalabra.textContent = esNada(conf.value) ? '—' : String(conf.value);
-  nodos.confPalabra.setAttribute('data-campo', 'confidence');
-  nodos.confPalabra.setAttribute('data-valor', esNada(conf.value) ? '' : String(conf.value));
-  nodos.confPalabra.setAttribute('data-source-key', conf.source_key || '');
+  // LA CONFIANZA ES DE LA LECTURA, asi que en un marco que no es scalp NO esta en `decide`:
+  // el backend la movio a `lectura_scalp`. Aqui se dice por que falta en vez de pintar un
+  // guion mudo, y se SUELTA el `data-campo` para que la unica celda con ese nombre sea la de
+  // la tarjeta del scalp -si hubiera dos, K102 compararia contra la que le tocase-.
+  const hayConf = Object.prototype.hasOwnProperty.call(dec, 'confidence');
+  if (hayConf) {
+    nodos.confPalabra.textContent = esNada(conf.value) ? '—' : String(conf.value);
+    nodos.confPalabra.setAttribute('data-campo', 'confidence');
+    nodos.confPalabra.setAttribute('data-valor', esNada(conf.value) ? '' : String(conf.value));
+    nodos.confPalabra.setAttribute('data-source-key', conf.source_key || '');
+  } else {
+    nodos.confPalabra.textContent = 'la confianza es de la lectura del SCALP, abajo';
+    nodos.confPalabra.removeAttribute('data-campo');
+    nodos.confPalabra.removeAttribute('data-valor');
+    nodos.confPalabra.removeAttribute('data-source-key');
+  }
   nodos.confClave.textContent = conf.source_key || '';
 
   // 4 · data_confidence: el numero que decide NO EVALUABLE, con su umbral.
@@ -202,25 +214,10 @@ function pintarDecide(sobre, nodos) {
   }
   nodos.dcClave.textContent = dc.source_key || '';
 
-  // 5 · LAS CUATRO COLUMNAS DEL HANDOFF: ZONA/RAZON · CONFIRMA · INVALIDA · HORIZONTE
-  const zona = dec.zone || {};
-  campos.appendChild(
-    celda('zone.center', 'zona · centro', zona.center, { cifra: true, formato: (v) => num(v, 1) })
-  );
+  // 5 · LO QUE ES DEL MARCO, SIEMPRE: la zona (que `price_barriers` mide sobre 730 sesiones
+  //     diarias y 720 barras de 4h, o sea que no es del scalp) y los niveles estructurales.
+  campos.appendChild(celdaZonaRango(dec.zone));
   campos.appendChild(celda('zone_decision', 'razón de la zona', dec.zone_decision));
-  campos.appendChild(
-    celdaLista('confirms', 'confirma', dec.confirms, {
-      motivoVacio: 'sin lado: el sesgo no es LONG ni SHORT',
-    })
-  );
-
-  campos.appendChild(
-    celda('invalidation_level', 'invalida · nivel de barrera', dec.invalidation_level, {
-      cifra: true,
-      clase: 'invalida',
-      formato: (v) => num(v, 1),
-    })
-  );
   campos.appendChild(
     celda('structural_invalidation', 'invalida · nivel estructural', dec.structural_invalidation, {
       cifra: true,
@@ -228,48 +225,199 @@ function pintarDecide(sobre, nodos) {
       formato: (v) => num(v, 1),
     })
   );
-  campos.appendChild(
-    celdaLista('invalidates', 'invalida · qué lo rompe', dec.invalidates, {
-      clase: 'invalida',
-      motivoVacio: 'sin lado: el sesgo no es LONG ni SHORT',
-    })
-  );
-
-  // HORIZONTE · sale de la persistencia MEDIDA, no de una cadena escrita a mano. Es el
-  // defecto que D1 midio en `static/app.js:1435` y que K90 vigila.
-  const hor = dec.horizon || {};
-  const cajaHor = celda('horizon', 'horizonte', hor);
-  if (hor.outside_cut) {
-    cajaHor.appendChild(
-      el(
-        'span',
-        'motivo',
-        'fuera del corte: agregado de ' + (hor.dias || '?') + ' d con su propio as_of'
-      )
-    );
-  }
-  campos.appendChild(cajaHor);
-
-  // 6 · el resto de las claves que DECIDE ensena
   campos.appendChild(celda('structural_horizon', 'horizonte estructural', dec.structural_horizon));
-  campos.appendChild(celda('state', 'estado', dec.state));
-  campos.appendChild(celda('reason', 'razón', dec.reason));
-  campos.appendChild(
-    celda('edge', 'ventaja (edge)', dec.edge, { cifra: true, formato: (v) => num(v, 2) })
-  );
-  campos.appendChild(
-    celda('evidence', 'evidencia', dec.evidence, { cifra: true, formato: (v) => num(v, 0) + ' %' })
-  );
+
+  // 6 · LO QUE SALE DE LA LECTURA DEL SCALP. En el marco SCALP es DECIDE y va aqui; en los
+  //     otros el backend lo saca de `decide` y lo sirve en `lectura_scalp`, y entonces se
+  //     pinta en su propia tarjeta con su rotulo. Ni una ni otra lo pinta en el sitio del
+  //     otro: la que no toca no existe en el sobre.
+  pintarLecturaScalp(dec, campos);
 
   // 7 · LA EDAD Y SU TOPE, EN PANTALLA. El encargo pide que la edad maxima de lo que se
   //     ensena se DECLARE y se ENSENE; aqui esta, con los dos cortes del bloque.
-  pintarEdad(d, nodos.edad);
+  refrescarEdad(d, sobre.tLlegada, nodos);
+
+  // 8 · y si el marco no es scalp, la lectura del scalp en su tarjeta aparte
+  pintarTarjetaScalp(d);
 }
 
-function pintarEdad(d, nodo) {
+/* Repinta SOLO lo que depende del reloj. La llama el render y la llama el latido de 1 s de
+ * `mesa-app.js`, asi que lo que la pantalla dice de la edad es verdad en cada instante. */
+function refrescarEdad(d, tLlegada, nodos) {
+  const v = edadViva(d, tLlegada);
+  pintarEdad(d, nodos.edad, v);
+
+  // LA TARJETA ENTERA LO DICE, no solo la linea de abajo: pasado el tope, el veredicto que
+  // hay encima ya no se sostiene y quien mire tiene que verlo sin leer la letra pequena.
+  nodos.caja.classList.toggle('rancio', Boolean(v.rancio));
+  if (nodos.sello) {
+    if (v.rancio) {
+      nodos.sello.hidden = false;
+      nodos.sello.textContent =
+        'RANCIO · ' + num(v.s, 0) + ' s sin refrescar, por encima del tope de '
+        + num(d.max_age_s, 0) + ' s';
+    } else {
+      nodos.sello.hidden = true;
+      nodos.sello.textContent = '';
+    }
+  }
+  return v;
+}
+
+/* LOS CAMPOS QUE SALEN DE LA LECTURA DEL SCALP. `origen` es `decide` (marco scalp) o
+ * `lectura_scalp` (los otros). Si el campo no esta en el origen, NO se pinta: no es un hueco
+ * que declarar, es que en ese marco no le corresponde estar ahi. */
+function pintarLecturaScalp(origen, campos) {
+  const hay = (k) => Object.prototype.hasOwnProperty.call(origen, k);
+
+  if (hay('confirms')) {
+    campos.appendChild(
+      celdaLista('confirms', 'confirma', origen.confirms, {
+        motivoVacio: 'sin lado: el sesgo no es LONG ni SHORT',
+      })
+    );
+  }
+  if (hay('invalidation_level')) {
+    campos.appendChild(
+      celda('invalidation_level', 'invalida · nivel de barrera', origen.invalidation_level, {
+        cifra: true,
+        clase: 'invalida',
+        formato: (v) => num(v, 1),
+      })
+    );
+  }
+  if (hay('invalidates')) {
+    campos.appendChild(
+      celdaLista('invalidates', 'invalida · qué lo rompe', origen.invalidates, {
+        clase: 'invalida',
+        motivoVacio: 'sin lado: el sesgo no es LONG ni SHORT',
+      })
+    );
+  }
+  // HORIZONTE · sale de la persistencia MEDIDA, no de una cadena escrita a mano. Es el
+  // defecto que D1 midio en `static/app.js:1435` y que K90 vigila.
+  if (hay('horizon')) {
+    const hor = origen.horizon || {};
+    const cajaHor = celda('horizon', 'horizonte', hor);
+    if (hor.outside_cut) {
+      cajaHor.appendChild(
+        el(
+          'span',
+          'motivo',
+          'fuera del corte: agregado de ' + (hor.dias || '?') + ' d con su propio as_of'
+        )
+      );
+    }
+    campos.appendChild(cajaHor);
+  }
+  if (hay('state')) campos.appendChild(celda('state', 'estado', origen.state));
+  if (hay('reason')) campos.appendChild(celda('reason', 'razón', origen.reason));
+  if (hay('edge')) {
+    campos.appendChild(
+      celda('edge', 'ventaja (edge)', origen.edge, { cifra: true, formato: (v) => num(v, 2) })
+    );
+  }
+  if (hay('evidence')) {
+    campos.appendChild(
+      celda('evidence', 'evidencia', origen.evidence, {
+        cifra: true,
+        formato: (v) => num(v, 0) + ' %',
+      })
+    );
+  }
+  if (hay('confidence')) {
+    campos.appendChild(celda('confidence', 'confianza', origen.confidence));
+  }
+}
+
+/* La tarjeta de la lectura del SCALP, que solo existe cuando el marco NO es scalp. */
+function pintarTarjetaScalp(d) {
+  const caja = document.getElementById('lectura-scalp');
+  if (!caja) return;
+  const ls = d.lectura_scalp;
+  if (!ls) {
+    caja.hidden = true;
+    vaciar(document.getElementById('lectura-scalp-campos'));
+    return;
+  }
+  caja.hidden = false;
+  document.getElementById('lectura-scalp-rotulo').textContent =
+    'lectura del ' + String(ls.de_marco || 'scalp').toUpperCase() + ' — NO es el veredicto de '
+    + String(d.frame || '').toUpperCase();
+  document.getElementById('lectura-scalp-aviso').textContent =
+    (ls.ventana || '') + (ls.donde ? ' · se ve como lo que es en ' + ls.donde : '');
+  pintarLecturaScalp(ls, vaciar(document.getElementById('lectura-scalp-campos')));
+}
+
+/* LA ZONA ES UN RANGO, Y SE PINTA COMO UN RANGO.
+ * La entrega anterior decia que DECIDE ensenaba «zona · centro / low / high / dificultad» y
+ * la pantalla solo pintaba el CENTRO: marcando las hojas servidas, low, high y difficulty no
+ * llegaban. Una zona de la que solo se ve el centro no es una zona, es un precio.
+ * Las tres cifras van cada una en SU celda -con su `data-campo` y su `data-source-key`- para
+ * que K102 las verifique una a una, y a la vez se leen juntas como el rango que son. */
+function celdaZonaRango(zona) {
+  const z = zona || {};
+  const caja = el('div', 'campo zona-rango');
+  caja.appendChild(el('span', 'rotulo', 'zona · rango (low – centro – high)'));
+  const fila = el('div', 'valor cifra zona-fila');
+
+  const trozo = (nombre, campo) => {
+    const sub = el('span', 'campo zona-trozo');
+    sub.setAttribute('data-campo', nombre);
+    const hay = campo && campo.status === 'ok' && !esNada(campo.value);
+    const v = el('span', 'valor');
+    v.setAttribute('data-valor', hay ? num(campo.value, 1) : '');
+    if (hay) v.textContent = num(campo.value, 1);
+    else v.appendChild(noSe((campo && campo.status) || 'ausente', (campo && campo.motivo) || null));
+    sub.appendChild(v);
+    if (campo && campo.source_key) sub.appendChild(nodoClave(campo.source_key));
+    return sub;
+  };
+
+  fila.appendChild(trozo('zone.low', z.low));
+  fila.appendChild(el('span', 'zona-sep', ' – '));
+  fila.appendChild(trozo('zone.center', z.center));
+  fila.appendChild(el('span', 'zona-sep', ' – '));
+  fila.appendChild(trozo('zone.high', z.high));
+  caja.appendChild(fila);
+  caja.appendChild(celda('zone.difficulty', 'dificultad de la zona', z.difficulty));
+  return caja;
+}
+
+/* LA EDAD VIVA, y por que no es la servida a secas.
+ *
+ * `age.snapshot_lag_seconds` es el lag EN EL INSTANTE EN QUE EL BACKEND ARMO LA RESPUESTA.
+ * Pintarlo tal cual y no volver a tocarlo -que es lo que esta pantalla hacia- deja la linea
+ * diciendo «5,0 s» para siempre: medido por el operador el 2026-09-29, cargada a las 06:05:24Z
+ * y releida a las 06:07:34Z -130 s, pasado el tope de 120- seguia diciendo «5,0 s», sin RANCIO
+ * y sin volver a pedir nada. Una mesa abierta una hora ensenaba como de 5 s un veredicto de
+ * hace una hora.
+ *
+ * SE CUENTA CON EL RELOJ LOCAL, NO CON EL DEL SERVIDOR: `lag_servido + (ahora - cuando_llego)`.
+ * Restar dos instantes de relojes distintos -el `build_finished_at` del servidor contra el
+ * `Date.now()` del navegador- meteria el desfase entre las dos maquinas dentro de la cifra.
+ * Con el tiempo TRANSCURRIDO aqui, el desfase se cancela.
+ *
+ * Y NO ES UN CONTADOR QUE SUBE SOLO: la cifra se recalcula, pero ademas `mesa-app.js` vuelve a
+ * PEDIR DECIDE cada MESA_REFRESCO_S. Un numero que crece sin preguntar otra vez seria el mismo
+ * defecto con otro disfraz.
+ */
+function edadViva(d, tLlegada) {
+  const a = (d && d.age) || {};
+  const lag = a.snapshot_lag_seconds || {};
+  if (esNada(lag.value)) return { s: null, rancio: false, derivada: false };
+  const ahora = (window.performance || Date).now();
+  const transcurrido = tLlegada === undefined || tLlegada === null ? 0 : (ahora - tLlegada) / 1000;
+  const s = Number(lag.value) + Math.max(0, transcurrido);
+  const tope = Number(d.max_age_s);
+  return { s, rancio: !Number.isNaN(tope) && s > tope, derivada: transcurrido > 0.5 };
+}
+
+function pintarEdad(d, nodo, viva) {
   const caja = vaciar(nodo);
   const a = d.age || {};
   const lag = a.snapshot_lag_seconds || {};
+  const v = viva || edadViva(d, null);
 
   const trozo = (rotulo, texto, clase) => {
     const s = el('span', clase || null);
@@ -280,12 +428,13 @@ function pintarEdad(d, nodo) {
   };
 
   const tope = d.max_age_s;
-  if (!esNada(lag.value)) {
-    const cls = claseFrescura(lag.value, tope);
+  if (v.s !== null) {
+    const cls = claseFrescura(v.s, tope);
     caja.appendChild(
       trozo(
         'edad del snapshot',
-        num(lag.value, 1) + ' s (tope declarado ' + num(tope, 0) + ' s)',
+        num(v.s, 1) + ' s (tope declarado ' + num(tope, 0) + ' s)'
+          + (v.derivada ? ' · DERIVADA: ' + num(lag.value, 1) + ' s servidos + lo transcurrido' : ''),
         cls === 'viejo' ? 'rancio-aviso' : null
       )
     );
@@ -293,7 +442,9 @@ function pintarEdad(d, nodo) {
     caja.appendChild(trozo('edad del snapshot', noSe(lag.status || 'ausente', lag.motivo)));
   }
 
-  if (a.stale) {
+  // EL VEREDICTO DE EDAD SALE DE LA EDAD VIVA, no del `stale` que el backend calculo al
+  // armar: ese ya era pasado en el instante en que llego.
+  if (v.rancio || a.stale) {
     caja.appendChild(
       trozo('veredicto de edad', 'RANCIO · ' + (a.stale_rule || ''), 'rancio-aviso')
     );

@@ -65,6 +65,9 @@
             <span class="badge-derivado">DERIVADO</span>
           </div>
           <div id="decide-sesgo" class="sesgo-NOEVAL">…</div>
+          <!-- El sello de RANCIO vive ARRIBA, pegado al veredicto, no en la letra pequena del
+               pie: pasado `max_age_s` lo que deja de sostenerse es el veredicto. -->
+          <div id="decide-sello" class="sello-rancio" hidden></div>
           <div id="decide-motivo"></div>
 
           <div class="conf-fila">
@@ -90,6 +93,20 @@
         </div>
 
         <div class="edad" id="decide-edad"></div>
+      </section>
+
+      <!-- LA LECTURA DEL SCALP, CUANDO EL MARCO NO ES SCALP.
+           Va aqui, JUSTO debajo de DECIDE y con el mismo tamano de tarjeta, porque la
+           decision del operador dice «no se pinta, o se pinta bajo un rotulo que diga SCALP
+           CON LA MISMA VISIBILIDAD». Esconderla en un pie pequeno seria cumplir la letra y
+           romper el motivo: lo que se quiere evitar es que se lea como del marco, no que se
+           lea. La sirve `lectura_scalp` y solo existe cuando el marco no es scalp. -->
+      <section class="tarjeta lectura-otro-marco" id="lectura-scalp" hidden>
+        <div class="panel-rotulo">
+          <h3 id="lectura-scalp-rotulo">lectura del SCALP</h3>
+          <span class="venue" id="lectura-scalp-aviso"></span>
+        </div>
+        <div class="decide-der" id="lectura-scalp-campos"></div>
       </section>
 
       <!-- MATRIZ DE DELTA -->

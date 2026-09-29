@@ -3799,7 +3799,12 @@ async def mesa_decide(symbol: str, frame: str = "scalp") -> dict[str, Any]:
     async with app.state.pool.acquire() as conn:
         payload = await build_mesa_decide(conn, selected, frame=frame)
         persistencia = await scalp_persistence(conn, selected)
-    payload["decide"]["horizon"] = {
+    # EL HORIZONTE ES LA PERSISTENCIA DE LA SENAL DE CORTO, asi que en un marco que no es
+    # scalp va donde va el resto de la lectura del scalp: en `lectura_scalp`. Poner «mediana 1
+    # min · p90 3 min» bajo el DECIDE de LARGO seria la misma mentira que esta corrigiendo R1,
+    # y ademas la mas facil de creer, porque es una cifra medida.
+    destino = payload["lectura_scalp"] if "lectura_scalp" in payload else payload["decide"]
+    destino["horizon"] = {
         "value": persistencia.get("etiqueta") if persistencia.get("available") else None,
         "source_key": "scalp_persistence.etiqueta",
         # CERO EPISODIOS NO ES UN HORIZONTE DE CERO. Si no se pudo medir, sale el motivo.

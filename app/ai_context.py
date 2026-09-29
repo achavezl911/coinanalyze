@@ -1254,7 +1254,38 @@ async def build_mesa_decide(
     calidad = as_float(confidence.get("quality_score"))
     evaluable = calidad is not None and calidad >= MESA_NO_EVALUABLE_UNDER
     bias_crudo = str(read.get("bias") or "")
-    if not evaluable:
+
+    # LA LECTURA DEL OPERADOR ES DEL SCALP, Y EN OTRO MARCO NO ES UN VEREDICTO DE ESE MARCO.
+    #
+    # `operator_read` sale de `compute_scalp_summary(scalp_context(...))`: deltas de 1 y 3
+    # minutos, libro L5, liquidaciones de 5 minutos. Servirla igual para los tres marcos
+    # -que es lo que esta ruta hacia- hace que en `#largo/SOL` se lea un SHORT de 30 px con
+    # la razon «ΔFut1m N/D, div spot-fut N/D, book stale/L5 0.45»: un minuto de libro
+    # presentado como una tesis de semanas. Medido por el operador el 2026-09-29: la palabra
+    # servida era LA MISMA en los tres marcos, 18 de 18 pares.
+    #
+    # DECISION DEL OPERADOR, y no la re-abre esta ruta: para un marco que NO es scalp, el
+    # veredicto de ESE marco es NO EVALUABLE con su motivo servido, y lo que sale de la
+    # lectura del scalp viaja aparte -en `lectura_scalp`- para que la pantalla no pueda
+    # presentarlo como del marco. Lo PROPIO del marco -nivel y horizonte estructurales- se
+    # queda en `decide`.
+    #
+    # ESTO NO ELIGE QUE LECTURA VA EN CADA MARCO. El backend publica varias con horizonte
+    # propio -`swing_score` declara «largo plazo (dias-semanas)`, `market_structure.layers`
+    # micro/mid/macro, `setup.primary` «mediano plazo», `trend_matrix` por marco- y escoger
+    # entre ellas es una campana, no un remate. Aqui solo se deja de mentir.
+    es_scalp = frame == "scalp"
+
+    if not es_scalp:
+        bias_display = "NO EVALUABLE"
+        bias_source = "mesa.decide.frame"
+        bias_motivo = (
+            f"la lectura del operador (operator_read) se calcula sobre la ventana del SCALP "
+            f"-deltas de 1 y 3 min, libro L5, liquidaciones de 5 min-, asi que no es un "
+            f"veredicto de {frame.upper()}. Se ve como lo que es en /mesa#scalp/"
+            f"{WS_SYMBOL_MAP[symbol]}"
+        )
+    elif not evaluable:
         bias_display = "NO EVALUABLE"
         bias_source = "data_confidence.quality_score"
         bias_motivo = (
@@ -1410,6 +1441,36 @@ async def build_mesa_decide(
             },
         },
     }
+
+    # EL REPARTO POR MARCO. Para un marco que NO es scalp, todo lo que sale de la lectura del
+    # scalp SALE DE `decide` y viaja en `lectura_scalp`, marcado con el marco del que es. Asi
+    # la pantalla no PUEDE presentarlo como del marco aunque quiera: no esta donde lo busca.
+    #
+    # LO QUE SE QUEDA EN `decide` PARA TODOS LOS MARCOS, y por que:
+    #   structural_invalidation / structural_horizon  son del marco (1h / 4h / 9d)
+    #   data_confidence                               es del SIMBOLO, no del marco
+    #   zone / zone_decision                          `price_barriers` mide 730 sesiones
+    #                                                 diarias y 720 barras de 4h: no es scalp
+    # LO QUE SE VA, y por que: state, reason, confidence, edge, evidence, confirms,
+    # invalidates, invalidation_level y horizon salen todos de `operator_read`, de
+    # `compute_scalp_summary` o se eligen POR EL LADO que decide la lectura del scalp.
+    if not es_scalp:
+        d = payload["decide"]
+        movidos = [
+            "state", "reason", "confidence", "edge", "evidence", "confirms",
+            "invalidates", "invalidation_level", "no_trade_reasons", "warnings",
+        ]
+        payload["lectura_scalp"] = {
+            "de_marco": "scalp",
+            "aviso": (
+                "esto es la lectura del SCALP, no un veredicto de " + frame.upper() + ". Se "
+                "sirve aparte para que no se lea como del marco"
+            ),
+            "donde": f"/mesa#scalp/{WS_SYMBOL_MAP[symbol]}",
+            "ventana": "deltas de 1 y 3 min, libro L5, liquidaciones de 5 min",
+            **{k: d.pop(k) for k in movidos if k in d},
+        }
+
     payload["build_started_at"] = build_started_at.isoformat()
     payload["build_finished_at"] = datetime.now(UTC).isoformat()
     return payload

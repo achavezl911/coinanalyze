@@ -61,6 +61,7 @@ function nodosDecide() {
   return {
     caja: document.getElementById('decide'),
     sesgo: document.getElementById('decide-sesgo'),
+    sello: document.getElementById('decide-sello'),
     motivo: document.getElementById('decide-motivo'),
     campos: document.getElementById('decide-campos'),
     edad: document.getElementById('decide-edad'),
@@ -82,11 +83,46 @@ function apuntar(sobre) {
   });
 }
 
+/* CADA CUANTO SE VUELVE A PEDIR DECIDE, y por que ese numero.
+ * 15 s es la cadencia de refresco que el panel ya usa y que `app/api.py` cita al justificar
+ * las caches de 5 min de `scalp_persistence` y `signal_base_rate` («no se mueven en los 15 s
+ * del refresco del panel»). No estreno cadencia: uso la que el sistema ya tiene.
+ * EL COSTE DE ESTO SE MIDE Y SE DECLARA en la entrega: son 4 peticiones/min por mesa abierta. */
+const MESA_REFRESCO_S = 15;
+const MESA_LATIDO_MS = 1000;
+
+/* Lo ultimo que DECIDE recibio, con el instante LOCAL en que llego. El latido lo necesita
+ * para saber cuanto ha pasado sin preguntarle la hora al servidor. */
+let _ultimoDecide = null;
+let _latido = null;
+let _refresco = null;
+
 /* ------------------------------------------------------------ OLA 1 */
 async function olaDecide() {
   const s = simbolo(ESTADO.activo);
   const sobre = await pedir('/api/mesa/decide', { symbol: s, frame: ESTADO.marco });
   apuntar(sobre);
+  sobre.tLlegada = (window.performance || Date).now();
+
+  // SI UN REFRESCO FALLA, NO SE BORRA LO QUE YA SE SABIA.
+  // Tirar el veredicto anterior y pintar SIN DATO seria perder informacion buena: ese
+  // veredicto era valido hace unos segundos y su edad se puede seguir diciendo con verdad.
+  // Lo que se hace es conservarlo, DECIR que el refresco fallo, y dejar que la edad siga
+  // corriendo -asi acabara diciendo RANCIO sola, que es exactamente lo que tiene que pasar
+  // cuando el backend deja de contestar-. En la PRIMERA carga no hay nada que conservar, y
+  // entonces si se pinta el error.
+  if (!sobre.ok && _ultimoDecide) {
+    const n = nodosDecide();
+    refrescarEdad(_ultimoDecide.datos, _ultimoDecide.tLlegada, n);
+    if (n.motivo) {
+      vaciar(n.motivo).appendChild(
+        noSe('error', 'el refresco fallo (' + sobre.http + '); se ensena lo ultimo que llego')
+      );
+    }
+    return sobre;
+  }
+
+  if (sobre.ok) _ultimoDecide = { datos: sobre.datos, tLlegada: sobre.tLlegada };
   pintarDecide(sobre, nodosDecide());
 
   // EL RELOJ DE LA CABECERA ES EL CORTE DEL SOBRE, no un reloj de pared que se incrementa
@@ -110,6 +146,38 @@ async function olaDecide() {
   marca('mesa:decide-pintado');
   window.MESA_HITOS.decidePintado = (window.performance || Date).now();
   return sobre;
+}
+
+/* EL LATIDO · lo que depende del reloj se repinta cada segundo, y DECIDE se vuelve a PEDIR
+ * cada MESA_REFRESCO_S. Las dos mitades hacen falta:
+ *   solo repintar  -> un contador que sube sin preguntar: dice una frescura que no tiene
+ *   solo refrescar -> entre peticion y peticion la edad se queda congelada hasta 15 s
+ * Se para y se rearma en cada cambio de vista: dos latidos a la vez pedirian el doble. */
+function pararLatido() {
+  if (_latido !== null) { clearInterval(_latido); _latido = null; }
+  if (_refresco !== null) { clearInterval(_refresco); _refresco = null; }
+}
+
+function arrancarLatido() {
+  pararLatido();
+  _latido = setInterval(() => {
+    if (!_ultimoDecide) return;
+    const nodos = nodosDecide();
+    if (!nodos.caja) return;
+    const v = refrescarEdad(_ultimoDecide.datos, _ultimoDecide.tLlegada, nodos);
+    const reloj = document.getElementById('reloj');
+    if (reloj) {
+      const c = claseFrescura(v.s, _ultimoDecide.datos.max_age_s);
+      reloj.className = 'reloj-valor ' + (c || '');
+    }
+  }, MESA_LATIDO_MS);
+
+  _refresco = setInterval(() => {
+    // Si la pestana no se ve, no se pide: refrescar lo que nadie mira es coste sin operador.
+    if (document.hidden) return;
+    if (ESTADO.vista !== 'mesa') return;
+    olaDecide();
+  }, MESA_REFRESCO_S * 1000);
 }
 
 /* ------------------------------------------------------------ OLA 2 */
@@ -319,6 +387,9 @@ async function pintar() {
   document.getElementById('vista-mesa').hidden = esEstado;
   document.getElementById('vista-estado').hidden = !esEstado;
 
+  pararLatido();
+  _ultimoDecide = null;
+
   if (esEstado) {
     await pintarEstado();
     return;
@@ -326,6 +397,7 @@ async function pintar() {
 
   const sobre = await olaDecide();
   if (mio !== _pintando) return; // llego otro cambio de vista: esta pasada ya no manda
+  arrancarLatido();
 
   // La ola 2 espera un turno para que el navegador presente DECIDE antes de pedir nueve rutas.
   await new Promise((r) => setTimeout(r, 0));

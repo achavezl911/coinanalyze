@@ -75,8 +75,9 @@ def binario_chromium() -> str:
 
 
 class Chromium:
-    def __init__(self, ancho: int, alto: int):
+    def __init__(self, ancho: int, alto: int, ocultar_barra: bool = False):
         self.ancho, self.alto = ancho, alto
+        self.ocultar_barra = ocultar_barra
         self.puerto = puerto_libre()
         self.perfil = tempfile.mkdtemp(prefix="k102-chromium-")
         self.proc: subprocess.Popen | None = None
@@ -92,7 +93,14 @@ class Chromium:
                 "--no-sandbox",
                 "--disable-gpu",
                 "--disable-dev-shm-usage",
-                "--hide-scrollbars",
+                # LA BARRA DE DESPLAZAMIENTO SE QUEDA, salvo que se pida quitarla.
+                # `--hide-scrollbars` estaba puesto siempre, y con el la ventana util es MAS
+                # ALTA que en un navegador de escritorio de verdad: la red medía un pliegue
+                # que nadie tiene. Medido por el operador el 2026-09-29 a 1440x900, la misma
+                # carga, dos vueltas alternando: CON barra `#decide` va de 237 a 598, SIN
+                # barra de 222 a 583. Cabe en los dos -por eso el veredicto no cambia- pero
+                # el numero que se publica tiene que ser el de quien usa la mesa.
+                *(["--hide-scrollbars"] if self.ocultar_barra else []),
                 # El certificado de 140 es propio: sin esto no se puede medir contra produccion.
                 "--ignore-certificate-errors",
                 "--no-first-run",
@@ -305,29 +313,95 @@ JS_COSECHA = r"""
 """
 
 
-def normaliza(v) -> str:
-    """Compara valores de pantalla con valores servidos sin pelearse con el formato.
+def _a_numero(v):
+    """El numero que hay dentro de un texto de pantalla o de un valor servido, o None.
 
-    `num()` del cliente escribe 83.546,40 y el backend sirve 83546.4: son EL MISMO numero. Se
-    normaliza a numero cuando ambos lo son, y a texto plegado cuando no.
+    Devuelve (numero, decimales_escritos). Los decimales son los que la PANTALLA escribio, y
+    son la mitad del criterio de `casan_valores`.
     """
-    if v is None:
-        return ""
+    if v is None or isinstance(v, bool):
+        return None, 0
+    if isinstance(v, (int, float)):
+        return float(v), 6
     s = str(v).strip()
     if not s:
-        return ""
-    t = s.replace(" ", " ").replace("%", "").strip()
+        return None, 0
+    t = "".join(ch for ch in s if ch not in "   %").strip()
     # formato es-ES: miles con punto, decimales con coma
-    cand = t.replace(".", "").replace(",", ".") if ("," in t) else t.replace(" ", "")
+    cand = t.replace(".", "").replace(",", ".") if ("," in t) else t
     try:
-        return f"{float(cand):.4f}".rstrip("0").rstrip(".")
+        n = float(cand)
     except ValueError:
-        pass
-    try:
-        return f"{float(t):.4f}".rstrip("0").rstrip(".")
-    except ValueError:
-        pass
-    return " ".join(s.split()).casefold()
+        return None, 0
+    dec = len(cand.split(".")[1]) if "." in cand else 0
+    return n, dec
+
+
+# Lo que la pantalla dice de su edad, AHORA. Se lee del DOM, no del sobre: lo que se juzga es
+# lo que el operador ve, no lo que el backend mando hace un rato.
+JS_EDAD = r"""
+(() => {
+  const d = document.getElementById('decide');
+  const e = document.getElementById('decide-edad');
+  const sello = document.getElementById('decide-sello');
+  const sesgo = document.getElementById('decide-sesgo');
+  const reloj = document.getElementById('reloj');
+  const texto = e ? (e.textContent || '') : '';
+  // «edad del snapshot: 4.014.238,1 s (tope declarado 120 s)» -> 4014238.1
+  const m = texto.match(/edad del snapshot:\s*([0-9.,]+)\s*s/);
+  let edad = null;
+  if (m) {
+    const t = m[1];
+    edad = parseFloat(t.indexOf(',') >= 0 ? t.replace(/\./g, '').replace(',', '.') : t);
+  }
+  return {
+    edad_s: Number.isNaN(edad) ? null : edad,
+    dice_rancio: /RANCIO/.test(texto) || (sello ? !sello.hidden : false),
+    sello_visible: sello ? !sello.hidden : false,
+    clase_rancio: d ? d.classList.contains('rancio') : false,
+    sesgo: sesgo ? (sesgo.textContent || '').trim() : null,
+    reloj: reloj ? (reloj.textContent || '').trim() : null,
+    reloj_clase: reloj ? reloj.className : null,
+  };
+})()
+"""
+
+
+def normaliza(v) -> str:
+    """Para comparar TEXTOS. Los numeros NO se comparan con esto: ver `casan_valores`."""
+    if v is None:
+        return ""
+    return " ".join(str(v).split()).casefold()
+
+
+def casan_valores(pintado, servido) -> bool:
+    """La celda pinta FIELMENTE el valor servido, A LA PRECISION CON QUE LO PINTA?
+
+    ESTE CRITERIO ESTABA MAL Y CONDENABA PAGINAS FIELES. La version anterior pasaba los dos
+    lados a numero y exigia igualdad a CUATRO decimales. Pero la mesa redondea al pintar
+    -`num(v, 1)`-, asi que con el backend sirviendo 63385.45 la pantalla escribe '63.385,5' y
+    el check gritaba «el valor de la celda no es el servido» sobre una pantalla IMPECABLE.
+    Medido por el operador el 2026-09-29: TRES hallazgos B3 en una pagina fiel. Y esa precision
+    es la de produccion, no un caso de laboratorio: por esta ruta llegan hoy BTC
+    nearest_support.center 82930.62, ETH horizonte 1h 2694.64, SOL 1h 119.08.
+
+    EL CRITERIO BUENO: el texto pintado tiene que ser UN REDONDEO FIEL del valor servido, o sea
+    que la diferencia no pase de MEDIA UNIDAD EN EL ULTIMO DECIMAL QUE LA PANTALLA ESCRIBIO.
+    Con '63.385,5' (1 decimal) se admite +-0.05, asi que 63385.45 casa; con '71 %' (0 decimales)
+    se admite +-0.5, asi que 71.429 casa. Lo que NO casa sigue sin casar: un 81.2 servido no se
+    pinta como '80,20' ni con la tolerancia mas generosa de esta regla, porque la diferencia es
+    1.0 contra una tolerancia de 0.005.
+
+    NO SE USA `round()` A PROPOSITO: el redondeo de la mitad exacta difiere entre JS -medio
+    hacia arriba- y Python -al par-, y esa discrepancia condenaria pantallas fieles justo en el
+    borde. La distancia no tiene ese problema.
+    """
+    np_, dec = _a_numero(pintado)
+    ns_, _ = _a_numero(servido)
+    if np_ is not None and ns_ is not None:
+        tolerancia = 0.5 * (10 ** -dec) + 1e-9
+        return abs(ns_ - np_) <= tolerancia
+    return normaliza(pintado) == normaliza(servido)
 
 
 def resuelve(sobre: dict, ruta: str):
@@ -364,7 +438,12 @@ async def corre(args) -> dict:
         "alto": args.alto,
         "medido_en": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
-    with Chromium(args.ancho, args.alto) as c:
+    out["barra_de_desplazamiento"] = (
+        "OCULTA (--sin-barra): la ventana util es mas alta que en un navegador de escritorio"
+        if args.sin_barra
+        else "VISIBLE, como en un navegador de escritorio"
+    )
+    with Chromium(args.ancho, args.alto, ocultar_barra=args.sin_barra) as c:
         # `/json/new` EXIGE PUT desde Chromium 111 (medido aqui con 152: con GET contesta
         # 405 Method Not Allowed). Un 405 leido como "el sujeto esta roto" seria el canal
         # disfrazado de veredicto, asi que se pide como toca y si falla se cae a la pestana
@@ -506,6 +585,39 @@ async def corre(args) -> dict:
             out["completo_s"] = cargas[0]["completo_s"]
             out["cosecha"] = cosecha
 
+            # LA OBSERVACION EN EL TIEMPO · lo que R3 necesita y ningun brazo de UNA SOLA FOTO
+            # puede ver. Se mira la MISMA pagina, SIN recargar, durante `--observa` segundos, y
+            # se apunta que dice de su edad y si ha vuelto a pedir DECIDE. Un check que solo
+            # mira el instante del render da VERDE sobre una pantalla que lleva una hora
+            # congelada: ese defecto solo existe DESPUES del render.
+            if args.observa > 0:
+                def _cuenta_decide():
+                    return len(
+                        [
+                            e
+                            for e in s.eventos
+                            if e.get("method") == "Network.requestWillBeSent"
+                            and "/api/mesa/decide"
+                            in ((e["params"].get("request") or {}).get("url") or "")
+                        ]
+                    )
+
+                pedidas0 = _cuenta_decide()
+                muestras = []
+                t_obs = time.time()
+                while time.time() - t_obs < args.observa:
+                    await s.drena(1.0)
+                    try:
+                        m = await s.evalua(JS_EDAD)
+                    except SystemExit2:
+                        break
+                    if not isinstance(m, dict):
+                        break
+                    m["t"] = round(time.time() - t_obs, 1)
+                    m["peticiones_decide"] = _cuenta_decide() - pedidas0
+                    muestras.append(m)
+                out["observacion"] = {"segundos": args.observa, "recargas": 0, "muestras": muestras}
+
             # LA RED: peticiones y bytes, de los eventos de CDP.
             peticiones, bytes_tot = {}, 0
             for e in s.eventos:
@@ -539,17 +651,51 @@ async def corre(args) -> dict:
                 )[:30],
             }
 
-            # EL SOBRE SERVIDO, PEDIDO POR LA PROPIA PAGINA (mismo origen, misma auth que la
-            # mesa). Es el patron contra el que se comparan las parejas.
+            # EL SOBRE CONTRA EL QUE SE COMPARA ES **EL QUE LA PAGINA RECIBIO**, no otro.
+            #
+            # LA VERSION ANTERIOR PEDIA `/api/mesa/decide` UNA SEGUNDA VEZ desde la pagina y
+            # comparaba la pantalla contra ESA respuesta. Esta mal, y no de forma sutil: DECIDE
+            # cambia entre una peticion y la siguiente. Medido por el operador contra 140 el
+            # 2026-09-29T06:03Z, 20 parejas de `/api/scalp/summary` separadas 2 s: `edge`
+            # distinto en 20 de 20, `reason` en 20 de 20, `state` y `confidence` en 8 de 20.
+            # O sea que mi red condenaba paginas FIELES por el simple hecho de que el mercado
+            # se movio entre las dos peticiones -y peor: se le podia colar un cambio real,
+            # porque comparaba contra un sobre que nadie pinto-.
+            #
+            # LO CORRECTO ES EL CUERPO DE LA RESPUESTA QUE LA PAGINA USO, que CDP guarda por
+            # `requestId`. Cero peticiones extra, y el patron es EXACTAMENTE lo que se pinto.
             if args.vista != "estado":
-                sobre = await s.evalua(
-                    "fetch('/api/mesa/decide?symbol=' + encodeURIComponent("
-                    "  ({BTC:'BTCUSDT_PERP.A',ETH:'ETHUSDT_PERP.A',SOL:'SOLUSDT_PERP.A'})"
-                    f"['{args.activo}']) + '&frame={args.marco}')"
-                    ".then(r => r.ok ? r.json() : ({__http: r.status}))"
-                    ".catch(e => ({__error: String(e)}))"
-                )
+                ids = [
+                    e["params"]["requestId"]
+                    for e in s.eventos
+                    if e.get("method") == "Network.responseReceived"
+                    and "/api/mesa/decide" in ((e["params"].get("response") or {}).get("url") or "")
+                ]
+                sobre = None
+                # La ULTIMA, que es la de la carga que se esta midiendo: con `--repite` hay una
+                # por carga y la pantalla que se cosecha es la de la ultima.
+                for rid in reversed(ids):
+                    try:
+                        r = await s.pide("Network.getResponseBody", requestId=rid)
+                        cuerpo = (
+                            base64.b64decode(r["body"]).decode("utf-8", "replace")
+                            if r.get("base64Encoded")
+                            else r.get("body", "")
+                        )
+                        sobre = json.loads(cuerpo)
+                        break
+                    except (SystemExit2, ValueError, KeyError):
+                        continue
                 out["sobre"] = sobre
+                out["sobre_origen"] = (
+                    f"Network.getResponseBody del requestId de la carga ({len(ids)} peticion(es) "
+                    "a /api/mesa/decide vistas); CERO peticiones extra"
+                )
+                if sobre is None:
+                    out["sobre_origen"] = (
+                        f"NO SE PUDO LEER el cuerpo que recibio la pagina ({len(ids)} peticion(es) "
+                        "vistas)"
+                    )
 
             if args.captura:
                 r = await s.pide(
@@ -608,7 +754,7 @@ def compara(out: dict) -> dict:
                 }
             )
             continue
-        if normaliza(p.get("valor")) != normaliza(servido):
+        if not casan_valores(p.get("valor"), servido):
             discrepan.append(
                 {
                     "campo": nombre,
@@ -647,7 +793,7 @@ def compara(out: dict) -> dict:
                     }
                 )
                 continue
-            if normaliza(p.get("valor")) != normaliza(servido):
+            if not casan_valores(p.get("valor"), servido):
                 discrepan.append(
                     {
                         "campo": f"{nombre}[{i}]",
@@ -700,12 +846,25 @@ def main() -> int:
     ap.add_argument("--alto", type=int, default=1080)
     ap.add_argument("--espera", type=float, default=30.0)
     ap.add_argument(
+        "--observa",
+        type=float,
+        default=0.0,
+        help="segundos mirando la MISMA pagina sin recargar, apuntando que dice de su edad. "
+             "Es lo unico que puede ver una pantalla que se congela DESPUES del render",
+    )
+    ap.add_argument(
         "--repite",
         type=int,
         default=1,
         help="cargas en el MISMO navegador: la 1 es en frio, las demas en caliente",
     )
     ap.add_argument("--frio", action="store_true", help="sin cache del navegador")
+    ap.add_argument(
+        "--sin-barra",
+        action="store_true",
+        help="oculta la barra de desplazamiento. POR OMISION NO se oculta: la mesa se juzga "
+             "en las condiciones de quien la usa, no en una ventana mas alta que la real",
+    )
     ap.add_argument(
         "--lento",
         action="store_true",
@@ -735,7 +894,7 @@ def main() -> int:
     # 2026-09-29T04:04Z se colgo 16.5 min y hubo que matarla a mano, sin cifra. Con esto, un
     # fallo que no haya previsto sale como NO MEDIDO -que se lee y se arregla- en vez de como
     # un proceso que nadie sabe si sigue midiendo.
-    techo = 60.0 + a.espera * max(1, a.repite) * 1.5
+    techo = 60.0 + a.espera * max(1, a.repite) * 1.5 + a.observa * 1.5
 
     async def con_techo():
         try:

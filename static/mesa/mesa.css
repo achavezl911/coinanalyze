@@ -380,6 +380,52 @@ main {
   color: var(--tx-mudo);
 }
 
+/* EL SELLO DE RANCIO · pegado al veredicto, no en el pie. Pasado el tope, lo que deja de
+ * sostenerse es el veredicto, asi que el aviso va donde esta el veredicto. */
+.sello-rancio {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  color: var(--ambar);
+  border: 1px solid var(--ambar);
+  border-radius: 3px;
+  padding: 2px 6px;
+  margin-top: 4px;
+}
+
+#decide.rancio {
+  border-color: var(--ambar);
+}
+
+/* La lectura de OTRO marco: misma tarjeta y mismo tamano que DECIDE -la decision pide «con la
+ * misma visibilidad»-, con un borde que la separa para que no se confunda con el veredicto. */
+.lectura-otro-marco {
+  border-left: 3px solid var(--azul);
+}
+
+.lectura-otro-marco h3 {
+  color: var(--azul);
+}
+
+/* la zona, leida como el rango que es */
+.zona-fila {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.zona-trozo .valor {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.zona-sep {
+  color: var(--tx-debil);
+  padding: 0 2px;
+}
+
 #decide-motivo {
   font-family: var(--mono);
   font-size: 9.5px;
