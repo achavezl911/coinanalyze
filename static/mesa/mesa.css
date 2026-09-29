@@ -1,0 +1,732 @@
+/* LA MESA DE OPERACION · tokens del design handoff del 2026-09-10
+ * ---------------------------------------------------------------------------
+ * ESTE FICHERO NO LO COMPARTE EL PANEL VIEJO. `static/app.css` sigue igual y sirve `/`;
+ * la mesa vive en `/mesa` con su propia hoja. Se separan a proposito: los checks que juzgan
+ * el panel tienen que poder decir CUAL juzgan, y dos ficheros distintos es la unica forma de
+ * que eso no dependa de un selector.
+ *
+ * LA TIPOGRAFIA DEL HANDOFF NO SE PUEDE SERVIR TAL CUAL, Y SE DECLARA.
+ * El handoff pide Space Grotesk e IBM Plex Mono «via Google Fonts CDN». La CSP que pone
+ * `app/api.py:210` incluye `font-src 'self'`, asi que un `@font-face` a fonts.gstatic.com lo
+ * bloquea el navegador; y medido en 143 el 2026-09-28, ninguna de las dos familias esta
+ * instalada (`fc-list | grep -ic 'space grotesk'` -> 0, `'plex mono'` -> 0). Su propio README
+ * ya preveia esto: «swap for self-hosted fonts if required by your infra».
+ * Lo que se hace: una pila de sistema con la MISMA intencion -geometrica de palo seco para
+ * texto, monoespaciada para toda cifra- y la sustitucion dicha en la vista de estado. Lo que
+ * NO se hace: fingir que la captura sale con la tipografia del prototipo.
+ */
+
+:root {
+  /* fondos */
+  --bg: #0a0d12;
+  --bg-strip: #0d1017;
+  --bg-misc: #0e1218;
+  --bg-pill: #10141b;
+  --bg-card: #12161d;
+  --bg-activo: #242b36;
+
+  /* bordes */
+  --borde: rgba(255, 255, 255, 0.08);
+  --borde-fila: rgba(255, 255, 255, 0.05);
+  --borde-boton: #262d38;
+  --borde-hueco: #3a4250;
+
+  /* texto */
+  --tx: #e6e9ee;
+  --tx2: #dfe3e8;
+  --tx3: #c9d3e0;
+  --tx-mudo: #8891a0;
+  --tx-debil: #5b6472;
+
+  /* semanticos */
+  --verde: #3ecf8e;
+  --rojo: #e05a5a;
+  --ambar: #e6b75a;
+  --azul: #5b9dd9;
+  --violeta: #8b7cf6;
+
+  --r-card: 10px;
+  --r-decide: 12px;
+  --r-boton: 8px;
+  --r-tag: 4px;
+
+  --fuente: "Space Grotesk", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg);
+  /* la trama de 32 px del handoff */
+  background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--tx);
+  font-family: var(--fuente);
+  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono,
+td.num,
+.cifra {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- cabecera */
+.cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 24px;
+  background: var(--bg-strip);
+  border-bottom: 1px solid var(--borde);
+}
+
+.cab-izq,
+.cab-der {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rombo {
+  width: 9px;
+  height: 9px;
+  background: var(--tx3);
+  transform: rotate(45deg);
+}
+
+.marca {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.pastilla-rotulo {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--tx-debil);
+  border: 1px solid var(--borde-boton);
+  border-radius: var(--r-tag);
+  padding: 3px 6px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+/* selectores segmentados */
+.seg {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-pill);
+  padding: 3px;
+  border-radius: var(--r-boton);
+}
+
+.seg button {
+  font-family: var(--fuente);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  color: var(--tx-mudo);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.seg button[aria-pressed="true"] {
+  background: var(--bg-activo);
+  color: var(--tx);
+}
+
+.reloj-rotulo {
+  font-size: 8.5px;
+  letter-spacing: 0.6px;
+  color: var(--tx-debil);
+  text-transform: uppercase;
+}
+
+.reloj-valor {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.fresco {
+  color: var(--verde);
+}
+.tibio {
+  color: var(--ambar);
+}
+.viejo {
+  color: var(--rojo);
+}
+
+.enlace {
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  color: var(--tx-mudo);
+  text-decoration: none;
+  border: 1px solid var(--borde-boton);
+  border-radius: 6px;
+  padding: 5px 9px;
+}
+
+.enlace:hover {
+  color: var(--tx);
+  background: var(--bg-activo);
+}
+
+/* --------------------------------------------------- tira de fuentes */
+.tira {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 8px 24px;
+  background: var(--bg-strip);
+  border-bottom: 1px solid var(--borde);
+  font-size: 9.5px;
+  color: var(--tx-mudo);
+  white-space: nowrap;
+}
+
+.fuente {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tx-debil);
+  flex: none;
+}
+
+.punto.ok {
+  background: var(--verde);
+  box-shadow: 0 0 6px var(--verde);
+}
+.punto.rancio {
+  background: var(--ambar);
+}
+.punto.mal {
+  background: var(--rojo);
+}
+
+.fuente .venue {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: var(--tx-debil);
+}
+
+/* ------------------------------------------------------------ columna */
+main {
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 12px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.seccion-rotulo {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--tx-debil);
+  text-transform: uppercase;
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.tarjeta {
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-card);
+  padding: 14px;
+}
+
+/* --------------------------------------------------------------- SCAN */
+.scan {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.chip {
+  flex: none;
+  background: var(--bg-card);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-boton);
+  padding: 7px 10px;
+  min-width: 150px;
+}
+
+.chip .titulo {
+  font-size: 11.5px;
+  color: var(--tx2);
+  margin-top: 4px;
+}
+
+/* etiquetas de evidencia */
+.ev {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.ev-vivo {
+  color: var(--verde);
+  border: 1px solid var(--verde);
+}
+.ev-historico {
+  color: var(--azul);
+  border: 1px solid var(--azul);
+}
+.ev-backtest {
+  color: var(--ambar);
+  border: 1px dashed var(--ambar);
+}
+.ev-noeval {
+  color: var(--tx-mudo);
+  border: 1px dashed var(--tx-mudo);
+  background: transparent;
+}
+
+/* ------------------------------------------------------------- DECIDE */
+#decide {
+  border-radius: var(--r-decide);
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 22px;
+}
+
+/* cuando el sistema no sabe, la tarjeta entera lo dice: trama diagonal */
+#decide.no-evaluable {
+  background-color: var(--bg-card);
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(136, 145, 160, 0.07) 0,
+    rgba(136, 145, 160, 0.07) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  border: 1px dashed var(--borde-hueco);
+}
+
+.decide-izq {
+  min-width: 230px;
+}
+
+.decide-cab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-derivado {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  color: var(--azul);
+  border: 1px dashed var(--azul);
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+
+#decide-sesgo {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1.15;
+  margin: 8px 0 2px;
+}
+
+.sesgo-LONG {
+  color: var(--verde);
+}
+.sesgo-SHORT {
+  color: var(--rojo);
+}
+.sesgo-NEUTRAL {
+  color: var(--ambar);
+}
+.sesgo-NOEVAL {
+  color: var(--tx-mudo);
+}
+
+#decide-motivo {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--ambar);
+  margin-top: 2px;
+}
+
+.conf-fila {
+  margin-top: 10px;
+}
+
+.conf-rotulo {
+  font-size: 8.5px;
+  letter-spacing: 0.8px;
+  color: var(--tx-debil);
+  text-transform: uppercase;
+}
+
+/* LA CONFIANZA ES UNA PALABRA, NO UN PORCENTAJE. El prototipo pinta una barra de %;
+ * `operator_read.confidence` sirve baja|media|alta. Un % seria precision inventada, asi que
+ * la barra tiene TRES escalones y va rotulada con la palabra que llega. */
+.escalones {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.escalon {
+  width: 34px;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--borde-boton);
+}
+
+.escalon.on {
+  background: var(--tx3);
+}
+
+.conf-palabra {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--tx2);
+  margin-top: 4px;
+}
+
+.dc-barra {
+  height: 5px;
+  border-radius: 2px;
+  background: var(--borde-boton);
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.dc-relleno {
+  height: 100%;
+  background: var(--verde);
+}
+
+.dc-relleno.bajo {
+  background: var(--rojo);
+}
+
+.decide-der {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.campo {
+  min-width: 0;
+}
+
+.campo .rotulo {
+  font-size: 8.5px;
+  letter-spacing: 0.9px;
+  color: var(--tx-debil);
+  text-transform: uppercase;
+  display: block;
+}
+
+.campo .valor {
+  font-size: 12px;
+  color: var(--tx2);
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.campo .valor.cifra {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.campo.invalida .rotulo,
+.campo.invalida .valor {
+  color: var(--rojo);
+}
+
+.campo .clave {
+  display: block;
+  font-family: var(--mono);
+  font-size: 7.5px;
+  color: var(--tx-debil);
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+/* AUSENTE · NULO · RANCIO · ERROR son cuatro cosas, y ninguna es cero. */
+.no-se {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px dashed var(--borde-hueco);
+  color: var(--tx-mudo);
+}
+
+.no-se.ausente {
+  color: var(--tx-mudo);
+}
+.no-se.nulo {
+  color: var(--azul);
+  border-color: var(--azul);
+}
+.no-se.rancio {
+  color: var(--ambar);
+  border-color: var(--ambar);
+}
+.no-se.error {
+  color: var(--rojo);
+  border-color: var(--rojo);
+}
+
+.motivo {
+  display: block;
+  font-size: 9px;
+  color: var(--tx-debil);
+  margin-top: 3px;
+}
+
+/* la edad y su tope, en pantalla */
+.edad {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-top: 1px solid var(--borde-fila);
+  padding-top: 10px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--tx-debil);
+}
+
+.edad b {
+  color: var(--tx-mudo);
+  font-weight: 500;
+}
+
+.edad .rancio-aviso {
+  color: var(--ambar);
+}
+
+/* ------------------------------------------------------------- tablas */
+table.rejilla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+
+table.rejilla th {
+  font-size: 8.5px;
+  letter-spacing: 0.7px;
+  color: var(--tx-debil);
+  text-transform: uppercase;
+  text-align: right;
+  font-weight: 600;
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--borde);
+  white-space: nowrap;
+}
+
+table.rejilla th:first-child,
+table.rejilla td:first-child {
+  text-align: left;
+}
+
+table.rejilla td {
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--borde-fila);
+  text-align: right;
+  font-family: var(--mono);
+  color: var(--tx2);
+  white-space: nowrap;
+}
+
+table.rejilla td.acento {
+  border-left: 3px solid transparent;
+}
+
+.banda-violeta {
+  border-left-color: var(--violeta) !important;
+}
+.banda-azul {
+  border-left-color: var(--azul) !important;
+}
+
+.pos {
+  color: var(--verde);
+}
+.neg {
+  color: var(--rojo);
+}
+.nd {
+  color: var(--tx-debil);
+}
+
+/* -------------------------------------------------------- rejillas */
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 12px;
+}
+
+.panel-rotulo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.panel-rotulo h3 {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--tx3);
+  font-weight: 600;
+}
+
+.panel-rotulo .venue {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: var(--tx-debil);
+}
+
+.pie {
+  font-size: 9px;
+  color: var(--tx-debil);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* un hueco de backend se recuadra y se explica, no se rellena */
+.hueco {
+  border: 1px dashed var(--borde-hueco);
+  border-radius: var(--r-boton);
+  padding: 12px;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(136, 145, 160, 0.06) 0,
+    rgba(136, 145, 160, 0.06) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  font-size: 10px;
+  color: var(--tx-mudo);
+  line-height: 1.6;
+}
+
+.hueco b {
+  color: var(--tx2);
+}
+
+/* tiles de la cinta */
+.tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tile {
+  background: var(--bg-misc);
+  border: 1px solid var(--borde);
+  border-radius: var(--r-boton);
+  padding: 8px 10px;
+}
+
+.tile .rotulo {
+  font-size: 8.5px;
+  letter-spacing: 0.8px;
+  color: var(--tx-debil);
+  text-transform: uppercase;
+}
+
+.tile .valor {
+  font-family: var(--mono);
+  font-size: 14px;
+  margin-top: 3px;
+}
+
+/* pie de servicios */
+.pie-servicios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  border-top: 1px solid var(--borde);
+  padding-top: 12px;
+  font-size: 9.5px;
+  color: var(--tx-mudo);
+}
+
+/* ------------------------------------------------- vista de estado */
+.estado main {
+  max-width: 1180px;
+}
+
+.resumen-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.resumen-4 .valor {
+  font-family: var(--mono);
+  font-size: 22px;
+  margin-top: 6px;
+}
+
+h1 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 6px 0 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.cargando {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--tx-debil);
+}

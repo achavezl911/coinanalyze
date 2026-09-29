@@ -1116,3 +1116,297 @@ async def build_ai_context(
     payload["build_finished_at"] = datetime.now(UTC).isoformat()
     payload["rough_token_estimate"] = rough_token_estimate(payload)
     return payload
+
+
+# ---------------------------------------------------------------------------
+# LA MESA · EL BLOQUE «DECIDE», SERVIDO YA DECIDIDO
+# ---------------------------------------------------------------------------
+# POR QUE EXISTE ESTA RUTA Y NO SE REUSA EL SOBRE. Medido contra 140 el 2026-09-28:
+#
+#     /api/ai/context?profile=default ....... 7.026 · 6.318 · 7.497 s   141639 B
+#     /api/scalp/summary .................... 0.021 · 0.019 · 0.026 s     2447 B
+#     /api/data-confidence .................. 0.178 · 0.162 · 0.474 s      549 B
+#     /api/snapshot ......................... 0.011 s                     1152 B
+#     /api/price-barriers ................... 0.113 · 0.110 · 0.102 s     3221 B
+#     /api/structure-detail ................. 0.371 · 0.349 · 0.350 s     3757 B
+#
+# `operator_read` -que ES el bloque DECIDE- sale de `build_operator_read(summary,
+# confidence)`, o sea de las DOS primeras lineas de esa tabla. El sobre tarda 7 s porque
+# `_armar_sobre` es un unico diccionario literal con ~40 `await` EN SERIE: pedir DECIDE por
+# ahi paga las otras 38 secciones para leer dos. No es una consulta lenta: es la cuenta
+# equivocada.
+#
+# LO QUE ESTA RUTA NO HACE: no calcula nada nuevo. Llama a las MISMAS funciones que el sobre
+# y devuelve los MISMOS valores; lo unico que anade es el mapeo del veredicto a la palabra
+# que se pinta, y lo anade AQUI a proposito -ver abajo-.
+#
+# POR QUE EL VEREDICTO SE DECIDE EN EL SERVIDOR. El encargo pide que cada cosa que DECIDE
+# ensena salga de una clave del backend que se pueda nombrar y que NINGUNA la deduzca el
+# cliente. Si el navegador tradujese `bias='Long'` a LONG, o aplicase el umbral de 70 del
+# handoff, esa traduccion seria una regla de negocio viviendo en `static/` sin test ni
+# version. Asi que cada campo viaja con su `source_key`, y el cliente PINTA lo que le llega:
+# la red de K102 puede exigir que cada celda de la pantalla coincida con el valor servido en
+# su `source_key`, que es una comprobacion que no existiria si el cliente dedujese.
+#
+# Y SIGUE SIENDO UNA INSTANTANEA DECLARADA (la garantia de la 129): todo lo que se lee aqui
+# va dentro de `_corte_unico`, y `envelope_cut` lo declara igual que el sobre. Lo unico que
+# cae FUERA del corte es el horizonte, porque es un agregado de 30 dias con su propio
+# `as_of` y su propia cache de 5 min -meterlo dentro le borraria su ventana, que es el mismo
+# motivo por el que las familias SERIE y DEMANDA no entran en el sobre-. Va declarado con
+# `outside_cut: true` por quien lo anade.
+
+MESA_DECIDE_SCHEMA = "mesa.decide.v1"
+
+# LA EDAD MAXIMA DE LO QUE LA MESA ENSENA, DECLARADA. No es un adorno: el encargo pide que
+# se declare Y se ensene en pantalla. 120 s sale de la cadencia real de ingesta -el lag de
+# instantanea medido en 140 el 2026-09-28 era 36.6 s- con holgura para un tick perdido.
+# Por encima de esto el campo sale `rancio`, que NO es `nulo` ni `ausente` ni cero.
+MESA_DECIDE_MAX_AGE_S = 120.0
+
+# EL UMBRAL DEL HANDOFF, EN UN SITIO. «data_confidence por debajo de 70 -> NO EVALUABLE».
+MESA_NO_EVALUABLE_UNDER = 70.0
+
+# QUE HORIZONTE ESTRUCTURAL MIRA CADA MARCO. El cliente manda el marco y el servidor dice
+# QUE horizonte uso, en vez de que el navegador elija una clave de un mapa que vive en el JS.
+MESA_FRAME_HORIZON: dict[str, str] = {"scalp": "1h", "swing": "4h", "largo": "9d"}
+
+# AUSENTE · NULO · RANCIO · ERROR son cuatro cosas, y ninguna es cero.
+#   ausente -> el backend no trae la clave
+#   nulo    -> la trae y vale null
+#   rancio  -> la trae con valor, pero mas viejo que su edad maxima declarada
+#   error   -> no se pudo leer
+MESA_ESTADOS = ("ok", "ausente", "nulo", "rancio", "error")
+
+
+def campo_mesa(
+    origen: dict[str, Any] | None,
+    ruta: str,
+    source_key: str,
+    *,
+    venue: str | None = None,
+    rancio: bool = False,
+) -> dict[str, Any]:
+    """Un campo de DECIDE con su procedencia y su estado, sin confundir los cuatro «no se».
+
+    `origen` es el diccionario CRUDO, no el que paso por `compact_dict`: ese borra la clave
+    cuando el valor es None y con eso vuelve un `nulo` indistinguible de un `ausente`. La
+    distincion es justo lo que el encargo pide ensenar, asi que aqui se lee el crudo.
+    """
+    out: dict[str, Any] = {"source_key": source_key}
+    if venue is not None:
+        out["venue"] = venue
+    if origen is None:
+        out["value"] = None
+        out["status"] = "ausente"
+        out["motivo"] = f"no se pudo leer el bloque de {source_key}"
+        return out
+    nodo: Any = origen
+    for tramo in ruta.split("."):
+        if not isinstance(nodo, dict) or tramo not in nodo:
+            out["value"] = None
+            out["status"] = "ausente"
+            out["motivo"] = f"el backend no trae {source_key}"
+            return out
+        nodo = nodo[tramo]
+    if nodo is None:
+        out["value"] = None
+        out["status"] = "nulo"
+        out["motivo"] = f"{source_key} llega con valor null"
+        return out
+    out["value"] = compact_value(nodo)
+    out["status"] = "rancio" if rancio else "ok"
+    return out
+
+
+def _sin_lado(source_key: str) -> dict[str, Any]:
+    return {
+        "value": None,
+        "status": "ausente",
+        "source_key": source_key,
+        "motivo": "sin lado: el sesgo no es LONG ni SHORT",
+    }
+
+
+async def build_mesa_decide(
+    conn: asyncpg.Connection,
+    symbol: str,
+    *,
+    frame: str = "scalp",
+) -> dict[str, Any]:
+    """El bloque DECIDE de la mesa, con UN corte declarado y cada campo con su procedencia."""
+    build_started_at = datetime.now(UTC)
+    horizonte_clave = MESA_FRAME_HORIZON.get(frame, MESA_FRAME_HORIZON["scalp"])
+    async with _corte_unico(conn) as (corte_modo, corte_razon):
+        # El PRIMER statement del corte, igual que en el sobre: aqui nace la instantanea.
+        matrix_as_of = await resolve_matrix_as_of(conn)
+        snap = await latest_snapshot(conn, symbol)
+        ctx = await scalp_context(conn, symbol, matrix_as_of)
+        summary = compute_scalp_summary(ctx)
+        confidence = await data_confidence_row(conn, symbol)
+        barriers = await price_barriers(conn, symbol)
+        detail = await structure_detail(conn, symbol, matrix_as_of)
+
+    read = build_operator_read(summary, confidence)
+
+    # EL VEREDICTO. `operator_read.bias` dice Long/Short/No Trade; la pantalla del handoff
+    # dice LONG/SHORT/NEUTRAL/NO EVALUABLE. La cuarta no es un bias: es la regla del handoff
+    # sobre `data_confidence.quality_score`, y por eso viaja con SU umbral y SU motivo.
+    calidad = as_float(confidence.get("quality_score"))
+    evaluable = calidad is not None and calidad >= MESA_NO_EVALUABLE_UNDER
+    bias_crudo = str(read.get("bias") or "")
+    if not evaluable:
+        bias_display = "NO EVALUABLE"
+        bias_source = "data_confidence.quality_score"
+        bias_motivo = (
+            f"data_confidence {calidad} < {MESA_NO_EVALUABLE_UNDER:g}"
+            if calidad is not None
+            else "data_confidence.quality_score no llega"
+        )
+    else:
+        bias_display = {"Long": "LONG", "Short": "SHORT", "No Trade": "NEUTRAL"}.get(
+            bias_crudo, "NEUTRAL"
+        )
+        bias_source = "operator_read.bias"
+        bias_motivo = None
+
+    lado = "long" if bias_display == "LONG" else "short" if bias_display == "SHORT" else None
+
+    # LA EDAD, y si lo que se ensena esta rancio contra su tope DECLARADO.
+    lag = as_float(confidence.get("snapshot_lag_seconds"))
+    rancio = lag is not None and lag > MESA_DECIDE_MAX_AGE_S
+
+    # QUE INVALIDA, Y CON QUE NIVEL. Las cadenas de `invalidates_*` son constantes del
+    # backend sin numero dentro; el NIVEL sale de dos claves servidas distintas, y cada una
+    # dice de donde viene: la barrera mas cercana del lado que se invalida, y el nivel
+    # estructural del horizonte de ESTE marco.
+    invalida_ruta = f"invalidates_{lado}" if lado else None
+    invalidaciones: list[dict[str, Any]] = []
+    if invalida_ruta:
+        for i, texto in enumerate(read.get(invalida_ruta) or []):
+            invalidaciones.append(
+                {
+                    "value": texto,
+                    "source_key": f"operator_read.{invalida_ruta}[{i}]",
+                    "status": "ok",
+                }
+            )
+
+    barrera_ruta = "nearest_support" if lado == "long" else "nearest_resistance"
+    horizontes = (detail or {}).get("horizons") or {}
+    caso = f"{lado}_case" if lado else None
+
+    payload: dict[str, Any] = {
+        "schema_version": MESA_DECIDE_SCHEMA,
+        "symbol": symbol,
+        "asset": WS_SYMBOL_MAP[symbol],
+        "frame": frame,
+        "generated_at": datetime.now(UTC).isoformat(),
+        "max_age_s": MESA_DECIDE_MAX_AGE_S,
+        "no_evaluable_under": MESA_NO_EVALUABLE_UNDER,
+        # LA GARANTIA DE LA 129, dicha por esta ruta igual que por el sobre.
+        "envelope_cut": {
+            "as_of": matrix_as_of.isoformat(),
+            "snapshot": corte_modo,
+            "snapshot_reason": corte_razon,
+            "meaning": (
+                "UN corte. Todo lo que DECIDE ensena -salvo `horizon`, que lo declara- se "
+                "leyo dentro de la MISMA instantanea MVCC y con el MISMO cutoff de evento, "
+                "asi que dos campos de esta pantalla no pueden salir de dos instantes"
+            ),
+        },
+        "age": {
+            "snapshot_lag_seconds": campo_mesa(
+                confidence, "snapshot_lag_seconds", "data_confidence.snapshot_lag_seconds"
+            ),
+            "price_cutoff_at": campo_mesa(snap, "price_cutoff_at", "snapshot.price_cutoff_at"),
+            "metrics_cutoff_at": campo_mesa(
+                snap, "metrics_cutoff_at", "snapshot.metrics_cutoff_at"
+            ),
+            "stale": rancio,
+            "stale_rule": f"snapshot_lag_seconds > max_age_s ({MESA_DECIDE_MAX_AGE_S:g} s)",
+        },
+        "decide": {
+            "bias": {
+                "value": bias_display,
+                "source_key": bias_source,
+                "status": "rancio" if (rancio and evaluable) else "ok",
+                "raw": bias_crudo,
+                "motivo": bias_motivo,
+            },
+            "evaluable": {
+                "value": evaluable,
+                "source_key": "data_confidence.quality_score",
+                "status": "ok" if calidad is not None else "ausente",
+                "threshold": MESA_NO_EVALUABLE_UNDER,
+                "rule": "handoff: data_confidence por debajo de 70 -> NO EVALUABLE",
+            },
+            "state": campo_mesa(read, "state", "operator_read.state"),
+            "reason": campo_mesa(summary, "reason", "scalp.reason", rancio=rancio),
+            "zone": {
+                "center": campo_mesa(
+                    barriers, "active_zone.center", "price_barriers.active_zone.center"
+                ),
+                "low": campo_mesa(barriers, "active_zone.low", "price_barriers.active_zone.low"),
+                "high": campo_mesa(
+                    barriers, "active_zone.high", "price_barriers.active_zone.high"
+                ),
+                "difficulty": campo_mesa(
+                    barriers, "active_zone.difficulty", "price_barriers.active_zone.difficulty"
+                ),
+            },
+            "zone_decision": campo_mesa(barriers, "decision", "price_barriers.decision"),
+            "confirms": [
+                campo_mesa(barriers, f"{caso}.rejection", f"price_barriers.{caso}.rejection")
+                if caso
+                else _sin_lado("price_barriers.<lado>_case.rejection"),
+                campo_mesa(
+                    barriers,
+                    f"{caso}.flow_requirement",
+                    f"price_barriers.{caso}.flow_requirement",
+                )
+                if caso
+                else _sin_lado("price_barriers.<lado>_case.flow_requirement"),
+            ],
+            "invalidates": invalidaciones,
+            "invalidation_level": (
+                campo_mesa(
+                    barriers,
+                    f"{barrera_ruta}.center",
+                    f"price_barriers.{barrera_ruta}.center",
+                )
+                if lado
+                else _sin_lado("price_barriers.nearest_*.center")
+            ),
+            "structural_invalidation": campo_mesa(
+                horizontes,
+                f"{horizonte_clave}.invalidation_level",
+                f"structure_detail.horizons.{horizonte_clave}.invalidation_level",
+            ),
+            "structural_horizon": {
+                "value": horizonte_clave,
+                "source_key": f"structure_detail.horizons.{horizonte_clave}",
+                "status": "ok" if horizonte_clave in horizontes else "ausente",
+            },
+            "confidence": campo_mesa(read, "confidence", "operator_read.confidence"),
+            "data_confidence": campo_mesa(
+                confidence, "quality_score", "data_confidence.quality_score"
+            ),
+            "evidence": campo_mesa(
+                summary, "evidence_coverage_pct", "scalp.evidence_coverage_pct"
+            ),
+            "edge": campo_mesa(read, "edge", "operator_read.edge"),
+            "no_trade_reasons": {
+                "value": list(read.get("no_trade_reasons") or []),
+                "source_key": "operator_read.no_trade_reasons",
+                "status": "ok",
+            },
+            "warnings": {
+                "value": list(read.get("warnings") or []),
+                "source_key": "operator_read.warnings",
+                "status": "ok",
+            },
+        },
+    }
+    payload["build_started_at"] = build_started_at.isoformat()
+    payload["build_finished_at"] = datetime.now(UTC).isoformat()
+    return payload

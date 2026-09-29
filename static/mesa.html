@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>COINALYZE · Mesa de operación</title>
+    <!-- LA CSP DE `app/api.py` NO ADMITE `<style>` NI `<script>` EN LINEA
+         (`style-src 'self'`, `script-src 'self'`), asi que todo va en ficheros servidos por
+         `/static`. Tampoco admite `font-src` externo: la tipografia del handoff se sustituye
+         por una pila de sistema y se DICE en la vista de estado. Ver mesa.css. -->
+    <link rel="stylesheet" href="/static/mesa/mesa.css" />
+  </head>
+  <body>
+    <!-- ====================================================== CABECERA -->
+    <header class="cabecera">
+      <div class="cab-izq">
+        <span class="rombo" aria-hidden="true"></span>
+        <span class="marca">COINALYZE</span>
+        <span class="pastilla-rotulo">MESA DE OPERACIÓN</span>
+
+        <div class="seg" id="sel-marco" role="group" aria-label="Marco">
+          <button type="button" data-marco="scalp" aria-pressed="true">SCALP</button>
+          <button type="button" data-marco="swing" aria-pressed="false">SWING</button>
+          <button type="button" data-marco="largo" aria-pressed="false">LARGO</button>
+        </div>
+
+        <div class="seg" id="sel-activo" role="group" aria-label="Activo">
+          <button type="button" data-activo="BTC" aria-pressed="true">BTC</button>
+          <button type="button" data-activo="ETH" aria-pressed="false">ETH</button>
+          <button type="button" data-activo="SOL" aria-pressed="false">SOL</button>
+        </div>
+      </div>
+
+      <div class="cab-der">
+        <div>
+          <span class="reloj-rotulo">corte · envelope_cut.as_of</span>
+          <div class="reloj-valor" id="reloj">—</div>
+        </div>
+        <a class="enlace" id="ir-estado" href="#scalp/BTC/status">SISTEMA →</a>
+      </div>
+    </header>
+
+    <!-- ============================================== TIRA DE FUENTES -->
+    <div class="tira" id="tira" aria-label="Estado de las fuentes">
+      <span class="cargando">pidiendo calidad de feeds…</span>
+    </div>
+
+    <!-- ================================================ VISTA MESA -->
+    <main id="vista-mesa">
+      <!-- SCAN · fila de chips delgada. Va antes que DECIDE porque esa es la jerarquia del
+           handoff, y se mantiene DELGADA a proposito: lo que se LEE primero es DECIDE, que
+           es el bloque con el veredicto y la cifra de 30 px. K102 lo comprueba midiendo que
+           #decide cabe entero en el primer pliegue a 1920x1080 y a 1440x900. -->
+      <p class="seccion-rotulo">scan · lo que pide atención</p>
+      <div class="scan" id="scan">
+        <span class="cargando">pidiendo señales…</span>
+      </div>
+
+      <!-- DECIDE -->
+      <p class="seccion-rotulo">decide · qué hacer</p>
+      <section class="tarjeta" id="decide" aria-label="DECIDE">
+        <div class="decide-izq">
+          <div class="decide-cab">
+            <span class="conf-rotulo">lectura del operador</span>
+            <span class="badge-derivado">DERIVADO</span>
+          </div>
+          <div id="decide-sesgo" class="sesgo-NOEVAL">…</div>
+          <div id="decide-motivo"></div>
+
+          <div class="conf-fila">
+            <span class="conf-rotulo">confianza</span>
+            <div class="escalones" id="conf-escalones" aria-hidden="true">
+              <span class="escalon"></span><span class="escalon"></span
+              ><span class="escalon"></span>
+            </div>
+            <div class="conf-palabra" id="conf-palabra">—</div>
+            <span class="clave mono" id="conf-clave"></span>
+          </div>
+
+          <div class="conf-fila">
+            <span class="conf-rotulo">data_confidence</span>
+            <div class="dc-barra"><div class="dc-relleno" id="dc-relleno"></div></div>
+            <div class="conf-palabra" id="dc-valor">—</div>
+            <span class="clave mono" id="dc-clave"></span>
+          </div>
+        </div>
+
+        <div class="decide-der" id="decide-campos">
+          <!-- ZONA/RAZON · CONFIRMA · INVALIDA · HORIZONTE los pinta mesa.js -->
+        </div>
+
+        <div class="edad" id="decide-edad"></div>
+      </section>
+
+      <!-- MATRIZ DE DELTA -->
+      <p class="seccion-rotulo">matriz de delta</p>
+      <section class="tarjeta" id="matriz-caja">
+        <div class="panel-rotulo">
+          <h3>Δ por horizonte</h3>
+          <span class="venue" id="matriz-venue"></span>
+        </div>
+        <div id="matriz"><span class="cargando">pidiendo matriz…</span></div>
+        <p class="pie" id="matriz-pie"></p>
+      </section>
+
+      <!-- INSPECT -->
+      <p class="seccion-rotulo">inspect</p>
+      <div id="inspect" class="grid-3"></div>
+
+      <!-- RESEARCH -->
+      <p class="seccion-rotulo">research</p>
+      <div id="research" class="grid-2"></div>
+
+      <!-- FOLLOW -->
+      <p class="seccion-rotulo">follow · lo que se sigue</p>
+      <section class="tarjeta" id="follow-caja">
+        <div id="follow"><span class="cargando">pidiendo setups…</span></div>
+      </section>
+
+      <!-- LEARN -->
+      <p class="seccion-rotulo">learn · lo sabido en t0 nunca se mezcla con el resultado</p>
+      <section class="tarjeta" id="learn-caja">
+        <div id="learn"><span class="cargando">pidiendo replay…</span></div>
+      </section>
+
+      <div class="pie-servicios" id="pie-servicios"></div>
+    </main>
+
+    <!-- ============================================== VISTA ESTADO -->
+    <main id="vista-estado" hidden>
+      <a class="enlace" id="volver" href="#scalp/BTC">← volver a la mesa</a>
+      <h1>Estado del sistema</h1>
+      <div class="resumen-4" id="estado-resumen"></div>
+      <section class="tarjeta">
+        <div class="panel-rotulo"><h3>Procesos</h3></div>
+        <div id="estado-procesos"><span class="cargando">pidiendo salud…</span></div>
+      </section>
+      <section class="tarjeta">
+        <div class="panel-rotulo"><h3>Feeds, con su venue</h3></div>
+        <div id="estado-feeds"></div>
+      </section>
+      <section class="tarjeta">
+        <div class="panel-rotulo"><h3>Lo que esta pantalla NO puede servir como pide el handoff</h3></div>
+        <div id="estado-declaraciones"></div>
+      </section>
+    </main>
+
+    <script src="/static/mesa/mesa-datos.js"></script>
+    <script src="/static/mesa/mesa-decide.js"></script>
+    <script src="/static/mesa/mesa-paneles.js"></script>
+    <script src="/static/mesa/mesa-app.js"></script>
+  </body>
+</html>
