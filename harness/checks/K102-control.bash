@@ -68,15 +68,22 @@ juzga() {  # juzga [base] -> rc
 }
 
 # espera <CONDENA|PASA> <rotulo> <patron> [base]
+#
+# EL PATRON SE BUSCA EN LAS LINEAS DE HALLAZGO, NO EN TODA LA SALIDA, Y ESO ES UN ARREGLO.
+# La salida del check ahora dice «B3, B4, B5, B7 y B8 solo en SOL» en su linea de ALCANCE, asi
+# que un patron «B7 » casaba con esa linea y daba por bueno un `rc=1` que podia venir de
+# cualquier otro brazo. Los hallazgos se imprimen con el prefijo «   - », y es ahi donde se
+# busca. Un patron que casa con la prosa del veredicto absuelve por homonimia (A43).
 espera() {
   local quiero="$1" rot="$2" patron="$3" b="${4:-$BASE}"
   total=$((total + 1))
   local rc; rc=$(juzga "$b")
+  grep -E '^   - ' "$TMP/sal" > "$TMP/hallazgos" 2>/dev/null || : > "$TMP/hallazgos"
   if [ "$quiero" = "CONDENA" ]; then
-    if [ "$rc" = "1" ] && grep -q "$patron" "$TMP/sal"; then
+    if [ "$rc" = "1" ] && grep -q "$patron" "$TMP/hallazgos"; then
       pasa=$((pasa + 1))
       printf '  CONDENA   %-44s rc=%s · %s\n' "$rot" "$rc" \
-        "$(grep -m1 "$patron" "$TMP/sal" | sed 's/^ *//' | cut -c1-92)"
+        "$(grep -m1 "$patron" "$TMP/hallazgos" | sed 's/^ *//' | cut -c1-92)"
     else
       falla=$((falla + 1))
       printf '  NO CAZA   %-44s rc=%s  <-- el plantado paso sin condena\n' "$rot" "$rc"
@@ -561,6 +568,19 @@ def parchea(ctx):
         return s
     ctx.compute_scalp_summary = _f
 
+    # Y LA CALIDAD, A 85. Sin esto el control NO MIDE, y la primera corrida lo demostro: con la
+    # calidad 0 del espejo la regla VIEJA tapaba la palabra con NO EVALUABLE en las 20 muestras
+    # -0 giros- y el brazo del plantado se declaraba a si mismo no medido (A57). El giro de la
+    # palabra vieja solo existe con la puerta de la calidad ABIERTA, que es como esta en
+    # produccion: `data_confidence` 100.0 el 2026-09-30T05:24:30Z.
+    orig_dc = ctx.data_confidence_row
+    async def _dc(conn, symbol):
+        fila = dict(await orig_dc(conn, symbol))
+        fila["quality_score"] = 85.0
+        fila["status"] = "ok"
+        return fila
+    ctx.data_confidence_row = _dc
+
 def lado(palabra):
     return {"LONG": "long", "SHORT": "short"}.get(str(palabra))
 
@@ -740,10 +760,12 @@ api.build_mesa_decide = build
 app = api.app
 PY
 
+  # CON `setsid`: el servidor se va a SU propia sesion, asi que cuando se le mate al final el
+  # bash de este control no escupe un «Terminated» en medio del informe.
   corre_banco() {  # corre_banco <arbol> <puerto> <token> <log>
     ( cd "$1" && PG_HOST=/var/run/postgresql PG_PORT=5432 PG_DB=coinalyze_espejo \
         PG_USER="$(id -un)" PG_PASSWORD= API_INTERNAL_TOKEN="$3" PYTHONPATH="$TMP:$1" \
-        nohup "$PY" -m uvicorn banco132:app --host 127.0.0.1 --port "$2" \
+        setsid nohup "$PY" -m uvicorn banco132:app --host 127.0.0.1 --port "$2" \
         > "$4" 2>&1 & )
     sleep 9
   }

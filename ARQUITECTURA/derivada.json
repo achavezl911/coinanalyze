@@ -26897,7 +26897,7 @@
           ],
           "menciones": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:26",
-            "harness/checks/K102-control.bash:625",
+            "harness/checks/K102-control.bash:645",
             "harness/checks/K102-mesa.py:520",
             "harness/checks/K31-eslabon5.sh:60",
             "harness/checks/K31-eslabon5.sh:172",
@@ -38835,7 +38835,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-control.bash:344",
+            "harness/checks/K102-control.bash:351",
             "harness/checks/K102-mesa.py:459",
             "harness/checks/K102-sobre-plantado.py:161",
             "harness/checks/K102-sobre-plantado.py:212"
