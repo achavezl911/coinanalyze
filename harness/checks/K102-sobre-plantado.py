@@ -16,10 +16,23 @@ LO QUE ESTE SERVIDOR NO ES: no es la mesa, y no se parece a produccion. Sirve un
 CONSTRUIDO, lo dice en el propio sobre (`plantado`), y solo lo usa el control. La mesa real se
 mide contra el espejo y contra 140.
 
+  · B9 · «la palabra dice la decision del sistema» necesita un banco que tenga A LA VEZ
+    respuestas CON decision y SIN ella, y poder hacerlas discrepar a mano. El espejo da
+    `state = 'Sin datos suficientes'` en los tres activos desde el 08-13, asi que por si solo no
+    puede ensenar ninguna de las dos mitades de la promesa.
+
+LO QUE ESTE SERVIDOR NO HACE: NO aplica ninguna regla. La palabra (`--bias`), el estado
+(`--state`) y el balance de evidencia (`--balance`) se sirven TAL CUAL, por separado, y por eso
+el control puede montar una respuesta fiel o una que se contradiga. Si el plantado dedujese la
+palabra del estado, no podria plantar el defecto que la red tiene que cazar.
+
   --lag N      segundos de `snapshot_lag_seconds` en el sobre servido
   --tope N     `max_age_s` del sobre servido
-  --bias X     LONG | SHORT | NEUTRAL  (el veredicto del scalp)
-  --dc N       `data_confidence.quality_score`
+  --bias X     la PALABRA de DECIDE, servida tal cual
+  --state X    el `state` del scalp, servido tal cual (no deduce la palabra)
+  --balance X  `evidence_balance` (lo que la palabra decia hasta la v1)
+  --dc N       `data_confidence.quality_score`. Decide `evaluable`, y NADA mas: desde la v2 la
+               calidad no decide la palabra
 """
 from __future__ import annotations
 
@@ -57,14 +70,11 @@ def sobre(frame: str) -> dict:
     evaluable = dc >= 70.0
     es_scalp = frame == "scalp"
 
-    # EL SOBRE PLANTADO TIENE QUE TENER LA MISMA FORMA QUE LA RUTA, o los controles verifican
-    # un contrato que no existe. Aqui se reproducen los DOS veredictos de `build_mesa_decide`:
-    # el del SCALP -que solo depende de la calidad- y el del MARCO.
-    if not evaluable:
-        bias_scalp, src_scalp = "NO EVALUABLE", "data_confidence.quality_score"
-        motivo_scalp = f"data_confidence {dc} < 70"
-    else:
-        bias_scalp, src_scalp, motivo_scalp = bias, "operator_read.bias", None
+    # EL SOBRE PLANTADO TIENE QUE TENER LA MISMA FORMA QUE LA RUTA, o los controles verifican un
+    # contrato que no existe. La palabra del SCALP es la que se pidio, sin tocarla: la calidad ya
+    # no la decide (v2). Lo unico que este servidor reproduce es la regla del MARCO, porque sin
+    # ella B7 no tendria contra que medir.
+    bias_scalp, src_scalp, motivo_scalp = bias, "operator_read.state", None
 
     if not es_scalp:
         display, src = "NO EVALUABLE", "mesa.decide.frame"
@@ -73,7 +83,7 @@ def sobre(frame: str) -> dict:
         display, src, motivo = bias_scalp, src_scalp, motivo_scalp
 
     d = {
-        "schema_version": "mesa.decide.v1",
+        "schema_version": "mesa.decide.v2",
         "plantado": (
             "SOBRE CONSTRUIDO por K102-sobre-plantado.py para un control. NO es un dato de "
             "mercado y no sale de ninguna base"
@@ -94,8 +104,7 @@ def sobre(frame: str) -> dict:
             "stale_rule": f"snapshot_lag_seconds > max_age_s ({tope:g} s)",
         },
         "decide": {
-            "bias": {"value": display, "source_key": src, "status": "ok",
-                     "raw": bias, "motivo": motivo},
+            "bias": {"value": display, "source_key": src, "status": "ok", "motivo": motivo},
             "evaluable": {"value": evaluable, "source_key": "data_confidence.quality_score",
                           "status": "ok", "threshold": 70.0,
                           "rule": "handoff: data_confidence por debajo de 70 -> NO EVALUABLE"},
@@ -113,7 +122,16 @@ def sobre(frame: str) -> dict:
         },
     }
     lectura = {
-        "state": campo("Long Pullback", "operator_read.state"),
+        "state": campo(CFG["state"], "operator_read.state"),
+        # LO QUE LA PALABRA DECIA HASTA LA v1, rotulado como lo que es. Se sirve APARTE del
+        # estado a proposito: los dos pueden discrepar sin que ninguno este roto, y el control
+        # necesita moverlos por separado.
+        "evidence_balance": {
+            "value": CFG["balance"], "source_key": "operator_read.bias", "status": "ok",
+            "rule": ("signo de long_score - short_score. NO es la decision: el estado exige "
+                     "ademas edge >= 12 y que el score ganador llegue a 58"),
+            "motivo": None,
+        },
         "reason": campo("ΔFut1m -742774, book ok/L5 0.47", "scalp.reason"),
         "confidence": campo("media", "operator_read.confidence"),
         # CON `--varia`, EL SOBRE CAMBIA EN CADA PETICION. Reproduce lo que hace el mercado de
@@ -145,7 +163,7 @@ def sobre(frame: str) -> dict:
             # SU PROPIO VEREDICTO, igual que lo sirve la ruta. Sin esto el plantado no podria
             # ejercitar R5 y las capturas ensenarian una tarjeta sin lado.
             "bias": {"value": bias_scalp, "source_key": src_scalp, "status": "ok",
-                     "raw": bias, "motivo": motivo_scalp},
+                     "motivo": motivo_scalp},
             **lectura,
         }
     d["build_started_at"] = ahora.isoformat()
@@ -210,7 +228,15 @@ if __name__ == "__main__":
     ap.add_argument("--puerto", type=int, default=8096)
     ap.add_argument("--lag", type=float, default=5.0)
     ap.add_argument("--tope", type=float, default=120.0)
-    ap.add_argument("--bias", default="LONG", choices=("LONG", "SHORT", "NEUTRAL"))
+    ap.add_argument("--bias", default="LONG",
+                    choices=("LONG", "SHORT", "NO OPERAR", "NO EVALUABLE"))
+    # SIN `choices`: el control tiene que poder plantar un estado que HOY NO EXISTE -«Long
+    # Breakout»- y ver que la red no lo convierte en un lado por parecerse a uno.
+    ap.add_argument("--state", default="Long Pullback",
+                    help="el `state` servido. Por omision uno CON lado, para que el sobre por "
+                         "defecto sea FIEL y los gemelos G1/G2 sigan midiendo su propia cosa")
+    ap.add_argument("--balance", default="Long",
+                    help="`evidence_balance`: lo que la palabra decia hasta la v1")
     ap.add_argument("--dc", type=float, default=100.0)
     ap.add_argument("--varia", action="store_true",
                     help="el sobre cambia en CADA peticion (edge +1), como el mercado")
@@ -225,5 +251,5 @@ if __name__ == "__main__":
     CFG.update(vars(a))
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", a.puerto), H)
     print(f"plantado en http://127.0.0.1:{a.puerto} lag={a.lag} tope={a.tope} "
-          f"bias={a.bias} dc={a.dc}", flush=True)
+          f"bias={a.bias!r} state={a.state!r} balance={a.balance!r} dc={a.dc}", flush=True)
     srv.serve_forever()

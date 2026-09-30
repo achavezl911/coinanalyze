@@ -30,6 +30,9 @@ function sobre(frame) {
   const esScalp = frame === 'scalp';
   const lectura = {
     state: campo('Long Pullback', 'operator_read.state'),
+    // LA v2 (campana 132): lo que la palabra decia hasta la v1 viaja aqui, rotulado, y se va con
+    // la lectura del scalp a `lectura_scalp` en los marcos que no son scalp.
+    evidence_balance: campo('Long', 'operator_read.bias'),
     reason: campo('ΔFut1m -742774', 'scalp.reason'),
     confidence: campo('media', 'operator_read.confidence'),
     edge: campo(80.2, 'operator_read.edge'),
@@ -43,7 +46,7 @@ function sobre(frame) {
     warnings: campo([], 'operator_read.warnings'),
   };
   const d = {
-    schema_version: 'mesa.decide.v1',
+    schema_version: 'mesa.decide.v2',
     frame,
     max_age_s: 120.0,
     no_evaluable_under: 70.0,
@@ -57,7 +60,7 @@ function sobre(frame) {
     },
     decide: {
       bias: esScalp
-        ? { value: 'LONG', source_key: 'operator_read.bias', status: 'ok' }
+        ? { value: 'LONG', source_key: 'operator_read.state', status: 'ok' }
         : {
             value: 'NO EVALUABLE',
             source_key: 'mesa.decide.frame',
@@ -156,8 +159,9 @@ test('R1 · en SCALP, la lectura del scalp ES el veredicto y se pinta dentro de 
     const s = sobre(marco);
     // el scalp SI tiene lado: es lo que la tarjeta tiene que decir
     s.datos.lectura_scalp.bias = {
-      value: 'SHORT', source_key: 'operator_read.bias', status: 'ok', raw: 'Short', motivo: null,
+      value: 'SHORT', source_key: 'operator_read.state', status: 'ok', motivo: null,
     };
+    s.datos.lectura_scalp.state = campo('Short Rejection', 'operator_read.state');
     ctx.pintarDecide(s, nodos(documento));
     // DECIDE sigue diciendo NO EVALUABLE por el marco
     assert.strictEqual(documento.getElementById('decide-sesgo').textContent, 'NO EVALUABLE');
@@ -169,15 +173,38 @@ test('R1 · en SCALP, la lectura del scalp ES el veredicto y se pinta dentro de 
     assert.ok(c, 'la tarjeta del scalp tiene que traer su propio sesgo');
     assert.strictEqual(
       c.querySelectorAll('[data-source-key]')[0].getAttribute('data-source-key'),
-      'operator_read.bias'
+      'operator_read.state'
     );
     assert.match(c.textContent, /SHORT/);
+  });
+
+  test(`C4 · en ${marco.toUpperCase()} el BALANCE de evidencia tambien esta en la tarjeta del scalp`, () => {
+    const { ctx, documento } = cargaMesa();
+    const s = sobre(marco);
+    s.datos.lectura_scalp.bias = {
+      value: 'NO OPERAR', source_key: 'operator_read.state', status: 'ok',
+    };
+    s.datos.lectura_scalp.state = campo('No Trade', 'operator_read.state');
+    s.datos.lectura_scalp.evidence_balance = campo('Short', 'operator_read.bias');
+    ctx.pintarDecide(s, nodos(documento));
+    const campos = documento.getElementById('lectura-scalp-campos');
+    const c = campos.querySelectorAll('[data-campo]')
+      .find((x) => x.getAttribute('data-campo') === 'evidence_balance');
+    assert.ok(c, 'el balance de evidencia tiene que estar en la tarjeta del scalp');
+    assert.strictEqual(c.querySelectorAll('[data-valor]')[0].getAttribute('data-valor'), 'Short');
+    assert.strictEqual(
+      c.querySelectorAll('[data-source-key]')[0].getAttribute('data-source-key'),
+      'operator_read.bias'
+    );
+    assert.match(c.textContent, /no es la decisión/);
+    // y la palabra de la tarjeta sigue siendo la DECISION, no el balance
+    assert.match(documento.getElementById('lectura-scalp-rotulo').textContent, /SCALP: NO OPERAR/);
   });
 
   test(`R5 · en ${marco.toUpperCase()} el lado del scalp NO se confunde con el del marco`, () => {
     const { ctx, documento } = cargaMesa();
     const s = sobre(marco);
-    s.datos.lectura_scalp.bias = { value: 'SHORT', source_key: 'operator_read.bias', status: 'ok' };
+    s.datos.lectura_scalp.bias = { value: 'SHORT', source_key: 'operator_read.state', status: 'ok' };
     ctx.pintarDecide(s, nodos(documento));
     const rot = documento.getElementById('lectura-scalp-rotulo').textContent;
     // el rotulo tiene que decir las dos cosas: de quien es y de quien NO es
@@ -189,19 +216,20 @@ test('R1 · en SCALP, la lectura del scalp ES el veredicto y se pinta dentro de 
 test('R5 · cuando el scalp NO tiene lado, la tarjeta lo dice y no inventa uno', () => {
   const { ctx, documento } = cargaMesa();
   const s = sobre('swing');
-  // es el control: con data_confidence baja el scalp es NO EVALUABLE y «sin lado» es VERDAD
+  // es el control: con el ESTADO del espejo el scalp es NO EVALUABLE y «sin lado» es VERDAD
   s.datos.lectura_scalp.bias = {
-    value: 'NO EVALUABLE', source_key: 'data_confidence.quality_score', status: 'ok',
-    motivo: 'data_confidence 0.0 < 70',
+    value: 'NO EVALUABLE', source_key: 'operator_read.state', status: 'ok',
+    motivo: 'el sistema no pudo evaluar: ESTADO Sin datos suficientes',
   };
+  s.datos.lectura_scalp.state = campo('Sin datos suficientes', 'operator_read.state');
   s.datos.lectura_scalp.confirms = [
     { value: null, status: 'ausente', source_key: 'price_barriers.<lado>_case.rejection',
-      motivo: 'sin lado: el sesgo no es LONG ni SHORT' },
+      motivo: 'sin lado: el sistema no toma lado en este instante' },
   ];
   ctx.pintarDecide(s, nodos(documento));
   assert.match(documento.getElementById('lectura-scalp-rotulo').textContent, /SCALP: NO EVALUABLE/);
   const t = documento.getElementById('lectura-scalp-campos').textContent;
-  assert.match(t, /data_confidence 0\.0 < 70/);
+  assert.match(t, /ESTADO Sin datos suficientes/);
   assert.match(t, /sin lado/);
 });
 

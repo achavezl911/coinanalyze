@@ -10,7 +10,8 @@
 #   B2 · el sesgo es el GLIFO MAS GRANDE del primer pliegue. Caber no basta.
 #   B3 · cada campo que el sobre sirve con valor se pinta, con SU valor y con SU `source_key`.
 #   B4 · ninguna celda declara una clave que el sobre NO sirva.
-#   B5 · la regla del handoff, en las dos direcciones.
+#   B5 · la regla del handoff, en las dos direcciones, sobre lo que de verdad decide: el RAYADO
+#        de la tarjeta. Desde la v2 del sobre `evaluable` ya NO decide la palabra.
 #   B7 · LA LECTURA DEL SCALP NO SE PRESENTA COMO DEL MARCO. En SWING y en LARGO el veredicto
 #        servido es NO EVALUABLE con su motivo, y lo que sale del scalp vive en `lectura_scalp`
 #        y se pinta en SU tarjeta, no dentro de DECIDE.
@@ -277,28 +278,60 @@ if huerf:
 else:
     lineas.append("ninguna celda declara una clave que el sobre no sirva")
 
-# --- B5 --------------------------------------------------------------------------------
+# --- B5 · LA REGLA DEL HANDOFF, SOBRE LO QUE AHORA DECIDE -------------------------------
+#
+# ESTE BRAZO JUZGABA OTRA COSA Y TENIA QUE CAMBIAR. Exigia «evaluable=false -> la palabra dice
+# NO EVALUABLE», que era la regla de la v1 del sobre. Desde la v2 la palabra sale del `state` y
+# la calidad NO la decide: si se hubiera dejado, B5 condenaria una pantalla CORRECTA en cuanto
+# la calidad baje de 70 con un estado que tiene lado -que es justo la mitad de C1 que el encargo
+# manda no callar-. Lo que `evaluable` decide hoy es el RAYADO de la tarjeta, y eso es lo que se
+# mide: la regla sigue cobrandose, sobre su efecto de verdad.
 dec = (g.get("sobre") or {}).get("decide") or {}
 ev = (dec.get("evaluable") or {}).get("value")
-texto_sesgo = ((cosecha(g, "scalp 1920x1080").get("sesgo") or {}).get("texto") or "").strip()
+umbral_ev = (dec.get("evaluable") or {}).get("threshold")
+dc_val = (dec.get("data_confidence") or {}).get("value")
+cg = cosecha(g, f"scalp 1920x1080 [{activo}]")
+clases = str(cg.get("clases_decide") or "").split()
+marcada = "no-evaluable" in clases
 if ev is None:
-    fallos.append("B5: el sobre no trae `decide.evaluable`: la regla de <70 no se puede juzgar")
-elif ev is False and texto_sesgo != "NO EVALUABLE":
-    fallos.append(f"B5: el sobre dice evaluable=false y la pantalla pone {texto_sesgo!r}")
-elif ev is True and texto_sesgo == "NO EVALUABLE":
-    fallos.append("B5: el sobre dice evaluable=true y la pantalla pone NO EVALUABLE")
+    fallos.append("B5: el sobre no trae `decide.evaluable`: la regla del umbral no se puede juzgar")
+elif cg.get("clases_decide") is None:
+    print("NO MEDIDO: B5: la sonda no cosecho las clases de #decide")
+    raise SystemExit(2)
+elif ev is False and not marcada:
+    fallos.append(
+        f"B5: el sobre dice evaluable=false (data_confidence {dc_val} contra umbral "
+        f"{umbral_ev}) y la tarjeta NO lleva la marca `no-evaluable`: clases {clases}"
+    )
+elif ev is True and marcada:
+    fallos.append(
+        f"B5: el sobre dice evaluable=true (data_confidence {dc_val} contra umbral "
+        f"{umbral_ev}) y la tarjeta se pinta rayada de NO EVALUABLE igualmente"
+    )
+elif (
+    dc_val is not None and umbral_ev is not None
+    and bool(float(dc_val) >= float(umbral_ev)) is not bool(ev)
+):
+    fallos.append(
+        f"B5: `evaluable` no sale de su propia regla: data_confidence {dc_val}, umbral "
+        f"{umbral_ev}, y el sobre dice evaluable={ev}"
+    )
 else:
     lineas.append(
-        f"la regla del handoff se cumple: data_confidence "
-        f"{(dec.get('data_confidence') or {}).get('value')} contra umbral "
-        f"{(dec.get('evaluable') or {}).get('threshold')} -> sesgo {texto_sesgo!r}"
+        f"la regla del handoff se cumple: data_confidence {dc_val} contra umbral {umbral_ev} "
+        f"-> evaluable={ev} -> tarjeta {'rayada' if marcada else 'sin rayar'} "
+        f"(y la palabra NO depende de esto: sale del estado, y eso lo juzga B9)"
     )
 
 # --- B7 · LA LECTURA DEL SCALP NO ES EL VEREDICTO DE OTRO MARCO ------------------------
 # Las claves que salen de la lectura del scalp. Si alguna aparece dentro de `decide` en un
 # marco que no es scalp, ese marco esta publicando la lectura del scalp como suya.
 DEL_SCALP = ("state", "reason", "confidence", "edge", "evidence", "confirms",
-             "invalidates", "invalidation_level", "horizon")
+             "invalidates", "invalidation_level", "horizon",
+             # `evidence_balance` sale de `operator_read.bias`, o sea de la lectura del scalp:
+             # publicarlo dentro de `decide` en SWING seria presentar un balance de scores de un
+             # minuto como del marco, que es el defecto de la 130 en otra clave.
+             "evidence_balance")
 for d, marco in ((sw, "swing"), (lg, "largo")):
     sobre = d.get("sobre") or {}
     if not sobre:

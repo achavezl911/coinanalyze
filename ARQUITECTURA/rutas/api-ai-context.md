@@ -20,58 +20,58 @@ Handler `ai_context` · `app/api.py:3513` (cuerpo hasta la 3526) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `absorption` | literal en app/ai_context.py:1016 |
-| `asset` | literal en app/ai_context.py:968 |
-| `basis` | literal en app/ai_context.py:1021 |
-| `build_finished_at` | asignado en app/ai_context.py:1067 |
-| `build_started_at` | asignado en app/ai_context.py:1066 |
-| `context_metadata` | literal en app/ai_context.py:1022 |
-| `cross_asset` | literal en app/ai_context.py:988 |
-| `cvd_matrix` | literal en app/ai_context.py:982 |
-| `cvd_swing_90d` | literal en app/ai_context.py:974 |
-| `daily_history` | asignado en app/ai_context.py:1052 |
-| `data_confidence` | literal en app/ai_context.py:969 |
-| `data_quality` | literal en app/ai_context.py:1023 |
-| `delta_matrix` | literal en app/ai_context.py:975 |
-| `divergences` | literal en app/ai_context.py:1035 |
-| `envelope_cut` | literal en app/ai_context.py:946 |
-| `external_macro_context` | literal en app/ai_context.py:1034 |
-| `feed_quality` | literal en app/ai_context.py:1030 |
-| `funding_context` | literal en app/ai_context.py:989 |
-| `generated_at` | literal en app/ai_context.py:965 |
-| `interpretation_prompt` | literal en app/ai_context.py:934 |
-| `liq_burst` | literal en app/ai_context.py:1038 |
-| `liquidation_levels` | literal en app/ai_context.py:1039 |
-| `liquidation_map` | literal en app/ai_context.py:990 |
-| `local_alerts` | literal en app/ai_context.py:973 |
-| `macro_context` | literal en app/ai_context.py:1033 |
-| `market_impact` | literal en app/ai_context.py:1000 |
-| `market_memory_2y` | literal en app/ai_context.py:993 |
-| `market_structure` | literal en app/ai_context.py:979 |
-| `oi_context` | literal en app/ai_context.py:985 |
-| `operator_read` | literal en app/ai_context.py:972 |
-| `orderbook` | literal en app/ai_context.py:978 |
-| `passive_flow` | literal en app/ai_context.py:983 |
-| `positioning` | literal en app/ai_context.py:1005 |
-| `price_barriers` | literal en app/ai_context.py:992 |
-| `profile` | literal en app/ai_context.py:966 |
-| `recent_signals` | asignado en app/ai_context.py:1050 |
-| `reference_levels` | literal en app/ai_context.py:987 |
-| `rough_token_estimate` | asignado en app/ai_context.py:1068 |
-| `scalp` | literal en app/ai_context.py:971 |
-| `scalp_liquidations` | literal en app/ai_context.py:1020 |
-| `schema_version` | literal en app/ai_context.py:933 |
-| `setup` | asignado en app/ai_context.py:1048 |
-| `snapshot` | literal en app/ai_context.py:970 |
-| `structure_detail` | literal en app/ai_context.py:981 |
-| `structure_horizons` | literal en app/ai_context.py:980 |
-| `swing_score` | asignado en app/ai_context.py:1055 |
-| `symbol` | literal en app/ai_context.py:967 |
-| `trend_matrix` | literal en app/ai_context.py:984 |
-| `verdict_history` | asignado en app/ai_context.py:1054 |
-| `volatility` | literal en app/ai_context.py:986 |
-| `volume_profile` | literal en app/ai_context.py:991 |
-| `wyckoff` | literal en app/ai_context.py:1006 |
+| `absorption` | literal en app/ai_context.py:1021 |
+| `asset` | literal en app/ai_context.py:973 |
+| `basis` | literal en app/ai_context.py:1026 |
+| `build_finished_at` | asignado en app/ai_context.py:1072 |
+| `build_started_at` | asignado en app/ai_context.py:1071 |
+| `context_metadata` | literal en app/ai_context.py:1027 |
+| `cross_asset` | literal en app/ai_context.py:993 |
+| `cvd_matrix` | literal en app/ai_context.py:987 |
+| `cvd_swing_90d` | literal en app/ai_context.py:979 |
+| `daily_history` | asignado en app/ai_context.py:1057 |
+| `data_confidence` | literal en app/ai_context.py:974 |
+| `data_quality` | literal en app/ai_context.py:1028 |
+| `delta_matrix` | literal en app/ai_context.py:980 |
+| `divergences` | literal en app/ai_context.py:1040 |
+| `envelope_cut` | literal en app/ai_context.py:951 |
+| `external_macro_context` | literal en app/ai_context.py:1039 |
+| `feed_quality` | literal en app/ai_context.py:1035 |
+| `funding_context` | literal en app/ai_context.py:994 |
+| `generated_at` | literal en app/ai_context.py:970 |
+| `interpretation_prompt` | literal en app/ai_context.py:939 |
+| `liq_burst` | literal en app/ai_context.py:1043 |
+| `liquidation_levels` | literal en app/ai_context.py:1044 |
+| `liquidation_map` | literal en app/ai_context.py:995 |
+| `local_alerts` | literal en app/ai_context.py:978 |
+| `macro_context` | literal en app/ai_context.py:1038 |
+| `market_impact` | literal en app/ai_context.py:1005 |
+| `market_memory_2y` | literal en app/ai_context.py:998 |
+| `market_structure` | literal en app/ai_context.py:984 |
+| `oi_context` | literal en app/ai_context.py:990 |
+| `operator_read` | literal en app/ai_context.py:977 |
+| `orderbook` | literal en app/ai_context.py:983 |
+| `passive_flow` | literal en app/ai_context.py:988 |
+| `positioning` | literal en app/ai_context.py:1010 |
+| `price_barriers` | literal en app/ai_context.py:997 |
+| `profile` | literal en app/ai_context.py:971 |
+| `recent_signals` | asignado en app/ai_context.py:1055 |
+| `reference_levels` | literal en app/ai_context.py:992 |
+| `rough_token_estimate` | asignado en app/ai_context.py:1073 |
+| `scalp` | literal en app/ai_context.py:976 |
+| `scalp_liquidations` | literal en app/ai_context.py:1025 |
+| `schema_version` | literal en app/ai_context.py:938 |
+| `setup` | asignado en app/ai_context.py:1053 |
+| `snapshot` | literal en app/ai_context.py:975 |
+| `structure_detail` | literal en app/ai_context.py:986 |
+| `structure_horizons` | literal en app/ai_context.py:985 |
+| `swing_score` | asignado en app/ai_context.py:1060 |
+| `symbol` | literal en app/ai_context.py:972 |
+| `trend_matrix` | literal en app/ai_context.py:989 |
+| `verdict_history` | asignado en app/ai_context.py:1059 |
+| `volatility` | literal en app/ai_context.py:991 |
+| `volume_profile` | literal en app/ai_context.py:996 |
+| `wyckoff` | literal en app/ai_context.py:1011 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -186,32 +186,32 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:884`
-- `app.ai_context.normalize_profile` — `app/ai_context.py:212`
+- `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:889`
+- `app.ai_context.normalize_profile` — `app/ai_context.py:217`
 - `app.api.validate_symbol` — `app/api.py:231`
 
 <details><summary>Alcanzables de forma indirecta (168)</summary>
 
-- `app.ai_context._armar_sobre` — `app/ai_context.py:902`
-- `app.ai_context._corte_unico` — `app/ai_context.py:848`
-- `app.ai_context._round_number` — `app/ai_context.py:219`
-- `app.ai_context.build_operator_read` — `app/ai_context.py:740`
-- `app.ai_context.compact_dict` — `app/ai_context.py:246`
-- `app.ai_context.compact_value` — `app/ai_context.py:230`
-- `app.ai_context.daily_data` — `app/ai_context.py:298`
-- `app.ai_context.daily_history` — `app/ai_context.py:387`
-- `app.ai_context.data_confidence_row` — `app/ai_context.py:524`
-- `app.ai_context.field_disambiguation` — `app/ai_context.py:67`
-- `app.ai_context.latest_orderbook` — `app/ai_context.py:673`
-- `app.ai_context.latest_snapshot` — `app/ai_context.py:291`
-- `app.ai_context.liquidation_levels` — `app/ai_context.py:701`
-- `app.ai_context.local_alerts` — `app/ai_context.py:790`
-- `app.ai_context.orderbook_freshness` — `app/ai_context.py:661`
-- `app.ai_context.quality_score` — `app/ai_context.py:612`
-- `app.ai_context.recent_signals` — `app/ai_context.py:685`
-- `app.ai_context.rough_token_estimate` — `app/ai_context.py:276`
-- `app.ai_context.sin_perder_los_nulos` — `app/ai_context.py:257`
-- `app.ai_context.verdict_history` — `app/ai_context.py:479`
+- `app.ai_context._armar_sobre` — `app/ai_context.py:907`
+- `app.ai_context._corte_unico` — `app/ai_context.py:853`
+- `app.ai_context._round_number` — `app/ai_context.py:224`
+- `app.ai_context.build_operator_read` — `app/ai_context.py:745`
+- `app.ai_context.compact_dict` — `app/ai_context.py:251`
+- `app.ai_context.compact_value` — `app/ai_context.py:235`
+- `app.ai_context.daily_data` — `app/ai_context.py:303`
+- `app.ai_context.daily_history` — `app/ai_context.py:392`
+- `app.ai_context.data_confidence_row` — `app/ai_context.py:529`
+- `app.ai_context.field_disambiguation` — `app/ai_context.py:72`
+- `app.ai_context.latest_orderbook` — `app/ai_context.py:678`
+- `app.ai_context.latest_snapshot` — `app/ai_context.py:296`
+- `app.ai_context.liquidation_levels` — `app/ai_context.py:706`
+- `app.ai_context.local_alerts` — `app/ai_context.py:795`
+- `app.ai_context.orderbook_freshness` — `app/ai_context.py:666`
+- `app.ai_context.quality_score` — `app/ai_context.py:617`
+- `app.ai_context.recent_signals` — `app/ai_context.py:690`
+- `app.ai_context.rough_token_estimate` — `app/ai_context.py:281`
+- `app.ai_context.sin_perder_los_nulos` — `app/ai_context.py:262`
+- `app.ai_context.verdict_history` — `app/ai_context.py:484`
 - `app.config.get_settings` — `app/config.py:291`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
@@ -389,7 +389,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K101-un-nombre-dos-cosas.sh:126`, `harness/checks/K101-un-nombre-dos-cosas.sh:207`, `harness/checks/K102-mesa.py:521`, `harness/checks/K102-mesa.py:559` _(+30)_ | `harness/checks/K101-un-nombre-dos-cosas.sh:26`, `harness/checks/K102-mesa.py:516`, `harness/checks/K31-eslabon5.sh:60`, `harness/checks/K31-eslabon5.sh:172` _(+9)_ |
+| **checks** | `harness/checks/K101-un-nombre-dos-cosas.sh:126`, `harness/checks/K101-un-nombre-dos-cosas.sh:207`, `harness/checks/K102-mesa.py:525`, `harness/checks/K102-mesa.py:563` _(+30)_ | `harness/checks/K101-un-nombre-dos-cosas.sh:26`, `harness/checks/K102-control.bash:625`, `harness/checks/K102-mesa.py:520`, `harness/checks/K31-eslabon5.sh:60` _(+10)_ |
 | **panel** | `static/js/02-canal.js:35`, `static/js/02-canal.js:49`, `static/js/02-canal.js:53`, `static/js/10-contexto-y-estructura.js:918` _(+8)_ | — |
 | **panel-html** | `static/index.html:85` | — |
 | **readme** | — | `README.md:62`, `README.md:414`, `README.md:518` |

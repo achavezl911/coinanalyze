@@ -314,6 +314,10 @@ JS_COSECHA = r"""
 
   return {
     tarjeta_scalp: tarjeta,
+    // LAS MARCAS DE LA TARJETA. `no-evaluable` y `rancio` son lo que la regla del handoff y el
+    // tope de edad deciden AHORA sobre la pantalla: desde la v2 del sobre, `evaluable` ya no
+    // decide la palabra, decide el rayado. Sin cosechar la clase, esa promesa no es medible.
+    clases_decide: d.className || '',
     pliegue: {
       innerHeight: window.innerHeight,
       innerWidth: window.innerWidth,

@@ -61,6 +61,11 @@ from app.scalp_logic import compute_swing_score as _compute_swing_score
 from app.scalp_logic import passive_flow as _passive_flow
 from app.scalp_logic import trend_matrix as _trend_matrix
 
+# EL MAPA ESTADO -> LADO SE IMPORTA, NO SE COPIA. La palabra que DECIDE pone en 30 px tiene que
+# decir la MISMA direccion que el registro de senales guarda para ese estado; con una copia, las
+# dos versiones se separarian en silencio, que es la forma exacta del defecto de la campana 132.
+from app.signal_ledger import _LONG_STATES, _NEUTRAL_STATES, _SHORT_STATES
+
 AIProfile = Literal["lite", "default", "pro", "max"]
 
 
@@ -1155,7 +1160,57 @@ async def build_ai_context(
 # motivo por el que las familias SERIE y DEMANDA no entran en el sobre-. Va declarado con
 # `outside_cut: true` por quien lo anade.
 
-MESA_DECIDE_SCHEMA = "mesa.decide.v1"
+MESA_DECIDE_SCHEMA = "mesa.decide.v2"
+
+# LAS CUATRO PALABRAS DE «QUE HACER», Y DE DONDE SALE CADA UNA.
+#
+# La v1 sacaba la palabra de `operator_read.bias`, que es el SIGNO de `long_score - short_score`
+# sin ningun umbral. El `state` -que es lo que el sistema DECIDE y lo que el registro de senales
+# guarda- exige ademas `edge >= 12` y que el score ganador llegue a 58 (`scalp_bias_label`).
+# Entre esas dos cuentas hay una franja entera donde el estado dice «No Trade» y el signo sigue
+# diciendo un lado: medido en PRODUCCION el 2026-09-30T05:24:30Z (BTC, release a15a89d), la
+# palabra decia SHORT con `state` «No Trade», `edge` 5.0 y `no_trade_reasons` ["score_edge_low"].
+#
+# Desde la v2 la palabra es funcion del `state` y de nada mas:
+#
+#   _LONG_STATES   (Long Momentum, Long Pullback)      -> LONG
+#   _SHORT_STATES  (Short Momentum, Short Rejection)   -> SHORT
+#   _NEUTRAL_STATES (No Trade)                         -> NO OPERAR
+#   cualquier otro, o vacio (Sin datos suficientes)    -> NO EVALUABLE
+#
+# POR QUE EL MAPA DEL ESTADO Y NO `classify_signal_observation` ENTERA. El clasificador del
+# registro pone `unavailable` tambien cuando el libro no esta `ok` o la cobertura baja de 50,
+# aunque el estado tenga lado. Usarlo aqui haria que la palabra CALLASE un lado que el sistema si
+# toma, que es la mitad que el encargo prohibe igual que la otra. El estado ya trae su propio
+# «no pude evaluar» -«Sin datos suficientes»- y es ese el que manda.
+#
+# Y `data_confidence` YA NO DECIDE LA PALABRA. En la v1, por debajo de 70 la palabra salia
+# NO EVALUABLE aunque el estado tuviera lado: la misma mitad prohibida. La calidad sigue servida
+# y sigue en pantalla por tres caminos que no son la palabra -`decide.evaluable` con su umbral y
+# su regla, el rayado de la tarjeta y la barra de `data_confidence` contra su umbral-.
+MESA_PALABRA_LONG = "LONG"
+MESA_PALABRA_SHORT = "SHORT"
+MESA_PALABRA_SIN_LADO = "NO OPERAR"
+MESA_PALABRA_NO_EVALUABLE = "NO EVALUABLE"
+
+
+def palabra_de_la_decision(state: Any) -> tuple[str, str | None]:
+    """La palabra de DECIDE y su motivo, a partir del `state` y del mapa del registro.
+
+    Devuelve `(palabra, motivo)`. El motivo es None cuando la pantalla ya tiene algo mejor que
+    ensenar en su linea: con lado no hace falta, y con «No Trade» esa linea publica
+    `no_trade_reasons`, que dice POR QUE no se opera en vez de repetir que no se opera.
+    """
+    st = str(state or "").strip()
+    if st in _LONG_STATES:
+        return MESA_PALABRA_LONG, None
+    if st in _SHORT_STATES:
+        return MESA_PALABRA_SHORT, None
+    if st in _NEUTRAL_STATES:
+        return MESA_PALABRA_SIN_LADO, None
+    if not st:
+        return MESA_PALABRA_NO_EVALUABLE, "el scalp no publica un estado"
+    return MESA_PALABRA_NO_EVALUABLE, f"el sistema no pudo evaluar: ESTADO {st}"
 
 # LA EDAD MAXIMA DE LO QUE LA MESA ENSENA, DECLARADA. No es un adorno: el encargo pide que
 # se declare Y se ensene en pantalla. 120 s sale de la cadencia real de ingesta -el lag de
@@ -1223,7 +1278,10 @@ def _sin_lado(source_key: str) -> dict[str, Any]:
         "value": None,
         "status": "ausente",
         "source_key": source_key,
-        "motivo": "sin lado: el sesgo no es LONG ni SHORT",
+        # LO QUE NO SE ENSENA TAMBIEN DICE ALGO. Antes decia «el sesgo no es LONG ni SHORT», que
+        # era verdad y no explicaba nada: el sesgo era el signo de una resta. Ahora el lado sale
+        # de la DECISION, asi que la ausencia se lee como lo que es.
+        "motivo": "sin lado: el sistema no toma lado en este instante",
     }
 
 
@@ -1248,11 +1306,12 @@ async def build_mesa_decide(
 
     read = build_operator_read(summary, confidence)
 
-    # EL VEREDICTO. `operator_read.bias` dice Long/Short/No Trade; la pantalla del handoff
-    # dice LONG/SHORT/NEUTRAL/NO EVALUABLE. La cuarta no es un bias: es la regla del handoff
-    # sobre `data_confidence.quality_score`, y por eso viaja con SU umbral y SU motivo.
+    # EL VEREDICTO. La palabra sale del `state`, que es lo que el sistema DECIDE; `evaluable`
+    # sigue siendo la regla del handoff sobre `data_confidence.quality_score` -con SU umbral y SU
+    # regla- pero ya NO decide la palabra: ver el bloque de `palabra_de_la_decision`.
     calidad = as_float(confidence.get("quality_score"))
     evaluable = calidad is not None and calidad >= MESA_NO_EVALUABLE_UNDER
+    estado_crudo = str(read.get("state") or "")
     bias_crudo = str(read.get("bias") or "")
 
     # LA LECTURA DEL OPERADOR ES DEL SCALP, Y EN OTRO MARCO NO ES UN VEREDICTO DE ESE MARCO.
@@ -1290,23 +1349,11 @@ async def build_mesa_decide(
     # tarjeta de swing y largo decia «sin lado», confirms [null, null], invalidates [].
     # O sea: arreglar R1 rompio la tarjeta que R1 creo.
     #
-    # EL LADO SALE SIEMPRE DEL VEREDICTO DEL SCALP, nunca del de la pantalla. Con la calidad
-    # real del espejo (0) el scalp es NO EVALUABLE y entonces «sin lado» SI es verdad, que es
-    # justo lo que el control comprueba.
-    if not evaluable:
-        bias_scalp = "NO EVALUABLE"
-        bias_scalp_source = "data_confidence.quality_score"
-        bias_scalp_motivo = (
-            f"data_confidence {calidad} < {MESA_NO_EVALUABLE_UNDER:g}"
-            if calidad is not None
-            else "data_confidence.quality_score no llega"
-        )
-    else:
-        bias_scalp = {"Long": "LONG", "Short": "SHORT", "No Trade": "NEUTRAL"}.get(
-            bias_crudo, "NEUTRAL"
-        )
-        bias_scalp_source = "operator_read.bias"
-        bias_scalp_motivo = None
+    # EL LADO SALE SIEMPRE DEL VEREDICTO DEL SCALP, nunca del de la pantalla. Y el veredicto del
+    # scalp sale de SU ESTADO, que es la decision que el registro de senales guarda: la palabra no
+    # puede decir un lado que el estado de la misma respuesta no toma, ni callar uno que si toma.
+    bias_scalp, bias_scalp_motivo = palabra_de_la_decision(estado_crudo)
+    bias_scalp_source = "operator_read.state"
 
     if not es_scalp:
         bias_display = "NO EVALUABLE"
@@ -1321,7 +1368,28 @@ async def build_mesa_decide(
         bias_source = bias_scalp_source
         bias_motivo = bias_scalp_motivo
 
-    lado = "long" if bias_scalp == "LONG" else "short" if bias_scalp == "SHORT" else None
+    lado = (
+        "long"
+        if bias_scalp == MESA_PALABRA_LONG
+        else "short"
+        if bias_scalp == MESA_PALABRA_SHORT
+        else None
+    )
+
+    # EL BALANCE DE EVIDENCIA, ROTULADO COMO LO QUE ES. Es lo que la palabra decia hasta la v1;
+    # no se pierde, pero deja de llamarse una decision. Se sirve con SU regla al lado para que la
+    # pantalla no tenga que explicarlo y para que un lector -humano o IA- vea por que puede
+    # discrepar del estado sin que ninguno de los dos este roto.
+    balance_evidencia = {
+        "value": bias_crudo or None,
+        "source_key": "operator_read.bias",
+        "status": "ok" if bias_crudo else "nulo",
+        "rule": (
+            "signo de long_score - short_score. NO es la decision: el estado exige ademas "
+            "edge >= 12 y que el score ganador llegue a 58"
+        ),
+        "motivo": None if bias_crudo else "operator_read.bias llega vacio",
+    }
 
     # LA EDAD, y si lo que se ensena esta rancio contra su tope DECLARADO.
     lag = as_float(confidence.get("snapshot_lag_seconds"))
@@ -1385,9 +1453,9 @@ async def build_mesa_decide(
                 "value": bias_display,
                 "source_key": bias_source,
                 "status": "rancio" if (rancio and evaluable) else "ok",
-                "raw": bias_crudo,
                 "motivo": bias_motivo,
             },
+            "evidence_balance": balance_evidencia,
             "evaluable": {
                 "value": evaluable,
                 "source_key": "data_confidence.quality_score",
@@ -1480,6 +1548,10 @@ async def build_mesa_decide(
         movidos = [
             "state", "reason", "confidence", "edge", "evidence", "confirms",
             "invalidates", "invalidation_level", "no_trade_reasons", "warnings",
+            # `evidence_balance` sale de `operator_read.bias`, o sea de la lectura del scalp:
+            # se va con ella. Si se quedase en `decide`, SWING publicaria como suyo un balance
+            # de scores de un minuto, que es el defecto de la 130 en otra clave.
+            "evidence_balance",
         ]
         payload["lectura_scalp"] = {
             "de_marco": "scalp",
@@ -1496,7 +1568,6 @@ async def build_mesa_decide(
                 "value": bias_scalp,
                 "source_key": bias_scalp_source,
                 "status": "ok",
-                "raw": bias_crudo,
                 "motivo": bias_scalp_motivo,
             },
             **{k: d.pop(k) for k in movidos if k in d},

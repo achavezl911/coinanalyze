@@ -19,9 +19,9 @@ Handler `mesa_decide` · `app/api.py:3784` (cuerpo hasta la 3819) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `build_finished_at` | asignado en app/ai_context.py:1506 |
-| `build_started_at` | asignado en app/ai_context.py:1505 |
-| `lectura_scalp` | asignado en app/ai_context.py:1484 |
+| `build_finished_at` | asignado en app/ai_context.py:1577 |
+| `build_started_at` | asignado en app/ai_context.py:1576 |
+| `lectura_scalp` | asignado en app/ai_context.py:1556 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -104,27 +104,28 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-52 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+53 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1230`
+- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1288`
 - `app.api.scalp_persistence` — `app/api.py:3142`
 - `app.api.validate_symbol` — `app/api.py:231`
 
-<details><summary>Alcanzables de forma indirecta (49)</summary>
+<details><summary>Alcanzables de forma indirecta (50)</summary>
 
-- `app.ai_context._corte_unico` — `app/ai_context.py:848`
-- `app.ai_context._round_number` — `app/ai_context.py:219`
-- `app.ai_context._sin_lado` — `app/ai_context.py:1221`
-- `app.ai_context.build_operator_read` — `app/ai_context.py:740`
-- `app.ai_context.campo_mesa` — `app/ai_context.py:1181`
-- `app.ai_context.compact_dict` — `app/ai_context.py:246`
-- `app.ai_context.compact_value` — `app/ai_context.py:230`
-- `app.ai_context.data_confidence_row` — `app/ai_context.py:524`
-- `app.ai_context.latest_snapshot` — `app/ai_context.py:291`
-- `app.ai_context.quality_score` — `app/ai_context.py:612`
+- `app.ai_context._corte_unico` — `app/ai_context.py:853`
+- `app.ai_context._round_number` — `app/ai_context.py:224`
+- `app.ai_context._sin_lado` — `app/ai_context.py:1276`
+- `app.ai_context.build_operator_read` — `app/ai_context.py:745`
+- `app.ai_context.campo_mesa` — `app/ai_context.py:1236`
+- `app.ai_context.compact_dict` — `app/ai_context.py:251`
+- `app.ai_context.compact_value` — `app/ai_context.py:235`
+- `app.ai_context.data_confidence_row` — `app/ai_context.py:529`
+- `app.ai_context.latest_snapshot` — `app/ai_context.py:296`
+- `app.ai_context.palabra_de_la_decision` — `app/ai_context.py:1197`
+- `app.ai_context.quality_score` — `app/ai_context.py:617`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
 - `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
@@ -193,8 +194,8 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-decide-lo-primero.sh:74`, `harness/checks/K102-decide-lo-primero.sh:98`, `harness/checks/K102-decide-lo-primero.sh:100`, `harness/checks/K102-decide-lo-primero.sh:105` _(+9)_ | `harness/checks/K102-decide-lo-primero.sh:29`, `harness/checks/K102-mesa.py:516`, `harness/checks/K102-mesa.py:526`, `harness/checks/K102-mesa.py:730` _(+1)_ |
-| **tests** | `tests/js/mesa_decide.test.js:189`, `tests/js/mesa_remate.test.js:28` | `tests/js/mesa_decide.test.js:30` |
+| **checks** | `harness/checks/K102-decide-lo-primero.sh:75`, `harness/checks/K102-decide-lo-primero.sh:99`, `harness/checks/K102-decide-lo-primero.sh:101`, `harness/checks/K102-decide-lo-primero.sh:106` _(+9)_ | `harness/checks/K102-decide-lo-primero.sh:30`, `harness/checks/K102-mesa.py:520`, `harness/checks/K102-mesa.py:530`, `harness/checks/K102-mesa.py:734` _(+1)_ |
+| **tests** | `tests/js/mesa_decide.test.js:263`, `tests/js/mesa_remate.test.js:28` | `tests/js/mesa_decide.test.js:30` |
 
 **No la llama el panel**, pero si 15 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
@@ -258,7 +259,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic._resample_highs_lows` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.spot_flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 28 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 29 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

@@ -177,7 +177,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | — | `harness/checks/K102-decide-lo-primero.sh:31`, `harness/checks/K102-mesa.py:733`, `harness/checks/K102-sobre-plantado.py:120` |
+| **checks** | — | `harness/checks/K102-decide-lo-primero.sh:32`, `harness/checks/K102-mesa.py:737`, `harness/checks/K102-sobre-plantado.py:138` |
 
 **Nadie la llama.** Sus 3 rastros son todos MENCION -comentario,
 docstring o documento-. Es la forma del patron que en esta casa se ha repetido

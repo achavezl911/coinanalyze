@@ -20,15 +20,15 @@ Handler `ai_context_bundle` · `app/api.py:3530` (cuerpo hasta la 3547) · decor
 
 | campo | de donde sale |
 |---|---|
-| `build_finished_at` | asignado en app/ai_context.py:1116 |
-| `build_started_at` | asignado en app/ai_context.py:1115 |
-| `generated_at` | literal en app/ai_context.py:1110 |
-| `interpretation_prompt` | literal en app/ai_context.py:1108 |
-| `local_alerts` | literal en app/ai_context.py:1112 |
-| `profile` | literal en app/ai_context.py:1111 |
-| `rough_token_estimate` | asignado en app/ai_context.py:1117 |
-| `schema_version` | literal en app/ai_context.py:1107 |
-| `symbols` | literal en app/ai_context.py:1113 |
+| `build_finished_at` | asignado en app/ai_context.py:1121 |
+| `build_started_at` | asignado en app/ai_context.py:1120 |
+| `generated_at` | literal en app/ai_context.py:1115 |
+| `interpretation_prompt` | literal en app/ai_context.py:1113 |
+| `local_alerts` | literal en app/ai_context.py:1117 |
+| `profile` | literal en app/ai_context.py:1116 |
+| `rough_token_estimate` | asignado en app/ai_context.py:1122 |
+| `schema_version` | literal en app/ai_context.py:1112 |
+| `symbols` | literal en app/ai_context.py:1118 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -143,33 +143,33 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.build_ai_context` — `app/ai_context.py:1072`
-- `app.ai_context.normalize_profile` — `app/ai_context.py:212`
+- `app.ai_context.build_ai_context` — `app/ai_context.py:1077`
+- `app.ai_context.normalize_profile` — `app/ai_context.py:217`
 - `app.api.validate_symbol` — `app/api.py:231`
 
 <details><summary>Alcanzables de forma indirecta (169)</summary>
 
-- `app.ai_context._armar_sobre` — `app/ai_context.py:902`
-- `app.ai_context._corte_unico` — `app/ai_context.py:848`
-- `app.ai_context._round_number` — `app/ai_context.py:219`
-- `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:884`
-- `app.ai_context.build_operator_read` — `app/ai_context.py:740`
-- `app.ai_context.compact_dict` — `app/ai_context.py:246`
-- `app.ai_context.compact_value` — `app/ai_context.py:230`
-- `app.ai_context.daily_data` — `app/ai_context.py:298`
-- `app.ai_context.daily_history` — `app/ai_context.py:387`
-- `app.ai_context.data_confidence_row` — `app/ai_context.py:524`
-- `app.ai_context.field_disambiguation` — `app/ai_context.py:67`
-- `app.ai_context.latest_orderbook` — `app/ai_context.py:673`
-- `app.ai_context.latest_snapshot` — `app/ai_context.py:291`
-- `app.ai_context.liquidation_levels` — `app/ai_context.py:701`
-- `app.ai_context.local_alerts` — `app/ai_context.py:790`
-- `app.ai_context.orderbook_freshness` — `app/ai_context.py:661`
-- `app.ai_context.quality_score` — `app/ai_context.py:612`
-- `app.ai_context.recent_signals` — `app/ai_context.py:685`
-- `app.ai_context.rough_token_estimate` — `app/ai_context.py:276`
-- `app.ai_context.sin_perder_los_nulos` — `app/ai_context.py:257`
-- `app.ai_context.verdict_history` — `app/ai_context.py:479`
+- `app.ai_context._armar_sobre` — `app/ai_context.py:907`
+- `app.ai_context._corte_unico` — `app/ai_context.py:853`
+- `app.ai_context._round_number` — `app/ai_context.py:224`
+- `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:889`
+- `app.ai_context.build_operator_read` — `app/ai_context.py:745`
+- `app.ai_context.compact_dict` — `app/ai_context.py:251`
+- `app.ai_context.compact_value` — `app/ai_context.py:235`
+- `app.ai_context.daily_data` — `app/ai_context.py:303`
+- `app.ai_context.daily_history` — `app/ai_context.py:392`
+- `app.ai_context.data_confidence_row` — `app/ai_context.py:529`
+- `app.ai_context.field_disambiguation` — `app/ai_context.py:72`
+- `app.ai_context.latest_orderbook` — `app/ai_context.py:678`
+- `app.ai_context.latest_snapshot` — `app/ai_context.py:296`
+- `app.ai_context.liquidation_levels` — `app/ai_context.py:706`
+- `app.ai_context.local_alerts` — `app/ai_context.py:795`
+- `app.ai_context.orderbook_freshness` — `app/ai_context.py:666`
+- `app.ai_context.quality_score` — `app/ai_context.py:617`
+- `app.ai_context.recent_signals` — `app/ai_context.py:690`
+- `app.ai_context.rough_token_estimate` — `app/ai_context.py:281`
+- `app.ai_context.sin_perder_los_nulos` — `app/ai_context.py:262`
+- `app.ai_context.verdict_history` — `app/ai_context.py:484`
 - `app.config.get_settings` — `app/config.py:291`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`

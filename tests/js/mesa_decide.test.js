@@ -29,11 +29,14 @@ function campo(value, source_key, extra) {
 
 // Un sobre con la forma que sirve /api/mesa/decide. Los valores son de la medida real contra
 // 140 del 2026-09-28, para que el test no invente una forma que el backend no tiene.
+// ACTUALIZADO A LA v2 (campana 132): la palabra sale de `operator_read.state` y no de
+// `operator_read.bias`, `raw` desaparece y el balance de evidencia viaja en su propio campo.
+// Un fixture con la forma vieja probaria un contrato que el backend ya no sirve (A62).
 function sobreLong() {
   return {
     ok: true,
     datos: {
-      schema_version: 'mesa.decide.v1',
+      schema_version: 'mesa.decide.v2',
       symbol: 'BTCUSDT_PERP.A',
       frame: 'scalp',
       max_age_s: 120.0,
@@ -47,9 +50,14 @@ function sobreLong() {
         stale_rule: 'snapshot_lag_seconds > max_age_s (120 s)',
       },
       decide: {
-        bias: { value: 'LONG', source_key: 'operator_read.bias', status: 'ok', raw: 'Long', motivo: null },
+        bias: { value: 'LONG', source_key: 'operator_read.state', status: 'ok', motivo: null },
         evaluable: { value: true, source_key: 'data_confidence.quality_score', status: 'ok', threshold: 70.0 },
         state: campo('Long Pullback', 'operator_read.state'),
+        evidence_balance: campo('Long', 'operator_read.bias', {
+          rule: 'signo de long_score - short_score. NO es la decision: el estado exige ademas '
+            + 'edge >= 12 y que el score ganador llegue a 58',
+          motivo: null,
+        }),
         reason: campo('ΔFut1m -742774, book ok/L5 0.47', 'scalp.reason'),
         zone: {
           center: campo(83751.5, 'price_barriers.active_zone.center'),
@@ -88,7 +96,7 @@ test('el sesgo que se pinta es EL VALOR SERVIDO, y declara su clave', () => {
   ctx.pintarDecide(sobreLong(), n);
   assert.strictEqual(n.sesgo.textContent, 'LONG');
   assert.strictEqual(n.sesgo.getAttribute('data-valor'), 'LONG');
-  assert.strictEqual(n.sesgo.getAttribute('data-source-key'), 'operator_read.bias');
+  assert.strictEqual(n.sesgo.getAttribute('data-source-key'), 'operator_read.state');
 });
 
 test('si el backend dijera SHORT, la pantalla dice SHORT: el cliente no recalcula', () => {
@@ -97,24 +105,25 @@ test('si el backend dijera SHORT, la pantalla dice SHORT: el cliente no recalcul
   const s = sobreLong();
   // Se cambia SOLO el valor servido. Si el cliente dedujese el sesgo de long_score/short_score
   // -que aqui no viajan- este test no podria pasar.
-  s.datos.decide.bias = { value: 'SHORT', source_key: 'operator_read.bias', status: 'ok' };
+  s.datos.decide.bias = { value: 'SHORT', source_key: 'operator_read.state', status: 'ok' };
   ctx.pintarDecide(s, n);
   assert.strictEqual(n.sesgo.textContent, 'SHORT');
   assert.strictEqual(n.sesgo.className, 'sesgo-SHORT');
 });
 
-test('LA REGLA DEL HANDOFF · data_confidence < 70 sale NO EVALUABLE con su motivo', () => {
+test('LA REGLA DEL HANDOFF · data_confidence < 70 NO decide la palabra, decide el rayado', () => {
   const { ctx, documento } = cargaMesa();
   const n = nodos(documento);
   const s = sobreLong();
-  // Es el caso que el ESPEJO produjo solo, con datos de verdad: quality_score 0.0.
+  // Es el caso que el ESPEJO produjo solo, con datos de verdad: quality_score 0.0. La palabra
+  // sigue siendo la del ESTADO -aqui «Sin datos suficientes»- y no la de la calidad.
   s.datos.decide.bias = {
     value: 'NO EVALUABLE',
-    source_key: 'data_confidence.quality_score',
+    source_key: 'operator_read.state',
     status: 'ok',
-    raw: 'Short',
-    motivo: 'data_confidence 0.0 < 70',
+    motivo: 'el sistema no pudo evaluar: ESTADO Sin datos suficientes',
   };
+  s.datos.decide.state = campo('Sin datos suficientes', 'operator_read.state');
   s.datos.decide.evaluable = {
     value: false, source_key: 'data_confidence.quality_score', status: 'ok', threshold: 70.0,
   };
@@ -122,9 +131,74 @@ test('LA REGLA DEL HANDOFF · data_confidence < 70 sale NO EVALUABLE con su moti
   ctx.pintarDecide(s, n);
   assert.strictEqual(n.sesgo.textContent, 'NO EVALUABLE');
   assert.strictEqual(n.sesgo.className, 'sesgo-NOEVAL');
-  assert.match(n.motivo.textContent, /data_confidence 0\.0 < 70/);
-  // y la tarjeta entera se marca como insuficiente, que es lo que pide el handoff
+  assert.match(n.motivo.textContent, /ESTADO Sin datos suficientes/);
+  // y la tarjeta entera se marca como insuficiente, que es lo que AHORA decide el handoff
   assert.ok(n.caja.classList.contains('no-evaluable'));
+});
+
+test('LA CALIDAD NO CALLA UN LADO · con evaluable=false y un estado CON lado, la palabra es ese lado', () => {
+  const { ctx, documento } = cargaMesa();
+  const n = nodos(documento);
+  const s = sobreLong();
+  // La v1 ponia NO EVALUABLE aqui, que es la mitad prohibida de C1: callar un lado que el
+  // sistema SI toma. La tarjeta se raya -el dato es malo- y la palabra sigue diciendo LONG.
+  s.datos.decide.evaluable = {
+    value: false, source_key: 'data_confidence.quality_score', status: 'ok', threshold: 70.0,
+  };
+  s.datos.decide.data_confidence = campo(12.0, 'data_confidence.quality_score');
+  ctx.pintarDecide(s, n);
+  assert.strictEqual(n.sesgo.textContent, 'LONG');
+  assert.strictEqual(n.sesgo.className, 'sesgo-LONG');
+  assert.ok(n.caja.classList.contains('no-evaluable'));
+});
+
+test('NO OPERAR · la palabra de «el sistema no toma lado» no se lee como un lado', () => {
+  const { ctx, documento } = cargaMesa();
+  const n = nodos(documento);
+  const s = sobreLong();
+  s.datos.decide.bias = { value: 'NO OPERAR', source_key: 'operator_read.state', status: 'ok' };
+  s.datos.decide.state = campo('No Trade', 'operator_read.state');
+  ctx.pintarDecide(s, n);
+  assert.strictEqual(n.sesgo.textContent, 'NO OPERAR');
+  assert.strictEqual(n.sesgo.className, 'sesgo-SIN-LADO');
+  assert.ok(!/LONG|SHORT/.test(n.sesgo.textContent));
+  // la clase NO cae al cajon de «no evaluable»: son dos cosas distintas y se pintan distintas
+  assert.notStrictEqual(n.sesgo.className, 'sesgo-NOEVAL');
+});
+
+test('EL BALANCE DE EVIDENCIA sigue a la vista, rotulado, y con SU clave', () => {
+  const { ctx, documento } = cargaMesa();
+  const n = nodos(documento);
+  ctx.pintarDecide(sobreLong(), n);
+  const celda = Array.from(n.campos.querySelectorAll('[data-campo]'))
+    .find((x) => x.getAttribute('data-campo') === 'evidence_balance');
+  assert.ok(celda, 'no se pinta la celda del balance de evidencia');
+  assert.strictEqual(celda.querySelector('[data-valor]').getAttribute('data-valor'), 'Long');
+  assert.strictEqual(
+    celda.querySelector('[data-source-key]').getAttribute('data-source-key'),
+    'operator_read.bias'
+  );
+  // el rotulo dice lo que NO es: sin eso, un lector lo leeria como la decision otra vez
+  assert.match(celda.querySelector('.rotulo').textContent, /no es la decisión/);
+});
+
+test('EL BALANCE Y LA PALABRA PUEDEN DISCREPAR, y la pantalla ensena los dos sin mezclarlos', () => {
+  const { ctx, documento } = cargaMesa();
+  const n = nodos(documento);
+  const s = sobreLong();
+  // El caso de produccion del 05:24:30Z: el balance dice Short y el sistema no toma lado.
+  s.datos.decide.bias = { value: 'NO OPERAR', source_key: 'operator_read.state', status: 'ok' };
+  s.datos.decide.state = campo('No Trade', 'operator_read.state');
+  s.datos.decide.evidence_balance = campo('Short', 'operator_read.bias');
+  ctx.pintarDecide(s, n);
+  assert.strictEqual(n.sesgo.textContent, 'NO OPERAR');
+  const celda = Array.from(n.campos.querySelectorAll('[data-campo]'))
+    .find((x) => x.getAttribute('data-campo') === 'evidence_balance');
+  assert.strictEqual(celda.querySelector('[data-valor]').getAttribute('data-valor'), 'Short');
+  // y NINGUNA de las dos celdas presta su valor a la otra
+  const estado = Array.from(n.campos.querySelectorAll('[data-campo]'))
+    .find((x) => x.getAttribute('data-campo') === 'state');
+  assert.strictEqual(estado.querySelector('[data-valor]').getAttribute('data-valor'), 'No Trade');
 });
 
 test('con datos suficientes la tarjeta NO lleva la trama de insuficiente', () => {

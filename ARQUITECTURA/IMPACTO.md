@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 509 funciones con radio, 196 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 510 funciones con radio, 196 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **46** de las 509 escriben alguna tabla
+Solo **46** de las 510 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -80,7 +80,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-509 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+510 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -199,8 +199,8 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.interpretation.evaluate_setups`](impacto/app-interpretation.md) | `app/interpretation.py:139` | 4 | **0** | 54 ↑ | **4** |
 | [`app.scalp_collector.persist_scalp_signals`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1358` | 0 | **4** | 25 ↑ | **4** |
 | [`app.scalp_logic.compute_swing_score`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:6421` | 4 | **0** | 3 ↑ | **4** |
-| [`app.ai_context.data_confidence_row`](impacto/app-ai_context.md) | `app/ai_context.py:524` | 4 | **0** | 0 | **4** |
-| [`app.ai_context.quality_score`](impacto/app-ai_context.md) | `app/ai_context.py:612` | 4 | **0** | 0 | **4** |
+| [`app.ai_context.data_confidence_row`](impacto/app-ai_context.md) | `app/ai_context.py:529` | 4 | **0** | 0 | **4** |
+| [`app.ai_context.quality_score`](impacto/app-ai_context.md) | `app/ai_context.py:617` | 4 | **0** | 0 | **4** |
 | [`app.api.ventana_pedida`](impacto/app-api.md) | `app/api.py:1668` | 4 | **0** | 0 | **4** |
 | [`app.data_gaps.align_down`](impacto/app-data_gaps.md) | `app/data_gaps.py:232` | 4 | **0** | 0 | **4** |
 | [`app.interpretation._memory_features`](impacto/app-interpretation.md) | `app/interpretation.py:372` | 4 | **0** | 0 | **4** |
@@ -223,13 +223,13 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.signal_outcomes._finalize_evaluated`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:241` | 0 | **3** | 11 ↑ | **3** |
 | [`app.signal_outcomes._finalize_not_evaluable`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:189` | 0 | **3** | 11 ↑ | **3** |
 | [`app.signal_outcomes.schedule_signal_outcomes`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:155` | 0 | **3** | 11 ↑ | **3** |
-| [`app.ai_context._corte_unico`](impacto/app-ai_context.md) | `app/ai_context.py:848` | 3 | **0** | 0 | **3** |
-| [`app.ai_context._round_number`](impacto/app-ai_context.md) | `app/ai_context.py:219` | 3 | **0** | 0 | **3** |
-| [`app.ai_context.build_operator_read`](impacto/app-ai_context.md) | `app/ai_context.py:740` | 3 | **0** | 0 | **3** |
-| [`app.ai_context.compact_dict`](impacto/app-ai_context.md) | `app/ai_context.py:246` | 3 | **0** | 0 | **3** |
-| [`app.ai_context.compact_value`](impacto/app-ai_context.md) | `app/ai_context.py:230` | 3 | **0** | 0 | **3** |
-| [`app.ai_context.latest_snapshot`](impacto/app-ai_context.md) | `app/ai_context.py:291` | 3 | **0** | 0 | **3** |
-| [`app.ai_context.orderbook_freshness`](impacto/app-ai_context.md) | `app/ai_context.py:661` | 3 | **0** | 0 | **3** |
+| [`app.ai_context._corte_unico`](impacto/app-ai_context.md) | `app/ai_context.py:853` | 3 | **0** | 0 | **3** |
+| [`app.ai_context._round_number`](impacto/app-ai_context.md) | `app/ai_context.py:224` | 3 | **0** | 0 | **3** |
+| [`app.ai_context.build_operator_read`](impacto/app-ai_context.md) | `app/ai_context.py:745` | 3 | **0** | 0 | **3** |
+| [`app.ai_context.compact_dict`](impacto/app-ai_context.md) | `app/ai_context.py:251` | 3 | **0** | 0 | **3** |
+| [`app.ai_context.compact_value`](impacto/app-ai_context.md) | `app/ai_context.py:235` | 3 | **0** | 0 | **3** |
+| [`app.ai_context.latest_snapshot`](impacto/app-ai_context.md) | `app/ai_context.py:296` | 3 | **0** | 0 | **3** |
+| [`app.ai_context.orderbook_freshness`](impacto/app-ai_context.md) | `app/ai_context.py:666` | 3 | **0** | 0 | **3** |
 | [`app.api.daily_data`](impacto/app-api.md) | `app/api.py:546` | 3 | **0** | 0 | **3** |
 | [`app.api.declara_ventana`](impacto/app-api.md) | `app/api.py:1701` | 3 | **0** | 0 | **3** |
 | [`app.api.latest_snapshot`](impacto/app-api.md) | `app/api.py:519` | 3 | **0** | 0 | **3** |
@@ -301,19 +301,19 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.wyckoff.wyckoff_auto_read`](impacto/app-wyckoff.md) | `app/wyckoff.py:447` | 3 | **0** | 0 | **3** |
 | [`app.metrics.session_bounds`](impacto/app-metrics.md) | `app/metrics.py:31` | 2 | **0** | 54 ↑ | **2** |
 | [`app.scalp_logic.swing_score`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:6572` | 2 | **0** | 54 ↑ | **2** |
-| [`app.ai_context._armar_sobre`](impacto/app-ai_context.md) | `app/ai_context.py:902` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.build_ai_symbol_context`](impacto/app-ai_context.md) | `app/ai_context.py:884` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.daily_data`](impacto/app-ai_context.md) | `app/ai_context.py:298` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.daily_history`](impacto/app-ai_context.md) | `app/ai_context.py:387` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.field_disambiguation`](impacto/app-ai_context.md) | `app/ai_context.py:67` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.latest_orderbook`](impacto/app-ai_context.md) | `app/ai_context.py:673` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.liquidation_levels`](impacto/app-ai_context.md) | `app/ai_context.py:701` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.local_alerts`](impacto/app-ai_context.md) | `app/ai_context.py:790` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.normalize_profile`](impacto/app-ai_context.md) | `app/ai_context.py:212` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.recent_signals`](impacto/app-ai_context.md) | `app/ai_context.py:685` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.rough_token_estimate`](impacto/app-ai_context.md) | `app/ai_context.py:276` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.sin_perder_los_nulos`](impacto/app-ai_context.md) | `app/ai_context.py:257` | 2 | **0** | 0 | **2** |
-| [`app.ai_context.verdict_history`](impacto/app-ai_context.md) | `app/ai_context.py:479` | 2 | **0** | 0 | **2** |
+| [`app.ai_context._armar_sobre`](impacto/app-ai_context.md) | `app/ai_context.py:907` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.build_ai_symbol_context`](impacto/app-ai_context.md) | `app/ai_context.py:889` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.daily_data`](impacto/app-ai_context.md) | `app/ai_context.py:303` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.daily_history`](impacto/app-ai_context.md) | `app/ai_context.py:392` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.field_disambiguation`](impacto/app-ai_context.md) | `app/ai_context.py:72` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.latest_orderbook`](impacto/app-ai_context.md) | `app/ai_context.py:678` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.liquidation_levels`](impacto/app-ai_context.md) | `app/ai_context.py:706` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.local_alerts`](impacto/app-ai_context.md) | `app/ai_context.py:795` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.normalize_profile`](impacto/app-ai_context.md) | `app/ai_context.py:217` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.recent_signals`](impacto/app-ai_context.md) | `app/ai_context.py:690` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.rough_token_estimate`](impacto/app-ai_context.md) | `app/ai_context.py:281` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.sin_perder_los_nulos`](impacto/app-ai_context.md) | `app/ai_context.py:262` | 2 | **0** | 0 | **2** |
+| [`app.ai_context.verdict_history`](impacto/app-ai_context.md) | `app/ai_context.py:484` | 2 | **0** | 0 | **2** |
 | [`app.api._session_window`](impacto/app-api.md) | `app/api.py:500` | 2 | **0** | 0 | **2** |
 | [`app.api.scalp_persistence`](impacto/app-api.md) | `app/api.py:3142` | 2 | **0** | 0 | **2** |
 | [`app.field_disambiguation.build`](impacto/app-field_disambiguation.md) | `app/field_disambiguation.py:72` | 2 | **0** | 0 | **2** |
@@ -343,10 +343,11 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.api.health`](impacto/app-api.md) | `app/api.py:3670` | 1 | **0** | 8 ↑ | **1** |
 | [`app.db.db_identity`](impacto/app-db.md) | `app/db.py:64` | 1 | **0** | 8 ↑ | **1** |
 | [`app.db.heartbeat_max_age`](impacto/app-db.md) | `app/db.py:95` | 1 | **0** | 8 ↑ | **1** |
-| [`app.ai_context._sin_lado`](impacto/app-ai_context.md) | `app/ai_context.py:1221` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.build_ai_context`](impacto/app-ai_context.md) | `app/ai_context.py:1072` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.build_mesa_decide`](impacto/app-ai_context.md) | `app/ai_context.py:1230` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.campo_mesa`](impacto/app-ai_context.md) | `app/ai_context.py:1181` | 1 | **0** | 0 | **1** |
+| [`app.ai_context._sin_lado`](impacto/app-ai_context.md) | `app/ai_context.py:1276` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.build_ai_context`](impacto/app-ai_context.md) | `app/ai_context.py:1077` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.build_mesa_decide`](impacto/app-ai_context.md) | `app/ai_context.py:1288` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.campo_mesa`](impacto/app-ai_context.md) | `app/ai_context.py:1236` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.palabra_de_la_decision`](impacto/app-ai_context.md) | `app/ai_context.py:1197` | 1 | **0** | 0 | **1** |
 | [`app.api._parse_heartbeat_detail`](impacto/app-api.md) | `app/api.py:3574` | 1 | **0** | 0 | **1** |
 | [`app.api._slippage_para`](impacto/app-api.md) | `app/api.py:1650` | 1 | **0** | 0 | **1** |
 | [`app.api.ai_context`](impacto/app-api.md) | `app/api.py:3513` | 1 | **0** | 0 | **1** |
