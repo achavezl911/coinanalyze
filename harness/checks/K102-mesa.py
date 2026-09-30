@@ -42,6 +42,7 @@ except ImportError:  # pragma: no cover
 # valor y la pantalla no lo pinta con su clave, es un hallazgo.
 CAMPOS_ESCALARES = (
     "bias",
+    "evidence_balance",
     "state",
     "reason",
     "zone_decision",
@@ -286,7 +287,33 @@ JS_COSECHA = r"""
   const sesgo = document.getElementById('decide-sesgo');
   const rs = sesgo ? sesgo.getBoundingClientRect() : null;
 
+  // LA TARJETA DEL SCALP, APARTE. En swing y en largo la palabra del scalp NO se pinta en
+  // #decide -B7 exige justo que no este ahi- sino en #lectura-scalp. Se cosecha en SU PROPIA
+  // clave y nunca dentro de `parejas`: si cayera ahi, B7 leeria `state` dentro de DECIDE y
+  // condenaria una pantalla correcta.
+  const ls = document.getElementById('lectura-scalp');
+  let tarjeta = null;
+  if (ls) {
+    const pls = [];
+    ls.querySelectorAll('[data-campo]').forEach((c) => {
+      const nv = c.matches('[data-valor]') ? c : c.querySelector(':scope > [data-valor]');
+      const nk = c.matches('[data-source-key]') ? c : c.querySelector(':scope > [data-source-key]');
+      pls.push({
+        campo: c.getAttribute('data-campo'),
+        valor: nv ? (nv.getAttribute('data-valor') || '') : null,
+        clave: nk ? (nk.getAttribute('data-source-key') || '') : null,
+      });
+    });
+    const rot = document.getElementById('lectura-scalp-rotulo');
+    tarjeta = {
+      oculta: Boolean(ls.hidden),
+      rotulo: rot ? (rot.textContent || '').trim() : null,
+      parejas: pls,
+    };
+  }
+
   return {
+    tarjeta_scalp: tarjeta,
     pliegue: {
       innerHeight: window.innerHeight,
       innerWidth: window.innerWidth,

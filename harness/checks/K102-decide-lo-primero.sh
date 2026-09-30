@@ -16,6 +16,12 @@
 #        y se pinta en SU tarjeta, no dentro de DECIDE.
 #   B8 · LA EDAD AVANZA SIN RECARGAR, y pasada `max_age_s` la pantalla lo dice. Un brazo de una
 #        sola foto no puede ver esto: el defecto solo existe DESPUES del render.
+#   B9 · LA PALABRA DICE LA DECISION DEL SISTEMA. Ninguno de los ocho de arriba puede ver esto,
+#        y eso es el defecto que costo la campana 132: B3 prueba que la pantalla pinta FIEL la
+#        clave que dice pintar, y una clave fielmente pintada puede seguir siendo la palabra
+#        equivocada (A83). B9 cruza la palabra -servida Y pintada- con el `state` de LA MISMA
+#        respuesta, usando el mapa estado -> lado del REGISTRO DE SENALES, que es la
+#        especificacion que el operador nombro: `app/signal_ledger.py`.
 #   B6 · errores de consola. HOY NO PUEDE CONDENAR y la salida lo dice.
 #
 # TRES COSAS QUE ESTA RED HACIA MAL Y QUE COSTARON UNA RONDA DE CORRECCION DEL OPERADOR:
@@ -46,13 +52,19 @@ PY="$REPO/.venv/bin/python"
 TMP="$(mktemp -d)" || exit 2
 trap 'rm -rf "$TMP"' EXIT INT TERM
 
-# SE JUZGA **UN** ACTIVO, Y SE ELIGE EL DE MENOS HOLGURA, NO EL COMODO.
-# Medido el 2026-09-29 sobre las 18 vistas (3 marcos x 3 activos x 2 tamanos): la que menos
-# margen tiene es scalp/SOL, con bottom 851 contra una ventana de 900 -49 px-, porque su
-# `scalp.reason` es el texto mas largo de los tres. BTC y ETH van 126 px mas holgados.
-# Juzgar BTC -lo que hacia- es juzgar el caso facil: el dia que DECIDE crezca, rompe por SOL y
-# el check no se entera. Las otras dos no se juzgan aqui, y el veredicto lo DICE.
+# EL ACTIVO DE LOS BRAZOS PROFUNDOS (B3, B4, B5, B7, B8), que piden una observacion larga.
 ACTIVO="${K102_ACTIVO:-SOL}"
+
+# EL PLIEGUE SE JUZGA EN LOS TRES ACTIVOS, Y ANTES NO (A81).
+#
+# Esto decia: «se juzga UN activo y se elige el de menos holgura, SOL, con 49 px medidos el
+# 2026-09-29 sobre las 18 vistas». Los 49 px se midieron en el ESPEJO, congelado desde el
+# 08-13. En PRODUCCION, a las 11:28Z del 09-29, SOL tenia 157 px y BTC 41 -859 de 900 en scalp
+# 1440x900-: la holgura depende del largo de `scalp.reason` y de la zona, y las dos dependen
+# del mercado. O sea que el check miraba el HOLGADO y declaraba que miraba el estrecho.
+# El peor caso de una magnitud que se mueve con el mercado no es un SUJETO, es una HORA: se
+# juzgan los TRES, y el margen de cada uno se publica.
+ACTIVOS="${K102_ACTIVOS:-BTC ETH SOL}"
 # 18 s para que la ventana CUBRA la cadencia de refresco de la mesa (15 s) y el brazo B8 pueda
 # exigir haber visto al menos un refresco. Con menos, ese tramo se declara no juzgado.
 OBSERVA="${K102_OBSERVA:-18}"
@@ -98,17 +110,21 @@ fi
 
 # --- LA MEDIDA -------------------------------------------------------------------------
 # CON LA BARRA DE DESPLAZAMIENTO PUESTA: se juzga la ventana que tiene quien usa la mesa.
-corre() {  # corre <ancho> <alto> <marco> <observa> <fichero>
-  local w="$1" h="$2" m="$3" obs="$4" f="$5"
+corre_a() {  # corre_a <activo> <ancho> <alto> <marco> <observa> <fichero>
+  local a="$1" w="$2" h="$3" m="$4" obs="$5" f="$6"
   if [ -n "$CAB" ]; then
-    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$ACTIVO" \
+    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$a" \
       --ancho "$w" --alto "$h" --frio --repite 1 --espera 30 --observa "$obs" \
       --cabecera-fichero "$CAB" --salida "$f" >/dev/null 2>"$f.err"
   else
-    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$ACTIVO" \
+    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$a" \
       --ancho "$w" --alto "$h" --frio --repite 1 --espera 30 --observa "$obs" \
       ${K102_CABECERA:+--cabecera "$K102_CABECERA"} --salida "$f" >/dev/null 2>"$f.err"
   fi
+}
+
+corre() {  # corre <ancho> <alto> <marco> <observa> <fichero>   (el activo de los profundos)
+  corre_a "$ACTIVO" "$1" "$2" "$3" "$4" "$5"
 }
 
 # LOS TRES MARCOS A LOS DOS TAMANOS. Antes solo se juzgaba el pliegue en SCALP, y en swing y
@@ -125,13 +141,47 @@ for f in "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/swp.json" "$TMP/lg.jso
   [ -s "$f" ] || { echo "NO MEDIDO: la sonda no midio ($(head -c 150 "$f.err" 2>/dev/null))"; exit 2; }
 done
 
+# LOS OTROS DOS ACTIVOS, SOLO PARA EL PLIEGUE Y PARA LA PALABRA (A81). No repiten la
+# observacion larga de B8 -que es del reloj, no del activo- asi que cuestan una carga cada una.
+# Van a un subdirectorio propio: si uno no midio, se DECLARA por su nombre y no se da por bueno.
+OTROS="$TMP/otros"; mkdir -p "$OTROS"
+for a in $ACTIVOS; do
+  [ "$a" = "$ACTIVO" ] && continue
+  for m in scalp swing largo; do
+    corre_a "$a" 1920 1080 "$m" 0 "$OTROS/${a}__${m}__1920x1080.json" || true
+    corre_a "$a" 1440 900  "$m" 0 "$OTROS/${a}__${m}__1440x900.json"  || true
+  done
+done
+
 "$PY" - "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/swp.json" "$TMP/lg.json" \
-       "$TMP/lgp.json" "$SUJETO" "$ACTIVO" <<'PY'
-import json, sys
+       "$TMP/lgp.json" "$SUJETO" "$ACTIVO" "$REPO/app/signal_ledger.py" \
+       "$REPO/app/ai_context.py" "$OTROS" "$ACTIVOS" <<'PY'
+import json, os, re, sys
 
 g, p, sw, swp, lg, lgp = (json.load(open(x)) for x in sys.argv[1:7])
 sujeto, activo = sys.argv[7], sys.argv[8]
+ruta_ledger, ruta_ctx = sys.argv[9], sys.argv[10]
+dir_otros, activos_pedidos = sys.argv[11], sys.argv[12].split()
 fallos, lineas = [], []
+
+# LAS VISTAS DE LOS OTROS ACTIVOS. Cada fichero se llama <activo>__<marco>__<ancho>x<alto>.json,
+# asi que el rotulo de cada hallazgo sale del NOMBRE del fichero y no de un indice.
+otros = []
+for nombre in sorted(os.listdir(dir_otros) if os.path.isdir(dir_otros) else []):
+    if not nombre.endswith(".json"):
+        continue
+    a, m, t = nombre[: -len(".json")].split("__")
+    try:
+        otros.append((json.load(open(os.path.join(dir_otros, nombre))), f"{m} {t} [{a}]", m, a))
+    except (OSError, ValueError) as e:
+        fallos.append(f"B1 {m} {t} [{a}]: la sonda no dejo una vista legible ({e})")
+faltan = [a for a in activos_pedidos
+          if a != activo and not any(x[3] == a for x in otros)]
+if faltan:
+    fallos.append(
+        "B1: no se midio NINGUNA vista de " + " ni ".join(faltan)
+        + ": el pliegue de esos activos queda SIN JUZGAR, y eso no es un aprobado"
+    )
 
 def cosecha(d, rot):
     c = d.get("cosecha") or {}
@@ -140,10 +190,20 @@ def cosecha(d, rot):
         raise SystemExit(2)
     return c
 
-# --- B1 y B2 · LOS TRES MARCOS, LOS DOS TAMANOS -----------------------------------------
-for d, rot in ((g, "scalp 1920x1080"), (p, "scalp 1440x900"),
-               (sw, "swing 1920x1080"), (swp, "swing 1440x900"),
-               (lg, "largo 1920x1080"), (lgp, "largo 1440x900")):
+# TODAS LAS VISTAS, con su activo dentro del rotulo. Las seis del activo profundo primero: son
+# las que alimentan a B3, B4, B5, B7 y B8, que necesitan la observacion larga.
+VISTAS = [
+    (g, f"scalp 1920x1080 [{activo}]", "scalp", activo),
+    (p, f"scalp 1440x900 [{activo}]", "scalp", activo),
+    (sw, f"swing 1920x1080 [{activo}]", "swing", activo),
+    (swp, f"swing 1440x900 [{activo}]", "swing", activo),
+    (lg, f"largo 1920x1080 [{activo}]", "largo", activo),
+    (lgp, f"largo 1440x900 [{activo}]", "largo", activo),
+] + otros
+
+# --- B1 y B2 · LOS TRES MARCOS, LOS DOS TAMANOS, LOS TRES ACTIVOS -----------------------
+margenes = {}
+for d, rot, _marco, act in VISTAS:
     c = cosecha(d, rot)
     pl = c.get("pliegue") or {}
     if not pl.get("visible"):
@@ -158,10 +218,7 @@ for d, rot in ((g, "scalp 1920x1080"), (p, "scalp 1440x900"),
         # dicen cosas muy distintas sobre lo que pasara la proxima vez que DECIDE crezca, y el
         # veredicto binario los cuenta igual.
         holgura = (pl.get("innerHeight") or 0) - (pl.get("bottom") or 0)
-        lineas.append(
-            f"{rot}: DECIDE entero en el pliegue (top {pl.get('top'):.0f} -> "
-            f"bottom {pl.get('bottom'):.0f} de {pl.get('innerHeight')}, holgura {holgura:.0f} px)"
-        )
+        margenes.setdefault(act, []).append((holgura, rot, pl))
     s = c.get("sesgo") or {}
     mayor = c.get("letra_mayor_px") or 0
     if not s:
@@ -173,8 +230,22 @@ for d, rot in ((g, "scalp 1920x1080"), (p, "scalp 1440x900"),
             f"B2 {rot}: el sesgo ({s.get('px')}px) NO es el texto mas grande del pliegue "
             f"({mayor}px en {c.get('letra_mayor_texto')!r})"
         )
-    else:
-        lineas.append(f"{rot}: el sesgo es el glifo mayor del pliegue ({s.get('px')}px)")
+
+# EL MARGEN DE CADA ACTIVO, POR SU NOMBRE. La vista mas estrecha de cada uno, y cual es: sin
+# esto «se juzgan los tres» seria una promesa sin cifra, que es de donde salio A81.
+for act in sorted(margenes):
+    peor = min(margenes[act])
+    lineas.append(
+        f"[{act}] {len(margenes[act])} vista(s) con DECIDE entero en el pliegue; la mas "
+        f"estrecha, {peor[1]}: bottom {peor[2].get('bottom'):.0f} de "
+        f"{peor[2].get('innerHeight')}, holgura {peor[0]:.0f} px"
+    )
+if margenes:
+    pg = min(min(v) for v in margenes.values())
+    lineas.append(
+        f"el sesgo es el glifo mayor del pliegue en las {len(VISTAS)} vistas · la mas estrecha "
+        f"de TODAS: {pg[1]} con {pg[0]:.0f} px"
+    )
 
 # --- B3 y B4 ---------------------------------------------------------------------------
 r = g.get("reparto") or {}
@@ -327,6 +398,130 @@ else:
                     f"RANCIO; la peor, {max(x['edad_s'] for x in malas)} s"
                 )
 
+# --- B9 · LA PALABRA DICE LA DECISION DEL SISTEMA ---------------------------------------
+# EL MAPA ESTADO -> LADO NO SE COPIA AQUI: SE LEE de `app/signal_ledger.py`. Es lo que el
+# operador declaro como especificacion -«la palabra dice la misma direccion que el registro de
+# senales guarda para ese estado»- y copiarlo aqui dejaria que las dos versiones se separasen en
+# silencio, que es la forma exacta del defecto que esta campana vino a arreglar. Si el fichero
+# cambia de forma, esto sale NO MEDIDO: un mapa que no se pudo leer no absuelve a nadie.
+def estados_del_registro(ruta):
+    try:
+        t = open(ruta, encoding="utf-8").read()
+    except OSError as e:
+        return None, f"no se pudo abrir {ruta}: {e}"
+    fuera = {}
+    for nombre in ("_LONG_STATES", "_SHORT_STATES", "_NEUTRAL_STATES"):
+        m = re.search(nombre + r"\s*=\s*frozenset\(\{([^}]*)\}\)", t)
+        if not m:
+            return None, f"no encontre {nombre} en {ruta}"
+        fuera[nombre] = {x.strip().strip("\"'") for x in m.group(1).split(",") if x.strip()}
+        if not fuera[nombre]:
+            return None, f"{nombre} salio vacio"
+    return fuera, None
+
+REG, err_reg = estados_del_registro(ruta_ledger)
+if REG is None:
+    print(f"NO MEDIDO: B9 no pudo leer el mapa estado->lado del registro: {err_reg}")
+    raise SystemExit(2)
+
+# LA PISTA DE DESPLIEGUE, no una excusa. Si el sujeto sirve un `schema_version` distinto del que
+# el ARBOL declara, lo que se esta juzgando son bytes viejos. Sigue siendo ROJO -el sujeto tiene
+# el defecto- pero la linea dice POR QUE, para que nadie salga a buscar un fallo en el arbol.
+m_sch = re.search(r'MESA_DECIDE_SCHEMA\s*=\s*"([^"]+)"', open(ruta_ctx, encoding="utf-8").read())
+sch_arbol = m_sch.group(1) if m_sch else None
+sch_sujeto = (g.get("sobre") or {}).get("schema_version")
+pista = ""
+if sch_arbol and sch_sujeto and sch_arbol != sch_sujeto:
+    pista = (f" · FALTA DESPLEGAR: el sujeto sirve {sch_sujeto} y el arbol declara {sch_arbol}")
+
+PALABRA_LADO = {"LONG": "long", "SHORT": "short"}
+
+def lado_del_estado(st):
+    if st in REG["_LONG_STATES"]:
+        return "long"
+    if st in REG["_SHORT_STATES"]:
+        return "short"
+    return None          # No Trade, «Sin datos suficientes» y cualquier estado nuevo: sin lado
+
+b9_ok, b9_sin_tarjeta = [], []
+for d, rot, marco, _act in VISTAS:
+    sob = d.get("sobre") or {}
+    if not sob:
+        fallos.append(f"B9 {rot}: no se pudo leer el sobre que recibio la pagina")
+        continue
+    c = cosecha(d, rot)
+    if marco == "scalp":
+        origen = sob.get("decide") or {}
+        pintada = ((c.get("sesgo") or {}).get("texto") or "").strip()
+        donde = "#decide-sesgo"
+    else:
+        # En swing y largo la palabra del SCALP vive en `lectura_scalp` y se pinta en su tarjeta
+        # -B7 exige que no este en `decide`-, asi que la pareja se juzga ALLI. Si la tarjeta no
+        # se sirve, el dueno del hallazgo es B7 y B9 no lo duplica.
+        origen = sob.get("lectura_scalp") or {}
+        if not origen:
+            b9_sin_tarjeta.append(rot)
+            continue
+        tj = c.get("tarjeta_scalp") or {}
+        cel = {x.get("campo"): x for x in (tj.get("parejas") or [])}
+        pintada = ((cel.get("scalp.bias") or {}).get("valor") or "").strip()
+        donde = "#lectura-scalp [data-campo=scalp.bias]"
+    servida = (origen.get("bias") or {}).get("value")
+    estado = (origen.get("state") or {}).get("value")
+    if servida is None or estado is None:
+        fallos.append(
+            f"B9 {rot}: la palabra ({servida!r}) y el estado ({estado!r}) no viajan LOS DOS en "
+            f"la misma respuesta: sin la pareja, la palabra mas grande no es auditable{pista}"
+        )
+        continue
+    lado_s = PALABRA_LADO.get(str(servida))
+    lado_p = PALABRA_LADO.get(pintada)
+    lado_e = lado_del_estado(str(estado))
+    if lado_s != lado_e:
+        fallos.append(
+            f"B9 {rot}: la palabra SERVIDA dice {servida!r} ({lado_s or 'sin lado'}) y el "
+            f"`state` de ESA MISMA respuesta es {estado!r} ({lado_e or 'sin lado'}), que es la "
+            f"decision que el registro de senales guarda{pista}"
+        )
+    elif lado_p != lado_e:
+        fallos.append(
+            f"B9 {rot}: la palabra PINTADA en {donde} dice {pintada!r} "
+            f"({lado_p or 'sin lado'}) y el estado servido en la MISMA carga es {estado!r} "
+            f"({lado_e or 'sin lado'})"
+        )
+    else:
+        b9_ok.append((rot, pintada, str(estado), lado_e or "sin lado"))
+
+# LAS PAREJAS QUE SALIERON BIEN, AGRUPADAS POR LO QUE DICEN. Dieciocho lineas iguales no se
+# leen; lo que importa es CUANTAS parejas distintas se llegaron a ver. Si solo se vio una
+# -«NO EVALUABLE» contra «Sin datos suficientes», que es lo que da el espejo- este brazo no ha
+# ejercido la mitad que condena un lado callado, y la salida lo dice en vez de sugerir que si.
+if b9_ok:
+    vistos = {}
+    for rot, pal, est, lado in b9_ok:
+        vistos.setdefault((pal, est, lado), []).append(rot)
+    lineas.append(
+        f"la palabra dice el mismo lado que la decision del sistema en {len(b9_ok)} de "
+        f"{len(VISTAS) - len(b9_sin_tarjeta)} vista(s) juzgada(s), con "
+        f"{len(vistos)} pareja(s) distinta(s):"
+    )
+    for (pal, est, lado), rots in sorted(vistos.items()):
+        lineas.append(
+            f"  palabra {pal!r} · state {est!r} -> {lado} · {len(rots)} vista(s): "
+            + " ".join(rots[:3]) + (" ..." if len(rots) > 3 else "")
+        )
+    con_lado = [k for k in vistos if k[2] != "sin lado"]
+    if not con_lado:
+        lineas.append(
+            "  y NINGUNA de las parejas vistas tenia lado: en esta corrida B9 no ha ejercido "
+            "la mitad que condena una palabra que CALLA un lado que el sistema si toma"
+        )
+if b9_sin_tarjeta:
+    lineas.append(
+        f"B9 no juzga {len(b9_sin_tarjeta)} vista(s) sin `lectura_scalp` (el hallazgo, si lo "
+        "hay, es de B7): " + " ".join(b9_sin_tarjeta[:4])
+    )
+
 # --- B6 · SIN PODER CONDENAR -----------------------------------------------------------
 errc = g.get("errores_consola") or []
 sin_poder = None
@@ -338,10 +533,14 @@ else:
 
 # --- EL VEREDICTO, CON SU ALCANCE -------------------------------------------------------
 print(f"K102 · lo que juzgo: {sujeto}")
-otros = [x for x in ("BTC", "ETH", "SOL") if x != activo]
+juzgados = sorted({activo} | {x[3] for x in otros})
 print(f"  alcance: los TRES marcos (scalp, swing y largo) a los DOS tamanos (1920x1080 y "
-      f"1440x900), SOLO del activo {activo} · {g.get('barra_de_desplazamiento')}")
-print(f"  NO juzga {' ni '.join(otros)}: se elige {activo} por ser el de menos holgura medida")
+      f"1440x900) · {g.get('barra_de_desplazamiento')}")
+print(f"  el PLIEGUE y la PALABRA, en {' '.join(juzgados)} ({len(VISTAS)} vistas): el margen "
+      "depende del largo de `scalp.reason` y de la zona, y las dos se mueven con el mercado, "
+      "asi que el peor caso no es un activo fijo (A81)")
+print(f"  B3, B4, B5, B7 y B8 solo en {activo}: piden la observacion larga, que es del reloj y "
+      "no del activo")
 print(f"  el patron de comparacion: {g.get('sobre_origen')}")
 for x in lineas:
     print(f"  {x}")

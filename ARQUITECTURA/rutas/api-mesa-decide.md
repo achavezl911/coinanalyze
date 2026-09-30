@@ -193,7 +193,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-decide-lo-primero.sh:62`, `harness/checks/K102-decide-lo-primero.sh:86`, `harness/checks/K102-decide-lo-primero.sh:88`, `harness/checks/K102-decide-lo-primero.sh:93` _(+9)_ | `harness/checks/K102-decide-lo-primero.sh:23`, `harness/checks/K102-mesa.py:489`, `harness/checks/K102-mesa.py:499`, `harness/checks/K102-mesa.py:703` _(+1)_ |
+| **checks** | `harness/checks/K102-decide-lo-primero.sh:74`, `harness/checks/K102-decide-lo-primero.sh:98`, `harness/checks/K102-decide-lo-primero.sh:100`, `harness/checks/K102-decide-lo-primero.sh:105` _(+9)_ | `harness/checks/K102-decide-lo-primero.sh:29`, `harness/checks/K102-mesa.py:516`, `harness/checks/K102-mesa.py:526`, `harness/checks/K102-mesa.py:730` _(+1)_ |
 | **tests** | `tests/js/mesa_decide.test.js:189`, `tests/js/mesa_remate.test.js:28` | `tests/js/mesa_decide.test.js:30` |
 
 **No la llama el panel**, pero si 15 linea(s) de codigo fuera de el.
