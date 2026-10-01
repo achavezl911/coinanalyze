@@ -32193,9 +32193,9 @@
     {
       "camino": "/api/mesa/decide",
       "campos": {
-        "build_finished_at": "asignado en app/ai_context.py:1651",
-        "build_started_at": "asignado en app/ai_context.py:1650",
-        "lectura_scalp": "asignado en app/ai_context.py:1630"
+        "build_finished_at": "asignado en app/ai_context.py:1657",
+        "build_started_at": "asignado en app/ai_context.py:1656",
+        "lectura_scalp": "asignado en app/ai_context.py:1636"
       },
       "campos_pendientes": [
         "devuelve la variable 'payload', cuyo contenido no se resuelve estaticamente"

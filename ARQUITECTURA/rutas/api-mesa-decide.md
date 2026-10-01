@@ -19,9 +19,9 @@ Handler `mesa_decide` · `app/api.py:3784` (cuerpo hasta la 3819) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `build_finished_at` | asignado en app/ai_context.py:1651 |
-| `build_started_at` | asignado en app/ai_context.py:1650 |
-| `lectura_scalp` | asignado en app/ai_context.py:1630 |
+| `build_finished_at` | asignado en app/ai_context.py:1657 |
+| `build_started_at` | asignado en app/ai_context.py:1656 |
+| `lectura_scalp` | asignado en app/ai_context.py:1636 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 

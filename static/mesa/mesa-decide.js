@@ -273,7 +273,10 @@ function pintarLecturaScalp(origen, campos) {
   if (hay('confirms')) {
     campos.appendChild(
       celdaLista('confirms', 'confirma', origen.confirms, {
-        motivoVacio: 'sin lado: el sistema no toma lado en este instante',
+        // ULTIMO RECURSO, Y NO DEBERIA VERSE: desde el remate de la 132 el backend sirve SIEMPRE
+        // una entrada con su motivo cuando no hay lado -decir «el sistema no toma lado» cuando
+        // lo que falla es la calidad es FALSO, y el cliente no tiene con que distinguirlo-.
+        motivoVacio: 'el backend no trae ninguna entrada',
       })
     );
   }
@@ -290,7 +293,10 @@ function pintarLecturaScalp(origen, campos) {
     campos.appendChild(
       celdaLista('invalidates', 'invalida · qué lo rompe', origen.invalidates, {
         clase: 'invalida',
-        motivoVacio: 'sin lado: el sistema no toma lado en este instante',
+        // ULTIMO RECURSO, Y NO DEBERIA VERSE: desde el remate de la 132 el backend sirve SIEMPRE
+        // una entrada con su motivo cuando no hay lado -decir «el sistema no toma lado» cuando
+        // lo que falla es la calidad es FALSO, y el cliente no tiene con que distinguirlo-.
+        motivoVacio: 'el backend no trae ninguna entrada',
       })
     );
   }

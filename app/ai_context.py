@@ -1476,6 +1476,12 @@ async def build_mesa_decide(
                     "status": "ok",
                 }
             )
+    else:
+        # SIN LADO, LA LISTA NO VA VACIA: VA CON SU MOTIVO SERVIDO. Una lista vacia obligaba al
+        # cliente a escribir el «por que no hay nada», y ese texto suyo decia «el sistema no toma
+        # lado» tambien cuando el sistema SI lo tomaba y lo que fallaba era la calidad. El cliente
+        # no deduce: aqui va la misma entrada que ya lleva `confirms`.
+        invalidaciones.append(_sin_lado("operator_read.invalidates_<lado>", bias_scalp))
 
     barrera_ruta = "nearest_support" if lado == "long" else "nearest_resistance"
     horizontes = (detail or {}).get("horizons") or {}
