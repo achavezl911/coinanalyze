@@ -477,7 +477,7 @@ pista = ""
 if sch_arbol and sch_sujeto and sch_arbol != sch_sujeto:
     pista = (f" · FALTA DESPLEGAR: el sujeto sirve {sch_sujeto} y el arbol declara {sch_arbol}")
 
-b9_ok, b9_sin_tarjeta = [], []
+b9_ok, b9_sin_tarjeta, b9_sin_libro = [], [], []
 for d, rot, marco, _act in VISTAS:
     sob = d.get("sobre") or {}
     if not sob:
@@ -510,7 +510,7 @@ for d, rot, marco, _act in VISTAS:
     cobertura = (origen.get("evidence") or {}).get("value")
     dc_v = (dec_v.get("data_confidence") or {}).get("value")
     umbral_v = (dec_v.get("evaluable") or {}).get("threshold")
-    faltan = [k for k, v in (("bias", servida), ("state", estado), ("book_status", libro),
+    faltan = [k for k, v in (("bias", servida), ("state", estado),
                              ("data_confidence", dc_v), ("evaluable.threshold", umbral_v))
               if v is None]
     if faltan:
@@ -519,7 +519,25 @@ for d, rot, marco, _act in VISTAS:
             f"no se puede contrastar con la regla que dice seguir{pista}"
         )
         continue
-    esperada, por_que = palabra_esperada(dc_v, umbral_v, estado, libro, cobertura)
+
+    # LO DECIDIBLE VA ANTES DE LO QUE FALTA (A54). Si la respuesta no sirve `book_status` -los
+    # sobres anteriores a la v2 no lo traen- la palabra NO queda sin juzgar: se recomputa con el
+    # MEJOR caso posible -libro `ok`, y cobertura 100 si tampoco viaja- y, si aun asi no coincide,
+    # la palabra esta mal pase lo que pase con el libro. Lo que falta se declara aparte: un dato
+    # ausente no puede comerse una condena que no lo necesitaba.
+    supuesto = []
+    if libro is None:
+        supuesto.append("libro=ok")
+        b9_sin_libro.append(rot)
+    if cobertura is None:
+        supuesto.append("evidencia=100")
+    esperada, por_que = palabra_esperada(
+        dc_v, umbral_v, estado,
+        "ok" if libro is None else libro,
+        100.0 if cobertura is None else cobertura,
+    )
+    con_supuesto = (" · juzgada con el MEJOR caso posible (" + ", ".join(supuesto) + ")"
+                    if supuesto else "")
     if esperada is None:
         fallos.append(f"B9 {rot}: no se pudo recomputar la palabra: {por_que}{pista}")
     elif str(servida) != esperada:
@@ -527,12 +545,12 @@ for d, rot, marco, _act in VISTAS:
             f"B9 {rot}: la palabra SERVIDA dice {servida!r} y la regla sobre lo que ESA MISMA "
             f"respuesta sirve da {esperada!r} por {por_que!r} (data_confidence {dc_v} contra "
             f"umbral {umbral_v}; ESTADO {estado!r}, libro {libro!r}, evidencia {cobertura})"
-            f"{pista}"
+            f"{con_supuesto}{pista}"
         )
     elif pintada != esperada:
         fallos.append(
             f"B9 {rot}: la palabra PINTADA en {donde} dice {pintada!r} y la regla sobre lo que la "
-            f"MISMA carga sirve da {esperada!r}"
+            f"MISMA carga sirve da {esperada!r}{con_supuesto}"
         )
     else:
         b9_ok.append((rot, pintada, str(estado), str(por_que)))
@@ -566,6 +584,15 @@ if b9_sin_tarjeta:
     lineas.append(
         f"B9 no juzga {len(b9_sin_tarjeta)} vista(s) sin `lectura_scalp` (el hallazgo, si lo "
         "hay, es de B7): " + " ".join(b9_sin_tarjeta[:4])
+    )
+if b9_sin_libro:
+    # VA COMO HALLAZGO, Y DESPUES del veredicto de la palabra. La palabra se juzgo igual -con el
+    # mejor caso-, asi que esto no se come ninguna condena; pero una respuesta que no sirve lo
+    # que su propia regla necesita NO es auditable, y eso es un defecto por si mismo.
+    fallos.append(
+        f"B9: {len(b9_sin_libro)} vista(s) no sirven `scalp.book_status`, que es una de las "
+        f"entradas de la regla: la palabra se pudo juzgar con el mejor caso, pero la respuesta "
+        f"NO se puede auditar entera contra la regla que dice seguir{pista}"
     )
 
 # --- B6 · SIN PODER CONDENAR -----------------------------------------------------------
