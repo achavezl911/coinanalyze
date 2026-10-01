@@ -31,8 +31,13 @@ palabra del estado, no podria plantar el defecto que la red tiene que cazar.
   --bias X     la PALABRA de DECIDE, servida tal cual
   --state X    el `state` del scalp, servido tal cual (no deduce la palabra)
   --balance X  `evidence_balance` (lo que la palabra decia hasta la v1)
-  --dc N       `data_confidence.quality_score`. Decide `evaluable`, y NADA mas: desde la v2 la
-               calidad no decide la palabra
+  --dc N       `data_confidence.quality_score`
+  --libro X    `scalp.book_status`
+  --cobertura N `scalp.evidence_coverage_pct`
+
+Las CUATRO ultimas son las entradas de la regla de la palabra -el umbral del handoff y
+`classify_signal_observation`- y se sirven POR SEPARADO de `--bias` justo para que el control
+pueda montar una respuesta que se contradiga a si misma.
 """
 from __future__ import annotations
 
@@ -71,9 +76,10 @@ def sobre(frame: str) -> dict:
     es_scalp = frame == "scalp"
 
     # EL SOBRE PLANTADO TIENE QUE TENER LA MISMA FORMA QUE LA RUTA, o los controles verifican un
-    # contrato que no existe. La palabra del SCALP es la que se pidio, sin tocarla: la calidad ya
-    # no la decide (v2). Lo unico que este servidor reproduce es la regla del MARCO, porque sin
-    # ella B7 no tendria contra que medir.
+    # contrato que no existe. La palabra del SCALP es la que se pidio, SIN APLICARLE NINGUNA
+    # REGLA: ni el umbral de la calidad ni la clasificacion del registro. Si este servidor las
+    # aplicase, no podria plantar la contradiccion que la red tiene que cazar. Lo unico que
+    # reproduce es la regla del MARCO, porque sin ella B7 no tendria contra que medir.
     bias_scalp, src_scalp, motivo_scalp = bias, "operator_read.state", None
 
     if not es_scalp:
@@ -123,6 +129,7 @@ def sobre(frame: str) -> dict:
     }
     lectura = {
         "state": campo(CFG["state"], "operator_read.state"),
+        "book_status": campo(CFG["libro"], "scalp.book_status"),
         # LO QUE LA PALABRA DECIA HASTA LA v1, rotulado como lo que es. Se sirve APARTE del
         # estado a proposito: los dos pueden discrepar sin que ninguno este roto, y el control
         # necesita moverlos por separado.
@@ -142,7 +149,7 @@ def sobre(frame: str) -> dict:
             round(80.2 + (_pedidas["n"] - 1 if CFG.get("varia") else 0), 2),
             "operator_read.edge",
         ),
-        "evidence": campo(71.429, "scalp.evidence_coverage_pct"),
+        "evidence": campo(CFG["cobertura"], "scalp.evidence_coverage_pct"),
         "confirms": [campo("Rechazo confirmado sobre 62736.46",
                            "price_barriers.long_case.rejection")],
         "invalidates": [campo("price_rejects_below_vwap", "operator_read.invalidates_long[0]")],
@@ -238,6 +245,9 @@ if __name__ == "__main__":
     ap.add_argument("--balance", default="Long",
                     help="`evidence_balance`: lo que la palabra decia hasta la v1")
     ap.add_argument("--dc", type=float, default=100.0)
+    ap.add_argument("--libro", default="ok", help="`scalp.book_status`")
+    ap.add_argument("--cobertura", type=float, default=71.429,
+                    help="`scalp.evidence_coverage_pct`")
     ap.add_argument("--varia", action="store_true",
                     help="el sobre cambia en CADA peticion (edge +1), como el mercado")
     ap.add_argument(
@@ -251,5 +261,6 @@ if __name__ == "__main__":
     CFG.update(vars(a))
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", a.puerto), H)
     print(f"plantado en http://127.0.0.1:{a.puerto} lag={a.lag} tope={a.tope} "
-          f"bias={a.bias!r} state={a.state!r} balance={a.balance!r} dc={a.dc}", flush=True)
+          f"bias={a.bias!r} state={a.state!r} balance={a.balance!r} dc={a.dc} "
+          f"libro={a.libro!r} cobertura={a.cobertura}", flush=True)
     srv.serve_forever()

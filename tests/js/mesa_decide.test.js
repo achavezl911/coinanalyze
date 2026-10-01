@@ -136,20 +136,32 @@ test('LA REGLA DEL HANDOFF · data_confidence < 70 NO decide la palabra, decide 
   assert.ok(n.caja.classList.contains('no-evaluable'));
 });
 
-test('LA CALIDAD NO CALLA UN LADO · con evaluable=false y un estado CON lado, la palabra es ese lado', () => {
+test('LA CALIDAD MALA DICE «no se», Y EL ESTADO SIGUE A LA VISTA', () => {
   const { ctx, documento } = cargaMesa();
   const n = nodos(documento);
   const s = sobreLong();
-  // La v1 ponia NO EVALUABLE aqui, que es la mitad prohibida de C1: callar un lado que el
-  // sistema SI toma. La tarjeta se raya -el dato es malo- y la palabra sigue diciendo LONG.
+  // La regla del handoff: por debajo de 70 el backend sirve NO EVALUABLE con su motivo. No es
+  // callar un lado -el estado sigue en su celda, con el lado que el sistema haya tomado- es
+  // decir «no se» con su regla. La pantalla solo lo pinta.
+  s.datos.decide.bias = {
+    value: 'NO EVALUABLE', source_key: 'data_confidence.quality_score', status: 'ok',
+    motivo: 'data_confidence 12 < 70',
+  };
   s.datos.decide.evaluable = {
     value: false, source_key: 'data_confidence.quality_score', status: 'ok', threshold: 70.0,
   };
   s.datos.decide.data_confidence = campo(12.0, 'data_confidence.quality_score');
   ctx.pintarDecide(s, n);
-  assert.strictEqual(n.sesgo.textContent, 'LONG');
-  assert.strictEqual(n.sesgo.className, 'sesgo-LONG');
+  assert.strictEqual(n.sesgo.textContent, 'NO EVALUABLE');
+  assert.strictEqual(n.sesgo.className, 'sesgo-NOEVAL');
+  assert.match(n.motivo.textContent, /data_confidence 12 < 70/);
   assert.ok(n.caja.classList.contains('no-evaluable'));
+  // y el ESTADO -la decision del sistema- sigue en su celda, con su clave
+  const estado = Array.from(n.campos.querySelectorAll('[data-campo]'))
+    .find((x) => x.getAttribute('data-campo') === 'state');
+  assert.strictEqual(
+    estado.querySelector('[data-valor]').getAttribute('data-valor'), 'Long Pullback'
+  );
 });
 
 test('NO OPERAR · la palabra de «el sistema no toma lado» no se lee como un lado', () => {

@@ -10,11 +10,11 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 |---|---|---|---|---|---|
 | [`persist_signal_observations`](#persist-signal-observations) | 227 | 0 | **7** | 25 ↑ | **7** |
 | [`_validated_required_fields`](#-validated-required-fields) | 201 | 0 | **0** | 11 ↑ | **0** |
-| [`classify_signal_observation`](#classify-signal-observation) | 62 | 0 | **0** | 11 ↑ | **0** |
+| [`classify_signal_observation`](#classify-signal-observation) | 62 | 1 | **0** | 11 ↑ | **1** |
 | [`decision_fingerprint`](#decision-fingerprint) | 179 | 0 | **0** | 11 ↑ | **0** |
 | [`select_reference_price`](#select-reference-price) | 95 | 0 | **0** | 11 ↑ | **0** |
 | [`serialize_signal_evidence`](#serialize-signal-evidence) | 166 | 0 | **0** | 11 ↑ | **0** |
-| [`_finite`](#-finite) | 52 | 0 | **0** | 7 ↑ | **0** |
+| [`_finite`](#-finite) | 52 | 1 | **0** | 7 ↑ | **1** |
 
 ## persist_signal_observations
 
@@ -184,13 +184,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:62` · clave completa `app.signal_ledger.classify_signal_observation`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 11** (mas ancha)
+**Radio exacto: 1 rutas** de 72 · **cota superior: 11** (mas ancha)
 
-### Por llamada — 0 rutas
+### Por llamada — 1 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
-_ninguna ruta la ejecuta._
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 
 ### Por tabla · k=0 — 0 rutas · **exacto**
 
@@ -225,13 +225,12 @@ Y esas tablas las leen:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**11 rutas se enteran SOLO por el dato**, sin
+**10 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
@@ -240,7 +239,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## decision_fingerprint
 
@@ -432,13 +431,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:52` · clave completa `app.signal_ledger._finite`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 7** (mas ancha)
+**Radio exacto: 1 rutas** de 72 · **cota superior: 7** (mas ancha)
 
-### Por llamada — 0 rutas
+### Por llamada — 1 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
-_ninguna ruta la ejecuta._
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 
 ### Por tabla · k=0 — 0 rutas · **exacto**
 
@@ -468,16 +467,15 @@ Y esas tablas las leen:
 - [`/api/signals/replay`](../rutas/api-signals-replay.md)
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 
-**7 rutas se enteran SOLO por el dato**, sin
+**6 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/signals/execution`](../rutas/api-signals-execution.md)
 - [`/api/signals/ledger`](../rutas/api-signals-ledger.md)
 - [`/api/signals/outcomes`](../rutas/api-signals-outcomes.md)
 - [`/api/signals/replay`](../rutas/api-signals-replay.md)
 - [`/api/signals/visibility`](../rutas/api-signals-visibility.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

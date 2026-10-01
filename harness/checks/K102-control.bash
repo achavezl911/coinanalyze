@@ -216,8 +216,8 @@ fi
 echo
 
 # --------------------- P5 · la regla del handoff, rota en la direccion que importa
-# LO QUE `evaluable` DECIDE HOY ES EL RAYADO, no la palabra (v2 del sobre). Asi que el plantado
-# es el que le quita el rayado: con calidad 0 en el espejo la tarjeta TIENE que salir rayada.
+# B5 JUZGA EL RAYADO -la palabra la juzga B9-, asi que el plantado es el que le quita el rayado:
+# con calidad 0 en el espejo la tarjeta TIENE que salir rayada.
 cat > "$TMP/parche.py" <<'PY'
 import pathlib, sys
 f = pathlib.Path(sys.argv[1]); t = f.read_text(encoding="utf-8")
@@ -261,6 +261,52 @@ p10 PASA    "NO OPERAR" "No Trade"        "G5 · NO OPERAR con ESTADO 'No Trade'
 p10 CONDENA "NO OPERAR" "Short Rejection" "P10b · calla el lado de 'Short Rejection'"
 p10 PASA    "SHORT"     "Short Rejection" "G6 · SHORT con ESTADO 'Short Rejection'"
 p10 CONDENA "LONG"      "Long Breakout"   "P10c · un estado que NO existe no da lado"
+echo
+
+# ------- P13 · LA REGLA COMPLETA · el umbral del handoff Y la clasificacion del registro ----
+# LAS TRES PUERTAS QUE SE CIERRAN ANTES DEL ESTADO, cada una con su plantado y su gemelo. Sin
+# esto, B9 solo cobraria el mapa de estados, y la palabra podria decir un lado donde el registro
+# dice «unavailable» -que es lo que el operador midio sobre la entrega de la 132-.
+#
+#   quiero    bias           dc    libro  cobertura  por que
+#   CONDENA   LONG           10    ok     90         la calidad no llega al umbral del handoff
+#   PASA      NO EVALUABLE   10    ok     90         decir «no se» con su regla NO es callar
+#   CONDENA   NO OPERAR      100   stale  90         el registro da `unavailable`, no `neutral`
+#   PASA      NO EVALUABLE   100   stale  90
+#   CONDENA   LONG           100   ok     40         cobertura por debajo de 50 -> `unavailable`
+#   PASA      NO EVALUABLE   100   ok     40
+#   PASA      LONG           70    ok     90         LA FRONTERA: 70 exacto SI es evaluable
+echo "P13 · C3 · el umbral del handoff y la clasificacion ENTERA del registro"
+p13() {  # p13 <CONDENA|PASA> <bias> <dc> <libro> <cobertura> <rotulo>
+  pkill -f '[K]102-sobre-plantado.py' 2>/dev/null; sleep 1
+  nohup "$PY" "$PLANTADO" --puerto 8096 --lag 3 --tope 600 \
+    --bias "$2" --state "Long Momentum" --balance Long \
+    --dc "$3" --libro "$4" --cobertura "$5" > "$TMP/plantado.log" 2>&1 &
+  sleep 3
+  K102_OBSERVA=4 espera "$1" "$6" "B9 " "http://127.0.0.1:8096"
+  pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
+}
+p13 CONDENA "LONG"         10  ok    90 "P13a · LONG con data_confidence 10"
+p13 PASA    "NO EVALUABLE" 10  ok    90 "G7 · NO EVALUABLE con data_confidence 10"
+p13 CONDENA "LONG"         100 ok    40 "P13c · LONG con la cobertura en 40"
+p13 PASA    "NO EVALUABLE" 100 ok    40 "G9 · NO EVALUABLE con la cobertura en 40"
+p13 PASA    "LONG"         70  ok    90 "G10 · FRONTERA: 70 exacto SI es evaluable"
+# EL DEL LIBRO VA CON 'No Trade' A PROPOSITO: es el caso que el operador midio -libro no ok con
+# No Trade daba NO OPERAR- y el unico de los tres en el que el estado por si solo diria algo
+# distinto de «no se». Por eso no pasa por `p13`, que clava el estado en 'Long Momentum'.
+pkill -f '[K]102-sobre-plantado.py' 2>/dev/null; sleep 1
+nohup "$PY" "$PLANTADO" --puerto 8096 --lag 3 --tope 600 \
+  --bias "NO OPERAR" --state "No Trade" --balance Long --dc 100 --libro stale --cobertura 90 \
+  > "$TMP/plantado.log" 2>&1 &
+sleep 3
+K102_OBSERVA=4 espera CONDENA "P13b · NO OPERAR con el libro 'stale'" "B9 " "http://127.0.0.1:8096"
+pkill -f '[K]102-sobre-plantado.py' 2>/dev/null; sleep 1
+nohup "$PY" "$PLANTADO" --puerto 8096 --lag 3 --tope 600 \
+  --bias "NO EVALUABLE" --state "No Trade" --balance Long --dc 100 --libro stale --cobertura 90 \
+  > "$TMP/plantado.log" 2>&1 &
+sleep 3
+K102_OBSERVA=4 espera PASA "G8 · NO EVALUABLE con el libro 'stale'" "B9 " "http://127.0.0.1:8096"
+pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
 echo
 
 # --------------------- P7 · R1 · la palabra de un marco no scalp vuelve a ser la del scalp
@@ -434,17 +480,20 @@ pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
 echo
 
 # --------- G4 · R5 · la tarjeta del scalp ensena el LADO del scalp cuando lo tiene ------
-# LO QUE SE FUERZA CAMBIO, Y POR ESO: hasta la v1 del sobre bastaba forzar `data_confidence` a
-# 85, porque la palabra salia del signo de los scores y la calidad era lo unico que la tapaba.
-# Desde la v2 la palabra sale del `state`, y el espejo da `state = 'Sin datos suficientes'` en
-# los tres activos: con la calidad a 85 seguiria sin haber lado, y este gemelo no mediria nada
-# (A57 · un control que no varia la variable que decide da 8 de 8 sin medir). Asi que lo que se
-# planta ahora es el ESTADO.
-#   · con `state` 'Short Rejection' forzado, swing y largo publican en `lectura_scalp` EL MISMO
-#     lado, confirms, invalidates e invalidation_level que publica scalp;
-#   · con el estado REAL del espejo, los tres siguen diciendo «sin lado», que ahi SI es cierto.
+# LO QUE SE FUERZA HA CAMBIADO DOS VECES, Y CADA VEZ POR LA MISMA RAZON: el banco tiene que
+# llegar al fenomeno o no mide nada (A57).
+#   v1 del sobre: bastaba forzar `data_confidence` a 85, porque la palabra salia del signo.
+#   v2:           hubo que forzar el ESTADO, porque la palabra paso a salir de el.
+#   v2 + remate:  hay que forzar ADEMAS el libro y la cobertura, porque la palabra sigue la
+#                 clasificacion ENTERA del registro y esta cierra la puerta ANTES de mirar el
+#                 estado. Medido en el espejo el 2026-10-01: `book_status='stale'` y
+#                 `evidence_coverage_pct=20.0` en los tres activos, asi que con solo el estado
+#                 forzado `classify_signal_observation` devuelve `unavailable` igualmente.
+#   · con la lectura forzada a buena y `state` 'Short Rejection', swing y largo publican en
+#     `lectura_scalp` EL MISMO lado, confirms, invalidates e invalidation_level que scalp;
+#   · con la lectura REAL del espejo, los tres siguen diciendo «sin lado», que ahi SI es cierto.
 # El segundo es el que impide que el arreglo sea «dar lado siempre».
-echo "G4 · la tarjeta del scalp y su lado (con el ESTADO forzado, y el control con el real)"
+echo "G4 · la tarjeta del scalp y su lado (con la LECTURA forzada, y el control con la real)"
 total=$((total + 1))
 "$PY" - <<'PY' > "$TMP/g4.txt" 2>&1
 import asyncio, getpass, json
@@ -452,12 +501,23 @@ import asyncpg
 import app.ai_context as ctx
 
 SUMMARY = ctx.compute_scalp_summary
+CONF = ctx.data_confidence_row
 
 def con_estado(valor):
     def _f(c):
         s = dict(SUMMARY(c))
         s["state"] = valor
+        s["book_status"] = "ok"
+        s["evidence_coverage_pct"] = 90.0
         return s
+    return _f
+
+def con_calidad(valor):
+    async def _f(conn, symbol):
+        fila = dict(await CONF(conn, symbol))
+        fila["quality_score"] = valor
+        fila["status"] = "ok"
+        return fila
     return _f
 
 def foto(d):
@@ -478,8 +538,9 @@ async def main():
         f"postgresql://{getpass.getuser()}@/coinalyze_espejo?host=/var/run/postgresql")
     fallos = []
     try:
-        # --- con el ESTADO forzado: los tres marcos tienen que coincidir, y tener lado
+        # --- con la LECTURA forzada: los tres marcos tienen que coincidir, y tener lado
         ctx.compute_scalp_summary = con_estado("Short Rejection")
+        ctx.data_confidence_row = con_calidad(85.0)
         for sym in ("BTCUSDT_PERP.A", "ETHUSDT_PERP.A", "SOLUSDT_PERP.A"):
             fotos = {m: foto(await ctx.build_mesa_decide(conn, sym, frame=m))
                      for m in ("scalp", "swing", "largo")}
@@ -496,8 +557,9 @@ async def main():
                   f"{s['nivel']}, {len(s['confirms'])} confirms, {s['n_inval']} invalidates, "
                   f"balance {s['balance']!r} · swing y largo IDENTICOS: "
                   f"{fotos['swing'] == s and fotos['largo'] == s}")
-        # --- CONTROL con el estado REAL: «sin lado» tiene que seguir siendo la respuesta
+        # --- CONTROL con la lectura REAL: «sin lado» tiene que seguir siendo la respuesta
         ctx.compute_scalp_summary = SUMMARY
+        ctx.data_confidence_row = CONF
         for sym in ("BTCUSDT_PERP.A",):
             for m in ("scalp", "swing", "largo"):
                 f = foto(await ctx.build_mesa_decide(conn, sym, frame=m))
@@ -509,6 +571,7 @@ async def main():
                   f"{not fallos}")
     finally:
         ctx.compute_scalp_summary = SUMMARY
+        ctx.data_confidence_row = CONF
         await conn.close()
     for x in fallos:
         print("  FALLO:", x)
@@ -556,7 +619,10 @@ N = 20
 # SIGNO de la resta cambia en cada muestra.
 def serie(i):
     a, b = (52.0, 48.0) if i % 2 == 0 else (48.0, 52.0)
-    return {"state": "No Trade", "long_score": a, "short_score": b}
+    # EL LIBRO Y LA COBERTURA, BUENOS A PROPOSITO: con los del espejo (stale / 20) la regla nueva
+    # daria NO EVALUABLE en las 20 muestras y la serie no mediria el giro, sino la puerta.
+    return {"state": "No Trade", "long_score": a, "short_score": b,
+            "book_status": "ok", "evidence_coverage_pct": 90.0}
 
 def parchea(ctx):
     original = ctx.compute_scalp_summary
@@ -728,14 +794,26 @@ import asyncio
 import app.ai_context as ctx
 import app.api as api
 
+# EL BANCO FUERZA LA LECTURA ENTERA, no solo el estado: el espejo trae `book_status='stale'` y
+# `evidence_coverage_pct=20.0`, y con eso el registro devuelve `unavailable` haga lo que haga el
+# estado. Un banco que solo plantase el estado daria NO EVALUABLE en los tres activos y no
+# ensenaria ni una respuesta CON decision, que es la mitad de lo que este control necesita.
 FORZADO = {
     "BTCUSDT_PERP.A": "Long Momentum",
     "ETHUSDT_PERP.A": "No Trade",
     "SOLUSDT_PERP.A": "Sin datos suficientes",
 }
 ORIG_SUMMARY = ctx.compute_scalp_summary
+ORIG_CONF = ctx.data_confidence_row
 ORIG_BUILD = ctx.build_mesa_decide
 CERROJO = asyncio.Lock()
+
+
+async def _conf_buena(conn, symbol):
+    fila = dict(await ORIG_CONF(conn, symbol))
+    fila["quality_score"] = 85.0
+    fila["status"] = "ok"
+    return fila
 
 
 async def build(conn, symbol, *, frame="scalp"):
@@ -746,14 +824,18 @@ async def build(conn, symbol, *, frame="scalp"):
     def _con_estado(c):
         s = dict(ORIG_SUMMARY(c))
         s["state"] = estado
+        s["book_status"] = "ok"
+        s["evidence_coverage_pct"] = 90.0
         return s
 
     async with CERROJO:
         ctx.compute_scalp_summary = _con_estado
+        ctx.data_confidence_row = _conf_buena
         try:
             return await ORIG_BUILD(conn, symbol, frame=frame)
         finally:
             ctx.compute_scalp_summary = ORIG_SUMMARY
+            ctx.data_confidence_row = ORIG_CONF
 
 
 api.build_mesa_decide = build

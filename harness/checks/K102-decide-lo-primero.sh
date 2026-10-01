@@ -10,8 +10,8 @@
 #   B2 · el sesgo es el GLIFO MAS GRANDE del primer pliegue. Caber no basta.
 #   B3 · cada campo que el sobre sirve con valor se pinta, con SU valor y con SU `source_key`.
 #   B4 · ninguna celda declara una clave que el sobre NO sirva.
-#   B5 · la regla del handoff, en las dos direcciones, sobre lo que de verdad decide: el RAYADO
-#        de la tarjeta. Desde la v2 del sobre `evaluable` ya NO decide la palabra.
+#   B5 · la regla del handoff, en las dos direcciones, sobre el RAYADO de la tarjeta. Que la
+#        PALABRA siga ese mismo umbral lo juzga B9, que la recomputa entera.
 #   B7 · LA LECTURA DEL SCALP NO SE PRESENTA COMO DEL MARCO. En SWING y en LARGO el veredicto
 #        servido es NO EVALUABLE con su motivo, y lo que sale del scalp vive en `lectura_scalp`
 #        y se pinta en SU tarjeta, no dentro de DECIDE.
@@ -20,9 +20,9 @@
 #   B9 · LA PALABRA DICE LA DECISION DEL SISTEMA. Ninguno de los ocho de arriba puede ver esto,
 #        y eso es el defecto que costo la campana 132: B3 prueba que la pantalla pinta FIEL la
 #        clave que dice pintar, y una clave fielmente pintada puede seguir siendo la palabra
-#        equivocada (A83). B9 cruza la palabra -servida Y pintada- con el `state` de LA MISMA
-#        respuesta, usando el mapa estado -> lado del REGISTRO DE SENALES, que es la
-#        especificacion que el operador nombro: `app/signal_ledger.py`.
+#        equivocada (A83). B9 RECOMPUTA la palabra con la regla completa -el umbral del handoff
+#        que el sobre sirve, y `classify_signal_observation` de `app/signal_ledger.py` IMPORTADA-
+#        sobre las cifras de LA MISMA respuesta, y la contrasta con la servida Y con la pintada.
 #   B6 · errores de consola. HOY NO PUEDE CONDENAR y la salida lo dice.
 #
 # TRES COSAS QUE ESTA RED HACIA MAL Y QUE COSTARON UNA RONDA DE CORRECCION DEL OPERADOR:
@@ -155,13 +155,13 @@ for a in $ACTIVOS; do
 done
 
 "$PY" - "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/swp.json" "$TMP/lg.json" \
-       "$TMP/lgp.json" "$SUJETO" "$ACTIVO" "$REPO/app/signal_ledger.py" \
+       "$TMP/lgp.json" "$SUJETO" "$ACTIVO" "$REPO" \
        "$REPO/app/ai_context.py" "$OTROS" "$ACTIVOS" <<'PY'
 import json, os, re, sys
 
 g, p, sw, swp, lg, lgp = (json.load(open(x)) for x in sys.argv[1:7])
 sujeto, activo = sys.argv[7], sys.argv[8]
-ruta_ledger, ruta_ctx = sys.argv[9], sys.argv[10]
+raiz_repo, ruta_ctx = sys.argv[9], sys.argv[10]
 dir_otros, activos_pedidos = sys.argv[11], sys.argv[12].split()
 fallos, lineas = [], []
 
@@ -278,14 +278,13 @@ if huerf:
 else:
     lineas.append("ninguna celda declara una clave que el sobre no sirva")
 
-# --- B5 · LA REGLA DEL HANDOFF, SOBRE LO QUE AHORA DECIDE -------------------------------
+# --- B5 · LA REGLA DEL HANDOFF, SOBRE EL RAYADO DE LA TARJETA ---------------------------
 #
-# ESTE BRAZO JUZGABA OTRA COSA Y TENIA QUE CAMBIAR. Exigia «evaluable=false -> la palabra dice
-# NO EVALUABLE», que era la regla de la v1 del sobre. Desde la v2 la palabra sale del `state` y
-# la calidad NO la decide: si se hubiera dejado, B5 condenaria una pantalla CORRECTA en cuanto
-# la calidad baje de 70 con un estado que tiene lado -que es justo la mitad de C1 que el encargo
-# manda no callar-. Lo que `evaluable` decide hoy es el RAYADO de la tarjeta, y eso es lo que se
-# mide: la regla sigue cobrandose, sobre su efecto de verdad.
+# ESTE BRAZO JUZGA EL RAYADO, Y B9 JUZGA LA PALABRA. El umbral del handoff decide las DOS cosas
+# -la tarjeta rayada y, en primer lugar, la palabra-, pero cada una tiene su brazo: aqui se mide
+# que `evaluable` sale de su propia regla (`data_confidence` contra su umbral) y que la tarjeta
+# lleva la marca que le toca; que la PALABRA siga ese mismo umbral lo recomputa B9 desde el
+# sobre. Separarlos es lo que hace que un hallazgo diga cual de las dos cosas esta rota.
 dec = (g.get("sobre") or {}).get("decide") or {}
 ev = (dec.get("evaluable") or {}).get("value")
 umbral_ev = (dec.get("evaluable") or {}).get("threshold")
@@ -320,7 +319,7 @@ else:
     lineas.append(
         f"la regla del handoff se cumple: data_confidence {dc_val} contra umbral {umbral_ev} "
         f"-> evaluable={ev} -> tarjeta {'rayada' if marcada else 'sin rayar'} "
-        f"(y la palabra NO depende de esto: sale del estado, y eso lo juzga B9)"
+        f"(y la PALABRA sale de este mismo umbral, en primer lugar; eso lo juzga B9)"
     )
 
 # --- B7 · LA LECTURA DEL SCALP NO ES EL VEREDICTO DE OTRO MARCO ------------------------
@@ -432,30 +431,41 @@ else:
                 )
 
 # --- B9 · LA PALABRA DICE LA DECISION DEL SISTEMA ---------------------------------------
-# EL MAPA ESTADO -> LADO NO SE COPIA AQUI: SE LEE de `app/signal_ledger.py`. Es lo que el
-# operador declaro como especificacion -«la palabra dice la misma direccion que el registro de
-# senales guarda para ese estado»- y copiarlo aqui dejaria que las dos versiones se separasen en
-# silencio, que es la forma exacta del defecto que esta campana vino a arreglar. Si el fichero
-# cambia de forma, esto sale NO MEDIDO: un mapa que no se pudo leer no absuelve a nadie.
-def estados_del_registro(ruta):
-    try:
-        t = open(ruta, encoding="utf-8").read()
-    except OSError as e:
-        return None, f"no se pudo abrir {ruta}: {e}"
-    fuera = {}
-    for nombre in ("_LONG_STATES", "_SHORT_STATES", "_NEUTRAL_STATES"):
-        m = re.search(nombre + r"\s*=\s*frozenset\(\{([^}]*)\}\)", t)
-        if not m:
-            return None, f"no encontre {nombre} en {ruta}"
-        fuera[nombre] = {x.strip().strip("\"'") for x in m.group(1).split(",") if x.strip()}
-        if not fuera[nombre]:
-            return None, f"{nombre} salio vacio"
-    return fuera, None
+# LA REGLA NO SE COPIA AQUI: SE IMPORTA, y son las DOS mitades.
+#
+#   1 · el umbral del handoff, que el propio sobre sirve (`decide.evaluable.threshold`)
+#   2 · `classify_signal_observation` de `app/signal_ledger.py`, ENTERA
+#
+# Reescribir aqui cualquiera de las dos dejaria que las versiones se separasen en silencio, que
+# es la forma exacta del defecto que esta campana vino a arreglar. Y son las DOS: una version que
+# solo mirase los conjuntos de estados diria un lado donde el registro dice «no se» -el registro
+# cierra la puerta antes, por libro o por cobertura-.
+#
+# Y SE RECOMPUTA DESDE LO QUE LA PROPIA RESPUESTA SIRVE: `data_confidence`, el umbral, `state`,
+# `book_status` y `evidence`. Si alguna no viaja, la palabra no es auditable y eso es un hallazgo.
+# Si el import falla, NO MEDIDO: una regla que no se pudo cargar no absuelve a nadie.
+sys.path.insert(0, raiz_repo)
+try:
+    from app.signal_ledger import classify_signal_observation
+except Exception as e:  # noqa: BLE001
+    print(f"NO MEDIDO: B9 no pudo importar classify_signal_observation de {raiz_repo}: {e}")
+    raise SystemExit(2) from None
 
-REG, err_reg = estados_del_registro(ruta_ledger)
-if REG is None:
-    print(f"NO MEDIDO: B9 no pudo leer el mapa estado->lado del registro: {err_reg}")
-    raise SystemExit(2)
+PALABRA_POR_DIRECCION = {"long": "LONG", "short": "SHORT", "neutral": "NO OPERAR"}
+
+def palabra_esperada(dc, umbral, estado, libro, cobertura):
+    """La palabra que ESA respuesta tendria que estar sirviendo, con la regla completa."""
+    if dc is None or umbral is None:
+        return None, "no llega data_confidence o su umbral"
+    try:
+        if float(dc) < float(umbral):
+            return "NO EVALUABLE", f"data_confidence {dc} < {umbral}"
+    except (TypeError, ValueError):
+        return None, f"data_confidence o umbral no son numeros: {dc!r} / {umbral!r}"
+    _d, direccion, _a = classify_signal_observation(
+        {"state": estado, "book_status": libro, "evidence_coverage_pct": cobertura}
+    )
+    return PALABRA_POR_DIRECCION.get(direccion, "NO EVALUABLE"), direccion
 
 # LA PISTA DE DESPLIEGUE, no una excusa. Si el sujeto sirve un `schema_version` distinto del que
 # el ARBOL declara, lo que se esta juzgando son bytes viejos. Sigue siendo ROJO -el sujeto tiene
@@ -467,15 +477,6 @@ pista = ""
 if sch_arbol and sch_sujeto and sch_arbol != sch_sujeto:
     pista = (f" · FALTA DESPLEGAR: el sujeto sirve {sch_sujeto} y el arbol declara {sch_arbol}")
 
-PALABRA_LADO = {"LONG": "long", "SHORT": "short"}
-
-def lado_del_estado(st):
-    if st in REG["_LONG_STATES"]:
-        return "long"
-    if st in REG["_SHORT_STATES"]:
-        return "short"
-    return None          # No Trade, «Sin datos suficientes» y cualquier estado nuevo: sin lado
-
 b9_ok, b9_sin_tarjeta = [], []
 for d, rot, marco, _act in VISTAS:
     sob = d.get("sobre") or {}
@@ -483,8 +484,9 @@ for d, rot, marco, _act in VISTAS:
         fallos.append(f"B9 {rot}: no se pudo leer el sobre que recibio la pagina")
         continue
     c = cosecha(d, rot)
+    dec_v = sob.get("decide") or {}
     if marco == "scalp":
-        origen = sob.get("decide") or {}
+        origen = dec_v
         pintada = ((c.get("sesgo") or {}).get("texto") or "").strip()
         donde = "#decide-sesgo"
     else:
@@ -500,30 +502,40 @@ for d, rot, marco, _act in VISTAS:
         pintada = ((cel.get("scalp.bias") or {}).get("valor") or "").strip()
         donde = "#lectura-scalp [data-campo=scalp.bias]"
     servida = (origen.get("bias") or {}).get("value")
+    # LAS CUATRO ENTRADAS DE LA REGLA, LEIDAS DEL SOBRE. `data_confidence` y su umbral viven
+    # SIEMPRE en `decide` -son del simbolo, no del marco-; las otras tres viajan con la lectura
+    # del scalp, o sea en `decide` en scalp y en `lectura_scalp` en los otros dos.
     estado = (origen.get("state") or {}).get("value")
-    if servida is None or estado is None:
+    libro = (origen.get("book_status") or {}).get("value")
+    cobertura = (origen.get("evidence") or {}).get("value")
+    dc_v = (dec_v.get("data_confidence") or {}).get("value")
+    umbral_v = (dec_v.get("evaluable") or {}).get("threshold")
+    faltan = [k for k, v in (("bias", servida), ("state", estado), ("book_status", libro),
+                             ("data_confidence", dc_v), ("evaluable.threshold", umbral_v))
+              if v is None]
+    if faltan:
         fallos.append(
-            f"B9 {rot}: la palabra ({servida!r}) y el estado ({estado!r}) no viajan LOS DOS en "
-            f"la misma respuesta: sin la pareja, la palabra mas grande no es auditable{pista}"
+            f"B9 {rot}: la respuesta no sirve {' '.join(faltan)}: sin eso la palabra mas grande "
+            f"no se puede contrastar con la regla que dice seguir{pista}"
         )
         continue
-    lado_s = PALABRA_LADO.get(str(servida))
-    lado_p = PALABRA_LADO.get(pintada)
-    lado_e = lado_del_estado(str(estado))
-    if lado_s != lado_e:
+    esperada, por_que = palabra_esperada(dc_v, umbral_v, estado, libro, cobertura)
+    if esperada is None:
+        fallos.append(f"B9 {rot}: no se pudo recomputar la palabra: {por_que}{pista}")
+    elif str(servida) != esperada:
         fallos.append(
-            f"B9 {rot}: la palabra SERVIDA dice {servida!r} ({lado_s or 'sin lado'}) y el "
-            f"`state` de ESA MISMA respuesta es {estado!r} ({lado_e or 'sin lado'}), que es la "
-            f"decision que el registro de senales guarda{pista}"
+            f"B9 {rot}: la palabra SERVIDA dice {servida!r} y la regla sobre lo que ESA MISMA "
+            f"respuesta sirve da {esperada!r} por {por_que!r} (data_confidence {dc_v} contra "
+            f"umbral {umbral_v}; ESTADO {estado!r}, libro {libro!r}, evidencia {cobertura})"
+            f"{pista}"
         )
-    elif lado_p != lado_e:
+    elif pintada != esperada:
         fallos.append(
-            f"B9 {rot}: la palabra PINTADA en {donde} dice {pintada!r} "
-            f"({lado_p or 'sin lado'}) y el estado servido en la MISMA carga es {estado!r} "
-            f"({lado_e or 'sin lado'})"
+            f"B9 {rot}: la palabra PINTADA en {donde} dice {pintada!r} y la regla sobre lo que la "
+            f"MISMA carga sirve da {esperada!r}"
         )
     else:
-        b9_ok.append((rot, pintada, str(estado), lado_e or "sin lado"))
+        b9_ok.append((rot, pintada, str(estado), str(por_que)))
 
 # LAS PAREJAS QUE SALIERON BIEN, AGRUPADAS POR LO QUE DICEN. Dieciocho lineas iguales no se
 # leen; lo que importa es CUANTAS parejas distintas se llegaron a ver. Si solo se vio una
@@ -531,22 +543,23 @@ for d, rot, marco, _act in VISTAS:
 # ejercido la mitad que condena un lado callado, y la salida lo dice en vez de sugerir que si.
 if b9_ok:
     vistos = {}
-    for rot, pal, est, lado in b9_ok:
-        vistos.setdefault((pal, est, lado), []).append(rot)
+    for rot, pal, est, motivo in b9_ok:
+        vistos.setdefault((pal, est, motivo), []).append(rot)
     lineas.append(
-        f"la palabra dice el mismo lado que la decision del sistema en {len(b9_ok)} de "
+        f"la palabra coincide con la regla completa -umbral del handoff + "
+        f"classify_signal_observation- en {len(b9_ok)} de "
         f"{len(VISTAS) - len(b9_sin_tarjeta)} vista(s) juzgada(s), con "
-        f"{len(vistos)} pareja(s) distinta(s):"
+        f"{len(vistos)} caso(s) distinto(s):"
     )
-    for (pal, est, lado), rots in sorted(vistos.items()):
+    for (pal, est, motivo), rots in sorted(vistos.items()):
         lineas.append(
-            f"  palabra {pal!r} · state {est!r} -> {lado} · {len(rots)} vista(s): "
+            f"  palabra {pal!r} · state {est!r} · {motivo} · {len(rots)} vista(s): "
             + " ".join(rots[:3]) + (" ..." if len(rots) > 3 else "")
         )
-    con_lado = [k for k in vistos if k[2] != "sin lado"]
+    con_lado = [k for k in vistos if k[0] in ("LONG", "SHORT")]
     if not con_lado:
         lineas.append(
-            "  y NINGUNA de las parejas vistas tenia lado: en esta corrida B9 no ha ejercido "
+            "  y NINGUNA de las palabras vistas tenia lado: en esta corrida B9 no ha ejercido "
             "la mitad que condena una palabra que CALLA un lado que el sistema si toma"
         )
 if b9_sin_tarjeta:

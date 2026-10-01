@@ -50,7 +50,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-control.bash:351`, `harness/checks/K102-mesa.py:459`, `harness/checks/K102-sobre-plantado.py:161`, `harness/checks/K102-sobre-plantado.py:212` | `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:199` |
+| **checks** | `harness/checks/K102-control.bash:397`, `harness/checks/K102-mesa.py:459`, `harness/checks/K102-sobre-plantado.py:168`, `harness/checks/K102-sobre-plantado.py:219` | `harness/checks/K90-la-senal-no-dura-su-rotulo.sh:199` |
 | **tests** | `tests/js/mesa_remate.test.js:84` | — |
 
 **No la llama el panel**, pero si 5 linea(s) de codigo fuera de el.
