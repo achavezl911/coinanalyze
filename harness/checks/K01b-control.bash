@@ -21,16 +21,25 @@
 #       nada: un comparador que nunca condena tambien «perdona» la retencion.
 #   C3  ninguna particion con dato              -> NO puede escribir OK.
 #
+# Y DESDE LA CAMPANA 131, LOS TRES DEL STDERR -lo que la restauracion NO PUDO CREAR-:
+#   C5  un volcado CON hijas huerfanas  -> FALLO que NOMBRA la FK y su tabla, y dice AUSENTE.
+#   C6  el GEMELO, el mismo volcado SIN las huerfanas -> OK y «0 FK sin crear». Sin este, C5
+#       no vale: un lector que siempre nombra algo condena tambien al respaldo bueno.
+#   C7  `K01B_DUMP` sin `K01B_REG` -> NO MEDIDO. Un volcado que fabrica el control no puede
+#       dejar su veredicto en el registro compartido.
+#
 # NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh.
 set -uo pipefail
 ORIG=${REPO:-/srv/coinanalyze/repo}
 CHK="$ORIG/harness/checks/K01b-respaldo-cifrado.sh"
 [ -r "$CHK" ] || { echo "NO MEDIDO: no encuentro el check en $CHK"; exit 2; }
 command -v psql >/dev/null || { echo "NO MEDIDO: no hay psql en esta maquina"; exit 2; }
+command -v pg_dump >/dev/null || { echo "NO MEDIDO: no hay pg_dump en esta maquina"; exit 2; }
 
 DIR=$(mktemp -d) || exit 2
-RES="k01b_ctl_res_$$"; PROD="k01b_ctl_140_$$"
-limpia() { psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $RES" -c "DROP DATABASE IF EXISTS $PROD" >/dev/null 2>&1; rm -rf "$DIR"; }
+RES="k01b_ctl_res_$$"; PROD="k01b_ctl_140_$$"; FUENTE="k01b_ctl_src_$$"; DESTINO="k01b_ctl_dst_$$"
+limpia() { psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $RES" -c "DROP DATABASE IF EXISTS $PROD" \
+                                   -c "DROP DATABASE IF EXISTS $FUENTE" -c "DROP DATABASE IF EXISTS $DESTINO" >/dev/null 2>&1; rm -rf "$DIR"; }
 [ "${K01B_CONTROL_GUARDA:-0}" = "1" ] || trap limpia EXIT
 fallos=0; pasan=0
 comprueba() { if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-62s\n' "$1"
@@ -135,6 +144,79 @@ comprueba "C4b escribe OK diciendo CUANTAS con dato" \
   "$(grep -q 'particiones CON DATO cuadran fila a fila' "$DIR/reg.tsv" && echo si || echo no)"
 comprueba "C4c y la vaciada sigue nombrada en la linea" \
   "$(printf '%s' "$OUT" | grep -q 'vacia_p20260101(0 filas vivas' && echo si || echo no)"
+
+echo
+echo "C5/C6/C7 · EL STDERR DE pg_restore · lo que la restauracion NO PUDO CREAR (campana 131)"
+# El escenario es el de produccion en pequeno: un padre, tres hijas con FK VALIDADA, y en el
+# sucio tres padres que se van SIN tocar a las hijas -`session_replication_role='replica'`, que
+# es la unica forma de reproducir «paginas que desaparecen con las FK intactas» sin corromper
+# nada-. El volcado de esa base no se puede restaurar COMPLETO: las FK no se pueden crear.
+# La particion `cuadra_p20260101` esta para que el comparador tenga algo con dato y el brazo
+# llegue hasta la linea del registro; si no, saldria NO MEDIDO por «cero particiones con dato».
+psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $FUENTE" -c "CREATE DATABASE $FUENTE" >/dev/null 2>&1
+psql -X -q -d "$FUENTE" >/dev/null 2>&1 <<'SQL'
+CREATE TABLE padre (id int PRIMARY KEY);
+CREATE TABLE hija_a (id int PRIMARY KEY, padre_id int REFERENCES padre(id));
+CREATE TABLE hija_b (id int PRIMARY KEY, padre_id int REFERENCES padre(id));
+CREATE TABLE cuadra_p20260101 (ts timestamptz, v int);
+INSERT INTO padre SELECT i FROM generate_series(1,10) i;
+INSERT INTO hija_a SELECT i,i FROM generate_series(1,10) i;
+INSERT INTO hija_b SELECT i,i FROM generate_series(1,10) i;
+INSERT INTO cuadra_p20260101 SELECT '2026-01-01T00:00:00Z'::timestamptz + (i||' min')::interval, i FROM generate_series(1,50) i;
+SQL
+# 140 de mentira tiene que tener la misma particion con el mismo contenido, o el comparador
+# condenaria por el md5 y no por la FK, y los dos brazos se confundirian.
+psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $PROD" -c "CREATE DATABASE $PROD" >/dev/null 2>&1
+psql -X -q -d "$PROD" -c "CREATE TABLE cuadra_p20260101 (ts timestamptz, v int)" >/dev/null 2>&1
+psql -X -q -d "$PROD" -c "INSERT INTO cuadra_p20260101 SELECT '2026-01-01T00:00:00Z'::timestamptz + (i||' min')::interval, i FROM generate_series(1,50) i" >/dev/null 2>&1
+pg_dump -Fc -d "$FUENTE" -f "$DIR/limpio.dump" 2>/dev/null
+psql -X -q -d "$FUENTE" -c "SET session_replication_role='replica'; DELETE FROM padre WHERE id IN (1,2,3);" >/dev/null 2>&1
+huerf=$(psql -X -A -t -d "$FUENTE" -c "SELECT count(*) FROM hija_a c WHERE NOT EXISTS (SELECT 1 FROM padre p WHERE p.id=c.padre_id)" 2>/dev/null)
+pg_dump -Fc -d "$FUENTE" -f "$DIR/sucio.dump" 2>/dev/null
+comprueba "C5pre el plantado existe: 3 hijas huerfanas en la fuente (huerf=$huerf)" \
+  "$([ "$huerf" = 3 ] && echo si || echo no)"
+
+corre_dump() {  # $1 = volcado
+  : > "$DIR/reg.tsv"
+  OUT=$(env K01B_RESTAURA=1 K01B_DUMP="$1" K01B_BASE="$DESTINO" K01B_FECHA="$HOY" \
+            K01B_REG="$DIR/reg.tsv" timeout -k 5 300 bash "$DIR/K01b.sh" 2>&1); RC=$?
+}
+
+echo
+echo "C5 · el volcado CON huerfanas: FALLO que NOMBRA la FK, su tabla y que esta AUSENTE"
+corre_dump "$DIR/sucio.dump"
+comprueba "C5a condena, rc=1 (rc=$RC)" "$([ "$RC" = 1 ] && echo si || echo no)"
+comprueba "C5b dice CUANTAS: 2 FK sin crear" \
+  "$(printf '%s' "$OUT" | grep -q '2 FK sin crear' && echo si || echo no)"
+comprueba "C5c NOMBRA hija_a_padre_id_fkey con su tabla y AUSENTE" \
+  "$(printf '%s' "$OUT" | grep -q 'public.hija_a/hija_a_padre_id_fkey(AUSENTE)' && echo si || echo no)"
+comprueba "C5d NOMBRA tambien hija_b_padre_id_fkey" \
+  "$(printf '%s' "$OUT" | grep -q 'public.hija_b/hija_b_padre_id_fkey(AUSENTE)' && echo si || echo no)"
+comprueba "C5e y los nombres quedan EN EL REGISTRO, no solo en la pantalla" \
+  "$(grep -q 'hija_a_padre_id_fkey' "$DIR/reg.tsv" && echo si || echo no)"
+comprueba "C5f la cifra de pg_restore se cita DICHA INFLADA, no como el numero de FK" \
+  "$(printf '%s' "$OUT" | grep -q 'cifra INFLADA por --jobs=2' && echo si || echo no)"
+comprueba "C5g y NO condena por el md5 de la particion (eso seria otro defecto)" \
+  "$(printf '%s' "$OUT" | grep -q 'cuadra_p20260101(' && echo no || echo si)"
+
+echo
+echo "C6 · EL GEMELO · el MISMO volcado sin las huerfanas: OK y «0 FK sin crear»"
+corre_dump "$DIR/limpio.dump"
+comprueba "C6a pasa, rc=0 (rc=$RC)" "$([ "$RC" = 0 ] && echo si || echo no)"
+comprueba "C6b dice 0 FK sin crear" \
+  "$(printf '%s' "$OUT" | grep -q '0 FK sin crear' && echo si || echo no)"
+comprueba "C6c no nombra ninguna FK" \
+  "$(printf '%s' "$OUT" | grep -q '_fkey' && echo no || echo si)"
+comprueba "C6d y la linea del registro es OK y DISTINTA de la del sucio" \
+  "$(grep -qP '\tOK\t.*0 FK sin crear' "$DIR/reg.tsv" && echo si || echo no)"
+
+echo
+echo "C7 · un volcado local NO puede dejar su veredicto en el registro COMPARTIDO"
+OUT7=$(env K01B_RESTAURA=1 K01B_DUMP="$DIR/sucio.dump" K01B_BASE="$DESTINO" \
+           timeout -k 5 60 bash "$DIR/K01b.sh" 2>&1); RC7=$?
+comprueba "C7a NO MEDIDO, rc=2 (rc=$RC7)" "$([ "$RC7" = 2 ] && echo si || echo no)"
+comprueba "C7b y lo dice: un volcado local no es el respaldo cifrado de 140" \
+  "$(printf '%s' "$OUT7" | grep -q 'no es el respaldo cifrado de 140' && echo si || echo no)"
 
 echo
 total=$((pasan+fallos))
