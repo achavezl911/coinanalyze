@@ -32,7 +32,7 @@
 const CLASE_SESGO = {
   LONG: 'sesgo-LONG',
   SHORT: 'sesgo-SHORT',
-  NEUTRAL: 'sesgo-NEUTRAL',
+  'NO OPERAR': 'sesgo-SIN-LADO',
   'NO EVALUABLE': 'sesgo-NOEVAL',
 };
 
@@ -273,7 +273,10 @@ function pintarLecturaScalp(origen, campos) {
   if (hay('confirms')) {
     campos.appendChild(
       celdaLista('confirms', 'confirma', origen.confirms, {
-        motivoVacio: 'sin lado: el sesgo no es LONG ni SHORT',
+        // ULTIMO RECURSO, Y NO DEBERIA VERSE: desde el remate de la 132 el backend sirve SIEMPRE
+        // una entrada con su motivo cuando no hay lado -decir «el sistema no toma lado» cuando
+        // lo que falla es la calidad es FALSO, y el cliente no tiene con que distinguirlo-.
+        motivoVacio: 'el backend no trae ninguna entrada',
       })
     );
   }
@@ -290,7 +293,10 @@ function pintarLecturaScalp(origen, campos) {
     campos.appendChild(
       celdaLista('invalidates', 'invalida · qué lo rompe', origen.invalidates, {
         clase: 'invalida',
-        motivoVacio: 'sin lado: el sesgo no es LONG ni SHORT',
+        // ULTIMO RECURSO, Y NO DEBERIA VERSE: desde el remate de la 132 el backend sirve SIEMPRE
+        // una entrada con su motivo cuando no hay lado -decir «el sistema no toma lado» cuando
+        // lo que falla es la calidad es FALSO, y el cliente no tiene con que distinguirlo-.
+        motivoVacio: 'el backend no trae ninguna entrada',
       })
     );
   }
@@ -311,6 +317,21 @@ function pintarLecturaScalp(origen, campos) {
     campos.appendChild(cajaHor);
   }
   if (hay('state')) campos.appendChild(celda('state', 'estado', origen.state));
+  // EL BALANCE DE EVIDENCIA, JUSTO DEBAJO DEL ESTADO. Es lo que la palabra de 30 px decia hasta
+  // la v1 del sobre: no se pierde, pero deja de llamarse una decision. Va en letra de campo y
+  // con el rotulo diciendo lo que NO es.
+  //
+  // SU REGLA VIAJA SERVIDA (`campo.rule`) Y NO SE PINTA, y eso es una decision, no un olvido:
+  // son 118 caracteres en la columna estrecha de DECIDE -230 px-, o sea cuatro lineas mas de
+  // tarjeta. Es el mismo defecto que saco DECIDE del primer pliegue en la campana 130 con un
+  // motivo de 211 caracteres. Quien audite la regla la lee en el sobre; quien opera lee el
+  // rotulo, que ya dice que esto no es la decision.
+  if (hay('evidence_balance')) {
+    campos.appendChild(
+      celda('evidence_balance', 'balance de evidencia (no es la decisión)',
+            origen.evidence_balance)
+    );
+  }
   if (hay('reason')) campos.appendChild(celda('reason', 'razón', origen.reason));
   if (hay('edge')) {
     campos.appendChild(

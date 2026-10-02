@@ -540,133 +540,138 @@
   "funciones": {
     "app.ai_context._armar_sobre": {
       "fichero": "app/ai_context.py",
-      "linea": 902,
-      "sitio": "`app/ai_context.py:902`"
+      "linea": 909,
+      "sitio": "`app/ai_context.py:909`"
     },
     "app.ai_context._corte_unico": {
       "fichero": "app/ai_context.py",
-      "linea": 848,
-      "sitio": "`app/ai_context.py:848`"
+      "linea": 855,
+      "sitio": "`app/ai_context.py:855`"
     },
     "app.ai_context._round_number": {
       "fichero": "app/ai_context.py",
-      "linea": 219,
-      "sitio": "`app/ai_context.py:219`"
+      "linea": 226,
+      "sitio": "`app/ai_context.py:226`"
     },
     "app.ai_context._sin_lado": {
       "fichero": "app/ai_context.py",
-      "linea": 1221,
-      "sitio": "`app/ai_context.py:1221`"
+      "linea": 1323,
+      "sitio": "`app/ai_context.py:1323`"
     },
     "app.ai_context.build_ai_context": {
       "fichero": "app/ai_context.py",
-      "linea": 1072,
-      "sitio": "`app/ai_context.py:1072`"
+      "linea": 1079,
+      "sitio": "`app/ai_context.py:1079`"
     },
     "app.ai_context.build_ai_symbol_context": {
       "fichero": "app/ai_context.py",
-      "linea": 884,
-      "sitio": "`app/ai_context.py:884`"
+      "linea": 891,
+      "sitio": "`app/ai_context.py:891`"
     },
     "app.ai_context.build_mesa_decide": {
       "fichero": "app/ai_context.py",
-      "linea": 1230,
-      "sitio": "`app/ai_context.py:1230`"
+      "linea": 1344,
+      "sitio": "`app/ai_context.py:1344`"
     },
     "app.ai_context.build_operator_read": {
       "fichero": "app/ai_context.py",
-      "linea": 740,
-      "sitio": "`app/ai_context.py:740`"
+      "linea": 747,
+      "sitio": "`app/ai_context.py:747`"
     },
     "app.ai_context.campo_mesa": {
       "fichero": "app/ai_context.py",
-      "linea": 1181,
-      "sitio": "`app/ai_context.py:1181`"
+      "linea": 1283,
+      "sitio": "`app/ai_context.py:1283`"
     },
     "app.ai_context.compact_dict": {
       "fichero": "app/ai_context.py",
-      "linea": 246,
-      "sitio": "`app/ai_context.py:246`"
+      "linea": 253,
+      "sitio": "`app/ai_context.py:253`"
     },
     "app.ai_context.compact_value": {
       "fichero": "app/ai_context.py",
-      "linea": 230,
-      "sitio": "`app/ai_context.py:230`"
+      "linea": 237,
+      "sitio": "`app/ai_context.py:237`"
     },
     "app.ai_context.daily_data": {
+      "fichero": "app/ai_context.py",
+      "linea": 305,
+      "sitio": "`app/ai_context.py:305`"
+    },
+    "app.ai_context.daily_history": {
+      "fichero": "app/ai_context.py",
+      "linea": 394,
+      "sitio": "`app/ai_context.py:394`"
+    },
+    "app.ai_context.data_confidence_row": {
+      "fichero": "app/ai_context.py",
+      "linea": 531,
+      "sitio": "`app/ai_context.py:531`"
+    },
+    "app.ai_context.field_disambiguation": {
+      "fichero": "app/ai_context.py",
+      "linea": 74,
+      "sitio": "`app/ai_context.py:74`"
+    },
+    "app.ai_context.latest_orderbook": {
+      "fichero": "app/ai_context.py",
+      "linea": 680,
+      "sitio": "`app/ai_context.py:680`"
+    },
+    "app.ai_context.latest_snapshot": {
       "fichero": "app/ai_context.py",
       "linea": 298,
       "sitio": "`app/ai_context.py:298`"
     },
-    "app.ai_context.daily_history": {
-      "fichero": "app/ai_context.py",
-      "linea": 387,
-      "sitio": "`app/ai_context.py:387`"
-    },
-    "app.ai_context.data_confidence_row": {
-      "fichero": "app/ai_context.py",
-      "linea": 524,
-      "sitio": "`app/ai_context.py:524`"
-    },
-    "app.ai_context.field_disambiguation": {
-      "fichero": "app/ai_context.py",
-      "linea": 67,
-      "sitio": "`app/ai_context.py:67`"
-    },
-    "app.ai_context.latest_orderbook": {
-      "fichero": "app/ai_context.py",
-      "linea": 673,
-      "sitio": "`app/ai_context.py:673`"
-    },
-    "app.ai_context.latest_snapshot": {
-      "fichero": "app/ai_context.py",
-      "linea": 291,
-      "sitio": "`app/ai_context.py:291`"
-    },
     "app.ai_context.liquidation_levels": {
       "fichero": "app/ai_context.py",
-      "linea": 701,
-      "sitio": "`app/ai_context.py:701`"
+      "linea": 708,
+      "sitio": "`app/ai_context.py:708`"
     },
     "app.ai_context.local_alerts": {
       "fichero": "app/ai_context.py",
-      "linea": 790,
-      "sitio": "`app/ai_context.py:790`"
+      "linea": 797,
+      "sitio": "`app/ai_context.py:797`"
     },
     "app.ai_context.normalize_profile": {
       "fichero": "app/ai_context.py",
-      "linea": 212,
-      "sitio": "`app/ai_context.py:212`"
+      "linea": 219,
+      "sitio": "`app/ai_context.py:219`"
     },
     "app.ai_context.orderbook_freshness": {
       "fichero": "app/ai_context.py",
-      "linea": 661,
-      "sitio": "`app/ai_context.py:661`"
+      "linea": 668,
+      "sitio": "`app/ai_context.py:668`"
+    },
+    "app.ai_context.palabra_de_la_decision": {
+      "fichero": "app/ai_context.py",
+      "linea": 1214,
+      "sitio": "`app/ai_context.py:1214`"
     },
     "app.ai_context.quality_score": {
       "fichero": "app/ai_context.py",
-      "linea": 612,
-      "sitio": "`app/ai_context.py:612`"
+      "linea": 619,
+      "sitio": "`app/ai_context.py:619`"
     },
     "app.ai_context.recent_signals": {
       "fichero": "app/ai_context.py",
-      "linea": 685,
-      "sitio": "`app/ai_context.py:685`"
+      "linea": 692,
+      "sitio": "`app/ai_context.py:692`"
     },
     "app.ai_context.rough_token_estimate": {
       "fichero": "app/ai_context.py",
-      "linea": 276,
-      "sitio": "`app/ai_context.py:276`"
+      "linea": 283,
+      "sitio": "`app/ai_context.py:283`"
     },
     "app.ai_context.sin_perder_los_nulos": {
       "fichero": "app/ai_context.py",
-      "linea": 257,
-      "sitio": "`app/ai_context.py:257`"
+      "linea": 264,
+      "sitio": "`app/ai_context.py:264`"
     },
     "app.ai_context.verdict_history": {
       "fichero": "app/ai_context.py",
-      "linea": 479,
-      "sitio": "`app/ai_context.py:479`"
+      "linea": 486,
+      "sitio": "`app/ai_context.py:486`"
     },
     "app.api._parse_heartbeat_detail": {
       "fichero": "app/api.py",
@@ -2098,6 +2103,16 @@
       "linea": 88,
       "sitio": "`app/setups.py:88`"
     },
+    "app.signal_ledger._finite": {
+      "fichero": "app/signal_ledger.py",
+      "linea": 52,
+      "sitio": "`app/signal_ledger.py:52`"
+    },
+    "app.signal_ledger.classify_signal_observation": {
+      "fichero": "app/signal_ledger.py",
+      "linea": 62,
+      "sitio": "`app/signal_ledger.py:62`"
+    },
     "app.wyckoff._atr_abs": {
       "fichero": "app/wyckoff.py",
       "linea": 183,
@@ -2249,7 +2264,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:902",
+        "sitio": "app/ai_context.py:909",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2272,7 +2287,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:848",
+        "sitio": "app/ai_context.py:855",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2295,7 +2310,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:219",
+        "sitio": "app/ai_context.py:226",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2313,7 +2328,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1221",
+        "sitio": "app/ai_context.py:1323",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2330,7 +2345,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1072",
+        "sitio": "app/ai_context.py:1079",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2350,7 +2365,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:884",
+        "sitio": "app/ai_context.py:891",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2367,7 +2382,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1230",
+        "sitio": "app/ai_context.py:1344",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2389,7 +2404,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:740",
+        "sitio": "app/ai_context.py:747",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2407,7 +2422,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1181",
+        "sitio": "app/ai_context.py:1283",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2436,7 +2451,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:246",
+        "sitio": "app/ai_context.py:253",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2465,7 +2480,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:230",
+        "sitio": "app/ai_context.py:237",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2484,7 +2499,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:298",
+        "sitio": "app/ai_context.py:305",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2503,7 +2518,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:387",
+        "sitio": "app/ai_context.py:394",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2527,7 +2542,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:524",
+        "sitio": "app/ai_context.py:531",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2548,7 +2563,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:67",
+        "sitio": "app/ai_context.py:74",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2567,7 +2582,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:673",
+        "sitio": "app/ai_context.py:680",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2589,7 +2604,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:291",
+        "sitio": "app/ai_context.py:298",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2608,7 +2623,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:701",
+        "sitio": "app/ai_context.py:708",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2627,7 +2642,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:790",
+        "sitio": "app/ai_context.py:797",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2646,7 +2661,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:212",
+        "sitio": "app/ai_context.py:219",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2667,12 +2682,30 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:661",
+        "sitio": "app/ai_context.py:668",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
         "total": 3,
         "total_exacto": 3
+      },
+      "app.ai_context.palabra_de_la_decision": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.api.mesa_decide"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1214",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
       },
       "app.ai_context.quality_score": {
         "cota_mas_ancha_que_k0": false,
@@ -2690,7 +2723,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:612",
+        "sitio": "app/ai_context.py:619",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2709,7 +2742,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:685",
+        "sitio": "app/ai_context.py:692",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2730,7 +2763,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:276",
+        "sitio": "app/ai_context.py:283",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2749,7 +2782,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:257",
+        "sitio": "app/ai_context.py:264",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2768,7 +2801,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:479",
+        "sitio": "app/ai_context.py:486",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -20439,6 +20472,7 @@
           "app.ai_context.daily_history",
           "app.ai_context.data_confidence_row",
           "app.ai_context.local_alerts",
+          "app.ai_context.palabra_de_la_decision",
           "app.ai_context.quality_score",
           "app.api.cvd_matrix_endpoint",
           "app.api.daily",
@@ -23660,12 +23694,15 @@
       "app.signal_ledger._finite": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
+          "app.ai_context.palabra_de_la_decision",
           "app.signal_ledger._validated_required_fields",
           "app.signal_ledger.classify_signal_observation",
           "app.signal_ledger.persist_signal_observations",
           "app.signal_ledger.select_reference_price"
         ],
-        "por_llamada": [],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
         "por_tabla": [
           "/api/dashboard/state",
           "/api/mesa/decide",
@@ -23679,7 +23716,6 @@
         "sitio": "app/signal_ledger.py:52",
         "solo_por_tabla": [
           "/api/dashboard/state",
-          "/api/mesa/decide",
           "/api/signals/execution",
           "/api/signals/ledger",
           "/api/signals/outcomes",
@@ -23702,7 +23738,7 @@
         },
         "tablas_k0": [],
         "total": 7,
-        "total_exacto": 0
+        "total_exacto": 1
       },
       "app.signal_ledger._validated_required_fields": {
         "cota_mas_ancha_que_k0": true,
@@ -23763,10 +23799,14 @@
       "app.signal_ledger.classify_signal_observation": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.ai_context.palabra_de_la_decision",
           "app.scalp_collector.persist_scalp_signals",
           "app.signal_ledger.persist_signal_observations"
         ],
-        "por_llamada": [],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23786,7 +23826,6 @@
           "/api/ai/context",
           "/api/ai/context/bundle",
           "/api/dashboard/state",
-          "/api/mesa/decide",
           "/api/scalp/signals",
           "/api/signals/execution",
           "/api/signals/ledger",
@@ -23814,7 +23853,7 @@
         },
         "tablas_k0": [],
         "total": 11,
-        "total_exacto": 0
+        "total_exacto": 1
       },
       "app.signal_ledger.decision_fingerprint": {
         "cota_mas_ancha_que_k0": true,
@@ -26345,7 +26384,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 339,
+    "funciones_alcanzables": 342,
     "rutas": 72,
     "rutas_con_campos": 66,
     "rutas_sin_campos": 6,
@@ -26416,58 +26455,58 @@
     {
       "camino": "/api/ai/context",
       "campos": {
-        "absorption": "literal en app/ai_context.py:1016",
-        "asset": "literal en app/ai_context.py:968",
-        "basis": "literal en app/ai_context.py:1021",
-        "build_finished_at": "asignado en app/ai_context.py:1067",
-        "build_started_at": "asignado en app/ai_context.py:1066",
-        "context_metadata": "literal en app/ai_context.py:1022",
-        "cross_asset": "literal en app/ai_context.py:988",
-        "cvd_matrix": "literal en app/ai_context.py:982",
-        "cvd_swing_90d": "literal en app/ai_context.py:974",
-        "daily_history": "asignado en app/ai_context.py:1052",
-        "data_confidence": "literal en app/ai_context.py:969",
-        "data_quality": "literal en app/ai_context.py:1023",
-        "delta_matrix": "literal en app/ai_context.py:975",
-        "divergences": "literal en app/ai_context.py:1035",
-        "envelope_cut": "literal en app/ai_context.py:946",
-        "external_macro_context": "literal en app/ai_context.py:1034",
-        "feed_quality": "literal en app/ai_context.py:1030",
-        "funding_context": "literal en app/ai_context.py:989",
-        "generated_at": "literal en app/ai_context.py:965",
-        "interpretation_prompt": "literal en app/ai_context.py:934",
-        "liq_burst": "literal en app/ai_context.py:1038",
-        "liquidation_levels": "literal en app/ai_context.py:1039",
-        "liquidation_map": "literal en app/ai_context.py:990",
-        "local_alerts": "literal en app/ai_context.py:973",
-        "macro_context": "literal en app/ai_context.py:1033",
-        "market_impact": "literal en app/ai_context.py:1000",
-        "market_memory_2y": "literal en app/ai_context.py:993",
-        "market_structure": "literal en app/ai_context.py:979",
-        "oi_context": "literal en app/ai_context.py:985",
-        "operator_read": "literal en app/ai_context.py:972",
-        "orderbook": "literal en app/ai_context.py:978",
-        "passive_flow": "literal en app/ai_context.py:983",
-        "positioning": "literal en app/ai_context.py:1005",
-        "price_barriers": "literal en app/ai_context.py:992",
-        "profile": "literal en app/ai_context.py:966",
-        "recent_signals": "asignado en app/ai_context.py:1050",
-        "reference_levels": "literal en app/ai_context.py:987",
-        "rough_token_estimate": "asignado en app/ai_context.py:1068",
-        "scalp": "literal en app/ai_context.py:971",
-        "scalp_liquidations": "literal en app/ai_context.py:1020",
-        "schema_version": "literal en app/ai_context.py:933",
-        "setup": "asignado en app/ai_context.py:1048",
-        "snapshot": "literal en app/ai_context.py:970",
-        "structure_detail": "literal en app/ai_context.py:981",
-        "structure_horizons": "literal en app/ai_context.py:980",
-        "swing_score": "asignado en app/ai_context.py:1055",
-        "symbol": "literal en app/ai_context.py:967",
-        "trend_matrix": "literal en app/ai_context.py:984",
-        "verdict_history": "asignado en app/ai_context.py:1054",
-        "volatility": "literal en app/ai_context.py:986",
-        "volume_profile": "literal en app/ai_context.py:991",
-        "wyckoff": "literal en app/ai_context.py:1006"
+        "absorption": "literal en app/ai_context.py:1023",
+        "asset": "literal en app/ai_context.py:975",
+        "basis": "literal en app/ai_context.py:1028",
+        "build_finished_at": "asignado en app/ai_context.py:1074",
+        "build_started_at": "asignado en app/ai_context.py:1073",
+        "context_metadata": "literal en app/ai_context.py:1029",
+        "cross_asset": "literal en app/ai_context.py:995",
+        "cvd_matrix": "literal en app/ai_context.py:989",
+        "cvd_swing_90d": "literal en app/ai_context.py:981",
+        "daily_history": "asignado en app/ai_context.py:1059",
+        "data_confidence": "literal en app/ai_context.py:976",
+        "data_quality": "literal en app/ai_context.py:1030",
+        "delta_matrix": "literal en app/ai_context.py:982",
+        "divergences": "literal en app/ai_context.py:1042",
+        "envelope_cut": "literal en app/ai_context.py:953",
+        "external_macro_context": "literal en app/ai_context.py:1041",
+        "feed_quality": "literal en app/ai_context.py:1037",
+        "funding_context": "literal en app/ai_context.py:996",
+        "generated_at": "literal en app/ai_context.py:972",
+        "interpretation_prompt": "literal en app/ai_context.py:941",
+        "liq_burst": "literal en app/ai_context.py:1045",
+        "liquidation_levels": "literal en app/ai_context.py:1046",
+        "liquidation_map": "literal en app/ai_context.py:997",
+        "local_alerts": "literal en app/ai_context.py:980",
+        "macro_context": "literal en app/ai_context.py:1040",
+        "market_impact": "literal en app/ai_context.py:1007",
+        "market_memory_2y": "literal en app/ai_context.py:1000",
+        "market_structure": "literal en app/ai_context.py:986",
+        "oi_context": "literal en app/ai_context.py:992",
+        "operator_read": "literal en app/ai_context.py:979",
+        "orderbook": "literal en app/ai_context.py:985",
+        "passive_flow": "literal en app/ai_context.py:990",
+        "positioning": "literal en app/ai_context.py:1012",
+        "price_barriers": "literal en app/ai_context.py:999",
+        "profile": "literal en app/ai_context.py:973",
+        "recent_signals": "asignado en app/ai_context.py:1057",
+        "reference_levels": "literal en app/ai_context.py:994",
+        "rough_token_estimate": "asignado en app/ai_context.py:1075",
+        "scalp": "literal en app/ai_context.py:978",
+        "scalp_liquidations": "literal en app/ai_context.py:1027",
+        "schema_version": "literal en app/ai_context.py:940",
+        "setup": "asignado en app/ai_context.py:1055",
+        "snapshot": "literal en app/ai_context.py:977",
+        "structure_detail": "literal en app/ai_context.py:988",
+        "structure_horizons": "literal en app/ai_context.py:987",
+        "swing_score": "asignado en app/ai_context.py:1062",
+        "symbol": "literal en app/ai_context.py:974",
+        "trend_matrix": "literal en app/ai_context.py:991",
+        "verdict_history": "asignado en app/ai_context.py:1061",
+        "volatility": "literal en app/ai_context.py:993",
+        "volume_profile": "literal en app/ai_context.py:998",
+        "wyckoff": "literal en app/ai_context.py:1013"
       },
       "campos_pendientes": [
         "una clave del objeto es una expresion, no un literal"
@@ -26839,8 +26878,8 @@
           "llamadas": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:126",
             "harness/checks/K101-un-nombre-dos-cosas.sh:207",
-            "harness/checks/K102-mesa.py:494",
-            "harness/checks/K102-mesa.py:532",
+            "harness/checks/K102-mesa.py:525",
+            "harness/checks/K102-mesa.py:563",
             "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:337",
             "harness/checks/K43-foto-unica.sh:338",
@@ -26874,7 +26913,8 @@
           ],
           "menciones": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:26",
-            "harness/checks/K102-mesa.py:489",
+            "harness/checks/K102-control.bash:711",
+            "harness/checks/K102-mesa.py:520",
             "harness/checks/K31-eslabon5.sh:60",
             "harness/checks/K31-eslabon5.sh:172",
             "harness/checks/K43-foto-unica.sh:7",
@@ -26932,7 +26972,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 47,
-        "n_menciones": 20,
+        "n_menciones": 21,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -27044,15 +27084,15 @@
     {
       "camino": "/api/ai/context/bundle",
       "campos": {
-        "build_finished_at": "asignado en app/ai_context.py:1116",
-        "build_started_at": "asignado en app/ai_context.py:1115",
-        "generated_at": "literal en app/ai_context.py:1110",
-        "interpretation_prompt": "literal en app/ai_context.py:1108",
-        "local_alerts": "literal en app/ai_context.py:1112",
-        "profile": "literal en app/ai_context.py:1111",
-        "rough_token_estimate": "asignado en app/ai_context.py:1117",
-        "schema_version": "literal en app/ai_context.py:1107",
-        "symbols": "literal en app/ai_context.py:1113"
+        "build_finished_at": "asignado en app/ai_context.py:1123",
+        "build_started_at": "asignado en app/ai_context.py:1122",
+        "generated_at": "literal en app/ai_context.py:1117",
+        "interpretation_prompt": "literal en app/ai_context.py:1115",
+        "local_alerts": "literal en app/ai_context.py:1119",
+        "profile": "literal en app/ai_context.py:1118",
+        "rough_token_estimate": "asignado en app/ai_context.py:1124",
+        "schema_version": "literal en app/ai_context.py:1114",
+        "symbols": "literal en app/ai_context.py:1120"
       },
       "campos_pendientes": [
         "una clave del objeto es una expresion, no un literal"
@@ -29355,15 +29395,15 @@
       "camino": "/api/data-confidence",
       "campos": {
         "rows": "literal en app/api.py:3093",
-        "rows.collectors_stale": "asignado en app/ai_context.py:593",
-        "rows.flow_8h_complete": "asignado en app/ai_context.py:562",
-        "rows.flow_8h_futures_complete": "asignado en app/ai_context.py:561",
-        "rows.flow_8h_spot_complete": "asignado en app/ai_context.py:558",
-        "rows.flow_8h_spot_end_gap_seconds": "asignado en app/ai_context.py:560",
-        "rows.flow_8h_spot_source": "asignado en app/ai_context.py:559",
-        "rows.quality_score": "asignado en app/ai_context.py:605",
-        "rows.quality_score_basis": "asignado en app/ai_context.py:606",
-        "rows.status": "asignado en app/ai_context.py:596"
+        "rows.collectors_stale": "asignado en app/ai_context.py:600",
+        "rows.flow_8h_complete": "asignado en app/ai_context.py:569",
+        "rows.flow_8h_futures_complete": "asignado en app/ai_context.py:568",
+        "rows.flow_8h_spot_complete": "asignado en app/ai_context.py:565",
+        "rows.flow_8h_spot_end_gap_seconds": "asignado en app/ai_context.py:567",
+        "rows.flow_8h_spot_source": "asignado en app/ai_context.py:566",
+        "rows.quality_score": "asignado en app/ai_context.py:612",
+        "rows.quality_score_basis": "asignado en app/ai_context.py:613",
+        "rows.status": "asignado en app/ai_context.py:603"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -32153,9 +32193,9 @@
     {
       "camino": "/api/mesa/decide",
       "campos": {
-        "build_finished_at": "asignado en app/ai_context.py:1506",
-        "build_started_at": "asignado en app/ai_context.py:1505",
-        "lectura_scalp": "asignado en app/ai_context.py:1484"
+        "build_finished_at": "asignado en app/ai_context.py:1657",
+        "build_started_at": "asignado en app/ai_context.py:1656",
+        "lectura_scalp": "asignado en app/ai_context.py:1636"
       },
       "campos_pendientes": [
         "devuelve la variable 'payload', cuyo contenido no se resuelve estaticamente"
@@ -32171,6 +32211,7 @@
         "app.ai_context.compact_value",
         "app.ai_context.data_confidence_row",
         "app.ai_context.latest_snapshot",
+        "app.ai_context.palabra_de_la_decision",
         "app.ai_context.quality_score",
         "app.api.scalp_persistence",
         "app.api.validate_symbol",
@@ -32212,7 +32253,9 @@
         "app.scalp_logic.structure_detail",
         "app.setups._sign",
         "app.setups.classify_oi",
-        "app.setups.oi_price_reading"
+        "app.setups.oi_price_reading",
+        "app.signal_ledger._finite",
+        "app.signal_ledger.classify_signal_observation"
       ],
       "cierre_indirecto": [
         "app.ai_context._corte_unico",
@@ -32224,6 +32267,7 @@
         "app.ai_context.compact_value",
         "app.ai_context.data_confidence_row",
         "app.ai_context.latest_snapshot",
+        "app.ai_context.palabra_de_la_decision",
         "app.ai_context.quality_score",
         "app.data_gaps.blocking_requirement_keys",
         "app.db.required_heartbeat_failures",
@@ -32263,7 +32307,9 @@
         "app.scalp_logic.structure_detail",
         "app.setups._sign",
         "app.setups.classify_oi",
-        "app.setups.oi_price_reading"
+        "app.setups.oi_price_reading",
+        "app.signal_ledger._finite",
+        "app.signal_ledger.classify_signal_observation"
       ],
       "claves_temporales": [
         "build_finished_at",
@@ -32286,31 +32332,31 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-decide-lo-primero.sh:62",
-            "harness/checks/K102-decide-lo-primero.sh:86",
-            "harness/checks/K102-decide-lo-primero.sh:88",
-            "harness/checks/K102-decide-lo-primero.sh:93",
-            "harness/checks/K102-mesa.py:493",
-            "harness/checks/K102-mesa.py:494",
-            "harness/checks/K102-mesa.py:504",
+            "harness/checks/K102-decide-lo-primero.sh:75",
+            "harness/checks/K102-decide-lo-primero.sh:99",
+            "harness/checks/K102-decide-lo-primero.sh:101",
+            "harness/checks/K102-decide-lo-primero.sh:106",
+            "harness/checks/K102-mesa.py:524",
             "harness/checks/K102-mesa.py:525",
-            "harness/checks/K102-mesa.py:532",
-            "harness/checks/K102-mesa.py:647",
-            "harness/checks/K102-mesa.py:730",
-            "harness/checks/K102-sobre-plantado.py:175",
-            "harness/checks/K102-sobre-plantado.py:191"
+            "harness/checks/K102-mesa.py:535",
+            "harness/checks/K102-mesa.py:556",
+            "harness/checks/K102-mesa.py:563",
+            "harness/checks/K102-mesa.py:678",
+            "harness/checks/K102-mesa.py:761",
+            "harness/checks/K102-sobre-plantado.py:200",
+            "harness/checks/K102-sobre-plantado.py:216"
           ],
           "menciones": [
-            "harness/checks/K102-decide-lo-primero.sh:23",
-            "harness/checks/K102-mesa.py:489",
-            "harness/checks/K102-mesa.py:499",
-            "harness/checks/K102-mesa.py:703",
+            "harness/checks/K102-decide-lo-primero.sh:30",
+            "harness/checks/K102-mesa.py:520",
+            "harness/checks/K102-mesa.py:530",
+            "harness/checks/K102-mesa.py:734",
             "harness/checks/K102-sobre-plantado.py:2"
           ]
         },
         "tests": {
           "llamadas": [
-            "tests/js/mesa_decide.test.js:189",
+            "tests/js/mesa_decide.test.js:275",
             "tests/js/mesa_remate.test.js:28"
           ],
           "menciones": [
@@ -35356,10 +35402,10 @@
       "camino": "/api/scalp/orderbook",
       "campos": {
         "freshness": "literal en app/api.py:1763",
-        "freshness.age_seconds": "literal en app/ai_context.py:668",
-        "freshness.as_of": "literal en app/ai_context.py:667",
-        "freshness.max_age_seconds": "literal en app/ai_context.py:669",
-        "freshness.status": "literal en app/ai_context.py:666",
+        "freshness.age_seconds": "literal en app/ai_context.py:675",
+        "freshness.as_of": "literal en app/ai_context.py:674",
+        "freshness.max_age_seconds": "literal en app/ai_context.py:676",
+        "freshness.status": "literal en app/ai_context.py:673",
         "rows": "literal en app/api.py:1762",
         "symbol": "literal en app/api.py:1761"
       },
@@ -35751,9 +35797,9 @@
         "checks": {
           "llamadas": [],
           "menciones": [
-            "harness/checks/K102-decide-lo-primero.sh:25",
-            "harness/checks/K102-mesa.py:706",
-            "harness/checks/K102-sobre-plantado.py:120"
+            "harness/checks/K102-decide-lo-primero.sh:32",
+            "harness/checks/K102-mesa.py:737",
+            "harness/checks/K102-sobre-plantado.py:145"
           ]
         }
       },
@@ -38809,10 +38855,10 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-control.bash:300",
-            "harness/checks/K102-mesa.py:428",
-            "harness/checks/K102-sobre-plantado.py:143",
-            "harness/checks/K102-sobre-plantado.py:194"
+            "harness/checks/K102-control.bash:397",
+            "harness/checks/K102-mesa.py:459",
+            "harness/checks/K102-sobre-plantado.py:168",
+            "harness/checks/K102-sobre-plantado.py:219"
           ],
           "menciones": [
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:199"
@@ -38820,7 +38866,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/js/mesa_remate.test.js:81"
+            "tests/js/mesa_remate.test.js:84"
           ],
           "menciones": []
         }
@@ -38994,12 +39040,12 @@
         {
           "funcion": "app.ai_context.daily_data",
           "origen": "literal",
-          "sitio": "app/ai_context.py:301"
+          "sitio": "app/ai_context.py:308"
         },
         {
           "funcion": "app.ai_context.daily_history",
           "origen": "constante DAILY_HISTORY_QUERY",
-          "sitio": "app/ai_context.py:332"
+          "sitio": "app/ai_context.py:339"
         },
         {
           "funcion": "app.api.daily_data",
@@ -39141,7 +39187,7 @@
         {
           "funcion": "app.ai_context.verdict_history",
           "origen": "literal",
-          "sitio": "app/ai_context.py:483"
+          "sitio": "app/ai_context.py:490"
         },
         {
           "funcion": "app.api.verdicts",
@@ -39169,7 +39215,7 @@
         {
           "funcion": "app.ai_context.verdict_history",
           "origen": "literal",
-          "sitio": "app/ai_context.py:483"
+          "sitio": "app/ai_context.py:490"
         },
         {
           "funcion": "app.api.verdicts",
@@ -39476,12 +39522,12 @@
         {
           "funcion": "app.ai_context.data_confidence_row",
           "origen": "literal",
-          "sitio": "app/ai_context.py:527"
+          "sitio": "app/ai_context.py:534"
         },
         {
           "funcion": "app.ai_context.liquidation_levels",
           "origen": "literal",
-          "sitio": "app/ai_context.py:706"
+          "sitio": "app/ai_context.py:713"
         },
         {
           "funcion": "app.api.liquidation_levels",
@@ -39614,7 +39660,7 @@
         {
           "funcion": "app.ai_context.liquidation_levels",
           "origen": "literal",
-          "sitio": "app/ai_context.py:706"
+          "sitio": "app/ai_context.py:713"
         },
         {
           "funcion": "app.api.liquidation_levels",
@@ -39855,12 +39901,12 @@
         {
           "funcion": "app.ai_context.latest_snapshot",
           "origen": "literal",
-          "sitio": "app/ai_context.py:293"
+          "sitio": "app/ai_context.py:300"
         },
         {
           "funcion": "app.ai_context.data_confidence_row",
           "origen": "literal",
-          "sitio": "app/ai_context.py:527"
+          "sitio": "app/ai_context.py:534"
         },
         {
           "funcion": "app.api.prometheus_metrics",
@@ -39942,7 +39988,7 @@
         {
           "funcion": "app.ai_context.liquidation_levels",
           "origen": "literal",
-          "sitio": "app/ai_context.py:706"
+          "sitio": "app/ai_context.py:713"
         },
         {
           "funcion": "app.api.liquidation_levels",
@@ -40395,27 +40441,27 @@
         {
           "funcion": "app.ai_context.data_confidence_row",
           "origen": "literal",
-          "sitio": "app/ai_context.py:527"
+          "sitio": "app/ai_context.py:534"
         },
         {
           "funcion": "app.ai_context.latest_orderbook",
           "origen": "constante ORDERBOOK_FRESCAS_SQL",
-          "sitio": "app/ai_context.py:644"
+          "sitio": "app/ai_context.py:651"
         },
         {
           "funcion": "app.api.scalp_orderbook",
           "origen": "constante ORDERBOOK_FRESCAS_SQL",
-          "sitio": "app/ai_context.py:644"
+          "sitio": "app/ai_context.py:651"
         },
         {
           "funcion": "app.ai_context.latest_orderbook",
           "origen": "constante ORDERBOOK_EDAD_SQL",
-          "sitio": "app/ai_context.py:655"
+          "sitio": "app/ai_context.py:662"
         },
         {
           "funcion": "app.api.scalp_orderbook",
           "origen": "constante ORDERBOOK_EDAD_SQL",
-          "sitio": "app/ai_context.py:655"
+          "sitio": "app/ai_context.py:662"
         },
         {
           "funcion": "app.api.prometheus_metrics",
@@ -40489,7 +40535,7 @@
         {
           "funcion": "app.ai_context.data_confidence_row",
           "origen": "literal",
-          "sitio": "app/ai_context.py:588"
+          "sitio": "app/ai_context.py:595"
         },
         {
           "funcion": "app.api.prometheus_metrics",
@@ -40585,7 +40631,7 @@
         {
           "funcion": "app.ai_context.recent_signals",
           "origen": "literal",
-          "sitio": "app/ai_context.py:688"
+          "sitio": "app/ai_context.py:695"
         },
         {
           "funcion": "app.api.scalp_signals",
@@ -41280,7 +41326,7 @@
         {
           "funcion": "app.ai_context.data_confidence_row",
           "origen": "literal",
-          "sitio": "app/ai_context.py:527"
+          "sitio": "app/ai_context.py:534"
         },
         {
           "funcion": "app.api.stream_generator",

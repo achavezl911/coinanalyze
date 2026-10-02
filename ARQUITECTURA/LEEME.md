@@ -41,7 +41,7 @@ directorio existe para no repetir.
 - rutas descubiertas: **72**
 - rutas con al menos un campo derivado: **66**
 - rutas sin ningun campo derivado (PENDIENTE, con motivo en su ficha): **6**
-- funciones alcanzables desde alguna ruta: **339**
+- funciones alcanzables desde alguna ruta: **342**
 - tablas del catalogo `sql/schema.sql`: **40**
 - tablas alcanzadas desde alguna ruta: **30**
 

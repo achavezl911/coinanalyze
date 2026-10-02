@@ -10,12 +10,19 @@
 #   B2 · el sesgo es el GLIFO MAS GRANDE del primer pliegue. Caber no basta.
 #   B3 · cada campo que el sobre sirve con valor se pinta, con SU valor y con SU `source_key`.
 #   B4 · ninguna celda declara una clave que el sobre NO sirva.
-#   B5 · la regla del handoff, en las dos direcciones.
+#   B5 · la regla del handoff, en las dos direcciones, sobre el RAYADO de la tarjeta. Que la
+#        PALABRA siga ese mismo umbral lo juzga B9, que la recomputa entera.
 #   B7 · LA LECTURA DEL SCALP NO SE PRESENTA COMO DEL MARCO. En SWING y en LARGO el veredicto
 #        servido es NO EVALUABLE con su motivo, y lo que sale del scalp vive en `lectura_scalp`
 #        y se pinta en SU tarjeta, no dentro de DECIDE.
 #   B8 · LA EDAD AVANZA SIN RECARGAR, y pasada `max_age_s` la pantalla lo dice. Un brazo de una
 #        sola foto no puede ver esto: el defecto solo existe DESPUES del render.
+#   B9 · LA PALABRA DICE LA DECISION DEL SISTEMA. Ninguno de los ocho de arriba puede ver esto,
+#        y eso es el defecto que costo la campana 132: B3 prueba que la pantalla pinta FIEL la
+#        clave que dice pintar, y una clave fielmente pintada puede seguir siendo la palabra
+#        equivocada (A83). B9 RECOMPUTA la palabra con la regla completa -el umbral del handoff
+#        que el sobre sirve, y `classify_signal_observation` de `app/signal_ledger.py` IMPORTADA-
+#        sobre las cifras de LA MISMA respuesta, y la contrasta con la servida Y con la pintada.
 #   B6 · errores de consola. HOY NO PUEDE CONDENAR y la salida lo dice.
 #
 # TRES COSAS QUE ESTA RED HACIA MAL Y QUE COSTARON UNA RONDA DE CORRECCION DEL OPERADOR:
@@ -46,13 +53,19 @@ PY="$REPO/.venv/bin/python"
 TMP="$(mktemp -d)" || exit 2
 trap 'rm -rf "$TMP"' EXIT INT TERM
 
-# SE JUZGA **UN** ACTIVO, Y SE ELIGE EL DE MENOS HOLGURA, NO EL COMODO.
-# Medido el 2026-09-29 sobre las 18 vistas (3 marcos x 3 activos x 2 tamanos): la que menos
-# margen tiene es scalp/SOL, con bottom 851 contra una ventana de 900 -49 px-, porque su
-# `scalp.reason` es el texto mas largo de los tres. BTC y ETH van 126 px mas holgados.
-# Juzgar BTC -lo que hacia- es juzgar el caso facil: el dia que DECIDE crezca, rompe por SOL y
-# el check no se entera. Las otras dos no se juzgan aqui, y el veredicto lo DICE.
+# EL ACTIVO DE LOS BRAZOS PROFUNDOS (B3, B4, B5, B7, B8), que piden una observacion larga.
 ACTIVO="${K102_ACTIVO:-SOL}"
+
+# EL PLIEGUE SE JUZGA EN LOS TRES ACTIVOS, Y ANTES NO (A81).
+#
+# Esto decia: «se juzga UN activo y se elige el de menos holgura, SOL, con 49 px medidos el
+# 2026-09-29 sobre las 18 vistas». Los 49 px se midieron en el ESPEJO, congelado desde el
+# 08-13. En PRODUCCION, a las 11:28Z del 09-29, SOL tenia 157 px y BTC 41 -859 de 900 en scalp
+# 1440x900-: la holgura depende del largo de `scalp.reason` y de la zona, y las dos dependen
+# del mercado. O sea que el check miraba el HOLGADO y declaraba que miraba el estrecho.
+# El peor caso de una magnitud que se mueve con el mercado no es un SUJETO, es una HORA: se
+# juzgan los TRES, y el margen de cada uno se publica.
+ACTIVOS="${K102_ACTIVOS:-BTC ETH SOL}"
 # 18 s para que la ventana CUBRA la cadencia de refresco de la mesa (15 s) y el brazo B8 pueda
 # exigir haber visto al menos un refresco. Con menos, ese tramo se declara no juzgado.
 OBSERVA="${K102_OBSERVA:-18}"
@@ -98,17 +111,21 @@ fi
 
 # --- LA MEDIDA -------------------------------------------------------------------------
 # CON LA BARRA DE DESPLAZAMIENTO PUESTA: se juzga la ventana que tiene quien usa la mesa.
-corre() {  # corre <ancho> <alto> <marco> <observa> <fichero>
-  local w="$1" h="$2" m="$3" obs="$4" f="$5"
+corre_a() {  # corre_a <activo> <ancho> <alto> <marco> <observa> <fichero>
+  local a="$1" w="$2" h="$3" m="$4" obs="$5" f="$6"
   if [ -n "$CAB" ]; then
-    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$ACTIVO" \
+    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$a" \
       --ancho "$w" --alto "$h" --frio --repite 1 --espera 30 --observa "$obs" \
       --cabecera-fichero "$CAB" --salida "$f" >/dev/null 2>"$f.err"
   else
-    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$ACTIVO" \
+    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$a" \
       --ancho "$w" --alto "$h" --frio --repite 1 --espera 30 --observa "$obs" \
       ${K102_CABECERA:+--cabecera "$K102_CABECERA"} --salida "$f" >/dev/null 2>"$f.err"
   fi
+}
+
+corre() {  # corre <ancho> <alto> <marco> <observa> <fichero>   (el activo de los profundos)
+  corre_a "$ACTIVO" "$1" "$2" "$3" "$4" "$5"
 }
 
 # LOS TRES MARCOS A LOS DOS TAMANOS. Antes solo se juzgaba el pliegue en SCALP, y en swing y
@@ -125,13 +142,47 @@ for f in "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/swp.json" "$TMP/lg.jso
   [ -s "$f" ] || { echo "NO MEDIDO: la sonda no midio ($(head -c 150 "$f.err" 2>/dev/null))"; exit 2; }
 done
 
+# LOS OTROS DOS ACTIVOS, SOLO PARA EL PLIEGUE Y PARA LA PALABRA (A81). No repiten la
+# observacion larga de B8 -que es del reloj, no del activo- asi que cuestan una carga cada una.
+# Van a un subdirectorio propio: si uno no midio, se DECLARA por su nombre y no se da por bueno.
+OTROS="$TMP/otros"; mkdir -p "$OTROS"
+for a in $ACTIVOS; do
+  [ "$a" = "$ACTIVO" ] && continue
+  for m in scalp swing largo; do
+    corre_a "$a" 1920 1080 "$m" 0 "$OTROS/${a}__${m}__1920x1080.json" || true
+    corre_a "$a" 1440 900  "$m" 0 "$OTROS/${a}__${m}__1440x900.json"  || true
+  done
+done
+
 "$PY" - "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/swp.json" "$TMP/lg.json" \
-       "$TMP/lgp.json" "$SUJETO" "$ACTIVO" <<'PY'
-import json, sys
+       "$TMP/lgp.json" "$SUJETO" "$ACTIVO" "$REPO" \
+       "$REPO/app/ai_context.py" "$OTROS" "$ACTIVOS" <<'PY'
+import json, os, re, sys
 
 g, p, sw, swp, lg, lgp = (json.load(open(x)) for x in sys.argv[1:7])
 sujeto, activo = sys.argv[7], sys.argv[8]
+raiz_repo, ruta_ctx = sys.argv[9], sys.argv[10]
+dir_otros, activos_pedidos = sys.argv[11], sys.argv[12].split()
 fallos, lineas = [], []
+
+# LAS VISTAS DE LOS OTROS ACTIVOS. Cada fichero se llama <activo>__<marco>__<ancho>x<alto>.json,
+# asi que el rotulo de cada hallazgo sale del NOMBRE del fichero y no de un indice.
+otros = []
+for nombre in sorted(os.listdir(dir_otros) if os.path.isdir(dir_otros) else []):
+    if not nombre.endswith(".json"):
+        continue
+    a, m, t = nombre[: -len(".json")].split("__")
+    try:
+        otros.append((json.load(open(os.path.join(dir_otros, nombre))), f"{m} {t} [{a}]", m, a))
+    except (OSError, ValueError) as e:
+        fallos.append(f"B1 {m} {t} [{a}]: la sonda no dejo una vista legible ({e})")
+faltan = [a for a in activos_pedidos
+          if a != activo and not any(x[3] == a for x in otros)]
+if faltan:
+    fallos.append(
+        "B1: no se midio NINGUNA vista de " + " ni ".join(faltan)
+        + ": el pliegue de esos activos queda SIN JUZGAR, y eso no es un aprobado"
+    )
 
 def cosecha(d, rot):
     c = d.get("cosecha") or {}
@@ -140,10 +191,20 @@ def cosecha(d, rot):
         raise SystemExit(2)
     return c
 
-# --- B1 y B2 · LOS TRES MARCOS, LOS DOS TAMANOS -----------------------------------------
-for d, rot in ((g, "scalp 1920x1080"), (p, "scalp 1440x900"),
-               (sw, "swing 1920x1080"), (swp, "swing 1440x900"),
-               (lg, "largo 1920x1080"), (lgp, "largo 1440x900")):
+# TODAS LAS VISTAS, con su activo dentro del rotulo. Las seis del activo profundo primero: son
+# las que alimentan a B3, B4, B5, B7 y B8, que necesitan la observacion larga.
+VISTAS = [
+    (g, f"scalp 1920x1080 [{activo}]", "scalp", activo),
+    (p, f"scalp 1440x900 [{activo}]", "scalp", activo),
+    (sw, f"swing 1920x1080 [{activo}]", "swing", activo),
+    (swp, f"swing 1440x900 [{activo}]", "swing", activo),
+    (lg, f"largo 1920x1080 [{activo}]", "largo", activo),
+    (lgp, f"largo 1440x900 [{activo}]", "largo", activo),
+] + otros
+
+# --- B1 y B2 · LOS TRES MARCOS, LOS DOS TAMANOS, LOS TRES ACTIVOS -----------------------
+margenes = {}
+for d, rot, _marco, act in VISTAS:
     c = cosecha(d, rot)
     pl = c.get("pliegue") or {}
     if not pl.get("visible"):
@@ -158,10 +219,7 @@ for d, rot in ((g, "scalp 1920x1080"), (p, "scalp 1440x900"),
         # dicen cosas muy distintas sobre lo que pasara la proxima vez que DECIDE crezca, y el
         # veredicto binario los cuenta igual.
         holgura = (pl.get("innerHeight") or 0) - (pl.get("bottom") or 0)
-        lineas.append(
-            f"{rot}: DECIDE entero en el pliegue (top {pl.get('top'):.0f} -> "
-            f"bottom {pl.get('bottom'):.0f} de {pl.get('innerHeight')}, holgura {holgura:.0f} px)"
-        )
+        margenes.setdefault(act, []).append((holgura, rot, pl))
     s = c.get("sesgo") or {}
     mayor = c.get("letra_mayor_px") or 0
     if not s:
@@ -173,8 +231,22 @@ for d, rot in ((g, "scalp 1920x1080"), (p, "scalp 1440x900"),
             f"B2 {rot}: el sesgo ({s.get('px')}px) NO es el texto mas grande del pliegue "
             f"({mayor}px en {c.get('letra_mayor_texto')!r})"
         )
-    else:
-        lineas.append(f"{rot}: el sesgo es el glifo mayor del pliegue ({s.get('px')}px)")
+
+# EL MARGEN DE CADA ACTIVO, POR SU NOMBRE. La vista mas estrecha de cada uno, y cual es: sin
+# esto «se juzgan los tres» seria una promesa sin cifra, que es de donde salio A81.
+for act in sorted(margenes):
+    peor = min(margenes[act])
+    lineas.append(
+        f"[{act}] {len(margenes[act])} vista(s) con DECIDE entero en el pliegue; la mas "
+        f"estrecha, {peor[1]}: bottom {peor[2].get('bottom'):.0f} de "
+        f"{peor[2].get('innerHeight')}, holgura {peor[0]:.0f} px"
+    )
+if margenes:
+    pg = min(min(v) for v in margenes.values())
+    lineas.append(
+        f"el sesgo es el glifo mayor del pliegue en las {len(VISTAS)} vistas · la mas estrecha "
+        f"de TODAS: {pg[1]} con {pg[0]:.0f} px"
+    )
 
 # --- B3 y B4 ---------------------------------------------------------------------------
 r = g.get("reparto") or {}
@@ -206,28 +278,59 @@ if huerf:
 else:
     lineas.append("ninguna celda declara una clave que el sobre no sirva")
 
-# --- B5 --------------------------------------------------------------------------------
+# --- B5 · LA REGLA DEL HANDOFF, SOBRE EL RAYADO DE LA TARJETA ---------------------------
+#
+# ESTE BRAZO JUZGA EL RAYADO, Y B9 JUZGA LA PALABRA. El umbral del handoff decide las DOS cosas
+# -la tarjeta rayada y, en primer lugar, la palabra-, pero cada una tiene su brazo: aqui se mide
+# que `evaluable` sale de su propia regla (`data_confidence` contra su umbral) y que la tarjeta
+# lleva la marca que le toca; que la PALABRA siga ese mismo umbral lo recomputa B9 desde el
+# sobre. Separarlos es lo que hace que un hallazgo diga cual de las dos cosas esta rota.
 dec = (g.get("sobre") or {}).get("decide") or {}
 ev = (dec.get("evaluable") or {}).get("value")
-texto_sesgo = ((cosecha(g, "scalp 1920x1080").get("sesgo") or {}).get("texto") or "").strip()
+umbral_ev = (dec.get("evaluable") or {}).get("threshold")
+dc_val = (dec.get("data_confidence") or {}).get("value")
+cg = cosecha(g, f"scalp 1920x1080 [{activo}]")
+clases = str(cg.get("clases_decide") or "").split()
+marcada = "no-evaluable" in clases
 if ev is None:
-    fallos.append("B5: el sobre no trae `decide.evaluable`: la regla de <70 no se puede juzgar")
-elif ev is False and texto_sesgo != "NO EVALUABLE":
-    fallos.append(f"B5: el sobre dice evaluable=false y la pantalla pone {texto_sesgo!r}")
-elif ev is True and texto_sesgo == "NO EVALUABLE":
-    fallos.append("B5: el sobre dice evaluable=true y la pantalla pone NO EVALUABLE")
+    fallos.append("B5: el sobre no trae `decide.evaluable`: la regla del umbral no se puede juzgar")
+elif cg.get("clases_decide") is None:
+    print("NO MEDIDO: B5: la sonda no cosecho las clases de #decide")
+    raise SystemExit(2)
+elif ev is False and not marcada:
+    fallos.append(
+        f"B5: el sobre dice evaluable=false (data_confidence {dc_val} contra umbral "
+        f"{umbral_ev}) y la tarjeta NO lleva la marca `no-evaluable`: clases {clases}"
+    )
+elif ev is True and marcada:
+    fallos.append(
+        f"B5: el sobre dice evaluable=true (data_confidence {dc_val} contra umbral "
+        f"{umbral_ev}) y la tarjeta se pinta rayada de NO EVALUABLE igualmente"
+    )
+elif (
+    dc_val is not None and umbral_ev is not None
+    and bool(float(dc_val) >= float(umbral_ev)) is not bool(ev)
+):
+    fallos.append(
+        f"B5: `evaluable` no sale de su propia regla: data_confidence {dc_val}, umbral "
+        f"{umbral_ev}, y el sobre dice evaluable={ev}"
+    )
 else:
     lineas.append(
-        f"la regla del handoff se cumple: data_confidence "
-        f"{(dec.get('data_confidence') or {}).get('value')} contra umbral "
-        f"{(dec.get('evaluable') or {}).get('threshold')} -> sesgo {texto_sesgo!r}"
+        f"la regla del handoff se cumple: data_confidence {dc_val} contra umbral {umbral_ev} "
+        f"-> evaluable={ev} -> tarjeta {'rayada' if marcada else 'sin rayar'} "
+        f"(y la PALABRA sale de este mismo umbral, en primer lugar; eso lo juzga B9)"
     )
 
 # --- B7 · LA LECTURA DEL SCALP NO ES EL VEREDICTO DE OTRO MARCO ------------------------
 # Las claves que salen de la lectura del scalp. Si alguna aparece dentro de `decide` en un
 # marco que no es scalp, ese marco esta publicando la lectura del scalp como suya.
 DEL_SCALP = ("state", "reason", "confidence", "edge", "evidence", "confirms",
-             "invalidates", "invalidation_level", "horizon")
+             "invalidates", "invalidation_level", "horizon",
+             # `evidence_balance` sale de `operator_read.bias`, o sea de la lectura del scalp:
+             # publicarlo dentro de `decide` en SWING seria presentar un balance de scores de un
+             # minuto como del marco, que es el defecto de la 130 en otra clave.
+             "evidence_balance")
 for d, marco in ((sw, "swing"), (lg, "largo")):
     sobre = d.get("sobre") or {}
     if not sobre:
@@ -327,6 +430,171 @@ else:
                     f"RANCIO; la peor, {max(x['edad_s'] for x in malas)} s"
                 )
 
+# --- B9 · LA PALABRA DICE LA DECISION DEL SISTEMA ---------------------------------------
+# LA REGLA NO SE COPIA AQUI: SE IMPORTA, y son las DOS mitades.
+#
+#   1 · el umbral del handoff, que el propio sobre sirve (`decide.evaluable.threshold`)
+#   2 · `classify_signal_observation` de `app/signal_ledger.py`, ENTERA
+#
+# Reescribir aqui cualquiera de las dos dejaria que las versiones se separasen en silencio, que
+# es la forma exacta del defecto que esta campana vino a arreglar. Y son las DOS: una version que
+# solo mirase los conjuntos de estados diria un lado donde el registro dice «no se» -el registro
+# cierra la puerta antes, por libro o por cobertura-.
+#
+# Y SE RECOMPUTA DESDE LO QUE LA PROPIA RESPUESTA SIRVE: `data_confidence`, el umbral, `state`,
+# `book_status` y `evidence`. Si alguna no viaja, la palabra no es auditable y eso es un hallazgo.
+# Si el import falla, NO MEDIDO: una regla que no se pudo cargar no absuelve a nadie.
+sys.path.insert(0, raiz_repo)
+try:
+    from app.signal_ledger import classify_signal_observation
+except Exception as e:  # noqa: BLE001
+    print(f"NO MEDIDO: B9 no pudo importar classify_signal_observation de {raiz_repo}: {e}")
+    raise SystemExit(2) from None
+
+PALABRA_POR_DIRECCION = {"long": "LONG", "short": "SHORT", "neutral": "NO OPERAR"}
+
+def palabra_esperada(dc, umbral, estado, libro, cobertura):
+    """La palabra que ESA respuesta tendria que estar sirviendo, con la regla completa."""
+    if dc is None or umbral is None:
+        return None, "no llega data_confidence o su umbral"
+    try:
+        if float(dc) < float(umbral):
+            return "NO EVALUABLE", f"data_confidence {dc} < {umbral}"
+    except (TypeError, ValueError):
+        return None, f"data_confidence o umbral no son numeros: {dc!r} / {umbral!r}"
+    _d, direccion, _a = classify_signal_observation(
+        {"state": estado, "book_status": libro, "evidence_coverage_pct": cobertura}
+    )
+    return PALABRA_POR_DIRECCION.get(direccion, "NO EVALUABLE"), direccion
+
+# LA PISTA DE DESPLIEGUE, no una excusa. Si el sujeto sirve un `schema_version` distinto del que
+# el ARBOL declara, lo que se esta juzgando son bytes viejos. Sigue siendo ROJO -el sujeto tiene
+# el defecto- pero la linea dice POR QUE, para que nadie salga a buscar un fallo en el arbol.
+m_sch = re.search(r'MESA_DECIDE_SCHEMA\s*=\s*"([^"]+)"', open(ruta_ctx, encoding="utf-8").read())
+sch_arbol = m_sch.group(1) if m_sch else None
+sch_sujeto = (g.get("sobre") or {}).get("schema_version")
+pista = ""
+if sch_arbol and sch_sujeto and sch_arbol != sch_sujeto:
+    pista = (f" · FALTA DESPLEGAR: el sujeto sirve {sch_sujeto} y el arbol declara {sch_arbol}")
+
+b9_ok, b9_sin_tarjeta, b9_sin_libro = [], [], []
+for d, rot, marco, _act in VISTAS:
+    sob = d.get("sobre") or {}
+    if not sob:
+        fallos.append(f"B9 {rot}: no se pudo leer el sobre que recibio la pagina")
+        continue
+    c = cosecha(d, rot)
+    dec_v = sob.get("decide") or {}
+    if marco == "scalp":
+        origen = dec_v
+        pintada = ((c.get("sesgo") or {}).get("texto") or "").strip()
+        donde = "#decide-sesgo"
+    else:
+        # En swing y largo la palabra del SCALP vive en `lectura_scalp` y se pinta en su tarjeta
+        # -B7 exige que no este en `decide`-, asi que la pareja se juzga ALLI. Si la tarjeta no
+        # se sirve, el dueno del hallazgo es B7 y B9 no lo duplica.
+        origen = sob.get("lectura_scalp") or {}
+        if not origen:
+            b9_sin_tarjeta.append(rot)
+            continue
+        tj = c.get("tarjeta_scalp") or {}
+        cel = {x.get("campo"): x for x in (tj.get("parejas") or [])}
+        pintada = ((cel.get("scalp.bias") or {}).get("valor") or "").strip()
+        donde = "#lectura-scalp [data-campo=scalp.bias]"
+    servida = (origen.get("bias") or {}).get("value")
+    # LAS CUATRO ENTRADAS DE LA REGLA, LEIDAS DEL SOBRE. `data_confidence` y su umbral viven
+    # SIEMPRE en `decide` -son del simbolo, no del marco-; las otras tres viajan con la lectura
+    # del scalp, o sea en `decide` en scalp y en `lectura_scalp` en los otros dos.
+    estado = (origen.get("state") or {}).get("value")
+    libro = (origen.get("book_status") or {}).get("value")
+    cobertura = (origen.get("evidence") or {}).get("value")
+    dc_v = (dec_v.get("data_confidence") or {}).get("value")
+    umbral_v = (dec_v.get("evaluable") or {}).get("threshold")
+    faltan = [k for k, v in (("bias", servida), ("state", estado),
+                             ("data_confidence", dc_v), ("evaluable.threshold", umbral_v))
+              if v is None]
+    if faltan:
+        fallos.append(
+            f"B9 {rot}: la respuesta no sirve {' '.join(faltan)}: sin eso la palabra mas grande "
+            f"no se puede contrastar con la regla que dice seguir{pista}"
+        )
+        continue
+
+    # LO DECIDIBLE VA ANTES DE LO QUE FALTA (A54). Si la respuesta no sirve `book_status` -los
+    # sobres anteriores a la v2 no lo traen- la palabra NO queda sin juzgar: se recomputa con el
+    # MEJOR caso posible -libro `ok`, y cobertura 100 si tampoco viaja- y, si aun asi no coincide,
+    # la palabra esta mal pase lo que pase con el libro. Lo que falta se declara aparte: un dato
+    # ausente no puede comerse una condena que no lo necesitaba.
+    supuesto = []
+    if libro is None:
+        supuesto.append("libro=ok")
+        b9_sin_libro.append(rot)
+    if cobertura is None:
+        supuesto.append("evidencia=100")
+    esperada, por_que = palabra_esperada(
+        dc_v, umbral_v, estado,
+        "ok" if libro is None else libro,
+        100.0 if cobertura is None else cobertura,
+    )
+    con_supuesto = (" · juzgada con el MEJOR caso posible (" + ", ".join(supuesto) + ")"
+                    if supuesto else "")
+    if esperada is None:
+        fallos.append(f"B9 {rot}: no se pudo recomputar la palabra: {por_que}{pista}")
+    elif str(servida) != esperada:
+        fallos.append(
+            f"B9 {rot}: la palabra SERVIDA dice {servida!r} y la regla sobre lo que ESA MISMA "
+            f"respuesta sirve da {esperada!r} por {por_que!r} (data_confidence {dc_v} contra "
+            f"umbral {umbral_v}; ESTADO {estado!r}, libro {libro!r}, evidencia {cobertura})"
+            f"{con_supuesto}{pista}"
+        )
+    elif pintada != esperada:
+        fallos.append(
+            f"B9 {rot}: la palabra PINTADA en {donde} dice {pintada!r} y la regla sobre lo que la "
+            f"MISMA carga sirve da {esperada!r}{con_supuesto}"
+        )
+    else:
+        b9_ok.append((rot, pintada, str(estado), str(por_que)))
+
+# LAS PAREJAS QUE SALIERON BIEN, AGRUPADAS POR LO QUE DICEN. Dieciocho lineas iguales no se
+# leen; lo que importa es CUANTAS parejas distintas se llegaron a ver. Si solo se vio una
+# -«NO EVALUABLE» contra «Sin datos suficientes», que es lo que da el espejo- este brazo no ha
+# ejercido la mitad que condena un lado callado, y la salida lo dice en vez de sugerir que si.
+if b9_ok:
+    vistos = {}
+    for rot, pal, est, motivo in b9_ok:
+        vistos.setdefault((pal, est, motivo), []).append(rot)
+    lineas.append(
+        f"la palabra coincide con la regla completa -umbral del handoff + "
+        f"classify_signal_observation- en {len(b9_ok)} de "
+        f"{len(VISTAS) - len(b9_sin_tarjeta)} vista(s) juzgada(s), con "
+        f"{len(vistos)} caso(s) distinto(s):"
+    )
+    for (pal, est, motivo), rots in sorted(vistos.items()):
+        lineas.append(
+            f"  palabra {pal!r} · state {est!r} · {motivo} · {len(rots)} vista(s): "
+            + " ".join(rots[:3]) + (" ..." if len(rots) > 3 else "")
+        )
+    con_lado = [k for k in vistos if k[0] in ("LONG", "SHORT")]
+    if not con_lado:
+        lineas.append(
+            "  y NINGUNA de las palabras vistas tenia lado: en esta corrida B9 no ha ejercido "
+            "la mitad que condena una palabra que CALLA un lado que el sistema si toma"
+        )
+if b9_sin_tarjeta:
+    lineas.append(
+        f"B9 no juzga {len(b9_sin_tarjeta)} vista(s) sin `lectura_scalp` (el hallazgo, si lo "
+        "hay, es de B7): " + " ".join(b9_sin_tarjeta[:4])
+    )
+if b9_sin_libro:
+    # VA COMO HALLAZGO, Y DESPUES del veredicto de la palabra. La palabra se juzgo igual -con el
+    # mejor caso-, asi que esto no se come ninguna condena; pero una respuesta que no sirve lo
+    # que su propia regla necesita NO es auditable, y eso es un defecto por si mismo.
+    fallos.append(
+        f"B9: {len(b9_sin_libro)} vista(s) no sirven `scalp.book_status`, que es una de las "
+        f"entradas de la regla: la palabra se pudo juzgar con el mejor caso, pero la respuesta "
+        f"NO se puede auditar entera contra la regla que dice seguir{pista}"
+    )
+
 # --- B6 · SIN PODER CONDENAR -----------------------------------------------------------
 errc = g.get("errores_consola") or []
 sin_poder = None
@@ -338,10 +606,14 @@ else:
 
 # --- EL VEREDICTO, CON SU ALCANCE -------------------------------------------------------
 print(f"K102 · lo que juzgo: {sujeto}")
-otros = [x for x in ("BTC", "ETH", "SOL") if x != activo]
+juzgados = sorted({activo} | {x[3] for x in otros})
 print(f"  alcance: los TRES marcos (scalp, swing y largo) a los DOS tamanos (1920x1080 y "
-      f"1440x900), SOLO del activo {activo} · {g.get('barra_de_desplazamiento')}")
-print(f"  NO juzga {' ni '.join(otros)}: se elige {activo} por ser el de menos holgura medida")
+      f"1440x900) · {g.get('barra_de_desplazamiento')}")
+print(f"  el PLIEGUE y la PALABRA, en {' '.join(juzgados)} ({len(VISTAS)} vistas): el margen "
+      "depende del largo de `scalp.reason` y de la zona, y las dos se mueven con el mercado, "
+      "asi que el peor caso no es un activo fijo (A81)")
+print(f"  B3, B4, B5, B7 y B8 solo en {activo}: piden la observacion larga, que es del reloj y "
+      "no del activo")
 print(f"  el patron de comparacion: {g.get('sobre_origen')}")
 for x in lineas:
     print(f"  {x}")

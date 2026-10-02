@@ -373,7 +373,9 @@ main {
 .sesgo-SHORT {
   color: var(--rojo);
 }
-.sesgo-NEUTRAL {
+/* NO OPERAR · el sistema evaluo y no toma lado. Era `.sesgo-NEUTRAL`, y «neutral» no contesta
+   a «que hacer»: es una lectura de mercado, no una decision. */
+.sesgo-SIN-LADO {
   color: var(--ambar);
 }
 .sesgo-NOEVAL {
