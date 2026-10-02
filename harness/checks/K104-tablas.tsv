@@ -1,0 +1,59 @@
+# K104 · QUE TABLA SE JUZGA, POR QUE COLUMNA Y HASTA DONDE ·  tabla <TAB> columna <TAB> retencion <TAB> fuente
+#
+# La lista de tablas sale del catalogo de 140 (x1-tmp/c131/22-tablas-tiempo.sh, 2026-10-02:
+# 40 tablas base + 5 particionadas). La columna tiene que ser INMUTABLE: si se reescribe en
+# cada upsert, un dia puede encoger sin que se haya perdido nada, y eso seria un rojo falso.
+# La retencion NO se copia aqui como numero: se nombra la VARIABLE y el check la lee del
+# coinalyze.env de 140 en cada corrida. Importa: los valores de 140 NO son los de config.py
+# (SCALP_TRADE 12 contra 6 por omision, HARD_DATA 90 contra 14), asi que un borde copiado del
+# codigo juzgaria 14 dias donde hay 90.
+#   sin_poda                 no hay DELETE ni retencion en el release: se juzga toda su historia
+#   horas:<VAR> / dias:<VAR> se juzgan solo los dias CERRADOS que caben enteros en la ventana
+#   dias:<n>                 la ventana esta escrita en el propio codigo, con su linea
+#   no_juzgada:<razon>       y la razon, para que no sea un silencio
+#
+signal_observation	created_at	sin_poda	cero DELETE FROM signal_% en app/ y sql/ del release (grep 2026-10-02)
+signal_execution_snapshot	created_at	sin_poda	cero DELETE FROM signal_% en app/ y sql/ del release
+signal_outcome	created_at	sin_poda	cero DELETE FROM signal_% en app/ y sql/ del release
+signal_outcome_final_visibility	created_at	sin_poda	cero DELETE FROM signal_% en app/ y sql/ del release
+signal_replay_frame	created_at	sin_poda	cero DELETE FROM signal_% en app/ y sql/ del release
+signal_research_bundle_visibility	created_at	sin_poda	cero DELETE FROM signal_% en app/ y sql/ del release
+signal_walk_forward_manifest	created_at	sin_poda	cero DELETE FROM signal_% en app/ y sql/ del release
+daily_session_agg	session_date	sin_poda	app/daily_agg.py:687 solo poda si daily_days>0 y DAILY_SESSION_RETENTION_DAYS=0 en 140
+daily_verdict	session_date	sin_poda	app/daily_agg.py:691 solo poda si daily_days>0 y DAILY_SESSION_RETENTION_DAYS=0 en 140
+daily_verdict_snapshot	session_date	sin_poda	sin DELETE en el release
+daily_verdict_outcome	recorded_at	sin_poda	sin DELETE en el release
+open_interest_daily	day	sin_poda	app/daily_agg.py:653 «daily no se purga a proposito»
+data_gap	detected_at	sin_poda	sin DELETE en el release
+external_macro_observation	observed_on	dias:800	app/external_macro.py:574 (la ventana esta en la propia consulta)
+macro_event	event_at	dias:30	app/external_macro.py:576 (la ventana esta en la propia consulta)
+futures_trades_realtime_unpartitioned_backup	ts	sin_poda	resto de la migracion a particiones: sin DELETE en el release
+liquidations_realtime_unpartitioned_backup	ts	sin_poda	resto de la migracion a particiones: sin DELETE en el release
+orderbook_snapshot_unpartitioned_backup	ts	sin_poda	resto de la migracion a particiones: sin DELETE en el release
+scalp_signal_snapshot_unpartitioned_backup	ts	sin_poda	resto de la migracion a particiones: sin DELETE en el release
+spot_trades_realtime_unpartitioned_backup	ts	sin_poda	resto de la migracion a particiones: sin DELETE en el release
+scalp_signal_snapshot	ts	horas:SCALP_SIGNAL_RETENTION_HOURS	app/scalp_collector.py:1563
+futures_trades_agg	ts	horas:SCALP_MINUTE_RETENTION_HOURS	app/scalp_collector.py:1549
+futures_trades_realtime	ts	horas:SCALP_TRADE_RETENTION_HOURS	app/scalp_collector.py:1540
+liquidations_realtime	ts	horas:SCALP_TRADE_RETENTION_HOURS	app/scalp_collector.py:1558
+orderbook_snapshot	ts	horas:SCALP_ORDERBOOK_RETENTION_HOURS	app/scalp_collector.py:1553
+spot_trades_realtime	ts	horas:REALTIME_RETENTION_HOURS	app/daily_agg.py:695
+ohlcv	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:655 · el MAS RESTRICTIVO de sus tres intervalos (1min hard, 5min y 4hour htf, daily sin poda): asi no condena lo que la poda del 1min se llevo
+open_interest	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:663
+oi_bybit	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:666
+funding_rate	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:669
+predicted_funding_rate	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:672
+liquidations	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:675
+long_short_ratio	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:678
+spot_trades_agg	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:681
+metrics_snapshot	ts	dias:SNAPSHOT_RETENTION_DAYS	app/daily_agg.py:684
+market_feed_health	-	no_juzgada:columna_mutable	sus tres columnas de tiempo (healthy_since, last_loss_at, updated_at) se reescriben en el upsert
+market_feed_health_shard	-	no_juzgada:columna_mutable	igual que market_feed_health
+pipeline_heartbeat	-	no_juzgada:columna_mutable	updated_at se reescribe en cada latido
+service_ownership	-	no_juzgada:columna_mutable	acquired_at cambia al renovar el dueno
+metric_baseline	-	no_juzgada:columna_mutable	sample_start/sample_end/updated_at se recalculan
+orderbook_depth	-	no_juzgada:columna_mutable	6 filas, una por simbolo, con ts reescrito en cada upsert
+symbols	-	no_juzgada:columna_mutable	created_at es inmutable pero app.db.create_pool REESCRIBE la tabla al arrancar (CLAUDE.md §4)
+market_assets	-	no_juzgada:columna_mutable	igual que symbols: create_pool escribe en ella
+schema_migration	-	no_juzgada:borrado_legitimo	sql/migrations/*.down.sql hace DELETE FROM schema_migration: ahi SI hay quien las borra
+external_api_rate_event	-	no_juzgada:ventana_sin_medir	app/coinalyze.py:68 la poda y no he medido su ventana
