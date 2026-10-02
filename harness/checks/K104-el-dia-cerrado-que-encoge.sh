@@ -92,9 +92,12 @@ if [ -n "$VARS" ]; then
     # leen del MISMO arbol que corre-.
     VALORES=$("$B/bin/prod" "grep -hE '^($PAT)=' /etc/coinalyze/coinalyze.env" 2>/dev/null)
     DEFS=$("$B/bin/prod" "grep -hE '^ *($PAT) *:' /opt/coinalyze/current/app/config.py" 2>/dev/null)
+    # NI UN `printf | grep -q` MAS EN TODO EL FICHERO, aunque aqui `VALORES` sean nueve lineas:
+    # la forma es la que falla, no el tamano de hoy (ver el bloque de VISTAS). `case` no abre
+    # tuberia, y el `\n` delante ancla al principio de linea igual que el `^` del grep.
     for v in $VARS; do
-      printf '%s\n' "$VALORES" | grep -q "^$v=" && continue
-      d=$(printf '%s\n' "$DEFS" | sed -n "s/^ *$v *:.*default=\([0-9]*\).*/\1/p" | head -1)
+      case $'\n'"$VALORES" in *$'\n'"$v="*) continue ;; esac
+      d=$(printf '%s\n' "$DEFS" | awk -v v="$v" 'n<1 && $0 ~ "^ *"v" *:" { if (match($0,/default=[0-9]+/)) { print substr($0,RSTART+8,RLENGTH-8); n++ } }')
       [ -n "$d" ] && VALORES="$VALORES
 $v=$d"
     done
@@ -102,7 +105,7 @@ $v=$d"
 fi
 FALTAN_VAR=""
 for v in $VARS; do
-  printf '%s\n' "$VALORES" | grep -q "^$v=" || FALTAN_VAR="$FALTAN_VAR $v"
+  case $'\n'"$VALORES" in *$'\n'"$v="*) ;; *) FALTAN_VAR="$FALTAN_VAR $v" ;; esac
 done
 [ -z "${FALTAN_VAR// /}" ] || {
   echo "NO MEDIDO: no se pudo leer la retencion de$FALTAN_VAR, asi que no se sabe donde esta el"
@@ -116,20 +119,21 @@ done
 PLAN=""; SIN_DIA=""; NO_JUZGADAS=""
 while IFS=$'\t' read -r t col ret _; do
   case "$t" in ''|'#'*) continue ;; esac
-  printf '%s\n' "$CAT" | tr ' ' '\n' | grep -qx "$t" || continue
+  case $'\n'"$CAT"$'\n' in *$'\n'"$t"$'\n'*) ;; *) continue ;; esac
   case "$ret" in
     no_juzgada:*) NO_JUZGADAS="$NO_JUZGADAS $t(${ret#no_juzgada:})"; continue ;;
     sin_poda) piso=1970-01-01 ;;
     horas:*|dias:*)
       n=${ret#*:}
-      case "$n" in [0-9]*) val=$n ;; *) val=$(printf '%s\n' "$VALORES" | sed -n "s/^$n=//p" | head -1) ;; esac
+      case "$n" in [0-9]*) val=$n ;; *) val=$(printf '%s\n' "$VALORES" | awk -v n="$n" -F= 'c<1 && $1==n {print $2; c++}') ;; esac
       case "$ret" in dias:*) horas=$((val*24)) ;; *) horas=$val ;; esac
       piso=$(date -u -d "$(date -u -d "-$horas hours" +%F) +1 day" +%F) ;;
     *) NO_JUZGADAS="$NO_JUZGADAS $t(retencion ilegible '$ret')"; continue ;;
   esac
-  if ! printf '%s\n' "$piso" | grep -q '^[0-9]'; then
-    NO_JUZGADAS="$NO_JUZGADAS $t(no se pudo calcular el piso)"; continue
-  fi
+  case "$piso" in
+    [0-9]*) ;;
+    *) NO_JUZGADAS="$NO_JUZGADAS $t(no se pudo calcular el piso)"; continue ;;
+  esac
   # Sin dia cerrado dentro de la ventana no hay nada que juzgar, y decirlo no es condenar.
   if [ "$piso" \> "$(date -u -d "$HOY -1 day" +%F)" ]; then
     SIN_DIA="$SIN_DIA $t(ventana ${ret#*:}, ni un dia cerrado entero)"; continue
@@ -157,19 +161,44 @@ $(printf '%s\n' "$PLAN" | grep '|')
 EOF
 t0=$(date -u +%s)
 ACTUAL=$(consulta "$LOTE" 2>/dev/null | grep '^C|')
-SIN_CONTAR=""
+# QUE TABLAS TRAJO EL LOTE, EN UNA SOLA PASADA QUE LEE TODO.
+#
+# ESTO ERA UN `printf "$ACTUAL" | grep -q "^C|$t|" && continue` DENTRO DEL BUCLE, Y ERA UN
+# DEFECTO DE LOS CAROS. `grep -q` sale en el PRIMER acierto y cierra su extremo de la tuberia;
+# `ACTUAL` son 2451 lineas (~85 KB) y NO cabe en el buffer de 64 KB, asi que el `printf` se
+# queda a medias. Con `pipefail` el estado de la tuberia es el del printf y NO el 0 de grep:
+#   · con SIGPIPE por omision      el printf muere por senal 13 -> 141, y no dice nada
+#   · con SIGPIPE IGNORADO         write() da EPIPE, el printf de bash escribe
+#                                  «printf: write error: Broken pipe» por STDERR -> 1
+# En los dos casos el `&& continue` NO ocurria NUNCA. Medido el 2026-10-02 sobre f5b3efa con
+# una copia instrumentada: **31 de 31 tablas recontadas una a una, en los DOS modos**, o sea
+# 31 viajes de ssh de mas y ~12 de los 15-18 s que duraba la corrida. Y lo peor no es el
+# tiempo: `verify:66` captura `2>&1`, asi que en el modo del operador -y asi corre todo lo que
+# lanza por `pct exec`- la PRIMERA linea de este check era un «Broken pipe» y el marcador
+# publicaba eso en vez del veredicto. El numero de MENSAJES baila (29 en una corrida mia y en
+# la del operador, 31 en nueve mas: es una carrera entre la ultima escritura y el cierre), pero
+# el DANO no baila: 31 de 31, siempre.
+#
+# Asi que aqui no queda NINGUNA tuberia que pueda romperse: una pasada que lee ACTUAL entero
+# para hacer el conjunto -`sort` no sale antes de tiempo-, y dentro del bucle una comparacion
+# de cadena de bash. Los espacios de `" $VISTAS "` y de `*" $t "*` no son adorno: sin ellos,
+# `trades` casaria dentro de `futures_trades` y una tabla que SI hay que recontar no se
+# recontaria.
+VISTAS=$(printf '%s\n' "$ACTUAL" | awk -F'|' '/^C\|/ {print $2}' | sort -u | tr '\n' ' ')
+SIN_CONTAR=""; N_RECONTADAS=0
 while IFS='|' read -r t col piso; do
   [ -n "$t" ] || continue
-  printf '%s\n' "$ACTUAL" | grep -q "^C|$t|" && continue
+  case " $VISTAS " in *" $t "*) continue ;; esac
   # Puede ser que la tabla este VACIA en la ventana (0 grupos) o que su sentencia reventara y
   # se llevara por delante al resto del lote. Las dos cosas NO son lo mismo, asi que se repesca.
+  N_RECONTADAS=$((N_RECONTADAS+1))
   una=$(consulta "$(sent "$t" "$col" "$piso")SELECT 'FIN|$t';" 2>/dev/null)
-  if printf '%s\n' "$una" | grep -q "^FIN|$t"; then
-    ACTUAL="$ACTUAL
-$(printf '%s\n' "$una" | grep "^C|$t|")"
-  else
-    SIN_CONTAR="$SIN_CONTAR $t"
-  fi
+  case $'\n'"$una" in
+    *$'\n'"FIN|$t"*)
+      ACTUAL="$ACTUAL
+$(printf '%s\n' "$una" | grep "^C|$t|")" ;;
+    *) SIN_CONTAR="$SIN_CONTAR $t" ;;
+  esac
 done <<EOF
 $(printf '%s\n' "$PLAN" | grep '|')
 EOF
@@ -239,8 +268,12 @@ mkdir -p "$(dirname "$CENSO")"
 # «sujeto: produccion ... hoy (UTC) ...» y lo que hubiera encontrado NO SALIA. Es el mismo
 # sintoma que esta campana arregla en K01b. El contexto se acumula y va DESPUES, y el veredicto
 # lleva el sujeto dentro, que es lo que K97 exige de un VERDE.
+# LA RECUENTA SE PUBLICA, y por eso existe este numero. Un lote que ya conto una tabla y la
+# vuelve a contar no cambia el veredicto, asi que un defecto asi puede vivir anios sin que nadie
+# lo note -el de esta campana vivio hasta que el operador corrio `bash -x`-. Con la cifra a la
+# vista, 31 recontadas sobre 31 juzgadas se lee de un golpe.
 CONTEXTO="sujeto: $QUIEN · hoy (UTC) $HOY · el dia cerrado mas reciente que se juzga es $(date -u -d "$HOY -1 day" +%F)
-tablas: $(printf '%s\n' "$CAT" | wc -w) en el catalogo · $N_PLAN juzgadas · censo de $N_PAR parejas (tabla,dia) en $((t1-t0)) s"
+tablas: $(printf '%s\n' "$CAT" | wc -w) en el catalogo · $N_PLAN juzgadas · censo de $N_PAR parejas (tabla,dia) en $((t1-t0)) s · $N_RECONTADAS recontada(s) una a una tras el lote"
 [ -n "${NO_JUZGADAS// /}" ] && CONTEXTO="$CONTEXTO
 NO JUZGADAS por declaracion:$NO_JUZGADAS"
 [ -n "${SIN_DIA// /}" ] && CONTEXTO="$CONTEXTO

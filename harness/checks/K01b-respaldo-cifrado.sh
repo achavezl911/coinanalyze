@@ -115,8 +115,16 @@ if [ "${K01B_RESTAURA:-0}" = "1" ]; then
     N_OTROS=$(grep -c '^pg_restore: error:' "$RERR")
     nfk=$(printf '%s' "$pares" | grep -c '|' )
     N_OTROS=$((N_OTROS - nfk)); [ "$N_OTROS" -ge 0 ] || N_OTROS=0
+    # `awk 'n<3'` Y NO `head -3`, Y NO ES ESTILO. `head -3` sale tras la tercera linea y cierra
+    # la tuberia; el `grep` de la izquierda se come un EPIPE y, si SIGPIPE esta IGNORADO -asi
+    # corre lo que el operador lanza por `pct exec`-, escribe «write error: Broken pipe» por
+    # STDERR. `verify:66` junta stderr con stdout y cita la PRIMERA linea, asi que un respaldo
+    # con un stderr grande (mas de 64 KB de errores) dejaria el marcador de K01b con un «Broken
+    # pipe» donde va el veredicto. Le paso a K104 con 85 KB y 31 recuentas; aqui el estado de la
+    # tuberia no decide nada -va dentro de una asignacion- pero el MENSAJE si contamina.
+    # `awk` lee toda su entrada: no hay cierre prematuro y no hay EPIPE posible.
     [ "$N_OTROS" -gt 0 ] && OTROS=$(grep '^pg_restore: error:' "$RERR" | grep -v 'violates foreign key constraint' \
-                                    | head -3 | cut -c1-120 | tr '\n' ' ')
+                                    | awk 'n<3 {print substr($0,1,120); n++}' | tr '\n' ' ')
     for par in $pares; do
       [ -n "$par" ] || continue
       t=${par%%|*}; fk=${par##*|}

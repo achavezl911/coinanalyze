@@ -118,10 +118,17 @@ if [ "$n_hu" != "$N_RAIZ" ]; then
   # EL LOTE SE ABORTO. Con ON_ERROR_STOP=1 una sentencia que revienta se lleva por delante a
   # las de atras, asi que lo que falta NO es «sin huerfanas»: es SIN MEDIR. Se repesca una a
   # una y lo que siga fallando sale con su nombre.
+  # SIN TUBERIA QUE PUEDA ROMPERSE. `printf "$SAL" | grep -q ... && continue` es la forma que
+  # costo la mitad del remate de esta campana en K104: `grep -q` sale al primer acierto, cierra
+  # la tuberia, y si el productor pasa de los 64 KB del buffer el `printf` se queda a medias y
+  # con `pipefail` el estado de la tuberia es el SUYO -141 por SIGPIPE, o 1 y un «Broken pipe»
+  # por stderr si SIGPIPE esta ignorado-, asi que el `&& continue` no ocurre. Aqui `SAL` son dos
+  # lineas por FK (~4 KB con las 34 de produccion) y hoy no llega, pero el techo crece con el
+  # numero de FK y la forma es la misma: `case` no abre tuberia.
   while IFS= read -r l; do
     [ -n "$l" ] || continue
-    fk=$(printf '%s' "$l" | cut -d'|' -f2)
-    printf '%s\n' "$SAL" | grep -q "^HU|$fk|" && continue
+    fk=${l#*|}; fk=${fk%%|*}
+    case $'\n'"$SAL" in *$'\n'"HU|$fk|"*) continue ;; esac
     una=$(consulta "$(sentencia "$l")" 2>/dev/null | grep "^HU|$fk|" | head -1)
     if [ -n "$una" ]; then SAL="$SAL
 $una"; else NO_JUZGADAS="$NO_JUZGADAS $fk"; fi

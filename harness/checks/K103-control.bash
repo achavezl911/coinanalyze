@@ -35,6 +35,7 @@ CHK="$ORIG/harness/checks/K103-la-fk-que-promete-y-no-cumple.sh"
 command -v psql >/dev/null || { echo "NO MEDIDO: no hay psql en esta maquina"; exit 2; }
 
 SUC="k103_ctl_sucia_$$"; LIM="k103_ctl_limpia_$$"; VAC="k103_ctl_sinfk_$$"
+DIR=$(mktemp -d) || exit 2
 # WITH (FORCE), Y NO ES ADORNO. La primera version hacia `DROP DATABASE IF EXISTS` a secas con
 # el error a /dev/null, y el brazo H deja una sesion con una transaccion abierta sobre la base
 # sucia: el DROP fallaba con «is being accessed by other users» y la base SE QUEDABA. Medido el
@@ -45,6 +46,7 @@ limpia() {
   for d in "$SUC" "$LIM" "$VAC"; do
     psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $d WITH (FORCE)" >/dev/null 2>&1
   done
+  rm -rf "$DIR"
   q=$(psql -X -A -t -d postgres -c "SELECT coalesce(string_agg(datname,' '),'') FROM pg_database WHERE datname IN ('$SUC','$LIM','$VAC')" 2>/dev/null)
   [ -z "${q// /}" ] || echo "AVISO: no pude borrar mis bases temporales: $q"
 }
@@ -52,6 +54,21 @@ limpia() {
 fallos=0; pasan=0
 comprueba() { if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-68s\n' "$1"
               else fallos=$((fallos+1)); printf '  [FALLA] %-68s\n' "$1"; fi; }
+
+# --- SIN TUBERIA EN LOS BRAZOS, Y NO ES ESTILO -------------------------------------------
+# `printf '%s' "$OUT" | grep -q PATRON` es la forma que costo la mitad del remate de la
+# campana 131 en K104: `grep -q` sale en el PRIMER acierto y cierra su extremo de la tuberia,
+# y si la variable pasa de los 64 KB del buffer el `printf` se queda a medias. Con `pipefail`
+# el estado de la tuberia es el del printf -141 por SIGPIPE, o 1 y un «write error: Broken
+# pipe» por stderr si SIGPIPE esta IGNORADO-, asi que el brazo saldria [FALLA] SIN HABER
+# MIRADO la salida. Aqui `OUT` es la salida de un check y su techo NO es pequeno: K104 sobre
+# un sujeto con miles de parejas condenadas pasa de 64 KB sin esfuerzo.
+# Se escribe a FICHERO y se grepea el FICHERO: ahi no hay tuberia que romper.
+#   dice  PATRON [TEXTO]   subcadena/BRE   ·   diceE PATRON [TEXTO]   ERE
+#   prim  TEXTO PATRON     solo la PRIMERA linea, con expansion de bash y cero procesos
+dice()  { printf '%s\n' "${2-$OUT}" > "$DIR/_o"; grep -q  -- "$1" "$DIR/_o"; }
+diceE() { printf '%s\n' "${2-$OUT}" > "$DIR/_o"; grep -qE -- "$1" "$DIR/_o"; }
+prim()  { case "${1%%$'\n'*}" in "$2"*) return 0 ;; *) return 1 ;; esac; }
 
 # EL ESCENARIO, igual en las dos bases. Cinco familias a proposito: simple, particionada,
 # compuesta, NOT VALID, y una tabla hija cuya columna admite NULL (una fila con NULL NO esta
@@ -140,52 +157,52 @@ comprueba "A1 condena, rc=1 (rc=$RC)" "$([ "$RC" = 1 ] && echo si || echo no)"
 # «DECLARADAS y NO condenan», cuya linea termina en «(NO VALIDADA: no condena)». Medido contra
 # la version defectuosa: A2, C1 y D1 pasaban POR LA RAZON EQUIVOCADA (x1-tmp/c131/16-...).
 comprueba "A2 nombra hija_padre_id_fkey con su 4, y como CONDENA" \
-  "$(printf '%s' "$OUT" | grep -qE 'hija_padre_id_fkey +public\.hija +4 *$' && echo si || echo no)"
+  "$(diceE 'hija_padre_id_fkey +public\.hija +4 *$' && echo si || echo no)"
 comprueba "A3 dice el TOTAL de filas huerfanas bajo FK validadas: 10" \
-  "$(printf '%s' "$OUT" | grep -q 'HUERFANAS: 10 filas hijas sin padre bajo 3 FK VALIDADA' && echo si || echo no)"
+  "$(dice 'HUERFANAS: 10 filas hijas sin padre bajo 3 FK VALIDADA' && echo si || echo no)"
 comprueba "A4 la fila con padre_id NULL NO cuenta (seria 5 en vez de 4)" \
-  "$(printf '%s' "$OUT" | grep -qE 'hija_padre_id_fkey +public\.hija +5' && echo no || echo si)"
+  "$(diceE 'hija_padre_id_fkey +public\.hija +5' && echo no || echo si)"
 comprueba "A5 el veredicto va en la PRIMERA linea, que es lo que verify cita en el marcador" \
-  "$(printf '%s' "$OUT" | head -1 | grep -q '^HUERFANAS: ' && echo si || echo no)"
+  "$(prim "${OUT}" 'HUERFANAS: ' && echo si || echo no)"
 
 echo
 echo "C · la huerfana que vive en una PARTICION la ve la FK de primer nivel"
 comprueba "C1 nombra la FK de trozos con su 4 (las dos particiones a la vez), y como CONDENA" \
-  "$(printf '%s' "$OUT" | grep -qE 'trozos_padre_id_fkey +public\.trozos +4 *$' && echo si || echo no)"
+  "$(diceE 'trozos_padre_id_fkey +public\.trozos +4 *$' && echo si || echo no)"
 comprueba "C2 y NO cuenta las copias por particion como FK aparte" \
-  "$(printf '%s' "$OUT" | grep -q 'son copias por particion, cubiertas por la suya' && echo si || echo no)"
+  "$(dice 'son copias por particion, cubiertas por la suya' && echo si || echo no)"
 
 echo
 echo "D · la FK COMPUESTA tambien se juzga, con sus dos columnas"
 comprueba "D1 nombra hija2_a_b_fkey con su 2, y como CONDENA" \
-  "$(printf '%s' "$OUT" | grep -qE 'hija2_a_b_fkey +public\.hija2 +2 *$' && echo si || echo no)"
+  "$(diceE 'hija2_a_b_fkey +public\.hija2 +2 *$' && echo si || echo no)"
 comprueba "D2 y el censo dice que hay 1 compuesta" \
-  "$(printf '%s' "$OUT" | grep -q 'compuestas: 1' && echo si || echo no)"
+  "$(dice 'compuestas: 1' && echo si || echo no)"
 
 echo
 echo "E · la NOT VALID se NOMBRA y NO condena"
 comprueba "E1 sale en el cubo de las declaradas, con su 4" \
-  "$(printf '%s' "$OUT" | grep -qE 'hija3_sin_validar +public\.hija3 +4 \(NO VALIDADA' && echo si || echo no)"
+  "$(diceE 'hija3_sin_validar +public\.hija3 +4 \(NO VALIDADA' && echo si || echo no)"
 comprueba "E2 y NO entra en el total de las validadas (10, no 14)" \
-  "$(printf '%s' "$OUT" | grep -q 'HUERFANAS: 14 ' && echo no || echo si)"
+  "$(dice 'HUERFANAS: 14 ' && echo no || echo si)"
 
 echo
 echo "B · GEMELO · la copia limpia PASA"
 corre "$LIM"
 comprueba "B1 rc=0 (rc=$RC)" "$([ "$RC" = 0 ] && echo si || echo no)"
 comprueba "B2 y lo dice contando: 0 filas hijas sin padre" \
-  "$(printf '%s' "$OUT" | grep -q 'cumplen: 0 filas hijas sin padre' && echo si || echo no)"
+  "$(dice 'cumplen: 0 filas hijas sin padre' && echo si || echo no)"
 comprueba "B3 no nombra ninguna FK como huerfana" \
-  "$(printf '%s' "$OUT" | grep -q 'HUERFANAS:' && echo no || echo si)"
+  "$(dice 'HUERFANAS:' && echo no || echo si)"
 comprueba "B4 la NOT VALID limpia tampoco sale declarada" \
-  "$(printf '%s' "$OUT" | grep -q 'hija3_sin_validar' && echo no || echo si)"
+  "$(dice 'hija3_sin_validar' && echo no || echo si)"
 
 echo
 echo "F · si el canal no puede ni leer el CATALOGO, NO MEDIDO · nunca VERDE"
 corre "$SUC" 1
 comprueba "F1 rc=2 (rc=$RC)" "$([ "$RC" = 2 ] && echo si || echo no)"
 comprueba "F2 y dice que lo que fallo fue el censo de FK, no la cuenta" \
-  "$(printf '%s' "$OUT" | grep -q 'no devolvio el censo de FK' && echo si || echo no)"
+  "$(dice 'no devolvio el censo de FK' && echo si || echo no)"
 
 echo
 echo "G · una base SIN NINGUNA FK no es un VERDE: no se juzgo nada"
@@ -194,7 +211,7 @@ psql -X -q -d "$VAC" -c "CREATE TABLE sola (id int PRIMARY KEY)" >/dev/null 2>&1
 corre "$VAC"
 comprueba "G1 rc=2 (rc=$RC)" "$([ "$RC" = 2 ] && echo si || echo no)"
 comprueba "G2 y lo dice: ninguna FK de primer nivel que juzgar" \
-  "$(printf '%s' "$OUT" | grep -q 'ninguna FK de primer nivel que juzgar' && echo si || echo no)"
+  "$(dice 'ninguna FK de primer nivel que juzgar' && echo si || echo no)"
 
 echo
 echo "H · una tabla que no se puede CONTAR sale nombrada, y no borra las condenas que si se contaron"
@@ -215,11 +232,11 @@ wait "$PIDLOCK" 2>/dev/null
 psql -X -q -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$SUC'" >/dev/null 2>&1
 comprueba "H1 sigue siendo ROJO, rc=1 (rc=$RC)" "$([ "$RC" = 1 ] && echo si || echo no)"
 comprueba "H2 y NOMBRA la FK que no se pudo contar" \
-  "$(printf '%s' "$OUT" | grep -q 'NO SE PUDIERON CONTAR.*hija_padre_id_fkey' && echo si || echo no)"
+  "$(dice 'NO SE PUDIERON CONTAR.*hija_padre_id_fkey' && echo si || echo no)"
 comprueba "H3 y las otras dos condenas siguen ahi (trozos y la compuesta)" \
-  "$(printf '%s' "$OUT" | grep -q 'trozos_padre_id_fkey' && printf '%s' "$OUT" | grep -q 'hija2_a_b_fkey' && echo si || echo no)"
+  "$(dice 'trozos_padre_id_fkey' && dice 'hija2_a_b_fkey' && echo si || echo no)"
 comprueba "H4 y la que no se conto NO cuenta como 0 en el total (6, no 10)" \
-  "$(printf '%s' "$OUT" | grep -q 'HUERFANAS: 6 filas' && echo si || echo no)"
+  "$(dice 'HUERFANAS: 6 filas' && echo si || echo no)"
 
 echo
 total=$((pasan+fallos))
