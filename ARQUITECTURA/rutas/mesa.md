@@ -50,10 +50,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-control.bash:271`, `harness/checks/K102-control.bash:282`, `harness/checks/K102-control.bash:284`, `harness/checks/K102-control.bash:424` _(+29)_ | `harness/checks/K102-control.bash:266`, `harness/checks/K102-control.bash:268`, `harness/checks/K102-decide-lo-primero.sh:113`, `harness/checks/K102-decide-lo-primero.sh:115` _(+6)_ |
+| **checks** | `harness/checks/K102-control.bash:271`, `harness/checks/K102-control.bash:282`, `harness/checks/K102-control.bash:284`, `harness/checks/K102-control.bash:424` _(+34)_ | `harness/checks/K102-control.bash:266`, `harness/checks/K102-control.bash:268`, `harness/checks/K102-control.bash:899`, `harness/checks/K102-decide-lo-primero.sh:113` _(+9)_ |
 | **tests** | `tests/js/mesa_remate.test.js:84`, `tests/test_la_puerta.py:39`, `tests/test_la_puerta.py:126` | `tests/test_la_puerta.py:3` |
 
-**No la llama el panel**, pero si 36 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 41 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

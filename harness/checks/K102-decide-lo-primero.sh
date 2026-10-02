@@ -130,18 +130,29 @@ pagina /mesa "$TMP/mesa.html"; rc_mesa=$?
 h_raiz=$(sha256sum < "$TMP/raiz.html" | cut -c1-12); b_raiz=$(wc -c < "$TMP/raiz.html")
 h_mesa=$(sha256sum < "$TMP/mesa.html" | cut -c1-12); b_mesa=$(wc -c < "$TMP/mesa.html")
 es_mesa() { grep -q 'mesa/mesa-app\.js' "$1"; }
+# K102_PUERTA=/mesa existe para UNA cosa: juzgar un arbol ANTERIOR a la 133 -donde `/` aun era el
+# panel viejo-, que es lo que hace P6 de su control con los bytes de antes del arreglo de la palabra.
+# Asi no juzga `/`, y LO DICE en la primera linea; por omision es `/` y la puerta se exige entera.
+PUERTA="${K102_PUERTA:-/}"
+case "$PUERTA" in
+  /|/mesa) ;;
+  *) echo "NO MEDIDO: K102_PUERTA solo admite \`/\` o \`/mesa\` (dice «$PUERTA»)"; exit 2 ;;
+esac
+if [ "$PUERTA" = "/mesa" ]; then rc_raiz=0; fi
 if [ "$rc_raiz" -ne 0 ] || [ "$rc_mesa" -ne 0 ]; then
   echo "NO MEDIDO: no se pudieron pedir las dos puertas de $SUJETO (\`/\` rc=$rc_raiz, \`/mesa\` rc=$rc_mesa):" \
        "sin ellas no se sabe que mesa se juzgaria"
   exit 2
 fi
 if ! es_mesa "$TMP/mesa.html"; then
-  echo "K102 · lo que juzgo: la mesa de $SUJETO, y \`/mesa\` YA NO LA SIRVE ($b_mesa B, sha $h_mesa)"
+  echo "K102 · ROJO, 1 hallazgo(s) · lo que juzgo: la mesa en \`/mesa\` · sujeto: $SUJETO · \`/mesa\` YA NO LA SIRVE ($b_mesa B, sha $h_mesa)"
   echo "  1 hallazgo(s):"
   echo "   - PUERTA: \`/mesa\` tiene que seguir sirviendo la mesa (marcadores, auditorias) y sirve otra cosa"
   exit 1
 fi
-if ! es_mesa "$TMP/raiz.html"; then
+if [ "$PUERTA" = "/mesa" ]; then
+  PUERTA_DICHO="abierta por \`/mesa\` porque K102_PUERTA lo pide (un arbol anterior a la campana 133): \`/\` NO se juzga en esta corrida"
+elif ! es_mesa "$TMP/raiz.html"; then
   if [ "$ARBOL_RAIZ" = "mesa.html" ] && [ -n "$CAB" ]; then
     echo "NO MEDIDO: FALTA DESPLEGAR LA PUERTA. El arbol sirve la mesa en \`/\` (index() -> mesa.html) y" \
          "$SUJETO sirve otra cosa en \`/\` ($b_raiz B, sha $h_raiz: el panel viejo hasta que se despliegue la" \
@@ -149,29 +160,29 @@ if ! es_mesa "$TMP/raiz.html"; then
     echo "  para juzgar el arbol:  MESA_BASE=http://127.0.0.1:PUERTO $0"
     exit 2
   fi
-  echo "K102 · lo que juzgo: la mesa en \`/\` de $SUJETO, y \`/\` NO SIRVE LA MESA ($b_raiz B, sha $h_raiz)"
+  echo "K102 · ROJO, 1 hallazgo(s) · lo que juzgo: la mesa en \`/\` · sujeto: $SUJETO · \`/\` NO SIRVE LA MESA ($b_raiz B, sha $h_raiz)"
   echo "  1 hallazgo(s):"
   echo "   - PUERTA: \`/\` tiene que servir la mesa desde la campana 133 y sirve otra cosa (el arbol: index() -> ${ARBOL_RAIZ:-?})"
   exit 1
-fi
-if [ "$h_raiz" != "$h_mesa" ]; then
-  echo "K102 · lo que juzgo: la mesa en \`/\` de $SUJETO, y \`/\` y \`/mesa\` NO SIRVEN LOS MISMOS BYTES"
+elif [ "$h_raiz" != "$h_mesa" ]; then
+  echo "K102 · ROJO, 1 hallazgo(s) · lo que juzgo: la mesa en \`/\` · sujeto: $SUJETO · \`/\` y \`/mesa\` NO SIRVEN LOS MISMOS BYTES"
   echo "  1 hallazgo(s):"
   echo "   - PUERTA: \`/\` ($b_raiz B, sha $h_raiz) y \`/mesa\` ($b_mesa B, sha $h_mesa) tienen que ser la misma mesa"
   exit 1
+else
+  PUERTA_DICHO="\`/mesa\` sirve los MISMOS bytes ($b_raiz B, sha $h_raiz)"
 fi
-PUERTA_DICHO="\`/mesa\` sirve los MISMOS bytes ($b_raiz B, sha $h_raiz)"
 
 # --- LA MEDIDA -------------------------------------------------------------------------
 # CON LA BARRA DE DESPLAZAMIENTO PUESTA: se juzga la ventana que tiene quien usa la mesa.
 corre_a() {  # corre_a <activo> <ancho> <alto> <marco> <observa> <fichero>
   local a="$1" w="$2" h="$3" m="$4" obs="$5" f="$6"
   if [ -n "$CAB" ]; then
-    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$a" \
+    "$PY" "$SONDA" --base "$BASE" --puerta "$PUERTA" --marco "$m" --activo "$a" \
       --ancho "$w" --alto "$h" --frio --repite 1 --espera 30 --observa "$obs" \
       --cabecera-fichero "$CAB" --salida "$f" >/dev/null 2>"$f.err"
   else
-    "$PY" "$SONDA" --base "$BASE" --marco "$m" --activo "$a" \
+    "$PY" "$SONDA" --base "$BASE" --puerta "$PUERTA" --marco "$m" --activo "$a" \
       --ancho "$w" --alto "$h" --frio --repite 1 --espera 30 --observa "$obs" \
       ${K102_CABECERA:+--cabecera "$K102_CABECERA"} --salida "$f" >/dev/null 2>"$f.err"
   fi
@@ -209,14 +220,14 @@ done
 
 "$PY" - "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/swp.json" "$TMP/lg.json" \
        "$TMP/lgp.json" "$SUJETO" "$ACTIVO" "$REPO" \
-       "$REPO/app/ai_context.py" "$OTROS" "$ACTIVOS" "$PUERTA_DICHO" <<'PY'
+       "$REPO/app/ai_context.py" "$OTROS" "$ACTIVOS" "$PUERTA_DICHO" "$PUERTA" <<'PY'
 import json, os, re, sys
 
 g, p, sw, swp, lg, lgp = (json.load(open(x)) for x in sys.argv[1:7])
 sujeto, activo = sys.argv[7], sys.argv[8]
 raiz_repo, ruta_ctx = sys.argv[9], sys.argv[10]
 dir_otros, activos_pedidos = sys.argv[11], sys.argv[12].split()
-puerta_dicho = sys.argv[13]
+puerta_dicho, puerta = sys.argv[13], sys.argv[14]
 fallos, lineas = [], []
 
 # LAS VISTAS DE LOS OTROS ACTIVOS. Cada fichero se llama <activo>__<marco>__<ancho>x<alto>.json,
@@ -662,7 +673,7 @@ else:
 # LA PRIMERA LINEA ES LA UNICA QUE CITA EL MARCADOR: lleva el veredicto, la PANTALLA y su puerta,
 # y el sujeto. Antes decia solo el sujeto -«PRODUCCION (...)»-, que es el host y no la pantalla.
 estado = f"ROJO, {len(fallos)} hallazgo(s)" if fallos else "VERDE"
-print(f"K102 · {estado} · lo que juzgo: la mesa en `/` · sujeto: {sujeto} · {puerta_dicho}"
+print(f"K102 · {estado} · lo que juzgo: la mesa en `{puerta}` · sujeto: {sujeto} · {puerta_dicho}"
       + (f" · el primero: {fallos[0][:110]}" if fallos else ""))
 juzgados = sorted({activo} | {x[3] for x in otros})
 print(f"  alcance: los TRES marcos (scalp, swing y largo) a los DOS tamanos (1920x1080 y "

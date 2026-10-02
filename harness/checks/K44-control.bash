@@ -1055,6 +1055,20 @@ comprueba "P18c la 1a linea con SIGPIPE IGNORADO es el veredicto, no un «Broken
   "$(awk 'NR==1' "$DIR/p18/ign" | grep -q '^la mesa (static/mesa.html, cargada por `/`) pide su nucleo '"$A"'/mesa/decide 3041 veces' && echo si || echo no)"
 
 echo
+echo "P19 · UNA VENTANA DE VERDAD NO CABE EN UNA VARIABLE: el gancho K44_LOG_FICHERO (una ruta)"
+# El prod de mentira devuelve una ventana SIN visitas y el fichero trae la de P1 (la mesa): solo un K44
+# que lea el FICHERO puede dar VERDE. Medido en la 133: una ventana real de 6 h son 1.86 MB y por
+# K44_LOG muere con «Argument list too long» antes de arrancar.
+montav "$DIR/p19" "$(echo 'D -86400 mesa')"
+corrv P19 "$DIR/p19" K44_LOG_FICHERO="$DIR/p1/salida"; rc=$RC
+comprueba "P19a VERDE, rc=0 (rc=$rc): juzga la mesa del FICHERO, y dice que fue inyectado" \
+  "$([ "$rc" = 0 ] && [ "$(en_primera P19 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo')" = si ] \
+     && [ "$(tiene P19 'log INYECTADO por K44_LOG_FICHERO')" = si ] && echo si || echo no)"
+corrv P19b "$DIR/p19" K44_LOG_FICHERO=/no/existe; rc=$RC
+comprueba "P19b y si el fichero no existe: NO MEDIDO, rc=2 (rc=$rc), diciendo CUAL, no culpando al canal" \
+  "$([ "$rc" = 2 ] && [ "$(tiene P19b 'no se pudo leer el log inyectado por K44_LOG_FICHERO \(/no/existe\)')" = si ] && echo si || echo no)"
+
+echo
 echo "G1 · GUARDA (ya valia antes): el ARNES no cuenta aunque venga con agente de navegador"
 montav "$DIR/g1" "$(echo 'C arnes -10800 /mesa'; ev_mesa arnes -10790)"
 corrv G1 "$DIR/g1"; rc=$RC

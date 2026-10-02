@@ -271,7 +271,17 @@ REMOTO
 LOG_CMD=${LOG_CMD//__VH__/$VENTANA_H}
 LOG_CMD=${LOG_CMD//__ARNES__/$ARNES_IP}
 
-if [ "${K44_LOG+puesta}" = puesta ]; then
+# DOS GANCHOS PARA INYECTAR, y el segundo no es un capricho: una ventana REAL no cabe en una variable
+# de entorno. Medido en la 133: el 29/Sep, 12-18 h, un solo cliente hizo 8 664 peticiones /api en 6 h
+# -1.86 MB de log- y `K44_LOG="$(cat ...)"` murio con «Argument list too long» antes de arrancar.
+if [ -n "${K44_LOG_FICHERO:-}" ]; then
+  if ! cp "$K44_LOG_FICHERO" "$TMPX/crudo" 2>/dev/null; then
+    echo "NO MEDIDO: no se pudo leer el log inyectado por K44_LOG_FICHERO ($K44_LOG_FICHERO)." \
+         "Esta linea NO dice nada sobre lo que pide ninguna pantalla."
+    exit 2
+  fi
+  _rc=0; ORIGEN="inyectado"
+elif [ "${K44_LOG+puesta}" = puesta ]; then
   printf '%s\n' "$K44_LOG" > "$TMPX/crudo"
   _rc=0; ORIGEN="inyectado"
 else
@@ -293,7 +303,8 @@ if ! grep -q '^K44-FIN$' "$TMPX/crudo"; then
   exit 2
 fi
 MARCA=""
-[ "$ORIGEN" = inyectado ] && MARCA=" [log INYECTADO por K44_LOG, no leido del canal]"
+GANCHO=K44_LOG; [ -n "${K44_LOG_FICHERO:-}" ] && GANCHO=K44_LOG_FICHERO
+[ "$ORIGEN" = inyectado ] && MARCA=" [log INYECTADO por $GANCHO, no leido del canal]"
 
 # --- 2b · LA ATRIBUCION, Y EL JUICIO DE LA MESA --------------------------------------------
 RUTAS_EX=$(printf '%s\n' "$EXCEPCIONES" | awk -F'|' 'NF>1 {gsub(/ /,"",$1); if ($1!="") printf "|%s", $1} END {printf "|"}')
