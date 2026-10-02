@@ -94,6 +94,13 @@ jobs:
       # cubos que lo acota). Bajarlo pide inyectarle el tiempo al modulo, o sea cambiar
       # como lee el reloj: es trabajo acotado y conocido -un helper, doce puntos de
       # llamada- pero NO es un retoque de CI, asi que aqui se paga y se declara.
+      # Campana 135 · C1. El test de historia del reglamento de las entradas
+      # (tests/test_entradas_reglamento.py) compara config/entradas/reglamento.json con el de
+      # main: ninguna version registrada cambia ni desaparece. El checkout es de profundidad 1
+      # y no trae main; sin esta referencia ese test FALLA en CI en vez de pasar sin mirar.
+      - name: Fetch main for the reglamento history test
+        run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
+
       - name: Pytest
         env:
           TEST_DATABASE_URL: "postgresql:///${{ steps.testdb.outputs.db }}?host=/var/run/postgresql"
