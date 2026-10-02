@@ -17,6 +17,23 @@
 # CERRADAS contra las mismas particiones en 140. Todas las que haya en comun, no una
 # elegida a dedo: la primera vez que corrio, la elegida a mano cuadraba y la de al
 # lado no.
+#
+# EL rc DE pg_restore NO DICE QUE FALLO, Y DURANTE DOCE DIAS ESO FUE TODO LO QUE ESTE
+# CHECK PUBLICO. El registro decia «rc=1» sobre un respaldo cuyo unico defecto eran 128
+# filas hijas huerfanas: la restauracion crea las tablas y los datos y DESPUES falla al
+# crear las 4 FK que esas filas violan. Asi que ahora el stderr NO se tira (era el
+# `2>&1` de esta misma linea): se leen los nombres de lo que no se pudo crear, con su
+# tabla, y se comprueba que la FK esta de verdad AUSENTE en lo restaurado. Es A71: un
+# ROJO de restauracion se lee en el stderr, no en el rc.
+#
+# Y la cifra que pg_restore SI da no sirve. Medido en 143 el 2026-10-02 con 12 corridas
+# (x1-tmp/c131/09-ensayo-cuenta.sh), con 0/1/2/3 FK rotas y --jobs 1/2/4:
+#     FK rotas   1   2   3        "errors ignored on restore" con --jobs=1   1  2  3
+#                                 "errors ignored on restore" con --jobs=2   2  4  6
+#                                 "errors ignored on restore" con --jobs=4   2  4  6
+# o sea que en paralelo -y este check usa --jobs=2- la cifra sale DOBLE. Las lineas
+# `violates foreign key constraint "<fk>"` dieron el numero exacto en las 12. Por eso se
+# cuenta por nombre y la cifra de pg_restore se cita entre parentesis, dicha inflada.
 set -uo pipefail
 B=/srv/coinanalyze/harness; . "$B/env"
 # EL REGISTRO ES ESTADO COMPARTIDO: un OK escrito aqui pone VERDE a K01b para todo el mundo.
@@ -42,13 +59,35 @@ if [ "${K01B_RESTAURA:-0}" = "1" ]; then
          "puede dejar un OK en el registro compartido."
     exit 2
   fi
+  # LO MISMO PARA UN VOLCADO LOCAL. `K01B_DUMP` existe para que el control pueda ejercitar el
+  # lector del stderr con un volcado de pocos KB en vez de bajar 242 MB de 140, y un volcado
+  # que fabrica el control NO es el respaldo de produccion: su veredicto no puede tocar el
+  # registro de todos.
+  if [ -n "${K01B_DUMP:-}" ] && [ -z "${K01B_REG:-}" ]; then
+    echo "NO MEDIDO: K01B_DUMP solo se puede usar con K01B_REG apuntando a un registro propio." \
+         "Un volcado local no es el respaldo cifrado de 140 y no puede dejar su veredicto en el" \
+         "registro compartido."
+    exit 2
+  fi
   SP=$(mktemp -d /tmp/k01b.XXXXXX)
   trap 'rm -rf "$SP"' EXIT
+  RERR="$SP/pg_restore.err"
+  : > "$RERR"
+  restauro=si
   if [ "${K01B_SALTA_RESTAURA:-0}" = "1" ]; then
     fecha=${K01B_FECHA:-$(date -u +%Y%m%d)}
     rc=0
+    restauro=no
     MARCA_REG="$MARCA_REG [RESTAURACION SALTADA: se reusa la base $BASE, esta corrida NO prueba que el respaldo restaure]"
     echo "comparador sobre la base $BASE, sin restaurar"
+  elif [ -n "${K01B_DUMP:-}" ]; then
+    [ -r "$K01B_DUMP" ] || { echo "NO MEDIDO: no puedo leer el volcado $K01B_DUMP"; exit 2; }
+    fecha=${K01B_FECHA:-$(date -u +%Y%m%d)}
+    MARCA_REG="$MARCA_REG [VOLCADO LOCAL $K01B_DUMP, no es el respaldo cifrado de 140]"
+    echo "restaurando el volcado local $K01B_DUMP en $BASE"
+    psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $BASE" -c "CREATE DATABASE $BASE" >/dev/null 2>&1
+    pg_restore --no-owner --no-privileges --jobs=2 -d "$BASE" "$K01B_DUMP" >/dev/null 2>"$RERR"
+    rc=$?
   else
   SSH="ssh -n -o BatchMode=yes -o ConnectTimeout=8 -i $PROD_SSH_KEY -o UserKnownHostsFile=$PROD_KNOWN_HOSTS $PROD_SSH_USER@$PROD_HOST"
   enc=$($SSH "ls -1 /var/backups/coinalyze/coinalyze-full-*.tar.gz.enc | tail -1")
@@ -58,9 +97,55 @@ if [ "${K01B_RESTAURA:-0}" = "1" ]; then
   $SSH "openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass file:/etc/coinalyze/backup.key -in $enc" \
     | tar xzf - -C "$SP" database/coinalyze.dump || { echo "NO MEDIDO: fallo el descifrado"; exit 2; }
   psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $BASE" -c "CREATE DATABASE $BASE" >/dev/null 2>&1
-  pg_restore --no-owner --no-privileges --jobs=2 -d "$BASE" "$SP/database/coinalyze.dump" >/dev/null 2>&1
+  # EL STDERR NO SE TIRA: es lo unico que dice QUE no se pudo crear (cabecera de este fichero).
+  pg_restore --no-owner --no-privileges --jobs=2 -d "$BASE" "$SP/database/coinalyze.dump" >/dev/null 2>"$RERR"
   rc=$?
   fi
+
+  # --- QUE NO PUDO CREAR LA RESTAURACION, POR SU NOMBRE Y SU TABLA ------------------------
+  # Una FK con hijas huerfanas no impide restaurar los datos: impide crear LA FK. El respaldo
+  # queda «restaurado» con una promesa menos, y eso es exactamente lo que un rc=1 no dice.
+  # SIN_CREAR sale de las lineas `violates foreign key constraint "<fk>"` ... `on table "<t>"`,
+  # y de cada una se comprueba ADEMAS que la FK esta AUSENTE en lo restaurado: si estuviera,
+  # la linea del stderr seria de otra cosa y no se puede afirmar que no se creo.
+  SIN_CREAR=""; N_SIN_CREAR=0; OTROS=""; N_OTROS=0; DICE=""
+  if [ "$restauro" = si ]; then
+    DICE=$(grep -o 'errors ignored on restore: [0-9]*' "$RERR" | tail -1 | grep -o '[0-9]*$')
+    pares=$(sed -n 's/.*on table "\([^"]*\)" violates foreign key constraint "\([^"]*\)".*/\1|\2/p' "$RERR" | sort -u)
+    N_OTROS=$(grep -c '^pg_restore: error:' "$RERR")
+    nfk=$(printf '%s' "$pares" | grep -c '|' )
+    N_OTROS=$((N_OTROS - nfk)); [ "$N_OTROS" -ge 0 ] || N_OTROS=0
+    # `awk 'n<3'` Y NO `head -3`, Y NO ES ESTILO. `head -3` sale tras la tercera linea y cierra
+    # la tuberia; el `grep` de la izquierda se come un EPIPE y, si SIGPIPE esta IGNORADO -asi
+    # corre lo que el operador lanza por `pct exec`-, escribe «write error: Broken pipe» por
+    # STDERR. `verify:66` junta stderr con stdout y cita la PRIMERA linea, asi que un respaldo
+    # con un stderr grande (mas de 64 KB de errores) dejaria el marcador de K01b con un «Broken
+    # pipe» donde va el veredicto. Le paso a K104 con 85 KB y 31 recuentas; aqui el estado de la
+    # tuberia no decide nada -va dentro de una asignacion- pero el MENSAJE si contamina.
+    # `awk` lee toda su entrada: no hay cierre prematuro y no hay EPIPE posible.
+    [ "$N_OTROS" -gt 0 ] && OTROS=$(grep '^pg_restore: error:' "$RERR" | grep -v 'violates foreign key constraint' \
+                                    | awk 'n<3 {print substr($0,1,120); n++}' | tr '\n' ' ')
+    for par in $pares; do
+      [ -n "$par" ] || continue
+      t=${par%%|*}; fk=${par##*|}
+      cual=$(psql -X -A -t -d "$BASE" -c \
+        "SELECT coalesce((SELECT n.nspname||'.'||c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relname='$t' AND c.relkind IN ('r','p') LIMIT 1),'?.$t')
+                ||'|'||(SELECT count(*) FROM pg_constraint k WHERE k.conname='$fk' AND k.contype='f')" 2>/dev/null | grep '|' | head -1)
+      tabla=${cual%%|*}; hay=${cual##*|}
+      [ -n "$tabla" ] || tabla="?.$t"
+      if [ "${hay:-0}" = "0" ]; then
+        SIN_CREAR="$SIN_CREAR $tabla/$fk(AUSENTE)"
+      else
+        SIN_CREAR="$SIN_CREAR $tabla/$fk(pero EXISTE en lo restaurado: la linea no era esto)"
+      fi
+      N_SIN_CREAR=$((N_SIN_CREAR+1))
+    done
+  fi
+  COLA_FK=" · $N_SIN_CREAR FK sin crear"
+  [ -n "${SIN_CREAR// /}" ] && COLA_FK="$COLA_FK:$SIN_CREAR"
+  [ "$N_OTROS" -gt 0 ] && COLA_FK="$COLA_FK · $N_OTROS error(es) de otra clase: $OTROS"
+  [ -n "$DICE" ] && COLA_FK="$COLA_FK · pg_restore dijo \"errors ignored on restore: $DICE\", cifra INFLADA por --jobs=2 (medido: sale el doble)"
+  [ "$restauro" = no ] && COLA_FK=" · FK sin crear: NO MEDIDO (no se restauro nada)"
   # Particiones diarias YA CERRADAS (fecha anterior a la del respaldo) presentes en
   # LAS DOS. Se comparan todas las que haya, no una elegida a dedo.
   comunes=$(comm -12 \
@@ -131,15 +216,20 @@ if [ "${K01B_RESTAURA:-0}" = "1" ]; then
   if [ "$probadas" -eq 0 ]; then
     echo "NO MEDIDO: pg_restore rc=$rc, pero CERO particiones tenian dato vivo con el que" \
          "comparar, asi que esta prueba no ha ejercitado el respaldo y no puede decir ni que" \
-         "vale ni que no. No se escribe en el registro.$COLA_V$MARCA_REG"
+         "vale ni que no. No se escribe en el registro.$COLA_FK$COLA_V$MARCA_REG"
     exit 2
   fi
-  if [ "$rc" -eq 0 ] && [ -z "${fallos// /}" ]; then
-    printf '%s\tOK\t%s\t%d particiones CON DATO cuadran fila a fila%s\n' "$(date -u +%FT%TZ)" "$fecha" "$probadas" "$COLA_V" >> "$REG"
-    echo "OK: $probadas particiones cerradas CON DATO VIVO cuadran fila a fila con 140$COLA_V$MARCA_REG"
+  # UNA FK QUE NO SE PUDO CREAR CONDENA AUNQUE EL rc SALGA 0. El rc de pg_restore es un
+  # agregado de otro programa; lo que este check afirma es que el respaldo restaura COMPLETO,
+  # y un respaldo al que le falta una promesa no restaura completo. Si algun dia pg_restore
+  # cambiara de criterio y devolviera 0 ignorando errores, el nombre sigue estando en el
+  # stderr y aqui sigue condenando.
+  if [ "$rc" -eq 0 ] && [ "$N_SIN_CREAR" -eq 0 ] && [ -z "${fallos// /}" ]; then
+    printf '%s\tOK\t%s\t%d particiones CON DATO cuadran fila a fila%s%s\n' "$(date -u +%FT%TZ)" "$fecha" "$probadas" "$COLA_FK" "$COLA_V" >> "$REG"
+    echo "OK: $probadas particiones cerradas CON DATO VIVO cuadran fila a fila con 140$COLA_FK$COLA_V$MARCA_REG"
   else
-    printf '%s\tFALLO\t%s\trc=%d%s%s\n' "$(date -u +%FT%TZ)" "$fecha" "$rc" "$fallos" "$COLA_V" >> "$REG"
-    echo "FALLO: rc=$rc$fallos · sobre $probadas particiones CON DATO$COLA_V$MARCA_REG"
+    printf '%s\tFALLO\t%s\trc=%d%s%s%s\n' "$(date -u +%FT%TZ)" "$fecha" "$rc" "$COLA_FK" "$fallos" "$COLA_V" >> "$REG"
+    echo "FALLO: rc=$rc$COLA_FK$fallos · sobre $probadas particiones CON DATO$COLA_V$MARCA_REG"
   fi
 fi
 
