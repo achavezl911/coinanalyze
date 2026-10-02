@@ -31,8 +31,19 @@ DECL="$ORIG/harness/checks/K104-tablas.tsv"
 command -v psql >/dev/null || { echo "NO MEDIDO: no hay psql en esta maquina"; exit 2; }
 
 BD="k104_ctl_$$"
+BK="k104_ctl_banco_$$"
 DIR=$(mktemp -d) || exit 2
-limpia() { psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $BD" >/dev/null 2>&1; rm -rf "$DIR"; }
+# WITH (FORCE) y COMPROBAR DESPUES: una limpieza que falla callada deja bases por el disco de
+# 143 y nadie se entera. Al control de K103 le paso -catorce bases abandonadas, 108 MB, una por
+# corrida-, asi que aqui va la misma guarda aunque este no tenga sesiones colgando.
+limpia() {
+  for d in "$BD" "$BK"; do
+    psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $d WITH (FORCE)" >/dev/null 2>&1
+  done
+  rm -rf "$DIR"
+  q=$(psql -X -A -t -d postgres -c "SELECT coalesce(string_agg(datname,' '),'') FROM pg_database WHERE datname IN ('$BD','$BK')" 2>/dev/null)
+  [ -z "${q// /}" ] || echo "AVISO: no pude borrar mis bases temporales: $q"
+}
 [ "${K104_CONTROL_GUARDA:-0}" = "1" ] || trap limpia EXIT
 fallos=0; pasan=0; sinmat=""
 comprueba() { if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-70s\n' "$1"
@@ -117,7 +128,9 @@ comprueba "P2 con su TABLA y su DIA" \
 comprueba "P3 y con el antes y el ahora" \
   "$(printf '%s' "$OUT" | grep -qE "signal_observation +$DIA3 +antes 20 +ahora $((20-quitadas))" && echo si || echo no)"
 comprueba "P4 y NO condena ningun otro dia ni tabla (1 dia, no 2)" \
-  "$(printf '%s' "$OUT" | grep -q 'PERDIDA SILENCIOSA: 1 dia' && echo si || echo no)"
+  "$(printf '%s' "$OUT" | grep -qE 'PERDIDA SILENCIOSA en .*: 1 dia' && echo si || echo no)"
+comprueba "P5 y el veredicto va en la PRIMERA linea, que es lo que verify cita" \
+  "$(printf '%s' "$OUT" | head -1 | grep -q 'PERDIDA SILENCIOSA' && echo si || echo no)"
 
 echo
 echo "E · LA MARCA DE AGUA NO SE REBAJA: con la perdida ahi, la corrida siguiente sigue ROJA"
@@ -173,6 +186,35 @@ comprueba "B4 y el dia que salio de la ventana se OLVIDO del censo" \
   "$([ "$(grep -cP "^metrics_snapshot\t$DIA6\t" "$DIR/cb5.tsv" 2>/dev/null)" = 0 ] && echo si || echo no)"
 
 echo
+echo "M · una tabla que NO SE PUEDE CONTAR no se cuenta como perdida, y no borra la que si se conto"
+# Es la mitad fea del brazo H de K103 traida aqui: sin cuenta de hoy, `actual` no trae las
+# parejas de esa tabla y la resta las daria a CERO, o sea una perdida INVENTADA del tamano de la
+# tabla entera. Y la salida se lo atribuia a «las que SI se contaron». El bloqueo lo pone otra
+# sesion, que es la unica forma honesta de que falle UNA tabla y no todas.
+ret 7
+rm -f "$DIR/cm.tsv"; corre "$DIR/cm.tsv"          # siembra limpia
+DIA2=$(D 2)
+m "SET session_replication_role='replica'; DELETE FROM signal_observation WHERE created_at::date='$DIA2' AND observation_id % 4 = 0;"
+psql -X -q -d "$BD" -c "BEGIN; LOCK TABLE metrics_snapshot IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(45);" >/dev/null 2>&1 &
+PIDLOCK=$!
+sleep 2
+tiene=$(psql -X -A -t -d "$BD" -c "SELECT count(*) FROM pg_locks l JOIN pg_class c ON c.oid=l.relation WHERE c.relname='metrics_snapshot' AND l.mode='AccessExclusiveLock'" 2>/dev/null)
+comprueba "M0 el bloqueo esta puesto de verdad (locks=$tiene)" "$([ "${tiene:-0}" -ge 1 ] && echo si || echo no)"
+OUT=$(env K104_SUJETO=local K104_BASE="$BD" K104_TABLAS="$DECL" K104_RETENCIONES="$DIR/ret.tsv" \
+          K104_CENSO="$DIR/cm.tsv" K104_TIMEOUT_MS=1500 timeout -k 5 300 bash "$CHK" 2>&1); RC=$?
+kill "$PIDLOCK" 2>/dev/null; wait "$PIDLOCK" 2>/dev/null
+psql -X -q -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$BD'" >/dev/null 2>&1
+comprueba "M1 ROJO por la perdida REAL, rc=1 (rc=$RC)" "$([ "$RC" = 1 ] && echo si || echo no)"
+comprueba "M2 nombra la perdida de signal_observation el $DIA2" \
+  "$(printf '%s' "$OUT" | grep -qE "signal_observation +$DIA2 " && echo si || echo no)"
+comprueba "M3 y NOMBRA metrics_snapshot como no contada" \
+  "$(printf '%s' "$OUT" | grep -q 'NO SE PUDO CONTAR.*metrics_snapshot' && echo si || echo no)"
+comprueba "M4 y NO inventa una perdida de metrics_snapshot" \
+  "$(printf '%s' "$OUT" | grep -qE '^  metrics_snapshot +[0-9]{4}-' && echo no || echo si)"
+comprueba "M5 un solo dia condenado, el de verdad" \
+  "$(printf '%s' "$OUT" | grep -qE 'PERDIDA SILENCIOSA en .*: 1 dia' && echo si || echo no)"
+
+echo
 echo "I · sin la retencion del sujeto no se juzga a ciegas"
 printf 'OTRA_COSA=3\n' > "$DIR/ret.tsv"
 corre "$DIR/c3.tsv"
@@ -189,8 +231,7 @@ if [ ! -r "$REP" ]; then
 else
   # Las dos tablas de verdad, con las columnas que el COPY del banco nombra. La copia se
   # siembra con un vecindario de dias para que «y NADA mas» pueda ser falso.
-  BK="k104_ctl_banco_$$"
-  psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $BK" -c "CREATE DATABASE $BK" >/dev/null 2>&1
+  psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $BK WITH (FORCE)" -c "CREATE DATABASE $BK" >/dev/null 2>&1
   cols_obs=$(sed -n 's/^COPY public.signal_observation (\(.*\)) FROM stdin;/\1/p' "$REP")
   cols_exe=$(sed -n 's/^COPY public.signal_execution_snapshot (\(.*\)) FROM stdin;/\1/p' "$REP")
   # Tipos generosos a proposito: lo que se mide es el CONTEO POR DIA, no el tipo de cada
@@ -235,8 +276,8 @@ SQL
   comprueba "K4 -21 en signal_execution_snapshot, del 2026-08-29" \
     "$(printf '%s' "$OUT" | grep -qE 'signal_execution_snapshot +2026-08-29 +antes 51 +ahora 30 +\(-21\)' && echo si || echo no)"
   comprueba "K5 y NADA mas: exactamente 2 dias condenados" \
-    "$(printf '%s' "$OUT" | grep -q 'PERDIDA SILENCIOSA: 2 dia' && echo si || echo no)"
-  psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $BK" >/dev/null 2>&1
+    "$(printf '%s' "$OUT" | grep -qE 'PERDIDA SILENCIOSA en .*: 2 dia' && echo si || echo no)"
+  psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $BK WITH (FORCE)" >/dev/null 2>&1
 fi
 
 echo

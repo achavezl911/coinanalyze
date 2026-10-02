@@ -38,8 +38,17 @@ command -v pg_dump >/dev/null || { echo "NO MEDIDO: no hay pg_dump en esta maqui
 
 DIR=$(mktemp -d) || exit 2
 RES="k01b_ctl_res_$$"; PROD="k01b_ctl_140_$$"; FUENTE="k01b_ctl_src_$$"; DESTINO="k01b_ctl_dst_$$"
-limpia() { psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $RES" -c "DROP DATABASE IF EXISTS $PROD" \
-                                   -c "DROP DATABASE IF EXISTS $FUENTE" -c "DROP DATABASE IF EXISTS $DESTINO" >/dev/null 2>&1; rm -rf "$DIR"; }
+# WITH (FORCE) y COMPROBAR DESPUES: una limpieza que falla callada deja bases por el disco de
+# 143 y nadie se entera. Al control de K103 le paso -catorce bases abandonadas, 108 MB, una por
+# corrida, porque un DROP contra una base con sesion abierta falla y el error iba a /dev/null-.
+limpia() {
+  for d in "$RES" "$PROD" "$FUENTE" "$DESTINO"; do
+    psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $d WITH (FORCE)" >/dev/null 2>&1
+  done
+  rm -rf "$DIR"
+  q=$(psql -X -A -t -d postgres -c "SELECT coalesce(string_agg(datname,' '),'') FROM pg_database WHERE datname IN ('$RES','$PROD','$FUENTE','$DESTINO')" 2>/dev/null)
+  [ -z "${q// /}" ] || echo "AVISO: no pude borrar mis bases temporales: $q"
+}
 [ "${K01B_CONTROL_GUARDA:-0}" = "1" ] || trap limpia EXIT
 fallos=0; pasan=0
 comprueba() { if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-62s\n' "$1"

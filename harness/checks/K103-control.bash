@@ -35,8 +35,19 @@ CHK="$ORIG/harness/checks/K103-la-fk-que-promete-y-no-cumple.sh"
 command -v psql >/dev/null || { echo "NO MEDIDO: no hay psql en esta maquina"; exit 2; }
 
 SUC="k103_ctl_sucia_$$"; LIM="k103_ctl_limpia_$$"; VAC="k103_ctl_sinfk_$$"
-limpia() { psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $SUC" -c "DROP DATABASE IF EXISTS $LIM" \
-                                   -c "DROP DATABASE IF EXISTS $VAC" >/dev/null 2>&1; }
+# WITH (FORCE), Y NO ES ADORNO. La primera version hacia `DROP DATABASE IF EXISTS` a secas con
+# el error a /dev/null, y el brazo H deja una sesion con una transaccion abierta sobre la base
+# sucia: el DROP fallaba con «is being accessed by other users» y la base SE QUEDABA. Medido el
+# 2026-10-02: CATORCE bases `k103_ctl_sucia_*` abandonadas en 143, una por corrida, en silencio.
+# `WITH (FORCE)` echa a las sesiones; y al final se COMPRUEBA que no queda ninguna y se NOMBRA
+# si queda, porque una limpieza que falla callada es como no tenerla.
+limpia() {
+  for d in "$SUC" "$LIM" "$VAC"; do
+    psql -X -q -d postgres -c "DROP DATABASE IF EXISTS $d WITH (FORCE)" >/dev/null 2>&1
+  done
+  q=$(psql -X -A -t -d postgres -c "SELECT coalesce(string_agg(datname,' '),'') FROM pg_database WHERE datname IN ('$SUC','$LIM','$VAC')" 2>/dev/null)
+  [ -z "${q// /}" ] || echo "AVISO: no pude borrar mis bases temporales: $q"
+}
 [ "${K103_CONTROL_GUARDA:-0}" = "1" ] || trap limpia EXIT
 fallos=0; pasan=0
 comprueba() { if [ "$2" = si ]; then pasan=$((pasan+1)); printf '  [ok   ] %-68s\n' "$1"
@@ -134,6 +145,8 @@ comprueba "A3 dice el TOTAL de filas huerfanas bajo FK validadas: 10" \
   "$(printf '%s' "$OUT" | grep -q 'HUERFANAS: 10 filas hijas sin padre bajo 3 FK VALIDADA' && echo si || echo no)"
 comprueba "A4 la fila con padre_id NULL NO cuenta (seria 5 en vez de 4)" \
   "$(printf '%s' "$OUT" | grep -qE 'hija_padre_id_fkey +public\.hija +5' && echo no || echo si)"
+comprueba "A5 el veredicto va en la PRIMERA linea, que es lo que verify cita en el marcador" \
+  "$(printf '%s' "$OUT" | head -1 | grep -q '^HUERFANAS: ' && echo si || echo no)"
 
 echo
 echo "C · la huerfana que vive en una PARTICION la ve la FK de primer nivel"
@@ -197,6 +210,9 @@ comprueba "H0 el bloqueo esta puesto de verdad (locks=$tiene)" "$([ "${tiene:-0}
 corre "$SUC" 1500
 kill "$PIDLOCK" 2>/dev/null
 wait "$PIDLOCK" 2>/dev/null
+# MATAR AL CLIENTE NO CIERRA EL BACKEND: hay que echarlo del servidor, o el DROP del final se
+# encuentra la base ocupada (y por eso tambien va el WITH (FORCE) de arriba).
+psql -X -q -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$SUC'" >/dev/null 2>&1
 comprueba "H1 sigue siendo ROJO, rc=1 (rc=$RC)" "$([ "$RC" = 1 ] && echo si || echo no)"
 comprueba "H2 y NOMBRA la FK que no se pudo contar" \
   "$(printf '%s' "$OUT" | grep -q 'NO SE PUDIERON CONTAR.*hija_padre_id_fkey' && echo si || echo no)"

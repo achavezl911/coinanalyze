@@ -177,9 +177,9 @@ t1=$(date -u +%s)
 
 # --- 5 · COMPARAR CON LA MARCA DE AGUA ---------------------------------------------------
 PREVIO=""; [ -r "$CENSO" ] && PREVIO=$(cat "$CENSO")
-RES=$(printf '%s\n' "$PLAN" "===" "$PREVIO" "===" "$ACTUAL" | python3 -c '
+RES=$(printf '%s\n' "$PLAN" "===" "$PREVIO" "===" "$ACTUAL" "===" "$SIN_CONTAR" | python3 -c '
 import sys
-plan, previo, actual = {}, {}, {}
+plan, previo, actual, muda = {}, {}, {}, set()
 modo = 0
 for l in sys.stdin.read().splitlines():
     l = l.strip()
@@ -193,10 +193,17 @@ for l in sys.stdin.read().splitlines():
         p = l.split("\t")
         if len(p) < 3: continue
         previo[(p[0], p[1])] = int(p[2])
-    else:
+    elif modo == 2:
         p = l.split("|")
         if len(p) != 4 or p[0] != "C": continue
         actual[(p[1], p[2])] = int(p[3])
+    else:
+        # Las tablas que NO SE PUDIERON CONTAR. Su marca de agua se conserva -no se rebaja por
+        # no haber podido mirar- pero NO se comparan: sin cuenta de hoy, `actual` no las trae y
+        # la resta las daria a CERO, o sea una perdida inventada. Y la salida ademas las
+        # atribuia a «las que SI se contaron», que es decir una falsedad en el unico sitio donde
+        # alguien la leeria. Lo que falta por contar se dice como lo que es: NO MEDIDO.
+        muda.update(l.split())
 perdidas, nuevo = [], {}
 # La marca de agua solo vive mientras el dia cabe en la ventana de HOY: un dia que salio de
 # su retencion se olvida, porque ahi encoger es el oficio de la poda y no una perdida.
@@ -207,6 +214,7 @@ for (t, d), n in actual.items():
     if nuevo.get((t, d), -1) < n:
         nuevo[(t, d)] = n
 for (t, d), antes in sorted(nuevo.items()):
+    if t in muda: continue
     hoy = actual.get((t, d), 0)
     if hoy < antes:
         perdidas.append((t, d, antes, hoy))
@@ -226,28 +234,46 @@ mkdir -p "$(dirname "$CENSO")"
 { printf '# K104 · marca de agua por (tabla, dia) · sujeto %s · reescrito %s\n' "$SUJETO" "$AHORA"
   printf '%s\n' "$RES" | sed -n 's/^CENSO|//p' | tr '|' '\t'; } > "$CENSO.tmp" && mv "$CENSO.tmp" "$CENSO"
 
-echo "sujeto: $QUIEN · hoy (UTC) $HOY · el dia cerrado mas reciente que se juzga es $(date -u -d "$HOY -1 day" +%F)"
-echo "tablas: $(printf '%s\n' "$CAT" | wc -w) en el catalogo · $N_PLAN juzgadas · censo de $N_PAR parejas (tabla,dia) en $((t1-t0)) s"
-[ -n "${NO_JUZGADAS// /}" ] && echo "NO JUZGADAS por declaracion:$NO_JUZGADAS"
-[ -n "${SIN_DIA// /}" ] && echo "SIN DIA CERRADO dentro de su retencion (no se juzgan hoy, y no es un VERDE sobre ellas):$SIN_DIA"
-[ -n "${SIN_DECLARAR// /}" ] && echo "EN EL CATALOGO Y SIN DECLARAR (nadie las juzga; declararlas en $(basename "$DECL")):$SIN_DECLARAR"
+# LA PRIMERA LINEA ES EL VEREDICTO. `bin/verify` se queda con la PRIMERA linea para el marcador,
+# que es lo que se cita durante semanas: con el contexto delante, este check aparecia como
+# «sujeto: produccion ... hoy (UTC) ...» y lo que hubiera encontrado NO SALIA. Es el mismo
+# sintoma que esta campana arregla en K01b. El contexto se acumula y va DESPUES, y el veredicto
+# lleva el sujeto dentro, que es lo que K97 exige de un VERDE.
+CONTEXTO="sujeto: $QUIEN · hoy (UTC) $HOY · el dia cerrado mas reciente que se juzga es $(date -u -d "$HOY -1 day" +%F)
+tablas: $(printf '%s\n' "$CAT" | wc -w) en el catalogo · $N_PLAN juzgadas · censo de $N_PAR parejas (tabla,dia) en $((t1-t0)) s"
+[ -n "${NO_JUZGADAS// /}" ] && CONTEXTO="$CONTEXTO
+NO JUZGADAS por declaracion:$NO_JUZGADAS"
+[ -n "${SIN_DIA// /}" ] && CONTEXTO="$CONTEXTO
+SIN DIA CERRADO dentro de su retencion (no se juzgan hoy, y no es un VERDE sobre ellas):$SIN_DIA"
+[ -n "${SIN_DECLARAR// /}" ] && CONTEXTO="$CONTEXTO
+EN EL CATALOGO Y SIN DECLARAR (nadie las juzga; declararlas en $(basename "$DECL")):$SIN_DECLARAR"
 
-if [ -n "${SIN_CONTAR// /}" ]; then
-  echo "NO MEDIDO: no se pudo contar$SIN_CONTAR, asi que de esas no se sabe si perdieron filas."
-  [ -n "$PERDIDAS" ] && { echo "y ADEMAS, de las que SI se contaron:"; printf '%s\n' "$PERDIDAS" | tr '|' ' '; }
-  exit 2
-fi
+# EL ORDEN DE LOS DOS ESTADOS MALOS, IGUAL QUE EN K103: una perdida CONTADA es un hecho y una
+# laguna de al lado no lo borra. Si hay perdida, ROJO, y la tabla que no se pudo contar sale
+# NOMBRADA dentro del mismo rojo. NO MEDIDO queda para cuando no hay ninguna perdida contada y
+# ADEMAS falta algo por contar: ahi si es verdad que no se sabe.
+FALTAN=""
+[ -n "${SIN_CONTAR// /}" ] && FALTAN="  y NO SE PUDO CONTAR$SIN_CONTAR, asi que de esas no se sabe (su marca de agua se conserva, no se rebaja)"
 if [ -n "$PERDIDAS" ]; then
-  echo "PERDIDA SILENCIOSA: $(printf '%s\n' "$PERDIDAS" | grep -c .) dia(s) CERRADO(S) con menos filas que antes:"
+  echo "PERDIDA SILENCIOSA en $QUIEN: $(printf '%s\n' "$PERDIDAS" | grep -c .) dia(s) CERRADO(S) con menos filas que antes"
   printf '%s\n' "$PERDIDAS" | awk -F'|' '{printf "  %-40s %s   antes %s  ahora %s   (-%d)\n", $1, $2, $3, $4, $3-$4}'
+  [ -n "$FALTAN" ] && printf '%s\n' "$FALTAN"
   echo "un dia cerrado no encoge solo. Mientras no vuelvan, este check sigue ROJO: la marca de"
   echo "agua no se rebaja, que es lo que hizo invisible la perdida del 09-16 durante doce dias."
+  printf '%s\n' "$CONTEXTO"
   exit 1
 fi
-if [ "${N_PREV:-0}" -eq 0 ]; then
-  echo "NO MEDIDO: no habia censo anterior en $CENSO, asi que esta corrida solo ha podido SEMBRAR"
-  echo "la marca de agua ($N_PAR parejas). Una perdida se ve comparando dos censos, no uno."
+if [ -n "${SIN_CONTAR// /}" ]; then
+  echo "NO MEDIDO: en $QUIEN no se pudo contar$SIN_CONTAR, asi que de esas no se sabe si perdieron filas."
+  echo "cero perdidas sobre lo que SI se conto no es un VERDE mientras quede algo sin contar."
+  printf '%s\n' "$CONTEXTO"
   exit 2
 fi
-echo "ningun dia cerrado encogio: $N_PAR parejas (tabla,dia) comparadas contra la marca de agua anterior"
+if [ "${N_PREV:-0}" -eq 0 ]; then
+  echo "NO MEDIDO: no habia censo anterior de $QUIEN en $CENSO, asi que esta corrida solo ha podido SEMBRAR la marca de agua ($N_PAR parejas). Una perdida se ve comparando dos censos, no uno."
+  printf '%s\n' "$CONTEXTO"
+  exit 2
+fi
+echo "ningun dia cerrado encogio en $QUIEN: $N_PAR parejas (tabla,dia) comparadas contra la marca de agua anterior, en $N_PLAN de $(printf '%s\n' "$CAT" | wc -w) tablas"
+printf '%s\n' "$CONTEXTO"
 exit 0

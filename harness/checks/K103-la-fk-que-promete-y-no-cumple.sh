@@ -147,16 +147,25 @@ RAROS=$(printf '%s\n' "$SAL" | awk -F'|' '/^HU\|/ && $4!="VAL" && $4!="NOVAL" {p
 SEG=$(printf '%s\n' "$SAL" | awk -F'|' '/^TS\|/ {print $2}' | head -1)
 FIN=$(printf '%s\n' "$SAL" | awk -F'|' '/^TS\|/ {print $2}' | tail -1)
 
+# LA PRIMERA LINEA ES EL VEREDICTO, Y ESO NO ES ESTETICA. `bin/verify` se queda con la PRIMERA
+# linea de la salida para el marcador, y el marcador es lo que se cita durante semanas. Con el
+# contexto delante, este check salia en el marcador como «sujeto: produccion (140, por
+# bin/prodsql)» y las 128 huerfanas NO APARECIAN. Es exactamente el sintoma que esta campana
+# viene a arreglar en K01b -un rojo que no dice que encontro-, asi que el contexto se acumula y
+# se imprime DESPUES. Y el veredicto lleva el sujeto dentro, que es lo que K97 exige de un VERDE.
 OTRAS=$((N_TOT - N_RAIZ))
-echo "sujeto: $QUIEN"
-echo "FK en el catalogo: $N_TOT · de primer nivel: $N_RAIZ (las otras $OTRAS son copias por particion, cubiertas por la suya) · NO validadas: $N_NOVAL · compuestas: $N_COMP"
-echo "juzgadas: $n_hu de $N_RAIZ · tope por sentencia ${TOPE} ms"
-[ -n "$SEG" ] && [ -n "$FIN" ] && echo "reloj del servidor: de $SEG a $FIN"
-[ -n "${DECLARA// /}" ] && { echo "DECLARADAS y NO condenan (la FK no prometio nada):"; printf '%s\n' "$DECLARA"; }
+CONTEXTO="sujeto: $QUIEN
+FK en el catalogo: $N_TOT · de primer nivel: $N_RAIZ (las otras $OTRAS son copias por particion, cubiertas por la suya) · NO validadas: $N_NOVAL · compuestas: $N_COMP
+juzgadas: $n_hu de $N_RAIZ · tope por sentencia ${TOPE} ms"
+[ -n "$SEG" ] && [ -n "$FIN" ] && CONTEXTO="$CONTEXTO
+reloj del servidor: de $SEG a $FIN"
+[ -n "${DECLARA// /}" ] && CONTEXTO="$CONTEXTO
+DECLARADAS y NO condenan (la FK no prometio nada):
+$DECLARA"
 
 if [ -n "${RAROS// /}" ]; then
-  echo "NO MEDIDO: la marca de validada salio con un valor que no es VAL ni NOVAL, asi que no se"
-  echo "puede decir cual promesa se rompio: $RAROS"
+  echo "NO MEDIDO: la marca de validada salio con un valor que no es VAL ni NOVAL en $QUIEN, asi que no se puede decir cual promesa se rompio: $RAROS"
+  printf '%s\n' "$CONTEXTO"
   exit 2
 fi
 # EL ORDEN DE LOS DOS ESTADOS MALOS NO ES INDIFERENTE. Una huerfana CONTADA es un hecho, y un
@@ -166,18 +175,20 @@ fi
 FALTAN=""
 [ -n "${NO_JUZGADAS// /}" ] && FALTAN="  y $(printf '%s' "$NO_JUZGADAS" | wc -w) FK NO SE PUDIERON CONTAR, asi que de esas no se sabe:$NO_JUZGADAS"
 if [ -n "${CONDENA// /}" ]; then
-  echo "HUERFANAS: $TOTAL filas hijas sin padre bajo $N_FK_MAL FK VALIDADA(S) de $QUIEN:"
+  echo "HUERFANAS: $TOTAL filas hijas sin padre bajo $N_FK_MAL FK VALIDADA(S) de $QUIEN"
   printf '%s\n' "$CONDENA"
   [ -n "$FALTAN" ] && printf '%s\n' "$FALTAN"
   echo "una FK validada con huerfanas no es una contradiccion que se discuta: es una perdida de"
   echo "filas padre que ya ocurrio (A71). Se repara metiendo las filas que faltan, no tocando la FK."
+  printf '%s\n' "$CONTEXTO"
   exit 1
 fi
 if [ -n "${NO_JUZGADAS// /}" ]; then
-  echo "NO MEDIDO: $(printf '%s' "$NO_JUZGADAS" | wc -w) FK no se pudieron contar y por tanto no se" \
-       "sabe si tienen huerfanas:$NO_JUZGADAS"
+  echo "NO MEDIDO: $(printf '%s' "$NO_JUZGADAS" | wc -w) FK de $QUIEN no se pudieron contar y por tanto no se sabe si tienen huerfanas:$NO_JUZGADAS"
   echo "cero condenas sobre lo que SI se conto no es un VERDE mientras quede algo sin contar."
+  printf '%s\n' "$CONTEXTO"
   exit 2
 fi
-echo "las $n_hu FK de primer nivel de $QUIEN cumplen: 0 filas hijas sin padre"
+echo "las $n_hu FK de primer nivel de $QUIEN cumplen: 0 filas hijas sin padre (de $N_TOT en el catalogo)"
+printf '%s\n' "$CONTEXTO"
 exit 0
