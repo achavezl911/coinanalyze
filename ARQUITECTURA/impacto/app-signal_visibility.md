@@ -19,7 +19,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/signal_visibility.py:363` · clave completa `app.signal_visibility.run_certification_cycle`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 25** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -109,7 +109,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:347` · clave completa `app.signal_visibility.certify_final_outcomes`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 11** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -169,7 +169,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:328` · clave completa `app.signal_visibility.certify_research_bundles`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 11** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -229,7 +229,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:141` · clave completa `app.signal_visibility._aware_utc`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 1** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -268,7 +268,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:249` · clave completa `app.signal_visibility._certify_final_outcomes_once`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -305,7 +305,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_visibility.py:147` · clave completa `app.signal_visibility._validate_batch_size`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 1** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 

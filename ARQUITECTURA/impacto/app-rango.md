@@ -18,7 +18,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/rango.py:107` · clave completa `app.rango._prueba`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -41,7 +41,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/rango.py:111` · clave completa `app.rango._pruebas`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -64,7 +64,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/rango.py:51` · clave completa `app.rango._ventana`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -87,7 +87,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/rango.py:189` · clave completa `app.rango._veredicto`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -110,7 +110,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/rango.py:234` · clave completa `app.rango.estructura_de_rango`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

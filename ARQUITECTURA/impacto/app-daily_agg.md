@@ -26,7 +26,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/daily_agg.py:745` · clave completa `app.daily_agg._store_baseline`
 
-**Radio exacto: 15 rutas** de 72 · **cota superior: 56** (mas ancha)
+**Radio exacto: 15 rutas** de 73 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -206,7 +206,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:731` · clave completa `app.daily_agg.refresh_baselines`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 56** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -370,7 +370,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:645` · clave completa `app.daily_agg.apply_retention`
 
-**Radio exacto: 53 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 53 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -584,7 +584,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:299` · clave completa `app.daily_agg.backfill`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -743,7 +743,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:141` · clave completa `app.daily_agg.compute_session`
 
-**Radio exacto: 22 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 22 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -925,7 +925,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:817` · clave completa `app.daily_agg.cycle`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1084,7 +1084,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:45` · clave completa `app.daily_agg.latest_closed_session_date`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1242,7 +1242,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:521` · clave completa `app.daily_agg.materialize_daily_verdict_outcomes`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1406,7 +1406,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:353` · clave completa `app.daily_agg.persist_verdicts`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1570,7 +1570,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:576` · clave completa `app.daily_agg.rollup_open_interest_daily`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1732,7 +1732,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:631` · clave completa `app.daily_agg.ventana_barrido_5m`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1891,7 +1891,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:73` · clave completa `app.daily_agg._coverage_complete`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1971,7 +1971,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:64` · clave completa `app.daily_agg._expected_session_samples`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 

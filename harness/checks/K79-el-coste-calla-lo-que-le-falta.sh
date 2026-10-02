@@ -189,10 +189,10 @@ CUERPO=$(awk '/^function renderExecutionRows\(/{d=1} d{print} d&&/^\}/{exit}' "$
 LEE=$(printf '%s' "$CUERPO" | grep -c "cost_components_missing")
 
 if [ "$LEE" -eq 0 ]; then
-  printf 'ROJO: la pantalla da VEREDICTO callando las patas que faltan. Con el plan derivado del mid %s, el backend responde %s con total %s bps y cost_components_missing=[%s], y renderExecutionRows de app.js NO consulta ese campo: pinta "Coste ida y vuelta" como si el total fuera completo. Y no es la etiqueta: con la pata puesta el veredicto pasa de %s a %s (%s -> %s bps)\n' \
+  printf 'ROJO: el panel viejo (static/index.html) da VEREDICTO callando las patas que faltan. Con el plan derivado del mid %s, el backend responde %s con total %s bps y cost_components_missing=[%s], y renderExecutionRows de app.js NO consulta ese campo: pinta "Coste ida y vuelta" como si el total fuera completo. Y no es la etiqueta: con la pata puesta el veredicto pasa de %s a %s (%s -> %s bps)\n' \
     "$MID" "$S_VER" "$S_TOT" "$S_MIS" "$S_VER" "$C_VER" "$S_TOT" "$C_TOT"
   exit 1
 fi
 
-printf 'renderExecutionRows consulta cost_components_missing (%d veces), asi que un veredicto sobre coste incompleto llega a la pantalla DICIENDO que lo es. Medido hoy sobre el mid %s: sin slippage el backend da %s con %s bps y declara [%s], y con la pata puesta pasa a %s con %s bps -- o sea que la omision SIGUE teniendo consecuencia y este brazo no es cosmetico. Control positivo: con las cuatro patas, missing vacio y veredicto %s. Control negativo: el caso sin plan sigue saliendo SIN EVALUAR, que app.js ya guarda aparte\n' \
+printf 'renderExecutionRows del panel viejo (static/index.html) consulta cost_components_missing (%d veces), asi que un veredicto sobre coste incompleto llega a esa pantalla DICIENDO que lo es. Medido hoy sobre el mid %s: sin slippage el backend da %s con %s bps y declara [%s], y con la pata puesta pasa a %s con %s bps -- o sea que la omision SIGUE teniendo consecuencia y este brazo no es cosmetico. Control positivo: con las cuatro patas, missing vacio y veredicto %s. Control negativo: el caso sin plan sigue saliendo SIN EVALUAR, que app.js ya guarda aparte\n' \
   "$LEE" "$MID" "$S_VER" "$S_TOT" "$S_MIS" "$C_VER" "$C_TOT" "$T_VER"

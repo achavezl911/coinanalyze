@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 510 funciones con radio, 196 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 511 funciones con radio, 196 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **46** de las 510 escriben alguna tabla
+Solo **46** de las 511 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -80,7 +80,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-510 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+511 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -373,7 +373,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.api.flow_spot_vs_perp`](impacto/app-api.md) | `app/api.py:1726` | 1 | **0** | 0 | **1** |
 | [`app.api.funding_context_endpoint`](impacto/app-api.md) | `app/api.py:1890` | 1 | **0** | 0 | **1** |
 | [`app.api.hypothesis`](impacto/app-api.md) | `app/api.py:1348` | 1 | **0** | 0 | **1** |
-| [`app.api.index`](impacto/app-api.md) | `app/api.py:3834` | 1 | **0** | 0 | **1** |
+| [`app.api.index`](impacto/app-api.md) | `app/api.py:3839` | 1 | **0** | 0 | **1** |
 | [`app.api.level_breakout_endpoint`](impacto/app-api.md) | `app/api.py:2023` | 1 | **0** | 0 | **1** |
 | [`app.api.liquidation_levels`](impacto/app-api.md) | `app/api.py:3029` | 1 | **0** | 0 | **1** |
 | [`app.api.liquidation_map_endpoint`](impacto/app-api.md) | `app/api.py:1897` | 1 | **0** | 0 | **1** |
@@ -387,6 +387,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.api.ohlcv`](impacto/app-api.md) | `app/api.py:687` | 1 | **0** | 0 | **1** |
 | [`app.api.oi`](impacto/app-api.md) | `app/api.py:1031` | 1 | **0** | 0 | **1** |
 | [`app.api.oi_context_endpoint`](impacto/app-api.md) | `app/api.py:2095` | 1 | **0** | 0 | **1** |
+| [`app.api.panel`](impacto/app-api.md) | `app/api.py:3833` | 1 | **0** | 0 | **1** |
 | [`app.api.passive_flow_endpoint`](impacto/app-api.md) | `app/api.py:2123` | 1 | **0** | 0 | **1** |
 | [`app.api.positioning`](impacto/app-api.md) | `app/api.py:1340` | 1 | **0** | 0 | **1** |
 | [`app.api.price_barriers_endpoint`](impacto/app-api.md) | `app/api.py:1940` | 1 | **0** | 0 | **1** |

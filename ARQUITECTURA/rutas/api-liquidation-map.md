@@ -94,7 +94,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:166`, `harness/checks/K43-foto-unica.sh:219` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:81`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
 | **panel** | — | `static/js/10-contexto-y-estructura.js:498` |
-| **panel-html** | — | `static/index.html:242` |
+| **panel-html** | — | `static/index.html:244` |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:308` | — |
 | **tests** | — | `tests/test_liquidation_map_ventana.py:1` |
 

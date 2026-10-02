@@ -34,7 +34,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/ingest.py:453` · clave completa `app.ingest._reconcile_persisted_cadence`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 55** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 55** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -196,7 +196,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:568` · clave completa `app.ingest.barrido_cadencia_persistido`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -355,7 +355,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:46` · clave completa `app.ingest.finite`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -515,7 +515,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:184` · clave completa `app.ingest.rollup_ohlcv_5m`
 
-**Radio exacto: 38 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 38 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -714,7 +714,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:89` · clave completa `app.ingest.rows_for`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -874,7 +874,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:101` · clave completa `app.ingest.upsert_ohlcv`
 
-**Radio exacto: 38 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 38 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1073,7 +1073,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:59` · clave completa `app.ingest.valid_ts`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1233,7 +1233,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:538` · clave completa `app.ingest.ventana_barrido_cadencia`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1391,7 +1391,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:619` · clave completa `app.ingest._reconcile_response_cadence`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 49** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 49** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1532,7 +1532,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:687` · clave completa `app.ingest._coverage_heartbeat_detail`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 43** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 43** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1660,7 +1660,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:367` · clave completa `app.ingest.publish_snapshot`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 43** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 43** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1788,7 +1788,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:746` · clave completa `app.ingest.ingest_ohlcv_cycle`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 41** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 41** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1908,7 +1908,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:649` · clave completa `app.ingest._liquidation_history_observation`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1975,7 +1975,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:814` · clave completa `app.ingest.ingest_metrics_cycle`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2042,7 +2042,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:66` · clave completa `app.ingest.source_response_buckets`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2109,7 +2109,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:293` · clave completa `app.ingest.upsert_liquidations`
 
-**Radio exacto: 5 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 5 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2183,7 +2183,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:326` · clave completa `app.ingest.upsert_long_short`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2255,7 +2255,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:240` · clave completa `app.ingest.upsert_ohlc_metric`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2322,7 +2322,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:1032` · clave completa `app.ingest.run`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2375,7 +2375,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:1006` · clave completa `app.ingest.run_aligned_feed`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2428,7 +2428,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:997` · clave completa `app.ingest.seconds_until_aligned_run`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 0 rutas
 

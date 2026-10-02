@@ -700,20 +700,20 @@ if no_juzgadas:
     cola += " · %d NO JUZGADAS -no se pudo preguntar-: %s" % (
         len(no_juzgadas), " ".join(no_juzgadas))
 if sin_familia:
-    print("%d de las %d rutas que el panel puede pedir no tienen familia asignada: %s%s"
+    print("%d de las %d rutas que el panel viejo (static/index.html) puede pedir no tienen familia asignada: %s%s"
           % (len(sin_familia), len(pintadas), " ".join(sin_familia), cola))
     raise SystemExit(1)
 if len(no_juzgadas) >= len(pintadas):
-    print("NO MEDIDO: no se pudo preguntar a ninguna de las %d rutas que el panel pide%s"
+    print("NO MEDIDO: no se pudo preguntar a ninguna de las %d rutas que el panel viejo (static/index.html) pide%s"
           % (len(pintadas), cola))
     raise SystemExit(2)
 if incumplen:
-    print("%d de %d rutas que el panel puede pedir no cumplen lo que su familia promete: %s%s"
+    print("%d de %d rutas que el panel viejo (static/index.html) puede pedir no cumplen lo que su familia promete: %s%s"
           % (len(incumplen), len(pintadas), " ".join(incumplen), cola))
     raise SystemExit(1)
 # LAS DOS FORMAS DE CUMPLIR VAN EN LA MISMA LINEA (A34): una en el verde y otra escondida no
 # es medir en las dos direcciones. Y las series se cuentan MEDIDAS, no asignadas.
-print(("las %d rutas que el panel puede pedir estan cubiertas: %d en la foto con sus nombres "
+print(("las %d rutas que el panel viejo (static/index.html) puede pedir estan cubiertas: %d en la foto con sus nombres "
        "de campo dentro de la clave declarada, %d series de %d asignadas con su ventana "
        "declarada -%d por coverage.served_window y %d por fila, que es la excepcion que este "
        "check declara en VENTANA_POR_FILA para %s-, %d bajo demanda con as_of propio, "

@@ -40,7 +40,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/ai_context.py:531` · clave completa `app.ai_context.data_confidence_row`
 
-**Radio exacto: 4 rutas** de 72 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 73 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -66,7 +66,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:619` · clave completa `app.ai_context.quality_score`
 
-**Radio exacto: 4 rutas** de 72 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 73 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -92,7 +92,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:855` · clave completa `app.ai_context._corte_unico`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -117,7 +117,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:226` · clave completa `app.ai_context._round_number`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -142,7 +142,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:747` · clave completa `app.ai_context.build_operator_read`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -167,7 +167,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:253` · clave completa `app.ai_context.compact_dict`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -192,7 +192,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:237` · clave completa `app.ai_context.compact_value`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -217,7 +217,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:298` · clave completa `app.ai_context.latest_snapshot`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -242,7 +242,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:668` · clave completa `app.ai_context.orderbook_freshness`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -267,7 +267,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:909` · clave completa `app.ai_context._armar_sobre`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -291,7 +291,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:891` · clave completa `app.ai_context.build_ai_symbol_context`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -315,7 +315,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:305` · clave completa `app.ai_context.daily_data`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -339,7 +339,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:394` · clave completa `app.ai_context.daily_history`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -363,7 +363,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:74` · clave completa `app.ai_context.field_disambiguation`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -387,7 +387,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:680` · clave completa `app.ai_context.latest_orderbook`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -411,7 +411,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:708` · clave completa `app.ai_context.liquidation_levels`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -435,7 +435,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:797` · clave completa `app.ai_context.local_alerts`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -459,7 +459,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:219` · clave completa `app.ai_context.normalize_profile`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -483,7 +483,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:692` · clave completa `app.ai_context.recent_signals`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -507,7 +507,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:283` · clave completa `app.ai_context.rough_token_estimate`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -531,7 +531,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:264` · clave completa `app.ai_context.sin_perder_los_nulos`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -555,7 +555,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:486` · clave completa `app.ai_context.verdict_history`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -579,7 +579,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:1323` · clave completa `app.ai_context._sin_lado`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -602,7 +602,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:1079` · clave completa `app.ai_context.build_ai_context`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -625,7 +625,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:1344` · clave completa `app.ai_context.build_mesa_decide`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -648,7 +648,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:1283` · clave completa `app.ai_context.campo_mesa`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -671,7 +671,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/ai_context.py:1214` · clave completa `app.ai_context.palabra_de_la_decision`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

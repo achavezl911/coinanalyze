@@ -263,6 +263,33 @@ p10 PASA    "SHORT"     "Short Rejection" "G6 · SHORT con ESTADO 'Short Rejecti
 p10 CONDENA "LONG"      "Long Breakout"   "P10c · un estado que NO existe no da lado"
 echo
 
+# ------- PU · LA PUERTA (campana 133) · la mesa se juzga en `/`, y `/mesa` sirve lo mismo --------
+# El banco de sobres plantados sirve las tres puertas como el arbol de la 133. Con --puerta-vieja
+# se porta como produccion ANTES del despliegue (`/` el panel viejo); con --mesa-distinta, `/mesa`
+# sirve otra mesa. Sujeto = el ARBOL (MESA_BASE), asi que lo que la puerta tenga mal es un hallazgo,
+# no un «falta desplegar» (ese estado es solo de produccion, y se ve en la corrida contra 140).
+echo "PU · la PUERTA: \`/\` es la mesa y \`/mesa\` sirve los MISMOS bytes"
+pu() {  # pu <CONDENA|PASA> <opcion del banco o -> <patron> <rotulo>
+  pkill -f '[K]102-sobre-plantado.py' 2>/dev/null; sleep 1
+  local op="$2"; [ "$op" = "-" ] && op=""
+  nohup "$PY" "$PLANTADO" --puerto 8096 --lag 3 --tope 600 --bias LONG --dc 100 $op \
+    > "$TMP/plantado.log" 2>&1 &
+  sleep 3
+  K102_OBSERVA=4 espera "$1" "$4" "$3" "http://127.0.0.1:8096"
+  pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
+}
+pu CONDENA --puerta-vieja  'PUERTA: `/` tiene que servir la mesa'  "PU1 · \`/\` sirve el panel viejo"
+pu CONDENA --mesa-distinta 'tienen que ser la misma mesa'          "PU2 · \`/mesa\` sirve OTRA mesa"
+pu PASA    -               'x'                                     "GU · las dos puertas, la misma mesa"
+if head -1 "$TMP/sal" | grep -q 'VERDE · lo que juzgo: la mesa en `/` · sujeto: el ARBOL.* · `/mesa` sirve los MISMOS bytes'; then
+  pasa=$((pasa + 1)); total=$((total + 1))
+  printf '  DICE      %-44s %s\n' "PU3 · la 1a linea nombra la mesa en \`/\`" "$(head -1 "$TMP/sal" | cut -c1-90)"
+else
+  falla=$((falla + 1)); total=$((total + 1))
+  printf '  NO DICE   %-44s %s\n' "PU3 · la 1a linea nombra la mesa en \`/\`" "$(head -1 "$TMP/sal" | cut -c1-90)"
+fi
+echo
+
 # ------- P13 · LA REGLA COMPLETA · el umbral del handoff Y la clasificacion del registro ----
 # LAS TRES PUERTAS QUE SE CIERRAN ANTES DEL ESTADO, cada una con su plantado y su gemelo. Sin
 # esto, B9 solo cobraria el mapa de estados, y la palabra podria decir un lado donde el registro
@@ -598,16 +625,28 @@ echo
 #   origin/main   la palabra gira en cada muestra con el estado quieto  <- el plantado que falla
 # Sin el brazo de origin/main esto seria un control que no varia la variable que decide (A57):
 # con la palabra ya arreglada, «0 giros» sale gratis.
+#
+# EL CODIGO VIEJO DE LA PALABRA SE FIJA A UN SHA, Y NO A origin/main (campana 133). Este brazo y P6
+# se escribieron cuando origin/main era a15a89d, la mesa ANTES del arreglo de la palabra. Desde que
+# la 132 se fusiono (fff708e), origin/main YA LO TRAE, y el plantado no plantaba nada: medido en la
+# 133, «0 giro(s) de lado de la PALABRA» en las dos y el propio brazo diciendo «el plantado no planto
+# nada» (A57). El arbol del calendario no es el defecto: el defecto vive en un commit, y se nombra.
+VIEJO_PALABRA=${K102_VIEJO_PALABRA:-a15a89d}
 echo "P11 · C2 · la palabra no cambia de lado mas que la decision (serie de 20)"
 total=$((total + 1))
 VIEJO_C2="$TMP/viejo-c2"
-if ! git -C "$REPO" rev-parse --verify --quiet origin/main >/dev/null; then
+VIEJO_PAL="$TMP/viejo-palabra"
+if ! git -C "$REPO" rev-parse --verify --quiet origin/main >/dev/null \
+   || ! git -C "$REPO" rev-parse --verify --quiet "$VIEJO_PALABRA^{commit}" >/dev/null; then
   nomed=$((nomed + 1))
-  echo "  NO MEDIDO P11 · no hay origin/main para correr la serie del codigo viejo"
+  echo "  NO MEDIDO P11 · no hay origin/main o no hay $VIEJO_PALABRA para correr la serie del codigo viejo"
 else
-  mkdir -p "$VIEJO_C2"
+  mkdir -p "$VIEJO_C2" "$VIEJO_PAL"
+  # VIEJO_C2 es origin/main y lo usa C3 (lo que el sistema calcula no se mueve respecto de main);
+  # VIEJO_PAL es el codigo de ANTES del arreglo de la palabra, el que este brazo necesita.
   git -C "$REPO" archive origin/main | tar -x -C "$VIEJO_C2" 2>/dev/null
-  "$PY" - "$REPO" "$VIEJO_C2" <<'PY' > "$TMP/p11.txt" 2>&1
+  git -C "$REPO" archive "$VIEJO_PALABRA" | tar -x -C "$VIEJO_PAL" 2>/dev/null
+  "$PY" - "$REPO" "$VIEJO_PAL" <<'PY' > "$TMP/p11.txt" 2>&1
 import asyncio, getpass, importlib, sys
 import asyncpg
 
@@ -680,7 +719,7 @@ async def mide(arbol, rotulo):
     return gp, ge
 
 async def main():
-    gp_v, ge_v = await mide(VIEJO, "origin/main (el plantado)")
+    gp_v, ge_v = await mide(VIEJO, "el codigo de antes de la palabra (el plantado)")
     gp_r, ge_r = await mide(RAMA, "la rama")
     fallos = []
     if gp_v <= ge_v:
@@ -772,17 +811,20 @@ echo
 #
 # El MISMO envoltorio se corre luego sobre la RAMA: si la red condenase tambien ahi, lo que
 # estaria condenando seria el banco y no la palabra.
-echo "P6 · la red contra los BYTES de origin/main, en un banco con y sin decision"
+# DESDE LA 133 LOS BYTES VIEJOS SON $VIEJO_PALABRA (a15a89d), no origin/main: ver la nota de P11.
+# origin/main ya trae el arreglo de la palabra, asi que «condenar la palabra de hoy» sobre el no
+# condenaba nada que existiera.
+echo "P6 · la red contra los BYTES de antes de la palabra ($VIEJO_PALABRA), en un banco con y sin decision"
 OLD="$TMP/viejo"
-if ! git -C "$REPO" rev-parse --verify --quiet origin/main >/dev/null; then
+if ! git -C "$REPO" rev-parse --verify --quiet "$VIEJO_PALABRA^{commit}" >/dev/null; then
   total=$((total + 1)); nomed=$((nomed + 1))
-  echo "  NO MEDIDO: no hay origin/main en este repo"
+  echo "  NO MEDIDO: no hay $VIEJO_PALABRA en este repo"
 else
-  sha_old=$(git -C "$REPO" rev-parse --short origin/main)
+  sha_old=$(git -C "$REPO" rev-parse --short "$VIEJO_PALABRA")
   mkdir -p "$OLD"
-  git -C "$REPO" archive origin/main | tar -x -C "$OLD" 2>/dev/null
+  git -C "$REPO" archive "$VIEJO_PALABRA" | tar -x -C "$OLD" 2>/dev/null
   h_old_ctx=$(huella "$OLD/app/ai_context.py")
-  echo "  origin/main = $sha_old · app/ai_context.py huella $h_old_ctx · mesa.html presente: \
+  echo "  bytes viejos = $sha_old ($VIEJO_PALABRA, antes de la palabra) · app/ai_context.py huella $h_old_ctx · mesa.html presente: \
 $([ -f "$OLD/static/mesa.html" ] && echo si || echo NO)"
 
   # EL ENVOLTORIO. Fuerza el estado por SIMBOLO, que es lo que `compute_scalp_summary` no sabe
@@ -854,15 +896,20 @@ PY
 
   for cual in viejo rama; do
     total=$((total + 1))
-    if [ "$cual" = "viejo" ]; then arbol="$OLD"; puerto=8097; quiero=1; rot="origin/main ($sha_old)"
-    else arbol="$REPO"; puerto=8099; quiero=0; rot="la rama"; fi
+    # LOS BYTES VIEJOS SE ABREN POR `/mesa`: son anteriores a la 133 y en ellos `/` es el panel
+    # viejo, asi que por `/` K102 condenaria la PUERTA y el rc=1 de este brazo saldria por la razon
+    # equivocada. Y por eso, ademas del rc, se exige que la condena sea de B9: la palabra.
+    if [ "$cual" = "viejo" ]; then arbol="$OLD"; puerto=8097; quiero=1; rot="antes de la palabra ($sha_old)"; puerta_k=/mesa
+    else arbol="$REPO"; puerto=8099; quiero=0; rot="la rama"; puerta_k=/; fi
     pkill -f "[u]vicorn banco132:app --host 127.0.0.1 --port $puerto" 2>/dev/null
     corre_banco "$arbol" "$puerto" k102control "$TMP/banco-$cual.log"
-    rc_b=$(MESA_BASE="http://127.0.0.1:$puerto" K102_CABECERA="X-Internal-Token: k102control" \
+    rc_b=$(MESA_BASE="http://127.0.0.1:$puerto" K102_CABECERA="X-Internal-Token: k102control" K102_PUERTA="$puerta_k" \
            K102_OBSERVA=4 K102_ACTIVOS="BTC ETH SOL" bash "$CHECK" > "$TMP/sal_$cual" 2>&1; echo $?)
     n_h=$(grep -cE '^   - ' "$TMP/sal_$cual")
     brazos=$(grep -oE '^   - B[0-9]+' "$TMP/sal_$cual" | sort -u | tr -d ' -' | tr '\n' ' ')
-    if [ "$rc_b" = "$quiero" ]; then
+    por_b9=si
+    if [ "$quiero" = 1 ]; then case " $brazos " in *" B9 "*) ;; *) por_b9=no ;; esac; fi
+    if [ "$rc_b" = "$quiero" ] && [ "$por_b9" = si ]; then
       pasa=$((pasa + 1))
       if [ "$quiero" = "1" ]; then
         printf '  CONDENA   %-44s rc=%s · %s hallazgo(s) en: %s\n' \
@@ -879,7 +926,8 @@ PY
       grep -E '^    palabra ' "$TMP/sal_$cual" | sed 's/^ */            /' | cut -c1-130
     else
       falla=$((falla + 1))
-      printf '  MAL       %-44s esperaba rc=%s y salio rc=%s\n' "P6 · $rot" "$quiero" "$rc_b"
+      printf '  MAL       %-44s esperaba rc=%s y salio rc=%s (condena de B9: %s; brazos: %s)\n' \
+        "P6 · $rot" "$quiero" "$rc_b" "$por_b9" "${brazos:-ninguno}"
       sed -n '1,8p' "$TMP/sal_$cual" | sed 's/^/      /'
     fi
     pkill -f "[u]vicorn banco132:app --host 127.0.0.1 --port $puerto" 2>/dev/null
@@ -889,10 +937,10 @@ PY
   total=$((total + 1))
   if [ "$(huella "$OLD/app/ai_context.py")" = "$h_old_ctx" ]; then
     pasa=$((pasa + 1))
-    echo "  CORRECTO  los bytes de origin/main NO se tocaron: huella $h_old_ctx sin cambio"
+    echo "  CORRECTO  los bytes viejos ($sha_old) NO se tocaron: huella $h_old_ctx sin cambio"
   else
     falla=$((falla + 1))
-    echo "  MAL       el arbol de origin/main cambio de huella: el banco lo modifico"
+    echo "  MAL       el arbol viejo ($sha_old) cambio de huella: el banco lo modifico"
   fi
   vivos=$(ps -eo cmd | grep -cE "[u]vicorn banco132:app")
   [ "$vivos" = "0" ] || echo "  AVISO: quedo un uvicorn de banco132; matalo a mano"

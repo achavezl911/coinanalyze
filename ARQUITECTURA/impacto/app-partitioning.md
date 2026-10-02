@@ -15,7 +15,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/partitioning.py:25` · clave completa `app.partitioning.apply_temporal_retention`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 54** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -174,7 +174,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/partitioning.py:20` · clave completa `app.partitioning.ensure_temporal_partitions`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 

@@ -416,7 +416,7 @@ function filaDeClave(base, mut, clave) {
 
   if (perdidos.length) {
     console.log(`ROJO: ${perdidos.length} campo(s) que el backend SIRVE dejaron de llegar a su ` +
-      `tarjeta: ${perdidos.join(' · ')} · de ${juzgados} juzgados, medido mutando el ` +
+      `tarjeta del panel viejo (static/index.html): ${perdidos.join(' · ')} · de ${juzgados} juzgados, medido mutando el ` +
       `payload que la tarjeta LEE y exigiendo que se mueva el DOM${cola}`);
     process.exit(1);
   }
@@ -436,7 +436,7 @@ function filaDeClave(base, mut, clave) {
   // RESIDUO R1 (COLA 121): esta linea ENUMERABA CINCO COSAS FIJAS pasara lo que pasara, asi que
   // se atribuia una cobertura que no habia medido. La lista se construye de los que de verdad
   // se juzgaron, y en modo NUMERO «llega» significa que se movio la CIFRA, no su etiqueta.
-  console.log(`los ${juzgados} campos servidos hoy llegan ESCRITOS a su tarjeta: ` +
+  console.log(`los ${juzgados} campos servidos hoy llegan ESCRITOS a su tarjeta del panel viejo (static/index.html): ` +
     `${juzgadosQue.join(' · ')}. Medido mutando el payload que la tarjeta lee -no el que ` +
     'uno supondria-: los textos por marca en el DOM; las CIFRAS sueltas exigiendo que cambie ' +
     'el texto de su fila o de su tarjeta; y los MAPAS mutando TODAS sus claves y exigiendo, ' +

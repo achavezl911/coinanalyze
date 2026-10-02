@@ -88,7 +88,7 @@ publicados.update(re.findall(r'^\s{8}"([a-z][a-z0-9_]+)":', py, re.M))
 
 huerfanos = sorted(leidos - publicados)
 if huerfanos:
-    print(f"la capa de auditoria lee {len(huerfanos)} campo(s) que app/api.py NO publica: "
+    print(f"la capa de auditoria del panel viejo (static/index.html) lee {len(huerfanos)} campo(s) que app/api.py NO publica: "
           + ", ".join(huerfanos))
     sys.exit(1)
 
@@ -96,7 +96,7 @@ if huerfanos:
 if len(leidos) < 15:
     print(f"NO MEDIDO: solo he sabido extraer {len(leidos)} campos leidos; la extraccion esta rota")
     sys.exit(2)
-print(f"los {len(leidos)} campos que la capa de auditoria lee estan los {len(leidos)} entre "
+print(f"los {len(leidos)} campos que la capa de auditoria del panel viejo (static/index.html) lee estan los {len(leidos)} entre "
       f"los {len(publicados)} que app/api.py publica: no pinta ninguno inventado")
 sys.exit(0)
 PYEOF
