@@ -23,7 +23,7 @@
 #
 # ruta	papel	marcos	quien la pinta (static/mesa/)	por que la mesa la pide
 /api/mesa/decide	NUCLEO	todos	mesa-app.js olaDecide -> pintarDecide (#decide)	DECIDE servido ya decidido, un corte; es la OLA 1 y el refresco de 15 s
-/api/quality/feeds	PARTE,ESTADO	todosmesa-app.js olaResto/pintarEstado -> pintarTira (#tira), pintarServicios (#pie-servicios)	la tira de fuentes con su venue; tambien en la vista de estado
+/api/quality/feeds	PARTE,ESTADO	todos	mesa-app.js olaResto/pintarEstado -> pintarTira (#tira), pintarServicios (#pie-servicios)	la tira de fuentes con su venue; tambien en la vista de estado
 /api/scalp/signals	PARTE	todos	mesa-app.js olaResto -> pintarScan (#scan)	SCAN, lo que pide atencion
 /api/scalp/delta-matrix	PARTE	todos	mesa-app.js olaResto -> pintarMatriz (#matriz)	la matriz de delta por horizonte
 /api/setup	PARTE	todos	mesa-app.js olaResto -> pintarFollow (#follow)	FOLLOW, los setups que se siguen

@@ -171,6 +171,12 @@ def test_el_contrato_de_la_mesa_casa_con_su_codigo():
 
 
 def test_el_contrato_declara_un_nucleo_y_papeles_conocidos():
+    # LA FORMA PRIMERO: un tabulador perdido junta dos columnas y la fila sigue «leyendose» (paso en la
+    # 133, en la fila de quality/feeds). Cinco columnas en cada fila, ninguna vacia.
+    filas = [ln.split("\t") for ln in CONTRATO.read_text(encoding="utf-8").splitlines()
+             if ln.strip() and not ln.startswith("#")]
+    assert filas and all(len(f) == 5 and all(c.strip() for c in f) for f in filas), \
+        [f[0] for f in filas if len(f) != 5 or not all(c.strip() for c in f)]
     contrato = _rutas_del_contrato()
     # La ruta va partida a proposito: escrita entera, bin/arquitectura acreditaria a este test como
     # consumidor de DECIDE (la autocontaminacion que cuenta harness/checks/K44-control.bash).

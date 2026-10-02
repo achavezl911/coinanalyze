@@ -63,8 +63,8 @@
 # esa persona abra la mesa tras haber usado el panel, sus peticiones serian ambiguas DOS SEMANAS;
 # con 48 h, como mucho dos dias. Lo que cuesta, dicho: una pestana cargada hace mas de 48 h no
 # tiene carga visible y sus peticiones salen nombradas. Y el silencio no prueba que una pestana
-# murio: el panel viejo pide cada 15 s aunque este oculto (static/js/08-arranque.js:166), pero un
-# portatil dormido calla a todas, y al despertar siguen.
+# murio: el temporizador de 15 s del panel viejo no mira si la pestana esta oculta (static/js/08-arranque.js:166)
+# -cuanto pide oculto lo decide el navegador, y no se midio-, y un portatil dormido calla a todas y al despertar siguen.
 #
 # EL DIA DEL DESPLIEGUE, que es el caso que obliga a todo esto: una pestana del panel cargada en `/`
 # ANTES del cambio sigue pidiendo DESPUES, y por la ruta sola se cargaria a la mesa. Aqui va al
@@ -298,8 +298,10 @@ fi
 # unico que prueba que el mandato remoto llego hasta el final.
 if ! grep -q '^K44-FIN$' "$TMPX/crudo"; then
   echo "NO MEDIDO: el log de nginx llego INCOMPLETO, sin la marca final del mandato remoto" \
-       "($(wc -c < "$TMPX/crudo") B; primera linea: «$(head -c 140 "$TMPX/crudo" | tr '\n' ' ')»)." \
-       "Esta linea NO dice nada sobre lo que el panel pide, ni sobre lo que pide la mesa."
+       "($(wc -c < "$TMPX/crudo") B; primera linea: «$(head -c 140 "$TMPX/crudo" | tr '\n' ' ')»)" \
+       "-o, si es inyectado, viene en la forma AGREGADA de antes de la 133, que no dice que cliente" \
+       "pidio que y no se puede atribuir-. Esta linea NO dice nada sobre lo que el panel pide, ni sobre" \
+       "lo que pide la mesa."
   exit 2
 fi
 MARCA=""
