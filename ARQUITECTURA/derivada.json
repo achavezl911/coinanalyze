@@ -825,8 +825,8 @@
     },
     "app.api.index": {
       "fichero": "app/api.py",
-      "linea": 3834,
-      "sitio": "`app/api.py:3834`"
+      "linea": 3839,
+      "sitio": "`app/api.py:3839`"
     },
     "app.api.latest_snapshot": {
       "fichero": "app/api.py",
@@ -907,6 +907,11 @@
       "fichero": "app/api.py",
       "linea": 2095,
       "sitio": "`app/api.py:2095`"
+    },
+    "app.api.panel": {
+      "fichero": "app/api.py",
+      "linea": 3833,
+      "sitio": "`app/api.py:3833`"
     },
     "app.api.passive_flow_endpoint": {
       "fichero": "app/api.py",
@@ -3354,7 +3359,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3834",
+        "sitio": "app/api.py:3839",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3663,6 +3668,21 @@
         "por_tabla": [],
         "por_tabla_k0": [],
         "sitio": "app/api.py:2095",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.api.panel": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [],
+        "por_llamada": [
+          "/panel"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/api.py:3833",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26384,13 +26404,13 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 342,
-    "rutas": 72,
+    "funciones_alcanzables": 343,
+    "rutas": 73,
     "rutas_con_campos": 66,
-    "rutas_sin_campos": 6,
-    "sin_clave_temporal": 22,
+    "rutas_sin_campos": 7,
+    "sin_clave_temporal": 23,
     "sin_consumidor": 4,
-    "sin_declarar": 4,
+    "sin_declarar": 5,
     "sin_llamada": 13,
     "solo_mencion": 9,
     "tablas_alcanzadas": 30,
@@ -26428,17 +26448,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3833,
+      "decorador_linea": 3838,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3835,
+      "fin": 3845,
       "forma": [],
       "handler": "app.api.index",
       "impacto_del_handler": 1,
-      "linea": 3834,
+      "linea": 3839,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -26878,43 +26898,43 @@
           "llamadas": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:126",
             "harness/checks/K101-un-nombre-dos-cosas.sh:207",
-            "harness/checks/K102-mesa.py:525",
-            "harness/checks/K102-mesa.py:563",
+            "harness/checks/K102-mesa.py:528",
+            "harness/checks/K102-mesa.py:566",
             "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:337",
             "harness/checks/K43-foto-unica.sh:338",
             "harness/checks/K43-foto-unica.sh:414",
             "harness/checks/K43-foto-unica.sh:440",
             "harness/checks/K43-foto-unica.sh:530",
-            "harness/checks/K44-control.bash:122",
-            "harness/checks/K44-control.bash:144",
-            "harness/checks/K44-control.bash:154",
-            "harness/checks/K44-control.bash:174",
-            "harness/checks/K44-control.bash:187",
-            "harness/checks/K44-control.bash:202",
-            "harness/checks/K44-control.bash:218",
-            "harness/checks/K44-control.bash:228",
-            "harness/checks/K44-control.bash:247",
-            "harness/checks/K44-control.bash:288",
-            "harness/checks/K44-control.bash:363",
-            "harness/checks/K44-control.bash:408",
-            "harness/checks/K44-control.bash:431",
-            "harness/checks/K44-control.bash:446",
-            "harness/checks/K44-control.bash:466",
-            "harness/checks/K44-control.bash:485",
-            "harness/checks/K44-control.bash:499",
-            "harness/checks/K44-control.bash:544",
+            "harness/checks/K44-control.bash:226",
+            "harness/checks/K44-control.bash:248",
+            "harness/checks/K44-control.bash:258",
+            "harness/checks/K44-control.bash:278",
+            "harness/checks/K44-control.bash:291",
+            "harness/checks/K44-control.bash:306",
+            "harness/checks/K44-control.bash:322",
+            "harness/checks/K44-control.bash:332",
+            "harness/checks/K44-control.bash:351",
+            "harness/checks/K44-control.bash:392",
+            "harness/checks/K44-control.bash:467",
+            "harness/checks/K44-control.bash:512",
+            "harness/checks/K44-control.bash:535",
+            "harness/checks/K44-control.bash:550",
+            "harness/checks/K44-control.bash:570",
             "harness/checks/K44-control.bash:589",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:161",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:300",
+            "harness/checks/K44-control.bash:603",
+            "harness/checks/K44-control.bash:648",
+            "harness/checks/K44-control.bash:693",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:218",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:649",
             "harness/checks/K72-campos.js:33",
             "harness/checks/K84-dos-matrices-una-cifra.sh:203",
             "harness/checks/K84-dos-matrices-una-cifra.sh:257"
           ],
           "menciones": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:26",
-            "harness/checks/K102-control.bash:711",
-            "harness/checks/K102-mesa.py:520",
+            "harness/checks/K102-control.bash:738",
+            "harness/checks/K102-mesa.py:523",
             "harness/checks/K31-eslabon5.sh:60",
             "harness/checks/K31-eslabon5.sh:172",
             "harness/checks/K43-foto-unica.sh:7",
@@ -26923,8 +26943,8 @@
             "harness/checks/K43-foto-unica.sh:288",
             "harness/checks/K43-foto-unica.sh:395",
             "harness/checks/K43-foto-unica.sh:438",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:5",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:11",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:6",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:16",
             "harness/checks/K84-dos-matrices-una-cifra.sh:8"
           ]
         },
@@ -27846,7 +27866,7 @@
         "panel-html": {
           "llamadas": [],
           "menciones": [
-            "static/index.html:240"
+            "static/index.html:242"
           ]
         },
         "tests": {
@@ -29251,10 +29271,11 @@
             "harness/checks/K43-foto-unica.sh:228",
             "harness/checks/K43-foto-unica.sh:229",
             "harness/checks/K43-foto-unica.sh:421",
-            "harness/checks/K44-control.bash:136",
-            "harness/checks/K44-control.bash:142",
-            "harness/checks/K44-control.bash:590",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:109",
+            "harness/checks/K44-control.bash:113",
+            "harness/checks/K44-control.bash:240",
+            "harness/checks/K44-control.bash:246",
+            "harness/checks/K44-control.bash:694",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:163",
             "harness/checks/K72-campos.js:46",
             "harness/checks/K72-campos.js:52",
             "harness/checks/K72-campos.js:58",
@@ -29268,10 +29289,10 @@
           ],
           "menciones": [
             "harness/checks/K43-foto-unica.sh:231",
-            "harness/checks/K44-control.bash:150",
-            "harness/checks/K44-control.bash:524",
-            "harness/checks/K44-control.bash:616",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:391",
+            "harness/checks/K44-control.bash:254",
+            "harness/checks/K44-control.bash:628",
+            "harness/checks/K44-control.bash:720",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:741",
             "harness/checks/K72-campos.js:6",
             "harness/checks/K72-el-campo-que-no-llega.sh:10",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13",
@@ -29309,7 +29330,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 27,
+        "n_llamadas": 28,
         "n_menciones": 17,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -31598,7 +31619,7 @@
         "panel-html": {
           "llamadas": [],
           "menciones": [
-            "static/index.html:242"
+            "static/index.html:244"
           ]
         },
         "panel-sobre": {
@@ -32336,22 +32357,23 @@
             "harness/checks/K102-decide-lo-primero.sh:99",
             "harness/checks/K102-decide-lo-primero.sh:101",
             "harness/checks/K102-decide-lo-primero.sh:106",
-            "harness/checks/K102-mesa.py:524",
-            "harness/checks/K102-mesa.py:525",
-            "harness/checks/K102-mesa.py:535",
-            "harness/checks/K102-mesa.py:556",
-            "harness/checks/K102-mesa.py:563",
-            "harness/checks/K102-mesa.py:678",
-            "harness/checks/K102-mesa.py:761",
+            "harness/checks/K102-mesa.py:527",
+            "harness/checks/K102-mesa.py:528",
+            "harness/checks/K102-mesa.py:538",
+            "harness/checks/K102-mesa.py:559",
+            "harness/checks/K102-mesa.py:566",
+            "harness/checks/K102-mesa.py:681",
+            "harness/checks/K102-mesa.py:764",
             "harness/checks/K102-sobre-plantado.py:200",
             "harness/checks/K102-sobre-plantado.py:216"
           ],
           "menciones": [
             "harness/checks/K102-decide-lo-primero.sh:30",
-            "harness/checks/K102-mesa.py:520",
-            "harness/checks/K102-mesa.py:530",
-            "harness/checks/K102-mesa.py:734",
-            "harness/checks/K102-sobre-plantado.py:2"
+            "harness/checks/K102-mesa.py:523",
+            "harness/checks/K102-mesa.py:533",
+            "harness/checks/K102-mesa.py:737",
+            "harness/checks/K102-sobre-plantado.py:2",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:8"
           ]
         },
         "tests": {
@@ -32367,7 +32389,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 15,
-        "n_menciones": 6,
+        "n_menciones": 7,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -32530,8 +32552,8 @@
             "harness/checks/K43-control.bash:204",
             "harness/checks/K43-foto-unica.sh:160",
             "harness/checks/K43-foto-unica.sh:421",
-            "harness/checks/K44-control.bash:123",
-            "harness/checks/K44-control.bash:137"
+            "harness/checks/K44-control.bash:227",
+            "harness/checks/K44-control.bash:241"
           ],
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:78",
@@ -32732,7 +32754,7 @@
         "panel-html": {
           "llamadas": [],
           "menciones": [
-            "static/index.html:488"
+            "static/index.html:490"
           ]
         },
         "readme": {
@@ -34776,20 +34798,21 @@
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:154",
             "harness/checks/K43-foto-unica.sh:209",
-            "harness/checks/K44-control.bash:175",
-            "harness/checks/K44-control.bash:188",
-            "harness/checks/K44-control.bash:203",
-            "harness/checks/K44-control.bash:229",
-            "harness/checks/K44-control.bash:248",
-            "harness/checks/K44-control.bash:432",
-            "harness/checks/K44-control.bash:439",
-            "harness/checks/K44-control.bash:447",
-            "harness/checks/K44-control.bash:457",
-            "harness/checks/K44-control.bash:459",
-            "harness/checks/K44-control.bash:467",
-            "harness/checks/K44-control.bash:500",
-            "harness/checks/K44-control.bash:545",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:110",
+            "harness/checks/K44-control.bash:113",
+            "harness/checks/K44-control.bash:279",
+            "harness/checks/K44-control.bash:292",
+            "harness/checks/K44-control.bash:307",
+            "harness/checks/K44-control.bash:333",
+            "harness/checks/K44-control.bash:352",
+            "harness/checks/K44-control.bash:536",
+            "harness/checks/K44-control.bash:543",
+            "harness/checks/K44-control.bash:551",
+            "harness/checks/K44-control.bash:561",
+            "harness/checks/K44-control.bash:563",
+            "harness/checks/K44-control.bash:571",
+            "harness/checks/K44-control.bash:604",
+            "harness/checks/K44-control.bash:649",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:164",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217"
           ],
@@ -34807,7 +34830,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 19,
+        "n_llamadas": 20,
         "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -35181,14 +35204,15 @@
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:154",
             "harness/checks/K43-foto-unica.sh:210",
-            "harness/checks/K44-control.bash:289",
-            "harness/checks/K44-control.bash:290",
-            "harness/checks/K44-control.bash:364",
-            "harness/checks/K44-control.bash:409",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:111"
+            "harness/checks/K44-control.bash:113",
+            "harness/checks/K44-control.bash:393",
+            "harness/checks/K44-control.bash:394",
+            "harness/checks/K44-control.bash:468",
+            "harness/checks/K44-control.bash:513",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:165"
           ],
           "menciones": [
-            "harness/checks/K44-control.bash:258"
+            "harness/checks/K44-control.bash:362"
           ]
         },
         "panel": {
@@ -35213,7 +35237,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 9,
+        "n_llamadas": 10,
         "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -35798,7 +35822,7 @@
           "llamadas": [],
           "menciones": [
             "harness/checks/K102-decide-lo-primero.sh:32",
-            "harness/checks/K102-mesa.py:737",
+            "harness/checks/K102-mesa.py:740",
             "harness/checks/K102-sobre-plantado.py:145"
           ]
         }
@@ -35919,6 +35943,7 @@
         "checks": {
           "llamadas": [],
           "menciones": [
+            "harness/checks/K44-control.bash:863",
             "harness/checks/K88-control.bash:161",
             "harness/checks/K88-control.bash:162",
             "harness/checks/K88-control.bash:479"
@@ -35934,7 +35959,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 0,
-        "n_menciones": 4,
+        "n_menciones": 5,
         "sin_ninguno": false,
         "solo_mencion": true
       },
@@ -37692,8 +37717,8 @@
         "checks": {
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:169",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:285",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:288"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:636",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:640"
           ],
           "menciones": []
         },
@@ -38530,20 +38555,20 @@
             "harness/checks/K43-control.bash:187",
             "harness/checks/K43-foto-unica.sh:159",
             "harness/checks/K43-foto-unica.sh:218",
-            "harness/checks/K44-control.bash:155",
-            "harness/checks/K44-control.bash:204",
-            "harness/checks/K44-control.bash:213",
-            "harness/checks/K44-control.bash:410",
-            "harness/checks/K44-control.bash:416",
-            "harness/checks/K44-control.bash:448",
-            "harness/checks/K44-control.bash:454",
-            "harness/checks/K44-control.bash:455",
-            "harness/checks/K44-control.bash:468",
-            "harness/checks/K44-control.bash:486"
+            "harness/checks/K44-control.bash:259",
+            "harness/checks/K44-control.bash:308",
+            "harness/checks/K44-control.bash:317",
+            "harness/checks/K44-control.bash:514",
+            "harness/checks/K44-control.bash:520",
+            "harness/checks/K44-control.bash:552",
+            "harness/checks/K44-control.bash:558",
+            "harness/checks/K44-control.bash:559",
+            "harness/checks/K44-control.bash:572",
+            "harness/checks/K44-control.bash:590"
           ],
           "menciones": [
-            "harness/checks/K44-control.bash:152",
-            "harness/checks/K44-control.bash:482"
+            "harness/checks/K44-control.bash:256",
+            "harness/checks/K44-control.bash:586"
           ]
         },
         "panel-sobre": {
@@ -38855,26 +38880,68 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-control.bash:397",
-            "harness/checks/K102-mesa.py:459",
+            "harness/checks/K102-control.bash:271",
+            "harness/checks/K102-control.bash:282",
+            "harness/checks/K102-control.bash:284",
+            "harness/checks/K102-control.bash:424",
+            "harness/checks/K102-decide-lo-primero.sh:129",
+            "harness/checks/K102-decide-lo-primero.sh:131",
+            "harness/checks/K102-decide-lo-primero.sh:134",
+            "harness/checks/K102-decide-lo-primero.sh:138",
+            "harness/checks/K102-decide-lo-primero.sh:139",
+            "harness/checks/K102-decide-lo-primero.sh:141",
+            "harness/checks/K102-decide-lo-primero.sh:148",
+            "harness/checks/K102-decide-lo-primero.sh:158",
+            "harness/checks/K102-decide-lo-primero.sh:160",
+            "harness/checks/K102-decide-lo-primero.sh:163",
+            "harness/checks/K102-mesa.py:909",
             "harness/checks/K102-sobre-plantado.py:168",
-            "harness/checks/K102-sobre-plantado.py:219"
+            "harness/checks/K102-sobre-plantado.py:221",
+            "harness/checks/K102-sobre-plantado.py:238",
+            "harness/checks/K102-sobre-plantado.py:239",
+            "harness/checks/K102-sobre-plantado.py:278",
+            "harness/checks/K44-control.bash:901",
+            "harness/checks/K44-control.bash:902",
+            "harness/checks/K44-control.bash:905",
+            "harness/checks/K44-control.bash:906",
+            "harness/checks/K44-control.bash:993",
+            "harness/checks/K44-control.bash:1014",
+            "harness/checks/K44-control.bash:1021",
+            "harness/checks/K44-control.bash:1028",
+            "harness/checks/K44-control.bash:1035",
+            "harness/checks/K44-control.bash:1059",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:262",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:352",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:436"
           ],
           "menciones": [
-            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:199"
+            "harness/checks/K102-control.bash:266",
+            "harness/checks/K102-control.bash:268",
+            "harness/checks/K102-decide-lo-primero.sh:113",
+            "harness/checks/K102-decide-lo-primero.sh:115",
+            "harness/checks/K102-mesa.py:459",
+            "harness/checks/K102-sobre-plantado.py:219",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:243",
+            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:200"
           ]
         },
         "tests": {
           "llamadas": [
-            "tests/js/mesa_remate.test.js:84"
+            "tests/js/mesa_remate.test.js:84",
+            "tests/test_la_puerta.py:39",
+            "tests/test_la_puerta.py:126"
           ],
-          "menciones": []
+          "menciones": [
+            "tests/test_la_puerta.py:3"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 5,
-        "n_menciones": 1,
+        "n_llamadas": 36,
+        "n_menciones": 11,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -38896,7 +38963,7 @@
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3830,
+      "fin": 3829,
       "forma": [],
       "handler": "app.api.mesa",
       "impacto_del_handler": 1,
@@ -39017,6 +39084,106 @@
         "scalp_signal_snapshot"
       ],
       "tipo_retorno": "Response"
+    },
+    {
+      "camino": "/panel",
+      "campos": {},
+      "campos_pendientes": [
+        "la respuesta pasa por FileResponse(), que no se puede seguir",
+        "el valor devuelto es un BinOp, que no se analiza estaticamente"
+      ],
+      "cierre": [],
+      "cierre_indirecto": [],
+      "claves_temporales": [],
+      "codigos": [],
+      "consumidores": {
+        "checks": {
+          "llamadas": [
+            "harness/checks/K102-sobre-plantado.py:223",
+            "harness/checks/K43-control.bash:179",
+            "harness/checks/K44-control.bash:918",
+            "harness/checks/K44-control.bash:919",
+            "harness/checks/K44-control.bash:922",
+            "harness/checks/K44-control.bash:925",
+            "harness/checks/K44-control.bash:926",
+            "harness/checks/K44-control.bash:930",
+            "harness/checks/K44-control.bash:938",
+            "harness/checks/K44-control.bash:941",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:262",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:352",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:438"
+          ],
+          "menciones": [
+            "harness/checks/K102-sobre-plantado.py:219",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:243",
+            "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:200"
+          ]
+        },
+        "panel-html": {
+          "llamadas": [],
+          "menciones": [
+            "static/index.html:89"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/harness.js:169",
+            "tests/test_la_puerta.py:43",
+            "tests/test_la_puerta.py:110",
+            "tests/test_la_puerta.py:129",
+            "tests/test_la_puerta.py:135"
+          ],
+          "menciones": [
+            "tests/js/harness.js:168",
+            "tests/test_la_puerta.py:3",
+            "tests/test_la_puerta.py:124"
+          ]
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 18,
+        "n_menciones": 9,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
+      "declarada": {
+        "completa": false,
+        "existe": false,
+        "faltan": [
+          "PREGUNTA",
+          "VENTANA",
+          "PROMESA",
+          "SUPERFICIE"
+        ],
+        "fichero": "declarada/panel.md",
+        "secciones": []
+      },
+      "decorador_linea": 3832,
+      "familia_ventana": {
+        "candidata": 1,
+        "por": "solo pide symbol (o nada): estado ambiente"
+      },
+      "fichero": "app/api.py",
+      "fin": 3835,
+      "forma": [],
+      "handler": "app.api.panel",
+      "impacto_del_handler": 1,
+      "linea": 3833,
+      "llama_directo": [],
+      "llama_fuera": [
+        "FileResponse"
+      ],
+      "metodos": [
+        "GET"
+      ],
+      "parametros": [],
+      "tablas_dudosas": [],
+      "tablas_escribe": [],
+      "tablas_lee": [],
+      "tipo_retorno": "FileResponse"
     }
   ],
   "tablas": {

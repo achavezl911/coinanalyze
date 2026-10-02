@@ -171,12 +171,12 @@ if sin_dato or huerfanas or anuladas:
     if huerfanas:
         partes.append("%d excepcion(es) HUERFANA(S) -su ruta SI llega, la excusa sobra-: %s"
                       % (len(huerfanas), " ".join(huerfanas)))
-    print("ROJO: " + " · ".join(partes) +
+    print("ROJO en el panel viejo (static/index.html): " + " · ".join(partes) +
           " · de %d rutas FOTO, %d llegan (mutando y mirando el DOM, %d secciones recorridas)"
           % (len(foto), len(foto) - len(sin_dato) - len(perdonadas), s.get("secciones", 0)) + cola)
     raise SystemExit(1)
 
-print("las %d rutas FOTO llegan al operador: su dato acaba ESCRITO en la pantalla, medido "
+print("las %d rutas FOTO llegan al operador: su dato acaba ESCRITO en el panel viejo (static/index.html), medido "
       "mutando el payload -o su clave dentro del sobre- y comparando el DOM, sobre %d "
       "secciones recorridas y %d payloads con datos%s"
       % (len(foto), s.get("secciones", 0), s.get("payloads_con_datos", 0), cola))

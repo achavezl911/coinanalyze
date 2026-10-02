@@ -25,7 +25,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/ws_collector.py:239` · clave completa `app.ws_collector._write_minute`
 
-**Radio exacto: 12 rutas** de 72 · **cota superior: 19** (mas ancha)
+**Radio exacto: 12 rutas** de 73 · **cota superior: 19** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -115,7 +115,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:333` · clave completa `app.ws_collector.drain_closed_minutes`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 19** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 19** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -191,7 +191,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:321` · clave completa `app.ws_collector.flush_minute`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 19** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 19** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -267,7 +267,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:530` · clave completa `app.ws_collector.heartbeat_loop`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 15** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 15** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -335,7 +335,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:439` · clave completa `app.ws_collector.binance_consumer`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -398,7 +398,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:217` · clave completa `app.ws_collector.binance_url`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -461,7 +461,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:481` · clave completa `app.ws_collector.bybit_consumer`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -524,7 +524,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:365` · clave completa `app.ws_collector.flush_realtime`
 
-**Radio exacto: 13 rutas** de 72 · **cota superior: 13** (igual al exacto)
+**Radio exacto: 13 rutas** de 73 · **cota superior: 13** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -598,7 +598,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:590` · clave completa `app.ws_collector.run`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -661,7 +661,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:213` · clave completa `app.ws_collector.spot_pairs`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -724,7 +724,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:222` · clave completa `app.ws_collector.valid_trade`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -787,7 +787,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:46` · clave completa `app.ws_collector.segundos_cubiertos`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 

@@ -35,12 +35,18 @@ hay que escribirla con su cita** — o es un hueco, no una exencion.
 
 ### Lo que promete
 
-**Sirve el panel.** Devuelve `FileResponse` (`app/api.py:2861`), o sea el `index.html`
-estatico. No publica campos, y por eso su ficha derivada no deriva ninguno: **no hay
-respuesta que describir, hay un fichero que se entrega**.
+**Sirve la MESA desde la campana 133.** Devuelve `FileResponse` (la funcion `index` de
+`app/api.py`), o sea el `static/mesa.html` estatico -el mismo que sigue sirviendo `/mesa`-.
+Hasta la campana 133 servia el panel viejo, `static/index.html`, que vive ahora en `/panel`.
+No publica campos, y por eso su ficha derivada no deriva ninguno: **no hay respuesta que
+describir, hay un fichero que se entrega**.
+
+**Y ESE CAMBIO NO MOVIO LA MARCA DE AGUA de esta ficha** (medido el 2026-10-02: `af7169de1004d5d5`
+antes y despues): los hechos que entran en su sha no incluyen QUE fichero entrega. Esta prosa se
+corrigio a mano, por busqueda, y no porque el brazo 6 de K88 la senalara.
 
 **PROMESA · es la puerta del producto y no promete ningun dato.** Todo lo que el trader ve
-llega despues, por las llamadas que hace `static/app.js`. Esta ruta no participa en ninguna
+llega despues, por las llamadas que hacen los guiones de `static/mesa/`. Esta ruta no participa en ninguna
 de las 66 preguntas de la bateria, y eso es correcto: **es transporte, no contenido**.
 
 *Que significa no cumplirlo:* que devolviera algo distinto de la aplicacion. Lo cubre el

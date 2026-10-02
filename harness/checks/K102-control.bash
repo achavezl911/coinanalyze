@@ -263,6 +263,33 @@ p10 PASA    "SHORT"     "Short Rejection" "G6 · SHORT con ESTADO 'Short Rejecti
 p10 CONDENA "LONG"      "Long Breakout"   "P10c · un estado que NO existe no da lado"
 echo
 
+# ------- PU · LA PUERTA (campana 133) · la mesa se juzga en `/`, y `/mesa` sirve lo mismo --------
+# El banco de sobres plantados sirve las tres puertas como el arbol de la 133. Con --puerta-vieja
+# se porta como produccion ANTES del despliegue (`/` el panel viejo); con --mesa-distinta, `/mesa`
+# sirve otra mesa. Sujeto = el ARBOL (MESA_BASE), asi que lo que la puerta tenga mal es un hallazgo,
+# no un «falta desplegar» (ese estado es solo de produccion, y se ve en la corrida contra 140).
+echo "PU · la PUERTA: \`/\` es la mesa y \`/mesa\` sirve los MISMOS bytes"
+pu() {  # pu <CONDENA|PASA> <opcion del banco o -> <patron> <rotulo>
+  pkill -f '[K]102-sobre-plantado.py' 2>/dev/null; sleep 1
+  local op="$2"; [ "$op" = "-" ] && op=""
+  nohup "$PY" "$PLANTADO" --puerto 8096 --lag 3 --tope 600 --bias LONG --dc 100 $op \
+    > "$TMP/plantado.log" 2>&1 &
+  sleep 3
+  K102_OBSERVA=4 espera "$1" "$4" "$3" "http://127.0.0.1:8096"
+  pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
+}
+pu CONDENA --puerta-vieja  'PUERTA: `/` tiene que servir la mesa'  "PU1 · \`/\` sirve el panel viejo"
+pu CONDENA --mesa-distinta 'tienen que ser la misma mesa'          "PU2 · \`/mesa\` sirve OTRA mesa"
+pu PASA    -               'x'                                     "GU · las dos puertas, la misma mesa"
+if head -1 "$TMP/sal" | grep -q 'VERDE · lo que juzgo: la mesa en `/` · sujeto: el ARBOL.* · `/mesa` sirve los MISMOS bytes'; then
+  pasa=$((pasa + 1)); total=$((total + 1))
+  printf '  DICE      %-44s %s\n' "PU3 · la 1a linea nombra la mesa en \`/\`" "$(head -1 "$TMP/sal" | cut -c1-90)"
+else
+  falla=$((falla + 1)); total=$((total + 1))
+  printf '  NO DICE   %-44s %s\n' "PU3 · la 1a linea nombra la mesa en \`/\`" "$(head -1 "$TMP/sal" | cut -c1-90)"
+fi
+echo
+
 # ------- P13 · LA REGLA COMPLETA · el umbral del handoff Y la clasificacion del registro ----
 # LAS TRES PUERTAS QUE SE CIERRAN ANTES DEL ESTADO, cada una con su plantado y su gemelo. Sin
 # esto, B9 solo cobraria el mapa de estados, y la palabra podria decir un lado donde el registro

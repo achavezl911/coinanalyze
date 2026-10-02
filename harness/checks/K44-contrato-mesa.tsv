@@ -1,0 +1,39 @@
+# K44-contrato-mesa.tsv · LO QUE LA MESA PIDE, Y POR QUE · campana 133 (2026-10-02)
+#
+# LA MESA NO PIDE EL SOBRE, Y NO ES UN DESCUIDO. Su diseno son DOS OLAS (static/mesa/mesa-app.js:9-17):
+# el sobre entero tardaba 7.026 · 6.318 · 7.497 s y pesaba 141 639 B medido contra 140 el 2026-09-28,
+# y DECIDE no lo necesita. OLA 1 = una peticion a /api/mesa/decide (lo que se lee primero); OLA 2 = el
+# resto de paneles, en paralelo y DESPUES de que DECIDE este en pantalla. Por eso el criterio del panel
+# viejo -«pide el sobre y cero partes»- no es el suyo, y aplicarselo era el defecto (COLA 133, P3).
+#
+# ESTE FICHERO DECLARA EL CONTRATO, NO LO CAMBIA: es lo que la mesa pide HOY (campana 133). K44 lo
+# contrasta con lo que un navegador pide de verdad (el log de nginx de 140) y condena lo que la mesa
+# pida FUERA de aqui, o que no pida su NUCLEO cuando se carga su vista principal.
+# tests/test_la_puerta.py lo contrasta con el CODIGO en las dos direcciones: cada ruta de aqui tiene su
+# `pedir('<ruta>'` en static/mesa/*.js, y cada `pedir('/api/...'` de static/mesa/ esta aqui.
+#
+# PAPEL:  NUCLEO   se pide en cada carga de la vista principal (y cada 15 s, mesa-app.js:91 y :175).
+#         PARTE    un panel de la OLA 2; algunas solo en un marco (scalp, swing o largo).
+#         ESTADO   la vista de estado del sistema (#<marco>/<activo>/status), mesa-app.js:240-245.
+#         Van separados por coma si son varios. La vista principal pide SIEMPRE su NUCLEO antes de la
+#         OLA 2 (mesa-app.js:393-405): pedir una ruta SOLO de PARTE sin el NUCLEO es un defecto; la
+#         vista de estado no pide el NUCLEO, y por eso lo que es tambien ESTADO no cuenta como prueba.
+# Que una ruta sea de la familia FOTO de K43 NO se copia aqui: K44 lo lee de la ASIGNACION de K43
+# en cada corrida y lo dice en su salida.
+#
+# ruta	papel	marcos	quien la pinta (static/mesa/)	por que la mesa la pide
+/api/mesa/decide	NUCLEO	todos	mesa-app.js olaDecide -> pintarDecide (#decide)	DECIDE servido ya decidido, un corte; es la OLA 1 y el refresco de 15 s
+/api/quality/feeds	PARTE,ESTADO	todosmesa-app.js olaResto/pintarEstado -> pintarTira (#tira), pintarServicios (#pie-servicios)	la tira de fuentes con su venue; tambien en la vista de estado
+/api/scalp/signals	PARTE	todos	mesa-app.js olaResto -> pintarScan (#scan)	SCAN, lo que pide atencion
+/api/scalp/delta-matrix	PARTE	todos	mesa-app.js olaResto -> pintarMatriz (#matriz)	la matriz de delta por horizonte
+/api/setup	PARTE	todos	mesa-app.js olaResto -> pintarFollow (#follow)	FOLLOW, los setups que se siguen
+/api/signals/replay	PARTE	todos	mesa-app.js olaResto -> pintarLearn (#learn)	LEARN, lo sabido en t0 separado del resultado
+/api/scalp/orderbook	PARTE	scalp	mesa-paneles.js pintarInspect -> panelLibro, panelCinta	el libro agregado por venue (L1/L5/L10)
+/api/liquidation-map	PARTE	scalp swing	mesa-paneles.js pintarResearch -> panelLiquidaciones	liquidaciones por precio
+/api/volume-profile	PARTE	scalp swing	mesa-paneles.js pintarResearch -> panelPerfil	el perfil de volumen
+/api/wyckoff	PARTE	swing	mesa-paneles.js pintarInspect -> panelWyckoff	la fase de Wyckoff
+/api/oi-context	PARTE	swing	mesa-paneles.js pintarInspect -> panelDerivados	los derivados (OI)
+/api/structure-detail	PARTE	largo	mesa-paneles.js pintarInspect -> panelEstructura	la estructura de largo plazo
+/api/scalp/basis	PARTE	largo	mesa-paneles.js pintarInspect -> panelBasis	el basis
+/api/external-macro	PARTE	largo	mesa-paneles.js pintarResearch -> panelMacro	el contexto macro externo
+/api/healthz	ESTADO	todos	mesa-app.js pintarEstado (#estado-procesos)	la salud de los procesos, en la vista de estado

@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-94 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
+95 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
 El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
@@ -48,7 +48,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`flow_spot_vs_perp`](#flow-spot-vs-perp) | 1726 | 1 | **0** | 0 | **1** |
 | [`funding_context_endpoint`](#funding-context-endpoint) | 1890 | 1 | **0** | 0 | **1** |
 | [`hypothesis`](#hypothesis) | 1348 | 1 | **0** | 0 | **1** |
-| [`index`](#index) | 3834 | 1 | **0** | 0 | **1** |
+| [`index`](#index) | 3839 | 1 | **0** | 0 | **1** |
 | [`level_breakout_endpoint`](#level-breakout-endpoint) | 2023 | 1 | **0** | 0 | **1** |
 | [`liquidation_levels`](#liquidation-levels) | 3029 | 1 | **0** | 0 | **1** |
 | [`liquidation_map_endpoint`](#liquidation-map-endpoint) | 1897 | 1 | **0** | 0 | **1** |
@@ -62,6 +62,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`ohlcv`](#ohlcv) | 687 | 1 | **0** | 0 | **1** |
 | [`oi`](#oi) | 1031 | 1 | **0** | 0 | **1** |
 | [`oi_context_endpoint`](#oi-context-endpoint) | 2095 | 1 | **0** | 0 | **1** |
+| [`panel`](#panel) | 3833 | 1 | **0** | 0 | **1** |
 | [`passive_flow_endpoint`](#passive-flow-endpoint) | 2123 | 1 | **0** | 0 | **1** |
 | [`positioning`](#positioning) | 1340 | 1 | **0** | 0 | **1** |
 | [`price_barriers_endpoint`](#price-barriers-endpoint) | 1940 | 1 | **0** | 0 | **1** |
@@ -107,7 +108,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/api.py:231` · clave completa `app.api.validate_symbol`
 
-**Radio exacto: 64 rutas** de 72 · **cota superior: 64** (igual al exacto)
+**Radio exacto: 64 rutas** de 73 · **cota superior: 64** (igual al exacto)
 
 ### Por llamada — 64 rutas
 
@@ -193,7 +194,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:244` · clave completa `app.api.records`
 
-**Radio exacto: 22 rutas** de 72 · **cota superior: 29** (mas ancha)
+**Radio exacto: 22 rutas** de 73 · **cota superior: 29** (mas ancha)
 
 ### Por llamada — 22 rutas
 
@@ -265,7 +266,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/api.py:2414` · clave completa `app.api._utc_iso`
 
-**Radio exacto: 9 rutas** de 72 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 73 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 9 rutas
 
@@ -296,7 +297,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3670` · clave completa `app.api.health`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 8** (mas ancha)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 1 rutas
 
@@ -347,7 +348,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/api.py:153` · clave completa `app.api.lifespan`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -399,7 +400,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/api.py:237` · clave completa `app.api.historical_interval_value`
 
-**Radio exacto: 7 rutas** de 72 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 7 rutas** de 73 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -428,7 +429,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:248` · clave completa `app.api.mask_gapped_series_rows`
 
-**Radio exacto: 7 rutas** de 72 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 7 rutas** de 73 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -457,7 +458,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2534` · clave completa `app.api.rechaza_parametros_desconocidos`
 
-**Radio exacto: 7 rutas** de 72 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 7 rutas** de 73 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -486,7 +487,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:398` · clave completa `app.api.declared_series_response`
 
-**Radio exacto: 6 rutas** de 72 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 6 rutas** de 73 · **cota superior: 6** (igual al exacto)
 
 ### Por llamada — 6 rutas
 
@@ -514,7 +515,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:358` · clave completa `app.api.minutos_de_las_filas`
 
-**Radio exacto: 6 rutas** de 72 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 6 rutas** de 73 · **cota superior: 6** (igual al exacto)
 
 ### Por llamada — 6 rutas
 
@@ -542,7 +543,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1668` · clave completa `app.api.ventana_pedida`
 
-**Radio exacto: 4 rutas** de 72 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 73 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -568,7 +569,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:546` · clave completa `app.api.daily_data`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -593,7 +594,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1701` · clave completa `app.api.declara_ventana`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -618,7 +619,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:519` · clave completa `app.api.latest_snapshot`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -643,7 +644,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1946` · clave completa `app.api.sella_respuesta`
 
-**Radio exacto: 3 rutas** de 72 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 73 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -668,7 +669,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:500` · clave completa `app.api._session_window`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -692,7 +693,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3142` · clave completa `app.api.scalp_persistence`
 
-**Radio exacto: 2 rutas** de 72 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 73 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -716,7 +717,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3574` · clave completa `app.api._parse_heartbeat_detail`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -739,7 +740,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1650` · clave completa `app.api._slippage_para`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -762,7 +763,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3513` · clave completa `app.api.ai_context`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -785,7 +786,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3530` · clave completa `app.api.ai_context_bundle`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -808,7 +809,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3551` · clave completa `app.api.ai_profiles`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -831,7 +832,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1276` · clave completa `app.api.carry_matriz`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -854,7 +855,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2047` · clave completa `app.api.context_metadata_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -877,7 +878,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2088` · clave completa `app.api.cross_asset_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -900,7 +901,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:751` · clave completa `app.api.cvd`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -923,7 +924,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:913` · clave completa `app.api.cvd_divergence`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -946,7 +947,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2130` · clave completa `app.api.cvd_matrix_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -969,7 +970,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:812` · clave completa `app.api.cvd_spot`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -992,7 +993,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2273` · clave completa `app.api.daily`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1015,7 +1016,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3482` · clave completa `app.api.dashboard_state`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1038,7 +1039,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3089` · clave completa `app.api.data_confidence`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1061,7 +1062,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1129` · clave completa `app.api.declarar_tramo_no_medible`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1084,7 +1085,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1911` · clave completa `app.api.delta_profile_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1107,7 +1108,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1429` · clave completa `app.api.desk_state`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1130,7 +1131,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2162` · clave completa `app.api.divergences_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1153,7 +1154,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2152` · clave completa `app.api.external_macro_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1176,7 +1177,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1726` · clave completa `app.api.flow_spot_vs_perp`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1199,7 +1200,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1890` · clave completa `app.api.funding_context_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1222,7 +1223,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1348` · clave completa `app.api.hypothesis`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1243,9 +1244,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## index
 
-`app/api.py:3834` · clave completa `app.api.index`
+`app/api.py:3839` · clave completa `app.api.index`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1268,7 +1269,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2023` · clave completa `app.api.level_breakout_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1291,7 +1292,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3029` · clave completa `app.api.liquidation_levels`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1314,7 +1315,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1897` · clave completa `app.api.liquidation_map_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1337,7 +1338,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1080` · clave completa `app.api.liquidation_series`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1360,7 +1361,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2145` · clave completa `app.api.macro_context_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1383,7 +1384,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1332` · clave completa `app.api.market_impact_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1406,7 +1407,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2169` · clave completa `app.api.market_memory_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1429,7 +1430,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3823` · clave completa `app.api.mesa`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1452,7 +1453,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3784` · clave completa `app.api.mesa_decide`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1475,7 +1476,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1556` · clave completa `app.api.metric_baselines`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1498,7 +1499,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:687` · clave completa `app.api.ohlcv`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1521,7 +1522,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1031` · clave completa `app.api.oi`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1544,7 +1545,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2095` · clave completa `app.api.oi_context_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1563,11 +1564,34 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 0 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## panel
+
+`app/api.py:3833` · clave completa `app.api.panel`
+
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
+
+### Por llamada — 1 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/panel`](../rutas/panel.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 0 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## passive_flow_endpoint
 
 `app/api.py:2123` · clave completa `app.api.passive_flow_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1590,7 +1614,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1340` · clave completa `app.api.positioning`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1613,7 +1637,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1940` · clave completa `app.api.price_barriers_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1636,7 +1660,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3592` · clave completa `app.api.prometheus_metrics`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1659,7 +1683,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1540` · clave completa `app.api.quality_feeds`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1682,7 +1706,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1989` · clave completa `app.api.range_validate_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1705,7 +1729,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2054` · clave completa `app.api.rango_estructura`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1728,7 +1752,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2081` · clave completa `app.api.reference_levels_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1751,7 +1775,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1768` · clave completa `app.api.scalp_absorption`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1774,7 +1798,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1784` · clave completa `app.api.scalp_alerts`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1797,7 +1821,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3022` · clave completa `app.api.scalp_basis`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1820,7 +1844,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1303` · clave completa `app.api.scalp_delta_matrix`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1843,7 +1867,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1594` · clave completa `app.api.scalp_execution_cost`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1866,7 +1890,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1777` · clave completa `app.api.scalp_liquidations`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1889,7 +1913,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1752` · clave completa `app.api.scalp_orderbook`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1912,7 +1936,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2373` · clave completa `app.api.scalp_signals`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1935,7 +1959,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1295` · clave completa `app.api.scalp_summary`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1958,7 +1982,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2358` · clave completa `app.api.setup`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -1981,7 +2005,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3357` · clave completa `app.api.signal_base_rate`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2004,7 +2028,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2767` · clave completa `app.api.signals_execution`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2027,7 +2051,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2550` · clave completa `app.api.signals_ledger`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2050,7 +2074,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2681` · clave completa `app.api.signals_outcomes`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2073,7 +2097,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2855` · clave completa `app.api.signals_replay`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2096,7 +2120,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2939` · clave completa `app.api.signals_visibility`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2119,7 +2143,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:667` · clave completa `app.api.snapshot`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2142,7 +2166,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1848` · clave completa `app.api.statistical_alerts`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2165,7 +2189,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3775` · clave completa `app.api.stream`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2188,7 +2212,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:3727` · clave completa `app.api.stream_generator`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2211,7 +2235,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2266` · clave completa `app.api.structure`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2234,7 +2258,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2138` · clave completa `app.api.structure_detail_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2257,7 +2281,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2109` · clave completa `app.api.swing_score_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2280,7 +2304,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:662` · clave completa `app.api.symbols`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2303,7 +2327,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1574` · clave completa `app.api.trading_profile`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2326,7 +2350,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2116` · clave completa `app.api.trend_matrix_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2349,7 +2373,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2176` · clave completa `app.api.verdicts`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2372,7 +2396,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2102` · clave completa `app.api.volatility_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2395,7 +2419,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1904` · clave completa `app.api.volume_profile_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2418,7 +2442,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1182` · clave completa `app.api.whale_delta`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2441,7 +2465,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:2039` · clave completa `app.api.wyckoff_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -2464,7 +2488,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/api.py:1963` · clave completa `app.api.zone_analysis_endpoint`
 
-**Radio exacto: 1 rutas** de 72 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

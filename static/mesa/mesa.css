@@ -1,7 +1,8 @@
 /* LA MESA DE OPERACION · tokens del design handoff del 2026-09-10
  * ---------------------------------------------------------------------------
- * ESTE FICHERO NO LO COMPARTE EL PANEL VIEJO. `static/app.css` sigue igual y sirve `/`;
- * la mesa vive en `/mesa` con su propia hoja. Se separan a proposito: los checks que juzgan
+ * ESTE FICHERO NO LO COMPARTE EL PANEL VIEJO. `static/app.css` es la hoja del panel viejo,
+ * que desde la campana 133 vive en `/panel`; la mesa -en `/` y en `/mesa`- tiene la suya.
+ * Se separan a proposito: los checks que juzgan
  * el panel tienen que poder decir CUAL juzgan, y dos ficheros distintos es la unica forma de
  * que eso no dependa de un selector.
  *

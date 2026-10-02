@@ -86,7 +86,7 @@ if [ "$ancla" -eq 0 ]; then
 fi
 literal=$(grep -oE "name: *'Corto plazo', *time: *'[^']*[0-9][^']*'" "$APPJS" | head -1)
 if [ -n "$literal" ]; then
-  echo "la tarjeta de corto vuelve a llevar un horizonte ESCRITO A MANO: $literal"
+  echo "la tarjeta de corto del panel viejo (static/index.html) vuelve a llevar un horizonte ESCRITO A MANO: $literal"
   echo "  el rotulo tiene que salir de scalp_persistence, no de una cadena (decision D1)"
   exit 1
 fi
@@ -113,7 +113,7 @@ print(p.get("mediana_min"),p.get("p90_min"),p.get("p90_no_accionable_min"),p.get
 
 case "$pub" in
   NOJSON*)   echo "NO MEDIDO: la respuesta no es JSON ($bytes B): $(printf '%s' "$pub" | cut -c1-90)"; exit 2 ;;
-  SINBLOQUE) echo "/api/dashboard/state NO publica scalp_persistence ($bytes B): el rotulo no tiene de donde salir"; exit 1 ;;
+  SINBLOQUE) echo "/api/dashboard/state NO publica scalp_persistence ($bytes B): el rotulo del panel viejo (static/index.html) no tiene de donde salir"; exit 1 ;;
   NODISPONIBLE*) echo "NO MEDIDO: scalp_persistence dice que no es medible: $(printf '%s' "$pub" | cut -c14-100)"; exit 2 ;;
   "") echo "NO MEDIDO: no se pudo leer scalp_persistence del cuerpo ($bytes B)"; exit 2 ;;
 esac
@@ -191,13 +191,14 @@ malas=''
 [ "$d_ctrl" -gt "$TOL" ] && malas="$malas control(±$d_ctrl)"
 
 if [ -n "$malas" ]; then
-  echo "el panel de \`/\` (static/index.html) publica una persistencia que la serie no sostiene:$malas (tolerancia $TOL min)"
+  echo "el panel viejo (static/index.html) publica una persistencia que la serie no sostiene:$malas (tolerancia $TOL min)"
   echo "  $detalle"
   exit 1
 fi
 
-# DICE QUE PANTALLA JUZGO. Desde la campana 130 hay DOS -`/` sirve static/index.html y `/mesa`
-# sirve static/mesa.html-, asi que «el panel» ya no identifica a nadie. Este brazo mira el
-# panel VIEJO, que es de donde sale la tarjeta de corto con su rotulo.
-echo "lo publicado coincide con lo medido (tolerancia $TOL min) en el panel de \`/\` (static/index.html): $detalle"
+# DICE QUE PANTALLA JUZGO. Desde la campana 130 hay DOS -static/index.html, el panel viejo, que
+# desde la 133 sirve `/panel`; y static/mesa.html, la mesa, que sirven `/` y `/mesa`-, asi que
+# «el panel» ya no identifica a nadie, y la RUTA tampoco: cambio en la 133. Se nombra por su
+# FICHERO, que es lo que este brazo lee. Mira el panel VIEJO, de donde sale la tarjeta de corto.
+echo "lo publicado coincide con lo medido (tolerancia $TOL min) en el panel viejo (static/index.html): $detalle"
 exit 0

@@ -14,7 +14,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/cutoffs.py:22` · clave completa `app.cutoffs.ClosedCutoff.at`
 
-**Radio exacto: 0 rutas** de 72 · **cota superior: 45** (mas ancha)
+**Radio exacto: 0 rutas** de 73 · **cota superior: 45** (mas ancha)
 
 ### Por llamada — 0 rutas
 

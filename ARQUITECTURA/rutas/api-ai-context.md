@@ -389,7 +389,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K101-un-nombre-dos-cosas.sh:126`, `harness/checks/K101-un-nombre-dos-cosas.sh:207`, `harness/checks/K102-mesa.py:525`, `harness/checks/K102-mesa.py:563` _(+30)_ | `harness/checks/K101-un-nombre-dos-cosas.sh:26`, `harness/checks/K102-control.bash:711`, `harness/checks/K102-mesa.py:520`, `harness/checks/K31-eslabon5.sh:60` _(+10)_ |
+| **checks** | `harness/checks/K101-un-nombre-dos-cosas.sh:126`, `harness/checks/K101-un-nombre-dos-cosas.sh:207`, `harness/checks/K102-mesa.py:528`, `harness/checks/K102-mesa.py:566` _(+30)_ | `harness/checks/K101-un-nombre-dos-cosas.sh:26`, `harness/checks/K102-control.bash:738`, `harness/checks/K102-mesa.py:523`, `harness/checks/K31-eslabon5.sh:60` _(+10)_ |
 | **panel** | `static/js/02-canal.js:35`, `static/js/02-canal.js:49`, `static/js/02-canal.js:53`, `static/js/10-contexto-y-estructura.js:918` _(+8)_ | — |
 | **panel-html** | `static/index.html:85` | — |
 | **readme** | — | `README.md:62`, `README.md:414`, `README.md:518` |

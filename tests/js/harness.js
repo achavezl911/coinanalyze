@@ -165,7 +165,8 @@ function cargarApp(extras = {}) {
   const contexto = {
     console,
     document: dom.document,
-    location: { hash: '', pathname: '/' },
+    // El panel viejo vive en `/panel` desde la campana 133 (antes, en `/`). Hoy no lee el pathname.
+    location: { hash: '', pathname: '/panel' },
     history: { pushState() {}, replaceState() {} },
     navigator: { userAgent: 'node' },
     fetch: async () => { throw new Error('sin red en las pruebas'); },

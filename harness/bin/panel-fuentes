@@ -75,7 +75,8 @@ def entradas_del_html(repo: pathlib.Path, html_rel: str = "index.html"):
     """Los <script src="/static/..."> del panel, en el orden en que el HTML los declara.
 
     `html_rel` EXISTE PORQUE DESDE LA CAMPANA 130 HAY DOS PANTALLAS. `static/index.html` es el
-    panel viejo que sirve `/`, y `static/mesa.html` es la mesa que sirve `/mesa`. Antes de esto
+    panel viejo, que sirve `/panel` (hasta la campana 133 lo servia `/`), y `static/mesa.html` es
+    la mesa, que sirven `/` y `/mesa`. Antes de esto
     el descubridor tenia `index.html` escrito dentro, asi que cualquier instrumento que lo
     usara juzgaba el panel viejo AUNQUE dijera estar juzgando la mesa -y al reves-. El valor
     por omision no cambia: quien no pida nada sigue midiendo el panel viejo, y los 28 sitios
@@ -161,7 +162,7 @@ def main():
     ap.add_argument("--n", action="store_true", help="solo el numero de ficheros")
     ap.add_argument("--html", default="index.html",
                     help="QUE pantalla se descubre, relativa a static/. "
-                         "index.html = el panel viejo de `/`; mesa.html = la mesa de `/mesa`")
+                         "index.html = el panel viejo de `/panel`; mesa.html = la mesa de `/` y `/mesa`")
     ap.add_argument("--quien", action="store_true",
                     help="imprime QUE pantalla se ha medido y sus ficheros, y no mas")
     a = ap.parse_args()

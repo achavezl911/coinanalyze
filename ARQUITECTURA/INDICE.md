@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-72 rutas descubiertas en el arbol. Para trabajar sobre una,
+73 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -79,10 +79,11 @@
 | `/api/zone/analysis` | GET | 1 | 2 | 16 | [ficha](rutas/api-zone-analysis.md) |
 | `/mesa` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/mesa.md) |
 | `/metrics` | GET | **0 · PENDIENTE** | 6 | 1 | [ficha](rutas/metrics.md) |
+| `/panel` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/panel.md) |
 
 ## Rutas cuyos campos NO se han podido derivar
 
-6 de 72. Cada una con su motivo en la ficha.
+7 de 73. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
@@ -90,6 +91,7 @@
 - `/api/stream` — la respuesta pasa por StreamingResponse(), que no se puede seguir
 - `/mesa` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/metrics` — la respuesta pasa por Response(), que no se puede seguir
+- `/panel` — la respuesta pasa por FileResponse(), que no se puede seguir
 
 ## Tablas, y que rutas las tocan
 

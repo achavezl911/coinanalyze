@@ -12,7 +12,9 @@ El Dashboard es una herramienta de analisis de microestructura y derivados. No e
 
 ## 2. Acceso
 
-- URL operativa: https://10.151.1.6:8443
+- URL operativa de ESTE panel: https://10.151.1.6:8443/panel
+- Desde la campana 133 (2026-10), la raiz https://10.151.1.6:8443 abre la Mesa de operacion,
+  que no es el panel de esta guia; desde la mesa se llega aqui con el enlace «PANEL ANTERIOR».
 - Usuario: operator
 - La contrasena es la definida en Basic Auth del despliegue.
 - El certificado TLS es autofirmado; el navegador puede mostrar una advertencia.

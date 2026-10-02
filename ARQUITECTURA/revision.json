@@ -71,7 +71,8 @@
     "/api/wyckoff": "a5634651c031dd30",
     "/api/zone/analysis": "e498076eb757a056",
     "/mesa": "cd495219affa108a",
-    "/metrics": "85fd30d67170fd17"
+    "/metrics": "85fd30d67170fd17",
+    "/panel": "cd495219affa108a"
   },
   "version_marca": 2
 }

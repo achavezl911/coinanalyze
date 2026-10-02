@@ -216,7 +216,14 @@ class H(http.server.BaseHTTPRequestHandler):
             self._envia(503, b'{"error":"este banco solo sirve /api/mesa/decide"}',
                         "application/json")
             return
-        f = REPO / "static" / "mesa.html" if ruta == "/mesa" else None
+        # LAS TRES PUERTAS DE LA CAMPANA 133: `/` y `/mesa` la mesa, `/panel` el panel viejo. Con
+        # `--puerta-vieja` el banco se porta como produccion ANTES del despliegue: `/` el panel.
+        if ruta in ("/", "/mesa"):
+            f = REPO / "static" / ("index.html" if ruta == "/" and CFG.get("puerta_vieja") else "mesa.html")
+        elif ruta == "/panel":
+            f = REPO / "static" / "index.html"
+        else:
+            f = None
         if ruta.startswith("/static/"):
             try:
                 f = (REPO / "static" / ruta[len("/static/"):]).resolve()
@@ -227,7 +234,10 @@ class H(http.server.BaseHTTPRequestHandler):
         if not f or not f.is_file():
             self._envia(404, b"no", "text/plain")
             return
-        self._envia(200, f.read_bytes(), TIPOS.get(f.suffix, "application/octet-stream"))
+        cuerpo = f.read_bytes()
+        if ruta == "/mesa" and CFG.get("mesa_distinta"):
+            cuerpo += b"\n<!-- PLANTADO K102-control: otra mesa en /mesa -->\n"
+        self._envia(200, cuerpo, TIPOS.get(f.suffix, "application/octet-stream"))
 
 
 if __name__ == "__main__":
@@ -256,6 +266,16 @@ if __name__ == "__main__":
         help="devuelve 503 a partir de la SEGUNDA peticion. Para ver la transicion a RANCIO "
              "hace falta que el dato NO se renueve: si se renueva, la edad se reinicia y la "
              "transicion no llega a ocurrir",
+    )
+    ap.add_argument(
+        "--puerta-vieja",
+        action="store_true",
+        help="`/` sirve el panel viejo, como produccion ANTES de desplegar la campana 133",
+    )
+    ap.add_argument(
+        "--mesa-distinta",
+        action="store_true",
+        help="`/mesa` sirve OTROS bytes que `/` (la mesa con un comentario de mas)",
     )
     a = ap.parse_args()
     CFG.update(vars(a))

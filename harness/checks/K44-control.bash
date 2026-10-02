@@ -19,6 +19,15 @@
 # llaman, y el brazo la comprueba. Sin llamada NO SE JUZGA.
 #
 # NO LLEVA .sh A PROPOSITO: bin/verify globea checks/*.sh.
+#
+# DESDE LA CAMPANA 133 EL MUNDO SE PLANTA COMO LOG CRUDO, CLIENTE A CLIENTE. K44 ya no lee cuentas
+# agregadas: atribuye cada peticion a la pantalla que la pidio por la CARGA del documento de su
+# cliente y por la linea de tiempo del desplegador. Asi que el `bin/prod` de mentira devuelve las
+# DOS formas del MISMO mundo: la agregada de antes -que lee el K44 de main- y la cruda -que lee el
+# de la 133-; cada uno ignora las lineas del otro. Eso es lo que deja correr este control contra
+# los BYTES de main (REPO=<arbol de main>): los brazos de las pantallas (P*) tienen que CAER ahi.
+# Los brazos E1-E40 plantan el mundo de siempre -un solo cliente que cargo `/` cuando `/` era el
+# panel- y tienen que seguir diciendo lo mismo con los dos.
 set -uo pipefail
 ORIG=${REPO:-/srv/coinanalyze/repo}
 CHK="$ORIG/harness/checks/K44-el-sobre-que-nadie-pide.sh"
@@ -33,16 +42,111 @@ comprueba() {  # $1 = etiqueta   $2 = si|no
   else fallos=$((fallos+1)); printf '  [FALLA] %-58s\n' "$1"; fi
 }
 
+# EL RELOJ DE LOS PLANTADOS ES FIJO: el mundo que se planta no depende de la hora a la que se corra.
+AHORA=1790960000   # 2026-10-02T16:53:20Z
+GEN="$DIR/genera.py"
+cat > "$GEN" <<'PY'
+"""genera.py <agregado|ventana> <ahora>   (la especificacion entra por stdin)
+
+agregado  la entrada es la forma AGREGADA de antes de la 133 (VISITAS n · «n ruta» · «QUERY n
+          ruta?query») y sale el MISMO mundo en crudo: UN cliente que cargo `/` -el panel- hace 3 h
+          y pidio exactamente eso, con sus queries. La forma agregada la pone quien llama.
+ventana   la entrada son EVENTOS y salen las DOS formas: la agregada que el awk de 140 del K44 de
+          main habria contado en la ventana de 6 h, y la cruda.
+EVENTOS, uno por linea; los tiempos en segundos respecto de AHORA (negativo = antes):
+  C <cliente> <seg> <ruta> [status]      una carga de documento (GET), 200 por omision
+  A <cliente> <seg> <n> <ruta[?query]>   n peticiones, una por segundo desde <seg>
+  D <seg> <panel|mesa|rara>               el desplegador cambia de release: `/` pasa a esa pantalla
+  B <seg> <panel|mesa>                    una vuelta atras («rolling back to <sha>»)
+  SIN_R                                   140 no dice que sirve ningun release (obliga a ir a git)
+  SIN_BASE                                sin el cambio de release de base de hace 30 dias
+Clientes: alex (.101, Firefox) · ipad (.99, Safari) · arnes (.2, Chromium: lo tiene que descartar).
+"""
+import datetime, sys
+modo, ahora = sys.argv[1], int(sys.argv[2])
+SHA = {"panel": "1" * 40, "mesa": "2" * 40, "rara": "3" * 40}
+IP = {"alex": "10.10.100.101", "ipad": "10.10.100.99", "arnes": "10.10.100.2"}
+UA = {"alex": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0",
+      "ipad": "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+      "arnes": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/152.0.0.0 Safari/537.36"}
+TZ = datetime.timezone(datetime.timedelta(hours=-6))   # el log de nginx de 140 va en -0600
+def hora(t): return datetime.datetime.fromtimestamp(t, TZ).strftime("%d/%b/%Y:%H:%M:%S -0600")
+def iso(t): return datetime.datetime.fromtimestamp(t, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def linea(cli, t, ruta, st=200):
+    usr = "-" if st == 401 else "operator"
+    return f'{IP[cli]} - {usr} [{hora(t)}] "GET {ruta} HTTP/1.1" {st} 100 "-" "{UA[cli]}"'
+C, A, D = [], [], []
+sin_r, base = False, True
+if modo == "agregado":
+    rutas, queries = [], []
+    for ln in sys.stdin:
+        p = ln.split()
+        if not p: continue
+        if p[0] == "QUERY" and len(p) >= 3: queries.append((int(p[1]), p[2]))
+        elif p[0].isdigit() and len(p) >= 2: rutas.append((int(p[0]), p[1]))
+    if rutas:
+        C.append(("alex", ahora - 3 * 3600, "/", 200))
+        t = ahora - 3 * 3600 + 5
+        for n, r in rutas:
+            usadas = 0
+            for nq, full in queries:
+                if full.split("?", 1)[0] == r:
+                    for _ in range(nq): A.append(("alex", t, full)); t += 1
+                    usadas += nq
+            for _ in range(max(0, n - usadas)): A.append(("alex", t, r + "?symbol=TEST")); t += 1
+else:
+    for ln in sys.stdin:
+        p = ln.split()
+        if not p or p[0].startswith("#"): continue
+        if p[0] == "C": C.append((p[1], ahora + int(p[2]), p[3], int(p[4]) if len(p) > 4 else 200))
+        elif p[0] == "A":
+            t0 = ahora + int(p[2])
+            for i in range(int(p[3])): A.append((p[1], t0 + i, p[4]))
+        elif p[0] == "D": D.append((ahora + int(p[1]), "current -> /opt/coinalyze/releases/" + SHA[p[2]]))
+        elif p[0] == "B": D.append((ahora + int(p[1]), "rolling back to " + SHA[p[2]]))
+        elif p[0] == "SIN_R": sin_r = True
+        elif p[0] == "SIN_BASE": base = False
+if base: D.append((ahora - 30 * 86400, "current -> /opt/coinalyze/releases/" + SHA["panel"]))
+D.sort()
+if modo == "ventana":
+    ini, vis, cuenta, q = ahora - 6 * 3600, 0, {}, {}
+    EXC = {"/api/dashboard/state", "/api/scalp/delta-matrix", "/api/scalp/liquidation-levels"}
+    for (cli, t, ruta, st) in C:
+        if cli != "arnes" and ini <= t <= ahora: vis += 1
+    for (cli, t, full) in A:
+        if cli == "arnes" or not (ini <= t <= ahora): continue
+        vis += 1; r = full.split("?", 1)[0]; cuenta[r] = cuenta.get(r, 0) + 1
+        if r in EXC: q[full] = q.get(full, 0) + 1
+    print(f"VISITAS {vis}")
+    for r, n in cuenta.items(): print(f"{n} {r}")
+    for f, n in q.items(): print(f"QUERY {n} {f}")
+print(f"AHORA {ahora}")
+for (cli, t, ruta, st) in C: print("C " + linea(cli, t, ruta, st))
+for (cli, t, full) in A: print("A " + linea(cli, t, full))
+for (t, txt) in D: print(f"D {iso(t)} {txt}")
+if not sin_r:
+    print(f"R {SHA['panel']} index.html")
+    print(f"R {SHA['mesa']} mesa.html")
+print("K44-FIN")
+PY
+
 # K44 solo usa dos cosas del arnes: `$B/env` (para el entorno) y `$B/bin/prod` (el log).
 # Se monta un arnes de mentira con esas dos y se apunta una COPIA del check con un `sed`,
 # comprobando que el sed MORDIO: si no muerde, se compararia el check consigo mismo.
-monta() {  # $1 = dir   $2 = rc del prod falso   $3 = lo que escribe en stdout
+# LO QUE EL PROD DE MENTIRA DEVUELVE VA EN UN FICHERO, NO EN UN HEREDOC: el K44 de la 133 cierra
+# su respuesta con una marca propia, y un heredoc con delimitador se cortaria en una linea igual.
+monta() {  # $1 = dir   $2 = rc del prod falso   $3 = lo que escribe, en la forma AGREGADA
   rm -rf "$1"; mkdir -p "$1/bin"
   printf '%s\n' ". /srv/coinanalyze/harness/env" > "$1/env"
+  if [ -n "$3" ]; then
+    { printf '%s\n' "$3"; printf '%s\n' "$3" | python3 "$GEN" agregado "$AHORA"; } > "$1/salida"
+  else
+    : > "$1/salida"
+  fi
   {
     printf '%s\n' "#!/bin/bash"
     printf '%s\n' "printf 'LLAMADO\\n' >> $1/senal"
-    printf "cat <<'FIN'\n%s\nFIN\n" "$3"
+    printf '%s\n' "cat $1/salida"
     printf '%s\n' "exit $2"
   } > "$1/bin/prod"
   chmod +x "$1/bin/prod"
@@ -722,6 +826,256 @@ liqcorre E40 "$DIR/e40" "$LIMITS_OK"; rc=$RC
 comprueba "E40a NO MEDIDO, rc=2 (rc=$rc): ni excusa ni condena" "$([ "$rc" = 2 ] && echo si || echo no)"
 comprueba "E40b y lo dice: la trae, pero NO como lista de filas" \
   "$(printf '%s' "${SALIDA[E40]}" | grep -q 'pero NO como lista de filas' && echo si || echo no)"
+
+# ══ LAS PANTALLAS (campana 133) ══════════════════════════════════════════════════════════════
+# Cada brazo planta una VENTANA de eventos -cargas de documento, peticiones y cambios del
+# desplegador, cliente a cliente- y mira lo que K44 dice de CADA pantalla. Los P* miden lo que
+# trajo la 133 y TIENEN QUE CAER contra los bytes de main (REPO=<arbol de main>): ahi K44 llama
+# «panel» a cualquier navegador. Los G* son GUARDAS de lo que ya valia antes, y pasan en los dos:
+# se dicen aparte para que nadie cuente su verde como prueba de lo nuevo.
+montav() {  # $1 = dir   $2 = eventos (ver genera.py)
+  rm -rf "$1"; mkdir -p "$1/bin" "$1/payloads"
+  printf '%s\n' ". /srv/coinanalyze/harness/env" > "$1/env"
+  printf '%s\n' "$2" | python3 "$GEN" ventana "$AHORA" > "$1/salida"
+  printf '%s\n' "#!/bin/bash" "printf 'LLAMADO\\n' >> $1/senal" "cat $1/salida" "exit 0" > "$1/bin/prod"
+  chmod +x "$1/bin/prod"; : > "$1/senal"
+  printf '%s\n' '{"symbol":"TEST","snapshot":{},"scalp":{},"setup":{}}' > "$1/payloads/_sobre.json"
+}
+corrv() {  # $1 = etiqueta  $2 = dir  resto = VAR=valor
+  local etq="$1" d="$2"; shift 2
+  local f; f=$(copia "$d") || exit 2
+  corre "$etq" "$f" K44_PAYLOADS="$d/payloads" K44_SIMBOLO=TEST K44_LIMITS=/no/existe "$@"
+}
+# LAS SALIDAS SE MIRAN EN FICHERO, NO POR TUBERIA (A89): `printf "$VAR" | grep -q` con mas de
+# 64 KB no llega nunca al `&&`.
+tiene() {  # tiene <etiqueta> <ERE>  -> si|no, sobre TODA la salida
+  printf '%s\n' "${SALIDA[$1]}" > "$DIR/_sal"; grep -qE -- "$2" "$DIR/_sal" && echo si || echo no
+}
+no_tiene() {  # no_tiene <etiqueta> <ERE>  -> si|no
+  printf '%s\n' "${SALIDA[$1]}" > "$DIR/_sal"; grep -qE -- "$2" "$DIR/_sal" && echo no || echo si
+}
+en_primera() {  # en_primera <etiqueta> <ERE>  -> si|no, SOLO la primera linea: la que cita el marcador
+  printf '%s\n' "${SALIDA[$1]}" | awk 'NR==1' > "$DIR/_pri"; grep -qE -- "$2" "$DIR/_pri" && echo si || echo no
+}
+S1="symbol=BTCUSDT_PERP.A"
+# LAS RUTAS DE ESTOS BRAZOS SE ESCRIBEN "$A/..." Y NO EN LITERAL, y no es estilo. bin/arquitectura
+# acredita como CONSUMIDOR de una ruta a toda linea de codigo que la nombre: escritas en literal, este
+# control pasaba a «llamar» a /api/setup y K88 se puso ROJO contra la ficha declarada que dice que
+# nadie la llama (medido en la 133). Es la autocontaminacion que K31-control ya cuenta: no escribirlas.
+A=/api
+ev_mesa() {  # ev_mesa <cliente> <seg> [marco] · una carga de la vista principal y 40 refrescos de DECIDE
+  local c=$1 s=$2 m=${3:-scalp} r
+  echo "A $c $s 1 $A/mesa/decide?$S1&frame=$m"
+  for r in $A/quality/feeds $A/scalp/signals $A/scalp/delta-matrix $A/setup $A/signals/replay; do
+    echo "A $c $((s + 1)) 1 $r?$S1"
+  done
+  case $m in
+    scalp) for r in $A/scalp/orderbook $A/liquidation-map $A/volume-profile; do echo "A $c $((s + 2)) 1 $r?$S1"; done ;;
+    swing) for r in $A/wyckoff $A/oi-context $A/liquidation-map $A/volume-profile; do echo "A $c $((s + 2)) 1 $r?$S1"; done ;;
+    largo) for r in $A/structure-detail $A/scalp/basis $A/external-macro; do echo "A $c $((s + 2)) 1 $r?$S1"; done ;;
+  esac
+  echo "A $c $((s + 15)) 40 $A/mesa/decide?$S1&frame=$m"
+}
+ev_panel() {  # ev_panel <cliente> <seg> <n> · el panel viejo: el sobre n veces, y una serie y una exenta (ninguna FOTO)
+  local c=$1 s=$2 n=$3
+  echo "A $c $s $n $A/ai/context?$S1&profile=default"
+  echo "A $c $((s + n)) 5 $A/ohlcv?$S1&interval=5min&limit=576"
+  echo "A $c $((s + n + 5)) 3 $A/symbols"
+}
+
+echo
+echo "P1 · SOLO LA MESA, en \`/\` despues del cambio: se juzga contra SU contrato, no contra el sobre"
+montav "$DIR/p1" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790)"
+corrv P1 "$DIR/p1"; rc=$RC
+comprueba "G2 (guarda) el plantado OCURRIO: el prod de mentira se llamo" "$([ -s "$DIR/p1/senal" ] && echo si || echo no)"
+comprueba "P1b VERDE, rc=0 (rc=$rc): la mesa no pide el sobre por diseno" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "P1c la PRIMERA linea nombra la mesa y la ruta por la que se cargo" \
+  "$(en_primera P1 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo '"$A"'/mesa/decide 41 veces y NADA fuera de su contrato')"
+comprueba "P1d y dice cuantas de sus rutas son FOTO: 4 de las 9 pedidas" \
+  "$(tiene P1 '9 de sus 15 rutas declaradas, 4 de ellas de la familia FOTO')"
+comprueba "P1e y el panel viejo, que nadie miro, sale SIN VISITAS y no condenado" \
+  "$(en_primera P1 'el panel viejo \(static/index\.html\): sin visitas')"
+comprueba "P1f y no acusa a NADIE de no pedir el sobre" "$(no_tiene P1 'NO pide el sobre|REFORMA A MEDIAS')"
+
+echo
+echo "P2 · SOLO LA MESA, en \`/mesa\` ANTES del cambio (\`/\` era el panel)"
+montav "$DIR/p2" "$(echo 'C alex -10800 /mesa'; ev_mesa alex -10790)"
+corrv P2 "$DIR/p2"; rc=$RC
+comprueba "P2a VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "P2b cargada por \`/mesa\`, y la puerta dice que \`/\` era el panel" \
+  "$([ "$(en_primera P2 'cargada por `/mesa`')" = si ] && [ "$(tiene P2 'puerta · `/` servia el panel viejo al empezar')" = si ] && echo si || echo no)"
+
+echo
+echo "P3 · SOLO EL PANEL, en \`/\` ANTES del cambio: el criterio de siempre, y dice QUE pantalla"
+montav "$DIR/p3" "$(echo 'C alex -10800 /'; ev_panel alex -10790 300)"
+corrv P3 "$DIR/p3"; rc=$RC
+comprueba "G3 (guarda) el panel solo sigue VERDE, rc=0 (rc=$rc): el criterio de siempre intacto" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "P3b la PRIMERA linea nombra el panel viejo y su ruta" \
+  "$(en_primera P3 'el panel viejo \(static/index\.html, cargado por `/`\) pide el sobre 300 veces y CERO de las [0-9]+ rutas')"
+comprueba "P3c y la mesa, que nadie miro, SIN VISITAS" "$(en_primera P3 'la mesa \(static/mesa\.html\): sin visitas')"
+
+echo
+echo "P4 · SOLO EL PANEL, en \`/panel\` DESPUES del cambio"
+montav "$DIR/p4" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /panel'; ev_panel alex -10790 300)"
+corrv P4 "$DIR/p4"; rc=$RC
+comprueba "G4 (guarda) VERDE, rc=0 (rc=$rc)" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "P4b cargado por \`/panel\`" "$(en_primera P4 'el panel viejo \(static/index\.html, cargado por `/panel`\)')"
+
+echo
+echo "P5 · LAS DOS, dos clientes: la mesa en \`/\` y el panel en \`/panel\`; cada una contra lo suyo"
+montav "$DIR/p5" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790; echo 'C ipad -9000 /panel'; ev_panel ipad -8990 300)"
+corrv P5 "$DIR/p5"; rc=$RC
+comprueba "P5a VERDE, rc=0 (rc=$rc): ninguna de las dos se carga lo de la otra" "$([ "$rc" = 0 ] && echo si || echo no)"
+comprueba "P5b la PRIMERA linea juzga LAS DOS, cada una con su nombre" \
+  "$([ "$(en_primera P5 'el panel viejo \(static/index\.html, cargado por `/panel`\) pide el sobre 300 veces y CERO')" = si ] \
+     && [ "$(en_primera P5 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo')" = si ] && echo si || echo no)"
+comprueba "G5 (guarda) y no inventa peticiones sin atribuir donde no las hay" "$(no_tiene P5 'SIN ATRIBUIR')"
+
+echo
+echo "P6 · LAS DOS piden $A/wyckoff (la mesa por contrato, el panel sin excusa): a cada uno lo SUYO"
+montav "$DIR/p6" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790 swing
+                     echo "A alex -9000 20 $A/wyckoff?$S1"
+                     echo 'C ipad -9000 /panel'; ev_panel ipad -8990 300; echo "A ipad -7000 7 $A/wyckoff?$S1")"
+corrv P6 "$DIR/p6"; rc=$RC
+comprueba "P6a ROJO, rc=1 (rc=$rc), y le cuenta al panel SOLO sus 7, no las 28 de las dos pantallas" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P6 'REFORMA A MEDIAS: el panel viejo \(static/index\.html, cargado por `/panel`\) pide el sobre 300 veces Y ADEMAS sigue pidiendo 7 veces 1 de las')" = si ] \
+     && [ "$(tiene P6 '· '"$A"'/wyckoff\(7\)')" = si ] && echo si || echo no)"
+comprueba "P6c y la mesa, con las suyas dentro del contrato, VERDE en la misma linea" \
+  "$(en_primera P6 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo '"$A"'/mesa/decide 41 veces y NADA fuera')"
+
+echo
+echo "P7 · CRUZA EL CAMBIO: una pestana del panel cargada en \`/\` ANTES sigue pidiendo DESPUES"
+# El caso que obliga a todo. alex carga `/` a -4 h (el panel), el desplegador cambia `/` a la
+# mesa a -2 h, la pestana vieja sigue pidiendo el sobre 3000 veces DESPUES del cambio, y a -1000 s
+# alex recarga `/` -ya la mesa-. Por la ruta sola, esas 3000 serian de la mesa y la condenarian.
+montav "$DIR/p7" "$(echo 'D -7200 mesa'; echo 'C alex -14400 /'
+                     echo "A alex -14390 7000 $A/ai/context?$S1&profile=default"
+                     echo "A alex -7000 3000 $A/ai/context?$S1&profile=default"
+                     echo 'C alex -1000 /'; ev_mesa alex -990)"
+corrv P7 "$DIR/p7"; rc=$RC
+comprueba "P7a las 3000 de DESPUES del cambio son del panel: pide el sobre 10000 veces" \
+  "$(en_primera P7 'el panel viejo \(static/index\.html, cargado por `/`\) pide el sobre 10000 veces')"
+# Esta ausencia main la cumple EN VACIO -main no juzga la mesa-, asi que es una guarda; lo que
+# prueba que la mide es V1, mas abajo: la variante que atribuye por la ruta sola SI la incumple.
+comprueba "G7 (guarda) la mesa NO se carga el sobre de la pestana vieja (nada FUERA de contrato)" "$(no_tiene P7 'FUERA de su contrato')"
+comprueba "P7c lo de despues de la recarga sale NOMBRADO y sin cargar: 49, las DOS pantallas" \
+  "$([ "$(en_primera P7 '49 peticion\(es\) SIN ATRIBUIR')" = si ] && [ "$(tiene P7 'LAS DOS pantallas')" = si ] && echo si || echo no)"
+comprueba "P7d y la puerta dice el cambio que leyo del desplegador" \
+  "$(tiene P7 'cambios del desplegador dentro: [0-9-]+ [0-9:]+Z release 2222222 -> la mesa')"
+comprueba "P7e VERDE, rc=0 (rc=$rc): lo atribuido cumple y lo no atribuido no condena" "$([ "$rc" = 0 ] && echo si || echo no)"
+
+echo
+echo "P8 · UNA CARGA DE \`/\` A 30 s DEL CAMBIO: dentro del margen, ambigua, se nombra"
+montav "$DIR/p8" "$(echo 'D -7200 mesa'; echo 'C ipad -7170 /'; ev_mesa ipad -7160)"
+corrv P8 "$DIR/p8"; rc=$RC
+comprueba "P8a NO MEDIDO, rc=2 (rc=$rc): no se juzga a ninguna" "$([ "$rc" = 2 ] && echo si || echo no)"
+comprueba "P8b y dice por que: 30 s del cambio, dentro del margen de 120 s" \
+  "$(tiene P8 'carga de `/` a 30 s del cambio \(el panel viejo -> la mesa, [^)]*\), dentro del margen de 120 s')"
+
+echo
+echo "P9 · UNA VUELTA ATRAS del desplegador devuelve \`/\` al panel"
+montav "$DIR/p9" "$(echo 'D -20000 mesa'; echo 'B -7200 panel'; echo 'C alex -5000 /'; ev_panel alex -4990 300)"
+corrv P9 "$DIR/p9"; rc=$RC
+comprueba "P9a VERDE, rc=0 (rc=$rc), y la carga de \`/\` tras la vuelta atras es del panel" \
+  "$([ "$rc" = 0 ] && [ "$(en_primera P9 'el panel viejo \(static/index\.html, cargado por `/`\) pide el sobre 300 veces')" = si ] && echo si || echo no)"
+
+echo
+echo "P10 · PETICIONES SIN NINGUNA CARGA VISIBLE (una pestana de antes del log)"
+montav "$DIR/p10" "$(echo 'D -86400 mesa'; ev_mesa alex -10790)"
+corrv P10 "$DIR/p10"; rc=$RC
+comprueba "P10a NO MEDIDO, rc=2 (rc=$rc): 49 peticiones y NINGUNA atribuible" \
+  "$([ "$rc" = 2 ] && [ "$(en_primera P10 'hubo 49 peticiones de navegador .* NINGUNA se pudo atribuir')" = si ] && echo si || echo no)"
+comprueba "P10b y nombra el motivo con sus rutas" \
+  "$(tiene P10 'sin carga visible de ninguna pantalla en las 48 h de cargas que se miran: .*'"$A"'/mesa/decide\(41\)')"
+
+echo
+echo "P11 · LA CARGA ES DE HACE 50 h: fuera de las 48 h que se miran, tampoco se atribuye"
+montav "$DIR/p11" "$(echo 'C alex -180000 /mesa'; ev_mesa alex -10790)"
+corrv P11 "$DIR/p11"; rc=$RC
+comprueba "P11a NO MEDIDO, rc=2 (rc=$rc), por «sin carga visible»" \
+  "$([ "$rc" = 2 ] && [ "$(tiene P11 'sin carga visible de ninguna pantalla')" = si ] && echo si || echo no)"
+
+echo
+echo "P12 · UN RELEASE DEL QUE NI 140 NI git DICEN QUE SIRVE \`/\`"
+montav "$DIR/p12" "$(echo 'SIN_R'; echo 'D -86400 rara'; echo 'C alex -10800 /'; ev_mesa alex -10790)"
+corrv P12 "$DIR/p12"; rc=$RC
+comprueba "P12a NO MEDIDO, rc=2 (rc=$rc): la carga de \`/\` no se puede atribuir" "$([ "$rc" = 2 ] && echo si || echo no)"
+comprueba "P12b y lo dice con el release" "$(tiene P12 'con el release 3333333, del que no se sabe que servia')"
+
+echo
+echo "P13 · LA MESA PIDE UNA RUTA QUE SU CONTRATO NO DECLARA"
+montav "$DIR/p13" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790; echo "A alex -9000 3 $A/ai/context?$S1")"
+corrv P13 "$DIR/p13"; rc=$RC
+comprueba "P13a ROJO, rc=1 (rc=$rc), y es LA MESA la condenada, nombrando la ruta y su cuenta" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P13 'la mesa \(static/mesa\.html, cargada por `/`\) pide FUERA de su contrato \(K44-contrato-mesa\.tsv\): '"$A"'/ai/context\(3\)')" = si ] && echo si || echo no)"
+
+echo
+echo "P14 · LA MESA CARGA SU VISTA PRINCIPAL Y NO PIDE SU NUCLEO"
+montav "$DIR/p14" "$(echo 'C alex -10800 /mesa'; for r in $A/scalp/signals $A/setup $A/scalp/orderbook; do echo "A alex -10790 2 $r?$S1"; done)"
+corrv P14 "$DIR/p14"; rc=$RC
+comprueba "P14a ROJO, rc=1 (rc=$rc), y dice que NO pide su nucleo" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P14 'carga su vista principal .* y NO pide su nucleo '"$A"'/mesa/decide')" = si ] && echo si || echo no)"
+
+echo
+echo "P15 · LA MESA SOLO EN SU VISTA DE ESTADO: no pide el nucleo y NO es un defecto"
+montav "$DIR/p15" "$(echo 'C alex -10800 /mesa'; echo "A alex -10790 3 $A/healthz"; echo "A alex -10780 3 $A/quality/feeds?$S1")"
+corrv P15 "$DIR/p15"; rc=$RC
+comprueba "P15a VERDE, rc=0 (rc=$rc), y lo dice" \
+  "$([ "$rc" = 0 ] && [ "$(en_primera P15 'solo se miro en su vista de ESTADO, que no pide el nucleo')" = si ] && echo si || echo no)"
+
+echo
+echo "P16 · LA MESA SE MIRO Y SU CONTRATO NO SE PUEDE LEER"
+montav "$DIR/p16" "$(echo 'C alex -10800 /mesa'; ev_mesa alex -10790)"
+corrv P16 "$DIR/p16" K44_CONTRATO=/no/existe; rc=$RC
+comprueba "P16a NO MEDIDO, rc=2 (rc=$rc): sin contrato no hay contra que juzgarla" \
+  "$([ "$rc" = 2 ] && [ "$(en_primera P16 'su contrato no se pudo leer')" = si ] && echo si || echo no)"
+
+echo
+echo "P17 · EL CANAL CONTESTA rc=0 PERO SIN LA MARCA FINAL: respuesta incompleta"
+mkdir -p "$DIR/p17"; montav "$DIR/p17" "$(echo 'C alex -10800 /mesa'; ev_mesa alex -10790)"
+grep -v '^K44-FIN$' "$DIR/p17/salida" > "$DIR/p17/s2"; mv "$DIR/p17/s2" "$DIR/p17/salida"
+corrv P17 "$DIR/p17"; rc=$RC
+comprueba "P17a NO MEDIDO, rc=2 (rc=$rc), y dice INCOMPLETO, no «nadie miro»" \
+  "$([ "$rc" = 2 ] && [ "$(tiene P17 'llego INCOMPLETO')" = si ] && echo si || echo no)"
+
+echo
+echo "P18 · MAS DE 64 KB DE LOG, EN LOS DOS MODOS DE SIGPIPE (A89): misma salida, y la 1a linea es el veredicto"
+montav "$DIR/p18" "$(echo 'D -86400 mesa'; echo 'C alex -14000 /'; ev_mesa alex -13990; echo "A alex -13000 3000 $A/mesa/decide?$S1&frame=scalp")"
+tam=$(wc -c < "$DIR/p18/salida")
+f18=$(copia "$DIR/p18") || exit 2
+env --ignore-signal=PIPE K44_PAYLOADS="$DIR/p18/payloads" K44_SIMBOLO=TEST K44_LIMITS=/no/existe \
+  timeout -k 5 200 bash "$f18" > "$DIR/p18/ign" 2>&1; rc_i=$?
+env --default-signal=PIPE K44_PAYLOADS="$DIR/p18/payloads" K44_SIMBOLO=TEST K44_LIMITS=/no/existe \
+  timeout -k 5 200 bash "$f18" > "$DIR/p18/def" 2>&1; rc_d=$?
+printf '        sujeto: %s B de log plantado (el brazo exige mas de 65536) · rc ignorado=%s omision=%s\n' "$tam" "$rc_i" "$rc_d"
+comprueba "G18 (guarda del sujeto) el log plantado PASA de 64 KB, medido ($tam B)" "$([ "$tam" -gt 65536 ] && echo si || echo no)"
+comprueba "P18b las dos salidas IGUALES byte a byte, y rc=0 las dos" \
+  "$(cmp -s "$DIR/p18/ign" "$DIR/p18/def" && [ "$rc_i" = 0 ] && [ "$rc_d" = 0 ] && echo si || echo no)"
+comprueba "P18c la 1a linea con SIGPIPE IGNORADO es el veredicto, no un «Broken pipe»" \
+  "$(awk 'NR==1' "$DIR/p18/ign" | grep -q '^la mesa (static/mesa.html, cargada por `/`) pide su nucleo '"$A"'/mesa/decide 3041 veces' && echo si || echo no)"
+
+echo
+echo "G1 · GUARDA (ya valia antes): el ARNES no cuenta aunque venga con agente de navegador"
+montav "$DIR/g1" "$(echo 'C arnes -10800 /mesa'; ev_mesa arnes -10790)"
+corrv G1 "$DIR/g1"; rc=$RC
+comprueba "G1a NO MEDIDO, rc=2 (rc=$rc): «no consta que nadie mirara»" \
+  "$([ "$rc" = 2 ] && [ "$(tiene G1 'no consta que nadie mirara')" = si ] && echo si || echo no)"
+
+echo
+echo "V1 · LA VARIANTE QUE ATRIBUYE \`/\` POR LA HORA DE LA PETICION -la ruta sola, A68-: P7 la tiene que cazar"
+# Una copia del check con UNA linea cambiada: la pantalla de una carga de `/` se mira a la hora de
+# cada PETICION, no a la de la carga. Es justo «atribuir por la ruta sola»: tras el cambio, todo lo
+# que llega con `/` seria de la mesa. Si la ventana de P7 no la condena, P7 no mide el cruce.
+rm -rf "$DIR/v1"; cp -a "$DIR/p7" "$DIR/v1"
+sed -e "s#^B=/srv/coinanalyze/harness; . \"\$B/env\"#B=$DIR/v1; . \"\$B/env\"#" \
+    -e 's/^    ps = {c\[2\] for c in previas}$/    ps = {((pantalla_raiz(t)[0] or c[2]) if c[1] == "\/" else c[2]) for c in previas}/' \
+    "$CHK" > "$DIR/v1/K44.sh"
+mordio=$(grep -c 'pantalla_raiz(t)\[0\] or c\[2\]) if c\[1\]' "$DIR/v1/K44.sh")
+comprueba "V1a la variante SE PLANTO (una linea cambiada, contada: $mordio)" "$([ "$mordio" = 1 ] && echo si || echo no)"
+corre V1 "$DIR/v1/K44.sh" K44_PAYLOADS="$DIR/v1/payloads" K44_SIMBOLO=TEST K44_LIMITS=/no/existe
+comprueba "V1b y la ventana del cruce la CONDENA: carga a la mesa el sobre de la pestana vieja" \
+  "$([ "$RC" = 1 ] && [ "$(en_primera V1 'la mesa \(static/mesa\.html, cargada por `/`\) pide FUERA de su contrato \(K44-contrato-mesa\.tsv\): '"$A"'/ai/context\(3000\)')" = si ] \
+     && [ "$(en_primera V1 'pide el sobre 10000 veces')" = no ] && echo si || echo no)"
 
 # ── LOS SEIS, DOS A DOS ──────────────────────────────────────────────────────────────────────
 echo

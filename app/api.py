@@ -3821,18 +3821,28 @@ async def mesa_decide(symbol: str, frame: str = "scalp") -> dict[str, Any]:
 
 @app.get("/mesa")
 async def mesa() -> FileResponse:
-    """LA MESA DE OPERACION, en su ruta NUEVA.
+    """LA MESA DE OPERACION, tambien en la ruta donde nacio (campana 130).
 
-    `/` NO CAMBIA en esta campana: la mesa convive con el panel viejo y el cambio de `/` lo
-    decide Alejandro cuando la vea en produccion. Queda a UNA LINEA de distancia: cambiar
-    `index.html` por `mesa.html` en el `FileResponse` de `index()`, aqui abajo.
+    Desde la campana 133 la mesa es la PUERTA y la sirve `/`, aqui abajo. Esta ruta se queda y
+    sirve los MISMOS bytes: hay marcadores, auditorias y una red (K102) que la abren por `/mesa`.
     """
     return FileResponse(STATIC_DIR / "mesa.html")
 
 
+@app.get("/panel")
+async def panel() -> FileResponse:
+    """EL PANEL VIEJO, que hasta la campana 133 servia `/`. El mismo fichero en otra puerta."""
+    return FileResponse(STATIC_DIR / "index.html")
+
+
 @app.get("/")
 async def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+    """LA PUERTA ES LA MESA (campana 133; lo decidio el operador por delegacion de Alejandro).
+
+    El panel viejo sigue entero en `/panel`, y desde cada pantalla se llega a la otra con un
+    enlace a la vista. `index` conserva el nombre: es la funcion de la raiz, no la de un fichero.
+    """
+    return FileResponse(STATIC_DIR / "mesa.html")
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

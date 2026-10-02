@@ -456,11 +456,14 @@ def resuelve(sobre: dict, ruta: str):
 
 
 async def corre(args) -> dict:
-    url = args.base.rstrip("/") + "/mesa#" + args.marco + "/" + args.activo + (
+    # LA PUERTA ES `/` DESDE LA CAMPANA 133: la mesa se juzga donde la abre quien opera. `/mesa`
+    # sigue sirviendo los mismos bytes, y eso lo comprueba el .sh antes de lanzar la sonda.
+    url = args.base.rstrip("/") + args.puerta + "#" + args.marco + "/" + args.activo + (
         "/status" if args.vista == "estado" else ""
     )
     out: dict = {
         "url": url,
+        "puerta": args.puerta,
         "base": args.base,
         "marco": args.marco,
         "activo": args.activo,
@@ -903,6 +906,8 @@ def compara(out: dict) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--base", required=True, help="p.ej. http://127.0.0.1:8099")
+    ap.add_argument("--puerta", default="/", choices=("/", "/mesa"),
+                    help="la ruta de pantalla que se abre: `/` desde la campana 133")
     ap.add_argument("--marco", default="scalp", choices=("scalp", "swing", "largo"))
     ap.add_argument("--activo", default="BTC", choices=("BTC", "ETH", "SOL"))
     ap.add_argument("--vista", default="mesa", choices=("mesa", "estado"))

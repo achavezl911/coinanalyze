@@ -224,7 +224,8 @@ por_grupo=$(grep -E '^/api/' "$DISP" | cut -f2 | sort | uniq -c | awk '{printf "
 
 if [ "$n_sin" -gt 0 ] || [ "$n_huerf" -gt 0 ] || [ "$nm" -gt 0 ]; then
   {
-    [ "$n_sin" -gt 0 ] && printf 'ROJO: %d ruta(s) HUECO sin disposicion en K31-disposiciones.tsv:%s' "$n_sin" " $sin_dueno"
+    printf 'en el panel viejo (static/index.html)'
+    [ "$n_sin" -gt 0 ] && printf ' · ROJO: %d ruta(s) HUECO sin disposicion en K31-disposiciones.tsv:%s' "$n_sin" " $sin_dueno"
     [ "$n_huerf" -gt 0 ] && printf ' · %d disposicion(es) HUERFANA(S) -su ruta ya no es hueco-:%s' "$n_huerf" " $huerfanas_disp"
     printf ' · de %d rutas' "$total"
     [ "$nm" -gt 0 ] && printf ' y %d payloads pedidos no mueven un pixel:%s' "$nm" "$mudas"
@@ -237,4 +238,4 @@ if [ "$n_sin" -gt 0 ] || [ "$n_huerf" -gt 0 ] || [ "$nm" -gt 0 ]; then
   } | cut -c1-900
   exit 1
 fi
-echo "las $total rutas de /api/ o las pide el panel o llegan dentro de otra o las consume app/ o TIENEN DUEÑO: $nhu hueco(s), los $n_disp dispuestos en K31-disposiciones.tsv ($por_grupo sin huerfanas) · $nb bundle · $nd diseno · $ve de $((ve + nove)) llegan al operador (las $nnp NO_PANEL no entran en esa cuenta) · $np payloads probados por mutacion (${segundos}s, payloads de hace ${edad:-0}s) · NO AFIRMA: jsdom no maqueta y el recorrido es un solo estado de UI"
+echo "en el panel viejo (static/index.html), las $total rutas de /api/ o las pide el panel o llegan dentro de otra o las consume app/ o TIENEN DUEÑO: $nhu hueco(s), los $n_disp dispuestos en K31-disposiciones.tsv ($por_grupo sin huerfanas) · $nb bundle · $nd diseno · $ve de $((ve + nove)) llegan al operador (las $nnp NO_PANEL no entran en esa cuenta) · $np payloads probados por mutacion (${segundos}s, payloads de hace ${edad:-0}s) · NO AFIRMA: jsdom no maqueta y el recorrido es un solo estado de UI"
