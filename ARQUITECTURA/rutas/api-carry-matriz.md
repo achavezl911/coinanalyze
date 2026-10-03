@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `carry_matriz` · `app/api.py:1276` (cuerpo hasta la 1291) · decorador en la linea 1275.
+Handler `carry_matriz` · `app/api.py:1277` (cuerpo hasta la 1292) · decorador en la linea 1276.
 
 ## Parametros de entrada
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2534`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2565`
 - `app.carry.matriz_de_carry` — `app/carry.py:99`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
@@ -87,7 +87,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 422 | — | `app/api.py:2543` | una funcion de su cierre |
+| 422 | — | `app/api.py:2574` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -97,7 +97,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-control.bash:147`, `harness/checks/K43-foto-unica.sh:167`, `harness/checks/K43-foto-unica.sh:465` | `harness/checks/K43-control.bash:142`, `harness/checks/K43-foto-unica.sh:88`, `harness/checks/K43-foto-unica.sh:462` |
+| **checks** | `harness/checks/K43-control.bash:147`, `harness/checks/K43-foto-unica.sh:167`, `harness/checks/K43-foto-unica.sh:470` | `harness/checks/K43-control.bash:142`, `harness/checks/K43-foto-unica.sh:88`, `harness/checks/K43-foto-unica.sh:467` |
 | **panel** | `static/js/07-decision-y-ciclos.js:225` | `static/js/10-contexto-y-estructura.js:373` |
 | **panel-html** | — | `static/index.html:242` |
 | **tests** | — | `tests/js/heatmap_celda.test.js:25` |
@@ -141,7 +141,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
-| `app.api.rechaza_parametros_desconocidos` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-api.md) |
 | `app.api.carry_matriz` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.carry._iso` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-carry.md) |
 | `app.carry._pct` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-carry.md) |

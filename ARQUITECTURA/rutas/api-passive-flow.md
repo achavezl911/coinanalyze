@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `passive_flow_endpoint` · `app/api.py:2123` (cuerpo hasta la 2126) · decorador en la linea 2122.
+Handler `passive_flow_endpoint` · `app/api.py:2154` (cuerpo hasta la 2157) · decorador en la linea 2153.
 
 ## Parametros de entrada
 
@@ -58,9 +58,9 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 
@@ -85,7 +85,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.scalp_logic.passive_flow` — `app/scalp_logic.py:6119`
 
 <details><summary>Alcanzables de forma indirecta (18)</summary>
@@ -123,7 +123,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -133,7 +133,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:153`, `harness/checks/K43-foto-unica.sh:207` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:153`, `harness/checks/K43-foto-unica.sh:212` | — |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:353` | — |
 
 **La llama el panel: es superficie de producto.**
@@ -173,7 +173,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |

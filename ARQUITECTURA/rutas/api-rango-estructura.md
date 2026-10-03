@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `rango_estructura` · `app/api.py:2054` (cuerpo hasta la 2077) · decorador en la linea 2053.
+Handler `rango_estructura` · `app/api.py:2085` (cuerpo hasta la 2108) · decorador en la linea 2084.
 
 ## Parametros de entrada
 
@@ -85,12 +85,12 @@ LEE:
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
 - `liquidations` — `sql/schema.sql:174`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:675`
-  - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:316`
+  - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:317`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
@@ -105,9 +105,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2534`
-- `app.api.validate_symbol` — `app/api.py:231`
-- `app.api.ventana_pedida` — `app/api.py:1668`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2565`
+- `app.api.validate_symbol` — `app/api.py:232`
+- `app.api.ventana_pedida` — `app/api.py:1699`
 - `app.rango.estructura_de_rango` — `app/rango.py:234`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
@@ -133,13 +133,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1685` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1688` | una funcion de su cierre |
-| 422 | — | `app/api.py:1693` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1695` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1697` | una funcion de su cierre |
-| 422 | — | `app/api.py:2543` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
+| 422 | hace falta «desde» | `app/api.py:1716` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1719` | una funcion de su cierre |
+| 422 | — | `app/api.py:1724` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1726` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1728` | una funcion de su cierre |
+| 422 | — | `app/api.py:2574` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -149,7 +149,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:168`, `harness/checks/K43-foto-unica.sh:457` | `harness/checks/K43-foto-unica.sh:98` |
+| **checks** | `harness/checks/K43-foto-unica.sh:168`, `harness/checks/K43-foto-unica.sh:462` | `harness/checks/K43-foto-unica.sh:98` |
 | **panel** | `static/js/07-decision-y-ciclos.js:226`, `static/js/10-contexto-y-estructura.js:705` | — |
 | **tests** | `tests/test_funding_una_sola_escala.py:87` | `tests/test_funding_una_sola_escala.py:13`, `tests/test_ventana_elegible.py:71` |
 
@@ -188,8 +188,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-api.md) |
 | `app.api.ventana_pedida` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-api.md) |
 | `app.api.rango_estructura` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.rango._prueba` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-rango.md) |

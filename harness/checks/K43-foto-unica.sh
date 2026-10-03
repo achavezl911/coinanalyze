@@ -166,8 +166,13 @@ ASIGNACION="
 /api/liquidation-map=FOTO
 /api/carry/matriz=SERIE
 /api/rango/estructura=DEMANDA
+/api/entradas=DEMANDA
 /api/stream=EXENTA /api/healthz=EXENTA /api/symbols=EXENTA
 "
+# /api/entradas (campana 135) es DEMANDA: sirve as_of en su raiz y una ventana PEDIDA (desde,
+# hasta) sobre un registro append-only; no es una foto del mercado ni una serie. Hoy no la pide
+# el panel viejo -la pintara la E2 en la mesa-, asi que K43 no la recorre: queda declarada para
+# el dia que alguien la enchufe en una pantalla que este check si mire.
 # EXENTAS, con su motivo: stream es SSE -empuje continuo, no una foto y no puede
 # serlo-; healthz es salud del sistema; symbols es catalogo de configuracion.
 

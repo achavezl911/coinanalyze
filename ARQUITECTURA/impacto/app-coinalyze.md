@@ -14,7 +14,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/coinalyze.py:116` · clave completa `app.coinalyze.validate_rate_budget`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 0 rutas
 

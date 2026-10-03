@@ -20,7 +20,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/signal_ledger.py:227` · clave completa `app.signal_ledger.persist_signal_observations`
 
-**Radio exacto: 7 rutas** de 73 · **cota superior: 25** (mas ancha)
+**Radio exacto: 7 rutas** de 74 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -122,7 +122,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:201` · clave completa `app.signal_ledger._validated_required_fields`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 11** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -184,7 +184,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:62` · clave completa `app.signal_ledger.classify_signal_observation`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 11** (mas ancha)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 1 rutas
 
@@ -245,7 +245,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:179` · clave completa `app.signal_ledger.decision_fingerprint`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 11** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -307,7 +307,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:95` · clave completa `app.signal_ledger.select_reference_price`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 11** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -369,7 +369,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:166` · clave completa `app.signal_ledger.serialize_signal_evidence`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 11** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -431,7 +431,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_ledger.py:52` · clave completa `app.signal_ledger._finite`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 7** (mas ancha)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 7** (mas ancha)
 
 ### Por llamada — 1 rutas
 

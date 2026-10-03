@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trading_profile` · `app/api.py:1574` (cuerpo hasta la 1590) · decorador en la linea 1573.
+Handler `trading_profile` · `app/api.py:1605` (cuerpo hasta la 1621) · decorador en la linea 1604.
 
 ## Parametros de entrada
 
@@ -19,7 +19,7 @@ Handler `trading_profile` · `app/api.py:1574` (cuerpo hasta la 1590) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1588 |
+| `as_of` | literal en app/api.py:1619 |
 | `bias` | literal en app/scalp_logic.py:4955 |
 | `confidence` | literal en app/scalp_logic.py:4957 |
 | `contradictions` | literal en app/scalp_logic.py:4961 |
@@ -31,7 +31,7 @@ Handler `trading_profile` · `app/api.py:1574` (cuerpo hasta la 1590) · decorad
 | `profile` | literal en app/scalp_logic.py:4953 |
 | `profile_label` | literal en app/scalp_logic.py:4954 |
 | `reference_only` | literal en app/scalp_logic.py:4960 |
-| `symbol` | literal en app/api.py:1587 |
+| `symbol` | literal en app/api.py:1618 |
 | `weights_note` | literal en app/scalp_logic.py:4963 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -62,9 +62,9 @@ LEE:
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 
@@ -89,7 +89,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4589`
 - `app.scalp_logic.profile_view` — `app/scalp_logic.py:4800`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
@@ -139,8 +139,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
-| 422 | — | `app/api.py:1578` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
+| 422 | — | `app/api.py:1609` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -150,7 +150,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | — | `harness/checks/K31-cubos.py:62`, `harness/checks/K43-foto-unica.sh:44`, `harness/checks/K43-foto-unica.sh:118`, `harness/checks/K43-foto-unica.sh:246` _(+2)_ |
+| **checks** | — | `harness/checks/K31-cubos.py:62`, `harness/checks/K43-foto-unica.sh:44`, `harness/checks/K43-foto-unica.sh:118`, `harness/checks/K43-foto-unica.sh:251` _(+2)_ |
 | **panel** | — | `static/js/04-flujo-y-libro.js:111` |
 | **tests** | `tests/test_v150_desk_snapshot.py:130` | — |
 
@@ -187,7 +187,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_signals` · `app/api.py:2373` (cuerpo hasta la 2411) · decorador en la linea 2372.
+Handler `scalp_signals` · `app/api.py:2404` (cuerpo hasta la 2442) · decorador en la linea 2403.
 
 ## Parametros de entrada
 
@@ -19,15 +19,15 @@ Handler `scalp_signals` · `app/api.py:2373` (cuerpo hasta la 2411) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2409 |
-| `count` | literal en app/api.py:2404 |
-| `limit` | literal en app/api.py:2403 |
-| `rows` | literal en app/api.py:2410 |
-| `servida_desde` | literal en app/api.py:2406 |
-| `servida_hasta` | literal en app/api.py:2407 |
-| `symbol` | literal en app/api.py:2402 |
-| `truncated` | literal en app/api.py:2405 |
-| `ventana_maxima_h` | literal en app/api.py:2408 |
+| `as_of` | literal en app/api.py:2440 |
+| `count` | literal en app/api.py:2435 |
+| `limit` | literal en app/api.py:2434 |
+| `rows` | literal en app/api.py:2441 |
+| `servida_desde` | literal en app/api.py:2437 |
+| `servida_hasta` | literal en app/api.py:2438 |
+| `symbol` | literal en app/api.py:2433 |
+| `truncated` | literal en app/api.py:2436 |
+| `ventana_maxima_h` | literal en app/api.py:2439 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -47,9 +47,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2414`
-- `app.api.records` — `app/api.py:244`
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api._utc_iso` — `app/api.py:2445`
+- `app.api.records` — `app/api.py:245`
+- `app.api.validate_symbol` — `app/api.py:232`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (5)</summary>
 
@@ -67,7 +67,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -114,7 +114,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api._utc_iso` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.api.scalp_signals` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |

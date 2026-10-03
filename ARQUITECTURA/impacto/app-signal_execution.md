@@ -22,7 +22,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/signal_execution.py:410` · clave completa `app.signal_execution.load_signal_execution_inputs`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 11** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -84,7 +84,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:429` · clave completa `app.signal_execution.persist_signal_execution_snapshots`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 11** (mas ancha)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -149,7 +149,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:139` · clave completa `app.signal_execution._canonical_json`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 7** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 7** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -202,7 +202,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:263` · clave completa `app.signal_execution.execution_snapshot_record`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 7** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 7** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -255,7 +255,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:127` · clave completa `app.signal_execution._aware_utc`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 1** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -293,7 +293,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:245` · clave completa `app.signal_execution._cost_curve`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 1** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -331,7 +331,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:168` · clave completa `app.signal_execution._decode_depth_levels`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 1** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -369,7 +369,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:150` · clave completa `app.signal_execution._hash_book_payload`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 1** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -407,7 +407,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/signal_execution.py:189` · clave completa `app.signal_execution._ordered_depth`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 1** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 

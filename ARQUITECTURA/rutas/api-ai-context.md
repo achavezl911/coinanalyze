@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_context` · `app/api.py:3513` (cuerpo hasta la 3526) · decorador en la linea 3512.
+Handler `ai_context` · `app/api.py:3544` (cuerpo hasta la 3557) · decorador en la linea 3543.
 
 ## Parametros de entrada
 
@@ -117,12 +117,12 @@ LEE:
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:784`
 - `liquidations` — `sql/schema.sql:174`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:675`
-  - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:316`
+  - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:317`
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
 - `long_short_ratio` — `sql/schema.sql:187`, 6 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:678`
-  - la llena `app.ingest.upsert_long_short` (INSERT) — `app/ingest.py:357`
+  - la llena `app.ingest.upsert_long_short` (INSERT) — `app/ingest.py:358`
 - `macro_event` — `sql/schema.sql:1245`, 6 columnas
   - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:564`
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:576`
@@ -137,9 +137,9 @@ LEE:
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
 - `oi_bybit` — `sql/schema.sql:97`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
@@ -188,7 +188,7 @@ Llamadas directas del handler:
 
 - `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:891`
 - `app.ai_context.normalize_profile` — `app/ai_context.py:219`
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 
 <details><summary>Alcanzables de forma indirecta (168)</summary>
 
@@ -378,8 +378,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
-| 422 | — | `app/api.py:3522` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
+| 422 | — | `app/api.py:3553` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -429,7 +429,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.config.get_settings` | 3 | **0** | 56 ↑ | **3** | [impacto](../impacto/app-config.md) |
 | `app.interpretation.evaluate_setups` | 4 | **0** | 54 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |

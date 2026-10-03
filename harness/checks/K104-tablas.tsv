@@ -57,3 +57,6 @@ symbols	-	no_juzgada:columna_mutable	created_at es inmutable pero app.db.create_
 market_assets	-	no_juzgada:columna_mutable	igual que symbols: create_pool escribe en ella
 schema_migration	-	no_juzgada:borrado_legitimo	sql/migrations/*.down.sql hace DELETE FROM schema_migration: ahi SI hay quien las borra
 external_api_rate_event	-	no_juzgada:ventana_sin_medir	app/coinalyze.py:68 la poda y no he medido su ventana
+entrada_reglamento	registered_at	sin_poda	append-only por disparador (UPDATE/DELETE/TRUNCATE rechazados, sql/schema.sql bloque de la campana 135) y cero DELETE FROM entrada_% en app/ y sql/ (git grep 2026-10-03); registered_at lo pone la base al insertar y no cambia
+entrada_registro	registered_at	sin_poda	append-only por disparador (UPDATE/DELETE/TRUNCATE rechazados, sql/schema.sql bloque de la campana 135) y cero DELETE FROM entrada_% en app/ y sql/ (git grep 2026-10-03); registered_at lo pone la base al insertar y no cambia
+entrada_latido	registered_at	sin_poda	append-only por disparador (UPDATE/DELETE/TRUNCATE rechazados, sql/schema.sql bloque de la campana 135) y cero DELETE FROM entrada_% en app/ y sql/ (git grep 2026-10-03); registered_at lo pone la base al insertar y no cambia

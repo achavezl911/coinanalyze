@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ohlcv` · `app/api.py:687` (cuerpo hasta la 747) · decorador en la linea 686.
+Handler `ohlcv` · `app/api.py:688` (cuerpo hasta la 748) · decorador en la linea 687.
 
 ## Parametros de entrada
 
@@ -20,22 +20,22 @@ Handler `ohlcv` · `app/api.py:687` (cuerpo hasta la 747) · decorador en la lin
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:480 |
-| `coverage.served_window` | literal en app/api.py:481 |
-| `coverage.unit` | literal en app/api.py:426 |
-| `data_gaps` | literal en app/api.py:486 |
-| `data_gaps.declared` | literal en app/api.py:494 |
-| `data_gaps.exchanges` | literal en app/api.py:488 |
-| `data_gaps.feed` | literal en app/api.py:487 |
-| `data_gaps.market` | literal en app/api.py:489 |
-| `data_gaps.status` | literal en app/api.py:493 |
-| `data_gaps.symbol` | literal en app/api.py:490 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:495 |
-| `data_gaps.window_end` | literal en app/api.py:492 |
-| `data_gaps.window_start` | literal en app/api.py:491 |
-| `interval` | literal en app/api.py:478 |
-| `rows` | literal en app/api.py:479 |
-| `symbol` | literal en app/api.py:477 |
+| `coverage` | literal en app/api.py:481 |
+| `coverage.served_window` | literal en app/api.py:482 |
+| `coverage.unit` | literal en app/api.py:427 |
+| `data_gaps` | literal en app/api.py:487 |
+| `data_gaps.declared` | literal en app/api.py:495 |
+| `data_gaps.exchanges` | literal en app/api.py:489 |
+| `data_gaps.feed` | literal en app/api.py:488 |
+| `data_gaps.market` | literal en app/api.py:490 |
+| `data_gaps.status` | literal en app/api.py:494 |
+| `data_gaps.symbol` | literal en app/api.py:491 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:496 |
+| `data_gaps.window_end` | literal en app/api.py:493 |
+| `data_gaps.window_start` | literal en app/api.py:492 |
+| `interval` | literal en app/api.py:479 |
+| `rows` | literal en app/api.py:480 |
+| `symbol` | literal en app/api.py:478 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -60,9 +60,9 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
@@ -76,15 +76,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:398`
-- `app.api.historical_interval_value` — `app/api.py:237`
-- `app.api.mask_gapped_series_rows` — `app/api.py:248`
-- `app.api.records` — `app/api.py:244`
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.declared_series_response` — `app/api.py:399`
+- `app.api.historical_interval_value` — `app/api.py:238`
+- `app.api.mask_gapped_series_rows` — `app/api.py:249`
+- `app.api.records` — `app/api.py:245`
+- `app.api.validate_symbol` — `app/api.py:232`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:358`
+- `app.api.minutos_de_las_filas` — `app/api.py:359`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
@@ -110,8 +110,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:240` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:241` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -121,7 +121,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K20-cincoxx.sh:83` _(+7)_ | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K43-foto-unica.sh:564` |
+| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K20-cincoxx.sh:83` _(+7)_ | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K43-foto-unica.sh:569` |
 | **panel** | `static/js/07-decision-y-ciclos.js:244` | — |
 | **readme** | — | `README.md:402` |
 | **tests** | — | `tests/test_p1_timeframes_and_spot.py:52` |
@@ -160,7 +160,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |

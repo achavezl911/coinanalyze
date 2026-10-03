@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `symbols` · `app/api.py:662` (cuerpo hasta la 663) · decorador en la linea 661.
+Handler `symbols` · `app/api.py:663` (cuerpo hasta la 664) · decorador en la linea 662.
 
 ## Parametros de entrada
 
@@ -16,8 +16,8 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `asset` | literal en app/api.py:663 |
-| `symbol` | literal en app/api.py:663 |
+| `asset` | literal en app/api.py:664 |
+| `symbol` | literal en app/api.py:664 |
 
 Forma de la respuesta segun el AST: lista, lista de objetos.
 
@@ -44,7 +44,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:169`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:649`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:653` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:170`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:649`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:653` | — |
 | **panel** | `static/js/08-arranque.js:160` | — |
 | **tests** | `tests/test_deploy_health_gate.py:180` | `tests/test_deploy_health_gate.py:42`, `tests/test_deploy_health_gate.py:158` |
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_ledger` · `app/api.py:2550` (cuerpo hasta la 2657) · decorador en la linea 2549.
+Handler `signals_ledger` · `app/api.py:2581` (cuerpo hasta la 2688) · decorador en la linea 2580.
 
 ## Parametros de entrada
 
@@ -22,17 +22,17 @@ Handler `signals_ledger` · `app/api.py:2550` (cuerpo hasta la 2657) · decorado
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2648 |
-| `count` | literal en app/api.py:2654 |
-| `limit` | literal en app/api.py:2649 |
-| `observations` | literal en app/api.py:2656 |
-| `since` | literal en app/api.py:2645 |
-| `symbol` | literal en app/api.py:2644 |
-| `transition_types` | literal en app/api.py:2652 |
-| `transition_types_nota` | literal en app/api.py:2653 |
-| `truncated` | literal en app/api.py:2655 |
-| `until` | literal en app/api.py:2646 |
-| `ventana_maxima_h` | literal en app/api.py:2647 |
+| `as_of` | literal en app/api.py:2679 |
+| `count` | literal en app/api.py:2685 |
+| `limit` | literal en app/api.py:2680 |
+| `observations` | literal en app/api.py:2687 |
+| `since` | literal en app/api.py:2676 |
+| `symbol` | literal en app/api.py:2675 |
+| `transition_types` | literal en app/api.py:2683 |
+| `transition_types_nota` | literal en app/api.py:2684 |
+| `truncated` | literal en app/api.py:2686 |
+| `until` | literal en app/api.py:2677 |
+| `ventana_maxima_h` | literal en app/api.py:2678 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -52,10 +52,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2414`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2534`
-- `app.api.records` — `app/api.py:244`
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api._utc_iso` — `app/api.py:2445`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2565`
+- `app.api.records` — `app/api.py:245`
+- `app.api.validate_symbol` — `app/api.py:232`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (10)</summary>
 
@@ -78,12 +78,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
-| 422 | — | `app/api.py:2543` | una funcion de su cierre |
-| 422 | — | `app/api.py:2571` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2573` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2575` | el propio handler |
-| 422 | — | `app/api.py:2577` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
+| 422 | — | `app/api.py:2574` | una funcion de su cierre |
+| 422 | — | `app/api.py:2602` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2604` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2606` | el propio handler |
+| 422 | — | `app/api.py:2608` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -131,10 +131,10 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api._utc_iso` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-api.md) |
 | `app.api.signals_ledger` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

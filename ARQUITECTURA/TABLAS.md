@@ -21,6 +21,9 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`daily_verdict_outcome`](#daily-verdict-outcome) | 1 | 3 | 0 |
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
 | [`data_gap`](#data-gap) | 12 | 22 | 0 |
+| [`entrada_latido`](#entrada-latido) | 1 | 1 | 0 |
+| [`entrada_registro`](#entrada-registro) | 1 | 1 | 0 |
+| [`entrada_reglamento`](#entrada-reglamento) | 1 | 1 | 0 |
 | [`external_macro_observation`](#external-macro-observation) | 2 | 3 | 0 |
 | [`funding_rate`](#funding-rate) | 1 | 4 | 0 |
 | [`futures_trades_agg`](#futures-trades-agg) | 2 | 7 | 0 |
@@ -62,7 +65,7 @@ Definiciones, escritas antes del recuento:
 - **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
   *"periodo medido a medias"* de *"periodo no medido"*.
 
-| | de 40 tablas del esquema |
+| | de 43 tablas del esquema |
 |---|---|
 | de SERIE | **22** |
 | de serie que DECLARAN cobertura cuantitativa | **7** |
@@ -306,6 +309,42 @@ La escriben:
 - [`/api/trend-matrix`](rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](rutas/api-whale-delta.md)
 
+### entrada_latido
+
+`sql/schema.sql:2702`, 8 columnas.
+
+La escriben:
+
+- `app.entradas.registro.latir` — **INSERT** en `app/entradas/registro.py:201`
+
+**Si cambia el contenido o el esquema de `entrada_latido`, estas 1 rutas lo notan:**
+
+- [`/api/entradas`](rutas/api-entradas.md)
+
+### entrada_registro
+
+`sql/schema.sql:2665`, 26 columnas.
+
+La escriben:
+
+- `app.entradas.registro.insertar` — **INSERT** en `app/entradas/registro.py:30`
+
+**Si cambia el contenido o el esquema de `entrada_registro`, estas 1 rutas lo notan:**
+
+- [`/api/entradas`](rutas/api-entradas.md)
+
+### entrada_reglamento
+
+`sql/schema.sql:2655`, 6 columnas.
+
+La escriben:
+
+- `app.entradas.registro.registrar_reglamento` — **INSERT** en `app/entradas/registro.py:74`
+
+**Si cambia el contenido o el esquema de `entrada_reglamento`, estas 1 rutas lo notan:**
+
+- [`/api/entradas`](rutas/api-entradas.md)
+
 ### external_macro_observation
 
 `sql/schema.sql:1234`, 5 columnas.
@@ -390,7 +429,7 @@ La escriben:
 La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:675`
-- `app.ingest.upsert_liquidations` — **INSERT** en `app/ingest.py:316`
+- `app.ingest.upsert_liquidations` — **INSERT** en `app/ingest.py:317`
 
 **Si cambia el contenido o el esquema de `liquidations`, estas 5 rutas lo notan:**
 
@@ -433,7 +472,7 @@ La escriben:
 La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:678`
-- `app.ingest.upsert_long_short` — **INSERT** en `app/ingest.py:357`
+- `app.ingest.upsert_long_short` — **INSERT** en `app/ingest.py:358`
 
 **Si cambia el contenido o el esquema de `long_short_ratio`, estas 3 rutas lo notan:**
 
@@ -533,9 +572,9 @@ La escriben:
 La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:655`
-- `app.ingest.upsert_ohlcv` — **INSERT** en `app/ingest.py:154`
-- `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:200`
-- `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:200`
+- `app.ingest.upsert_ohlcv` — **INSERT** en `app/ingest.py:155`
+- `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:201`
+- `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:201`
 
 **Si cambia el contenido o el esquema de `ohlcv`, estas 38 rutas lo notan:**
 

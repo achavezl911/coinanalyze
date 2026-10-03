@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `stream` · `app/api.py:3775` (cuerpo hasta la 3780) · decorador en la linea 3774.
+Handler `stream` · `app/api.py:3806` (cuerpo hasta la 3811) · decorador en la linea 3805.
 
 ## Parametros de entrada
 
@@ -43,11 +43,11 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.stream_generator` — `app/api.py:3727`
+- `app.api.stream_generator` — `app/api.py:3758`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
-- `app.api.records` — `app/api.py:244`
+- `app.api.records` — `app/api.py:245`
 
 </details>
 
@@ -71,7 +71,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K20-cincoxx.sh:126`, `harness/checks/K31-eslabon5.sh:65`, `harness/checks/K43-foto-unica.sh:169` | `harness/checks/K20-cincoxx.sh:124`, `harness/checks/K31-eslabon5.sh:57` |
+| **checks** | `harness/checks/K20-cincoxx.sh:126`, `harness/checks/K31-eslabon5.sh:65`, `harness/checks/K43-foto-unica.sh:170` | `harness/checks/K20-cincoxx.sh:124`, `harness/checks/K31-eslabon5.sh:57` |
 | **panel** | `static/js/08-arranque.js:8` | — |
 | **readme** | — | `README.md:412` |
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `desk_state` · `app/api.py:1429` (cuerpo hasta la 1536) · decorador en la linea 1428.
+Handler `desk_state` · `app/api.py:1460` (cuerpo hasta la 1567) · decorador en la linea 1459.
 
 ## Parametros de entrada
 
@@ -21,32 +21,32 @@ Handler `desk_state` · `app/api.py:1429` (cuerpo hasta la 1536) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1510 |
-| `components` | literal en app/api.py:1514 |
-| `components.data_quality` | literal en app/api.py:1495 |
-| `components.delta_matrix` | literal en app/api.py:1491 |
-| `components.hypothesis` | literal en app/api.py:1493 |
-| `components.profile` | literal en app/api.py:1492 |
-| `components.reference_levels` | literal en app/api.py:1500 |
-| `components.scalp` | literal en app/api.py:1494 |
-| `components.trend_matrix` | literal en app/api.py:1490 |
-| `direction` | literal en app/api.py:1512 |
-| `note` | literal en app/api.py:1531 |
-| `partial` | literal en app/api.py:1525 |
-| `partial.profile_coverage_pct` | literal en app/api.py:1529 |
-| `partial.profile_missing_data` | literal en app/api.py:1527 |
-| `partial.scalp_coverage_pct` | literal en app/api.py:1528 |
-| `partial.scalp_missing_components` | literal en app/api.py:1526 |
-| `profile` | literal en app/api.py:1511 |
-| `setup` | literal en app/api.py:1513 |
-| `source_timestamps` | literal en app/api.py:1515 |
-| `source_timestamps.basis_status` | literal en app/api.py:1518 |
-| `source_timestamps.book_lag_seconds` | literal en app/api.py:1516 |
-| `source_timestamps.book_status` | literal en app/api.py:1517 |
-| `source_timestamps.collectors` | literal en app/api.py:1520 |
-| `source_timestamps.liquidations_last_event_age_s` | literal en app/api.py:1521 |
-| `source_timestamps.liquidations_measured` | literal en app/api.py:1519 |
-| `symbol` | literal en app/api.py:1509 |
+| `as_of` | literal en app/api.py:1541 |
+| `components` | literal en app/api.py:1545 |
+| `components.data_quality` | literal en app/api.py:1526 |
+| `components.delta_matrix` | literal en app/api.py:1522 |
+| `components.hypothesis` | literal en app/api.py:1524 |
+| `components.profile` | literal en app/api.py:1523 |
+| `components.reference_levels` | literal en app/api.py:1531 |
+| `components.scalp` | literal en app/api.py:1525 |
+| `components.trend_matrix` | literal en app/api.py:1521 |
+| `direction` | literal en app/api.py:1543 |
+| `note` | literal en app/api.py:1562 |
+| `partial` | literal en app/api.py:1556 |
+| `partial.profile_coverage_pct` | literal en app/api.py:1560 |
+| `partial.profile_missing_data` | literal en app/api.py:1558 |
+| `partial.scalp_coverage_pct` | literal en app/api.py:1559 |
+| `partial.scalp_missing_components` | literal en app/api.py:1557 |
+| `profile` | literal en app/api.py:1542 |
+| `setup` | literal en app/api.py:1544 |
+| `source_timestamps` | literal en app/api.py:1546 |
+| `source_timestamps.basis_status` | literal en app/api.py:1549 |
+| `source_timestamps.book_lag_seconds` | literal en app/api.py:1547 |
+| `source_timestamps.book_status` | literal en app/api.py:1548 |
+| `source_timestamps.collectors` | literal en app/api.py:1551 |
+| `source_timestamps.liquidations_last_event_age_s` | literal en app/api.py:1552 |
+| `source_timestamps.liquidations_measured` | literal en app/api.py:1550 |
+| `symbol` | literal en app/api.py:1540 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -87,9 +87,9 @@ LEE:
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
@@ -129,7 +129,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.data_quality` — `app/scalp_logic.py:4278`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4589`
@@ -235,10 +235,10 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
-| 422 | — | `app/api.py:1449` | el propio handler |
-| 422 | — | `app/api.py:1453` | el propio handler |
-| 422 | — | `app/api.py:1457` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
+| 422 | — | `app/api.py:1480` | el propio handler |
+| 422 | — | `app/api.py:1484` | el propio handler |
+| 422 | — | `app/api.py:1488` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -287,7 +287,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |

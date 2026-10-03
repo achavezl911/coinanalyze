@@ -40,7 +40,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/scalp_collector.py:1535` · clave completa `app.scalp_collector.owns_global_cleanup`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 26** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 26** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -133,7 +133,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1358` · clave completa `app.scalp_collector.persist_scalp_signals`
 
-**Radio exacto: 4 rutas** de 73 · **cota superior: 25** (mas ancha)
+**Radio exacto: 4 rutas** de 74 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -229,7 +229,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:806` · clave completa `app.scalp_collector._write_combined_minute`
 
-**Radio exacto: 7 rutas** de 73 · **cota superior: 22** (mas ancha)
+**Radio exacto: 7 rutas** de 74 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -323,7 +323,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:777` · clave completa `app.scalp_collector._write_combined_realtime`
 
-**Radio exacto: 17 rutas** de 73 · **cota superior: 22** (mas ancha)
+**Radio exacto: 17 rutas** de 74 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -427,7 +427,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:720` · clave completa `app.scalp_collector._write_trade_rows`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -512,7 +512,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:637` · clave completa `app.scalp_collector.flush_trades`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -597,7 +597,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:629` · clave completa `app.scalp_collector.all_expected_fresh`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -679,7 +679,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1463` · clave completa `app.scalp_collector.monitor`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -761,7 +761,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:525` · clave completa `app.scalp_collector.persist_liquidation_health_snapshot`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -843,7 +843,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:907` · clave completa `app.scalp_collector._write_combined_books`
 
-**Radio exacto: 15 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 15 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -940,7 +940,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:875` · clave completa `app.scalp_collector._write_ladders`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1023,7 +1023,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:999` · clave completa `app.scalp_collector.binance_loop`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1102,7 +1102,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1109` · clave completa `app.scalp_collector.binance_market_loop`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1181,7 +1181,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1161` · clave completa `app.scalp_collector.bybit_loop`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1260,7 +1260,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1570` · clave completa `app.scalp_collector.cleanup`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1340,7 +1340,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1539` · clave completa `app.scalp_collector.cleanup_expired_rows`
 
-**Radio exacto: 7 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 7 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1429,7 +1429,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:691` · clave completa `app.scalp_collector.drenar_minutos`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1509,7 +1509,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:832` · clave completa `app.scalp_collector.flush_books`
 
-**Radio exacto: 15 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 15 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1606,7 +1606,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:965` · clave completa `app.scalp_collector.flush_liquidations`
 
-**Radio exacto: 15 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 15 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1702,7 +1702,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1055` · clave completa `app.scalp_collector.handle_binance`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1781,7 +1781,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1247` · clave completa `app.scalp_collector.handle_bybit`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1860,7 +1860,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1586` · clave completa `app.scalp_collector.main`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1939,7 +1939,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:624` · clave completa `app.scalp_collector.mark_exchange_disconnected`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2018,7 +2018,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:463` · clave completa `app.scalp_collector.persist_liquidation_feed_state`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2097,7 +2097,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:604` · clave completa `app.scalp_collector.reset_liquidation_feed_health`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 20** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 20** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2176,7 +2176,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:673` · clave completa `app.scalp_collector.segundos_cubiertos`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 18** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 18** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2249,7 +2249,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:580` · clave completa `app.scalp_collector.persist_liquidation_event_loss`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 0 rutas
 

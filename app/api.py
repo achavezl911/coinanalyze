@@ -59,6 +59,7 @@ from app.db import (
     required_heartbeat_failures,
 )
 from app.delta_profile import delta_profile
+from app.entradas import ruta as entradas_ruta
 from app.external_macro import align_with_internal, external_macro_context
 from app.interpretation import cvd_swing_read, daily_flow_read, evaluate_setups
 from app.logging_setup import configure_logging
@@ -1289,6 +1290,36 @@ async def carry_matriz(
     rechaza_parametros_desconocidos(request, ("dias",))
     async with app.state.pool.acquire() as conn:
         return await matriz_de_carry(conn, list(SUPPORTED_SYMBOLS), dias)
+
+
+@app.get("/api/entradas")
+async def entradas(
+    request: Request,
+    lado: Annotated[str, Query(pattern="^(ambos|largo|corto)$")] = "ambos",
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+    version: Annotated[str | None, Query(max_length=64)] = None,
+    symbol: str | None = None,
+    limite: Annotated[int, Query(ge=1, le=1000)] = 200,
+    foto: bool = False,
+) -> dict[str, Any]:
+    """EL REGISTRO DE ENTRADAS (campana 135, E1): planes en largo y en corto apuntados ANTES de
+    saber como acaban, con su foto. Vivos y ventana por lado, sombras con su vector, reglamento
+    vigente y su diferencia con el padre, cuentas por celda y el estado del generador.
+
+    NO sirve ninguna fraccion ni tasa de aciertos de los candidatos (app/entradas/ruta.py). Todo
+    parametro tiene valor por defecto; la ventana por defecto son las 24 h hasta ahora.
+    """
+    rechaza_parametros_desconocidos(
+        request, ("lado", "desde", "hasta", "version", "symbol", "limite", "foto")
+    )
+    if symbol is not None:
+        validate_symbol(symbol)
+    async with app.state.pool.acquire() as conn:
+        return await entradas_ruta.construir(
+            conn, lado=lado, desde=desde, hasta=hasta, version=version, symbol=symbol,
+            limite=limite, foto=foto,
+        )
 
 
 @app.get("/api/scalp/summary")

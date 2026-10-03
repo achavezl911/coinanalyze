@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `structure` · `app/api.py:2266` (cuerpo hasta la 2269) · decorador en la linea 2265.
+Handler `structure` · `app/api.py:2297` (cuerpo hasta la 2300) · decorador en la linea 2296.
 
 ## Parametros de entrada
 
@@ -40,14 +40,14 @@ LEE:
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:784`
 - `liquidations` — `sql/schema.sql:174`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:675`
-  - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:316`
+  - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:317`
 - `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 
@@ -58,7 +58,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.scalp_logic.market_structure` — `app/scalp_logic.py:1041`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
@@ -87,7 +87,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -97,7 +97,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:155`, `harness/checks/K43-foto-unica.sh:212` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:155`, `harness/checks/K43-foto-unica.sh:217` | — |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:351` | — |
 
 **La llama el panel: es superficie de producto.**
@@ -138,7 +138,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._explicit_as_of` | 26 | **0** | 0 | **26** | [impacto](../impacto/app-scalp_logic.md) |
