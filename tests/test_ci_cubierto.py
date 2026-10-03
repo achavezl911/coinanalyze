@@ -31,6 +31,10 @@ PASOS_CONOCIDOS = {
     "Compile all (syntax check)": ".venv/bin/python -m compileall -q app",
     "Sweep leftover CI databases": "bash harness/checks/barre-bases-ci-control.bash (el barrido REAL lo hace CI en su corrida)",
     "Create disposable test database": "en 143 la base de test la levanta el propio pytest",
+    "Fetch main for the reglamento history test": (
+        "git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main (campana 135: sin "
+        "origin/main, tests/test_entradas_reglamento.py se salta fuera de CI y falla dentro)"
+    ),
     "Pytest": ".venv/bin/pytest -q",
     "Drop disposable test database": "no aplica en local",
     "JavaScript tests": "node --test tests/js/",

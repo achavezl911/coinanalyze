@@ -41,6 +41,9 @@ limpia() {
   rm -rf "$T"
 }
 trap limpia EXIT
+# Parado con una senal (TaskStop, Ctrl-C), el EXIT solo no corre y las bases se quedan: medido el
+# 2026-10-03, ocho k105_ctl_* huerfanas tras parar una corrida a medias.
+trap 'limpia; trap - EXIT; exit 143' INT TERM
 [ "$CARGADO" = "1" ] || exit 2
 
 pasan=0; total=0; fallan=""
