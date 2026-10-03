@@ -50,9 +50,9 @@ LEE:
   - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:813`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
-  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:154`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
-  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:200`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:856`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:912`

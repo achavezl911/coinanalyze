@@ -32,6 +32,7 @@ from app.db import (
     monitor_service_lock,
     wait_for_stop_or_lock_loss,
 )
+from app.entradas import servicio as entradas_servicio
 from app.external_macro import refresh_external_macro
 from app.logging_setup import configure_logging
 from app.metrics import compute_and_store_all
@@ -1063,6 +1064,7 @@ async def run() -> None:
         name="service-lock",
     )
     tasks: tuple[asyncio.Task[None], ...] = ()
+    extras: tuple[asyncio.Task[None], ...] = ()  # campana 135: fuera de critical_tasks
 
     try:
         async with pool.acquire() as conn:
@@ -1124,16 +1126,30 @@ async def run() -> None:
                     )
                 ),
             )
+            # Campana 135 · el generador de entradas vive aqui (P7: no cabe una unidad nueva).
+            # NO va en critical_tasks: si muriera, ingest sigue recogiendo y el fallo queda en
+            # entrada_latido. Corre en su propio hilo y con su propia conexion (servicio.py).
+            marcha = entradas_servicio.plan_de_marcha()
+            entradas = asyncio.create_task(
+                run_aligned_feed(
+                    stop,
+                    lambda: entradas_servicio.pasada(settings),
+                    cadence_seconds=marcha["cadencia_s"],
+                    offset_seconds=marcha["desfase_s"],
+                    name="entradas",
+                )
+            )
+            extras = (entradas,)
             await wait_for_stop_or_lock_loss(
                 stop,
                 lock_monitor,
                 critical_tasks=tasks,
             )
     finally:
-        for task in tasks:
+        for task in (*tasks, *extras):
             task.cancel()
         lock_monitor.cancel()
-        await asyncio.gather(*tasks, lock_monitor, return_exceptions=True)
+        await asyncio.gather(*tasks, *extras, lock_monitor, return_exceptions=True)
         await pool.close()
         await service_lock.close()
 

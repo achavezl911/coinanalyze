@@ -62,7 +62,7 @@ Definiciones, escritas antes del recuento:
 - **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
   *"periodo medido a medias"* de *"periodo no medido"*.
 
-| | de 40 tablas del esquema |
+| | de 43 tablas del esquema |
 |---|---|
 | de SERIE | **22** |
 | de serie que DECLARAN cobertura cuantitativa | **7** |
@@ -390,7 +390,7 @@ La escriben:
 La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:675`
-- `app.ingest.upsert_liquidations` — **INSERT** en `app/ingest.py:316`
+- `app.ingest.upsert_liquidations` — **INSERT** en `app/ingest.py:317`
 
 **Si cambia el contenido o el esquema de `liquidations`, estas 5 rutas lo notan:**
 
@@ -433,7 +433,7 @@ La escriben:
 La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:678`
-- `app.ingest.upsert_long_short` — **INSERT** en `app/ingest.py:357`
+- `app.ingest.upsert_long_short` — **INSERT** en `app/ingest.py:358`
 
 **Si cambia el contenido o el esquema de `long_short_ratio`, estas 3 rutas lo notan:**
 
@@ -533,9 +533,9 @@ La escriben:
 La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:655`
-- `app.ingest.upsert_ohlcv` — **INSERT** en `app/ingest.py:154`
-- `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:200`
-- `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:200`
+- `app.ingest.upsert_ohlcv` — **INSERT** en `app/ingest.py:155`
+- `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:201`
+- `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:201`
 
 **Si cambia el contenido o el esquema de `ohlcv`, estas 38 rutas lo notan:**
 
@@ -843,6 +843,9 @@ del patron que en esta casa se ha repetido nueve veces: algo que existe, parece
 completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
+- `entrada_latido` — la escriben 1: `app/entradas/registro.py:201`
+- `entrada_registro` — la escriben 1: `app/entradas/registro.py:30`
+- `entrada_reglamento` — la escriben 1: `app/entradas/registro.py:74`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
 - `market_assets` — la escriben 1: `app/db.py:247`
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`

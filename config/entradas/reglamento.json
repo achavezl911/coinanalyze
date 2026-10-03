@@ -102,7 +102,7 @@
             },
             "stop_ancla": {
               "valor": "extremo_del_episodio",
-              "unidad": "minimo (largo) / maximo (corto) desde la ruptura",
+              "unidad": "minimo (largo) / maximo (corto) del RETEST: velas despues de la ruptura confirmada hasta el gatillo",
               "origen": "operador, DECIDIDO (encargo 135): stop ESTRUCTURAL mas alla del extremo del episodio"
             },
             "entrada": {
@@ -201,10 +201,17 @@
                 "sesiones_1d": 730,
                 "velas_4h": 720,
                 "minimo_velas": 120,
-                "fuentes": ["1d", "4h"]
+                "barra_min": {"1d": 1440, "4h": 240},
+                "peso_toque_1d": 1.5,
+                "borde_pad_tolerancia": 0.2
               },
-              "unidad": "pivotes fractales estrictos sobre velas diarias UTC y de 4 h cerradas ANTES del inicio del episodio",
-              "origen": "BARRIER_PIVOT_WIDTH/BARRIER_LOOKBACK_SESSIONS/BARRIER_INTRADAY_TARGET_BARS, app/interpretation.py:358-363; minimo 120, app/scalp_logic.py:1319 y :1334 (main@82ae7e2)"
+              "unidad": "pivotes fractales estrictos sobre velas diarias UTC y de 4 h (ohlcv 'daily' y '4hour') cerradas ANTES del inicio del episodio, agrupados con _barrier_candidates/_barrier_zones",
+              "origen": "BARRIER_PIVOT_WIDTH/BARRIER_LOOKBACK_SESSIONS/BARRIER_INTRADAY_TARGET_BARS, app/interpretation.py:358-363; minimo 120, app/scalp_logic.py:1319 y :1334; peso 1.5 del toque diario, app/interpretation.py:773; margen del borde 0.2 x tolerancia, app/interpretation.py:846 (main@82ae7e2). Valores FIJADOS POR EL CODIGO REUTILIZADO: tests/test_entradas_motor.py los contrasta con su fuente"
+            },
+            "separacion_ventana_velas": {
+              "valor": {"intradia": 144, "swing": 90},
+              "unidad": "velas del perfil en que se busca la separacion; un episodio cerrado antes de esa ventana cuenta como separado",
+              "origen": "ARBITRARIO v1 (la misma ventana que la base de volumen)"
             },
             "colchon_stop": {
               "valor": {"atr_perfil": 0.5, "racimo": "tolerancia_racimo", "fuera_de_racimo": true},
@@ -386,8 +393,8 @@
       },
       "huellas": {
         "F1": "3fc845a2cc4f0b4250651679786b82cc143b5275b600d58f2348d64c48f5b999",
-        "F2": "352f0bc0d3c47c4dbbf6feb48475667387248c4c090af2c9b88976a2b73d890a",
-        "comun": "99fcbbc2a420468d7a1ae748c42fe13c714bda63fc1b63405cc9af00983dc89e",
+        "F2": "033d5f9af296a415b358d57585d462dfaad99460a160f8aff0cd4515461c0df8",
+        "comun": "d4e3acf3daa3952bd36bb39bee6bbde443e3758e7f9dc246fe70bab8b349fee6",
         "calendario": "8adc8a8f38ea96764dd793d6b2c6690057c9c643cefd2f49420cac8f01cdb5da",
         "lectura": "43a7ead49530b4bd064b96dd93872fed5463261b29ccd601b0fc39fa13bf8d5c",
         "papel": "23407669fd06d62ed73d6255a1eb3fe89ed854dc2077aa3e86a59b445fe7d003"

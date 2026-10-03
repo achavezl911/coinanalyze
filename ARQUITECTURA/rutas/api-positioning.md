@@ -46,7 +46,7 @@ LEE:
 
 - `long_short_ratio` — `sql/schema.sql:187`, 6 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:678`
-  - la llena `app.ingest.upsert_long_short` (INSERT) — `app/ingest.py:357`
+  - la llena `app.ingest.upsert_long_short` (INSERT) — `app/ingest.py:358`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):

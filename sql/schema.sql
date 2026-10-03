@@ -2628,3 +2628,184 @@ COMMENT ON CONSTRAINT signal_observation_pr25_reference_time_check
   'Signal evidence v5/v6 reference prices require an exact source timestamp no later than observed_at';
 
 COMMIT;
+
+-- =========================================================================================
+-- CAMPANA 135 · LAS ENTRADAS (E1) · EL REGISTRO DE HIPOTESIS DE ENTRADA. Bloque ADITIVO:
+-- solo CREATE TABLE/INDEX IF NOT EXISTS, CREATE OR REPLACE FUNCTION y DROP TRIGGER IF EXISTS
+-- + CREATE TRIGGER sobre tablas NUEVAS. No toca ninguna tabla existente (Puerta 1).
+--
+-- entrada_reglamento  la huella de cada (etiqueta, bloque) del reglamento (config/entradas/
+--                     reglamento.json) y del codigo que decide, registrada ANTES de emitir nada.
+--                     UNIQUE(etiqueta, bloque): una etiqueta no abarca dos reglas (K62).
+-- entrada_registro    cada cambio de estado de cada plan de entrada (VIGILANDO, DISPARADO,
+--                     SOMBRA, CERRADO_SIN_DISPARO) con su foto. registered_at y retraso_s los
+--                     pone la BASE al insertar; un DISPARADO por encima de su tope, o un segundo
+--                     episodio vivo en la misma clave, los rechaza la base y no el cliente.
+-- entrada_latido      cada pasada del generador con su estado y su fallo: lo que falta se sirve.
+--
+-- Las tres son append-only: UPDATE, DELETE y TRUNCATE los rechaza un disparador (ERRCODE
+-- 55000, el patron de signal_walk_forward_manifest). NINGUNA poda de retencion las toca: no
+-- estan en apply_retention (app/daily_agg.py), ni en cleanup_expired_rows
+-- (app/scalp_collector.py), ni en la lista de apply_temporal_retention. Sus nombres no llevan
+-- digitos (K01a los extrae con [a-z_]+). foto y contenido son json, no jsonb: guardan el texto
+-- canonico EXACTO, asi que sha256(foto::text) = huella_foto se puede recomprobar siempre.
+-- =========================================================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS entrada_reglamento (
+    reglamento_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    etiqueta text NOT NULL CHECK (etiqueta ~ '^[A-Za-z0-9._-]{1,64}$'),
+    bloque text NOT NULL CHECK (bloque ~ '^[A-Za-z0-9_]{1,40}$'),
+    huella text NOT NULL CHECK (huella ~ '^[0-9a-f]{64}$'),
+    contenido json NOT NULL CHECK (json_typeof(contenido) = 'object'),
+    registered_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    UNIQUE (etiqueta, bloque)
+);
+
+CREATE TABLE IF NOT EXISTS entrada_registro (
+    registro_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    registered_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    version text NOT NULL CHECK (version ~ '^[A-Za-z0-9._-]{1,64}$'),
+    familia text NOT NULL CHECK (length(familia) BETWEEN 1 AND 20),
+    perfil text NOT NULL CHECK (length(perfil) BETWEEN 1 AND 20),
+    lado text NOT NULL CHECK (lado IN ('largo', 'corto')),
+    symbol text NOT NULL REFERENCES symbols(symbol),
+    clave text NOT NULL CHECK (length(clave) BETWEEN 1 AND 200),
+    episodio text NOT NULL CHECK (episodio ~ '^[0-9a-f]{64}$'),
+    estado text NOT NULL CHECK (estado IN ('VIGILANDO', 'DISPARADO', 'SOMBRA', 'CERRADO_SIN_DISPARO')),
+    motivo text,
+    vela_cierre timestamptz NOT NULL,
+    inicio_episodio timestamptz NOT NULL,
+    caduca_en timestamptz,
+    tope_retraso_s numeric NOT NULL CHECK (tope_retraso_s > 0),
+    retraso_s numeric NOT NULL DEFAULT 0,
+    huella_familia text NOT NULL CHECK (huella_familia ~ '^[0-9a-f]{64}$'),
+    huella_comun text NOT NULL CHECK (huella_comun ~ '^[0-9a-f]{64}$'),
+    huella_calendario text NOT NULL CHECK (huella_calendario ~ '^[0-9a-f]{64}$'),
+    huella_calendario_datos text CHECK (huella_calendario_datos ~ '^[0-9a-f]{64}$'),
+    huella_lectura text NOT NULL CHECK (huella_lectura ~ '^[0-9a-f]{64}$'),
+    huella_papel text NOT NULL CHECK (huella_papel ~ '^[0-9a-f]{64}$'),
+    codigo_version text NOT NULL CHECK (codigo_version ~ '^[A-Za-z0-9._-]{1,64}$'),
+    huella_codigo text NOT NULL CHECK (huella_codigo ~ '^[0-9a-f]{64}$'),
+    huella_foto text NOT NULL CHECK (huella_foto ~ '^[0-9a-f]{64}$'),
+    foto json NOT NULL CHECK (json_typeof(foto) = 'object'),
+    CHECK (vela_cierre >= inicio_episodio),
+    CHECK (estado <> 'DISPARADO' OR caduca_en IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS entrada_registro_grupo_idx
+    ON entrada_registro (symbol, perfil, version, vela_cierre);
+CREATE INDEX IF NOT EXISTS entrada_registro_clave_idx
+    ON entrada_registro (version, symbol, familia, perfil, lado, clave, vela_cierre);
+CREATE INDEX IF NOT EXISTS entrada_registro_registered_idx
+    ON entrada_registro (registered_at);
+
+CREATE TABLE IF NOT EXISTS entrada_latido (
+    latido_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    registered_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    vela_cierre timestamptz,
+    estado text NOT NULL CHECK (length(estado) BETWEEN 1 AND 40),
+    duracion_s numeric,
+    codigo_version text NOT NULL,
+    detalle json NOT NULL CHECK (json_typeof(detalle) = 'object'),
+    error text
+);
+CREATE INDEX IF NOT EXISTS entrada_latido_registered_idx ON entrada_latido (registered_at);
+
+CREATE OR REPLACE FUNCTION entrada_pone_registered_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.registered_at := clock_timestamp();
+    RETURN NEW;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION entrada_registro_al_insertar()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    previo record;
+BEGIN
+    -- El reloj de la BASE, no el del cliente: lo que el cliente mande en registered_at se pisa.
+    NEW.registered_at := clock_timestamp();
+    NEW.retraso_s := round(extract(epoch FROM (NEW.registered_at - NEW.vela_cierre))::numeric, 3);
+    PERFORM pg_advisory_xact_lock(hashtext(
+        'entrada_registro|' || NEW.version || '|' || NEW.symbol || '|' || NEW.familia || '|'
+        || NEW.perfil || '|' || NEW.lado || '|' || NEW.clave));
+    IF NEW.estado = 'DISPARADO' AND NEW.retraso_s > NEW.tope_retraso_s THEN
+        RAISE EXCEPTION 'entrada_registro: DISPARADO tardio: % s desde el cierre de su vela, tope % s',
+            NEW.retraso_s, NEW.tope_retraso_s
+            USING ERRCODE = 'EN001';
+    END IF;
+    IF NEW.estado IN ('VIGILANDO', 'DISPARADO') THEN
+        SELECT registro_id, estado, caduca_en INTO previo
+          FROM entrada_registro
+         WHERE version = NEW.version AND symbol = NEW.symbol AND familia = NEW.familia
+           AND perfil = NEW.perfil AND lado = NEW.lado AND clave = NEW.clave
+           AND episodio <> NEW.episodio
+         ORDER BY vela_cierre DESC, registro_id DESC
+         LIMIT 1;
+        IF FOUND AND (previo.estado = 'VIGILANDO'
+                      OR (previo.estado = 'DISPARADO' AND previo.caduca_en > NEW.vela_cierre)) THEN
+            RAISE EXCEPTION 'entrada_registro: ya hay un episodio vivo en esta clave (registro %, %)',
+                previo.registro_id, previo.estado
+                USING ERRCODE = 'EN002';
+        END IF;
+    END IF;
+    RETURN NEW;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION rechaza_mutacion_entradas()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION '% is append-only; % is not allowed', TG_TABLE_NAME, TG_OP
+        USING ERRCODE = '55000';
+    RETURN NULL;
+END
+$$;
+
+DROP TRIGGER IF EXISTS entrada_reglamento_al_insertar ON entrada_reglamento;
+CREATE TRIGGER entrada_reglamento_al_insertar
+BEFORE INSERT ON entrada_reglamento
+FOR EACH ROW EXECUTE FUNCTION entrada_pone_registered_at();
+DROP TRIGGER IF EXISTS entrada_reglamento_no_update_delete ON entrada_reglamento;
+CREATE TRIGGER entrada_reglamento_no_update_delete
+BEFORE UPDATE OR DELETE ON entrada_reglamento
+FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas();
+DROP TRIGGER IF EXISTS entrada_reglamento_no_truncate ON entrada_reglamento;
+CREATE TRIGGER entrada_reglamento_no_truncate
+BEFORE TRUNCATE ON entrada_reglamento
+FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
+
+DROP TRIGGER IF EXISTS entrada_registro_al_insertar ON entrada_registro;
+CREATE TRIGGER entrada_registro_al_insertar
+BEFORE INSERT ON entrada_registro
+FOR EACH ROW EXECUTE FUNCTION entrada_registro_al_insertar();
+DROP TRIGGER IF EXISTS entrada_registro_no_update_delete ON entrada_registro;
+CREATE TRIGGER entrada_registro_no_update_delete
+BEFORE UPDATE OR DELETE ON entrada_registro
+FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas();
+DROP TRIGGER IF EXISTS entrada_registro_no_truncate ON entrada_registro;
+CREATE TRIGGER entrada_registro_no_truncate
+BEFORE TRUNCATE ON entrada_registro
+FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
+
+DROP TRIGGER IF EXISTS entrada_latido_al_insertar ON entrada_latido;
+CREATE TRIGGER entrada_latido_al_insertar
+BEFORE INSERT ON entrada_latido
+FOR EACH ROW EXECUTE FUNCTION entrada_pone_registered_at();
+DROP TRIGGER IF EXISTS entrada_latido_no_update_delete ON entrada_latido;
+CREATE TRIGGER entrada_latido_no_update_delete
+BEFORE UPDATE OR DELETE ON entrada_latido
+FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas();
+DROP TRIGGER IF EXISTS entrada_latido_no_truncate ON entrada_latido;
+CREATE TRIGGER entrada_latido_no_truncate
+BEFORE TRUNCATE ON entrada_latido
+FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
+
+COMMIT;

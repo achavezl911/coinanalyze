@@ -41,6 +41,9 @@
     "daily_verdict_outcome": "`sql/schema.sql:2290`, 10 columnas",
     "daily_verdict_snapshot": "`sql/schema.sql:1099`, 26 columnas",
     "data_gap": "`sql/schema.sql:1412`, 22 columnas",
+    "entrada_latido": "`sql/schema.sql:2702`, 8 columnas",
+    "entrada_registro": "`sql/schema.sql:2665`, 26 columnas",
+    "entrada_reglamento": "`sql/schema.sql:2655`, 6 columnas",
     "external_api_rate_event": "`sql/schema.sql:1309`, 3 columnas",
     "external_macro_observation": "`sql/schema.sql:1234`, 5 columnas",
     "funding_rate": "`sql/schema.sql:146`, 7 columnas",
@@ -153,6 +156,27 @@
       "por_alter": []
     },
     "data_gap": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "entrada_latido": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "entrada_registro": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": false,
+      "por_alter": []
+    },
+    "entrada_reglamento": {
       "columnas_de_cobertura": [],
       "cuantitativas": [],
       "distingue_corto_de_ausente": false,
@@ -11772,6 +11796,355 @@
         "total": 1,
         "total_exacto": 1
       },
+      "app.entradas.reglamento.cargar_valido": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.entradas.backtest.main",
+          "app.entradas.backtest.main._corre",
+          "app.entradas.servicio._pasada_async",
+          "app.entradas.servicio.pasada",
+          "app.entradas.servicio.plan_de_marcha",
+          "app.ingest.run"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/reglamento.py:322",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "entrada_latido": [
+            "app.entradas.registro.latir"
+          ],
+          "entrada_reglamento": [
+            "app.entradas.registro.registrar_reglamento"
+          ],
+          "pipeline_heartbeat": [
+            "app.db.heartbeat_component"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 8,
+        "total_exacto": 0
+      },
+      "app.entradas.reglamento.valores": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.entradas.backtest.correr",
+          "app.entradas.backtest.main",
+          "app.entradas.backtest.main._corre",
+          "app.entradas.backtest.simular",
+          "app.entradas.motor._foto_base",
+          "app.entradas.motor.parametros",
+          "app.entradas.motor.paso",
+          "app.entradas.registro.ventana_previos",
+          "app.entradas.servicio._pasada_async",
+          "app.entradas.servicio.evaluar_vela",
+          "app.entradas.servicio.pasada",
+          "app.entradas.servicio.plan_de_marcha",
+          "app.ingest.run"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/reglamento.py:110",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "entrada_latido": [
+            "app.entradas.registro.latir"
+          ],
+          "entrada_registro": [
+            "app.entradas.registro.insertar"
+          ],
+          "entrada_reglamento": [
+            "app.entradas.registro.registrar_reglamento"
+          ],
+          "pipeline_heartbeat": [
+            "app.db.heartbeat_component"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 8,
+        "total_exacto": 0
+      },
+      "app.entradas.reglamento.versiones_en_curso": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.entradas.backtest.correr",
+          "app.entradas.backtest.main",
+          "app.entradas.backtest.main._corre",
+          "app.entradas.reglamento.version_activa",
+          "app.entradas.servicio._pasada_async",
+          "app.entradas.servicio.evaluar_vela",
+          "app.entradas.servicio.pasada",
+          "app.entradas.servicio.plan_de_marcha",
+          "app.ingest.run"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/reglamento.py:330",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "entrada_latido": [
+            "app.entradas.registro.latir"
+          ],
+          "entrada_registro": [
+            "app.entradas.registro.insertar"
+          ],
+          "entrada_reglamento": [
+            "app.entradas.registro.registrar_reglamento"
+          ],
+          "pipeline_heartbeat": [
+            "app.db.heartbeat_component"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 8,
+        "total_exacto": 0
+      },
+      "app.entradas.servicio._latido_suelto": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.entradas.servicio.pasada",
+          "app.entradas.servicio.pasada.en_hilo",
+          "app.ingest.run"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/servicio.py:78",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "entrada_latido": [
+            "app.entradas.registro.latir"
+          ],
+          "pipeline_heartbeat": [
+            "app.db.heartbeat_component"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 8,
+        "total_exacto": 0
+      },
+      "app.entradas.servicio._pasada_async": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.entradas.servicio.pasada",
+          "app.ingest.run"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/servicio.py:201",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "entrada_latido": [
+            "app.entradas.registro.latir"
+          ],
+          "entrada_reglamento": [
+            "app.entradas.registro.registrar_reglamento"
+          ],
+          "pipeline_heartbeat": [
+            "app.db.heartbeat_component"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 8,
+        "total_exacto": 0
+      },
+      "app.entradas.servicio.pasada": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.ingest.run"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/servicio.py:90",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "pipeline_heartbeat": [
+            "app.db.heartbeat_component"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 8,
+        "total_exacto": 0
+      },
+      "app.entradas.servicio.plan_de_marcha": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.entradas.servicio._pasada_async",
+          "app.entradas.servicio.pasada",
+          "app.ingest.run"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/servicio.py:62",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "entrada_latido": [
+            "app.entradas.registro.latir"
+          ],
+          "entrada_reglamento": [
+            "app.entradas.registro.registrar_reglamento"
+          ],
+          "pipeline_heartbeat": [
+            "app.db.heartbeat_component"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 8,
+        "total_exacto": 0
+      },
       "app.external_macro._direction": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
@@ -12512,7 +12885,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:687",
+        "sitio": "app/ingest.py:688",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -12611,7 +12984,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:649",
+        "sitio": "app/ingest.py:650",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -12720,7 +13093,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:453",
+        "sitio": "app/ingest.py:454",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -12900,7 +13273,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:619",
+        "sitio": "app/ingest.py:620",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -13048,7 +13421,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:568",
+        "sitio": "app/ingest.py:569",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -13231,7 +13604,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:46",
+        "sitio": "app/ingest.py:47",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -13374,7 +13747,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:814",
+        "sitio": "app/ingest.py:815",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -13466,7 +13839,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:746",
+        "sitio": "app/ingest.py:747",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -13581,7 +13954,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:367",
+        "sitio": "app/ingest.py:368",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -13762,7 +14135,7 @@
           "/api/wyckoff",
           "/api/zone/analysis"
         ],
-        "sitio": "app/ingest.py:184",
+        "sitio": "app/ingest.py:185",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -13949,7 +14322,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:89",
+        "sitio": "app/ingest.py:90",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14084,7 +14457,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:1032",
+        "sitio": "app/ingest.py:1033",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14124,7 +14497,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:1006",
+        "sitio": "app/ingest.py:1007",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14166,7 +14539,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:997",
+        "sitio": "app/ingest.py:998",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14213,7 +14586,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:66",
+        "sitio": "app/ingest.py:67",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14284,7 +14657,7 @@
           "/api/rango/estructura",
           "/api/structure"
         ],
-        "sitio": "app/ingest.py:293",
+        "sitio": "app/ingest.py:294",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14355,7 +14728,7 @@
           "/api/ai/context/bundle",
           "/api/positioning"
         ],
-        "sitio": "app/ingest.py:326",
+        "sitio": "app/ingest.py:327",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14422,7 +14795,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:240",
+        "sitio": "app/ingest.py:241",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14569,7 +14942,7 @@
           "/api/wyckoff",
           "/api/zone/analysis"
         ],
-        "sitio": "app/ingest.py:101",
+        "sitio": "app/ingest.py:102",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14756,7 +15129,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:59",
+        "sitio": "app/ingest.py:60",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -14940,7 +15313,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:538",
+        "sitio": "app/ingest.py:539",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -15054,6 +15427,8 @@
       "app.interpretation._barrier_candidates": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
+          "app.entradas.motor.construir_zonas",
+          "app.entradas.motor.paso",
           "app.interpretation.price_barrier_read",
           "app.scalp_logic.price_barriers"
         ],
@@ -15078,6 +15453,8 @@
       "app.interpretation._barrier_zones": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
+          "app.entradas.motor.construir_zonas",
+          "app.entradas.motor.paso",
           "app.interpretation.price_barrier_read",
           "app.scalp_logic.price_barriers"
         ],
@@ -15444,6 +15821,7 @@
           "app.breakout.classify_outcome",
           "app.breakout.find_attempts",
           "app.daily_agg.persist_verdicts",
+          "app.entradas.motor.construir_zonas",
           "app.interpretation._barrier_candidates",
           "app.interpretation._cvd_observation",
           "app.interpretation._memory_features",
@@ -26414,7 +26792,7 @@
     "sin_llamada": 13,
     "solo_mencion": 9,
     "tablas_alcanzadas": 30,
-    "tablas_catalogo": 40
+    "tablas_catalogo": 43
   },
   "rutas": [
     {
@@ -39608,6 +39986,11 @@
           "sitio": "app/daily_agg.py:78"
         },
         {
+          "funcion": "app.entradas.insumos.cargar",
+          "origen": "constante _FUNDING_SQL",
+          "sitio": "app/entradas/insumos.py:72"
+        },
+        {
           "funcion": "app.metrics.compute_snapshot",
           "origen": "constante SNAPSHOT_QUERY",
           "sitio": "app/metrics.py:336"
@@ -39777,7 +40160,7 @@
         {
           "funcion": "app.ingest.upsert_liquidations",
           "origen": "literal",
-          "sitio": "app/ingest.py:316",
+          "sitio": "app/ingest.py:317",
           "verbo": "INSERT"
         }
       ],
@@ -39918,7 +40301,7 @@
         {
           "funcion": "app.ingest.upsert_long_short",
           "origen": "literal",
-          "sitio": "app/ingest.py:357",
+          "sitio": "app/ingest.py:358",
           "verbo": "INSERT"
         }
       ],
@@ -39957,6 +40340,11 @@
         }
       ],
       "lectores_del_arbol": [
+        {
+          "funcion": "app.entradas.insumos.cargar",
+          "origen": "constante _EVENTOS_SQL",
+          "sitio": "app/entradas/insumos.py:78"
+        },
         {
           "funcion": "app.external_macro.external_macro_context",
           "origen": "literal",
@@ -40143,19 +40531,19 @@
         {
           "funcion": "app.ingest.upsert_ohlcv",
           "origen": "literal",
-          "sitio": "app/ingest.py:154",
+          "sitio": "app/ingest.py:155",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.ingest.rollup_ohlcv_5m",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/ingest.py:200",
+          "sitio": "app/ingest.py:201",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.ingest.rollup_ohlcv_5m",
           "origen": "literal",
-          "sitio": "app/ingest.py:200",
+          "sitio": "app/ingest.py:201",
           "verbo": "INSERT"
         }
       ],
@@ -40226,14 +40614,34 @@
           "sitio": "app/delta_profile.py:242"
         },
         {
+          "funcion": "app.entradas.insumos.velas_perfil",
+          "origen": "constante _VELAS_SQL",
+          "sitio": "app/entradas/insumos.py:29"
+        },
+        {
+          "funcion": "app.entradas.insumos.barras",
+          "origen": "constante _BARRAS_SQL",
+          "sitio": "app/entradas/insumos.py:43"
+        },
+        {
+          "funcion": "app.entradas.insumos.cargar",
+          "origen": "constante _PRECIO_CORTE_SQL",
+          "sitio": "app/entradas/insumos.py:51"
+        },
+        {
+          "funcion": "app.entradas.insumos.cargar",
+          "origen": "constante _APERTURA_SIGUIENTE_SQL",
+          "sitio": "app/entradas/insumos.py:85"
+        },
+        {
           "funcion": "app.ingest.rollup_ohlcv_5m",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/ingest.py:200"
+          "sitio": "app/ingest.py:201"
         },
         {
           "funcion": "app.ingest.rollup_ohlcv_5m",
           "origen": "literal",
-          "sitio": "app/ingest.py:200"
+          "sitio": "app/ingest.py:201"
         },
         {
           "funcion": "app.metrics.compute_snapshot",
@@ -40647,6 +41055,11 @@
           "funcion": "app.api.stream_generator",
           "origen": "literal",
           "sitio": "app/api.py:3755"
+        },
+        {
+          "funcion": "app.entradas.insumos.libro",
+          "origen": "constante _LIBRO_SQL",
+          "sitio": "app/entradas/insumos.py:65"
         },
         {
           "funcion": "app.scalp_collector._write_combined_books",
@@ -41562,6 +41975,57 @@
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
           "sitio": "app/daily_agg.py:692"
+        }
+      ]
+    },
+    "entrada_latido": {
+      "escritores": [
+        {
+          "funcion": "app.entradas.registro.latir",
+          "origen": "literal",
+          "sitio": "app/entradas/registro.py:201",
+          "verbo": "INSERT"
+        }
+      ],
+      "lectores": [
+        {
+          "funcion": "app.entradas.registro.ultimo_tick",
+          "origen": "literal",
+          "sitio": "app/entradas/registro.py:213"
+        }
+      ]
+    },
+    "entrada_registro": {
+      "escritores": [
+        {
+          "funcion": "app.entradas.registro.insertar",
+          "origen": "constante _INSERTA_REGISTRO",
+          "sitio": "app/entradas/registro.py:30",
+          "verbo": "INSERT"
+        }
+      ],
+      "lectores": [
+        {
+          "funcion": "app.entradas.registro.cargar_previos",
+          "origen": "literal",
+          "sitio": "app/entradas/registro.py:120"
+        }
+      ]
+    },
+    "entrada_reglamento": {
+      "escritores": [
+        {
+          "funcion": "app.entradas.registro.registrar_reglamento",
+          "origen": "literal",
+          "sitio": "app/entradas/registro.py:74",
+          "verbo": "INSERT"
+        }
+      ],
+      "lectores": [
+        {
+          "funcion": "app.entradas.registro.registrar_reglamento",
+          "origen": "literal",
+          "sitio": "app/entradas/registro.py:83"
         }
       ]
     },

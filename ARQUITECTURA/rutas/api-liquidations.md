@@ -60,7 +60,7 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
 - `liquidations` — `sql/schema.sql:174`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:675`
-  - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:316`
+  - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:317`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
