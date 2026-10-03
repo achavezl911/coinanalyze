@@ -224,3 +224,56 @@ def elige(transiciones: list[dict], *, familia: str, lado: str, estado: str | No
         t for t in transiciones
         if t["familia"] == familia and t["lado"] == lado and (estado is None or t["estado"] == estado)
     ]
+
+
+async def sembrar(conn, T: datetime, ins: dict, symbol: str, base: str) -> None:
+    """Pasa los insumos del banco a filas de la base: velas de 15 m -> 15 velas de 1 min, etc."""
+    filas = []
+    for v in ins["velas"]:
+        if v["minutos"] == 0:
+            continue
+        inicio = M.de_iso(v["inicio"])
+        for m in range(v["minutos"]):
+            o = v["open"] if m == 0 else (v["open"] + v["close"]) / 2
+            c = v["close"] if m == v["minutos"] - 1 else (v["open"] + v["close"]) / 2
+            h = v["high"] if m == 1 else max(o, c)
+            lo = v["low"] if m == 2 else min(o, c)
+            vol = v["volume"] / v["esperados"]
+            filas.append((inicio + timedelta(minutes=m), symbol, "1min", o, h, lo, c, vol, vol / 2, 1, 1))
+    for intervalo, barras in (("daily", ins["diarias"]), ("4hour", ins["h4"])):
+        for b in barras:
+            filas.append((M.de_iso(b["t"]), symbol, intervalo, b["close"], b["high"], b["low"],
+                          b["close"], b["volume"], b["volume"] / 2, 1, 1))
+    await conn.executemany(
+        "INSERT INTO ohlcv(ts, symbol, interval, open, high, low, close, volume, buy_volume, tx, btx) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT DO NOTHING",
+        filas,
+    )
+    for tabla, simbolo, pata in (("spot_trades_agg", base, "spot"), ("futures_trades_agg", symbol, "futuros")):
+        d_vela = ins["flujos"][pata]["vela"]["delta_usd"]
+        d_hora = ins["flujos"][pata]["ultima_hora"]["delta_usd"]
+        for m in range(60):
+            ts = T - timedelta(minutes=60 - m)
+            d = d_vela / 15 if ts >= T - timedelta(minutes=15) else (d_hora - d_vela) / 45
+            extra = ("inst_buy_usd, inst_sell_usd, mid_buy_usd, mid_sell_usd, retail_buy_usd, "
+                     "retail_sell_usd, " if tabla == "spot_trades_agg" else
+                     "large_buy_usd, large_sell_usd, ")
+            ceros = "0, 0, 0, 0, 0, 0, " if tabla == "spot_trades_agg" else "0, 0, "
+            await conn.execute(
+                f"INSERT INTO {tabla}(ts, symbol, exchange, interval, buy_vol_usd, sell_vol_usd, "
+                f"{extra}trade_count, covered_seconds, venue_count) "
+                f"VALUES ($1, $2, 'combined', '1min', $3, $4, {ceros}10, 60, 2)",
+                ts, simbolo, 1e7 + d / 2, 1e7 - d / 2,
+            )
+    for exchange, mid in (("bybit", ins["mids"]["bybit"]["mid"]), ("binance", ins["mids"]["binance"]["mid"])):
+        await conn.execute(
+            "INSERT INTO orderbook_snapshot(ts, symbol, exchange, bid_px, ask_px, mid_px, spread_bps, "
+            "bid_notional_l1, ask_notional_l1, venue_count) VALUES ($1,$2,$3,$4,$5,$6,$7,1e6,1e6,1)",
+            T - timedelta(seconds=1), symbol, exchange, mid - 0.01, mid + 0.01, mid,
+            0.02 / mid * 10_000,
+        )
+    await conn.execute(
+        "INSERT INTO funding_rate(ts, symbol, interval, fr_open, fr_high, fr_low, fr_close) "
+        "VALUES ($1, $2, '5min', 0.0001, 0.0001, 0.0001, 0.0001)",
+        T - timedelta(minutes=10), symbol,
+    )
