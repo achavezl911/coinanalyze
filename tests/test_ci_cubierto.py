@@ -31,9 +31,13 @@ PASOS_CONOCIDOS = {
     "Compile all (syntax check)": ".venv/bin/python -m compileall -q app",
     "Sweep leftover CI databases": "bash harness/checks/barre-bases-ci-control.bash (el barrido REAL lo hace CI en su corrida)",
     "Create disposable test database": "en 143 la base de test la levanta el propio pytest",
+    # EN LOCAL, SIN --depth. El --depth=1 de ci.yml es inocuo alli porque el checkout YA es
+    # superficial; sobre un clon completo lo VUELVE superficial (.git/shallow) y K93 deja de
+    # encontrar el commit anterior a la migracion: medido el 2026-10-03 en 143, K93 NO MEDIDO
+    # hasta `git fetch --unshallow origin`.
     "Fetch main for the reglamento history test": (
-        "git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main (campana 135: sin "
-        "origin/main, tests/test_entradas_reglamento.py se salta fuera de CI y falla dentro)"
+        "git fetch --no-tags origin main (SIN --depth: en un clon completo lo deja superficial); "
+        "sin origin/main, tests/test_entradas_reglamento.py se salta fuera de CI y falla dentro"
     ),
     "Pytest": ".venv/bin/pytest -q",
     "Drop disposable test database": "no aplica en local",

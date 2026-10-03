@@ -98,6 +98,8 @@ jobs:
       # (tests/test_entradas_reglamento.py) compara config/entradas/reglamento.json con el de
       # main: ninguna version registrada cambia ni desaparece. El checkout es de profundidad 1
       # y no trae main; sin esta referencia ese test FALLA en CI en vez de pasar sin mirar.
+      # --depth=1 SOLO AQUI: este checkout ya es superficial. En un clon completo ese mismo
+      # mandato lo vuelve superficial y K93 sale NO MEDIDO (medido el 2026-10-03 en 143).
       - name: Fetch main for the reglamento history test
         run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
 
