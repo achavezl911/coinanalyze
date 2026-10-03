@@ -225,7 +225,10 @@ async def _pasada_async(settings) -> None:
             estado, error = "sin_reglamento", registro["motivo"]
             return
         comun = R.valores(R.versiones_en_curso(doc)[0]["bloques"]["comun"])
-        maximo = comun["recuperacion_max_velas"]["intradia"]
+        # la recuperacion cubre lo que pida el perfil mas exigente: velas x minutos por vela
+        minutos = max(comun["recuperacion_max_velas"][p] * comun["perfiles"][p]["vela_min"]
+                      for p in comun["perfiles"])
+        maximo = minutos * 60 // plan["cadencia_s"]
         pendientes, omitidas = await _pendientes(conn, T, cadencia, maximo)
         detalle["recuperacion"] = {"velas": len(pendientes) - 1, "omitidas": omitidas}
         for Ti in pendientes:

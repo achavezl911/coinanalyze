@@ -235,8 +235,8 @@
                 "spot_venues": 2,
                 "minuto_completo_s": 60
               },
-              "unidad": "un minuto cuenta si su fila combined existe y covered_seconds es 60 o NULL (legado)",
-              "origen": "ARBITRARIO v1; covered_seconds y venue_count, sql/schema.sql:1355-1396 (main@82ae7e2)"
+              "unidad": "un minuto cuenta si estan sus filas de Binance Y de Bybit (spot_venues = 2, contadas por minuto) y su covered_seconds es 60 o NULL (legado); el delta es la suma de las dos",
+              "origen": "ARBITRARIO v1; covered_seconds y venue_count, sql/schema.sql:1355-1396; la fila combined solo garantiza las dos venues desde el commit 0df80b2 (2026-08-11), por eso se cuentan las de cada venue (main@82ae7e2)"
             },
             "tope_retraso_s": {
               "valor": 120,
@@ -301,7 +301,7 @@
             },
             "renovacion_minima_dias": {
               "valor": 14,
-              "unidad": "dias de cobertura que trae cada revision de eventos",
+              "unidad": "dias de cobertura que trae cada revision de eventos: regla del lazo del operador; /api/entradas sirve los dias que le quedan al calendario vigente y K105 f exige al menos ahora + la caducidad maxima",
               "origen": "operador, EL LAZO punto 5, harness/COLA.md:16055"
             }
           }
@@ -394,8 +394,8 @@
       "huellas": {
         "F1": "3fc845a2cc4f0b4250651679786b82cc143b5275b600d58f2348d64c48f5b999",
         "F2": "033d5f9af296a415b358d57585d462dfaad99460a160f8aff0cd4515461c0df8",
-        "comun": "d4e3acf3daa3952bd36bb39bee6bbde443e3758e7f9dc246fe70bab8b349fee6",
-        "calendario": "8adc8a8f38ea96764dd793d6b2c6690057c9c643cefd2f49420cac8f01cdb5da",
+        "comun": "050d5d7e57b335abb5831e8c4e1e735c305c3587b4d183cdcf2d803326fe6cf4",
+        "calendario": "9dfa489d17748093efe50f81138064d0be9619b5507781c78731123184d35d4b",
         "lectura": "43a7ead49530b4bd064b96dd93872fed5463261b29ccd601b0fc39fa13bf8d5c",
         "papel": "23407669fd06d62ed73d6255a1eb3fe89ed854dc2077aa3e86a59b445fe7d003"
       }

@@ -25,7 +25,7 @@
 | `/api/delta-profile` | GET | 3 | 1 | 13 | [ficha](rutas/api-delta-profile.md) |
 | `/api/desk/state` | GET | 26 | 13 | 80 | [ficha](rutas/api-desk-state.md) |
 | `/api/divergences` | GET | 15 | 3 | 7 | [ficha](rutas/api-divergences.md) |
-| `/api/entradas` | GET | 11 | 3 | 25 | [ficha](rutas/api-entradas.md) |
+| `/api/entradas` | GET | 11 | 3 | 26 | [ficha](rutas/api-entradas.md) |
 | `/api/external-macro` | GET | 1 | 6 | 49 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 6 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |

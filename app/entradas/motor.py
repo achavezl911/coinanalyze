@@ -26,6 +26,8 @@ aqui por minutos con su hueco (MC10/MC11) y el largo exige su spot (MC12).
 from __future__ import annotations
 
 import hashlib
+import inspect
+import re
 from datetime import UTC, datetime, timedelta
 from statistics import median
 from typing import Any
@@ -61,6 +63,77 @@ MIN_DIA = 1440
 
 class CodigoIncompatible(RuntimeError):
     """El reglamento declara algo que este codigo no aplica: no se emite ningun candidato."""
+
+
+# EL VOCABULARIO QUE ESTE CODIGO APLICA. Cada valor de texto del reglamento que DECIDE algo se
+# contrasta aqui: una version que diga otra cosa (otro evento, otro reloj, otra venue) no corre
+# con la logica de v1 en silencio; se salta con su motivo (A62).
+VOCABULARIO: dict[str, dict[tuple[str, ...], Any]] = {
+    "F1": {
+        ("zona_por_lado",): {"largo": "soporte", "corto": "resistencia"},
+        ("evento",): "toque",
+        ("aceptacion",): "cierre_al_otro_lado",
+        ("gatillo",): "cierre_de_vuelta_fuera",
+        ("stop_ancla",): "extremo_del_episodio",
+        ("entrada",): "mercado",
+    },
+    "F2": {
+        ("zona_por_lado",): {"largo": "resistencia", "corto": "soporte"},
+        ("borde",): {"largo": "alto", "corto": "bajo"},
+        ("sin_volver_dentro",): "ningun_cierre_dentro",
+        ("gatillo",): "cierre_de_reaccion",
+        ("stop_ancla",): "extremo_del_episodio",
+        ("entrada",): "mercado",
+    },
+    "comun": {
+        ("venues",): {"ejecucion": "bybit", "trayectoria": "binance", "funding": "binance"},
+        ("invalidacion_reloj",): "UTC",
+        ("atr", "estadistico"): "mediana_rango_verdadero",
+        ("spot", "vela_gatillo"): "signo_del_lado",
+        ("spot", "ultima_hora"): "no_en_contra",
+        ("hueco", "spot"): "todos_los_minutos",
+        ("hueco", "futuros"): "todos_los_minutos",
+        ("colchon_stop", "racimo"): "tolerancia_racimo",
+        ("colchon_stop", "fuera_de_racimo"): True,
+    },
+    "calendario": {("fuentes",): ["macro_event", "manual"]},
+}
+
+
+def _fijados_por_el_codigo_reutilizado() -> dict[str, float | None]:
+    """Los valores que _barrier_candidates y _barrier_zones fijan por dentro y deciden los bordes
+    de las zonas: se leen de su fuente para contrastarlos con lo que declara el reglamento."""
+    zonas = inspect.getsource(_barrier_zones)
+    candidatos = inspect.getsource(_barrier_candidates)
+    margen = re.search(r"pad = tolerance \* ([0-9.]+)", zonas)
+    peso = re.search(r'"touch_weight": ([0-9.]+) if source == "1d"', candidatos)
+    return {
+        "borde_pad_tolerancia": float(margen.group(1)) if margen else None,
+        "peso_toque_1d": float(peso.group(1)) if peso else None,
+        "pivote_anchura": BARRIER_PIVOT_WIDTH,
+    }
+
+
+FIJADOS_POR_EL_CODIGO = _fijados_por_el_codigo_reutilizado()
+
+
+def incompatibilidades(version: dict[str, Any]) -> list[str]:
+    """Lo que una version declara y este codigo NO aplica. Vacia = la version puede correr."""
+    errores: list[str] = []
+    for bloque, esperado in VOCABULARIO.items():
+        valores = R.valores(version["bloques"][bloque])
+        for camino, valor in esperado.items():
+            actual: Any = valores
+            for paso_ in camino:
+                actual = actual.get(paso_) if isinstance(actual, dict) else None
+            if actual != valor:
+                errores.append(f"{bloque}.{'.'.join(camino)} = {actual!r} y el codigo aplica {valor!r}")
+    zonas = R.valores(version["bloques"]["comun"])["zonas"]
+    for nombre, fijado in FIJADOS_POR_EL_CODIGO.items():
+        if fijado is None or zonas.get(nombre) != fijado:
+            errores.append(f"comun.zonas.{nombre} = {zonas.get(nombre)!r} y el codigo reutilizado "
+                           f"fija {fijado!r} (app/interpretation.py)")
+    return errores
 
 
 class FotoIncoherente(ValueError):
@@ -773,6 +846,10 @@ def paso(
     zonas_por_comun: dict[str, dict[str, Any]] = {}
     motivos: list[str] = []
     for version in versiones:
+        incompatible = incompatibilidades(version)
+        if incompatible:
+            motivos.append(f"{version['version']} NO CORRE: {'; '.join(incompatible)}")
+            continue
         pc = R.valores(version["bloques"]["comun"])
         if symbol not in pc["simbolos"]:
             continue

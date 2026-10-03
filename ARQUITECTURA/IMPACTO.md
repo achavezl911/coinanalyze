@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 578 funciones con radio, 246 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 579 funciones con radio, 247 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **49** de las 578 escriben alguna tabla
+Solo **49** de las 579 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -83,7 +83,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-578 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+579 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -345,6 +345,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.signal_ledger.classify_signal_observation`](impacto/app-signal_ledger.md) | `app/signal_ledger.py:62` | 1 | **0** | 11 ↑ | **1** |
 | [`app.signal_replay.persist_signal_replay_frame`](impacto/app-signal_replay.md) | `app/signal_replay.py:90` | 0 | **1** | 11 ↑ | **1** |
 | [`app.entradas.reglamento.cargar_valido`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:322` | 1 | **0** | 9 ↑ | **1** |
+| [`app.entradas.reglamento.valores`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:110` | 1 | **0** | 9 ↑ | **1** |
 | [`app.entradas.reglamento.versiones_en_curso`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:330` | 1 | **0** | 9 ↑ | **1** |
 | [`app.api.health`](impacto/app-api.md) | `app/api.py:3701` | 1 | **0** | 8 ↑ | **1** |
 | [`app.db.db_identity`](impacto/app-db.md) | `app/db.py:64` | 1 | **0** | 8 ↑ | **1** |
@@ -601,7 +602,6 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.db.mark_feed_degraded`](impacto/app-db.md) | `app/db.py:629` | 0 | **0** | 10 ↑ | **0** |
 | [`app.db.mark_feed_error`](impacto/app-db.md) | `app/db.py:639` | 0 | **0** | 10 ↑ | **0** |
 | [`app.db.mark_feed_shard_error`](impacto/app-db.md) | `app/db.py:817` | 0 | **0** | 10 ↑ | **0** |
-| [`app.entradas.reglamento.valores`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:110` | 0 | **0** | 9 ↑ | **0** |
 | [`app.entradas.servicio._latido_suelto`](impacto/app-entradas-servicio.md) | `app/entradas/servicio.py:78` | 0 | **0** | 9 ↑ | **0** |
 | [`app.entradas.servicio._pasada_async`](impacto/app-entradas-servicio.md) | `app/entradas/servicio.py:201` | 0 | **0** | 9 ↑ | **0** |
 | [`app.entradas.servicio.plan_de_marcha`](impacto/app-entradas-servicio.md) | `app/entradas/servicio.py:62` | 0 | **0** | 9 ↑ | **0** |
@@ -635,20 +635,21 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.entradas.insumos.vela_de_T_completa`](impacto/app-entradas-insumos.md) | `app/entradas/insumos.py:289` | 0 | **0** | 1 ↑ | **0** |
 | [`app.entradas.insumos.velas_perfil`](impacto/app-entradas-insumos.md) | `app/entradas/insumos.py:114` | 0 | **0** | 1 ↑ | **0** |
 | [`app.entradas.insumos.ventana_velas`](impacto/app-entradas-insumos.md) | `app/entradas/insumos.py:105` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor._avanza`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:902` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor._nuevo_episodio`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:868` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor._ocupaciones`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:700` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.arma`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:332` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.atr_mediana`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:119` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.completa`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:114` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.construir_zonas`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:171` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.de_iso`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:78` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.elegible`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:325` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.estructura`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:314` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.foto_canonica`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:86` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.iso`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:73` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.paso`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:745` | 0 | **0** | 1 ↑ | **0** |
-| [`app.entradas.motor.solapan`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:141` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor._avanza`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:979` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor._nuevo_episodio`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:945` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor._ocupaciones`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:773` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.arma`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:405` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.atr_mediana`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:192` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.completa`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:187` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.construir_zonas`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:244` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.de_iso`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:151` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.elegible`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:398` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.estructura`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:387` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.foto_canonica`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:159` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.incompatibilidades`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:120` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.iso`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:146` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.paso`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:818` | 0 | **0** | 1 ↑ | **0** |
+| [`app.entradas.motor.solapan`](impacto/app-entradas-motor.md) | `app/entradas/motor.py:214` | 0 | **0** | 1 ↑ | **0** |
 | [`app.entradas.registro._argumentos`](impacto/app-entradas-registro.md) | `app/entradas/registro.py:153` | 0 | **0** | 1 ↑ | **0** |
 | [`app.entradas.registro.cargar_previos`](impacto/app-entradas-registro.md) | `app/entradas/registro.py:116` | 0 | **0** | 1 ↑ | **0** |
 | [`app.entradas.registro.como_sombra_tardia`](impacto/app-entradas-registro.md) | `app/entradas/registro.py:164` | 0 | **0** | 1 ↑ | **0** |

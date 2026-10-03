@@ -58,7 +58,7 @@ LEE:
 
 ## Funciones que la componen
 
-25 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+26 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
@@ -67,7 +67,7 @@ Llamadas directas del handler:
 - `app.api.validate_symbol` — `app/api.py:232`
 - `app.entradas.ruta.construir` — `app/entradas/ruta.py:158`
 
-<details><summary>Alcanzables de forma indirecta (22)</summary>
+<details><summary>Alcanzables de forma indirecta (23)</summary>
 
 - `app.entradas.reglamento._texto` — `app/entradas/reglamento.py:118`
 - `app.entradas.reglamento._valida_bloque` — `app/entradas/reglamento.py:122`
@@ -86,6 +86,7 @@ Llamadas directas del handler:
 - `app.entradas.reglamento.registros_esperados` — `app/entradas/reglamento.py:379`
 - `app.entradas.reglamento.revision_vigente` — `app/entradas/reglamento.py:344`
 - `app.entradas.reglamento.validar` — `app/entradas/reglamento.py:293`
+- `app.entradas.reglamento.valores` — `app/entradas/reglamento.py:110`
 - `app.entradas.reglamento.version` — `app/entradas/reglamento.py:340`
 - `app.entradas.reglamento.version_activa` — `app/entradas/reglamento.py:335`
 - `app.entradas.reglamento.versiones_en_curso` — `app/entradas/reglamento.py:330`
@@ -159,6 +160,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.entradas.reglamento.cargar_valido` | 1 | **0** | 9 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.valores` | 1 | **0** | 9 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.versiones_en_curso` | 1 | **0** | 9 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.api.rechaza_parametros_desconocidos` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-api.md) |
 | `app.api.entradas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
@@ -181,8 +183,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.version` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.version_activa` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.ruta._reglamento` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-ruta.md) |
-| `app.entradas.ruta._resumen` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-ruta.md) |
-| _… y 1 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 2 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

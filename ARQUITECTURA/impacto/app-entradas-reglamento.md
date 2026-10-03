@@ -9,7 +9,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
 | [`cargar_valido`](#cargar-valido) | 322 | 1 | **0** | 9 ↑ | **1** |
-| [`valores`](#valores) | 110 | 0 | **0** | 9 ↑ | **0** |
+| [`valores`](#valores) | 110 | 1 | **0** | 9 ↑ | **1** |
 | [`versiones_en_curso`](#versiones-en-curso) | 330 | 1 | **0** | 9 ↑ | **1** |
 | [`_texto`](#-texto) | 118 | 1 | **0** | 0 | **1** |
 | [`_valida_bloque`](#-valida-bloque) | 122 | 1 | **0** | 0 | **1** |
@@ -90,13 +90,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/reglamento.py:110` · clave completa `app.entradas.reglamento.valores`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 9** (mas ancha)
 
-### Por llamada — 0 rutas
+### Por llamada — 1 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
-_ninguna ruta la ejecuta._
+- [`/api/entradas`](../rutas/api-entradas.md)
 
 ### Por tabla · k=0 — 0 rutas · **exacto**
 
@@ -129,20 +129,19 @@ Y esas tablas las leen:
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**9 rutas se enteran SOLO por el dato**, sin
+**8 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 13 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 16 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## versiones_en_curso
 
@@ -394,7 +393,7 @@ Y esas tablas las leen:
 
 - [`/api/entradas`](../rutas/api-entradas.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 17 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 18 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## contenido_revision
 
@@ -553,7 +552,7 @@ Y esas tablas las leen:
 
 - [`/api/entradas`](../rutas/api-entradas.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## registros_esperados
 

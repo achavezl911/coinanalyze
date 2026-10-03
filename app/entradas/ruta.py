@@ -315,6 +315,9 @@ def _reglamento(doc: dict[str, Any], momento: datetime) -> dict[str, Any]:
         "calendario_vigente": {
             "revision": revision["revision"] if revision else None,
             "cubre_hasta": revision["cubre_hasta"] if revision else None,
+            "dias_que_le_quedan": round((R.instante(revision["cubre_hasta"]) - momento).total_seconds()
+                                        / 86_400, 2) if revision else None,
+            "renovacion_minima_dias": R.valores(activa["bloques"]["calendario"])["renovacion_minima_dias"],
             "motivo": None if revision else "no hay revision de calendario vigente",
         },
     }

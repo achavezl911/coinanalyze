@@ -377,6 +377,42 @@ def test_sin_libro_de_bybit_es_sombra_de_datos_con_su_motivo_servido():
     assert F.validar_fila(_fila_registrada(t)) == []
 
 
+# --------------------------------------------------------------------------- lo que el codigo aplica
+
+
+def _v2_con(cambio) -> list[dict]:
+    from app.entradas import reglamento as R
+
+    versiones = B.versiones()
+    v2 = copy.deepcopy(versiones[0])
+    v2.update({"version": "v2", "padre": "v1", "ancla": False})
+    cambio(v2["bloques"])
+    v2["huellas"] = {n: R.huella_bloque(v2["bloques"][n]) for n in R.BLOQUES}
+    return versiones + [v2]
+
+
+@pytest.mark.parametrize(
+    "nombre, cambio, rastro",
+    [
+        ("evento", lambda b: b["F1"]["parametros"]["evento"].update(valor="toque_de_mecha"),
+         "F1.evento"),
+        ("reloj", lambda b: b["comun"]["parametros"]["invalidacion_reloj"].update(valor="NYSE"),
+         "comun.invalidacion_reloj"),
+        ("margen", lambda b: b["comun"]["parametros"]["zonas"]["valor"].update(borde_pad_tolerancia=0.3),
+         "comun.zonas.borde_pad_tolerancia"),
+    ],
+)
+def test_una_version_que_declara_lo_que_el_codigo_no_aplica_no_corre_y_v1_si(nombre, cambio, rastro):
+    versiones = _v2_con(cambio)
+    ins = B.insumos()
+    res = M.paso(T=ins["T"], symbol=ins["symbol"], perfil=ins["perfil"], modo=M.PROSPECTIVO,
+                 versiones=versiones, insumos=ins, previos=[],
+                 revision=B.revision(cubre_hasta=B.T0 + timedelta(days=30)), codigo=B.CODIGO)
+    assert {t["version"] for t in res["transiciones"]} == {"v1"}, nombre
+    assert "v2 NO CORRE" in res["evaluacion"]["motivo"] and rastro in res["evaluacion"]["motivo"]
+    assert M.incompatibilidades(B.versiones()[0]) == []
+
+
 # --------------------------------------------------------------------------- nada en el codigo
 
 

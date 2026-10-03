@@ -1427,6 +1427,11 @@
       "linea": 293,
       "sitio": "`app/entradas/reglamento.py:293`"
     },
+    "app.entradas.reglamento.valores": {
+      "fichero": "app/entradas/reglamento.py",
+      "linea": 110,
+      "sitio": "`app/entradas/reglamento.py:110`"
+    },
     "app.entradas.reglamento.version": {
       "fichero": "app/entradas/reglamento.py",
       "linea": 340,
@@ -12248,7 +12253,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:902",
+        "sitio": "app/entradas/motor.py:979",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12273,7 +12278,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:868",
+        "sitio": "app/entradas/motor.py:945",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12298,7 +12303,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:700",
+        "sitio": "app/entradas/motor.py:773",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12323,7 +12328,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:332",
+        "sitio": "app/entradas/motor.py:405",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12349,7 +12354,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:119",
+        "sitio": "app/entradas/motor.py:192",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12381,7 +12386,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:114",
+        "sitio": "app/entradas/motor.py:187",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12406,7 +12411,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:171",
+        "sitio": "app/entradas/motor.py:244",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12438,7 +12443,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:78",
+        "sitio": "app/entradas/motor.py:151",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12463,7 +12468,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:325",
+        "sitio": "app/entradas/motor.py:398",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12491,7 +12496,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:314",
+        "sitio": "app/entradas/motor.py:387",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12515,7 +12520,32 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:86",
+        "sitio": "app/entradas/motor.py:159",
+        "solo_por_tabla": [
+          "/api/entradas"
+        ],
+        "tablas_escritas": {
+          "entrada_registro": [
+            "app.entradas.registro.insertar"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 0
+      },
+      "app.entradas.motor.incompatibilidades": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.entradas.backtest.simular",
+          "app.entradas.motor.paso",
+          "app.entradas.servicio.evaluar_vela"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/entradas"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/motor.py:120",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12559,7 +12589,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:73",
+        "sitio": "app/entradas/motor.py:146",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12591,7 +12621,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:745",
+        "sitio": "app/entradas/motor.py:818",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12622,7 +12652,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:141",
+        "sitio": "app/entradas/motor.py:214",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -13097,6 +13127,7 @@
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
           "app.entradas.backtest.correr",
+          "app.entradas.motor.incompatibilidades",
           "app.entradas.motor.parametros",
           "app.entradas.motor.paso",
           "app.entradas.registro.filas_esperadas",
@@ -13274,6 +13305,7 @@
           "app.entradas.reglamento.revision_vigente",
           "app.entradas.reglamento.validar",
           "app.entradas.ruta._reglamento",
+          "app.entradas.ruta.construir",
           "app.entradas.servicio.evaluar_vela"
         ],
         "por_llamada": [
@@ -13396,16 +13428,21 @@
           "app.entradas.backtest.main._corre",
           "app.entradas.backtest.simular",
           "app.entradas.motor._foto_base",
+          "app.entradas.motor.incompatibilidades",
           "app.entradas.motor.parametros",
           "app.entradas.motor.paso",
           "app.entradas.registro.ventana_previos",
+          "app.entradas.ruta._reglamento",
+          "app.entradas.ruta.construir",
           "app.entradas.servicio._pasada_async",
           "app.entradas.servicio.evaluar_vela",
           "app.entradas.servicio.pasada",
           "app.entradas.servicio.plan_de_marcha",
           "app.ingest.run"
         ],
-        "por_llamada": [],
+        "por_llamada": [
+          "/api/entradas"
+        ],
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -13424,7 +13461,6 @@
           "/api/ai/context/bundle",
           "/api/data-confidence",
           "/api/desk/state",
-          "/api/entradas",
           "/api/healthz",
           "/api/mesa/decide",
           "/api/quality/feeds",
@@ -13449,7 +13485,7 @@
         },
         "tablas_k0": [],
         "total": 9,
-        "total_exacto": 0
+        "total_exacto": 1
       },
       "app.entradas.reglamento.version": {
         "cota_mas_ancha_que_k0": false,
@@ -28541,7 +28577,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 367,
+    "funciones_alcanzables": 368,
     "rutas": 74,
     "rutas_con_campos": 67,
     "rutas_sin_campos": 7,
@@ -32433,6 +32469,7 @@
         "app.entradas.reglamento.registros_esperados",
         "app.entradas.reglamento.revision_vigente",
         "app.entradas.reglamento.validar",
+        "app.entradas.reglamento.valores",
         "app.entradas.reglamento.version",
         "app.entradas.reglamento.version_activa",
         "app.entradas.reglamento.versiones_en_curso",
@@ -32458,6 +32495,7 @@
         "app.entradas.reglamento.registros_esperados",
         "app.entradas.reglamento.revision_vigente",
         "app.entradas.reglamento.validar",
+        "app.entradas.reglamento.valores",
         "app.entradas.reglamento.version",
         "app.entradas.reglamento.version_activa",
         "app.entradas.reglamento.versiones_en_curso",
