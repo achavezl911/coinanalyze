@@ -8,18 +8,18 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_f`](#-f) | 89 | 0 | **0** | 1 ↑ | **0** |
-| [`barras`](#barras) | 131 | 0 | **0** | 1 ↑ | **0** |
-| [`cargar`](#cargar) | 203 | 0 | **0** | 1 ↑ | **0** |
-| [`flujos`](#flujos) | 168 | 0 | **0** | 1 ↑ | **0** |
-| [`libro`](#libro) | 183 | 0 | **0** | 1 ↑ | **0** |
-| [`vela_de_T_completa`](#vela-de-t-completa) | 276 | 0 | **0** | 1 ↑ | **0** |
-| [`velas_perfil`](#velas-perfil) | 105 | 0 | **0** | 1 ↑ | **0** |
-| [`ventana_velas`](#ventana-velas) | 96 | 0 | **0** | 1 ↑ | **0** |
+| [`_f`](#-f) | 98 | 0 | **0** | 1 ↑ | **0** |
+| [`barras`](#barras) | 140 | 0 | **0** | 1 ↑ | **0** |
+| [`cargar`](#cargar) | 216 | 0 | **0** | 1 ↑ | **0** |
+| [`flujos`](#flujos) | 180 | 0 | **0** | 1 ↑ | **0** |
+| [`libro`](#libro) | 196 | 0 | **0** | 1 ↑ | **0** |
+| [`vela_de_T_completa`](#vela-de-t-completa) | 289 | 0 | **0** | 1 ↑ | **0** |
+| [`velas_perfil`](#velas-perfil) | 114 | 0 | **0** | 1 ↑ | **0** |
+| [`ventana_velas`](#ventana-velas) | 105 | 0 | **0** | 1 ↑ | **0** |
 
 ## _f
 
-`app/entradas/insumos.py:89` · clave completa `app.entradas.insumos._f`
+`app/entradas/insumos.py:98` · clave completa `app.entradas.insumos._f`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -57,7 +57,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## barras
 
-`app/entradas/insumos.py:131` · clave completa `app.entradas.insumos.barras`
+`app/entradas/insumos.py:140` · clave completa `app.entradas.insumos.barras`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -95,7 +95,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## cargar
 
-`app/entradas/insumos.py:203` · clave completa `app.entradas.insumos.cargar`
+`app/entradas/insumos.py:216` · clave completa `app.entradas.insumos.cargar`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -135,7 +135,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## flujos
 
-`app/entradas/insumos.py:168` · clave completa `app.entradas.insumos.flujos`
+`app/entradas/insumos.py:180` · clave completa `app.entradas.insumos.flujos`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -173,7 +173,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## libro
 
-`app/entradas/insumos.py:183` · clave completa `app.entradas.insumos.libro`
+`app/entradas/insumos.py:196` · clave completa `app.entradas.insumos.libro`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -211,7 +211,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## vela_de_T_completa
 
-`app/entradas/insumos.py:276` · clave completa `app.entradas.insumos.vela_de_T_completa`
+`app/entradas/insumos.py:289` · clave completa `app.entradas.insumos.vela_de_T_completa`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -251,7 +251,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## velas_perfil
 
-`app/entradas/insumos.py:105` · clave completa `app.entradas.insumos.velas_perfil`
+`app/entradas/insumos.py:114` · clave completa `app.entradas.insumos.velas_perfil`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -289,7 +289,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## ventana_velas
 
-`app/entradas/insumos.py:96` · clave completa `app.entradas.insumos.ventana_velas`
+`app/entradas/insumos.py:105` · clave completa `app.entradas.insumos.ventana_velas`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 

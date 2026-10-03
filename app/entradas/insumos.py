@@ -53,11 +53,20 @@ WHERE symbol = $1 AND interval = '1min' AND ts < $2 AND ts >= $3
 ORDER BY ts DESC LIMIT 1
 """
 
+# LAS DOS VENUES SE CUENTAN, NO SE SUPONEN. La fila 'combined' solo garantiza las dos venues
+# desde el commit 0df80b2 (2026-08-11, venue_count y el HAVING de ws_collector); antes, una
+# 'combined' pudo escribirse con una sola. Por eso un minuto cuenta si estan las filas de
+# Binance Y de Bybit (y su cobertura), en cualquier epoca; el delta es la suma de las dos.
 _FLUJO_SQL = """
-SELECT ts, buy_vol_usd - sell_vol_usd AS delta, covered_seconds
+SELECT ts,
+       sum(buy_vol_usd - sell_vol_usd) AS delta,
+       count(DISTINCT exchange)::int AS venues,
+       min(covered_seconds) AS covered_seconds,
+       bool_or(covered_seconds IS NULL) AS cobertura_nula
 FROM {tabla}
-WHERE symbol = $1 AND exchange = 'combined' AND venue_count = $2 AND interval = '1min'
-  AND ts >= $3 AND ts < $4
+WHERE symbol = $1 AND exchange IN ('binance', 'bybit') AND interval = '1min'
+  AND ts >= $2 AND ts < $3
+GROUP BY ts
 ORDER BY ts
 """
 
@@ -146,11 +155,13 @@ async def barras(conn, symbol: str, intervalo: str, barra_min: int, corte: datet
     ]
 
 
-def _tramo(filas: list, desde: datetime, hasta: datetime, minuto_completo_s: int) -> dict[str, Any]:
+def _tramo(filas: list, desde: datetime, hasta: datetime, venues: int,
+           minuto_completo_s: int) -> dict[str, Any]:
     dentro = [f for f in filas if desde <= f["ts"] < hasta]
     completos = [
         f for f in dentro
-        if f["covered_seconds"] is None or f["covered_seconds"] >= minuto_completo_s
+        if f["venues"] == venues
+        and (f["cobertura_nula"] or f["covered_seconds"] >= minuto_completo_s)
     ]
     esperados = int((hasta - desde).total_seconds() // 60)
     return {
@@ -161,7 +172,8 @@ def _tramo(filas: list, desde: datetime, hasta: datetime, minuto_completo_s: int
         "esperados": esperados,
         "completo": len(completos) == esperados,
         "ultimo_minuto": iso(max(f["ts"] for f in dentro)) if dentro else None,
-        "minutos_cobertura_nula": sum(1 for f in dentro if f["covered_seconds"] is None),
+        "minutos_cobertura_nula": sum(1 for f in dentro if f["cobertura_nula"]),
+        "minutos_con_una_venue": sum(1 for f in dentro if f["venues"] != venues),
     }
 
 
@@ -169,14 +181,15 @@ async def flujos(conn, *, tabla: str, simbolo: str, T: datetime, vela_min: int,
                  hora_min: int, hueco: dict[str, Any]) -> dict[str, Any]:
     largo = max(vela_min, hora_min)
     filas = await conn.fetch(
-        _FLUJO_SQL.format(tabla=tabla), simbolo, hueco["spot_venues"],
-        T - timedelta(minutes=largo), T,
+        _FLUJO_SQL.format(tabla=tabla), simbolo, T - timedelta(minutes=largo), T,
     )
+    venues = hueco["spot_venues"]
+    minuto = hueco["minuto_completo_s"]
     return {
         "tabla": tabla,
         "simbolo": simbolo,
-        "vela": _tramo(filas, T - timedelta(minutes=vela_min), T, hueco["minuto_completo_s"]),
-        "ultima_hora": _tramo(filas, T - timedelta(minutes=hora_min), T, hueco["minuto_completo_s"]),
+        "vela": _tramo(filas, T - timedelta(minutes=vela_min), T, venues, minuto),
+        "ultima_hora": _tramo(filas, T - timedelta(minutes=hora_min), T, venues, minuto),
     }
 
 

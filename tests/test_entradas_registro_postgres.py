@@ -248,6 +248,23 @@ async def test_c2b_los_insumos_se_cortan_en_T_y_nada_posterior_entra(conn):
     assert I.vela_de_T_completa(cargados)
 
 
+async def test_un_minuto_de_spot_con_una_sola_venue_deja_la_pata_incompleta(conn):
+    """«Spot con las dos venues» se CUENTA por minuto: antes de 0df80b2 (2026-08-11) una fila
+    'combined' pudo escribirse con una sola venue, asi que no basta con ella."""
+    T = await _ahora_T(conn)
+    await _sembrar(conn, T, B.insumos(T), "BTCUSDT_PERP.A", "BTC")
+    kw = {"symbol": "BTCUSDT_PERP.A", "base_asset": "BTC", "T": T, "perfil": "intradia",
+          "comun": B.comun(), "calendario": R.valores(B.versiones()[0]["bloques"]["calendario"]),
+          "modo": M.PROSPECTIVO}
+    antes = (await I.cargar(conn, **kw))["flujos"]["spot"]["vela"]
+    assert antes["completo"] and antes["minutos"] == 15
+    await conn.execute("DELETE FROM spot_trades_agg WHERE symbol = 'BTC' AND exchange = 'bybit' "
+                       "AND ts = $1", T - timedelta(minutes=3))
+    despues = (await I.cargar(conn, **kw))["flujos"]["spot"]["vela"]
+    assert not despues["completo"] and despues["minutos"] == 14
+    assert despues["minutos_con_una_venue"] == 1
+
+
 async def test_c2c_un_minuto_ausente_en_la_base_deja_la_vela_no_evaluable(conn):
     T = await _ahora_T(conn)
     await _sembrar(conn, T, B.insumos(T), "BTCUSDT_PERP.A", "BTC")

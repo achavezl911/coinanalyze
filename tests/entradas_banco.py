@@ -259,12 +259,14 @@ async def sembrar(conn, T: datetime, ins: dict, symbol: str, base: str) -> None:
                      "retail_sell_usd, " if tabla == "spot_trades_agg" else
                      "large_buy_usd, large_sell_usd, ")
             ceros = "0, 0, 0, 0, 0, 0, " if tabla == "spot_trades_agg" else "0, 0, "
-            await conn.execute(
-                f"INSERT INTO {tabla}(ts, symbol, exchange, interval, buy_vol_usd, sell_vol_usd, "
-                f"{extra}trade_count, covered_seconds, venue_count) "
-                f"VALUES ($1, $2, 'combined', '1min', $3, $4, {ceros}10, 60, 2)",
-                ts, simbolo, 1e7 + d / 2, 1e7 - d / 2,
-            )
+            # como el colector desde 0df80b2: una fila por venue y la combinada con las dos
+            for exchange, parte, venues in (("binance", 0.5, 1), ("bybit", 0.5, 1), ("combined", 1.0, 2)):
+                await conn.execute(
+                    f"INSERT INTO {tabla}(ts, symbol, exchange, interval, buy_vol_usd, sell_vol_usd, "
+                    f"{extra}trade_count, covered_seconds, venue_count) "
+                    f"VALUES ($1, $2, $3, '1min', $4, $5, {ceros}10, 60, $6)",
+                    ts, simbolo, exchange, parte * (1e7 + d / 2), parte * (1e7 - d / 2), venues,
+                )
     for exchange, mid in (("bybit", ins["mids"]["bybit"]["mid"]), ("binance", ins["mids"]["binance"]["mid"])):
         await conn.execute(
             "INSERT INTO orderbook_snapshot(ts, symbol, exchange, bid_px, ask_px, mid_px, spread_bps, "

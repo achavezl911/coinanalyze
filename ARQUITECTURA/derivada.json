@@ -12035,7 +12035,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/insumos.py:89",
+        "sitio": "app/entradas/insumos.py:98",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12060,7 +12060,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/insumos.py:131",
+        "sitio": "app/entradas/insumos.py:140",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12087,7 +12087,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/insumos.py:203",
+        "sitio": "app/entradas/insumos.py:216",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12118,7 +12118,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/insumos.py:168",
+        "sitio": "app/entradas/insumos.py:180",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12143,7 +12143,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/insumos.py:183",
+        "sitio": "app/entradas/insumos.py:196",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12167,7 +12167,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/insumos.py:276",
+        "sitio": "app/entradas/insumos.py:289",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12198,7 +12198,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/insumos.py:105",
+        "sitio": "app/entradas/insumos.py:114",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -12223,7 +12223,7 @@
           "/api/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/insumos.py:96",
+        "sitio": "app/entradas/insumos.py:105",
         "solo_por_tabla": [
           "/api/entradas"
         ],
@@ -42058,7 +42058,7 @@
         {
           "funcion": "app.entradas.insumos.cargar",
           "origen": "constante _FUNDING_SQL",
-          "sitio": "app/entradas/insumos.py:72"
+          "sitio": "app/entradas/insumos.py:81"
         },
         {
           "funcion": "app.metrics.compute_snapshot",
@@ -42413,7 +42413,7 @@
         {
           "funcion": "app.entradas.insumos.cargar",
           "origen": "constante _EVENTOS_SQL",
-          "sitio": "app/entradas/insumos.py:78"
+          "sitio": "app/entradas/insumos.py:87"
         },
         {
           "funcion": "app.external_macro.external_macro_context",
@@ -42701,7 +42701,7 @@
         {
           "funcion": "app.entradas.insumos.cargar",
           "origen": "constante _APERTURA_SIGUIENTE_SQL",
-          "sitio": "app/entradas/insumos.py:85"
+          "sitio": "app/entradas/insumos.py:94"
         },
         {
           "funcion": "app.ingest.rollup_ohlcv_5m",
@@ -43129,7 +43129,7 @@
         {
           "funcion": "app.entradas.insumos.libro",
           "origen": "constante _LIBRO_SQL",
-          "sitio": "app/entradas/insumos.py:65"
+          "sitio": "app/entradas/insumos.py:74"
         },
         {
           "funcion": "app.scalp_collector._write_combined_books",

@@ -54,27 +54,53 @@ def simular(
     return {"registro": registro, "evaluaciones": evaluaciones}
 
 
+def _cuantiles(valores: list[float]) -> dict[str, float] | None:
+    if not valores:
+        return None
+    v = sorted(valores)
+    n = len(v)
+    return {"n": n, "min": round(v[0], 3), "p25": round(v[n // 4], 3), "mediana": round(v[n // 2], 3),
+            "p75": round(v[(3 * n) // 4], 3), "max": round(v[-1], 3)}
+
+
 def _cuenta(registro: list[dict[str, Any]]) -> dict[str, Any]:
     por_dia: Counter = Counter()
     sombras: Counter = Counter()
     celdas: Counter = Counter()
+    combinaciones: Counter = Counter()
+    r_neto: list[float] = []
+    distancias: dict[str, list[float]] = {"t1_bps": [], "stop_bps": [], "racimos_saltados": []}
     for f in registro:
         if f["estado"] not in ("DISPARADO", "SOMBRA"):
             continue
         dia = f["vela_cierre"].strftime("%Y-%m-%d")
         por_dia[(dia, f["familia"], f["perfil"], f["lado"], f["estado"])] += 1
         celdas[(f["familia"], f["perfil"], f["lado"], f["estado"])] += 1
+        plan = f["foto"]["plan"]
+        if plan["r"]["neto"] is not None:
+            r_neto.append(plan["r"]["neto"])
+        if plan["distancias_bps"]["t1"] is not None:
+            distancias["t1_bps"].append(plan["distancias_bps"]["t1"])
+        if plan["distancias_bps"]["stop"] is not None:
+            distancias["stop_bps"].append(plan["distancias_bps"]["stop"])
+        distancias["racimos_saltados"].append(len(plan["stop"]["racimos_saltados"]))
         if f["estado"] == "SOMBRA":
             decision = f["foto"]["decision"]
+            combinaciones[" + ".join(sorted(decision["motivo"]))] += 1
             for motivo in decision["motivo"]:
                 sombras[motivo] += 1
             sombras[f"tipo:{decision['tipo_sombra']}"] += 1
             for etiqueta in decision["etiquetas"]:
                 sombras[f"etiqueta:{etiqueta}"] += 1
+    dias = sorted({k[0] for k in por_dia})
     return {
         "por_dia": [list(k) + [v] for k, v in sorted(por_dia.items())],
         "por_celda": [list(k) + [v] for k, v in sorted(celdas.items())],
         "sombras_por_motivo": dict(sorted(sombras.items())),
+        "sombras_por_combinacion": dict(combinaciones.most_common(12)),
+        "r_neto_t1": _cuantiles(r_neto),
+        "distancias": {k: _cuantiles(v) for k, v in distancias.items()},
+        "dias_con_candidatos": len(dias),
         "estados": dict(Counter(f["estado"] for f in registro)),
     }
 
