@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_execution_cost` · `app/api.py:1594` (cuerpo hasta la 1647) · decorador en la linea 1593.
+Handler `scalp_execution_cost` · `app/api.py:1625` (cuerpo hasta la 1678) · decorador en la linea 1624.
 
 ## Parametros de entrada
 
@@ -29,9 +29,9 @@ Handler `scalp_execution_cost` · `app/api.py:1594` (cuerpo hasta la 1647) · de
 | campo | de donde sale |
 |---|---|
 | `as_of` | literal en app/scalp_logic.py:5538 |
-| `assessment` | asignado en app/api.py:1633 |
+| `assessment` | asignado en app/api.py:1664 |
 | `note` | literal en app/scalp_logic.py:5540 |
-| `profiles` | asignado en app/api.py:1646 |
+| `profiles` | asignado en app/api.py:1677 |
 | `sizes_usd` | literal en app/scalp_logic.py:5537 |
 | `stale_after_seconds` | literal en app/scalp_logic.py:5539 |
 | `status` | literal en app/scalp_logic.py:5542 |
@@ -85,8 +85,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._slippage_para` — `app/api.py:1650`
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api._slippage_para` — `app/api.py:1681`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5341`
@@ -142,10 +142,10 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
-| 422 | — | `app/api.py:1615` | el propio handler |
-| 422 | sizes debe ser una lista de numeros | `app/api.py:1621` | el propio handler |
-| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1623` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
+| 422 | — | `app/api.py:1646` | el propio handler |
+| 422 | sizes debe ser una lista de numeros | `app/api.py:1652` | el propio handler |
+| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1654` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -191,7 +191,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.metrics.current_nyse_start` | 16 | **0** | 15 ↑ | **16** | [impacto](../impacto/app-metrics.md) |

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_basis` · `app/api.py:3022` (cuerpo hasta la 3025) · decorador en la linea 3021.
+Handler `scalp_basis` · `app/api.py:3053` (cuerpo hasta la 3056) · decorador en la linea 3052.
 
 ## Parametros de entrada
 
@@ -51,7 +51,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5766`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
@@ -73,7 +73,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -83,7 +83,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:221` | — |
+| **checks** | `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:226` | — |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:378` | — |
 | **readme** | — | `README.md:488`, `README.md:499` |
 | **tests** | `tests/test_v121_hardening.py:40` | — |
@@ -125,7 +125,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.basis_quality` | 11 | **0** | 11 ↑ | **11** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.scalp_basis` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |

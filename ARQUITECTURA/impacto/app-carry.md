@@ -19,7 +19,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/carry.py:67` · clave completa `app.carry._iso`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -42,7 +42,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/carry.py:63` · clave completa `app.carry._pct`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -65,7 +65,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/carry.py:53` · clave completa `app.carry.celda_completa`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -88,7 +88,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/carry.py:71` · clave completa `app.carry.coste_de_carry`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -111,7 +111,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/carry.py:99` · clave completa `app.carry.matriz_de_carry`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -134,7 +134,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/carry.py:88` · clave completa `app.carry.quien_paga`
 
-**Radio exacto: 1 rutas** de 73 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 74 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

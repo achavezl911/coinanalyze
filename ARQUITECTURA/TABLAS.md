@@ -21,6 +21,9 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`daily_verdict_outcome`](#daily-verdict-outcome) | 1 | 3 | 0 |
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
 | [`data_gap`](#data-gap) | 12 | 22 | 0 |
+| [`entrada_latido`](#entrada-latido) | 1 | 1 | 0 |
+| [`entrada_registro`](#entrada-registro) | 1 | 1 | 0 |
+| [`entrada_reglamento`](#entrada-reglamento) | 1 | 1 | 0 |
 | [`external_macro_observation`](#external-macro-observation) | 2 | 3 | 0 |
 | [`funding_rate`](#funding-rate) | 1 | 4 | 0 |
 | [`futures_trades_agg`](#futures-trades-agg) | 2 | 7 | 0 |
@@ -305,6 +308,42 @@ La escriben:
 - [`/api/swing-score`](rutas/api-swing-score.md)
 - [`/api/trend-matrix`](rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](rutas/api-whale-delta.md)
+
+### entrada_latido
+
+`sql/schema.sql:2702`, 8 columnas.
+
+La escriben:
+
+- `app.entradas.registro.latir` — **INSERT** en `app/entradas/registro.py:201`
+
+**Si cambia el contenido o el esquema de `entrada_latido`, estas 1 rutas lo notan:**
+
+- [`/api/entradas`](rutas/api-entradas.md)
+
+### entrada_registro
+
+`sql/schema.sql:2665`, 26 columnas.
+
+La escriben:
+
+- `app.entradas.registro.insertar` — **INSERT** en `app/entradas/registro.py:30`
+
+**Si cambia el contenido o el esquema de `entrada_registro`, estas 1 rutas lo notan:**
+
+- [`/api/entradas`](rutas/api-entradas.md)
+
+### entrada_reglamento
+
+`sql/schema.sql:2655`, 6 columnas.
+
+La escriben:
+
+- `app.entradas.registro.registrar_reglamento` — **INSERT** en `app/entradas/registro.py:74`
+
+**Si cambia el contenido o el esquema de `entrada_reglamento`, estas 1 rutas lo notan:**
+
+- [`/api/entradas`](rutas/api-entradas.md)
 
 ### external_macro_observation
 
@@ -843,9 +882,6 @@ del patron que en esta casa se ha repetido nueve veces: algo que existe, parece
 completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
-- `entrada_latido` — la escriben 1: `app/entradas/registro.py:201`
-- `entrada_registro` — la escriben 1: `app/entradas/registro.py:30`
-- `entrada_reglamento` — la escriben 1: `app/entradas/registro.py:74`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
 - `market_assets` — la escriben 1: `app/db.py:247`
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`

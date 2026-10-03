@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_delta_matrix` · `app/api.py:1303` (cuerpo hasta la 1328) · decorador en la linea 1302.
+Handler `scalp_delta_matrix` · `app/api.py:1334` (cuerpo hasta la 1359) · decorador en la linea 1333.
 
 ## Parametros de entrada
 
@@ -67,7 +67,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4589`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 
@@ -104,7 +104,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -114,7 +114,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:154`, `harness/checks/K43-foto-unica.sh:209`, `harness/checks/K44-control.bash:113`, `harness/checks/K44-control.bash:279` _(+15)_ | `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:79`, `harness/checks/K84-dos-matrices-una-cifra.sh:13` |
+| **checks** | `harness/checks/K43-foto-unica.sh:154`, `harness/checks/K43-foto-unica.sh:214`, `harness/checks/K44-control.bash:113`, `harness/checks/K44-control.bash:279` _(+15)_ | `harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:79`, `harness/checks/K84-dos-matrices-una-cifra.sh:13` |
 | **panel** | `static/js/07-decision-y-ciclos.js:325` | — |
 
 **La llama el panel: es superficie de producto.**
@@ -149,7 +149,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |

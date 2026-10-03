@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-73 rutas descubiertas en el arbol. Para trabajar sobre una,
+74 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -25,6 +25,7 @@
 | `/api/delta-profile` | GET | 3 | 1 | 13 | [ficha](rutas/api-delta-profile.md) |
 | `/api/desk/state` | GET | 26 | 13 | 80 | [ficha](rutas/api-desk-state.md) |
 | `/api/divergences` | GET | 15 | 3 | 7 | [ficha](rutas/api-divergences.md) |
+| `/api/entradas` | GET | 11 | 3 | 25 | [ficha](rutas/api-entradas.md) |
 | `/api/external-macro` | GET | 1 | 6 | 49 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 6 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
@@ -83,7 +84,7 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-7 de 73. Cada una con su motivo en la ficha.
+7 de 74. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
@@ -101,6 +102,9 @@
 | `daily_verdict_outcome` | 3 | 0 |
 | `daily_verdict_snapshot` | 3 | 0 |
 | `data_gap` | 22 | 0 |
+| `entrada_latido` | 1 | 0 |
+| `entrada_registro` | 1 | 0 |
+| `entrada_reglamento` | 1 | 0 |
 | `external_macro_observation` | 3 | 0 |
 | `funding_rate` | 4 | 0 |
 | `futures_trades_agg` | 7 | 0 |

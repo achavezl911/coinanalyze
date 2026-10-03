@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `external_macro_endpoint` · `app/api.py:2152` (cuerpo hasta la 2158) · decorador en la linea 2151.
+Handler `external_macro_endpoint` · `app/api.py:2183` (cuerpo hasta la 2189) · decorador en la linea 2182.
 
 ## Parametros de entrada
 
@@ -82,7 +82,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.external_macro.align_with_internal` — `app/external_macro.py:415`
 - `app.external_macro.external_macro_context` — `app/external_macro.py:437`
 - `app.scalp_logic.swing_score` — `app/scalp_logic.py:6572`
@@ -150,7 +150,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -160,7 +160,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:151`, `harness/checks/K43-foto-unica.sh:204` | `harness/checks/K20-cincoxx.sh:2` |
+| **checks** | `harness/checks/K43-foto-unica.sh:151`, `harness/checks/K43-foto-unica.sh:209` | `harness/checks/K20-cincoxx.sh:2` |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:220`, `static/js/07-decision-y-ciclos.js:432` | — |
 | **tests** | `tests/test_dashboard_layout.py:134` | `tests/test_dashboard_layout.py:130` |
 
@@ -201,7 +201,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.swing_score` | 2 | **0** | 54 ↑ | **2** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |

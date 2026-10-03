@@ -2,22 +2,26 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-4 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
+8 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
 El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_latido_suelto`](#-latido-suelto) | 78 | 0 | **0** | 8 ↑ | **0** |
-| [`_pasada_async`](#-pasada-async) | 201 | 0 | **0** | 8 ↑ | **0** |
+| [`_latido_suelto`](#-latido-suelto) | 78 | 0 | **0** | 9 ↑ | **0** |
+| [`_pasada_async`](#-pasada-async) | 201 | 0 | **0** | 9 ↑ | **0** |
+| [`plan_de_marcha`](#plan-de-marcha) | 62 | 0 | **0** | 9 ↑ | **0** |
 | [`pasada`](#pasada) | 90 | 0 | **0** | 8 ↑ | **0** |
-| [`plan_de_marcha`](#plan-de-marcha) | 62 | 0 | **0** | 8 ↑ | **0** |
+| [`_alineada`](#-alineada) | 139 | 0 | **0** | 1 ↑ | **0** |
+| [`_conexion_kw`](#-conexion-kw) | 49 | 0 | **0** | 1 ↑ | **0** |
+| [`_pendientes`](#-pendientes) | 143 | 0 | **0** | 1 ↑ | **0** |
+| [`evaluar_vela`](#evaluar-vela) | 157 | 0 | **0** | 1 ↑ | **0** |
 
 ## _latido_suelto
 
 `app/entradas/servicio.py:78` · clave completa `app.entradas.servicio._latido_suelto`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -30,9 +34,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 8 rutas · **cota superior**
+### Por tabla · k<=2 — 9 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (8 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -48,18 +52,20 @@ Y esas tablas las leen:
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**8 rutas se enteran SOLO por el dato**, sin
+**9 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
@@ -71,7 +77,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/servicio.py:201` · clave completa `app.entradas.servicio._pasada_async`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -84,9 +90,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 8 rutas · **cota superior**
+### Por tabla · k<=2 — 9 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (8 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -103,18 +109,20 @@ Y esas tablas las leen:
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**8 rutas se enteran SOLO por el dato**, sin
+**9 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
@@ -122,11 +130,68 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 <sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## plan_de_marcha
+
+`app/entradas/servicio.py:62` · clave completa `app.entradas.servicio.plan_de_marcha`
+
+**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
+
+### Por llamada — 0 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+_ninguna ruta la ejecuta._
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 9 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (9 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
+
+- `entrada_latido` — la escribe `app.entradas.registro.latir`
+- `entrada_reglamento` — la escribe `app.entradas.registro.registrar_reglamento`
+- `pipeline_heartbeat` — la escribe `app.db.heartbeat_component`
+- `service_ownership` — la escribe `app.db.acquire_service_lock`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
+- [`/api/healthz`](../rutas/api-healthz.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/metrics`](../rutas/metrics.md)
+
+**9 rutas se enteran SOLO por el dato**, sin
+ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/data-confidence`](../rutas/api-data-confidence.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
+- [`/api/healthz`](../rutas/api-healthz.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/metrics`](../rutas/metrics.md)
+
+<sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## pasada
 
 `app/entradas/servicio.py:90` · clave completa `app.entradas.servicio.pasada`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -175,11 +240,11 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 <sub>k=0 es exacto. La cota k<=2 sube por 1 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## plan_de_marcha
+## _alineada
 
-`app/entradas/servicio.py:62` · clave completa `app.entradas.servicio.plan_de_marcha`
+`app/entradas/servicio.py:139` · clave completa `app.entradas.servicio._alineada`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -192,9 +257,49 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 8 rutas · **cota superior**
+### Por tabla · k<=2 — 1 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (8 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (1 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
+
+- `entrada_latido` — la escribe `app.entradas.registro.latir`
+- `entrada_registro` — la escribe `app.entradas.registro.insertar`
+- `entrada_reglamento` — la escribe `app.entradas.registro.registrar_reglamento`
+
+Y esas tablas las leen:
+
+- [`/api/entradas`](../rutas/api-entradas.md)
+
+**1 rutas se enteran SOLO por el dato**, sin
+ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
+
+- [`/api/entradas`](../rutas/api-entradas.md)
+
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## _conexion_kw
+
+`app/entradas/servicio.py:49` · clave completa `app.entradas.servicio._conexion_kw`
+
+**Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
+
+### Por llamada — 0 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+_ninguna ruta la ejecuta._
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 1 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (1 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -202,31 +307,94 @@ Ella o alguien que la llama hasta k=2 escribe:
 
 - `entrada_latido` — la escribe `app.entradas.registro.latir`
 - `entrada_reglamento` — la escribe `app.entradas.registro.registrar_reglamento`
-- `pipeline_heartbeat` — la escribe `app.db.heartbeat_component`
-- `service_ownership` — la escribe `app.db.acquire_service_lock`
 
 Y esas tablas las leen:
 
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/healthz`](../rutas/api-healthz.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/metrics`](../rutas/metrics.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 
-**8 rutas se enteran SOLO por el dato**, sin
+**1 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/healthz`](../rutas/api-healthz.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/metrics`](../rutas/metrics.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## _pendientes
+
+`app/entradas/servicio.py:143` · clave completa `app.entradas.servicio._pendientes`
+
+**Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
+
+### Por llamada — 0 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+_ninguna ruta la ejecuta._
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 1 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (1 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
+
+- `entrada_latido` — la escribe `app.entradas.registro.latir`
+- `entrada_reglamento` — la escribe `app.entradas.registro.registrar_reglamento`
+
+Y esas tablas las leen:
+
+- [`/api/entradas`](../rutas/api-entradas.md)
+
+**1 rutas se enteran SOLO por el dato**, sin
+ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
+
+- [`/api/entradas`](../rutas/api-entradas.md)
+
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## evaluar_vela
+
+`app/entradas/servicio.py:157` · clave completa `app.entradas.servicio.evaluar_vela`
+
+**Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
+
+### Por llamada — 0 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+_ninguna ruta la ejecuta._
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 1 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (1 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
+
+- `entrada_latido` — la escribe `app.entradas.registro.latir`
+- `entrada_registro` — la escribe `app.entradas.registro.insertar`
+- `entrada_reglamento` — la escribe `app.entradas.registro.registrar_reglamento`
+
+Y esas tablas las leen:
+
+- [`/api/entradas`](../rutas/api-entradas.md)
+
+**1 rutas se enteran SOLO por el dato**, sin
+ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
+
+- [`/api/entradas`](../rutas/api-entradas.md)
+
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

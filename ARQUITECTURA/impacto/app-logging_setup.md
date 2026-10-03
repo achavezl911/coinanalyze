@@ -14,7 +14,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/logging_setup.py:7` · clave completa `app.logging_setup.configure_logging`
 
-**Radio exacto: 0 rutas** de 73 · **cota superior: 15** (mas ancha)
+**Radio exacto: 0 rutas** de 74 · **cota superior: 15** (mas ancha)
 
 ### Por llamada — 0 rutas
 

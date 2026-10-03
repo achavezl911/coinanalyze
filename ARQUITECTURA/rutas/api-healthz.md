@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `health` · `app/api.py:3670` (cuerpo hasta la 3724) · decorador en la linea 3669.
+Handler `health` · `app/api.py:3701` (cuerpo hasta la 3755) · decorador en la linea 3700.
 
 ## Parametros de entrada
 
@@ -16,13 +16,13 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `database` | literal en app/api.py:3718 |
-| `governed_services` | literal en app/api.py:3721 |
-| `missing_services` | literal en app/api.py:3719 |
-| `missing_symbols` | literal en app/api.py:3720 |
-| `services` | literal en app/api.py:3722 |
-| `status` | literal en app/api.py:3713 |
-| `symbols` | literal en app/api.py:3723 |
+| `database` | literal en app/api.py:3749 |
+| `governed_services` | literal en app/api.py:3752 |
+| `missing_services` | literal en app/api.py:3750 |
+| `missing_symbols` | literal en app/api.py:3751 |
+| `services` | literal en app/api.py:3753 |
+| `status` | literal en app/api.py:3744 |
+| `symbols` | literal en app/api.py:3754 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:244`
+- `app.api.records` — `app/api.py:245`
 - `app.db.db_identity` — `app/db.py:64`
 - `app.db.heartbeat` — `app/db.py:409`
 - `app.db.heartbeat_max_age` — `app/db.py:95`

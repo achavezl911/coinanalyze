@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_map_endpoint` · `app/api.py:1897` (cuerpo hasta la 1900) · decorador en la linea 1896.
+Handler `liquidation_map_endpoint` · `app/api.py:1928` (cuerpo hasta la 1931) · decorador en la linea 1927.
 
 ## Parametros de entrada
 
@@ -58,7 +58,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3725`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -92,7 +92,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:166`, `harness/checks/K43-foto-unica.sh:219` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:81`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
+| **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:166`, `harness/checks/K43-foto-unica.sh:224` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:81`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
 | **panel** | — | `static/js/10-contexto-y-estructura.js:498` |
 | **panel-html** | — | `static/index.html:244` |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:308` | — |
@@ -139,7 +139,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._resample_highs_lows` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._atr` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |

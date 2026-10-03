@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `market_memory_endpoint` · `app/api.py:2169` (cuerpo hasta la 2172) · decorador en la linea 2168.
+Handler `market_memory_endpoint` · `app/api.py:2200` (cuerpo hasta la 2203) · decorador en la linea 2199.
 
 ## Parametros de entrada
 
@@ -53,7 +53,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:231`
+- `app.api.validate_symbol` — `app/api.py:232`
 - `app.scalp_logic.market_memory` — `app/scalp_logic.py:1734`
 
 <details><summary>Alcanzables de forma indirecta (3)</summary>
@@ -76,7 +76,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:233` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -122,7 +122,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 64 | **0** | 0 | **64** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |
 | `app.interpretation._memory_features` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.interpretation.market_memory_read` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-interpretation.md) |
