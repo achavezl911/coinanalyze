@@ -2,9 +2,10 @@
 # K105-control · UN PLANTADO QUE TIENE QUE FALLAR POR CADA COSA QUE K105 PROMETE (campana 135, C5)
 #
 # Todo en bases DESECHABLES k105_ctl_<pid>* que se borran al salir (y se comprueba que se borraron).
-# Base: schema.sql de este arbol, reglamento de control registrado, BTC y ETH sembrados en la vela
-# T actual y evaluados con el generador REAL: un DISPARADO y una SOMBRA «solo perpetuo». Su gemelo
-# tiene que salir VERDE; cada plantado, en una COPIA de la base, tiene que salir ROJO por su brazo:
+# Base: schema.sql de este arbol, reglamento de control registrado (v1 y v2 del arbol, cada una con
+# SU tope), BTC y ETH sembrados en la vela T actual y evaluados con el generador REAL: en cada
+# version un DISPARADO y una SOMBRA «solo perpetuo». Su gemelo tiene que salir VERDE; cada
+# plantado, en una COPIA de la base, tiene que salir ROJO por su brazo:
 #
 #   sin_stop       un DISPARADO sin stop                              c
 #   posterior      un insumo con hora posterior a su registro         d
@@ -14,7 +15,17 @@
 #   evento_ajeno   una SOMBRA de evento con un calendario que no es el de su registro   f
 #   evento_atras   un evento con hora anterior a la revision que lo trae (release)      f
 #   vacio          cero DISPARADOS y SOMBRAS: NO MEDIDO, nunca VERDE
-#   main           los BYTES de main (esquema y release sin registro): sus brazos CAEN
+#   antes          los BYTES de antes del registro (82ae7e2: esquema y release sin el): sus brazos CAEN
+#
+# DOS VERSIONES A LA VEZ (campana 136). La base solo conoce el tope que la fila TRAE; K105 juzga
+# cada fila con el tope y las huellas de SU version en el release:
+#   tope_gemelo    un DISPARADO de v2 por encima del tope de v1 y dentro del suyo: VERDE (un K105
+#                  que juzgara todo con el tope de v1 lo condenaria)
+#   tope_ajeno     un DISPARADO de v1 con ese mismo retraso, que la base acepto porque trae el tope
+#                  de v2: ROJO por d, y la condenada es la de v1, no su gemela               d
+#   huella_ajena   una fila de v1 con la huella de comun de v2                                a
+#   release_135    el release de la 135 (191c2fb: solo v1 y cal-1) sobre una base donde v2 ya
+#                  registro: ROJO por a (lo registrado no esta en el fichero)                 a
 #
 # Y el intento real de UPDATE/DELETE/TRUNCATE: lo rechaza el DISPARADOR (55000, su texto), y en una
 # transaccion de solo lectura el error es otro (25006): el control distingue los dos.
@@ -127,17 +138,50 @@ psql -h "$H" -d "${BASE}_vacio" -q -v ON_ERROR_STOP=1 -f "$REPO/sql/schema.sql" 
 rc=$(corre "${BASE}_vacio" "$T/release")
 comprueba vacio_no_medido "$([ "$rc" = 2 ] && primera | grep -q 'NO MEDIDO' && echo 0 || echo 1)" "rc=$rc · $(primera)"
 
-echo "== los BYTES de main"
+echo "== los BYTES de antes del registro"
+# «main» se mueve: desde que la 135 se fusiono ya trae el registro, y este brazo dejo de medir lo
+# que decia (el 2026-10-09 caian 2 brazos de 4 con los bytes de main@191c2fb). Los bytes de ANTES
+# del registro son un commit fijo.
+ANTES=82ae7e2
 mkdir -p "$T/main"
-git -C "$REPO" archive main sql/schema.sql config 2>/dev/null | tar -x -C "$T/main"
+git -C "$REPO" archive "$ANTES" sql/schema.sql config 2>/dev/null | tar -x -C "$T/main"
+[ -s "$T/main/sql/schema.sql" ] || echo "    sin el commit $ANTES en este clon: los dos brazos siguientes no miden"
 createdb -h "$H" "${BASE}_main" > /dev/null
 psql -h "$H" -d "${BASE}_main" -q -f "$T/main/sql/schema.sql" > /dev/null 2>&1
 rc=$(corre "${BASE}_main" "$T/main")
 caen=$(grep -cE '^  [a-f] .* ROJO' "$T/salida")
 cuales=$(grep -E '^  [a-f] .* ROJO' "$T/salida" | awk '{print $1}' | tr '\n' ' ')
-comprueba main_caen "$([ "$rc" = 1 ] && [ "$caen" -ge 4 ] && echo 0 || echo 1)" "rc=$rc · caen $caen: $cuales· $(primera)"
+comprueba antes_caen "$([ -s "$T/main/sql/schema.sql" ] && [ "$rc" = 1 ] && [ "$caen" -ge 4 ] && echo 0 || echo 1)" "rc=$rc · caen $caen: $cuales· $(primera)"
 rc=$(corre "$BASE" "$T/main")
-comprueba main_release_sin_reglamento "$([ "$rc" = 1 ] && echo 0 || echo 1)" "rc=$rc · $(primera)"
+comprueba antes_release_sin_reglamento "$([ -s "$T/main/sql/schema.sql" ] && [ "$rc" = 1 ] && echo 0 || echo 1)" "rc=$rc · $(primera)"
+
+echo "== dos versiones a la vez: cada fila con el tope y las huellas de SU version"
+copia "${BASE}_tope_gemelo"
+"$PY" "$SIEMBRA" planta tope_gemelo "postgresql:///${BASE}_tope_gemelo?host=$H" | sed 's/^/    /'
+rc=$(corre "${BASE}_tope_gemelo" "$T/release")
+comprueba tope_gemelo "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc brazo d=$(brazo d) · $(primera)"
+copia "${BASE}_tope_ajeno"
+"$PY" "$SIEMBRA" planta tope_gemelo "postgresql:///${BASE}_tope_ajeno?host=$H" | sed 's/^/    /'
+"$PY" "$SIEMBRA" planta tope_ajeno "postgresql:///${BASE}_tope_ajeno?host=$H" | sed 's/^/    /'
+rc=$(corre "${BASE}_tope_ajeno" "$T/release")
+de_v1=$(grep -c 'DISPARADO de v1 a .* sobre el tope de su version' "$T/salida")
+de_v2=$(grep -c 'DISPARADO de v2 a .* sobre el tope de su version' "$T/salida")
+comprueba tope_ajeno "$([ "$rc" = 1 ] && [ "$(brazo d)" = ROJO ] && [ "$de_v1" = 1 ] && [ "$de_v2" = 0 ] && echo 0 || echo 1)" \
+  "rc=$rc brazo d=$(brazo d) · condenadas por su tope: v1 $de_v1, v2 $de_v2 · $(primera)"
+copia "${BASE}_huella_ajena"
+"$PY" "$SIEMBRA" planta huella_ajena "postgresql:///${BASE}_huella_ajena?host=$H" | sed 's/^/    /'
+rc=$(corre "${BASE}_huella_ajena" "$T/release")
+comprueba huella_ajena "$([ "$rc" = 1 ] && [ "$(brazo a)" = ROJO ] && grep -q 'huella_comun no es la de v1' "$T/salida" && echo 0 || echo 1)" "rc=$rc brazo a=$(brazo a) · $(primera)"
+# el release de la 135 (solo v1 y cal-1) sobre una base donde el reglamento de ESTE arbol ya se
+# registro (v2 y cal-2 incluidos): una vuelta atras se VE, y se ve por lo que es
+LA135=191c2fb
+mkdir -p "$T/la135"
+git -C "$REPO" archive "$LA135" config 2>/dev/null | tar -x -C "$T/la135"
+createdb -h "$H" "${BASE}_la135" > /dev/null
+psql -h "$H" -d "${BASE}_la135" -q -v ON_ERROR_STOP=1 -f "$REPO/sql/schema.sql" > /dev/null 2>&1
+"$PY" "$SIEMBRA" reglamento "postgresql:///${BASE}_la135?host=$H" "$REPO" | sed 's/^/    /'
+rc=$(corre "${BASE}_la135" "$T/la135")
+comprueba release_135 "$([ -s "$T/la135/config/entradas/reglamento.json" ] && [ "$rc" = 1 ] && [ "$(brazo a)" = ROJO ] && grep -q 'v2\.[A-Za-z0-9]* registrado y AUSENTE del fichero del release' "$T/salida" && echo 0 || echo 1)" "rc=$rc brazo a=$(brazo a) · $(primera)"
 
 echo "== restaurado: la base de control sigue saliendo VERDE"
 rc=$(corre "$BASE" "$T/release")

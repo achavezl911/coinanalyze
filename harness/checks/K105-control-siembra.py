@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """Siembra de K105-control: el escenario correcto y cada plantado de C5, en una base DESECHABLE.
 
-  escenario <dsn> <release>   escribe un release de control (v1 con tope de retraso 900 s para
-                              que la vela T actual entre, y un calendario que cubre 10 dias),
-                              registra su reglamento y codigo, siembra BTC y ETH en la vela T y la
-                              evalua con el generador real: un DISPARADO (BTC) y una SOMBRA «solo
-                              perpetuo» (ETH), con sus VIGILANDO.
+  escenario <dsn> <release>   escribe un release de control (v1 y v2 del arbol, cada una con SU
+                              tope de retraso -los dos caben en la vela T actual; en una vela mas
+                              vieja solo el de v2- y un calendario que cubre), registra su
+                              reglamento y codigo, siembra BTC y ETH en la vela T y la evalua con
+                              el generador real: en CADA version un DISPARADO (BTC) y una SOMBRA
+                              «solo perpetuo» (ETH), con sus VIGILANDO.
   planta <caso> <dsn>         una fila mala sobre esa base: sin_stop, posterior, sin_spot,
-                              dos_vivos, evento_ajeno. Imprime la huella de la foto antes/despues.
+                              dos_vivos, evento_ajeno; y las de DOS VERSIONES (campana 136):
+                              tope_gemelo (un DISPARADO de v2 por encima del tope de v1 y dentro
+                              del suyo: es CORRECTO), tope_ajeno (uno de v1 con ese mismo retraso,
+                              que la base acepta porque trae el tope de v2) y huella_ajena (una
+                              fila de v1 con la huella de comun de v2).
+                              Imprime la huella de la foto antes/despues.
   release_evento <release>    mete en el calendario del release un evento ANTERIOR a su revision.
 
 Nunca toca una base que no se llame k105_ctl_*.
@@ -46,15 +52,16 @@ def _desechable(dsn: str) -> None:
         raise SystemExit(f"siembra: {nombre} no es una base desechable k105_ctl_*")
 
 
-def _release(T, ruta: Path) -> dict:
-    doc = R.cargar()
-    v1 = doc["versiones"][0]
-    v1["bloques"]["comun"]["parametros"]["tope_retraso_s"]["valor"] = 900
-    v1["huellas"] = {n: R.huella_bloque(v1["bloques"][n]) for n in R.BLOQUES}
-    rev = B.revision(cubre_hasta=T + timedelta(days=10))
-    rev.update({"revision": "cal-control", "vigente_desde": M.iso(T - timedelta(days=1))})
-    rev["huella"] = R.huella_revision(rev)
-    doc["calendario"]["revisiones"] = [rev]
+# Los topes de control, en segundos sobre lo que lleva cerrada la vela T al sembrar. En el de v1 cabe
+# la vela T y NO la anterior (15 min mas vieja); en el de v2 caben las dos. Asi una fila de la vela
+# anterior queda por encima del tope de v1 y dentro del de v2: el sitio donde juzgar con el tope de
+# OTRA version da el veredicto contrario.
+TOPE_SOBRE_LO_PASADO = {"v1": 870.0, "v2": 1500.0}
+
+
+def _release(T, pasado_s: float, ruta: Path) -> dict:
+    doc = B.doc_de_prueba(T, "v1", "v2",
+                          tope_s={v: round(pasado_s + s, 3) for v, s in TOPE_SOBRE_LO_PASADO.items()})
     destino = ruta / "config" / "entradas"
     destino.mkdir(parents=True, exist_ok=True)
     (destino / "reglamento.json").write_text(R.formatea(doc) + "\n", encoding="utf-8")
@@ -71,7 +78,8 @@ async def escenario(dsn: str, release: str) -> None:
             await conn.execute("INSERT INTO symbols(symbol, base_asset) VALUES($1, $2) ON CONFLICT DO NOTHING",
                                symbol, base)
         T = await conn.fetchval("SELECT date_bin('15 minutes', clock_timestamp(), TIMESTAMPTZ '1970-01-01 00:00:00+00')")
-        doc = _release(T, Path(release))
+        pasado = (await conn.fetchval("SELECT clock_timestamp()") - T).total_seconds()
+        doc = _release(T, pasado, Path(release))
         reg = await G.registrar_reglamento(conn, doc, C.registradas(), M.CODIGO_VERSION, C.contenido())
         assert reg["ok"], reg
         await B.sembrar(conn, T, B.insumos(T), "BTCUSDT_PERP.A", "BTC")
@@ -81,7 +89,9 @@ async def escenario(dsn: str, release: str) -> None:
         # un latido de verdad: sin filas, un DELETE no dispara nada y el control no mediria (A35)
         await G.latir(conn, vela_cierre=T, estado="ok", duracion_s=0.0,
                       detalle={"velas": salida}, error=None)
-        print(f"escenario T={M.iso(T)} registradas={estados} + 1 latido")
+        topes = {v["version"]: R.valores(v["bloques"]["comun"])["tope_retraso_s"] for v in doc["versiones"]}
+        print(f"escenario T={M.iso(T)} (cerrada hace {pasado:.0f} s) topes de control={topes} "
+              f"registradas={estados} + 1 latido")
     finally:
         await conn.close()
 
@@ -89,9 +99,11 @@ async def escenario(dsn: str, release: str) -> None:
 async def planta(caso: str, dsn: str) -> None:
     conn = await asyncpg.connect(dsn, server_settings={"timezone": "UTC"})
     try:
-        fila = await conn.fetchrow(
-            "SELECT * , foto::text AS foto_texto FROM entrada_registro WHERE estado = 'DISPARADO' "
-            "AND symbol = 'BTCUSDT_PERP.A' ORDER BY registro_id LIMIT 1")
+        de_v2 = caso == "tope_gemelo"
+        base = ("SELECT * , foto::text AS foto_texto FROM entrada_registro WHERE estado = 'DISPARADO' "
+                "AND symbol = 'BTCUSDT_PERP.A' AND version = $1 ORDER BY registro_id LIMIT 1")
+        fila = await conn.fetchrow(base, "v2" if de_v2 else "v1")
+        otra = await conn.fetchrow(base, "v1" if de_v2 else "v2")
         foto = json.loads(fila["foto_texto"])
         antes = M.huella_foto(foto)
         t = {
@@ -122,13 +134,33 @@ async def planta(caso: str, dsn: str) -> None:
             foto["calendario"]["revision"] = "cal-fantasma"
             foto["huellas"]["calendario_datos"] = "f" * 64
             t["huellas"] = foto["huellas"]
+        elif caso in ("tope_gemelo", "tope_ajeno"):
+            # una fila de la vela ANTERIOR: su retraso pasa del tope de v1 y cabe en el de v2
+            anterior = fila["vela_cierre"] - timedelta(minutes=15)
+            t.update({"vela_cierre": anterior, "inicio_episodio": anterior - timedelta(minutes=15),
+                      "clave": "zona:1.0:2.0" if de_v2 else "zona:3.0:4.0"})
+            if caso == "tope_ajeno":  # de v1, pero con el tope de v2: la base la deja pasar
+                t["tope_retraso_s"] = float(otra["tope_retraso_s"])
+        elif caso == "huella_ajena":  # dice ser de v1 y lleva la regla comun de v2
+            t.update({"clave": "zona:5.0:6.0",
+                      "huellas": {**foto["huellas"], "comun": otra["huella_comun"]}})
         else:
             raise SystemExit(f"caso desconocido {caso}")
         t["foto"] = foto
         t["huella_foto"] = M.huella_foto(foto)
         r = await G.insertar(conn, t, "c" * 64)
-        cambio = (f"clave {fila['clave']} -> {t['clave']} (misma foto)" if caso == "dos_vivos"
-                  else f"huella de la foto {antes[:12]} -> {t['huella_foto'][:12]}")
+        if caso == "dos_vivos":
+            cambio = f"clave {fila['clave']} -> {t['clave']} (misma foto)"
+        elif caso in ("tope_gemelo", "tope_ajeno"):
+            cambio = (f"{t['version']} · retraso {r.get('retraso_s', 0):.0f} s · tope de la fila "
+                      f"{float(fila['tope_retraso_s']):g} -> {t['tope_retraso_s']:g} · topes de control v1 "
+                      f"{float((otra if de_v2 else fila)['tope_retraso_s']):g}, v2 "
+                      f"{float((fila if de_v2 else otra)['tope_retraso_s']):g} (misma foto {antes[:12]})")
+        elif caso == "huella_ajena":
+            cambio = (f"{t['version']} · huella_comun {fila['huella_comun'][:12]} -> "
+                      f"{t['huellas']['comun'][:12]} (misma foto {antes[:12]})")
+        else:
+            cambio = f"huella de la foto {antes[:12]} -> {t['huella_foto'][:12]}"
         print(f"plantado {caso}: {cambio} registrado={r['registrado']} estado={r.get('estado')}")
     finally:
         await conn.close()
