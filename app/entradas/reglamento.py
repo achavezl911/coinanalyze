@@ -11,10 +11,18 @@ no reinicia la cuenta de F2. Los EVENTOS del calendario van en una cadena de rev
 compartida por todas las versiones en curso: renovarlos no crea version (el ANCLA no muere cuando el
 calendario vence) y cada revision tiene su propia huella (bloque 'calendario_datos').
 
+VARIAS VERSIONES A LA VEZ (campana 136). Todas las versiones no retiradas corren en paralelo, cada
+una con sus umbrales, sus relojes y sus huellas; la ACTIVA es solo la ultima. Las celdas (familia x
+perfil x lado) en que cada version APUESTA van en la seccion 'apuestas' del fichero, fuera del
+objeto de la version -una version registrada no se toca-: validar() las contrasta con las familias,
+los perfiles y los lados de cada version y apuestas() las sirve. De ahi, y no del texto libre de la
+hipotesis, sale cuantas hipotesis lleva probadas cada familia.
+
 LO QUE ESTE MODULO NO PUEDE VER. El CI clona a profundidad 1 (.github/workflows/ci.yml): un test
 solo ve el fichero de su arbol. Si alguien cambia un umbral de v1 Y recalcula su huella declarada,
-validar() no lo ve; lo ve el test de historia contra origin/main (tests/test_entradas_reglamento.py)
-y, en produccion, la tabla entrada_reglamento, que guarda la huella de cada (etiqueta, bloque) la
+validar() no lo ve; lo ve el test de historia contra origin/main (tests/test_entradas_reglamento.py),
+que compara ENTERO el objeto de cada version y de cada revision que main ya tiene, y sus apuestas
+(la hipotesis, el motivo y el origen no entran en ninguna huella); y, en produccion, la tabla entrada_reglamento, que guarda la huella de cada (etiqueta, bloque) la
 primera vez que corre y rechaza una segunda regla bajo la misma etiqueta (UNIQUE), y K105 a.
 """
 
@@ -32,6 +40,7 @@ from typing import Any
 FORMATO = "coinalyze.entradas.reglamento"
 FORMATO_VERSION = 1
 FAMILIAS = ("F1", "F2")
+LADOS = ("largo", "corto")
 BLOQUES = ("F1", "F2", "comun", "calendario", "lectura", "papel")
 BLOQUE_CALENDARIO_DATOS = "calendario_datos"
 RUTA = Path(__file__).resolve().parents[2] / "config" / "entradas" / "reglamento.json"
@@ -133,7 +142,7 @@ def _valida_bloque(donde: str, nombre: str, bloque: Any) -> list[str]:
         if not _texto(cuerpo.get("origen")):
             errores.append(
                 f"{donde}: {nombre}.{p} sin ORIGEN (una constante fichero:linea, una medida con su "
-                "comando, o 'ARBITRARIO v1')"
+                "comando, o 'ARBITRARIO <version>')"
             )
     return errores
 
@@ -290,6 +299,61 @@ def _valida_calendario(calendario: Any) -> list[str]:
     return errores
 
 
+def celdas(version: dict[str, Any]) -> list[list[str]]:
+    """Todas las celdas de una version: familia x perfil x lado (los simbolos van juntos)."""
+    perfiles = valores(version["bloques"]["comun"])["perfiles"]
+    return [[f, p, lado] for f in FAMILIAS for p in perfiles for lado in LADOS]
+
+
+def _valida_apuestas(doc: dict[str, Any]) -> list[str]:
+    """La seccion 'apuestas' contra las versiones del fichero: cada version declara en que celdas
+    apuesta, y cada celda declarada existe en ESA version. Un fichero que no trae la seccion (el
+    de la campana 135) es valido: quien cuenta hipotesis dice entonces que no estan declaradas."""
+    seccion = doc.get("apuestas")
+    if seccion is None:
+        return []
+    por_version = seccion.get("versiones") if isinstance(seccion, dict) else None
+    if not isinstance(por_version, dict):
+        return ["apuestas: sin mapa 'versiones'"]
+    versiones = [v for v in doc["versiones"] if isinstance(v, dict) and isinstance(v.get("version"), str)]
+    etiquetas = [v["version"] for v in versiones]
+    errores = [f"apuestas: {e} no es una version del fichero" for e in por_version if e not in etiquetas]
+    for v in versiones:
+        entrada = por_version.get(v["version"])
+        lista = entrada.get("celdas") if isinstance(entrada, dict) else None
+        if not isinstance(lista, list):
+            errores.append(f"apuestas: la version {v['version']} no declara en que celdas apuesta")
+            continue
+        try:
+            posibles = celdas(v)
+        except (ReglamentoInvalido, KeyError, TypeError, AttributeError):
+            continue  # el bloque comun no se deja leer: ya lo dice _valida_version
+        for i, celda in enumerate(lista):
+            if celda not in posibles:
+                errores.append(f"apuestas: {v['version']} apuesta en {celda!r}, que no es una celda "
+                               "suya (familia x perfil x lado)")
+            elif celda in lista[:i]:
+                errores.append(f"apuestas: {v['version']} repite la celda {celda!r}")
+    return errores
+
+
+def apuestas(doc: dict[str, Any]) -> dict[str, dict[str, list[list[str]]]] | None:
+    """Por version, las celdas en que APUESTA y las que mueve SIN apuesta (todas las suyas menos
+    las apostadas). None si el fichero no las declara. Es lo que cuenta como hipotesis probada de
+    una familia: se lee de aqui, nunca del texto libre de la hipotesis."""
+    seccion = doc.get("apuestas")
+    if seccion is None:
+        return None
+    salida: dict[str, dict[str, list[list[str]]]] = {}
+    for v in doc["versiones"]:
+        apostadas = [list(c) for c in seccion["versiones"][v["version"]]["celdas"]]
+        salida[v["version"]] = {
+            "apostadas": apostadas,
+            "sin_apuesta": [c for c in celdas(v) if c not in apostadas],
+        }
+    return salida
+
+
 def validar(doc: Any) -> list[str]:
     """Todos los errores del fichero contra sus propias reglas. Lista vacia = valido."""
     if not isinstance(doc, dict):
@@ -308,6 +372,7 @@ def validar(doc: Any) -> list[str]:
     for v in versiones:
         if isinstance(v, dict):
             v.pop("_calculadas", None)
+    errores.extend(_valida_apuestas(doc))
     errores.extend(_valida_calendario(doc.get("calendario")))
     return errores
 

@@ -8,19 +8,19 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_argumentos`](#-argumentos) | 153 | 0 | **0** | 1 ↑ | **0** |
-| [`cargar_previos`](#cargar-previos) | 116 | 0 | **0** | 1 ↑ | **0** |
-| [`como_sombra_tardia`](#como-sombra-tardia) | 164 | 0 | **0** | 1 ↑ | **0** |
-| [`filas_esperadas`](#filas-esperadas) | 43 | 0 | **0** | 1 ↑ | **0** |
-| [`insertar`](#insertar) | 169 | 0 | **1** | 1 | **1** |
-| [`latir`](#latir) | 198 | 0 | **1** | 1 | **1** |
-| [`registrar_reglamento`](#registrar-reglamento) | 55 | 0 | **1** | 1 | **1** |
-| [`ultimo_tick`](#ultimo-tick) | 212 | 0 | **0** | 1 ↑ | **0** |
-| [`ventana_previos`](#ventana-previos) | 101 | 0 | **0** | 1 ↑ | **0** |
+| [`_argumentos`](#-argumentos) | 164 | 0 | **0** | 1 ↑ | **0** |
+| [`cargar_previos`](#cargar-previos) | 127 | 0 | **0** | 1 ↑ | **0** |
+| [`como_sombra_tardia`](#como-sombra-tardia) | 175 | 0 | **0** | 1 ↑ | **0** |
+| [`filas_esperadas`](#filas-esperadas) | 54 | 0 | **0** | 1 ↑ | **0** |
+| [`insertar`](#insertar) | 180 | 0 | **1** | 1 | **1** |
+| [`latir`](#latir) | 219 | 0 | **1** | 1 | **1** |
+| [`registrar_reglamento`](#registrar-reglamento) | 66 | 0 | **1** | 1 | **1** |
+| [`ultimo_tick`](#ultimo-tick) | 233 | 0 | **0** | 1 ↑ | **0** |
+| [`ventana_previos`](#ventana-previos) | 112 | 0 | **0** | 1 ↑ | **0** |
 
 ## _argumentos
 
-`app/entradas/registro.py:153` · clave completa `app.entradas.registro._argumentos`
+`app/entradas/registro.py:164` · clave completa `app.entradas.registro._argumentos`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -58,7 +58,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## cargar_previos
 
-`app/entradas/registro.py:116` · clave completa `app.entradas.registro.cargar_previos`
+`app/entradas/registro.py:127` · clave completa `app.entradas.registro.cargar_previos`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -98,7 +98,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## como_sombra_tardia
 
-`app/entradas/registro.py:164` · clave completa `app.entradas.registro.como_sombra_tardia`
+`app/entradas/registro.py:175` · clave completa `app.entradas.registro.como_sombra_tardia`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -136,7 +136,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## filas_esperadas
 
-`app/entradas/registro.py:43` · clave completa `app.entradas.registro.filas_esperadas`
+`app/entradas/registro.py:54` · clave completa `app.entradas.registro.filas_esperadas`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -175,7 +175,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## insertar
 
-`app/entradas/registro.py:169` · clave completa `app.entradas.registro.insertar`
+`app/entradas/registro.py:180` · clave completa `app.entradas.registro.insertar`
 
 **Radio exacto: 1 rutas** de 74 · **cota superior: 1** (igual al exacto)
 
@@ -214,7 +214,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## latir
 
-`app/entradas/registro.py:198` · clave completa `app.entradas.registro.latir`
+`app/entradas/registro.py:219` · clave completa `app.entradas.registro.latir`
 
 **Radio exacto: 1 rutas** de 74 · **cota superior: 1** (igual al exacto)
 
@@ -252,7 +252,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## registrar_reglamento
 
-`app/entradas/registro.py:55` · clave completa `app.entradas.registro.registrar_reglamento`
+`app/entradas/registro.py:66` · clave completa `app.entradas.registro.registrar_reglamento`
 
 **Radio exacto: 1 rutas** de 74 · **cota superior: 1** (igual al exacto)
 
@@ -290,7 +290,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## ultimo_tick
 
-`app/entradas/registro.py:212` · clave completa `app.entradas.registro.ultimo_tick`
+`app/entradas/registro.py:233` · clave completa `app.entradas.registro.ultimo_tick`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 
@@ -329,7 +329,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## ventana_previos
 
-`app/entradas/registro.py:101` · clave completa `app.entradas.registro.ventana_previos`
+`app/entradas/registro.py:112` · clave completa `app.entradas.registro.ventana_previos`
 
 **Radio exacto: 0 rutas** de 74 · **cota superior: 1** (mas ancha)
 

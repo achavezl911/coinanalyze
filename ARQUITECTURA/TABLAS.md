@@ -315,7 +315,7 @@ La escriben:
 
 La escriben:
 
-- `app.entradas.registro.latir` — **INSERT** en `app/entradas/registro.py:201`
+- `app.entradas.registro.latir` — **INSERT** en `app/entradas/registro.py:222`
 
 **Si cambia el contenido o el esquema de `entrada_latido`, estas 1 rutas lo notan:**
 
@@ -327,7 +327,7 @@ La escriben:
 
 La escriben:
 
-- `app.entradas.registro.insertar` — **INSERT** en `app/entradas/registro.py:30`
+- `app.entradas.registro.insertar` — **INSERT** en `app/entradas/registro.py:31`
 
 **Si cambia el contenido o el esquema de `entrada_registro`, estas 1 rutas lo notan:**
 
@@ -339,7 +339,7 @@ La escriben:
 
 La escriben:
 
-- `app.entradas.registro.registrar_reglamento` — **INSERT** en `app/entradas/registro.py:74`
+- `app.entradas.registro.registrar_reglamento` — **INSERT** en `app/entradas/registro.py:85`
 
 **Si cambia el contenido o el esquema de `entrada_reglamento`, estas 1 rutas lo notan:**
 

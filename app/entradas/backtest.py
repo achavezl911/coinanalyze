@@ -8,7 +8,10 @@ Lo que el espejo no tiene se DECLARA y no manda a SOMBRA (modo BACKTEST en el mo
 (orderbook_snapshot dura ~6 h) -coste = solo comision, spread NO MEDIDO-, y con el el mid de
 Bybit; la referencia del plan es la apertura de 1 min del minuto que abre en T. El calendario sin
 cubrir tambien sale NO MEDIDO. Es BACKTEST EN MUESTRA: reglas escritas despues de ver el periodo
-y datos revisados. No alimenta ningun cambio de reglamento.
+y datos revisados. No alimenta ningun cambio de reglamento. Con varias versiones en curso (campana
+136) cada grupo de versiones con el mismo bloque comun carga sus insumos, como el generador; aqui
+nadie espera al colector, porque en el espejo el dato esta quieto: lo que solo pasa en marcha -el
+spot que aun no ha llegado al registrar- este backtest NO lo ve.
 
     python -m app.entradas.backtest --dsn postgresql:///<copia> --desde 2026-07-24 --hasta 2026-08-13
 """
@@ -107,36 +110,43 @@ def _cuenta(registro: list[dict[str, Any]]) -> dict[str, Any]:
 
 async def correr(conn, *, desde: datetime, hasta: datetime, doc: dict[str, Any],
                  bases: dict[str, str], codigo: str, simbolos: list[str] | None = None) -> dict:
-    versiones = R.versiones_en_curso(doc)
-    comun = R.valores(versiones[0]["bloques"]["comun"])
-    calendario = R.valores(versiones[0]["bloques"]["calendario"])
-    paso = timedelta(minutes=min(p["vela_min"] for p in comun["perfiles"].values()))
+    # Como el generador (servicio.evaluar_vela): las versiones se agrupan por su bloque comun y
+    # cada grupo carga SUS insumos. Aqui nadie espera: en el espejo el dato esta quieto.
+    grupos = [
+        (g, R.valores(g[0]["bloques"]["comun"]), R.valores(g[0]["bloques"]["calendario"]))
+        for g in M.grupos_por_comun(R.versiones_en_curso(doc))
+    ]
+    paso = timedelta(minutes=min(
+        p["vela_min"] for _, comun, _ in grupos for p in comun["perfiles"].values()
+    ))
     registro: list[dict[str, Any]] = []
     evaluaciones: Counter = Counter()
     motivos_no_evaluable: Counter = Counter()
     T = desde
     while hasta >= T:
         revision = R.revision_vigente(doc, T)
-        for perfil, p in comun["perfiles"].items():
-            if int(T.timestamp()) % (p["vela_min"] * 60):
-                continue
-            for symbol in simbolos or comun["simbolos"]:
-                insumos = await I.cargar(conn, symbol=symbol, base_asset=bases[symbol], T=T,
-                                         perfil=perfil, comun=comun, calendario=calendario,
-                                         modo=M.BACKTEST)
-                resultado = simular([(T, insumos)], symbol=symbol, perfil=perfil,
-                                    versiones=versiones, revision=revision, codigo=codigo,
-                                    registro=registro)
-                for e in resultado["evaluaciones"]:
-                    evaluaciones[(perfil, e["estado"])] += 1
-                    if e["estado"] != "ok":
-                        motivos_no_evaluable[e["motivo"].split(":")[0]] += 1
+        for versiones, comun, calendario in grupos:
+            etiquetas = "+".join(v["version"] for v in versiones)
+            for perfil, p in comun["perfiles"].items():
+                if int(T.timestamp()) % (p["vela_min"] * 60):
+                    continue
+                for symbol in simbolos or comun["simbolos"]:
+                    insumos = await I.cargar(conn, symbol=symbol, base_asset=bases[symbol], T=T,
+                                             perfil=perfil, comun=comun, calendario=calendario,
+                                             modo=M.BACKTEST)
+                    resultado = simular([(T, insumos)], symbol=symbol, perfil=perfil,
+                                        versiones=versiones, revision=revision, codigo=codigo,
+                                        registro=registro)
+                    for e in resultado["evaluaciones"]:
+                        evaluaciones[(etiquetas, perfil, e["estado"])] += 1
+                        if e["estado"] != "ok":
+                            motivos_no_evaluable[e["motivo"].split(":")[0]] += 1
         T += paso
     return {
         "modo": "BACKTEST EN MUESTRA",
         "desde": M.iso(desde),
         "hasta": M.iso(hasta),
-        "evaluaciones": {f"{k[0]}:{k[1]}": v for k, v in sorted(evaluaciones.items())},
+        "evaluaciones": {":".join(k): v for k, v in sorted(evaluaciones.items())},
         "no_evaluables_por_motivo": dict(motivos_no_evaluable.most_common()),
         **_cuenta(registro),
     }

@@ -6,14 +6,16 @@ la validacion de la foto (app/entradas/foto.py) del arbol que lo invoca.
 
 Brazos (campana 135, C5):
   a  el reglamento registrado es el del release, huella a huella, y todo lo registrado sigue en el
-     fichero (codigo incluido); cada contenido es su huella
+     fichero (codigo incluido); cada contenido es su huella; y cada fila del registro lleva las
+     huellas y los parametros de SU version (campana 136: corren dos a la vez)
   b  append-only por CATALOGO: BEFORE UPDATE OR DELETE (fila) y BEFORE TRUNCATE (sentencia),
      activos, con la funcion que lanza; y el BEFORE INSERT que pone la hora y el tope
   c  todo DISPARADO y toda SOMBRA traen lo de C3; ningun DISPARADO sin la pata spot (MC12)
-  d  ningun insumo de la foto posterior a su registro; ningun retraso sobre el tope; y como DATO,
+  d  ningun insumo de la foto posterior a su registro; ningun retraso sobre el tope DE SU VERSION
+     -el del reglamento del release, no el que trae la fila, que lo pone el cliente-; y como DATO,
      cuantas velas de la foto se compararon con las asentadas y cuantas difieren
   e  uno vivo por clave (zonas que se solapan cuentan como la misma clave)
-  f  el calendario vigente cubre ahora + la caducidad maxima; la etiqueta de evento sale del
+  f  el calendario vigente DEL RELEASE cubre ahora + la caducidad maxima; la etiqueta de evento sale del
      calendario de SU registro; ningun evento anterior a su revision; y la retencion del ohlcv
      1min de 140 >= caducidad maxima + 7 dias de gracia (signal_outcomes)
 
@@ -84,6 +86,57 @@ def brazo_a(R, doc, codigo, registradas, usados) -> list[str]:
         if (version, "codigo") not in en_base:
             errores.append(f"codigo {version} usado en el registro y sin registrar")
     return errores
+
+
+HUELLAS_DE_BLOQUE = ("comun", "calendario", "lectura", "papel")
+
+
+def por_version(R, doc, combos, disparados, filas) -> tuple[list[str], list[str]]:
+    """CADA FILA CON LO DE SU VERSION (campana 136: corren dos a la vez, con topes distintos).
+
+    La base juzga el DISPARADO tardio con el tope que TRAE la fila, que lo pone el cliente; aqui
+    se contrasta con el reglamento del release: las huellas y el tope de cada fila son los de la
+    version que dice ser (errores de `a` y de `d`), todo DISPARADO esta dentro del tope de SU
+    version, y la foto lleva los parametros de su version. `combos` son las combinaciones
+    distintas de (version, familia, tope, huellas) de TODO el registro, con cuantas filas."""
+    a, d = [], []
+    versiones = {v["version"]: v for v in doc["versiones"]}
+    de_revision = {r["huella"] for r in doc["calendario"]["revisiones"]}
+    topes = {e: float(R.valores(v["bloques"]["comun"])["tope_retraso_s"]) for e, v in versiones.items()}
+    for c in combos:
+        donde = (f"{c['n']} fila(s) de {c['version']} {c['familia']} (desde el registro "
+                 f"{c['primero']})")
+        v = versiones.get(c["version"])
+        if v is None:
+            a.append(f"{donde}: su version no esta en el reglamento del release")
+            continue
+        esperadas = {"huella_familia": v["huellas"].get(c["familia"])}
+        esperadas.update({f"huella_{b}": v["huellas"][b] for b in HUELLAS_DE_BLOQUE})
+        for campo, esperada in esperadas.items():
+            if c[campo] != esperada:
+                a.append(f"{donde}: {campo} no es la de {c['version']} en el release")
+        if c["huella_calendario_datos"] is not None and c["huella_calendario_datos"] not in de_revision:
+            a.append(f"{donde}: huella_calendario_datos no es de ninguna revision del release")
+        if float(c["tope_retraso_s"]) != topes[c["version"]]:
+            d.append(f"{donde}: llevan tope_retraso_s {float(c['tope_retraso_s']):g} y el de "
+                     f"{c['version']} es {topes[c['version']]:g}")
+    for f in disparados:
+        tope = topes.get(f["version"])
+        if tope is not None and float(f["retraso_s"]) > tope:
+            d.append(f"registro {f['registro_id']}: DISPARADO de {f['version']} a "
+                     f"{float(f['retraso_s']):g} s, sobre el tope de su version ({tope:g} s)")
+    for fila in filas:
+        v = versiones.get(fila["version"])
+        if v is None:
+            continue
+        foto = json.loads(fila["foto"]) if isinstance(fila["foto"], str) else fila["foto"]
+        parametros = foto.get("parametros") or {}
+        suyos = {"comun": "comun", "calendario": "calendario", "familia": fila["familia"]}
+        for clave, bloque in suyos.items():
+            if bloque in v["bloques"] and parametros.get(clave) != R.valores(v["bloques"][bloque]):
+                a.append(f"registro {fila['registro_id']}: los parametros «{clave}» de su foto no "
+                         f"son los de {fila['version']} en el release")
+    return a, d
 
 
 def brazo_b(disparadores) -> list[str]:
@@ -203,6 +256,7 @@ def main() -> int:
     disparadores = _carga(directorio, "disparadores.json", [])
     filas = _carga(directorio, "filas.json", [])
     vivos = _carga(directorio, "vivos.json", [])
+    combos = _carga(directorio, "combos.json", [])
     abiertos = _carga(directorio, "abiertos.json", [])
     usados = set(_carga(directorio, "codigos_usados.json", []))
     velas = _carga(directorio, "velas.json", {"comparadas": 0, "difieren": 0})
@@ -232,8 +286,13 @@ def main() -> int:
         c, d = brazos_cd(F, filas)
     except Exception as exc:  # noqa: BLE001
         c, d = [f"no se pudo juzgar: {type(exc).__name__}: {exc}"], []
+    try:
+        a_suyo, d_suyo = por_version(R, doc, combos, vivos, filas)
+    except Exception as exc:  # noqa: BLE001 - lo que no se puede juzgar condena
+        a_suyo, d_suyo = [f"no se pudo juzgar cada fila con su version: {type(exc).__name__}: {exc}"], []
     hay = len(filas)
-    resultado["c"], resultado["d"] = c, d
+    resultado["a"] = resultado["a"] + a_suyo
+    resultado["c"], resultado["d"] = c, d + d_suyo
     rojos = [k for k in "abcdef" if resultado[k]]
     nombres = {"a": "reglamento", "b": "append-only", "c": "foto", "d": "futuro",
                "e": "uno_vivo", "f": "calendario"}
@@ -246,7 +305,8 @@ def main() -> int:
               f"(juzgado: {sujeto})")
     else:
         print(f"VERDE {hay} DISPARADOS y SOMBRAS con su foto, reglamento registrado = release, "
-              f"append-only por catalogo, calendario cubierto (juzgado: {sujeto})")
+              f"cada fila con las huellas y el tope de su version, append-only por catalogo, "
+              f"calendario cubierto (juzgado: {sujeto})")
     for k in "abcdef":
         estado = "ROJO" if resultado[k] else ("NO MEDIDO" if k in "cd" and hay == 0 else "VERDE")
         print(f"  {k} {nombres[k]:12s} {estado} · {len(resultado[k])} fallo(s)"
@@ -257,6 +317,12 @@ def main() -> int:
           f"difieren: {velas['difieren']}")
     print(f"  dato  {hay} DISPARADOS y SOMBRAS en {ventana} dias; {len(vivos)} DISPARADOS en el "
           f"registro; {len(abiertos)} VIGILANDO abiertos; {len(registradas)} filas de reglamento")
+    por_v: dict[str, int] = {}
+    for combo in combos:
+        por_v[combo["version"]] = por_v.get(combo["version"], 0) + int(combo["n"])
+    print(f"  dato  filas del registro por version, cada una juzgada con lo suyo: "
+          f"{', '.join(f'{v} {n}' for v, n in sorted(por_v.items())) or 'ninguna'}; el release "
+          f"corre {', '.join(v['version'] for v in R.versiones_en_curso(doc))}")
     if rojos:
         return 1
     return 2 if hay == 0 else 0

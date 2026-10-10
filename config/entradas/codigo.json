@@ -1,6 +1,7 @@
 {
   "que_es": "Huella de cada version del CODIGO que decide las entradas (app/entradas/codigo.py). Append-only: una version registrada no se reescribe; un cambio en motor, insumos, registro, servicio o en las funciones reutilizadas de interpretation.py exige subir motor.CODIGO_VERSION y anadir aqui su huella (tests/test_entradas_codigo.py lo para en CI).",
   "versiones": {
-    "entradas-motor-1": "a49878edd468993e2f7f9db28413e2388dd9e421230a9721bd77b6dfcfba98f9"
+    "entradas-motor-1": "a49878edd468993e2f7f9db28413e2388dd9e421230a9721bd77b6dfcfba98f9",
+    "entradas-motor-2": "59493806f2247ab60c2dc85866ebeaaeb44bce7ec1926f68af73831d088d7c63"
   }
 }

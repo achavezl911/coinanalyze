@@ -29,12 +29,57 @@ def doc() -> dict[str, Any]:
     return R.cargar()
 
 
-def versiones() -> list[dict[str, Any]]:
-    return R.versiones_en_curso(doc())
+def versiones(*etiquetas: str) -> list[dict[str, Any]]:
+    """Las versiones del reglamento del arbol con las que corre el banco. Sin argumentos, SOLO el
+    ANCLA (v1): los escenarios de la 135 se escribieron contra ella y siguen diciendo lo mismo
+    cuando el fichero gana versiones. Con etiquetas, esas: versiones("v1", "v2")."""
+    en_curso = R.versiones_en_curso(doc())
+    quedan = etiquetas or (en_curso[0]["version"],)
+    elegidas = [v for v in en_curso if v["version"] in quedan]
+    assert len(elegidas) == len(quedan), f"el reglamento del arbol no trae en curso {quedan}"
+    return elegidas
 
 
-def comun() -> dict[str, Any]:
-    return R.valores(versiones()[0]["bloques"]["comun"])
+def comun(etiqueta: str | None = None) -> dict[str, Any]:
+    return R.valores(versiones(*([etiqueta] if etiqueta else []))[0]["bloques"]["comun"])
+
+
+def doc_de_prueba(T: datetime, *etiquetas: str, tope_s: float | dict[str, float] | None = None,
+                  desfase_s: float = 0.0, escala: float = 1.0) -> dict[str, Any]:
+    """El reglamento del arbol, reducido a las versiones pedidas (por defecto el ANCLA) y con un
+    calendario que cubre, para evaluar la vela T ACTUAL desde una base de prueba.
+
+    Los umbrales NO se inventan: son los del fichero. Solo se mueve el reloj, que el generador lee
+    del reglamento: `tope_s` fija un tope de retraso en el que cabe el test (los escenarios de la
+    135; un mapa da uno por version); `desfase_s` y `escala` llevan cada segundo de espera y de
+    tope de x a desfase + x/escala (campana 136), de modo que un test puede arrancar `desfase_s`
+    despues del cierre de la vela y comprimir la espera, conservando el orden y las proporciones
+    entre versiones."""
+    d = doc()
+    en_curso = R.versiones_en_curso(d)
+    quedan = etiquetas or (en_curso[0]["version"],)
+    d["versiones"] = [v for v in d["versiones"] if v["version"] in quedan]
+    assert len(d["versiones"]) == len(quedan), f"el reglamento del arbol no trae {quedan}"
+    d["apuestas"]["versiones"] = {e: a for e, a in d["apuestas"]["versiones"].items() if e in quedan}
+    for v in d["versiones"]:
+        p = v["bloques"]["comun"]["parametros"]
+        if tope_s is not None:
+            p["tope_retraso_s"]["valor"] = tope_s[v["version"]] if isinstance(tope_s, dict) else tope_s
+        elif (desfase_s, escala) != (0.0, 1.0):
+            p["tope_retraso_s"]["valor"] = desfase_s + p["tope_retraso_s"]["valor"] / escala
+        if (desfase_s, escala) != (0.0, 1.0):
+            e = p["espera_datos_s"]["valor"]
+            p["espera_datos_s"]["valor"] = {
+                "primer_intento": desfase_s + e["primer_intento"] / escala,
+                "reintento": e["reintento"] / escala,
+                "ultimo_intento": desfase_s + e["ultimo_intento"] / escala,
+            }
+        v["huellas"] = {n: R.huella_bloque(v["bloques"][n]) for n in R.BLOQUES}
+    rev = revision(cubre_hasta=T + timedelta(days=30))
+    rev["vigente_desde"] = M.iso(T - timedelta(days=1))
+    rev["huella"] = R.huella_revision(rev)
+    d["calendario"]["revisiones"] = [rev]
+    return d
 
 
 def revision(*, cubre_hasta: datetime, eventos: list[dict] | None = None) -> dict[str, Any]:
@@ -204,14 +249,14 @@ def refleja(ins: dict[str, Any], eje: float = 100.0) -> dict[str, Any]:
 
 
 def paso(ins: dict[str, Any], *, previos: list[dict] | None = None, rev: dict | None = None,
-         modo: str = M.PROSPECTIVO) -> dict[str, Any]:
+         modo: str = M.PROSPECTIVO, vs: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     T = ins["T"]
     return M.paso(
         T=T,
         symbol=ins["symbol"],
         perfil=ins["perfil"],
         modo=modo,
-        versiones=versiones(),
+        versiones=vs or versiones(),
         insumos=ins,
         previos=previos or [],
         revision=rev or revision(cubre_hasta=T + timedelta(days=30)),
@@ -226,8 +271,41 @@ def elige(transiciones: list[dict], *, familia: str, lado: str, estado: str | No
     ]
 
 
-async def sembrar(conn, T: datetime, ins: dict, symbol: str, base: str) -> None:
-    """Pasa los insumos del banco a filas de la base: velas de 15 m -> 15 velas de 1 min, etc."""
+FLUJOS = (("spot_trades_agg", "spot"), ("futures_trades_agg", "futuros"))
+
+
+async def sembrar_flujos(conn, T: datetime, ins: dict, symbol: str, base: str, *,
+                         minutos: list[int], patas: tuple[str, ...] = ("spot", "futuros")) -> None:
+    """Los minutos de spot y de futuros `minutos` (0 = T - 60 min ... 59 = T - 1 min) de la hora
+    que acaba en T, como los escribe el colector desde 0df80b2: una fila por venue y la combinada
+    con las dos. El colector de mentira de la campana 136 la llama con retraso."""
+    for tabla, pata in FLUJOS:
+        if pata not in patas:
+            continue
+        simbolo = base if pata == "spot" else symbol
+        d_vela = ins["flujos"][pata]["vela"]["delta_usd"]
+        d_hora = ins["flujos"][pata]["ultima_hora"]["delta_usd"]
+        for m in minutos:
+            ts = T - timedelta(minutes=60 - m)
+            d = d_vela / 15 if ts >= T - timedelta(minutes=15) else (d_hora - d_vela) / 45
+            extra = ("inst_buy_usd, inst_sell_usd, mid_buy_usd, mid_sell_usd, retail_buy_usd, "
+                     "retail_sell_usd, " if tabla == "spot_trades_agg" else
+                     "large_buy_usd, large_sell_usd, ")
+            ceros = "0, 0, 0, 0, 0, 0, " if tabla == "spot_trades_agg" else "0, 0, "
+            for exchange, parte, venues in (("binance", 0.5, 1), ("bybit", 0.5, 1), ("combined", 1.0, 2)):
+                await conn.execute(
+                    f"INSERT INTO {tabla}(ts, symbol, exchange, interval, buy_vol_usd, sell_vol_usd, "
+                    f"{extra}trade_count, covered_seconds, venue_count) "
+                    f"VALUES ($1, $2, $3, '1min', $4, $5, {ceros}10, 60, $6)",
+                    ts, simbolo, exchange, parte * (1e7 + d / 2), parte * (1e7 - d / 2), venues,
+                )
+
+
+async def sembrar(conn, T: datetime, ins: dict, symbol: str, base: str, *,
+                  minutos_de_flujo: int = 60) -> None:
+    """Pasa los insumos del banco a filas de la base: velas de 15 m -> 15 velas de 1 min, etc.
+    `minutos_de_flujo` < 60 deja sin escribir los ultimos minutos de spot y de futuros (los que el
+    colector todavia no ha escrito cuando la vela cierra)."""
     filas = []
     for v in ins["velas"]:
         if v["minutos"] == 0:
@@ -249,24 +327,7 @@ async def sembrar(conn, T: datetime, ins: dict, symbol: str, base: str) -> None:
         "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT DO NOTHING",
         filas,
     )
-    for tabla, simbolo, pata in (("spot_trades_agg", base, "spot"), ("futures_trades_agg", symbol, "futuros")):
-        d_vela = ins["flujos"][pata]["vela"]["delta_usd"]
-        d_hora = ins["flujos"][pata]["ultima_hora"]["delta_usd"]
-        for m in range(60):
-            ts = T - timedelta(minutes=60 - m)
-            d = d_vela / 15 if ts >= T - timedelta(minutes=15) else (d_hora - d_vela) / 45
-            extra = ("inst_buy_usd, inst_sell_usd, mid_buy_usd, mid_sell_usd, retail_buy_usd, "
-                     "retail_sell_usd, " if tabla == "spot_trades_agg" else
-                     "large_buy_usd, large_sell_usd, ")
-            ceros = "0, 0, 0, 0, 0, 0, " if tabla == "spot_trades_agg" else "0, 0, "
-            # como el colector desde 0df80b2: una fila por venue y la combinada con las dos
-            for exchange, parte, venues in (("binance", 0.5, 1), ("bybit", 0.5, 1), ("combined", 1.0, 2)):
-                await conn.execute(
-                    f"INSERT INTO {tabla}(ts, symbol, exchange, interval, buy_vol_usd, sell_vol_usd, "
-                    f"{extra}trade_count, covered_seconds, venue_count) "
-                    f"VALUES ($1, $2, $3, '1min', $4, $5, {ceros}10, 60, $6)",
-                    ts, simbolo, exchange, parte * (1e7 + d / 2), parte * (1e7 - d / 2), venues,
-                )
+    await sembrar_flujos(conn, T, ins, symbol, base, minutos=list(range(minutos_de_flujo)))
     for exchange, mid in (("bybit", ins["mids"]["bybit"]["mid"]), ("binance", ins["mids"]["binance"]["mid"])):
         await conn.execute(
             "INSERT INTO orderbook_snapshot(ts, symbol, exchange, bid_px, ask_px, mid_px, spread_bps, "

@@ -13,6 +13,12 @@ lleva su borde como parametro, y ese borde sale de T. Lo que no se puede saber e
   funding            funding_rate de Binance, ultimo cubo de 5 min cerrado en T
   calendario         macro_event con hora en [T, T + ventana)
 
+LO QUE LLEGA TARDE (campana 136). Todo se corta en T, pero no todo ESTA en T: el colector escribe
+cada minuto de spot y de futuros ~125-131 s despues de que cierre (medido en 140 el 2026-10-09),
+asi que a los ~20 s del cierre de la vela faltan sus dos ultimos minutos. listos() dice si una
+version tiene ya lo que declara esperar; el servicio vuelve a cargar hasta entonces. La foto no
+cambia por evaluarse mas tarde: sus ventanas siguen acabando en T.
+
 En BACKTEST el espejo no tiene libro (orderbook_snapshot dura ~6 h): la referencia del plan es la
 apertura de 1 min del minuto siguiente a T y el spread queda NO MEDIDO, declarado en la foto.
 """
@@ -290,4 +296,19 @@ def vela_de_T_completa(insumos: dict[str, Any]) -> bool:
     velas = insumos["velas"]
     return bool(velas) and de_iso(velas[-1]["fin"]) == insumos["T"] and (
         velas[-1]["minutos"] == velas[-1]["esperados"]
+    )
+
+
+def listos(insumos: dict[str, Any], comun: dict[str, Any]) -> bool:
+    """Lo que una version ESPERA antes de decidir la vela T (servicio.evaluar_vela): su vela de
+    1 min y, si lo declara en comun.espera_flujos (v2: spot y futuros), las dos ventanas de cada
+    una de esas patas completas. Una version que no lo declara (v1) solo espera su vela.
+
+    El colector escribe cada minuto de spot y de futuros cuando ya no puede llegarle un trade
+    tardio (LATE_TRADE_GRACE_SECONDS, app/ws_collector.py y app/scalp_collector.py): a los ~20 s
+    del cierre de la vela sus dos ultimos minutos todavia no estan."""
+    return vela_de_T_completa(insumos) and all(
+        tramo["completo"]
+        for pata in comun.get("espera_flujos", ())
+        for tramo in (insumos["flujos"][pata]["vela"], insumos["flujos"][pata]["ultima_hora"])
     )

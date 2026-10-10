@@ -13,6 +13,10 @@
 #   c,d con cero DISPARADOS y SOMBRAS en la ventana salen NO MEDIDO, nunca VERDE (A54).
 #   a  el arbol trae el registro y produccion no: ROJO «FALTA DESPLEGAR», que es su estado correcto
 #      hasta el despliegue (el precedente de K101 con el sobre).
+#   a,d,f se juzgan con el reglamento DEL RELEASE (no el del arbol), y cada fila con las huellas y
+#      el tope de SU version (campana 136: v1 y v2 corren a la vez con topes distintos, y la base
+#      solo conoce el tope que la fila trae). Con una rama sin desplegar que renueva el calendario,
+#      f sigue ROJO contra 140: el release de alli trae el viejo.
 #
 # SUJETOS. K105_SUJETO=produccion (por defecto: prodsql + prod sobre 140), espejo (espejosql; el
 # release es el arbol), o local (K105_BASE = DSN de psql, K105_RELEASE = directorio con
@@ -96,10 +100,13 @@ consulta "SELECT coalesce(json_agg(json_build_object('etiqueta', etiqueta, 'bloq
   || { echo "NO MEDIDO: no se pudo leer entrada_reglamento de $NOMBRE"; exit 2; }
 consulta "SELECT coalesce(json_agg(json_build_object('tabla', c.relname, 'nombre', t.tgname, 'activo', t.tgenabled, 'tipo', t.tgtype, 'funcion', p.proname, 'fuente', p.prosrc)), '[]') FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_proc p ON p.oid = t.tgfoid WHERE c.oid IN (to_regclass('entrada_reglamento'), to_regclass('entrada_registro'), to_regclass('entrada_latido')) AND NOT t.tgisinternal" > "$D/disparadores.json" \
   || { echo "NO MEDIDO: no se pudo leer el catalogo de disparadores de $NOMBRE"; exit 2; }
-consulta "SELECT coalesce(json_agg(json_build_object('registro_id', registro_id, 'estado', estado, 'motivo', motivo, 'registered_at', registered_at, 'vela_cierre', vela_cierre, 'retraso_s', retraso_s, 'tope_retraso_s', tope_retraso_s, 'huella_foto', huella_foto, 'symbol', symbol, 'foto', foto::text) ORDER BY registro_id), '[]') FROM entrada_registro WHERE estado IN ('DISPARADO', 'SOMBRA') AND registered_at >= now() - make_interval(days => $VENTANA)" > "$D/filas.json" \
+consulta "SELECT coalesce(json_agg(json_build_object('registro_id', registro_id, 'version', version, 'familia', familia, 'estado', estado, 'motivo', motivo, 'registered_at', registered_at, 'vela_cierre', vela_cierre, 'retraso_s', retraso_s, 'tope_retraso_s', tope_retraso_s, 'huella_foto', huella_foto, 'symbol', symbol, 'foto', foto::text) ORDER BY registro_id), '[]') FROM entrada_registro WHERE estado IN ('DISPARADO', 'SOMBRA') AND registered_at >= now() - make_interval(days => $VENTANA)" > "$D/filas.json" \
   || { echo "NO MEDIDO: no se pudo leer entrada_registro de $NOMBRE"; exit 2; }
-consulta "SELECT coalesce(json_agg(json_build_object('version', version, 'symbol', symbol, 'familia', familia, 'perfil', perfil, 'lado', lado, 'clave', clave, 'episodio', episodio, 'estado', estado, 'vela_cierre', vela_cierre, 'caduca_en', caduca_en)), '[]') FROM entrada_registro WHERE estado = 'DISPARADO'" > "$D/vivos.json" \
+consulta "SELECT coalesce(json_agg(json_build_object('registro_id', registro_id, 'retraso_s', retraso_s, 'version', version, 'symbol', symbol, 'familia', familia, 'perfil', perfil, 'lado', lado, 'clave', clave, 'episodio', episodio, 'estado', estado, 'vela_cierre', vela_cierre, 'caduca_en', caduca_en)), '[]') FROM entrada_registro WHERE estado = 'DISPARADO'" > "$D/vivos.json" \
   || { echo "NO MEDIDO: no se pudo leer los DISPARADOS de $NOMBRE"; exit 2; }
+# cada fila con lo de SU version: las combinaciones distintas de (version, familia, tope, huellas) de TODO el registro
+consulta "SELECT coalesce(json_agg(c), '[]') FROM (SELECT version, familia, tope_retraso_s, huella_familia, huella_comun, huella_calendario, huella_calendario_datos, huella_lectura, huella_papel, count(*) AS n, min(registro_id) AS primero FROM entrada_registro GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9) c" > "$D/combos.json" \
+  || { echo "NO MEDIDO: no se pudo leer las huellas por version de $NOMBRE"; exit 2; }
 consulta "SELECT coalesce(json_agg(json_build_object('version', version, 'symbol', symbol, 'familia', familia, 'perfil', perfil, 'lado', lado, 'clave', clave, 'episodio', episodio, 'estado', estado, 'vela_cierre', vela_cierre, 'caduca_en', NULL)), '[]') FROM (SELECT DISTINCT ON (episodio) * FROM entrada_registro ORDER BY episodio, vela_cierre DESC, registro_id DESC) u WHERE estado = 'VIGILANDO'" > "$D/abiertos.json" \
   || { echo "NO MEDIDO: no se pudo leer los VIGILANDO de $NOMBRE"; exit 2; }
 consulta "SELECT coalesce(json_agg(DISTINCT codigo_version), '[]') FROM entrada_registro" > "$D/codigos_usados.json" \

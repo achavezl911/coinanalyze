@@ -14,6 +14,11 @@ del inicio del episodio (corte = apertura de la vela que arma): ningun pivote de
 su propia zona, y cada medida se ancla en el inicio de SU episodio, no en el primer evento de la
 ventana de velas. El candidato se juzga contra su zona congelada aunque el precio este dentro.
 
+EL STOP (campana 136). Extremo del episodio -/+ colchon. Lo que pasa despues lo dice la VERSION
+(comun.colchon_stop.fuera_de_racimo), no el codigo: con true (v1) se repite desde el borde lejano
+de cada zona que pisa, hasta quedar fuera de todo racimo; con false (v2) se queda donde cae,
+aunque sea dentro de una zona. Las dos reglas corren a la vez, cada una sobre sus candidatos.
+
 LA FOTO BASTA. decidir(foto) recalcula plan, filtros y estado leyendo SOLO la foto; el generador
 la llama exactamente asi, de modo que reproducir una decision desde el registro no es una promesa
 sino el mismo camino.
@@ -35,10 +40,10 @@ from typing import Any
 from app.entradas import reglamento as R
 from app.interpretation import BARRIER_PIVOT_WIDTH, _barrier_candidates, _barrier_zones
 
-CODIGO_VERSION = "entradas-motor-1"
+CODIGO_VERSION = "entradas-motor-2"
 ESQUEMA_FOTO = "entradas.foto.v1"
 ESTADOS = ("VIGILANDO", "DISPARADO", "SOMBRA", "CERRADO_SIN_DISPARO")
-LADOS = ("largo", "corto")
+LADOS = R.LADOS
 FILTROS = (
     "objetivo",
     "coste_objetivo",
@@ -65,9 +70,15 @@ class CodigoIncompatible(RuntimeError):
     """El reglamento declara algo que este codigo no aplica: no se emite ningun candidato."""
 
 
-# EL VOCABULARIO QUE ESTE CODIGO APLICA. Cada valor de texto del reglamento que DECIDE algo se
-# contrasta aqui: una version que diga otra cosa (otro evento, otro reloj, otra venue) no corre
-# con la logica de v1 en silencio; se salta con su motivo (A62).
+class UnoDe(tuple):
+    """Un parametro que el codigo sabe aplicar de mas de una manera: cada valor tiene su rama."""
+
+
+# EL VOCABULARIO QUE ESTE CODIGO APLICA. Cada valor del reglamento que DECIDE algo y no es un
+# numero se contrasta aqui: una version que diga otra cosa (otro evento, otro reloj, otra venue)
+# no corre con la logica de otra en silencio; se salta con su motivo (A62). Donde el codigo
+# tiene dos ramas (el stop con o sin cascada, campana 136) se nombran las dos con UnoDe.
+PATAS_DE_FLUJO = ("spot", "futuros")
 VOCABULARIO: dict[str, dict[tuple[str, ...], Any]] = {
     "F1": {
         ("zona_por_lado",): {"largo": "soporte", "corto": "resistencia"},
@@ -94,7 +105,7 @@ VOCABULARIO: dict[str, dict[tuple[str, ...], Any]] = {
         ("hueco", "spot"): "todos_los_minutos",
         ("hueco", "futuros"): "todos_los_minutos",
         ("colchon_stop", "racimo"): "tolerancia_racimo",
-        ("colchon_stop", "fuera_de_racimo"): True,
+        ("colchon_stop", "fuera_de_racimo"): UnoDe((True, False)),
     },
     "calendario": {("fuentes",): ["macro_event", "manual"]},
 }
@@ -126,9 +137,23 @@ def incompatibilidades(version: dict[str, Any]) -> list[str]:
             actual: Any = valores
             for paso_ in camino:
                 actual = actual.get(paso_) if isinstance(actual, dict) else None
-            if actual != valor:
-                errores.append(f"{bloque}.{'.'.join(camino)} = {actual!r} y el codigo aplica {valor!r}")
-    zonas = R.valores(version["bloques"]["comun"])["zonas"]
+            if isinstance(valor, UnoDe):
+                # mismo tipo, no solo igualdad: en Python 1 == True y un 1 no es una rama
+                aplica = any(type(actual) is type(v) and actual == v for v in valor)
+                sabe = " o ".join(repr(v) for v in valor)
+            else:
+                aplica, sabe = actual == valor, repr(valor)
+            if not aplica:
+                errores.append(f"{bloque}.{'.'.join(camino)} = {actual!r} y el codigo aplica {sabe}")
+    comun = R.valores(version["bloques"]["comun"])
+    # Las patas de flujo que la version espera completas antes de decidir (insumos.listos): el
+    # codigo solo sabe esperar las que carga. Ausente (v1) = no espera ninguna.
+    patas = comun.get("espera_flujos", [])
+    if (not isinstance(patas, list) or not all(isinstance(p, str) for p in patas)
+            or len(set(patas)) != len(patas) or not set(patas) <= set(PATAS_DE_FLUJO)):
+        errores.append(f"comun.espera_flujos = {patas!r} y el codigo solo sabe esperar "
+                       f"{list(PATAS_DE_FLUJO)}")
+    zonas = comun["zonas"]
     for nombre, fijado in FIJADOS_POR_EL_CODIGO.items():
         if fijado is None or zonas.get(nombre) != fijado:
             errores.append(f"comun.zonas.{nombre} = {zonas.get(nombre)!r} y el codigo reutilizado "
@@ -223,6 +248,19 @@ def parametros(version: dict[str, Any], familia: str) -> dict[str, Any]:
         "familia": R.valores(bloques[familia]),
         "calendario": R.valores(bloques["calendario"]),
     }
+
+
+def grupos_por_comun(versiones: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    """Las versiones agrupadas por su bloque comun: cada grupo carga SUS insumos (sus ventanas) y
+    espera lo suyo. Por orden de primer_intento, para que el grupo que antes busca sus datos
+    decida antes (servicio.evaluar_vela); el backtest los recorre igual."""
+    grupos: dict[str, list[dict[str, Any]]] = {}
+    for v in versiones:
+        grupos.setdefault(v["huellas"]["comun"], []).append(v)
+    return sorted(
+        grupos.values(),
+        key=lambda g: R.valores(g[0]["bloques"]["comun"])["espera_datos_s"]["primer_intento"],
+    )
 
 
 def huellas(version: dict[str, Any], familia: str, revision: dict[str, Any] | None,
@@ -421,11 +459,15 @@ def _filtro(estado: str, valor: Any = None, umbral: Any = None, motivo: str | No
     return {"estado": estado, "valor": valor, "umbral": umbral, "motivo": motivo}
 
 
-def _stop(extremo: float, colchon: float, escalera: list[tuple[float, float]]) -> tuple[float, list]:
-    """Mas alla del extremo con colchon, y fuera de todo racimo: si cae dentro de una zona, se
-    repite desde su borde lejano."""
+def _stop(extremo: float, colchon: float, escalera: list[tuple[float, float]],
+          fuera_de_racimo: bool) -> tuple[float, list]:
+    """Mas alla del extremo con colchon. Con `fuera_de_racimo` (v1), ademas fuera de todo racimo:
+    si cae dentro de una zona, se repite desde su borde lejano (la cascada). Sin el (v2), UNA
+    sola vez: el stop puede quedar dentro de una zona y no salta ninguna."""
     stop = extremo - colchon
     saltados: list[list[float]] = []
+    if not fuera_de_racimo:
+        return stop, saltados
     for _ in range(len(escalera) + 1):
         dentro = [z for z in escalera if z[0] <= stop <= z[1]]
         if not dentro:
@@ -476,7 +518,8 @@ def decidir(foto: dict[str, Any]) -> dict[str, Any]:
     mid = (foto.get("mids") or {}).get("binance")
     entrada = s * mid["mid"] if mid else None
     colchon = max(pc["colchon_stop"]["atr_perfil"] * atr_perfil, foto["atr"]["tolerancia_racimo"])
-    stop_lado, saltados = _stop(hecho["extremo"], colchon, escalera)
+    stop_lado, saltados = _stop(hecho["extremo"], colchon, escalera,
+                                pc["colchon_stop"]["fuera_de_racimo"])
     objetivos_lado = (
         sorted(z[0] for z in escalera if z[0] > entrada)[: pc["objetivos_n"]]
         if entrada is not None
