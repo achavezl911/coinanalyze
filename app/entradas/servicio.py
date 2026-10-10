@@ -8,15 +8,29 @@ trades y el libro los recogen OTROS procesos (coinalyze-scalp, coinalyze-ws). El
   - con tope de tiempo (comun.tope_tick_s): al tope, ingest deja de esperarla y lo apunta;
   - no lanza nunca hacia ingest: todo fallo queda en entrada_latido, que sirve /api/entradas.
 
-CUANDO CORRE. Cada vela del perfil mas corto (15 min) a +espera_datos_s.primer_intento. La vela
-de 1 min llega a ~6-11 s de su cierre (medido en 140 el 2026-10-02: 45 de 45 entre 5.8 y 10.6 s),
-asi que lo normal es que este completa al primer intento; si no, se reintenta hasta el ultimo
-intento y despues queda NO EVALUABLE con su motivo. Lo que se registre por encima del tope de
-retraso lo convierte la base en SOMBRA «tardio».
+CUANDO CORRE. La pasada arranca en cada vela del perfil mas corto (15 min) al primer_intento MAS
+TEMPRANO de las versiones en curso. Dentro, cada grupo de versiones (las que comparten bloque
+comun) decide a SU hora, y los grupos van por orden de primer_intento, asi que ninguno espera a
+otro que busque sus datos mas tarde:
+  - cada grupo empieza en su espera_datos_s.primer_intento, reintenta cada `reintento` y no
+    empieza ningun intento despues de `ultimo_intento`; dentro del grupo cada (perfil, simbolo)
+    se decide en cuanto SUS datos estan, sin esperar a los de otro simbolo;
+  - espera lo que SU version declara (insumos.listos): la vela de 1 min siempre -llega a ~6-11 s
+    de su cierre, medido en 140 el 2026-10-02: 45 de 45 entre 5.8 y 10.6 s- y, si declara
+    comun.espera_flujos (v2), tambien los minutos de spot y de futuros de sus dos ventanas, que
+    el colector escribe ~2 min despues (campana 136). v1 no los espera: registra a los ~20 s;
+  - si en el ultimo intento falta la vela, queda NO EVALUABLE con su motivo; si lo que falta es
+    un flujo, se decide con lo que hay: SOMBRA de datos «hueco». Nada de la espera entra en la
+    foto (ni la hora ni los intentos: van en el latido), asi que su huella no depende de cuando
+    se evalua.
+Lo que se registre por encima del tope de retraso de SU version lo convierte la base en SOMBRA
+«tardio».
 
 RECUPERACION. Tras un reinicio o un apagon, las velas perdidas (hasta recuperacion_max_velas) se
-evaluan en orden para que la maquina de estados no salte nada; todo lo que salga de ellas es
-tardio por construccion: ninguna evaluacion de recuperacion emite DISPARADO de una vela pasada.
+evaluan en orden para que la maquina de estados no salte nada, SIN esperar; todo lo que salga de
+ellas es tardio por construccion: ninguna evaluacion de recuperacion emite DISPARADO de una vela
+pasada. Si la pasada que murio ya habia registrado parte de su vela (v1 a los ~20 s, mientras v2
+esperaba), al re-evaluarla el registro no repite lo que ya tiene (registro.insertar).
 """
 
 from __future__ import annotations
@@ -154,38 +168,54 @@ async def _pendientes(conn: asyncpg.Connection, T: datetime, cadencia: timedelta
     return pendientes[omitidas:], omitidas
 
 
+async def _hasta(conn: asyncpg.Connection, momento: datetime) -> None:
+    """Duerme hasta `momento` segun el reloj de la BASE (el mismo que pone registered_at)."""
+    falta = (momento - await conn.fetchval("SELECT clock_timestamp()")).total_seconds()
+    if falta > 0:
+        await asyncio.sleep(falta)
+
+
 async def evaluar_vela(conn: asyncpg.Connection, *, T: datetime, doc: dict[str, Any],
                        huella_codigo: str, esperar: bool, modo: str = M.PROSPECTIVO) -> list[dict]:
     """Una vela de cierre T: todos los perfiles alineados en T, todos los simbolos.
 
-    Las versiones se agrupan por su bloque comun: cada grupo carga SUS insumos (sus ventanas)."""
+    Con `esperar` (la vela en curso) cada grupo empieza en SU primer intento y espera lo que su
+    version declara hasta su ultimo intento; sin el (recuperacion, controles) decide con lo que
+    hay, sin dormir."""
     revision = R.revision_vigente(doc, T)
     bases = {item.symbol: item.base_asset for item in MARKET_SYMBOL_CATALOG}
-    grupos: dict[str, list[dict[str, Any]]] = {}
-    for v in R.versiones_en_curso(doc):
-        grupos.setdefault(v["huellas"]["comun"], []).append(v)
     salida: list[dict] = []
-    for versiones in grupos.values():
+    # ponytail: los grupos van en fila con una sola conexion. Uno atascado en su espera retrasa a
+    # los que busquen sus datos despues de su primer intento y antes de su ultimo; v1 (20-95 s) y
+    # v2 no se solapan. Si alguna vez se solapan: una tarea por grupo, cada una con su conexion.
+    for versiones in M.grupos_por_comun(R.versiones_en_curso(doc)):
         comun = R.valores(versiones[0]["bloques"]["comun"])
         calendario = R.valores(versiones[0]["bloques"]["calendario"])
-        for perfil, p in comun["perfiles"].items():
-            if not _alineada(T, p["vela_min"]):
-                continue
-            desde = T - G.ventana_previos(versiones, perfil)
-            for symbol in comun["simbolos"]:
-                cargar = {"symbol": symbol, "base_asset": bases[symbol], "T": T, "perfil": perfil,
-                          "comun": comun, "calendario": calendario, "modo": modo}
-                insumos = await I.cargar(conn, **cargar)
-                espera = comun["espera_datos_s"]
-                while esperar and not I.vela_de_T_completa(insumos):
-                    ahora = await conn.fetchval("SELECT clock_timestamp()")
-                    if ahora >= T + timedelta(seconds=espera["ultimo_intento"]):
-                        break
-                    await asyncio.sleep(espera["reintento"])
-                    insumos = await I.cargar(conn, **cargar)
+        espera = comun["espera_datos_s"]
+        ultimo = T + timedelta(seconds=espera["ultimo_intento"])
+        if esperar:
+            await _hasta(conn, T + timedelta(seconds=espera["primer_intento"]))
+        # Cada (perfil, simbolo) se decide en cuanto SUS datos estan: uno al que le falte algo no
+        # retrasa a los demas; se vuelve a mirar cada `reintento` y el ultimo intento decide lo
+        # que quede con lo que haya.
+        pendientes = [(perfil, symbol) for perfil, p in comun["perfiles"].items()
+                      if _alineada(T, p["vela_min"]) for symbol in comun["simbolos"]]
+        intentos = dict.fromkeys(pendientes, 0)
+        while pendientes:
+            falta = 0.0
+            if esperar:
+                falta = (ultimo - await conn.fetchval("SELECT clock_timestamp()")).total_seconds()
+            for perfil, symbol in list(pendientes):
+                insumos = await I.cargar(conn, symbol=symbol, base_asset=bases[symbol], T=T,
+                                         perfil=perfil, comun=comun, calendario=calendario, modo=modo)
+                intentos[(perfil, symbol)] += 1
+                listos = I.listos(insumos, comun)
+                if not listos and falta > 0:
+                    continue
+                pendientes.remove((perfil, symbol))
                 previos = await G.cargar_previos(conn, symbol=symbol, perfil=perfil,
                                                  versiones=[v["version"] for v in versiones],
-                                                 desde=desde, T=T)
+                                                 desde=T - G.ventana_previos(versiones, perfil), T=T)
                 resultado = M.paso(T=T, symbol=symbol, perfil=perfil, modo=modo,
                                    versiones=versiones, insumos=insumos, previos=previos,
                                    revision=revision, codigo=huella_codigo)
@@ -194,7 +224,11 @@ async def evaluar_vela(conn: asyncpg.Connection, *, T: datetime, doc: dict[str, 
                 ]
                 salida.append({"vela_cierre": M.iso(T), "perfil": perfil, "symbol": symbol,
                                "versiones": [v["version"] for v in versiones],
+                               "espera": {"intentos": intentos[(perfil, symbol)], "listos": listos},
                                "evaluacion": resultado["evaluacion"], "registradas": registradas})
+            if pendientes:
+                # el ultimo intento cae EN ultimo_intento, no un reintento despues
+                await asyncio.sleep(min(espera["reintento"], falta))
     return salida
 
 
@@ -224,10 +258,11 @@ async def _pasada_async(settings) -> None:
         if not registro["ok"]:
             estado, error = "sin_reglamento", registro["motivo"]
             return
-        comun = R.valores(R.versiones_en_curso(doc)[0]["bloques"]["comun"])
-        # la recuperacion cubre lo que pida el perfil mas exigente: velas x minutos por vela
-        minutos = max(comun["recuperacion_max_velas"][p] * comun["perfiles"][p]["vela_min"]
-                      for p in comun["perfiles"])
+        # la recuperacion cubre lo que pida el perfil mas exigente de la version mas exigente:
+        # velas x minutos por vela
+        comunes = [R.valores(v["bloques"]["comun"]) for v in R.versiones_en_curso(doc)]
+        minutos = max(c["recuperacion_max_velas"][p] * c["perfiles"][p]["vela_min"]
+                      for c in comunes for p in c["perfiles"])
         maximo = minutos * 60 // plan["cadencia_s"]
         pendientes, omitidas = await _pendientes(conn, T, cadencia, maximo)
         detalle["recuperacion"] = {"velas": len(pendientes) - 1, "omitidas": omitidas}

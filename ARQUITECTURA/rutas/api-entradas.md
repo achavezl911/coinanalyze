@@ -25,17 +25,17 @@ Handler `entradas` · `app/api.py:1296` (cuerpo hasta la 1322) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `cuentas` | literal en app/entradas/ruta.py:282 |
-| `disponible` | literal en app/entradas/ruta.py:275 |
-| `generador` | literal en app/entradas/ruta.py:276 |
-| `generador.motivo` | literal en app/entradas/ruta.py:278 |
-| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:277 |
-| `motivo` | literal en app/entradas/ruta.py:181 |
-| `por_lado` | literal en app/entradas/ruta.py:280 |
-| `reglamento` | literal en app/entradas/ruta.py:281 |
-| `reglamento.disponible` | literal en app/entradas/ruta.py:189 |
-| `reglamento.motivo` | literal en app/entradas/ruta.py:189 |
-| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:195 |
+| `cuentas` | literal en app/entradas/ruta.py:293 |
+| `disponible` | literal en app/entradas/ruta.py:286 |
+| `generador` | literal en app/entradas/ruta.py:287 |
+| `generador.motivo` | literal en app/entradas/ruta.py:289 |
+| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:288 |
+| `motivo` | literal en app/entradas/ruta.py:192 |
+| `por_lado` | literal en app/entradas/ruta.py:291 |
+| `reglamento` | literal en app/entradas/ruta.py:292 |
+| `reglamento.disponible` | literal en app/entradas/ruta.py:200 |
+| `reglamento.motivo` | literal en app/entradas/ruta.py:200 |
+| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:206 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -50,48 +50,52 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `entrada_latido` — `sql/schema.sql:2702`, 8 columnas
-  - la llena `app.entradas.registro.latir` (INSERT) — `app/entradas/registro.py:201`
+  - la llena `app.entradas.registro.latir` (INSERT) — `app/entradas/registro.py:222`
 - `entrada_registro` — `sql/schema.sql:2665`, 26 columnas
-  - la llena `app.entradas.registro.insertar` (INSERT) — `app/entradas/registro.py:30`
+  - la llena `app.entradas.registro.insertar` (INSERT) — `app/entradas/registro.py:31`
 - `entrada_reglamento` — `sql/schema.sql:2655`, 6 columnas
-  - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:74`
+  - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:85`
 
 ## Funciones que la componen
 
-26 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+30 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2565`
 - `app.api.validate_symbol` — `app/api.py:232`
-- `app.entradas.ruta.construir` — `app/entradas/ruta.py:158`
+- `app.entradas.ruta.construir` — `app/entradas/ruta.py:169`
 
-<details><summary>Alcanzables de forma indirecta (23)</summary>
+<details><summary>Alcanzables de forma indirecta (27)</summary>
 
-- `app.entradas.reglamento._texto` — `app/entradas/reglamento.py:118`
-- `app.entradas.reglamento._valida_bloque` — `app/entradas/reglamento.py:122`
-- `app.entradas.reglamento._valida_calendario` — `app/entradas/reglamento.py:220`
-- `app.entradas.reglamento._valida_version` — `app/entradas/reglamento.py:141`
-- `app.entradas.reglamento.canonico` — `app/entradas/reglamento.py:48`
-- `app.entradas.reglamento.cargar` — `app/entradas/reglamento.py:318`
-- `app.entradas.reglamento.cargar_valido` — `app/entradas/reglamento.py:322`
-- `app.entradas.reglamento.contenido_bloque` — `app/entradas/reglamento.py:66`
-- `app.entradas.reglamento.contenido_revision` — `app/entradas/reglamento.py:83`
-- `app.entradas.reglamento.diferencia_con_padre` — `app/entradas/reglamento.py:353`
-- `app.entradas.reglamento.huella` — `app/entradas/reglamento.py:55`
-- `app.entradas.reglamento.huella_bloque` — `app/entradas/reglamento.py:79`
-- `app.entradas.reglamento.huella_revision` — `app/entradas/reglamento.py:106`
-- `app.entradas.reglamento.instante` — `app/entradas/reglamento.py:59`
-- `app.entradas.reglamento.registros_esperados` — `app/entradas/reglamento.py:379`
-- `app.entradas.reglamento.revision_vigente` — `app/entradas/reglamento.py:344`
-- `app.entradas.reglamento.validar` — `app/entradas/reglamento.py:293`
-- `app.entradas.reglamento.valores` — `app/entradas/reglamento.py:110`
-- `app.entradas.reglamento.version` — `app/entradas/reglamento.py:340`
-- `app.entradas.reglamento.version_activa` — `app/entradas/reglamento.py:335`
-- `app.entradas.reglamento.versiones_en_curso` — `app/entradas/reglamento.py:330`
-- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:286`
-- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:117`
+- `app.entradas.reglamento._texto` — `app/entradas/reglamento.py:127`
+- `app.entradas.reglamento._valida_apuestas` — `app/entradas/reglamento.py:308`
+- `app.entradas.reglamento._valida_bloque` — `app/entradas/reglamento.py:131`
+- `app.entradas.reglamento._valida_calendario` — `app/entradas/reglamento.py:229`
+- `app.entradas.reglamento._valida_version` — `app/entradas/reglamento.py:150`
+- `app.entradas.reglamento.apuestas` — `app/entradas/reglamento.py:340`
+- `app.entradas.reglamento.canonico` — `app/entradas/reglamento.py:57`
+- `app.entradas.reglamento.cargar` — `app/entradas/reglamento.py:383`
+- `app.entradas.reglamento.cargar_valido` — `app/entradas/reglamento.py:387`
+- `app.entradas.reglamento.celdas` — `app/entradas/reglamento.py:302`
+- `app.entradas.reglamento.contenido_bloque` — `app/entradas/reglamento.py:75`
+- `app.entradas.reglamento.contenido_revision` — `app/entradas/reglamento.py:92`
+- `app.entradas.reglamento.diferencia_con_padre` — `app/entradas/reglamento.py:418`
+- `app.entradas.reglamento.huella` — `app/entradas/reglamento.py:64`
+- `app.entradas.reglamento.huella_bloque` — `app/entradas/reglamento.py:88`
+- `app.entradas.reglamento.huella_revision` — `app/entradas/reglamento.py:115`
+- `app.entradas.reglamento.instante` — `app/entradas/reglamento.py:68`
+- `app.entradas.reglamento.registros_esperados` — `app/entradas/reglamento.py:444`
+- `app.entradas.reglamento.revision_vigente` — `app/entradas/reglamento.py:409`
+- `app.entradas.reglamento.validar` — `app/entradas/reglamento.py:357`
+- `app.entradas.reglamento.valores` — `app/entradas/reglamento.py:119`
+- `app.entradas.reglamento.version` — `app/entradas/reglamento.py:405`
+- `app.entradas.reglamento.version_activa` — `app/entradas/reglamento.py:400`
+- `app.entradas.reglamento.versiones_en_curso` — `app/entradas/reglamento.py:395`
+- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:297`
+- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:319`
+- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:128`
 
 </details>
 
@@ -165,11 +169,14 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.rechaza_parametros_desconocidos` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-api.md) |
 | `app.api.entradas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.entradas.reglamento._texto` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento._valida_apuestas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento._valida_bloque` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento._valida_calendario` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento._valida_version` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.apuestas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.canonico` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.cargar` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.celdas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.contenido_bloque` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.contenido_revision` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.diferencia_con_padre` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
@@ -180,10 +187,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.registros_esperados` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.revision_vigente` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.validar` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.version` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.version_activa` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.ruta._reglamento` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-ruta.md) |
-| _… y 2 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 6 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

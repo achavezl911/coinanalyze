@@ -7,8 +7,9 @@
     "Una etiqueta de version no abarca dos reglas: si un bloque cambia, nace una version nueva con su padre, fecha, autor, motivo e hipotesis (tests/test_entradas_reglamento.py).",
     "Huella de un bloque = sha256 del JSON canonico de {parametro: {valor, unidad}}; el ORIGEN documenta y no entra (app/entradas/reglamento.py).",
     "Huella por FAMILIA (F1, F2) y por bloque (comun, calendario, lectura, papel): un cambio en F1 no reinicia la cuenta de F2.",
-    "La version ACTIVA es la ultima no retirada por orden de este fichero (por PR), nunca la elegida por su resultado. v1 es el ANCLA: corre siempre y no se retira.",
-    "Los EVENTOS del calendario viven en 'calendario.revisiones', compartidos por todas las versiones en curso: renovarlos no crea version ni reinicia ninguna cuenta. Ningun evento con hora anterior a la revision que lo trae."
+    "Todas las versiones no retiradas CORREN A LA VEZ, cada una sobre sus propios candidatos y con sus propios umbrales, relojes y huellas. La ACTIVA es la ultima no retirada por orden de este fichero (por PR), nunca la elegida por su resultado. v1 es el ANCLA: corre siempre y no se retira.",
+    "Los EVENTOS del calendario viven en 'calendario.revisiones', compartidos por todas las versiones en curso: renovarlos no crea version ni reinicia ninguna cuenta. Ningun evento con hora anterior a la revision que lo trae.",
+    "Las celdas (familia x perfil x lado) en que cada version APUESTA viven en 'apuestas', fuera del objeto de la version: son las hipotesis que cuentan para la correccion de su familia. Lo demas que una version mueve se registra sin apuesta. Como una version, la entrada de 'apuestas' de una version registrada no se toca (tests/test_entradas_reglamento.py)."
   ],
   "versiones": [
     {
@@ -399,8 +400,424 @@
         "lectura": "43a7ead49530b4bd064b96dd93872fed5463261b29ccd601b0fc39fa13bf8d5c",
         "papel": "23407669fd06d62ed73d6255a1eb3fe89ed854dc2077aa3e86a59b445fe7d003"
       }
+    },
+    {
+      "version": "v2",
+      "padre": "v1",
+      "fecha": "2026-10-10",
+      "autor": "operador (sesion de mesa, lazo 1 del 2026-10-03, y operador de campanas, adenda del 2026-10-09: entregas/20261003-1953-lazo-entradas-1.md y entregas/20261009-2245-lazo-entradas-1-adenda.md) · implementado por claude-opus-5-5 (campana 136)",
+      "motivo": "PRIMER LAZO del operador sobre las entradas. v1 con TRES cambios y ninguno mas: (a) EL STOP SIN CASCADA (comun.colchon_stop.fuera_de_racimo -> false): extremo del episodio -/+ colchon, una vez; (b) EL REGISTRO ESPERA AL SPOT (comun.espera_flujos, comun.espera_datos_s y comun.tope_retraso_s 120 -> 240): un candidato se decide con el spot y los futuros de sus dos ventanas completos, que el colector entrega ~2 min despues del cierre; la regla de entrada no cambia (la apertura del minuto siguiente al registro); (c) EL PASO DE CANTIDAD DE BYBIT (papel.paso_cantidad_bybit), que v1 dejo vacio por no poder citarlo. F1, F2, calendario y lectura son los de v1, con sus mismas huellas. Ninguno de los tres se eligio por un resultado de entrada: no existe ninguno (0 DISPARADOS; E3 y E4 sin construir). Lo que quitaba que v1 pudiera disparar, medido: el stop con cascada (0 DISPARADOS y 319 SOMBRAS en muestra, todas por r_neto_t1) y el spot que no habia llegado al registrar (las 159 SOMBRAS de produccion hasta el 2026-10-09, todas con spot_vela y spot_hora NO EVALUABLE). LA PUERTA del lazo 1 (PASO A: v1 tal cual sobre una copia desechable del espejo, arco 2026-07-25 00:00Z a 2026-08-13 17:30Z, recalculando fuera de linea el stop sin cascada con T1 sin cambios) se midio el 2026-10-09 ANTES de escribir esta version y de tocar el motor: de las 319 SOMBRAS de v1 PASARIA 1, en F1 intradia largo (F1 intradia largo + corto: 1 de 201), asi que v2 se registra TAL CUAL, sin ajustar nada a lo visto. Con la sensibilidad fijada de antemano (+1 bps de spread y +1 de deslizamiento por pata taker) PASARIA 0. Es frecuencia EN MUESTRA: no elige nada y no promete que v2 dispare. ERRATA DE v1, que NO se toca: su hipotesis dice 'las 16' celdas y son 8 (F1 y F2 x intradia y swing x largo y corto, los simbolos juntos); su lectura maquina esta en 'apuestas', fuera de su objeto. v1 sigue corriendo como ANCLA y no puede disparar (no espera al spot): sus SOMBRAS son el control emparejado del stop.",
+      "ancla": false,
+      "retirada": null,
+      "hipotesis": {
+        "celdas": "F1 x intradia x largo y F1 x intradia x corto (simbolos juntos): 2 hipotesis unilaterales, fijadas por el numero de SOMBRAS de v1 en muestra (111 y 90 de 319), no por cuantas pasarian con v2. Las otras 6 celdas de v2 (F1 swing x2, F2 x4) cambian tambien, porque colchon_stop esta en comun, y se registran SIN apuesta: solo descriptivas, nunca se leen como prueba",
+        "sentido": "exceso sobre el equilibrio con coste > 0: sum(exito_i - p*_i)/n_ef > 0, IC unilateral por clusters de vidas solapadas (H0: <= 0). Exito = T1 cruzado antes que el stop de v2. Poblacion esperada y declarada: toques superficiales con el stop DENTRO de la zona tocada, por delante de su invalidacion. Se espera que la tasa de T1 antes que el stop quede POR DEBAJO de la del plan v1 del mismo episodio, y se apuesta a que aun asi queda por encima de su p*_i (<= 0.40)",
+        "lectura": "CONFIRMATORIA solo en n efectiva 120 de DISPARADOS de v2 resueltos por celda; 30 y 60 son descriptivas. Bonferroni con m = 6 (hipotesis de F1 vivas al registrar v2: las 4 celdas de F1 de v1 + las 2 de v2) y alfa = 0.05/6 = 0.0083 unilateral por hipotesis. Fecha tope 2027-03-31: una celda sin n efectiva 120 se lee MUESTRA INSUFICIENTE y v2 se retira por escrito, sin veredicto. Descriptivos fijados ahora (no son pruebas): (1) posicion del stop (zona propia por delante de la invalidacion / hueco / zona siguiente), sacada de la escalera de la foto; (2) tasa de barrido emparejada: de los DISPARADOS de v2 que tocan stop, la fraccion cuyo plan v1 del mismo episodio (su SOMBRA: mismo T1, stop con cascada) habria cruzado T1; la resuelve la E3 desde la foto de esa SOMBRA. El bloque papel de v2 no mueve ninguna celda de la generacion ni de la lectura E4. v2 registra cuando el spot de sus ventanas esta completo: su entrada es la apertura del minuto siguiente a ese registro, minutos despues del cierre de la vela, no segundos. Un DISPARADO cuyo T1 o cuyo stop se cruza entre el cierre de su vela y la apertura de su entrada NO cuenta como exito (salida «sin entrada»), cuenta en el denominador y se publica cuantos son."
+      },
+      "bloques": {
+        "F1": {
+          "nombre": "RECHAZO DE ZONA",
+          "definicion": "El episodio toca la zona congelada, no la acepta (ningun cierre de vela del perfil al otro lado) y cierra de vuelta fuera: esa vela es el gatillo. Largo sobre soporte, corto bajo resistencia, cada uno con sus propias condiciones.",
+          "parametros": {
+            "zona_por_lado": {
+              "valor": {"largo": "soporte", "corto": "resistencia"},
+              "unidad": "lado->tipo de zona",
+              "origen": "operador, DECIDIDO (encargo 135): F1 RECHAZO DE ZONA"
+            },
+            "evento": {
+              "valor": "toque",
+              "unidad": "minimo <= borde alto del soporte (largo) / maximo >= borde bajo de la resistencia (corto)",
+              "origen": "operador, DECIDIDO (encargo 135): 'el episodio toca la zona'"
+            },
+            "aceptacion": {
+              "valor": "cierre_al_otro_lado",
+              "unidad": "cierre < borde bajo (largo) / cierre > borde alto (corto): cierra el episodio sin disparo",
+              "origen": "operador, DECIDIDO (encargo 135): 'no la acepta (ningun cierre al otro lado)'"
+            },
+            "gatillo": {
+              "valor": "cierre_de_vuelta_fuera",
+              "unidad": "tras el toque, cierre > borde alto (largo) / cierre < borde bajo (corto)",
+              "origen": "operador, DECIDIDO (encargo 135): 'y cierra de vuelta fuera'"
+            },
+            "stop_ancla": {
+              "valor": "extremo_del_episodio",
+              "unidad": "minimo (largo) / maximo (corto) de las velas del episodio",
+              "origen": "operador, DECIDIDO (encargo 135): stop ESTRUCTURAL mas alla del extremo del episodio"
+            },
+            "entrada": {
+              "valor": "mercado",
+              "unidad": "tipo de orden de la pata de entrada",
+              "origen": "ARBITRARIO v1"
+            }
+          }
+        },
+        "F2": {
+          "nombre": "RUPTURA + RETEST",
+          "definicion": "Dos cierres consecutivos mas alla del BORDE (no del centro) de la zona congelada; despues un retest cuyo extremo queda a <= 0.5 ATR del perfil del borde sin cerrar de vuelta dentro, en <= 8 velas; gatillo en el cierre de reaccion. Largo rompiendo resistencia hacia arriba, corto rompiendo soporte hacia abajo.",
+          "parametros": {
+            "zona_por_lado": {
+              "valor": {"largo": "resistencia", "corto": "soporte"},
+              "unidad": "lado->tipo de zona",
+              "origen": "operador, DECIDIDO (encargo 135): F2 RUPTURA + RETEST"
+            },
+            "borde": {
+              "valor": {"largo": "alto", "corto": "bajo"},
+              "unidad": "borde de la zona que se rompe",
+              "origen": "operador ('del BORDE, no del centro'); coincide con _breakout_frontier, app/setups.py:741 (main@82ae7e2)"
+            },
+            "ruptura_cierres": {
+              "valor": 2,
+              "unidad": "cierres consecutivos de vela del perfil mas alla del borde",
+              "origen": "operador, DECIDIDO (encargo 135); coincide con CONFIRM_CLOSES = 2, app/breakout.py:39 (main@82ae7e2)"
+            },
+            "retest_atr_perfil": {
+              "valor": 0.5,
+              "unidad": "ATR del perfil entre el extremo del retest y el borde",
+              "origen": "RETEST_ATR_MULT, app/setups.py:702 (main@82ae7e2)"
+            },
+            "retest_max_velas": {
+              "valor": 8,
+              "unidad": "velas del perfil desde la ruptura confirmada",
+              "origen": "ARBITRARIO v1"
+            },
+            "sin_volver_dentro": {
+              "valor": "ningun_cierre_dentro",
+              "unidad": "un cierre <= borde (largo) / >= borde (corto) tras la ruptura cierra el episodio sin disparo",
+              "origen": "operador, DECIDIDO (encargo 135): 'retest cerca del borde sin volver dentro'"
+            },
+            "gatillo": {
+              "valor": "cierre_de_reaccion",
+              "unidad": "en o despues del contacto: vela que cierra a favor de su apertura y mas alla del borde",
+              "origen": "operador ('gatillo en el cierre de reaccion'); la forma exacta de la reaccion es ARBITRARIO v1"
+            },
+            "stop_ancla": {
+              "valor": "extremo_del_episodio",
+              "unidad": "minimo (largo) / maximo (corto) del RETEST: velas despues de la ruptura confirmada hasta el gatillo",
+              "origen": "operador, DECIDIDO (encargo 135): stop ESTRUCTURAL mas alla del extremo del episodio"
+            },
+            "entrada": {
+              "valor": "mercado",
+              "unidad": "tipo de orden de la pata de entrada",
+              "origen": "ARBITRARIO v1"
+            }
+          }
+        },
+        "comun": {
+          "nombre": "BLOQUE COMUN",
+          "definicion": "Lo que comparten F1 y F2: perfiles, simbolos, venues, coste, geometria, filtros de flujo y de datos, retraso, caducidad, zonas.",
+          "parametros": {
+            "perfiles": {
+              "valor": {"intradia": {"vela_min": 15}, "swing": {"vela_min": 240}},
+              "unidad": "minutos por vela, alineadas con date_bin desde 1970-01-01 UTC",
+              "origen": "operador, DECIDIDO (encargo 135): intradia velas de 15 m, swing velas de 4 h"
+            },
+            "simbolos": {
+              "valor": ["BTCUSDT_PERP.A", "ETHUSDT_PERP.A", "SOLUSDT_PERP.A"],
+              "unidad": "perpetuos de Binance (.A) cuya trayectoria se registra",
+              "origen": "DEFAULT_MARKET_CATALOG, app/config.py:31-44 (main@82ae7e2)"
+            },
+            "venues": {
+              "valor": {"ejecucion": "bybit", "trayectoria": "binance", "funding": "binance"},
+              "unidad": "venue de cada cosa; cada candidato guarda la base entre las dos",
+              "origen": "operador, DECIDIDO (encargo 135)"
+            },
+            "comision_bps_lado": {
+              "valor": {"taker": 5.5, "maker": 2.0},
+              "unidad": "bps por lado, Bybit sin VIP",
+              "origen": "COLA 103, harness/COLA.md:11048-11050 (tarifa publica, sin confirmar en el panel de Alejandro)"
+            },
+            "coste_pata": {
+              "valor": {
+                "mercado": ["taker", "spread", "deslizamiento"],
+                "stop": ["taker", "spread", "deslizamiento"],
+                "limite": ["maker"]
+              },
+              "unidad": "componentes de coste por pata; spread y deslizamiento de Bybit del instante",
+              "origen": "operador, DECIDIDO (encargo 135): 'limite = maker; mercado y stop = taker + spread de Bybit del instante + deslizamiento'"
+            },
+            "tamano_plan_usd": {
+              "valor": 200,
+              "unidad": "USD con los que se mide el deslizamiento en el libro",
+              "origen": "bloque papel: 200 USD sin apalancamiento (operador)"
+            },
+            "libro_edad_max_s": {
+              "valor": 10,
+              "unidad": "segundos de edad maxima de la foto de libro de Bybit",
+              "origen": "app/scalp_logic.py:1394 (libro 'ok' con menos de 10 s, main@82ae7e2)"
+            },
+            "banda_coste_objetivo_max": {
+              "valor": 0.1,
+              "unidad": "coste del camino al objetivo / distancia a T1",
+              "origen": "COST_TO_TARGET_BANDS, app/scalp_logic.py:5254 (main@82ae7e2)"
+            },
+            "banda_coste_riesgo_max": {
+              "valor": 0.15,
+              "unidad": "coste del camino al stop / distancia al stop",
+              "origen": "COST_TO_RISK_BANDS, app/scalp_logic.py:5255 (main@82ae7e2)"
+            },
+            "r_neto_min_t1": {
+              "valor": 1.5,
+              "unidad": "R neto en T1 (ganancia neta / perdida neta)",
+              "origen": "ARBITRARIO v1"
+            },
+            "objetivos_n": {
+              "valor": 3,
+              "unidad": "objetivos por estructura (T1..T3): bordes cercanos de las zonas opuestas siguientes",
+              "origen": "ARBITRARIO v1"
+            },
+            "armar_distancia_pct": {
+              "valor": 1.0,
+              "unidad": "% |borde/precio - 1| para pasar a VIGILANDO (dentro de la zona = 0)",
+              "origen": "near_support/near_resistance, app/interpretation.py:975-976 (main@82ae7e2)"
+            },
+            "tolerancia_racimo": {
+              "valor": {"pct_precio": 0.35, "atr_diario": 0.25},
+              "unidad": "max(% del precio, fraccion del ATR diario)",
+              "origen": "app/interpretation.py:927 (main@82ae7e2)"
+            },
+            "escalera_atr_diarios": {
+              "valor": 3,
+              "unidad": "ATR diarios por lado del precio hasta donde se publican zonas (MC5)",
+              "origen": "ARBITRARIO v1"
+            },
+            "atr": {
+              "valor": {"n": 14, "estadistico": "mediana_rango_verdadero"},
+              "unidad": "ATR diario y del perfil",
+              "origen": "app/interpretation.py:728-729 (mediana de los 14 ultimos rangos verdaderos, main@82ae7e2)"
+            },
+            "zonas": {
+              "valor": {
+                "pivote_anchura": 2,
+                "sesiones_1d": 730,
+                "velas_4h": 720,
+                "minimo_velas": 120,
+                "barra_min": {"1d": 1440, "4h": 240},
+                "peso_toque_1d": 1.5,
+                "borde_pad_tolerancia": 0.2
+              },
+              "unidad": "pivotes fractales estrictos sobre velas diarias UTC y de 4 h (ohlcv 'daily' y '4hour') cerradas ANTES del inicio del episodio, agrupados con _barrier_candidates/_barrier_zones",
+              "origen": "BARRIER_PIVOT_WIDTH/BARRIER_LOOKBACK_SESSIONS/BARRIER_INTRADAY_TARGET_BARS, app/interpretation.py:358-363; minimo 120, app/scalp_logic.py:1319 y :1334; peso 1.5 del toque diario, app/interpretation.py:773; margen del borde 0.2 x tolerancia, app/interpretation.py:846 (main@82ae7e2). Valores FIJADOS POR EL CODIGO REUTILIZADO: tests/test_entradas_motor.py los contrasta con su fuente"
+            },
+            "separacion_ventana_velas": {
+              "valor": {"intradia": 144, "swing": 90},
+              "unidad": "velas del perfil en que se busca la separacion; un episodio cerrado antes de esa ventana cuenta como separado",
+              "origen": "ARBITRARIO v1 (la misma ventana que la base de volumen)"
+            },
+            "colchon_stop": {
+              "valor": {"atr_perfil": 0.5, "racimo": "tolerancia_racimo", "fuera_de_racimo": false},
+              "unidad": "stop = extremo del episodio -/+ max(0.5 ATR del perfil, tolerancia de racimo), UNA sola vez: no se repite desde el borde lejano de ninguna zona. Puede quedar dentro de una zona de la escalera; en F1, tipicamente dentro de la zona TOCADA y por delante de su nivel de invalidacion. Aplica a F1 y a F2 (bloque comun)",
+              "origen": "v2 (padre v1; lazo 1 del operador, 2026-10-03; campana 136). Retira la lectura «fuera de TODO racimo» (ARBITRARIO v1: TABLA del encargo 135, «colchon del stop ... y fuera de todo racimo (A1)»; entrega 20261003-1822 §8.3) y, con ella, la clausula «fuera de racimos de pivotes» que el encargo 135 ponia en DECIDIDO POR EL OPERADOR («Stop ESTRUCTURAL (mas alla del extremo del episodio, con colchon, fuera de racimos de pivotes)»): la retira el mismo operador, por PR y con hipotesis. Mantiene «mas alla del extremo del episodio, con colchon» y el colchon de v1. Elegida entre variantes por FRECUENCIA del backtest EN MUESTRA 07-25..08-13 (e28: 0 DISPARADOS, 319 SOMBRAS, stop mediano 716 bps tras 5 zonas). La variante coherente con la invalidacion («fuera de la zona PROPIA, sin cascada», stop ~130-240 bps) se descarto porque previsiblemente seguia en 0 DISPARADOS en muestra. Ninguna salida vista."
+            },
+            "volumen": {
+              "valor": {"min_x": 1.0, "base_velas": {"intradia": 144, "swing": 90}, "fraccion_minima_completas": 0.5},
+              "unidad": "volumen de la vela gatillo / mediana de las N velas COMPLETAS previas del perfil",
+              "origen": "min_x: VOLUME_PUSH_MULTIPLE, app/setups.py:52; base intradia 36 h, app/scalp_logic.py:1374; base swing 90 velas, app/breakout.py:337-346 (main@82ae7e2); fraccion: ARBITRARIO v1"
+            },
+            "spot": {
+              "valor": {"vela_gatillo": "signo_del_lado", "ultima_hora_min": 60, "ultima_hora": "no_en_contra"},
+              "unidad": "delta de spot (compras - ventas, USD) de las dos venues juntas",
+              "origen": "ARBITRARIO v1; la regla de la consulta #6, entregas/CONSULTAS-TRADING.md:357"
+            },
+            "hueco": {
+              "valor": {
+                "spot": "todos_los_minutos",
+                "futuros": "todos_los_minutos",
+                "spot_venues": 2,
+                "minuto_completo_s": 60
+              },
+              "unidad": "un minuto cuenta si estan sus filas de Binance Y de Bybit (spot_venues = 2, contadas por minuto) y su covered_seconds es 60 o NULL (legado); el delta es la suma de las dos",
+              "origen": "ARBITRARIO v1; covered_seconds y venue_count, sql/schema.sql:1355-1396; la fila combined solo garantiza las dos venues desde el commit 0df80b2 (2026-08-11), por eso se cuentan las de cada venue (main@82ae7e2)"
+            },
+            "tope_retraso_s": {
+              "valor": 240,
+              "unidad": "segundos entre el cierre de la vela y el registro; por encima, SOMBRA tardio",
+              "origen": "ARBITRARIO v2 (padre v1: 120; operador, adenda del lazo 1 del 2026-10-09, D1; campana 136). Con 120 ningun candidato podia decidirse con su spot: el ultimo minuto de la vela lo escribe el colector entre 127 y 133 s despues de cerrar (medido: ver espera_datos_s). Si la medida dijera que 240 no alcanza, se dice y NO se cambia: lo fija el operador"
+            },
+            "espera_datos_s": {
+              "valor": {"primer_intento": 135, "reintento": 5, "ultimo_intento": 210},
+              "unidad": "segundos tras el cierre de la vela: en primer_intento el generador busca por primera vez lo que la version espera -sus minutos de 1 min y, si declara espera_flujos, los minutos de spot y de futuros de sus dos ventanas-; si falta algo reintenta cada `reintento` y no empieza ningun intento despues de ultimo_intento: lo que entonces falte se decide como hueco",
+              "origen": "v2 (padre v1: 20 / 10 / 95; operador, adenda del lazo 1 del 2026-10-09, D1; campana 136). MEDIDO en produccion (140, release 191c2fb, solo lectura por harness/bin/prodsql) de 2026-10-09T23:06Z a 2026-10-10T00:26Z, 1132 sondeos, uno cada ~4 s (x1-tmp/l1-c4-mide.sh y l1-c4-analiza.py): sobre 80 minutos seguidos, el minuto esta con las dos venues y 60 s -spot y futuros de BTC, ETH y SOL, los seis- entre 126.9 y 132.6 s despues de CERRAR (mediana 129.8, p95 131.8; cota superior: el primer sondeo que lo ve; el sondeo anterior, que aun no lo veia, cae entre 121.0 y 128.4 s). Solo spot: 126.5 a 132.6 s; solo futuros: 125.3 a 130.8 s. Cuadra con el colector: LATE_TRADE_GRACE_SECONDS = 125 (app/ws_collector.py:38, app/scalp_collector.py:65) mas su bucle de vaciado de 5 s (app/ws_collector.py:326). primer_intento = 135: justo por encima del maximo medido, para que lo normal sea decidir al primer intento. reintento = 5: el periodo del bucle de vaciado del colector. ultimo_intento = 210: ARBITRARIO v2 dentro del tope de 240; deja 30 s para evaluar y registrar lo que quede de la pasada (una pasada ENTERA de v1 -6 evaluaciones en los cierres de 4 h- tardo como mucho 2.694 s en 38 latidos: harness/bin/prodsql, 2026-10-10 00:26Z)"
+            },
+            "espera_flujos": {
+              "valor": ["spot", "futuros"],
+              "unidad": "patas de flujo cuyas DOS ventanas (la vela gatillo y la ultima hora) tienen que estar completas -todos sus minutos, como los cuenta comun.hueco- para que el generador decida antes de su ultimo intento. Una version SIN este parametro (v1) no espera ninguna: decide en cuanto tiene su vela de 1 min",
+              "origen": "v2 (operador, adenda del lazo 1 del 2026-10-09, D1; campana 136): es lo que el codigo LEE para saber que la version espera (app/entradas/insumos.py: listos; app/entradas/motor.py: incompatibilidades). Medido por el operador en 140 el 2026-10-09 22:20-22:38Z: en las 159 SOMBRAS de v1 la pata spot y la de futuros de la foto estaban incompletas (el ultimo minuto visto, T - 3 min) y recontadas despues estaban completas en 146"
+            },
+            "caducidad_min": {
+              "valor": {"intradia": 240, "swing": 4320},
+              "unidad": "minutos de vida de un DISPARADO desde el cierre de su vela gatillo",
+              "origen": "ARBITRARIO v1"
+            },
+            "vigilando_max_min": {
+              "valor": {"intradia": 240, "swing": 4320},
+              "unidad": "minutos maximos en VIGILANDO sin disparo; despues, EPISODIO CERRADO SIN DISPARO",
+              "origen": "ARBITRARIO v1"
+            },
+            "separacion_atr_perfil": {
+              "valor": 1.5,
+              "unidad": "un episodio nuevo en la misma clave exige un cierre a esta distancia de la zona",
+              "origen": "ATTEMPT_EXIT_ATR, app/breakout.py:35 (main@82ae7e2)"
+            },
+            "recuperacion_max_velas": {
+              "valor": {"intradia": 96, "swing": 6},
+              "unidad": "velas perdidas (reinicio, apagon) que se evaluan al volver; todo lo que salga es tardio",
+              "origen": "ARBITRARIO v1"
+            },
+            "tope_tick_s": {
+              "valor": 600,
+              "unidad": "segundos maximos de una pasada del generador",
+              "origen": "ARBITRARIO v1"
+            },
+            "invalidacion_reloj": {
+              "valor": "UTC",
+              "unidad": "reloj de toda invalidacion y caducidad: cierres de vela date_bin desde 1970-01-01 UTC (MC4)",
+              "origen": "MC4, harness/COLA.md:15396-15407"
+            }
+          }
+        },
+        "calendario": {
+          "nombre": "REGLA DEL CALENDARIO",
+          "definicion": "Un evento de importancia alta dentro de la ventana manda el candidato a SOMBRA 'evento'. Si la ventana pasa del limite que cubre el calendario vigente, el filtro es NO EVALUABLE y el candidato va a SOMBRA 'calendario sin cubrir'. Los eventos salen de macro_event (external_macro: BLS y FOMC, MC3) como suelo mas los manuales de calendario.revisiones.",
+          "parametros": {
+            "importancia_minima": {
+              "valor": 3,
+              "unidad": "macro_event.importance (1-3); BLS y FOMC son 3",
+              "origen": "app/external_macro.py:113-136 y :180; sql/schema.sql:1245-1253 (main@82ae7e2)"
+            },
+            "ventana_min": {
+              "valor": {"intradia": 240, "swing": 240},
+              "unidad": "minutos desde el registro: la vida entera (intradia) o las primeras 4 h (swing)",
+              "origen": "ARBITRARIO v1 (TABLA del operador)"
+            },
+            "fuentes": {
+              "valor": ["macro_event", "manual"],
+              "unidad": "de donde salen los eventos",
+              "origen": "MC3, harness/COLA.md:15383-15394"
+            },
+            "renovacion_minima_dias": {
+              "valor": 14,
+              "unidad": "dias de cobertura que trae cada revision de eventos: regla del lazo del operador; /api/entradas sirve los dias que le quedan al calendario vigente y K105 f exige al menos ahora + la caducidad maxima",
+              "origen": "operador, EL LAZO punto 5, harness/COLA.md:16055"
+            }
+          }
+        },
+        "lectura": {
+          "nombre": "LECTURA (la juzga la E4; escrita ANTES del primer resultado)",
+          "definicion": "Que se mide y cuando se lee. Ningun porcentaje antes de n efectiva 30; 30 es un minimo de EXPOSICION, no de significancia; la palabra CALIBRADO no se escribe nunca como afirmacion.",
+          "parametros": {
+            "exito": {
+              "valor": "t1_antes_que_stop",
+              "unidad": "el primer objetivo cruzado antes que el stop; el plan de salida va aparte",
+              "origen": "operador, DECIDIDO (encargo 135)"
+            },
+            "denominador": {
+              "valor": "todos_los_disparados_resueltos",
+              "unidad": "con TODAS sus salidas",
+              "origen": "operador, DECIDIDO (encargo 135)"
+            },
+            "n_efectiva_minima": {
+              "valor": 30,
+              "unidad": "DISPARADOS resueltos por celda, como exposicion",
+              "origen": "DEFAULT_MIN_GROUP_N, app/signal_backtest.py:15 (main@82ae7e2)"
+            },
+            "lecturas_fijadas": {
+              "valor": [30, 60, 120],
+              "unidad": "n efectiva en que se emite veredicto",
+              "origen": "operador, TABLA v1"
+            },
+            "correccion": {
+              "valor": "bonferroni_hipotesis_probadas_de_la_familia",
+              "unidad": "sobre cuantas hipotesis lleva probadas la familia",
+              "origen": "operador, TABLA v1"
+            },
+            "no_evaluables_max_pct": {
+              "valor": 10,
+              "unidad": "% de no evaluables por encima del cual sigue MUESTRA INSUFICIENTE",
+              "origen": "operador, TABLA v1"
+            },
+            "simbolos": {
+              "valor": "juntos_n_efectiva_por_clusters_de_vidas_solapadas",
+              "unidad": "el desglose por simbolo es solo descriptivo",
+              "origen": "operador, TABLA v1"
+            },
+            "semilla_control": {
+              "valor": 135,
+              "unidad": "semilla del control emparejado y del placebo de la E4",
+              "origen": "ARBITRARIO v1"
+            },
+            "etiqueta_sin_muestra": {
+              "valor": "SIN CALIBRAR · MUESTRA INSUFICIENTE (n/30)",
+              "unidad": "texto mientras n efectiva < 30",
+              "origen": "operador, DECIDIDO (encargo 135)"
+            }
+          }
+        },
+        "papel": {
+          "nombre": "CUENTA DE PAPEL (la ejecuta la E3; escrita ANTES del primer resultado)",
+          "definicion": "Una cuenta por version en curso; toma todo DISPARADO de su version por orden de registro si cabe y apunta los saltados con su motivo. La meta es informativa: nunca motivo para cambiar, retirar o elegir una version.",
+          "parametros": {
+            "capital_usd": {
+              "valor": 200,
+              "unidad": "USD iniciales",
+              "origen": "operador; consulta #6, entregas/CONSULTAS-TRADING.md:344"
+            },
+            "apalancamiento": {"valor": 1, "unidad": "x (sin apalancamiento)", "origen": "operador, TABLA v1"},
+            "cuentas": {"valor": "una_por_version_en_curso", "unidad": "", "origen": "operador, TABLA v1"},
+            "toma": {
+              "valor": "todo_disparado_por_orden_de_registro_si_cabe",
+              "unidad": "los saltados se apuntan con su motivo",
+              "origen": "operador, TABLA v1"
+            },
+            "paso_cantidad_bybit": {
+              "valor": {"BTCUSDT_PERP.A": 0.001, "ETHUSDT_PERP.A": 0.01, "SOLUSDT_PERP.A": 0.1},
+              "unidad": "paso de cantidad (qtyStep) del perpetuo lineal de Bybit por simbolo; en los tres minOrderQty = qtyStep y minNotionalValue = 5 USDT",
+              "origen": "API publica Bybit v5 GET /v5/market/instruments-info?category=linear&symbol={BTCUSDT,ETHUSDT,SOLUSDT}, solo endpoints publicos. DOS consultas del operador, las dos con retCode 0 y los mismos valores: 2026-10-03T19:25:21-23Z (time del servidor; entregas/lazo-entradas-1-papel-paso.json) y 2026-10-09 22:29Z (adenda del lazo 1, §3). tickSize 0.10 / 0.01 / 0.010. Bybit lo cambia a veces: re-consultar antes de que la E3 lo use"
+            },
+            "funding": {
+              "valor": "solo_adverso_maximo_absoluto_por_cobro_cruzado",
+              "unidad": "nunca se abona el favorable",
+              "origen": "operador, TABLA v1"
+            },
+            "meta_usd": {
+              "valor": 10,
+              "unidad": "USD, informativa",
+              "origen": "consulta #6, entregas/CONSULTAS-TRADING.md:344; 'la meta es informativa' (ARBITRARIO v1)"
+            }
+          }
+        }
+      },
+      "huellas": {
+        "F1": "3fc845a2cc4f0b4250651679786b82cc143b5275b600d58f2348d64c48f5b999",
+        "F2": "033d5f9af296a415b358d57585d462dfaad99460a160f8aff0cd4515461c0df8",
+        "comun": "cd0f027ee065d99dff39facf803fdd9a79b51ceb3c86a24a5fe65c1bc7eb6a2f",
+        "calendario": "9dfa489d17748093efe50f81138064d0be9619b5507781c78731123184d35d4b",
+        "lectura": "43a7ead49530b4bd064b96dd93872fed5463261b29ccd601b0fc39fa13bf8d5c",
+        "papel": "b10c2704c4ef3bd9ff8c8bc67c0c7b4c0d0087c89698c9b20ee81b105bb37a70"
+      }
     }
   ],
+  "apuestas": {
+    "que_es": "Las celdas (familia x perfil x lado, los simbolos juntos) en que cada version APUESTA: las hipotesis que su familia lleva probadas, que es sobre lo que corrige la lectura (bloque lectura: correccion). Lo que una version mueve y no esta aqui se registra SIN apuesta: descriptivo, nunca prueba. Va FUERA del objeto de cada version porque una version registrada no se toca; lo contrasta app/entradas/reglamento.py (validar y apuestas) con las familias, los perfiles y los lados de cada version, y de aqui -no de un texto libre- sale lo que sirve /api/entradas.",
+    "versiones": {
+      "v1": {
+        "celdas": [
+          ["F1", "intradia", "largo"],
+          ["F1", "intradia", "corto"],
+          ["F1", "swing", "largo"],
+          ["F1", "swing", "corto"],
+          ["F2", "intradia", "largo"],
+          ["F2", "intradia", "corto"],
+          ["F2", "swing", "largo"],
+          ["F2", "swing", "corto"]
+        ],
+        "nota": "LECTURA DE LA ERRATA DE v1, cuyo objeto no se toca: su hipotesis dice 'las 16' celdas y son 8 (F1 y F2 x intradia y swing x largo y corto, los simbolos juntos). v1 apuesta en las 8."
+      },
+      "v2": {
+        "celdas": [["F1", "intradia", "largo"], ["F1", "intradia", "corto"]],
+        "nota": "La hipotesis de v2 (lazo 1 del operador, 2026-10-03): 2 hipotesis unilaterales, F1 intradia largo y F1 intradia corto. Las otras 6 celdas de v2 (F1 swing x2 y F2 x4) cambian tambien, porque colchon_stop esta en comun, y se registran SIN apuesta. Con las 4 de F1 de v1, F1 lleva 6 (el m de su Bonferroni); F2 sigue en las 4 de v1."
+      }
+    }
+  },
   "calendario": {
     "que_es": "Cadena de revisiones de EVENTOS manuales, compartida por todas las versiones en curso. Vigente = la ultima revision con vigente_desde <= el instante. 'cubre_hasta' declara hasta donde estan TODOS los eventos de importancia alta (macro_event + manuales); pasado ese limite el filtro de evento es NO EVALUABLE.",
     "revisiones": [

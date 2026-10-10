@@ -1,10 +1,13 @@
 """GET /api/entradas · lo que el registro de entradas sirve (campana 135, C4).
 
 Sirve, con todos sus parametros por defecto: los VIGILANDO y DISPARADOS vivos y los de una ventana
-pedida, por lado; las SOMBRAS con su vector de filtros; el reglamento vigente y su diferencia con
-el padre; por familia, cuantas versiones e hipotesis van probadas y las retiradas antes de su
-lectura; por (familia, perfil, lado, version), cuantos hay en cada estado y cuantos resueltos (0
-hasta la E3); el estado del generador; y lo que falta, con su motivo.
+pedida, por lado; las SOMBRAS con su vector de filtros; el reglamento vigente -las versiones en
+curso corren a la vez; la activa es la ultima- y su diferencia con el padre; el calendario vigente
+y los dias que le quedan; por familia, las hipotesis que van APOSTADAS (las celdas declaradas en
+la seccion 'apuestas' del reglamento, campana 136: no un recuento de huellas ni la lectura de un
+texto libre), lo que cada version mueve SIN apuesta y las retiradas antes de su lectura; por
+(familia, perfil, lado, version), cuantos hay en cada estado y cuantos resueltos (0 hasta la E3);
+el estado del generador; y lo que falta, con su motivo.
 
 LO QUE NO SIRVE: ninguna fraccion ni tasa de aciertos de los candidatos. «Probabilistico» sera una
 FRECUENCIA MEDIDA (E4) sobre DISPARADOS resueltos, y hasta n efectiva 30 ningun porcentaje.
@@ -68,7 +71,8 @@ FALTAN = [
      "etapa": "E3", "motivo": "el resolutor por primer toque en ohlcv 1 min no existe todavia: "
      "resueltos = 0 en todas las celdas"},
     {"que": "cuenta de papel de 200 USD", "etapa": "E3",
-     "motivo": "sus reglas estan escritas en el bloque papel de v1; no se ejecuta hasta la E3"},
+     "motivo": "sus reglas estan escritas en el bloque papel de cada version del reglamento; no "
+     "se ejecuta hasta la E3"},
     {"que": "frecuencia por version contra el equilibrio", "etapa": "E4",
      "motivo": "sin resueltos no hay frecuencia; hasta n efectiva 30: SIN CALIBRAR · MUESTRA "
      "INSUFICIENTE (n/30), sin porcentaje"},
@@ -96,6 +100,13 @@ def fracciones_servidas(respuesta: Any, ruta: str = "") -> list[str]:
             camino = f"{ruta}.{clave}" if ruta else str(clave)
             # parametros: las reglas del reglamento copiadas en la foto (con su huella), no datos
             if clave in ("referencia_ya_medido", "que_es", "faltan", "nota", "rotulo", "parametros"):
+                continue
+            # la HIPOTESIS de la version activa: el texto del reglamento, escrito antes de cualquier
+            # resultado (el de v2 habla de «tasa» y de «0.05/6»). Es prosa fija solo si trae sus
+            # tres textos y nada mas: cualquier otra clave ahi dentro se condena.
+            if clave == "hipotesis_activa" and isinstance(valor, dict):
+                hallazgos.extend(f"{camino}.{k}: clave ajena a la hipotesis del reglamento"
+                                 for k in valor if k not in ("celdas", "sentido", "lectura"))
                 continue
             if _CLAVES_PROHIBIDAS.search(str(clave)):
                 hallazgos.append(f"{camino}: clave con forma de tasa de aciertos")
@@ -283,6 +294,28 @@ async def construir(conn, *, lado: str, desde: datetime | None, hasta: datetime 
     }
 
 
+def _hipotesis(doc: dict[str, Any], familia: str) -> dict[str, Any]:
+    """Las hipotesis que la familia lleva APOSTADAS: las celdas declaradas en la seccion
+    'apuestas' del reglamento, de TODAS sus versiones (retiradas incluidas: una hipotesis probada
+    no se des-prueba). No se cuentan huellas -v2 no cambia el bloque F1 y aun asi apuesta dos
+    hipotesis nuevas en F1- ni se lee el texto libre de la hipotesis."""
+    apostado = R.apuestas(doc)
+    if apostado is None:
+        return {"hipotesis_probadas": None, "apuestas": None, "sin_apuesta": None,
+                "motivo": "el reglamento del release no declara la seccion 'apuestas': no se cuenta "
+                "nada que una maquina no pueda contrastar"}
+    de_la_familia = {
+        version: {clase: [c[1:] for c in celdas if c[0] == familia] for clase, celdas in a.items()}
+        for version, a in apostado.items()
+    }
+    return {
+        "hipotesis_probadas": sum(len(a["apostadas"]) for a in de_la_familia.values()),
+        "apuestas": {v: a["apostadas"] for v, a in de_la_familia.items()},
+        "sin_apuesta": {v: a["sin_apuesta"] for v, a in de_la_familia.items()},
+        "motivo": None,
+    }
+
+
 def _reglamento(doc: dict[str, Any], momento: datetime) -> dict[str, Any]:
     activa = R.version_activa(doc)
     revision = R.revision_vigente(doc, momento)
@@ -298,9 +331,10 @@ def _reglamento(doc: dict[str, Any], momento: datetime) -> dict[str, Any]:
                                   "motivo": v["retirada"]["motivo"],
                                   "etiqueta": "RETIRADA ANTES DE SU LECTURA"})
         familias[familia] = {
-            "versiones_distintas": len(huellas),
-            "hipotesis_probadas": len(huellas),
+            "versiones": [v["version"] for v in doc["versiones"]],
+            "bloques_distintos": len(huellas),
             "huellas": huellas,
+            **_hipotesis(doc, familia),
             "retiradas_antes_de_su_lectura": retiradas,
         }
     return {
@@ -314,6 +348,8 @@ def _reglamento(doc: dict[str, Any], momento: datetime) -> dict[str, Any]:
         "por_familia": familias,
         "calendario_vigente": {
             "revision": revision["revision"] if revision else None,
+            "vigente_desde": revision["vigente_desde"] if revision else None,
+            "eventos": len(revision["eventos"]) if revision else None,
             "cubre_hasta": revision["cubre_hasta"] if revision else None,
             "dias_que_le_quedan": round((R.instante(revision["cubre_hasta"]) - momento).total_seconds()
                                         / 86_400, 2) if revision else None,

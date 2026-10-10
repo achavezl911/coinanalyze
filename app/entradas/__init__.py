@@ -8,5 +8,6 @@ Que es y que NO es, para quien llegue aqui sin contexto:
 - NO es una orden, ni una senal de ejecucion, ni una probabilidad. «Probabilistico» sera una
   FRECUENCIA MEDIDA (E4) sobre DISPARADOS ya resueltos (E3), y hasta n efectiva 30 no se
   publica ningun porcentaje (app/analysis_prompt.py:38, app/breakout.py:1-5, COLA 100-110).
-- Las reglas viven en config/entradas/reglamento.json (reglamento.py), no en el codigo.
+- Las reglas viven en config/entradas/reglamento.json (reglamento.py), no en el codigo. Varias
+  versiones corren a la vez (v1 es el ANCLA); cada una decide con sus umbrales y a su hora.
 """

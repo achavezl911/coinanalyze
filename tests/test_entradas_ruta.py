@@ -14,7 +14,7 @@ import copy
 import inspect
 import os
 import uuid
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import asyncpg
@@ -96,7 +96,10 @@ async def test_registro_vacio_cuentas_a_cero_y_motivos_servidos(conn):
     assert set(respuesta["por_lado"]) == {"largo", "corto"}
     assert respuesta["cuentas"] == []
     assert respuesta["generador"]["motivo"] == "el generador aun no ha corrido en esta base"
-    assert respuesta["reglamento"]["version_activa"] == "v1"
+    assert respuesta["reglamento"]["version_activa"] == "v2"
+    assert respuesta["reglamento"]["versiones_en_curso"] == ["v1", "v2"]
+    assert respuesta["reglamento"]["ancla"] == "v1"
+    assert respuesta["reglamento"]["hipotesis_activa"] == R.version(R.cargar(), "v2")["hipotesis"]
     assert {f["estado"] for f in respuesta["reglamento"]["registro_en_base"]} == {"sin registrar"}
     assert any(f["etapa"] == "E3" for f in respuesta["faltan"])
     assert RUTA.fracciones_servidas(respuesta) == []
@@ -110,14 +113,7 @@ async def test_de_punta_a_punta_sirve_disparados_y_sombras_por_lado_sin_fraccion
     T = await connection.fetchval(
         "SELECT date_bin('15 minutes', clock_timestamp(), TIMESTAMPTZ '1970-01-01 00:00:00+00')"
     )
-    doc = R.cargar()
-    v1 = doc["versiones"][0]
-    v1["bloques"]["comun"]["parametros"]["tope_retraso_s"]["valor"] = 900
-    v1["huellas"] = {n: R.huella_bloque(v1["bloques"][n]) for n in R.BLOQUES}
-    rev = B.revision(cubre_hasta=T + timedelta(days=10))
-    rev["vigente_desde"] = B.M.iso(T - timedelta(days=1))
-    rev["huella"] = R.huella_revision(rev)
-    doc["calendario"]["revisiones"] = [rev]
+    doc = B.doc_de_prueba(T, tope_s=900)
     await B.sembrar(connection, T, B.insumos(T), "BTCUSDT_PERP.A", "BTC")
     await B.sembrar(connection, T, B.insumos(T, spot_vela=-1e6), "ETHUSDT_PERP.A", "ETH")
     await S.evaluar_vela(connection, T=T, doc=doc, huella_codigo=C.huella_codigo(), esperar=False)
@@ -125,13 +121,16 @@ async def test_de_punta_a_punta_sirve_disparados_y_sombras_por_lado_sin_fraccion
     respuesta = await RUTA.construir(connection, **_por_defecto(desde=T - timedelta(hours=1)))
     largo = respuesta["por_lado"]["largo"]
     assert [d["symbol"] for d in largo["vivos"]["disparados"]] == ["BTCUSDT_PERP.A"]
-    sombras = largo["ventana"]["sombras"]
+    # SOLO el perfil intradia: si la vela T cierra tambien una vela de 4 h (una de cada dieciseis)
+    # el generador evalua el swing, que aqui no tiene sembrada su ventana y registra sus SOMBRAS
+    # de datos. Este test dependia de la hora a la que corria (campana 136: fallo a las 00:07Z).
+    sombras = [s for s in largo["ventana"]["sombras"] if s["perfil"] == "intradia"]
     assert [s["symbol"] for s in sombras] == ["ETHUSDT_PERP.A"]
     filtros = sombras[0]["resumen"]["filtros"]
     assert filtros["spot_vela"]["estado"] == "falla"
     assert "solo perpetuo" in sombras[0]["resumen"]["decision"]["etiquetas"]
     assert respuesta["por_lado"]["corto"]["vivos"]["vigilando"], "las F2 corto armadas"
-    celdas = {(c["familia"], c["lado"]): c for c in respuesta["cuentas"]}
+    celdas = {(c["familia"], c["lado"]): c for c in respuesta["cuentas"] if c["perfil"] == "intradia"}
     assert celdas[("F1", "largo")]["DISPARADO"] == 1 and celdas[("F1", "largo")]["SOMBRA"] == 1
     assert all(c["resueltos"] == 0 for c in respuesta["cuentas"])
     assert RUTA.fracciones_servidas(respuesta) == [], RUTA.fracciones_servidas(respuesta)
@@ -149,6 +148,101 @@ async def test_de_punta_a_punta_sirve_disparados_y_sombras_por_lado_sin_fraccion
         plantada = copy.deepcopy(respuesta)
         plantar(plantada)
         assert RUTA.fracciones_servidas(plantada), "la red no condena una fraccion servida"
+
+
+# --------------------------------------------------------------------------- dos versiones (136)
+
+
+def _declaradas(doc: dict) -> dict[str, int]:
+    """Las hipotesis apostadas por familia, contadas del JSON del fichero y de nada mas: el
+    contraste de lo que la ruta sirve (no pasa por app/entradas/reglamento.apuestas)."""
+    cuenta = dict.fromkeys(R.FAMILIAS, 0)
+    for entrada in doc["apuestas"]["versiones"].values():
+        for familia, _perfil, _lado in entrada["celdas"]:
+            cuenta[familia] += 1
+    return cuenta
+
+
+def _mal_contadas(reglamento: dict, doc: dict) -> list[str]:
+    """LA RED de C5 c: lo que la ruta dice que lleva probado cada familia contra lo declarado."""
+    declaradas = _declaradas(doc)
+    return [
+        f"{f}: la ruta sirve {reglamento['por_familia'][f]['hipotesis_probadas']} y el reglamento "
+        f"declara {declaradas[f]}"
+        for f in R.FAMILIAS
+        if reglamento["por_familia"][f]["hipotesis_probadas"] != declaradas[f]
+    ]
+
+
+def test_las_hipotesis_que_van_son_las_apostadas_y_contar_como_antes_se_condena(monkeypatch):
+    doc = R.cargar_valido()
+    momento = datetime(2026, 10, 12, tzinfo=UTC)
+    reglamento = RUTA._reglamento(doc, momento)
+    f1, f2 = reglamento["por_familia"]["F1"], reglamento["por_familia"]["F2"]
+    assert (f1["hipotesis_probadas"], f2["hipotesis_probadas"]) == (6, 4)
+    assert f1["apuestas"] == {"v1": [["intradia", "largo"], ["intradia", "corto"], ["swing", "largo"],
+                                     ["swing", "corto"]],
+                              "v2": [["intradia", "largo"], ["intradia", "corto"]]}
+    # v2 mueve F1 swing y las cuatro de F2 SIN apuesta, y la ruta lo dice
+    assert f1["sin_apuesta"] == {"v1": [], "v2": [["swing", "largo"], ["swing", "corto"]]}
+    assert f2["apuestas"]["v2"] == [] and len(f2["sin_apuesta"]["v2"]) == 4
+    assert _mal_contadas(reglamento, doc) == []
+    # el plantado: contar como hasta la 135, una hipotesis por huella distinta del bloque de familia
+    monkeypatch.setattr(RUTA, "_hipotesis", lambda doc, familia: {
+        "hipotesis_probadas": len({v["huellas"][familia] for v in doc["versiones"]})})
+    viejo = RUTA._reglamento(doc, momento)
+    assert viejo["por_familia"]["F1"]["hipotesis_probadas"] == 1  # lo que decia la ruta antes de v2
+    assert _mal_contadas(viejo, doc) == [
+        "F1: la ruta sirve 1 y el reglamento declara 6", "F2: la ruta sirve 1 y el reglamento declara 4"]
+
+
+def test_sin_apuestas_declaradas_la_ruta_no_cuenta_nada():
+    doc = R.cargar_valido()
+    del doc["apuestas"]
+    f1 = RUTA._reglamento(doc, datetime(2026, 10, 12, tzinfo=UTC))["por_familia"]["F1"]
+    assert f1["hipotesis_probadas"] is None and "no declara" in f1["motivo"]
+
+
+def test_v2_es_la_activa_y_su_diferencia_con_el_padre_son_los_tres_cambios():
+    reglamento = RUTA._reglamento(R.cargar_valido(), datetime(2026, 10, 12, tzinfo=UTC))
+    assert reglamento["version_activa"] == "v2" and reglamento["versiones_en_curso"] == ["v1", "v2"]
+    dif = reglamento["diferencia_con_el_padre"]
+    assert dif["padre"] == "v1"
+    cambian = {b: sorted(c["parametros"]) for b, c in dif["bloques"].items() if c["cambia"]}
+    assert cambian == {
+        "comun": ["colchon_stop", "espera_datos_s", "espera_flujos", "tope_retraso_s"],
+        "papel": ["paso_cantidad_bybit"],
+    }
+    stop = dif["bloques"]["comun"]["parametros"]["colchon_stop"]
+    assert stop["antes"]["valor"]["fuera_de_racimo"] is True
+    assert stop["despues"]["valor"]["fuera_de_racimo"] is False
+    assert dif["bloques"]["comun"]["parametros"]["espera_flujos"]["antes"] is None
+    assert RUTA.fracciones_servidas({"reglamento": reglamento}) == []
+
+
+def test_el_calendario_vigente_y_los_dias_que_le_quedan():
+    doc = R.cargar_valido()
+    antes = RUTA._reglamento(doc, datetime(2026, 10, 9, 23, 0, tzinfo=UTC))["calendario_vigente"]
+    assert antes["revision"] == "cal-1" and antes["dias_que_le_quedan"] < 0  # no cubre nada
+    cal = RUTA._reglamento(doc, datetime(2026, 10, 10, 0, 0, tzinfo=UTC))["calendario_vigente"]
+    assert cal["revision"] == "cal-2" and cal["eventos"] == 20
+    assert cal["vigente_desde"] == "2026-10-10T00:00:00Z" and cal["cubre_hasta"] == "2026-11-30T23:59:59Z"
+    assert cal["dias_que_le_quedan"] == pytest.approx(52.0, abs=0.01)
+    assert cal["renovacion_minima_dias"] == 14
+    vencido = RUTA._reglamento(doc, datetime(2026, 12, 2, tzinfo=UTC))["calendario_vigente"]
+    assert vencido["revision"] == "cal-2" and vencido["dias_que_le_quedan"] < 0
+
+
+def test_la_red_no_deja_colar_una_fraccion_dentro_de_la_hipotesis_servida():
+    reglamento = RUTA._reglamento(R.cargar_valido(), datetime(2026, 10, 12, tzinfo=UTC))
+    assert RUTA.fracciones_servidas({"reglamento": reglamento}) == []
+    assert "tasa" in reglamento["hipotesis_activa"]["sentido"]  # el texto del lazo, tal cual
+    plantada = copy.deepcopy(reglamento)
+    plantada["hipotesis_activa"]["aciertos_hasta_hoy"] = "3/7"
+    assert RUTA.fracciones_servidas({"reglamento": plantada}), "una clave ajena dentro de la hipotesis"
+    plantada = copy.deepcopy(reglamento)
+    plantada["por_familia"]["F1"]["lectura"] = "43 %"
+    assert RUTA.fracciones_servidas({"reglamento": plantada})
 
 
 def test_la_referencia_ya_medido_lleva_su_cita_y_no_la_condena_la_red():

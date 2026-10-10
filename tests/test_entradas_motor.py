@@ -400,6 +400,15 @@ def _v2_con(cambio) -> list[dict]:
          "comun.invalidacion_reloj"),
         ("margen", lambda b: b["comun"]["parametros"]["zonas"]["valor"].update(borde_pad_tolerancia=0.3),
          "comun.zonas.borde_pad_tolerancia"),
+        # campana 136: el stop tiene dos ramas (true, false) y nada mas; y solo se esperan los
+        # flujos que el codigo carga
+        ("cascada", lambda b: b["comun"]["parametros"]["colchon_stop"]["valor"].update(
+            fuera_de_racimo="a_veces"), "comun.colchon_stop.fuera_de_racimo"),
+        ("cascada_uno", lambda b: b["comun"]["parametros"]["colchon_stop"]["valor"].update(
+            fuera_de_racimo=1), "comun.colchon_stop.fuera_de_racimo"),
+        ("espera", lambda b: b["comun"]["parametros"].update(
+            espera_flujos={"valor": ["libro"], "unidad": "", "origen": "plantado"}),
+         "comun.espera_flujos"),
     ],
 )
 def test_una_version_que_declara_lo_que_el_codigo_no_aplica_no_corre_y_v1_si(nombre, cambio, rastro):
@@ -411,6 +420,84 @@ def test_una_version_que_declara_lo_que_el_codigo_no_aplica_no_corre_y_v1_si(nom
     assert {t["version"] for t in res["transiciones"]} == {"v1"}, nombre
     assert "v2 NO CORRE" in res["evaluacion"]["motivo"] and rastro in res["evaluacion"]["motivo"]
     assert M.incompatibilidades(B.versiones()[0]) == []
+
+
+# --------------------------------------------------------------------------- v2: el stop (136)
+
+
+def _con_mecha() -> dict:
+    """El rechazo del soporte [94.74, 95.26] con una mecha hasta 91.5: extremo - colchon (1.3) cae
+    en 90.2, DENTRO de la zona de abajo [89.74, 90.26]. Es la vela en que v1 y v2 se separan."""
+    return B.insumos(gatillo=(96.0, 96.2, 91.5, 95.8))
+
+
+def _fallos_del_stop(resultado: dict) -> list[str]:
+    """EL CONTROL de C3 a, foto a foto: el stop es el que SU version declara. Con cascada queda
+    fuera de todo racimo; sin ella es extremo -/+ colchon UNA vez y no salta nada."""
+    fallos = []
+    for t in resultado["transiciones"]:
+        if t["estado"] not in ("DISPARADO", "SOMBRA"):
+            continue
+        foto = t["foto"]
+        s = 1.0 if foto["lado"] == "largo" else -1.0
+        stop = foto["plan"]["stop"]
+        if foto["parametros"]["comun"]["colchon_stop"]["fuera_de_racimo"]:
+            if any(z["low"] <= stop["precio"] <= z["high"] for z in foto["escalera"]):
+                fallos.append(f"{t['version']}: declara el stop fuera de todo racimo y queda en uno")
+        else:
+            if stop["racimos_saltados"]:
+                fallos.append(f"{t['version']}: declara el stop sin cascada y salta "
+                              f"{len(stop['racimos_saltados'])} racimo(s)")
+            if stop["precio"] != pytest.approx(stop["extremo_episodio"] - s * stop["colchon"]):
+                fallos.append(f"{t['version']}: el stop no es extremo -/+ colchon")
+    return fallos
+
+
+def test_v2_deja_el_stop_donde_cae_y_v1_lo_saca_de_la_zona_sobre_la_misma_vela(monkeypatch):
+    dos = B.versiones("v1", "v2")
+    res = B.paso(_con_mecha(), vs=dos)
+    gatillos = {t["version"]: t for t in res["transiciones"]
+                if (t["familia"], t["lado"]) == ("F1", "largo") and t["estado"] in ("DISPARADO", "SOMBRA")}
+    v1, v2 = gatillos["v1"]["foto"], gatillos["v2"]["foto"]
+    assert v1["zona"] == v2["zona"] and v1["plan"]["objetivos"] == v2["plan"]["objetivos"]
+    assert v1["plan"]["stop"]["extremo_episodio"] == v2["plan"]["stop"]["extremo_episodio"] == 91.5
+    assert v1["plan"]["stop"]["colchon"] == v2["plan"]["stop"]["colchon"] == pytest.approx(1.3)
+    # v1: cae en 90.2, dentro de [89.74, 90.26], y repite desde su borde lejano
+    assert v1["plan"]["stop"]["racimos_saltados"] == [[pytest.approx(89.74), pytest.approx(90.26)]]
+    assert v1["plan"]["stop"]["precio"] == pytest.approx(89.74 - 1.3)
+    assert gatillos["v1"]["estado"] == "SOMBRA" and gatillos["v1"]["motivo"] == "r_neto_t1"
+    # v2: una vez. Se queda en 90.2, dentro de la zona, y con el mismo T1 el R neto pasa
+    assert v2["plan"]["stop"]["racimos_saltados"] == []
+    assert v2["plan"]["stop"]["precio"] == pytest.approx(91.5 - 1.3)
+    assert gatillos["v2"]["estado"] == "DISPARADO", (gatillos["v2"]["motivo"], v2["filtros"])
+    assert v2["plan"]["r"]["neto"] >= 1.5 > v1["plan"]["r"]["neto"]
+    assert gatillos["v2"]["tope_retraso_s"] == 240 and gatillos["v1"]["tope_retraso_s"] == 120
+    assert F.validar_fila(_fila_registrada(gatillos["v2"])) == []
+    assert _fallos_del_stop(res) == []
+    # la foto basta tambien en v2: la decision se reproduce leyendo solo la foto
+    foto = copy.deepcopy(v2)
+    guardado = {k: foto.pop(k) for k in ("plan", "filtros", "decision")}
+    assert M.decidir(foto) == guardado
+
+    # EL PLANTADO: un _stop que ignora el false (el de la campana 135, que no lo leia)
+    original = M._stop
+    monkeypatch.setattr(M, "_stop", lambda extremo, colchon, escalera, _fuera: original(
+        extremo, colchon, escalera, True))
+    plantado = B.paso(_con_mecha(), vs=dos)
+    assert _fallos_del_stop(plantado) == ["v2: declara el stop sin cascada y salta 1 racimo(s)",
+                                          "v2: el stop no es extremo -/+ colchon"]
+    en_v2 = next(t for t in plantado["transiciones"] if t["version"] == "v2"
+                 and (t["familia"], t["lado"]) == ("F1", "largo") and t["estado"] != "VIGILANDO")
+    assert en_v2["estado"] == "SOMBRA"  # con el plantado, v2 es v1: no dispara
+
+
+def test_la_v2_del_arbol_corre_con_este_codigo_y_su_reflejo_tambien():
+    assert [M.incompatibilidades(v) for v in B.versiones("v1", "v2")] == [[], []]
+    res = B.paso(B.refleja(_con_mecha()), vs=B.versiones("v2"))
+    corto = _gatillo(res, "F1", "corto")
+    assert corto["estado"] == "DISPARADO" and corto["foto"]["plan"]["stop"]["racimos_saltados"] == []
+    assert corto["foto"]["plan"]["stop"]["precio"] == pytest.approx(200 - (91.5 - 1.3))
+    assert _fallos_del_stop(res) == []
 
 
 # --------------------------------------------------------------------------- nada en el codigo

@@ -13,6 +13,10 @@ Lo que se promete y cada plantado que tiene que fallar (el gemelo correcto pasa)
 - y, contra main, que ninguna version ni revision registrada cambie -ni un byte de su objeto,
   salvo retirarse- ni desaparezca del fichero.
 
+Campana 136: v2 es v1 con los tres cambios del lazo y ninguno mas; cada version cabe con su
+espera dentro de su tope; y las APUESTAS (las celdas que cuentan como hipotesis probadas) se
+contrastan con las versiones del fichero: una apuesta que no cuadra no entra.
+
 El CI clona a profundidad 1, asi que la historia se compara contra origin/main, que el paso
 «Fetch main for the reglamento history test» de .github/workflows/ci.yml trae antes de pytest.
 Fuera de CI, sin esa referencia, ese test se SALTA y lo dice; dentro de CI, sin ella, FALLA:
@@ -24,6 +28,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import re
 import subprocess
 from datetime import timedelta
 from pathlib import Path
@@ -40,11 +45,15 @@ def doc() -> dict:
     return R.cargar()
 
 
-def _nueva_version(doc: dict, *, etiqueta: str = "v2", con_hipotesis: bool = True) -> dict:
-    """Una hija correcta de v1 que cambia SOLO F2 (retest_max_velas 8 -> 10)."""
+PRUEBA = "v-prueba"
+
+
+def _nueva_version(doc: dict, *, etiqueta: str = PRUEBA, con_hipotesis: bool = True) -> dict:
+    """Una hija correcta de v1 que cambia SOLO F2 (retest_max_velas 8 -> 10) y apuesta en F2
+    intradia. Lleva su propia etiqueta: el fichero ya tiene una v2 de verdad (campana 136)."""
     v1 = R.version(doc, "v1")
-    v2 = copy.deepcopy(v1)
-    v2.update(
+    nueva = copy.deepcopy(v1)
+    nueva.update(
         {
             "version": etiqueta,
             "padre": "v1",
@@ -55,18 +64,21 @@ def _nueva_version(doc: dict, *, etiqueta: str = "v2", con_hipotesis: bool = Tru
             "retirada": None,
         }
     )
-    v2["bloques"]["F2"]["parametros"]["retest_max_velas"]["valor"] = 10
-    v2["huellas"] = {n: R.huella_bloque(v2["bloques"][n]) for n in R.BLOQUES}
+    nueva["bloques"]["F2"]["parametros"]["retest_max_velas"]["valor"] = 10
+    nueva["huellas"] = {n: R.huella_bloque(nueva["bloques"][n]) for n in R.BLOQUES}
     if con_hipotesis:
-        v2["hipotesis"] = {
+        nueva["hipotesis"] = {
             "celdas": "F2 intradia largo y corto",
             "sentido": "mas DISPARADOS sin bajar el exceso sobre el equilibrio",
             "lectura": "n efectiva 30 de F2 intradia",
         }
     else:
-        v2.pop("hipotesis")
-    doc["versiones"].append(v2)
-    return v2
+        nueva.pop("hipotesis")
+    doc["versiones"].append(nueva)
+    doc["apuestas"]["versiones"].setdefault(
+        etiqueta, {"celdas": [["F2", "intradia", "largo"], ["F2", "intradia", "corto"]]}
+    )
+    return nueva
 
 
 def test_el_reglamento_del_arbol_es_valido(doc):
@@ -130,18 +142,20 @@ def test_el_ancla_retirada_no_entra(doc):
 
 
 def test_una_version_retirada_sigue_en_el_fichero_y_deja_de_correr(doc):
-    v2 = _nueva_version(doc)
-    v2["retirada"] = {"fecha": "2026-11-01", "motivo": "plantado", "antes_de_su_lectura": True}
+    en_curso = [v["version"] for v in R.versiones_en_curso(doc)]
+    nueva = _nueva_version(doc)
+    nueva["retirada"] = {"fecha": "2026-11-01", "motivo": "plantado", "antes_de_su_lectura": True}
     assert R.validar(doc) == []
-    assert [v["version"] for v in R.versiones_en_curso(doc)] == ["v1"]
-    assert R.version(doc, "v2") is not None
+    assert [v["version"] for v in R.versiones_en_curso(doc)] == en_curso
+    assert R.version(doc, PRUEBA) is not None
 
 
 def test_la_activa_es_la_ultima_por_orden_del_fichero(doc):
-    assert R.version_activa(doc)["version"] == "v1"
+    en_curso = [v["version"] for v in R.versiones_en_curso(doc)]
+    assert en_curso[0] == "v1" and R.version_activa(doc)["version"] == en_curso[-1]
     _nueva_version(doc)
-    assert R.version_activa(doc)["version"] == "v2"
-    assert [v["version"] for v in R.versiones_en_curso(doc)] == ["v1", "v2"]
+    assert R.version_activa(doc)["version"] == PRUEBA
+    assert [v["version"] for v in R.versiones_en_curso(doc)] == en_curso + [PRUEBA]
 
 
 def test_un_umbral_sin_origen_no_entra(doc):
@@ -151,9 +165,9 @@ def test_un_umbral_sin_origen_no_entra(doc):
 
 
 def test_una_version_identica_a_su_padre_no_entra(doc):
-    v2 = _nueva_version(doc)
-    v2["bloques"]["F2"]["parametros"]["retest_max_velas"]["valor"] = 8
-    v2["huellas"] = {n: R.huella_bloque(v2["bloques"][n]) for n in R.BLOQUES}
+    nueva = _nueva_version(doc)
+    nueva["bloques"]["F2"]["parametros"]["retest_max_velas"]["valor"] = 8
+    nueva["huellas"] = {n: R.huella_bloque(nueva["bloques"][n]) for n in R.BLOQUES}
     errores = R.validar(doc)
     assert any("no cambia ningun bloque" in e for e in errores), errores
 
@@ -218,7 +232,7 @@ def test_una_revision_ya_registrada_tocada_no_entra(doc):
 
 def test_la_diferencia_con_el_padre_nombra_lo_que_cambia(doc):
     _nueva_version(doc)
-    dif = R.diferencia_con_padre(doc, "v2")
+    dif = R.diferencia_con_padre(doc, PRUEBA)
     assert dif["padre"] == "v1"
     assert [n for n, b in dif["bloques"].items() if b["cambia"]] == ["F2"]
     assert list(dif["bloques"]["F2"]["parametros"]) == ["retest_max_velas"]
@@ -249,6 +263,96 @@ def test_los_registros_esperados_cubren_cada_bloque_y_cada_revision(doc):
     assert len({(f["etiqueta"], f["bloque"]) for f in filas}) == len(filas)
     for f in filas:
         assert f["huella"] == R.huella(f["contenido"])
+
+
+# --------------------------------------------------------------------------- v2 (campana 136)
+
+# Los TRES cambios decididos por el operador (lazo 1 y su adenda) y los parametros de cada uno.
+TRES_CAMBIOS = {
+    "a · el stop sin cascada": {("comun", "colchon_stop")},
+    "b · el registro espera al spot": {("comun", "tope_retraso_s"), ("comun", "espera_datos_s"),
+                                       ("comun", "espera_flujos")},
+    "c · el paso de cantidad de Bybit": {("papel", "paso_cantidad_bybit")},
+}
+
+
+def test_v2_es_v1_con_los_tres_cambios_y_ninguno_mas(doc):
+    v1, v2 = R.version(doc, "v1"), R.version(doc, "v2")
+    assert v2["padre"] == "v1" and v2["ancla"] is False and v2["retirada"] is None
+    dif = R.diferencia_con_padre(doc, "v2")
+    cambiados = {(b, p) for b, cuerpo in dif["bloques"].items() for p in cuerpo["parametros"]}
+    assert cambiados == set().union(*TRES_CAMBIOS.values()), cambiados
+    for bloque in ("F1", "F2", "calendario", "lectura"):
+        assert v2["huellas"][bloque] == v1["huellas"][bloque], bloque
+    comun, padre = R.valores(v2["bloques"]["comun"]), R.valores(v1["bloques"]["comun"])
+    assert padre["colchon_stop"]["fuera_de_racimo"] is True
+    assert comun["colchon_stop"] == {**padre["colchon_stop"], "fuera_de_racimo": False}
+    assert (padre["tope_retraso_s"], comun["tope_retraso_s"]) == (120, 240)
+    assert "espera_flujos" not in padre and comun["espera_flujos"] == ["spot", "futuros"]
+    paso = R.valores(v2["bloques"]["papel"])["paso_cantidad_bybit"]
+    assert paso == {"BTCUSDT_PERP.A": 0.001, "ETHUSDT_PERP.A": 0.01, "SOLUSDT_PERP.A": 0.1}
+    assert set(paso) == set(comun["simbolos"])
+    assert "las 16" in v2["motivo"] and "son 8" in v2["motivo"]  # la errata de v1, declarada
+
+
+def test_la_espera_de_cada_version_cabe_en_su_tope_y_en_la_cadencia(doc):
+    """«Dentro del tope»: ningun intento empieza despues del tope de retraso de su version, y lo
+    que tarda la pasada mas larga no llega a la siguiente (C4 e)."""
+    cadencia = min(p["vela_min"] * 60 for v in R.versiones_en_curso(doc)
+                   for p in R.valores(v["bloques"]["comun"])["perfiles"].values())
+    for v in R.versiones_en_curso(doc):
+        c = R.valores(v["bloques"]["comun"])
+        e = c["espera_datos_s"]
+        assert 0 < e["primer_intento"] <= e["ultimo_intento"] < c["tope_retraso_s"], v["version"]
+        assert e["reintento"] > 0
+        assert c["tope_retraso_s"] < c["tope_tick_s"] <= cadencia, v["version"]
+
+
+def test_la_hipotesis_de_v2_declara_el_m_que_dicen_sus_apuestas(doc):
+    v2 = R.version(doc, "v2")
+    assert set(v2["hipotesis"]) == {"celdas", "sentido", "lectura"}
+    apostado = R.apuestas(doc)
+    f1 = sum(1 for a in apostado.values() for c in a["apostadas"] if c[0] == "F1")
+    f2 = sum(1 for a in apostado.values() for c in a["apostadas"] if c[0] == "F2")
+    assert (f1, f2) == (6, 4)
+    # el texto libre dice lo mismo que la declaracion que lee la maquina
+    m = re.search(r"Bonferroni con m = (\d+)", v2["hipotesis"]["lectura"])
+    assert m and int(m.group(1)) == f1
+    assert v2["hipotesis"]["lectura"].endswith("se publica cuantos son.")  # el parrafo de la adenda
+    assert apostado["v1"] == {"apostadas": R.celdas(R.version(doc, "v1")), "sin_apuesta": []}
+    assert apostado["v2"]["apostadas"] == [["F1", "intradia", "largo"], ["F1", "intradia", "corto"]]
+    assert len(apostado["v2"]["sin_apuesta"]) == 6
+
+
+def test_el_reglamento_del_arbol_declara_sus_apuestas_y_el_de_la_135_valida_sin_ellas(doc):
+    assert set(doc["apuestas"]["versiones"]) == {v["version"] for v in doc["versiones"]}
+    # el fichero del release de la 135 (solo v1, sin la seccion): valido, y nadie cuenta nada
+    viejo = copy.deepcopy(doc)
+    viejo["versiones"] = viejo["versiones"][:1]
+    del viejo["apuestas"]
+    assert R.validar(viejo) == [] and R.apuestas(viejo) is None
+
+
+@pytest.mark.parametrize(
+    "nombre, plantar, rastro",
+    [
+        ("version fantasma", lambda a: a.update({"v9": {"celdas": []}}), "v9 no es una version"),
+        ("version sin declarar", lambda a: a.pop("v2"), "v2 no declara en que celdas apuesta"),
+        ("familia que no existe", lambda a: a["v2"]["celdas"].append(["F3", "intradia", "largo"]),
+         "no es una celda suya"),
+        ("perfil que no es suyo", lambda a: a["v2"]["celdas"].append(["F1", "diario", "largo"]),
+         "no es una celda suya"),
+        ("lado que no existe", lambda a: a["v2"]["celdas"].append(["F1", "swing", "neutral"]),
+         "no es una celda suya"),
+        ("celda repetida", lambda a: a["v2"]["celdas"].append(["F1", "intradia", "largo"]),
+         "repite la celda"),
+    ],
+)
+def test_una_apuesta_que_no_cuadra_con_las_versiones_no_entra(doc, nombre, plantar, rastro):
+    assert R.validar(copy.deepcopy(doc)) == []  # el gemelo
+    plantar(doc["apuestas"]["versiones"])
+    errores = R.validar(doc)
+    assert len(errores) == 1 and rastro in errores[0], (nombre, errores)
 
 
 # --------------------------------------------------------------------------- historia
@@ -294,6 +398,11 @@ def _cambios_de_historia(anterior: dict, doc: dict) -> list[str]:
         distintos = sorted(k for k in set(r) | set(actual) if r.get(k) != actual.get(k))
         if distintos:
             cambios.append(f"la revision {r['revision']} de main cambio: {', '.join(distintos)}")
+    # las apuestas de una version registrada: quitar una celda despues seria bajar el m de su familia
+    ahora = (doc.get("apuestas") or {}).get("versiones", {})
+    for version, entrada in (anterior.get("apuestas") or {}).get("versiones", {}).items():
+        if ahora.get(version) != entrada:
+            cambios.append(f"las apuestas de {version} de main cambiaron")
     return cambios
 
 
@@ -316,6 +425,11 @@ def test_la_historia_ve_un_byte_de_una_version_ya_registrada(doc):
     plantado = copy.deepcopy(doc)
     plantado["versiones"][0]["bloques"]["papel"]["parametros"]["meta_usd"]["origen"] += " · retocado"
     assert _cambios_de_historia(main, plantado) == ["la version v1 de main cambio: bloques"]
+    # y sus apuestas: dejar a v1 con 4 celdas bajaria el m de F2 sin que ninguna huella se mueva
+    plantado = copy.deepcopy(doc)
+    plantado["apuestas"]["versiones"]["v1"]["celdas"] = plantado["apuestas"]["versiones"]["v1"]["celdas"][:4]
+    assert R.validar(plantado) == []
+    assert _cambios_de_historia(main, plantado) == ["las apuestas de v1 de main cambiaron"]
 
 
 def test_ninguna_version_registrada_en_main_cambia_ni_desaparece(doc):

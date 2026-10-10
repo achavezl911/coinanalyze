@@ -6,9 +6,10 @@ Tres tablas append-only (sql/schema.sql, bloque de la campana 135):
                       con OTRA huella, o una registrada que el fichero ya no trae, no se emite
                       ningun candidato y el motivo queda en el latido.
   entrada_registro    las transiciones del motor. Un DISPARADO que la base rechaza por tardio
-                      (EN001) se registra como SOMBRA «tardio» con la MISMA foto: ninguna
-                      evaluacion tardia emite DISPARADO. Dos vivos en una clave (EN002) se apuntan
-                      como rechazo y no se reintentan.
+                      (EN001, contra el tope de SU version, que viaja en la fila) se registra como
+                      SOMBRA «tardio» con la MISMA foto: ninguna evaluacion tardia emite DISPARADO.
+                      Dos vivos en una clave (EN002) se apuntan como rechazo y no se reintentan.
+                      Una transicion que el episodio ya tiene (vela re-evaluada) no se repite.
   entrada_latido      cada pasada, con su estado y su fallo.
 """
 
@@ -37,6 +38,16 @@ INSERT INTO entrada_registro (
     $21, $22, $23::json
 )
 RETURNING registro_id, registered_at, retraso_s
+"""
+
+# ponytail: mirar y despues insertar no es atomico. Basta porque solo hay UN generador (el candado
+# _EN_CURSO de servicio.py y el cerrojo de servicio de ingest); con dos escritores haria falta
+# llevarlo al disparador, y eso ya es esquema.
+_YA_REGISTRADA = """
+SELECT registro_id, estado FROM entrada_registro
+WHERE version = $1 AND symbol = $2 AND familia = $3 AND perfil = $4 AND lado = $5 AND clave = $6
+  AND episodio = $7 AND (estado = 'VIGILANDO') = $8
+ORDER BY registro_id LIMIT 1
 """
 
 
@@ -167,7 +178,17 @@ def como_sombra_tardia(t: dict[str, Any]) -> dict[str, Any]:
 
 
 async def insertar(conn: asyncpg.Connection, t: dict[str, Any], huella_codigo: str) -> dict[str, Any]:
-    """Inserta una transicion. Un DISPARADO tardio pasa a SOMBRA «tardio»: lo decide la base."""
+    """Inserta una transicion. Un DISPARADO tardio pasa a SOMBRA «tardio»: lo decide la base.
+
+    Un episodio tiene UNA fila VIGILANDO y UNA terminal. Si su vela se re-evalua (la recuperacion
+    de una pasada que murio a medias: v1 ya habia registrado y v2 seguia esperando), el motor
+    vuelve a emitir lo mismo y aqui no se repite: gana lo que se registro primero."""
+    ya = await conn.fetchrow(_YA_REGISTRADA, t["version"], t["symbol"], t["familia"], t["perfil"],
+                             t["lado"], t["clave"], t["episodio"], t["estado"] == "VIGILANDO")
+    if ya is not None:
+        return {"registrado": False, "estado": t["estado"],
+                "rechazo": f"ya registrada: el episodio tiene su fila {ya['estado']} "
+                f"(registro {ya['registro_id']})"}
     if t["estado"] == "DISPARADO":
         ahora = await conn.fetchval("SELECT clock_timestamp()")
         if (ahora - t["vela_cierre"]).total_seconds() > t["tope_retraso_s"]:

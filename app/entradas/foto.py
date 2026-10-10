@@ -12,7 +12,8 @@ puede traer un hueco solo si su foto dice POR QUE falta (A86); un DISPARADO, nin
 
 Lo que no puede traer nadie: un insumo con hora posterior a su registro; una entrada a mercado con
 precio fijado o anclada en el cierre de la vela que dispara; un DISPARADO por encima del tope de
-retraso o sin la pata spot completa a favor (MC12).
+retraso que trae su fila o sin la pata spot completa a favor (MC12). Que ese tope sea el de SU
+version no lo puede saber la fila sola: lo contrasta K105 con el reglamento del release.
 """
 
 from __future__ import annotations

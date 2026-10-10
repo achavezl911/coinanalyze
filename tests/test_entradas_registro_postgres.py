@@ -290,15 +290,7 @@ async def test_c2c_un_minuto_ausente_en_la_base_deja_la_vela_no_evaluable(conn):
 def _doc_de_prueba(T: datetime) -> dict:
     """v1 con un tope de retraso que cabe en la duracion del test y un calendario que cubre:
     solo cambia lo necesario para que la vela T actual pueda disparar desde una base de prueba."""
-    doc = R.cargar()
-    v1 = doc["versiones"][0]
-    v1["bloques"]["comun"]["parametros"]["tope_retraso_s"]["valor"] = 900
-    v1["huellas"] = {n: R.huella_bloque(v1["bloques"][n]) for n in R.BLOQUES}
-    rev = B.revision(cubre_hasta=T + timedelta(days=30))
-    rev["vigente_desde"] = M.iso(T - timedelta(days=1))
-    rev["huella"] = R.huella_revision(rev)
-    doc["calendario"]["revisiones"] = [rev]
-    return doc
+    return B.doc_de_prueba(T, tope_s=900)
 
 
 async def resolutor_de_juguete(conn, registro_id: int) -> str:
