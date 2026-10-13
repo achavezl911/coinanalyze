@@ -22,7 +22,8 @@
 #       K102 con DECIDE empujado fuera del pliegue por la cabecera
 #   C5  la misma ruta trayendo el peso del registro entero · una vista que no obedece su cadencia
 #   y el check: sus tres invocaciones (A56), los dos modos de SIGPIPE (A89), y una mesa sin la vista
-#   (NO MEDIDO, ni ROJO ni VERDE).
+#   (NO MEDIDO, ni ROJO ni VERDE). Y el lector de cifras de la propia red: «63.385» son sesenta y
+#   tres mil, y una variante de la sonda que lo lea como K102 tiene que condenar una pagina fiel.
 #
 # No usa produccion ni el espejo. Puertos: 8106 (el banco) y 8107 (el sobre plantado de K102); se
 # niega a arrancar si estan ocupados. Al salir: 0 bases, ningun servidor suyo vivo, el arbol intacto.
@@ -109,6 +110,17 @@ echo "== C2 · la NO INTERFERENCIA: dos respuestas que solo difieren en el RESUL
 comprueba no_interferencia "$([ -n "$fa" ] && [ "$fa" = "$fb" ] && echo 0 || echo 1)" "la vista real: $fa y $fb"
 "$PY" "$PLANTA" planta color_por_resultado "$T/b" > /dev/null; sonda --firma > /dev/null; fc=$(grep '^firma ' "$T/sal")
 comprueba la_firma_ve_el_color "$([ -n "$fc" ] && [ "$fc" != "$fa" ] && echo 0 || echo 1)" "con el color plantado: $fc"
+
+echo "== el lector de cifras: en es-ES «63.385» son sesenta y tres mil. La variante que lo lee como K102 tiene que CONDENAR una pagina fiel"
+# Una copia de la sonda con UNA linea cambiada: compara las cifras con K102.casan_valores, que solo
+# quita los puntos de miles cuando hay coma. Si el brazo precio_de_miles no la condena, no mide nada.
+ln -s "$AQUI/K102-mesa.py" "$T/K102-mesa.py"; ln -s "$AQUI/K44-contrato-mesa.tsv" "$T/K44-contrato-mesa.tsv"
+sed 's|^        return abs(float(servido) - pintado) <= 0.5 \* 10 \*\* -len(decimales) + 1e-9$|        return K.casan_valores(numero.group(0), servido)|' "$SONDA" > "$T/K106-vista.py"
+mordio=$(grep -c 'return K.casan_valores(numero.group(0), servido)' "$T/K106-vista.py")
+"$PY" "$PLANTA" planta precio_de_miles "$T/b" > /dev/null
+"$PY" "$T/K106-vista.py" --base "http://127.0.0.1:$P1" --activo BTC > "$T/sal" 2>&1; rc=$?
+visto=$(hallazgo "E2 .*zona.low: pinta '63.385'")
+comprueba lector_viejo_condena "$([ "$mordio" = 1 ] && [ "$rc" = 1 ] && [ -n "$visto" ] && echo 0 || echo 1)" "variante plantada ($mordio linea) · rc=$rc · ${visto:-NO SALE: $(grep -m1 '^   - ' "$T/sal" | cut -c1-100)}"
 
 echo "== el check: A89 los dos modos de SIGPIPE, A56 las tres invocaciones, y una mesa SIN la vista"
 "$PY" "$PLANTA" planta vivo "$T/b" > /dev/null
