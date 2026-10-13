@@ -147,7 +147,7 @@ def _significado(palabra: str | None, marco: str, motivo: str | None) -> dict[st
         }
     if palabra == "NO EVALUABLE":
         return {
-            "frase": f"DECIDE ({M}) no se pudo evaluar: {motivo or 'sin motivo servido'}. No dice "
+            "frase": f"DECIDE ({M}) dice NO EVALUABLE: {motivo or 'sin motivo servido'}. No dice "
             "nada de estos planes: ni los respalda ni los desaconseja.",
             "para": {lado: {"relacion": "no_dice",
                             "etiqueta": "DECIDE no evaluable: ni respalda ni desaconseja el plan"}

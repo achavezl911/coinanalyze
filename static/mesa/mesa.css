@@ -1024,6 +1024,8 @@ h1 {
 
 #ent-volver {
   display: inline-block;
+  width: fit-content;
+  justify-self: start;
   margin-top: 10px;
 }
 
@@ -1031,9 +1033,9 @@ h1 {
   color: var(--tx);
 }
 
-/* YA NO SE SABE: sin dato o con el generador parado, lo que estaba vivo deja de verse como vivo. */
-.ent-no-se-sabe #ent-vivo,
-.ent-no-se-sabe #ent-decide {
+/* YA NO SE SABE: sin dato o con el generador parado, lo que estaba vivo deja de verse como vivo.
+ * La palabra de DECIDE no se apaga aqui: si es vieja lo dice su propia edad (RANCIO). */
+.ent-no-se-sabe #ent-vivo {
   opacity: 0.45;
 }
 

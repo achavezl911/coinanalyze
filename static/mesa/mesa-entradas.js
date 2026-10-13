@@ -57,6 +57,15 @@ function entDura(s) {
   return t + ' s';
 }
 
+/* La cuenta atras lleva SIEMPRE sus segundos: quien la mira tiene que verla correr. */
+function entCuenta(s) {
+  const t = Math.max(0, Math.floor(s));
+  const d = Math.floor(t / 86400);
+  const h = Math.floor((t % 86400) / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  return (d ? d + ' d ' : '') + (d || h ? h + ' h ' : '') + (d || h || m ? m + ' min ' : '') + (t % 60) + ' s';
+}
+
 /* La hora de un instante servido, cortada de su texto (llegan todos en UTC). No se convierte. */
 function entHora(iso, conSegundos) {
   if (esNada(iso)) return null;
@@ -521,7 +530,7 @@ function entTicTac() {
       n.textContent = entDura(d.decide.edad_s + entPasado()) + ' (tope ' + num(d.decide.max_age_s, 0) + ' s)';
     } else if (tipo === 'cuenta') {
       const r = entResta(iso);
-      n.textContent = r > 0 ? 'caduca en ' + entDura(r) : 'caducó hace ' + entDura(-r);
+      n.textContent = r > 0 ? 'caduca en ' + entCuenta(r) : 'caducó hace ' + entDura(-r);
     }
   });
 
@@ -624,5 +633,5 @@ if (typeof document !== 'undefined' && document.addEventListener) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { entDura, entHora };
+  module.exports = { entDura, entCuenta, entHora };
 }

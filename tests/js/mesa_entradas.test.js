@@ -54,6 +54,10 @@ test('las dos unicas cuentas del cliente: una duracion y una hora cortada del in
   assert.strictEqual(ctx.entDura(8040), '2 h 14 min');
   assert.strictEqual(ctx.entDura(190000), '2 d 4 h');
   assert.strictEqual(ctx.entDura(-3), '0 s');
+  // la cuenta atras, siempre con sus segundos
+  assert.strictEqual(ctx.entCuenta(13867), '3 h 51 min 7 s');
+  assert.strictEqual(ctx.entCuenta(59), '59 s');
+  assert.strictEqual(ctx.entCuenta(3600), '1 h 0 min 0 s');
   assert.strictEqual(ctx.entHora('2026-10-13T16:00:00+00:00'), '10-13 16:00Z');
   assert.strictEqual(ctx.entHora('2026-10-13T16:00:09Z', true), '10-13 16:00:09Z');
   assert.strictEqual(ctx.entHora(null), null);
