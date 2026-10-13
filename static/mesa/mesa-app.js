@@ -35,8 +35,10 @@ function marca(nombre) {
 }
 
 /* ------------------------------------------------------------ el hash */
-/* `#<marco>/<activo>[/status]`. Lo que no se entiende NO se adivina: se cae al defecto y se
- * reescribe el hash, para que la URL y la pantalla nunca digan cosas distintas. */
+/* `#<marco>/<activo>[/status|/entradas]`. Lo que no se entiende NO se adivina: se cae al defecto
+ * y se reescribe el hash, para que la URL y la pantalla nunca digan cosas distintas. */
+const VISTA_DEL_HASH = { status: 'estado', entradas: 'entradas' };
+const HASH_DE_LA_VISTA = { estado: '/status', entradas: '/entradas' };
 function leerHash(hash) {
   const partes = String(hash || '')
     .replace(/^#/, '')
@@ -46,12 +48,14 @@ function leerHash(hash) {
   const activo = ACTIVOS.indexOf(String(partes[1] || '').toUpperCase()) >= 0
     ? String(partes[1]).toUpperCase()
     : 'BTC';
-  const vista = partes[2] === 'status' ? 'estado' : 'mesa';
+  const vista = Object.prototype.hasOwnProperty.call(VISTA_DEL_HASH, partes[2])
+    ? VISTA_DEL_HASH[partes[2]]
+    : 'mesa';
   return { marco, activo, vista };
 }
 
 function escribirHash(e) {
-  const h = '#' + e.marco + '/' + e.activo + (e.vista === 'estado' ? '/status' : '');
+  const h = '#' + e.marco + '/' + e.activo + (HASH_DE_LA_VISTA[e.vista] || '');
   if (window.location.hash !== h) window.location.hash = h;
   return h;
 }
@@ -371,6 +375,11 @@ function pintarSelectores() {
     '#' + ESTADO.marco + '/' + ESTADO.activo + '/status'
   );
   document.getElementById('volver').setAttribute('href', '#' + ESTADO.marco + '/' + ESTADO.activo);
+  document.getElementById('ir-entradas').setAttribute(
+    'href',
+    '#' + ESTADO.marco + '/' + ESTADO.activo + '/entradas'
+  );
+  document.getElementById('ent-volver').setAttribute('href', '#' + ESTADO.marco + '/' + ESTADO.activo);
 }
 
 let _pintando = 0;
@@ -384,14 +393,25 @@ async function pintar() {
 
   pintarSelectores();
   const esEstado = ESTADO.vista === 'estado';
-  document.getElementById('vista-mesa').hidden = esEstado;
+  const esEntradas = ESTADO.vista === 'entradas';
+  document.getElementById('vista-mesa').hidden = esEstado || esEntradas;
   document.getElementById('vista-estado').hidden = !esEstado;
+  document.getElementById('vista-entradas').hidden = !esEntradas;
+  // LO QUE LA VISTA DE ENTRADAS NO PINTA, NO SE QUEDA EN PANTALLA COMO SI LO PINTARA: la tira de
+  // fuentes y el reloj del corte son de la vista principal (los pide y los refresca ella).
+  document.getElementById('tira').hidden = esEntradas;
+  document.getElementById('reloj-caja').hidden = esEntradas;
 
   pararLatido();
+  pararEntradas();
   _ultimoDecide = null;
 
   if (esEstado) {
     await pintarEstado();
+    return;
+  }
+  if (esEntradas) {
+    await arrancarEntradas();
     return;
   }
 

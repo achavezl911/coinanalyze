@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `entradas` · `app/api.py:1296` (cuerpo hasta la 1322) · decorador en la linea 1295.
+Handler `entradas` · `app/api.py:1297` (cuerpo hasta la 1323) · decorador en la linea 1296.
 
 ## Parametros de entrada
 
@@ -63,8 +63,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2565`
-- `app.api.validate_symbol` — `app/api.py:232`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2566`
+- `app.api.validate_symbol` — `app/api.py:233`
 - `app.entradas.ruta.construir` — `app/entradas/ruta.py:169`
 
 <details><summary>Alcanzables de forma indirecta (27)</summary>
@@ -112,8 +112,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
-| 422 | — | `app/api.py:2574` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 422 | — | `app/api.py:2575` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -124,7 +124,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:169` | `harness/checks/K43-foto-unica.sh:172` |
-| **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_ruta.py:1` |
+| **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
 
 **No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
@@ -162,31 +162,31 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
-| `app.entradas.reglamento.cargar_valido` | 1 | **0** | 9 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.valores` | 1 | **0** | 9 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.versiones_en_curso` | 1 | **0** | 9 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.api.rechaza_parametros_desconocidos` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-api.md) |
-| `app.api.entradas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
-| `app.entradas.reglamento._texto` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento._valida_apuestas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento._valida_bloque` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento._valida_calendario` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento._valida_version` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.apuestas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.canonico` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.cargar` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.celdas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.contenido_bloque` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.contenido_revision` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.diferencia_con_padre` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.huella` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.huella_bloque` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.huella_revision` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.instante` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.registros_esperados` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.revision_vigente` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.validar` | 1 | **0** | 1 ↑ | **1** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
+| `app.entradas.reglamento.cargar_valido` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.valores` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.versiones_en_curso` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.api.rechaza_parametros_desconocidos` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
+| `app.entradas.reglamento._texto` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento._valida_apuestas` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento._valida_bloque` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento._valida_calendario` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento._valida_version` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.apuestas` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.canonico` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.cargar` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.celdas` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.contenido_bloque` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.contenido_revision` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.diferencia_con_padre` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.huella` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.huella_bloque` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.huella_revision` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.instante` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.registros_esperados` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.revision_vigente` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.validar` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.version` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | _… y 6 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

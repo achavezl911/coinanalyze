@@ -60,6 +60,7 @@ from app.db import (
 )
 from app.delta_profile import delta_profile
 from app.entradas import ruta as entradas_ruta
+from app.entradas import vista as entradas_vista
 from app.external_macro import align_with_internal, external_macro_context
 from app.interpretation import cvd_swing_read, daily_flow_read, evaluate_setups
 from app.logging_setup import configure_logging
@@ -3848,6 +3849,23 @@ async def mesa_decide(symbol: str, frame: str = "scalp") -> dict[str, Any]:
         "p90_min": persistencia.get("p90_min"),
     }
     return payload
+
+
+@app.get("/api/mesa/entradas")
+async def mesa_entradas(request: Request, symbol: str) -> dict[str, Any]:
+    """LA VISTA ENTRADAS DE LA MESA (campana 137, E2): lo que esa pantalla pinta para UN activo,
+    con UN as_of. Planes apuntados antes de saber como acaban, la palabra de DECIDE que acompana
+    a cada perfil y lo que significa para un plan. Ver app/entradas/vista.py.
+
+    NO sirve ninguna fraccion ni tasa de aciertos: pasa por la misma red que /api/entradas.
+    """
+    rechaza_parametros_desconocidos(request, ("symbol",))
+    selected = validate_symbol(symbol)
+    async with app.state.pool.acquire() as conn:
+        return await entradas_vista.construir(
+            conn, symbol=selected, activo=WS_SYMBOL_MAP[selected],
+            palabra_de_decide=build_mesa_decide,
+        )
 
 
 @app.get("/mesa")

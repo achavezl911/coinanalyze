@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-74 rutas descubiertas en el arbol. Para trabajar sobre una,
+75 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -38,6 +38,7 @@
 | `/api/market-impact` | GET | 6 | 2 | 7 | [ficha](rutas/api-market-impact.md) |
 | `/api/market-memory` | GET | 13 | 1 | 5 | [ficha](rutas/api-market-memory.md) |
 | `/api/mesa/decide` | GET | 3 | 15 | 55 | [ficha](rutas/api-mesa-decide.md) |
+| `/api/mesa/entradas` | GET | 7 | 4 | 49 | [ficha](rutas/api-mesa-entradas.md) |
 | `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
 | `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
 | `/api/oi-context` | GET | 16 | 4 | 12 | [ficha](rutas/api-oi-context.md) |
@@ -84,7 +85,7 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-7 de 74. Cada una con su motivo en la ficha.
+7 de 75. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
@@ -102,9 +103,9 @@
 | `daily_verdict_outcome` | 3 | 0 |
 | `daily_verdict_snapshot` | 3 | 0 |
 | `data_gap` | 22 | 0 |
-| `entrada_latido` | 1 | 0 |
-| `entrada_registro` | 1 | 0 |
-| `entrada_reglamento` | 1 | 0 |
+| `entrada_latido` | 2 | 0 |
+| `entrada_registro` | 2 | 0 |
+| `entrada_reglamento` | 2 | 0 |
 | `external_macro_observation` | 3 | 0 |
 | `funding_rate` | 4 | 0 |
 | `futures_trades_agg` | 7 | 0 |
@@ -116,7 +117,7 @@
 | `market_feed_health` | 10 | 0 |
 | `metric_baseline` | 15 | 0 |
 | `metrics_snapshot` | 9 | 0 |
-| `ohlcv` | 38 | 0 |
+| `ohlcv` | 39 | 0 |
 | `oi_bybit` | 3 | 0 |
 | `open_interest` | 20 | 0 |
 | `orderbook_depth` | 1 | 0 |

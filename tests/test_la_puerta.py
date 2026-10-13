@@ -181,4 +181,24 @@ def test_el_contrato_declara_un_nucleo_y_papeles_conocidos():
     # La ruta va partida a proposito: escrita entera, bin/arquitectura acreditaria a este test como
     # consumidor de DECIDE (la autocontaminacion que cuenta harness/checks/K44-control.bash).
     assert [r for r, p in contrato.items() if "NUCLEO" in p] == ["/api" + "/mesa/decide"]
-    assert set().union(*contrato.values()) <= {"NUCLEO", "PARTE", "ESTADO"}
+    assert set().union(*contrato.values()) <= {"NUCLEO", "PARTE", "ESTADO", "ENTRADAS"}
+
+
+def test_cada_vista_pide_solo_lo_de_su_papel():
+    """La vista de ENTRADAS (campana 137) vive en mesa-entradas.js y pide SOLO rutas de papel
+    ENTRADAS; el resto de la mesa no pide ninguna ruta que solo sea de ENTRADAS. K44 lo juzga en el
+    log de produccion y K106 con un navegador; esto, en el codigo y en las dos direcciones."""
+    import re
+
+    contrato = _rutas_del_contrato()
+    de_entradas = {r for r, p in contrato.items() if p == {"ENTRADAS"}}
+    assert de_entradas == {"/api" + "/mesa/entradas"}
+    vistas = 0
+    for js in sorted((STATIC / "mesa").glob("*.js")):
+        pedidas = set(re.findall(r"pedir\(\s*'(/api/[^'?]+)'", js.read_text(encoding="utf-8")))
+        if js.name == "mesa-entradas.js":
+            vistas += 1
+            assert pedidas == de_entradas, f"la vista de entradas pide {sorted(pedidas)}: solo puede pedir lo de su papel"
+        else:
+            assert not pedidas & de_entradas, f"{js.name} pide {sorted(pedidas & de_entradas)}, que solo es de ENTRADAS"
+    assert vistas == 1, "no encuentro static/mesa/mesa-entradas.js: la regla no tendria sujeto"

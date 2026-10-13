@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `stream` · `app/api.py:3806` (cuerpo hasta la 3811) · decorador en la linea 3805.
+Handler `stream` · `app/api.py:3807` (cuerpo hasta la 3812) · decorador en la linea 3806.
 
 ## Parametros de entrada
 
@@ -43,11 +43,11 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.stream_generator` — `app/api.py:3758`
+- `app.api.stream_generator` — `app/api.py:3759`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
-- `app.api.records` — `app/api.py:245`
+- `app.api.records` — `app/api.py:246`
 
 </details>
 

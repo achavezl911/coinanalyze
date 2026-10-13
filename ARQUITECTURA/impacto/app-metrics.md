@@ -8,8 +8,8 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`session_bounds`](#session-bounds) | 31 | 2 | **0** | 54 ↑ | **2** |
-| [`compute_and_store_all`](#compute-and-store-all) | 711 | 0 | **0** | 45 ↑ | **0** |
+| [`session_bounds`](#session-bounds) | 31 | 2 | **0** | 55 ↑ | **2** |
+| [`compute_and_store_all`](#compute-and-store-all) | 711 | 0 | **0** | 46 ↑ | **0** |
 | [`current_nyse_start`](#current-nyse-start) | 20 | 16 | **0** | 15 ↑ | **16** |
 | [`liquidation_history_observation`](#liquidation-history-observation) | 252 | 0 | **0** | 22 ↑ | **0** |
 | [`_liquidation_history_observed`](#-liquidation-history-observed) | 315 | 0 | **0** | 9 ↑ | **0** |
@@ -24,7 +24,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/metrics.py:31` · clave completa `app.metrics.session_bounds`
 
-**Radio exacto: 2 rutas** de 74 · **cota superior: 54** (mas ancha)
+**Radio exacto: 2 rutas** de 75 · **cota superior: 55** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -38,9 +38,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 54 rutas · **cota superior**
+### Por tabla · k<=2 — 55 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (54 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -89,6 +89,7 @@ Y esas tablas las leen:
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
@@ -119,7 +120,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**52 rutas se enteran SOLO por el dato**, sin
+**53 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -146,6 +147,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
@@ -181,7 +183,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:711` · clave completa `app.metrics.compute_and_store_all`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 45** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 46** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -194,9 +196,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 45 rutas · **cota superior**
+### Por tabla · k<=2 — 46 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (45 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (46 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -232,6 +234,7 @@ Y esas tablas las leen:
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
@@ -258,7 +261,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**45 rutas se enteran SOLO por el dato**, sin
+**46 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -281,6 +284,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
@@ -313,7 +317,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:20` · clave completa `app.metrics.current_nyse_start`
 
-**Radio exacto: 16 rutas** de 74 · **cota superior: 27** (mas ancha)
+**Radio exacto: 16 rutas** de 75 · **cota superior: 27** (mas ancha)
 
 ### Por llamada — 16 rutas
 
@@ -392,7 +396,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:252` · clave completa `app.metrics.liquidation_history_observation`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -472,7 +476,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:315` · clave completa `app.metrics._liquidation_history_observed`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -526,7 +530,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:166` · clave completa `app.metrics.compute_regime`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -580,7 +584,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:429` · clave completa `app.metrics.compute_snapshot`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -634,7 +638,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:676` · clave completa `app.metrics.insert_snapshot`
 
-**Radio exacto: 9 rutas** de 74 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 75 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -695,7 +699,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:146` · clave completa `app.metrics.normalized_cvd_imbalance`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -749,7 +753,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:50` · clave completa `app.metrics.optional_finite`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -803,7 +807,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:66` · clave completa `app.metrics.whale_classification`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 

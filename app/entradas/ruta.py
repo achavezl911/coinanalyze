@@ -64,9 +64,9 @@ REFERENCIA_YA_MEDIDO = {
     "contra su propio equilibrio p*, nunca contra el 50 %",
 }
 
+# La pantalla ENTRADAS (E2) salio de esta lista con la campana 137: existe, en la mesa
+# (#<marco>/<activo>/entradas, app/entradas/vista.py). Lo que falta es lo que sigue faltando.
 FALTAN = [
-    {"que": "pantalla ENTRADAS en la mesa", "etapa": "E2",
-     "motivo": "esta campana (E1) solo registra; la vista la construye la E2"},
     {"que": "resultado de cada DISPARADO (objetivo, stop, invalidado, caducado, no llenado)",
      "etapa": "E3", "motivo": "el resolutor por primer toque en ohlcv 1 min no existe todavia: "
      "resueltos = 0 en todas las celdas"},

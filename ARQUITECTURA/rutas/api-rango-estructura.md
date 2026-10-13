@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `rango_estructura` · `app/api.py:2085` (cuerpo hasta la 2108) · decorador en la linea 2084.
+Handler `rango_estructura` · `app/api.py:2086` (cuerpo hasta la 2109) · decorador en la linea 2085.
 
 ## Parametros de entrada
 
@@ -105,9 +105,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2565`
-- `app.api.validate_symbol` — `app/api.py:232`
-- `app.api.ventana_pedida` — `app/api.py:1699`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2566`
+- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api.ventana_pedida` — `app/api.py:1700`
 - `app.rango.estructura_de_rango` — `app/rango.py:234`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
@@ -133,13 +133,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1716` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1719` | una funcion de su cierre |
-| 422 | — | `app/api.py:1724` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1726` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1728` | una funcion de su cierre |
-| 422 | — | `app/api.py:2574` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 422 | hace falta «desde» | `app/api.py:1717` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1720` | una funcion de su cierre |
+| 422 | — | `app/api.py:1725` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1727` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1729` | una funcion de su cierre |
+| 422 | — | `app/api.py:2575` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -188,8 +188,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 8 | **0** | 0 | **8** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.api.ventana_pedida` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-api.md) |
 | `app.api.rango_estructura` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.rango._prueba` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-rango.md) |

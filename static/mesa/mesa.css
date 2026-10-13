@@ -786,3 +786,262 @@ h1 {
   font-size: 10px;
   color: var(--tx-debil);
 }
+
+/* ============================================================ VISTA ENTRADAS
+ * `#<marco>/<activo>/entradas` (campana 137). NINGUN COLOR DE AQUI DEPENDE DE COMO ACABO UN PLAN:
+ * se colorea la PALABRA de DECIDE (el mismo mapa que la tarjeta DECIDE), el estado de un REQUISITO
+ * (cumple / falla / no evaluable, que son de antes del resultado), el aviso de arriba y el papel
+ * de la version (activa o ancla). Nada mas, y K106 lo vigila. */
+#vista-entradas {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+#vista-entradas .motivo {
+  display: inline;
+  font-size: inherit;
+  margin: 0;
+}
+
+#vista-entradas .pie {
+  font-size: 11px;
+  max-width: 1180px;
+}
+
+/* EL AVISO VA ARRIBA Y EN GRANDE: es lo primero que se lee cuando no hay dato. */
+.ent-aviso {
+  margin: 12px 0;
+  padding: 14px 18px;
+  border: 2px solid var(--rojo);
+  border-radius: var(--r-card);
+  background: rgba(224, 90, 90, 0.1);
+}
+
+.ent-aviso-linea {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--rojo);
+}
+
+.ent-aviso-linea + .ent-aviso-linea {
+  margin-top: 8px;
+}
+
+.ent-aviso-detalle {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--tx);
+}
+
+.ent-que-es {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--tx);
+}
+
+.ent-palabra {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin: 6px 0 4px;
+}
+
+.ent-frase {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tx);
+}
+
+.ent-decide-rancio .ent-palabra {
+  color: var(--tx-debil);
+  text-decoration: line-through;
+}
+
+.ent-precio {
+  margin: 6px 0 10px;
+}
+
+.ent-rejilla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ent-celda h3,
+.ent-bloque h3 {
+  text-transform: uppercase;
+}
+
+.ent-rel {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: var(--r-tag);
+  border: 1px solid var(--borde-hueco);
+  color: var(--tx-mudo);
+}
+
+/* UN PLAN EN CONTRA DEL LADO QUE DECIDE TOMA SE DICE, y se ve. «Mismo lado» va en neutro: no es
+ * un respaldo del plan, y pintarlo de verde lo pareceria. */
+.ent-rel.rel-en_contra {
+  color: var(--ambar);
+  border-color: var(--ambar);
+  font-weight: 700;
+}
+
+.ent-bloque {
+  margin-top: 10px;
+}
+
+.ent-bloque-rotulo {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  color: var(--tx-mudo);
+  border-bottom: 1px solid var(--borde-fila);
+  padding-bottom: 3px;
+  margin-bottom: 4px;
+}
+
+/* EL ANCLA VA APARTE Y ROTULADA: mas apagada, para que la activa sea la que se lee primero. */
+.ent-bloque.papel-ANCLA {
+  opacity: 0.72;
+  border-left: 2px solid var(--borde-hueco);
+  padding-left: 8px;
+}
+
+.ent-ancla {
+  margin: 4px 0 8px;
+  color: var(--tx);
+}
+
+.ent-plan {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--borde-fila);
+  overflow-wrap: anywhere;
+}
+
+.ent-ver {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: var(--r-tag);
+  background: var(--bg-activo);
+  color: var(--tx);
+}
+
+.ent-fam {
+  font-family: var(--mono);
+  color: var(--tx-mudo);
+}
+
+.ent-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  padding: 1px 6px;
+  border-radius: var(--r-tag);
+  border: 1px solid var(--azul);
+  color: var(--azul);
+}
+
+.ent-disparado {
+  border: 1px solid var(--borde-boton);
+  border-radius: var(--r-boton);
+  padding: 8px 10px;
+  margin: 6px 0;
+}
+
+.ent-linea {
+  margin-top: 4px;
+}
+
+.ent-linea > .rotulo {
+  display: inline-block;
+  min-width: 96px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--tx-mudo);
+}
+
+.ent-t {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--tx-mudo);
+}
+
+.ent-requisitos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  vertical-align: top;
+}
+
+.req-falla,
+.req-falla .ent-req-estado {
+  color: var(--ambar);
+}
+
+.req-no_evaluable,
+.req-no_evaluable .ent-req-estado {
+  color: var(--azul);
+}
+
+.lat-error {
+  color: var(--rojo);
+  font-weight: 700;
+}
+
+.ent-cuentas td,
+.ent-cuentas th {
+  font-size: 11px;
+  padding: 3px 8px;
+  text-align: left;
+}
+
+.ent-muestra {
+  font-family: var(--mono);
+  color: var(--tx-mudo);
+}
+
+.ent-hipotesis {
+  color: var(--tx);
+  margin: 2px 0 0;
+  max-width: 1180px;
+}
+
+.ent-larga > .rotulo {
+  display: block;
+}
+
+#ent-volver {
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.ent-falta {
+  color: var(--tx);
+}
+
+/* YA NO SE SABE: sin dato o con el generador parado, lo que estaba vivo deja de verse como vivo. */
+.ent-no-se-sabe #ent-vivo,
+.ent-no-se-sabe #ent-decide {
+  opacity: 0.45;
+}
+
+.ent-no-se-sabe .ent-chip {
+  border-color: var(--rojo);
+  color: var(--rojo);
+}
+
+.ent-no-se-sabe [data-calc="cuenta"] {
+  display: none;
+}

@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`apply_temporal_retention`](#apply-temporal-retention) | 25 | 0 | **0** | 54 ↑ | **0** |
+| [`apply_temporal_retention`](#apply-temporal-retention) | 25 | 0 | **0** | 55 ↑ | **0** |
 | [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 20 | 0 | **0** | 22 ↑ | **0** |
 
 ## apply_temporal_retention
 
 `app/partitioning.py:25` · clave completa `app.partitioning.apply_temporal_retention`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 54** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 55** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -28,9 +28,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 54 rutas · **cota superior**
+### Por tabla · k<=2 — 55 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (54 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -80,6 +80,7 @@ Y esas tablas las leen:
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
@@ -110,7 +111,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**54 rutas se enteran SOLO por el dato**, sin
+**55 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -138,6 +139,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/market-impact`](../rutas/api-market-impact.md)
 - [`/api/market-memory`](../rutas/api-market-memory.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
@@ -174,7 +176,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/partitioning.py:20` · clave completa `app.partitioning.ensure_temporal_partitions`
 
-**Radio exacto: 0 rutas** de 74 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
