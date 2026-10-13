@@ -29985,8 +29985,8 @@
             "harness/checks/K44-control.bash:603",
             "harness/checks/K44-control.bash:648",
             "harness/checks/K44-control.bash:693",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:218",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:662",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:222",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:720",
             "harness/checks/K72-campos.js:33",
             "harness/checks/K84-dos-matrices-una-cifra.sh:203",
             "harness/checks/K84-dos-matrices-una-cifra.sh:257"
@@ -32335,7 +32335,7 @@
             "harness/checks/K44-control.bash:240",
             "harness/checks/K44-control.bash:246",
             "harness/checks/K44-control.bash:694",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:163",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:167",
             "harness/checks/K72-campos.js:46",
             "harness/checks/K72-campos.js:52",
             "harness/checks/K72-campos.js:58",
@@ -32352,7 +32352,7 @@
             "harness/checks/K44-control.bash:254",
             "harness/checks/K44-control.bash:628",
             "harness/checks/K44-control.bash:720",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:754",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:812",
             "harness/checks/K72-campos.js:6",
             "harness/checks/K72-el-campo-que-no-llega.sh:10",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13",
@@ -33415,6 +33415,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
+            "harness/checks/K106-banco.py:52",
             "harness/checks/K43-foto-unica.sh:169"
           ],
           "menciones": [
@@ -33433,7 +33434,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 2,
+        "n_llamadas": 3,
         "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -35649,7 +35650,8 @@
             "harness/checks/K102-mesa.py:681",
             "harness/checks/K102-mesa.py:764",
             "harness/checks/K102-sobre-plantado.py:200",
-            "harness/checks/K102-sobre-plantado.py:216"
+            "harness/checks/K102-sobre-plantado.py:216",
+            "harness/checks/K106-banco.py:56"
           ],
           "menciones": [
             "harness/checks/K102-decide-lo-primero.sh:30",
@@ -35672,7 +35674,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 15,
+        "n_llamadas": 16,
         "n_menciones": 7,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -38303,7 +38305,7 @@
             "harness/checks/K44-control.bash:571",
             "harness/checks/K44-control.bash:604",
             "harness/checks/K44-control.bash:649",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:164",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:168",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217"
           ],
@@ -38700,7 +38702,7 @@
             "harness/checks/K44-control.bash:394",
             "harness/checks/K44-control.bash:468",
             "harness/checks/K44-control.bash:513",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:165"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:169"
           ],
           "menciones": [
             "harness/checks/K44-control.bash:362"
@@ -39073,6 +39075,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
+            "harness/checks/K106-plantados.py:309",
+            "harness/checks/K106-plantados.py:310",
             "harness/checks/K43-control.bash:29",
             "harness/checks/K43-control.bash:74",
             "harness/checks/K43-foto-unica.sh:164",
@@ -39102,7 +39106,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 5,
+        "n_llamadas": 7,
         "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -41208,8 +41212,8 @@
         "checks": {
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:170",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:649",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:653"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:707",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:711"
           ],
           "menciones": []
         },
@@ -42396,19 +42400,20 @@
             "harness/checks/K102-sobre-plantado.py:238",
             "harness/checks/K102-sobre-plantado.py:239",
             "harness/checks/K102-sobre-plantado.py:278",
+            "harness/checks/K106-banco.py:96",
             "harness/checks/K44-control.bash:901",
             "harness/checks/K44-control.bash:902",
             "harness/checks/K44-control.bash:905",
             "harness/checks/K44-control.bash:906",
-            "harness/checks/K44-control.bash:993",
-            "harness/checks/K44-control.bash:1014",
-            "harness/checks/K44-control.bash:1021",
-            "harness/checks/K44-control.bash:1028",
-            "harness/checks/K44-control.bash:1035",
-            "harness/checks/K44-control.bash:1073",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:262",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:365",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:449"
+            "harness/checks/K44-control.bash:998",
+            "harness/checks/K44-control.bash:1019",
+            "harness/checks/K44-control.bash:1026",
+            "harness/checks/K44-control.bash:1126",
+            "harness/checks/K44-control.bash:1133",
+            "harness/checks/K44-control.bash:1171",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:266",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:369",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:453"
           ],
           "menciones": [
             "harness/checks/K102-control.bash:266",
@@ -42420,9 +42425,10 @@
             "harness/checks/K102-decide-lo-primero.sh:139",
             "harness/checks/K102-mesa.py:459",
             "harness/checks/K102-sobre-plantado.py:219",
+            "harness/checks/K106-banco.py:6",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:243",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:247",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:200"
           ]
         },
@@ -42439,8 +42445,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 41,
-        "n_menciones": 14,
+        "n_llamadas": 42,
+        "n_menciones": 15,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -42606,17 +42612,17 @@
             "harness/checks/K44-control.bash:925",
             "harness/checks/K44-control.bash:926",
             "harness/checks/K44-control.bash:930",
-            "harness/checks/K44-control.bash:938",
-            "harness/checks/K44-control.bash:941",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:262",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:365",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:451"
+            "harness/checks/K44-control.bash:943",
+            "harness/checks/K44-control.bash:946",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:266",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:369",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:455"
           ],
           "menciones": [
             "harness/checks/K102-sobre-plantado.py:219",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:243",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:247",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:200"
           ]
         },

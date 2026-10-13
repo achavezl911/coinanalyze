@@ -123,10 +123,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:169` | `harness/checks/K43-foto-unica.sh:172` |
+| **checks** | `harness/checks/K106-banco.py:52`, `harness/checks/K43-foto-unica.sh:169` | `harness/checks/K43-foto-unica.sh:172` |
 | **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
 
-**No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 3 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

@@ -196,10 +196,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-decide-lo-primero.sh:75`, `harness/checks/K102-decide-lo-primero.sh:99`, `harness/checks/K102-decide-lo-primero.sh:101`, `harness/checks/K102-decide-lo-primero.sh:106` _(+9)_ | `harness/checks/K102-decide-lo-primero.sh:30`, `harness/checks/K102-mesa.py:523`, `harness/checks/K102-mesa.py:533`, `harness/checks/K102-mesa.py:737` _(+2)_ |
+| **checks** | `harness/checks/K102-decide-lo-primero.sh:75`, `harness/checks/K102-decide-lo-primero.sh:99`, `harness/checks/K102-decide-lo-primero.sh:101`, `harness/checks/K102-decide-lo-primero.sh:106` _(+10)_ | `harness/checks/K102-decide-lo-primero.sh:30`, `harness/checks/K102-mesa.py:523`, `harness/checks/K102-mesa.py:533`, `harness/checks/K102-mesa.py:737` _(+2)_ |
 | **tests** | `tests/js/mesa_decide.test.js:275`, `tests/js/mesa_remate.test.js:28` | `tests/js/mesa_decide.test.js:30` |
 
-**No la llama el panel**, pero si 15 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 16 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

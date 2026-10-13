@@ -892,7 +892,7 @@ comprueba "P1b VERDE, rc=0 (rc=$rc): la mesa no pide el sobre por diseno" "$([ "
 comprueba "P1c la PRIMERA linea nombra la mesa y la ruta por la que se cargo" \
   "$(en_primera P1 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo '"$A"'/mesa/decide 41 veces y NADA fuera de su contrato')"
 comprueba "P1d y dice cuantas de sus rutas son FOTO: 4 de las 9 pedidas" \
-  "$(tiene P1 '9 de sus 15 rutas declaradas, 4 de ellas de la familia FOTO')"
+  "$(tiene P1 '9 de sus 16 rutas declaradas, 4 de ellas de la familia FOTO')"
 comprueba "P1e y el panel viejo, que nadie miro, sale SIN VISITAS y no condenado" \
   "$(en_primera P1 'el panel viejo \(static/index\.html\): sin visitas')"
 comprueba "P1f y no acusa a NADIE de no pedir el sobre" "$(no_tiene P1 'NO pide el sobre|REFORMA A MEDIAS')"
@@ -933,7 +933,12 @@ comprueba "G5 (guarda) y no inventa peticiones sin atribuir donde no las hay" "$
 
 echo
 echo "P6 · LAS DOS piden $A/wyckoff (la mesa por contrato, el panel sin excusa): a cada uno lo SUYO"
+# Desde la campana 137 una PARTE lleva SIEMPRE su nucleo delante (regla B de K44): las 20 peticiones
+# sueltas de este brazo, media hora despues del ultimo nucleo, eran un ritmo que la mesa no puede
+# producir -una parte solo se pide en la ola 2, detras del nucleo- y la regla las condenaba con razon.
+# Se les pone su nucleo delante: el brazo sigue midiendo lo suyo, a quien se le cuenta cada wyckoff.
 montav "$DIR/p6" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790 swing
+                     echo "A alex -9001 1 $A/mesa/decide?$S1&frame=swing"
                      echo "A alex -9000 20 $A/wyckoff?$S1"
                      echo 'C ipad -9000 /panel'; ev_panel ipad -8990 300; echo "A ipad -7000 7 $A/wyckoff?$S1")"
 corrv P6 "$DIR/p6"; rc=$RC
@@ -941,7 +946,7 @@ comprueba "P6a ROJO, rc=1 (rc=$rc), y le cuenta al panel SOLO sus 7, no las 28 d
   "$([ "$rc" = 1 ] && [ "$(en_primera P6 'REFORMA A MEDIAS: el panel viejo \(static/index\.html, cargado por `/panel`\) pide el sobre 300 veces Y ADEMAS sigue pidiendo 7 veces 1 de las')" = si ] \
      && [ "$(tiene P6 '· '"$A"'/wyckoff\(7\)')" = si ] && echo si || echo no)"
 comprueba "P6c y la mesa, con las suyas dentro del contrato, VERDE en la misma linea" \
-  "$(en_primera P6 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo '"$A"'/mesa/decide 41 veces y NADA fuera')"
+  "$(en_primera P6 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo '"$A"'/mesa/decide 42 veces y NADA fuera')"
 
 echo
 echo "P7 · CRUZA EL CAMBIO: una pestana del panel cargada en \`/\` ANTES sigue pidiendo DESPUES"
@@ -1022,6 +1027,99 @@ montav "$DIR/p15" "$(echo 'C alex -10800 /mesa'; echo "A alex -10790 3 $A/health
 corrv P15 "$DIR/p15"; rc=$RC
 comprueba "P15a VERDE, rc=0 (rc=$rc), y lo dice" \
   "$([ "$rc" = 0 ] && [ "$(en_primera P15 'solo se miro en su vista de ESTADO, que no pide el nucleo')" = si ] && echo si || echo no)"
+
+# ══ LA TERCERA VISTA (campana 137) ══════════════════════════════════════════════════════════════════
+# La mesa gana la vista de ENTRADAS, que pide SU ruta cada 45 s y nada mas. El hash no llega al
+# servidor: la vista se lee en el RITMO de cada cliente. Estos brazos plantan ese ritmo de verdad -el
+# nucleo cada 15 s, no uno por segundo como ev_mesa- porque el ritmo es justo lo que la regla mira.
+ev_principal() {  # ev_principal <cliente> <seg> <refrescos> [marco] · un pintado de la vista principal y sus refrescos cada 15 s
+  local c=$1 s=$2 n=$3 m=${4:-scalp} r i
+  echo "A $c $s 1 $A/mesa/decide?$S1&frame=$m"
+  for r in $A/quality/feeds $A/scalp/signals $A/scalp/delta-matrix $A/setup $A/signals/replay; do
+    echo "A $c $((s + 1)) 1 $r?$S1"
+  done
+  for r in $A/scalp/orderbook $A/liquidation-map $A/volume-profile; do echo "A $c $((s + 2)) 1 $r?$S1"; done
+  for i in $(seq 1 "$n"); do echo "A $c $((s + 15 * i)) 1 $A/mesa/decide?$S1&frame=$m"; done
+}
+ev_entradas() {  # ev_entradas <cliente> <seg> <refrescos> · la vista de entradas: su ruta, y otra vez cada 45 s
+  local c=$1 s=$2 n=$3 i
+  for i in $(seq 0 "$n"); do echo "A $c $((s + 45 * i)) 1 $A/mesa/entradas?$S1"; done
+}
+ENT="$A/mesa/entradas"
+
+echo
+echo "P20 · LA MESA SOLO EN SU VISTA DE ENTRADAS: pide su ruta, no pide el nucleo y NO es un defecto"
+montav "$DIR/p20" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_entradas alex -10790 4)"
+corrv P20 "$DIR/p20"; rc=$RC
+comprueba "P20a VERDE, rc=0 (rc=$rc), y dice que solo se miro la vista de ENTRADAS" \
+  "$([ "$rc" = 0 ] && [ "$(en_primera P20 'solo se miro en su vista de ENTRADAS, que no pide el nucleo, y no pidio NADA fuera de su contrato: 1 de sus 16')" = si ] && echo si || echo no)"
+
+echo
+echo "P21 · NAVEGAR: principal, clic a ENTRADAS (tres refrescos suyos), vuelta a la principal. Nadie pide lo de otro"
+montav "$DIR/p21" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_principal alex -10790 2; ev_entradas alex -10755 2; ev_principal alex -10650 3)"
+corrv P21 "$DIR/p21"; rc=$RC
+comprueba "P21a VERDE, rc=0 (rc=$rc): 10 de sus 16 rutas, el nucleo 7 veces" \
+  "$([ "$rc" = 0 ] && [ "$(en_primera P21 'pide su nucleo '"$A"'/mesa/decide 7 veces y NADA fuera de su contrato: 10 de sus 16 rutas declaradas')" = si ] && echo si || echo no)"
+comprueba "P21b y no acusa a ninguna vista de pedir lo de otra" "$(no_tiene P21 'solo es de ENTRADAS|sin su nucleo delante')"
+
+echo
+echo "P21c · IDA Y VUELTA RAPIDA que cae JUSTO en el ritmo del nucleo: al volver, la principal REPINTA, y no se condena"
+montav "$DIR/p21c" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_principal alex -10790 0; echo "A alex -10786 1 $ENT?$S1"; ev_principal alex -10775 3)"
+corrv P21c "$DIR/p21c"; rc=$RC
+comprueba "P21c VERDE, rc=0 (rc=$rc): un nucleo a los 15 s seguido de sus partes es una vuelta, no un refresco" \
+  "$([ "$rc" = 0 ] && [ "$(no_tiene P21c 'solo es de ENTRADAS')" = si ] && echo si || echo no)"
+
+echo
+echo "P22 · LA VISTA PRINCIPAL PIDE EL REGISTRO DE ENTRADAS ($A/entradas): no esta en su contrato"
+montav "$DIR/p22" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_principal alex -10790 4; echo "A alex -10789 1 $A/entradas?$S1")"
+corrv P22 "$DIR/p22"; rc=$RC
+comprueba "P22a ROJO, rc=1 (rc=$rc): la mesa pide FUERA de su contrato, y nombra la ruta" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P22 'la mesa \(static/mesa\.html, cargada por `/`\) pide FUERA de su contrato \(K44-contrato-mesa\.tsv\): '"$A"'/entradas\(1\)')" = si ] && echo si || echo no)"
+
+echo
+echo "P23 · LA VISTA PRINCIPAL PIDE LA RUTA QUE SOLO ES DE ENTRADAS, en su ola 2, y sigue en pantalla"
+montav "$DIR/p23" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_principal alex -10790 4; echo "A alex -10789 1 $ENT?$S1")"
+corrv P23 "$DIR/p23"; rc=$RC
+comprueba "P23a ROJO, rc=1 (rc=$rc): es la vista PRINCIPAL la condenada, con la ruta y su cuenta" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P23 'su vista PRINCIPAL pide lo que solo es de ENTRADAS: '"$ENT"'\(1\)')" = si ] && echo si || echo no)"
+comprueba "P23b y NO la condena por estar fuera del contrato: la ruta esta declarada, con otro papel" "$(no_tiene P23 'pide FUERA de su contrato')"
+
+echo
+echo "P23c · y si la pide en CADA refresco del nucleo, las cuenta todas"
+montav "$DIR/p23c" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_principal alex -10790 4; for i in 0 1 2 3; do echo "A alex $((-10790 + 15 * i + 1)) 1 $ENT?$S1"; done)"
+corrv P23c "$DIR/p23c"; rc=$RC
+comprueba "P23c ROJO, rc=1 (rc=$rc): cuatro peticiones cruzadas" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P23c 'su vista PRINCIPAL pide lo que solo es de ENTRADAS: '"$ENT"'\(4\)')" = si ] && echo si || echo no)"
+
+echo
+echo "P24 · LA VISTA DE ENTRADAS PIDE UNA PARTE QUE NO PINTA (cargada por su URL; nadie paso por la principal)"
+montav "$DIR/p24" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_entradas alex -10790 2; echo "A alex -10790 1 $A/scalp/signals?$S1")"
+corrv P24 "$DIR/p24"; rc=$RC
+comprueba "P24a ROJO, rc=1 (rc=$rc): una PARTE sin nucleo, y dice que en la ventana se pidio lo de ENTRADAS" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P24 'NO pide su nucleo .*se pidio tambien '"$ENT"', de ENTRADAS: si la vista en pantalla era esa, es ella quien pide una PARTE')" = si ] && echo si || echo no)"
+
+echo
+echo "P25 · LO MISMO CON LA PRINCIPAL ABIERTA UNA HORA ANTES: el nucleo de entonces no tapa la PARTE de ahora"
+montav "$DIR/p25" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_principal alex -10790 4; echo 'C alex -7200 /'; ev_entradas alex -7190 2; echo "A alex -7190 1 $A/scalp/signals?$S1")"
+corrv P25 "$DIR/p25"; rc=$RC
+comprueba "P25a ROJO, rc=1 (rc=$rc): una PARTE sin su nucleo delante, con la ruta y su cuenta" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P25 'pide una PARTE sin su nucleo delante: '"$A"'/scalp/signals\(1\)')" = si ] && echo si || echo no)"
+comprueba "P25b y las PARTES de la vista principal, que si llevan su nucleo delante, NO se cuentan" "$(no_tiene P25 'sin su nucleo delante: [^-]*'"$A"'/setup')"
+
+echo
+echo "V2 · LOS BYTES DE K44 DE ANTES (aa5ad6f) con el contrato de AHORA: no ven ninguna de las dos reglas"
+if git -C "$ORIG" show aa5ad6f:harness/checks/K44-el-sobre-que-nadie-pide.sh > "$DIR/K44-antes.sh" 2>/dev/null; then
+  for brazo in p23 p25; do
+    rm -rf "$DIR/v2$brazo"; cp -a "$DIR/$brazo" "$DIR/v2$brazo"
+    sed "s#^B=/srv/coinanalyze/harness; . \"\$B/env\"#B=$DIR/v2$brazo; . \"\$B/env\"#" "$DIR/K44-antes.sh" > "$DIR/v2$brazo/K44.sh"
+    printf '%s\n' "#!/bin/bash" "printf 'LLAMADO\\n' >> $DIR/v2$brazo/senal" "cat $DIR/v2$brazo/salida" "exit 0" > "$DIR/v2$brazo/bin/prod"
+    corre "V2$brazo" "$DIR/v2$brazo/K44.sh" K44_PAYLOADS="$DIR/v2$brazo/payloads" K44_SIMBOLO=TEST K44_LIMITS=/no/existe
+    comprueba "V2 el K44 de antes da VERDE (rc=$RC) en la ventana de $brazo: la condena de ahora es de la regla nueva" \
+      "$([ "$RC" = 0 ] && [ "$(no_tiene "V2$brazo" 'solo es de ENTRADAS|sin su nucleo delante')" = si ] && echo si || echo no)"
+  done
+else
+  comprueba "V2 no pude leer el K44 de aa5ad6f del historial" no
+fi
 
 echo
 echo "P16 · LA MESA SE MIRO Y SU CONTRATO NO SE PUEDE LEER"

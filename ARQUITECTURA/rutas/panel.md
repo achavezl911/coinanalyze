@@ -50,7 +50,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-sobre-plantado.py:223`, `harness/checks/K43-control.bash:179`, `harness/checks/K44-control.bash:918`, `harness/checks/K44-control.bash:919` _(+9)_ | `harness/checks/K102-sobre-plantado.py:219`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:48`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:49`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:243` _(+1)_ |
+| **checks** | `harness/checks/K102-sobre-plantado.py:223`, `harness/checks/K43-control.bash:179`, `harness/checks/K44-control.bash:918`, `harness/checks/K44-control.bash:919` _(+9)_ | `harness/checks/K102-sobre-plantado.py:219`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:48`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:49`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:247` _(+1)_ |
 | **panel-html** | — | `static/index.html:89` |
 | **tests** | `tests/js/harness.js:169`, `tests/test_la_puerta.py:43`, `tests/test_la_puerta.py:110`, `tests/test_la_puerta.py:129` _(+1)_ | `tests/js/harness.js:168`, `tests/test_la_puerta.py:3`, `tests/test_la_puerta.py:124` |
 

@@ -121,6 +121,10 @@
 # LA MESA, contra su contrato (K44-contrato-mesa.tsv, que DECLARA lo que pide hoy y por que):
 #   ROJO   pide una ruta que su contrato no declara; o carga su vista principal -pide una ruta que
 #          solo pide esa vista- y NO pide su NUCLEO, que esa vista pide siempre antes que nada.
+#          Y DESDE LA CAMPANA 137, POR PAPEL (la mesa tiene una tercera vista, la de ENTRADAS, que
+#          pide SU ruta y nada mas): su vista PRINCIPAL pide una ruta que solo es de ENTRADAS; o una
+#          vista que no es la principal pide una PARTE. La vista se lee en el ritmo de cada cliente
+#          -el hash no llega al servidor-: las dos reglas y lo que no ven estan donde se aplican.
 #   NOMED  se miro y el contrato no se pudo leer: sin el no hay contra que juzgarla.
 #   VERDE  todo lo que pidio esta en su contrato. Lo declarado y no pedido se NOMBRA y no condena:
 #          es un marco o una vista que nadie abrio en la ventana.
@@ -457,6 +461,7 @@ for k in por_cliente:
     por_cliente[k].sort(key=lambda c: c[0])
 
 pide = {"panel": Counter(), "mesa": Counter()}
+tiempos = defaultdict(list)   # por cliente: (t, ruta) de lo que pidio la mesa, para leer la VISTA en su ritmo
 query = Counter()
 rutas_doc = {"panel": set(), "mesa": set()}
 sin = defaultdict(Counter)
@@ -480,6 +485,8 @@ for (t, k, ruta, completa) in pets:
         continue
     p = ps.pop()
     pide[p][ruta] += 1
+    if p == "mesa":
+        tiempos[k].append((t, ruta))
     rutas_doc[p].update(c[1] for c in previas)
     if p == "panel" and ruta in EXC:
         query[completa] += 1
@@ -543,19 +550,70 @@ else:
     if no_pedidas:
         det += (" · declaradas y NO pedidas en esta ventana -un marco o una vista que nadie abrio; no "
                 "condenan-: " + " ".join(no_pedidas))
+    # LO QUE PIDE CADA VISTA (campana 137). El hash no llega al servidor, asi que la vista que
+    # estaba en pantalla se lee en el RITMO de cada cliente. Por construccion (static/mesa/):
+    #   la PRINCIPAL    pide su NUCLEO antes de cada PARTE (ola 1, ola 2) y lo repite cada 15 s
+    #   la de ENTRADAS  pide SU ruta cada 45 s, y no pide ni el nucleo ni ninguna parte
+    # De ahi dos reglas, por cliente y por tiempo:
+    #   A  una ruta SOLO de ENTRADAS con el nucleo delante y con el refresco siguiente del nucleo
+    #      llegando a su ritmo y SIN repintar (ninguna parte detras): la vista principal seguia
+    #      en pantalla, asi que la pidio ella. Ir a entradas y volver no la dispara: al volver la
+    #      principal repinta (nucleo y partes) y su ritmo empieza de nuevo.
+    #   B  una PARTE sin ningun nucleo de ese cliente en el minuto anterior: no salio de la vista
+    #      principal, que lo pide antes de cada parte. La pidio otra vista, que no la pinta.
+    # LO QUE NO VEN, y se dice: una parte pedida por la vista de entradas en el mismo minuto en que
+    # el cliente venia de la principal (el nucleo de esa todavia la tapa). Eso lo ve K106, que abre
+    # cada vista en un navegador y mira que pide.
+    de_entradas = {r for r, pap in contrato.items() if pap == {"ENTRADAS"}}
+    de_parte = {r for r, pap in contrato.items() if pap == {"PARTE"}}
+    hubo_entradas = sorted(r for r in mp if r in de_entradas)
+    REFRESCO, HOLGURA, MINUTO = 15, 5, 60
+    cruzadas, huerfanas = Counter(), Counter()
+    for linea in tiempos.values():
+        linea.sort()
+        t_nuc = [t for t, r in linea if r in nucleo]
+        t_par = [t for t, r in linea if r in de_parte]
+        for t, r in linea:
+            if r in de_entradas:
+                antes = [x for x in t_nuc if 0 <= t - x <= REFRESCO + HOLGURA]
+                despues = [x for x in t_nuc if x > t]
+                if antes and despues:
+                    previo, siguiente = antes[-1], despues[0]
+                    en_ritmo = REFRESCO - 2 <= siguiente - previo <= REFRESCO + HOLGURA
+                    repinta = any(siguiente < x <= siguiente + 10 for x in t_par)
+                    if en_ritmo and not repinta:
+                        cruzadas[r] += 1
+            elif r in de_parte and n_nucleo and not any(0 <= t - x <= MINUTO for x in t_nuc):
+                huerfanas[r] += 1
+    sin_nucleo = [v for v, hay in (("ESTADO", any("ESTADO" in contrato.get(r, ()) for r in mp)),
+                                   ("ENTRADAS", bool(hubo_entradas))) if hay] or ["ESTADO"]
     if not principal and not n_nucleo and not fuera:
-        det += " · solo se miro su vista de ESTADO, que no pide el nucleo: no se le exige"
+        det += f" · solo se miro su vista de {' y de '.join(sin_nucleo)}, que no pide el nucleo: no se le exige"
     malas = []
     if fuera:
         malas.append("pide FUERA de su contrato (K44-contrato-mesa.tsv): "
                      + " ".join(f"{r}({n})" for r, n in fuera))
     if principal and not n_nucleo:
         malas.append(f"carga su vista principal ({' '.join(principal)}) y NO pide su nucleo "
-                     + " ".join(nucleo) + ", que esa vista pide siempre antes que nada")
+                     + " ".join(nucleo) + ", que esa vista pide siempre antes que nada"
+                     + (f" -en la ventana se pidio tambien {' '.join(hubo_entradas)}, de ENTRADAS: si la "
+                        "vista en pantalla era esa, es ella quien pide una PARTE que no pinta-"
+                        if hubo_entradas else ""))
+    if cruzadas:
+        malas.append("su vista PRINCIPAL pide lo que solo es de ENTRADAS: "
+                     + " ".join(f"{r}({n})" for r, n in sorted(cruzadas.items()))
+                     + " -llega con el nucleo delante y el refresco del nucleo sigue a su ritmo, sin "
+                       "repintar: la vista principal seguia en pantalla-")
+    if huerfanas:
+        malas.append("pide una PARTE sin su nucleo delante: "
+                     + " ".join(f"{r}({n})" for r, n in sorted(huerfanas.items()))
+                     + f" -ningun {' '.join(nucleo)} de ese cliente en los {MINUTO} s anteriores: no la "
+                       "pidio la vista principal, que lo pide antes de cada parte; la pidio la de "
+                       "entradas o la de estado, que no la pintan-")
     if malas:
         sale("MESA", 1, f"{nombre_m} " + " Y ADEMAS ".join(malas), det)
     elif not n_nucleo:
-        sale("MESA", 0, f"{nombre_m} solo se miro en su vista de ESTADO, que no pide el nucleo, y no pidio "
+        sale("MESA", 0, f"{nombre_m} solo se miro en su vista de {' y de '.join(sin_nucleo)}, que no pide el nucleo, y no pidio "
                         f"NADA fuera de su contrato: {len(pedidas)} de sus {len(contrato)} rutas declaradas", det)
     else:
         foto = [r for r in pedidas if r in FOTO]
