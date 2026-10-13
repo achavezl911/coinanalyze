@@ -35792,13 +35792,13 @@
     {
       "camino": "/api/mesa/entradas",
       "campos": {
-        "disponible": "literal en app/entradas/vista.py:497",
-        "generador": "literal en app/entradas/vista.py:500",
-        "marco": "literal en app/entradas/vista.py:520",
-        "motivo": "literal en app/entradas/vista.py:498",
-        "precio": "literal en app/entradas/vista.py:499",
-        "reciente": "literal en app/entradas/vista.py:513",
-        "vivo": "literal en app/entradas/vista.py:512"
+        "disponible": "literal en app/entradas/vista.py:502",
+        "generador": "literal en app/entradas/vista.py:505",
+        "marco": "literal en app/entradas/vista.py:525",
+        "motivo": "literal en app/entradas/vista.py:503",
+        "precio": "literal en app/entradas/vista.py:504",
+        "reciente": "literal en app/entradas/vista.py:518",
+        "vivo": "literal en app/entradas/vista.py:517"
       },
       "campos_pendientes": [
         "el objeto se expande con **base, que no se resuelve en el arbol: sus campos no se pueden derivar"

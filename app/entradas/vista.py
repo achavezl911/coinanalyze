@@ -425,8 +425,13 @@ def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict
             "sin_dato_s": SIN_DATO_S,
             "regla": f"se vuelve a pedir cada {REFRESCO_S} s; sin una respuesta buena en "
             f"{SIN_DATO_S} s la vista deja de ensenar nada como vivo",
+            # dos frases, porque son dos cosas: el ultimo intento FALLO, o no hay ninguna reciente
+            # (una peticion colgada, una pestana que estuvo oculta y no pidio). Decir «no contesta»
+            # de una ruta a la que no se pregunto seria falso.
             "sin_dato_frase": "SIN DATO · la ruta de entradas no contesta. Lo de abajo es lo ultimo "
             "que se supo y ya no se sabe si sigue vivo.",
+            "viejo_frase": f"SIN DATO RECIENTE · la ultima respuesta buena tiene mas de {SIN_DATO_S} s. "
+            "Lo de abajo es lo ultimo que se supo y ya no se sabe si sigue vivo.",
         },
         "decide": _decide(decide, decide_error),
     }

@@ -85,6 +85,7 @@ test('si el refresco falla se dice ARRIBA en el acto y nada queda en pantalla co
   m.pasa(45);
   m.pinta({ ok: false, http: 503, motivo: 'banco' });
   assert.deepStrictEqual(m.avisos(), ['sin-dato']);
+  assert.match(m.id('ent-aviso').textContent, /la ruta de entradas no contesta/);
   assert.strictEqual(m.id('ent-aviso').hidden, false);
   assert.ok(m.vivos().length >= 3, 'lo ultimo que se supo sigue en pantalla');
   assert.ok(m.vivos().every((p) => p.vivo === 'no-se-sabe' && p.chip === 'YA NO SE SABE'));
@@ -114,6 +115,9 @@ test('una respuesta que no llega NI falla tambien acaba diciendolo: la edad corr
   m.pasa(2);
   assert.deepStrictEqual(m.avisos(), ['sin-dato']);
   assert.ok(m.vivos().every((p) => p.vivo === 'no-se-sabe'));
+  // y NO dice que la ruta no contesta: nadie le ha preguntado. Dice lo que sabe, la edad.
+  assert.match(m.id('ent-aviso').textContent, /la ultima respuesta buena tiene mas de 120 s/);
+  assert.doesNotMatch(m.id('ent-aviso').textContent, /no contesta/);
 });
 
 test('el generador que deja de latir se dice arriba aunque la ruta conteste, y sin latido ninguno tambien', () => {

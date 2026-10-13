@@ -505,7 +505,7 @@ function entTicTac() {
     avisos.push(['sin-dato', (d ? d.frescura.sin_dato_frase : 'SIN DATO · no se pudo pedir /api/mesa/entradas.') + ' ',
                  _entFallo.http ? 'HTTP ' + _entFallo.http : _entFallo.motivo]);
   } else if (d && entPasado() > d.frescura.sin_dato_s) {
-    avisos.push(['sin-dato', d.frescura.sin_dato_frase + ' ', 'última respuesta hace ' + entDura(entPasado())]);
+    avisos.push(['sin-dato', d.frescura.viejo_frase + ' ', 'última respuesta hace ' + entDura(entPasado())]);
   }
   if (d) {
     const lat = d.generador.ultimo_latido;

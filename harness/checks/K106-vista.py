@@ -91,7 +91,7 @@ ISO = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}")
 # Lo que la respuesta trae y la pantalla NO pinta como texto, con su motivo. Todo lo demas se pinta.
 NO_SE_PINTA = re.compile(
     r"^(esquema|symbol|disponible|motivo)$"                      # identidad; el motivo va en el aviso
-    r"|^frescura\.(refresco_s|sin_dato_s|sin_dato_frase)$"         # la cadencia y el tope del reloj; el aviso
+    r"|^frescura\.(refresco_s|sin_dato_s|sin_dato_frase|viejo_frase)$"  # la cadencia, el tope y los dos avisos
     r"|^generador\.(tope_s|parado_frase)$"                          # el tope del reloj; el aviso
     r"|^decide\.(edad_s|max_age_s)$"                                # las usa el reloj
     r"|^decide\.perfiles\.\w+\.(palabra|sin_respuesta|motivo)$"     # van en `rotulo` y en `frase`

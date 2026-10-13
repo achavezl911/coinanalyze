@@ -880,6 +880,12 @@ h1 {
   gap: 12px;
 }
 
+@media (max-width: 1100px) {
+  .ent-rejilla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .ent-celda h3,
 .ent-bloque h3 {
   text-transform: uppercase;

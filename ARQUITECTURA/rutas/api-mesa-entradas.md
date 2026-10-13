@@ -19,13 +19,13 @@ Handler `mesa_entradas` · `app/api.py:3855` (cuerpo hasta la 3868) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `disponible` | literal en app/entradas/vista.py:497 |
-| `generador` | literal en app/entradas/vista.py:500 |
-| `marco` | literal en app/entradas/vista.py:520 |
-| `motivo` | literal en app/entradas/vista.py:498 |
-| `precio` | literal en app/entradas/vista.py:499 |
-| `reciente` | literal en app/entradas/vista.py:513 |
-| `vivo` | literal en app/entradas/vista.py:512 |
+| `disponible` | literal en app/entradas/vista.py:502 |
+| `generador` | literal en app/entradas/vista.py:505 |
+| `marco` | literal en app/entradas/vista.py:525 |
+| `motivo` | literal en app/entradas/vista.py:503 |
+| `precio` | literal en app/entradas/vista.py:504 |
+| `reciente` | literal en app/entradas/vista.py:518 |
+| `vivo` | literal en app/entradas/vista.py:517 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
