@@ -50,7 +50,8 @@ def fila(i: int, vela: datetime, estado: str = "SOMBRA", *, version: str = "v2",
             "caduca_en": caduca.isoformat() if caduca else None, "foto": foto}
 
 
-def registro(*, caduca_en_s: float = 3600.0, latido_hace_s: float | None = 100.0) -> dict[str, Any]:
+def registro(*, caduca_en_s: float = 3600.0, latido_hace_s: float | None = 100.0,
+             latido_vela_h: int = 11) -> dict[str, Any]:
     """Un DISPARADO de v2 (vivo si caduca_en_s > 0), un VIGILANDO de v2 y otro de v1 sobre la MISMA
     zona, y tres SOMBRAS de v2 (dos a la misma hora) mas una de v1."""
     hora = lambda h: AS_OF.replace(hour=h, minute=0, second=0)  # noqa: E731
@@ -62,7 +63,8 @@ def registro(*, caduca_en_s: float = 3600.0, latido_hace_s: float | None = 100.0
         "parametros": {"desde": (AS_OF - timedelta(hours=24)).isoformat(), "hasta": AS_OF.isoformat()},
         "generador": {"ultimos_latidos": [] if latido_hace_s is None else [
             {"registered_at": (AS_OF - timedelta(seconds=latido_hace_s)).isoformat(),
-             "vela_cierre": hora(11).isoformat(), "estado": "ok", "duracion_s": 2.0, "error": None, "motivo": None}],
+             "vela_cierre": hora(latido_vela_h).isoformat(), "estado": "ok", "duracion_s": 2.0, "error": None,
+             "motivo": None}],
             "motivo": "el generador aun no ha corrido en esta base" if latido_hace_s is None else None},
         "reglamento": {"disponible": True, "version_activa": "v2", "ancla": "v1", "versiones_en_curso": ["v1", "v2"],
                        "hipotesis_activa": {"celdas": "c", "sentido": "s", "lectura": "l"},

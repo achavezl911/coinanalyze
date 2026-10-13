@@ -298,6 +298,20 @@ def test_un_plan_caducado_no_sale_como_vivo_y_el_orden_es_por_hora():
     assert RUTA.fracciones_servidas(r) == []
 
 
+def test_la_pasada_a_medias_se_dice_y_solo_mientras_dura():
+    """Cada version registra a su hora y el latido se escribe al acabar la ultima (TRASPASO del
+    10-10: «no leer una pasada antes de T + 4 min»). La pantalla se mira a cualquier hora: si hay
+    planes de una vela que aun no ha latido, la ruta lo dice."""
+    acabada = EB.respuesta("LONG")
+    assert acabada["generador"]["pasada_en_curso"] is None, "el latido es de la ultima vela con planes"
+    a_medias = EB.respuesta("LONG", latido_vela_h=10)
+    frase = a_medias["generador"]["pasada_en_curso"]
+    assert frase.startswith("La vela de las 11:00Z esta todavia registrandose")
+    assert "v1 a partir de los 20 s y v2 a partir de los 135 s" in frase, "las horas salen del reglamento"
+    assert EB.respuesta("LONG", latido_hace_s=None)["generador"]["pasada_en_curso"] is None, "sin latido lo dice el aviso"
+    assert RUTA.fracciones_servidas(a_medias) == []
+
+
 async def test_la_ruta_rechaza_un_parametro_que_no_conoce(sembrada):
     class Peticion:
         query_params = {"symbol": "BTCUSDT_PERP.A", "foto": "true"}

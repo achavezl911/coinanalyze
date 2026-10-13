@@ -99,6 +99,17 @@ def _no_disponible(r):
     r.update(disponible=False, motivo="esta base no tiene las tablas del registro de entradas: falta desplegar")
 
 
+def _a_medias(r):
+    """El ultimo latido es de la vela ANTERIOR a la de los planes servidos: la pasada esta en curso."""
+    from app.entradas import reglamento as R
+    from app.entradas import vista as V
+    lat = r["generador"]["ultimo_latido"]
+    ultima = max(p["vela_cierre"] for p in _vivos(r) + _vigilando(r))
+    lat["vela_cierre"] = (datetime.fromisoformat(ultima) - timedelta(minutes=15)).isoformat()
+    r["generador"]["pasada_en_curso"] = V.pasada_en_curso(R.cargar_valido(), ultima, lat["vela_cierre"])
+    assert r["generador"]["pasada_en_curso"], "plantados: la pasada no quedo a medias"
+
+
 def _palabra(r, scalp, edad: float = 5.0):
     from app.entradas import vista as V
     r["decide"] = V._decide(_decide(scalp, edad), None if scalp else "DECIDE fallo al calcularse (RuntimeError)")
@@ -216,6 +227,12 @@ BRAZOS: list[tuple] = [
     ("reloj_parado", "CONDENA", "(E3 .* NO avanzaron|E4 el generador no late .* NO lo dice arriba)", ["--luego", "@12"],
      lambda r: r["generador"]["ultimo_latido"].update(registered_at=_mas(r, -1793)), RELOJ_PARADO,
      "una edad pintada UNA vez: el reloj de la pantalla no corre (A78)"),
+    ("pasada_a_medias", "PASA", "", [], lambda r: _a_medias(r), None,
+     "hay planes de una vela que aun no ha latido: la ruta lo dice y la pantalla lo pinta sobre lo vivo"),
+    ("pasada_a_medias_callada", "CONDENA", "E8 la respuesta trae 1 hoja.* generador.pasada_en_curso", [],
+     lambda r: _a_medias(r),
+     _tras_pintar("    document.querySelectorAll('.ent-en-curso').forEach((n) => n.parentNode.removeChild(n));"),
+     "la ruta dice que la pasada esta a medias y la pantalla se lo calla"),
     ("versiones_confundidas", "CONDENA", "E2 el plan .* dos versiones confundidas", [], None,
      _tras_pintar("    document.querySelectorAll('#ent-vivo [data-celda]').forEach((c) => {\n"
                   "      const b = c.querySelectorAll('[data-bloque-version]');\n"

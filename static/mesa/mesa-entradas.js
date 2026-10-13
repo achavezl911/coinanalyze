@@ -346,6 +346,9 @@ function entVivo(R, d) {
             d.precio.valor, 'precio.motivo', d.precio.motivo),
     ' · ', sv('span', 'motivo', 'precio.fuente', d.precio.fuente)
   ));
+  if (d.generador.pasada_en_curso) {
+    caja.appendChild(sv('p', 'ent-en-curso', 'generador.pasada_en_curso', d.generador.pasada_en_curso));
+  }
   const rejilla = el('div', 'ent-rejilla');
   d.vivo.celdas.forEach((c, i) => {
     const rc = 'vivo.celdas[' + i + ']';

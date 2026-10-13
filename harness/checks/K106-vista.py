@@ -79,7 +79,8 @@ CIFRAS = {  # clase -> como se escribe (es-ES). Nada fuera de aqui puede ser una
 PROSA = re.compile(r"(\.motivo|\.regla|\.reloj|\.frase|\.fuente|\.definicion|\.sin_planes|\.tipo_disparo|"
                    r"\.resueltos_motivo|\.por_que_este_marco|\.etiqueta|\.que|\.error|"
                    r"^que_es|^vivo\.que_es|^marco\.cuentas_ambito|^reciente\.falta_el_resultado|"
-                   r"^reciente\.recortada|^marco\.hipotesis_activa\.\w+|^frescura\.regla)$")
+                   r"^reciente\.recortada|^marco\.hipotesis_activa\.\w+|^frescura\.regla|"
+                   r"^generador\.pasada_en_curso)$")
 FRACCION = re.compile(r"\d\s*/\s*\d|\d\s*%|\d+\s+de\s+(cada\s+)?\d+|\bpor\s+cien(to)?\b", re.I)
 TASA = re.compile(r"\b(tasas?|aciertos?|acert\w+|win ?rate|hit ?rate|probabilidad(es)?|frecuencias?|"
                   r"[eé]xitos?)\b", re.I)

@@ -1489,8 +1489,8 @@
     },
     "app.entradas.vista._ancla_no_puede": {
       "fichero": "app/entradas/vista.py",
-      "linea": 348,
-      "sitio": "`app/entradas/vista.py:348`"
+      "linea": 368,
+      "sitio": "`app/entradas/vista.py:368`"
     },
     "app.entradas.vista._base": {
       "fichero": "app/entradas/vista.py",
@@ -1569,13 +1569,18 @@
     },
     "app.entradas.vista.componer": {
       "fichero": "app/entradas/vista.py",
-      "linea": 393,
-      "sitio": "`app/entradas/vista.py:393`"
+      "linea": 413,
+      "sitio": "`app/entradas/vista.py:413`"
     },
     "app.entradas.vista.construir": {
       "fichero": "app/entradas/vista.py",
-      "linea": 371,
-      "sitio": "`app/entradas/vista.py:371`"
+      "linea": 391,
+      "sitio": "`app/entradas/vista.py:391`"
+    },
+    "app.entradas.vista.pasada_en_curso": {
+      "fichero": "app/entradas/vista.py",
+      "linea": 348,
+      "sitio": "`app/entradas/vista.py:348`"
     },
     "app.entradas.vista.precio_ahora": {
       "fichero": "app/entradas/vista.py",
@@ -13533,7 +13538,8 @@
           "app.entradas.servicio.evaluar_vela",
           "app.entradas.servicio.plan_de_marcha",
           "app.entradas.vista._ancla_no_puede",
-          "app.entradas.vista._muestra"
+          "app.entradas.vista._muestra",
+          "app.entradas.vista.pasada_en_curso"
         ],
         "por_llamada": [
           "/api/entradas",
@@ -13853,6 +13859,7 @@
           "app.entradas.vista._ancla_no_puede",
           "app.entradas.vista._muestra",
           "app.entradas.vista.componer",
+          "app.entradas.vista.pasada_en_curso",
           "app.ingest.run"
         ],
         "por_llamada": [
@@ -13962,6 +13969,7 @@
           "app.entradas.servicio.plan_de_marcha",
           "app.entradas.vista._muestra",
           "app.entradas.vista.componer",
+          "app.entradas.vista.pasada_en_curso",
           "app.ingest.run"
         ],
         "por_llamada": [
@@ -14451,7 +14459,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:348",
+        "sitio": "app/entradas/vista.py:368",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14749,7 +14757,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:393",
+        "sitio": "app/entradas/vista.py:413",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14766,7 +14774,25 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:371",
+        "sitio": "app/entradas/vista.py:391",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.entradas.vista.pasada_en_curso": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.entradas.vista.componer",
+          "app.entradas.vista.construir"
+        ],
+        "por_llamada": [
+          "/api/mesa/entradas"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/vista.py:348",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29464,7 +29490,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 392,
+    "funciones_alcanzables": 393,
     "rutas": 75,
     "rutas_con_campos": 68,
     "rutas_sin_campos": 7,
@@ -35766,13 +35792,13 @@
     {
       "camino": "/api/mesa/entradas",
       "campos": {
-        "disponible": "literal en app/entradas/vista.py:476",
-        "generador": "literal en app/entradas/vista.py:479",
-        "marco": "literal en app/entradas/vista.py:498",
-        "motivo": "literal en app/entradas/vista.py:477",
-        "precio": "literal en app/entradas/vista.py:478",
-        "reciente": "literal en app/entradas/vista.py:491",
-        "vivo": "literal en app/entradas/vista.py:490"
+        "disponible": "literal en app/entradas/vista.py:497",
+        "generador": "literal en app/entradas/vista.py:500",
+        "marco": "literal en app/entradas/vista.py:520",
+        "motivo": "literal en app/entradas/vista.py:498",
+        "precio": "literal en app/entradas/vista.py:499",
+        "reciente": "literal en app/entradas/vista.py:513",
+        "vivo": "literal en app/entradas/vista.py:512"
       },
       "campos_pendientes": [
         "el objeto se expande con **base, que no se resuelve en el arbol: sus campos no se pueden derivar"
@@ -35826,6 +35852,7 @@
         "app.entradas.vista._zona",
         "app.entradas.vista.componer",
         "app.entradas.vista.construir",
+        "app.entradas.vista.pasada_en_curso",
         "app.entradas.vista.precio_ahora"
       ],
       "cierre_indirecto": [
@@ -35874,6 +35901,7 @@
         "app.entradas.vista._vigilando",
         "app.entradas.vista._zona",
         "app.entradas.vista.componer",
+        "app.entradas.vista.pasada_en_curso",
         "app.entradas.vista.precio_ahora"
       ],
       "claves_temporales": [],
@@ -39075,8 +39103,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K106-plantados.py:312",
-            "harness/checks/K106-plantados.py:313",
+            "harness/checks/K106-plantados.py:329",
+            "harness/checks/K106-plantados.py:330",
             "harness/checks/K43-control.bash:29",
             "harness/checks/K43-control.bash:74",
             "harness/checks/K43-foto-unica.sh:164",

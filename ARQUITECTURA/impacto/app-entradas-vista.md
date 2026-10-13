@@ -2,13 +2,13 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-19 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
+20 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
 El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_ancla_no_puede`](#-ancla-no-puede) | 348 | 1 | **0** | 0 | **1** |
+| [`_ancla_no_puede`](#-ancla-no-puede) | 368 | 1 | **0** | 0 | **1** |
 | [`_base`](#-base) | 226 | 1 | **0** | 0 | **1** |
 | [`_de`](#-de) | 302 | 1 | **0** | 0 | **1** |
 | [`_decide`](#-decide) | 165 | 1 | **0** | 0 | **1** |
@@ -24,13 +24,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`_sombra`](#-sombra) | 292 | 1 | **0** | 0 | **1** |
 | [`_vigilando`](#-vigilando) | 246 | 1 | **0** | 0 | **1** |
 | [`_zona`](#-zona) | 208 | 1 | **0** | 0 | **1** |
-| [`componer`](#componer) | 393 | 1 | **0** | 0 | **1** |
-| [`construir`](#construir) | 371 | 1 | **0** | 0 | **1** |
+| [`componer`](#componer) | 413 | 1 | **0** | 0 | **1** |
+| [`construir`](#construir) | 391 | 1 | **0** | 0 | **1** |
+| [`pasada_en_curso`](#pasada-en-curso) | 348 | 1 | **0** | 0 | **1** |
 | [`precio_ahora`](#precio-ahora) | 99 | 1 | **0** | 0 | **1** |
 
 ## _ancla_no_puede
 
-`app/entradas/vista.py:348` · clave completa `app.entradas.vista._ancla_no_puede`
+`app/entradas/vista.py:368` · clave completa `app.entradas.vista._ancla_no_puede`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -398,7 +399,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## componer
 
-`app/entradas/vista.py:393` · clave completa `app.entradas.vista.componer`
+`app/entradas/vista.py:413` · clave completa `app.entradas.vista.componer`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -421,7 +422,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## construir
 
-`app/entradas/vista.py:371` · clave completa `app.entradas.vista.construir`
+`app/entradas/vista.py:391` · clave completa `app.entradas.vista.construir`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -441,6 +442,29 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 1 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## pasada_en_curso
+
+`app/entradas/vista.py:348` · clave completa `app.entradas.vista.pasada_en_curso`
+
+**Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
+
+### Por llamada — 1 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## precio_ahora
 

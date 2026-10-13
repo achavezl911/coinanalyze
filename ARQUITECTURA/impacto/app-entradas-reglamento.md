@@ -148,7 +148,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 23 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 24 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## versiones_en_curso
 
@@ -207,7 +207,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 13 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 14 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _texto
 
@@ -484,7 +484,7 @@ Y esas tablas las leen:
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 22 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 23 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## contenido_revision
 

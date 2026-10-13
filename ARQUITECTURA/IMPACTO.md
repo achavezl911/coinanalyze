@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 606 funciones con radio, 250 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 607 funciones con radio, 250 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **49** de las 606 escriben alguna tabla
+Solo **49** de las 607 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -83,7 +83,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-606 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+607 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -486,7 +486,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.delta_profile.delta_profile`](impacto/app-delta_profile.md) | `app/delta_profile.py:222` | 1 | **0** | 0 | **1** |
 | [`app.delta_profile.profile_read`](impacto/app-delta_profile.md) | `app/delta_profile.py:115` | 1 | **0** | 0 | **1** |
 | [`app.delta_profile.value_area`](impacto/app-delta_profile.md) | `app/delta_profile.py:92` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._ancla_no_puede`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:348` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._ancla_no_puede`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:368` | 1 | **0** | 0 | **1** |
 | [`app.entradas.vista._base`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:226` | 1 | **0** | 0 | **1** |
 | [`app.entradas.vista._de`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:302` | 1 | **0** | 0 | **1** |
 | [`app.entradas.vista._decide`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:165` | 1 | **0** | 0 | **1** |
@@ -502,8 +502,9 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.entradas.vista._sombra`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:292` | 1 | **0** | 0 | **1** |
 | [`app.entradas.vista._vigilando`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:246` | 1 | **0** | 0 | **1** |
 | [`app.entradas.vista._zona`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:208` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.componer`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:393` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.construir`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:371` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.componer`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:413` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.construir`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:391` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.pasada_en_curso`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:348` | 1 | **0** | 0 | **1** |
 | [`app.entradas.vista.precio_ahora`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:99` | 1 | **0** | 0 | **1** |
 | [`app.rango._prueba`](impacto/app-rango.md) | `app/rango.py:107` | 1 | **0** | 0 | **1** |
 | [`app.rango._pruebas`](impacto/app-rango.md) | `app/rango.py:111` | 1 | **0** | 0 | **1** |

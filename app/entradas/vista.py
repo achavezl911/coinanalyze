@@ -345,6 +345,26 @@ def _muestra(doc: dict[str, Any] | None, resueltos: int) -> dict[str, Any]:
             "motivo": "con la muestra minima alcanzada la lectura la emite la E4, que no existe todavia"}
 
 
+def pasada_en_curso(doc: dict[str, Any] | None, ultima_vela: str | None, vela_del_latido: str | None) -> str | None:
+    """LA PASADA A MEDIAS. Cada version registra a SU hora tras el cierre de la vela (el ancla antes
+    que la activa) y el latido se escribe al acabar la ultima. Si hay planes de una vela posterior a
+    la del ultimo latido, esa vela esta todavia registrandose: quien mire la pantalla en ese rato ve
+    lo que apunto una version y no lo que apuntara la otra. Se dice; no se esconde ni se espera."""
+    if not ultima_vela or not vela_del_latido:
+        return None
+    if datetime.fromisoformat(ultima_vela) <= datetime.fromisoformat(vela_del_latido):
+        return None
+    horas = ""
+    if doc is not None:
+        horas = " (" + " y ".join(
+            f"{v['version']} a partir de los "
+            f"{R.valores(v['bloques']['comun'])['espera_datos_s']['primer_intento']} s"
+            for v in R.versiones_en_curso(doc)) + ")"
+    return (f"La vela de las {ultima_vela[11:16]}Z esta todavia registrandose: hay planes suyos y el "
+            f"generador aun no ha latido por ella. Cada version decide a su hora tras el cierre{horas}; "
+            "hasta ese latido, lo de esa vela puede estar a medias.")
+
+
 def _ancla_no_puede(doc: dict[str, Any] | None, ancla: str, sombras: list[dict[str, Any]]) -> dict[str, Any]:
     """Lo que el ancla no puede hacer, dicho UNA vez. Sale de las filas servidas -los requisitos
     que no se pudieron evaluar en NINGUNA de sus sombras de la ventana- y de su reglamento."""
@@ -465,6 +485,7 @@ def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict
         reciente.append(bloque)
 
     n_ventana = len(filas["disparados"]) + len(filas["sombras"])
+    ultima_vela = max((f["vela_cierre"] for grupo in filas.values() for f in grupo), default=None)
     latidos = registro["generador"]["ultimos_latidos"]
     tope = VELA_GENERADOR_S * VELAS_SIN_LATIR
     calendario = reglamento.get("calendario_vigente") or {}
@@ -481,6 +502,7 @@ def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict
                               ("registered_at", "vela_cierre", "estado", "error", "motivo")}
             if latidos else None,
             "motivo": registro["generador"]["motivo"],
+            "pasada_en_curso": pasada_en_curso(doc, ultima_vela, latidos[0]["vela_cierre"] if latidos else None),
             "tope_s": tope,
             "regla": f"se da por PARADO si su ultimo latido tiene mas de {VELAS_SIN_LATIR} velas de "
             f"15 min ({tope} s)",
