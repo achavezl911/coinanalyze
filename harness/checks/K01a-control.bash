@@ -17,6 +17,7 @@
 #                  -lo que decide es el corte, no lo largo del nombre-
 #   error_al_*    la base contesta, y UNA consulta da un error del motor (remate, R4): una
 #                 por cada sitio donde el check cuenta o lista                           NO MEDIDO, y NOMBRA el error
+#                 -dentro de los 70 caracteres que verify cita en el marcador-
 #     y sus gemelos: lo mismo sin el error, VERDE; y el K01a de aa5ad6f, que se lo callaba
 #   sin_base      una base que no existe                                                 NO MEDIDO
 #   espejo_hoy    el espejo real, tal como esta, sin tocarlo                             VERDE
@@ -140,16 +141,18 @@ echo "== el motor da un ERROR en cada uno de los tres sitios donde el check cuen
 # lc_messages-: se le pregunta a el, en esa misma base.
 CERO="1 / (length(current_database()) - length(current_database())) = 1"
 motor_dice() { psql -h "$H" -d "$1" -X -Atq -c "SELECT 1 WHERE $CERO" 2>&1 | sed -n 's/^[A-Z]*: *//p' | head -1; }
-nombra() {  # brazo base sitio -> rc 2, y la linea del NO MEDIDO dice el sitio y lleva el texto del motor
+# El texto del motor tiene que caber en lo que `verify` CITA: los 70 primeros caracteres de la primera linea
+# (harness/bin/verify:77). Un error nombrado al final de la frase no llega al marcador.
+nombra() {  # brazo base sitio -> rc 2, y la linea del NO MEDIDO dice el sitio y lleva el texto del motor DELANTE
   local dice; dice=$(motor_dice "$2")
   rc=$(corre "$2")
-  comprueba "$1" "$([ "$rc" = 2 ] && [ -n "$dice" ] && head -1 "$T/salida" | grep -q "^NO MEDIDO: $3" && head -1 "$T/salida" | grep -qF -- "$dice" && echo 0 || echo 1)" "rc=$rc · el motor dice «$dice» · $(primera)"
+  comprueba "$1" "$([ "$rc" = 2 ] && [ -n "$dice" ] && head -1 "$T/salida" | grep -q "^NO MEDIDO: .*$3" && head -1 "$T/salida" | cut -c1-70 | grep -qF -- "$dice" && echo 0 || echo 1)" "rc=$rc · el motor dice «$dice» · $(primera)"
 }
 # 1 · contar las declaradas. Es la reproduccion del operador: una vista public.pg_tables y el search_path de la base.
 copia "${BASE}_err1"
 sql "${BASE}_err1" "CREATE VIEW public.pg_tables AS SELECT schemaname, tablename FROM pg_catalog.pg_tables WHERE $CERO"
 sql "${BASE}_err1" "ALTER DATABASE \"${BASE}_err1\" SET search_path = public, pg_catalog"
-nombra error_al_contar "${BASE}_err1" 'contar las tablas declaradas'
+nombra error_al_contar "${BASE}_err1" 'al contar las tablas declaradas'
 if [ -s "$T/K01a-antes.sh" ]; then
   dice=$(motor_dice "${BASE}_err1"); rc=$(corre "${BASE}_err1" "$T/K01a-antes.sh")
   comprueba error_antes_callado "$([ "$rc" = 2 ] && [ -n "$dice" ] && ! grep -qF -- "$dice" "$T/salida" && echo 0 || echo 1)" "rc=$rc · el K01a de aa5ad6f: «$(primera)»"
@@ -165,13 +168,13 @@ copia "${BASE}_err2"
 sql "${BASE}_err2" "CREATE SEQUENCE public.k01a_veces"
 sql "${BASE}_err2" "CREATE VIEW public.pg_tables AS SELECT schemaname, tablename FROM pg_catalog.pg_tables WHERE 1 / ((SELECT nextval('public.k01a_veces')) % 2) = 1"
 sql "${BASE}_err2" "ALTER DATABASE \"${BASE}_err2\" SET search_path = public, pg_catalog"
-nombra error_al_listar "${BASE}_err2" 'listar las tablas declaradas'
+nombra error_al_listar "${BASE}_err2" 'al listar las tablas declaradas'
 # 3 · contar signal_outcome. Una vista con ese nombre en un esquema que va ANTES en el search_path.
 copia "${BASE}_err3"
 sql "${BASE}_err3" "CREATE SCHEMA tapa"
 sql "${BASE}_err3" "CREATE VIEW tapa.signal_outcome AS SELECT 1 AS id WHERE $CERO"
 sql "${BASE}_err3" "ALTER DATABASE \"${BASE}_err3\" SET search_path = tapa, public"
-nombra error_al_contar_filas "${BASE}_err3" 'contar signal_outcome'
+nombra error_al_contar_filas "${BASE}_err3" 'al contar signal_outcome'
 
 echo "== una base que no existe"
 rc=$(corre "${BASE}_no_existe")

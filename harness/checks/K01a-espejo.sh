@@ -52,6 +52,8 @@ n_decl=$(printf '%s\n' "$declaradas" | grep -c .)
 # y DESPUES el error. La primera linea de «salida y error juntos» es una linea en blanco, y el NO MEDIDO
 # acababa en «no devolvio un numero: » y nada detras. Se coge la primera linea que diga ERROR o FATAL y, si
 # no hay ninguna, la primera que traiga texto. awk la lee entera: aqui no hay tuberia que se cierre antes.
+# Y VA DELANTE, pegado a «NO MEDIDO:»: `verify` cita solo los 70 primeros caracteres de la primera linea
+# (harness/bin/verify:77), y con el error al final el marcador lo cortaba justo antes de nombrarlo.
 dijo() {
   awk '/ERROR|FATAL/ && e == "" { e = $0 } NF && p == "" { p = $0 }
        END { t = (e != "" ? e : p); print (t != "" ? substr(t, 1, 160) : "(el canal no devolvio ningun texto)") }' <<< "$1"
@@ -63,14 +65,14 @@ DONDE="schemaname='public' AND tablename IN ($lista_sql)"
 crudo_n=$("$B/bin/espejosql" "SELECT count(*) FROM pg_tables WHERE $DONDE" 2>&1)
 n_pub=$(printf '%s\n' "$crudo_n" | grep -E '^[0-9]+$' | head -1)
 [ -n "$n_pub" ] || {
-  echo "NO MEDIDO: contar las tablas declaradas que tiene el espejo no devolvio un numero: $(dijo "$crudo_n")"
+  echo "NO MEDIDO: $(dijo "$crudo_n") · al contar las tablas declaradas que tiene el espejo: no devolvio un numero"
   exit 2; }
 
 crudo_tablas=$("$B/bin/espejosql" "SELECT tablename FROM pg_tables WHERE $DONDE ORDER BY 1" 2>&1); rc_lista=$?
 # Un listado que FALLA no es una lista incompleta: sin esto el error del motor salia como «el listado trajo 0
 # nombres», que es verdad y no dice por que.
 [ "$rc_lista" = 0 ] || {
-  echo "NO MEDIDO: listar las tablas declaradas que tiene el espejo fallo (rc=$rc_lista): $(dijo "$crudo_tablas")"
+  echo "NO MEDIDO: $(dijo "$crudo_tablas") · al listar las tablas declaradas que tiene el espejo (rc=$rc_lista)"
   exit 2; }
 # EL CORTE SE LEE EN SU MARCA, no solo en la cuenta: un nombre partido por el corte sigue teniendo
 # forma de nombre, y si el corte cae dentro del ULTIMO la cuenta cuadra y el check condenaria «falta»
@@ -97,7 +99,7 @@ faltan=$(comm -23 <(printf '%s\n' "$declaradas") <(printf '%s\n' "$presentes") |
 crudo_filas=$("$B/bin/espejosql" "SELECT count(*) FROM signal_outcome" 2>&1)
 filas=$(printf '%s\n' "$crudo_filas" | grep -E '^[0-9]+$' | head -1)
 [ -n "$filas" ] || {
-  echo "NO MEDIDO: contar signal_outcome en el espejo no devolvio un numero: $(dijo "$crudo_filas")"
+  echo "NO MEDIDO: $(dijo "$crudo_filas") · al contar signal_outcome en el espejo: no devolvio un numero"
   exit 2; }
 [ "$filas" -gt 0 ] || { echo "el espejo tiene las $n_decl tablas pero signal_outcome esta VACIA: 0 filas contadas"; exit 1; }
 
