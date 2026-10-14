@@ -15,6 +15,10 @@
 # antes y despues y se planta solo si de verdad cambio.
 #
 # SE INVOCA DE LAS TRES FORMAS (A56).
+#
+# LA BASE DEL ESPEJO VA PARAMETRIZADA (campana 138): K102_ESPEJO_DB, por omision coinalyze_espejo.
+# P7, P9 y P6 ARRANCAN LA APP contra ella, y arrancar la app escribe (filas y particiones por DDL);
+# con una copia desechable del espejo en K102_ESPEJO_DB, el control lo lee sin tocarlo.
 set -u
 
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # ABSOLUTA ANTES de cualquier cd
@@ -336,6 +340,81 @@ K102_OBSERVA=4 espera PASA "G8 · NO EVALUABLE con el libro 'stale'" "B9 " "http
 pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
 echo
 
+# ------- P14 · C4 (campana 138) · LA PALABRA GRANDE CONTRA SU REGLA DECLARADA (sobre plantado v3) -------
+# La serie de evaluaciones registradas la FABRICA el banco (--memoria) y la grande se sirve TAL CUAL
+# (--grande): cada promesa del encargo con su plantado, que TIENE que condenar B10, y su gemelo fiel,
+# que TIENE que pasar entero. El instante y su estado van fieles entre si, para que B9 no se coma la
+# condena que es de B10.
+#   quiero    memoria          instante      grande     dc   libro  por que
+#   PASA      sostenido-LONG   LONG          la regla   100  ok     a · el sistema sostiene LONG toda la ventana
+#   CONDENA   sostenido-LONG   LONG          NO OPERAR                calla un lado sostenido
+#   PASA      oscila           NO OPERAR     la regla   100  ok     b · oscila en cada evaluacion: no es un lado
+#   CONDENA   oscila           NO OPERAR     LONG                     un lado donde la regla no da lado
+#   PASA      sostenido-LONG   NO EVALUABLE  la regla   60   ok     c · sostenido, y la calidad cae AHORA
+#   CONDENA   sostenido-LONG   NO EVALUABLE  LONG       60
+#   PASA      sostenido-LONG   NO EVALUABLE  la regla   100  stale  d · el libro deja de estar ok AHORA
+#   CONDENA   sostenido-LONG   NO EVALUABLE  LONG       100  stale
+#   PASA      parado           LONG          la regla   100  ok     e · el colector deja de escribir: no ve, y lo dice
+#   CONDENA   parado           LONG          LONG
+echo "P14 · C4 · la palabra GRANDE contra su regla declarada (sobre plantado v3)"
+p14() {  # p14 <CONDENA|PASA> <memoria> <instante> <grande|-> <dc> <libro> <state> <rotulo>
+  pkill -f '[K]102-sobre-plantado.py' 2>/dev/null; sleep 1
+  local extra=(); [ "$4" != "-" ] && extra=(--grande "$4")
+  nohup "$PY" "$PLANTADO" --puerto 8096 --lag 3 --tope 600 --memoria "$2" --bias "$3" "${extra[@]}" \
+    --state "$7" --balance Long --dc "$5" --libro "$6" --cobertura 90 > "$TMP/plantado.log" 2>&1 &
+  sleep 3
+  K102_OBSERVA=4 espera "$1" "$8" "B10 " "http://127.0.0.1:8096"
+  pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
+}
+p14 PASA    sostenido-LONG LONG           -           100 ok    "Long Pullback" "G11 · a · LONG sostenido es LONG"
+p14 CONDENA sostenido-LONG LONG           "NO OPERAR" 100 ok    "Long Pullback" "P14a · calla un LONG sostenido"
+p14 PASA    oscila         "NO OPERAR"    -           100 ok    "No Trade"      "G12 · b · oscilar es NO OPERAR"
+p14 CONDENA oscila         "NO OPERAR"    LONG        100 ok    "No Trade"      "P14b · LONG donde la regla no da lado"
+p14 PASA    sostenido-LONG "NO EVALUABLE" -           60  ok    "Long Pullback" "G13 · c · la calidad cae AHORA"
+p14 CONDENA sostenido-LONG "NO EVALUABLE" LONG        60  ok    "Long Pullback" "P14c · LONG con calidad 60 AHORA"
+p14 PASA    sostenido-LONG "NO EVALUABLE" -           100 stale "No Trade"      "G14 · d · el libro stale AHORA"
+p14 CONDENA sostenido-LONG "NO EVALUABLE" LONG        100 stale "No Trade"      "P14d · LONG con el libro stale AHORA"
+p14 PASA    parado         LONG           -           100 ok    "Long Pullback" "G15 · e · el colector parado"
+p14 CONDENA parado         LONG           LONG        100 ok    "Long Pullback" "P14e · LONG con el colector parado"
+echo
+
+# ------- P15 y P16 · C4 · lo que la PANTALLA pinta de la memoria (plantado en el cliente) ----------
+# Sobre el mismo banco v3 y FIEL (LONG sostenido con el instante en NO OPERAR, para que las dos
+# palabras difieran): P15 pinta la palabra del INSTANTE en el sitio de la grande y P16 pinta la edad
+# de la INSTANTANEA de debajo como edad de la palabra. Los dos TIENEN que caer por B10.
+pkill -f '[K]102-sobre-plantado.py' 2>/dev/null; sleep 1
+nohup "$PY" "$PLANTADO" --puerto 8096 --lag 3 --tope 600 --memoria sostenido-LONG --bias "NO OPERAR" \
+  --state "No Trade" --balance Long --dc 100 --libro ok --cobertura 90 > "$TMP/plantado.log" 2>&1 &
+sleep 3
+cat > "$TMP/parche.py" <<'PY'
+import pathlib, sys
+f = pathlib.Path(sys.argv[1]); t = f.read_text(encoding="utf-8")
+viejo = "  const sesgo = dec.bias || {};"
+nuevo = "  const sesgo = dec.instante || dec.bias || {};  /* PLANTADO K102-control P15 */"
+assert t.count(viejo) == 1, "no encontre la linea del sesgo"
+f.write_text(t.replace(viejo, nuevo, 1), encoding="utf-8")
+PY
+if planta "$JS" "P15 · la palabra del INSTANTE en el sitio de la grande"; then
+  K102_OBSERVA=4 espera CONDENA "B10 tiene que condenar el instante en grande" "B10 " "http://127.0.0.1:8096"
+  restaura "$JS" "$h_js"
+fi
+cat > "$TMP/parche.py" <<'PY'
+import pathlib, sys
+f = pathlib.Path(sys.argv[1]); t = f.read_text(encoding="utf-8")
+viejo = "  pintarMemoria(dec, nodos.edadPalabra, nodos.instante, '');"
+nuevo = ("  pintarMemoria(Object.assign({}, dec, { memoria: Object.assign({}, dec.memoria, { edad: Object.assign("
+         "{}, (dec.memoria || {}).edad, { frase: 'edad ' + num(d.age.snapshot_lag_seconds.value, 1) + ' s' }) }) }),"
+         " nodos.edadPalabra, nodos.instante, '');  /* PLANTADO K102-control P16 */")
+assert t.count(viejo) == 1, "no encontre la llamada a pintarMemoria"
+f.write_text(t.replace(viejo, nuevo, 1), encoding="utf-8")
+PY
+if planta "$JS" "P16 · la edad de la INSTANTANEA como edad de la palabra"; then
+  K102_OBSERVA=4 espera CONDENA "B10 tiene que condenar la edad prestada" "B10 " "http://127.0.0.1:8096"
+  restaura "$JS" "$h_js"
+fi
+pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
+echo
+
 # --------------------- P7 · R1 · la palabra de un marco no scalp vuelve a ser la del scalp
 # EL PLANTADO VA EN EL BACKEND, que es de quien es la promesa: la RUTA sirve NO EVALUABLE para
 # un marco que no es scalp. Plantarlo solo en el cliente mediria la mitad.
@@ -349,7 +428,7 @@ f.write_text(t.replace(viejo, nuevo, 1), encoding="utf-8")
 PY
 if planta "$CTX" "P7 · la ruta vuelve a dar la lectura del scalp en swing y largo"; then
   # hace falta un servidor NUEVO: el modulo ya esta importado en el que corre.
-  ( cd "$REPO" && PG_HOST=/var/run/postgresql PG_PORT=5432 PG_DB=coinalyze_espejo \
+  ( cd "$REPO" && PG_HOST=/var/run/postgresql PG_PORT=5432 PG_DB="${K102_ESPEJO_DB:-coinalyze_espejo}" \
       PG_USER="$(id -un)" PG_PASSWORD= API_INTERNAL_TOKEN=k102p7 \
       nohup "$PY" -m uvicorn app.api:app --host 127.0.0.1 --port 8095 \
       > "$TMP/p7.log" 2>&1 & )
@@ -427,7 +506,7 @@ assert viejo in t, "no encontre la linea del motivo"
 f.write_text(t.replace(viejo, nuevo, 1), encoding="utf-8")
 PY
 if planta "$CTX" "P9 · el motivo largo vuelve, y estira DECIDE en swing y largo"; then
-  ( cd "$REPO" && PG_HOST=/var/run/postgresql PG_PORT=5432 PG_DB=coinalyze_espejo \
+  ( cd "$REPO" && PG_HOST=/var/run/postgresql PG_PORT=5432 PG_DB="${K102_ESPEJO_DB:-coinalyze_espejo}" \
       PG_USER="$(id -un)" PG_PASSWORD= API_INTERNAL_TOKEN=k102p9 \
       nohup "$PY" -m uvicorn app.api:app --host 127.0.0.1 --port 8095 \
       > "$TMP/p9.log" 2>&1 & )
@@ -523,12 +602,31 @@ echo
 echo "G4 · la tarjeta del scalp y su lado (con la LECTURA forzada, y el control con la real)"
 total=$((total + 1))
 "$PY" - <<'PY' > "$TMP/g4.txt" 2>&1
-import asyncio, getpass, json
+import asyncio, getpass, json, os
+from datetime import timedelta
 import asyncpg
 import app.ai_context as ctx
 
 SUMMARY = ctx.compute_scalp_summary
 CONF = ctx.data_confidence_row
+
+
+class ConMemoria:
+    """La conexion del espejo, con UNA consulta cambiada: la memoria (campana 138). El espejo no
+    tiene evaluaciones registradas en las ultimas 3 h, asi que sin esto la palabra GRANDE sale NO
+    EVALUABLE haga lo que haga la lectura forzada, y este brazo no llegaria al fenomeno (A57)."""
+
+    def __init__(self, conn, estado):
+        self._c, self._estado = conn, estado
+
+    def __getattr__(self, k):
+        return getattr(self._c, k)
+
+    async def fetch(self, sql, *args):
+        if sql == getattr(ctx, "MEMORIA_SQL", None):
+            return [{"ts": args[2] - timedelta(seconds=2 + 13.9 * i), "state": self._estado,
+                     "book_status": "ok"} for i in range(30, -1, -1)]
+        return await self._c.fetch(sql, *args)
 
 def con_estado(valor):
     def _f(c):
@@ -562,14 +660,14 @@ def foto(d):
 
 async def main():
     conn = await asyncpg.connect(
-        f"postgresql://{getpass.getuser()}@/coinalyze_espejo?host=/var/run/postgresql")
+        f"postgresql://{getpass.getuser()}@/{os.environ.get('K102_ESPEJO_DB', 'coinalyze_espejo')}?host=/var/run/postgresql")
     fallos = []
     try:
         # --- con la LECTURA forzada: los tres marcos tienen que coincidir, y tener lado
         ctx.compute_scalp_summary = con_estado("Short Rejection")
         ctx.data_confidence_row = con_calidad(85.0)
         for sym in ("BTCUSDT_PERP.A", "ETHUSDT_PERP.A", "SOLUSDT_PERP.A"):
-            fotos = {m: foto(await ctx.build_mesa_decide(conn, sym, frame=m))
+            fotos = {m: foto(await ctx.build_mesa_decide(ConMemoria(conn, "Short Rejection"), sym, frame=m))
                      for m in ("scalp", "swing", "largo")}
             s = fotos["scalp"]
             if s["bias_scalp"] != "SHORT":
@@ -647,7 +745,7 @@ else
   git -C "$REPO" archive origin/main | tar -x -C "$VIEJO_C2" 2>/dev/null
   git -C "$REPO" archive "$VIEJO_PALABRA" | tar -x -C "$VIEJO_PAL" 2>/dev/null
   "$PY" - "$REPO" "$VIEJO_PAL" <<'PY' > "$TMP/p11.txt" 2>&1
-import asyncio, getpass, importlib, sys
+import asyncio, getpass, importlib, os, sys
 import asyncpg
 
 RAMA, VIEJO = sys.argv[1], sys.argv[2]
@@ -698,13 +796,15 @@ async def mide(arbol, rotulo):
         assert ctx.__file__.startswith(arbol), f"{rotulo}: cargue {ctx.__file__}"
         parchea(ctx)
         conn = await asyncpg.connect(
-            f"postgresql://{getpass.getuser()}@/coinalyze_espejo?host=/var/run/postgresql")
+            f"postgresql://{getpass.getuser()}@/{os.environ.get('K102_ESPEJO_DB', 'coinalyze_espejo')}?host=/var/run/postgresql")
         try:
             palabras, estados = [], []
             for _ in range(N):
                 d = await ctx.build_mesa_decide(conn, "BTCUSDT_PERP.A", frame="scalp")
                 dec = d["decide"]
-                palabras.append(dec["bias"]["value"])
+                # LA PALABRA DE UNA EVALUACION: desde la v3 (campana 138) viaja en `instante`, y la de
+                # `bias` es la que el sistema sostiene. El codigo viejo no trae `instante`.
+                palabras.append((dec.get("instante") or dec["bias"])["value"])
                 estados.append((dec.get("state") or {}).get("value"))
         finally:
             await conn.close()
@@ -756,7 +856,7 @@ if [ ! -d "$VIEJO_C2/app" ]; then
   echo "  NO MEDIDO C3 · no hay arbol de origin/main desplegado"
 else
   cat > "$TMP/c3.py" <<'PY'
-import asyncio, getpass, json, sys
+import asyncio, getpass, json, os, sys
 sys.path.insert(0, sys.argv[1])
 import asyncpg
 import app.ai_context as ctx
@@ -764,7 +864,7 @@ import app.ai_context as ctx
 async def main():
     assert ctx.__file__.startswith(sys.argv[1]), f"cargue el arbol equivocado: {ctx.__file__}"
     conn = await asyncpg.connect(
-        f"postgresql://{getpass.getuser()}@/coinalyze_espejo?host=/var/run/postgresql")
+        f"postgresql://{getpass.getuser()}@/{os.environ.get('K102_ESPEJO_DB', 'coinalyze_espejo')}?host=/var/run/postgresql")
     try:
         out = {}
         for sym in ("BTCUSDT_PERP.A", "ETHUSDT_PERP.A", "SOLUSDT_PERP.A"):
@@ -887,7 +987,7 @@ PY
   # CON `setsid`: el servidor se va a SU propia sesion, asi que cuando se le mate al final el
   # bash de este control no escupe un «Terminated» en medio del informe.
   corre_banco() {  # corre_banco <arbol> <puerto> <token> <log>
-    ( cd "$1" && PG_HOST=/var/run/postgresql PG_PORT=5432 PG_DB=coinalyze_espejo \
+    ( cd "$1" && PG_HOST=/var/run/postgresql PG_PORT=5432 PG_DB="${K102_ESPEJO_DB:-coinalyze_espejo}" \
         PG_USER="$(id -un)" PG_PASSWORD= API_INTERNAL_TOKEN="$3" PYTHONPATH="$TMP:$1" \
         setsid nohup "$PY" -m uvicorn banco132:app --host 127.0.0.1 --port "$2" \
         > "$4" 2>&1 & )

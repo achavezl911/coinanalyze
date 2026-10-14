@@ -206,12 +206,27 @@ def _decide(payload: dict[str, Any] | None, error: str | None) -> dict[str, Any]
     """Las dos palabras, cada una con lo que significa. `payload` es build_mesa_decide(frame=swing)."""
     por_marco: dict[str, dict[str, Any]] = {}
     memoria: dict[str, Any] = {}
+    recalculo = None
     if payload is not None:
         por_marco["swing"] = (payload.get("decide") or {}).get("bias") or {}
         por_marco["scalp"] = (payload.get("lectura_scalp") or {}).get("bias") or {}
         # LA PALABRA DEL SCALP ES LA QUE EL SISTEMA SOSTIENE (campana 138), con su edad: la de la
         # palabra, no la de la instantanea de debajo.
         memoria = (payload.get("lectura_scalp") or {}).get("memoria") or {}
+        # Y LO QUE HACE FALTA PARA RECALCULARLA desde ESTA respuesta (A76): la regla, las evaluaciones de
+        # SU VENTANA con sus instantes, el corte y la palabra del instante. No se pinta; lo lee K106. Solo
+        # la ventana: la serie entera de la edad pesa hasta ~32 KB y la verifica K102 en /api/mesa/decide.
+        if memoria:
+            corte = (memoria.get("ventana") or {}).get("despues_de")
+            recalculo = {
+                # sin su texto: lleva «60 %» y esta ruta no sirve ninguno (fracciones_servidas); los numeros
+                # de la regla bastan para recalcularla
+                "regla": {k: v for k, v in (memoria.get("regla") or {}).items() if k != "texto"},
+                "serie": [x for x in memoria.get("serie") or [] if corte is not None and x[0] > corte],
+                "edad": memoria.get("edad"),
+                "as_of": (payload.get("envelope_cut") or {}).get("as_of"),
+                "instante": ((payload.get("lectura_scalp") or {}).get("instante") or {}).get("value"),
+            }
     perfiles: dict[str, Any] = {}
     for perfil in PERFILES:
         marco = MARCO_DEL_PERFIL[perfil]["marco"]
@@ -231,7 +246,7 @@ def _decide(payload: dict[str, Any] | None, error: str | None) -> dict[str, Any]
             "motivo": motivo,
             "edad_de_la_palabra": edad.get("frase") if sostenida or palabra is None else
             f"la palabra de {marco.upper()} no sale de una ventana de evaluaciones: no tiene edad propia",
-            "desde": edad.get("desde"),
+            "recalculo": recalculo if sostenida else None,
             **_significado(palabra, marco, motivo, sostenida),
         }
     edad = ((payload or {}).get("age") or {}).get("snapshot_lag_seconds") or {}

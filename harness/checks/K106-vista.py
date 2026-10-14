@@ -18,6 +18,9 @@ LOS BRAZOS, y que condena cada uno:
   E7 decide      la palabra pintada no es la servida, o su frase es la de OTRA palabra (A83)
   E8 peso        la vista pide una ruta que no es de su papel, o mas bytes que su presupuesto, o la
                  respuesta trae hojas que la pantalla no pinta ni usa
+  E9 memoria     (campana 138) la palabra GRANDE de un perfil no sale de la regla que la respuesta
+                 declara sobre la serie que sirve (`recalculo`), su edad no es la de la palabra, se
+                 pinta la del INSTANTE en su sitio, o la pantalla rotula «edad de la palabra» otra cosa
 
 LAS CIFRAS QUE LA VISTA SI PUEDE LLEVAR, una a una, y por que ninguna es una tasa de aciertos (A84):
   precio          un nivel del plan o el ultimo cierre: unidades de precio
@@ -78,7 +81,7 @@ CIFRAS = {  # clase -> como se escribe (es-ES). Nada fuera de aqui puede ser una
 }
 # Prosa servida: reglas, motivos y textos del reglamento. Se exige igualdad exacta con lo servido
 # (E2) y por eso no se le busca forma de cifra; las palabras que prometen se le buscan igual.
-PROSA = re.compile(r"(\.motivo|\.regla|\.reloj|\.frase|\.fuente|\.definicion|\.sin_planes|\.tipo_disparo|"
+PROSA = re.compile(r"(\.motivo|\.regla|\.reloj|\.frase|\.fuente|\.definicion|\.sin_planes|\.tipo_disparo|\.edad_de_la_palabra|"
                    r"\.resueltos_motivo|\.por_que_este_marco|\.etiqueta|\.que|\.error|"
                    r"^que_es|^vivo\.que_es|^marco\.cuentas_que_cuentan|^reciente\.falta_el_resultado|"
                    r"^reciente\.recortada|^marco\.hipotesis_activa\.\w+|^frescura\.regla|"
@@ -97,6 +100,7 @@ NO_SE_PINTA = re.compile(
     r"|^generador\.(tope_s|parado_frase)$"                          # el tope del reloj; el aviso
     r"|^decide\.(edad_s|max_age_s)$"                                # las usa el reloj
     r"|^decide\.perfiles\.\w+\.(palabra|sin_respuesta|motivo)$"     # van en `rotulo` y en `frase`
+    r"|^decide\.perfiles\.\w+\.recalculo[.\[]"                      # lo que E9 recalcula (campana 138)
     r"|\.para\.\w+\.relacion$|^vivo\.rotulos\.\w+$"                # claves de presentacion
     r"|\.(registro_id|caducado|vivo|caducidad_min)$"               # identidad y banderas del reloj
     r"|\.no_puede\.requisitos\[\d+\]$"                             # va dentro de su frase
@@ -444,7 +448,7 @@ def juzga(c: dict, cuerpo: dict | None, ultimo: dict | None, pasado: float, pets
                     h.append(f"E7 {x['perfil']}: la palabra pasa de su tope y la vista no dice que es rancia")
                 continue
             frase = x["frase"]
-            quiere, sobra = _frase_de(pal)
+            quiere, sobra = _frase_de(pal, bool(srv.get("recalculo")))
             if not all(q in frase for q in quiere) or any(s in frase for s in sobra):
                 h.append(f"E7 {x['perfil']}: con {pal or 'sin respuesta'} la frase es de OTRA palabra: {frase[:90]!r}")
         for cel in ([] if borde_decide else c["relaciones"]):
@@ -456,11 +460,48 @@ def juzga(c: dict, cuerpo: dict | None, ultimo: dict | None, pasado: float, pets
                 if "rancio" not in dicho:
                     h.append(f"E7 {cel['celda']}: la palabra pasa de su tope y la celda sigue diciendo {dicho[:60]!r}")
                 continue
+            sin_lado = ("plan condicional: el sistema no sostiene un lado" if srv.get("recalculo")
+                        else "plan condicional: el sistema no toma lado")
             quiere = ("EN CONTRA" if pal in ("LONG", "SHORT") and {"LONG": "largo", "SHORT": "corto"}[pal] != lado
-                      else "mismo lado" if pal in ("LONG", "SHORT") else "plan condicional: el sistema no toma lado"
+                      else "mismo lado" if pal in ("LONG", "SHORT") else sin_lado
                       if pal == "NO OPERAR" else "ni respalda ni desaconseja" if pal == "NO EVALUABLE" else "sin respuesta")
             if quiere not in dicho or dicho != srv["para"][lado]["etiqueta"]:
                 h.append(f"E7 {cel['celda']}: con DECIDE {pal or 'sin respuesta'} la celda dice {dicho[:70]!r}")
+
+    # ---- E9 · la palabra GRANDE de un perfil sale de SU regla, con SU edad (campana 138)
+    # Se recalcula por la regla que la respuesta declara, sobre la serie que sirve (`recalculo`), con la misma
+    # implementacion que B10 de K102 (K.juzga_memoria), no con la de la ruta.
+    if cuerpo and ok:
+        for perfil, srv in cuerpo["decide"]["perfiles"].items():
+            rc = srv.get("recalculo")
+            if not rc:
+                continue
+            mem = {"regla": rc.get("regla"), "serie": rc.get("serie"), "edad": rc.get("edad")}
+            esperada, malas = K.juzga_memoria(mem, rc.get("instante"), rc.get("as_of"), cadena=False)
+            pal = srv.get("palabra")
+            pintada = next((x["rotulo"] for x in c["palabras"] if x["perfil"] == perfil), None)
+            if esperada is None:
+                h.append(f"E9 {perfil}: {malas[0]}")
+            elif pal != esperada:
+                h.append(f"E9 {perfil}: la palabra GRANDE servida es {pal!r} y su regla declarada sobre la serie que la "
+                         f"respuesta sirve da {esperada!r}")
+            elif pintada is not None and pintada != esperada:
+                h.append(f"E9 {perfil}: la palabra pintada es {pintada!r} y su regla da {esperada!r}"
+                         + (" -es la del INSTANTE pintada en el sitio de la grande-" if pintada == rc.get("instante") else ""))
+            elif malas:
+                h.append(f"E9 {perfil}: {malas[0]}")
+            elif K.colector_parado(mem, rc.get("as_of")) and "colector" not in str(srv.get("motivo") or ""):
+                h.append(f"E9 {perfil}: el colector no escribe y la palabra no lo dice: {srv.get('motivo')!r}")
+            elif (srv.get("edad_de_la_palabra") or "") != ((rc.get("edad") or {}).get("frase") or ""):
+                h.append(f"E9 {perfil}: la edad de la palabra servida {srv.get('edad_de_la_palabra')!r} no es la de su "
+                         f"memoria {(rc.get('edad') or {}).get('frase')!r}")
+    # EL ROTULO se juzga solo frente a una respuesta CON memoria: en la de antes de la 138 la palabra era la del
+    # instante y la edad de su dato era la suya. Lo desplegado se juzga por su propio contrato.
+    con_memoria = bool(cuerpo) and any((p or {}).get("recalculo") for p in cuerpo["decide"]["perfiles"].values())
+    if con_memoria and "edad de la palabra" in c["literal"]:
+        i = c["literal"].index("edad de la palabra")
+        h.append(f"E9 la pantalla rotula «edad de la palabra» algo que no es la edad servida de la palabra: "
+                 f"«{c['literal'][max(0, i - 20):i + 50]}»")
 
     # ---- E8 · que pide, cuanto pesa, y que todo lo que trae se pinta o se usa
     papeles = roles()
@@ -481,9 +522,16 @@ def juzga(c: dict, cuerpo: dict | None, ultimo: dict | None, pasado: float, pets
     return h
 
 
-def _frase_de(palabra):
+def _frase_de(palabra, sostenida=False):
     """Lo que la frase de cada palabra TIENE que decir y lo que NO puede: se contrasta con la
-    palabra, no con lo que la respuesta diga que es su frase (A83)."""
+    palabra, no con lo que la respuesta diga que es su frase (A83). `sostenida`: la palabra es la que
+    el sistema sostiene en su ventana (campana 138), y su frase no puede decir «en este instante»."""
+    if palabra in ("LONG", "SHORT") and sostenida:
+        return ([f"sostiene {palabra} en los ultimos 5 min", "EN CONTRA"],
+                ["plan condicional", "ni los respalda", "Sin respuesta", "en este instante"])
+    if palabra == "NO OPERAR" and sostenida:
+        return (["plan condicional: el sistema no sostiene un lado", "no sostiene un lado en los ultimos 5 min"],
+                ["EN CONTRA", "ni los respalda", "Sin respuesta", "toma LONG", "toma SHORT", "en este instante"])
     if palabra in ("LONG", "SHORT"):
         return [f"toma {palabra}", "EN CONTRA"], ["plan condicional", "ni los respalda", "Sin respuesta"]
     if palabra == "NO OPERAR":
@@ -677,9 +725,12 @@ def main() -> int:
             if not 0.85 * cada <= r <= 1.15 * cada + 4:
                 hallazgos.append(f"[{a.activo}] E8 la vista volvio a pedir a los {r} s y su cadencia servida es de {cada} s")
     dom = primera["dom"]
+    con_memoria = [p for p, x in ((ult["cuerpo"] or {}).get("decide") or {}).get("perfiles", {}).items() if (x or {}).get("recalculo")]
     print(f"entradas [{a.activo}] {a.ancho}x{a.alto}: {len(dom['planes'])} planes pintados, {len([n for n in dom['nodos'] if n['vis']])} "
           f"nodos servidos, {len(ruta)} peticion(es) a la ruta" + (f", {max(pesos)} B la mayor" if pesos else "")
-          + (f", cada {ritmo} s" if ritmo else "") + f", {len({p['camino'] for p in ult['peticiones']})} ruta(s) distinta(s)")
+          + (f", cada {ritmo} s" if ritmo else "") + f", {len({p['camino'] for p in ult['peticiones']})} ruta(s) distinta(s)"
+          + (f" · E9 recalcula la palabra grande de {', '.join(con_memoria)}" if con_memoria
+             else " · E9 SIN JUZGAR: la respuesta no trae memoria (lo desplegado antes de la 138)"))
     for hz in dict.fromkeys(hallazgos):
         print(f"   - {hz}")
     if a.firma:

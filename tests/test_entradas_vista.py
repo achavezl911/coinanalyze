@@ -254,7 +254,9 @@ async def test_las_cinco_respuestas_de_decide_cada_una_con_su_frase(sembrada, sc
     if scalp is not None:
         assert "en este instante" not in intradia["frase"]
         assert intradia["edad_de_la_palabra"] == "desde las 21:12:05Z (17 min)"
-        assert intradia["desde"] == "2026-10-14T21:12:05+00:00"
+        # y lo necesario para recalcularla viaja con ella (lo lee K106); sin porcentajes servidos
+        assert intradia["recalculo"]["edad"]["desde"] == "2026-10-14T21:12:05+00:00"
+        assert decide["perfiles"]["swing"]["recalculo"] is None
     # SWING es hoy NO EVALUABLE por el marco: ni desaconseja el plan ni lo respalda
     swing = decide["perfiles"]["swing"]
     if scalp is None:

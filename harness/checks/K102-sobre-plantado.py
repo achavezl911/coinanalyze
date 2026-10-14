@@ -38,6 +38,13 @@ palabra del estado, no podria plantar el defecto que la red tiene que cazar.
 Las CUATRO ultimas son las entradas de la regla de la palabra -el umbral del handoff y
 `classify_signal_observation`- y se sirven POR SEPARADO de `--bias` justo para que el control
 pueda montar una respuesta que se contradiga a si misma.
+
+LA v3 (campana 138), con `--memoria <patron>`: `--bias` pasa a ser la palabra del INSTANTE
+(`decide.instante`), y la serie de evaluaciones registradas se FABRICA con el patron, terminada en el
+corte: sostenido-LONG / sostenido-SHORT (40 seguidas), oscila (LONG y NO OPERAR alternos) o parado
+(40 LONG, la ultima 90 s antes del corte). La memoria fiel -ventana, edad, serie- la compone la funcion
+de la RUTA (`palabra_sostenida`); la palabra GRANDE servida es la de esa regla salvo que `--grande`
+la plante TAL CUAL, que es como el control monta la contradiccion.
 """
 from __future__ import annotations
 
@@ -45,7 +52,7 @@ import argparse
 import http.server
 import json
 import pathlib
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 REPO = pathlib.Path("/srv/coinanalyze/repo")
 TIPOS = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
@@ -65,6 +72,14 @@ def campo(v, k, estado="ok"):
 _pedidas = {"n": 0}
 
 
+def serie(patron: str, corte: datetime) -> list:
+    """La serie de evaluaciones registradas que el patron describe, terminada en el corte (13.9 s)."""
+    palabras = {"sostenido-LONG": ["LONG"] * 40, "sostenido-SHORT": ["SHORT"] * 40,
+                "oscila": ["LONG", "NO OPERAR"] * 20, "parado": ["LONG"] * 40}[patron]
+    ultima = corte - timedelta(seconds=90 if patron == "parado" else 3)
+    return [(ultima - timedelta(seconds=13.9 * (len(palabras) - 1 - i)), p) for i, p in enumerate(palabras)]
+
+
 def sobre(frame: str) -> dict:
     ahora = datetime.now(UTC)
     _pedidas["n"] += 1
@@ -81,6 +96,22 @@ def sobre(frame: str) -> dict:
     # aplicase, no podria plantar la contradiccion que la red tiene que cazar. Lo unico que
     # reproduce es la regla del MARCO, porque sin ella B7 no tendria contra que medir.
     bias_scalp, src_scalp, motivo_scalp = bias, "operator_read.state", None
+    v3 = None
+    if CFG.get("memoria"):
+        import sys
+
+        sys.path.insert(0, str(REPO))
+        from app import ai_context as A
+
+        m = A.palabra_sostenida(serie(CFG["memoria"], ahora), instante=bias, motivo_instante=None, as_of=ahora)
+        v3 = {
+            "instante": {"value": bias, "source_key": "operator_read.state", "status": "ok", "motivo": None,
+                         "cambios_en_ventana": m["cambios_del_instante"],
+                         "frase": A.frase_del_instante(m["cambios_del_instante"])},
+            "memoria": {k: v for k, v in m.items() if k not in ("value", "motivo")},
+        }
+        # LA GRANDE: la de la regla, o la que `--grande` planta TAL CUAL
+        bias_scalp, src_scalp, motivo_scalp = CFG.get("grande") or m["value"], A.MEMORIA_FUENTE, m["motivo"]
 
     if not es_scalp:
         display, src = "NO EVALUABLE", "mesa.decide.frame"
@@ -89,7 +120,7 @@ def sobre(frame: str) -> dict:
         display, src, motivo = bias_scalp, src_scalp, motivo_scalp
 
     d = {
-        "schema_version": "mesa.decide.v2",
+        "schema_version": "mesa.decide.v3" if v3 else "mesa.decide.v2",
         "plantado": (
             "SOBRE CONSTRUIDO por K102-sobre-plantado.py para un control. NO es un dato de "
             "mercado y no sale de ninguna base"
@@ -158,6 +189,7 @@ def sobre(frame: str) -> dict:
                     "status": "ok", "outside_cut": True, "dias": 30},
         "no_trade_reasons": campo([], "operator_read.no_trade_reasons"),
         "warnings": campo([], "operator_read.warnings"),
+        **(v3 or {}),
     }
     if es_scalp:
         d["decide"].update(lectura)
@@ -267,6 +299,10 @@ if __name__ == "__main__":
              "hace falta que el dato NO se renueve: si se renueva, la edad se reinicia y la "
              "transicion no llega a ocurrir",
     )
+    ap.add_argument("--memoria", default=None, choices=("sostenido-LONG", "sostenido-SHORT", "oscila", "parado"),
+                    help="sirve v3: la serie registrada que fabrica el patron; --bias pasa a ser el instante")
+    ap.add_argument("--grande", default=None, choices=("LONG", "SHORT", "NO OPERAR", "NO EVALUABLE"),
+                    help="con --memoria, la palabra GRANDE servida TAL CUAL en vez de la de la regla")
     ap.add_argument(
         "--puerta-vieja",
         action="store_true",
@@ -282,5 +318,5 @@ if __name__ == "__main__":
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", a.puerto), H)
     print(f"plantado en http://127.0.0.1:{a.puerto} lag={a.lag} tope={a.tope} "
           f"bias={a.bias!r} state={a.state!r} balance={a.balance!r} dc={a.dc} "
-          f"libro={a.libro!r} cobertura={a.cobertura}", flush=True)
+          f"libro={a.libro!r} cobertura={a.cobertura} memoria={a.memoria!r} grande={a.grande!r}", flush=True)
     srv.serve_forever()
