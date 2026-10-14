@@ -119,7 +119,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46` | `harness/checks/K02-cobertura-hueco.sh:56`, `harness/checks/K31-cubos.py:40`, `harness/checks/K88-control.bash:438`, `harness/checks/K88-control.bash:480` |
-| **readme** | — | `README.md:404` |
+| **readme** | — | `README.md:408` |
 | **tests** | `tests/test_whale_delta_minutes_postgres.py:283` | `tests/test_whale_delta_minutes_postgres.py:199`, `tests/test_whale_delta_minutes_postgres.py:265` |
 
 **No la llama el panel**, pero si 3 linea(s) de codigo fuera de el.

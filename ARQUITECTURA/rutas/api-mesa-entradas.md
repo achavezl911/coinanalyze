@@ -19,13 +19,13 @@ Handler `mesa_entradas` · `app/api.py:3855` (cuerpo hasta la 3868) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `disponible` | literal en app/entradas/vista.py:502 |
-| `generador` | literal en app/entradas/vista.py:505 |
-| `marco` | literal en app/entradas/vista.py:525 |
-| `motivo` | literal en app/entradas/vista.py:503 |
-| `precio` | literal en app/entradas/vista.py:504 |
-| `reciente` | literal en app/entradas/vista.py:518 |
-| `vivo` | literal en app/entradas/vista.py:517 |
+| `disponible` | literal en app/entradas/vista.py:532 |
+| `generador` | literal en app/entradas/vista.py:535 |
+| `marco` | literal en app/entradas/vista.py:555 |
+| `motivo` | literal en app/entradas/vista.py:533 |
+| `precio` | literal en app/entradas/vista.py:534 |
+| `reciente` | literal en app/entradas/vista.py:548 |
+| `vivo` | literal en app/entradas/vista.py:547 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -53,16 +53,16 @@ LEE:
 
 ## Funciones que la componen
 
-50 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+51 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2566`
 - `app.api.validate_symbol` — `app/api.py:233`
-- `app.entradas.vista.construir` — `app/entradas/vista.py:391`
+- `app.entradas.vista.construir` — `app/entradas/vista.py:421`
 
-<details><summary>Alcanzables de forma indirecta (47)</summary>
+<details><summary>Alcanzables de forma indirecta (48)</summary>
 
 - `app.entradas.reglamento._texto` — `app/entradas/reglamento.py:127`
 - `app.entradas.reglamento._valida_apuestas` — `app/entradas/reglamento.py:308`
@@ -92,25 +92,26 @@ Llamadas directas del handler:
 - `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:319`
 - `app.entradas.ruta._resumen` — `app/entradas/ruta.py:128`
 - `app.entradas.ruta.construir` — `app/entradas/ruta.py:169`
-- `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:368`
-- `app.entradas.vista._base` — `app/entradas/vista.py:226`
-- `app.entradas.vista._de` — `app/entradas/vista.py:302`
-- `app.entradas.vista._decide` — `app/entradas/vista.py:165`
-- `app.entradas.vista._disparado` — `app/entradas/vista.py:252`
-- `app.entradas.vista._distancia` — `app/entradas/vista.py:213`
-- `app.entradas.vista._muestra` — `app/entradas/vista.py:333`
-- `app.entradas.vista._orden` — `app/entradas/vista.py:308`
-- `app.entradas.vista._papeles` — `app/entradas/vista.py:317`
-- `app.entradas.vista._precio` — `app/entradas/vista.py:109`
-- `app.entradas.vista._r` — `app/entradas/vista.py:118`
-- `app.entradas.vista._requisitos` — `app/entradas/vista.py:238`
-- `app.entradas.vista._significado` — `app/entradas/vista.py:125`
-- `app.entradas.vista._sombra` — `app/entradas/vista.py:292`
-- `app.entradas.vista._vigilando` — `app/entradas/vista.py:246`
-- `app.entradas.vista._zona` — `app/entradas/vista.py:208`
-- `app.entradas.vista.componer` — `app/entradas/vista.py:413`
-- `app.entradas.vista.pasada_en_curso` — `app/entradas/vista.py:348`
-- `app.entradas.vista.precio_ahora` — `app/entradas/vista.py:99`
+- `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:398`
+- `app.entradas.vista._base` — `app/entradas/vista.py:256`
+- `app.entradas.vista._de` — `app/entradas/vista.py:332`
+- `app.entradas.vista._decide` — `app/entradas/vista.py:195`
+- `app.entradas.vista._disparado` — `app/entradas/vista.py:282`
+- `app.entradas.vista._distancia` — `app/entradas/vista.py:243`
+- `app.entradas.vista._fraccion` — `app/entradas/vista.py:142`
+- `app.entradas.vista._muestra` — `app/entradas/vista.py:363`
+- `app.entradas.vista._orden` — `app/entradas/vista.py:338`
+- `app.entradas.vista._papeles` — `app/entradas/vista.py:347`
+- `app.entradas.vista._precio` — `app/entradas/vista.py:129`
+- `app.entradas.vista._r` — `app/entradas/vista.py:138`
+- `app.entradas.vista._requisitos` — `app/entradas/vista.py:268`
+- `app.entradas.vista._significado` — `app/entradas/vista.py:155`
+- `app.entradas.vista._sombra` — `app/entradas/vista.py:322`
+- `app.entradas.vista._vigilando` — `app/entradas/vista.py:276`
+- `app.entradas.vista._zona` — `app/entradas/vista.py:238`
+- `app.entradas.vista.componer` — `app/entradas/vista.py:443`
+- `app.entradas.vista.pasada_en_curso` — `app/entradas/vista.py:378`
+- `app.entradas.vista.precio_ahora` — `app/entradas/vista.py:119`
 
 </details>
 
@@ -137,7 +138,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **tests** | `tests/test_entradas_vista.py:107` | `tests/test_entradas_vista.py:1` |
+| **tests** | `tests/test_entradas_vista.py:108` | `tests/test_entradas_vista.py:1` |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
@@ -200,7 +201,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.revision_vigente` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.validar` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.version` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| _… y 26 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 27 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

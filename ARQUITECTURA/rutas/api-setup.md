@@ -88,7 +88,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | — | `harness/checks/K44-control.bash:863`, `harness/checks/K88-control.bash:161`, `harness/checks/K88-control.bash:162`, `harness/checks/K88-control.bash:479` |
-| **readme** | — | `README.md:411` |
+| **readme** | — | `README.md:415` |
 
 **Nadie la llama.** Sus 5 rastros son todos MENCION -comentario,
 docstring o documento-. Es la forma del patron que en esta casa se ha repetido

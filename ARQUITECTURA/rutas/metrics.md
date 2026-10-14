@@ -88,7 +88,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **readme** | — | `README.md:290`, `README.md:291`, `README.md:319`, `README.md:503` |
+| **readme** | — | `README.md:290`, `README.md:291`, `README.md:319`, `README.md:507` |
 | **tests** | `tests/test_metrics_endpoint.py:252` | `tests/test_metrics_endpoint.py:3`, `tests/test_metrics_endpoint.py:4` |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.

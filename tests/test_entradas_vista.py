@@ -28,6 +28,7 @@ import pytest
 from app import api
 from app.entradas import codigo as C
 from app.entradas import foto as F
+from app.entradas import motor as M
 from app.entradas import registro as G
 from app.entradas import reglamento as R
 from app.entradas import ruta as RUTA
@@ -151,7 +152,8 @@ async def test_de_punta_a_punta_el_disparado_vivo_sale_con_su_plan_entero(sembra
         assert [c["pata"] for c in d["costes"]] == ["entrada", "objetivo", "stop"]
         for c in d["costes"]:
             assert c["bps"] > 0 and c["venue"]
-            assert c["x_objetivo"] == pytest.approx(c["bps"] / d["t1_distancia_bps"], abs=0.002)
+            assert c["x_objetivo"] == pytest.approx(c["bps"] / d["t1_distancia_bps"], abs=0.006)
+            assert c["x_objetivo"] > 0, "un coste que no es cero no sale como cero"
         # los requisitos: la LISTA con su estado, sin conteo ni nota
         assert [r["nombre"] for r in d["requisitos"]] == list(F.FILTROS)
         assert {r["estado"] for r in d["requisitos"]} == {"cumple"}
@@ -273,6 +275,69 @@ async def test_la_palabra_de_scalp_que_la_vista_lee_es_la_que_decide_sirve_en_sc
                                   palabra_de_decide=api.build_mesa_decide)
     assert respuesta["decide"]["perfiles"]["intradia"]["rotulo"] == en_scalp["value"]
     assert RUTA.fracciones_servidas(respuesta) == []
+
+
+def test_el_readme_no_niega_las_entradas_que_el_sistema_genera():
+    """Remate R1. El README decia, del sistema entero y en presente, «no genera entradas mecánicas»: desde
+    la campana 135 las genera. Se lee sin saltos de linea, que es por donde se cayo de la busqueda."""
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    assert "no genera entradas" not in readme.lower()
+    assert "`config/entradas/reglamento.json`" in readme and "`#<marco>/<activo>/entradas`" in readme
+
+
+def test_una_fraccion_del_objetivo_que_no_es_cero_no_sale_como_cero(monkeypatch):
+    """Remate R2. «x0,00 del objetivo» se lee «no cuesta nada». La precision la pone la ruta (A77): dos
+    decimales, y por debajo de 0,01 los que hagan falta para que se vea su primera cifra. El cliente pinta
+    lo que llega, sin redondear (tests/js/mesa_entradas.test.js; en un navegador, K106)."""
+    assert [V._fraccion(v) for v in (0.0375, 0.0446, 0.5, 1.234, 12)] == [0.04, 0.04, 0.5, 1.23, 12.0]
+    assert [V._fraccion(v) for v in (0.007, 0.002146, 0.0096, 0.00032, 4e-7)] == [0.007, 0.002, 0.01, 0.0003, 4e-7]
+    assert all(V._fraccion(10.0 ** -n) > 0 > V._fraccion(-(10.0 ** -n)) for n in range(1, 30))
+    assert V._fraccion(0) == 0.0 and V._fraccion(None) is None
+    # por la ruta: el plan que midio el operador (T1 a 932,1 bps), y el gemelo: una pata que de verdad no cuesta
+    plan = copy.deepcopy(EB.PLAN)
+    plan["distancias_bps"]["t1"] = 932.1
+    plan["costes"]["stop"]["total_bps"] = 0.0
+    plan["cocientes"]["coste_objetivo"] = 0.0086
+    monkeypatch.setattr(EB, "PLAN", plan)
+    d = _planes(EB.respuesta(None), "disparados")[0]
+    assert [(c["pata"], c["bps"], c["x_objetivo"]) for c in d["costes"]] == [
+        ("entrada", 6.0, 0.006), ("objetivo", 2.0, 0.002), ("stop", 0.0, 0.0)]
+    assert d["coste_ida_y_vuelta_x_objetivo"] == 0.009
+
+
+async def test_la_tabla_de_recuentos_dice_que_cuenta_y_el_registro_lo_cumple(sembrada):
+    """Remate R3. La columna se llamaba VIGILANDO, como el estado de un plan vivo, y «VIGILANDO 264» se leia
+    «264 planes vigilados ahora». La ruta sirve la frase que dice que cuenta cada columna, y lo que la frase
+    afirma se comprueba aqui sobre lo que el registro DE VERDAD escribe: una fila al abrirse, otra al cerrarse."""
+    conn, _, T = sembrada
+    marco = (await _vista(conn))["marco"]
+    frase = marco["cuentas_que_cuentan"]
+    assert frase == V.CUENTAS_QUE_CUENTAN and "NO planes vivos" in frase
+    assert all(e.replace("_", " ") in frase for e in M.ESTADOS), "la frase nombra la fila de cada columna"
+    # la cabecera de cada columna: una por estado del motor, y ninguna se llama como el estado de un plan
+    assert tuple(marco["cuentas_rotulos"]) == M.ESTADOS
+    assert not set(marco["cuentas_rotulos"].values()) & {*V.ROTULOS_VIVO.values(), *M.ESTADOS}
+
+    async def episodios():
+        return [dict(f) for f in await conn.fetch(
+            "SELECT version, symbol, familia, perfil, lado, clave, episodio, "
+            "count(*) FILTER (WHERE estado = 'VIGILANDO') AS abre, "
+            "count(*) FILTER (WHERE estado <> 'VIGILANDO') AS cierra "
+            "FROM entrada_registro GROUP BY 1, 2, 3, 4, 5, 6, 7 ORDER BY 1, 2, 3, 4, 5, 6, 7")]
+
+    antes = await episodios()
+    assert antes and all(e["abre"] == 1 and e["cierra"] <= 1 for e in antes), "una fila al abrirse y como mucho otra al cerrarse"
+    assert any(e["cierra"] for e in antes), "el escenario trae episodios cerrados"
+    # cada columna cuenta los episodios que tienen esa fila; uno que sigue abierto solo cuenta en la primera
+    assert marco["cuentas"]
+    for c in marco["cuentas"]:
+        suyos = [e for e in antes if all(e[k] == c[k] for k in ("familia", "perfil", "lado", "version"))]
+        assert c["VIGILANDO"] == len(suyos)
+        assert c["DISPARADO"] + c["SOMBRA"] + c["CERRADO_SIN_DISPARO"] == sum(e["cierra"] for e in suyos)
+    # y re-evaluar la misma vela (la recuperacion de una pasada que murio a medias) no le anade filas a ninguno
+    await S.evaluar_vela(conn, T=T, doc=B.doc_de_prueba(T, "v1", "v2", tope_s=900), huella_codigo=C.huella_codigo(),
+                         esperar=False)
+    assert await episodios() == antes
 
 
 def test_un_plan_caducado_no_sale_como_vivo_y_el_orden_es_por_hora():

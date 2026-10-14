@@ -47,16 +47,31 @@ n_decl=$(printf '%s\n' "$declaradas" | grep -c .)
 # -43 nombres, 802 bytes-, tenga el espejo las tablas que tenga. No se le quita el corte al canal:
 # si aun asi la lista no llega entera, sigue siendo NO MEDIDO.
 # Los nombres salen de la regex de arriba ([a-z_]+): no llevan nada que escapar.
+# LO QUE DIJO EL MOTOR (campana 137, remate R4). La promesa de K63 -«para poder nombrar el error»- se rompio
+# sin que nadie tocara este check: desde K94 `espejosql` escribe primero su salida, VACIA si la consulta fallo,
+# y DESPUES el error. La primera linea de «salida y error juntos» es una linea en blanco, y el NO MEDIDO
+# acababa en «no devolvio un numero: » y nada detras. Se coge la primera linea que diga ERROR o FATAL y, si
+# no hay ninguna, la primera que traiga texto. awk la lee entera: aqui no hay tuberia que se cierre antes.
+dijo() {
+  awk '/ERROR|FATAL/ && e == "" { e = $0 } NF && p == "" { p = $0 }
+       END { t = (e != "" ? e : p); print (t != "" ? substr(t, 1, 160) : "(el canal no devolvio ningun texto)") }' <<< "$1"
+}
+
 lista_sql=$(printf '%s\n' "$declaradas" | sed "s/.*/'&'/" | paste -sd, -)
 DONDE="schemaname='public' AND tablename IN ($lista_sql)"
 
 crudo_n=$("$B/bin/espejosql" "SELECT count(*) FROM pg_tables WHERE $DONDE" 2>&1)
 n_pub=$(printf '%s\n' "$crudo_n" | grep -E '^[0-9]+$' | head -1)
 [ -n "$n_pub" ] || {
-  echo "NO MEDIDO: contar las tablas declaradas que tiene el espejo no devolvio un numero: $(printf '%s' "$crudo_n" | head -1 | cut -c1-120)"
+  echo "NO MEDIDO: contar las tablas declaradas que tiene el espejo no devolvio un numero: $(dijo "$crudo_n")"
   exit 2; }
 
-crudo_tablas=$("$B/bin/espejosql" "SELECT tablename FROM pg_tables WHERE $DONDE ORDER BY 1" 2>&1)
+crudo_tablas=$("$B/bin/espejosql" "SELECT tablename FROM pg_tables WHERE $DONDE ORDER BY 1" 2>&1); rc_lista=$?
+# Un listado que FALLA no es una lista incompleta: sin esto el error del motor salia como «el listado trajo 0
+# nombres», que es verdad y no dice por que.
+[ "$rc_lista" = 0 ] || {
+  echo "NO MEDIDO: listar las tablas declaradas que tiene el espejo fallo (rc=$rc_lista): $(dijo "$crudo_tablas")"
+  exit 2; }
 # EL CORTE SE LEE EN SU MARCA, no solo en la cuenta: un nombre partido por el corte sigue teniendo
 # forma de nombre, y si el corte cae dentro del ULTIMO la cuenta cuadra y el check condenaria «falta»
 # una tabla que esta (el 10-10 el corte cayo a 31 bytes del final).
@@ -82,7 +97,7 @@ faltan=$(comm -23 <(printf '%s\n' "$declaradas") <(printf '%s\n' "$presentes") |
 crudo_filas=$("$B/bin/espejosql" "SELECT count(*) FROM signal_outcome" 2>&1)
 filas=$(printf '%s\n' "$crudo_filas" | grep -E '^[0-9]+$' | head -1)
 [ -n "$filas" ] || {
-  echo "NO MEDIDO: contar signal_outcome en el espejo no devolvio un numero: $(printf '%s' "$crudo_filas" | head -1 | cut -c1-120)"
+  echo "NO MEDIDO: contar signal_outcome en el espejo no devolvio un numero: $(dijo "$crudo_filas")"
   exit 2; }
 [ "$filas" -gt 0 ] || { echo "el espejo tiene las $n_decl tablas pero signal_outcome esta VACIA: 0 filas contadas"; exit 1; }
 

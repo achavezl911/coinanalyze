@@ -38,7 +38,7 @@
 | `/api/market-impact` | GET | 6 | 2 | 7 | [ficha](rutas/api-market-impact.md) |
 | `/api/market-memory` | GET | 13 | 1 | 5 | [ficha](rutas/api-market-memory.md) |
 | `/api/mesa/decide` | GET | 3 | 15 | 55 | [ficha](rutas/api-mesa-decide.md) |
-| `/api/mesa/entradas` | GET | 7 | 4 | 50 | [ficha](rutas/api-mesa-entradas.md) |
+| `/api/mesa/entradas` | GET | 7 | 4 | 51 | [ficha](rutas/api-mesa-entradas.md) |
 | `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
 | `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
 | `/api/oi-context` | GET | 16 | 4 | 12 | [ficha](rutas/api-oi-context.md) |

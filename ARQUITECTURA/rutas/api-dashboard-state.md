@@ -324,7 +324,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:157`, `harness/checks/K43-foto-unica.sh:228`, `harness/checks/K43-foto-unica.sh:229`, `harness/checks/K43-foto-unica.sh:230` _(+20)_ | `harness/checks/K43-foto-unica.sh:236`, `harness/checks/K44-control.bash:254`, `harness/checks/K44-control.bash:628`, `harness/checks/K44-control.bash:720` _(+7)_ |
 | **panel** | `static/js/07-decision-y-ciclos.js:243` | `static/js/07-decision-y-ciclos.js:26`, `static/js/07-decision-y-ciclos.js:33`, `static/js/07-decision-y-ciclos.js:235` |
-| **readme** | — | `README.md:195`, `README.md:488`, `README.md:502` |
+| **readme** | — | `README.md:195`, `README.md:492`, `README.md:506` |
 | **tests** | `tests/test_metrics_endpoint.py:253`, `tests/test_v121_hardening.py:35`, `tests/test_v150_desk_snapshot.py:130` | — |
 
 **La llama el panel: es superficie de producto.**

@@ -23,6 +23,7 @@ reglamento, con la n servida: hoy los resueltos son 0 (la E3 no existe).
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -88,6 +89,25 @@ FALTA_RESULTADO = (
     "De lo que el precio hizo despues de cada plan esta pantalla no dice nada: el resultado es lo "
     "que falta (E3)."
 )
+# LA TABLA DE RECUENTOS (campana 137, remate R3). Su primera columna se llamaba VIGILANDO, como el estado
+# de un plan vivo, y «VIGILANDO 264» se leia «264 planes vigilados ahora». Lo que cuenta es otra cosa y sale
+# del registro: un episodio tiene UNA fila VIGILANDO y UNA terminal (app/entradas/registro.py, insertar).
+# Medido en produccion el 2026-10-13 23:43Z: 1646 episodios y 3260 filas, ninguno con mas de dos, ninguno
+# sin su fila VIGILANDO, ninguno con un estado repetido, y 32 abiertos. Lo ata tests/test_entradas_vista.py.
+CUENTAS_QUE_CUENTAN = (
+    "Esta tabla cuenta EPISODIOS del registro, NO planes vivos. Cada episodio deja una fila al abrirse "
+    "(VIGILANDO) y otra al cerrarse, con como acabo (DISPARADO, SOMBRA o CERRADO SIN DISPARO). Cada columna "
+    "cuenta los episodios que tienen esa fila, de todos los activos juntos y desde que el registro existe; "
+    "uno que sigue abierto solo cuenta en la primera. Lo que se vigila AHORA en este activo esta arriba, en "
+    "«lo vivo»."
+)
+# La cabecera de cada columna, en pasado: lo que le paso a un episodio, no el estado de un plan.
+CUENTAS_ROTULOS = {
+    "VIGILANDO": "SE ABRIERON",
+    "DISPARADO": "ACABARON EN DISPARADO",
+    "SOMBRA": "ACABARON EN SOMBRA",
+    "CERRADO_SIN_DISPARO": "SE CERRARON SIN DISPARO",
+}
 _PRECIO_SQL = """
 SELECT ts, close FROM ohlcv
 WHERE symbol = $1 AND interval = '1min' AND ts >= $2
@@ -117,6 +137,16 @@ def _precio(valor: Any) -> float | None:
 
 def _r(valor: Any, decimales: int) -> float | None:
     return None if valor is None else round(float(valor), decimales)
+
+
+def _fraccion(valor: Any) -> float | None:
+    """Una fraccion del objetivo, a la precision con que se pinta (A77): dos decimales, y por debajo de
+    0,01 los que hagan falta para que se vea su primera cifra. De aqui no sale como cero lo que no lo
+    es: «x0,00 del objetivo» se lee «no cuesta nada» (campana 137, remate R2)."""
+    if valor is None:
+        return None
+    n = float(valor)
+    return round(n, max(2, -math.floor(math.log10(abs(n))))) if n else 0.0
 
 
 # --------------------------------------------------------------------------- DECIDE
@@ -279,10 +309,10 @@ def _disparado(fila: dict[str, Any], as_of: datetime) -> dict[str, Any]:
         "costes": [
             {"pata": pata, "venue": c.get("venue"), "tipo": c.get("tipo"),
              "bps": _r(c.get("total_bps"), 2),
-             "x_objetivo": _r(c["total_bps"] / t1, 3) if c.get("total_bps") is not None and t1 else None}
+             "x_objetivo": _fraccion(c["total_bps"] / t1) if c.get("total_bps") is not None and t1 else None}
             for pata, c in ((n, (p.get("costes") or {}).get(n) or {}) for n in ("entrada", "objetivo", "stop"))
         ],
-        "coste_ida_y_vuelta_x_objetivo": _r((p.get("cocientes") or {}).get("coste_objetivo"), 3),
+        "coste_ida_y_vuelta_x_objetivo": _fraccion((p.get("cocientes") or {}).get("coste_objetivo")),
         "requisitos": _requisitos(foto),
     })
     plan["invalidacion"]["nivel"] = _precio(plan["invalidacion"]["nivel"])
@@ -533,8 +563,8 @@ def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict
                            ("revision", "vigente_desde", "cubre_hasta", "eventos",
                             "dias_que_le_quedan", "motivo")},
             "hipotesis_activa": reglamento.get("hipotesis_activa"),
-            "cuentas_ambito": "filas del registro por celda y estado, de los tres activos juntos y "
-            "desde que el registro existe",
+            "cuentas_que_cuentan": CUENTAS_QUE_CUENTAN,
+            "cuentas_rotulos": CUENTAS_ROTULOS,
             "resueltos_motivo": motivo_comun,
             "cuentas": [{**{k: v for k, v in c.items() if k != "resueltos_motivo" or motivo_comun is None},
                          "muestra": _muestra(doc, c["resueltos"])} for c in registro["cuentas"]],

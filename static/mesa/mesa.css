@@ -1016,6 +1016,10 @@ h1 {
   font-weight: 700;
 }
 
+.ent-cuentas {
+  margin-top: 10px;
+}
+
 .ent-cuentas td,
 .ent-cuentas th {
   font-size: 11px;

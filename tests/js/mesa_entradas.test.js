@@ -155,3 +155,23 @@ test('sin respuesta de DECIDE la vista pinta lo que se le sirve y no una palabra
   const palabras = m.id('ent-decide').querySelectorAll('.ent-palabra').map((n) => [n.textContent, n.getAttribute('data-palabra')]);
   assert.deepStrictEqual(palabras, [['SIN RESPUESTA', ''], ['SIN RESPUESTA', '']]);
 });
+
+test('una fraccion del objetivo se pinta ENTERA, y la tabla de recuentos lleva su frase y sus cabeceras servidas', () => {
+  // Remate R2 y R3. La precision de la fraccion la pone la ruta y aqui no se redondea: 0,002 a dos decimales
+  // era «x0,00 del objetivo». Y las columnas de la tabla ya no se llaman como el estado de un plan vivo.
+  const m = mesa();
+  const datos = respuesta('LONG');
+  const plan = datos.vivo.celdas[0].por_version[0].disparados[0];
+  [0.04, 0.002, 0].forEach((x, i) => { plan.costes[i].x_objetivo = x; });
+  plan.coste_ida_y_vuelta_x_objetivo = 0.0000004;
+  m.pinta({ ok: true, datos });
+  const de = (caja, attr, valor) => m.id(caja).querySelectorAll('[' + attr + ']')
+    .filter((n) => (valor.test ? valor.test(n.getAttribute(attr)) : n.getAttribute(attr) === valor));
+  assert.deepStrictEqual(
+    de('ent-vivo', 'data-cifra', 'x-objetivo').map((n) => n.textContent),
+    ['x0,04 del objetivo', 'x0,002 del objetivo', 'x0,00 del objetivo', 'x0,0000004 del objetivo']);
+  assert.deepStrictEqual(de('ent-marco', 'data-k', 'marco.cuentas_que_cuentan').map((n) => n.textContent),
+                         [datos.marco.cuentas_que_cuentan]);
+  assert.deepStrictEqual(de('ent-marco', 'data-k', /^marco\.cuentas_rotulos\./).map((n) => n.textContent),
+                         ['SE ABRIERON', 'ACABARON EN DISPARADO', 'ACABARON EN SOMBRA', 'SE CERRARON SIN DISPARO']);
+});

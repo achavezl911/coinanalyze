@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 607 funciones con radio, 250 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 608 funciones con radio, 250 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **49** de las 607 escriben alguna tabla
+Solo **49** de las 608 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -83,7 +83,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-607 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+608 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -486,26 +486,27 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.delta_profile.delta_profile`](impacto/app-delta_profile.md) | `app/delta_profile.py:222` | 1 | **0** | 0 | **1** |
 | [`app.delta_profile.profile_read`](impacto/app-delta_profile.md) | `app/delta_profile.py:115` | 1 | **0** | 0 | **1** |
 | [`app.delta_profile.value_area`](impacto/app-delta_profile.md) | `app/delta_profile.py:92` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._ancla_no_puede`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:368` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._base`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:226` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._de`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:302` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._decide`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:165` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._disparado`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:252` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._distancia`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:213` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._muestra`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:333` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._orden`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:308` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._papeles`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:317` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._precio`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:109` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._r`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:118` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._requisitos`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:238` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._significado`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:125` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._sombra`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:292` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._vigilando`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:246` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._zona`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:208` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.componer`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:413` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.construir`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:391` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.pasada_en_curso`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:348` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.precio_ahora`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:99` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._ancla_no_puede`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:398` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._base`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:256` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._de`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:332` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._decide`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:195` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._disparado`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:282` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._distancia`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:243` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._fraccion`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:142` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._muestra`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:363` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._orden`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:338` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._papeles`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:347` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._precio`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:129` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._r`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:138` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._requisitos`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:268` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._significado`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:155` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._sombra`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:322` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._vigilando`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:276` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._zona`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:238` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.componer`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:443` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.construir`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:421` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.pasada_en_curso`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:378` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.precio_ahora`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:119` | 1 | **0** | 0 | **1** |
 | [`app.rango._prueba`](impacto/app-rango.md) | `app/rango.py:107` | 1 | **0** | 0 | **1** |
 | [`app.rango._pruebas`](impacto/app-rango.md) | `app/rango.py:111` | 1 | **0** | 0 | **1** |
 | [`app.rango._ventana`](impacto/app-rango.md) | `app/rango.py:51` | 1 | **0** | 0 | **1** |

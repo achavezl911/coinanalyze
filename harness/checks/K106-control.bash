@@ -21,6 +21,9 @@
 #   C4  la vista principal pidiendo la ruta de entradas · la de entradas pidiendo una PARTE ·
 #       K102 con DECIDE empujado fuera del pliegue por la cabecera
 #   C5  la misma ruta trayendo el peso del registro entero · una vista que no obedece su cadencia
+#   y del remate: R2  un coste de 0,002 del objetivo, pintado («x0,002») y redondeado a «x0,00» como
+#       antes · su gemelo, un cero servido que se pinta como cero.  R3  la tabla de recuentos sin su
+#       frase (callada por la pantalla, y sin servir por la ruta) · con la cabecera VIGILANDO de antes
 #   y el check: sus tres invocaciones (A56), los dos modos de SIGPIPE (A89), y una mesa sin la vista
 #   (NO MEDIDO, ni ROJO ni VERDE). Y el lector de cifras de la propia red: «63.385» son sesenta y
 #   tres mil, y una variante de la sonda que lo lea como K102 tiene que condenar una pagina fiel.

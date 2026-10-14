@@ -73,7 +73,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K20-cincoxx.sh:126`, `harness/checks/K31-eslabon5.sh:65`, `harness/checks/K43-foto-unica.sh:170` | `harness/checks/K20-cincoxx.sh:124`, `harness/checks/K31-eslabon5.sh:57` |
 | **panel** | `static/js/08-arranque.js:8` | — |
-| **readme** | — | `README.md:412` |
+| **readme** | — | `README.md:416` |
 
 **La llama el panel: es superficie de producto.**
 

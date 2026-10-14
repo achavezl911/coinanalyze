@@ -23,7 +23,8 @@ LAS CIFRAS QUE LA VISTA SI PUEDE LLEVAR, una a una, y por que ninguna es una tas
   precio          un nivel del plan o el ultimo cierre: unidades de precio
   distancia-pct   lo que separa una zona del precio, en % DEL PRECIO: mide distancia, no aciertos
   bps             distancia al stop o a T1, o coste de una pata: diezmilesimas del precio
-  x-objetivo      coste como fraccion de la distancia a T1 («x0,04 del objetivo»): un coste
+  x-objetivo      coste como fraccion de la distancia a T1 («x0,04 del objetivo»): un coste. Dos
+                  decimales, o los que la ruta sirva por debajo de 0,01 («x0,002 del objetivo»)
   r               R bruto y neto del PLAN: beneficio a T1 entre riesgo al stop, de su foto
   p-equilibrio    la p a partir de la cual el plan no pierde, calculada de su R y sus costes ANTES
                   de saber como acaba: es del plan, no de un resultado
@@ -63,11 +64,12 @@ CONTRATO = AQUI / "K44-contrato-mesa.tsv"
 PRESUPUESTO_B = 48_000
 BORDE_S = 2.5
 
+ESTADOS = ("VIGILANDO", "DISPARADO", "SOMBRA", "CERRADO_SIN_DISPARO")  # las columnas de la tabla de recuentos
 CIFRAS = {  # clase -> como se escribe (es-ES). Nada fuera de aqui puede ser una cifra.
     "precio": r"-?\d{1,3}(\.\d{3})*(,\d+)?|-?\d+(,\d+)?",
     "distancia-pct": r"\d+,\d{2} %",
     "bps": r"\d+(\.\d{3})*,\d{1,2} bps",
-    "x-objetivo": r"x\d+,\d{2} del objetivo",
+    "x-objetivo": r"x\d+,\d{2,} del objetivo",
     "r": r"-?\d+,\d{2}",
     "p-equilibrio": r"0,\d{3}|1,000",
     "recuento": r"\d+",
@@ -78,7 +80,7 @@ CIFRAS = {  # clase -> como se escribe (es-ES). Nada fuera de aqui puede ser una
 # (E2) y por eso no se le busca forma de cifra; las palabras que prometen se le buscan igual.
 PROSA = re.compile(r"(\.motivo|\.regla|\.reloj|\.frase|\.fuente|\.definicion|\.sin_planes|\.tipo_disparo|"
                    r"\.resueltos_motivo|\.por_que_este_marco|\.etiqueta|\.que|\.error|"
-                   r"^que_es|^vivo\.que_es|^marco\.cuentas_ambito|^reciente\.falta_el_resultado|"
+                   r"^que_es|^vivo\.que_es|^marco\.cuentas_que_cuentan|^reciente\.falta_el_resultado|"
                    r"^reciente\.recortada|^marco\.hipotesis_activa\.\w+|^frescura\.regla|"
                    r"^generador\.pasada_en_curso)$")
 FRACCION = re.compile(r"\d\s*/\s*\d|\d\s*%|\d+\s+de\s+(cada\s+)?\d+|\bpor\s+cien(to)?\b", re.I)
@@ -208,6 +210,16 @@ def casa(nodo, servido) -> bool:
     return K.casan_valores(t, servido)
 
 
+def como_cero(nodo, servido) -> bool:
+    """Se lee CERO lo que la ruta sirve distinto de cero? Comparar a la precision pintada (A77) da por
+    fiel «x0,00 del objetivo» ante un 0.002 servido, y eso se lee «no cuesta nada»: un cero pintado solo
+    es fiel a un cero servido (campana 137, remate R2). Vale para toda clase de cifra, y no depende del
+    lector de cifras de casa(): mira si el texto trae algun digito que no sea 0."""
+    if not nodo["cifra"] or nodo["cifra"] == "muestra" or isinstance(servido, bool) or not isinstance(servido, (int, float)):
+        return False
+    return servido != 0 and bool(re.search(r"\d", nodo["t"])) and not re.search(r"[1-9]", nodo["t"])
+
+
 def segundos(texto: str):
     """«2 h 13 min» -> (7980, 60): los segundos que dice y la resolucion con que lo dice."""
     valor, fino = 0, None
@@ -241,8 +253,19 @@ def juzga(c: dict, cuerpo: dict | None, ultimo: dict | None, pasado: float, pets
             hay, servido = K.resuelve(cuerpo, n["k"])
             if not hay:
                 h.append(f"E2 pinta {n['k']} = {n['t'][:40]!r}, que la respuesta no sirve")
+            elif como_cero(n, servido):
+                h.append(f"E2 {n['k']}: se pinta como CERO ({n['t'][:40]!r}) y la respuesta sirve {servido!r}, que no lo es")
             elif not casa(n, servido):
                 h.append(f"E2 {n['k']}: pinta {n['t'][:50]!r} y la respuesta sirve {str(servido)[:50]!r}")
+        # LA TABLA DE RECUENTOS NO SE PINTA SIN DECIR QUE CUENTA (remate R3): «VIGILANDO 264» se leia «264 planes
+        # vigilados ahora». Con una fila de la tabla a la vista, la frase y la cabecera de cada columna tienen que
+        # estar a la vista y con texto, las sirva la ruta o no (si no las sirve, E8 no tiene hoja que echar de menos).
+        dicho = {n["k"] for n in visibles if n["t"].strip()}
+        if any(re.match(r"marco\.cuentas\[\d+\]\.", k) for k in dicho):
+            callan = [k for k in ("marco.cuentas_que_cuentan", *(f"marco.cuentas_rotulos.{e}" for e in ESTADOS))
+                      if k not in dicho]
+            if callan:
+                h.append(f"E2 la tabla de recuentos se pinta sin decir que cuenta: no esta a la vista {', '.join(callan)}")
         servidos = {}
         for celda in cuerpo["vivo"]["celdas"]:
             for v in celda["por_version"]:

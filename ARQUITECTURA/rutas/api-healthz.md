@@ -97,7 +97,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:55`, `harness/checks/K05-control.bash:307`, `harness/checks/K05-latidos.sh:127`, `harness/checks/K05-latidos.sh:388` _(+7)_ | `harness/checks/K05-latidos.sh:2`, `harness/checks/K08-control.bash:6`, `harness/checks/K08-control.bash:40`, `harness/checks/K08-que-base.sh:6` _(+3)_ |
 | **panel** | `static/js/07-decision-y-ciclos.js:245`, `static/js/07-decision-y-ciclos.js:405` | — |
-| **readme** | — | `README.md:413`, `README.md:436` |
+| **readme** | — | `README.md:417`, `README.md:440` |
 | **tests** | — | `tests/test_cobertura_proveedor.py:7`, `tests/test_deploy_health_gate.py:38`, `tests/test_deploy_health_gate.py:154`, `tests/test_ingest_health.py:232` |
 
 **La llama el panel: es superficie de producto.**

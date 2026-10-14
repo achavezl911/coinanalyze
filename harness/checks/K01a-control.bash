@@ -15,6 +15,9 @@
 #                 creadas: su listado no cabe en el corte del canal                      NO MEDIDO, nunca VERDE
 #     y su gemelo: el mismo con 100 (cabe)                                               VERDE
 #                  -lo que decide es el corte, no lo largo del nombre-
+#   error_al_*    la base contesta, y UNA consulta da un error del motor (remate, R4): una
+#                 por cada sitio donde el check cuenta o lista                           NO MEDIDO, y NOMBRA el error
+#     y sus gemelos: lo mismo sin el error, VERDE; y el K01a de aa5ad6f, que se lo callaba
 #   sin_base      una base que no existe                                                 NO MEDIDO
 #   espejo_hoy    el espejo real, tal como esta, sin tocarlo                             VERDE
 #
@@ -130,6 +133,45 @@ fabrica 100
 b_corto=$(psql -h "$H" -d "${BASE}_largo100" -Atc "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY 1" | wc -c)
 rc=$(corre "${BASE}_largo100" "$CHK" "$T/repo_100")
 comprueba lista_que_cabe_verde "$([ "$rc" = 0 ] && [ "$b_corto" -lt 8000 ] && echo 0 || echo 1)" "rc=$rc · $b_corto bytes de listado · $(primera)"
+
+echo "== el motor da un ERROR en cada uno de los tres sitios donde el check cuenta o lista: el NO MEDIDO lo NOMBRA"
+# Las tres bases contestan a «SELECT 'ok'»; lo que falla es UNA consulta, con un error del motor: una division
+# por cero plantada en una vista que tapa a la tabla. Lo que el motor dice no se escribe aqui -depende de su
+# lc_messages-: se le pregunta a el, en esa misma base.
+CERO="1 / (length(current_database()) - length(current_database())) = 1"
+motor_dice() { psql -h "$H" -d "$1" -X -Atq -c "SELECT 1 WHERE $CERO" 2>&1 | sed -n 's/^[A-Z]*: *//p' | head -1; }
+nombra() {  # brazo base sitio -> rc 2, y la linea del NO MEDIDO dice el sitio y lleva el texto del motor
+  local dice; dice=$(motor_dice "$2")
+  rc=$(corre "$2")
+  comprueba "$1" "$([ "$rc" = 2 ] && [ -n "$dice" ] && head -1 "$T/salida" | grep -q "^NO MEDIDO: $3" && head -1 "$T/salida" | grep -qF -- "$dice" && echo 0 || echo 1)" "rc=$rc · el motor dice «$dice» · $(primera)"
+}
+# 1 · contar las declaradas. Es la reproduccion del operador: una vista public.pg_tables y el search_path de la base.
+copia "${BASE}_err1"
+sql "${BASE}_err1" "CREATE VIEW public.pg_tables AS SELECT schemaname, tablename FROM pg_catalog.pg_tables WHERE $CERO"
+sql "${BASE}_err1" "ALTER DATABASE \"${BASE}_err1\" SET search_path = public, pg_catalog"
+nombra error_al_contar "${BASE}_err1" 'contar las tablas declaradas'
+if [ -s "$T/K01a-antes.sh" ]; then
+  dice=$(motor_dice "${BASE}_err1"); rc=$(corre "${BASE}_err1" "$T/K01a-antes.sh")
+  comprueba error_antes_callado "$([ "$rc" = 2 ] && [ -n "$dice" ] && ! grep -qF -- "$dice" "$T/salida" && echo 0 || echo 1)" "rc=$rc · el K01a de aa5ad6f: «$(primera)»"
+else
+  comprueba error_antes_callado 1 "no pude leer el K01a de aa5ad6f del historial"
+fi
+# y su gemelo: la MISMA vista sin la division. Lo que decide es el error del motor, no que algo tape a pg_tables.
+sql "${BASE}_err1" "CREATE OR REPLACE VIEW public.pg_tables AS SELECT schemaname, tablename FROM pg_catalog.pg_tables"
+rc=$(corre "${BASE}_err1"); comprueba tapada_sin_error_verde "$(es "$rc" 0)" "rc=$rc · $(primera)"
+# 2 · listar las declaradas. La vista falla en la SEGUNDA consulta que la toca (una secuencia: el impar pasa, el
+#     par divide por cero), asi que el conteo sale bien y el listado no. Cada corrida gasta dos valores.
+copia "${BASE}_err2"
+sql "${BASE}_err2" "CREATE SEQUENCE public.k01a_veces"
+sql "${BASE}_err2" "CREATE VIEW public.pg_tables AS SELECT schemaname, tablename FROM pg_catalog.pg_tables WHERE 1 / ((SELECT nextval('public.k01a_veces')) % 2) = 1"
+sql "${BASE}_err2" "ALTER DATABASE \"${BASE}_err2\" SET search_path = public, pg_catalog"
+nombra error_al_listar "${BASE}_err2" 'listar las tablas declaradas'
+# 3 · contar signal_outcome. Una vista con ese nombre en un esquema que va ANTES en el search_path.
+copia "${BASE}_err3"
+sql "${BASE}_err3" "CREATE SCHEMA tapa"
+sql "${BASE}_err3" "CREATE VIEW tapa.signal_outcome AS SELECT 1 AS id WHERE $CERO"
+sql "${BASE}_err3" "ALTER DATABASE \"${BASE}_err3\" SET search_path = tapa, public"
+nombra error_al_contar_filas "${BASE}_err3" 'contar signal_outcome'
 
 echo "== una base que no existe"
 rc=$(corre "${BASE}_no_existe")

@@ -92,6 +92,15 @@ def _caduca(r, segundos: float):
             p["caduca_en"] = _mas(r, segundos)
 
 
+def _coste(r, bps: float, fraccion: float):
+    """El DISPARADO con T1 a 932,1 bps -el escenario base ya lo trae asi: es el plan que midio el operador,
+    con su pata del objetivo a 2,00 bps, 0,002 del objetivo- y la pata del objetivo costando `bps`, que
+    son `fraccion` del objetivo. En lo vivo y en lo reciente: es el mismo plan."""
+    for p in [*_vivos(r), *(p for v in r["reciente"]["por_version"] for p in v["disparados"])]:
+        p["t1_distancia_bps"] = 932.1
+        p["costes"][1].update(bps=bps, x_objetivo=fraccion)
+
+
 def _no_disponible(r):
     """Lo que vista.componer sirve cuando la base no tiene las tablas del registro."""
     for k in [k for k in r if k not in ("esquema", "as_of", "symbol", "activo", "que_es", "frescura", "decide")]:
@@ -189,6 +198,9 @@ RELOJ_PARADO = ("\n/* PLANTADO por K106-plantados.py */\n(function () {\n  const
 
 # nombre, veredicto, patron, opciones de la sonda, que hace a la respuesta (o None), que anade a la
 # pantalla (o None), que se planta. `{D}` es el directorio del brazo.
+# El formato de antes de R2: la fraccion del objetivo redondeada a dos decimales en el cliente.
+DOS_DECIMALES = "\n/* PLANTADO por K106-plantados.py */\nFMT.x = (v) => 'x' + num(v, 2) + ' del objetivo';\n"
+
 BRAZOS: list[tuple] = [
     # ---- C1 · lo vivo, lo caducado, sin dato, dos versiones
     ("vivo", "PASA", "", ["--luego", "@3"], None, None,
@@ -245,6 +257,27 @@ BRAZOS: list[tuple] = [
     ("precio_de_miles", "PASA", "", [],
      lambda r: (_vigilando(r)[0]["zona"].update(low=63385.0, high=64120.0), r["precio"].update(valor=63000.0)), None,
      "un precio de cinco cifras SIN decimales: la pantalla escribe «63.385» y son sesenta y tres mil"),
+    # ---- un coste que no es cero no se pinta como cero (remate R2)
+    ("coste_pequeno", "PASA", "", [], lambda r: _coste(r, 0.3, 0.0003), None,
+     "T1 a 932,1 bps y una pata que cuesta 0,30 bps, 0,0003 del objetivo: la pantalla lo dice («x0,0003 del objetivo»)"),
+    ("coste_pequeno_en_cero", "CONDENA", "E2 .*costes\\[1\\]\\.x_objetivo: se pinta como CERO", [],
+     lambda r: _coste(r, 0.3, 0.0003), DOS_DECIMALES,
+     "la misma respuesta con el formato de antes, a dos decimales: «x0,00 del objetivo» para un coste que no es cero"),
+    ("coste_del_operador_en_cero", "CONDENA", "E2 .*costes\\[1\\]\\.x_objetivo: se pinta como CERO .* sirve 0.002", [],
+     None, DOS_DECIMALES,
+     "el escenario base TAL CUAL (2,00 bps a 932,1 bps: 0,002) con el formato de antes: es la captura que señalo el operador"),
+    ("coste_cero", "PASA", "", [], lambda r: _coste(r, 0.0, 0.0), None,
+     "el gemelo: una pata que de verdad cuesta cero se pinta como cero («0,00 bps», «x0,00 del objetivo»)"),
+    # ---- la tabla de recuentos dice que cuenta (remate R3)
+    ("recuentos_callados", "CONDENA", "E2 la tabla de recuentos se pinta sin decir que cuenta", [], None,
+     _tras_pintar("    const n = document.querySelector('#ent-marco [data-k=\"marco.cuentas_que_cuentan\"]'); n.parentNode.removeChild(n);"),
+     "la pantalla pinta la tabla de recuentos y se calla la frase que dice que cuenta cada columna"),
+    ("recuentos_sin_frase_servida", "CONDENA", "E2 la tabla de recuentos se pinta sin decir que cuenta", [],
+     lambda r: r["marco"].pop("cuentas_que_cuentan"), None,
+     "la ruta deja de servir la frase y la tabla se sigue pintando: nadie dice que cuenta"),
+    ("recuentos_con_la_cabecera_de_antes", "CONDENA", "E2 marco.cuentas_rotulos.VIGILANDO: pinta 'VIGILANDO'", [], None,
+     _tras_pintar("    document.querySelector('#ent-marco [data-k=\"marco.cuentas_rotulos.VIGILANDO\"]').textContent = 'VIGILANDO';"),
+     "la columna vuelve a llamarse VIGILANDO, como el estado de un plan vivo"),
     ("cifra_cambiada", "CONDENA", "E2 .*stop.precio: pinta .* y la respuesta sirve", [], None,
      _tras_pintar("    const n = document.querySelector('#ent-vivo [data-k$=\".stop.precio\"]'); n.textContent = '1,23';"),
      "el stop pintado no es el servido"),

@@ -120,7 +120,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:160` | — |
 | **panel** | `static/js/07-decision-y-ciclos.js:317` | — |
-| **readme** | — | `README.md:405` |
+| **readme** | — | `README.md:409` |
 
 **La llama el panel: es superficie de producto.**
 

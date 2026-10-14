@@ -103,7 +103,10 @@ const FMT = {
   pct: (v) => num(v, 2) + ' %',
   bps1: (v) => num(v, 1) + ' bps',
   bps2: (v) => num(v, 2) + ' bps',
-  x: (v) => 'x' + num(v, 2) + ' del objetivo',
+  // Una fraccion del objetivo se pinta ENTERA, con los decimales que la ruta le dio (dos como minimo):
+  // redondear aqui a dos convertia 0,002 en «x0,00 del objetivo», que se lee «no cuesta nada».
+  x: (v) => 'x' + Number(v).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 20 }) +
+    ' del objetivo',
   r: (v) => num(v, 2),
   p: (v) => num(v, 3),
   dias: (v) => num(v, 1) + ' d',
@@ -444,12 +447,17 @@ function entMarco(R, d) {
   caja.appendChild(t);
 
   const tc = el('section', 'tarjeta');
-  tc.appendChild(sv('p', 'pie', 'marco.cuentas_ambito', m.cuentas_ambito));
+  // QUE CUENTA LA TABLA va antes de la tabla y con letra de leer: «VIGILANDO 264» se leia «264 planes
+  // vigilados ahora» y son episodios abiertos desde que el registro existe. La frase y la cabecera de
+  // cada columna las sirve la ruta: aqui las columnas ya no se llaman como el estado de un plan vivo.
+  tc.appendChild(sv('p', 'ent-hipotesis', 'marco.cuentas_que_cuentan', m.cuentas_que_cuentan));
   const tabla = el('table', 'rejilla ent-cuentas');
   const cols = ['VIGILANDO', 'DISPARADO', 'SOMBRA', 'CERRADO_SIN_DISPARO'];
   const cab = el('tr');
-  ['familia', 'perfil', 'lado', 'versión'].concat(cols.map((x) => x.replace(/_/g, ' ')), ['RESUELTOS', 'muestra'])
-    .forEach((x) => cab.appendChild(el('th', null, x)));
+  const th = (x) => cab.appendChild(junta(el('th'), x));
+  ['familia', 'perfil', 'lado', 'versión'].forEach(th);
+  cols.forEach((k) => th(sv('span', null, 'marco.cuentas_rotulos.' + k, (m.cuentas_rotulos || {})[k])));
+  ['RESUELTOS', 'muestra'].forEach(th);
   tabla.appendChild(cab);
   (m.cuentas || []).forEach((q, i) => {
     const rq = 'marco.cuentas[' + i + ']';
