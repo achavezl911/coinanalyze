@@ -33,13 +33,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`_dura`](#-dura) | 1420 | 1 | **0** | 0 | **1** |
 | [`_hora`](#-hora) | 1416 | 1 | **0** | 0 | **1** |
 | [`_sin_lado`](#-sin-lado) | 1325 | 1 | **0** | 0 | **1** |
-| [`_veces`](#-veces) | 1428 | 1 | **0** | 0 | **1** |
 | [`build_ai_context`](#build-ai-context) | 1079 | 1 | **0** | 0 | **1** |
-| [`build_mesa_decide`](#build-mesa-decide) | 1556 | 1 | **0** | 0 | **1** |
+| [`build_mesa_decide`](#build-mesa-decide) | 1560 | 1 | **0** | 0 | **1** |
 | [`campo_mesa`](#campo-mesa) | 1285 | 1 | **0** | 0 | **1** |
+| [`frase_del_instante`](#frase-del-instante) | 1428 | 1 | **0** | 0 | **1** |
 | [`palabra_de_la_decision`](#palabra-de-la-decision) | 1216 | 1 | **0** | 0 | **1** |
 | [`palabra_registrada`](#palabra-registrada) | 1409 | 1 | **0** | 0 | **1** |
-| [`palabra_sostenida`](#palabra-sostenida) | 1432 | 1 | **0** | 0 | **1** |
+| [`palabra_sostenida`](#palabra-sostenida) | 1435 | 1 | **0** | 0 | **1** |
 
 ## data_confidence_row
 
@@ -649,29 +649,6 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## _veces
-
-`app/ai_context.py:1428` · clave completa `app.ai_context._veces`
-
-**Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
-
-### Por llamada — 1 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
 ## build_ai_context
 
 `app/ai_context.py:1079` · clave completa `app.ai_context.build_ai_context`
@@ -697,7 +674,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## build_mesa_decide
 
-`app/ai_context.py:1556` · clave completa `app.ai_context.build_mesa_decide`
+`app/ai_context.py:1560` · clave completa `app.ai_context.build_mesa_decide`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -721,6 +698,29 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 ## campo_mesa
 
 `app/ai_context.py:1285` · clave completa `app.ai_context.campo_mesa`
+
+**Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
+
+### Por llamada — 1 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## frase_del_instante
+
+`app/ai_context.py:1428` · clave completa `app.ai_context.frase_del_instante`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -789,7 +789,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## palabra_sostenida
 
-`app/ai_context.py:1432` · clave completa `app.ai_context.palabra_sostenida`
+`app/ai_context.py:1435` · clave completa `app.ai_context.palabra_sostenida`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 

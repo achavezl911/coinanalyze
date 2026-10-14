@@ -592,11 +592,6 @@
       "linea": 1325,
       "sitio": "`app/ai_context.py:1325`"
     },
-    "app.ai_context._veces": {
-      "fichero": "app/ai_context.py",
-      "linea": 1428,
-      "sitio": "`app/ai_context.py:1428`"
-    },
     "app.ai_context.build_ai_context": {
       "fichero": "app/ai_context.py",
       "linea": 1079,
@@ -609,8 +604,8 @@
     },
     "app.ai_context.build_mesa_decide": {
       "fichero": "app/ai_context.py",
-      "linea": 1556,
-      "sitio": "`app/ai_context.py:1556`"
+      "linea": 1560,
+      "sitio": "`app/ai_context.py:1560`"
     },
     "app.ai_context.build_operator_read": {
       "fichero": "app/ai_context.py",
@@ -651,6 +646,11 @@
       "fichero": "app/ai_context.py",
       "linea": 74,
       "sitio": "`app/ai_context.py:74`"
+    },
+    "app.ai_context.frase_del_instante": {
+      "fichero": "app/ai_context.py",
+      "linea": 1428,
+      "sitio": "`app/ai_context.py:1428`"
     },
     "app.ai_context.latest_orderbook": {
       "fichero": "app/ai_context.py",
@@ -694,8 +694,8 @@
     },
     "app.ai_context.palabra_sostenida": {
       "fichero": "app/ai_context.py",
-      "linea": 1432,
-      "sitio": "`app/ai_context.py:1432`"
+      "linea": 1435,
+      "sitio": "`app/ai_context.py:1435`"
     },
     "app.ai_context.quality_score": {
       "fichero": "app/ai_context.py",
@@ -2680,25 +2680,6 @@
         "total": 1,
         "total_exacto": 1
       },
-      "app.ai_context._veces": {
-        "cota_mas_ancha_que_k0": false,
-        "llamadores_hasta_k": [
-          "app.ai_context.build_mesa_decide",
-          "app.ai_context.palabra_sostenida",
-          "app.api.mesa_decide"
-        ],
-        "por_llamada": [
-          "/api/mesa/decide"
-        ],
-        "por_tabla": [],
-        "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1428",
-        "solo_por_tabla": [],
-        "tablas_escritas": {},
-        "tablas_k0": [],
-        "total": 1,
-        "total_exacto": 1
-      },
       "app.ai_context.build_ai_context": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
@@ -2746,7 +2727,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1556",
+        "sitio": "app/ai_context.py:1560",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2934,6 +2915,24 @@
         "total": 2,
         "total_exacto": 2
       },
+      "app.ai_context.frase_del_instante": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.api.mesa_decide"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1428",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
       "app.ai_context.latest_orderbook": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
@@ -3101,7 +3100,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1432",
+        "sitio": "app/ai_context.py:1435",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -35668,9 +35667,9 @@
     {
       "camino": "/api/mesa/decide",
       "campos": {
-        "build_finished_at": "asignado en app/ai_context.py:1906",
-        "build_started_at": "asignado en app/ai_context.py:1905",
-        "lectura_scalp": "asignado en app/ai_context.py:1885"
+        "build_finished_at": "asignado en app/ai_context.py:1905",
+        "build_started_at": "asignado en app/ai_context.py:1904",
+        "lectura_scalp": "asignado en app/ai_context.py:1884"
       },
       "campos_pendientes": [
         "devuelve la variable 'payload', cuyo contenido no se resuelve estaticamente"
@@ -35681,13 +35680,13 @@
         "app.ai_context._hora",
         "app.ai_context._round_number",
         "app.ai_context._sin_lado",
-        "app.ai_context._veces",
         "app.ai_context.build_mesa_decide",
         "app.ai_context.build_operator_read",
         "app.ai_context.campo_mesa",
         "app.ai_context.compact_dict",
         "app.ai_context.compact_value",
         "app.ai_context.data_confidence_row",
+        "app.ai_context.frase_del_instante",
         "app.ai_context.latest_snapshot",
         "app.ai_context.palabra_de_la_decision",
         "app.ai_context.palabra_registrada",
@@ -35743,12 +35742,12 @@
         "app.ai_context._hora",
         "app.ai_context._round_number",
         "app.ai_context._sin_lado",
-        "app.ai_context._veces",
         "app.ai_context.build_operator_read",
         "app.ai_context.campo_mesa",
         "app.ai_context.compact_dict",
         "app.ai_context.compact_value",
         "app.ai_context.data_confidence_row",
+        "app.ai_context.frase_del_instante",
         "app.ai_context.latest_snapshot",
         "app.ai_context.palabra_de_la_decision",
         "app.ai_context.palabra_registrada",
@@ -36078,7 +36077,7 @@
       "consumidores": {
         "tests": {
           "llamadas": [
-            "tests/test_entradas_vista.py:108"
+            "tests/test_entradas_vista.py:111"
           ],
           "menciones": [
             "tests/test_entradas_vista.py:1"

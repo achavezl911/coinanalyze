@@ -145,6 +145,7 @@ function pintarDecide(sobre, nodos) {
       noSe('error', (sobre && sobre.motivo) || 'no se pudo pedir /api/mesa/decide')
     );
     vaciar(nodos.edad);
+    pintarMemoria(null, nodos.edadPalabra, nodos.instante, '');
     return;
   }
 
@@ -170,6 +171,11 @@ function pintarDecide(sobre, nodos) {
   } else if (dec.no_trade_reasons && (dec.no_trade_reasons.value || []).length) {
     nodos.motivo.textContent = dec.no_trade_reasons.value.join(' · ');
   }
+
+  // 2b · LA EDAD DE LA PALABRA Y LA PALABRA DEL INSTANTE (campana 138). En scalp la palabra grande
+  //      es la que el sistema SOSTIENE; en los otros marcos las dos viajan en `lectura_scalp` y se
+  //      pintan en su tarjeta.
+  pintarMemoria(dec, nodos.edadPalabra, nodos.instante, '');
 
   // 3 · LA CONFIANZA ES UNA PALABRA. Tres escalones rotulados, no un % inventado.
   const conf = dec.confidence || {};
@@ -351,6 +357,41 @@ function pintarLecturaScalp(origen, campos) {
   }
 }
 
+/* LA EDAD DE LA PALABRA GRANDE Y LA PALABRA DEL INSTANTE (campana 138).
+ * La palabra grande es la que el sistema SOSTIENE en la ventana de su regla; su edad -desde
+ * cuando dice lo que dice- y la palabra del instante, con cuantas veces cambio, llegan SERVIDAS:
+ * aqui no se calcula ninguna edad ni se cuenta ningun cambio. La edad que se pinta es la de la
+ * PALABRA (`memoria.edad`), no la de la instantanea, que va en su linea de abajo.
+ * `origen` es `decide` (marco scalp) o `lectura_scalp`; sin `memoria` los dos nodos se vacian. */
+function pintarMemoria(origen, nodoEdad, nodoInstante, prefijo) {
+  if (!nodoEdad || !nodoInstante) return;
+  const mem = origen && origen.memoria;
+  const inst = origen && origen.instante;
+  const edad = nodoEdad;
+  const caja = nodoInstante;
+  [edad, caja].forEach((n) => {
+    n.textContent = '';
+    ['data-campo', 'data-valor', 'data-source-key'].forEach((a) => n.removeAttribute(a));
+  });
+  edad.className = 'decide-edad-palabra';
+  caja.className = 'decide-instante';
+  if (mem && mem.edad) {
+    edad.setAttribute('data-campo', prefijo + 'memoria.edad');
+    edad.setAttribute('data-valor', mem.edad.frase || '');
+    edad.setAttribute('data-source-key', mem.edad.source_key || '');
+    edad.textContent = mem.edad.frase || '';
+  }
+  if (inst) {
+    caja.setAttribute('data-campo', prefijo + 'instante');
+    caja.setAttribute('data-source-key', inst.source_key || '');
+    caja.appendChild(el('span', 'rotulo', 'instante '));
+    const v = nodoValor(esNada(inst.value) ? null : String(inst.value));
+    v.className = 'valor ' + (CLASE_SESGO[inst.value] || 'sesgo-NOEVAL');
+    caja.appendChild(v);
+    if (inst.frase) caja.appendChild(el('span', 'motivo', ' · ' + inst.frase));
+  }
+}
+
 /* La tarjeta de la lectura del SCALP, que solo existe cuando el marco NO es scalp. */
 function pintarTarjetaScalp(d) {
   const caja = document.getElementById('lectura-scalp');
@@ -377,6 +418,12 @@ function pintarTarjetaScalp(d) {
     const c = celda('scalp.bias', 'sesgo del scalp', ls.bias);
     c.classList.add('sesgo-de-la-lectura');
     if (ls.bias.motivo) c.appendChild(el('span', 'motivo', ls.bias.motivo));
+    // su edad y la palabra del instante, como en la cabecera de DECIDE (campana 138)
+    const e = el('div');
+    const i = el('div');
+    pintarMemoria(ls, e, i, 'scalp.');
+    if (e.textContent) c.appendChild(e);
+    if (i.textContent) c.appendChild(i);
     campos.appendChild(c);
   }
   pintarLecturaScalp(ls, campos);

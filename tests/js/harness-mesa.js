@@ -158,6 +158,8 @@ function nuevoDocumento(ids) {
 // en vez de recibir null y pasar por casualidad.
 const IDS = [
   'decide', 'decide-sesgo', 'decide-sello', 'decide-motivo', 'decide-campos', 'decide-edad',
+  // la edad de la palabra grande y la palabra del instante (campana 138)
+  'decide-edad-palabra', 'decide-instante',
   'lectura-scalp', 'lectura-scalp-rotulo', 'lectura-scalp-aviso', 'lectura-scalp-campos',
   'conf-escalones', 'conf-palabra', 'conf-clave', 'dc-relleno', 'dc-valor', 'dc-clave',
   'reloj', 'tira', 'scan', 'matriz', 'matriz-pie', 'matriz-venue', 'inspect', 'research',

@@ -19,9 +19,9 @@ Handler `mesa_decide` · `app/api.py:3816` (cuerpo hasta la 3851) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `build_finished_at` | asignado en app/ai_context.py:1906 |
-| `build_started_at` | asignado en app/ai_context.py:1905 |
-| `lectura_scalp` | asignado en app/ai_context.py:1885 |
+| `build_finished_at` | asignado en app/ai_context.py:1905 |
+| `build_started_at` | asignado en app/ai_context.py:1904 |
+| `lectura_scalp` | asignado en app/ai_context.py:1884 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -111,7 +111,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1556`
+- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1560`
 - `app.api.scalp_persistence` — `app/api.py:3174`
 - `app.api.validate_symbol` — `app/api.py:233`
 
@@ -122,16 +122,16 @@ Llamadas directas del handler:
 - `app.ai_context._hora` — `app/ai_context.py:1416`
 - `app.ai_context._round_number` — `app/ai_context.py:226`
 - `app.ai_context._sin_lado` — `app/ai_context.py:1325`
-- `app.ai_context._veces` — `app/ai_context.py:1428`
 - `app.ai_context.build_operator_read` — `app/ai_context.py:747`
 - `app.ai_context.campo_mesa` — `app/ai_context.py:1285`
 - `app.ai_context.compact_dict` — `app/ai_context.py:253`
 - `app.ai_context.compact_value` — `app/ai_context.py:237`
 - `app.ai_context.data_confidence_row` — `app/ai_context.py:531`
+- `app.ai_context.frase_del_instante` — `app/ai_context.py:1428`
 - `app.ai_context.latest_snapshot` — `app/ai_context.py:298`
 - `app.ai_context.palabra_de_la_decision` — `app/ai_context.py:1216`
 - `app.ai_context.palabra_registrada` — `app/ai_context.py:1409`
-- `app.ai_context.palabra_sostenida` — `app/ai_context.py:1432`
+- `app.ai_context.palabra_sostenida` — `app/ai_context.py:1435`
 - `app.ai_context.quality_score` — `app/ai_context.py:619`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`

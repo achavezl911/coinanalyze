@@ -94,8 +94,12 @@ def decide(scalp: str | None, edad: float = 10.0) -> dict[str, Any] | None:
     return {"max_age_s": 120.0, "age": {"snapshot_lag_seconds": {"value": edad, "status": "ok"}},
             "decide": {"bias": {"value": "NO EVALUABLE", "source_key": "mesa.decide.frame",
                                 "motivo": "la lectura del operador es del SCALP, no de SWING"}},
-            "lectura_scalp": {"bias": {"value": scalp, "source_key": "operator_read.state",
-                                       "motivo": "data_confidence 12 < 70" if scalp == "NO EVALUABLE" else None}}}
+            # mesa.decide.v3 (campana 138): la palabra del scalp es la que el sistema SOSTIENE, con su edad
+            "lectura_scalp": {"bias": {"value": scalp, "source_key": "mesa.decide.memoria",
+                                       "motivo": "data_confidence 12 < 70" if scalp == "NO EVALUABLE" else None},
+                              "memoria": {"edad": {"desde": (AS_OF - timedelta(seconds=1043)).isoformat(),
+                                                   "frase": f"desde las "
+                                                   f"{(AS_OF - timedelta(seconds=1043)):%H:%M:%S}Z (17 min)"}}}}
 
 
 def respuesta(scalp: str | None = "LONG", **kw: Any) -> dict[str, Any]:

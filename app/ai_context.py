@@ -1425,8 +1425,11 @@ def _dura(s: float) -> str:
     return f"{s / 3600:.1f} h"
 
 
-def _veces(k: int) -> str:
-    return "1 vez" if k == 1 else f"{k} veces"
+def frase_del_instante(cambios: int | None) -> str:
+    """Lo que la linea pequena del instante dice de el, corto: va en la columna estrecha de DECIDE."""
+    if cambios is None:
+        return "sin evaluaciones en 5 min"
+    return f"{cambios} {'cambio' if cambios == 1 else 'cambios'} en 5 min"
 
 
 def palabra_sostenida(
@@ -1484,54 +1487,55 @@ def palabra_sostenida(
             "cuenta": {k: w.count(k) for k in _PALABRAS},
         }
 
-    sin_edad = {"desde": None, "s": None, "al_menos": False, "antes": None}
+    sin_edad = {"source_key": f"{MEMORIA_FUENTE}.edad", "desde": None, "s": None, "al_menos": False,
+                "antes": None}
     if instante == MESA_PALABRA_NO_EVALUABLE:
         value, motivo = MESA_PALABRA_NO_EVALUABLE, motivo_instante
-        edad = {**sin_edad, "frase": "cierra la puerta del instante, que no se registra: no se sabe "
-                "desde cuando"}
+        edad = {**sin_edad, "frase": "puerta del instante: no se sabe desde cuando"}
     elif not ts:
         value = MESA_PALABRA_NO_EVALUABLE
         motivo = "el colector no registro ninguna evaluacion en las ultimas 3 h: la memoria no ve nada"
-        edad = {**sin_edad, "frase": "sin evaluaciones registradas: no se sabe desde cuando"}
+        edad = {**sin_edad, "frase": "sin evaluaciones: no se sabe desde cuando"}
     elif (hueco := (as_of - ts[-1]).total_seconds()) > MEMORIA_FRESCURA_S:
         value = MESA_PALABRA_NO_EVALUABLE
-        motivo = (f"el colector no escribe desde hace {_dura(hueco)} (ultima evaluacion registrada "
-                  f"{_hora(ts[-1])}): la memoria no ve el presente")
+        motivo = (f"el colector no escribe desde hace {_dura(hueco)} (ultima {_hora(ts[-1])}): la "
+                  "memoria no ve el presente")
         desde = ts[-1] + timedelta(seconds=MEMORIA_FRESCURA_S)
         s = (as_of - desde).total_seconds()
         edad = {**sin_edad, "desde": desde.isoformat(), "s": round(s, 1),
-                "frase": f"desde las {_hora(desde)} ({_dura(s)}): la ultima evaluacion cumplio 60 s"}
+                "frase": f"desde las {_hora(desde)} ({_dura(s)})"}
     else:
         value = grande[-1]
         c, n = ventana["cuenta"], ventana["n"]
+        # CORTOS A PROPOSITO: van en la columna estrecha de DECIDE, y una frase larga ahi la ensancha y
+        # estira la tarjeta (medido: -110 px de pliegue en ETH 1440x900). Cuanto cambio el instante lo
+        # dice SU linea, no esta.
         if value in (MESA_PALABRA_LONG, MESA_PALABRA_SHORT):
-            motivo = (f"{value} en {c[value]} de {n} evaluaciones de los ultimos 5 min (umbral 60 %); "
-                      f"la palabra del instante cambio {_veces(cambios)}")
+            motivo = f"{value} en {c[value]} de {n} evaluaciones de 5 min (umbral 60 %)"
         elif value == MESA_PALABRA_SIN_LADO and not c[MESA_PALABRA_LONG] + c[MESA_PALABRA_SHORT]:
-            motivo = f"el sistema no toma lado en 5 min: NO OPERAR en {c[value]} de {n} evaluaciones"
+            motivo = f"sin lado en 5 min: NO OPERAR {c[value]} de {n}"
         elif value == MESA_PALABRA_SIN_LADO:
             no_ev = c[MESA_PALABRA_NO_EVALUABLE]
-            motivo = (f"no sostiene un lado en 5 min (umbral 60 %): LONG {c[MESA_PALABRA_LONG]}, "
-                      f"SHORT {c[MESA_PALABRA_SHORT]}, NO OPERAR {c[value]}"
-                      f"{f', NO EVALUABLE {no_ev}' if no_ev else ''} de {n}; la palabra del instante "
-                      f"cambio {_veces(cambios)}")
+            motivo = (f"no sostiene un lado en 5 min: LONG {c[MESA_PALABRA_LONG]} · SHORT "
+                      f"{c[MESA_PALABRA_SHORT]} · NO OPERAR {c[value]}"
+                      f"{f' · NO EVALUABLE {no_ev}' if no_ev else ''} de {n} (umbral 60 %)")
         elif pal[-1] == MESA_PALABRA_NO_EVALUABLE:
-            motivo = f"el registro no evaluo la ultima evaluacion registrada ({_hora(ts[-1])})"
+            motivo = f"el registro no evaluo la ultima evaluacion ({_hora(ts[-1])})"
         else:
-            motivo = (f"la ventana de 5 min tiene {n} evaluaciones registradas, menos de "
-                      f"{MEMORIA_MINIMO}: la memoria no ve lo bastante")
+            motivo = f"solo {n} evaluaciones en 5 min (minimo {MEMORIA_MINIMO}): la memoria no ve lo bastante"
         j = len(ts) - 1
         while j > 0 and grande[j - 1] == value:
             j -= 1
         al_menos = j == 0 or grande[j - 1] is None
         s = (as_of - ts[j]).total_seconds()
         edad = {
+            "source_key": f"{MEMORIA_FUENTE}.edad",
             "desde": ts[j].isoformat(),
             "s": round(s, 1),
             "al_menos": al_menos,
             "antes": None if al_menos else {"ts": ts[j - 1].isoformat(), "palabra": grande[j - 1]},
-            "frase": (f"dice {value} desde antes de las {_hora(ts[j])} (mas de {_dura(s)})"
-                      if al_menos else f"dice {value} desde las {_hora(ts[j])} ({_dura(s)})"),
+            "frase": (f"desde antes de las {_hora(ts[j])} (mas de {_dura(s)})"
+                      if al_menos else f"desde las {_hora(ts[j])} ({_dura(s)})"),
         }
         # Lo que hace falta para recalcular la palabra de la evaluacion de ANTES de la racha: su
         # ventana entera. Si la racha llega al principio de la busqueda, la serie entera.
@@ -1653,12 +1657,7 @@ async def build_mesa_decide(
         "status": "ok",
         "motivo": bias_scalp_motivo,
         "cambios_en_ventana": memoria["cambios_del_instante"],
-        "frase": (
-            f"instante: {bias_scalp} · cambio {_veces(memoria['cambios_del_instante'])} en los "
-            "ultimos 5 min registrados"
-            if memoria["cambios_del_instante"] is not None
-            else f"instante: {bias_scalp} · sin evaluaciones registradas en 5 min"
-        ),
+        "frase": frase_del_instante(memoria["cambios_del_instante"]),
     }
     bias_scalp, bias_scalp_source, bias_scalp_motivo = (
         memoria["value"],

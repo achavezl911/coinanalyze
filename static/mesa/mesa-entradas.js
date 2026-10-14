@@ -319,14 +319,17 @@ function entDecide(R, d) {
     const r = 'decide.perfiles.' + perfil;
     const t = el('section', 'tarjeta ent-decide');
     t.setAttribute('data-decide', perfil);
+    // LA EDAD DEL DATO NO ES LA DE LA PALABRA (campana 138): la de la instantanea de debajo decide si
+    // DECIDE esta RANCIO; la de la palabra -desde cuando dice lo que dice- llega servida por perfil.
     junta(t, junta(el('div', 'panel-rotulo'),
                    junta(el('h3'), 'planes ', el('b', null, perfil), ' · DECIDE de ', sv('span', null, r + '.marco', x.marco)),
-                   junta(el('span', 'venue'), 'edad de la palabra: ',
+                   junta(el('span', 'venue'), 'edad del dato de DECIDE: ',
                          esNada(d.decide.edad_s) ? sv('span', null, 'decide.edad_motivo', d.decide.edad_motivo)
                            : calc('edad-decide', ''))));
     const palabra = sv('div', 'ent-palabra ' + (CLASE_SESGO[x.palabra] || 'sesgo-NOEVAL'), r + '.rotulo', x.rotulo);
     palabra.setAttribute('data-palabra', x.palabra || '');
     t.appendChild(palabra);
+    if (x.edad_de_la_palabra) t.appendChild(sv('p', 'pie', r + '.edad_de_la_palabra', x.edad_de_la_palabra));
     const viva = junta(el('div', 'ent-dec-viva'), sv('p', 'ent-frase', r + '.frase', x.frase));
     if (x.motivo && !x.frase.includes(x.motivo)) viva.appendChild(sv('p', 'motivo', r + '.motivo', x.motivo));
     const rancia = junta(el('div', 'ent-dec-rancia'),

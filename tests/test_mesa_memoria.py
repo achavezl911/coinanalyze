@@ -80,11 +80,12 @@ def test_a_un_lado_sostenido_es_ese_lado_con_su_cuenta_y_su_edad():
     s, _ = serie((N, 60), (L, 40))
     m = sostenida(s)
     assert m["value"] == L
-    assert m["motivo"].startswith("LONG en 22 de 22 evaluaciones de los ultimos 5 min")
+    assert m["motivo"] == "LONG en 22 de 22 evaluaciones de 5 min (umbral 60 %)"
     # empezo a decir LONG en la evaluacion LONG numero 14 (el 60 % de 22 es 13.2)
     assert m["edad"]["desde"] == s[60 + 13][0].isoformat()
     assert m["edad"]["antes"]["palabra"] == N and m["edad"]["al_menos"] is False
-    assert m["edad"]["frase"].startswith("dice LONG desde las 12:")
+    assert m["edad"]["frase"].startswith("desde las 12:")
+    assert m["edad"]["source_key"] == "mesa.decide.memoria.edad"
 
 
 def test_a_el_lado_se_dice_aunque_el_instante_diga_otra_cosa():
@@ -100,8 +101,8 @@ def test_b_oscilar_en_cada_evaluacion_no_es_un_lado_y_el_motivo_dice_cuanto():
     s, _ = serie(*[(L, 1), (N, 1)] * 40)
     m = sostenida(s)
     assert m["value"] == N
-    assert m["motivo"].startswith("no sostiene un lado en 5 min (umbral 60 %): LONG 11, SHORT 0, NO OPERAR 11 de 22")
-    assert m["cambios_del_instante"] == 21 and "cambio 21 veces" in m["motivo"]
+    assert m["motivo"] == "no sostiene un lado en 5 min: LONG 11 · SHORT 0 · NO OPERAR 11 de 22 (umbral 60 %)"
+    assert m["cambios_del_instante"] == 21
 
 
 def test_b_dos_de_cada_tres_si_lo_sostiene():
@@ -162,7 +163,7 @@ def test_tras_un_hueco_la_ventana_corta_no_sostiene_nada():
     a, fin = serie((L, 60))
     b, _ = serie((L, 5), desde=fin + timedelta(seconds=400))
     m = sostenida(a + b)
-    assert m["value"] == E and "tiene 5 evaluaciones registradas, menos de 10" in m["motivo"]
+    assert m["value"] == E and m["motivo"].startswith("solo 5 evaluaciones en 5 min (minimo 10)")
 
 
 def test_la_ultima_evaluacion_no_evaluable_cierra():
@@ -197,7 +198,7 @@ def test_la_busqueda_tiene_tope_y_entonces_dice_al_menos():
     dentro = [x for x in s if x[0] > as_of - timedelta(seconds=A.MEMORIA_BUSQUEDA_S + A.MEMORIA_VENTANA_S)]
     m = sostenida(dentro, as_of=as_of)
     assert m["value"] == N and m["edad"]["al_menos"] is True
-    assert m["edad"]["frase"].startswith("dice NO OPERAR desde antes de las ")
+    assert m["edad"]["frase"].startswith("desde antes de las ")
 
 
 def test_lo_que_mide_C1_es_la_regla_que_la_ruta_sirve():
@@ -291,8 +292,8 @@ async def test_la_ruta_sirve_la_grande_en_bias_y_la_del_instante_aparte(monkeypa
     dec = d["decide"]
     assert (dec["bias"]["value"], dec["bias"]["source_key"]) == (L, "mesa.decide.memoria")
     assert (dec["instante"]["value"], dec["instante"]["source_key"]) == (N, "operator_read.state")
-    assert dec["instante"]["frase"] == "instante: NO OPERAR · cambio 0 veces en los ultimos 5 min registrados"
-    assert dec["memoria"]["edad"]["frase"].startswith("dice LONG desde las ")
+    assert dec["instante"]["frase"] == "0 cambios en 5 min"
+    assert dec["memoria"]["edad"]["frase"].startswith("desde las ")
     # el lado de confirma / invalida sigue a la palabra GRANDE
     assert dec["invalidates"][0]["source_key"] == "operator_read.invalidates_long[0]"
 

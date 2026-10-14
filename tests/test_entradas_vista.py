@@ -51,8 +51,11 @@ def _decide(scalp: str | None, *, edad: float = 12.0):
             "age": {"snapshot_lag_seconds": {"value": edad, "status": "ok"}},
             "decide": {"bias": {"value": "NO EVALUABLE", "source_key": "mesa.decide.frame",
                                 "motivo": "la lectura del operador es del SCALP, no de SWING"}},
-            "lectura_scalp": {"bias": {"value": scalp, "source_key": "operator_read.state",
-                                       "motivo": "data_confidence 12 < 70" if scalp == "NO EVALUABLE" else None}},
+            # mesa.decide.v3 (campana 138): la palabra del scalp es la que el sistema SOSTIENE, con su edad
+            "lectura_scalp": {"bias": {"value": scalp, "source_key": "mesa.decide.memoria",
+                                       "motivo": "data_confidence 12 < 70" if scalp == "NO EVALUABLE" else None},
+                              "memoria": {"edad": {"desde": "2026-10-14T21:12:05+00:00",
+                                                   "frase": "desde las 21:12:05Z (17 min)"}}},
         }
     return palabra
 
@@ -228,9 +231,9 @@ async def test_la_sombra_dice_que_fallo_y_el_ancla_se_dice_una_vez(sembrada):
 @pytest.mark.parametrize(
     ("scalp", "largo", "corto", "debe_decir"),
     [
-        ("LONG", "mismo_lado", "en_contra", "toma LONG"),
-        ("SHORT", "en_contra", "mismo_lado", "toma SHORT"),
-        ("NO OPERAR", "condicional", "condicional", "plan condicional: el sistema no toma lado"),
+        ("LONG", "mismo_lado", "en_contra", "sostiene LONG en los ultimos 5 min"),
+        ("SHORT", "en_contra", "mismo_lado", "sostiene SHORT en los ultimos 5 min"),
+        ("NO OPERAR", "condicional", "condicional", "no sostiene un lado en los ultimos 5 min"),
         ("NO EVALUABLE", "no_dice", "no_dice", "ni los respalda ni los desaconseja"),
         (None, "sin_respuesta", "sin_respuesta", "Sin respuesta de DECIDE"),
     ],
@@ -246,7 +249,12 @@ async def test_las_cinco_respuestas_de_decide_cada_una_con_su_frase(sembrada, sc
     en_contra = [x["etiqueta"] for x in intradia["para"].values() if x["relacion"] == "en_contra"]
     assert all("EN CONTRA" in e for e in en_contra), "un plan en contra del lado que DECIDE toma se dice"
     if scalp == "NO OPERAR":
-        assert {x["etiqueta"] for x in intradia["para"].values()} == {"plan condicional: el sistema no toma lado"}
+        assert {x["etiqueta"] for x in intradia["para"].values()} == {"plan condicional: el sistema no sostiene un lado"}
+    # campana 138: la palabra INTRADIA es la que el sistema sostiene, y su frase no dice «en este instante»
+    if scalp is not None:
+        assert "en este instante" not in intradia["frase"]
+        assert intradia["edad_de_la_palabra"] == "desde las 21:12:05Z (17 min)"
+        assert intradia["desde"] == "2026-10-14T21:12:05+00:00"
     # SWING es hoy NO EVALUABLE por el marco: ni desaconseja el plan ni lo respalda
     swing = decide["perfiles"]["swing"]
     if scalp is None:
@@ -257,6 +265,7 @@ async def test_las_cinco_respuestas_de_decide_cada_una_con_su_frase(sembrada, sc
         assert {x["relacion"] for x in swing["para"].values()} == {"no_dice"}
         assert "EN CONTRA" not in swing["frase"] and "mismo lado" not in json.dumps(swing["para"])
         assert decide["edad_s"] == 12.0 and decide["max_age_s"] == 120.0
+        assert "no sale de una ventana de evaluaciones" in swing["edad_de_la_palabra"]
 
 
 async def test_la_palabra_de_scalp_que_la_vista_lee_es_la_que_decide_sirve_en_scalp(sembrada):

@@ -67,6 +67,8 @@ function nodosDecide() {
     sesgo: document.getElementById('decide-sesgo'),
     sello: document.getElementById('decide-sello'),
     motivo: document.getElementById('decide-motivo'),
+    edadPalabra: document.getElementById('decide-edad-palabra'),
+    instante: document.getElementById('decide-instante'),
     campos: document.getElementById('decide-campos'),
     edad: document.getElementById('decide-edad'),
     escalones: document.getElementById('conf-escalones'),

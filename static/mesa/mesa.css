@@ -436,6 +436,36 @@ main {
   margin-top: 2px;
 }
 
+/* La edad de la palabra grande y la palabra del instante (campana 138): debajo del veredicto,
+ * pequenas. La del instante lleva su color pero no su tamano: no es la decision que se presenta. */
+.decide-edad-palabra {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--tx-debil);
+  margin-top: 2px;
+}
+
+.decide-instante {
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.decide-instante .rotulo {
+  font-size: 8.5px;
+  letter-spacing: 0.8px;
+  color: var(--tx-debil);
+  text-transform: uppercase;
+}
+
+.decide-instante .valor {
+  display: inline;
+  font-weight: 700;
+}
+
+.decide-instante .motivo {
+  display: inline;
+}
+
 .conf-fila {
   margin-top: 10px;
 }
