@@ -572,6 +572,16 @@
       "linea": 855,
       "sitio": "`app/ai_context.py:855`"
     },
+    "app.ai_context._dura": {
+      "fichero": "app/ai_context.py",
+      "linea": 1420,
+      "sitio": "`app/ai_context.py:1420`"
+    },
+    "app.ai_context._hora": {
+      "fichero": "app/ai_context.py",
+      "linea": 1416,
+      "sitio": "`app/ai_context.py:1416`"
+    },
     "app.ai_context._round_number": {
       "fichero": "app/ai_context.py",
       "linea": 226,
@@ -579,8 +589,13 @@
     },
     "app.ai_context._sin_lado": {
       "fichero": "app/ai_context.py",
-      "linea": 1323,
-      "sitio": "`app/ai_context.py:1323`"
+      "linea": 1325,
+      "sitio": "`app/ai_context.py:1325`"
+    },
+    "app.ai_context._veces": {
+      "fichero": "app/ai_context.py",
+      "linea": 1428,
+      "sitio": "`app/ai_context.py:1428`"
     },
     "app.ai_context.build_ai_context": {
       "fichero": "app/ai_context.py",
@@ -594,8 +609,8 @@
     },
     "app.ai_context.build_mesa_decide": {
       "fichero": "app/ai_context.py",
-      "linea": 1344,
-      "sitio": "`app/ai_context.py:1344`"
+      "linea": 1556,
+      "sitio": "`app/ai_context.py:1556`"
     },
     "app.ai_context.build_operator_read": {
       "fichero": "app/ai_context.py",
@@ -604,8 +619,8 @@
     },
     "app.ai_context.campo_mesa": {
       "fichero": "app/ai_context.py",
-      "linea": 1283,
-      "sitio": "`app/ai_context.py:1283`"
+      "linea": 1285,
+      "sitio": "`app/ai_context.py:1285`"
     },
     "app.ai_context.compact_dict": {
       "fichero": "app/ai_context.py",
@@ -669,8 +684,18 @@
     },
     "app.ai_context.palabra_de_la_decision": {
       "fichero": "app/ai_context.py",
-      "linea": 1214,
-      "sitio": "`app/ai_context.py:1214`"
+      "linea": 1216,
+      "sitio": "`app/ai_context.py:1216`"
+    },
+    "app.ai_context.palabra_registrada": {
+      "fichero": "app/ai_context.py",
+      "linea": 1409,
+      "sitio": "`app/ai_context.py:1409`"
+    },
+    "app.ai_context.palabra_sostenida": {
+      "fichero": "app/ai_context.py",
+      "linea": 1432,
+      "sitio": "`app/ai_context.py:1432`"
     },
     "app.ai_context.quality_score": {
       "fichero": "app/ai_context.py",
@@ -1489,108 +1514,108 @@
     },
     "app.entradas.vista._ancla_no_puede": {
       "fichero": "app/entradas/vista.py",
-      "linea": 398,
-      "sitio": "`app/entradas/vista.py:398`"
+      "linea": 417,
+      "sitio": "`app/entradas/vista.py:417`"
     },
     "app.entradas.vista._base": {
       "fichero": "app/entradas/vista.py",
-      "linea": 256,
-      "sitio": "`app/entradas/vista.py:256`"
+      "linea": 275,
+      "sitio": "`app/entradas/vista.py:275`"
     },
     "app.entradas.vista._de": {
       "fichero": "app/entradas/vista.py",
-      "linea": 332,
-      "sitio": "`app/entradas/vista.py:332`"
+      "linea": 351,
+      "sitio": "`app/entradas/vista.py:351`"
     },
     "app.entradas.vista._decide": {
       "fichero": "app/entradas/vista.py",
-      "linea": 195,
-      "sitio": "`app/entradas/vista.py:195`"
+      "linea": 205,
+      "sitio": "`app/entradas/vista.py:205`"
     },
     "app.entradas.vista._disparado": {
       "fichero": "app/entradas/vista.py",
-      "linea": 282,
-      "sitio": "`app/entradas/vista.py:282`"
+      "linea": 301,
+      "sitio": "`app/entradas/vista.py:301`"
     },
     "app.entradas.vista._distancia": {
       "fichero": "app/entradas/vista.py",
-      "linea": 243,
-      "sitio": "`app/entradas/vista.py:243`"
+      "linea": 262,
+      "sitio": "`app/entradas/vista.py:262`"
     },
     "app.entradas.vista._fraccion": {
       "fichero": "app/entradas/vista.py",
-      "linea": 142,
-      "sitio": "`app/entradas/vista.py:142`"
+      "linea": 143,
+      "sitio": "`app/entradas/vista.py:143`"
     },
     "app.entradas.vista._muestra": {
       "fichero": "app/entradas/vista.py",
-      "linea": 363,
-      "sitio": "`app/entradas/vista.py:363`"
+      "linea": 382,
+      "sitio": "`app/entradas/vista.py:382`"
     },
     "app.entradas.vista._orden": {
       "fichero": "app/entradas/vista.py",
-      "linea": 338,
-      "sitio": "`app/entradas/vista.py:338`"
+      "linea": 357,
+      "sitio": "`app/entradas/vista.py:357`"
     },
     "app.entradas.vista._papeles": {
       "fichero": "app/entradas/vista.py",
-      "linea": 347,
-      "sitio": "`app/entradas/vista.py:347`"
+      "linea": 366,
+      "sitio": "`app/entradas/vista.py:366`"
     },
     "app.entradas.vista._precio": {
       "fichero": "app/entradas/vista.py",
-      "linea": 129,
-      "sitio": "`app/entradas/vista.py:129`"
+      "linea": 130,
+      "sitio": "`app/entradas/vista.py:130`"
     },
     "app.entradas.vista._r": {
       "fichero": "app/entradas/vista.py",
-      "linea": 138,
-      "sitio": "`app/entradas/vista.py:138`"
+      "linea": 139,
+      "sitio": "`app/entradas/vista.py:139`"
     },
     "app.entradas.vista._requisitos": {
       "fichero": "app/entradas/vista.py",
-      "linea": 268,
-      "sitio": "`app/entradas/vista.py:268`"
+      "linea": 287,
+      "sitio": "`app/entradas/vista.py:287`"
     },
     "app.entradas.vista._significado": {
       "fichero": "app/entradas/vista.py",
-      "linea": 155,
-      "sitio": "`app/entradas/vista.py:155`"
+      "linea": 156,
+      "sitio": "`app/entradas/vista.py:156`"
     },
     "app.entradas.vista._sombra": {
       "fichero": "app/entradas/vista.py",
-      "linea": 322,
-      "sitio": "`app/entradas/vista.py:322`"
+      "linea": 341,
+      "sitio": "`app/entradas/vista.py:341`"
     },
     "app.entradas.vista._vigilando": {
       "fichero": "app/entradas/vista.py",
-      "linea": 276,
-      "sitio": "`app/entradas/vista.py:276`"
+      "linea": 295,
+      "sitio": "`app/entradas/vista.py:295`"
     },
     "app.entradas.vista._zona": {
       "fichero": "app/entradas/vista.py",
-      "linea": 238,
-      "sitio": "`app/entradas/vista.py:238`"
+      "linea": 257,
+      "sitio": "`app/entradas/vista.py:257`"
     },
     "app.entradas.vista.componer": {
       "fichero": "app/entradas/vista.py",
-      "linea": 443,
-      "sitio": "`app/entradas/vista.py:443`"
+      "linea": 462,
+      "sitio": "`app/entradas/vista.py:462`"
     },
     "app.entradas.vista.construir": {
       "fichero": "app/entradas/vista.py",
-      "linea": 421,
-      "sitio": "`app/entradas/vista.py:421`"
+      "linea": 440,
+      "sitio": "`app/entradas/vista.py:440`"
     },
     "app.entradas.vista.pasada_en_curso": {
       "fichero": "app/entradas/vista.py",
-      "linea": 378,
-      "sitio": "`app/entradas/vista.py:378`"
+      "linea": 397,
+      "sitio": "`app/entradas/vista.py:397`"
     },
     "app.entradas.vista.precio_ahora": {
       "fichero": "app/entradas/vista.py",
-      "linea": 119,
-      "sitio": "`app/entradas/vista.py:119`"
+      "linea": 120,
+      "sitio": "`app/entradas/vista.py:120`"
     },
     "app.external_macro._direction": {
       "fichero": "app/external_macro.py",
@@ -2578,6 +2603,42 @@
         "total": 3,
         "total_exacto": 3
       },
+      "app.ai_context._dura": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.ai_context.palabra_sostenida"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1420",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.ai_context._hora": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.ai_context.palabra_sostenida"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1416",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
       "app.ai_context._round_number": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
@@ -2612,7 +2673,26 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1323",
+        "sitio": "app/ai_context.py:1325",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.ai_context._veces": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.ai_context.palabra_sostenida",
+          "app.api.mesa_decide"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1428",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2666,7 +2746,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1344",
+        "sitio": "app/ai_context.py:1556",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2706,7 +2786,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1283",
+        "sitio": "app/ai_context.py:1285",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2977,6 +3057,7 @@
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
           "app.ai_context.build_mesa_decide",
+          "app.ai_context.palabra_registrada",
           "app.api.mesa_decide"
         ],
         "por_llamada": [
@@ -2984,7 +3065,43 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1214",
+        "sitio": "app/ai_context.py:1216",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.ai_context.palabra_registrada": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.api.mesa_decide"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1409",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.ai_context.palabra_sostenida": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.api.mesa_decide"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1432",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14464,7 +14581,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:398",
+        "sitio": "app/entradas/vista.py:417",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14484,7 +14601,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:256",
+        "sitio": "app/entradas/vista.py:275",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14502,7 +14619,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:332",
+        "sitio": "app/entradas/vista.py:351",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14520,7 +14637,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:195",
+        "sitio": "app/entradas/vista.py:205",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14538,7 +14655,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:282",
+        "sitio": "app/entradas/vista.py:301",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14556,7 +14673,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:243",
+        "sitio": "app/entradas/vista.py:262",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14574,7 +14691,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:142",
+        "sitio": "app/entradas/vista.py:143",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14592,7 +14709,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:363",
+        "sitio": "app/entradas/vista.py:382",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14610,7 +14727,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:338",
+        "sitio": "app/entradas/vista.py:357",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14628,7 +14745,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:347",
+        "sitio": "app/entradas/vista.py:366",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14650,7 +14767,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:129",
+        "sitio": "app/entradas/vista.py:130",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14669,7 +14786,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:138",
+        "sitio": "app/entradas/vista.py:139",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14688,7 +14805,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:268",
+        "sitio": "app/entradas/vista.py:287",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14706,7 +14823,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:155",
+        "sitio": "app/entradas/vista.py:156",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14724,7 +14841,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:322",
+        "sitio": "app/entradas/vista.py:341",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14742,7 +14859,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:276",
+        "sitio": "app/entradas/vista.py:295",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14762,7 +14879,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:238",
+        "sitio": "app/entradas/vista.py:257",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14780,7 +14897,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:443",
+        "sitio": "app/entradas/vista.py:462",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14797,7 +14914,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:421",
+        "sitio": "app/entradas/vista.py:440",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14815,7 +14932,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:378",
+        "sitio": "app/entradas/vista.py:397",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14833,7 +14950,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:119",
+        "sitio": "app/entradas/vista.py:120",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21729,6 +21846,7 @@
         "por_tabla_k0": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/mesa/decide",
           "/api/scalp/signals",
           "/metrics"
         ],
@@ -21781,7 +21899,7 @@
           "scalp_signal_snapshot"
         ],
         "total": 25,
-        "total_exacto": 4
+        "total_exacto": 5
       },
       "app.scalp_collector.reset_liquidation_feed_health": {
         "cota_mas_ancha_que_k0": true,
@@ -23600,6 +23718,7 @@
           "app.ai_context.data_confidence_row",
           "app.ai_context.local_alerts",
           "app.ai_context.palabra_de_la_decision",
+          "app.ai_context.palabra_registrada",
           "app.ai_context.quality_score",
           "app.api.cvd_matrix_endpoint",
           "app.api.daily",
@@ -26930,6 +27049,7 @@
         "llamadores_hasta_k": [
           "app.ai_context.build_mesa_decide",
           "app.ai_context.palabra_de_la_decision",
+          "app.ai_context.palabra_registrada",
           "app.scalp_collector.persist_scalp_signals",
           "app.signal_ledger.persist_signal_observations"
         ],
@@ -29513,7 +29633,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 394,
+    "funciones_alcanzables": 399,
     "rutas": 75,
     "rutas_con_campos": 68,
     "rutas_sin_campos": 7,
@@ -35548,17 +35668,20 @@
     {
       "camino": "/api/mesa/decide",
       "campos": {
-        "build_finished_at": "asignado en app/ai_context.py:1657",
-        "build_started_at": "asignado en app/ai_context.py:1656",
-        "lectura_scalp": "asignado en app/ai_context.py:1636"
+        "build_finished_at": "asignado en app/ai_context.py:1906",
+        "build_started_at": "asignado en app/ai_context.py:1905",
+        "lectura_scalp": "asignado en app/ai_context.py:1885"
       },
       "campos_pendientes": [
         "devuelve la variable 'payload', cuyo contenido no se resuelve estaticamente"
       ],
       "cierre": [
         "app.ai_context._corte_unico",
+        "app.ai_context._dura",
+        "app.ai_context._hora",
         "app.ai_context._round_number",
         "app.ai_context._sin_lado",
+        "app.ai_context._veces",
         "app.ai_context.build_mesa_decide",
         "app.ai_context.build_operator_read",
         "app.ai_context.campo_mesa",
@@ -35567,6 +35690,8 @@
         "app.ai_context.data_confidence_row",
         "app.ai_context.latest_snapshot",
         "app.ai_context.palabra_de_la_decision",
+        "app.ai_context.palabra_registrada",
+        "app.ai_context.palabra_sostenida",
         "app.ai_context.quality_score",
         "app.api.scalp_persistence",
         "app.api.validate_symbol",
@@ -35614,8 +35739,11 @@
       ],
       "cierre_indirecto": [
         "app.ai_context._corte_unico",
+        "app.ai_context._dura",
+        "app.ai_context._hora",
         "app.ai_context._round_number",
         "app.ai_context._sin_lado",
+        "app.ai_context._veces",
         "app.ai_context.build_operator_read",
         "app.ai_context.campo_mesa",
         "app.ai_context.compact_dict",
@@ -35623,6 +35751,8 @@
         "app.ai_context.data_confidence_row",
         "app.ai_context.latest_snapshot",
         "app.ai_context.palabra_de_la_decision",
+        "app.ai_context.palabra_registrada",
+        "app.ai_context.palabra_sostenida",
         "app.ai_context.quality_score",
         "app.data_gaps.blocking_requirement_keys",
         "app.db.required_heartbeat_failures",
@@ -35806,6 +35936,7 @@
         "open_interest",
         "orderbook_snapshot",
         "pipeline_heartbeat",
+        "scalp_signal_snapshot",
         "signal_observation",
         "spot_trades_agg",
         "spot_trades_realtime"
@@ -35815,13 +35946,13 @@
     {
       "camino": "/api/mesa/entradas",
       "campos": {
-        "disponible": "literal en app/entradas/vista.py:532",
-        "generador": "literal en app/entradas/vista.py:535",
-        "marco": "literal en app/entradas/vista.py:555",
-        "motivo": "literal en app/entradas/vista.py:533",
-        "precio": "literal en app/entradas/vista.py:534",
-        "reciente": "literal en app/entradas/vista.py:548",
-        "vivo": "literal en app/entradas/vista.py:547"
+        "disponible": "literal en app/entradas/vista.py:551",
+        "generador": "literal en app/entradas/vista.py:554",
+        "marco": "literal en app/entradas/vista.py:574",
+        "motivo": "literal en app/entradas/vista.py:552",
+        "precio": "literal en app/entradas/vista.py:553",
+        "reciente": "literal en app/entradas/vista.py:567",
+        "vivo": "literal en app/entradas/vista.py:566"
       },
       "campos_pendientes": [
         "el objeto se expande con **base, que no se resuelve en el arbol: sus campos no se pueden derivar"
@@ -43914,7 +44045,7 @@
         {
           "funcion": "app.entradas.vista.precio_ahora",
           "origen": "constante _PRECIO_SQL",
-          "sitio": "app/entradas/vista.py:112"
+          "sitio": "app/entradas/vista.py:113"
         },
         {
           "funcion": "app.ingest.rollup_ohlcv_5m",
@@ -44501,6 +44632,11 @@
       ],
       "lectores_del_arbol": [
         {
+          "funcion": "app.ai_context.build_mesa_decide",
+          "origen": "constante MEMORIA_SQL",
+          "sitio": "app/ai_context.py:1384"
+        },
+        {
           "funcion": "app.ai_context.recent_signals",
           "origen": "literal",
           "sitio": "app/ai_context.py:695"
@@ -44519,6 +44655,7 @@
       "leida_por": [
         "/api/ai/context",
         "/api/ai/context/bundle",
+        "/api/mesa/decide",
         "/api/scalp/signals",
         "/metrics"
       ]

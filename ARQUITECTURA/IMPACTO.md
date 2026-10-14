@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 608 funciones con radio, 250 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 613 funciones con radio, 250 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **49** de las 608 escriben alguna tabla
+Solo **49** de las 613 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -72,7 +72,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 | [`orderbook_snapshot`](TABLAS.md#orderbook-snapshot) | 2 | **15** | 0 |
 | [`pipeline_heartbeat`](TABLAS.md#pipeline-heartbeat) | 3 | **8** | 1 |
 | [`predicted_funding_rate`](TABLAS.md#predicted-funding-rate) | 1 | **3** | 0 |
-| [`scalp_signal_snapshot`](TABLAS.md#scalp-signal-snapshot) | 1 | **4** | 0 |
+| [`scalp_signal_snapshot`](TABLAS.md#scalp-signal-snapshot) | 1 | **5** | 0 |
 | [`signal_execution_snapshot`](TABLAS.md#signal-execution-snapshot) | 1 | **1** | 0 |
 | [`signal_observation`](TABLAS.md#signal-observation) | 1 | **7** | 0 |
 | [`signal_outcome`](TABLAS.md#signal-outcome) | 4 | **3** | 0 |
@@ -83,7 +83,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-608 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+613 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -186,6 +186,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.api.minutos_de_las_filas`](impacto/app-api.md) | `app/api.py:360` | 6 | **0** | 0 | **6** |
 | [`app.scalp_logic._profile`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3807` | 6 | **0** | 0 | **6** |
 | [`app.scalp_logic.volume_profile`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3844` | 6 | **0** | 0 | **6** |
+| [`app.scalp_collector.persist_scalp_signals`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1358` | 0 | **5** | 25 ↑ | **5** |
 | [`app.ingest.upsert_liquidations`](impacto/app-ingest.md) | `app/ingest.py:294` | 0 | **5** | 13 ↑ | **5** |
 | [`app.db.required_heartbeat_failures`](impacto/app-db.md) | `app/db.py:110` | 5 | **0** | 8 ↑ | **5** |
 | [`app.scalp_logic.cross_asset`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3609` | 5 | **0** | 3 ↑ | **5** |
@@ -200,7 +201,6 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic._regime`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1865` | 5 | **0** | 0 | **5** |
 | [`app.scalp_logic._returns`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3553` | 5 | **0** | 0 | **5** |
 | [`app.interpretation.evaluate_setups`](impacto/app-interpretation.md) | `app/interpretation.py:139` | 4 | **0** | 55 ↑ | **4** |
-| [`app.scalp_collector.persist_scalp_signals`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1358` | 0 | **4** | 25 ↑ | **4** |
 | [`app.scalp_logic.compute_swing_score`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:6421` | 4 | **0** | 3 ↑ | **4** |
 | [`app.ai_context.data_confidence_row`](impacto/app-ai_context.md) | `app/ai_context.py:531` | 4 | **0** | 0 | **4** |
 | [`app.ai_context.quality_score`](impacto/app-ai_context.md) | `app/ai_context.py:619` | 4 | **0** | 0 | **4** |
@@ -379,11 +379,16 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.db.db_identity`](impacto/app-db.md) | `app/db.py:64` | 1 | **0** | 8 ↑ | **1** |
 | [`app.db.heartbeat_max_age`](impacto/app-db.md) | `app/db.py:95` | 1 | **0** | 8 ↑ | **1** |
 | [`app.signal_ledger._finite`](impacto/app-signal_ledger.md) | `app/signal_ledger.py:52` | 1 | **0** | 7 ↑ | **1** |
-| [`app.ai_context._sin_lado`](impacto/app-ai_context.md) | `app/ai_context.py:1323` | 1 | **0** | 0 | **1** |
+| [`app.ai_context._dura`](impacto/app-ai_context.md) | `app/ai_context.py:1420` | 1 | **0** | 0 | **1** |
+| [`app.ai_context._hora`](impacto/app-ai_context.md) | `app/ai_context.py:1416` | 1 | **0** | 0 | **1** |
+| [`app.ai_context._sin_lado`](impacto/app-ai_context.md) | `app/ai_context.py:1325` | 1 | **0** | 0 | **1** |
+| [`app.ai_context._veces`](impacto/app-ai_context.md) | `app/ai_context.py:1428` | 1 | **0** | 0 | **1** |
 | [`app.ai_context.build_ai_context`](impacto/app-ai_context.md) | `app/ai_context.py:1079` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.build_mesa_decide`](impacto/app-ai_context.md) | `app/ai_context.py:1344` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.campo_mesa`](impacto/app-ai_context.md) | `app/ai_context.py:1283` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.palabra_de_la_decision`](impacto/app-ai_context.md) | `app/ai_context.py:1214` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.build_mesa_decide`](impacto/app-ai_context.md) | `app/ai_context.py:1556` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.campo_mesa`](impacto/app-ai_context.md) | `app/ai_context.py:1285` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.palabra_de_la_decision`](impacto/app-ai_context.md) | `app/ai_context.py:1216` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.palabra_registrada`](impacto/app-ai_context.md) | `app/ai_context.py:1409` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.palabra_sostenida`](impacto/app-ai_context.md) | `app/ai_context.py:1432` | 1 | **0** | 0 | **1** |
 | [`app.api._parse_heartbeat_detail`](impacto/app-api.md) | `app/api.py:3606` | 1 | **0** | 0 | **1** |
 | [`app.api._slippage_para`](impacto/app-api.md) | `app/api.py:1682` | 1 | **0** | 0 | **1** |
 | [`app.api.ai_context`](impacto/app-api.md) | `app/api.py:3545` | 1 | **0** | 0 | **1** |
@@ -486,27 +491,27 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.delta_profile.delta_profile`](impacto/app-delta_profile.md) | `app/delta_profile.py:222` | 1 | **0** | 0 | **1** |
 | [`app.delta_profile.profile_read`](impacto/app-delta_profile.md) | `app/delta_profile.py:115` | 1 | **0** | 0 | **1** |
 | [`app.delta_profile.value_area`](impacto/app-delta_profile.md) | `app/delta_profile.py:92` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._ancla_no_puede`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:398` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._base`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:256` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._de`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:332` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._decide`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:195` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._disparado`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:282` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._distancia`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:243` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._fraccion`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:142` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._muestra`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:363` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._orden`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:338` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._papeles`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:347` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._precio`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:129` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._r`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:138` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._requisitos`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:268` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._significado`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:155` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._sombra`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:322` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._vigilando`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:276` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista._zona`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:238` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.componer`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:443` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.construir`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:421` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.pasada_en_curso`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:378` | 1 | **0** | 0 | **1** |
-| [`app.entradas.vista.precio_ahora`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:119` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._ancla_no_puede`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:417` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._base`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:275` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._de`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:351` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._decide`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:205` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._disparado`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:301` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._distancia`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:262` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._fraccion`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:143` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._muestra`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:382` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._orden`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:357` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._papeles`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:366` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._precio`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:130` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._r`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:139` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._requisitos`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:287` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._significado`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:156` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._sombra`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:341` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._vigilando`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:295` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista._zona`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:257` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.componer`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:462` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.construir`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:440` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.pasada_en_curso`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:397` | 1 | **0** | 0 | **1** |
+| [`app.entradas.vista.precio_ahora`](impacto/app-entradas-vista.md) | `app/entradas/vista.py:120` | 1 | **0** | 0 | **1** |
 | [`app.rango._prueba`](impacto/app-rango.md) | `app/rango.py:107` | 1 | **0** | 0 | **1** |
 | [`app.rango._pruebas`](impacto/app-rango.md) | `app/rango.py:111` | 1 | **0** | 0 | **1** |
 | [`app.rango._ventana`](impacto/app-rango.md) | `app/rango.py:51` | 1 | **0** | 0 | **1** |

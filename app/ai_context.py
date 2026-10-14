@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any, Literal
 
 import asyncpg
@@ -1162,7 +1162,9 @@ async def build_ai_context(
 # motivo por el que las familias SERIE y DEMANDA no entran en el sobre-. Va declarado con
 # `outside_cut: true` por quien lo anade.
 
-MESA_DECIDE_SCHEMA = "mesa.decide.v2"
+# v3 (campana 138): `decide.bias` pasa a ser la palabra que el sistema SOSTIENE (ver el bloque de
+# `palabra_sostenida`), y la del instante viaja aparte en `decide.instante`.
+MESA_DECIDE_SCHEMA = "mesa.decide.v3"
 
 # EL UMBRAL DEL HANDOFF, EN UN SITIO. «data_confidence por debajo de 70 -> NO EVALUABLE».
 # Va aqui arriba porque `palabra_de_la_decision` lo toma como valor por omision.
@@ -1328,7 +1330,7 @@ def _sin_lado(source_key: str, palabra: str = "") -> dict[str, Any]:
     sistema puede estar tomando lado perfectamente, y lo que pasa es que no se juzga.
     """
     if palabra == MESA_PALABRA_SIN_LADO:
-        motivo = "sin lado: el sistema evaluo y no toma lado"
+        motivo = "sin lado: el sistema no sostiene un lado"
     elif palabra == MESA_PALABRA_NO_EVALUABLE:
         motivo = "sin lado: la palabra es NO EVALUABLE, asi que no hay lado que ensenar"
     else:
@@ -1338,6 +1340,216 @@ def _sin_lado(source_key: str, palabra: str = "") -> dict[str, Any]:
         "status": "ausente",
         "source_key": source_key,
         "motivo": motivo,
+    }
+
+
+# LA PALABRA GRANDE DICE LO QUE EL SISTEMA SOSTIENE, NO LO QUE DICE EN UN INSTANTE (campana 138).
+#
+# `palabra_de_la_decision` clasifica UNA evaluacion, y la ruta la pedia en cada peticion: con la
+# mesa refrescando cada 15 s, la palabra de 30 px cambiaba en el 37 % de las evaluaciones seguidas
+# de BTC (140, 72 h de scalp_signal_snapshot, 2026-10-11/14), casi siempre NO OPERAR <-> un lado.
+# Lo que el sistema CALCULA no se toca: cambia lo que se PRESENTA como la decision.
+#
+# LA REGLA, que la respuesta sirve en `memoria.regla` y que se recalcula desde scalp_signal_snapshot
+# (una fila por evaluacion del colector):
+#   1 · las puertas del INSTANTE mandan: si la palabra de esta peticion es NO EVALUABLE (calidad por
+#       debajo de 70, o el registro no evalua AHORA), la grande tambien, con su motivo.
+#   2 · el colector: si su ultima evaluacion registrada tiene mas de 60 s, NO EVALUABLE.
+#   3 · cada evaluacion registrada se clasifica con `palabra_de_la_decision` por su estado y su
+#       libro. La cobertura no se registra, pero va dentro del estado (`compute_scalp_summary`
+#       escribe «Sin datos suficientes» por debajo de 50); la calidad no se registra y es puerta del
+#       instante. Por eso las dos se pasan como «no cierra».
+#   4 · la ventana son las evaluaciones de (ultima - 300 s, ultima]. Con menos de 10, o con la
+#       ultima NO EVALUABLE: NO EVALUABLE. Si al menos el 60 % son LONG (o SHORT): ese lado. Si no,
+#       NO OPERAR, y el motivo dice cuanto oscila.
+#
+# POR QUE ESTOS NUMEROS (medido antes de escribir esto, entregas/*-decide-con-memoria.md): con
+# refrescos de 15 s simulados sobre 18 771 evaluaciones por activo, cambia en el 2.2-2.5 % de los
+# refrescos (el criterio era no mas del 5 %; el peor dia, 2.77 %). Con «mas de la mitad» llegaba al
+# 4.2 % algun dia; con 10 min o con bloques cerrados de 5 min decia un lado mucho menos.
+#
+# LA VENTANA ACABA EN LA ULTIMA EVALUACION VISTA, NO EN EL RELOJ: el colector confirma las filas de
+# un activo en orden, asi que la que esta ruta no vio es posterior a todas las que vio, y lo servido
+# se recalcula despues EXACTAMENTE desde sus instantes.
+MEMORIA_VENTANA_S = 300.0
+MEMORIA_UMBRAL = 0.6
+MEMORIA_MINIMO = 10
+MEMORIA_FRESCURA_S = 60.0
+# Hasta donde se mira hacia atras para la EDAD: la palabra que mas duro en esas 72 h, 141 min.
+MEMORIA_BUSQUEDA_S = 3 * 3600.0
+MEMORIA_FUENTE = "mesa.decide.memoria"
+_NO_REGISTRADA = 100.0
+
+MEMORIA_SQL = """
+SELECT ts, state, book_status FROM scalp_signal_snapshot
+WHERE symbol = $1 AND ts > $2 AND ts <= $3
+ORDER BY ts
+"""
+
+MEMORIA_REGLA = {
+    "fuente": "scalp_signal_snapshot, una fila por evaluacion del colector",
+    "ventana_s": MEMORIA_VENTANA_S,
+    "umbral": MEMORIA_UMBRAL,
+    "minimo": MEMORIA_MINIMO,
+    "frescura_s": MEMORIA_FRESCURA_S,
+    "busqueda_s": MEMORIA_BUSQUEDA_S,
+    "texto": (
+        "La palabra grande es LONG (o SHORT) si al menos el 60 % de las evaluaciones que el colector "
+        "registro en los 5 min que acaban en la ultima son LONG (o SHORT); si no, NO OPERAR. Antes "
+        "mandan tres puertas, y cualquiera da NO EVALUABLE: la del instante (la palabra de esta "
+        "peticion es NO EVALUABLE), la del colector (su ultima evaluacion tiene mas de 60 s) y la de "
+        "la ventana (menos de 10 evaluaciones, o la ultima no evaluable). Cada evaluacion registrada "
+        "se clasifica como la del instante, por su estado y su libro"
+    ),
+}
+
+_PALABRAS = (MESA_PALABRA_LONG, MESA_PALABRA_SHORT, MESA_PALABRA_SIN_LADO, MESA_PALABRA_NO_EVALUABLE)
+
+
+def palabra_registrada(state: Any, book_status: Any) -> str:
+    """La palabra de UNA evaluacion registrada: la misma clasificacion que la del instante."""
+    return palabra_de_la_decision(
+        state=state, book_status=book_status, coverage=_NO_REGISTRADA, quality_score=_NO_REGISTRADA
+    )[0]
+
+
+def _hora(t: datetime) -> str:
+    return t.astimezone(UTC).strftime("%H:%M:%SZ")
+
+
+def _dura(s: float) -> str:
+    if s < 120:
+        return f"{s:.0f} s"
+    if s < 7200:
+        return f"{s // 60:.0f} min"
+    return f"{s / 3600:.1f} h"
+
+
+def _veces(k: int) -> str:
+    return "1 vez" if k == 1 else f"{k} veces"
+
+
+def palabra_sostenida(
+    serie: list[tuple[datetime, str]],
+    *,
+    instante: str,
+    motivo_instante: str | None,
+    as_of: datetime,
+) -> dict[str, Any]:
+    """La palabra grande, su motivo, su EDAD y lo necesario para recalcularlas desde lo servido.
+
+    `serie`: las evaluaciones registradas (instante, palabra), en orden, de las ultimas
+    MEMORIA_BUSQUEDA_S + MEMORIA_VENTANA_S antes de `as_of`. `instante` y `motivo_instante`: lo
+    que `palabra_de_la_decision` dice en esta peticion.
+    """
+    ts = [t for t, _ in serie]
+    pal = [p for _, p in serie]
+    ventana_td = timedelta(seconds=MEMORIA_VENTANA_S)
+    piso = as_of - timedelta(seconds=MEMORIA_BUSQUEDA_S)
+
+    # La palabra grande en CADA evaluacion cuya ventana cabe entera en la serie: la ultima es la de
+    # ahora, y las de antes dan la edad. Ventana deslizante con dos punteros.
+    grande: list[str | None] = [None] * len(ts)
+    lo = cl = cs = 0
+    for j, p in enumerate(pal):
+        cl += p == MESA_PALABRA_LONG
+        cs += p == MESA_PALABRA_SHORT
+        while ts[lo] <= ts[j] - ventana_td:
+            cl -= pal[lo] == MESA_PALABRA_LONG
+            cs -= pal[lo] == MESA_PALABRA_SHORT
+            lo += 1
+        if ts[j] < piso:
+            continue
+        n = j - lo + 1
+        if p == MESA_PALABRA_NO_EVALUABLE or n < MEMORIA_MINIMO:
+            grande[j] = MESA_PALABRA_NO_EVALUABLE
+        elif cl >= MEMORIA_UMBRAL * n:
+            grande[j] = MESA_PALABRA_LONG
+        elif cs >= MEMORIA_UMBRAL * n:
+            grande[j] = MESA_PALABRA_SHORT
+        else:
+            grande[j] = MESA_PALABRA_SIN_LADO
+
+    ventana = cambios = None
+    desde_serie = 0
+    if ts:
+        corte = ts[-1] - ventana_td
+        desde_serie = next(i for i, t in enumerate(ts) if t > corte)
+        w = pal[desde_serie:]
+        cambios = sum(a != b for a, b in zip(w, w[1:], strict=False))
+        ventana = {
+            "despues_de": corte.isoformat(),
+            "hasta": ts[-1].isoformat(),
+            "n": len(w),
+            "cuenta": {k: w.count(k) for k in _PALABRAS},
+        }
+
+    sin_edad = {"desde": None, "s": None, "al_menos": False, "antes": None}
+    if instante == MESA_PALABRA_NO_EVALUABLE:
+        value, motivo = MESA_PALABRA_NO_EVALUABLE, motivo_instante
+        edad = {**sin_edad, "frase": "cierra la puerta del instante, que no se registra: no se sabe "
+                "desde cuando"}
+    elif not ts:
+        value = MESA_PALABRA_NO_EVALUABLE
+        motivo = "el colector no registro ninguna evaluacion en las ultimas 3 h: la memoria no ve nada"
+        edad = {**sin_edad, "frase": "sin evaluaciones registradas: no se sabe desde cuando"}
+    elif (hueco := (as_of - ts[-1]).total_seconds()) > MEMORIA_FRESCURA_S:
+        value = MESA_PALABRA_NO_EVALUABLE
+        motivo = (f"el colector no escribe desde hace {_dura(hueco)} (ultima evaluacion registrada "
+                  f"{_hora(ts[-1])}): la memoria no ve el presente")
+        desde = ts[-1] + timedelta(seconds=MEMORIA_FRESCURA_S)
+        s = (as_of - desde).total_seconds()
+        edad = {**sin_edad, "desde": desde.isoformat(), "s": round(s, 1),
+                "frase": f"desde las {_hora(desde)} ({_dura(s)}): la ultima evaluacion cumplio 60 s"}
+    else:
+        value = grande[-1]
+        c, n = ventana["cuenta"], ventana["n"]
+        if value in (MESA_PALABRA_LONG, MESA_PALABRA_SHORT):
+            motivo = (f"{value} en {c[value]} de {n} evaluaciones de los ultimos 5 min (umbral 60 %); "
+                      f"la palabra del instante cambio {_veces(cambios)}")
+        elif value == MESA_PALABRA_SIN_LADO and not c[MESA_PALABRA_LONG] + c[MESA_PALABRA_SHORT]:
+            motivo = f"el sistema no toma lado en 5 min: NO OPERAR en {c[value]} de {n} evaluaciones"
+        elif value == MESA_PALABRA_SIN_LADO:
+            no_ev = c[MESA_PALABRA_NO_EVALUABLE]
+            motivo = (f"no sostiene un lado en 5 min (umbral 60 %): LONG {c[MESA_PALABRA_LONG]}, "
+                      f"SHORT {c[MESA_PALABRA_SHORT]}, NO OPERAR {c[value]}"
+                      f"{f', NO EVALUABLE {no_ev}' if no_ev else ''} de {n}; la palabra del instante "
+                      f"cambio {_veces(cambios)}")
+        elif pal[-1] == MESA_PALABRA_NO_EVALUABLE:
+            motivo = f"el registro no evaluo la ultima evaluacion registrada ({_hora(ts[-1])})"
+        else:
+            motivo = (f"la ventana de 5 min tiene {n} evaluaciones registradas, menos de "
+                      f"{MEMORIA_MINIMO}: la memoria no ve lo bastante")
+        j = len(ts) - 1
+        while j > 0 and grande[j - 1] == value:
+            j -= 1
+        al_menos = j == 0 or grande[j - 1] is None
+        s = (as_of - ts[j]).total_seconds()
+        edad = {
+            "desde": ts[j].isoformat(),
+            "s": round(s, 1),
+            "al_menos": al_menos,
+            "antes": None if al_menos else {"ts": ts[j - 1].isoformat(), "palabra": grande[j - 1]},
+            "frase": (f"dice {value} desde antes de las {_hora(ts[j])} (mas de {_dura(s)})"
+                      if al_menos else f"dice {value} desde las {_hora(ts[j])} ({_dura(s)})"),
+        }
+        # Lo que hace falta para recalcular la palabra de la evaluacion de ANTES de la racha: su
+        # ventana entera. Si la racha llega al principio de la busqueda, la serie entera.
+        if not al_menos:
+            corte_antes = ts[j - 1] - ventana_td
+            desde_serie = next(i for i, t in enumerate(ts) if t > corte_antes)
+        else:
+            desde_serie = 0
+
+    return {
+        "value": value,
+        "motivo": motivo,
+        "regla": MEMORIA_REGLA,
+        "ultima_registrada": ts[-1].isoformat() if ts else None,
+        "ventana": ventana,
+        "cambios_del_instante": cambios,
+        "edad": edad,
+        "serie": [[t.isoformat(), p] for t, p in serie[desde_serie:]],
     }
 
 
@@ -1359,6 +1571,13 @@ async def build_mesa_decide(
         confidence = await data_confidence_row(conn, symbol)
         barriers = await price_barriers(conn, symbol)
         detail = await structure_detail(conn, symbol, matrix_as_of)
+        # LA MEMORIA, DENTRO DEL MISMO CORTE: las evaluaciones que el colector registro.
+        registradas = await conn.fetch(
+            MEMORIA_SQL,
+            symbol,
+            matrix_as_of - timedelta(seconds=MEMORIA_BUSQUEDA_S + MEMORIA_VENTANA_S),
+            matrix_as_of,
+        )
 
     read = build_operator_read(summary, confidence)
 
@@ -1419,6 +1638,32 @@ async def build_mesa_decide(
         coverage=cobertura_cruda,
         quality_score=calidad,
         threshold=MESA_NO_EVALUABLE_UNDER,
+    )
+    # LA DEL INSTANTE NO DECIDE LA PALABRA GRANDE: la decide lo que el sistema sostiene. Ver el
+    # bloque de `palabra_sostenida`. Desde aqui, `bias_scalp` es la grande.
+    memoria = palabra_sostenida(
+        [(r["ts"], palabra_registrada(r["state"], r["book_status"])) for r in registradas],
+        instante=bias_scalp,
+        motivo_instante=bias_scalp_motivo,
+        as_of=matrix_as_of,
+    )
+    instante = {
+        "value": bias_scalp,
+        "source_key": bias_scalp_source,
+        "status": "ok",
+        "motivo": bias_scalp_motivo,
+        "cambios_en_ventana": memoria["cambios_del_instante"],
+        "frase": (
+            f"instante: {bias_scalp} · cambio {_veces(memoria['cambios_del_instante'])} en los "
+            "ultimos 5 min registrados"
+            if memoria["cambios_del_instante"] is not None
+            else f"instante: {bias_scalp} · sin evaluaciones registradas en 5 min"
+        ),
+    }
+    bias_scalp, bias_scalp_source, bias_scalp_motivo = (
+        memoria["value"],
+        MEMORIA_FUENTE,
+        memoria["motivo"],
     )
 
     if not es_scalp:
@@ -1528,6 +1773,8 @@ async def build_mesa_decide(
                 "motivo": bias_motivo,
             },
             "evidence_balance": balance_evidencia,
+            "instante": instante,
+            "memoria": {k: v for k, v in memoria.items() if k not in ("value", "motivo")},
             "evaluable": {
                 "value": evaluable,
                 "source_key": "data_confidence.quality_score",
@@ -1632,6 +1879,8 @@ async def build_mesa_decide(
             # se va con ella. Si se quedase en `decide`, SWING publicaria como suyo un balance
             # de scores de un minuto, que es el defecto de la 130 en otra clave.
             "evidence_balance",
+            # la palabra del instante y la memoria son de la lectura del scalp (campana 138)
+            "instante", "memoria",
         ]
         payload["lectura_scalp"] = {
             "de_marco": "scalp",

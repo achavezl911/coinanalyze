@@ -67,6 +67,7 @@ MARCO_DEL_PERFIL = {
 }
 
 SIN_LADO = "plan condicional: el sistema no toma lado"
+SIN_LADO_SOSTENIDO = "plan condicional: el sistema no sostiene un lado"
 _LADO_DE = {"LONG": "largo", "SHORT": "corto"}
 
 QUE_ES = (
@@ -152,15 +153,18 @@ def _fraccion(valor: Any) -> float | None:
 # --------------------------------------------------------------------------- DECIDE
 
 
-def _significado(palabra: str | None, marco: str, motivo: str | None) -> dict[str, Any]:
+def _significado(palabra: str | None, marco: str, motivo: str | None,
+                 sostenida: bool = False) -> dict[str, Any]:
     """Que significa para un plan cada una de las cinco respuestas de DECIDE. La frase la escribe
-    quien sabe cual de las cinco es; la pantalla no la deduce de una palabra."""
+    quien sabe cual de las cinco es; la pantalla no la deduce de una palabra. `sostenida`: la palabra
+    es la que el sistema SOSTIENE en su ventana (campana 138), no la de un instante."""
     M = marco.upper()
     if palabra in _LADO_DE:
         mismo = _LADO_DE[palabra]
         otro = "corto" if mismo == "largo" else "largo"
+        cuando = "sostiene {} en los ultimos 5 min" if sostenida else "toma {} en este instante"
         return {
-            "frase": f"DECIDE ({M}) toma {palabra} en este instante. Un plan {mismo} va de su mismo "
+            "frase": f"DECIDE ({M}) {cuando.format(palabra)}. Un plan {mismo} va de su mismo "
             f"lado; un plan {otro} va EN CONTRA. DECIDE no es un requisito del plan: ni lo dispara "
             "ni lo anula.",
             "para": {
@@ -168,6 +172,12 @@ def _significado(palabra: str | None, marco: str, motivo: str | None) -> dict[st
                 otro: {"relacion": "en_contra",
                        "etiqueta": f"EN CONTRA de DECIDE ({palabra}): este plan es {otro}"},
             },
+        }
+    if palabra == "NO OPERAR" and sostenida:
+        return {
+            "frase": f"{SIN_LADO_SOSTENIDO}. DECIDE ({M}) no sostiene un lado en los ultimos 5 min; el "
+            "plan sigue apuntado con sus propias reglas.",
+            "para": {lado: {"relacion": "condicional", "etiqueta": SIN_LADO_SOSTENIDO} for lado in LADOS},
         }
     if palabra == "NO OPERAR":
         return {
@@ -195,9 +205,13 @@ def _significado(palabra: str | None, marco: str, motivo: str | None) -> dict[st
 def _decide(payload: dict[str, Any] | None, error: str | None) -> dict[str, Any]:
     """Las dos palabras, cada una con lo que significa. `payload` es build_mesa_decide(frame=swing)."""
     por_marco: dict[str, dict[str, Any]] = {}
+    memoria: dict[str, Any] = {}
     if payload is not None:
         por_marco["swing"] = (payload.get("decide") or {}).get("bias") or {}
         por_marco["scalp"] = (payload.get("lectura_scalp") or {}).get("bias") or {}
+        # LA PALABRA DEL SCALP ES LA QUE EL SISTEMA SOSTIENE (campana 138), con su edad: la de la
+        # palabra, no la de la instantanea de debajo.
+        memoria = (payload.get("lectura_scalp") or {}).get("memoria") or {}
     perfiles: dict[str, Any] = {}
     for perfil in PERFILES:
         marco = MARCO_DEL_PERFIL[perfil]["marco"]
@@ -206,6 +220,8 @@ def _decide(payload: dict[str, Any] | None, error: str | None) -> dict[str, Any]
         motivo = campo.get("motivo") if palabra else (
             error or (f"DECIDE sirvio {campo.get('value')!r}, que no es ninguna de sus cuatro palabras"
                       if campo.get("value") else "DECIDE no sirvio la palabra de este marco"))
+        sostenida = marco == "scalp" and palabra is not None and bool(memoria)
+        edad = (memoria.get("edad") or {}) if sostenida else {}
         perfiles[perfil] = {
             "marco": marco.upper(),
             "por_que_este_marco": MARCO_DEL_PERFIL[perfil]["por_que"],
@@ -213,7 +229,10 @@ def _decide(payload: dict[str, Any] | None, error: str | None) -> dict[str, Any]
             "rotulo": palabra or "SIN RESPUESTA",
             "sin_respuesta": palabra is None,
             "motivo": motivo,
-            **_significado(palabra, marco, motivo),
+            "edad_de_la_palabra": edad.get("frase") if sostenida or palabra is None else
+            f"la palabra de {marco.upper()} no sale de una ventana de evaluaciones: no tiene edad propia",
+            "desde": edad.get("desde"),
+            **_significado(palabra, marco, motivo, sostenida),
         }
     edad = ((payload or {}).get("age") or {}).get("snapshot_lag_seconds") or {}
     tope = (payload or {}).get("max_age_s")

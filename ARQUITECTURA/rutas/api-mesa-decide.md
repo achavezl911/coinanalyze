@@ -19,9 +19,9 @@ Handler `mesa_decide` · `app/api.py:3816` (cuerpo hasta la 3851) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `build_finished_at` | asignado en app/ai_context.py:1657 |
-| `build_started_at` | asignado en app/ai_context.py:1656 |
-| `lectura_scalp` | asignado en app/ai_context.py:1636 |
+| `build_finished_at` | asignado en app/ai_context.py:1906 |
+| `build_started_at` | asignado en app/ai_context.py:1905 |
+| `lectura_scalp` | asignado en app/ai_context.py:1885 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -79,6 +79,8 @@ LEE:
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
   - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
+- `scalp_signal_snapshot` — `sql/schema.sql:381`, 16 columnas
+  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1417`
 - `signal_observation` — `sql/schema.sql:415`, 34 columnas
   - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:371`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
@@ -104,27 +106,32 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-55 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+60 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1344`
+- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1556`
 - `app.api.scalp_persistence` — `app/api.py:3174`
 - `app.api.validate_symbol` — `app/api.py:233`
 
-<details><summary>Alcanzables de forma indirecta (52)</summary>
+<details><summary>Alcanzables de forma indirecta (57)</summary>
 
 - `app.ai_context._corte_unico` — `app/ai_context.py:855`
+- `app.ai_context._dura` — `app/ai_context.py:1420`
+- `app.ai_context._hora` — `app/ai_context.py:1416`
 - `app.ai_context._round_number` — `app/ai_context.py:226`
-- `app.ai_context._sin_lado` — `app/ai_context.py:1323`
+- `app.ai_context._sin_lado` — `app/ai_context.py:1325`
+- `app.ai_context._veces` — `app/ai_context.py:1428`
 - `app.ai_context.build_operator_read` — `app/ai_context.py:747`
-- `app.ai_context.campo_mesa` — `app/ai_context.py:1283`
+- `app.ai_context.campo_mesa` — `app/ai_context.py:1285`
 - `app.ai_context.compact_dict` — `app/ai_context.py:253`
 - `app.ai_context.compact_value` — `app/ai_context.py:237`
 - `app.ai_context.data_confidence_row` — `app/ai_context.py:531`
 - `app.ai_context.latest_snapshot` — `app/ai_context.py:298`
-- `app.ai_context.palabra_de_la_decision` — `app/ai_context.py:1214`
+- `app.ai_context.palabra_de_la_decision` — `app/ai_context.py:1216`
+- `app.ai_context.palabra_registrada` — `app/ai_context.py:1409`
+- `app.ai_context.palabra_sostenida` — `app/ai_context.py:1432`
 - `app.ai_context.quality_score` — `app/ai_context.py:619`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
@@ -261,7 +268,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic._resample_highs_lows` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.spot_flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 31 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 36 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

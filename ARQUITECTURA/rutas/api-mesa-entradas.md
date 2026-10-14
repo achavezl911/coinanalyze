@@ -19,13 +19,13 @@ Handler `mesa_entradas` · `app/api.py:3855` (cuerpo hasta la 3868) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `disponible` | literal en app/entradas/vista.py:532 |
-| `generador` | literal en app/entradas/vista.py:535 |
-| `marco` | literal en app/entradas/vista.py:555 |
-| `motivo` | literal en app/entradas/vista.py:533 |
-| `precio` | literal en app/entradas/vista.py:534 |
-| `reciente` | literal en app/entradas/vista.py:548 |
-| `vivo` | literal en app/entradas/vista.py:547 |
+| `disponible` | literal en app/entradas/vista.py:551 |
+| `generador` | literal en app/entradas/vista.py:554 |
+| `marco` | literal en app/entradas/vista.py:574 |
+| `motivo` | literal en app/entradas/vista.py:552 |
+| `precio` | literal en app/entradas/vista.py:553 |
+| `reciente` | literal en app/entradas/vista.py:567 |
+| `vivo` | literal en app/entradas/vista.py:566 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -60,7 +60,7 @@ Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2566`
 - `app.api.validate_symbol` — `app/api.py:233`
-- `app.entradas.vista.construir` — `app/entradas/vista.py:421`
+- `app.entradas.vista.construir` — `app/entradas/vista.py:440`
 
 <details><summary>Alcanzables de forma indirecta (48)</summary>
 
@@ -92,26 +92,26 @@ Llamadas directas del handler:
 - `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:319`
 - `app.entradas.ruta._resumen` — `app/entradas/ruta.py:128`
 - `app.entradas.ruta.construir` — `app/entradas/ruta.py:169`
-- `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:398`
-- `app.entradas.vista._base` — `app/entradas/vista.py:256`
-- `app.entradas.vista._de` — `app/entradas/vista.py:332`
-- `app.entradas.vista._decide` — `app/entradas/vista.py:195`
-- `app.entradas.vista._disparado` — `app/entradas/vista.py:282`
-- `app.entradas.vista._distancia` — `app/entradas/vista.py:243`
-- `app.entradas.vista._fraccion` — `app/entradas/vista.py:142`
-- `app.entradas.vista._muestra` — `app/entradas/vista.py:363`
-- `app.entradas.vista._orden` — `app/entradas/vista.py:338`
-- `app.entradas.vista._papeles` — `app/entradas/vista.py:347`
-- `app.entradas.vista._precio` — `app/entradas/vista.py:129`
-- `app.entradas.vista._r` — `app/entradas/vista.py:138`
-- `app.entradas.vista._requisitos` — `app/entradas/vista.py:268`
-- `app.entradas.vista._significado` — `app/entradas/vista.py:155`
-- `app.entradas.vista._sombra` — `app/entradas/vista.py:322`
-- `app.entradas.vista._vigilando` — `app/entradas/vista.py:276`
-- `app.entradas.vista._zona` — `app/entradas/vista.py:238`
-- `app.entradas.vista.componer` — `app/entradas/vista.py:443`
-- `app.entradas.vista.pasada_en_curso` — `app/entradas/vista.py:378`
-- `app.entradas.vista.precio_ahora` — `app/entradas/vista.py:119`
+- `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:417`
+- `app.entradas.vista._base` — `app/entradas/vista.py:275`
+- `app.entradas.vista._de` — `app/entradas/vista.py:351`
+- `app.entradas.vista._decide` — `app/entradas/vista.py:205`
+- `app.entradas.vista._disparado` — `app/entradas/vista.py:301`
+- `app.entradas.vista._distancia` — `app/entradas/vista.py:262`
+- `app.entradas.vista._fraccion` — `app/entradas/vista.py:143`
+- `app.entradas.vista._muestra` — `app/entradas/vista.py:382`
+- `app.entradas.vista._orden` — `app/entradas/vista.py:357`
+- `app.entradas.vista._papeles` — `app/entradas/vista.py:366`
+- `app.entradas.vista._precio` — `app/entradas/vista.py:130`
+- `app.entradas.vista._r` — `app/entradas/vista.py:139`
+- `app.entradas.vista._requisitos` — `app/entradas/vista.py:287`
+- `app.entradas.vista._significado` — `app/entradas/vista.py:156`
+- `app.entradas.vista._sombra` — `app/entradas/vista.py:341`
+- `app.entradas.vista._vigilando` — `app/entradas/vista.py:295`
+- `app.entradas.vista._zona` — `app/entradas/vista.py:257`
+- `app.entradas.vista.componer` — `app/entradas/vista.py:462`
+- `app.entradas.vista.pasada_en_curso` — `app/entradas/vista.py:397`
+- `app.entradas.vista.precio_ahora` — `app/entradas/vista.py:120`
 
 </details>
 
