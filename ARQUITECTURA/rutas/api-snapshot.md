@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `snapshot` · `app/api.py:668` (cuerpo hasta la 684) · decorador en la linea 667.
+Handler `snapshot` · `app/api.py:669` (cuerpo hasta la 685) · decorador en la linea 668.
 
 ## Parametros de entrada
 
@@ -80,9 +80,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.latest_snapshot` — `app/api.py:520`
-- `app.api.records` — `app/api.py:245`
-- `app.api.validate_symbol` — `app/api.py:232`
+- `app.api.latest_snapshot` — `app/api.py:521`
+- `app.api.records` — `app/api.py:246`
+- `app.api.validate_symbol` — `app/api.py:233`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (4)</summary>
 
@@ -99,8 +99,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
-| 404 | No data | `app/api.py:674` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 404 | No data | `app/api.py:675` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -111,7 +111,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | — | `harness/checks/K31-cubos.py:109` |
-| **readme** | — | `README.md:401` |
+| **readme** | — | `README.md:405` |
 | **tests** | — | `tests/test_pr24_daily_historical_integrity.py:89` |
 
 **Nadie la llama.** Sus 3 rastros son todos MENCION -comentario,
@@ -150,7 +150,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api.latest_snapshot` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |
 | `app.api.snapshot` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |

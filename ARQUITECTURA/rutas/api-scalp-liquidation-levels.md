@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_levels` · `app/api.py:3060` (cuerpo hasta la 3116) · decorador en la linea 3059.
+Handler `liquidation_levels` · `app/api.py:3061` (cuerpo hasta la 3117) · decorador en la linea 3060.
 
 ## Parametros de entrada
 
@@ -21,13 +21,13 @@ Handler `liquidation_levels` · `app/api.py:3060` (cuerpo hasta la 3116) · deco
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3112 |
-| `bucket_bps` | literal en app/api.py:3111 |
-| `minutes` | literal en app/api.py:3110 |
-| `rows` | literal en app/api.py:3115 |
-| `symbol` | literal en app/api.py:3109 |
-| `window_end` | literal en app/api.py:3114 |
-| `window_start` | literal en app/api.py:3113 |
+| `as_of` | literal en app/api.py:3113 |
+| `bucket_bps` | literal en app/api.py:3112 |
+| `minutes` | literal en app/api.py:3111 |
+| `rows` | literal en app/api.py:3116 |
+| `symbol` | literal en app/api.py:3110 |
+| `window_end` | literal en app/api.py:3115 |
+| `window_start` | literal en app/api.py:3114 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,8 +54,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:245`
-- `app.api.validate_symbol` — `app/api.py:232`
+- `app.api.records` — `app/api.py:246`
+- `app.api.validate_symbol` — `app/api.py:233`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (7)</summary>
 
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -87,7 +87,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:154`, `harness/checks/K43-foto-unica.sh:215`, `harness/checks/K44-control.bash:113`, `harness/checks/K44-control.bash:393` _(+4)_ | `harness/checks/K44-control.bash:362` |
 | **panel** | `static/js/07-decision-y-ciclos.js:383` | — |
-| **readme** | — | `README.md:488`, `README.md:500` |
+| **readme** | — | `README.md:492`, `README.md:504` |
 | **tests** | `tests/test_v121_hardening.py:36` | — |
 
 **La llama el panel: es superficie de producto.**
@@ -124,7 +124,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api.liquidation_levels` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

@@ -14,7 +14,12 @@
 #
 # PAPEL:  NUCLEO   se pide en cada carga de la vista principal (y cada 15 s, mesa-app.js:91 y :175).
 #         PARTE    un panel de la OLA 2; algunas solo en un marco (scalp, swing o largo).
-#         ESTADO   la vista de estado del sistema (#<marco>/<activo>/status), mesa-app.js:240-245.
+#         ESTADO   la vista de estado del sistema (#<marco>/<activo>/status), mesa-app.js pintarEstado.
+#         ENTRADAS la vista de entradas (#<marco>/<activo>/entradas, campana 137), mesa-entradas.js:
+#                  pide SU ruta al cargar y cada 45 s, y NADA mas: ni el NUCLEO ni ninguna PARTE.
+#                  La vista principal no pide lo que solo es de ENTRADAS, y la de entradas no pide
+#                  una PARTE: K44 lo mira en el log por cliente y por tiempo, K106 con un navegador
+#                  y tests/test_la_puerta.py en el codigo.
 #         Van separados por coma si son varios. La vista principal pide SIEMPRE su NUCLEO antes de la
 #         OLA 2 (mesa-app.js:393-405): pedir una ruta SOLO de PARTE sin el NUCLEO es un defecto; la
 #         vista de estado no pide el NUCLEO, y por eso lo que es tambien ESTADO no cuenta como prueba.
@@ -37,3 +42,4 @@
 /api/scalp/basis	PARTE	largo	mesa-paneles.js pintarInspect -> panelBasis	el basis
 /api/external-macro	PARTE	largo	mesa-paneles.js pintarResearch -> panelMacro	el contexto macro externo
 /api/healthz	ESTADO	todos	mesa-app.js pintarEstado (#estado-procesos)	la salud de los procesos, en la vista de estado
+/api/mesa/entradas	ENTRADAS	todos	mesa-entradas.js olaEntradas -> pintarEntradas (#vista-entradas)	la vista de entradas: los planes del activo, la palabra de DECIDE de cada perfil y el marco, en UNA respuesta que se vuelve a pedir cada 45 s

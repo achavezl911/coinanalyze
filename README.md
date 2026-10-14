@@ -327,8 +327,12 @@ perpetuos de BTC, ETH y SOL. Contrasta flujo spot contra futuros y presenta CVD,
 CVD diferencial, whale delta, funding, open interest, liquidaciones, buy-trade ratio,
 régimen de mercado e histórico diario con corte NYSE.
 
-No ejecuta órdenes, no se conecta a una cuenta de exchange y no genera entradas
-mecánicas. El motor de setups clasifica contexto probabilístico e invalidaciones.
+No ejecuta órdenes y no se conecta a una cuenta de exchange. Desde las campañas 135 y 136
+SÍ genera, de forma mecánica, PLANES de entrada en largo y en corto (`app/entradas/`, con
+sus reglas versionadas en `config/entradas/reglamento.json`): los apunta en un registro
+ANTES de saber cómo acaban y se leen en la mesa, en `#<marco>/<activo>/entradas`. No son
+una señal ni una orden, y de su resultado el sistema todavía no dice nada. El motor de
+setups clasifica contexto probabilístico e invalidaciones.
 
 ## Arquitectura
 

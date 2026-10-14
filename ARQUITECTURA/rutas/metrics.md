@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `prometheus_metrics` · `app/api.py:3623` (cuerpo hasta la 3697) · decorador en la linea 3622.
+Handler `prometheus_metrics` · `app/api.py:3624` (cuerpo hasta la 3698) · decorador en la linea 3623.
 
 ## Parametros de entrada
 
@@ -54,7 +54,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._parse_heartbeat_detail` — `app/api.py:3605`
+- `app.api._parse_heartbeat_detail` — `app/api.py:3606`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (11)</summary>
 
@@ -78,7 +78,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Metrics disabled | `app/api.py:3625` | el propio handler |
+| 404 | Metrics disabled | `app/api.py:3626` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -88,7 +88,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **readme** | — | `README.md:290`, `README.md:291`, `README.md:319`, `README.md:503` |
+| **readme** | — | `README.md:290`, `README.md:291`, `README.md:319`, `README.md:507` |
 | **tests** | `tests/test_metrics_endpoint.py:252` | `tests/test_metrics_endpoint.py:3`, `tests/test_metrics_endpoint.py:4` |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.

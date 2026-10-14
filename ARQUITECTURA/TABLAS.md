@@ -21,9 +21,9 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`daily_verdict_outcome`](#daily-verdict-outcome) | 1 | 3 | 0 |
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
 | [`data_gap`](#data-gap) | 12 | 22 | 0 |
-| [`entrada_latido`](#entrada-latido) | 1 | 1 | 0 |
-| [`entrada_registro`](#entrada-registro) | 1 | 1 | 0 |
-| [`entrada_reglamento`](#entrada-reglamento) | 1 | 1 | 0 |
+| [`entrada_latido`](#entrada-latido) | 1 | 2 | 0 |
+| [`entrada_registro`](#entrada-registro) | 1 | 2 | 0 |
+| [`entrada_reglamento`](#entrada-reglamento) | 1 | 2 | 0 |
 | [`external_macro_observation`](#external-macro-observation) | 2 | 3 | 0 |
 | [`funding_rate`](#funding-rate) | 1 | 4 | 0 |
 | [`futures_trades_agg`](#futures-trades-agg) | 2 | 7 | 0 |
@@ -35,7 +35,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`market_feed_health`](#market-feed-health) | 3 | 10 | 0 |
 | [`metric_baseline`](#metric-baseline) | 1 | 15 | 0 |
 | [`metrics_snapshot`](#metrics-snapshot) | 2 | 9 | 0 |
-| [`ohlcv`](#ohlcv) | 4 | 38 | 0 |
+| [`ohlcv`](#ohlcv) | 4 | 39 | 0 |
 | [`oi_bybit`](#oi-bybit) | 1 | 3 | 0 |
 | [`open_interest`](#open-interest) | 1 | 20 | 0 |
 | [`orderbook_depth`](#orderbook-depth) | 1 | 1 | 0 |
@@ -317,9 +317,10 @@ La escriben:
 
 - `app.entradas.registro.latir` — **INSERT** en `app/entradas/registro.py:222`
 
-**Si cambia el contenido o el esquema de `entrada_latido`, estas 1 rutas lo notan:**
+**Si cambia el contenido o el esquema de `entrada_latido`, estas 2 rutas lo notan:**
 
 - [`/api/entradas`](rutas/api-entradas.md)
+- [`/api/mesa/entradas`](rutas/api-mesa-entradas.md)
 
 ### entrada_registro
 
@@ -329,9 +330,10 @@ La escriben:
 
 - `app.entradas.registro.insertar` — **INSERT** en `app/entradas/registro.py:31`
 
-**Si cambia el contenido o el esquema de `entrada_registro`, estas 1 rutas lo notan:**
+**Si cambia el contenido o el esquema de `entrada_registro`, estas 2 rutas lo notan:**
 
 - [`/api/entradas`](rutas/api-entradas.md)
+- [`/api/mesa/entradas`](rutas/api-mesa-entradas.md)
 
 ### entrada_reglamento
 
@@ -341,9 +343,10 @@ La escriben:
 
 - `app.entradas.registro.registrar_reglamento` — **INSERT** en `app/entradas/registro.py:85`
 
-**Si cambia el contenido o el esquema de `entrada_reglamento`, estas 1 rutas lo notan:**
+**Si cambia el contenido o el esquema de `entrada_reglamento`, estas 2 rutas lo notan:**
 
 - [`/api/entradas`](rutas/api-entradas.md)
+- [`/api/mesa/entradas`](rutas/api-mesa-entradas.md)
 
 ### external_macro_observation
 
@@ -576,7 +579,7 @@ La escriben:
 - `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:201`
 - `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:201`
 
-**Si cambia el contenido o el esquema de `ohlcv`, estas 38 rutas lo notan:**
+**Si cambia el contenido o el esquema de `ohlcv`, estas 39 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
@@ -595,6 +598,7 @@ La escriben:
 - [`/api/market-impact`](rutas/api-market-impact.md)
 - [`/api/market-memory`](rutas/api-market-memory.md)
 - [`/api/mesa/decide`](rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](rutas/api-ohlcv.md)
 - [`/api/oi-context`](rutas/api-oi-context.md)
 - [`/api/passive-flow`](rutas/api-passive-flow.md)

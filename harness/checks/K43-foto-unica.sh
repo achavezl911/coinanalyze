@@ -170,9 +170,9 @@ ASIGNACION="
 /api/stream=EXENTA /api/healthz=EXENTA /api/symbols=EXENTA
 "
 # /api/entradas (campana 135) es DEMANDA: sirve as_of en su raiz y una ventana PEDIDA (desde,
-# hasta) sobre un registro append-only; no es una foto del mercado ni una serie. Hoy no la pide
-# el panel viejo -la pintara la E2 en la mesa-, asi que K43 no la recorre: queda declarada para
-# el dia que alguien la enchufe en una pantalla que este check si mire.
+# hasta) sobre un registro append-only; no es una foto del mercado ni una serie. No la pide el
+# panel viejo ni la mesa: la vista ENTRADAS (campana 137) pinta su hermana magra, que es de la
+# mesa y la juzgan K44 y K106. K43 no recorre ninguna de las dos: queda declarada aqui.
 # EXENTAS, con su motivo: stream es SSE -empuje continuo, no una foto y no puede
 # serlo-; healthz es salud del sistema; symbols es catalogo de configuracion.
 

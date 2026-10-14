@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd` · `app/api.py:752` (cuerpo hasta la 796) · decorador en la linea 751.
+Handler `cvd` · `app/api.py:753` (cuerpo hasta la 797) · decorador en la linea 752.
 
 ## Parametros de entrada
 
@@ -20,22 +20,22 @@ Handler `cvd` · `app/api.py:752` (cuerpo hasta la 796) · decorador en la linea
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:481 |
-| `coverage.served_window` | literal en app/api.py:482 |
-| `coverage.unit` | literal en app/api.py:427 |
-| `data_gaps` | literal en app/api.py:487 |
-| `data_gaps.declared` | literal en app/api.py:495 |
-| `data_gaps.exchanges` | literal en app/api.py:489 |
-| `data_gaps.feed` | literal en app/api.py:488 |
-| `data_gaps.market` | literal en app/api.py:490 |
-| `data_gaps.status` | literal en app/api.py:494 |
-| `data_gaps.symbol` | literal en app/api.py:491 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:496 |
-| `data_gaps.window_end` | literal en app/api.py:493 |
-| `data_gaps.window_start` | literal en app/api.py:492 |
-| `interval` | literal en app/api.py:479 |
-| `rows` | literal en app/api.py:480 |
-| `symbol` | literal en app/api.py:478 |
+| `coverage` | literal en app/api.py:482 |
+| `coverage.served_window` | literal en app/api.py:483 |
+| `coverage.unit` | literal en app/api.py:428 |
+| `data_gaps` | literal en app/api.py:488 |
+| `data_gaps.declared` | literal en app/api.py:496 |
+| `data_gaps.exchanges` | literal en app/api.py:490 |
+| `data_gaps.feed` | literal en app/api.py:489 |
+| `data_gaps.market` | literal en app/api.py:491 |
+| `data_gaps.status` | literal en app/api.py:495 |
+| `data_gaps.symbol` | literal en app/api.py:492 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:497 |
+| `data_gaps.window_end` | literal en app/api.py:494 |
+| `data_gaps.window_start` | literal en app/api.py:493 |
+| `interval` | literal en app/api.py:480 |
+| `rows` | literal en app/api.py:481 |
+| `symbol` | literal en app/api.py:479 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -76,15 +76,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:399`
-- `app.api.historical_interval_value` — `app/api.py:238`
-- `app.api.mask_gapped_series_rows` — `app/api.py:249`
-- `app.api.records` — `app/api.py:245`
-- `app.api.validate_symbol` — `app/api.py:232`
+- `app.api.declared_series_response` — `app/api.py:400`
+- `app.api.historical_interval_value` — `app/api.py:239`
+- `app.api.mask_gapped_series_rows` — `app/api.py:250`
+- `app.api.records` — `app/api.py:246`
+- `app.api.validate_symbol` — `app/api.py:233`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:359`
+- `app.api.minutos_de_las_filas` — `app/api.py:360`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
@@ -108,8 +108,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:241` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:242` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -120,7 +120,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46` | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K31-cubos.py:40`, `harness/checks/K88-control.bash:346`, `harness/checks/K88-control.bash:438` _(+1)_ |
-| **readme** | — | `README.md:403` |
+| **readme** | — | `README.md:407` |
 
 **No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
@@ -157,7 +157,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |

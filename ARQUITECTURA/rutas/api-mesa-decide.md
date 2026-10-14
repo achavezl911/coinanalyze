@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `mesa_decide` · `app/api.py:3815` (cuerpo hasta la 3850) · decorador en la linea 3814.
+Handler `mesa_decide` · `app/api.py:3816` (cuerpo hasta la 3851) · decorador en la linea 3815.
 
 ## Parametros de entrada
 
@@ -110,8 +110,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.build_mesa_decide` — `app/ai_context.py:1344`
-- `app.api.scalp_persistence` — `app/api.py:3173`
-- `app.api.validate_symbol` — `app/api.py:232`
+- `app.api.scalp_persistence` — `app/api.py:3174`
+- `app.api.validate_symbol` — `app/api.py:233`
 
 <details><summary>Alcanzables de forma indirecta (52)</summary>
 
@@ -185,8 +185,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
-| 422 | — | `app/api.py:3826` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 422 | — | `app/api.py:3827` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -196,10 +196,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-decide-lo-primero.sh:75`, `harness/checks/K102-decide-lo-primero.sh:99`, `harness/checks/K102-decide-lo-primero.sh:101`, `harness/checks/K102-decide-lo-primero.sh:106` _(+9)_ | `harness/checks/K102-decide-lo-primero.sh:30`, `harness/checks/K102-mesa.py:523`, `harness/checks/K102-mesa.py:533`, `harness/checks/K102-mesa.py:737` _(+2)_ |
+| **checks** | `harness/checks/K102-decide-lo-primero.sh:75`, `harness/checks/K102-decide-lo-primero.sh:99`, `harness/checks/K102-decide-lo-primero.sh:101`, `harness/checks/K102-decide-lo-primero.sh:106` _(+10)_ | `harness/checks/K102-decide-lo-primero.sh:30`, `harness/checks/K102-mesa.py:523`, `harness/checks/K102-mesa.py:533`, `harness/checks/K102-mesa.py:737` _(+2)_ |
 | **tests** | `tests/js/mesa_decide.test.js:275`, `tests/js/mesa_remate.test.js:28` | `tests/js/mesa_decide.test.js:30` |
 
-**No la llama el panel**, pero si 15 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 16 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
@@ -236,7 +236,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |

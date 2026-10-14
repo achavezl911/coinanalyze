@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `hypothesis` · `app/api.py:1379` (cuerpo hasta la 1456) · decorador en la linea 1378.
+Handler `hypothesis` · `app/api.py:1380` (cuerpo hasta la 1457) · decorador en la linea 1379.
 
 ## Parametros de entrada
 
@@ -31,7 +31,7 @@ Handler `hypothesis` · `app/api.py:1379` (cuerpo hasta la 1456) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1431 |
+| `as_of` | literal en app/api.py:1432 |
 | `context` | literal en app/scalp_logic.py:5152 |
 | `counts` | literal en app/scalp_logic.py:5163 |
 | `data_coverage_pct` | literal en app/scalp_logic.py:5154 |
@@ -111,7 +111,7 @@ Handler `hypothesis` · `app/api.py:1379` (cuerpo hasta la 1456) · decorador en
 | `setup_zone.zone_high` | literal en app/scalp_logic.py:5169 |
 | `setup_zone.zone_low` | literal en app/scalp_logic.py:5168 |
 | `spread_bps` | literal en app/scalp_logic.py:5161 |
-| `symbol` | literal en app/api.py:1430 |
+| `symbol` | literal en app/api.py:1431 |
 | `timing` | literal en app/scalp_logic.py:5153 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -190,7 +190,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:232`
+- `app.api.validate_symbol` — `app/api.py:233`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4589`
 - `app.scalp_logic.hypothesis_evidence` — `app/scalp_logic.py:4992`
@@ -289,11 +289,11 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
-| 422 | — | `app/api.py:1402` | el propio handler |
-| 422 | — | `app/api.py:1406` | el propio handler |
-| 422 | — | `app/api.py:1410` | el propio handler |
-| 422 | — | `app/api.py:1414` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 422 | — | `app/api.py:1403` | el propio handler |
+| 422 | — | `app/api.py:1407` | el propio handler |
+| 422 | — | `app/api.py:1411` | el propio handler |
+| 422 | — | `app/api.py:1415` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -343,7 +343,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |

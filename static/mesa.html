@@ -35,12 +35,14 @@
       </div>
 
       <div class="cab-der">
-        <div>
+        <div id="reloj-caja">
           <span class="reloj-rotulo">corte · envelope_cut.as_of</span>
           <div class="reloj-valor" id="reloj">—</div>
         </div>
         <!-- LA OTRA PANTALLA. Desde la campana 133 la mesa es `/` y el panel viejo vive en `/panel`. -->
         <a class="enlace" id="ir-panel" href="/panel">PANEL ANTERIOR →</a>
+        <!-- EL CAMINO A LA VISTA DE ENTRADAS (campana 137). Es lo unico que la mesa gana. -->
+        <a class="enlace" id="ir-entradas" href="#scalp/BTC/entradas">ENTRADAS →</a>
         <a class="enlace" id="ir-estado" href="#scalp/BTC/status">SISTEMA →</a>
       </div>
     </header>
@@ -167,9 +169,29 @@
       </section>
     </main>
 
+    <!-- ============================================ VISTA ENTRADAS -->
+    <!-- `#<marco>/<activo>/entradas` · PLANES de entrada apuntados antes de saber como acaban,
+         para el activo del hash y en los DOS perfiles sea cual sea el marco. No es una senal.
+         Todo lo pinta mesa-entradas.js desde UNA respuesta de /api/mesa/entradas. El aviso va
+         ARRIBA: es lo primero que se lee cuando no hay dato o el generador no late. -->
+    <main id="vista-entradas" hidden>
+      <a class="enlace" id="ent-volver" href="#scalp/BTC">← volver a la mesa</a>
+      <div id="ent-aviso" class="ent-aviso" role="alert" hidden></div>
+      <div id="ent-cabeza"></div>
+      <p class="seccion-rotulo">decide · qué decide el sistema ahora, y qué significa para un plan</p>
+      <div id="ent-decide" class="grid-2"></div>
+      <p class="seccion-rotulo">lo vivo · largo y corto, intradía (15 min) y swing (4 h)</p>
+      <div id="ent-vivo"></div>
+      <p class="seccion-rotulo">lo reciente · disparados y sombras de la ventana</p>
+      <div id="ent-reciente"></div>
+      <p class="seccion-rotulo">el marco · versiones, calendario, hipótesis, recuentos y lo que falta</p>
+      <div id="ent-marco"></div>
+    </main>
+
     <script src="/static/mesa/mesa-datos.js"></script>
     <script src="/static/mesa/mesa-decide.js"></script>
     <script src="/static/mesa/mesa-paneles.js"></script>
+    <script src="/static/mesa/mesa-entradas.js"></script>
     <script src="/static/mesa/mesa-app.js"></script>
   </body>
 </html>

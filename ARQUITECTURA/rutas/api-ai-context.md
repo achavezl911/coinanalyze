@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_context` · `app/api.py:3544` (cuerpo hasta la 3557) · decorador en la linea 3543.
+Handler `ai_context` · `app/api.py:3545` (cuerpo hasta la 3558) · decorador en la linea 3544.
 
 ## Parametros de entrada
 
@@ -188,7 +188,7 @@ Llamadas directas del handler:
 
 - `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:891`
 - `app.ai_context.normalize_profile` — `app/ai_context.py:219`
-- `app.api.validate_symbol` — `app/api.py:232`
+- `app.api.validate_symbol` — `app/api.py:233`
 
 <details><summary>Alcanzables de forma indirecta (168)</summary>
 
@@ -378,8 +378,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
-| 422 | — | `app/api.py:3553` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 422 | — | `app/api.py:3554` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -392,7 +392,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K101-un-nombre-dos-cosas.sh:126`, `harness/checks/K101-un-nombre-dos-cosas.sh:207`, `harness/checks/K102-mesa.py:528`, `harness/checks/K102-mesa.py:566` _(+30)_ | `harness/checks/K101-un-nombre-dos-cosas.sh:26`, `harness/checks/K102-control.bash:750`, `harness/checks/K102-mesa.py:523`, `harness/checks/K31-eslabon5.sh:60` _(+10)_ |
 | **panel** | `static/js/02-canal.js:35`, `static/js/02-canal.js:49`, `static/js/02-canal.js:53`, `static/js/10-contexto-y-estructura.js:918` _(+8)_ | — |
 | **panel-html** | `static/index.html:85` | — |
-| **readme** | — | `README.md:62`, `README.md:414`, `README.md:518` |
+| **readme** | — | `README.md:62`, `README.md:418`, `README.md:522` |
 | **tests** | — | `tests/test_metrics_endpoint.py:222`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:115`, `tests/test_pr22_cvd_semantics.py:1198` |
 
 **La llama el panel: es superficie de producto.**
@@ -429,9 +429,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
-| `app.config.get_settings` | 3 | **0** | 56 ↑ | **3** | [impacto](../impacto/app-config.md) |
-| `app.interpretation.evaluate_setups` | 4 | **0** | 54 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
+| `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
+| `app.config.get_settings` | 3 | **0** | 57 ↑ | **3** | [impacto](../impacto/app-config.md) |
+| `app.interpretation.evaluate_setups` | 4 | **0** | 55 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |

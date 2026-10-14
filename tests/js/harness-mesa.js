@@ -164,6 +164,9 @@ const IDS = [
   'follow', 'learn', 'pie-servicios', 'sel-marco', 'sel-activo', 'ir-estado', 'volver',
   'vista-mesa', 'vista-estado', 'estado-resumen', 'estado-procesos', 'estado-feeds',
   'estado-declaraciones',
+  // la vista de entradas (campana 137)
+  'ir-entradas', 'reloj-caja', 'vista-entradas', 'ent-volver', 'ent-aviso', 'ent-cabeza',
+  'ent-decide', 'ent-vivo', 'ent-reciente', 'ent-marco',
 ];
 
 function cargaMesa() {

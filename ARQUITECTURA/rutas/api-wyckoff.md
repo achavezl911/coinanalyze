@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `wyckoff_endpoint` · `app/api.py:2070` (cuerpo hasta la 2074) · decorador en la linea 2069.
+Handler `wyckoff_endpoint` · `app/api.py:2071` (cuerpo hasta la 2075) · decorador en la linea 2070.
 
 ## Parametros de entrada
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:232`
+- `app.api.validate_symbol` — `app/api.py:233`
 - `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1680`
 
 <details><summary>Alcanzables de forma indirecta (20)</summary>
@@ -97,7 +97,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:234` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -149,7 +149,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api.validate_symbol` | 65 | **0** | 0 | **65** | [impacto](../impacto/app-api.md) |
+| `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |
 | `app.zones._atr_abs` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
 | `app.zones._edge_episodes` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
