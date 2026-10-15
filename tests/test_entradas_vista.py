@@ -51,8 +51,11 @@ def _decide(scalp: str | None, *, edad: float = 12.0):
             "age": {"snapshot_lag_seconds": {"value": edad, "status": "ok"}},
             "decide": {"bias": {"value": "NO EVALUABLE", "source_key": "mesa.decide.frame",
                                 "motivo": "la lectura del operador es del SCALP, no de SWING"}},
-            "lectura_scalp": {"bias": {"value": scalp, "source_key": "operator_read.state",
-                                       "motivo": "data_confidence 12 < 70" if scalp == "NO EVALUABLE" else None}},
+            # mesa.decide.v3 (campana 138): la palabra del scalp es la que el sistema SOSTIENE, con su edad
+            "lectura_scalp": {"bias": {"value": scalp, "source_key": "mesa.decide.memoria",
+                                       "motivo": "data_confidence 12 < 70" if scalp == "NO EVALUABLE" else None},
+                              "memoria": {"edad": {"desde": "2026-10-14T21:12:05+00:00",
+                                                   "frase": "desde las 21:12:05Z (17 min)"}}},
         }
     return palabra
 
@@ -64,13 +67,46 @@ def _dsn() -> str:
     return dsn
 
 
+# EL TOPE DE RETRASO DEL ESCENARIO: DOS VELAS (campana 138, P138-1). El fixture evalua la vela T = el cuarto de hora
+# en curso, que pudo empezar hace casi 900 s. Con un tope de 900, si el cuarto cambiaba mientras el fixture corria, el
+# DISPARADO se registraba tardio -SOMBRA, lo deciden registro.insertar y el disparador de la base- y el escenario caia
+# solo por la hora (reproducido el 2026-10-14: 22:29:56Z cae, 22:30:04Z pasa). Con dos velas, la pasada del fixture
+# tendria que durar mas de 900 s para agotarlo.
+TOPE_S = 1800
+
+
+async def _planta_reloj(conn, cuarto, segundos: float) -> None:
+    """El reloj de la base del test, a `segundos` del cuarto de hora `cuarto` (negativos: antes de el)."""
+    desfase = await conn.fetchval(
+        "SELECT (($1::timestamptz + make_interval(secs => $2)) - pg_catalog.clock_timestamp())::text",
+        cuarto, float(segundos))
+    await conn.execute("SELECT set_config('reloj.desfase', $1, false)", desfase)
+
+
 @pytest.fixture
-async def sembrada():
-    """BTC con un DISPARADO vivo y ETH con una SOMBRA, en v1 y en v2, por el generador real."""
+async def sembrada(request):
+    """BTC con un DISPARADO vivo y ETH con una SOMBRA, en v1 y en v2, por el generador real.
+
+    Con un parametro indirecto `(al_calcular_T, al_registrar)`, en segundos desde un cuarto de hora (negativos: antes
+    de el), la base del test lee un RELOJ PLANTADO: T se calcula a la primera distancia y el generador registra a la
+    segunda. Asi se prueba el escenario a los dos lados del cuarto sin esperar a que el reloj de pared llegue alli."""
+    reloj = getattr(request, "param", None)
     schema = f"entradas_vista_{uuid.uuid4().hex}"
     conn = await asyncpg.connect(_dsn())
     await conn.execute(f'CREATE SCHEMA "{schema}"')
-    await conn.execute(f'SET search_path TO "{schema}", public')
+    if reloj is None:
+        await conn.execute(f'SET search_path TO "{schema}", public')
+    else:
+        # EL RELOJ PLANTADO. Todo lo que el escenario toca lee la hora con clock_timestamp() SIN CALIFICAR -el
+        # generador, el registro, su disparador, la ruta, y los DEFAULT de las tablas, que se crean despues-: una
+        # funcion con ese nombre en el esquema, con pg_catalog DETRAS en el search_path, mueve el reloj de todo el
+        # escenario y de nada mas. El desfase vive en una variable de la sesion.
+        await conn.execute(
+            f'CREATE FUNCTION "{schema}".clock_timestamp() RETURNS timestamptz LANGUAGE sql VOLATILE AS '
+            "$$ SELECT pg_catalog.clock_timestamp() + coalesce(current_setting('reloj.desfase', true), '0')::interval $$")
+        await conn.execute(f'SET search_path TO "{schema}", pg_catalog, public')
+        cuarto = await conn.fetchval(
+            "SELECT date_bin('15 minutes', pg_catalog.clock_timestamp(), TIMESTAMPTZ '1970-01-01 00:00:00+00')")
     await conn.execute("SET TIME ZONE 'UTC'")
     try:
         await conn.execute(SCHEMA_SQL)
@@ -78,9 +114,13 @@ async def sembrada():
             await conn.execute("INSERT INTO market_assets(base_asset) VALUES($1) ON CONFLICT DO NOTHING", base)
             await conn.execute("INSERT INTO symbols(symbol, base_asset) VALUES($1, $2) ON CONFLICT DO NOTHING",
                                symbol, base)
+        if reloj is not None:
+            await _planta_reloj(conn, cuarto, reloj[0])
         T = await conn.fetchval(
             "SELECT date_bin('15 minutes', clock_timestamp(), TIMESTAMPTZ '1970-01-01 00:00:00+00')")
-        doc = B.doc_de_prueba(T, "v1", "v2", tope_s=900)
+        if reloj is not None:
+            await _planta_reloj(conn, cuarto, reloj[1])
+        doc = B.doc_de_prueba(T, "v1", "v2", tope_s=TOPE_S)
         await B.sembrar(conn, T, B.insumos(T), "BTCUSDT_PERP.A", "BTC")
         await B.sembrar(conn, T, B.insumos(T, spot_vela=-1e6), "ETHUSDT_PERP.A", "ETH")
         await S.evaluar_vela(conn, T=T, doc=doc, huella_codigo=C.huella_codigo(), esperar=False)
@@ -126,7 +166,12 @@ async def test_sin_tablas_lo_dice_y_la_palabra_de_decide_sigue_llegando():
     assert "vivo" not in respuesta, "sin registro no hay nada que ensenar como vivo"
 
 
+@pytest.mark.parametrize(
+    "sembrada", [None, (-1.0, 4.0), (1.0, 6.0)], indirect=True,
+    ids=["reloj-de-pared", "T-antes-del-cuarto-y-registro-despues", "todo-despues-del-cuarto"])
 async def test_de_punta_a_punta_el_disparado_vivo_sale_con_su_plan_entero(sembrada):
+    """El escenario entero, con el reloj de pared y con el reloj PLANTADO a los dos lados de un cuarto de hora: el
+    DISPARADO tiene que salir vivo aunque el cuarto cambie entre el calculo de T y el registro (P138-1)."""
     conn, _, T = sembrada
     respuesta = await _vista(conn)
     assert respuesta["disponible"] is True and respuesta["activo"] == "BTC"
@@ -228,9 +273,9 @@ async def test_la_sombra_dice_que_fallo_y_el_ancla_se_dice_una_vez(sembrada):
 @pytest.mark.parametrize(
     ("scalp", "largo", "corto", "debe_decir"),
     [
-        ("LONG", "mismo_lado", "en_contra", "toma LONG"),
-        ("SHORT", "en_contra", "mismo_lado", "toma SHORT"),
-        ("NO OPERAR", "condicional", "condicional", "plan condicional: el sistema no toma lado"),
+        ("LONG", "mismo_lado", "en_contra", "sostiene LONG en los ultimos 5 min"),
+        ("SHORT", "en_contra", "mismo_lado", "sostiene SHORT en los ultimos 5 min"),
+        ("NO OPERAR", "condicional", "condicional", "no sostiene un lado en los ultimos 5 min"),
         ("NO EVALUABLE", "no_dice", "no_dice", "ni los respalda ni los desaconseja"),
         (None, "sin_respuesta", "sin_respuesta", "Sin respuesta de DECIDE"),
     ],
@@ -246,7 +291,14 @@ async def test_las_cinco_respuestas_de_decide_cada_una_con_su_frase(sembrada, sc
     en_contra = [x["etiqueta"] for x in intradia["para"].values() if x["relacion"] == "en_contra"]
     assert all("EN CONTRA" in e for e in en_contra), "un plan en contra del lado que DECIDE toma se dice"
     if scalp == "NO OPERAR":
-        assert {x["etiqueta"] for x in intradia["para"].values()} == {"plan condicional: el sistema no toma lado"}
+        assert {x["etiqueta"] for x in intradia["para"].values()} == {"plan condicional: el sistema no sostiene un lado"}
+    # campana 138: la palabra INTRADIA es la que el sistema sostiene, y su frase no dice «en este instante»
+    if scalp is not None:
+        assert "en este instante" not in intradia["frase"]
+        assert intradia["edad_de_la_palabra"] == "desde las 21:12:05Z (17 min)"
+        # y lo necesario para recalcularla viaja con ella (lo lee K106); sin porcentajes servidos
+        assert intradia["recalculo"]["edad"]["desde"] == "2026-10-14T21:12:05+00:00"
+        assert decide["perfiles"]["swing"]["recalculo"] is None
     # SWING es hoy NO EVALUABLE por el marco: ni desaconseja el plan ni lo respalda
     swing = decide["perfiles"]["swing"]
     if scalp is None:
@@ -257,6 +309,7 @@ async def test_las_cinco_respuestas_de_decide_cada_una_con_su_frase(sembrada, sc
         assert {x["relacion"] for x in swing["para"].values()} == {"no_dice"}
         assert "EN CONTRA" not in swing["frase"] and "mismo lado" not in json.dumps(swing["para"])
         assert decide["edad_s"] == 12.0 and decide["max_age_s"] == 120.0
+        assert "no sale de una ventana de evaluaciones" in swing["edad_de_la_palabra"]
 
 
 async def test_la_palabra_de_scalp_que_la_vista_lee_es_la_que_decide_sirve_en_scalp(sembrada):
@@ -335,7 +388,7 @@ async def test_la_tabla_de_recuentos_dice_que_cuenta_y_el_registro_lo_cumple(sem
         assert c["VIGILANDO"] == len(suyos)
         assert c["DISPARADO"] + c["SOMBRA"] + c["CERRADO_SIN_DISPARO"] == sum(e["cierra"] for e in suyos)
     # y re-evaluar la misma vela (la recuperacion de una pasada que murio a medias) no le anade filas a ninguno
-    await S.evaluar_vela(conn, T=T, doc=B.doc_de_prueba(T, "v1", "v2", tope_s=900), huella_codigo=C.huella_codigo(),
+    await S.evaluar_vela(conn, T=T, doc=B.doc_de_prueba(T, "v1", "v2", tope_s=TOPE_S), huella_codigo=C.huella_codigo(),
                          esperar=False)
     assert await episodios() == antes
 

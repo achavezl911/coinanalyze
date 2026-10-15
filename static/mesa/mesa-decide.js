@@ -52,12 +52,28 @@ function nodoClave(source_key) {
   return k;
 }
 
+/* LA MARCA DE LO QUE SALE DE LA EVALUACION DEL INSTANTE (campana 138, remate R1). La palabra grande dice lo que el
+ * sistema SOSTIENE; una cifra de la evaluacion de esta peticion junto a ella, sin decirlo, se lee como suya. El texto
+ * lo sirve la ruta (`rotulo_instante`) y se pinta SIEMPRE que llega: no depende de que las dos palabras coincidan.
+ * `nodo` es un span ya en la pagina (la fila de confianza) o ninguno, y entonces se crea. */
+function marcaInstante(texto, nodo) {
+  const m = nodo || el('span');
+  m.textContent = texto || '';
+  m.className = texto ? 'marca-instante' : '';
+  if (texto) m.setAttribute('data-rotulo-instante', texto);
+  else m.removeAttribute('data-rotulo-instante');
+  return m;
+}
+
 /* Pinta un campo servido. `campo` es {value, source_key, status, motivo}. */
 function celda(nombre, rotulo, campo, opciones) {
   const o = opciones || {};
   const caja = el('div', 'campo' + (o.clase ? ' ' + o.clase : ''));
   caja.setAttribute('data-campo', nombre);
-  caja.appendChild(el('span', 'rotulo', rotulo));
+  const rot = el('span', 'rotulo', rotulo);
+  // dentro del rotulo, en su misma linea: un bloque aparte estiraria la tarjeta
+  if (campo && campo.rotulo_instante) rot.appendChild(marcaInstante(campo.rotulo_instante));
+  caja.appendChild(rot);
 
   if (!campo) {
     const v = nodoValor(null, o.cifra);
@@ -145,6 +161,7 @@ function pintarDecide(sobre, nodos) {
       noSe('error', (sobre && sobre.motivo) || 'no se pudo pedir /api/mesa/decide')
     );
     vaciar(nodos.edad);
+    pintarMemoria(null, nodos.edadPalabra, nodos.instante, '');
     return;
   }
 
@@ -164,12 +181,15 @@ function pintarDecide(sobre, nodos) {
   const evaluable = dec.evaluable && dec.evaluable.value === true;
   caja.classList.toggle('no-evaluable', !evaluable);
 
+  // El motivo es el de la palabra GRANDE y nada mas: caer a `no_trade_reasons` pintaba la razon de la evaluacion
+  // del instante en su sitio, sin rotulo (campana 138, remate R1).
   vaciar(nodos.motivo);
-  if (sesgo.motivo) {
-    nodos.motivo.textContent = sesgo.motivo;
-  } else if (dec.no_trade_reasons && (dec.no_trade_reasons.value || []).length) {
-    nodos.motivo.textContent = dec.no_trade_reasons.value.join(' · ');
-  }
+  if (sesgo.motivo) nodos.motivo.textContent = sesgo.motivo;
+
+  // 2b · LA EDAD DE LA PALABRA Y LA PALABRA DEL INSTANTE (campana 138). En scalp la palabra grande
+  //      es la que el sistema SOSTIENE; en los otros marcos las dos viajan en `lectura_scalp` y se
+  //      pintan en su tarjeta.
+  pintarMemoria(dec, nodos.edadPalabra, nodos.instante, '');
 
   // 3 · LA CONFIANZA ES UNA PALABRA. Tres escalones rotulados, no un % inventado.
   const conf = dec.confidence || {};
@@ -181,17 +201,22 @@ function pintarDecide(sobre, nodos) {
   // el backend la movio a `lectura_scalp`. Aqui se dice por que falta en vez de pintar un
   // guion mudo, y se SUELTA el `data-campo` para que la unica celda con ese nombre sea la de
   // la tarjeta del scalp -si hubiera dos, K102 compararia contra la que le tocase-.
+  // Y ES DE LA EVALUACION DEL INSTANTE, no de la palabra grande que tiene encima: lleva su marca, servida, y la
+  // celda es la FILA entera (data-campo en la fila) para que la marca este dentro de ella (campana 138, remate R1).
   const hayConf = Object.prototype.hasOwnProperty.call(dec, 'confidence');
+  const filaConf = nodos.confFila || nodos.confPalabra;
   if (hayConf) {
     nodos.confPalabra.textContent = esNada(conf.value) ? '—' : String(conf.value);
-    nodos.confPalabra.setAttribute('data-campo', 'confidence');
+    filaConf.setAttribute('data-campo', 'confidence');
     nodos.confPalabra.setAttribute('data-valor', esNada(conf.value) ? '' : String(conf.value));
     nodos.confPalabra.setAttribute('data-source-key', conf.source_key || '');
+    if (nodos.confInstante) marcaInstante(conf.rotulo_instante, nodos.confInstante);
   } else {
     nodos.confPalabra.textContent = 'la confianza es de la lectura del SCALP, abajo';
-    nodos.confPalabra.removeAttribute('data-campo');
+    filaConf.removeAttribute('data-campo');
     nodos.confPalabra.removeAttribute('data-valor');
     nodos.confPalabra.removeAttribute('data-source-key');
+    if (nodos.confInstante) marcaInstante(null, nodos.confInstante);
   }
   nodos.confClave.textContent = conf.source_key || '';
 
@@ -351,6 +376,42 @@ function pintarLecturaScalp(origen, campos) {
   }
 }
 
+/* LA EDAD DE LA PALABRA GRANDE Y LA PALABRA DEL INSTANTE (campana 138).
+ * La palabra grande es la que el sistema SOSTIENE en la ventana de su regla; su edad -desde
+ * cuando dice lo que dice- y la palabra del instante, con cuantas veces cambio, llegan SERVIDAS:
+ * aqui no se calcula ninguna edad ni se cuenta ningun cambio. La edad que se pinta es la de la
+ * PALABRA (`memoria.edad`), no la de la instantanea, que va en su linea de abajo.
+ * `origen` es `decide` (marco scalp) o `lectura_scalp`; sin `memoria` los dos nodos se vacian. */
+function pintarMemoria(origen, nodoEdad, nodoInstante, prefijo) {
+  if (!nodoEdad || !nodoInstante) return;
+  const mem = origen && origen.memoria;
+  const inst = origen && origen.instante;
+  const edad = nodoEdad;
+  const caja = nodoInstante;
+  [edad, caja].forEach((n) => {
+    n.textContent = '';
+    ['data-campo', 'data-valor', 'data-source-key'].forEach((a) => n.removeAttribute(a));
+  });
+  edad.className = 'decide-edad-palabra';
+  caja.className = 'decide-instante';
+  if (mem && mem.edad) {
+    edad.setAttribute('data-campo', prefijo + 'memoria.edad');
+    edad.setAttribute('data-valor', mem.edad.frase || '');
+    edad.setAttribute('data-source-key', mem.edad.source_key || '');
+    edad.textContent = mem.edad.frase || '';
+  }
+  if (inst) {
+    caja.setAttribute('data-campo', prefijo + 'instante');
+    caja.setAttribute('data-source-key', inst.source_key || '');
+    // su rotulo tambien lo sirve la ruta (remate R1)
+    caja.appendChild(marcaInstante(inst.rotulo_instante));
+    const v = nodoValor(esNada(inst.value) ? null : String(inst.value));
+    v.className = 'valor ' + (CLASE_SESGO[inst.value] || 'sesgo-NOEVAL');
+    caja.appendChild(v);
+    if (inst.frase) caja.appendChild(el('span', 'motivo', ' · ' + inst.frase));
+  }
+}
+
 /* La tarjeta de la lectura del SCALP, que solo existe cuando el marco NO es scalp. */
 function pintarTarjetaScalp(d) {
   const caja = document.getElementById('lectura-scalp');
@@ -377,6 +438,12 @@ function pintarTarjetaScalp(d) {
     const c = celda('scalp.bias', 'sesgo del scalp', ls.bias);
     c.classList.add('sesgo-de-la-lectura');
     if (ls.bias.motivo) c.appendChild(el('span', 'motivo', ls.bias.motivo));
+    // su edad y la palabra del instante, como en la cabecera de DECIDE (campana 138)
+    const e = el('div');
+    const i = el('div');
+    pintarMemoria(ls, e, i, 'scalp.');
+    if (e.textContent) c.appendChild(e);
+    if (i.textContent) c.appendChild(i);
     campos.appendChild(c);
   }
   pintarLecturaScalp(ls, campos);

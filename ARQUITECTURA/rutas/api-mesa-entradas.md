@@ -19,13 +19,13 @@ Handler `mesa_entradas` · `app/api.py:3855` (cuerpo hasta la 3868) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `disponible` | literal en app/entradas/vista.py:532 |
-| `generador` | literal en app/entradas/vista.py:535 |
-| `marco` | literal en app/entradas/vista.py:555 |
-| `motivo` | literal en app/entradas/vista.py:533 |
-| `precio` | literal en app/entradas/vista.py:534 |
-| `reciente` | literal en app/entradas/vista.py:548 |
-| `vivo` | literal en app/entradas/vista.py:547 |
+| `disponible` | literal en app/entradas/vista.py:566 |
+| `generador` | literal en app/entradas/vista.py:569 |
+| `marco` | literal en app/entradas/vista.py:589 |
+| `motivo` | literal en app/entradas/vista.py:567 |
+| `precio` | literal en app/entradas/vista.py:568 |
+| `reciente` | literal en app/entradas/vista.py:582 |
+| `vivo` | literal en app/entradas/vista.py:581 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -60,7 +60,7 @@ Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2566`
 - `app.api.validate_symbol` — `app/api.py:233`
-- `app.entradas.vista.construir` — `app/entradas/vista.py:421`
+- `app.entradas.vista.construir` — `app/entradas/vista.py:455`
 
 <details><summary>Alcanzables de forma indirecta (48)</summary>
 
@@ -92,26 +92,26 @@ Llamadas directas del handler:
 - `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:319`
 - `app.entradas.ruta._resumen` — `app/entradas/ruta.py:128`
 - `app.entradas.ruta.construir` — `app/entradas/ruta.py:169`
-- `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:398`
-- `app.entradas.vista._base` — `app/entradas/vista.py:256`
-- `app.entradas.vista._de` — `app/entradas/vista.py:332`
-- `app.entradas.vista._decide` — `app/entradas/vista.py:195`
-- `app.entradas.vista._disparado` — `app/entradas/vista.py:282`
-- `app.entradas.vista._distancia` — `app/entradas/vista.py:243`
-- `app.entradas.vista._fraccion` — `app/entradas/vista.py:142`
-- `app.entradas.vista._muestra` — `app/entradas/vista.py:363`
-- `app.entradas.vista._orden` — `app/entradas/vista.py:338`
-- `app.entradas.vista._papeles` — `app/entradas/vista.py:347`
-- `app.entradas.vista._precio` — `app/entradas/vista.py:129`
-- `app.entradas.vista._r` — `app/entradas/vista.py:138`
-- `app.entradas.vista._requisitos` — `app/entradas/vista.py:268`
-- `app.entradas.vista._significado` — `app/entradas/vista.py:155`
-- `app.entradas.vista._sombra` — `app/entradas/vista.py:322`
-- `app.entradas.vista._vigilando` — `app/entradas/vista.py:276`
-- `app.entradas.vista._zona` — `app/entradas/vista.py:238`
-- `app.entradas.vista.componer` — `app/entradas/vista.py:443`
-- `app.entradas.vista.pasada_en_curso` — `app/entradas/vista.py:378`
-- `app.entradas.vista.precio_ahora` — `app/entradas/vista.py:119`
+- `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:432`
+- `app.entradas.vista._base` — `app/entradas/vista.py:290`
+- `app.entradas.vista._de` — `app/entradas/vista.py:366`
+- `app.entradas.vista._decide` — `app/entradas/vista.py:205`
+- `app.entradas.vista._disparado` — `app/entradas/vista.py:316`
+- `app.entradas.vista._distancia` — `app/entradas/vista.py:277`
+- `app.entradas.vista._fraccion` — `app/entradas/vista.py:143`
+- `app.entradas.vista._muestra` — `app/entradas/vista.py:397`
+- `app.entradas.vista._orden` — `app/entradas/vista.py:372`
+- `app.entradas.vista._papeles` — `app/entradas/vista.py:381`
+- `app.entradas.vista._precio` — `app/entradas/vista.py:130`
+- `app.entradas.vista._r` — `app/entradas/vista.py:139`
+- `app.entradas.vista._requisitos` — `app/entradas/vista.py:302`
+- `app.entradas.vista._significado` — `app/entradas/vista.py:156`
+- `app.entradas.vista._sombra` — `app/entradas/vista.py:356`
+- `app.entradas.vista._vigilando` — `app/entradas/vista.py:310`
+- `app.entradas.vista._zona` — `app/entradas/vista.py:272`
+- `app.entradas.vista.componer` — `app/entradas/vista.py:477`
+- `app.entradas.vista.pasada_en_curso` — `app/entradas/vista.py:412`
+- `app.entradas.vista.precio_ahora` — `app/entradas/vista.py:120`
 
 </details>
 
@@ -138,7 +138,8 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **tests** | `tests/test_entradas_vista.py:108` | `tests/test_entradas_vista.py:1` |
+| **checks** | — | `harness/checks/K102-mesa.py:481` |
+| **tests** | `tests/test_entradas_vista.py:148` | `tests/test_entradas_vista.py:1` |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.

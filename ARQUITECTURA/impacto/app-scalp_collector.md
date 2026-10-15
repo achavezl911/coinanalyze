@@ -9,7 +9,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
 | [`owns_global_cleanup`](#owns-global-cleanup) | 1535 | 0 | **0** | 26 ↑ | **0** |
-| [`persist_scalp_signals`](#persist-scalp-signals) | 1358 | 0 | **4** | 25 ↑ | **4** |
+| [`persist_scalp_signals`](#persist-scalp-signals) | 1358 | 0 | **5** | 25 ↑ | **5** |
 | [`_write_combined_minute`](#-write-combined-minute) | 806 | 0 | **7** | 22 ↑ | **7** |
 | [`_write_combined_realtime`](#-write-combined-realtime) | 777 | 0 | **17** | 22 ↑ | **17** |
 | [`_write_trade_rows`](#-write-trade-rows) | 720 | 0 | **0** | 22 ↑ | **0** |
@@ -133,7 +133,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_collector.py:1358` · clave completa `app.scalp_collector.persist_scalp_signals`
 
-**Radio exacto: 4 rutas** de 75 · **cota superior: 25** (mas ancha)
+**Radio exacto: 5 rutas** de 75 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -141,7 +141,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 4 rutas · **exacto**
+### Por tabla · k=0 — 5 rutas · **exacto**
 
 Escribe **ella misma**: `scalp_signal_snapshot`
 
@@ -149,12 +149,13 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](../rutas/api-scalp-signals.md)
 - [`/metrics`](../rutas/metrics.md)
 
 ### Por tabla · k<=2 — 25 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (25 contra 4). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (25 contra 5). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 

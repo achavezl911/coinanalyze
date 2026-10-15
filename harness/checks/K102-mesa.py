@@ -257,6 +257,18 @@ JS_COSECHA = r"""
   const visible = cs.display !== 'none' && cs.visibility !== 'hidden'
                   && Number(cs.opacity) > 0.01 && r.height > 1 && r.width > 1;
 
+  // LAS MARCAS DE INSTANTE DE UNA CELDA (campana 138, remate R1): las de dentro cuya celda mas cercana es ESTA, con su
+  // texto y si se ven. Sin cosecharlas, una celda de la evaluacion del instante pintada sin su rotulo se lee como de
+  // la palabra grande que tiene encima, y nada lo ve.
+  const marcas = (c) => Array.from(c.querySelectorAll('[data-rotulo-instante]'))
+    .filter((m) => m.closest('[data-campo]') === c)
+    .map((m) => {
+      const rr = m.getBoundingClientRect();
+      const cs = getComputedStyle(m);
+      return {texto: (m.textContent || '').trim(),
+              visible: rr.width > 1 && rr.height > 1 && cs.visibility !== 'hidden' && Number(cs.opacity) > 0.01};
+    });
+
   // LAS PAREJAS. Cada celda declara data-campo; su valor vive en [data-valor] y su clave en
   // [data-source-key]. Se recogen TAL CUAL, sin interpretar.
   const parejas = [];
@@ -269,6 +281,7 @@ JS_COSECHA = r"""
       valor: nv ? (nv.getAttribute('data-valor') || '') : null,
       clave: nk ? (nk.getAttribute('data-source-key') || '') : null,
       texto: (c.textContent || '').trim().slice(0, 300),
+      marcas: marcas(c),
     });
   });
 
@@ -302,6 +315,7 @@ JS_COSECHA = r"""
         campo: c.getAttribute('data-campo'),
         valor: nv ? (nv.getAttribute('data-valor') || '') : null,
         clave: nk ? (nk.getAttribute('data-source-key') || '') : null,
+        marcas: marcas(c),
       });
     });
     const rot = document.getElementById('lectura-scalp-rotulo');
@@ -453,6 +467,136 @@ def resuelve(sobre: dict, ruta: str):
                 return False, None
             nodo = nodo[tramo]
     return True, nodo
+
+
+def juzga_memoria(memoria: dict, instante, as_of, cadena: bool = True) -> tuple[str | None, list[str]]:
+    """LA PALABRA GRANDE, RECALCULADA AQUI POR LA REGLA QUE LA RESPUESTA DECLARA (campana 138).
+
+    `memoria` es lo que la respuesta sirve para eso -`regla`, `serie` [[instante, palabra], ...] y
+    `edad`-; `instante`, la palabra del instante servida; `as_of`, el corte servido. Devuelve la
+    palabra que la regla da y las incoherencias de lo servido: la edad que no es la de la palabra, o
+    una serie que no basta para recalcularla. La regla NO se importa de la ruta: una red que llamase a
+    la funcion que juzga no veria un defecto de esa funcion. La palabra de CADA evaluacion de la serie
+    se toma como servida: que salga de su estado registrado lo cobran los tests de la ruta, no esto.
+    Con `cadena=False` la serie es solo la VENTANA (lo que sirve /api/mesa/entradas): la palabra se
+    recalcula igual, y de la edad se mira su coherencia con su corte, no la racha entera.
+    """
+    from datetime import datetime, timedelta
+
+    malas: list[str] = []
+    try:
+        r = memoria["regla"]
+        ventana, umbral = timedelta(seconds=float(r["ventana_s"])), float(r["umbral"])
+        minimo, frescura, busqueda = int(r["minimo"]), float(r["frescura_s"]), float(r["busqueda_s"])
+        ts = [datetime.fromisoformat(t) for t, _ in memoria["serie"]]
+        pal = [p for _, p in memoria["serie"]]
+        corte = datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+        edad = memoria.get("edad") or {}
+    except (KeyError, TypeError, ValueError) as e:
+        return None, [f"la respuesta no trae lo necesario para recalcular la palabra grande ({type(e).__name__}: {e})"]
+
+    def en(j: int) -> str:
+        dentro = [p for t, p in zip(ts, pal, strict=True) if ts[j] - ventana < t <= ts[j]]
+        if pal[j] == "NO EVALUABLE" or len(dentro) < minimo:
+            return "NO EVALUABLE"
+        for lado in ("LONG", "SHORT"):
+            if dentro.count(lado) >= umbral * len(dentro):
+                return lado
+        return "NO OPERAR"
+
+    if instante == "NO EVALUABLE":
+        return "NO EVALUABLE", malas  # la puerta del instante: su edad no se registra
+    if not ts:
+        return "NO EVALUABLE", malas
+    if (corte - ts[-1]).total_seconds() > frescura:
+        if edad.get("desde") != (ts[-1] + timedelta(seconds=frescura)).isoformat():
+            malas.append(f"la edad dice desde {edad.get('desde')!r} y el colector dejo de verse a los "
+                         f"{frescura:g} s de su ultima evaluacion ({ts[-1].isoformat()})")
+        return "NO EVALUABLE", malas
+    grande = en(len(ts) - 1)
+    # LA EDAD: desde la evaluacion en que la regla empezo a dar la palabra de ahora, sin interrupcion.
+    try:
+        desde = datetime.fromisoformat(edad["desde"])
+        j = ts.index(desde) if cadena else None
+    except (KeyError, TypeError, ValueError):
+        malas.append(f"la edad dice desde {edad.get('desde')!r}, que no es ninguna evaluacion de la serie")
+        return grande, malas
+    if not cadena:
+        if desde > ts[-1]:
+            malas.append(f"la edad dice desde {edad['desde']}, despues de la ultima evaluacion ({ts[-1].isoformat()})")
+        s = edad.get("s")
+        if s is None or abs(float(s) - (corte - desde).total_seconds()) > 0.15:
+            malas.append(f"la edad sirve s={s!r} y desde su instante al corte van {(corte - desde).total_seconds():.1f} s")
+        if desde.strftime("%H:%M:%SZ") not in str(edad.get("frase") or ""):
+            malas.append(f"la frase de la edad {edad.get('frase')!r} no dice su instante ({desde:%H:%M:%SZ})")
+        return grande, malas
+    rotas = [ts[k].isoformat() for k in range(j, len(ts)) if en(k) != grande]
+    if rotas:
+        malas.append(f"la edad dice que dice {grande} desde {edad['desde']} y la regla da otra palabra en "
+                     f"{len(rotas)} evaluacion(es) despues, la primera {rotas[0]}")
+    if edad.get("al_menos"):
+        piso = corte - timedelta(seconds=busqueda)
+        if desde != min((t for t in ts if t >= piso), default=desde):
+            malas.append(f"la edad dice «al menos» desde {edad['desde']} y no es el principio de la busqueda")
+    elif j == 0 or en(j - 1) == grande:
+        malas.append(f"la edad dice desde {edad['desde']} y la evaluacion anterior ya decia {grande}: "
+                     "la palabra es mas vieja que su edad")
+    s = edad.get("s")
+    if s is None or abs(float(s) - (corte - desde).total_seconds()) > 0.15:
+        malas.append(f"la edad sirve s={s!r} y desde su instante al corte van {(corte - desde).total_seconds():.1f} s")
+    if desde.strftime("%H:%M:%SZ") not in str(edad.get("frase") or ""):
+        malas.append(f"la frase de la edad {edad.get('frase')!r} no dice su instante ({desde:%H:%M:%SZ})")
+    return grande, malas
+
+
+def colector_parado(memoria: dict, as_of) -> bool:
+    """La ultima evaluacion servida tiene mas que la frescura de la regla en el corte?"""
+    from datetime import datetime
+
+    try:
+        ultima = datetime.fromisoformat(memoria["serie"][-1][0])
+        corte = datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+        return (corte - ultima).total_seconds() > float(memoria["regla"]["frescura_s"])
+    except (KeyError, TypeError, ValueError, IndexError):
+        return False
+
+
+def cambios_en_ventana(memoria: dict):
+    """Cuantas veces cambio la palabra del instante en la ventana de la ultima evaluacion servida."""
+    from datetime import datetime, timedelta
+
+    try:
+        ts = [datetime.fromisoformat(t) for t, _ in memoria["serie"]]
+        pal = [p for _, p in memoria["serie"]]
+        if not ts:
+            return None  # sin evaluaciones no hay ventana, y la ruta sirve None
+        w = [p for t, p in zip(ts, pal, strict=True)
+             if t > ts[-1] - timedelta(seconds=float(memoria["regla"]["ventana_s"]))]
+    except (KeyError, TypeError, ValueError, IndexError):
+        return None
+    return sum(a != b for a, b in zip(w, w[1:], strict=False))
+
+
+def _claves(v) -> list:
+    """Las source_key de un campo servido: la suya, las de una lista o las de sus hojas."""
+    if isinstance(v, dict) and "source_key" in v:
+        return [v["source_key"]]
+    if isinstance(v, dict):
+        return [c for x in v.values() for c in _claves(x)]
+    if isinstance(v, list):
+        return [x.get("source_key") for x in v if isinstance(x, dict)]
+    return []
+
+
+def es_del_instante(nombre: str, servido) -> bool:
+    """Sale este campo de `decide` de la evaluacion del INSTANTE? (campana 138, remate R1). Por un criterio de la
+    sonda, no por el rotulo que sirve la ruta: su clave es operator_read.* o scalp.* -sale de build_operator_read o
+    de compute_scalp_summary de ESTA peticion-, salvo `invalidates`, una lista fija que elige el lado de la grande. La
+    linea del instante lo es por definicion: su clave dice que entrada la decidio, y cuando decide la puerta de la
+    calidad es data_confidence.quality_score (medido en el espejo el 2026-10-15)."""
+    if nombre == "instante":
+        return True
+    return nombre != "invalidates" and any(str(c).startswith(("operator_read.", "scalp.")) for c in _claves(servido))
 
 
 async def corre(args) -> dict:

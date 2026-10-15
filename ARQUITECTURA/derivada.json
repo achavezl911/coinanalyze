@@ -572,6 +572,16 @@
       "linea": 855,
       "sitio": "`app/ai_context.py:855`"
     },
+    "app.ai_context._dura": {
+      "fichero": "app/ai_context.py",
+      "linea": 1431,
+      "sitio": "`app/ai_context.py:1431`"
+    },
+    "app.ai_context._hora": {
+      "fichero": "app/ai_context.py",
+      "linea": 1427,
+      "sitio": "`app/ai_context.py:1427`"
+    },
     "app.ai_context._round_number": {
       "fichero": "app/ai_context.py",
       "linea": 226,
@@ -579,8 +589,8 @@
     },
     "app.ai_context._sin_lado": {
       "fichero": "app/ai_context.py",
-      "linea": 1323,
-      "sitio": "`app/ai_context.py:1323`"
+      "linea": 1325,
+      "sitio": "`app/ai_context.py:1325`"
     },
     "app.ai_context.build_ai_context": {
       "fichero": "app/ai_context.py",
@@ -594,8 +604,8 @@
     },
     "app.ai_context.build_mesa_decide": {
       "fichero": "app/ai_context.py",
-      "linea": 1344,
-      "sitio": "`app/ai_context.py:1344`"
+      "linea": 1571,
+      "sitio": "`app/ai_context.py:1571`"
     },
     "app.ai_context.build_operator_read": {
       "fichero": "app/ai_context.py",
@@ -604,8 +614,8 @@
     },
     "app.ai_context.campo_mesa": {
       "fichero": "app/ai_context.py",
-      "linea": 1283,
-      "sitio": "`app/ai_context.py:1283`"
+      "linea": 1285,
+      "sitio": "`app/ai_context.py:1285`"
     },
     "app.ai_context.compact_dict": {
       "fichero": "app/ai_context.py",
@@ -636,6 +646,11 @@
       "fichero": "app/ai_context.py",
       "linea": 74,
       "sitio": "`app/ai_context.py:74`"
+    },
+    "app.ai_context.frase_del_instante": {
+      "fichero": "app/ai_context.py",
+      "linea": 1439,
+      "sitio": "`app/ai_context.py:1439`"
     },
     "app.ai_context.latest_orderbook": {
       "fichero": "app/ai_context.py",
@@ -669,8 +684,18 @@
     },
     "app.ai_context.palabra_de_la_decision": {
       "fichero": "app/ai_context.py",
-      "linea": 1214,
-      "sitio": "`app/ai_context.py:1214`"
+      "linea": 1216,
+      "sitio": "`app/ai_context.py:1216`"
+    },
+    "app.ai_context.palabra_registrada": {
+      "fichero": "app/ai_context.py",
+      "linea": 1420,
+      "sitio": "`app/ai_context.py:1420`"
+    },
+    "app.ai_context.palabra_sostenida": {
+      "fichero": "app/ai_context.py",
+      "linea": 1446,
+      "sitio": "`app/ai_context.py:1446`"
     },
     "app.ai_context.quality_score": {
       "fichero": "app/ai_context.py",
@@ -1489,108 +1514,108 @@
     },
     "app.entradas.vista._ancla_no_puede": {
       "fichero": "app/entradas/vista.py",
-      "linea": 398,
-      "sitio": "`app/entradas/vista.py:398`"
+      "linea": 432,
+      "sitio": "`app/entradas/vista.py:432`"
     },
     "app.entradas.vista._base": {
       "fichero": "app/entradas/vista.py",
-      "linea": 256,
-      "sitio": "`app/entradas/vista.py:256`"
+      "linea": 290,
+      "sitio": "`app/entradas/vista.py:290`"
     },
     "app.entradas.vista._de": {
       "fichero": "app/entradas/vista.py",
-      "linea": 332,
-      "sitio": "`app/entradas/vista.py:332`"
+      "linea": 366,
+      "sitio": "`app/entradas/vista.py:366`"
     },
     "app.entradas.vista._decide": {
       "fichero": "app/entradas/vista.py",
-      "linea": 195,
-      "sitio": "`app/entradas/vista.py:195`"
+      "linea": 205,
+      "sitio": "`app/entradas/vista.py:205`"
     },
     "app.entradas.vista._disparado": {
       "fichero": "app/entradas/vista.py",
-      "linea": 282,
-      "sitio": "`app/entradas/vista.py:282`"
+      "linea": 316,
+      "sitio": "`app/entradas/vista.py:316`"
     },
     "app.entradas.vista._distancia": {
       "fichero": "app/entradas/vista.py",
-      "linea": 243,
-      "sitio": "`app/entradas/vista.py:243`"
+      "linea": 277,
+      "sitio": "`app/entradas/vista.py:277`"
     },
     "app.entradas.vista._fraccion": {
       "fichero": "app/entradas/vista.py",
-      "linea": 142,
-      "sitio": "`app/entradas/vista.py:142`"
+      "linea": 143,
+      "sitio": "`app/entradas/vista.py:143`"
     },
     "app.entradas.vista._muestra": {
       "fichero": "app/entradas/vista.py",
-      "linea": 363,
-      "sitio": "`app/entradas/vista.py:363`"
+      "linea": 397,
+      "sitio": "`app/entradas/vista.py:397`"
     },
     "app.entradas.vista._orden": {
       "fichero": "app/entradas/vista.py",
-      "linea": 338,
-      "sitio": "`app/entradas/vista.py:338`"
+      "linea": 372,
+      "sitio": "`app/entradas/vista.py:372`"
     },
     "app.entradas.vista._papeles": {
       "fichero": "app/entradas/vista.py",
-      "linea": 347,
-      "sitio": "`app/entradas/vista.py:347`"
+      "linea": 381,
+      "sitio": "`app/entradas/vista.py:381`"
     },
     "app.entradas.vista._precio": {
       "fichero": "app/entradas/vista.py",
-      "linea": 129,
-      "sitio": "`app/entradas/vista.py:129`"
+      "linea": 130,
+      "sitio": "`app/entradas/vista.py:130`"
     },
     "app.entradas.vista._r": {
       "fichero": "app/entradas/vista.py",
-      "linea": 138,
-      "sitio": "`app/entradas/vista.py:138`"
+      "linea": 139,
+      "sitio": "`app/entradas/vista.py:139`"
     },
     "app.entradas.vista._requisitos": {
       "fichero": "app/entradas/vista.py",
-      "linea": 268,
-      "sitio": "`app/entradas/vista.py:268`"
+      "linea": 302,
+      "sitio": "`app/entradas/vista.py:302`"
     },
     "app.entradas.vista._significado": {
       "fichero": "app/entradas/vista.py",
-      "linea": 155,
-      "sitio": "`app/entradas/vista.py:155`"
+      "linea": 156,
+      "sitio": "`app/entradas/vista.py:156`"
     },
     "app.entradas.vista._sombra": {
       "fichero": "app/entradas/vista.py",
-      "linea": 322,
-      "sitio": "`app/entradas/vista.py:322`"
+      "linea": 356,
+      "sitio": "`app/entradas/vista.py:356`"
     },
     "app.entradas.vista._vigilando": {
       "fichero": "app/entradas/vista.py",
-      "linea": 276,
-      "sitio": "`app/entradas/vista.py:276`"
+      "linea": 310,
+      "sitio": "`app/entradas/vista.py:310`"
     },
     "app.entradas.vista._zona": {
       "fichero": "app/entradas/vista.py",
-      "linea": 238,
-      "sitio": "`app/entradas/vista.py:238`"
+      "linea": 272,
+      "sitio": "`app/entradas/vista.py:272`"
     },
     "app.entradas.vista.componer": {
       "fichero": "app/entradas/vista.py",
-      "linea": 443,
-      "sitio": "`app/entradas/vista.py:443`"
+      "linea": 477,
+      "sitio": "`app/entradas/vista.py:477`"
     },
     "app.entradas.vista.construir": {
       "fichero": "app/entradas/vista.py",
-      "linea": 421,
-      "sitio": "`app/entradas/vista.py:421`"
+      "linea": 455,
+      "sitio": "`app/entradas/vista.py:455`"
     },
     "app.entradas.vista.pasada_en_curso": {
       "fichero": "app/entradas/vista.py",
-      "linea": 378,
-      "sitio": "`app/entradas/vista.py:378`"
+      "linea": 412,
+      "sitio": "`app/entradas/vista.py:412`"
     },
     "app.entradas.vista.precio_ahora": {
       "fichero": "app/entradas/vista.py",
-      "linea": 119,
-      "sitio": "`app/entradas/vista.py:119`"
+      "linea": 120,
+      "sitio": "`app/entradas/vista.py:120`"
     },
     "app.external_macro._direction": {
       "fichero": "app/external_macro.py",
@@ -2578,6 +2603,42 @@
         "total": 3,
         "total_exacto": 3
       },
+      "app.ai_context._dura": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.ai_context.palabra_sostenida"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1431",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.ai_context._hora": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.ai_context.palabra_sostenida"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1427",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
       "app.ai_context._round_number": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
@@ -2612,7 +2673,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1323",
+        "sitio": "app/ai_context.py:1325",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2666,7 +2727,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1344",
+        "sitio": "app/ai_context.py:1571",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2706,7 +2767,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1283",
+        "sitio": "app/ai_context.py:1285",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2854,6 +2915,24 @@
         "total": 2,
         "total_exacto": 2
       },
+      "app.ai_context.frase_del_instante": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.api.mesa_decide"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1439",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
       "app.ai_context.latest_orderbook": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
@@ -2977,6 +3056,7 @@
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
           "app.ai_context.build_mesa_decide",
+          "app.ai_context.palabra_registrada",
           "app.api.mesa_decide"
         ],
         "por_llamada": [
@@ -2984,7 +3064,43 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1214",
+        "sitio": "app/ai_context.py:1216",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.ai_context.palabra_registrada": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.api.mesa_decide"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1420",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.ai_context.palabra_sostenida": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.ai_context.build_mesa_decide",
+          "app.api.mesa_decide"
+        ],
+        "por_llamada": [
+          "/api/mesa/decide"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/ai_context.py:1446",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14464,7 +14580,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:398",
+        "sitio": "app/entradas/vista.py:432",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14484,7 +14600,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:256",
+        "sitio": "app/entradas/vista.py:290",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14502,7 +14618,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:332",
+        "sitio": "app/entradas/vista.py:366",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14520,7 +14636,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:195",
+        "sitio": "app/entradas/vista.py:205",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14538,7 +14654,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:282",
+        "sitio": "app/entradas/vista.py:316",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14556,7 +14672,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:243",
+        "sitio": "app/entradas/vista.py:277",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14574,7 +14690,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:142",
+        "sitio": "app/entradas/vista.py:143",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14592,7 +14708,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:363",
+        "sitio": "app/entradas/vista.py:397",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14610,7 +14726,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:338",
+        "sitio": "app/entradas/vista.py:372",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14628,7 +14744,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:347",
+        "sitio": "app/entradas/vista.py:381",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14650,7 +14766,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:129",
+        "sitio": "app/entradas/vista.py:130",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14669,7 +14785,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:138",
+        "sitio": "app/entradas/vista.py:139",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14688,7 +14804,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:268",
+        "sitio": "app/entradas/vista.py:302",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14706,7 +14822,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:155",
+        "sitio": "app/entradas/vista.py:156",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14724,7 +14840,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:322",
+        "sitio": "app/entradas/vista.py:356",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14742,7 +14858,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:276",
+        "sitio": "app/entradas/vista.py:310",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14762,7 +14878,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:238",
+        "sitio": "app/entradas/vista.py:272",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14780,7 +14896,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:443",
+        "sitio": "app/entradas/vista.py:477",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14797,7 +14913,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:421",
+        "sitio": "app/entradas/vista.py:455",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14815,7 +14931,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:378",
+        "sitio": "app/entradas/vista.py:412",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14833,7 +14949,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:119",
+        "sitio": "app/entradas/vista.py:120",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21729,6 +21845,7 @@
         "por_tabla_k0": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/mesa/decide",
           "/api/scalp/signals",
           "/metrics"
         ],
@@ -21781,7 +21898,7 @@
           "scalp_signal_snapshot"
         ],
         "total": 25,
-        "total_exacto": 4
+        "total_exacto": 5
       },
       "app.scalp_collector.reset_liquidation_feed_health": {
         "cota_mas_ancha_que_k0": true,
@@ -23600,6 +23717,7 @@
           "app.ai_context.data_confidence_row",
           "app.ai_context.local_alerts",
           "app.ai_context.palabra_de_la_decision",
+          "app.ai_context.palabra_registrada",
           "app.ai_context.quality_score",
           "app.api.cvd_matrix_endpoint",
           "app.api.daily",
@@ -26930,6 +27048,7 @@
         "llamadores_hasta_k": [
           "app.ai_context.build_mesa_decide",
           "app.ai_context.palabra_de_la_decision",
+          "app.ai_context.palabra_registrada",
           "app.scalp_collector.persist_scalp_signals",
           "app.signal_ledger.persist_signal_observations"
         ],
@@ -29513,7 +29632,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 394,
+    "funciones_alcanzables": 399,
     "rutas": 75,
     "rutas_con_campos": 68,
     "rutas_sin_campos": 7,
@@ -30007,8 +30126,8 @@
           "llamadas": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:126",
             "harness/checks/K101-un-nombre-dos-cosas.sh:207",
-            "harness/checks/K102-mesa.py:528",
-            "harness/checks/K102-mesa.py:566",
+            "harness/checks/K102-mesa.py:672",
+            "harness/checks/K102-mesa.py:710",
             "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:342",
             "harness/checks/K43-foto-unica.sh:343",
@@ -30042,8 +30161,8 @@
           ],
           "menciones": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:26",
-            "harness/checks/K102-control.bash:750",
-            "harness/checks/K102-mesa.py:523",
+            "harness/checks/K102-control.bash:914",
+            "harness/checks/K102-mesa.py:667",
             "harness/checks/K31-eslabon5.sh:60",
             "harness/checks/K31-eslabon5.sh:172",
             "harness/checks/K43-foto-unica.sh:7",
@@ -35548,15 +35667,17 @@
     {
       "camino": "/api/mesa/decide",
       "campos": {
-        "build_finished_at": "asignado en app/ai_context.py:1657",
-        "build_started_at": "asignado en app/ai_context.py:1656",
-        "lectura_scalp": "asignado en app/ai_context.py:1636"
+        "build_finished_at": "asignado en app/ai_context.py:1922",
+        "build_started_at": "asignado en app/ai_context.py:1921",
+        "lectura_scalp": "asignado en app/ai_context.py:1901"
       },
       "campos_pendientes": [
         "devuelve la variable 'payload', cuyo contenido no se resuelve estaticamente"
       ],
       "cierre": [
         "app.ai_context._corte_unico",
+        "app.ai_context._dura",
+        "app.ai_context._hora",
         "app.ai_context._round_number",
         "app.ai_context._sin_lado",
         "app.ai_context.build_mesa_decide",
@@ -35565,8 +35686,11 @@
         "app.ai_context.compact_dict",
         "app.ai_context.compact_value",
         "app.ai_context.data_confidence_row",
+        "app.ai_context.frase_del_instante",
         "app.ai_context.latest_snapshot",
         "app.ai_context.palabra_de_la_decision",
+        "app.ai_context.palabra_registrada",
+        "app.ai_context.palabra_sostenida",
         "app.ai_context.quality_score",
         "app.api.scalp_persistence",
         "app.api.validate_symbol",
@@ -35614,6 +35738,8 @@
       ],
       "cierre_indirecto": [
         "app.ai_context._corte_unico",
+        "app.ai_context._dura",
+        "app.ai_context._hora",
         "app.ai_context._round_number",
         "app.ai_context._sin_lado",
         "app.ai_context.build_operator_read",
@@ -35621,8 +35747,11 @@
         "app.ai_context.compact_dict",
         "app.ai_context.compact_value",
         "app.ai_context.data_confidence_row",
+        "app.ai_context.frase_del_instante",
         "app.ai_context.latest_snapshot",
         "app.ai_context.palabra_de_la_decision",
+        "app.ai_context.palabra_registrada",
+        "app.ai_context.palabra_sostenida",
         "app.ai_context.quality_score",
         "app.data_gaps.blocking_requirement_keys",
         "app.db.required_heartbeat_failures",
@@ -35687,26 +35816,26 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-decide-lo-primero.sh:75",
-            "harness/checks/K102-decide-lo-primero.sh:99",
-            "harness/checks/K102-decide-lo-primero.sh:101",
-            "harness/checks/K102-decide-lo-primero.sh:106",
-            "harness/checks/K102-mesa.py:527",
-            "harness/checks/K102-mesa.py:528",
-            "harness/checks/K102-mesa.py:538",
-            "harness/checks/K102-mesa.py:559",
-            "harness/checks/K102-mesa.py:566",
-            "harness/checks/K102-mesa.py:681",
-            "harness/checks/K102-mesa.py:764",
-            "harness/checks/K102-sobre-plantado.py:200",
-            "harness/checks/K102-sobre-plantado.py:216",
+            "harness/checks/K102-decide-lo-primero.sh:83",
+            "harness/checks/K102-decide-lo-primero.sh:107",
+            "harness/checks/K102-decide-lo-primero.sh:109",
+            "harness/checks/K102-decide-lo-primero.sh:114",
+            "harness/checks/K102-mesa.py:671",
+            "harness/checks/K102-mesa.py:672",
+            "harness/checks/K102-mesa.py:682",
+            "harness/checks/K102-mesa.py:703",
+            "harness/checks/K102-mesa.py:710",
+            "harness/checks/K102-mesa.py:825",
+            "harness/checks/K102-mesa.py:908",
+            "harness/checks/K102-sobre-plantado.py:239",
+            "harness/checks/K102-sobre-plantado.py:255",
             "harness/checks/K106-banco.py:56"
           ],
           "menciones": [
-            "harness/checks/K102-decide-lo-primero.sh:30",
-            "harness/checks/K102-mesa.py:523",
-            "harness/checks/K102-mesa.py:533",
-            "harness/checks/K102-mesa.py:737",
+            "harness/checks/K102-decide-lo-primero.sh:38",
+            "harness/checks/K102-mesa.py:667",
+            "harness/checks/K102-mesa.py:677",
+            "harness/checks/K102-mesa.py:881",
             "harness/checks/K102-sobre-plantado.py:2",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:8"
           ]
@@ -35806,6 +35935,7 @@
         "open_interest",
         "orderbook_snapshot",
         "pipeline_heartbeat",
+        "scalp_signal_snapshot",
         "signal_observation",
         "spot_trades_agg",
         "spot_trades_realtime"
@@ -35815,13 +35945,13 @@
     {
       "camino": "/api/mesa/entradas",
       "campos": {
-        "disponible": "literal en app/entradas/vista.py:532",
-        "generador": "literal en app/entradas/vista.py:535",
-        "marco": "literal en app/entradas/vista.py:555",
-        "motivo": "literal en app/entradas/vista.py:533",
-        "precio": "literal en app/entradas/vista.py:534",
-        "reciente": "literal en app/entradas/vista.py:548",
-        "vivo": "literal en app/entradas/vista.py:547"
+        "disponible": "literal en app/entradas/vista.py:566",
+        "generador": "literal en app/entradas/vista.py:569",
+        "marco": "literal en app/entradas/vista.py:589",
+        "motivo": "literal en app/entradas/vista.py:567",
+        "precio": "literal en app/entradas/vista.py:568",
+        "reciente": "literal en app/entradas/vista.py:582",
+        "vivo": "literal en app/entradas/vista.py:581"
       },
       "campos_pendientes": [
         "el objeto se expande con **base, que no se resuelve en el arbol: sus campos no se pueden derivar"
@@ -35945,9 +36075,15 @@
         }
       ],
       "consumidores": {
+        "checks": {
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K102-mesa.py:481"
+          ]
+        },
         "tests": {
           "llamadas": [
-            "tests/test_entradas_vista.py:108"
+            "tests/test_entradas_vista.py:148"
           ],
           "menciones": [
             "tests/test_entradas_vista.py:1"
@@ -35957,7 +36093,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 1,
-        "n_menciones": 1,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -39128,8 +39264,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K106-plantados.py:362",
-            "harness/checks/K106-plantados.py:363",
+            "harness/checks/K106-plantados.py:417",
+            "harness/checks/K106-plantados.py:418",
             "harness/checks/K43-control.bash:29",
             "harness/checks/K43-control.bash:74",
             "harness/checks/K43-foto-unica.sh:164",
@@ -39369,9 +39505,9 @@
         "checks": {
           "llamadas": [],
           "menciones": [
-            "harness/checks/K102-decide-lo-primero.sh:32",
-            "harness/checks/K102-mesa.py:740",
-            "harness/checks/K102-sobre-plantado.py:145"
+            "harness/checks/K102-decide-lo-primero.sh:40",
+            "harness/checks/K102-mesa.py:884",
+            "harness/checks/K102-sobre-plantado.py:178"
           ]
         }
       },
@@ -42428,31 +42564,31 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-control.bash:271",
-            "harness/checks/K102-control.bash:282",
-            "harness/checks/K102-control.bash:284",
-            "harness/checks/K102-control.bash:424",
-            "harness/checks/K102-control.bash:902",
-            "harness/checks/K102-decide-lo-primero.sh:129",
-            "harness/checks/K102-decide-lo-primero.sh:131",
-            "harness/checks/K102-decide-lo-primero.sh:138",
-            "harness/checks/K102-decide-lo-primero.sh:141",
-            "harness/checks/K102-decide-lo-primero.sh:143",
-            "harness/checks/K102-decide-lo-primero.sh:147",
-            "harness/checks/K102-decide-lo-primero.sh:148",
-            "harness/checks/K102-decide-lo-primero.sh:150",
-            "harness/checks/K102-decide-lo-primero.sh:153",
-            "harness/checks/K102-decide-lo-primero.sh:154",
-            "harness/checks/K102-decide-lo-primero.sh:159",
-            "harness/checks/K102-decide-lo-primero.sh:168",
-            "harness/checks/K102-decide-lo-primero.sh:170",
-            "harness/checks/K102-decide-lo-primero.sh:173",
-            "harness/checks/K102-mesa.py:909",
-            "harness/checks/K102-sobre-plantado.py:168",
-            "harness/checks/K102-sobre-plantado.py:221",
-            "harness/checks/K102-sobre-plantado.py:238",
-            "harness/checks/K102-sobre-plantado.py:239",
+            "harness/checks/K102-control.bash:275",
+            "harness/checks/K102-control.bash:286",
+            "harness/checks/K102-control.bash:288",
+            "harness/checks/K102-control.bash:567",
+            "harness/checks/K102-control.bash:1066",
+            "harness/checks/K102-decide-lo-primero.sh:137",
+            "harness/checks/K102-decide-lo-primero.sh:139",
+            "harness/checks/K102-decide-lo-primero.sh:146",
+            "harness/checks/K102-decide-lo-primero.sh:149",
+            "harness/checks/K102-decide-lo-primero.sh:151",
+            "harness/checks/K102-decide-lo-primero.sh:155",
+            "harness/checks/K102-decide-lo-primero.sh:156",
+            "harness/checks/K102-decide-lo-primero.sh:158",
+            "harness/checks/K102-decide-lo-primero.sh:161",
+            "harness/checks/K102-decide-lo-primero.sh:162",
+            "harness/checks/K102-decide-lo-primero.sh:167",
+            "harness/checks/K102-decide-lo-primero.sh:176",
+            "harness/checks/K102-decide-lo-primero.sh:178",
+            "harness/checks/K102-decide-lo-primero.sh:181",
+            "harness/checks/K102-mesa.py:1053",
+            "harness/checks/K102-sobre-plantado.py:207",
+            "harness/checks/K102-sobre-plantado.py:260",
+            "harness/checks/K102-sobre-plantado.py:277",
             "harness/checks/K102-sobre-plantado.py:278",
+            "harness/checks/K102-sobre-plantado.py:323",
             "harness/checks/K106-banco.py:96",
             "harness/checks/K44-control.bash:901",
             "harness/checks/K44-control.bash:902",
@@ -42469,15 +42605,15 @@
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:453"
           ],
           "menciones": [
-            "harness/checks/K102-control.bash:266",
-            "harness/checks/K102-control.bash:268",
-            "harness/checks/K102-control.bash:899",
-            "harness/checks/K102-decide-lo-primero.sh:113",
-            "harness/checks/K102-decide-lo-primero.sh:115",
-            "harness/checks/K102-decide-lo-primero.sh:133",
-            "harness/checks/K102-decide-lo-primero.sh:139",
-            "harness/checks/K102-mesa.py:459",
-            "harness/checks/K102-sobre-plantado.py:219",
+            "harness/checks/K102-control.bash:270",
+            "harness/checks/K102-control.bash:272",
+            "harness/checks/K102-control.bash:1063",
+            "harness/checks/K102-decide-lo-primero.sh:121",
+            "harness/checks/K102-decide-lo-primero.sh:123",
+            "harness/checks/K102-decide-lo-primero.sh:141",
+            "harness/checks/K102-decide-lo-primero.sh:147",
+            "harness/checks/K102-mesa.py:603",
+            "harness/checks/K102-sobre-plantado.py:258",
             "harness/checks/K106-banco.py:6",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
@@ -42657,7 +42793,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-sobre-plantado.py:223",
+            "harness/checks/K102-sobre-plantado.py:262",
             "harness/checks/K43-control.bash:179",
             "harness/checks/K44-control.bash:918",
             "harness/checks/K44-control.bash:919",
@@ -42672,7 +42808,7 @@
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:455"
           ],
           "menciones": [
-            "harness/checks/K102-sobre-plantado.py:219",
+            "harness/checks/K102-sobre-plantado.py:258",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:247",
@@ -43914,7 +44050,7 @@
         {
           "funcion": "app.entradas.vista.precio_ahora",
           "origen": "constante _PRECIO_SQL",
-          "sitio": "app/entradas/vista.py:112"
+          "sitio": "app/entradas/vista.py:113"
         },
         {
           "funcion": "app.ingest.rollup_ohlcv_5m",
@@ -44501,6 +44637,11 @@
       ],
       "lectores_del_arbol": [
         {
+          "funcion": "app.ai_context.build_mesa_decide",
+          "origen": "constante MEMORIA_SQL",
+          "sitio": "app/ai_context.py:1384"
+        },
+        {
           "funcion": "app.ai_context.recent_signals",
           "origen": "literal",
           "sitio": "app/ai_context.py:695"
@@ -44519,6 +44660,7 @@
       "leida_por": [
         "/api/ai/context",
         "/api/ai/context/bundle",
+        "/api/mesa/decide",
         "/api/scalp/signals",
         "/metrics"
       ]

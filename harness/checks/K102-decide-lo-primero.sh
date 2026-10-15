@@ -23,6 +23,14 @@
 #        equivocada (A83). B9 RECOMPUTA la palabra con la regla completa -el umbral del handoff
 #        que el sobre sirve, y `classify_signal_observation` de `app/signal_ledger.py` IMPORTADA-
 #        sobre las cifras de LA MISMA respuesta, y la contrasta con la servida Y con la pintada.
+#        Desde la v3 del sobre (campana 138) esa palabra es la del INSTANTE (`instante`).
+#   B10 · LA PALABRA GRANDE DICE LO QUE EL SISTEMA SOSTIENE (v3). Se recalcula por la regla que la
+#        respuesta declara (`memoria.regla`) sobre la serie de evaluaciones que sirve, y condena una
+#        grande que no sale de su regla, un lado pintado donde la regla no da lado, la del instante
+#        pintada en su sitio y una edad pintada que no es la de la palabra.
+#   B11 · LO DEL INSTANTE SE VE COMO DEL INSTANTE (v3, remate de la 138). Una celda que sale de la
+#        evaluacion de ESTA peticion -clave operator_read.* o scalp.*, salvo `invalidates`- lleva una
+#        marca visible con el `rotulo_instante` que la ruta le sirve; las de la grande o de las dos, no.
 #   B6 · errores de consola. HOY NO PUEDE CONDENAR y la salida lo dice.
 #
 # TRES COSAS QUE ESTA RED HACIA MAL Y QUE COSTARON UNA RONDA DE CORRECCION DEL OPERADOR:
@@ -220,14 +228,18 @@ done
 
 "$PY" - "$TMP/g.json" "$TMP/p.json" "$TMP/sw.json" "$TMP/swp.json" "$TMP/lg.json" \
        "$TMP/lgp.json" "$SUJETO" "$ACTIVO" "$REPO" \
-       "$REPO/app/ai_context.py" "$OTROS" "$ACTIVOS" "$PUERTA_DICHO" "$PUERTA" <<'PY'
-import json, os, re, sys
+       "$REPO/app/ai_context.py" "$OTROS" "$ACTIVOS" "$PUERTA_DICHO" "$PUERTA" "$SONDA" <<'PY'
+import importlib.util, json, os, re, sys
 
 g, p, sw, swp, lg, lgp = (json.load(open(x)) for x in sys.argv[1:7])
 sujeto, activo = sys.argv[7], sys.argv[8]
 raiz_repo, ruta_ctx = sys.argv[9], sys.argv[10]
 dir_otros, activos_pedidos = sys.argv[11], sys.argv[12].split()
 puerta_dicho, puerta = sys.argv[13], sys.argv[14]
+# la sonda: de ahi sale la regla de la palabra GRANDE recalculada (juzga_memoria), la misma que usa K106
+_spec = importlib.util.spec_from_file_location("k102_mesa", sys.argv[15])
+SONDA = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(SONDA)
 fallos, lineas = [], []
 
 # LAS VISTAS DE LOS OTROS ACTIVOS. Cada fichero se llama <activo>__<marco>__<ancho>x<alto>.json,
@@ -395,7 +407,9 @@ DEL_SCALP = ("state", "reason", "confidence", "edge", "evidence", "confirms",
              # `evidence_balance` sale de `operator_read.bias`, o sea de la lectura del scalp:
              # publicarlo dentro de `decide` en SWING seria presentar un balance de scores de un
              # minuto como del marco, que es el defecto de la 130 en otra clave.
-             "evidence_balance")
+             "evidence_balance",
+             # la palabra del instante y la memoria tambien son de la lectura del scalp (campana 138)
+             "instante", "memoria")
 for d, marco in ((sw, "swing"), (lg, "largo")):
     sobre = d.get("sobre") or {}
     if not sobre:
@@ -543,6 +557,7 @@ if sch_arbol and sch_sujeto and sch_arbol != sch_sujeto:
     pista = (f" · FALTA DESPLEGAR: el sujeto sirve {sch_sujeto} y el arbol declara {sch_arbol}")
 
 b9_ok, b9_sin_tarjeta, b9_sin_libro = [], [], []
+b10_ok, b10_v2, b11_ok = [], [], []
 for d, rot, marco, _act in VISTAS:
     sob = d.get("sobre") or {}
     if not sob:
@@ -552,7 +567,9 @@ for d, rot, marco, _act in VISTAS:
     dec_v = sob.get("decide") or {}
     if marco == "scalp":
         origen = dec_v
-        pintada = ((c.get("sesgo") or {}).get("texto") or "").strip()
+        cel = {x.get("campo"): x for x in (c.get("parejas") or [])}
+        pref = ""
+        pintada_grande = ((c.get("sesgo") or {}).get("texto") or "").strip()
         donde = "#decide-sesgo"
     else:
         # En swing y largo la palabra del SCALP vive en `lectura_scalp` y se pinta en su tarjeta
@@ -564,9 +581,21 @@ for d, rot, marco, _act in VISTAS:
             continue
         tj = c.get("tarjeta_scalp") or {}
         cel = {x.get("campo"): x for x in (tj.get("parejas") or [])}
-        pintada = ((cel.get("scalp.bias") or {}).get("valor") or "").strip()
+        pref = "scalp."
+        pintada_grande = ((cel.get("scalp.bias") or {}).get("valor") or "").strip()
         donde = "#lectura-scalp [data-campo=scalp.bias]"
-    servida = (origen.get("bias") or {}).get("value")
+    # v3 (campana 138): la palabra GRANDE -`bias`- es la que el sistema SOSTIENE, y la del INSTANTE
+    # viaja en `instante`. B9 juzga la del instante con su regla de siempre y B10 la grande con la
+    # suya. En v2 -lo desplegado hasta la 138- la palabra pintada en grande ES la del instante.
+    es_v3 = "memoria" in origen
+    if es_v3:
+        servida = (origen.get("instante") or {}).get("value")
+        pintada = ((cel.get(pref + "instante") or {}).get("valor") or "").strip()
+        donde_g, donde = donde, f"[data-campo={pref}instante]"
+    else:
+        servida = (origen.get("bias") or {}).get("value")
+        pintada = pintada_grande
+        b10_v2.append(rot)
     # LAS CUATRO ENTRADAS DE LA REGLA, LEIDAS DEL SOBRE. `data_confidence` y su umbral viven
     # SIEMPRE en `decide` -son del simbolo, no del marco-; las otras tres viajan con la lectura
     # del scalp, o sea en `decide` en scalp y en `lectura_scalp` en los otros dos.
@@ -575,7 +604,7 @@ for d, rot, marco, _act in VISTAS:
     cobertura = (origen.get("evidence") or {}).get("value")
     dc_v = (dec_v.get("data_confidence") or {}).get("value")
     umbral_v = (dec_v.get("evaluable") or {}).get("threshold")
-    faltan = [k for k, v in (("bias", servida), ("state", estado),
+    faltan = [k for k, v in (("instante" if es_v3 else "bias", servida), ("state", estado),
                              ("data_confidence", dc_v), ("evaluable.threshold", umbral_v))
               if v is None]
     if faltan:
@@ -619,6 +648,86 @@ for d, rot, marco, _act in VISTAS:
         )
     else:
         b9_ok.append((rot, pintada, str(estado), str(por_que)))
+    if not es_v3:
+        continue
+
+    # --- B10 · LA PALABRA GRANDE DICE LO QUE EL SISTEMA SOSTIENE, POR SU REGLA DECLARADA (campana 138)
+    # Se RECALCULA desde lo que ESA respuesta sirve -la regla en `memoria.regla`, las evaluaciones con
+    # sus instantes en `memoria.serie`, el corte y la palabra del instante- con una implementacion de la
+    # sonda, no con la de la ruta. Condena: una grande que no sale de su regla, un lado pintado donde la
+    # regla no da lado, la del instante pintada en su sitio y una edad que no es la de la palabra.
+    mem = origen.get("memoria") or {}
+    grande_servida = (origen.get("bias") or {}).get("value")
+    esperada_g, malas = SONDA.juzga_memoria(mem, servida, (sob.get("envelope_cut") or {}).get("as_of"))
+    edad_pintada = (cel.get(pref + "memoria.edad") or {}).get("valor")
+    frase_edad = (mem.get("edad") or {}).get("frase")
+    cambios = SONDA.cambios_en_ventana(mem)
+    if esperada_g is None:
+        fallos.append(f"B10 {rot}: {malas[0]}{pista}")
+    elif grande_servida != esperada_g:
+        fallos.append(
+            f"B10 {rot}: la palabra GRANDE servida dice {grande_servida!r} y su regla declarada "
+            f"(memoria.regla) sobre la serie que ESA respuesta sirve da {esperada_g!r}{pista}"
+        )
+    elif pintada_grande != esperada_g:
+        fallos.append(
+            f"B10 {rot}: la palabra pintada en {donde_g} dice {pintada_grande!r} y su regla da "
+            f"{esperada_g!r}" + (" -ES LA PALABRA DEL INSTANTE pintada en el sitio de la grande-"
+                                 if pintada_grande == str(servida) else "")
+        )
+    elif malas:
+        fallos.append(f"B10 {rot}: {malas[0]}")
+    elif (SONDA.colector_parado(mem, (sob.get("envelope_cut") or {}).get("as_of"))
+          and "colector" not in str((origen.get("bias") or {}).get("motivo") or "")):
+        fallos.append(
+            f"B10 {rot}: el colector no escribe y la palabra grande no lo dice: su motivo es "
+            f"{(origen.get('bias') or {}).get('motivo')!r}"
+        )
+    elif edad_pintada != frase_edad:
+        fallos.append(
+            f"B10 {rot}: la edad pintada en [data-campo={pref}memoria.edad] dice {edad_pintada!r} y la "
+            f"de la palabra es {frase_edad!r}: lo pintado no es la edad de la palabra"
+        )
+    elif (origen.get("instante") or {}).get("cambios_en_ventana") != cambios:
+        fallos.append(
+            f"B10 {rot}: instante.cambios_en_ventana sirve "
+            f"{(origen.get('instante') or {}).get('cambios_en_ventana')!r} y su serie da {cambios}"
+        )
+    else:
+        b10_ok.append((rot, esperada_g, str(servida)))
+
+    # --- B11 · LO DEL INSTANTE SE VE COMO DEL INSTANTE (campana 138, remate R1)
+    # Una celda que sale de la evaluacion del INSTANTE -por el criterio de la sonda, no por el rotulo de la ruta- se
+    # pinta con UNA marca visible y con el texto que la ruta le sirve en `rotulo_instante` (A86: la pantalla no lo
+    # escribe). Las de la palabra grande o de las dos, sin marca. Sin condicion: la marca sigue cuando la grande y el
+    # instante dicen lo mismo.
+    juzgadas = [(c.get("parejas"), dec_v, "")]
+    if marco != "scalp":
+        juzgadas.append(((c.get("tarjeta_scalp") or {}).get("parejas"), origen, "scalp."))
+    malas11, n11 = [], 0
+    for parejas, fuente, p in juzgadas:
+        for x in parejas or []:
+            nombre = str(x.get("campo") or "")
+            base = re.split(r"[.\[]", nombre.removeprefix(p), maxsplit=1)[0]
+            servido = fuente.get(base)
+            vistas = [m.get("texto") for m in (x.get("marcas") or []) if m.get("visible")]
+            if not SONDA.es_del_instante(base, servido):
+                if x.get("marcas"):
+                    malas11.append(f"la celda {nombre} es de la palabra grande o de las dos y lleva la marca de "
+                                   f"instante {[m.get('texto') for m in x['marcas']]}")
+                continue
+            n11 += 1
+            rotulo = servido.get("rotulo_instante") if isinstance(servido, dict) else None
+            if not rotulo:
+                malas11.append(f"la celda {nombre} sale de la evaluacion del instante y la ruta no le sirve "
+                               "rotulo_instante: se lee como de la palabra grande")
+            elif vistas != [rotulo]:
+                malas11.append(f"la celda {nombre} sale de la evaluacion del instante y se pinta con "
+                               f"{vistas or 'NINGUNA marca visible'} donde la ruta sirve {rotulo!r}")
+    if malas11:
+        fallos.append(f"B11 {rot}: {malas11[0]}" + (f" (y {len(malas11) - 1} mas)" if len(malas11) > 1 else ""))
+    else:
+        b11_ok.append((rot, n11))
 
 # LAS PAREJAS QUE SALIERON BIEN, AGRUPADAS POR LO QUE DICEN. Dieciocho lineas iguales no se
 # leen; lo que importa es CUANTAS parejas distintas se llegaron a ver. Si solo se vio una
@@ -629,8 +738,8 @@ if b9_ok:
     for rot, pal, est, motivo in b9_ok:
         vistos.setdefault((pal, est, motivo), []).append(rot)
     lineas.append(
-        f"la palabra coincide con la regla completa -umbral del handoff + "
-        f"classify_signal_observation- en {len(b9_ok)} de "
+        f"la palabra del INSTANTE (en v2, la pintada en grande) coincide con la regla completa -umbral "
+        f"del handoff + classify_signal_observation- en {len(b9_ok)} de "
         f"{len(VISTAS) - len(b9_sin_tarjeta)} vista(s) juzgada(s), con "
         f"{len(vistos)} caso(s) distinto(s):"
     )
@@ -659,6 +768,27 @@ if b9_sin_libro:
         f"entradas de la regla: la palabra se pudo juzgar con el mejor caso, pero la respuesta "
         f"NO se puede auditar entera contra la regla que dice seguir{pista}"
     )
+if b10_ok:
+    casos = sorted({(g_, i_) for _r, g_, i_ in b10_ok})
+    lineas.append(
+        f"B10 · la palabra GRANDE sale de su regla declarada (memoria.regla sobre memoria.serie), con su "
+        f"edad y sus cambios, y es la pintada, en {len(b10_ok)} vista(s); grande/instante vistos: "
+        + ", ".join(f"{g_}/{i_}" for g_, i_ in casos)
+    )
+    if not any(g_ in ("LONG", "SHORT") for g_, _i in casos):
+        lineas.append("  y NINGUNA grande tenia lado: en esta corrida B10 no ha ejercido la mitad que condena "
+                      "callar un lado sostenido")
+if b10_v2:
+    # LO DESPLEGADO HASTA LA 138 NO TRAE MEMORIA: su palabra grande ES la del instante y la juzga B9.
+    # No es un aprobado de B10, y se dice.
+    lineas.append(f"B10 SIN JUZGAR en {len(b10_v2)} vista(s): el sujeto sirve {sch_sujeto} (sin memoria), "
+                  f"cuya palabra grande es la del instante y la juzga B9{pista}")
+    lineas.append(f"B11 SIN JUZGAR en {len(b10_v2)} vista(s): sin memoria no hay palabra grande aparte, y no hay "
+                  f"celda del instante que distinguir de ella{pista}")
+if b11_ok:
+    lineas.append(f"B11 · las celdas de la evaluacion del INSTANTE llevan su marca servida y las de la grande o de "
+                  f"las dos ninguna, en {len(b11_ok)} vista(s); celdas del instante juzgadas: "
+                  f"{sum(n for _r, n in b11_ok)}")
 
 # --- B6 · SIN PODER CONDENAR -----------------------------------------------------------
 errc = g.get("errores_consola") or []

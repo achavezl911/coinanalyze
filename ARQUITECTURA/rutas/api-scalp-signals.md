@@ -77,7 +77,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K106-plantados.py:362`, `harness/checks/K106-plantados.py:363`, `harness/checks/K43-control.bash:29`, `harness/checks/K43-control.bash:74` _(+2)_ | — |
+| **checks** | `harness/checks/K106-plantados.py:417`, `harness/checks/K106-plantados.py:418`, `harness/checks/K43-control.bash:29`, `harness/checks/K43-control.bash:74` _(+2)_ | — |
 | **panel** | `static/js/07-decision-y-ciclos.js:422` | — |
 | **readme** | — | `README.md:492`, `README.md:502` |
 | **tests** | — | `tests/test_dashboard_layout.py:160` |

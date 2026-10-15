@@ -436,6 +436,49 @@ main {
   margin-top: 2px;
 }
 
+/* La edad de la palabra grande y la palabra del instante (campana 138): debajo del veredicto,
+ * pequenas. La del instante lleva su color pero no su tamano: no es la decision que se presenta. */
+.decide-edad-palabra {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--tx-debil);
+  margin-top: 2px;
+}
+
+.decide-instante {
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+/* LA MARCA DE LO QUE SALE DE LA EVALUACION DEL INSTANTE (remate R1): pequena, en la linea del rotulo de su celda,
+ * discontinua como la de DERIVADO y en gris: dice de donde sale la cifra, no la colorea. */
+.marca-instante {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--tx-debil);
+  border: 1px dashed var(--borde-hueco);
+  border-radius: 3px;
+  padding: 0 4px;
+  margin: 0 6px 0 4px;
+  white-space: nowrap;
+}
+
+.decide-instante .marca-instante {
+  margin-left: 0;
+}
+
+.decide-instante .valor {
+  display: inline;
+  font-weight: 700;
+}
+
+.decide-instante .motivo {
+  display: inline;
+}
+
 .conf-fila {
   margin-top: 10px;
 }

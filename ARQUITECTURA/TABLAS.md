@@ -42,7 +42,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`orderbook_snapshot`](#orderbook-snapshot) | 2 | 15 | 0 |
 | [`pipeline_heartbeat`](#pipeline-heartbeat) | 3 | 8 | 1 |
 | [`predicted_funding_rate`](#predicted-funding-rate) | 1 | 3 | 0 |
-| [`scalp_signal_snapshot`](#scalp-signal-snapshot) | 1 | 4 | 0 |
+| [`scalp_signal_snapshot`](#scalp-signal-snapshot) | 1 | 5 | 0 |
 | [`signal_execution_snapshot`](#signal-execution-snapshot) | 1 | 1 | 0 |
 | [`signal_observation`](#signal-observation) | 1 | 7 | 0 |
 | [`signal_outcome`](#signal-outcome) | 4 | 3 | 0 |
@@ -750,10 +750,11 @@ La escriben:
 
 - `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1417`
 
-**Si cambia el contenido o el esquema de `scalp_signal_snapshot`, estas 4 rutas lo notan:**
+**Si cambia el contenido o el esquema de `scalp_signal_snapshot`, estas 5 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
+- [`/api/mesa/decide`](rutas/api-mesa-decide.md)
 - [`/api/scalp/signals`](rutas/api-scalp-signals.md)
 - [`/metrics`](rutas/metrics.md)
 

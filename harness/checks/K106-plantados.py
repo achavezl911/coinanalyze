@@ -32,15 +32,40 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "tests"))
 
 
-def _decide(scalp: str | None, edad: float = 5.0):
-    """Lo que build_mesa_decide(frame="swing") sirve, reducido a lo que la vista lee de el."""
+# LAS SERIES REGISTRADAS que fabrica el banco (campana 138), terminadas en el corte a 13.9 s.
+_SERIES = {"LONG": ["LONG"] * 40, "SHORT": ["SHORT"] * 40, "NO OPERAR": ["NO OPERAR"] * 40,
+           "oscila": ["LONG", "NO OPERAR"] * 20, "parado": ["LONG"] * 40}
+
+
+def _decide(scalp: str | None, edad: float = 5.0, *, patron: str | None = None, instante: str | None = None,
+            grande: str | None = None):
+    """Lo que build_mesa_decide(frame="swing") sirve, reducido a lo que la vista lee de el. v3 (campana 138): la
+    palabra del scalp es la que el sistema SOSTIENE, con la memoria FIEL que da la regla de la RUTA sobre una serie
+    fabricada (`patron`; por omision, la de `scalp`) y la palabra del instante (por omision, `scalp`). `grande`
+    planta la palabra grande TAL CUAL, que es como un brazo monta una que no sale de su regla."""
     if scalp is None:
         return None
+    from datetime import UTC
+
+    from app import ai_context as A
+
+    corte = datetime.now(UTC)
+    patron = patron or ("LONG" if scalp == "NO EVALUABLE" else scalp)
+    palabras = _SERIES[patron]
+    ultima = corte - timedelta(seconds=90 if patron == "parado" else 3)
+    serie = [(ultima - timedelta(seconds=13.9 * (len(palabras) - 1 - i)), p) for i, p in enumerate(palabras)]
+    inst = instante or scalp
+    m = A.palabra_sostenida(serie, instante=inst, as_of=corte,
+                            motivo_instante="data_confidence 12 < 70" if inst == "NO EVALUABLE" else None)
+    assert grande or m["value"] == scalp, f"plantados: la regla da {m['value']} y el escenario fiel pide {scalp}"
     return {"max_age_s": 120.0, "age": {"snapshot_lag_seconds": {"value": edad, "status": "ok"}},
+            "envelope_cut": {"as_of": corte.isoformat()},
             "decide": {"bias": {"value": "NO EVALUABLE", "source_key": "mesa.decide.frame",
                                 "motivo": "la lectura del operador es del SCALP, no de SWING"}},
-            "lectura_scalp": {"bias": {"value": scalp, "source_key": "operator_read.state",
-                                       "motivo": "data_confidence 12 < 70" if scalp == "NO EVALUABLE" else None}}}
+            "lectura_scalp": {"bias": {"value": grande or m["value"], "source_key": A.MEMORIA_FUENTE,
+                                       "motivo": m["motivo"]},
+                              "instante": {"value": inst, "source_key": "operator_read.state", "status": "ok"},
+                              "memoria": {k: v for k, v in m.items() if k not in ("value", "motivo")}}}
 
 
 async def base(dsn: str, destino: Path) -> None:
@@ -119,9 +144,9 @@ def _a_medias(r):
     assert r["generador"]["pasada_en_curso"], "plantados: la pasada no quedo a medias"
 
 
-def _palabra(r, scalp, edad: float = 5.0):
+def _palabra(r, scalp, edad: float = 5.0, **memoria):
     from app.entradas import vista as V
-    r["decide"] = V._decide(_decide(scalp, edad), None if scalp else "DECIDE fallo al calcularse (RuntimeError)")
+    r["decide"] = V._decide(_decide(scalp, edad, **memoria), None if scalp else "DECIDE fallo al calcularse (RuntimeError)")
 
 
 def _cruza(r, palabra_pintada, frase_de):
@@ -335,7 +360,7 @@ BRAZOS: list[tuple] = [
     # ---- C3 · las cinco palabras, cada una con su frase; y la frase de una servida para otra
     ("decide_long", "PASA", "", [], lambda r: _palabra(r, "LONG"), None, "DECIDE en LONG: un plan largo va de su lado, uno corto EN CONTRA"),
     ("decide_short", "PASA", "", [], lambda r: _palabra(r, "SHORT"), None, "DECIDE en SHORT"),
-    ("decide_no_operar", "PASA", "", [], lambda r: _palabra(r, "NO OPERAR"), None, "NO OPERAR: «plan condicional: el sistema no toma lado»"),
+    ("decide_no_operar", "PASA", "", [], lambda r: _palabra(r, "NO OPERAR"), None, "NO OPERAR: «plan condicional: el sistema no sostiene un lado»"),
     ("decide_no_evaluable", "PASA", "", [], lambda r: _palabra(r, "NO EVALUABLE"), None, "NO EVALUABLE: ni respalda ni desaconseja"),
     ("decide_sin_respuesta", "PASA", "", [], lambda r: _palabra(r, None), None, "DECIDE no contesta y la ruta si"),
     ("decide_rancio", "PASA", "", ["--luego", "@12"], lambda r: _palabra(r, "LONG", 112.0), None,
@@ -356,6 +381,36 @@ BRAZOS: list[tuple] = [
     ("en_contra_callado", "CONDENA", "E7 intradia/largo: con DECIDE SHORT la celda dice", [], lambda r: _palabra(r, "SHORT"),
      _tras_pintar("    document.querySelectorAll('.ent-rel.rel-en_contra').forEach((n) => { n.textContent = 'mismo lado que DECIDE (SHORT)'; });"),
      "un plan largo con DECIDE en SHORT y la pantalla no dice que va en contra"),
+    # ---- C4 de la campana 138 · la palabra GRANDE de INTRADIA, por la regla que la respuesta declara
+    ("grande_oscila", "PASA", "", [], lambda r: _palabra(r, "NO OPERAR", patron="oscila"), None,
+     "b · la serie oscila en cada evaluacion: la grande es NO OPERAR, con su frase de «no sostiene»"),
+    ("lado_donde_no_lo_hay", "CONDENA", "E9 intradia: la palabra GRANDE servida", [],
+     lambda r: _palabra(r, "NO OPERAR", patron="oscila", grande="LONG"), None,
+     "b · LONG servido, y pintado con su frase, sobre una serie que oscila: la regla no da lado"),
+    ("calla_lado_sostenido", "CONDENA", "E9 intradia: la palabra GRANDE servida", [],
+     lambda r: _palabra(r, "LONG", grande="NO OPERAR"), None, "a · NO OPERAR servido sobre una serie LONG sostenida"),
+    # (su gemelo fiel es decide_no_evaluable: LONG sostenido y la puerta del instante cerrada)
+    ("lado_con_la_puerta_cerrada", "CONDENA", "E9 intradia: la palabra GRANDE servida", [],
+     lambda r: _palabra(r, "NO EVALUABLE", grande="LONG"), None, "c y d · LONG con la puerta del instante cerrada"),
+    ("colector_parado", "PASA", "", [], lambda r: _palabra(r, "NO EVALUABLE", patron="parado", instante="LONG"), None,
+     "e · el colector dejo de escribir: la grande es NO EVALUABLE y su motivo lo dice"),
+    ("colector_parado_con_lado", "CONDENA", "E9 intradia: la palabra GRANDE servida", [],
+     lambda r: _palabra(r, "NO EVALUABLE", patron="parado", instante="LONG", grande="LONG"), None,
+     "e · LONG con el colector parado: afirma lo que no ve"),
+    ("instante_en_grande", "CONDENA", "E9 intradia: la palabra pintada .*INSTANTE", [],
+     lambda r: _palabra(r, "LONG", instante="NO OPERAR"),
+     _tras_pintar("    const x = document.querySelector('[data-decide=intradia] .ent-palabra');\n"
+                  "    if (x && _ent) { x.textContent = _ent.datos.decide.perfiles.intradia.recalculo.instante;"
+                  " x.dataset.palabra = x.textContent; }"),
+     "f · la pantalla pinta la palabra del INSTANTE en el sitio de la grande"),
+    ("edad_prestada", "CONDENA", "E2 decide.perfiles.intradia.edad_de_la_palabra: pinta", [], None,
+     _tras_pintar("    const e = document.querySelector('[data-k=\"decide.perfiles.intradia.edad_de_la_palabra\"]');\n"
+                  "    if (e && _ent) e.textContent = 'edad ' + _ent.datos.decide.edad_s + ' s';"),
+     "g · la edad de la instantanea pintada en el sitio de la edad de la palabra"),
+    ("rotulo_de_antes", "CONDENA", "E9 la pantalla rotula", [], None,
+     _tras_pintar("    document.querySelectorAll('#ent-decide .venue').forEach((n) => {"
+                  " n.firstChild.textContent = 'edad de la palabra: '; });"),
+     "g · la edad del dato, rotulada otra vez «edad de la palabra» (lo de antes de la 138)"),
     # ---- C4 · quien pide que
     ("principal_pide_entradas", "CONDENA", "E8 la vista principal pide .* que solo es de ENTRADAS", ["--vista", "mesa"], None, "APP",
      "la vista PRINCIPAL pidiendo la ruta de entradas en su ola 2"),

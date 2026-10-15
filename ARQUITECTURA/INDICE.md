@@ -37,7 +37,7 @@
 | `/api/macro-context` | GET | 7 | 1 | 10 | [ficha](rutas/api-macro-context.md) |
 | `/api/market-impact` | GET | 6 | 2 | 7 | [ficha](rutas/api-market-impact.md) |
 | `/api/market-memory` | GET | 13 | 1 | 5 | [ficha](rutas/api-market-memory.md) |
-| `/api/mesa/decide` | GET | 3 | 15 | 55 | [ficha](rutas/api-mesa-decide.md) |
+| `/api/mesa/decide` | GET | 3 | 16 | 60 | [ficha](rutas/api-mesa-decide.md) |
 | `/api/mesa/entradas` | GET | 7 | 4 | 51 | [ficha](rutas/api-mesa-entradas.md) |
 | `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
 | `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
@@ -124,7 +124,7 @@
 | `orderbook_snapshot` | 15 | 0 |
 | `pipeline_heartbeat` | 8 | 1 |
 | `predicted_funding_rate` | 3 | 0 |
-| `scalp_signal_snapshot` | 4 | 0 |
+| `scalp_signal_snapshot` | 5 | 0 |
 | `signal_execution_snapshot` | 1 | 0 |
 | `signal_observation` | 7 | 0 |
 | `signal_outcome` | 3 | 0 |
