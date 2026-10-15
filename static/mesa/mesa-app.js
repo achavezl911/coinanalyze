@@ -72,6 +72,8 @@ function nodosDecide() {
     campos: document.getElementById('decide-campos'),
     edad: document.getElementById('decide-edad'),
     escalones: document.getElementById('conf-escalones'),
+    confFila: document.getElementById('conf-fila'),
+    confInstante: document.getElementById('conf-instante'),
     confPalabra: document.getElementById('conf-palabra'),
     confClave: document.getElementById('conf-clave'),
     dcRelleno: document.getElementById('dc-relleno'),

@@ -415,6 +415,70 @@ fi
 pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
 echo
 
+# ------- P17 a P22 · remate R1 · lo de la evaluacion del INSTANTE se ve como del instante (B11) ------
+# Sobre el banco v3 plantado y con un gemelo FIEL por cada sobre: G16 (las palabras difieren) es el de
+# P17 a P19; G17 (dicen lo mismo: la marca no es una condicion de pintado) el de P20; G18 (la ruta
+# sirve OTRO texto de rotulo: la pantalla pinta el servido, A86) el de P21. P22 planta la RUTA.
+echo "P17-P22 · remate R1 · las celdas del instante, con su marca servida (B11)"
+sirve_v3() {  # sirve_v3 <palabra del instante> <su estado> [opciones del banco...]: FIEL, o B9 condena al gemelo
+  pkill -f '[K]102-sobre-plantado.py' 2>/dev/null; sleep 1
+  nohup "$PY" "$PLANTADO" --puerto 8096 --lag 3 --tope 600 --memoria sostenido-LONG --bias "$1" --state "$2" \
+    "${@:3}" --balance Long --dc 100 --libro ok --cobertura 90 > "$TMP/plantado.log" 2>&1 &
+  sleep 3
+}
+cat > "$TMP/parche.py" <<'PY'
+import os, pathlib, sys
+f = pathlib.Path(sys.argv[1]); t = f.read_text(encoding="utf-8")
+viejo, nuevo = os.environ["K102_VIEJO"], os.environ["K102_NUEVO"]
+assert t.count(viejo) == 1, "no encontre UNA vez: " + viejo[:60]
+f.write_text(t.replace(viejo, nuevo, 1), encoding="utf-8")
+PY
+r1() {  # r1 <rotulo> <linea vieja> <linea nueva>: planta mesa-decide.js, B11 tiene que condenar, restaura
+  export K102_VIEJO="$2" K102_NUEVO="$3"
+  if planta "$JS" "$1"; then
+    K102_OBSERVA=4 espera CONDENA "B11 tiene que condenarlo" "B11 " "http://127.0.0.1:8096"
+    restaura "$JS" "$h_js"
+  fi
+}
+sirve_v3 "NO OPERAR" "No Trade"
+K102_OBSERVA=4 espera PASA "G16 · instante con su marca, grande sin ella" "B11 " "http://127.0.0.1:8096"
+r1 "P17 · las celdas del instante, sin su marca" \
+  "  if (campo && campo.rotulo_instante) rot.appendChild(marcaInstante(campo.rotulo_instante));" \
+  "  /* PLANTADO K102-control P17: sin marca */"
+r1 "P18 · la confianza bajo la grande, sin su marca" \
+  "    if (nodos.confInstante) marcaInstante(conf.rotulo_instante, nodos.confInstante);" \
+  "    if (nodos.confInstante) marcaInstante(null, nodos.confInstante);  /* PLANTADO K102-control P18 */"
+r1 "P19 · la marca en una celda de las dos (zona)" \
+  "  campos.appendChild(celda('zone_decision', 'razón de la zona', dec.zone_decision));" \
+  "  campos.appendChild(celda('zone_decision', 'razón de la zona', Object.assign({}, dec.zone_decision, { rotulo_instante: 'del instante' })));  /* PLANTADO K102-control P19 */"
+sirve_v3 LONG "Long Pullback"
+K102_OBSERVA=4 espera PASA "G17 · grande e instante LONG: la marca sigue" "B11 " "http://127.0.0.1:8096"
+r1 "P20 · la marca solo cuando las palabras difieren" \
+  "  const dec = d.decide || {};" \
+  "  const dec = d.decide || {}; if (dec.instante && dec.bias && dec.instante.value === dec.bias.value) Object.keys(dec).forEach((k) => { if (dec[k] && dec[k].rotulo_instante) delete dec[k].rotulo_instante; });  /* PLANTADO K102-control P20 */"
+sirve_v3 "NO OPERAR" "No Trade" --rotulo "de este instante"
+K102_OBSERVA=4 espera PASA "G18 · otro texto servido: se pinta el servido" "B11 " "http://127.0.0.1:8096"
+r1 "P21 · la pantalla escribe su propio rotulo" \
+  "  m.textContent = texto || '';" \
+  "  m.textContent = texto ? 'del instante' : '';  /* PLANTADO K102-control P21 */"
+pkill -f '[K]102-sobre-plantado.py' 2>/dev/null
+# P22 · LA RUTA deja de servir el rotulo: la pantalla, que no lo escribe, pinta las celdas del instante sin marca
+export K102_VIEJO='        payload["decide"][k]["rotulo_instante"] = ROTULO_DEL_INSTANTE' \
+       K102_NUEVO='        pass  # PLANTADO K102-control P22'
+if planta "$CTX" "P22 · la ruta deja de servir el rotulo del instante"; then
+  ( cd "$REPO" && PG_HOST=/var/run/postgresql PG_PORT=5432 PG_DB="${K102_ESPEJO_DB:-coinalyze_espejo}" \
+      PG_USER="$(id -un)" PG_PASSWORD= API_INTERNAL_TOKEN=k102p22 \
+      nohup "$PY" -m uvicorn app.api:app --host 127.0.0.1 --port 8095 \
+      > "$TMP/p22.log" 2>&1 & )
+  sleep 8
+  K102_CABECERA="X-Internal-Token: k102p22" \
+    espera CONDENA "B11 tiene que condenar la ruta sin rotulo" "B11 " "http://127.0.0.1:8095"
+  pkill -f '[u]vicorn app.api:app --host 127.0.0.1 --port 8095' 2>/dev/null
+  sleep 1
+  restaura "$CTX" "$h_ctx"
+fi
+echo
+
 # --------------------- P7 · R1 · la palabra de un marco no scalp vuelve a ser la del scalp
 # EL PLANTADO VA EN EL BACKEND, que es de quien es la promesa: la RUTA sirve NO EVALUABLE para
 # un marco que no es scalp. Plantarlo solo en el cliente mediria la mitad.

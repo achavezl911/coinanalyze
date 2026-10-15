@@ -28,6 +28,9 @@
 #        respuesta declara (`memoria.regla`) sobre la serie de evaluaciones que sirve, y condena una
 #        grande que no sale de su regla, un lado pintado donde la regla no da lado, la del instante
 #        pintada en su sitio y una edad pintada que no es la de la palabra.
+#   B11 · LO DEL INSTANTE SE VE COMO DEL INSTANTE (v3, remate de la 138). Una celda que sale de la
+#        evaluacion de ESTA peticion -clave operator_read.* o scalp.*, salvo `invalidates`- lleva una
+#        marca visible con el `rotulo_instante` que la ruta le sirve; las de la grande o de las dos, no.
 #   B6 · errores de consola. HOY NO PUEDE CONDENAR y la salida lo dice.
 #
 # TRES COSAS QUE ESTA RED HACIA MAL Y QUE COSTARON UNA RONDA DE CORRECCION DEL OPERADOR:
@@ -554,7 +557,7 @@ if sch_arbol and sch_sujeto and sch_arbol != sch_sujeto:
     pista = (f" · FALTA DESPLEGAR: el sujeto sirve {sch_sujeto} y el arbol declara {sch_arbol}")
 
 b9_ok, b9_sin_tarjeta, b9_sin_libro = [], [], []
-b10_ok, b10_v2 = [], []
+b10_ok, b10_v2, b11_ok = [], [], []
 for d, rot, marco, _act in VISTAS:
     sob = d.get("sobre") or {}
     if not sob:
@@ -693,6 +696,39 @@ for d, rot, marco, _act in VISTAS:
     else:
         b10_ok.append((rot, esperada_g, str(servida)))
 
+    # --- B11 · LO DEL INSTANTE SE VE COMO DEL INSTANTE (campana 138, remate R1)
+    # Una celda que sale de la evaluacion del INSTANTE -por el criterio de la sonda, no por el rotulo de la ruta- se
+    # pinta con UNA marca visible y con el texto que la ruta le sirve en `rotulo_instante` (A86: la pantalla no lo
+    # escribe). Las de la palabra grande o de las dos, sin marca. Sin condicion: la marca sigue cuando la grande y el
+    # instante dicen lo mismo.
+    juzgadas = [(c.get("parejas"), dec_v, "")]
+    if marco != "scalp":
+        juzgadas.append(((c.get("tarjeta_scalp") or {}).get("parejas"), origen, "scalp."))
+    malas11, n11 = [], 0
+    for parejas, fuente, p in juzgadas:
+        for x in parejas or []:
+            nombre = str(x.get("campo") or "")
+            base = re.split(r"[.\[]", nombre.removeprefix(p), maxsplit=1)[0]
+            servido = fuente.get(base)
+            vistas = [m.get("texto") for m in (x.get("marcas") or []) if m.get("visible")]
+            if not SONDA.es_del_instante(base, servido):
+                if x.get("marcas"):
+                    malas11.append(f"la celda {nombre} es de la palabra grande o de las dos y lleva la marca de "
+                                   f"instante {[m.get('texto') for m in x['marcas']]}")
+                continue
+            n11 += 1
+            rotulo = servido.get("rotulo_instante") if isinstance(servido, dict) else None
+            if not rotulo:
+                malas11.append(f"la celda {nombre} sale de la evaluacion del instante y la ruta no le sirve "
+                               "rotulo_instante: se lee como de la palabra grande")
+            elif vistas != [rotulo]:
+                malas11.append(f"la celda {nombre} sale de la evaluacion del instante y se pinta con "
+                               f"{vistas or 'NINGUNA marca visible'} donde la ruta sirve {rotulo!r}")
+    if malas11:
+        fallos.append(f"B11 {rot}: {malas11[0]}" + (f" (y {len(malas11) - 1} mas)" if len(malas11) > 1 else ""))
+    else:
+        b11_ok.append((rot, n11))
+
 # LAS PAREJAS QUE SALIERON BIEN, AGRUPADAS POR LO QUE DICEN. Dieciocho lineas iguales no se
 # leen; lo que importa es CUANTAS parejas distintas se llegaron a ver. Si solo se vio una
 # -«NO EVALUABLE» contra «Sin datos suficientes», que es lo que da el espejo- este brazo no ha
@@ -747,6 +783,12 @@ if b10_v2:
     # No es un aprobado de B10, y se dice.
     lineas.append(f"B10 SIN JUZGAR en {len(b10_v2)} vista(s): el sujeto sirve {sch_sujeto} (sin memoria), "
                   f"cuya palabra grande es la del instante y la juzga B9{pista}")
+    lineas.append(f"B11 SIN JUZGAR en {len(b10_v2)} vista(s): sin memoria no hay palabra grande aparte, y no hay "
+                  f"celda del instante que distinguir de ella{pista}")
+if b11_ok:
+    lineas.append(f"B11 · las celdas de la evaluacion del INSTANTE llevan su marca servida y las de la grande o de "
+                  f"las dos ninguna, en {len(b11_ok)} vista(s); celdas del instante juzgadas: "
+                  f"{sum(n for _r, n in b11_ok)}")
 
 # --- B6 · SIN PODER CONDENAR -----------------------------------------------------------
 errc = g.get("errores_consola") or []

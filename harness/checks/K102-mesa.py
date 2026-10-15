@@ -257,6 +257,18 @@ JS_COSECHA = r"""
   const visible = cs.display !== 'none' && cs.visibility !== 'hidden'
                   && Number(cs.opacity) > 0.01 && r.height > 1 && r.width > 1;
 
+  // LAS MARCAS DE INSTANTE DE UNA CELDA (campana 138, remate R1): las de dentro cuya celda mas cercana es ESTA, con su
+  // texto y si se ven. Sin cosecharlas, una celda de la evaluacion del instante pintada sin su rotulo se lee como de
+  // la palabra grande que tiene encima, y nada lo ve.
+  const marcas = (c) => Array.from(c.querySelectorAll('[data-rotulo-instante]'))
+    .filter((m) => m.closest('[data-campo]') === c)
+    .map((m) => {
+      const rr = m.getBoundingClientRect();
+      const cs = getComputedStyle(m);
+      return {texto: (m.textContent || '').trim(),
+              visible: rr.width > 1 && rr.height > 1 && cs.visibility !== 'hidden' && Number(cs.opacity) > 0.01};
+    });
+
   // LAS PAREJAS. Cada celda declara data-campo; su valor vive en [data-valor] y su clave en
   // [data-source-key]. Se recogen TAL CUAL, sin interpretar.
   const parejas = [];
@@ -269,6 +281,7 @@ JS_COSECHA = r"""
       valor: nv ? (nv.getAttribute('data-valor') || '') : null,
       clave: nk ? (nk.getAttribute('data-source-key') || '') : null,
       texto: (c.textContent || '').trim().slice(0, 300),
+      marcas: marcas(c),
     });
   });
 
@@ -302,6 +315,7 @@ JS_COSECHA = r"""
         campo: c.getAttribute('data-campo'),
         valor: nv ? (nv.getAttribute('data-valor') || '') : null,
         clave: nk ? (nk.getAttribute('data-source-key') || '') : null,
+        marcas: marcas(c),
       });
     });
     const rot = document.getElementById('lectura-scalp-rotulo');
@@ -561,6 +575,28 @@ def cambios_en_ventana(memoria: dict):
     except (KeyError, TypeError, ValueError, IndexError):
         return None
     return sum(a != b for a, b in zip(w, w[1:], strict=False))
+
+
+def _claves(v) -> list:
+    """Las source_key de un campo servido: la suya, las de una lista o las de sus hojas."""
+    if isinstance(v, dict) and "source_key" in v:
+        return [v["source_key"]]
+    if isinstance(v, dict):
+        return [c for x in v.values() for c in _claves(x)]
+    if isinstance(v, list):
+        return [x.get("source_key") for x in v if isinstance(x, dict)]
+    return []
+
+
+def es_del_instante(nombre: str, servido) -> bool:
+    """Sale este campo de `decide` de la evaluacion del INSTANTE? (campana 138, remate R1). Por un criterio de la
+    sonda, no por el rotulo que sirve la ruta: su clave es operator_read.* o scalp.* -sale de build_operator_read o
+    de compute_scalp_summary de ESTA peticion-, salvo `invalidates`, una lista fija que elige el lado de la grande. La
+    linea del instante lo es por definicion: su clave dice que entrada la decidio, y cuando decide la puerta de la
+    calidad es data_confidence.quality_score (medido en el espejo el 2026-10-15)."""
+    if nombre == "instante":
+        return True
+    return nombre != "invalidates" and any(str(c).startswith(("operator_read.", "scalp.")) for c in _claves(servido))
 
 
 async def corre(args) -> dict:

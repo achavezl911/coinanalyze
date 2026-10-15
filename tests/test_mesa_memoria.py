@@ -313,6 +313,41 @@ async def test_e_por_la_ruta(monkeypatch):
     assert d["decide"]["bias"]["motivo"].startswith("el colector no escribe desde hace 75 s")
 
 
+def _claves(v):
+    """Las source_key de un campo servido: la suya, las de una lista o las de sus hojas."""
+    if isinstance(v, dict) and "source_key" in v:
+        return [v["source_key"]]
+    if isinstance(v, list):
+        return [x.get("source_key") for x in v if isinstance(x, dict)]
+    if isinstance(v, dict):
+        return [c for x in v.values() for c in _claves(x)]
+    return []
+
+
+async def test_remate_R1_lo_que_sale_de_la_evaluacion_del_instante_va_rotulado_por_la_ruta(monkeypatch):
+    """La palabra grande dice lo que el sistema SOSTIENE; lo que sale de la evaluacion de ESTA peticion se rotula como
+    del instante, y el rotulo lo sirve la ruta (A86). La lista se ata a la regla con que se busco: todo campo de `decide`
+    con clave operator_read.* o scalp.* sale de compute_scalp_summary o de build_operator_read de esta peticion, salvo
+    `invalidates`, una lista fija que ELIGE el lado de la palabra grande."""
+    dec = (await _decide(monkeypatch, _filas((L, 40)), state="No Trade", quality=100.0))["decide"]
+    rotulados = {k for k, v in dec.items() if isinstance(v, dict) and v.get("rotulo_instante")}
+    assert rotulados == set(A.CAMPOS_DEL_INSTANTE) | {"instante"}
+    assert {dec[k]["rotulo_instante"] for k in A.CAMPOS_DEL_INSTANTE} == {"del instante"}
+    assert dec["instante"]["rotulo_instante"] == "instante"
+    por_su_clave = {k for k, v in dec.items() if k not in ("instante", "invalidates")
+                    and any(str(c).startswith(("operator_read.", "scalp.")) for c in _claves(v))}
+    assert por_su_clave == set(A.CAMPOS_DEL_INSTANTE)
+    # lo de la grande y lo de las dos, sin rotulo: confirma, invalida, nivel, zona, data_confidence, horizontes
+    for k in set(dec) - rotulados:
+        assert "rotulo_instante" not in str(dec[k]), k
+    assert {"bias", "confirms", "invalidates", "invalidation_level", "zone", "zone_decision", "data_confidence",
+            "structural_horizon"} <= set(dec) - rotulados
+    # en swing, el rotulo viaja con su campo a la lectura del scalp
+    sw = await _decide(monkeypatch, _filas((L, 40)), state="No Trade", quality=100.0, frame="swing")
+    assert {k for k, v in sw["lectura_scalp"].items() if isinstance(v, dict) and v.get("rotulo_instante")} == (
+        set(A.CAMPOS_DEL_INSTANTE) | {"instante"})
+
+
 async def test_en_swing_la_memoria_viaja_con_la_lectura_del_scalp(monkeypatch):
     d = await _decide(monkeypatch, _filas((S, 40)), state="No Trade", quality=100.0, frame="swing")
     assert "memoria" not in d["decide"] and "instante" not in d["decide"]

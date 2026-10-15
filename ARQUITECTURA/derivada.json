@@ -574,13 +574,13 @@
     },
     "app.ai_context._dura": {
       "fichero": "app/ai_context.py",
-      "linea": 1420,
-      "sitio": "`app/ai_context.py:1420`"
+      "linea": 1431,
+      "sitio": "`app/ai_context.py:1431`"
     },
     "app.ai_context._hora": {
       "fichero": "app/ai_context.py",
-      "linea": 1416,
-      "sitio": "`app/ai_context.py:1416`"
+      "linea": 1427,
+      "sitio": "`app/ai_context.py:1427`"
     },
     "app.ai_context._round_number": {
       "fichero": "app/ai_context.py",
@@ -604,8 +604,8 @@
     },
     "app.ai_context.build_mesa_decide": {
       "fichero": "app/ai_context.py",
-      "linea": 1560,
-      "sitio": "`app/ai_context.py:1560`"
+      "linea": 1571,
+      "sitio": "`app/ai_context.py:1571`"
     },
     "app.ai_context.build_operator_read": {
       "fichero": "app/ai_context.py",
@@ -649,8 +649,8 @@
     },
     "app.ai_context.frase_del_instante": {
       "fichero": "app/ai_context.py",
-      "linea": 1428,
-      "sitio": "`app/ai_context.py:1428`"
+      "linea": 1439,
+      "sitio": "`app/ai_context.py:1439`"
     },
     "app.ai_context.latest_orderbook": {
       "fichero": "app/ai_context.py",
@@ -689,13 +689,13 @@
     },
     "app.ai_context.palabra_registrada": {
       "fichero": "app/ai_context.py",
-      "linea": 1409,
-      "sitio": "`app/ai_context.py:1409`"
+      "linea": 1420,
+      "sitio": "`app/ai_context.py:1420`"
     },
     "app.ai_context.palabra_sostenida": {
       "fichero": "app/ai_context.py",
-      "linea": 1435,
-      "sitio": "`app/ai_context.py:1435`"
+      "linea": 1446,
+      "sitio": "`app/ai_context.py:1446`"
     },
     "app.ai_context.quality_score": {
       "fichero": "app/ai_context.py",
@@ -2614,7 +2614,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1420",
+        "sitio": "app/ai_context.py:1431",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2632,7 +2632,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1416",
+        "sitio": "app/ai_context.py:1427",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2727,7 +2727,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1560",
+        "sitio": "app/ai_context.py:1571",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -2926,7 +2926,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1428",
+        "sitio": "app/ai_context.py:1439",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3082,7 +3082,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1409",
+        "sitio": "app/ai_context.py:1420",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -3100,7 +3100,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/ai_context.py:1435",
+        "sitio": "app/ai_context.py:1446",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -30126,8 +30126,8 @@
           "llamadas": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:126",
             "harness/checks/K101-un-nombre-dos-cosas.sh:207",
-            "harness/checks/K102-mesa.py:636",
-            "harness/checks/K102-mesa.py:674",
+            "harness/checks/K102-mesa.py:672",
+            "harness/checks/K102-mesa.py:710",
             "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:342",
             "harness/checks/K43-foto-unica.sh:343",
@@ -30161,8 +30161,8 @@
           ],
           "menciones": [
             "harness/checks/K101-un-nombre-dos-cosas.sh:26",
-            "harness/checks/K102-control.bash:850",
-            "harness/checks/K102-mesa.py:631",
+            "harness/checks/K102-control.bash:914",
+            "harness/checks/K102-mesa.py:667",
             "harness/checks/K31-eslabon5.sh:60",
             "harness/checks/K31-eslabon5.sh:172",
             "harness/checks/K43-foto-unica.sh:7",
@@ -35667,9 +35667,9 @@
     {
       "camino": "/api/mesa/decide",
       "campos": {
-        "build_finished_at": "asignado en app/ai_context.py:1905",
-        "build_started_at": "asignado en app/ai_context.py:1904",
-        "lectura_scalp": "asignado en app/ai_context.py:1884"
+        "build_finished_at": "asignado en app/ai_context.py:1922",
+        "build_started_at": "asignado en app/ai_context.py:1921",
+        "lectura_scalp": "asignado en app/ai_context.py:1901"
       },
       "campos_pendientes": [
         "devuelve la variable 'payload', cuyo contenido no se resuelve estaticamente"
@@ -35816,26 +35816,26 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-decide-lo-primero.sh:80",
-            "harness/checks/K102-decide-lo-primero.sh:104",
-            "harness/checks/K102-decide-lo-primero.sh:106",
-            "harness/checks/K102-decide-lo-primero.sh:111",
-            "harness/checks/K102-mesa.py:635",
-            "harness/checks/K102-mesa.py:636",
-            "harness/checks/K102-mesa.py:646",
-            "harness/checks/K102-mesa.py:667",
-            "harness/checks/K102-mesa.py:674",
-            "harness/checks/K102-mesa.py:789",
-            "harness/checks/K102-mesa.py:872",
-            "harness/checks/K102-sobre-plantado.py:232",
-            "harness/checks/K102-sobre-plantado.py:248",
+            "harness/checks/K102-decide-lo-primero.sh:83",
+            "harness/checks/K102-decide-lo-primero.sh:107",
+            "harness/checks/K102-decide-lo-primero.sh:109",
+            "harness/checks/K102-decide-lo-primero.sh:114",
+            "harness/checks/K102-mesa.py:671",
+            "harness/checks/K102-mesa.py:672",
+            "harness/checks/K102-mesa.py:682",
+            "harness/checks/K102-mesa.py:703",
+            "harness/checks/K102-mesa.py:710",
+            "harness/checks/K102-mesa.py:825",
+            "harness/checks/K102-mesa.py:908",
+            "harness/checks/K102-sobre-plantado.py:239",
+            "harness/checks/K102-sobre-plantado.py:255",
             "harness/checks/K106-banco.py:56"
           ],
           "menciones": [
-            "harness/checks/K102-decide-lo-primero.sh:35",
-            "harness/checks/K102-mesa.py:631",
-            "harness/checks/K102-mesa.py:641",
-            "harness/checks/K102-mesa.py:845",
+            "harness/checks/K102-decide-lo-primero.sh:38",
+            "harness/checks/K102-mesa.py:667",
+            "harness/checks/K102-mesa.py:677",
+            "harness/checks/K102-mesa.py:881",
             "harness/checks/K102-sobre-plantado.py:2",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:8"
           ]
@@ -36078,12 +36078,12 @@
         "checks": {
           "llamadas": [],
           "menciones": [
-            "harness/checks/K102-mesa.py:467"
+            "harness/checks/K102-mesa.py:481"
           ]
         },
         "tests": {
           "llamadas": [
-            "tests/test_entradas_vista.py:111"
+            "tests/test_entradas_vista.py:148"
           ],
           "menciones": [
             "tests/test_entradas_vista.py:1"
@@ -39505,9 +39505,9 @@
         "checks": {
           "llamadas": [],
           "menciones": [
-            "harness/checks/K102-decide-lo-primero.sh:37",
-            "harness/checks/K102-mesa.py:848",
-            "harness/checks/K102-sobre-plantado.py:176"
+            "harness/checks/K102-decide-lo-primero.sh:40",
+            "harness/checks/K102-mesa.py:884",
+            "harness/checks/K102-sobre-plantado.py:178"
           ]
         }
       },
@@ -42567,28 +42567,28 @@
             "harness/checks/K102-control.bash:275",
             "harness/checks/K102-control.bash:286",
             "harness/checks/K102-control.bash:288",
-            "harness/checks/K102-control.bash:503",
-            "harness/checks/K102-control.bash:1002",
-            "harness/checks/K102-decide-lo-primero.sh:134",
-            "harness/checks/K102-decide-lo-primero.sh:136",
-            "harness/checks/K102-decide-lo-primero.sh:143",
+            "harness/checks/K102-control.bash:567",
+            "harness/checks/K102-control.bash:1066",
+            "harness/checks/K102-decide-lo-primero.sh:137",
+            "harness/checks/K102-decide-lo-primero.sh:139",
             "harness/checks/K102-decide-lo-primero.sh:146",
-            "harness/checks/K102-decide-lo-primero.sh:148",
-            "harness/checks/K102-decide-lo-primero.sh:152",
-            "harness/checks/K102-decide-lo-primero.sh:153",
+            "harness/checks/K102-decide-lo-primero.sh:149",
+            "harness/checks/K102-decide-lo-primero.sh:151",
             "harness/checks/K102-decide-lo-primero.sh:155",
+            "harness/checks/K102-decide-lo-primero.sh:156",
             "harness/checks/K102-decide-lo-primero.sh:158",
-            "harness/checks/K102-decide-lo-primero.sh:159",
-            "harness/checks/K102-decide-lo-primero.sh:164",
-            "harness/checks/K102-decide-lo-primero.sh:173",
-            "harness/checks/K102-decide-lo-primero.sh:175",
+            "harness/checks/K102-decide-lo-primero.sh:161",
+            "harness/checks/K102-decide-lo-primero.sh:162",
+            "harness/checks/K102-decide-lo-primero.sh:167",
+            "harness/checks/K102-decide-lo-primero.sh:176",
             "harness/checks/K102-decide-lo-primero.sh:178",
-            "harness/checks/K102-mesa.py:1017",
-            "harness/checks/K102-sobre-plantado.py:200",
-            "harness/checks/K102-sobre-plantado.py:253",
-            "harness/checks/K102-sobre-plantado.py:270",
-            "harness/checks/K102-sobre-plantado.py:271",
-            "harness/checks/K102-sobre-plantado.py:314",
+            "harness/checks/K102-decide-lo-primero.sh:181",
+            "harness/checks/K102-mesa.py:1053",
+            "harness/checks/K102-sobre-plantado.py:207",
+            "harness/checks/K102-sobre-plantado.py:260",
+            "harness/checks/K102-sobre-plantado.py:277",
+            "harness/checks/K102-sobre-plantado.py:278",
+            "harness/checks/K102-sobre-plantado.py:323",
             "harness/checks/K106-banco.py:96",
             "harness/checks/K44-control.bash:901",
             "harness/checks/K44-control.bash:902",
@@ -42607,13 +42607,13 @@
           "menciones": [
             "harness/checks/K102-control.bash:270",
             "harness/checks/K102-control.bash:272",
-            "harness/checks/K102-control.bash:999",
-            "harness/checks/K102-decide-lo-primero.sh:118",
-            "harness/checks/K102-decide-lo-primero.sh:120",
-            "harness/checks/K102-decide-lo-primero.sh:138",
-            "harness/checks/K102-decide-lo-primero.sh:144",
-            "harness/checks/K102-mesa.py:567",
-            "harness/checks/K102-sobre-plantado.py:251",
+            "harness/checks/K102-control.bash:1063",
+            "harness/checks/K102-decide-lo-primero.sh:121",
+            "harness/checks/K102-decide-lo-primero.sh:123",
+            "harness/checks/K102-decide-lo-primero.sh:141",
+            "harness/checks/K102-decide-lo-primero.sh:147",
+            "harness/checks/K102-mesa.py:603",
+            "harness/checks/K102-sobre-plantado.py:258",
             "harness/checks/K106-banco.py:6",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
@@ -42793,7 +42793,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K102-sobre-plantado.py:255",
+            "harness/checks/K102-sobre-plantado.py:262",
             "harness/checks/K43-control.bash:179",
             "harness/checks/K44-control.bash:918",
             "harness/checks/K44-control.bash:919",
@@ -42808,7 +42808,7 @@
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:455"
           ],
           "menciones": [
-            "harness/checks/K102-sobre-plantado.py:251",
+            "harness/checks/K102-sobre-plantado.py:258",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:247",

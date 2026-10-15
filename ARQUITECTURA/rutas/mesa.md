@@ -50,7 +50,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-control.bash:275`, `harness/checks/K102-control.bash:286`, `harness/checks/K102-control.bash:288`, `harness/checks/K102-control.bash:503` _(+35)_ | `harness/checks/K102-control.bash:270`, `harness/checks/K102-control.bash:272`, `harness/checks/K102-control.bash:999`, `harness/checks/K102-decide-lo-primero.sh:118` _(+10)_ |
+| **checks** | `harness/checks/K102-control.bash:275`, `harness/checks/K102-control.bash:286`, `harness/checks/K102-control.bash:288`, `harness/checks/K102-control.bash:567` _(+35)_ | `harness/checks/K102-control.bash:270`, `harness/checks/K102-control.bash:272`, `harness/checks/K102-control.bash:1063`, `harness/checks/K102-decide-lo-primero.sh:121` _(+10)_ |
 | **tests** | `tests/js/mesa_remate.test.js:84`, `tests/test_la_puerta.py:39`, `tests/test_la_puerta.py:126` | `tests/test_la_puerta.py:3` |
 
 **No la llama el panel**, pero si 42 linea(s) de codigo fuera de el.

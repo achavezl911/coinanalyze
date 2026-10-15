@@ -379,16 +379,16 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.db.db_identity`](impacto/app-db.md) | `app/db.py:64` | 1 | **0** | 8 ↑ | **1** |
 | [`app.db.heartbeat_max_age`](impacto/app-db.md) | `app/db.py:95` | 1 | **0** | 8 ↑ | **1** |
 | [`app.signal_ledger._finite`](impacto/app-signal_ledger.md) | `app/signal_ledger.py:52` | 1 | **0** | 7 ↑ | **1** |
-| [`app.ai_context._dura`](impacto/app-ai_context.md) | `app/ai_context.py:1420` | 1 | **0** | 0 | **1** |
-| [`app.ai_context._hora`](impacto/app-ai_context.md) | `app/ai_context.py:1416` | 1 | **0** | 0 | **1** |
+| [`app.ai_context._dura`](impacto/app-ai_context.md) | `app/ai_context.py:1431` | 1 | **0** | 0 | **1** |
+| [`app.ai_context._hora`](impacto/app-ai_context.md) | `app/ai_context.py:1427` | 1 | **0** | 0 | **1** |
 | [`app.ai_context._sin_lado`](impacto/app-ai_context.md) | `app/ai_context.py:1325` | 1 | **0** | 0 | **1** |
 | [`app.ai_context.build_ai_context`](impacto/app-ai_context.md) | `app/ai_context.py:1079` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.build_mesa_decide`](impacto/app-ai_context.md) | `app/ai_context.py:1560` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.build_mesa_decide`](impacto/app-ai_context.md) | `app/ai_context.py:1571` | 1 | **0** | 0 | **1** |
 | [`app.ai_context.campo_mesa`](impacto/app-ai_context.md) | `app/ai_context.py:1285` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.frase_del_instante`](impacto/app-ai_context.md) | `app/ai_context.py:1428` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.frase_del_instante`](impacto/app-ai_context.md) | `app/ai_context.py:1439` | 1 | **0** | 0 | **1** |
 | [`app.ai_context.palabra_de_la_decision`](impacto/app-ai_context.md) | `app/ai_context.py:1216` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.palabra_registrada`](impacto/app-ai_context.md) | `app/ai_context.py:1409` | 1 | **0** | 0 | **1** |
-| [`app.ai_context.palabra_sostenida`](impacto/app-ai_context.md) | `app/ai_context.py:1435` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.palabra_registrada`](impacto/app-ai_context.md) | `app/ai_context.py:1420` | 1 | **0** | 0 | **1** |
+| [`app.ai_context.palabra_sostenida`](impacto/app-ai_context.md) | `app/ai_context.py:1446` | 1 | **0** | 0 | **1** |
 | [`app.api._parse_heartbeat_detail`](impacto/app-api.md) | `app/api.py:3606` | 1 | **0** | 0 | **1** |
 | [`app.api._slippage_para`](impacto/app-api.md) | `app/api.py:1682` | 1 | **0** | 0 | **1** |
 | [`app.api.ai_context`](impacto/app-api.md) | `app/api.py:3545` | 1 | **0** | 0 | **1** |

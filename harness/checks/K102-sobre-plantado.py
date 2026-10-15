@@ -44,7 +44,8 @@ LA v3 (campana 138), con `--memoria <patron>`: `--bias` pasa a ser la palabra de
 corte: sostenido-LONG / sostenido-SHORT (40 seguidas), oscila (LONG y NO OPERAR alternos) o parado
 (40 LONG, la ultima 90 s antes del corte). La memoria fiel -ventana, edad, serie- la compone la funcion
 de la RUTA (`palabra_sostenida`); la palabra GRANDE servida es la de esa regla salvo que `--grande`
-la plante TAL CUAL, que es como el control monta la contradiccion.
+la plante TAL CUAL, que es como el control monta la contradiccion. Lo de la evaluacion del instante va
+con su `rotulo_instante`, como en la ruta; `--rotulo` cambia su texto (remate R1).
 """
 from __future__ import annotations
 
@@ -107,7 +108,8 @@ def sobre(frame: str) -> dict:
         v3 = {
             "instante": {"value": bias, "source_key": "operator_read.state", "status": "ok", "motivo": None,
                          "cambios_en_ventana": m["cambios_del_instante"],
-                         "frase": A.frase_del_instante(m["cambios_del_instante"])},
+                         "frase": A.frase_del_instante(m["cambios_del_instante"]),
+                         "rotulo_instante": A.ROTULO_DE_LA_LINEA_DEL_INSTANTE},
             "memoria": {k: v for k, v in m.items() if k not in ("value", "motivo")},
         }
         # LA GRANDE: la de la regla, o la que `--grande` planta TAL CUAL
@@ -191,6 +193,11 @@ def sobre(frame: str) -> dict:
         "warnings": campo([], "operator_read.warnings"),
         **(v3 or {}),
     }
+    # v3: lo de la evaluacion del instante va rotulado, como lo sirve la ruta (remate R1); `--rotulo` cambia el texto
+    # servido, para ver que la pantalla pinta EL SERVIDO y no uno suyo (A86)
+    if v3:
+        for k in A.CAMPOS_DEL_INSTANTE:
+            lectura[k]["rotulo_instante"] = CFG.get("rotulo") or A.ROTULO_DEL_INSTANTE
     if es_scalp:
         d["decide"].update(lectura)
     else:
@@ -303,6 +310,8 @@ if __name__ == "__main__":
                     help="sirve v3: la serie registrada que fabrica el patron; --bias pasa a ser el instante")
     ap.add_argument("--grande", default=None, choices=("LONG", "SHORT", "NO OPERAR", "NO EVALUABLE"),
                     help="con --memoria, la palabra GRANDE servida TAL CUAL en vez de la de la regla")
+    ap.add_argument("--rotulo", default=None,
+                    help="con --memoria, el texto del rotulo de instante que se sirve en vez del de la ruta")
     ap.add_argument(
         "--puerta-vieja",
         action="store_true",

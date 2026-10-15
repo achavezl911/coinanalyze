@@ -1405,6 +1405,17 @@ MEMORIA_REGLA = {
 
 _PALABRAS = (MESA_PALABRA_LONG, MESA_PALABRA_SHORT, MESA_PALABRA_SIN_LADO, MESA_PALABRA_NO_EVALUABLE)
 
+# LO QUE SALE DE LA EVALUACION DE ESTA PETICION, ROTULADO COMO DEL INSTANTE (campana 138, remate R1). La palabra grande
+# dice lo que el sistema SOSTIENE; las cifras de la evaluacion de esta peticion -estado, confianza, ventaja, razon,
+# evidencia, balance- son de la palabra del instante, que a menudo no es la grande, y se pintaban a su lado sin decirlo.
+# Cada una lleva su rotulo, y lo sirve la ruta (A86). Son los campos de `decide` que salen de `summary` o de `read` de
+# ESTA peticion, salvo `invalidates`: una lista fija ELEGIDA por el lado de la palabra grande, como confirma y el nivel.
+# tests/test_mesa_memoria.py ata la lista a las claves servidas (operator_read.* y scalp.*).
+CAMPOS_DEL_INSTANTE = ("state", "book_status", "reason", "confidence", "edge", "evidence", "evidence_balance",
+                       "no_trade_reasons", "warnings")
+ROTULO_DEL_INSTANTE = "del instante"
+ROTULO_DE_LA_LINEA_DEL_INSTANTE = "instante"
+
 
 def palabra_registrada(state: Any, book_status: Any) -> str:
     """La palabra de UNA evaluacion registrada: la misma clasificacion que la del instante."""
@@ -1658,6 +1669,7 @@ async def build_mesa_decide(
         "motivo": bias_scalp_motivo,
         "cambios_en_ventana": memoria["cambios_del_instante"],
         "frase": frase_del_instante(memoria["cambios_del_instante"]),
+        "rotulo_instante": ROTULO_DE_LA_LINEA_DEL_INSTANTE,
     }
     bias_scalp, bias_scalp_source, bias_scalp_motivo = (
         memoria["value"],
@@ -1856,6 +1868,11 @@ async def build_mesa_decide(
             },
         },
     }
+
+    # Lo que sale de la evaluacion de ESTA peticion, con su rotulo de instante: ver CAMPOS_DEL_INSTANTE. Va en el
+    # campo, asi que viaja con el a `lectura_scalp` en los otros marcos.
+    for k in CAMPOS_DEL_INSTANTE:
+        payload["decide"][k]["rotulo_instante"] = ROTULO_DEL_INSTANTE
 
     # EL REPARTO POR MARCO. Para un marco que NO es scalp, todo lo que sale de la lectura del
     # scalp SALE DE `decide` y viaja en `lectura_scalp`, marcado con el marco del que es. Asi

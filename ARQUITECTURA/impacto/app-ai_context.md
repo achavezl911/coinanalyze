@@ -30,16 +30,16 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`rough_token_estimate`](#rough-token-estimate) | 283 | 2 | **0** | 0 | **2** |
 | [`sin_perder_los_nulos`](#sin-perder-los-nulos) | 264 | 2 | **0** | 0 | **2** |
 | [`verdict_history`](#verdict-history) | 486 | 2 | **0** | 0 | **2** |
-| [`_dura`](#-dura) | 1420 | 1 | **0** | 0 | **1** |
-| [`_hora`](#-hora) | 1416 | 1 | **0** | 0 | **1** |
+| [`_dura`](#-dura) | 1431 | 1 | **0** | 0 | **1** |
+| [`_hora`](#-hora) | 1427 | 1 | **0** | 0 | **1** |
 | [`_sin_lado`](#-sin-lado) | 1325 | 1 | **0** | 0 | **1** |
 | [`build_ai_context`](#build-ai-context) | 1079 | 1 | **0** | 0 | **1** |
-| [`build_mesa_decide`](#build-mesa-decide) | 1560 | 1 | **0** | 0 | **1** |
+| [`build_mesa_decide`](#build-mesa-decide) | 1571 | 1 | **0** | 0 | **1** |
 | [`campo_mesa`](#campo-mesa) | 1285 | 1 | **0** | 0 | **1** |
-| [`frase_del_instante`](#frase-del-instante) | 1428 | 1 | **0** | 0 | **1** |
+| [`frase_del_instante`](#frase-del-instante) | 1439 | 1 | **0** | 0 | **1** |
 | [`palabra_de_la_decision`](#palabra-de-la-decision) | 1216 | 1 | **0** | 0 | **1** |
-| [`palabra_registrada`](#palabra-registrada) | 1409 | 1 | **0** | 0 | **1** |
-| [`palabra_sostenida`](#palabra-sostenida) | 1435 | 1 | **0** | 0 | **1** |
+| [`palabra_registrada`](#palabra-registrada) | 1420 | 1 | **0** | 0 | **1** |
+| [`palabra_sostenida`](#palabra-sostenida) | 1446 | 1 | **0** | 0 | **1** |
 
 ## data_confidence_row
 
@@ -582,7 +582,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _dura
 
-`app/ai_context.py:1420` · clave completa `app.ai_context._dura`
+`app/ai_context.py:1431` · clave completa `app.ai_context._dura`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -605,7 +605,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _hora
 
-`app/ai_context.py:1416` · clave completa `app.ai_context._hora`
+`app/ai_context.py:1427` · clave completa `app.ai_context._hora`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -674,7 +674,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## build_mesa_decide
 
-`app/ai_context.py:1560` · clave completa `app.ai_context.build_mesa_decide`
+`app/ai_context.py:1571` · clave completa `app.ai_context.build_mesa_decide`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -720,7 +720,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## frase_del_instante
 
-`app/ai_context.py:1428` · clave completa `app.ai_context.frase_del_instante`
+`app/ai_context.py:1439` · clave completa `app.ai_context.frase_del_instante`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -766,7 +766,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## palabra_registrada
 
-`app/ai_context.py:1409` · clave completa `app.ai_context.palabra_registrada`
+`app/ai_context.py:1420` · clave completa `app.ai_context.palabra_registrada`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -789,7 +789,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## palabra_sostenida
 
-`app/ai_context.py:1435` · clave completa `app.ai_context.palabra_sostenida`
+`app/ai_context.py:1446` · clave completa `app.ai_context.palabra_sostenida`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 

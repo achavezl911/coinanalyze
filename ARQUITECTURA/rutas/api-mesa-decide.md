@@ -19,9 +19,9 @@ Handler `mesa_decide` · `app/api.py:3816` (cuerpo hasta la 3851) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `build_finished_at` | asignado en app/ai_context.py:1905 |
-| `build_started_at` | asignado en app/ai_context.py:1904 |
-| `lectura_scalp` | asignado en app/ai_context.py:1884 |
+| `build_finished_at` | asignado en app/ai_context.py:1922 |
+| `build_started_at` | asignado en app/ai_context.py:1921 |
+| `lectura_scalp` | asignado en app/ai_context.py:1901 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -111,15 +111,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1560`
+- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1571`
 - `app.api.scalp_persistence` — `app/api.py:3174`
 - `app.api.validate_symbol` — `app/api.py:233`
 
 <details><summary>Alcanzables de forma indirecta (57)</summary>
 
 - `app.ai_context._corte_unico` — `app/ai_context.py:855`
-- `app.ai_context._dura` — `app/ai_context.py:1420`
-- `app.ai_context._hora` — `app/ai_context.py:1416`
+- `app.ai_context._dura` — `app/ai_context.py:1431`
+- `app.ai_context._hora` — `app/ai_context.py:1427`
 - `app.ai_context._round_number` — `app/ai_context.py:226`
 - `app.ai_context._sin_lado` — `app/ai_context.py:1325`
 - `app.ai_context.build_operator_read` — `app/ai_context.py:747`
@@ -127,11 +127,11 @@ Llamadas directas del handler:
 - `app.ai_context.compact_dict` — `app/ai_context.py:253`
 - `app.ai_context.compact_value` — `app/ai_context.py:237`
 - `app.ai_context.data_confidence_row` — `app/ai_context.py:531`
-- `app.ai_context.frase_del_instante` — `app/ai_context.py:1428`
+- `app.ai_context.frase_del_instante` — `app/ai_context.py:1439`
 - `app.ai_context.latest_snapshot` — `app/ai_context.py:298`
 - `app.ai_context.palabra_de_la_decision` — `app/ai_context.py:1216`
-- `app.ai_context.palabra_registrada` — `app/ai_context.py:1409`
-- `app.ai_context.palabra_sostenida` — `app/ai_context.py:1435`
+- `app.ai_context.palabra_registrada` — `app/ai_context.py:1420`
+- `app.ai_context.palabra_sostenida` — `app/ai_context.py:1446`
 - `app.ai_context.quality_score` — `app/ai_context.py:619`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
@@ -203,7 +203,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-decide-lo-primero.sh:80`, `harness/checks/K102-decide-lo-primero.sh:104`, `harness/checks/K102-decide-lo-primero.sh:106`, `harness/checks/K102-decide-lo-primero.sh:111` _(+10)_ | `harness/checks/K102-decide-lo-primero.sh:35`, `harness/checks/K102-mesa.py:631`, `harness/checks/K102-mesa.py:641`, `harness/checks/K102-mesa.py:845` _(+2)_ |
+| **checks** | `harness/checks/K102-decide-lo-primero.sh:83`, `harness/checks/K102-decide-lo-primero.sh:107`, `harness/checks/K102-decide-lo-primero.sh:109`, `harness/checks/K102-decide-lo-primero.sh:114` _(+10)_ | `harness/checks/K102-decide-lo-primero.sh:38`, `harness/checks/K102-mesa.py:667`, `harness/checks/K102-mesa.py:677`, `harness/checks/K102-mesa.py:881` _(+2)_ |
 | **tests** | `tests/js/mesa_decide.test.js:275`, `tests/js/mesa_remate.test.js:28` | `tests/js/mesa_decide.test.js:30` |
 
 **No la llama el panel**, pero si 16 linea(s) de codigo fuera de el.
