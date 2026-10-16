@@ -45,60 +45,115 @@ SALIDAS = (OBJETIVO, STOP, MISMA_VELA, INVALIDADO, CADUCADO, SIN_ENTRADA, NO_EVA
 ABIERTO, ACABADO, ESPERANDO = "abierto", "acabado", "esperando_velas"
 FINAL, PROVISIONAL = "final", "provisional"
 
+# Toda regla que resolver() y resultados.resolver_fila aplican y puede cambiar un resultado, dicha como la aplica el
+# codigo (campana 139, remate 2: el inventario rama a rama, con cada linea y su convencion, esta en su entrega).
 CONVENCIONES = {
-    "unidad": "cada DISPARADO, cada version por separado; sobre una SOMBRA el mismo calculo es un HIPOTETICO "
-    "rotulado como tal, que nunca entra en una cuenta de DISPARADOS",
-    "serie": "ohlcv de 1 min del simbolo del plan (.A, Binance), tal como esta en la base al resolver",
+    "unidad": "cada DISPARADO, cada version por separado; todo plan cuyo estado no es DISPARADO (en el registro, una "
+    "SOMBRA) da con el mismo calculo un HIPOTETICO rotulado como tal, que nunca entra en una cuenta de DISPARADOS",
+    "serie": "las velas de 1 min de ohlcv (interval 1min) del simbolo del plan (.A: Binance) con hora en "
+    "[vela_cierre, plan.caducidad.caduca_en], tal como estan en la base al resolver; los precios de Bybit no entran",
     "corte": "lo que se sabia en `ahora` (el reloj de la base al resolver): una vela de 1 min que empieza despues "
     "de `ahora` no se usa aunque ya este en la base, porque todavia no existia; la que empieza en el minuto de "
     "`ahora` cuenta si ya esta, y si ohlcv la reescribe despues lo cubre el asentamiento",
-    "entrada_mercado": "apertura de la vela de 1 min floor(registered_at)+1min, movida en contra por la banda "
-    "pesimista de la foto (plan.entrada.banda_pesimista_bps: spread y deslizamiento de Bybit en T)",
-    "entrada_limite": "al precio de la foto (plan.entrada.precio; si es null, su referencia), y solo si una vela "
-    "de 1 min desde floor(registered_at)+1min la CRUZA (largo: minimo por debajo; corto: maximo por encima), "
-    "sin banda. Si antes cruza T1, se invalida o caduca: LIMITE NO LLENADA, 0 USD, con su hipotetico a mercado "
-    "aparte",
-    "tolerancia_venue": "el plan se ejecuta en Bybit y se mide sobre Binance: tolerancia = |mids.base_bps| de la "
-    "foto mas el spread de Bybit de la foto (libro_bybit.spread_bps, un tick); sin libro (solo una SOMBRA), "
-    "solo la base",
-    "objetivo": "T1 cuenta si el precio lo CRUZA mas alla de la tolerancia (largo: maximo > T1 + tolerancia); "
-    "sale al precio de T1, orden limite (maker), sin banda; si la vela abre ya mas alla, sale igual a T1 y la "
-    "apertura es el caso a favor",
-    "stop": "cuenta si el precio lo TOCA dentro de la tolerancia (largo: minimo <= stop + tolerancia); sale al "
-    "precio del stop a mercado (taker) movido en contra por la banda de la pata stop; si la vela abre ya mas "
-    "alla (nivel saltado con hueco), sale a esa apertura con la banda, y el precio del stop es el caso a "
-    "favor",
+    "horas": "todo instante es UTC, y una hora que llega sin zona se lee como UTC (las de la base la traen). El "
+    "plan se recorre de minuto en minuto desde vela_cierre, y la vela de la caducidad es la que empieza en "
+    "plan.caducidad.caduca_en: los dos tienen que caer en minuto entero, y si no, esas velas no se encuentran y el "
+    "plan espera (huecos)",
+    "lados": "el corto es el reflejo exacto del largo: se razona sobre x = precio en el largo y x = -precio en el "
+    "corto, asi que cada «largo: ...» de estas convenciones vale para el corto con el signo cambiado (maximo por "
+    "minimo, por encima por por debajo). Un lado que no es largo ni corto no se resuelve: da error",
+    "plan": "sin plan.stop.precio, sin T1 (plan.objetivos vacio) o sin plan.invalidacion.nivel no hay plan que "
+    "resolver: NO EVALUABLE en el acto, FINAL, sin instante ni hora de asentamiento, y su motivo lo dice. Un "
+    "DISPARADO los trae siempre: motor.decidir pone siempre stop y nivel, y sin T1 su filtro objetivo no cumple y "
+    "el plan es una SOMBRA. Tampoco se resuelve, y da error en vez de resultado, una foto sin plan, sin "
+    "parametros.comun.perfiles.<perfil>.vela_min o sin plan.caducidad.caduca_en, ni una limite sin precio ni "
+    "referencia",
+    "entrada_mercado": "toda entrada cuyo plan.entrada.tipo no es limite (tambien sin tipo) va a mercado: apertura "
+    "de la vela de 1 min floor(registered_at)+1min, movida en contra por la banda pesimista de la foto "
+    "(plan.entrada.banda_pesimista_bps: spread y deslizamiento de Bybit en T). Si la foto no trae esa clave, la "
+    "banda de su pata de entrada; si la trae a null, el precio va sin banda y el resultado sin P&L (sin_coste)",
+    "entrada_limite": "al precio de la foto (plan.entrada.precio; si es null, el de su referencia), sin banda y sin "
+    "tolerancia: se llena si una vela de 1 min desde floor(registered_at)+1min la CRUZA (largo: minimo por debajo; "
+    "corto: maximo por encima). Si antes de llenarse cruza T1, una vela del perfil cierra al otro lado del nivel o "
+    "llega la caducidad: LIMITE NO LLENADA, 0 USD y R 0 (sin P&L si falta un coste: sin_coste), en el instante de "
+    "esa vela o en el de la caducidad, con su hipotetico a mercado aparte; si en la misma vela se llena y cruza T1 o "
+    "cierra en contra, cuenta que se lleno. "
+    "En la vela en que se llena, su apertura no cuenta (fue antes del lleno) y T1 solo no es salida (no se sabe si "
+    "llego despues); el stop si, con la regla de la misma vela si tambien cruza T1",
+    "tolerancia_venue": "el plan se ejecuta en Bybit y se mide sobre Binance: tolerancia en bps = |mids.base_bps| "
+    "de la foto mas libro_bybit.spread_bps (un tick), y lo que la foto no traiga cuenta 0. Se aplica sobre el "
+    "precio de cada nivel: nivel x (1 + tolerancia / 10 000) en el largo. Un DISPARADO del registro trae siempre "
+    "los dos: motor.decidir deja en SOMBRA el plan sin mid de Binance, sin mid de Bybit, sin libro de Bybit o sin "
+    "coste (y el coste lleva el spread de ese libro), e insumos calcula base_bps con los dos mids",
+    "objetivos": "T1, T2 y T3 son los tres primeros de plan.objetivos, T1 el primero; si la foto trae mas no se "
+    "miran, y si trae menos, t2 o t3 no se dan (el motor pone hasta objetivos_n del reglamento, que son tres)",
+    "salida": "una sola entrada y una sola salida: el plan sale entero en el primero de sus eventos, minuto a minuto "
+    "desde la entrada -T1, el stop (o los dos en la misma vela), la invalidacion o la caducidad-; no hay salidas "
+    "parciales, y T2 y T3 solo se informan (t2_t3)",
+    "objetivo": "T1 cuenta si el precio lo CRUZA mas alla de la tolerancia (largo: maximo > T1 x (1 + tolerancia / "
+    "10 000)); sale al precio de T1, orden limite (maker), sin banda; si la vela abre ya mas alla, sale igual a T1 "
+    "y la apertura es el caso a favor",
+    "stop": "cuenta si el precio lo TOCA dentro de la tolerancia (largo: minimo <= stop x (1 + tolerancia / "
+    "10 000)); sale al precio del stop a mercado (taker) movido en contra por la banda de la pata stop; si la vela "
+    "abre ya mas alla (nivel saltado con hueco), sale a esa apertura con la banda, y el precio del stop es el caso "
+    "a favor",
     "misma_vela": "si en una vela de 1 min se cumplen el stop y T1 y su apertura no decide cual fue primero, "
     "cuenta el STOP y T1 es el caso a favor. La apertura si decide: es el primer precio de la vela",
-    "invalidacion": "cierre de una vela del perfil (date_bin desde 1970-01-01 UTC, el reloj de "
-    "plan.invalidacion) estrictamente al otro lado de plan.invalidacion.nivel (largo: cierre < nivel; corto: "
-    "cierre > nivel), posterior a la entrada y no posterior a la caducidad; sale a mercado en la apertura del "
-    "minuto en que cierra esa vela, con la banda de la pata stop. En el mismo instante que la caducidad, cuenta "
-    "INVALIDADO",
+    "invalidacion": "cierre de una vela del perfil estrictamente al otro lado de plan.invalidacion.nivel (largo: "
+    "cierre < nivel; corto: cierre > nivel), posterior a la entrada y no posterior a la caducidad; sale a mercado "
+    "en la apertura del minuto en que cierra esa vela, con la banda de la pata stop. Las velas del perfil se "
+    "cuentan desde vela_cierre, de parametros.comun.perfiles.<perfil>.vela_min en vela_min: es el date_bin desde "
+    "1970-01-01 UTC de plan.invalidacion.reloj cuando vela_cierre cae en esa rejilla. Un stop o un T1 dentro del "
+    "ultimo minuto de esa vela cuenta antes que su cierre. En el mismo instante que la caducidad, cuenta INVALIDADO",
     "caducidad": "sin evento antes de plan.caducidad.caduca_en, sale a mercado en la apertura de la vela de "
     "1 min que empieza en ese instante, con la banda de la pata stop",
-    "sin_entrada": "si T1 o el stop se cumplen entre el cierre de su vela y la entrada real, o la apertura de "
-    "la entrada ya esta mas alla de uno de los dos, no abre posicion: 0 USD y R 0, cuenta en el denominador y "
-    "no cuenta como T1 cruzado",
-    "costes": "la banda (spread y deslizamiento) va en el precio y a cada pata se le cobra la comision de su "
-    "foto: entrada taker (maker si es limite), objetivo maker, stop taker; las salidas por invalidacion o "
-    "caducidad pagan la pata stop",
-    "r": "R neto = bps netos / riesgo neto del PLAN registrado (plan.distancias_bps.stop mas el coste total de "
-    "las patas de entrada y de stop de la foto): la unidad la fija el registro, no la entrada real. Con la "
-    "entrada real en la referencia de la foto, T1 da el r.neto de la foto y el stop da -1",
-    "t2_t3": "se informa si el precio los cruzo (la regla de T1) y cuando, desde la entrada hasta el fin del "
-    "plan -su stop, su invalidacion o su caducidad-, aunque el lote ya saliera entero en T1; no mueven nada",
-    "excursion": "maxima a favor y en contra, en bps de la entrada real, sobre las velas con la posicion "
-    "abierta (de la de entrada a la anterior a la de salida) y el precio de salida",
-    "huecos": "un minuto ausente antes del evento que decide, o cubierto por un hueco de data_gap sin "
-    "resolver, PUDO esconder un nivel: el plan espera; si a la gracia de signal_outcomes (7 dias despues de "
-    "su asentamiento) sigue faltando, es NO EVALUABLE",
-    "asentamiento": "un resultado es FINAL cuando la ultima vela que usa tiene mas de 42 min "
-    "(OUTCOME_SETTLEMENT_LAG de signal_outcomes: ohlcv se reescribe 40 min hacia atras, mas 2); antes es "
-    "PROVISIONAL y dice hasta cuando",
-    "funding": "cobros de Binance a las 00, 08 y 16 UTC dentro de [entrada, salida] (los dos bordes, en "
-    "contra), cada uno con el cubo de 5 min de funding_rate que acaba en el: su extremo adverso (largo fr_high, "
-    "corto fr_low) si va en contra del lado, 0 si va a favor; lo usa la cuenta de papel",
+    "sin_entrada": "si T1 o el stop se cumplen entre el cierre de su vela y la entrada real (minuto a minuto, con "
+    "la regla de T1 y la del stop; la invalidacion no se mira antes de la entrada), o la apertura de la entrada a "
+    "mercado ya esta mas alla de uno de los dos, no abre posicion: 0 USD y R 0 (sin P&L si a la foto le falta un "
+    "coste: sin_coste), cuenta en el denominador y no cuenta como T1 cruzado",
+    "costes": "la banda va en el precio y a cada pata se le cobra la comision de su foto: la comision son los "
+    "componentes taker y maker de plan.costes.<pata>.componentes_bps, y la banda el resto de sus componentes. Con "
+    "el coste_pata del reglamento eso es taker con spread y deslizamiento en la entrada a mercado y en el stop, y "
+    "maker sin banda en la limite y en el objetivo. Las salidas por invalidacion o caducidad pagan la pata stop",
+    "sin_coste": "si a una pata de la foto le faltan sus componentes de coste o alguno es null, o en una entrada a "
+    "mercado plan.entrada.banda_pesimista_bps es null, el resultado va sin P&L: pnl null en cualquier salida, "
+    "tambien en SIN ENTRADA y LIMITE NO LLENADA, y cuando sale tras entrar su motivo lo dice (salvo si al "
+    "seguimiento de T2 y T3 le falta una vela: entonces dice eso). El precio se da igual, con 0 en la banda que "
+    "falte. Un DISPARADO del "
+    "registro trae siempre su coste: motor.decidir deja en SOMBRA el plan al que le falta (sus filtros "
+    "coste_objetivo, coste_riesgo y r_neto_t1 no son evaluables)",
+    "r": "R neto = bps netos / riesgo neto del PLAN registrado (plan.distancias_bps.stop mas el total_bps de las "
+    "patas de entrada y de stop de la foto): la unidad la fija el registro, no la entrada real. Si falta alguno de "
+    "los tres, o el riesgo es 0, R neto es null y los bps se dan igual. Con la apertura de la entrada en la "
+    "referencia de la foto, T1 da el r.neto de la foto y el stop -1, con una diferencia pequena: la banda y los "
+    "bps se miden sobre la entrada real",
+    "t2_t3": "se informa si el precio cruzo T2 y T3 (la regla de T1) y cuando, desde la entrada hasta el fin del "
+    "plan -su stop, su invalidacion, su caducidad, o los dos ya cruzados-, aunque el lote saliera entero en T1; no "
+    "mueven nada. Durante la vida cuentan las velas sin evento y la de T1, no la de un stop ni la de la misma vela; "
+    "tras salir en T1 se siguen minuto a minuto y cuenta tambien la vela que toca el stop. Mientras ese seguimiento "
+    "no acaba (le falta una vela, tambien la que aun no ha llegado), el resultado es PROVISIONAL y sin hora de "
+    "asentamiento, aunque su salida y su P&L ya se saben; si una vela sigue faltando a la gracia (huecos), es FINAL "
+    "y lo que no llego a cruzarse queda sin saber (null)",
+    "excursion": "maxima a favor y en contra, en bps de la entrada real, sobre las velas con la posicion abierta "
+    "(de la de entrada a la anterior a la de salida) y el precio de salida: de la vela de salida solo cuenta ese "
+    "precio",
+    "huecos": "un minuto ausente, o cubierto por un hueco de data_gap de su simbolo (ohlcv_1min, binance, "
+    "perpetual) en estado unresolved o unrecoverable (BLOCKING_GAP_STATUSES), PUDO esconder un nivel: el plan "
+    "espera. Un minuto que falta despues de que el plan acaba (su salida y, tras un T1, el fin del seguimiento de "
+    "T2 y T3) no importa. Si falta antes de la entrada, el de la entrada, uno esperando la limite o uno con la "
+    "posicion abierta, y aun no ha caducado, el plan esta ABIERTO (se sabe hasta ese minuto). Si falta la vela de "
+    "una salida ya decidida (la de la invalidacion o la de la caducidad), o ya caduco, ESPERA, PROVISIONAL, hasta "
+    "la gracia: caduca_en + 1 min + 42 min + 7 dias (MISSING_DATA_FINAL_GRACE de signal_outcomes). A la gracia es "
+    "NO EVALUABLE, FINAL, sin precio, P&L ni excursion; la entrada, si se sabia, se da",
+    "asentamiento": "un resultado es FINAL cuando `ahora` llega a 42 min despues del cierre de la ultima vela que "
+    "usa (OUTCOME_SETTLEMENT_LAG de signal_outcomes: ohlcv se reescribe 40 min hacia atras, mas 2); tras un T1, la "
+    "ultima es la ultima que se mira para T2 y T3. Antes es PROVISIONAL y dice hasta cuando, salvo tras un T1 "
+    "mientras no acaba el seguimiento de T2 y T3 (t2_t3): ahi no da hora",
+    "funding": "solo un DISPARADO: a una SOMBRA no se le mira ninguno. Cobros de Binance a las 00, 08 y 16 UTC "
+    "dentro de [entrada, salida] (los dos bordes, en contra), cada uno con el cubo de 5 min de funding_rate de su "
+    "simbolo que acaba en el (ts = cobro - 5 min): su extremo adverso (largo fr_high, corto fr_low) si va en contra "
+    "del lado, 0 si va a favor. Si falta el cubo, el cobro va como no medido, sin importe; sin salida no hay "
+    "cobros. Lo usa la cuenta de papel",
 }
 HUELLA_CONVENCIONES = R.huella({"version": RESOLUTOR_VERSION, "convenciones": CONVENCIONES})
 

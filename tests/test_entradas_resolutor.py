@@ -257,6 +257,41 @@ def test_una_sombra_da_un_hipotetico_y_sin_plan_no_evaluable():
     assert RES.resolver(sin, velas(sin), tarde(sin))["salida"] == RES.NO_EVALUABLE
 
 
+def test_lo_que_declaran_las_convenciones_del_remate_2():
+    """Convenciones «plan», «sin_coste», «t2_t3» y «huecos» (remate 2 de la 139): lo que dicen es lo que hace el
+    codigo. Si una cambia, este test y la convencion cambian juntos."""
+    stop_2030 = {"2026-10-12T20:30": (100.0, 100.0, 98.9, 99.5)}
+    t1_2030 = {"2026-10-12T20:30": (100.0, 102.5, 100.0, 101.0)}
+    # plan: sin stop, NO EVALUABLE en el acto (antes incluso de la entrada), FINAL y sin instante ni hora
+    sin_plan = fila("intradia")
+    sin_plan["foto"]["plan"]["stop"]["precio"] = None
+    r = RES.resolver(sin_plan, velas(sin_plan), T + MIN)
+    assert (r["estado"], r["salida"], r["firmeza"], r["instante"], r["asentado_en"]) == (
+        RES.ACABADO, RES.NO_EVALUABLE, RES.FINAL, None, None)
+    # sin_coste: con un componente null, sin P&L en un STOP (y lo dice el motivo) y en un SIN ENTRADA; el precio, si
+    sin = fila("intradia")
+    sin["foto"]["plan"]["costes"]["stop"]["componentes_bps"]["deslizamiento"] = None
+    r = RES.resolver(sin, velas(sin, stop_2030), tarde(sin))
+    assert (r["salida"], r["pnl"], r["precio"] is not None) == (RES.STOP, None, True)
+    assert r["motivo"].startswith("la foto no trae el coste de sus patas")
+    r = RES.resolver(sin, velas(sin, {"2026-10-12T20:01": (100.0, 100.0, 98.9, 99.5)}), tarde(sin))
+    assert (r["salida"], r["pnl"]) == (RES.SIN_ENTRADA, None)
+    # ... salvo si al seguimiento de T2 y T3 le falta una vela: entonces el motivo dice eso
+    hora = T + timedelta(minutes=60)
+    r = RES.resolver(sin, [v for v in velas(sin, t1_2030) if v["ts"] < hora], hora)
+    assert (r["salida"], r["pnl"]) == (RES.OBJETIVO, None) and r["motivo"].startswith("T2 y T3 se siguen")
+    # t2_t3: tras T1, mientras el seguimiento no acaba, PROVISIONAL y sin hora de asentamiento, con su P&L
+    f = fila("intradia")
+    r = RES.resolver(f, [v for v in velas(f, t1_2030) if v["ts"] < hora], hora)
+    assert (r["salida"], r["firmeza"], r["asentado_en"], r["pnl"] is not None) == (
+        RES.OBJETIVO, RES.PROVISIONAL, None, True)
+    # huecos: falta la vela de una salida ya decidida (la invalidacion de las 20:30): ESPERA, no ABIERTO, aunque el
+    # plan no ha caducado
+    vs = velas(f, {"2026-10-12T20:29": (100.0, 100.0, 99.4, 99.4)}, quita=("2026-10-12T20:30",))
+    r = RES.resolver(f, vs, T + timedelta(minutes=50))
+    assert (r["estado"], r["firmeza"], r["sabido_hasta"]) == (RES.ESPERANDO, RES.PROVISIONAL, "2026-10-12T20:30:00Z")
+
+
 # --------------------------------------------------------------------------- el espejo
 
 
@@ -344,12 +379,13 @@ def test_el_corte_en_ahora_se_declara_y_se_aplica(perfil):
 
 def test_cambiar_una_convencion_es_una_version_nueva():
     """La huella de las convenciones de entradas-resolutor-1 no se mueve: cambiar una exige subir la version
-    (un resultado guardado lleva la suya y no se reescribe). Se movio UNA vez sin subirla, en el remate de la 139:
-    la de d9f4520 (717a69038e1b...) no tenia el «corte», que ya se aplicaba desde 8b33125, y no llego a guardar
-    ningun resultado en produccion."""
+    (un resultado guardado lleva la suya y no se reescribe). Se movio sin subirla en los dos remates de la 139, antes
+    de desplegar y sin cambiar lo que el codigo hace: la de d9f4520 (717a69038e1b...) no tenia el «corte», que ya se
+    aplicaba desde 8b33125; la de 8fb7c20 (d3f41674d65d...) no decia todo lo que resolver() aplica. Ninguna de las
+    dos llego a guardar un resultado en produccion."""
     registradas = {"entradas-resolutor-1": HUELLA_V1}
     assert RES.RESOLUTOR_VERSION in registradas
     assert registradas[RES.RESOLUTOR_VERSION] == RES.HUELLA_CONVENCIONES
 
 
-HUELLA_V1 = "d3f41674d65d37ac67906fa1fa94622b1a8c3c8a4071dc7ddb9aed049b1deca3"
+HUELLA_V1 = "eb6248f2b29207c053d17e7fd6c97db4edf8d6c38b17616dfe74095ee2cea66f"
