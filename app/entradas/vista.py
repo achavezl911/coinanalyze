@@ -115,8 +115,8 @@ ROTULO_SALIDA = {
 A_FAVOR_QUE_ES = ("lo que dentro de un minuto no se puede saber se cuenta en contra; este es el caso a favor, "
                   "fuera de toda cuenta")
 ANTERIORES_N = 10
-ANTERIORES_QUE_ES = (f"los ultimos {ANTERIORES_N} DISPARADOS de este activo y de esta version anteriores a la "
-                     "ventana, con su resultado; el plan entero de cada uno, en /api/entradas?foto=true")
+ANTERIORES_QUE_ES = (f"los DISPARADOS de este activo y de esta version anteriores a la ventana (hasta los "
+                     f"{ANTERIORES_N} ultimos), con su resultado; el plan entero de cada uno, en /api/entradas?foto=true")
 OPERACIONES_EN_PANTALLA = 20
 PAPEL_QUE_ES = (
     "CUENTA DE PAPEL de cada version en curso: su bloque papel tal como esta registrado, sobre los resultados "
@@ -680,7 +680,7 @@ def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict
                     "vigilando": vigilando,
                     "sin_planes": None if disparados or vigilando else
                     f"{v['version']} no tiene ningun plan vivo en {perfil} · {lado}: ningun episodio "
-                    "abierto ni DISPARADO vivo (uno que ya acabo esta en lo reciente, con su salida)",
+                    "abierto ni DISPARADO vivo (los que ya acabaron estan en lo reciente, con su salida)",
                 })
             celdas.append({"perfil": perfil, "lado": lado, "por_version": por_version})
 

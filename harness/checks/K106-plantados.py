@@ -201,7 +201,7 @@ def _acaba_vivo(r):
                 p = v["disparados"].pop(0)
                 if not v["disparados"] and not v["vigilando"]:
                     v["sin_planes"] = (f"{v['version']} no tiene ningun plan vivo en {c['perfil']} · {c['lado']}: "
-                                       "ningun episodio abierto ni DISPARADO vivo (uno que ya acabo esta en lo "
+                                       "ningun episodio abierto ni DISPARADO vivo (los que ya acabaron estan en lo "
                                        "reciente, con su salida)")
                 for b in r["reciente"]["por_version"]:
                     for q in b["disparados"]:
