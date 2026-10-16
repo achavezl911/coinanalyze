@@ -114,8 +114,8 @@ def test_stop_saltado_con_hueco_sale_a_la_apertura_y_el_stop_es_el_favorable(per
     r = resuelve(perfil, {"2026-10-12T20:30": (98.8, 98.9, 98.7, 98.8)})
     assert r["salida"] == RES.STOP
     assert r["precio"] == pytest.approx(98.8 * (1 - 1e-4))
-    assert r["favorable"]["salida"] == RES.STOP and r["favorable"]["precio"] == pytest.approx(99.0 * (1 - 1e-4))
-    assert r["pnl"]["bps_netos"] < r["favorable"]["pnl"]["bps_netos"]
+    assert r["a_favor"]["salida"] == RES.STOP and r["a_favor"]["precio"] == pytest.approx(99.0 * (1 - 1e-4))
+    assert r["pnl"]["bps_netos"] < r["a_favor"]["pnl"]["bps_netos"]
 
 
 @pytest.mark.parametrize("perfil", PERFILES)
@@ -123,7 +123,7 @@ def test_stop_y_objetivo_en_la_misma_vela_cuenta_stop(perfil):
     r = resuelve(perfil, {"2026-10-12T20:30": (100.0, 102.5, 98.9, 100.0)})
     assert r["salida"] == RES.MISMA_VELA
     assert r["pnl"]["r_neto"] == pytest.approx(-1.0, abs=2e-3)
-    assert r["favorable"]["salida"] == RES.OBJETIVO and r["favorable"]["precio"] == 102.0
+    assert r["a_favor"]["salida"] == RES.OBJETIVO and r["a_favor"]["precio"] == 102.0
     # si la APERTURA ya esta mas alla de T1, T1 fue primero: no hay duda que resolver en contra
     assert resuelve(perfil, {"2026-10-12T20:30": (102.5, 102.6, 98.9, 100.0)})["salida"] == RES.OBJETIVO
 
@@ -192,11 +192,11 @@ def test_no_evaluable_solo_a_la_gracia_y_vivo_antes_de_caducar(perfil):
 def test_limite_no_llenada_y_limite_llenada(perfil):
     sin_llenar = resuelve(perfil, tipo="limite", precio_limite=99.6)
     assert sin_llenar["salida"] == RES.LIMITE_NO_LLENADA and sin_llenar["pnl"]["r_neto"] == 0.0
-    assert sin_llenar["favorable"]["hipotetico_a_mercado"]["salida"] == RES.CADUCADO
+    assert sin_llenar["a_favor"]["hipotetico_a_mercado"]["salida"] == RES.CADUCADO
     # T1 antes de llenarse: no llenada, y su hipotetico a mercado es el objetivo
     t1_antes = resuelve(perfil, {"2026-10-12T20:30": (100.0, 102.5, 100.0, 101.0)}, tipo="limite", precio_limite=99.6)
     assert (t1_antes["salida"], t1_antes["instante"]) == (RES.LIMITE_NO_LLENADA, "2026-10-12T20:30:00Z")
-    assert t1_antes["favorable"]["hipotetico_a_mercado"]["salida"] == RES.OBJETIVO
+    assert t1_antes["a_favor"]["hipotetico_a_mercado"]["salida"] == RES.OBJETIVO
     # tocar la limite sin cruzarla no la llena; cruzarla si, a su precio y con comision maker
     llena = resuelve(perfil, {"2026-10-12T20:10": (99.8, 99.8, 99.6, 99.7), "2026-10-12T20:11": (99.7, 99.7, 99.55, 99.7),
                               "2026-10-12T20:30": (100.0, 102.5, 100.0, 101.0)}, tipo="limite", precio_limite=99.6)
@@ -337,4 +337,4 @@ def test_cambiar_una_convencion_es_una_version_nueva():
     assert RES.RESOLUTOR_VERSION in registradas
 
 
-HUELLA_V1 = "63bd1768f65052316612095e8f5222d86da5e45fe3ecc9038b4e47b10d342ee5"
+HUELLA_V1 = "717a69038e1b3c87124e25c81fbca3759185148e431984738841d5f6a408e99b"

@@ -60,13 +60,13 @@ CONVENCIONES = {
     "solo la base",
     "objetivo": "T1 cuenta si el precio lo CRUZA mas alla de la tolerancia (largo: maximo > T1 + tolerancia); "
     "sale al precio de T1, orden limite (maker), sin banda; si la vela abre ya mas alla, sale igual a T1 y la "
-    "apertura es el caso favorable",
+    "apertura es el caso a favor",
     "stop": "cuenta si el precio lo TOCA dentro de la tolerancia (largo: minimo <= stop + tolerancia); sale al "
     "precio del stop a mercado (taker) movido en contra por la banda de la pata stop; si la vela abre ya mas "
-    "alla (nivel saltado con hueco), sale a esa apertura con la banda, y el precio del stop es el caso "
-    "favorable",
+    "alla (nivel saltado con hueco), sale a esa apertura con la banda, y el precio del stop es el caso a "
+    "favor",
     "misma_vela": "si en una vela de 1 min se cumplen el stop y T1 y su apertura no decide cual fue primero, "
-    "cuenta el STOP y T1 es el caso favorable. La apertura si decide: es el primer precio de la vela",
+    "cuenta el STOP y T1 es el caso a favor. La apertura si decide: es el primer precio de la vela",
     "invalidacion": "cierre de una vela del perfil (date_bin desde 1970-01-01 UTC, el reloj de "
     "plan.invalidacion) estrictamente al otro lado de plan.invalidacion.nivel (largo: cierre < nivel; corto: "
     "cierre > nivel), posterior a la entrada y no posterior a la caducidad; sale a mercado en la apertura del "
@@ -76,7 +76,7 @@ CONVENCIONES = {
     "1 min que empieza en ese instante, con la banda de la pata stop",
     "sin_entrada": "si T1 o el stop se cumplen entre el cierre de su vela y la entrada real, o la apertura de "
     "la entrada ya esta mas alla de uno de los dos, no abre posicion: 0 USD y R 0, cuenta en el denominador y "
-    "no es exito",
+    "no cuenta como T1 cruzado",
     "costes": "la banda (spread y deslizamiento) va en el precio y a cada pata se le cobra la comision de su "
     "foto: entrada taker (maker si es limite), objetivo maker, stop taker; las salidas por invalidacion o "
     "caducidad pagan la pata stop",
@@ -188,7 +188,7 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
         "resolutor": RESOLUTOR_VERSION, "huella_convenciones": HUELLA_CONVENCIONES,
         "hipotetico": fila.get("estado") != "DISPARADO",
         "estado": ACABADO, "salida": None, "firmeza": FINAL, "asentado_en": None, "instante": None,
-        "precio": None, "entrada": None, "pnl": None, "favorable": None, "t2": None, "t3": None,
+        "precio": None, "entrada": None, "pnl": None, "a_favor": None, "t2": None, "t3": None,
         "excursion": None, "funding": [], "sabido_hasta": None, "motivo": None,
     }
     if stop is None or not objetivos or nivel is None:
@@ -258,7 +258,7 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
         motivo = f"falta la vela de 1 min de las {iso(m)} ({que}) y pudo esconder un nivel"
         if ahora >= tope:
             out.update(salida=NO_EVALUABLE, firmeza=FINAL, asentado_en=iso(tope), instante=None, precio=None,
-                       pnl=None, favorable=None, excursion=None, motivo=motivo)
+                       pnl=None, a_favor=None, excursion=None, motivo=motivo)
         else:
             out.update(estado=ESPERANDO, firmeza=PROVISIONAL, asentado_en=iso(tope),
                        motivo=f"{motivo}; si sigue faltando a las {iso(tope)} sera NO EVALUABLE")
@@ -304,7 +304,7 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
                     **entrada, "tipo": "mercado"}}}}, velas, ahora, funding, huecos)
                 acaba(LIMITE_NO_LLENADA, min(m, caduca - MINUTO), motivo + ": 0 USD")
                 out["instante"] = iso(min(m, caduca))
-                out["favorable"] = {"hipotetico_a_mercado": {k: hipotetico.get(k) for k in (
+                out["a_favor"] = {"hipotetico_a_mercado": {k: hipotetico.get(k) for k in (
                     "salida", "instante", "precio", "pnl", "firmeza")},
                     "que_es": "el mismo plan entrando a mercado: hipotetico, fuera de toda cuenta"}
                 return out
@@ -363,9 +363,9 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
     out.update(salida=nombre, instante=iso(m_s), precio=s * x_s, pnl=pnl(x_e, x_s, com_s),
                excursion={"favor_bps": (alto - x_e) / abs(x_e) * BPS, "contra_bps": (x_e - bajo) / abs(x_e) * BPS})
     if alternativa is not None:
-        out["favorable"] = {"salida": alternativa[0], "precio": s * alternativa[1],
+        out["a_favor"] = {"salida": alternativa[0], "precio": s * alternativa[1],
                             "pnl": pnl(x_e, alternativa[1], alternativa[2]),
-                            "que_es": "el caso favorable de lo que dentro de un minuto no se puede saber: fuera "
+                            "que_es": "el caso a favor de lo que dentro de un minuto no se puede saber: fuera "
                             "de toda cuenta"}
     ultima = m_s
 
