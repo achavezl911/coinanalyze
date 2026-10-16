@@ -121,8 +121,10 @@ OPERACIONES_EN_PANTALLA = 20
 PAPEL_QUE_ES = (
     "CUENTA DE PAPEL de cada version en curso: su bloque papel tal como esta registrado, sobre los resultados "
     "de sus DISPARADOS de los tres activos (nunca una SOMBRA). Sin apalancamiento: toma cada DISPARADO por orden "
-    "de registro si cabe, con la cantidad hacia abajo al paso de Bybit, y apunta los saltados con su motivo; "
-    "funding solo adverso. No mueve fondos ni ejecuta nada.")
+    "de registro si cabe, con la cantidad hacia abajo al paso de Bybit, y apunta los saltados (los que no caben o "
+    "no dimensionan) con su motivo. Un DISPARADO sin entrada real todavia queda pendiente, y detras de el los "
+    "posteriores que necesitan capital: la cuenta es PROVISIONAL mientras tanto. Funding solo adverso. No mueve "
+    "fondos ni ejecuta nada.")
 _ANTERIORES_SQL = """
 SELECT * FROM (
     SELECT registro_id, version, familia, perfil, lado, symbol, clave, inicio_episodio, estado, vela_cierre,
@@ -422,7 +424,7 @@ def _fila_corta(fila: dict[str, Any]) -> dict[str, Any]:
 
 def _papel(cuentas: dict[str, Any], versiones: list[dict[str, str]]) -> dict[str, Any]:
     """La cuenta de papel de cada version en curso, ya escrita: saldo, n, cada operacion con su lote, su R y su
-    P&L, los saltados con su motivo y el funding cobrado."""
+    P&L, los saltados, los pendientes y los que no abren posicion con su motivo, y el funding cobrado."""
     por_version = []
     for v in versiones:
         c = cuentas.get(v["version"])
@@ -434,6 +436,7 @@ def _papel(cuentas: dict[str, Any], versiones: list[dict[str, str]]) -> dict[str
             "saldo_usd": c["saldo_usd"], "n": c["n"], "abiertas": c["abiertas"], "funding_usd": c["funding_usd"],
             "meta_usd": c["meta_usd"], "meta": c["meta"], "no_dimensiona": c["no_dimensiona"],
             "firmeza": "FINAL" if c["firmeza"] == RES.FINAL else (
+                "PROVISIONAL: hay DISPARADOS pendientes, aun sin entrada real" if c["pendientes"] else
                 f"PROVISIONAL hasta las {_hora(c['provisional_hasta'])}" if c.get("provisional_hasta") else
                 "PROVISIONAL: hay operaciones abiertas"),
             "recortada": (f"se ven las ultimas {OPERACIONES_EN_PANTALLA} de sus operaciones: todas, en "
@@ -447,8 +450,9 @@ def _papel(cuentas: dict[str, Any], versiones: list[dict[str, str]]) -> dict[str
                 "precio_salida": _precio(op["precio_salida"]), "r_neto": _r(op["r_neto"], 2),
                 "pnl_usd": op["pnl_usd"], "comision_usd": op["comision_usd"], "funding_usd": op["funding_usd"],
                 "funding_sin_medir": op["funding_sin_medir"] or None} for op in ops],
-            "saltados": [{"registro_id": s["registro_id"], "activo": s["symbol"].split("USDT")[0],
-                          "vela_cierre": s["vela_cierre"], "motivo": s["motivo"]} for s in c["saltados"]],
+            **{lista: [{"registro_id": s["registro_id"], "activo": s["symbol"].split("USDT")[0],
+                        "vela_cierre": s["vela_cierre"], "motivo": s["motivo"]} for s in c[lista]]
+               for lista in ("saltados", "pendientes", "sin_posicion")},
         })
     return {"que_es": PAPEL_QUE_ES, "por_version": por_version}
 

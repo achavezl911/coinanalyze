@@ -528,12 +528,14 @@ function entPapel(R, d) {
       });
       t.appendChild(tabla);
     }
-    (c.saltados || []).forEach((s, i) => {
-      const rs = rc + '.saltados[' + i + ']';
-      t.appendChild(entLinea('saltado', sv('span', 'mono', rs + '.registro_id', s.registro_id), ' ',
-                             sv('span', null, rs + '.activo', s.activo), ' · vela ',
-                             sv('span', 'mono', rs + '.vela_cierre', entHora(s.vela_cierre)), ' · ',
-                             sv('span', 'motivo', rs + '.motivo', s.motivo)));
+    [['saltados', 'saltado'], ['pendientes', 'pendiente'], ['sin_posicion', 'sin posición']].forEach(([lista, rotulo]) => {
+      (c[lista] || []).forEach((s, i) => {
+        const rs = rc + '.' + lista + '[' + i + ']';
+        t.appendChild(entLinea(rotulo, sv('span', 'mono', rs + '.registro_id', s.registro_id), ' ',
+                               sv('span', null, rs + '.activo', s.activo), ' · vela ',
+                               sv('span', 'mono', rs + '.vela_cierre', entHora(s.vela_cierre)), ' · ',
+                               sv('span', 'motivo', rs + '.motivo', s.motivo)));
+      });
     });
     caja.appendChild(t);
   });

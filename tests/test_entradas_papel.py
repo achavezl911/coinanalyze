@@ -100,13 +100,50 @@ def test_v1_no_dimensiona_y_lo_dice():
 def test_sin_entrada_no_abre_y_una_posicion_abierta_es_provisional():
     a, ra = disparado(1, {"2026-10-12T20:01": (100.0, 100.0, 98.9, 99.5)})
     c = PAPEL.cuenta(V2, [a], {1: ra})
-    assert c["n"] == 0 and c["saltados"][0]["motivo"].startswith("sin entrada")
+    assert c["n"] == 0 and c["saltados"] == [] and c["sin_posicion"][0]["motivo"].startswith("sin entrada")
     f = fila("intradia")
     f.update(registro_id=3, symbol="SOLUSDT_PERP.A")
     vivo = RES.resolver(f, [v for v in velas(f) if v["ts"] < T + timedelta(minutes=30)], T + timedelta(minutes=30))
     c = PAPEL.cuenta(V2, [f], {3: vivo})
     assert c["abiertas"] == 1 and c["n"] == 0 and c["firmeza"] == RES.PROVISIONAL
     assert c["saldo_usd"] == 200.0
+
+
+def test_un_disparado_sin_su_vela_de_entrada_esta_pendiente_y_la_cuenta_no_es_final():
+    """Saltado es SOLO el que no cabe o no dimensiona. Uno sin su vela de entrada esta PENDIENTE, con su motivo, y la
+    cuenta es PROVISIONAL. Detras de el esperan los posteriores que necesitan capital; los que no lo necesitan (no
+    dimensiona, sin posicion) se apuntan ya."""
+    a, ra = disparado(1, STOP_2030)
+    b, rb = disparado(2, OBJ_2030, horas=6)
+    c_, rc_ = disparado(3, {"2026-10-12T20:01": (100.0, 100.0, 98.9, 99.5)}, horas=7)     # sin entrada
+    d, rd = disparado(4, OBJ_2030, horas=8, symbol="XRPUSDT_PERP.A")                      # sin paso: no dimensiona
+    sin_vela = [v for v in velas(a, STOP_2030) if v["ts"] != RES.entrada_t(a)]
+    ra_p = RES.resolver(a, sin_vela, T + timedelta(minutes=5))
+    assert (ra_p["estado"], ra_p["entrada"]) == (RES.ABIERTO, None)
+    filas = [a, b, c_, d]
+    c = PAPEL.cuenta(V2, filas, {1: ra_p, 2: rb, 3: rc_, 4: rd})
+    assert [s["registro_id"] for s in c["saltados"]] == [4] and c["saltados"][0]["motivo"].startswith("no dimensiona")
+    assert (c["n"], c["operaciones"], c["saldo_usd"], c["firmeza"]) == (0, [], 200.0, RES.PROVISIONAL)
+    assert [p["registro_id"] for p in c["pendientes"]] == [1, 2]
+    assert c["pendientes"][0]["motivo"].endswith("la vela de 1 min de las 20:03Z no esta en la base")
+    assert c["pendientes"][1]["motivo"].startswith("detras del registro 1, que esta pendiente")
+    assert [s["registro_id"] for s in c["sin_posicion"]] == [3]
+    # llega su vela: las dos operan, como sin los otros dos, y la cuenta es final
+    c2 = PAPEL.cuenta(V2, filas, {1: ra, 2: rb, 3: rc_, 4: rd})
+    assert c2["pendientes"] == [] and c2["firmeza"] == RES.FINAL
+    assert c2["operaciones"] == PAPEL.cuenta(V2, [a, b], {1: ra, 2: rb})["operaciones"]
+    # tres a la vez sin su vela de entrada (lo que midio el operador en d9f4520): tres pendientes, y no es final
+    tres = [{**a, "registro_id": 10 + i, "symbol": s} for i, s in enumerate(("BTCUSDT_PERP.A", "ETHUSDT_PERP.A",
+                                                                           "SOLUSDT_PERP.A"))]
+    c3 = PAPEL.cuenta(V2, tres, {10 + i: ra_p for i in range(3)})
+    assert (len(c3["pendientes"]), c3["saltados"], c3["n"], c3["saldo_usd"], c3["firmeza"]) == (
+        3, [], 0, 200.0, RES.PROVISIONAL)
+    # en un hueco que dura: pendiente hasta la gracia, y a la gracia no abre posicion
+    espera = RES.resolver(a, sin_vela, RES.ventana(a)[1] + timedelta(days=1))
+    c4 = PAPEL.cuenta(V2, [a], {1: espera})
+    assert c4["pendientes"][0]["motivo"].endswith("sera NO EVALUABLE") and c4["firmeza"] == RES.PROVISIONAL
+    c5 = PAPEL.cuenta(V2, [a], {1: RES.resolver(a, sin_vela, tarde(a))})
+    assert c5["sin_posicion"][0]["motivo"].startswith("no evaluable") and c5["firmeza"] == RES.FINAL
 
 
 def test_la_cuenta_no_cambia_con_el_orden_en_que_llegan_las_filas():

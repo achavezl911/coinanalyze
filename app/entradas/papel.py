@@ -12,6 +12,15 @@ usa lo que quede libre, con tope en comun.tamano_plan_usd (los USD con los que e
 deslizamiento en el libro), y con la comision de entrada dentro:
     cantidad = floor(min(libre, tamano_plan_usd) / (precio_entrada * (1 + comision_entrada)) / paso) * paso
 Si no llega a un paso (en Bybit el paso es tambien la cantidad minima: unidad del parametro en v2), se salta.
+Saltado es SOLO el que no cabe o no dimensiona. Los que no abren posicion (SIN ENTRADA, LIMITE NO LLENADA, NO
+EVALUABLE) van en `sin_posicion`, con su motivo.
+
+QUE ES UN PENDIENTE. Un DISPARADO sin entrada real todavia no tiene resultado: su vela de entrada, o una anterior, aun
+no esta en la base (pasa unos dos minutos tras cada registro, y en cualquier hueco de velas). No esta saltado: va en
+`pendientes` con su motivo, y la cuenta es PROVISIONAL mientras este. LOS POSTERIORES: la cuenta toma por orden de
+registro, asi que todo DISPARADO posterior de la version que necesite capital queda pendiente DETRAS del primero
+que lo este. Lo libre para el depende de lo que ocupe aquel y de como acabe. Los que no dimensionan y los que no
+abren posicion no necesitan capital y se apuntan ya.
 
 Lo que un DISPARADO trae de su resultado: precio e instante de entrada y de salida (con la banda pesimista ya
 dentro), la comision de cada pata y los cobros de funding. P&L = lado * cantidad * (salida - entrada) - las dos
@@ -34,6 +43,16 @@ def _usd(x: float | None) -> float | None:
     return None if x is None else round(x, 2)
 
 
+def _pendiente(r: dict[str, Any]) -> str:
+    """Por que un DISPARADO sin entrada real todavia no tiene resultado."""
+    if not r.get("sabido_hasta"):
+        return "todavia no tiene resultado"
+    falta = f"aun sin entrada real: la vela de 1 min de las {r['sabido_hasta'][11:16]}Z no esta en la base"
+    if r.get("estado") == RES.ESPERANDO:
+        return f"{falta}; si sigue faltando a las {r['asentado_en']}, sera NO EVALUABLE"
+    return falta
+
+
 def cuenta(version: dict[str, Any], disparados: list[dict[str, Any]],
            resultados: dict[int, dict[str, Any]]) -> dict[str, Any]:
     """La cuenta de una version: `version` es su objeto del reglamento; `disparados`, sus filas DISPARADO (con
@@ -50,7 +69,7 @@ def cuenta(version: dict[str, Any], disparados: list[dict[str, Any]],
         "meta": "informativa: nunca motivo para cambiar, retirar o elegir una version",
         "dimensiona": any(v is not None for v in pasos.values()), "no_dimensiona": None,
         "saldo_usd": capital, "funding_usd": 0.0, "n": 0, "abiertas": 0, "firmeza": RES.FINAL,
-        "provisional_hasta": None, "operaciones": [], "saltados": [],
+        "provisional_hasta": None, "operaciones": [], "saltados": [], "pendientes": [], "sin_posicion": [],
     }
     sin_paso = [s for s, v in pasos.items() if v is None]
     if sin_paso:
@@ -59,16 +78,17 @@ def cuenta(version: dict[str, Any], disparados: list[dict[str, Any]],
             "null, sin fuente citada en su reglamento; el paso no se inventa, y sus DISPARADOS ahi se saltan")
     saldo = capital
     abiertas: list[dict[str, Any]] = []   # las que tienen la posicion abierta en el instante que se mira
-    pendientes: list[dict[str, Any]] = []  # las cerradas, a liquidar en el orden de su salida
+    por_liquidar: list[dict[str, Any]] = []  # las cerradas, a liquidar en el orden de su salida
 
     def liquida(hasta: str | None) -> None:
         nonlocal saldo
-        for op in sorted([p for p in pendientes if hasta is None or p["instante_salida"] <= hasta],
+        for op in sorted([p for p in por_liquidar if hasta is None or p["instante_salida"] <= hasta],
                          key=lambda p: (p["instante_salida"], p["registro_id"])):
             saldo += op["_pnl"]
-            pendientes.remove(op)
+            por_liquidar.remove(op)
             abiertas.remove(op)
 
+    detras: int | None = None  # el primer pendiente: lo posterior que necesita capital espera a que se sepa
     for f in sorted(disparados, key=lambda x: x["registro_id"]):
         rid, symbol = f["registro_id"], f["symbol"]
         r = resultados.get(rid) or {}
@@ -80,12 +100,18 @@ def cuenta(version: dict[str, Any], disparados: list[dict[str, Any]],
                                        f"{symbol} en el reglamento de {version['version']}"})
             continue
         if r.get("salida") in SIN_POSICION:
-            salida["saltados"].append({**base, "motivo": f"{r['salida'].replace('_', ' ')}: no abre posicion"
-                                       + (" (no se sabe su P&L)" if r["salida"] == RES.NO_EVALUABLE else "")})
+            salida["sin_posicion"].append({**base, "motivo": f"{r['salida'].replace('_', ' ')}: no abre posicion"
+                                           + (" (no se sabe su P&L)" if r["salida"] == RES.NO_EVALUABLE else "")})
             continue
         entrada = r.get("entrada")
         if not entrada:
-            salida["saltados"].append({**base, "motivo": "aun sin entrada real: falta la vela de su entrada"})
+            salida["pendientes"].append({**base, "motivo": _pendiente(r)})
+            detras = detras or rid
+            continue
+        if detras is not None:
+            salida["pendientes"].append({**base, "motivo": (
+                f"detras del registro {detras}, que esta pendiente: la cuenta toma por orden de registro, y lo libre "
+                "para este depende de lo que ocupe aquel y de como acabe")})
             continue
         liquida(entrada["instante"])
         libre = saldo - sum(p["nocional_usd"] for p in abiertas)
@@ -116,7 +142,7 @@ def cuenta(version: dict[str, Any], disparados: list[dict[str, Any]],
                       precio_salida=precio_s, comision_usd=comision, funding_usd=funding, pnl_usd=pnl,
                       r_neto=r["pnl"]["r_neto"], _pnl=pnl,
                       funding_sin_medir=[c["cobro"] for c in r.get("funding") or [] if not c["medido"]])
-            pendientes.append(op)
+            por_liquidar.append(op)
             salida["funding_usd"] += funding
             salida["n"] += 1
             if r["firmeza"] != RES.FINAL:
@@ -127,7 +153,7 @@ def cuenta(version: dict[str, Any], disparados: list[dict[str, Any]],
         salida["operaciones"].append(op)
     liquida(None)
     salida["abiertas"] = sum(op["estado"] == "abierta" for op in salida["operaciones"])
-    if salida["abiertas"]:
+    if salida["abiertas"] or salida["pendientes"]:
         salida["firmeza"] = RES.PROVISIONAL
     salida["saldo_usd"] = _usd(saldo)
     salida["funding_usd"] = _usd(salida["funding_usd"])

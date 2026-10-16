@@ -92,7 +92,7 @@ LEE:
 
 ## Funciones que la componen
 
-48 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+49 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
@@ -101,10 +101,11 @@ Llamadas directas del handler:
 - `app.api.validate_symbol` — `app/api.py:253`
 - `app.entradas.ruta.construir` — `app/entradas/ruta.py:196`
 
-<details><summary>Alcanzables de forma indirecta (45)</summary>
+<details><summary>Alcanzables de forma indirecta (46)</summary>
 
-- `app.entradas.papel._usd` — `app/entradas/papel.py:33`
-- `app.entradas.papel.cuenta` — `app/entradas/papel.py:37`
+- `app.entradas.papel._pendiente` — `app/entradas/papel.py:46`
+- `app.entradas.papel._usd` — `app/entradas/papel.py:42`
+- `app.entradas.papel.cuenta` — `app/entradas/papel.py:56`
 - `app.entradas.reglamento._texto` — `app/entradas/reglamento.py:127`
 - `app.entradas.reglamento._valida_apuestas` — `app/entradas/reglamento.py:308`
 - `app.entradas.reglamento._valida_bloque` — `app/entradas/reglamento.py:131`
@@ -175,8 +176,8 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K106-banco.py:52`, `harness/checks/K107-control.bash:65`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37` _(+2)_ | `harness/checks/K107-control.bash:9`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:5`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:11`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:13` _(+3)_ |
-| **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_resultados_postgres.py:223`, `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
+| **checks** | `harness/checks/K106-banco.py:52`, `harness/checks/K107-control.bash:70`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37` _(+2)_ | `harness/checks/K107-control.bash:9`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:5`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:11`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:13` _(+3)_ |
+| **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_resultados_postgres.py:246`, `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
 
 **No la llama el panel**, pero si 7 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
@@ -219,6 +220,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.valores` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.versiones_en_curso` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.api.rechaza_parametros_desconocidos` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
+| `app.entradas.papel._pendiente` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel._usd` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel.cuenta` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.reglamento._texto` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
@@ -238,8 +240,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.huella_revision` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.instante` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.registros_esperados` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.revision_vigente` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| _… y 24 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 25 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

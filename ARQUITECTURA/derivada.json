@@ -1380,15 +1380,20 @@
       "linea": 92,
       "sitio": "`app/delta_profile.py:92`"
     },
+    "app.entradas.papel._pendiente": {
+      "fichero": "app/entradas/papel.py",
+      "linea": 46,
+      "sitio": "`app/entradas/papel.py:46`"
+    },
     "app.entradas.papel._usd": {
       "fichero": "app/entradas/papel.py",
-      "linea": 33,
-      "sitio": "`app/entradas/papel.py:33`"
+      "linea": 42,
+      "sitio": "`app/entradas/papel.py:42`"
     },
     "app.entradas.papel.cuenta": {
       "fichero": "app/entradas/papel.py",
-      "linea": 37,
-      "sitio": "`app/entradas/papel.py:37`"
+      "linea": 56,
+      "sitio": "`app/entradas/papel.py:56`"
     },
     "app.entradas.reglamento._texto": {
       "fichero": "app/entradas/reglamento.py",
@@ -1612,143 +1617,143 @@
     },
     "app.entradas.vista._ancla_no_puede": {
       "fichero": "app/entradas/vista.py",
-      "linea": 573,
-      "sitio": "`app/entradas/vista.py:573`"
+      "linea": 577,
+      "sitio": "`app/entradas/vista.py:577`"
     },
     "app.entradas.vista._base": {
       "fichero": "app/entradas/vista.py",
-      "linea": 331,
-      "sitio": "`app/entradas/vista.py:331`"
+      "linea": 333,
+      "sitio": "`app/entradas/vista.py:333`"
     },
     "app.entradas.vista._de": {
       "fichero": "app/entradas/vista.py",
-      "linea": 507,
-      "sitio": "`app/entradas/vista.py:507`"
+      "linea": 511,
+      "sitio": "`app/entradas/vista.py:511`"
     },
     "app.entradas.vista._decide": {
       "fichero": "app/entradas/vista.py",
-      "linea": 246,
-      "sitio": "`app/entradas/vista.py:246`"
+      "linea": 248,
+      "sitio": "`app/entradas/vista.py:248`"
     },
     "app.entradas.vista._disparado": {
       "fichero": "app/entradas/vista.py",
-      "linea": 456,
-      "sitio": "`app/entradas/vista.py:456`"
+      "linea": 460,
+      "sitio": "`app/entradas/vista.py:460`"
     },
     "app.entradas.vista._distancia": {
       "fichero": "app/entradas/vista.py",
-      "linea": 318,
-      "sitio": "`app/entradas/vista.py:318`"
+      "linea": 320,
+      "sitio": "`app/entradas/vista.py:320`"
     },
     "app.entradas.vista._fila_corta": {
       "fichero": "app/entradas/vista.py",
-      "linea": 416,
-      "sitio": "`app/entradas/vista.py:416`"
+      "linea": 418,
+      "sitio": "`app/entradas/vista.py:418`"
     },
     "app.entradas.vista._firmeza": {
       "fichero": "app/entradas/vista.py",
-      "linea": 367,
-      "sitio": "`app/entradas/vista.py:367`"
+      "linea": 369,
+      "sitio": "`app/entradas/vista.py:369`"
     },
     "app.entradas.vista._fraccion": {
       "fichero": "app/entradas/vista.py",
-      "linea": 184,
-      "sitio": "`app/entradas/vista.py:184`"
+      "linea": 186,
+      "sitio": "`app/entradas/vista.py:186`"
     },
     "app.entradas.vista._hora": {
       "fichero": "app/entradas/vista.py",
-      "linea": 357,
-      "sitio": "`app/entradas/vista.py:357`"
+      "linea": 359,
+      "sitio": "`app/entradas/vista.py:359`"
     },
     "app.entradas.vista._muestra": {
       "fichero": "app/entradas/vista.py",
-      "linea": 538,
-      "sitio": "`app/entradas/vista.py:538`"
+      "linea": 542,
+      "sitio": "`app/entradas/vista.py:542`"
     },
     "app.entradas.vista._orden": {
       "fichero": "app/entradas/vista.py",
-      "linea": 513,
-      "sitio": "`app/entradas/vista.py:513`"
+      "linea": 517,
+      "sitio": "`app/entradas/vista.py:517`"
     },
     "app.entradas.vista._papel": {
       "fichero": "app/entradas/vista.py",
-      "linea": 423,
-      "sitio": "`app/entradas/vista.py:423`"
+      "linea": 425,
+      "sitio": "`app/entradas/vista.py:425`"
     },
     "app.entradas.vista._papeles": {
       "fichero": "app/entradas/vista.py",
-      "linea": 522,
-      "sitio": "`app/entradas/vista.py:522`"
+      "linea": 526,
+      "sitio": "`app/entradas/vista.py:526`"
     },
     "app.entradas.vista._precio": {
       "fichero": "app/entradas/vista.py",
-      "linea": 171,
-      "sitio": "`app/entradas/vista.py:171`"
+      "linea": 173,
+      "sitio": "`app/entradas/vista.py:173`"
     },
     "app.entradas.vista._r": {
       "fichero": "app/entradas/vista.py",
-      "linea": 180,
-      "sitio": "`app/entradas/vista.py:180`"
+      "linea": 182,
+      "sitio": "`app/entradas/vista.py:182`"
     },
     "app.entradas.vista._requisitos": {
       "fichero": "app/entradas/vista.py",
-      "linea": 343,
-      "sitio": "`app/entradas/vista.py:343`"
+      "linea": 345,
+      "sitio": "`app/entradas/vista.py:345`"
     },
     "app.entradas.vista._resolutor": {
       "fichero": "app/entradas/vista.py",
-      "linea": 762,
-      "sitio": "`app/entradas/vista.py:762`"
+      "linea": 766,
+      "sitio": "`app/entradas/vista.py:766`"
     },
     "app.entradas.vista._resultado": {
       "fichero": "app/entradas/vista.py",
-      "linea": 375,
-      "sitio": "`app/entradas/vista.py:375`"
+      "linea": 377,
+      "sitio": "`app/entradas/vista.py:377`"
     },
     "app.entradas.vista._rotulo_de": {
       "fichero": "app/entradas/vista.py",
-      "linea": 362,
-      "sitio": "`app/entradas/vista.py:362`"
+      "linea": 364,
+      "sitio": "`app/entradas/vista.py:364`"
     },
     "app.entradas.vista._significado": {
       "fichero": "app/entradas/vista.py",
-      "linea": 197,
-      "sitio": "`app/entradas/vista.py:197`"
+      "linea": 199,
+      "sitio": "`app/entradas/vista.py:199`"
     },
     "app.entradas.vista._sombra": {
       "fichero": "app/entradas/vista.py",
-      "linea": 497,
-      "sitio": "`app/entradas/vista.py:497`"
+      "linea": 501,
+      "sitio": "`app/entradas/vista.py:501`"
     },
     "app.entradas.vista._vigilando": {
       "fichero": "app/entradas/vista.py",
-      "linea": 351,
-      "sitio": "`app/entradas/vista.py:351`"
+      "linea": 353,
+      "sitio": "`app/entradas/vista.py:353`"
     },
     "app.entradas.vista._zona": {
       "fichero": "app/entradas/vista.py",
-      "linea": 313,
-      "sitio": "`app/entradas/vista.py:313`"
+      "linea": 315,
+      "sitio": "`app/entradas/vista.py:315`"
     },
     "app.entradas.vista.componer": {
       "fichero": "app/entradas/vista.py",
-      "linea": 624,
-      "sitio": "`app/entradas/vista.py:624`"
+      "linea": 628,
+      "sitio": "`app/entradas/vista.py:628`"
     },
     "app.entradas.vista.construir": {
       "fichero": "app/entradas/vista.py",
-      "linea": 596,
-      "sitio": "`app/entradas/vista.py:596`"
+      "linea": 600,
+      "sitio": "`app/entradas/vista.py:600`"
     },
     "app.entradas.vista.pasada_en_curso": {
       "fichero": "app/entradas/vista.py",
-      "linea": 553,
-      "sitio": "`app/entradas/vista.py:553`"
+      "linea": 557,
+      "sitio": "`app/entradas/vista.py:557`"
     },
     "app.entradas.vista.precio_ahora": {
       "fichero": "app/entradas/vista.py",
-      "linea": 161,
-      "sitio": "`app/entradas/vista.py:161`"
+      "linea": 163,
+      "sitio": "`app/entradas/vista.py:163`"
     },
     "app.external_macro._direction": {
       "fichero": "app/external_macro.py",
@@ -13384,6 +13389,25 @@
         "total": 2,
         "total_exacto": 0
       },
+      "app.entradas.papel._pendiente": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.entradas.papel.cuenta",
+          "app.entradas.ruta.construir"
+        ],
+        "por_llamada": [
+          "/api/entradas",
+          "/api/mesa/entradas"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/papel.py:46",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 2,
+        "total_exacto": 2
+      },
       "app.entradas.papel._usd": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
@@ -13396,7 +13420,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/papel.py:33",
+        "sitio": "app/entradas/papel.py:42",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -13416,7 +13440,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/papel.py:37",
+        "sitio": "app/entradas/papel.py:56",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15377,7 +15401,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:573",
+        "sitio": "app/entradas/vista.py:577",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15397,7 +15421,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:331",
+        "sitio": "app/entradas/vista.py:333",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15415,7 +15439,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:507",
+        "sitio": "app/entradas/vista.py:511",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15433,7 +15457,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:246",
+        "sitio": "app/entradas/vista.py:248",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15451,7 +15475,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:456",
+        "sitio": "app/entradas/vista.py:460",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15469,7 +15493,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:318",
+        "sitio": "app/entradas/vista.py:320",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15487,7 +15511,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:416",
+        "sitio": "app/entradas/vista.py:418",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15506,7 +15530,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:367",
+        "sitio": "app/entradas/vista.py:369",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15524,7 +15548,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:184",
+        "sitio": "app/entradas/vista.py:186",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15547,7 +15571,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:357",
+        "sitio": "app/entradas/vista.py:359",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15565,7 +15589,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:538",
+        "sitio": "app/entradas/vista.py:542",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15583,7 +15607,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:513",
+        "sitio": "app/entradas/vista.py:517",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15601,7 +15625,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:423",
+        "sitio": "app/entradas/vista.py:425",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15619,7 +15643,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:522",
+        "sitio": "app/entradas/vista.py:526",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15644,7 +15668,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:171",
+        "sitio": "app/entradas/vista.py:173",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15666,7 +15690,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:180",
+        "sitio": "app/entradas/vista.py:182",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15685,7 +15709,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:343",
+        "sitio": "app/entradas/vista.py:345",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15703,7 +15727,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:762",
+        "sitio": "app/entradas/vista.py:766",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15722,7 +15746,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:375",
+        "sitio": "app/entradas/vista.py:377",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15743,7 +15767,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:362",
+        "sitio": "app/entradas/vista.py:364",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15761,7 +15785,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:197",
+        "sitio": "app/entradas/vista.py:199",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15779,7 +15803,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:497",
+        "sitio": "app/entradas/vista.py:501",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15797,7 +15821,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:351",
+        "sitio": "app/entradas/vista.py:353",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15817,7 +15841,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:313",
+        "sitio": "app/entradas/vista.py:315",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15835,7 +15859,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:624",
+        "sitio": "app/entradas/vista.py:628",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15852,7 +15876,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:596",
+        "sitio": "app/entradas/vista.py:600",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15870,7 +15894,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:553",
+        "sitio": "app/entradas/vista.py:557",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15888,7 +15912,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:161",
+        "sitio": "app/entradas/vista.py:163",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -30607,7 +30631,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 424,
+    "funciones_alcanzables": 425,
     "rutas": 75,
     "rutas_con_campos": 68,
     "rutas_sin_campos": 7,
@@ -34490,6 +34514,7 @@
       "cierre": [
         "app.api.rechaza_parametros_desconocidos",
         "app.api.validate_symbol",
+        "app.entradas.papel._pendiente",
         "app.entradas.papel._usd",
         "app.entradas.papel.cuenta",
         "app.entradas.reglamento._texto",
@@ -34538,6 +34563,7 @@
         "app.entradas.ruta.construir"
       ],
       "cierre_indirecto": [
+        "app.entradas.papel._pendiente",
         "app.entradas.papel._usd",
         "app.entradas.papel.cuenta",
         "app.entradas.reglamento._texto",
@@ -34603,10 +34629,10 @@
         "checks": {
           "llamadas": [
             "harness/checks/K106-banco.py:52",
-            "harness/checks/K107-control.bash:65",
+            "harness/checks/K107-control.bash:70",
             "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35",
             "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37",
-            "harness/checks/K107-resultado.py:167",
+            "harness/checks/K107-resultado.py:204",
             "harness/checks/K43-foto-unica.sh:169"
           ],
           "menciones": [
@@ -34615,7 +34641,7 @@
             "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:11",
             "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:13",
             "harness/checks/K107-resultado.py:4",
-            "harness/checks/K107-resultado.py:317",
+            "harness/checks/K107-resultado.py:356",
             "harness/checks/K43-foto-unica.sh:172"
           ]
         },
@@ -34624,7 +34650,7 @@
             "tests/test_entradas_ruta.py:72"
           ],
           "menciones": [
-            "tests/test_entradas_resultados_postgres.py:223",
+            "tests/test_entradas_resultados_postgres.py:246",
             "tests/test_entradas_ruta.py:1",
             "tests/test_entradas_vista.py:10"
           ]
@@ -36981,14 +37007,14 @@
     {
       "camino": "/api/mesa/entradas",
       "campos": {
-        "disponible": "literal en app/entradas/vista.py:715",
-        "generador": "literal en app/entradas/vista.py:718",
-        "marco": "literal en app/entradas/vista.py:738",
-        "motivo": "literal en app/entradas/vista.py:716",
-        "papel": "literal en app/entradas/vista.py:758",
-        "precio": "literal en app/entradas/vista.py:717",
-        "reciente": "literal en app/entradas/vista.py:731",
-        "vivo": "literal en app/entradas/vista.py:730"
+        "disponible": "literal en app/entradas/vista.py:719",
+        "generador": "literal en app/entradas/vista.py:722",
+        "marco": "literal en app/entradas/vista.py:742",
+        "motivo": "literal en app/entradas/vista.py:720",
+        "papel": "literal en app/entradas/vista.py:762",
+        "precio": "literal en app/entradas/vista.py:721",
+        "reciente": "literal en app/entradas/vista.py:735",
+        "vivo": "literal en app/entradas/vista.py:734"
       },
       "campos_pendientes": [
         "el objeto se expande con **base, que no se resuelve en el arbol: sus campos no se pueden derivar"
@@ -36996,6 +37022,7 @@
       "cierre": [
         "app.api.rechaza_parametros_desconocidos",
         "app.api.validate_symbol",
+        "app.entradas.papel._pendiente",
         "app.entradas.papel._usd",
         "app.entradas.papel.cuenta",
         "app.entradas.reglamento._texto",
@@ -37072,6 +37099,7 @@
         "app.entradas.vista.precio_ahora"
       ],
       "cierre_indirecto": [
+        "app.entradas.papel._pendiente",
         "app.entradas.papel._usd",
         "app.entradas.papel.cuenta",
         "app.entradas.reglamento._texto",
@@ -44434,7 +44462,7 @@
         {
           "funcion": "app.entradas.vista.construir",
           "origen": "constante _ANTERIORES_SQL",
-          "sitio": "app/entradas/vista.py:127"
+          "sitio": "app/entradas/vista.py:129"
         }
       ],
       "leida_por": [
@@ -45227,7 +45255,7 @@
         {
           "funcion": "app.entradas.vista.precio_ahora",
           "origen": "constante _PRECIO_SQL",
-          "sitio": "app/entradas/vista.py:154"
+          "sitio": "app/entradas/vista.py:156"
         },
         {
           "funcion": "app.ingest.rollup_ohlcv_5m",

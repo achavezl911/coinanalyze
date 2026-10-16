@@ -219,6 +219,29 @@ async def test_antes_de_la_vela_que_lo_acaba_esta_vivo_y_dice_hasta_donde_se_sab
     assert await base.fetchval("SELECT count(*) FROM entrada_resultado") == 0
 
 
+async def test_un_disparado_sin_su_vela_de_entrada_queda_pendiente_y_con_ella_se_resuelve(base):
+    """Sin la vela de su entrada, el papel SERVIDO lo da pendiente (no saltado) y la cuenta es PROVISIONAL. Con la
+    vela es una operacion, y con su stop asentado la cuenta es final."""
+    f = await registra(base, fila())
+    await siembra(base, fila(), STOP_2030)
+    await base.execute("DELETE FROM ohlcv WHERE symbol = $1 AND ts = $2", SOL, RES.entrada_t(fila()))
+    await _reloj(base, LISTO + timedelta(minutes=5))
+
+    async def papel():
+        return (await RUTA.construir(base, lado="ambos", desde=None, hasta=None, version=None, symbol=None,
+                                     limite=200, foto=False))["papel"]["v2"]
+    p = await papel()
+    assert (p["saltados"], p["n"], p["operaciones"], p["saldo_usd"], p["firmeza"]) == ([], 0, [], 200.0,
+                                                                                         RES.PROVISIONAL)
+    assert [x["registro_id"] for x in p["pendientes"]] == [f["registro_id"]]
+    assert p["pendientes"][0]["motivo"].endswith("la vela de 1 min de las 20:03Z no esta en la base")
+    assert await base.fetchval("SELECT count(*) FROM entrada_resultado") == 0
+    await siembra(base, fila(), STOP_2030)
+    p = await papel()
+    assert p["pendientes"] == [] and [op["registro_id"] for op in p["operaciones"]] == [f["registro_id"]]
+    assert (p["n"], p["firmeza"], p["operaciones"][0]["salida"]) == (1, RES.FINAL, RES.STOP)
+
+
 async def test_la_red_de_fracciones_sigue_condenando_con_resultados(base):
     """La E3 trae resultados, papel y convenciones a /api/entradas: la red de fracciones sigue mirando TODO lo que
     se sirve, y una frecuencia de resultados plantada en cualquiera de esos sitios la condena."""
