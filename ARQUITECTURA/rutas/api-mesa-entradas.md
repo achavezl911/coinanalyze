@@ -19,14 +19,14 @@ Handler `mesa_entradas` · `app/api.py:3875` (cuerpo hasta la 3888) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `disponible` | literal en app/entradas/vista.py:719 |
-| `generador` | literal en app/entradas/vista.py:722 |
-| `marco` | literal en app/entradas/vista.py:742 |
-| `motivo` | literal en app/entradas/vista.py:720 |
-| `papel` | literal en app/entradas/vista.py:762 |
-| `precio` | literal en app/entradas/vista.py:721 |
-| `reciente` | literal en app/entradas/vista.py:735 |
-| `vivo` | literal en app/entradas/vista.py:734 |
+| `disponible` | literal en app/entradas/vista.py:722 |
+| `generador` | literal en app/entradas/vista.py:725 |
+| `marco` | literal en app/entradas/vista.py:745 |
+| `motivo` | literal en app/entradas/vista.py:723 |
+| `papel` | literal en app/entradas/vista.py:765 |
+| `precio` | literal en app/entradas/vista.py:724 |
+| `reciente` | literal en app/entradas/vista.py:738 |
+| `vivo` | literal en app/entradas/vista.py:737 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -60,7 +60,7 @@ LEE:
 - `entrada_reglamento` — `sql/schema.sql:2655`, 6 columnas
   - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:85`
 - `entrada_resultado` — `sql/schema.sql:2843`, 12 columnas
-  - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:55`
+  - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:62`
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
@@ -75,20 +75,21 @@ LEE:
 
 ## Funciones que la componen
 
-77 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+78 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2586`
 - `app.api.validate_symbol` — `app/api.py:253`
-- `app.entradas.vista.construir` — `app/entradas/vista.py:600`
+- `app.entradas.vista.construir` — `app/entradas/vista.py:603`
 
-<details><summary>Alcanzables de forma indirecta (74)</summary>
+<details><summary>Alcanzables de forma indirecta (75)</summary>
 
-- `app.entradas.papel._pendiente` — `app/entradas/papel.py:46`
-- `app.entradas.papel._usd` — `app/entradas/papel.py:42`
-- `app.entradas.papel.cuenta` — `app/entradas/papel.py:56`
+- `app.entradas.papel._pendiente` — `app/entradas/papel.py:63`
+- `app.entradas.papel._sin_resultado` — `app/entradas/papel.py:74`
+- `app.entradas.papel._usd` — `app/entradas/papel.py:59`
+- `app.entradas.papel.cuenta` — `app/entradas/papel.py:87`
 - `app.entradas.reglamento._texto` — `app/entradas/reglamento.py:127`
 - `app.entradas.reglamento._valida_apuestas` — `app/entradas/reglamento.py:308`
 - `app.entradas.reglamento._valida_bloque` — `app/entradas/reglamento.py:131`
@@ -125,41 +126,41 @@ Llamadas directas del handler:
 - `app.entradas.resolutor.iso` — `app/entradas/resolutor.py:178`
 - `app.entradas.resolutor.resolver` — `app/entradas/resolutor.py:223`
 - `app.entradas.resolutor.ventana` — `app/entradas/resolutor.py:196`
-- `app.entradas.resultados.barrido` — `app/entradas/resultados.py:129`
-- `app.entradas.resultados.de_filas` — `app/entradas/resultados.py:110`
-- `app.entradas.resultados.guardar` — `app/entradas/resultados.py:97`
-- `app.entradas.resultados.resolver_fila` — `app/entradas/resultados.py:82`
-- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:346`
-- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:368`
-- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:153`
-- `app.entradas.ruta.construir` — `app/entradas/ruta.py:196`
-- `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:577`
-- `app.entradas.vista._base` — `app/entradas/vista.py:333`
-- `app.entradas.vista._de` — `app/entradas/vista.py:511`
-- `app.entradas.vista._decide` — `app/entradas/vista.py:248`
-- `app.entradas.vista._disparado` — `app/entradas/vista.py:460`
-- `app.entradas.vista._distancia` — `app/entradas/vista.py:320`
-- `app.entradas.vista._fila_corta` — `app/entradas/vista.py:418`
-- `app.entradas.vista._firmeza` — `app/entradas/vista.py:369`
-- `app.entradas.vista._fraccion` — `app/entradas/vista.py:186`
-- `app.entradas.vista._hora` — `app/entradas/vista.py:359`
-- `app.entradas.vista._muestra` — `app/entradas/vista.py:542`
-- `app.entradas.vista._orden` — `app/entradas/vista.py:517`
-- `app.entradas.vista._papel` — `app/entradas/vista.py:425`
-- `app.entradas.vista._papeles` — `app/entradas/vista.py:526`
-- `app.entradas.vista._precio` — `app/entradas/vista.py:173`
-- `app.entradas.vista._r` — `app/entradas/vista.py:182`
-- `app.entradas.vista._requisitos` — `app/entradas/vista.py:345`
-- `app.entradas.vista._resolutor` — `app/entradas/vista.py:766`
-- `app.entradas.vista._resultado` — `app/entradas/vista.py:377`
-- `app.entradas.vista._rotulo_de` — `app/entradas/vista.py:364`
-- `app.entradas.vista._significado` — `app/entradas/vista.py:199`
-- `app.entradas.vista._sombra` — `app/entradas/vista.py:501`
-- `app.entradas.vista._vigilando` — `app/entradas/vista.py:353`
-- `app.entradas.vista._zona` — `app/entradas/vista.py:315`
-- `app.entradas.vista.componer` — `app/entradas/vista.py:628`
-- `app.entradas.vista.pasada_en_curso` — `app/entradas/vista.py:557`
-- `app.entradas.vista.precio_ahora` — `app/entradas/vista.py:163`
+- `app.entradas.resultados.barrido` — `app/entradas/resultados.py:138`
+- `app.entradas.resultados.de_filas` — `app/entradas/resultados.py:119`
+- `app.entradas.resultados.guardar` — `app/entradas/resultados.py:104`
+- `app.entradas.resultados.resolver_fila` — `app/entradas/resultados.py:89`
+- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:349`
+- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:371`
+- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:156`
+- `app.entradas.ruta.construir` — `app/entradas/ruta.py:199`
+- `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:580`
+- `app.entradas.vista._base` — `app/entradas/vista.py:335`
+- `app.entradas.vista._de` — `app/entradas/vista.py:514`
+- `app.entradas.vista._decide` — `app/entradas/vista.py:250`
+- `app.entradas.vista._disparado` — `app/entradas/vista.py:463`
+- `app.entradas.vista._distancia` — `app/entradas/vista.py:322`
+- `app.entradas.vista._fila_corta` — `app/entradas/vista.py:420`
+- `app.entradas.vista._firmeza` — `app/entradas/vista.py:371`
+- `app.entradas.vista._fraccion` — `app/entradas/vista.py:188`
+- `app.entradas.vista._hora` — `app/entradas/vista.py:361`
+- `app.entradas.vista._muestra` — `app/entradas/vista.py:545`
+- `app.entradas.vista._orden` — `app/entradas/vista.py:520`
+- `app.entradas.vista._papel` — `app/entradas/vista.py:427`
+- `app.entradas.vista._papeles` — `app/entradas/vista.py:529`
+- `app.entradas.vista._precio` — `app/entradas/vista.py:175`
+- `app.entradas.vista._r` — `app/entradas/vista.py:184`
+- `app.entradas.vista._requisitos` — `app/entradas/vista.py:347`
+- `app.entradas.vista._resolutor` — `app/entradas/vista.py:769`
+- `app.entradas.vista._resultado` — `app/entradas/vista.py:379`
+- `app.entradas.vista._rotulo_de` — `app/entradas/vista.py:366`
+- `app.entradas.vista._significado` — `app/entradas/vista.py:201`
+- `app.entradas.vista._sombra` — `app/entradas/vista.py:504`
+- `app.entradas.vista._vigilando` — `app/entradas/vista.py:355`
+- `app.entradas.vista._zona` — `app/entradas/vista.py:317`
+- `app.entradas.vista.componer` — `app/entradas/vista.py:631`
+- `app.entradas.vista.pasada_en_curso` — `app/entradas/vista.py:560`
+- `app.entradas.vista.precio_ahora` — `app/entradas/vista.py:165`
 
 </details>
 
@@ -231,6 +232,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.versiones_en_curso` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.api.rechaza_parametros_desconocidos` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.entradas.papel._pendiente` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
+| `app.entradas.papel._sin_resultado` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel._usd` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel.cuenta` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.reglamento._texto` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
@@ -249,8 +251,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.huella_bloque` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.huella_revision` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.instante` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.registros_esperados` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| _… y 53 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 54 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

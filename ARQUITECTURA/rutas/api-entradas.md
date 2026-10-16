@@ -25,25 +25,25 @@ Handler `entradas` · `app/api.py:1317` (cuerpo hasta la 1343) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `cuentas` | literal en app/entradas/ruta.py:332 |
-| `disponible` | literal en app/entradas/ruta.py:325 |
-| `generador` | literal en app/entradas/ruta.py:326 |
-| `generador.motivo` | literal en app/entradas/ruta.py:328 |
-| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:327 |
-| `motivo` | literal en app/entradas/ruta.py:219 |
-| `papel` | literal en app/entradas/ruta.py:341 |
-| `por_lado` | literal en app/entradas/ruta.py:330 |
-| `reglamento` | literal en app/entradas/ruta.py:331 |
-| `reglamento.disponible` | literal en app/entradas/ruta.py:227 |
-| `reglamento.motivo` | literal en app/entradas/ruta.py:227 |
-| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:233 |
-| `resultados` | literal en app/entradas/ruta.py:333 |
-| `resultados.barrido_emparejado` | literal en app/entradas/ruta.py:339 |
-| `resultados.cambios_e3` | literal en app/entradas/ruta.py:338 |
-| `resultados.convenciones` | literal en app/entradas/ruta.py:337 |
-| `resultados.huella_convenciones` | literal en app/entradas/ruta.py:336 |
-| `resultados.que_es` | literal en app/entradas/ruta.py:334 |
-| `resultados.resolutor` | literal en app/entradas/ruta.py:335 |
+| `cuentas` | literal en app/entradas/ruta.py:335 |
+| `disponible` | literal en app/entradas/ruta.py:328 |
+| `generador` | literal en app/entradas/ruta.py:329 |
+| `generador.motivo` | literal en app/entradas/ruta.py:331 |
+| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:330 |
+| `motivo` | literal en app/entradas/ruta.py:222 |
+| `papel` | literal en app/entradas/ruta.py:344 |
+| `por_lado` | literal en app/entradas/ruta.py:333 |
+| `reglamento` | literal en app/entradas/ruta.py:334 |
+| `reglamento.disponible` | literal en app/entradas/ruta.py:230 |
+| `reglamento.motivo` | literal en app/entradas/ruta.py:230 |
+| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:236 |
+| `resultados` | literal en app/entradas/ruta.py:336 |
+| `resultados.barrido_emparejado` | literal en app/entradas/ruta.py:342 |
+| `resultados.cambios_e3` | literal en app/entradas/ruta.py:341 |
+| `resultados.convenciones` | literal en app/entradas/ruta.py:340 |
+| `resultados.huella_convenciones` | literal en app/entradas/ruta.py:339 |
+| `resultados.que_es` | literal en app/entradas/ruta.py:337 |
+| `resultados.resolutor` | literal en app/entradas/ruta.py:338 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -77,7 +77,7 @@ LEE:
 - `entrada_reglamento` — `sql/schema.sql:2655`, 6 columnas
   - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:85`
 - `entrada_resultado` — `sql/schema.sql:2843`, 12 columnas
-  - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:55`
+  - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:62`
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
@@ -92,20 +92,21 @@ LEE:
 
 ## Funciones que la componen
 
-49 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+50 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2586`
 - `app.api.validate_symbol` — `app/api.py:253`
-- `app.entradas.ruta.construir` — `app/entradas/ruta.py:196`
+- `app.entradas.ruta.construir` — `app/entradas/ruta.py:199`
 
-<details><summary>Alcanzables de forma indirecta (46)</summary>
+<details><summary>Alcanzables de forma indirecta (47)</summary>
 
-- `app.entradas.papel._pendiente` — `app/entradas/papel.py:46`
-- `app.entradas.papel._usd` — `app/entradas/papel.py:42`
-- `app.entradas.papel.cuenta` — `app/entradas/papel.py:56`
+- `app.entradas.papel._pendiente` — `app/entradas/papel.py:63`
+- `app.entradas.papel._sin_resultado` — `app/entradas/papel.py:74`
+- `app.entradas.papel._usd` — `app/entradas/papel.py:59`
+- `app.entradas.papel.cuenta` — `app/entradas/papel.py:87`
 - `app.entradas.reglamento._texto` — `app/entradas/reglamento.py:127`
 - `app.entradas.reglamento._valida_apuestas` — `app/entradas/reglamento.py:308`
 - `app.entradas.reglamento._valida_bloque` — `app/entradas/reglamento.py:131`
@@ -142,13 +143,13 @@ Llamadas directas del handler:
 - `app.entradas.resolutor.iso` — `app/entradas/resolutor.py:178`
 - `app.entradas.resolutor.resolver` — `app/entradas/resolutor.py:223`
 - `app.entradas.resolutor.ventana` — `app/entradas/resolutor.py:196`
-- `app.entradas.resultados.barrido` — `app/entradas/resultados.py:129`
-- `app.entradas.resultados.de_filas` — `app/entradas/resultados.py:110`
-- `app.entradas.resultados.guardar` — `app/entradas/resultados.py:97`
-- `app.entradas.resultados.resolver_fila` — `app/entradas/resultados.py:82`
-- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:346`
-- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:368`
-- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:153`
+- `app.entradas.resultados.barrido` — `app/entradas/resultados.py:138`
+- `app.entradas.resultados.de_filas` — `app/entradas/resultados.py:119`
+- `app.entradas.resultados.guardar` — `app/entradas/resultados.py:104`
+- `app.entradas.resultados.resolver_fila` — `app/entradas/resultados.py:89`
+- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:349`
+- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:371`
+- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:156`
 
 </details>
 
@@ -177,7 +178,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K106-banco.py:52`, `harness/checks/K107-control.bash:70`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37` _(+2)_ | `harness/checks/K107-control.bash:9`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:5`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:11`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:13` _(+3)_ |
-| **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_resultados_postgres.py:246`, `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
+| **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_resultados_postgres.py:248`, `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
 
 **No la llama el panel**, pero si 7 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
@@ -221,6 +222,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.versiones_en_curso` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.api.rechaza_parametros_desconocidos` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.entradas.papel._pendiente` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
+| `app.entradas.papel._sin_resultado` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel._usd` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel.cuenta` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.reglamento._texto` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
@@ -239,8 +241,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.huella_bloque` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.huella_revision` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.instante` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.registros_esperados` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| _… y 25 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 26 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

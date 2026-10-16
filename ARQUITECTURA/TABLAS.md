@@ -357,7 +357,7 @@ La escriben:
 
 La escriben:
 
-- `app.entradas.resultados.guardar` — **INSERT** en `app/entradas/resultados.py:55`
+- `app.entradas.resultados.guardar` — **INSERT** en `app/entradas/resultados.py:62`
 
 **Si cambia el contenido o el esquema de `entrada_resultado`, estas 2 rutas lo notan:**
 

@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_hipotesis`](#-hipotesis) | 346 | 2 | **0** | 0 | **2** |
-| [`_reglamento`](#-reglamento) | 368 | 2 | **0** | 0 | **2** |
-| [`_resumen`](#-resumen) | 153 | 2 | **0** | 0 | **2** |
-| [`construir`](#construir) | 196 | 2 | **0** | 0 | **2** |
+| [`_hipotesis`](#-hipotesis) | 349 | 2 | **0** | 0 | **2** |
+| [`_reglamento`](#-reglamento) | 371 | 2 | **0** | 0 | **2** |
+| [`_resumen`](#-resumen) | 156 | 2 | **0** | 0 | **2** |
+| [`construir`](#construir) | 199 | 2 | **0** | 0 | **2** |
 
 ## _hipotesis
 
-`app/entradas/ruta.py:346` · clave completa `app.entradas.ruta._hipotesis`
+`app/entradas/ruta.py:349` · clave completa `app.entradas.ruta._hipotesis`
 
 **Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
 
@@ -39,7 +39,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _reglamento
 
-`app/entradas/ruta.py:368` · clave completa `app.entradas.ruta._reglamento`
+`app/entradas/ruta.py:371` · clave completa `app.entradas.ruta._reglamento`
 
 **Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
 
@@ -63,7 +63,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _resumen
 
-`app/entradas/ruta.py:153` · clave completa `app.entradas.ruta._resumen`
+`app/entradas/ruta.py:156` · clave completa `app.entradas.ruta._resumen`
 
 **Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
 
@@ -87,7 +87,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## construir
 
-`app/entradas/ruta.py:196` · clave completa `app.entradas.ruta.construir`
+`app/entradas/ruta.py:199` · clave completa `app.entradas.ruta.construir`
 
 **Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
 

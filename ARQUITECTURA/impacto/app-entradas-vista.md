@@ -8,38 +8,38 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_ancla_no_puede`](#-ancla-no-puede) | 577 | 1 | **0** | 0 | **1** |
-| [`_base`](#-base) | 333 | 1 | **0** | 0 | **1** |
-| [`_de`](#-de) | 511 | 1 | **0** | 0 | **1** |
-| [`_decide`](#-decide) | 248 | 1 | **0** | 0 | **1** |
-| [`_disparado`](#-disparado) | 460 | 1 | **0** | 0 | **1** |
-| [`_distancia`](#-distancia) | 320 | 1 | **0** | 0 | **1** |
-| [`_fila_corta`](#-fila-corta) | 418 | 1 | **0** | 0 | **1** |
-| [`_firmeza`](#-firmeza) | 369 | 1 | **0** | 0 | **1** |
-| [`_fraccion`](#-fraccion) | 186 | 1 | **0** | 0 | **1** |
-| [`_hora`](#-hora) | 359 | 1 | **0** | 0 | **1** |
-| [`_muestra`](#-muestra) | 542 | 1 | **0** | 0 | **1** |
-| [`_orden`](#-orden) | 517 | 1 | **0** | 0 | **1** |
-| [`_papel`](#-papel) | 425 | 1 | **0** | 0 | **1** |
-| [`_papeles`](#-papeles) | 526 | 1 | **0** | 0 | **1** |
-| [`_precio`](#-precio) | 173 | 1 | **0** | 0 | **1** |
-| [`_r`](#-r) | 182 | 1 | **0** | 0 | **1** |
-| [`_requisitos`](#-requisitos) | 345 | 1 | **0** | 0 | **1** |
-| [`_resolutor`](#-resolutor) | 766 | 1 | **0** | 0 | **1** |
-| [`_resultado`](#-resultado) | 377 | 1 | **0** | 0 | **1** |
-| [`_rotulo_de`](#-rotulo-de) | 364 | 1 | **0** | 0 | **1** |
-| [`_significado`](#-significado) | 199 | 1 | **0** | 0 | **1** |
-| [`_sombra`](#-sombra) | 501 | 1 | **0** | 0 | **1** |
-| [`_vigilando`](#-vigilando) | 353 | 1 | **0** | 0 | **1** |
-| [`_zona`](#-zona) | 315 | 1 | **0** | 0 | **1** |
-| [`componer`](#componer) | 628 | 1 | **0** | 0 | **1** |
-| [`construir`](#construir) | 600 | 1 | **0** | 0 | **1** |
-| [`pasada_en_curso`](#pasada-en-curso) | 557 | 1 | **0** | 0 | **1** |
-| [`precio_ahora`](#precio-ahora) | 163 | 1 | **0** | 0 | **1** |
+| [`_ancla_no_puede`](#-ancla-no-puede) | 580 | 1 | **0** | 0 | **1** |
+| [`_base`](#-base) | 335 | 1 | **0** | 0 | **1** |
+| [`_de`](#-de) | 514 | 1 | **0** | 0 | **1** |
+| [`_decide`](#-decide) | 250 | 1 | **0** | 0 | **1** |
+| [`_disparado`](#-disparado) | 463 | 1 | **0** | 0 | **1** |
+| [`_distancia`](#-distancia) | 322 | 1 | **0** | 0 | **1** |
+| [`_fila_corta`](#-fila-corta) | 420 | 1 | **0** | 0 | **1** |
+| [`_firmeza`](#-firmeza) | 371 | 1 | **0** | 0 | **1** |
+| [`_fraccion`](#-fraccion) | 188 | 1 | **0** | 0 | **1** |
+| [`_hora`](#-hora) | 361 | 1 | **0** | 0 | **1** |
+| [`_muestra`](#-muestra) | 545 | 1 | **0** | 0 | **1** |
+| [`_orden`](#-orden) | 520 | 1 | **0** | 0 | **1** |
+| [`_papel`](#-papel) | 427 | 1 | **0** | 0 | **1** |
+| [`_papeles`](#-papeles) | 529 | 1 | **0** | 0 | **1** |
+| [`_precio`](#-precio) | 175 | 1 | **0** | 0 | **1** |
+| [`_r`](#-r) | 184 | 1 | **0** | 0 | **1** |
+| [`_requisitos`](#-requisitos) | 347 | 1 | **0** | 0 | **1** |
+| [`_resolutor`](#-resolutor) | 769 | 1 | **0** | 0 | **1** |
+| [`_resultado`](#-resultado) | 379 | 1 | **0** | 0 | **1** |
+| [`_rotulo_de`](#-rotulo-de) | 366 | 1 | **0** | 0 | **1** |
+| [`_significado`](#-significado) | 201 | 1 | **0** | 0 | **1** |
+| [`_sombra`](#-sombra) | 504 | 1 | **0** | 0 | **1** |
+| [`_vigilando`](#-vigilando) | 355 | 1 | **0** | 0 | **1** |
+| [`_zona`](#-zona) | 317 | 1 | **0** | 0 | **1** |
+| [`componer`](#componer) | 631 | 1 | **0** | 0 | **1** |
+| [`construir`](#construir) | 603 | 1 | **0** | 0 | **1** |
+| [`pasada_en_curso`](#pasada-en-curso) | 560 | 1 | **0** | 0 | **1** |
+| [`precio_ahora`](#precio-ahora) | 165 | 1 | **0** | 0 | **1** |
 
 ## _ancla_no_puede
 
-`app/entradas/vista.py:577` · clave completa `app.entradas.vista._ancla_no_puede`
+`app/entradas/vista.py:580` · clave completa `app.entradas.vista._ancla_no_puede`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -62,7 +62,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _base
 
-`app/entradas/vista.py:333` · clave completa `app.entradas.vista._base`
+`app/entradas/vista.py:335` · clave completa `app.entradas.vista._base`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -85,7 +85,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _de
 
-`app/entradas/vista.py:511` · clave completa `app.entradas.vista._de`
+`app/entradas/vista.py:514` · clave completa `app.entradas.vista._de`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -108,7 +108,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _decide
 
-`app/entradas/vista.py:248` · clave completa `app.entradas.vista._decide`
+`app/entradas/vista.py:250` · clave completa `app.entradas.vista._decide`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -131,7 +131,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _disparado
 
-`app/entradas/vista.py:460` · clave completa `app.entradas.vista._disparado`
+`app/entradas/vista.py:463` · clave completa `app.entradas.vista._disparado`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -154,7 +154,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _distancia
 
-`app/entradas/vista.py:320` · clave completa `app.entradas.vista._distancia`
+`app/entradas/vista.py:322` · clave completa `app.entradas.vista._distancia`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -177,7 +177,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _fila_corta
 
-`app/entradas/vista.py:418` · clave completa `app.entradas.vista._fila_corta`
+`app/entradas/vista.py:420` · clave completa `app.entradas.vista._fila_corta`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -200,7 +200,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _firmeza
 
-`app/entradas/vista.py:369` · clave completa `app.entradas.vista._firmeza`
+`app/entradas/vista.py:371` · clave completa `app.entradas.vista._firmeza`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -223,7 +223,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _fraccion
 
-`app/entradas/vista.py:186` · clave completa `app.entradas.vista._fraccion`
+`app/entradas/vista.py:188` · clave completa `app.entradas.vista._fraccion`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -246,7 +246,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _hora
 
-`app/entradas/vista.py:359` · clave completa `app.entradas.vista._hora`
+`app/entradas/vista.py:361` · clave completa `app.entradas.vista._hora`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -269,7 +269,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _muestra
 
-`app/entradas/vista.py:542` · clave completa `app.entradas.vista._muestra`
+`app/entradas/vista.py:545` · clave completa `app.entradas.vista._muestra`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -292,7 +292,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _orden
 
-`app/entradas/vista.py:517` · clave completa `app.entradas.vista._orden`
+`app/entradas/vista.py:520` · clave completa `app.entradas.vista._orden`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -315,7 +315,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _papel
 
-`app/entradas/vista.py:425` · clave completa `app.entradas.vista._papel`
+`app/entradas/vista.py:427` · clave completa `app.entradas.vista._papel`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -338,7 +338,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _papeles
 
-`app/entradas/vista.py:526` · clave completa `app.entradas.vista._papeles`
+`app/entradas/vista.py:529` · clave completa `app.entradas.vista._papeles`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -361,7 +361,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _precio
 
-`app/entradas/vista.py:173` · clave completa `app.entradas.vista._precio`
+`app/entradas/vista.py:175` · clave completa `app.entradas.vista._precio`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -384,7 +384,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _r
 
-`app/entradas/vista.py:182` · clave completa `app.entradas.vista._r`
+`app/entradas/vista.py:184` · clave completa `app.entradas.vista._r`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -407,7 +407,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _requisitos
 
-`app/entradas/vista.py:345` · clave completa `app.entradas.vista._requisitos`
+`app/entradas/vista.py:347` · clave completa `app.entradas.vista._requisitos`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -430,7 +430,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _resolutor
 
-`app/entradas/vista.py:766` · clave completa `app.entradas.vista._resolutor`
+`app/entradas/vista.py:769` · clave completa `app.entradas.vista._resolutor`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -453,7 +453,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _resultado
 
-`app/entradas/vista.py:377` · clave completa `app.entradas.vista._resultado`
+`app/entradas/vista.py:379` · clave completa `app.entradas.vista._resultado`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -476,7 +476,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _rotulo_de
 
-`app/entradas/vista.py:364` · clave completa `app.entradas.vista._rotulo_de`
+`app/entradas/vista.py:366` · clave completa `app.entradas.vista._rotulo_de`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -499,7 +499,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _significado
 
-`app/entradas/vista.py:199` · clave completa `app.entradas.vista._significado`
+`app/entradas/vista.py:201` · clave completa `app.entradas.vista._significado`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -522,7 +522,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _sombra
 
-`app/entradas/vista.py:501` · clave completa `app.entradas.vista._sombra`
+`app/entradas/vista.py:504` · clave completa `app.entradas.vista._sombra`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -545,7 +545,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _vigilando
 
-`app/entradas/vista.py:353` · clave completa `app.entradas.vista._vigilando`
+`app/entradas/vista.py:355` · clave completa `app.entradas.vista._vigilando`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -568,7 +568,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _zona
 
-`app/entradas/vista.py:315` · clave completa `app.entradas.vista._zona`
+`app/entradas/vista.py:317` · clave completa `app.entradas.vista._zona`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -591,7 +591,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## componer
 
-`app/entradas/vista.py:628` · clave completa `app.entradas.vista.componer`
+`app/entradas/vista.py:631` · clave completa `app.entradas.vista.componer`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -614,7 +614,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## construir
 
-`app/entradas/vista.py:600` · clave completa `app.entradas.vista.construir`
+`app/entradas/vista.py:603` · clave completa `app.entradas.vista.construir`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -637,7 +637,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## pasada_en_curso
 
-`app/entradas/vista.py:557` · clave completa `app.entradas.vista.pasada_en_curso`
+`app/entradas/vista.py:560` · clave completa `app.entradas.vista.pasada_en_curso`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 
@@ -660,7 +660,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## precio_ahora
 
-`app/entradas/vista.py:163` · clave completa `app.entradas.vista.precio_ahora`
+`app/entradas/vista.py:165` · clave completa `app.entradas.vista.precio_ahora`
 
 **Radio exacto: 1 rutas** de 75 · **cota superior: 1** (igual al exacto)
 

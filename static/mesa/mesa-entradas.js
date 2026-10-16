@@ -528,7 +528,8 @@ function entPapel(R, d) {
       });
       t.appendChild(tabla);
     }
-    [['saltados', 'saltado'], ['pendientes', 'pendiente'], ['sin_posicion', 'sin posición']].forEach(([lista, rotulo]) => {
+    [['saltados', 'saltado'], ['pendientes', 'pendiente'], ['sin_posicion', 'sin posición'],
+     ['sin_resultado', 'sin resultado']].forEach(([lista, rotulo]) => {
       (c[lista] || []).forEach((s, i) => {
         const rs = rc + '.' + lista + '[' + i + ']';
         t.appendChild(entLinea(rotulo, sv('span', 'mono', rs + '.registro_id', s.registro_id), ' ',

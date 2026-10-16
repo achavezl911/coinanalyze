@@ -136,13 +136,16 @@ RESUELTOS_QUE_ES = ("cuenta los DISPARADOS de la celda con resultado FINAL guard
                     "que ademas se cuentan aparte; la muestra no cuenta los no evaluables")
 RESULTADOS_QUE_ES = (
     "Como acabo cada DISPARADO, por primer toque en las velas de 1 min de su simbolo, con estas convenciones "
-    "(su version y su huella). Un resultado PROVISIONAL dice hasta cuando lo es; uno FINAL esta guardado en "
-    "entrada_resultado y no se reescribe: cambiar una convencion es una version nueva del resolutor. Ninguna "
-    "frecuencia: con menos de 30 resueltos por celda no se da ninguna, y la da la E4.")
+    "(su version y su huella). Un resultado PROVISIONAL dice hasta cuando lo es, salvo un T1 mientras sigue su plan; "
+    "uno FINAL se guarda en entrada_resultado y no se reescribe: cambiar una convencion es una version nueva del "
+    "resolutor. El FINAL sin hora de asentamiento (convencion «plan») no se guarda: no tiene hora que guardar, y "
+    "se recalcula en cada peticion siempre igual. Ninguna frecuencia: con menos de 30 resueltos por celda no se da "
+    "ninguna, y la da la E4.")
 BARRIDO_QUE_ES = (
     "Descriptivo fijado por la hipotesis de v2 ANTES de su registro, NUNCA una prueba: para cada DISPARADO de v2 "
     "que toca su stop, la SOMBRA de v1 del mismo episodio (misma clave, mismo inicio y misma vela) y si su plan "
-    "-mismo T1, stop con cascada- habria cruzado T1 antes que su stop. Un HIPOTETICO, plan a plan.")
+    "-mismo T1, stop con cascada- habria cruzado T1 antes que su stop. Un HIPOTETICO, plan a plan. De una pareja "
+    "NO EVALUABLE (sin T1, sin stop o sin nivel, o un minuto que falto) no se sabe: null, y su motivo dice por que.")
 _DISPARADOS = """
 SELECT registro_id, version, familia, perfil, lado, symbol, clave, episodio, estado, vela_cierre,
        inicio_episodio, registered_at, caduca_en

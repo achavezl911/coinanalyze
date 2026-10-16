@@ -123,8 +123,10 @@ PAPEL_QUE_ES = (
     "de sus DISPARADOS de los tres activos (nunca una SOMBRA). Sin apalancamiento: toma cada DISPARADO por orden "
     "de registro si cabe, con la cantidad hacia abajo al paso de Bybit, y apunta los saltados (los que no caben o "
     "no dimensionan) con su motivo. Un DISPARADO sin entrada real todavia queda pendiente, y detras de el los "
-    "posteriores que necesitan capital: la cuenta es PROVISIONAL mientras tanto. Funding solo adverso. No mueve "
-    "fondos ni ejecuta nada.")
+    "posteriores que necesitan capital. Los que no abren posicion (sin entrada, limite no llenada) y los que no "
+    "tienen resultado (no evaluables, o sin P&L) se apuntan aparte: la cuenta no les reserva capital. Una "
+    "operacion a la espera (su plan acabo y falta una vela para saber como salio) sigue ocupando su nocional. Si la "
+    "cuenta es PROVISIONAL, dice por que. Funding solo adverso. No mueve fondos ni ejecuta nada.")
 _ANTERIORES_SQL = """
 SELECT * FROM (
     SELECT registro_id, version, familia, perfil, lado, symbol, clave, inicio_episodio, estado, vela_cierre,
@@ -424,7 +426,8 @@ def _fila_corta(fila: dict[str, Any]) -> dict[str, Any]:
 
 def _papel(cuentas: dict[str, Any], versiones: list[dict[str, str]]) -> dict[str, Any]:
     """La cuenta de papel de cada version en curso, ya escrita: saldo, n, cada operacion con su lote, su R y su
-    P&L, los saltados, los pendientes y los que no abren posicion con su motivo, y el funding cobrado."""
+    P&L, los saltados, los pendientes, los que no abren posicion y los que no tienen resultado con su motivo, y el
+    funding cobrado."""
     por_version = []
     for v in versiones:
         c = cuentas.get(v["version"])
@@ -435,24 +438,24 @@ def _papel(cuentas: dict[str, Any], versiones: list[dict[str, str]]) -> dict[str
             "version": v["version"], "papel": v["papel"], "capital_usd": c["capital_usd"],
             "saldo_usd": c["saldo_usd"], "n": c["n"], "abiertas": c["abiertas"], "funding_usd": c["funding_usd"],
             "meta_usd": c["meta_usd"], "meta": c["meta"], "no_dimensiona": c["no_dimensiona"],
+            # cada razon la da la cuenta, cierta del estado que la pone; «hasta las» solo si es lo unico que falta
             "firmeza": "FINAL" if c["firmeza"] == RES.FINAL else (
-                "PROVISIONAL: hay DISPARADOS pendientes, aun sin entrada real" if c["pendientes"] else
                 f"PROVISIONAL hasta las {_hora(c['provisional_hasta'])}" if c.get("provisional_hasta") else
-                "PROVISIONAL: hay operaciones abiertas"),
+                "PROVISIONAL: " + "; ".join(c["provisional_por"])),
             "recortada": (f"se ven las ultimas {OPERACIONES_EN_PANTALLA} de sus operaciones: todas, en "
                           "/api/entradas") if len(c["operaciones"]) > OPERACIONES_EN_PANTALLA else None,
             "operaciones": [{
                 "registro_id": op["registro_id"], "activo": op["symbol"].split("USDT")[0],
                 "vela_cierre": op["vela_cierre"], "perfil": op["perfil"], "lado": op["lado"],
                 "rotulo": _rotulo_de({"salida": op["salida"], "instante": op["instante_salida"]}) if op["salida"]
-                else "ABIERTA", "firmeza": "FINAL" if op["firmeza"] == RES.FINAL else "PROVISIONAL",
+                else op["estado"].upper(), "firmeza": "FINAL" if op["firmeza"] == RES.FINAL else "PROVISIONAL",
                 "lote": op["lote"], "precio_entrada": _precio(op["precio_entrada"]),
                 "precio_salida": _precio(op["precio_salida"]), "r_neto": _r(op["r_neto"], 2),
                 "pnl_usd": op["pnl_usd"], "comision_usd": op["comision_usd"], "funding_usd": op["funding_usd"],
                 "funding_sin_medir": op["funding_sin_medir"] or None} for op in ops],
             **{lista: [{"registro_id": s["registro_id"], "activo": s["symbol"].split("USDT")[0],
                         "vela_cierre": s["vela_cierre"], "motivo": s["motivo"]} for s in c[lista]]
-               for lista in ("saltados", "pendientes", "sin_posicion")},
+               for lista in ("saltados", "pendientes", "sin_posicion", "sin_resultado")},
         })
     return {"que_es": PAPEL_QUE_ES, "por_version": por_version}
 

@@ -16,12 +16,14 @@ from pathlib import Path
 
 import asyncpg
 import pytest
+from test_entradas_papel import formas
 from test_entradas_resolutor import T, fila
 
 from app.entradas import reglamento as R
 from app.entradas import resolutor as RES
 from app.entradas import resultados as RS
 from app.entradas import ruta as RUTA
+from app.entradas import vista as V
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_SQL = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
@@ -234,7 +236,7 @@ async def test_un_disparado_sin_su_vela_de_entrada_queda_pendiente_y_con_ella_se
     assert (p["saltados"], p["n"], p["operaciones"], p["saldo_usd"], p["firmeza"]) == ([], 0, [], 200.0,
                                                                                          RES.PROVISIONAL)
     assert [x["registro_id"] for x in p["pendientes"]] == [f["registro_id"]]
-    assert p["pendientes"][0]["motivo"].endswith("la vela de 1 min de las 20:03Z no esta en la base")
+    assert "la vela de 1 min de las 20:03Z aun no se puede usar (no esta en la base, la tapa un hueco" in p["pendientes"][0]["motivo"]
     assert await base.fetchval("SELECT count(*) FROM entrada_resultado") == 0
     await siembra(base, fila(), STOP_2030)
     p = await papel()
@@ -261,3 +263,50 @@ async def test_la_red_de_fracciones_sigue_condenando_con_resultados(base):
         r = json.loads(json.dumps(resp, default=str))
         planta(r)
         assert RUTA.fracciones_servidas(r), planta
+
+
+
+async def _sin_decide(conn, symbol, frame):
+    raise RuntimeError("sin DECIDE en este test")
+
+
+async def test_una_pareja_sin_t1_no_tumba_las_rutas_ni_el_bucle(base):
+    """Remate 3 de la 139 (R6): un DISPARADO v2 al STOP cuya pareja v1 del barrido emparejado no trae T1. Su
+    resultado es el FINAL sin hora (convencion «plan»): las dos rutas y una vuelta del bucle no lanzan, la pareja
+    sale NO EVALUABLE sin guardarse, y el barrido no dice si su T1 llego antes que el stop."""
+    d = await registra(base, fila())
+    sombra = fila()
+    sombra["registered_at"] = T + timedelta(seconds=20)
+    sombra["foto"]["plan"]["objetivos"] = []
+    s = await registra(base, sombra, version="v1", estado="SOMBRA")
+    await siembra(base, fila(), STOP_2030)
+    await _reloj(base, LISTO + timedelta(minutes=5))
+    resp = await RUTA.construir(base, lado="ambos", desde=None, hasta=None, version=None, symbol=None,
+                                limite=200, foto=False)
+    [plan] = resp["resultados"]["barrido_emparejado"]["planes"]
+    assert (plan["registro_id"], plan["salida"], plan["pareja"]["registro_id"]) == (d["registro_id"], RES.STOP,
+                                                                                  s["registro_id"])
+    assert (plan["pareja"]["salida_hipotetica"], plan["pareja"]["t1_antes_que_el_stop"]) == (RES.NO_EVALUABLE, None)
+    assert plan["motivo"].startswith("su SOMBRA de v1 no es evaluable: la foto no trae stop, T1 o nivel")
+    mesa = await V.construir(base, symbol=SOL, activo="SOL", palabra_de_decide=_sin_decide)
+    assert mesa["papel"]["por_version"]
+    hecho = await RS.asentar_pendientes(base)
+    assert hecho["mirados"] == 1   # la pareja: no tiene hora que guardar, y la vuelve a mirar en cada vuelta
+    guardados = {x["registro_id"] for x in await base.fetch("SELECT registro_id FROM entrada_resultado")}
+    assert guardados == {d["registro_id"]}
+
+
+async def test_guardar_no_lanza_con_ninguna_forma_de_resultado(base):
+    """R6: guardar() guarda lo FINAL con hora de asentamiento y devuelve False, sin escribir, con todo lo demas que
+    resolver() puede dar (cada salida, cada firmeza, con y sin hora, con y sin P&L)."""
+    d = await registra(base, fila())
+    s = await registra(base, fila(), version="v1", estado="SOMBRA")
+    await _reloj(base, T + timedelta(days=30))   # despues de toda hora de asentamiento (y de toda gracia)
+    vistas = set()
+    for i, (nombre, _f, r) in enumerate(formas()):
+        for rid, hipotetico in ((d["registro_id"], False), (s["registro_id"], True)):
+            forma = {**r, "registro_id": rid, "hipotetico": hipotetico, "resolutor": f"forma-{i}"}
+            esperado = forma["firmeza"] == RES.FINAL and forma["salida"] is not None and bool(forma["asentado_en"])
+            assert await RS.guardar(base, forma) is esperado, nombre
+            vistas.add(esperado)
+    assert vistas == {True, False}

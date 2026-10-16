@@ -12,6 +12,7 @@ from test_entradas_resolutor import T, espejo_fila, espejo_velas, fila, tarde, v
 from app.entradas import papel as PAPEL
 from app.entradas import reglamento as R
 from app.entradas import resolutor as RES
+from app.entradas import vista as V
 
 DOC = R.cargar_valido()
 V1, V2 = R.version(DOC, "v1"), R.version(DOC, "v2")
@@ -125,7 +126,7 @@ def test_un_disparado_sin_su_vela_de_entrada_esta_pendiente_y_la_cuenta_no_es_fi
     assert [s["registro_id"] for s in c["saltados"]] == [4] and c["saltados"][0]["motivo"].startswith("no dimensiona")
     assert (c["n"], c["operaciones"], c["saldo_usd"], c["firmeza"]) == (0, [], 200.0, RES.PROVISIONAL)
     assert [p["registro_id"] for p in c["pendientes"]] == [1, 2]
-    assert c["pendientes"][0]["motivo"].endswith("la vela de 1 min de las 20:03Z no esta en la base")
+    assert "la vela de 1 min de las 20:03Z aun no se puede usar (no esta en la base, la tapa un hueco" in c["pendientes"][0]["motivo"]
     assert c["pendientes"][1]["motivo"].startswith("detras del registro 1, que esta pendiente")
     assert [s["registro_id"] for s in c["sin_posicion"]] == [3]
     # llega su vela: las dos operan, como sin los otros dos, y la cuenta es final
@@ -143,7 +144,8 @@ def test_un_disparado_sin_su_vela_de_entrada_esta_pendiente_y_la_cuenta_no_es_fi
     c4 = PAPEL.cuenta(V2, [a], {1: espera})
     assert c4["pendientes"][0]["motivo"].endswith("sera NO EVALUABLE") and c4["firmeza"] == RES.PROVISIONAL
     c5 = PAPEL.cuenta(V2, [a], {1: RES.resolver(a, sin_vela, tarde(a))})
-    assert c5["sin_posicion"][0]["motivo"].startswith("no evaluable") and c5["firmeza"] == RES.FINAL
+    assert c5["sin_posicion"] == [] and c5["firmeza"] == RES.FINAL
+    assert c5["sin_resultado"][0]["motivo"].startswith("no evaluable: no se sabe si entro")
 
 
 def test_la_cuenta_no_cambia_con_el_orden_en_que_llegan_las_filas():
@@ -152,3 +154,136 @@ def test_la_cuenta_no_cambia_con_el_orden_en_que_llegan_las_filas():
     uno = PAPEL.cuenta(V2, [a, b], {1: ra, 2: rb})
     assert PAPEL.cuenta(V2, [b, a], {1: ra, 2: rb}) == uno
     assert PAPEL.cuenta(copy.deepcopy(V2), [a, b], {1: ra, 2: rb}) == uno
+
+
+# --------------------------------------------------------------------------- remate 3 de la 139: R5 y R6
+
+VERSIONES = [{"version": "v2", "papel": "activa"}]
+INVALIDA_2029 = {"2026-10-12T20:29": (100.0, 100.0, 99.4, 99.4)}   # el cuarto de las 20:15 cierra bajo 99.5
+
+
+def _vista(c: dict) -> dict:
+    return V._papel({"v2": c}, VERSIONES)["por_version"][0]
+
+
+def a_la_hora(rid: int, cambios: dict, ahora, *, horas: float = 0.0, quita=(), plan=None, **kw):
+    """Una fila DISPARADO (como disparado()) resuelta a la hora `ahora`: lo que se sabia entonces."""
+    f = fila("intradia", **kw)
+    d = timedelta(hours=horas)
+    vs = [{**v, "ts": v["ts"] + d} for v in velas(f, cambios, quita)]
+    f.update(registro_id=rid, symbol="SOLUSDT_PERP.A", vela_cierre=T + d, registered_at=f["registered_at"] + d,
+             caduca_en=f["caduca_en"] + d)
+    p = f["foto"]["plan"]
+    p["caducidad"]["caduca_en"] = RES.iso(RES._t(p["caducidad"]["caduca_en"]) + d)
+    if plan:
+        plan(p)
+    return f, RES.resolver(f, vs, ahora)
+
+
+def formas() -> list[tuple[str, dict, dict]]:
+    """Cada forma de resultado que resolver() da: cada salida, cada estado y firmeza, con y sin hora, con y sin
+    entrada, con y sin P&L. Cada una con su registro_id."""
+    tarde_ = tarde(fila("intradia"))
+    caduca = RES.ventana(fila("intradia"))[1]
+    sin_com_entrada = lambda p: p["costes"]["entrada"]["componentes_bps"].update(taker=None)  # noqa: E731
+    sin_coste_stop = lambda p: p["costes"]["stop"]["componentes_bps"].update(deslizamiento=None)  # noqa: E731
+    casos = [
+        ("T1 final", OBJ_2030, tarde_, {}),
+        ("T1 cuyo plan sigue", OBJ_2030, T + timedelta(minutes=60), {}),
+        ("stop final", STOP_2030, tarde_, {}),
+        ("stop provisional con hora", STOP_2030, T + timedelta(minutes=45), {}),
+        ("misma vela", {"2026-10-12T20:30": (100.0, 102.5, 98.9, 100.0)}, tarde_, {}),
+        ("invalidado", INVALIDA_2029, tarde_, {}),
+        ("caducado", {}, tarde_, {}),
+        ("sin entrada", {"2026-10-12T20:01": (100.0, 100.0, 98.9, 99.5)}, tarde_, {}),
+        ("limite no llenada", {}, tarde_, {"tipo": "limite", "precio_limite": 99.8}),
+        ("limite llenada y stop", {"2026-10-12T20:10": (100.0, 100.0, 99.7, 99.9), **STOP_2030}, tarde_,
+         {"tipo": "limite", "precio_limite": 99.8}),
+        ("no evaluable con entrada", {}, tarde_, {"quita": ("2026-10-12T20:30",)}),
+        ("no evaluable sin entrada", {}, tarde_, {"quita": ("2026-10-12T20:03",)}),
+        ("plan sin stop", {}, tarde_, {"plan": lambda p: p["stop"].update(precio=None)}),
+        ("abierto sin entrada", {}, T + timedelta(minutes=5), {"quita": ("2026-10-12T20:03",)}),
+        ("abierto con entrada", {}, T + timedelta(minutes=20), {}),
+        ("esperando con entrada", INVALIDA_2029, T + timedelta(minutes=50), {"quita": ("2026-10-12T20:30",)}),
+        ("esperando sin entrada", {}, caduca + timedelta(days=1), {"quita": ("2026-10-12T20:03",)}),
+        ("sin comision de entrada, stop", STOP_2030, tarde_, {"plan": sin_com_entrada}),
+        ("sin comision de entrada, abierto", {}, T + timedelta(minutes=20), {"plan": sin_com_entrada}),
+        ("sin coste del stop, stop", STOP_2030, tarde_, {"plan": sin_coste_stop}),
+        ("sin coste del stop, T1 cuyo plan sigue", OBJ_2030, T + timedelta(minutes=60), {"plan": sin_coste_stop}),
+        ("sin coste del stop, sin entrada", {"2026-10-12T20:01": (100.0, 100.0, 98.9, 99.5)}, tarde_,
+         {"plan": sin_coste_stop}),
+        ("sin riesgo: R null", STOP_2030, tarde_, {"plan": lambda p: p["distancias_bps"].update(stop=None)}),
+    ]
+    return [(nombre, *a_la_hora(100 + i, cambios, ahora, **kw)) for i, (nombre, cambios, ahora, kw) in enumerate(casos)]
+
+
+def test_las_formas_de_resultado_son_todas_las_que_da_el_resolutor():
+    fs = formas()
+    assert {r["salida"] for _, _, r in fs} == set(RES.SALIDAS) | {None}
+    assert {(r["estado"], r["firmeza"], r["asentado_en"] is None) for _, _, r in fs} >= {
+        (RES.ACABADO, RES.FINAL, False), (RES.ACABADO, RES.FINAL, True), (RES.ACABADO, RES.PROVISIONAL, False),
+        (RES.ACABADO, RES.PROVISIONAL, True), (RES.ABIERTO, RES.PROVISIONAL, True), (RES.ESPERANDO, RES.PROVISIONAL, False)}
+    assert any(r["pnl"] is None and r["salida"] == RES.STOP for _, _, r in fs)
+    assert any(r["pnl"] and r["pnl"]["r_neto"] is None for _, _, r in fs)
+
+
+def test_ninguna_forma_de_resultado_tumba_la_cuenta_ni_la_vista():
+    """R6: cada forma pasa por la cuenta, su vista y la vista del resultado sin lanzar, y la cuenta pone cada
+    DISPARADO en un solo sitio."""
+    for nombre, f, r in formas():
+        c = PAPEL.cuenta(V2, [f], {f["registro_id"]: r})
+        _vista(c)
+        V._resultado(r)
+        sitios = [k for k in ("operaciones", "saltados", "pendientes", "sin_posicion", "sin_resultado") if c.get(k)]
+        assert len(sitios) == 1 and len(c[sitios[0]]) == 1, (nombre, sitios)
+
+
+def test_cierto_un_t1_cuyo_plan_sigue_no_es_una_operacion_abierta():
+    """R5: un DISPARADO que salio en T1 y cuyo plan sigue: cerrado, PROVISIONAL y sin hora; no hay ninguna «abierta»."""
+    f, r = a_la_hora(1, OBJ_2030, T + timedelta(minutes=60))
+    assert (r["salida"], r["firmeza"], r["asentado_en"]) == (RES.OBJETIVO, RES.PROVISIONAL, None)
+    c = PAPEL.cuenta(V2, [f], {1: r})
+    p = _vista(c)
+    assert "hay operaciones abiertas" not in p["firmeza"] and "salieron en T1 y cuyo plan sigue" in p["firmeza"]
+    assert (c["abiertas"], c["n"], c["firmeza"], c["provisional_hasta"]) == (0, 1, RES.PROVISIONAL, None)
+
+
+def test_cierto_un_no_evaluable_que_entro_no_es_uno_que_no_abre_posicion():
+    """R5: un NO EVALUABLE que entro (falto un minuto con la posicion abierta, hasta la gracia): entro, y no se sabe
+    como salio."""
+    f2, ne = a_la_hora(2, {}, tarde(fila("intradia")), quita=("2026-10-12T20:30",))
+    assert (ne["salida"], ne["entrada"]["instante"]) == (RES.NO_EVALUABLE, "2026-10-12T20:03:00Z")
+    c = PAPEL.cuenta(V2, [f2], {2: ne})
+    assert [s["motivo"][:20] for s in c.get("sin_posicion", [])] == []
+    assert c["sin_resultado"][0]["motivo"].startswith("no evaluable: entro a las 20:03Z y no se sabe como salio")
+    assert c["firmeza"] == RES.FINAL and _vista(c)["sin_resultado"][0]["registro_id"] == 2
+
+
+def test_cierto_la_firmeza_dice_sus_razones_y_su_hora_solo_si_es_lo_unico():
+    """R5: «hasta las» solo si es lo unico que falta; una a la espera no es una abierta; y de los pendientes, solo el
+    que no tiene entrada «aun sin entrada real»."""
+    # una que se asienta a las 21:13 Y otra abierta: «hasta las», no
+    hora = T + timedelta(minutes=45)
+    a, ra = a_la_hora(3, STOP_2030, hora)
+    b, rb = a_la_hora(4, {}, hora, horas=0.5)
+    assert (ra["salida"], ra["firmeza"], rb["estado"]) == (RES.STOP, RES.PROVISIONAL, RES.ABIERTO)
+    c = PAPEL.cuenta(V2, [a, b], {3: ra, 4: rb})
+    assert _vista(c)["firmeza"] == ("PROVISIONAL: hay operaciones abiertas; lo que ya acabo se asienta a las "
+                                    f"{ra['asentado_en']}")
+    assert (c["abiertas"], c["provisional_hasta"]) == (1, None)
+    sola = PAPEL.cuenta(V2, [a], {3: ra})
+    assert (sola["provisional_hasta"], _vista(sola)["firmeza"]) == (ra["asentado_en"], "PROVISIONAL hasta las 10-12 21:13Z")
+    # entro, su plan acabo (la invalidacion de las 20:30) y falta la vela de su salida: «a la espera», no «abierta»
+    e, re_ = a_la_hora(5, INVALIDA_2029, T + timedelta(minutes=50), quita=("2026-10-12T20:30",))
+    assert (re_["estado"], re_["entrada"] is not None) == (RES.ESPERANDO, True)
+    c = PAPEL.cuenta(V2, [e], {5: re_})
+    p = _vista(c)
+    assert (p["operaciones"][0]["rotulo"], c["abiertas"]) == ("A LA ESPERA", 0)
+    assert "a la espera de una vela que falta" in p["firmeza"] and "abiertas" not in p["firmeza"]
+    # pendientes: uno sin entrada real y otro, con la suya, detras de el; ninguna frase dice «sin entrada» del segundo
+    g, rg = a_la_hora(6, {}, T + timedelta(minutes=5), quita=("2026-10-12T20:03",))
+    h, rh = disparado(7, OBJ_2030, horas=6)
+    c = PAPEL.cuenta(V2, [g, h], {6: rg, 7: rh})
+    assert [x["registro_id"] for x in c["pendientes"]] == [6, 7]
+    assert c["provisional_por"] == ["hay DISPARADOS aun sin entrada real",
+                                    "hay DISPARADOS que esperan detras de uno pendiente"]

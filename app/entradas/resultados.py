@@ -12,6 +12,13 @@ segundo plano (app/api.py, cada RESULTADOS_CADA_S) para que se guarde aunque nad
 se pisan: la clave es (registro_id, resolutor) y se inserta con ON CONFLICT DO NOTHING; y la base rechaza
 una fila no asentada (EN003).
 
+LO QUE NO SE GUARDA, Y NO TUMBA A NADIE (campana 139, remate 3). guardar() no lanza con ninguna forma de
+resultado que resolver() de: lo que no se guarda lo devuelve como False, sin escribir. No se guarda lo que no
+es FINAL, ni lo que no tiene salida, ni el FINAL SIN HORA de asentamiento. Ese ultimo es el plan sin stop, T1 o
+nivel (convencion «plan»): entrada_resultado.asentado_en es NOT NULL y no se le inventa una hora. No depende de
+ninguna vela, asi que se recalcula en cada peticion y sale siempre igual. Solo una SOMBRA llega asi (la del
+barrido emparejado), y el bucle de la API la vuelve a mirar en cada vuelta sin guardarla.
+
 EL BARRIDO EMPAREJADO (hipotesis de v2, descriptivo fijado ANTES de su registro): para cada DISPARADO de v2
 que toca su stop, la SOMBRA de v1 del MISMO episodio -misma clave, mismo inicio de episodio y misma vela,
 P136-10- y si su plan (mismo T1, stop con cascada) habria cruzado T1. Se sirve plan a plan: no es una
@@ -95,9 +102,11 @@ async def resolver_fila(conn, fila: dict[str, Any], ahora: datetime) -> dict[str
 
 
 async def guardar(conn, resultado: dict[str, Any]) -> bool:
-    """Guarda un resultado FINAL. False si ya habia uno de esta version (gana el primero)."""
-    if resultado["firmeza"] != RES.FINAL or resultado["salida"] is None:
-        raise ValueError("solo se guarda un resultado FINAL")
+    """Guarda un resultado FINAL con su hora de asentamiento. False, sin escribir, si no es de los que se guardan
+    (no FINAL, sin salida, o FINAL sin hora: ver el docstring del modulo) o si ya habia uno de esta version (gana
+    el primero)."""
+    if resultado.get("firmeza") != RES.FINAL or resultado.get("salida") is None or not resultado.get("asentado_en"):
+        return False
     texto = R.canonico(resultado)
     hecho = await conn.execute(
         _GUARDA, resultado["registro_id"], resultado["resolutor"], resultado["huella_convenciones"],
@@ -108,8 +117,8 @@ async def guardar(conn, resultado: dict[str, Any]) -> bool:
 
 
 async def de_filas(conn, filas: list[dict[str, Any]], ahora: datetime, guarda: bool = True) -> dict[int, dict]:
-    """El resultado de cada fila: el GUARDADO de esta version si lo hay; si no, se resuelve ahora y, si sale
-    FINAL, se guarda. Lo provisional se devuelve sin guardar."""
+    """El resultado de cada fila: el GUARDADO de esta version si lo hay; si no, se resuelve ahora y se guarda lo
+    que guardar() guarda (lo FINAL con hora). Lo demas se devuelve sin guardar."""
     ya = {f["registro_id"]: json.loads(f["resultado"]) for f in await conn.fetch(
         _GUARDADOS, [f["registro_id"] for f in filas], RES.RESOLUTOR_VERSION)}
     salida: dict[int, dict] = {}
@@ -120,7 +129,7 @@ async def de_filas(conn, filas: list[dict[str, Any]], ahora: datetime, guarda: b
                 f = {**f, "foto": await conn.fetchval(
                     "SELECT foto::text FROM entrada_registro WHERE registro_id = $1", f["registro_id"])}
             r = await resolver_fila(conn, f, ahora)
-            if guarda and r["firmeza"] == RES.FINAL and r["salida"] is not None:
+            if guarda:
                 await guardar(conn, r)
         salida[f["registro_id"]] = r
     return salida
@@ -142,10 +151,13 @@ async def barrido(conn, disparados: list[dict[str, Any]], resultados: dict[int, 
                 "pueden ir desfasados, P136-10)"}
         if par is not None:
             h = (await de_filas(conn, [dict(par)], ahora, guarda))[par["registro_id"]]
+            # de una pareja NO EVALUABLE (sin T1, sin stop o sin nivel, o un minuto que falto) no se sabe si T1 llego antes
+            no_se_sabe = h["salida"] in (None, RES.NO_EVALUABLE)
             item["pareja"] = {"registro_id": par["registro_id"], "salida_hipotetica": h["salida"],
                               "instante": h["instante"], "firmeza": h["firmeza"],
-                              "t1_antes_que_el_stop": None if h["salida"] is None else h["salida"] == RES.OBJETIVO}
-            item["motivo"] = None
+                              "t1_antes_que_el_stop": None if no_se_sabe else h["salida"] == RES.OBJETIVO}
+            item["motivo"] = (f"su SOMBRA de {BARRIDO['contra']} no es evaluable: {h.get('motivo')}"
+                              if h["salida"] == RES.NO_EVALUABLE else None)
         lista.append(item)
     return lista
 
