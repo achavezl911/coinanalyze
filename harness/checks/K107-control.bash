@@ -14,6 +14,11 @@
 #   final_sin_guardar      la fila FINAL de 3945 no esta y su asentamiento paso hace mas de 15 min (C)
 #   cuentas_que_no_salen   la respuesta sirve un resuelto de mas (D)
 #   papel_que_no_sale      la respuesta sirve otro saldo en la cuenta de v2 (E)
+#   papel_una_operacion    otro P&L en UNA operacion de v2, con el saldo y n intactos: la linea nombra la
+#                          operacion y el campo, con sus dos valores (E; remate de la 139, R3)
+#   pendiente_servido      sin la vela de entrada de 3945: el arbol lo sirve pendiente y la cuenta provisional:
+#                          VERDE (remate de la 139, R2)
+#   pendiente_como_saltado lo mismo servido como en d9f4520 -saltado, y la cuenta final-: lo condena E (R2)
 #   catalogo_sin_guardia   sin el disparador que rechaza TRUNCATE (F)
 #   velas_podadas          sin las velas de 2632: NO MEDIDO para ese, y VERDE lo demas (ni absuelve ni condena)
 #   todo_podado            sin ninguna vela: NO MEDIDO (rc=2), nunca VERDE
@@ -141,7 +146,26 @@ planta cuentas_que_no_salen 1 "^   - D F1/intradia/largo/v2: sirve 2 resueltos y
 
 # E · otro saldo en la cuenta de v2
 "$PY" -c "import json,sys; r=json.load(open(sys.argv[1])); r['papel']['v2']['saldo_usd']+=1; json.dump(r,open(sys.argv[2],'w'))" "$T/servido-base.json" "$T/s-papel.json"
-planta papel_que_no_sale 1 "^   - E v2: la cuenta de papel servida \(saldo 197.14" "saldo 196,14 -> 197,14" "${DB}_base" "$T/s-papel.json" "$RELOJ" "$H_BUENA"
+planta papel_que_no_sale 1 "^   - E v2: la cuenta de papel servida no es la de sus resultados: saldo_usd servido 197.14, recalculado 196.14$" "saldo 196,14 -> 197,14" "${DB}_base" "$T/s-papel.json" "$RELOJ" "$H_BUENA"
+# E · otro P&L en una sola operacion, y el resumen intacto: la linea dice cual y que, con dos valores distintos
+"$PY" -c "import json,sys; r=json.load(open(sys.argv[1])); op=r['papel']['v2']['operaciones'][0]; assert op['registro_id']==2632; op['pnl_usd']=round(op['pnl_usd']+1,2); json.dump(r,open(sys.argv[2],'w'))" "$T/servido-base.json" "$T/s-papel-op.json"
+planta papel_una_operacion 1 "^   - E v2: la cuenta de papel servida no es la de sus resultados: operaciones\[2632\]\.pnl_usd servido (-?[0-9.]+), recalculado (-?[0-9.]+)$" "pnl de la operacion 2632 +1 USD; saldo y n intactos" "${DB}_base" "$T/s-papel-op.json" "$RELOJ" "$H_BUENA"
+dos=$(grep -oE 'operaciones\[2632\]\.pnl_usd servido -?[0-9.]+, recalculado -?[0-9.]+$' "$T/sal" | head -1)
+x=${dos#*servido }; x=${x%%,*}; y=${dos##*recalculado }
+comprueba papel_dos_lados_distintos "$([ -n "$dos" ] && [ "$x" != "$y" ] && echo 0 || echo 1)" "servido ${x:-?} · recalculado ${y:-?}"
+
+# E · un DISPARADO sin su vela de entrada (remate de la 139, R2): en la copia LIMPIA, sin la vela de entrada de
+# 3945, el arbol lo sirve PENDIENTE y la cuenta PROVISIONAL, y K107 da VERDE; servido como en d9f4520 -saltado,
+# y la cuenta final- lo condena E por esos campos
+b=$(copia pendiente)
+en "$b" "DELETE FROM ohlcv WHERE symbol = 'SOLUSDT_PERP.A' AND interval = '1min' AND ts = (SELECT date_trunc('minute', registered_at) + interval '1 minute' FROM entrada_registro WHERE registro_id = 3945)" > /dev/null
+sirve "$REPO" "$b" "$RELOJ" "$T/s-pendiente.json"
+H_PEND=$(huella "$b" "$T/s-pendiente.json")
+pend=$("$PY" -c "import json,sys; p=json.load(open(sys.argv[1]))['papel']['v2']; print([x['registro_id'] for x in p['pendientes']], [x['registro_id'] for x in p['saltados']], p['firmeza'])" "$T/s-pendiente.json")
+rc=$(k107 "$b" "$T/s-pendiente.json" "$RELOJ")
+comprueba pendiente_servido "$([ "$rc" = 0 ] && [ "$pend" = "[3945] [] provisional" ] && [ "$H_PEND" != "$H_BUENA" ] && echo 0 || echo 1)" "rc=$rc · $H_BUENA -> $H_PEND · papel v2 (pendientes, saltados, firmeza): $pend"
+"$PY" -c "import json,sys; r=json.load(open(sys.argv[1])); p=r['papel']['v2']; p['saltados']+=[{**x, 'motivo': 'aun sin entrada real: falta la vela de su entrada'} for x in p.pop('pendientes')]; p.pop('sin_posicion'); p['firmeza']='final'; json.dump(r,open(sys.argv[2],'w'))" "$T/s-pendiente.json" "$T/s-pendiente-d9.json"
+planta pendiente_como_saltado 1 "^   - E v2: la cuenta de papel servida no es la de sus resultados: firmeza servido \"final\", recalculado \"provisional\"; saltados\[3945\] se sirve" "3945 saltado y la cuenta final, como en d9f4520" "$b" "$T/s-pendiente-d9.json" "$RELOJ" "$H_PEND"
 
 # F · sin el disparador que rechaza TRUNCATE
 b=$(copia catalogo base); en "$b" "DROP TRIGGER entrada_resultado_no_truncate ON entrada_resultado" > /dev/null

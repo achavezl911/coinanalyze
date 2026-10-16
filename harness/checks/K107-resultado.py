@@ -150,6 +150,43 @@ def _dice(r: dict | None) -> str:
     return f"{r.get('salida') or r.get('estado')}" + (f" a las {r['instante'][11:16]}Z" if r.get("instante") else "")
 
 
+def _valor(v) -> str:
+    texto = json.dumps(v, ensure_ascii=False, default=str)
+    return texto if len(texto) <= 60 else texto[:57] + "..."
+
+
+def _difiere(dado, esperado, donde: str = "") -> list[str]:
+    """Que cambia de lo servido a lo recalculado, campo a campo; en una lista de filas con registro_id, por
+    registro (`operaciones[2632].pnl_usd servido X, recalculado Y`). Una lista vacia si nada cambia."""
+    if isinstance(dado, dict) and isinstance(esperado, dict):
+        out = []
+        for k in [*dado, *(k for k in esperado if k not in dado)]:
+            if k not in dado:
+                out.append(f"{donde}{k} no se sirve (recalculado {_valor(esperado[k])})")
+            elif k not in esperado:
+                out.append(f"{donde}{k} se sirve ({_valor(dado[k])}) y no sale del recalculo")
+            else:
+                out += _difiere(dado[k], esperado[k], f"{donde}{k}.")
+        return out
+    nombre = donde.rstrip(".")
+    filas = isinstance(dado, list) and isinstance(esperado, list) and all(
+        isinstance(x, dict) and "registro_id" in x for x in dado + esperado)
+    if filas:
+        a, b = ({x["registro_id"]: x for x in lista} for lista in (dado, esperado))
+        out = []
+        for rid in [*a, *(r for r in b if r not in a)]:
+            if rid not in a:
+                out.append(f"{nombre}[{rid}] no se sirve")
+            elif rid not in b:
+                out.append(f"{nombre}[{rid}] se sirve y no sale del recalculo")
+            else:
+                out += _difiere(a[rid], b[rid], f"{nombre}[{rid}].")
+        if not out and list(a) != list(b):
+            out.append(f"{nombre}: los mismos registros en otro orden ({list(a)}, recalculado {list(b)})")
+        return out
+    return [] if dado == esperado else [f"{nombre} servido {_valor(dado)}, recalculado {_valor(esperado)}"]
+
+
 def juzga(directorio: Path, arbol: str) -> int:
     d = json.loads((directorio / "sujeto.json").read_text())
     servido_f = directorio / "servido.json"
@@ -262,10 +299,12 @@ def juzga(directorio: Path, arbol: str) -> int:
         esperado = PAPEL.cuenta(v, [f for f in planes.values() if f["estado"] == "DISPARADO"
                                     and f["version"] == v["version"]], resultados)
         dado = (servido.get("papel") or {}).get(v["version"])
-        if dado != esperado:
-            hallazgos.append(f"E {v['version']}: la cuenta de papel servida (saldo {(dado or {}).get('saldo_usd')}, n "
-                             f"{(dado or {}).get('n')}) no es la de sus resultados (saldo {esperado['saldo_usd']}, n "
-                             f"{esperado['n']})")
+        if dado is None:
+            hallazgos.append(f"E {v['version']}: la cuenta de papel no se sirve")
+        elif dado != esperado:
+            cambia = _difiere(dado, esperado) or ["difieren y ningun campo lo dice (tipo u orden)"]
+            hallazgos.append(f"E {v['version']}: la cuenta de papel servida no es la de sus resultados: "
+                             + "; ".join(cambia[:3]) + (f"; y {len(cambia) - 3} mas" if len(cambia) > 3 else ""))
 
     # F · el catalogo: solo-anadir por sus disparadores, activos y con su funcion
     activos = {(t["tgname"], t["proname"]) for t in d["catalogo"] if t["tgenabled"] in ("O", "A")}
