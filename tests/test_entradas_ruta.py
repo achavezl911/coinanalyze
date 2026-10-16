@@ -2,7 +2,7 @@
 
 - toda la ruta es GET y todos sus parametros tienen valor por defecto;
 - sin tablas del registro, lo dice (falta desplegar) en vez de fallar;
-- con el registro vacio sirve las cuentas a cero, resueltos 0 y el motivo de lo que falta;
+- con el registro vacio sirve las cuentas a cero y el motivo de lo que falta (desde la 139, solo la E4);
 - con un DISPARADO y una SOMBRA sembrados de punta a punta, los sirve por lado, la sombra con su
   vector de filtros, y la referencia «ya medido» con sus citas;
 - y la RED: la ruta sirviendo una fraccion de aciertos se condena; la ruta real pasa.
@@ -101,7 +101,7 @@ async def test_registro_vacio_cuentas_a_cero_y_motivos_servidos(conn):
     assert respuesta["reglamento"]["ancla"] == "v1"
     assert respuesta["reglamento"]["hipotesis_activa"] == R.version(R.cargar(), "v2")["hipotesis"]
     assert {f["estado"] for f in respuesta["reglamento"]["registro_en_base"]} == {"sin registrar"}
-    assert any(f["etapa"] == "E3" for f in respuesta["faltan"])
+    assert [f["etapa"] for f in respuesta["faltan"]] == ["E4"], "el resultado y el papel (E3) ya no faltan"
     assert RUTA.fracciones_servidas(respuesta) == []
     solo_corto = await RUTA.construir(connection, **_por_defecto(lado="corto"))
     assert set(solo_corto["por_lado"]) == {"corto"}
@@ -132,7 +132,10 @@ async def test_de_punta_a_punta_sirve_disparados_y_sombras_por_lado_sin_fraccion
     assert respuesta["por_lado"]["corto"]["vivos"]["vigilando"], "las F2 corto armadas"
     celdas = {(c["familia"], c["lado"]): c for c in respuesta["cuentas"] if c["perfil"] == "intradia"}
     assert celdas[("F1", "largo")]["DISPARADO"] == 1 and celdas[("F1", "largo")]["SOMBRA"] == 1
+    # recien registrado y sin velas despues de su vela: sin resultado FINAL, y el DISPARADO sigue vivo
     assert all(c["resueltos"] == 0 for c in respuesta["cuentas"])
+    [vivo] = respuesta["por_lado"]["largo"]["vivos"]["disparados"]
+    assert vivo["resultado"]["estado"] == "abierto" and vivo["resultado"]["firmeza"] == "provisional"
     assert RUTA.fracciones_servidas(respuesta) == [], RUTA.fracciones_servidas(respuesta)
     entera = await RUTA.construir(connection, **_por_defecto(desde=T - timedelta(hours=1), foto=True))
     assert entera["por_lado"]["largo"]["vivos"]["disparados"][0]["foto"]["plan"]["p_equilibrio"]

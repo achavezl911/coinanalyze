@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `entradas` · `app/api.py:1297` (cuerpo hasta la 1323) · decorador en la linea 1296.
+Handler `entradas` · `app/api.py:1317` (cuerpo hasta la 1343) · decorador en la linea 1316.
 
 ## Parametros de entrada
 
@@ -21,21 +21,28 @@ Handler `entradas` · `app/api.py:1297` (cuerpo hasta la 1323) · decorador en l
 
 ## Campos que publica
 
-11 campos derivados. La procedencia dice de donde sale cada uno.
+18 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `cuentas` | literal en app/entradas/ruta.py:293 |
-| `disponible` | literal en app/entradas/ruta.py:286 |
-| `generador` | literal en app/entradas/ruta.py:287 |
-| `generador.motivo` | literal en app/entradas/ruta.py:289 |
-| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:288 |
-| `motivo` | literal en app/entradas/ruta.py:192 |
-| `por_lado` | literal en app/entradas/ruta.py:291 |
-| `reglamento` | literal en app/entradas/ruta.py:292 |
-| `reglamento.disponible` | literal en app/entradas/ruta.py:200 |
-| `reglamento.motivo` | literal en app/entradas/ruta.py:200 |
-| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:206 |
+| `cuentas` | literal en app/entradas/ruta.py:329 |
+| `disponible` | literal en app/entradas/ruta.py:322 |
+| `generador` | literal en app/entradas/ruta.py:323 |
+| `generador.motivo` | literal en app/entradas/ruta.py:325 |
+| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:324 |
+| `motivo` | literal en app/entradas/ruta.py:216 |
+| `por_lado` | literal en app/entradas/ruta.py:327 |
+| `reglamento` | literal en app/entradas/ruta.py:328 |
+| `reglamento.disponible` | literal en app/entradas/ruta.py:224 |
+| `reglamento.motivo` | literal en app/entradas/ruta.py:224 |
+| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:230 |
+| `resultados` | literal en app/entradas/ruta.py:330 |
+| `resultados.barrido_emparejado` | literal en app/entradas/ruta.py:336 |
+| `resultados.cambios_e3` | literal en app/entradas/ruta.py:335 |
+| `resultados.convenciones` | literal en app/entradas/ruta.py:334 |
+| `resultados.huella_convenciones` | literal en app/entradas/ruta.py:333 |
+| `resultados.que_es` | literal en app/entradas/ruta.py:331 |
+| `resultados.resolutor` | literal en app/entradas/ruta.py:332 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -49,25 +56,51 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
+- `data_gap` — `sql/schema.sql:1412`, 22 columnas
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1092`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1243`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1262`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1311`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:322`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:584`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:663`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:687`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
 - `entrada_latido` — `sql/schema.sql:2702`, 8 columnas
   - la llena `app.entradas.registro.latir` (INSERT) — `app/entradas/registro.py:222`
 - `entrada_registro` — `sql/schema.sql:2665`, 26 columnas
   - la llena `app.entradas.registro.insertar` (INSERT) — `app/entradas/registro.py:31`
 - `entrada_reglamento` — `sql/schema.sql:2655`, 6 columnas
   - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:85`
+- `entrada_resultado` — `sql/schema.sql:2843`, 12 columnas
+  - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:55`
+- `funding_rate` — `sql/schema.sql:146`, 7 columnas
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
+- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+  - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
+  - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+  - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+
+**ESCRIBE** (una ruta de lectura que escribe merece mirarse):
+
+- `entrada_resultado` — `sql/schema.sql:2843`, 12 columnas
 
 ## Funciones que la componen
 
-30 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+46 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2566`
-- `app.api.validate_symbol` — `app/api.py:233`
-- `app.entradas.ruta.construir` — `app/entradas/ruta.py:169`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2586`
+- `app.api.validate_symbol` — `app/api.py:253`
+- `app.entradas.ruta.construir` — `app/entradas/ruta.py:193`
 
-<details><summary>Alcanzables de forma indirecta (27)</summary>
+<details><summary>Alcanzables de forma indirecta (43)</summary>
 
 - `app.entradas.reglamento._texto` — `app/entradas/reglamento.py:127`
 - `app.entradas.reglamento._valida_apuestas` — `app/entradas/reglamento.py:308`
@@ -93,9 +126,25 @@ Llamadas directas del handler:
 - `app.entradas.reglamento.version` — `app/entradas/reglamento.py:405`
 - `app.entradas.reglamento.version_activa` — `app/entradas/reglamento.py:400`
 - `app.entradas.reglamento.versiones_en_curso` — `app/entradas/reglamento.py:395`
-- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:297`
-- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:319`
-- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:128`
+- `app.entradas.resolutor._cero` — `app/entradas/resolutor.py:429`
+- `app.entradas.resolutor._cobros` — `app/entradas/resolutor.py:414`
+- `app.entradas.resolutor._minuto` — `app/entradas/resolutor.py:124`
+- `app.entradas.resolutor._pata` — `app/entradas/resolutor.py:154`
+- `app.entradas.resolutor._t` — `app/entradas/resolutor.py:112`
+- `app.entradas.resolutor._t23` — `app/entradas/resolutor.py:407`
+- `app.entradas.resolutor.cobros_funding` — `app/entradas/resolutor.py:144`
+- `app.entradas.resolutor.entrada_t` — `app/entradas/resolutor.py:133`
+- `app.entradas.resolutor.foto_de` — `app/entradas/resolutor.py:128`
+- `app.entradas.resolutor.iso` — `app/entradas/resolutor.py:120`
+- `app.entradas.resolutor.resolver` — `app/entradas/resolutor.py:165`
+- `app.entradas.resolutor.ventana` — `app/entradas/resolutor.py:138`
+- `app.entradas.resultados.barrido` — `app/entradas/resultados.py:129`
+- `app.entradas.resultados.de_filas` — `app/entradas/resultados.py:110`
+- `app.entradas.resultados.guardar` — `app/entradas/resultados.py:97`
+- `app.entradas.resultados.resolver_fila` — `app/entradas/resultados.py:82`
+- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:341`
+- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:363`
+- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:150`
 
 </details>
 
@@ -112,8 +161,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
-| 422 | — | `app/api.py:2575` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 422 | — | `app/api.py:2595` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -187,7 +236,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.entradas.reglamento.revision_vigente` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.validar` | 2 | **0** | 2 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.version` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| _… y 6 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 22 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

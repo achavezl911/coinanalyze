@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `positioning` · `app/api.py:1372` (cuerpo hasta la 1376) · decorador en la linea 1371.
+Handler `positioning` · `app/api.py:1392` (cuerpo hasta la 1396) · decorador en la linea 1391.
 
 ## Parametros de entrada
 
@@ -61,7 +61,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api.validate_symbol` — `app/api.py:253`
 - `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5909`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

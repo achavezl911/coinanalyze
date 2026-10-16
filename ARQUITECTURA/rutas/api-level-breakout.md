@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `level_breakout_endpoint` · `app/api.py:2055` (cuerpo hasta la 2067) · decorador en la linea 2054.
+Handler `level_breakout_endpoint` · `app/api.py:2075` (cuerpo hasta la 2087) · decorador en la linea 2074.
 
 ## Parametros de entrada
 
@@ -20,7 +20,7 @@ Handler `level_breakout_endpoint` · `app/api.py:2055` (cuerpo hasta la 2067) ·
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | asignado en app/api.py:1990 |
+| `as_of` | asignado en app/api.py:2010 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -45,13 +45,13 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.sella_respuesta` — `app/api.py:1978`
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api.sella_respuesta` — `app/api.py:1998`
+- `app.api.validate_symbol` — `app/api.py:253`
 - `app.scalp_logic.level_breakout` — `app/scalp_logic.py:1706`
 
 <details><summary>Alcanzables de forma indirecta (12)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2446`
+- `app.api._utc_iso` — `app/api.py:2466`
 - `app.breakout._atr` — `app/breakout.py:58`
 - `app.breakout._confirmation_checks` — `app/breakout.py:330`
 - `app.breakout._delta_usd` — `app/breakout.py:77`
@@ -80,8 +80,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
-| 422 | direction must be 'up' or 'down' | `app/api.py:2063` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 422 | direction must be 'up' or 'down' | `app/api.py:2083` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

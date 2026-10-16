@@ -223,7 +223,7 @@ async def test_de_punta_a_punta_el_disparado_vivo_sale_con_su_plan_entero(sembra
     assert all(c["resueltos"] == 0 and c["muestra"]["rotulo"] == "SIN CALIBRAR · MUESTRA INSUFICIENTE (0/30)"
                for c in marco["cuentas"])
     assert marco["resueltos_motivo"] and all("resueltos_motivo" not in c for c in marco["cuentas"])
-    assert [f["etapa"] for f in marco["faltan"]] == ["E3", "E3", "E4"], "la pantalla (E2) ya no falta"
+    assert [f["etapa"] for f in marco["faltan"]] == ["E4"], "la pantalla (E2) y el resultado (E3) ya no faltan"
     assert respuesta["generador"]["ultimo_latido"]["estado"] == "ok" and respuesta["generador"]["tope_s"] == 1800
 
     # LA RED: ni una fraccion, ni un porcentaje, ni una tasa. Y la red CONDENA si se le planta una.

@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 613 funciones con radio, 250 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 631 funciones con radio, 259 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **49** de las 613 escriben alguna tabla
+Solo **50** de las 631 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -50,12 +50,13 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 | [`daily_session_agg`](TABLAS.md#daily-session-agg) | 2 | **22** | 0 |
 | [`daily_verdict_outcome`](TABLAS.md#daily-verdict-outcome) | 1 | **3** | 0 |
 | [`daily_verdict_snapshot`](TABLAS.md#daily-verdict-snapshot) | 1 | **3** | 0 |
-| [`data_gap`](TABLAS.md#data-gap) | 12 | **22** | 0 |
+| [`data_gap`](TABLAS.md#data-gap) | 12 | **24** | 0 |
 | [`entrada_latido`](TABLAS.md#entrada-latido) | 1 | **2** | 0 |
 | [`entrada_registro`](TABLAS.md#entrada-registro) | 1 | **2** | 0 |
 | [`entrada_reglamento`](TABLAS.md#entrada-reglamento) | 1 | **2** | 0 |
+| [`entrada_resultado`](TABLAS.md#entrada-resultado) | 1 | **2** | 2 |
 | [`external_macro_observation`](TABLAS.md#external-macro-observation) | 2 | **3** | 0 |
-| [`funding_rate`](TABLAS.md#funding-rate) | 1 | **4** | 0 |
+| [`funding_rate`](TABLAS.md#funding-rate) | 1 | **6** | 0 |
 | [`futures_trades_agg`](TABLAS.md#futures-trades-agg) | 2 | **7** | 0 |
 | [`futures_trades_realtime`](TABLAS.md#futures-trades-realtime) | 1 | **17** | 0 |
 | [`liquidations`](TABLAS.md#liquidations) | 2 | **5** | 0 |
@@ -65,7 +66,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 | [`market_feed_health`](TABLAS.md#market-feed-health) | 3 | **10** | 0 |
 | [`metric_baseline`](TABLAS.md#metric-baseline) | 1 | **15** | 0 |
 | [`metrics_snapshot`](TABLAS.md#metrics-snapshot) | 2 | **9** | 0 |
-| [`ohlcv`](TABLAS.md#ohlcv) | 4 | **39** | 0 |
+| [`ohlcv`](TABLAS.md#ohlcv) | 4 | **40** | 0 |
 | [`oi_bybit`](TABLAS.md#oi-bybit) | 1 | **3** | 0 |
 | [`open_interest`](TABLAS.md#open-interest) | 1 | **20** | 0 |
 | [`orderbook_depth`](TABLAS.md#orderbook-depth) | 1 | **1** | 0 |
@@ -83,34 +84,34 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-613 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+631 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`app.api.validate_symbol`](impacto/app-api.md) | `app/api.py:233` | 66 | **0** | 0 | **66** |
-| [`app.daily_agg.apply_retention`](impacto/app-daily_agg.md) | `app/daily_agg.py:645` | 0 | **54** | 55 ↑ | **54** |
-| [`app.ingest.rollup_ohlcv_5m`](impacto/app-ingest.md) | `app/ingest.py:185` | 0 | **39** | 55 ↑ | **39** |
-| [`app.ingest.upsert_ohlcv`](impacto/app-ingest.md) | `app/ingest.py:102` | 0 | **39** | 55 ↑ | **39** |
+| [`app.api.validate_symbol`](impacto/app-api.md) | `app/api.py:253` | 66 | **0** | 0 | **66** |
+| [`app.daily_agg.apply_retention`](impacto/app-daily_agg.md) | `app/daily_agg.py:645` | 0 | **55** | 56 ↑ | **55** |
+| [`app.ingest.rollup_ohlcv_5m`](impacto/app-ingest.md) | `app/ingest.py:185` | 0 | **40** | 56 ↑ | **40** |
+| [`app.ingest.upsert_ohlcv`](impacto/app-ingest.md) | `app/ingest.py:102` | 0 | **40** | 56 ↑ | **40** |
 | [`app.scalp_logic.as_float`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:920` | 38 | **0** | 11 ↑ | **38** |
 | [`app.scalp_logic._explicit_as_of`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2586` | 26 | **0** | 0 | **26** |
 | [`app.scalp_logic.resolve_matrix_as_of`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2592` | 25 | **0** | 12 ↑ | **25** |
-| [`app.daily_agg.compute_session`](impacto/app-daily_agg.md) | `app/daily_agg.py:141` | 0 | **22** | 55 ↑ | **22** |
-| [`app.data_gaps.reconcile_cadence_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:474` | 0 | **22** | 50 ↑ | **22** |
-| [`app.api.records`](impacto/app-api.md) | `app/api.py:246` | 22 | **0** | 8 ↑ | **22** |
-| [`app.data_gaps._mark_unrecoverable`](impacto/app-data_gaps.md) | `app/data_gaps.py:1230` | 0 | **22** | 22 | **22** |
-| [`app.data_gaps._record_recovery_failure`](impacto/app-data_gaps.md) | `app/data_gaps.py:1255` | 0 | **22** | 22 | **22** |
-| [`app.data_gaps.archive_beyond_source_horizon`](impacto/app-data_gaps.md) | `app/data_gaps.py:722` | 0 | **22** | 22 | **22** |
-| [`app.data_gaps.archive_source_response_absence`](impacto/app-data_gaps.md) | `app/data_gaps.py:792` | 0 | **22** | 22 | **22** |
-| [`app.data_gaps.close_partitioned_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1045` | 0 | **22** | 22 | **22** |
-| [`app.data_gaps.record_data_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:287` | 0 | **22** | 22 | **22** |
-| [`app.data_gaps.recover_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1272` | 0 | **22** | 22 | **22** |
+| [`app.data_gaps.reconcile_cadence_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:474` | 0 | **24** | 51 ↑ | **24** |
+| [`app.data_gaps._mark_unrecoverable`](impacto/app-data_gaps.md) | `app/data_gaps.py:1230` | 0 | **24** | 24 | **24** |
+| [`app.data_gaps._record_recovery_failure`](impacto/app-data_gaps.md) | `app/data_gaps.py:1255` | 0 | **24** | 24 | **24** |
+| [`app.data_gaps.archive_beyond_source_horizon`](impacto/app-data_gaps.md) | `app/data_gaps.py:722` | 0 | **24** | 24 | **24** |
+| [`app.data_gaps.archive_source_response_absence`](impacto/app-data_gaps.md) | `app/data_gaps.py:792` | 0 | **24** | 24 | **24** |
+| [`app.data_gaps.close_partitioned_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1045` | 0 | **24** | 24 | **24** |
+| [`app.data_gaps.record_data_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:287` | 0 | **24** | 24 | **24** |
+| [`app.data_gaps.recover_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1272` | 0 | **24** | 24 | **24** |
+| [`app.daily_agg.compute_session`](impacto/app-daily_agg.md) | `app/daily_agg.py:141` | 0 | **22** | 56 ↑ | **22** |
+| [`app.api.records`](impacto/app-api.md) | `app/api.py:266` | 22 | **0** | 8 ↑ | **22** |
 | [`app.data_gaps.blocking_requirement_keys`](impacto/app-data_gaps.md) | `app/data_gaps.py:108` | 21 | **0** | 15 ↑ | **21** |
 | [`app.scalp_collector._write_combined_realtime`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:777` | 0 | **17** | 22 ↑ | **17** |
 | [`app.metrics.current_nyse_start`](impacto/app-metrics.md) | `app/metrics.py:20` | 16 | **0** | 15 ↑ | **16** |
-| [`app.daily_agg._store_baseline`](impacto/app-daily_agg.md) | `app/daily_agg.py:745` | 0 | **15** | 57 ↑ | **15** |
-| [`app.data_gaps._aware_utc`](impacto/app-data_gaps.md) | `app/data_gaps.py:67` | 15 | **0** | 22 ↑ | **15** |
-| [`app.data_gaps._validated_window`](impacto/app-data_gaps.md) | `app/data_gaps.py:73` | 15 | **0** | 22 ↑ | **15** |
+| [`app.daily_agg._store_baseline`](impacto/app-daily_agg.md) | `app/daily_agg.py:745` | 0 | **15** | 58 ↑ | **15** |
+| [`app.data_gaps._aware_utc`](impacto/app-data_gaps.md) | `app/data_gaps.py:67` | 15 | **0** | 24 ↑ | **15** |
+| [`app.data_gaps._validated_window`](impacto/app-data_gaps.md) | `app/data_gaps.py:73` | 15 | **0** | 24 ↑ | **15** |
 | [`app.scalp_logic.load_baselines`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:158` | 15 | **0** | 11 ↑ | **15** |
 | [`app.scalp_collector._write_combined_books`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:907` | 0 | **15** | 20 ↑ | **15** |
 | [`app.scalp_collector.flush_books`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:832` | 0 | **15** | 20 ↑ | **15** |
@@ -122,7 +123,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic._flow_windows`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2619` | 14 | **0** | 0 | **14** |
 | [`app.scalp_logic.spot_flow_windows`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2797` | 14 | **0** | 0 | **14** |
 | [`app.ws_collector.flush_realtime`](impacto/app-ws_collector.md) | `app/ws_collector.py:365` | 0 | **13** | 13 | **13** |
-| [`app.data_gaps.expected_buckets`](impacto/app-data_gaps.md) | `app/data_gaps.py:245` | 12 | **0** | 22 ↑ | **12** |
+| [`app.data_gaps.expected_buckets`](impacto/app-data_gaps.md) | `app/data_gaps.py:245` | 12 | **0** | 24 ↑ | **12** |
 | [`app.ws_collector._write_minute`](impacto/app-ws_collector.md) | `app/ws_collector.py:239` | 0 | **12** | 19 ↑ | **12** |
 | [`app.scalp_logic._gap_and_baseline`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:4376` | 12 | **0** | 0 | **12** |
 | [`app.scalp_logic._gap_threshold_seconds`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:4346` | 12 | **0** | 0 | **12** |
@@ -154,13 +155,13 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic._utc_now`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:68` | 10 | **0** | 0 | **10** |
 | [`app.scalp_logic.flow_confirmation`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:4721` | 10 | **0** | 0 | **10** |
 | [`app.setups._sign`](impacto/app-setups.md) | `app/setups.py:95` | 10 | **0** | 0 | **10** |
-| [`app.api._utc_iso`](impacto/app-api.md) | `app/api.py:2446` | 9 | **0** | 0 | **9** |
-| [`app.api.rechaza_parametros_desconocidos`](impacto/app-api.md) | `app/api.py:2566` | 9 | **0** | 0 | **9** |
+| [`app.api._utc_iso`](impacto/app-api.md) | `app/api.py:2466` | 9 | **0** | 0 | **9** |
+| [`app.api.rechaza_parametros_desconocidos`](impacto/app-api.md) | `app/api.py:2586` | 9 | **0** | 0 | **9** |
 | [`app.metrics.insert_snapshot`](impacto/app-metrics.md) | `app/metrics.py:676` | 0 | **9** | 9 | **9** |
 | [`app.scalp_logic._atr`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3194` | 9 | **0** | 0 | **9** |
 | [`app.scalp_logic._tr_series`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3183` | 9 | **0** | 0 | **9** |
-| [`app.db.heartbeat`](impacto/app-db.md) | `app/db.py:409` | 1 | **8** | 57 ↑ | **8** |
-| [`app.db.heartbeat_component`](impacto/app-db.md) | `app/db.py:443` | 0 | **8** | 44 ↑ | **8** |
+| [`app.db.heartbeat`](impacto/app-db.md) | `app/db.py:409` | 1 | **8** | 58 ↑ | **8** |
+| [`app.db.heartbeat_component`](impacto/app-db.md) | `app/db.py:443` | 0 | **8** | 45 ↑ | **8** |
 | [`app.db.heartbeat_shard`](impacto/app-db.md) | `app/db.py:522` | 0 | **8** | 22 ↑ | **8** |
 | [`app.scalp_logic.structure_detail`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2429` | 8 | **0** | 3 ↑ | **8** |
 | [`app.scalp_logic.trend_matrix`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:6247` | 8 | **0** | 3 ↑ | **8** |
@@ -173,8 +174,8 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.signal_ledger.persist_signal_observations`](impacto/app-signal_ledger.md) | `app/signal_ledger.py:227` | 0 | **7** | 25 ↑ | **7** |
 | [`app.scalp_collector._write_combined_minute`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:806` | 0 | **7** | 22 ↑ | **7** |
 | [`app.scalp_collector.cleanup_expired_rows`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1539` | 0 | **7** | 20 ↑ | **7** |
-| [`app.api.historical_interval_value`](impacto/app-api.md) | `app/api.py:239` | 7 | **0** | 0 | **7** |
-| [`app.api.mask_gapped_series_rows`](impacto/app-api.md) | `app/api.py:250` | 7 | **0** | 0 | **7** |
+| [`app.api.historical_interval_value`](impacto/app-api.md) | `app/api.py:259` | 7 | **0** | 0 | **7** |
+| [`app.api.mask_gapped_series_rows`](impacto/app-api.md) | `app/api.py:270` | 7 | **0** | 0 | **7** |
 | [`app.data_gaps.declared_gap_windows`](impacto/app-data_gaps.md) | `app/data_gaps.py:197` | 7 | **0** | 0 | **7** |
 | [`app.interpretation._barrier_candidates`](impacto/app-interpretation.md) | `app/interpretation.py:684` | 7 | **0** | 0 | **7** |
 | [`app.interpretation._barrier_zones`](impacto/app-interpretation.md) | `app/interpretation.py:779` | 7 | **0** | 0 | **7** |
@@ -182,8 +183,8 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic._pct_rank`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1856` | 7 | **0** | 0 | **7** |
 | [`app.scalp_logic.delta_matrix`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:4589` | 7 | **0** | 0 | **7** |
 | [`app.scalp_logic.price_barriers`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1304` | 7 | **0** | 0 | **7** |
-| [`app.api.declared_series_response`](impacto/app-api.md) | `app/api.py:400` | 6 | **0** | 0 | **6** |
-| [`app.api.minutos_de_las_filas`](impacto/app-api.md) | `app/api.py:360` | 6 | **0** | 0 | **6** |
+| [`app.api.declared_series_response`](impacto/app-api.md) | `app/api.py:420` | 6 | **0** | 0 | **6** |
+| [`app.api.minutos_de_las_filas`](impacto/app-api.md) | `app/api.py:380` | 6 | **0** | 0 | **6** |
 | [`app.scalp_logic._profile`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3807` | 6 | **0** | 0 | **6** |
 | [`app.scalp_logic.volume_profile`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3844` | 6 | **0** | 0 | **6** |
 | [`app.scalp_collector.persist_scalp_signals`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1358` | 0 | **5** | 25 ↑ | **5** |
@@ -200,11 +201,11 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic._pearson`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3561` | 5 | **0** | 0 | **5** |
 | [`app.scalp_logic._regime`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1865` | 5 | **0** | 0 | **5** |
 | [`app.scalp_logic._returns`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3553` | 5 | **0** | 0 | **5** |
-| [`app.interpretation.evaluate_setups`](impacto/app-interpretation.md) | `app/interpretation.py:139` | 4 | **0** | 55 ↑ | **4** |
+| [`app.interpretation.evaluate_setups`](impacto/app-interpretation.md) | `app/interpretation.py:139` | 4 | **0** | 56 ↑ | **4** |
 | [`app.scalp_logic.compute_swing_score`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:6421` | 4 | **0** | 3 ↑ | **4** |
 | [`app.ai_context.data_confidence_row`](impacto/app-ai_context.md) | `app/ai_context.py:531` | 4 | **0** | 0 | **4** |
 | [`app.ai_context.quality_score`](impacto/app-ai_context.md) | `app/ai_context.py:619` | 4 | **0** | 0 | **4** |
-| [`app.api.ventana_pedida`](impacto/app-api.md) | `app/api.py:1700` | 4 | **0** | 0 | **4** |
+| [`app.api.ventana_pedida`](impacto/app-api.md) | `app/api.py:1720` | 4 | **0** | 0 | **4** |
 | [`app.data_gaps.align_down`](impacto/app-data_gaps.md) | `app/data_gaps.py:232` | 4 | **0** | 0 | **4** |
 | [`app.interpretation._memory_features`](impacto/app-interpretation.md) | `app/interpretation.py:372` | 4 | **0** | 0 | **4** |
 | [`app.interpretation.market_memory_read`](impacto/app-interpretation.md) | `app/interpretation.py:400` | 4 | **0** | 0 | **4** |
@@ -217,9 +218,9 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.zones._ols_slope`](impacto/app-zones.md) | `app/zones.py:471` | 4 | **0** | 0 | **4** |
 | [`app.zones._rotations`](impacto/app-zones.md) | `app/zones.py:483` | 4 | **0** | 0 | **4** |
 | [`app.zones.range_validate_read`](impacto/app-zones.md) | `app/zones.py:535` | 4 | **0** | 0 | **4** |
-| [`app.config.get_settings`](impacto/app-config.md) | `app/config.py:291` | 3 | **0** | 57 ↑ | **3** |
-| [`app.daily_agg.materialize_daily_verdict_outcomes`](impacto/app-daily_agg.md) | `app/daily_agg.py:521` | 0 | **3** | 55 ↑ | **3** |
-| [`app.daily_agg.persist_verdicts`](impacto/app-daily_agg.md) | `app/daily_agg.py:353` | 0 | **3** | 55 ↑ | **3** |
+| [`app.config.get_settings`](impacto/app-config.md) | `app/config.py:291` | 3 | **0** | 58 ↑ | **3** |
+| [`app.daily_agg.materialize_daily_verdict_outcomes`](impacto/app-daily_agg.md) | `app/daily_agg.py:521` | 0 | **3** | 56 ↑ | **3** |
+| [`app.daily_agg.persist_verdicts`](impacto/app-daily_agg.md) | `app/daily_agg.py:353` | 0 | **3** | 56 ↑ | **3** |
 | [`app.external_macro.refresh_external_macro`](impacto/app-external_macro.md) | `app/external_macro.py:478` | 0 | **3** | 13 ↑ | **3** |
 | [`app.ingest.upsert_long_short`](impacto/app-ingest.md) | `app/ingest.py:327` | 0 | **3** | 13 ↑ | **3** |
 | [`app.signal_outcomes._defer_missing_path`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:217` | 0 | **3** | 11 ↑ | **3** |
@@ -233,10 +234,10 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.ai_context.compact_value`](impacto/app-ai_context.md) | `app/ai_context.py:237` | 3 | **0** | 0 | **3** |
 | [`app.ai_context.latest_snapshot`](impacto/app-ai_context.md) | `app/ai_context.py:298` | 3 | **0** | 0 | **3** |
 | [`app.ai_context.orderbook_freshness`](impacto/app-ai_context.md) | `app/ai_context.py:668` | 3 | **0** | 0 | **3** |
-| [`app.api.daily_data`](impacto/app-api.md) | `app/api.py:548` | 3 | **0** | 0 | **3** |
-| [`app.api.declara_ventana`](impacto/app-api.md) | `app/api.py:1733` | 3 | **0** | 0 | **3** |
-| [`app.api.latest_snapshot`](impacto/app-api.md) | `app/api.py:521` | 3 | **0** | 0 | **3** |
-| [`app.api.sella_respuesta`](impacto/app-api.md) | `app/api.py:1978` | 3 | **0** | 0 | **3** |
+| [`app.api.daily_data`](impacto/app-api.md) | `app/api.py:568` | 3 | **0** | 0 | **3** |
+| [`app.api.declara_ventana`](impacto/app-api.md) | `app/api.py:1753` | 3 | **0** | 0 | **3** |
+| [`app.api.latest_snapshot`](impacto/app-api.md) | `app/api.py:541` | 3 | **0** | 0 | **3** |
+| [`app.api.sella_respuesta`](impacto/app-api.md) | `app/api.py:1998` | 3 | **0** | 0 | **3** |
 | [`app.external_macro._direction`](impacto/app-external_macro.md) | `app/external_macro.py:190` | 3 | **0** | 0 | **3** |
 | [`app.external_macro._metric`](impacto/app-external_macro.md) | `app/external_macro.py:205` | 3 | **0** | 0 | **3** |
 | [`app.external_macro._pct_change`](impacto/app-external_macro.md) | `app/external_macro.py:184` | 3 | **0** | 0 | **3** |
@@ -302,8 +303,8 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.wyckoff._signed_balance`](impacto/app-wyckoff.md) | `app/wyckoff.py:178` | 3 | **0** | 0 | **3** |
 | [`app.wyckoff.detect_latest_range`](impacto/app-wyckoff.md) | `app/wyckoff.py:99` | 3 | **0** | 0 | **3** |
 | [`app.wyckoff.wyckoff_auto_read`](impacto/app-wyckoff.md) | `app/wyckoff.py:447` | 3 | **0** | 0 | **3** |
-| [`app.metrics.session_bounds`](impacto/app-metrics.md) | `app/metrics.py:31` | 2 | **0** | 55 ↑ | **2** |
-| [`app.scalp_logic.swing_score`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:6572` | 2 | **0** | 55 ↑ | **2** |
+| [`app.metrics.session_bounds`](impacto/app-metrics.md) | `app/metrics.py:31` | 2 | **0** | 56 ↑ | **2** |
+| [`app.scalp_logic.swing_score`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:6572` | 2 | **0** | 56 ↑ | **2** |
 | [`app.entradas.reglamento.cargar_valido`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:387` | 2 | **0** | 10 ↑ | **2** |
 | [`app.entradas.reglamento.valores`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:119` | 2 | **0** | 10 ↑ | **2** |
 | [`app.entradas.reglamento.versiones_en_curso`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:395` | 2 | **0** | 10 ↑ | **2** |
@@ -320,8 +321,8 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.ai_context.rough_token_estimate`](impacto/app-ai_context.md) | `app/ai_context.py:283` | 2 | **0** | 0 | **2** |
 | [`app.ai_context.sin_perder_los_nulos`](impacto/app-ai_context.md) | `app/ai_context.py:264` | 2 | **0** | 0 | **2** |
 | [`app.ai_context.verdict_history`](impacto/app-ai_context.md) | `app/ai_context.py:486` | 2 | **0** | 0 | **2** |
-| [`app.api._session_window`](impacto/app-api.md) | `app/api.py:502` | 2 | **0** | 0 | **2** |
-| [`app.api.scalp_persistence`](impacto/app-api.md) | `app/api.py:3174` | 2 | **0** | 0 | **2** |
+| [`app.api._session_window`](impacto/app-api.md) | `app/api.py:522` | 2 | **0** | 0 | **2** |
+| [`app.api.scalp_persistence`](impacto/app-api.md) | `app/api.py:3194` | 2 | **0** | 0 | **2** |
 | [`app.entradas.registro.insertar`](impacto/app-entradas-registro.md) | `app/entradas/registro.py:180` | 0 | **2** | 2 | **2** |
 | [`app.entradas.registro.latir`](impacto/app-entradas-registro.md) | `app/entradas/registro.py:219` | 0 | **2** | 2 | **2** |
 | [`app.entradas.registro.registrar_reglamento`](impacto/app-entradas-registro.md) | `app/entradas/registro.py:66` | 0 | **2** | 2 | **2** |
@@ -346,10 +347,26 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.entradas.reglamento.validar`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:357` | 2 | **0** | 2 ↑ | **2** |
 | [`app.entradas.reglamento.version`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:405` | 2 | **0** | 0 | **2** |
 | [`app.entradas.reglamento.version_activa`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:400` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta._hipotesis`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:297` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta._reglamento`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:319` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta._resumen`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:128` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta.construir`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:169` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor._cero`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:429` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor._cobros`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:414` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor._minuto`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:124` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor._pata`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:154` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor._t`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:112` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resolutor._t23`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:407` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor.cobros_funding`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:144` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resolutor.entrada_t`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:133` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resolutor.foto_de`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:128` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor.iso`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:120` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor.resolver`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:165` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resolutor.ventana`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:138` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resultados.barrido`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:129` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resultados.de_filas`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:110` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resultados.guardar`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:97` | 2 | **2** | 2 | **2** |
+| [`app.entradas.resultados.resolver_fila`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:82` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.ruta._hipotesis`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:341` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta._reglamento`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:363` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta._resumen`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:150` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta.construir`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:193` | 2 | **0** | 0 | **2** |
 | [`app.field_disambiguation.build`](impacto/app-field_disambiguation.md) | `app/field_disambiguation.py:72` | 2 | **0** | 0 | **2** |
 | [`app.scalp_logic.horizon_structure`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1753` | 2 | **0** | 0 | **2** |
 | [`app.scalp_logic.hypothesis_evidence`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:4992` | 2 | **0** | 0 | **2** |
@@ -375,7 +392,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.signal_execution.persist_signal_execution_snapshots`](impacto/app-signal_execution.md) | `app/signal_execution.py:429` | 0 | **1** | 11 ↑ | **1** |
 | [`app.signal_ledger.classify_signal_observation`](impacto/app-signal_ledger.md) | `app/signal_ledger.py:62` | 1 | **0** | 11 ↑ | **1** |
 | [`app.signal_replay.persist_signal_replay_frame`](impacto/app-signal_replay.md) | `app/signal_replay.py:90` | 0 | **1** | 11 ↑ | **1** |
-| [`app.api.health`](impacto/app-api.md) | `app/api.py:3702` | 1 | **0** | 8 ↑ | **1** |
+| [`app.api.health`](impacto/app-api.md) | `app/api.py:3722` | 1 | **0** | 8 ↑ | **1** |
 | [`app.db.db_identity`](impacto/app-db.md) | `app/db.py:64` | 1 | **0** | 8 ↑ | **1** |
 | [`app.db.heartbeat_max_age`](impacto/app-db.md) | `app/db.py:95` | 1 | **0** | 8 ↑ | **1** |
 | [`app.signal_ledger._finite`](impacto/app-signal_ledger.md) | `app/signal_ledger.py:52` | 1 | **0** | 7 ↑ | **1** |
@@ -389,86 +406,86 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.ai_context.palabra_de_la_decision`](impacto/app-ai_context.md) | `app/ai_context.py:1216` | 1 | **0** | 0 | **1** |
 | [`app.ai_context.palabra_registrada`](impacto/app-ai_context.md) | `app/ai_context.py:1420` | 1 | **0** | 0 | **1** |
 | [`app.ai_context.palabra_sostenida`](impacto/app-ai_context.md) | `app/ai_context.py:1446` | 1 | **0** | 0 | **1** |
-| [`app.api._parse_heartbeat_detail`](impacto/app-api.md) | `app/api.py:3606` | 1 | **0** | 0 | **1** |
-| [`app.api._slippage_para`](impacto/app-api.md) | `app/api.py:1682` | 1 | **0** | 0 | **1** |
-| [`app.api.ai_context`](impacto/app-api.md) | `app/api.py:3545` | 1 | **0** | 0 | **1** |
-| [`app.api.ai_context_bundle`](impacto/app-api.md) | `app/api.py:3562` | 1 | **0** | 0 | **1** |
-| [`app.api.ai_profiles`](impacto/app-api.md) | `app/api.py:3583` | 1 | **0** | 0 | **1** |
-| [`app.api.carry_matriz`](impacto/app-api.md) | `app/api.py:1278` | 1 | **0** | 0 | **1** |
-| [`app.api.context_metadata_endpoint`](impacto/app-api.md) | `app/api.py:2079` | 1 | **0** | 0 | **1** |
-| [`app.api.cross_asset_endpoint`](impacto/app-api.md) | `app/api.py:2120` | 1 | **0** | 0 | **1** |
-| [`app.api.cvd`](impacto/app-api.md) | `app/api.py:753` | 1 | **0** | 0 | **1** |
-| [`app.api.cvd_divergence`](impacto/app-api.md) | `app/api.py:915` | 1 | **0** | 0 | **1** |
-| [`app.api.cvd_matrix_endpoint`](impacto/app-api.md) | `app/api.py:2162` | 1 | **0** | 0 | **1** |
-| [`app.api.cvd_spot`](impacto/app-api.md) | `app/api.py:814` | 1 | **0** | 0 | **1** |
-| [`app.api.daily`](impacto/app-api.md) | `app/api.py:2305` | 1 | **0** | 0 | **1** |
-| [`app.api.dashboard_state`](impacto/app-api.md) | `app/api.py:3514` | 1 | **0** | 0 | **1** |
-| [`app.api.data_confidence`](impacto/app-api.md) | `app/api.py:3121` | 1 | **0** | 0 | **1** |
-| [`app.api.declarar_tramo_no_medible`](impacto/app-api.md) | `app/api.py:1131` | 1 | **0** | 0 | **1** |
-| [`app.api.delta_profile_endpoint`](impacto/app-api.md) | `app/api.py:1943` | 1 | **0** | 0 | **1** |
-| [`app.api.desk_state`](impacto/app-api.md) | `app/api.py:1461` | 1 | **0** | 0 | **1** |
-| [`app.api.divergences_endpoint`](impacto/app-api.md) | `app/api.py:2194` | 1 | **0** | 0 | **1** |
-| [`app.api.entradas`](impacto/app-api.md) | `app/api.py:1297` | 1 | **0** | 0 | **1** |
-| [`app.api.external_macro_endpoint`](impacto/app-api.md) | `app/api.py:2184` | 1 | **0** | 0 | **1** |
-| [`app.api.flow_spot_vs_perp`](impacto/app-api.md) | `app/api.py:1758` | 1 | **0** | 0 | **1** |
-| [`app.api.funding_context_endpoint`](impacto/app-api.md) | `app/api.py:1922` | 1 | **0** | 0 | **1** |
-| [`app.api.hypothesis`](impacto/app-api.md) | `app/api.py:1380` | 1 | **0** | 0 | **1** |
-| [`app.api.index`](impacto/app-api.md) | `app/api.py:3888` | 1 | **0** | 0 | **1** |
-| [`app.api.level_breakout_endpoint`](impacto/app-api.md) | `app/api.py:2055` | 1 | **0** | 0 | **1** |
-| [`app.api.liquidation_levels`](impacto/app-api.md) | `app/api.py:3061` | 1 | **0** | 0 | **1** |
-| [`app.api.liquidation_map_endpoint`](impacto/app-api.md) | `app/api.py:1929` | 1 | **0** | 0 | **1** |
-| [`app.api.liquidation_series`](impacto/app-api.md) | `app/api.py:1082` | 1 | **0** | 0 | **1** |
-| [`app.api.macro_context_endpoint`](impacto/app-api.md) | `app/api.py:2177` | 1 | **0** | 0 | **1** |
-| [`app.api.market_impact_endpoint`](impacto/app-api.md) | `app/api.py:1364` | 1 | **0** | 0 | **1** |
-| [`app.api.market_memory_endpoint`](impacto/app-api.md) | `app/api.py:2201` | 1 | **0** | 0 | **1** |
-| [`app.api.mesa`](impacto/app-api.md) | `app/api.py:3872` | 1 | **0** | 0 | **1** |
-| [`app.api.mesa_decide`](impacto/app-api.md) | `app/api.py:3816` | 1 | **0** | 0 | **1** |
-| [`app.api.mesa_entradas`](impacto/app-api.md) | `app/api.py:3855` | 1 | **0** | 0 | **1** |
-| [`app.api.metric_baselines`](impacto/app-api.md) | `app/api.py:1588` | 1 | **0** | 0 | **1** |
-| [`app.api.ohlcv`](impacto/app-api.md) | `app/api.py:689` | 1 | **0** | 0 | **1** |
-| [`app.api.oi`](impacto/app-api.md) | `app/api.py:1033` | 1 | **0** | 0 | **1** |
-| [`app.api.oi_context_endpoint`](impacto/app-api.md) | `app/api.py:2127` | 1 | **0** | 0 | **1** |
-| [`app.api.panel`](impacto/app-api.md) | `app/api.py:3882` | 1 | **0** | 0 | **1** |
-| [`app.api.passive_flow_endpoint`](impacto/app-api.md) | `app/api.py:2155` | 1 | **0** | 0 | **1** |
-| [`app.api.positioning`](impacto/app-api.md) | `app/api.py:1372` | 1 | **0** | 0 | **1** |
-| [`app.api.price_barriers_endpoint`](impacto/app-api.md) | `app/api.py:1972` | 1 | **0** | 0 | **1** |
-| [`app.api.prometheus_metrics`](impacto/app-api.md) | `app/api.py:3624` | 1 | **0** | 0 | **1** |
-| [`app.api.quality_feeds`](impacto/app-api.md) | `app/api.py:1572` | 1 | **0** | 0 | **1** |
-| [`app.api.range_validate_endpoint`](impacto/app-api.md) | `app/api.py:2021` | 1 | **0** | 0 | **1** |
-| [`app.api.rango_estructura`](impacto/app-api.md) | `app/api.py:2086` | 1 | **0** | 0 | **1** |
-| [`app.api.reference_levels_endpoint`](impacto/app-api.md) | `app/api.py:2113` | 1 | **0** | 0 | **1** |
-| [`app.api.scalp_absorption`](impacto/app-api.md) | `app/api.py:1800` | 1 | **0** | 0 | **1** |
-| [`app.api.scalp_alerts`](impacto/app-api.md) | `app/api.py:1816` | 1 | **0** | 0 | **1** |
-| [`app.api.scalp_basis`](impacto/app-api.md) | `app/api.py:3054` | 1 | **0** | 0 | **1** |
-| [`app.api.scalp_delta_matrix`](impacto/app-api.md) | `app/api.py:1335` | 1 | **0** | 0 | **1** |
-| [`app.api.scalp_execution_cost`](impacto/app-api.md) | `app/api.py:1626` | 1 | **0** | 0 | **1** |
-| [`app.api.scalp_liquidations`](impacto/app-api.md) | `app/api.py:1809` | 1 | **0** | 0 | **1** |
-| [`app.api.scalp_orderbook`](impacto/app-api.md) | `app/api.py:1784` | 1 | **0** | 0 | **1** |
-| [`app.api.scalp_signals`](impacto/app-api.md) | `app/api.py:2405` | 1 | **0** | 0 | **1** |
-| [`app.api.scalp_summary`](impacto/app-api.md) | `app/api.py:1327` | 1 | **0** | 0 | **1** |
-| [`app.api.setup`](impacto/app-api.md) | `app/api.py:2390` | 1 | **0** | 0 | **1** |
-| [`app.api.signal_base_rate`](impacto/app-api.md) | `app/api.py:3389` | 1 | **0** | 0 | **1** |
-| [`app.api.signals_execution`](impacto/app-api.md) | `app/api.py:2799` | 1 | **0** | 0 | **1** |
-| [`app.api.signals_ledger`](impacto/app-api.md) | `app/api.py:2582` | 1 | **0** | 0 | **1** |
-| [`app.api.signals_outcomes`](impacto/app-api.md) | `app/api.py:2713` | 1 | **0** | 0 | **1** |
-| [`app.api.signals_replay`](impacto/app-api.md) | `app/api.py:2887` | 1 | **0** | 0 | **1** |
-| [`app.api.signals_visibility`](impacto/app-api.md) | `app/api.py:2971` | 1 | **0** | 0 | **1** |
-| [`app.api.snapshot`](impacto/app-api.md) | `app/api.py:669` | 1 | **0** | 0 | **1** |
-| [`app.api.statistical_alerts`](impacto/app-api.md) | `app/api.py:1880` | 1 | **0** | 0 | **1** |
-| [`app.api.stream`](impacto/app-api.md) | `app/api.py:3807` | 1 | **0** | 0 | **1** |
-| [`app.api.stream_generator`](impacto/app-api.md) | `app/api.py:3759` | 1 | **0** | 0 | **1** |
-| [`app.api.structure`](impacto/app-api.md) | `app/api.py:2298` | 1 | **0** | 0 | **1** |
-| [`app.api.structure_detail_endpoint`](impacto/app-api.md) | `app/api.py:2170` | 1 | **0** | 0 | **1** |
-| [`app.api.swing_score_endpoint`](impacto/app-api.md) | `app/api.py:2141` | 1 | **0** | 0 | **1** |
-| [`app.api.symbols`](impacto/app-api.md) | `app/api.py:664` | 1 | **0** | 0 | **1** |
-| [`app.api.trading_profile`](impacto/app-api.md) | `app/api.py:1606` | 1 | **0** | 0 | **1** |
-| [`app.api.trend_matrix_endpoint`](impacto/app-api.md) | `app/api.py:2148` | 1 | **0** | 0 | **1** |
-| [`app.api.verdicts`](impacto/app-api.md) | `app/api.py:2208` | 1 | **0** | 0 | **1** |
-| [`app.api.volatility_endpoint`](impacto/app-api.md) | `app/api.py:2134` | 1 | **0** | 0 | **1** |
-| [`app.api.volume_profile_endpoint`](impacto/app-api.md) | `app/api.py:1936` | 1 | **0** | 0 | **1** |
-| [`app.api.whale_delta`](impacto/app-api.md) | `app/api.py:1184` | 1 | **0** | 0 | **1** |
-| [`app.api.wyckoff_endpoint`](impacto/app-api.md) | `app/api.py:2071` | 1 | **0** | 0 | **1** |
-| [`app.api.zone_analysis_endpoint`](impacto/app-api.md) | `app/api.py:1995` | 1 | **0** | 0 | **1** |
+| [`app.api._parse_heartbeat_detail`](impacto/app-api.md) | `app/api.py:3626` | 1 | **0** | 0 | **1** |
+| [`app.api._slippage_para`](impacto/app-api.md) | `app/api.py:1702` | 1 | **0** | 0 | **1** |
+| [`app.api.ai_context`](impacto/app-api.md) | `app/api.py:3565` | 1 | **0** | 0 | **1** |
+| [`app.api.ai_context_bundle`](impacto/app-api.md) | `app/api.py:3582` | 1 | **0** | 0 | **1** |
+| [`app.api.ai_profiles`](impacto/app-api.md) | `app/api.py:3603` | 1 | **0** | 0 | **1** |
+| [`app.api.carry_matriz`](impacto/app-api.md) | `app/api.py:1298` | 1 | **0** | 0 | **1** |
+| [`app.api.context_metadata_endpoint`](impacto/app-api.md) | `app/api.py:2099` | 1 | **0** | 0 | **1** |
+| [`app.api.cross_asset_endpoint`](impacto/app-api.md) | `app/api.py:2140` | 1 | **0** | 0 | **1** |
+| [`app.api.cvd`](impacto/app-api.md) | `app/api.py:773` | 1 | **0** | 0 | **1** |
+| [`app.api.cvd_divergence`](impacto/app-api.md) | `app/api.py:935` | 1 | **0** | 0 | **1** |
+| [`app.api.cvd_matrix_endpoint`](impacto/app-api.md) | `app/api.py:2182` | 1 | **0** | 0 | **1** |
+| [`app.api.cvd_spot`](impacto/app-api.md) | `app/api.py:834` | 1 | **0** | 0 | **1** |
+| [`app.api.daily`](impacto/app-api.md) | `app/api.py:2325` | 1 | **0** | 0 | **1** |
+| [`app.api.dashboard_state`](impacto/app-api.md) | `app/api.py:3534` | 1 | **0** | 0 | **1** |
+| [`app.api.data_confidence`](impacto/app-api.md) | `app/api.py:3141` | 1 | **0** | 0 | **1** |
+| [`app.api.declarar_tramo_no_medible`](impacto/app-api.md) | `app/api.py:1151` | 1 | **0** | 0 | **1** |
+| [`app.api.delta_profile_endpoint`](impacto/app-api.md) | `app/api.py:1963` | 1 | **0** | 0 | **1** |
+| [`app.api.desk_state`](impacto/app-api.md) | `app/api.py:1481` | 1 | **0** | 0 | **1** |
+| [`app.api.divergences_endpoint`](impacto/app-api.md) | `app/api.py:2214` | 1 | **0** | 0 | **1** |
+| [`app.api.entradas`](impacto/app-api.md) | `app/api.py:1317` | 1 | **0** | 0 | **1** |
+| [`app.api.external_macro_endpoint`](impacto/app-api.md) | `app/api.py:2204` | 1 | **0** | 0 | **1** |
+| [`app.api.flow_spot_vs_perp`](impacto/app-api.md) | `app/api.py:1778` | 1 | **0** | 0 | **1** |
+| [`app.api.funding_context_endpoint`](impacto/app-api.md) | `app/api.py:1942` | 1 | **0** | 0 | **1** |
+| [`app.api.hypothesis`](impacto/app-api.md) | `app/api.py:1400` | 1 | **0** | 0 | **1** |
+| [`app.api.index`](impacto/app-api.md) | `app/api.py:3908` | 1 | **0** | 0 | **1** |
+| [`app.api.level_breakout_endpoint`](impacto/app-api.md) | `app/api.py:2075` | 1 | **0** | 0 | **1** |
+| [`app.api.liquidation_levels`](impacto/app-api.md) | `app/api.py:3081` | 1 | **0** | 0 | **1** |
+| [`app.api.liquidation_map_endpoint`](impacto/app-api.md) | `app/api.py:1949` | 1 | **0** | 0 | **1** |
+| [`app.api.liquidation_series`](impacto/app-api.md) | `app/api.py:1102` | 1 | **0** | 0 | **1** |
+| [`app.api.macro_context_endpoint`](impacto/app-api.md) | `app/api.py:2197` | 1 | **0** | 0 | **1** |
+| [`app.api.market_impact_endpoint`](impacto/app-api.md) | `app/api.py:1384` | 1 | **0** | 0 | **1** |
+| [`app.api.market_memory_endpoint`](impacto/app-api.md) | `app/api.py:2221` | 1 | **0** | 0 | **1** |
+| [`app.api.mesa`](impacto/app-api.md) | `app/api.py:3892` | 1 | **0** | 0 | **1** |
+| [`app.api.mesa_decide`](impacto/app-api.md) | `app/api.py:3836` | 1 | **0** | 0 | **1** |
+| [`app.api.mesa_entradas`](impacto/app-api.md) | `app/api.py:3875` | 1 | **0** | 0 | **1** |
+| [`app.api.metric_baselines`](impacto/app-api.md) | `app/api.py:1608` | 1 | **0** | 0 | **1** |
+| [`app.api.ohlcv`](impacto/app-api.md) | `app/api.py:709` | 1 | **0** | 0 | **1** |
+| [`app.api.oi`](impacto/app-api.md) | `app/api.py:1053` | 1 | **0** | 0 | **1** |
+| [`app.api.oi_context_endpoint`](impacto/app-api.md) | `app/api.py:2147` | 1 | **0** | 0 | **1** |
+| [`app.api.panel`](impacto/app-api.md) | `app/api.py:3902` | 1 | **0** | 0 | **1** |
+| [`app.api.passive_flow_endpoint`](impacto/app-api.md) | `app/api.py:2175` | 1 | **0** | 0 | **1** |
+| [`app.api.positioning`](impacto/app-api.md) | `app/api.py:1392` | 1 | **0** | 0 | **1** |
+| [`app.api.price_barriers_endpoint`](impacto/app-api.md) | `app/api.py:1992` | 1 | **0** | 0 | **1** |
+| [`app.api.prometheus_metrics`](impacto/app-api.md) | `app/api.py:3644` | 1 | **0** | 0 | **1** |
+| [`app.api.quality_feeds`](impacto/app-api.md) | `app/api.py:1592` | 1 | **0** | 0 | **1** |
+| [`app.api.range_validate_endpoint`](impacto/app-api.md) | `app/api.py:2041` | 1 | **0** | 0 | **1** |
+| [`app.api.rango_estructura`](impacto/app-api.md) | `app/api.py:2106` | 1 | **0** | 0 | **1** |
+| [`app.api.reference_levels_endpoint`](impacto/app-api.md) | `app/api.py:2133` | 1 | **0** | 0 | **1** |
+| [`app.api.scalp_absorption`](impacto/app-api.md) | `app/api.py:1820` | 1 | **0** | 0 | **1** |
+| [`app.api.scalp_alerts`](impacto/app-api.md) | `app/api.py:1836` | 1 | **0** | 0 | **1** |
+| [`app.api.scalp_basis`](impacto/app-api.md) | `app/api.py:3074` | 1 | **0** | 0 | **1** |
+| [`app.api.scalp_delta_matrix`](impacto/app-api.md) | `app/api.py:1355` | 1 | **0** | 0 | **1** |
+| [`app.api.scalp_execution_cost`](impacto/app-api.md) | `app/api.py:1646` | 1 | **0** | 0 | **1** |
+| [`app.api.scalp_liquidations`](impacto/app-api.md) | `app/api.py:1829` | 1 | **0** | 0 | **1** |
+| [`app.api.scalp_orderbook`](impacto/app-api.md) | `app/api.py:1804` | 1 | **0** | 0 | **1** |
+| [`app.api.scalp_signals`](impacto/app-api.md) | `app/api.py:2425` | 1 | **0** | 0 | **1** |
+| [`app.api.scalp_summary`](impacto/app-api.md) | `app/api.py:1347` | 1 | **0** | 0 | **1** |
+| [`app.api.setup`](impacto/app-api.md) | `app/api.py:2410` | 1 | **0** | 0 | **1** |
+| [`app.api.signal_base_rate`](impacto/app-api.md) | `app/api.py:3409` | 1 | **0** | 0 | **1** |
+| [`app.api.signals_execution`](impacto/app-api.md) | `app/api.py:2819` | 1 | **0** | 0 | **1** |
+| [`app.api.signals_ledger`](impacto/app-api.md) | `app/api.py:2602` | 1 | **0** | 0 | **1** |
+| [`app.api.signals_outcomes`](impacto/app-api.md) | `app/api.py:2733` | 1 | **0** | 0 | **1** |
+| [`app.api.signals_replay`](impacto/app-api.md) | `app/api.py:2907` | 1 | **0** | 0 | **1** |
+| [`app.api.signals_visibility`](impacto/app-api.md) | `app/api.py:2991` | 1 | **0** | 0 | **1** |
+| [`app.api.snapshot`](impacto/app-api.md) | `app/api.py:689` | 1 | **0** | 0 | **1** |
+| [`app.api.statistical_alerts`](impacto/app-api.md) | `app/api.py:1900` | 1 | **0** | 0 | **1** |
+| [`app.api.stream`](impacto/app-api.md) | `app/api.py:3827` | 1 | **0** | 0 | **1** |
+| [`app.api.stream_generator`](impacto/app-api.md) | `app/api.py:3779` | 1 | **0** | 0 | **1** |
+| [`app.api.structure`](impacto/app-api.md) | `app/api.py:2318` | 1 | **0** | 0 | **1** |
+| [`app.api.structure_detail_endpoint`](impacto/app-api.md) | `app/api.py:2190` | 1 | **0** | 0 | **1** |
+| [`app.api.swing_score_endpoint`](impacto/app-api.md) | `app/api.py:2161` | 1 | **0** | 0 | **1** |
+| [`app.api.symbols`](impacto/app-api.md) | `app/api.py:684` | 1 | **0** | 0 | **1** |
+| [`app.api.trading_profile`](impacto/app-api.md) | `app/api.py:1626` | 1 | **0** | 0 | **1** |
+| [`app.api.trend_matrix_endpoint`](impacto/app-api.md) | `app/api.py:2168` | 1 | **0** | 0 | **1** |
+| [`app.api.verdicts`](impacto/app-api.md) | `app/api.py:2228` | 1 | **0** | 0 | **1** |
+| [`app.api.volatility_endpoint`](impacto/app-api.md) | `app/api.py:2154` | 1 | **0** | 0 | **1** |
+| [`app.api.volume_profile_endpoint`](impacto/app-api.md) | `app/api.py:1956` | 1 | **0** | 0 | **1** |
+| [`app.api.whale_delta`](impacto/app-api.md) | `app/api.py:1204` | 1 | **0** | 0 | **1** |
+| [`app.api.wyckoff_endpoint`](impacto/app-api.md) | `app/api.py:2091` | 1 | **0** | 0 | **1** |
+| [`app.api.zone_analysis_endpoint`](impacto/app-api.md) | `app/api.py:2015` | 1 | **0** | 0 | **1** |
 | [`app.breakout._atr`](impacto/app-breakout.md) | `app/breakout.py:58` | 1 | **0** | 0 | **1** |
 | [`app.breakout._confirmation_checks`](impacto/app-breakout.md) | `app/breakout.py:330` | 1 | **0** | 0 | **1** |
 | [`app.breakout._delta_usd`](impacto/app-breakout.md) | `app/breakout.py:77` | 1 | **0** | 0 | **1** |
@@ -532,42 +549,42 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.zones._percentile`](impacto/app-zones.md) | `app/zones.py:121` | 1 | **0** | 0 | **1** |
 | [`app.zones._rejection`](impacto/app-zones.md) | `app/zones.py:194` | 1 | **0** | 0 | **1** |
 | [`app.zones.zone_character_read`](impacto/app-zones.md) | `app/zones.py:220` | 1 | **0** | 0 | **1** |
-| [`app.db.assert_service_ownership`](impacto/app-db.md) | `app/db.py:301` | 0 | **0** | 66 ↑ | **0** |
-| [`app.db.fenced_transaction`](impacto/app-db.md) | `app/db.py:333` | 0 | **0** | 66 ↑ | **0** |
-| [`app.daily_agg.refresh_baselines`](impacto/app-daily_agg.md) | `app/daily_agg.py:731` | 0 | **0** | 57 ↑ | **0** |
-| [`app.db.heartbeat_owned`](impacto/app-db.md) | `app/db.py:431` | 0 | **0** | 57 ↑ | **0** |
-| [`app.ingest._reconcile_persisted_cadence`](impacto/app-ingest.md) | `app/ingest.py:454` | 0 | **0** | 56 ↑ | **0** |
-| [`app.daily_agg.backfill`](impacto/app-daily_agg.md) | `app/daily_agg.py:299` | 0 | **0** | 55 ↑ | **0** |
-| [`app.daily_agg.cycle`](impacto/app-daily_agg.md) | `app/daily_agg.py:817` | 0 | **0** | 55 ↑ | **0** |
-| [`app.daily_agg.latest_closed_session_date`](impacto/app-daily_agg.md) | `app/daily_agg.py:45` | 0 | **0** | 55 ↑ | **0** |
-| [`app.daily_agg.rollup_open_interest_daily`](impacto/app-daily_agg.md) | `app/daily_agg.py:576` | 0 | **0** | 55 ↑ | **0** |
-| [`app.daily_agg.ventana_barrido_5m`](impacto/app-daily_agg.md) | `app/daily_agg.py:631` | 0 | **0** | 55 ↑ | **0** |
-| [`app.ingest.barrido_cadencia_persistido`](impacto/app-ingest.md) | `app/ingest.py:569` | 0 | **0** | 55 ↑ | **0** |
-| [`app.ingest.finite`](impacto/app-ingest.md) | `app/ingest.py:47` | 0 | **0** | 55 ↑ | **0** |
-| [`app.ingest.rows_for`](impacto/app-ingest.md) | `app/ingest.py:90` | 0 | **0** | 55 ↑ | **0** |
-| [`app.ingest.valid_ts`](impacto/app-ingest.md) | `app/ingest.py:60` | 0 | **0** | 55 ↑ | **0** |
-| [`app.ingest.ventana_barrido_cadencia`](impacto/app-ingest.md) | `app/ingest.py:539` | 0 | **0** | 55 ↑ | **0** |
-| [`app.partitioning.apply_temporal_retention`](impacto/app-partitioning.md) | `app/partitioning.py:25` | 0 | **0** | 55 ↑ | **0** |
-| [`app.ingest._reconcile_response_cadence`](impacto/app-ingest.md) | `app/ingest.py:620` | 0 | **0** | 50 ↑ | **0** |
-| [`app.cutoffs.ClosedCutoff.at`](impacto/app-cutoffs.md) | `app/cutoffs.py:22` | 0 | **0** | 46 ↑ | **0** |
-| [`app.metrics.compute_and_store_all`](impacto/app-metrics.md) | `app/metrics.py:711` | 0 | **0** | 46 ↑ | **0** |
-| [`app.ingest._coverage_heartbeat_detail`](impacto/app-ingest.md) | `app/ingest.py:688` | 0 | **0** | 44 ↑ | **0** |
-| [`app.ingest.publish_snapshot`](impacto/app-ingest.md) | `app/ingest.py:368` | 0 | **0** | 44 ↑ | **0** |
-| [`app.ingest.ingest_ohlcv_cycle`](impacto/app-ingest.md) | `app/ingest.py:747` | 0 | **0** | 42 ↑ | **0** |
+| [`app.db.assert_service_ownership`](impacto/app-db.md) | `app/db.py:301` | 0 | **0** | 67 ↑ | **0** |
+| [`app.db.fenced_transaction`](impacto/app-db.md) | `app/db.py:333` | 0 | **0** | 67 ↑ | **0** |
+| [`app.daily_agg.refresh_baselines`](impacto/app-daily_agg.md) | `app/daily_agg.py:731` | 0 | **0** | 58 ↑ | **0** |
+| [`app.db.heartbeat_owned`](impacto/app-db.md) | `app/db.py:431` | 0 | **0** | 58 ↑ | **0** |
+| [`app.ingest._reconcile_persisted_cadence`](impacto/app-ingest.md) | `app/ingest.py:454` | 0 | **0** | 57 ↑ | **0** |
+| [`app.daily_agg.backfill`](impacto/app-daily_agg.md) | `app/daily_agg.py:299` | 0 | **0** | 56 ↑ | **0** |
+| [`app.daily_agg.cycle`](impacto/app-daily_agg.md) | `app/daily_agg.py:817` | 0 | **0** | 56 ↑ | **0** |
+| [`app.daily_agg.latest_closed_session_date`](impacto/app-daily_agg.md) | `app/daily_agg.py:45` | 0 | **0** | 56 ↑ | **0** |
+| [`app.daily_agg.rollup_open_interest_daily`](impacto/app-daily_agg.md) | `app/daily_agg.py:576` | 0 | **0** | 56 ↑ | **0** |
+| [`app.daily_agg.ventana_barrido_5m`](impacto/app-daily_agg.md) | `app/daily_agg.py:631` | 0 | **0** | 56 ↑ | **0** |
+| [`app.ingest.barrido_cadencia_persistido`](impacto/app-ingest.md) | `app/ingest.py:569` | 0 | **0** | 56 ↑ | **0** |
+| [`app.ingest.finite`](impacto/app-ingest.md) | `app/ingest.py:47` | 0 | **0** | 56 ↑ | **0** |
+| [`app.ingest.rows_for`](impacto/app-ingest.md) | `app/ingest.py:90` | 0 | **0** | 56 ↑ | **0** |
+| [`app.ingest.valid_ts`](impacto/app-ingest.md) | `app/ingest.py:60` | 0 | **0** | 56 ↑ | **0** |
+| [`app.ingest.ventana_barrido_cadencia`](impacto/app-ingest.md) | `app/ingest.py:539` | 0 | **0** | 56 ↑ | **0** |
+| [`app.partitioning.apply_temporal_retention`](impacto/app-partitioning.md) | `app/partitioning.py:25` | 0 | **0** | 56 ↑ | **0** |
+| [`app.ingest._reconcile_response_cadence`](impacto/app-ingest.md) | `app/ingest.py:620` | 0 | **0** | 51 ↑ | **0** |
+| [`app.cutoffs.ClosedCutoff.at`](impacto/app-cutoffs.md) | `app/cutoffs.py:22` | 0 | **0** | 47 ↑ | **0** |
+| [`app.metrics.compute_and_store_all`](impacto/app-metrics.md) | `app/metrics.py:711` | 0 | **0** | 47 ↑ | **0** |
+| [`app.ingest._coverage_heartbeat_detail`](impacto/app-ingest.md) | `app/ingest.py:688` | 0 | **0** | 45 ↑ | **0** |
+| [`app.ingest.publish_snapshot`](impacto/app-ingest.md) | `app/ingest.py:368` | 0 | **0** | 45 ↑ | **0** |
+| [`app.ingest.ingest_ohlcv_cycle`](impacto/app-ingest.md) | `app/ingest.py:747` | 0 | **0** | 43 ↑ | **0** |
 | [`app.scalp_collector.owns_global_cleanup`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1535` | 0 | **0** | 26 ↑ | **0** |
 | [`app.signal_outcomes.materialize_due_signal_outcomes`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:289` | 0 | **0** | 25 ↑ | **0** |
 | [`app.signal_visibility.run_certification_cycle`](impacto/app-signal_visibility.md) | `app/signal_visibility.py:363` | 0 | **0** | 25 ↑ | **0** |
+| [`app.data_gaps.DataGap.from_record`](impacto/app-data_gaps.md) | `app/data_gaps.py:1140` | 0 | **0** | 24 ↑ | **0** |
+| [`app.data_gaps._cubierto_por_otro_detector`](impacto/app-data_gaps.md) | `app/data_gaps.py:439` | 0 | **0** | 24 ↑ | **0** |
+| [`app.data_gaps._load_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1220` | 0 | **0** | 24 ↑ | **0** |
+| [`app.data_gaps.missing_cadence_windows`](impacto/app-data_gaps.md) | `app/data_gaps.py:378` | 0 | **0** | 24 ↑ | **0** |
+| [`app.data_gaps.partition_gap_by_source_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:967` | 0 | **0** | 24 ↑ | **0** |
+| [`app.data_gaps.partition_runs`](impacto/app-data_gaps.md) | `app/data_gaps.py:922` | 0 | **0** | 24 ↑ | **0** |
+| [`app.data_gaps.record_event_stream_loss`](impacto/app-data_gaps.md) | `app/data_gaps.py:348` | 0 | **0** | 24 ↑ | **0** |
+| [`app.data_gaps.recover_unresolved_gaps`](impacto/app-data_gaps.md) | `app/data_gaps.py:1333` | 0 | **0** | 24 ↑ | **0** |
+| [`app.data_gaps.validate_recovery`](impacto/app-data_gaps.md) | `app/data_gaps.py:1176` | 0 | **0** | 24 ↑ | **0** |
 | [`app.daily_agg._coverage_complete`](impacto/app-daily_agg.md) | `app/daily_agg.py:73` | 0 | **0** | 22 ↑ | **0** |
 | [`app.daily_agg._expected_session_samples`](impacto/app-daily_agg.md) | `app/daily_agg.py:64` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps.DataGap.from_record`](impacto/app-data_gaps.md) | `app/data_gaps.py:1140` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps._cubierto_por_otro_detector`](impacto/app-data_gaps.md) | `app/data_gaps.py:439` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps._load_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1220` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps.missing_cadence_windows`](impacto/app-data_gaps.md) | `app/data_gaps.py:378` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps.partition_gap_by_source_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:967` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps.partition_runs`](impacto/app-data_gaps.md) | `app/data_gaps.py:922` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps.record_event_stream_loss`](impacto/app-data_gaps.md) | `app/data_gaps.py:348` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps.recover_unresolved_gaps`](impacto/app-data_gaps.md) | `app/data_gaps.py:1333` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps.validate_recovery`](impacto/app-data_gaps.md) | `app/data_gaps.py:1176` | 0 | **0** | 22 ↑ | **0** |
 | [`app.db.acquire_service_lock`](impacto/app-db.md) | `app/db.py:262` | 0 | **0** | 22 ↑ | **0** |
 | [`app.db.create_pool`](impacto/app-db.md) | `app/db.py:162` | 0 | **0** | 22 ↑ | **0** |
 | [`app.db.monitor_service_lock`](impacto/app-db.md) | `app/db.py:343` | 0 | **0** | 22 ↑ | **0** |
@@ -642,8 +659,10 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.metrics.normalized_cvd_imbalance`](impacto/app-metrics.md) | `app/metrics.py:146` | 0 | **0** | 9 ↑ | **0** |
 | [`app.metrics.optional_finite`](impacto/app-metrics.md) | `app/metrics.py:50` | 0 | **0** | 9 ↑ | **0** |
 | [`app.metrics.whale_classification`](impacto/app-metrics.md) | `app/metrics.py:66` | 0 | **0** | 9 ↑ | **0** |
-| [`app.api.lifespan`](impacto/app-api.md) | `app/api.py:155` | 0 | **0** | 8 ↑ | **0** |
+| [`app.api._asienta_resultados`](impacto/app-api.md) | `app/api.py:155` | 0 | **0** | 8 ↑ | **0** |
+| [`app.api.lifespan`](impacto/app-api.md) | `app/api.py:171` | 0 | **0** | 8 ↑ | **0** |
 | [`app.coinalyze.validate_rate_budget`](impacto/app-coinalyze.md) | `app/coinalyze.py:116` | 0 | **0** | 8 ↑ | **0** |
+| [`app.entradas.resultados.asentar_pendientes`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:166` | 0 | **0** | 8 ↑ | **0** |
 | [`app.entradas.servicio.pasada`](impacto/app-entradas-servicio.md) | `app/entradas/servicio.py:104` | 0 | **0** | 8 ↑ | **0** |
 | [`app.ingest.run`](impacto/app-ingest.md) | `app/ingest.py:1033` | 0 | **0** | 8 ↑ | **0** |
 | [`app.ingest.run_aligned_feed`](impacto/app-ingest.md) | `app/ingest.py:1007` | 0 | **0** | 8 ↑ | **0** |

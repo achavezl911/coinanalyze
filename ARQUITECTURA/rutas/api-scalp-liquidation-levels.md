@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_levels` · `app/api.py:3061` (cuerpo hasta la 3117) · decorador en la linea 3060.
+Handler `liquidation_levels` · `app/api.py:3081` (cuerpo hasta la 3137) · decorador en la linea 3080.
 
 ## Parametros de entrada
 
@@ -21,13 +21,13 @@ Handler `liquidation_levels` · `app/api.py:3061` (cuerpo hasta la 3117) · deco
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3113 |
-| `bucket_bps` | literal en app/api.py:3112 |
-| `minutes` | literal en app/api.py:3111 |
-| `rows` | literal en app/api.py:3116 |
-| `symbol` | literal en app/api.py:3110 |
-| `window_end` | literal en app/api.py:3115 |
-| `window_start` | literal en app/api.py:3114 |
+| `as_of` | literal en app/api.py:3133 |
+| `bucket_bps` | literal en app/api.py:3132 |
+| `minutes` | literal en app/api.py:3131 |
+| `rows` | literal en app/api.py:3136 |
+| `symbol` | literal en app/api.py:3130 |
+| `window_end` | literal en app/api.py:3135 |
+| `window_start` | literal en app/api.py:3134 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,8 +54,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:246`
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api.records` — `app/api.py:266`
+- `app.api.validate_symbol` — `app/api.py:253`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (7)</summary>
 
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

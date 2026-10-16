@@ -6,8 +6,15 @@ curso corren a la vez; la activa es la ultima- y su diferencia con el padre; el 
 y los dias que le quedan; por familia, las hipotesis que van APOSTADAS (las celdas declaradas en
 la seccion 'apuestas' del reglamento, campana 136: no un recuento de huellas ni la lectura de un
 texto libre), lo que cada version mueve SIN apuesta y las retiradas antes de su lectura; por
-(familia, perfil, lado, version), cuantos hay en cada estado y cuantos resueltos (0 hasta la E3);
-el estado del generador; y lo que falta, con su motivo.
+(familia, perfil, lado, version), cuantos hay en cada estado y cuantos resueltos; el estado del
+generador; y lo que falta, con su motivo.
+
+LA E3 (campana 139): cada DISPARADO lleva su RESULTADO (app/entradas/resolutor.py: el FINAL guardado
+en entrada_resultado o, si no lo es todavia, el PROVISIONAL de las velas que haya ahora), y un
+DISPARADO que ya acabo deja de estar entre los vivos aunque su reloj no haya caducado. Se sirven las
+convenciones del resolutor con su version y su huella, y el barrido emparejado de la hipotesis de v2
+(plan a plan, descriptivo).
+«resueltos» cuenta DISPARADOS con resultado FINAL guardado; con n < 30 ninguna frecuencia (E4).
 
 LO QUE NO SIRVE: ninguna fraccion ni tasa de aciertos de los candidatos. «Probabilistico» sera una
 FRECUENCIA MEDIDA (E4) sobre DISPARADOS resueltos, y hasta n efectiva 30 ningun porcentaje.
@@ -29,6 +36,8 @@ from typing import Any
 
 from app.entradas import motor as M
 from app.entradas import reglamento as R
+from app.entradas import resolutor as RES
+from app.entradas import resultados as RS
 
 REFERENCIA_YA_MEDIDO = {
     "rotulo": "YA MEDIDO · sobre la senal scalp del sistema, NO sobre estos candidatos",
@@ -64,15 +73,9 @@ REFERENCIA_YA_MEDIDO = {
     "contra su propio equilibrio p*, nunca contra el 50 %",
 }
 
-# La pantalla ENTRADAS (E2) salio de esta lista con la campana 137: existe, en la mesa
-# (#<marco>/<activo>/entradas, app/entradas/vista.py). Lo que falta es lo que sigue faltando.
+# La pantalla ENTRADAS (E2) salio de esta lista con la campana 137, y el resultado de cada DISPARADO y la
+# cuenta de papel (E3) con la 139: existen. Lo que falta es lo que sigue faltando.
 FALTAN = [
-    {"que": "resultado de cada DISPARADO (objetivo, stop, invalidado, caducado, no llenado)",
-     "etapa": "E3", "motivo": "el resolutor por primer toque en ohlcv 1 min no existe todavia: "
-     "resueltos = 0 en todas las celdas"},
-    {"que": "cuenta de papel de 200 USD", "etapa": "E3",
-     "motivo": "sus reglas estan escritas en el bloque papel de cada version del reglamento; no "
-     "se ejecuta hasta la E3"},
     {"que": "frecuencia por version contra el equilibrio", "etapa": "E4",
      "motivo": "sin resueltos no hay frecuencia; hasta n efectiva 30: SIN CALIBRAR · MUESTRA "
      "INSUFICIENTE (n/30), sin porcentaje"},
@@ -125,7 +128,26 @@ def _prosa(ruta: str) -> bool:
             or ".zonas_origen" in ruta or ruta.endswith("fuente"))
 
 
-def _resumen(fila: dict[str, Any], foto_entera: bool) -> dict[str, Any]:
+RESUELTOS_QUE_ES = ("resueltos = DISPARADOS de la celda con resultado FINAL guardado (entrada_resultado, "
+                    f"{RES.RESOLUTOR_VERSION}), con todas sus salidas: tambien los sin entrada y los no "
+                    "evaluables, que se cuentan aparte")
+RESULTADOS_QUE_ES = (
+    "Como acabo cada DISPARADO, por primer toque en las velas de 1 min de su simbolo, con estas convenciones "
+    "(su version y su huella). Un resultado PROVISIONAL dice hasta cuando lo es; uno FINAL esta guardado en "
+    "entrada_resultado y no se reescribe: cambiar una convencion es una version nueva del resolutor. Ninguna "
+    "frecuencia: hasta n efectiva 30 por celda es la E4 la que no la da.")
+BARRIDO_QUE_ES = (
+    "Descriptivo fijado por la hipotesis de v2 ANTES de su registro, NUNCA una prueba: para cada DISPARADO de v2 "
+    "que toca su stop, la SOMBRA de v1 del mismo episodio (misma clave, mismo inicio y misma vela) y si su plan "
+    "-mismo T1, stop con cascada- habria cruzado T1 antes que su stop. Un HIPOTETICO, plan a plan.")
+_DISPARADOS = """
+SELECT registro_id, version, familia, perfil, lado, symbol, clave, episodio, estado, vela_cierre,
+       inicio_episodio, registered_at, caduca_en
+FROM entrada_registro WHERE estado = 'DISPARADO' ORDER BY registro_id
+"""
+
+
+def _resumen(fila: dict[str, Any], foto_entera: bool, resultado: dict[str, Any] | None = None) -> dict[str, Any]:
     foto = json.loads(fila["foto"]) if isinstance(fila["foto"], str) else fila["foto"]
     salida = {
         "registro_id": fila["registro_id"],
@@ -144,6 +166,8 @@ def _resumen(fila: dict[str, Any], foto_entera: bool) -> dict[str, Any]:
         "caduca_en": fila["caduca_en"].isoformat() if fila["caduca_en"] else None,
         "huella_foto": fila["huella_foto"],
     }
+    if fila["estado"] == "DISPARADO":
+        salida["resultado"] = resultado
     if foto_entera:
         salida["foto"] = foto
         return salida
@@ -244,6 +268,15 @@ async def construir(conn, *, lado: str, desde: datetime | None, hasta: datetime 
         "SELECT registered_at, vela_cierre, estado, duracion_s, error, detalle::text AS detalle "
         "FROM entrada_latido ORDER BY latido_id DESC LIMIT 5"
     )
+    # LA E3 (campana 139). El resultado de TODO DISPARADO -la cuenta de papel y el barrido son de la version
+    # entera, pida lo que pida la peticion-: el guardado si es FINAL; si no, recalculado AHORA.
+    todos = [dict(f) for f in await conn.fetch(_DISPARADOS)]
+    resultados = await RS.de_filas(conn, todos, as_of)
+    vivos = [f for f in vivos if f["estado"] != "DISPARADO"
+             or (resultados.get(f["registro_id"]) or {}).get("estado") == RES.ABIERTO]
+    resueltos = {(c["familia"], c["perfil"], c["lado"], c["version"]): c
+                 for c in await conn.fetch(RS.CUENTAS_SQL, RES.RESOLUTOR_VERSION)}
+    barrido = await RS.barrido(conn, todos, resultados, as_of)
 
     por_lado: dict[str, Any] = {}
     for un_lado in M.LADOS:
@@ -253,11 +286,11 @@ async def construir(conn, *, lado: str, desde: datetime | None, hasta: datetime 
             "vivos": {
                 "vigilando": [_resumen(dict(f), foto) for f in vivos
                               if f["lado"] == un_lado and f["estado"] == "VIGILANDO"],
-                "disparados": [_resumen(dict(f), foto) for f in vivos
+                "disparados": [_resumen(dict(f), foto, resultados.get(f["registro_id"])) for f in vivos
                                if f["lado"] == un_lado and f["estado"] == "DISPARADO"],
             },
             "ventana": {
-                "disparados": [_resumen(dict(f), foto) for f in ventana
+                "disparados": [_resumen(dict(f), foto, resultados.get(f["registro_id"])) for f in ventana
                                if f["lado"] == un_lado and f["estado"] == "DISPARADO"],
                 "sombras": [_resumen(dict(f), foto) for f in ventana
                             if f["lado"] == un_lado and f["estado"] == "SOMBRA"],
@@ -270,9 +303,12 @@ async def construir(conn, *, lado: str, desde: datetime | None, hasta: datetime 
                                           "version": clave[3], "VIGILANDO": 0, "DISPARADO": 0,
                                           "SOMBRA": 0, "CERRADO_SIN_DISPARO": 0})
         celda[c["estado"]] = c["n"]
-    for celda in celdas.values():
-        celda["resueltos"] = 0
-        celda["resueltos_motivo"] = "la E3 (resolutor) no existe todavia"
+    for clave, celda in celdas.items():
+        c = resueltos.get(clave) or {}
+        celda["resueltos"] = c.get("resueltos", 0)
+        celda["sin_entrada"] = c.get("sin_entrada", 0)
+        celda["no_evaluables"] = c.get("no_evaluables", 0)
+        celda["resueltos_motivo"] = RESUELTOS_QUE_ES
     generador = [
         {"registered_at": f["registered_at"].isoformat(),
          "vela_cierre": f["vela_cierre"].isoformat() if f["vela_cierre"] else None,
@@ -291,6 +327,14 @@ async def construir(conn, *, lado: str, desde: datetime | None, hasta: datetime 
         "por_lado": por_lado,
         "reglamento": reglamento,
         "cuentas": list(celdas.values()),
+        "resultados": {
+            "que_es": RESULTADOS_QUE_ES,
+            "resolutor": RES.RESOLUTOR_VERSION,
+            "huella_convenciones": RES.HUELLA_CONVENCIONES,
+            "convenciones": RES.CONVENCIONES,
+            "cambios_e3": RES.CAMBIOS_E3,
+            "barrido_emparejado": {"que_es": BARRIDO_QUE_ES, "planes": barrido},
+        },
     }
 
 

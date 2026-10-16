@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd` · `app/api.py:753` (cuerpo hasta la 797) · decorador en la linea 752.
+Handler `cvd` · `app/api.py:773` (cuerpo hasta la 817) · decorador en la linea 772.
 
 ## Parametros de entrada
 
@@ -20,22 +20,22 @@ Handler `cvd` · `app/api.py:753` (cuerpo hasta la 797) · decorador en la linea
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:482 |
-| `coverage.served_window` | literal en app/api.py:483 |
-| `coverage.unit` | literal en app/api.py:428 |
-| `data_gaps` | literal en app/api.py:488 |
-| `data_gaps.declared` | literal en app/api.py:496 |
-| `data_gaps.exchanges` | literal en app/api.py:490 |
-| `data_gaps.feed` | literal en app/api.py:489 |
-| `data_gaps.market` | literal en app/api.py:491 |
-| `data_gaps.status` | literal en app/api.py:495 |
-| `data_gaps.symbol` | literal en app/api.py:492 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:497 |
-| `data_gaps.window_end` | literal en app/api.py:494 |
-| `data_gaps.window_start` | literal en app/api.py:493 |
-| `interval` | literal en app/api.py:480 |
-| `rows` | literal en app/api.py:481 |
-| `symbol` | literal en app/api.py:479 |
+| `coverage` | literal en app/api.py:502 |
+| `coverage.served_window` | literal en app/api.py:503 |
+| `coverage.unit` | literal en app/api.py:448 |
+| `data_gaps` | literal en app/api.py:508 |
+| `data_gaps.declared` | literal en app/api.py:516 |
+| `data_gaps.exchanges` | literal en app/api.py:510 |
+| `data_gaps.feed` | literal en app/api.py:509 |
+| `data_gaps.market` | literal en app/api.py:511 |
+| `data_gaps.status` | literal en app/api.py:515 |
+| `data_gaps.symbol` | literal en app/api.py:512 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:517 |
+| `data_gaps.window_end` | literal en app/api.py:514 |
+| `data_gaps.window_start` | literal en app/api.py:513 |
+| `interval` | literal en app/api.py:500 |
+| `rows` | literal en app/api.py:501 |
+| `symbol` | literal en app/api.py:499 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -76,15 +76,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:400`
-- `app.api.historical_interval_value` — `app/api.py:239`
-- `app.api.mask_gapped_series_rows` — `app/api.py:250`
-- `app.api.records` — `app/api.py:246`
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api.declared_series_response` — `app/api.py:420`
+- `app.api.historical_interval_value` — `app/api.py:259`
+- `app.api.mask_gapped_series_rows` — `app/api.py:270`
+- `app.api.records` — `app/api.py:266`
+- `app.api.validate_symbol` — `app/api.py:253`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:360`
+- `app.api.minutos_de_las_filas` — `app/api.py:380`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
@@ -108,8 +108,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:242` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -160,9 +160,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.expected_buckets` | 12 | **0** | 22 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.expected_buckets` | 12 | **0** | 24 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.api.mask_gapped_series_rows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |

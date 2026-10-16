@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `verdicts` · `app/api.py:2208` (cuerpo hasta la 2294) · decorador en la linea 2207.
+Handler `verdicts` · `app/api.py:2228` (cuerpo hasta la 2314) · decorador en la linea 2227.
 
 ## Parametros de entrada
 
@@ -20,18 +20,18 @@ Handler `verdicts` · `app/api.py:2208` (cuerpo hasta la 2294) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:2287 |
-| `coverage.served_window` | literal en app/api.py:2287 |
+| `coverage` | literal en app/api.py:2307 |
+| `coverage.served_window` | literal en app/api.py:2307 |
 | `coverage.served_window.complete` | literal en app/data_gaps.py:279 |
 | `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:277 |
 | `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:278 |
 | `coverage.served_window.sources` | literal en app/data_gaps.py:280 |
 | `coverage.served_window.window_end` | literal en app/data_gaps.py:276 |
 | `coverage.served_window.window_start` | literal en app/data_gaps.py:275 |
-| `logic_version` | literal en app/api.py:2285 |
-| `note` | literal en app/api.py:2288 |
-| `rows` | literal en app/api.py:2286 |
-| `symbol` | literal en app/api.py:2284 |
+| `logic_version` | literal en app/api.py:2305 |
+| `note` | literal en app/api.py:2308 |
+| `rows` | literal en app/api.py:2306 |
+| `symbol` | literal en app/api.py:2304 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -53,9 +53,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._session_window` — `app/api.py:502`
-- `app.api.records` — `app/api.py:246`
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api._session_window` — `app/api.py:522`
+- `app.api.records` — `app/api.py:266`
+- `app.api.validate_symbol` — `app/api.py:253`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
 
 <details><summary>Alcanzables de forma indirecta (3)</summary>
@@ -86,7 +86,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -135,10 +135,10 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.metrics.session_bounds` | 2 | **0** | 55 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
+| `app.metrics.session_bounds` | 2 | **0** | 56 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api._session_window` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-api.md) |
 | `app.api.verdicts` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |

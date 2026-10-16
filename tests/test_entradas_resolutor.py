@@ -86,7 +86,7 @@ def test_objetivo_cruzado_sale_en_t1(perfil):
     assert (r["salida"], r["instante"], r["firmeza"]) == (RES.OBJETIVO, "2026-10-12T20:30:00Z", RES.FINAL)
     assert r["precio"] == 102.0
     assert r["entrada"] == {"instante": "2026-10-12T20:03:00Z", "precio": pytest.approx(100.01), "tipo": "mercado",
-                            "apertura": 100.0, "banda_bps": 1.0}
+                            "apertura": 100.0, "banda_bps": 1.0, "comision_bps": 5.5}
     # con la entrada real en la referencia, T1 da (casi) el r.neto de la foto: la unidad R es la del plan
     assert r["pnl"]["r_neto"] == pytest.approx(fila(perfil)["foto"]["plan"]["r"]["neto"], abs=2e-3)
     assert r["pnl"]["comision_bps"] == {"entrada": 5.5, "salida": 2.0}
@@ -333,8 +333,8 @@ def test_cambiar_una_convencion_es_una_version_nueva():
     """La huella de las convenciones de entradas-resolutor-1 no se mueve: cambiar una exige subir la version
     (un resultado guardado lleva la suya y no se reescribe)."""
     registradas = {"entradas-resolutor-1": HUELLA_V1}
-    assert RES.HUELLA_CONVENCIONES == registradas.get(RES.RESOLUTOR_VERSION, RES.HUELLA_CONVENCIONES)
     assert RES.RESOLUTOR_VERSION in registradas
+    assert registradas[RES.RESOLUTOR_VERSION] == RES.HUELLA_CONVENCIONES
 
 
 HUELLA_V1 = "717a69038e1b3c87124e25c81fbca3759185148e431984738841d5f6a408e99b"

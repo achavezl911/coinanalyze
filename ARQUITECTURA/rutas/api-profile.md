@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trading_profile` · `app/api.py:1606` (cuerpo hasta la 1622) · decorador en la linea 1605.
+Handler `trading_profile` · `app/api.py:1626` (cuerpo hasta la 1642) · decorador en la linea 1625.
 
 ## Parametros de entrada
 
@@ -19,7 +19,7 @@ Handler `trading_profile` · `app/api.py:1606` (cuerpo hasta la 1622) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1620 |
+| `as_of` | literal en app/api.py:1640 |
 | `bias` | literal en app/scalp_logic.py:4955 |
 | `confidence` | literal en app/scalp_logic.py:4957 |
 | `contradictions` | literal en app/scalp_logic.py:4961 |
@@ -31,7 +31,7 @@ Handler `trading_profile` · `app/api.py:1606` (cuerpo hasta la 1622) · decorad
 | `profile` | literal en app/scalp_logic.py:4953 |
 | `profile_label` | literal en app/scalp_logic.py:4954 |
 | `reference_only` | literal en app/scalp_logic.py:4960 |
-| `symbol` | literal en app/api.py:1619 |
+| `symbol` | literal en app/api.py:1639 |
 | `weights_note` | literal en app/scalp_logic.py:4963 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -89,7 +89,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api.validate_symbol` — `app/api.py:253`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4589`
 - `app.scalp_logic.profile_view` — `app/scalp_logic.py:4800`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
@@ -139,8 +139,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
-| 422 | — | `app/api.py:1610` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 422 | — | `app/api.py:1630` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

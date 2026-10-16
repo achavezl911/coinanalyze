@@ -20,12 +20,13 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`daily_session_agg`](#daily-session-agg) | 2 | 22 | 0 |
 | [`daily_verdict_outcome`](#daily-verdict-outcome) | 1 | 3 | 0 |
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
-| [`data_gap`](#data-gap) | 12 | 22 | 0 |
+| [`data_gap`](#data-gap) | 12 | 24 | 0 |
 | [`entrada_latido`](#entrada-latido) | 1 | 2 | 0 |
 | [`entrada_registro`](#entrada-registro) | 1 | 2 | 0 |
 | [`entrada_reglamento`](#entrada-reglamento) | 1 | 2 | 0 |
+| [`entrada_resultado`](#entrada-resultado) | 1 | 2 | 2 |
 | [`external_macro_observation`](#external-macro-observation) | 2 | 3 | 0 |
-| [`funding_rate`](#funding-rate) | 1 | 4 | 0 |
+| [`funding_rate`](#funding-rate) | 1 | 6 | 0 |
 | [`futures_trades_agg`](#futures-trades-agg) | 2 | 7 | 0 |
 | [`futures_trades_realtime`](#futures-trades-realtime) | 1 | 17 | 0 |
 | [`liquidations`](#liquidations) | 2 | 5 | 0 |
@@ -35,7 +36,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`market_feed_health`](#market-feed-health) | 3 | 10 | 0 |
 | [`metric_baseline`](#metric-baseline) | 1 | 15 | 0 |
 | [`metrics_snapshot`](#metrics-snapshot) | 2 | 9 | 0 |
-| [`ohlcv`](#ohlcv) | 4 | 39 | 0 |
+| [`ohlcv`](#ohlcv) | 4 | 40 | 0 |
 | [`oi_bybit`](#oi-bybit) | 1 | 3 | 0 |
 | [`open_interest`](#open-interest) | 1 | 20 | 0 |
 | [`orderbook_depth`](#orderbook-depth) | 1 | 1 | 0 |
@@ -65,7 +66,7 @@ Definiciones, escritas antes del recuento:
 - **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
   *"periodo medido a medias"* de *"periodo no medido"*.
 
-| | de 43 tablas del esquema |
+| | de 44 tablas del esquema |
 |---|---|
 | de SERIE | **22** |
 | de serie que DECLARAN cobertura cuantitativa | **7** |
@@ -284,7 +285,7 @@ La escriben:
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
 
-**Si cambia el contenido o el esquema de `data_gap`, estas 22 rutas lo notan:**
+**Si cambia el contenido o el esquema de `data_gap`, estas 24 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
@@ -295,10 +296,12 @@ La escriben:
 - [`/api/daily`](rutas/api-daily.md)
 - [`/api/data-confidence`](rutas/api-data-confidence.md)
 - [`/api/desk/state`](rutas/api-desk-state.md)
+- [`/api/entradas`](rutas/api-entradas.md)
 - [`/api/external-macro`](rutas/api-external-macro.md)
 - [`/api/hypothesis`](rutas/api-hypothesis.md)
 - [`/api/liquidations`](rutas/api-liquidations.md)
 - [`/api/mesa/decide`](rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](rutas/api-ohlcv.md)
 - [`/api/oi`](rutas/api-oi.md)
 - [`/api/passive-flow`](rutas/api-passive-flow.md)
@@ -348,6 +351,21 @@ La escriben:
 - [`/api/entradas`](rutas/api-entradas.md)
 - [`/api/mesa/entradas`](rutas/api-mesa-entradas.md)
 
+### entrada_resultado
+
+`sql/schema.sql:2843`, 12 columnas.
+
+La escriben:
+
+- `app.entradas.resultados.guardar` — **INSERT** en `app/entradas/resultados.py:55`
+
+**Si cambia el contenido o el esquema de `entrada_resultado`, estas 2 rutas lo notan:**
+
+- [`/api/entradas`](rutas/api-entradas.md)
+- [`/api/mesa/entradas`](rutas/api-mesa-entradas.md)
+
+Rutas que ESCRIBEN en `entrada_resultado`: `/api/entradas`, `/api/mesa/entradas`
+
 ### external_macro_observation
 
 `sql/schema.sql:1234`, 5 columnas.
@@ -371,11 +389,13 @@ La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:669`
 
-**Si cambia el contenido o el esquema de `funding_rate`, estas 4 rutas lo notan:**
+**Si cambia el contenido o el esquema de `funding_rate`, estas 6 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
+- [`/api/entradas`](rutas/api-entradas.md)
 - [`/api/funding-context`](rutas/api-funding-context.md)
+- [`/api/mesa/entradas`](rutas/api-mesa-entradas.md)
 - [`/api/rango/estructura`](rutas/api-rango-estructura.md)
 
 ### futures_trades_agg
@@ -579,7 +599,7 @@ La escriben:
 - `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:201`
 - `app.ingest.rollup_ohlcv_5m` — **INSERT** en `app/ingest.py:201`
 
-**Si cambia el contenido o el esquema de `ohlcv`, estas 39 rutas lo notan:**
+**Si cambia el contenido o el esquema de `ohlcv`, estas 40 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
@@ -590,6 +610,7 @@ La escriben:
 - [`/api/delta-profile`](rutas/api-delta-profile.md)
 - [`/api/desk/state`](rutas/api-desk-state.md)
 - [`/api/divergences`](rutas/api-divergences.md)
+- [`/api/entradas`](rutas/api-entradas.md)
 - [`/api/external-macro`](rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](rutas/api-flow-spot-vs-perp.md)
 - [`/api/hypothesis`](rutas/api-hypothesis.md)

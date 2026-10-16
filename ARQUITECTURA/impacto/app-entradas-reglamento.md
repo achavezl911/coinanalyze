@@ -148,7 +148,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 24 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 25 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## versiones_en_curso
 
@@ -381,13 +381,14 @@ Ella o alguien que la llama hasta k=2 escribe:
 
 - `entrada_latido` — la escribe `app.entradas.registro.latir`
 - `entrada_reglamento` — la escribe `app.entradas.registro.registrar_reglamento`
+- `entrada_resultado` — la escribe `app.entradas.resultados.guardar`
 
 Y esas tablas las leen:
 
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## cargar
 
@@ -484,7 +485,7 @@ Y esas tablas las leen:
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 23 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 24 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## contenido_revision
 
@@ -562,13 +563,14 @@ Ella o alguien que la llama hasta k=2 escribe:
 
 - `entrada_latido` — la escribe `app.entradas.registro.latir`
 - `entrada_reglamento` — la escribe `app.entradas.registro.registrar_reglamento`
+- `entrada_resultado` — la escribe `app.entradas.resultados.guardar`
 
 Y esas tablas las leen:
 
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 14 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 16 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## huella_bloque
 

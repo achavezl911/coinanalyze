@@ -208,7 +208,8 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
 
     S, N = s * stop, s * nivel
     Ts = [s * t for t in objetivos]
-    por_ts = {_t(v["ts"]): v for v in velas}
+    # Lo que se sabia en `ahora`: una vela que empieza despues no existe todavia (la de este minuto, si esta, si).
+    por_ts = {m: v for m, v in ((_t(v["ts"]), v) for v in velas) if m <= ahora}
     tapados = [(_t(a), _t(b)) for a, b in huecos]
 
     def vela(m: datetime) -> dict[str, float] | None:
@@ -315,7 +316,7 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
                 break
             m += MINUTO
     out["entrada"] = {"instante": iso(m_ini), "precio": s * x_e, "tipo": entrada.get("tipo"),
-                      "apertura": None if limite else s * v["o"], "banda_bps": banda_e}
+                      "apertura": None if limite else s * v["o"], "banda_bps": banda_e, "comision_bps": com_e}
 
     # 3 · la vida, minuto a minuto: el primer evento
     alto = bajo = x_e
