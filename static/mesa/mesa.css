@@ -1096,6 +1096,28 @@ h1 {
   color: var(--tx);
 }
 
+/* EL RESULTADO DE UN DISPARADO ES TEXTO, en el color del texto: ni verde ni rojo segun como acabo (K106 E6). */
+.ent-res {
+  font-family: var(--mono);
+  color: var(--tx);
+}
+
+.ent-firmeza {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--tx-mudo);
+}
+
+.ent-convenciones {
+  margin: 4px 0 8px;
+  padding-left: 18px;
+  max-width: 1180px;
+}
+
+.ent-convenciones li {
+  margin: 2px 0;
+}
+
 /* YA NO SE SABE: sin dato o con el generador parado, lo que estaba vivo deja de verse como vivo.
  * La palabra de DECIDE no se apaga aqui: si es vieja lo dice su propia edad (RANCIO). */
 .ent-no-se-sabe #ent-vivo {

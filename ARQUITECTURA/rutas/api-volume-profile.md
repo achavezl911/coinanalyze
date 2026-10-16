@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `volume_profile_endpoint` · `app/api.py:1936` (cuerpo hasta la 1939) · decorador en la linea 1935.
+Handler `volume_profile_endpoint` · `app/api.py:1956` (cuerpo hasta la 1959) · decorador en la linea 1955.
 
 ## Parametros de entrada
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api.validate_symbol` — `app/api.py:253`
 - `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3844`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
@@ -81,7 +81,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

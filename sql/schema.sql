@@ -2809,3 +2809,92 @@ BEFORE TRUNCATE ON entrada_latido
 FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
 
 COMMIT;
+
+-- =========================================================================================
+-- CAMPANA 139 · EL RESOLUTOR (E3) · EL RESULTADO DE CADA PLAN DEL REGISTRO. Bloque ADITIVO:
+-- una tabla NUEVA, su indice, una funcion NUEVA y los disparadores de la tabla nueva (con la
+-- funcion rechaza_mutacion_entradas() de la campana 135, que no se toca). Nada que exista se
+-- altera ni se borra (Puerta 1).
+--
+-- entrada_resultado  el resultado FINAL de cada DISPARADO, y el HIPOTETICO de las SOMBRAS que
+--                    la hipotesis de v2 empareja (barrido emparejado), tal como los dio
+--                    app/entradas/resolutor.py: con su version, la huella de sus convenciones y
+--                    las convenciones enteras. Se lee y se audita cuando las velas de 1 min que lo
+--                    decidieron ya se han podado. UNIQUE(registro_id, resolutor): una version da
+--                    UN resultado por plan; cambiar una convencion es una version nueva, nunca
+--                    reescribir uno ya dado. Una fila cuyo asentado_en es posterior a su insercion
+--                    la rechaza la BASE (EN003): ninguna fila final antes del asentamiento. Y una que
+--                    no es de un plan del registro, o que llama hipotetico a un DISPARADO o real a
+--                    una SOMBRA, tambien (EN004).
+--
+-- SIN CLAVE AJENA a entrada_registro, a proposito: una FK hacia ella cambia como falla un TRUNCATE de
+-- la tabla del registro (0A000 «referenced in a foreign key» antes que el 55000 de su disparador), y
+-- eso es tocar una garantia de una tabla que ya existe. Lo que la FK diria lo comprueba el disparador
+-- de insercion de la tabla nueva.
+--
+-- Solo-anadir como las del registro: UPDATE, DELETE y TRUNCATE los rechaza un disparador. Ninguna
+-- poda la toca (no esta en apply_retention, cleanup_expired_rows ni apply_temporal_retention) y su
+-- nombre no lleva digitos (K01a). resultado y convenciones son json, no jsonb: guardan el texto
+-- canonico EXACTO, asi que sha256(resultado::text) = huella_resultado y
+-- sha256(convenciones::text) = huella_convenciones se pueden recomprobar siempre.
+-- =========================================================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS entrada_resultado (
+    resultado_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    registro_id bigint NOT NULL,
+    resolutor text NOT NULL CHECK (resolutor ~ '^[A-Za-z0-9._-]{1,64}$'),
+    huella_convenciones text NOT NULL CHECK (huella_convenciones ~ '^[0-9a-f]{64}$'),
+    hipotetico boolean NOT NULL,
+    salida text NOT NULL CHECK (salida IN ('objetivo', 'stop', 'stop_y_objetivo_misma_vela', 'invalidado',
+                                           'caducado', 'sin_entrada', 'no_evaluable', 'limite_no_llenada')),
+    instante timestamptz,
+    asentado_en timestamptz NOT NULL,
+    registered_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    huella_resultado text NOT NULL CHECK (huella_resultado ~ '^[0-9a-f]{64}$'),
+    resultado json NOT NULL CHECK (json_typeof(resultado) = 'object'),
+    convenciones json NOT NULL CHECK (json_typeof(convenciones) = 'object'),
+    UNIQUE (registro_id, resolutor)
+);
+CREATE INDEX IF NOT EXISTS entrada_resultado_registered_idx ON entrada_resultado (registered_at);
+
+CREATE OR REPLACE FUNCTION entrada_resultado_al_insertar()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    estado_plan text;
+BEGIN
+    -- El reloj de la BASE: lo que el cliente mande en registered_at se pisa.
+    NEW.registered_at := clock_timestamp();
+    SELECT estado INTO estado_plan FROM entrada_registro WHERE registro_id = NEW.registro_id;
+    IF estado_plan IS NULL OR estado_plan NOT IN ('DISPARADO', 'SOMBRA')
+       OR NEW.hipotetico <> (estado_plan = 'SOMBRA') THEN
+        RAISE EXCEPTION 'entrada_resultado: el registro % (%) no admite un resultado % ',
+            NEW.registro_id, coalesce(estado_plan, 'no existe'),
+            CASE WHEN NEW.hipotetico THEN 'hipotetico' ELSE 'real' END
+            USING ERRCODE = 'EN004';
+    END IF;
+    IF NEW.asentado_en > NEW.registered_at THEN
+        RAISE EXCEPTION 'entrada_resultado: el resultado del registro % no esta asentado hasta %',
+            NEW.registro_id, NEW.asentado_en
+            USING ERRCODE = 'EN003';
+    END IF;
+    RETURN NEW;
+END
+$$;
+
+DROP TRIGGER IF EXISTS entrada_resultado_al_insertar ON entrada_resultado;
+CREATE TRIGGER entrada_resultado_al_insertar
+BEFORE INSERT ON entrada_resultado
+FOR EACH ROW EXECUTE FUNCTION entrada_resultado_al_insertar();
+DROP TRIGGER IF EXISTS entrada_resultado_no_update_delete ON entrada_resultado;
+CREATE TRIGGER entrada_resultado_no_update_delete
+BEFORE UPDATE OR DELETE ON entrada_resultado
+FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas();
+DROP TRIGGER IF EXISTS entrada_resultado_no_truncate ON entrada_resultado;
+CREATE TRIGGER entrada_resultado_no_truncate
+BEFORE TRUNCATE ON entrada_resultado
+FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
+
+COMMIT;

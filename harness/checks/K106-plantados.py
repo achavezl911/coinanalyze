@@ -160,10 +160,22 @@ def _cruza(r, palabra_pintada, frase_de):
     assert V  # la frase y `para` siguen siendo las de `frase_de`
 
 
+def _resultado(r, salida: str | None, hace_s: float) -> dict:
+    """El resultado que la vista sirve (campana 139) para una salida, acabado hace `hace_s`: siempre con las
+    MISMAS claves, para que dos que solo difieren en la salida solo difieran en su texto. Sin salida, CADUCADO."""
+    from app.entradas import resolutor as RES
+    from app.entradas import vista as V
+    gana = salida == "objetivo"
+    instante = (datetime.fromisoformat(r["as_of"]) - timedelta(seconds=hace_s)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return V._resultado({"estado": RES.ACABADO, "salida": salida or RES.CADUCADO, "firmeza": RES.FINAL,
+                         "instante": instante, "motivo": None, "asentado_en": instante,
+                         "entrada": {"instante": instante, "precio": 100.0}, "precio": 102.0 if gana else 99.0,
+                         "pnl": {"r_neto": 1.5 if gana else -1.0, "bps_netos": 150.0 if gana else -100.0}})
+
+
 def _resueltos(r, orden, misma_hora: bool = False):
     """Tres DISPARADOS caducados de la activa, a horas distintas (o a la MISMA: el empate), con un
-    RESULTADO cada uno (lo que serviria la E3). Con n < 30, ni el color ni el orden pueden depender
-    de el."""
+    RESULTADO cada uno (el que sirve la E3). Con n < 30, ni el color ni el orden pueden depender de el."""
     activa = r["reciente"]["por_version"][0]
     modelo = copy.deepcopy((activa["disparados"] or _vivos(r))[0])
     activa["disparados"] = []
@@ -172,11 +184,43 @@ def _resueltos(r, orden, misma_hora: bool = False):
         hace = 5 if misma_hora else i + 5
         p.update({"registro_id": 9000 + (len(orden) - i if misma_hora else i), "vela_cierre": _mas(r, -3600 * hace),
                   "registered_at": _mas(r, -3600 * hace + 140),
-                  "caduca_en": _mas(r, -3600 * (i + 1)), "caducado": True, "vivo": False})
-        if resultado is not None:
-            p["resultado"] = resultado
+                  "caduca_en": _mas(r, -3600 * (i + 1)), "caducado": True, "vivo": False,
+                  "resultado": _resultado(r, resultado, 3600 * (i + 1))})
         activa["disparados"].append(p)
     activa["sin_planes"] = None
+
+
+def _acaba_vivo(r):
+    """El primer DISPARADO de lo vivo acaba en su STOP hace 10 min, y la respuesta lo sirve COMO LO SERVIRIA LA
+    RUTA (gemelo fiel para toda la red): fuera de lo vivo, con la frase de su celda vacia, y en lo reciente no
+    vivo y con su resultado. Devuelve su registro_id."""
+    from app.entradas import vista as V
+    for c in r["vivo"]["celdas"]:
+        for v in c["por_version"]:
+            if v["disparados"]:
+                p = v["disparados"].pop(0)
+                if not v["disparados"] and not v["vigilando"]:
+                    v["sin_planes"] = (f"{v['version']} no tiene ningun plan vivo en {c['perfil']} · {c['lado']}: "
+                                       "ningun episodio abierto ni DISPARADO vivo (los que ya acabaron estan en lo "
+                                       "reciente, con su salida)")
+                for b in r["reciente"]["por_version"]:
+                    for q in b["disparados"]:
+                        if q["registro_id"] == p["registro_id"]:
+                            q.update(vivo=False, resultado=_resultado(r, "stop", 600))
+                assert V
+                return p["registro_id"]
+    raise AssertionError("plantados: no hay ningun DISPARADO vivo que acabar")
+
+
+def _anterior(r):
+    """Un DISPARADO anterior a la ventana en lo reciente de la activa: su fila corta y su resultado (E3)."""
+    from app.entradas import vista as V
+    activa = r["reciente"]["por_version"][0]
+    modelo = _vivos(r)[0]
+    activa["anteriores"] = [{"registro_id": 8000, "version": activa["version"], "familia": modelo["familia"],
+                             "perfil": modelo["perfil"], "lado": modelo["lado"], "vela_cierre": _mas(r, -3 * 86400),
+                             "caduca_en": _mas(r, -3 * 86400 + 4 * 3600), "resultado": _resultado(r, "stop", 2 * 86400)}]
+    activa["anteriores_que_es"] = V.ANTERIORES_QUE_ES
 
 
 # Lo que se anade al FINAL de static/mesa/mesa-entradas.js para plantar una pantalla.
@@ -196,7 +240,7 @@ def _escribe(texto: str) -> str:
                         f"    s.textContent = {json.dumps(' ' + texto, ensure_ascii=False)};\n    f.appendChild(s);")
 
 
-POR_RESULTADO = ("    const res = {};\n    ((_ent && _ent.datos.reciente.por_version) || []).forEach((v) => v.disparados.forEach((p) => { res[p.registro_id] = p.resultado; }));\n"
+POR_RESULTADO = ("    const res = {};\n    ((_ent && _ent.datos.reciente.por_version) || []).forEach((v) => v.disparados.forEach((p) => { res[p.registro_id] = p.resultado && (/^OBJETIVO/.test(p.resultado.rotulo || '') ? 'objetivo' : 'stop'); }));\n"
                  "    const filas = Array.from(document.querySelectorAll('#ent-reciente [data-plan]')).filter((f) => res[f.dataset.plan]);\n")
 NO_REPINTA = ("\n/* PLANTADO por K106-plantados.py */\n(function () {\n  const pintar0 = pintarEntradas;\n  let hecho = false;\n"
               "  pintarEntradas = function (sobre) {\n    if (hecho) return;\n    hecho = true;\n    pintar0(sobre);\n  };\n})();\n")
@@ -427,6 +471,30 @@ BRAZOS: list[tuple] = [
      lambda r: r["frescura"].update(refresco_s=3),
      "\n/* PLANTADO por K106-plantados.py */\nsetInterval(() => { if (ESTADO.vista === 'entradas' && _ent) olaEntradas(); }, 1000);\n",
      "una vista que vuelve a pedir cada segundo, diga lo que diga la cadencia servida"),
+    # ---- campana 139 (E3) · el resultado de cada DISPARADO, pintado; lo acabado nunca VIVO; ninguna frecuencia
+    ("acabado_servido_no_se_pinta_vivo", "PASA", "", [], _acaba_vivo, None,
+     "un DISPARADO de lo vivo cuyo resultado servido dice que acabo: el arbol pinta su salida y no lo llama VIVO"),
+    ("acabado_pintado_vivo", "CONDENA", "E11 el DISPARADO .* acabo .* y la pantalla lo pinta VIVO", [], _acaba_vivo,
+     _tras_tic("    document.querySelectorAll('#ent-reciente [data-tipo=\"disparado\"] [data-chip]').forEach((c) => { c.textContent = _ent.datos.vivo.rotulos.disparado_vivo; });"),
+     "el mismo con un reloj de pantalla que lo devuelve a VIVO por su cuenta atras: lo que pintaba la de antes de la E3"),
+    ("chip_no_es_su_resultado", "CONDENA", "E11 el DISPARADO .* acabo y su estado dice", [],
+     lambda r: _resueltos(r, ["stop"]),
+     _tras_tic("    document.querySelectorAll('#ent-reciente [data-chip]').forEach((c) => { c.textContent = _ent.datos.vivo.rotulos.disparado_caducado; });"),
+     "un DISPARADO que acabo en su stop, con el estado «caducado» en vez de su resultado servido"),
+    ("rotulo_cambiado", "CONDENA", "E2 .*resultado.rotulo: pinta", [], lambda r: _resueltos(r, ["stop"]),
+     _tras_pintar("    const n = document.querySelector('#ent-reciente [data-k$=\".resultado.rotulo\"]');\n    if (n) n.textContent = 'OBJETIVO (T1)';"),
+     "el resultado de un DISPARADO pintado distinto del servido (OBJETIVO donde se sirve STOP)"),
+    ("anterior_con_su_resultado", "PASA", "", [], _anterior, None,
+     "un DISPARADO anterior a la ventana, en su fila corta con su resultado: lo reciente aunque tenga mas de 24 h"),
+    ("anterior_pintado_vivo", "CONDENA", "E11 el DISPARADO 8000 acabo", [], _anterior,
+     _tras_tic("    document.querySelectorAll('[data-anterior] [data-chip]').forEach((c) => { c.textContent = _ent.datos.vivo.rotulos.disparado_vivo; });"),
+     "el anterior, acabado en su stop, con el estado VIVO"),
+    ("frecuencia_de_resultados", "CONDENA", "E5 fraccion o porcentaje en el texto de la pantalla", [], None,
+     _tras_pintar("    const s = document.createElement('p');\n    s.textContent = '1 de 2 tocaron T1';\n    document.getElementById('ent-papel').appendChild(s);"),
+     "con n < 30, «1 de 2 tocaron T1» escrito junto a la cuenta de papel"),
+    ("porcentaje_en_el_papel", "CONDENA", "E5 fraccion o porcentaje en papel", [],
+     lambda r: r["papel"]["por_version"][0].update(meta="50 % de las operaciones llegaron a T1"), None,
+     "un «50 %» de resultados SERVIDO en la cuenta de papel, que la pantalla pinta fielmente"),
 ]
 
 
@@ -477,6 +545,38 @@ def planta(nombre: str, dir_: Path) -> None:
     print(f"{nombre}: huella {antes} -> {huella(dir_)}")
 
 
+def copia(arbol: str, dsn: str, esquema: str, reloj: str, simbolo: str, destino: str) -> None:
+    """/api/mesa/entradas del ARBOL dado sobre la copia del registro (K107-resultado.py carga) a la hora `reloj`,
+    con el DECIDE fingido fiel de aqui. Con `python -S`: asi `import app` es el del arbol (main o la rama)."""
+    import asyncio
+
+    sys.path[:0] = [arbol]
+    sys.path += [str(d) for d in sorted((Path(sys.executable).parents[1] / "lib").glob("python3*/site-packages"))]
+    import app
+    assert app.__file__.startswith(arbol.rstrip("/") + "/"), f"plantados: app viene de {app.__file__}"
+    import asyncpg
+
+    from app.entradas import vista as V
+
+    async def una() -> None:
+        c = await asyncpg.connect(dsn)
+        await c.execute(f"SET search_path TO {esquema}, pg_catalog, public")
+        await c.execute("SET TIME ZONE 'UTC'")
+        desfase = await c.fetchval("SELECT ($1::timestamptz - pg_catalog.clock_timestamp())::text",
+                                   datetime.fromisoformat(reloj.replace("Z", "+00:00")))
+        await c.execute("SELECT set_config('reloj.desfase', $1, false)", desfase)
+
+        async def palabra(_c, _s, *, frame):
+            return _decide("LONG")
+
+        r = await V.construir(c, symbol=simbolo, activo=simbolo.split("USDT")[0], palabra_de_decide=palabra)
+        Path(destino).write_text(json.dumps(r, ensure_ascii=False, default=str), encoding="utf-8")
+        await c.close()
+
+    asyncio.run(una())
+    print(f"copia: {arbol} sirve {Path(destino).stat().st_size} B a las {reloj}")
+
+
 def main() -> None:
     orden = sys.argv[1]
     if orden == "base":
@@ -494,6 +594,8 @@ def main() -> None:
         (dir_ / "sobre" / "mesa").mkdir(parents=True)
         (dir_ / "respuesta.json").write_text(json.dumps(r, ensure_ascii=False), encoding="utf-8")
         print(f"resueltos {sys.argv[3]}: huella {huella(dir_)}")
+    elif orden == "copia":  # <arbol> <dsn> <esquema> <reloj> <simbolo> <destino>: con python -S
+        copia(*sys.argv[2:8])
     else:
         raise SystemExit(__doc__)
 

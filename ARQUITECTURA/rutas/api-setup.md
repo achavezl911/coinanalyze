@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `setup` · `app/api.py:2390` (cuerpo hasta la 2401) · decorador en la linea 2389.
+Handler `setup` · `app/api.py:2410` (cuerpo hasta la 2421) · decorador en la linea 2409.
 
 ## Parametros de entrada
 
@@ -23,8 +23,8 @@ Handler `setup` · `app/api.py:2390` (cuerpo hasta la 2401) · decorador en la l
 | `daily_streak` | literal en app/interpretation.py:199 |
 | `primary` | literal en app/interpretation.py:202 |
 | `setups` | literal en app/interpretation.py:203 |
-| `snapshot_ts` | literal en app/api.py:2399 |
-| `symbol` | literal en app/api.py:2398 |
+| `snapshot_ts` | literal en app/api.py:2419 |
+| `symbol` | literal en app/api.py:2418 |
 | `warning` | literal en app/interpretation.py:204 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -49,14 +49,14 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.daily_data` — `app/api.py:548`
-- `app.api.latest_snapshot` — `app/api.py:521`
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api.daily_data` — `app/api.py:568`
+- `app.api.latest_snapshot` — `app/api.py:541`
+- `app.api.validate_symbol` — `app/api.py:253`
 - `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 
-- `app.api.records` — `app/api.py:246`
+- `app.api.records` — `app/api.py:266`
 - `app.interpretation.daily_flow_read` — `app/interpretation.py:208`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
@@ -76,8 +76,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
-| 404 | No data | `app/api.py:2395` | el propio handler |
+| 404 | No data | `app/api.py:2415` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -125,7 +125,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.interpretation.evaluate_setups` | 4 | **0** | 55 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
+| `app.interpretation.evaluate_setups` | 4 | **0** | 56 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `flow_spot_vs_perp` · `app/api.py:1758` (cuerpo hasta la 1780) · decorador en la linea 1757.
+Handler `flow_spot_vs_perp` · `app/api.py:1778` (cuerpo hasta la 1800) · decorador en la linea 1777.
 
 ## Parametros de entrada
 
@@ -56,9 +56,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declara_ventana` — `app/api.py:1733`
-- `app.api.validate_symbol` — `app/api.py:233`
-- `app.api.ventana_pedida` — `app/api.py:1700`
+- `app.api.declara_ventana` — `app/api.py:1753`
+- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.ventana_pedida` — `app/api.py:1720`
 - `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:5988`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
@@ -82,13 +82,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1717` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1720` | una funcion de su cierre |
-| 422 | — | `app/api.py:1725` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1727` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1729` | una funcion de su cierre |
-| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1772` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 422 | hace falta «desde» | `app/api.py:1737` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1740` | una funcion de su cierre |
+| 422 | — | `app/api.py:1745` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1747` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1749` | una funcion de su cierre |
+| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1792` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

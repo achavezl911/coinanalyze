@@ -8,7 +8,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`swing_score`](#swing-score) | 6572 | 2 | **0** | 55 ↑ | **2** |
+| [`swing_score`](#swing-score) | 6572 | 2 | **0** | 56 ↑ | **2** |
 | [`as_float`](#as-float) | 920 | 38 | **0** | 11 ↑ | **38** |
 | [`resolve_matrix_as_of`](#resolve-matrix-as-of) | 2592 | 25 | **0** | 12 ↑ | **25** |
 | [`_explicit_as_of`](#-explicit-as-of) | 2586 | 26 | **0** | 0 | **26** |
@@ -125,7 +125,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/scalp_logic.py:6572` · clave completa `app.scalp_logic.swing_score`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 2 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -139,9 +139,9 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -178,6 +178,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -221,7 +222,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**53 rutas se enteran SOLO por el dato**, sin
+**54 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -237,6 +238,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
 - [`/api/healthz`](../rutas/api-healthz.md)

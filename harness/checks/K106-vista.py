@@ -21,6 +21,12 @@ LOS BRAZOS, y que condena cada uno:
   E9 memoria     (campana 138) la palabra GRANDE de un perfil no sale de la regla que la respuesta
                  declara sobre la serie que sirve (`recalculo`), su edad no es la de la palabra, se
                  pinta la del INSTANTE en su sitio, o la pantalla rotula «edad de la palabra» otra cosa
+  E10 la base    (campana 139) un DISPARADO que segun LA BASE Y SUS VELAS ya acabo -la VERDAD que da
+                 K107-resultado.py verdad, si se le pasa con --verdad- y que la pantalla pinta VIVO,
+                 aunque la respuesta no traiga su resultado (la pantalla de antes de la E3). Solo si la
+                 vela que lo acaba cerro con tiempo de haber llegado antes de la respuesta (LLEGADA_S)
+  E11 resultado  (campana 139) un DISPARADO cuyo resultado SERVIDO dice que acabo y que la pantalla
+                 pinta VIVO, o cuyo estado no es el rotulo de su resultado servido
 
 LAS CIFRAS QUE LA VISTA SI PUEDE LLEVAR, una a una, y por que ninguna es una tasa de aciertos (A84):
   precio          un nivel del plan o el ultimo cierre: unidades de precio
@@ -35,6 +41,11 @@ LAS CIFRAS QUE LA VISTA SI PUEDE LLEVAR, una a una, y por que ninguna es una tas
   dias            lo que le queda al calendario
   muestra         el rotulo «... (n/30)»: la UNICA barra permitida; cuenta resueltos contra el minimo
                   de exposicion, con n < minimo, y no lleva porcentaje
+  bps-resultado   (139) lo que UN DISPARADO gano o perdio, en bps netos de su entrada real: el hecho de
+                  un plan, con su signo; ninguna suma de planes
+  usd             (139) dinero de la cuenta de papel: su saldo, su capital, su meta, el P&L, la comision
+                  y el funding de UNA operacion. Dolares, no un cociente de aciertos
+  cantidad        (139) el lote de una operacion de papel, en unidades de su activo («1,9 SOL»)
   y, calculadas por el reloj: una edad y una cuenta atras (horas, minutos, segundos)
 Los MOTIVOS y REGLAS servidos (prosa del registro o del reglamento) se pintan tal cual y pueden
 contar minutos («58 de 60 minutos») o citar su alfa; se exige que sean EXACTAMENTE lo servido.
@@ -78,7 +89,14 @@ CIFRAS = {  # clase -> como se escribe (es-ES). Nada fuera de aqui puede ser una
     "recuento": r"\d+",
     "dias": r"-?\d+(\.\d{3})*,\d d",
     "muestra": r".*\((\d+)/(\d+)\)",
+    "bps-resultado": r"-?\d+(\.\d{3})*,\d bps",
+    "usd": r"-?\d{1,3}(\.\d{3})*,\d{2} USD",
+    "cantidad": r"\d+(,\d+)? [A-Z]{3,5}",
 }
+# E10 · lo que una vela de 1 min puede tardar en llegar a ohlcv: una que cerro antes de esto pudo no estar al
+# servirse la respuesta, y entonces la pantalla no miente al pintar vivo. La misma holgura que K107 (LLEGADA).
+LLEGADA_S = 180
+VERDAD: dict | None = None   # la de --verdad: {"ahora", "disparados": {id: {acabado, salida, instante}}}
 # Prosa servida: reglas, motivos y textos del reglamento. Se exige igualdad exacta con lo servido
 # (E2) y por eso no se le busca forma de cifra; las palabras que prometen se le buscan igual.
 PROSA = re.compile(r"(\.motivo|\.regla|\.reloj|\.frase|\.fuente|\.definicion|\.sin_planes|\.tipo_disparo|\.edad_de_la_palabra|"
@@ -123,6 +141,9 @@ JS = r"""
   const dat = (n, sel, k) => { const x = n.closest(sel); return x ? x.dataset[k] : null; };
   const clon = raiz.cloneNode(true);
   clon.querySelectorAll('[hidden],[data-k],[data-calc]').forEach((n) => n.remove());
+  // para la firma de la no interferencia: el texto propio SIN el estado de cada plan, que con la E3 es su resultado
+  const clon2 = clon.cloneNode(true);
+  clon2.querySelectorAll('[data-chip]').forEach((n) => n.remove());
   const top = (id) => { const n = document.getElementById(id); return n ? n.getBoundingClientRect().top + window.scrollY : null; };
   return {
     existe: true,
@@ -149,6 +170,7 @@ JS = r"""
     tops: {cabeza: top('ent-cabeza'), decide: top('ent-decide'), vivo: top('ent-vivo')},
     alto: window.innerHeight,
     literal: (clon.textContent || '').replace(/\s+/g, ' ').trim(),
+    literal_sin_estado: (clon2.textContent || '').replace(/\s+/g, ' ').trim(),
     visible_todo: txt(raiz),
     colores: [...raiz.querySelectorAll('*')].filter(visible).map((n) => {
       const cs = getComputedStyle(n);
@@ -172,6 +194,19 @@ JS = r"""
   };
 })()
 """
+
+
+def _resultados(cuerpo: dict) -> dict:
+    """{registro_id: resultado servido} de cada DISPARADO de la respuesta: lo vivo, lo reciente y sus anteriores."""
+    salida = {}
+    for cel in (cuerpo.get("vivo") or {}).get("celdas") or []:
+        for v in cel["por_version"]:
+            for p in v["disparados"]:
+                salida[p["registro_id"]] = p.get("resultado")
+    for v in (cuerpo.get("reciente") or {}).get("por_version") or []:
+        for p in (v.get("disparados") or []) + (v.get("anteriores") or []):
+            salida[p["registro_id"]] = p.get("resultado")
+    return {k: r for k, r in salida.items() if r}
 
 
 def hojas(nodo, ruta=""):
@@ -277,8 +312,8 @@ def juzga(c: dict, cuerpo: dict | None, ultimo: dict | None, pasado: float, pets
                     for p in v[tipo]:
                         servidos[("vivo", p["registro_id"])] = (v["version"], nombre, f"{celda['perfil']}/{celda['lado']}")
         for v in cuerpo["reciente"]["por_version"]:
-            for tipo, nombre in (("disparados", "disparado"), ("sombras", "sombra")):
-                for p in v[tipo]:
+            for tipo, nombre in (("disparados", "disparado"), ("sombras", "sombra"), ("anteriores", "disparado")):
+                for p in v.get(tipo) or []:
                     servidos[("reciente", p["registro_id"])] = (v["version"], nombre, None)
         pintados = {(p["seccion"], p["id"]): p for p in c["planes"]}
         for clave, (version, tipo, celda) in servidos.items():
@@ -365,6 +400,7 @@ def juzga(c: dict, cuerpo: dict | None, ultimo: dict | None, pasado: float, pets
         caduca = {p["registro_id"]: p["caduca_en"] for cel in cuerpo["vivo"]["celdas"]
                   for v in cel["por_version"] for p in v["disparados"]}
         rot = cuerpo["vivo"]["rotulos"]
+        servido = _resultados(cuerpo)
         for p in c["planes"]:
             if p["seccion"] != "vivo":
                 continue
@@ -372,10 +408,37 @@ def juzga(c: dict, cuerpo: dict | None, ultimo: dict | None, pasado: float, pets
                 resta = _epoch(caduca[p["id"]]) - as_of - pasado if p["id"] in caduca else None
                 if resta is not None and resta < -2 and (p["vivo"] == "si" or p["chip"] == rot["disparado_vivo"]):
                     h.append(f"E4 el DISPARADO {p['id']} caduco hace {-resta:.0f} s y sigue en pantalla como vivo")
-                if resta is not None and resta > 2 and p["chip"] != rot["disparado_vivo"]:
+                # uno cuyo resultado servido dice que acabo no tiene que decir VIVO: eso lo juzga E11
+                acabo = (servido.get(p["id"]) or {}).get("vivo") is False
+                if resta is not None and resta > 2 and p["chip"] != rot["disparado_vivo"] and not acabo:
                     h.append(f"E4 el DISPARADO {p['id']} esta vivo y su estado dice {p['chip']!r}")
             elif p["chip"] != rot["vigilando"]:
                 h.append(f"E4 el VIGILANDO {p['id']} lleva el estado {p['chip']!r}")
+
+    # ---- E11 · lo que su resultado servido da por acabado no se pinta VIVO, y su estado es su rotulo
+    if cuerpo:
+        rot = cuerpo["vivo"]["rotulos"]
+        for p in c["planes"]:
+            r = _resultados(cuerpo).get(p["id"]) if p["tipo"] == "disparado" else None
+            if not r or r.get("vivo") is not False:
+                continue
+            if p["vivo"] == "si" or p["chip"] == rot["disparado_vivo"]:
+                h.append(f"E11 el DISPARADO {p['id']} acabo ({r.get('rotulo')}) y la pantalla lo pinta VIVO")
+            elif p["chip"] != r.get("rotulo"):
+                h.append(f"E11 el DISPARADO {p['id']} acabo y su estado dice {p['chip']!r}, no su resultado servido "
+                         f"{r.get('rotulo')!r}")
+
+    # ---- E10 · lo que LA BASE da por acabado no se pinta VIVO (con --verdad: K107-resultado.py verdad)
+    if cuerpo and VERDAD is not None:
+        rot = cuerpo["vivo"]["rotulos"]
+        for p in c["planes"]:
+            v = (VERDAD.get("disparados") or {}).get(str(p["id"])) if p["tipo"] == "disparado" else None
+            if not v or not v.get("acabado") or not v.get("instante"):
+                continue
+            if (p["vivo"] == "si" or p["chip"] == rot["disparado_vivo"]) \
+                    and _epoch(v["instante"]) + 60 + LLEGADA_S <= _epoch(cuerpo["as_of"]):
+                h.append(f"E10 el DISPARADO {p['id']} acabo segun la base ({v.get('salida')} a las "
+                         f"{v['instante'][11:16]}Z) y la pantalla lo pinta VIVO")
 
     # ---- E5 · lo que la vista no puede decir
     for cual, texto in (("fraccion o porcentaje", FRACCION), ("palabra de tasa", TASA), ("palabra que promete", PROMESA)):
@@ -681,7 +744,14 @@ def main() -> int:
     ap.add_argument("--tramos", metavar="PREFIJO", help="capturar la pagina entera a trozos: PREFIJO-NN.png")
     ap.add_argument("--salida", help="volcar aqui la cosecha entera (JSON)")
     ap.add_argument("--firma", action="store_true", help="imprimir la firma de lo que la pantalla ensena")
+    ap.add_argument("--verdad", help="como acabo cada DISPARADO segun la base (K107-resultado.py verdad): E10")
     a = ap.parse_args()
+    global VERDAD
+    if a.verdad:
+        try:
+            VERDAD = json.loads(pathlib.Path(a.verdad).read_text())
+        except (OSError, ValueError):
+            VERDAD = None
     try:
         out = asyncio.run(asyncio.wait_for(corre(a), timeout=120 + a.espera + sum(float(p.rpartition('@')[2]) for p in a.luego or [])))
     except (K.SystemExit2, TimeoutError, OSError) as e:
@@ -730,16 +800,20 @@ def main() -> int:
           f"nodos servidos, {len(ruta)} peticion(es) a la ruta" + (f", {max(pesos)} B la mayor" if pesos else "")
           + (f", cada {ritmo} s" if ritmo else "") + f", {len({p['camino'] for p in ult['peticiones']})} ruta(s) distinta(s)"
           + (f" · E9 recalcula la palabra grande de {', '.join(con_memoria)}" if con_memoria
-             else " · E9 SIN JUZGAR: la respuesta no trae memoria (lo desplegado antes de la 138)"))
+             else " · E9 SIN JUZGAR: la respuesta no trae memoria (lo desplegado antes de la 138)")
+          + (f" · E10 contrasta {len(VERDAD.get('disparados') or {})} DISPARADO(S) con la base" if VERDAD is not None
+             else " · E10 SIN JUZGAR: sin la verdad de la base"))
     for hz in dict.fromkeys(hallazgos):
         print(f"   - {hz}")
     if a.firma:
         # lo que la pantalla ensena y como: el orden y la clase de cada plan, cada texto servido,
-        # el texto propio y cada color. Dos respuestas que solo difieren en un RESULTADO tienen
-        # que dar la misma firma.
+        # el texto propio y cada color. Dos respuestas que solo difieren en un RESULTADO tienen que
+        # dar la misma firma SALVO EL TEXTO DE ESE RESULTADO (campana 139: la E3 lo pinta, y con el el
+        # estado del plan): ni el orden, ni las clases, ni los colores, ni ningun otro texto.
         d = out["cosechas"][-1]["dom"]
-        visto = [[(p["seccion"], p["bloque"], p["id"], p["clases"], p["chip"]) for p in d["planes"]],
-                 [(n["k"], n["t"]) for n in d["nodos"] if n["vis"]], d["literal"],
+        visto = [[(p["seccion"], p["bloque"], p["id"], p["clases"]) for p in d["planes"]],
+                 [(n["k"], n["t"]) for n in d["nodos"] if n["vis"] and ".resultado." not in n["k"]],
+                 d.get("literal_sin_estado", d["literal"]),
                  [(x["camino"], x["color"], x["fondo"], x["borde"], x["estilo"]) for x in d["colores"]]]
         print("firma " + hashlib.sha256(json.dumps(visto, ensure_ascii=False).encode()).hexdigest()[:16])
     return 1 if hallazgos else 0

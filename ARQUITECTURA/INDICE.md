@@ -25,7 +25,7 @@
 | `/api/delta-profile` | GET | 3 | 1 | 13 | [ficha](rutas/api-delta-profile.md) |
 | `/api/desk/state` | GET | 26 | 13 | 80 | [ficha](rutas/api-desk-state.md) |
 | `/api/divergences` | GET | 15 | 3 | 7 | [ficha](rutas/api-divergences.md) |
-| `/api/entradas` | GET | 11 | 3 | 30 | [ficha](rutas/api-entradas.md) |
+| `/api/entradas` | GET | 19 | 8 | 50 | [ficha](rutas/api-entradas.md) |
 | `/api/external-macro` | GET | 1 | 6 | 49 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 6 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
@@ -38,7 +38,7 @@
 | `/api/market-impact` | GET | 6 | 2 | 7 | [ficha](rutas/api-market-impact.md) |
 | `/api/market-memory` | GET | 13 | 1 | 5 | [ficha](rutas/api-market-memory.md) |
 | `/api/mesa/decide` | GET | 3 | 16 | 60 | [ficha](rutas/api-mesa-decide.md) |
-| `/api/mesa/entradas` | GET | 7 | 4 | 51 | [ficha](rutas/api-mesa-entradas.md) |
+| `/api/mesa/entradas` | GET | 8 | 8 | 78 | [ficha](rutas/api-mesa-entradas.md) |
 | `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
 | `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
 | `/api/oi-context` | GET | 16 | 4 | 12 | [ficha](rutas/api-oi-context.md) |
@@ -102,12 +102,13 @@
 | `daily_session_agg` | 22 | 0 |
 | `daily_verdict_outcome` | 3 | 0 |
 | `daily_verdict_snapshot` | 3 | 0 |
-| `data_gap` | 22 | 0 |
+| `data_gap` | 24 | 0 |
 | `entrada_latido` | 2 | 0 |
 | `entrada_registro` | 2 | 0 |
 | `entrada_reglamento` | 2 | 0 |
+| `entrada_resultado` | 2 | 2 |
 | `external_macro_observation` | 3 | 0 |
-| `funding_rate` | 4 | 0 |
+| `funding_rate` | 6 | 0 |
 | `futures_trades_agg` | 7 | 0 |
 | `futures_trades_realtime` | 17 | 0 |
 | `liquidations` | 5 | 0 |
@@ -117,7 +118,7 @@
 | `market_feed_health` | 10 | 0 |
 | `metric_baseline` | 15 | 0 |
 | `metrics_snapshot` | 9 | 0 |
-| `ohlcv` | 39 | 0 |
+| `ohlcv` | 40 | 0 |
 | `oi_bybit` | 3 | 0 |
 | `open_interest` | 20 | 0 |
 | `orderbook_depth` | 1 | 0 |

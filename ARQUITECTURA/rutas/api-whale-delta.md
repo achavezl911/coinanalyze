@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1184` (cuerpo hasta la 1274) · decorador en la linea 1183.
+Handler `whale_delta` · `app/api.py:1204` (cuerpo hasta la 1294) · decorador en la linea 1203.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `whale_delta` · `app/api.py:1184` (cuerpo hasta la 1274) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:482 |
-| `data_gaps` | literal en app/api.py:488 |
-| `interval` | literal en app/api.py:480 |
-| `rows` | literal en app/api.py:481 |
-| `symbol` | literal en app/api.py:479 |
+| `coverage` | literal en app/api.py:502 |
+| `data_gaps` | literal en app/api.py:508 |
+| `interval` | literal en app/api.py:500 |
+| `rows` | literal en app/api.py:501 |
+| `symbol` | literal en app/api.py:499 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,15 +59,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declarar_tramo_no_medible` — `app/api.py:1131`
-- `app.api.declared_series_response` — `app/api.py:400`
-- `app.api.historical_interval_value` — `app/api.py:239`
-- `app.api.records` — `app/api.py:246`
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api.declarar_tramo_no_medible` — `app/api.py:1151`
+- `app.api.declared_series_response` — `app/api.py:420`
+- `app.api.historical_interval_value` — `app/api.py:259`
+- `app.api.records` — `app/api.py:266`
+- `app.api.validate_symbol` — `app/api.py:253`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:360`
+- `app.api.minutos_de_las_filas` — `app/api.py:380`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
@@ -90,8 +90,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:242` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -140,9 +140,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.expected_buckets` | 12 | **0** | 22 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.expected_buckets` | 12 | **0** | 24 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |

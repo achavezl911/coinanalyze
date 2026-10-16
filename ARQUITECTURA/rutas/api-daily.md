@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `daily` · `app/api.py:2305` (cuerpo hasta la 2386) · decorador en la linea 2304.
+Handler `daily` · `app/api.py:2325` (cuerpo hasta la 2406) · decorador en la linea 2324.
 
 ## Parametros de entrada
 
@@ -21,18 +21,18 @@ Handler `daily` · `app/api.py:2305` (cuerpo hasta la 2386) · decorador en la l
 
 | campo | de donde sale |
 |---|---|
-| `coverage_note` | literal en app/api.py:654 |
-| `data_gaps` | asignado en app/api.py:2369 |
-| `knowledge_time_replay` | literal en app/api.py:651 |
-| `projection_latest_session_date` | literal en app/api.py:647 |
-| `quick_read` | literal en app/api.py:652 |
-| `rows` | literal en app/api.py:643 |
-| `sources` | literal en app/api.py:653 |
-| `streak` | literal en app/api.py:641 |
-| `streak_source` | literal en app/api.py:642 |
-| `symbol` | literal en app/api.py:640 |
-| `temporal_semantics` | literal en app/api.py:650 |
-| `through_session_date` | literal en app/api.py:644 |
+| `coverage_note` | literal en app/api.py:674 |
+| `data_gaps` | asignado en app/api.py:2389 |
+| `knowledge_time_replay` | literal en app/api.py:671 |
+| `projection_latest_session_date` | literal en app/api.py:667 |
+| `quick_read` | literal en app/api.py:672 |
+| `rows` | literal en app/api.py:663 |
+| `sources` | literal en app/api.py:673 |
+| `streak` | literal en app/api.py:661 |
+| `streak_source` | literal en app/api.py:662 |
+| `symbol` | literal en app/api.py:660 |
+| `temporal_semantics` | literal en app/api.py:670 |
+| `through_session_date` | literal en app/api.py:664 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -71,15 +71,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._session_window` — `app/api.py:502`
-- `app.api.daily_data` — `app/api.py:548`
-- `app.api.mask_gapped_series_rows` — `app/api.py:250`
-- `app.api.validate_symbol` — `app/api.py:233`
+- `app.api._session_window` — `app/api.py:522`
+- `app.api.daily_data` — `app/api.py:568`
+- `app.api.mask_gapped_series_rows` — `app/api.py:270`
+- `app.api.validate_symbol` — `app/api.py:253`
 - `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:197`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
-- `app.api.records` — `app/api.py:246`
+- `app.api.records` — `app/api.py:266`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
@@ -110,8 +110,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2312` | el propio handler |
-| 404 | Unknown symbol | `app/api.py:235` | una funcion de su cierre |
+| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2332` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -161,12 +161,12 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.metrics.session_bounds` | 2 | **0** | 55 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
+| `app.metrics.session_bounds` | 2 | **0** | 56 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |
 | `app.api.mask_gapped_series_rows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |

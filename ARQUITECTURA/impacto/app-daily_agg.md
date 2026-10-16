@@ -8,17 +8,17 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_store_baseline`](#-store-baseline) | 745 | 0 | **15** | 57 ↑ | **15** |
-| [`refresh_baselines`](#refresh-baselines) | 731 | 0 | **0** | 57 ↑ | **0** |
-| [`apply_retention`](#apply-retention) | 645 | 0 | **54** | 55 ↑ | **54** |
-| [`backfill`](#backfill) | 299 | 0 | **0** | 55 ↑ | **0** |
-| [`compute_session`](#compute-session) | 141 | 0 | **22** | 55 ↑ | **22** |
-| [`cycle`](#cycle) | 817 | 0 | **0** | 55 ↑ | **0** |
-| [`latest_closed_session_date`](#latest-closed-session-date) | 45 | 0 | **0** | 55 ↑ | **0** |
-| [`materialize_daily_verdict_outcomes`](#materialize-daily-verdict-outcomes) | 521 | 0 | **3** | 55 ↑ | **3** |
-| [`persist_verdicts`](#persist-verdicts) | 353 | 0 | **3** | 55 ↑ | **3** |
-| [`rollup_open_interest_daily`](#rollup-open-interest-daily) | 576 | 0 | **0** | 55 ↑ | **0** |
-| [`ventana_barrido_5m`](#ventana-barrido-5m) | 631 | 0 | **0** | 55 ↑ | **0** |
+| [`_store_baseline`](#-store-baseline) | 745 | 0 | **15** | 58 ↑ | **15** |
+| [`refresh_baselines`](#refresh-baselines) | 731 | 0 | **0** | 58 ↑ | **0** |
+| [`apply_retention`](#apply-retention) | 645 | 0 | **55** | 56 ↑ | **55** |
+| [`backfill`](#backfill) | 299 | 0 | **0** | 56 ↑ | **0** |
+| [`compute_session`](#compute-session) | 141 | 0 | **22** | 56 ↑ | **22** |
+| [`cycle`](#cycle) | 817 | 0 | **0** | 56 ↑ | **0** |
+| [`latest_closed_session_date`](#latest-closed-session-date) | 45 | 0 | **0** | 56 ↑ | **0** |
+| [`materialize_daily_verdict_outcomes`](#materialize-daily-verdict-outcomes) | 521 | 0 | **3** | 56 ↑ | **3** |
+| [`persist_verdicts`](#persist-verdicts) | 353 | 0 | **3** | 56 ↑ | **3** |
+| [`rollup_open_interest_daily`](#rollup-open-interest-daily) | 576 | 0 | **0** | 56 ↑ | **0** |
+| [`ventana_barrido_5m`](#ventana-barrido-5m) | 631 | 0 | **0** | 56 ↑ | **0** |
 | [`_coverage_complete`](#-coverage-complete) | 73 | 0 | **0** | 22 ↑ | **0** |
 | [`_expected_session_samples`](#-expected-session-samples) | 64 | 0 | **0** | 22 ↑ | **0** |
 
@@ -26,7 +26,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/daily_agg.py:745` · clave completa `app.daily_agg._store_baseline`
 
-**Radio exacto: 15 rutas** de 75 · **cota superior: 57** (mas ancha)
+**Radio exacto: 15 rutas** de 75 · **cota superior: 58** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -56,9 +56,9 @@ Y esas tablas las leen:
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-### Por tabla · k<=2 — 57 rutas · **cota superior**
+### Por tabla · k<=2 — 58 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (57 contra 15). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (58 contra 15). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -97,6 +97,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -141,7 +142,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**57 rutas se enteran SOLO por el dato**, sin
+**58 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -158,6 +159,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -208,7 +210,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:731` · clave completa `app.daily_agg.refresh_baselines`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 57** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 58** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -221,9 +223,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 57 rutas · **cota superior**
+### Por tabla · k<=2 — 58 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (57 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (58 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -263,6 +265,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -307,7 +310,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**57 rutas se enteran SOLO por el dato**, sin
+**58 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -324,6 +327,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -374,7 +378,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:645` · clave completa `app.daily_agg.apply_retention`
 
-**Radio exacto: 54 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 55 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -382,7 +386,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 54 rutas · **exacto**
+### Por tabla · k=0 — 55 rutas · **exacto**
 
 Escribe **ella misma**: `daily_session_agg`, `daily_verdict`, `funding_rate`, `liquidations`, `long_short_ratio`, `metrics_snapshot`, `ohlcv`, `oi_bybit`, `open_interest`, `predicted_funding_rate`, `spot_trades_agg`
 
@@ -401,6 +405,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -443,9 +448,9 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 54). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 55). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -483,6 +488,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -526,7 +532,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**55 rutas se enteran SOLO por el dato**, sin
+**56 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -542,6 +548,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -591,7 +598,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:299` · clave completa `app.daily_agg.backfill`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -604,9 +611,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -644,6 +651,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -687,7 +695,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**55 rutas se enteran SOLO por el dato**, sin
+**56 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -703,6 +711,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -752,7 +761,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:141` · clave completa `app.daily_agg.compute_session`
 
-**Radio exacto: 22 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 22 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -789,9 +798,9 @@ Y esas tablas las leen:
 - [`/api/wyckoff`](../rutas/api-wyckoff.md)
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 22). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 22). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -828,6 +837,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -871,7 +881,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**55 rutas se enteran SOLO por el dato**, sin
+**56 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -887,6 +897,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -936,7 +947,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:817` · clave completa `app.daily_agg.cycle`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -949,9 +960,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -989,6 +1000,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1032,7 +1044,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**55 rutas se enteran SOLO por el dato**, sin
+**56 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1048,6 +1060,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1097,7 +1110,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:45` · clave completa `app.daily_agg.latest_closed_session_date`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1110,9 +1123,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1149,6 +1162,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1192,7 +1206,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**55 rutas se enteran SOLO por el dato**, sin
+**56 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1208,6 +1222,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1257,7 +1272,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:521` · clave completa `app.daily_agg.materialize_daily_verdict_outcomes`
 
-**Radio exacto: 3 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 3 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1275,9 +1290,9 @@ Y esas tablas las leen:
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/verdicts`](../rutas/api-verdicts.md)
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 3). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 3). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1315,6 +1330,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1358,7 +1374,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**55 rutas se enteran SOLO por el dato**, sin
+**56 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1374,6 +1390,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1423,7 +1440,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:353` · clave completa `app.daily_agg.persist_verdicts`
 
-**Radio exacto: 3 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 3 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1441,9 +1458,9 @@ Y esas tablas las leen:
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/verdicts`](../rutas/api-verdicts.md)
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 3). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 3). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1481,6 +1498,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1524,7 +1542,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**55 rutas se enteran SOLO por el dato**, sin
+**56 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1540,6 +1558,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1589,7 +1608,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:576` · clave completa `app.daily_agg.rollup_open_interest_daily`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1605,9 +1624,9 @@ Y esas tablas las leen:
 
 
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1645,6 +1664,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1688,7 +1708,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**55 rutas se enteran SOLO por el dato**, sin
+**56 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1704,6 +1724,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1753,7 +1774,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/daily_agg.py:631` · clave completa `app.daily_agg.ventana_barrido_5m`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 55** (mas ancha)
+**Radio exacto: 0 rutas** de 75 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1766,9 +1787,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 55 rutas · **cota superior**
+### Por tabla · k<=2 — 56 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (56 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1806,6 +1827,7 @@ Y esas tablas las leen:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)
@@ -1849,7 +1871,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**55 rutas se enteran SOLO por el dato**, sin
+**56 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1865,6 +1887,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/flow/spot-vs-perp`](../rutas/api-flow-spot-vs-perp.md)
 - [`/api/funding-context`](../rutas/api-funding-context.md)

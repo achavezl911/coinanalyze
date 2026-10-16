@@ -168,7 +168,7 @@ const IDS = [
   'estado-declaraciones',
   // la vista de entradas (campana 137)
   'ir-entradas', 'reloj-caja', 'vista-entradas', 'ent-volver', 'ent-aviso', 'ent-cabeza',
-  'ent-decide', 'ent-vivo', 'ent-reciente', 'ent-marco',
+  'ent-decide', 'ent-vivo', 'ent-reciente', 'ent-papel', 'ent-marco',
 ];
 
 function cargaMesa() {

@@ -6,7 +6,7 @@ import json
 import logging
 import time
 from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from datetime import UTC, date, datetime, timedelta
 from ipaddress import ip_address, ip_network
 from pathlib import Path
@@ -59,6 +59,7 @@ from app.db import (
     required_heartbeat_failures,
 )
 from app.delta_profile import delta_profile
+from app.entradas import resultados as entradas_resultados
 from app.entradas import ruta as entradas_ruta
 from app.entradas import vista as entradas_vista
 from app.external_macro import align_with_internal, external_macro_context
@@ -151,15 +152,34 @@ HISTORICAL_INTERVALS = {
 
 # Ventanas que alimentan la jerarquia de perfiles y la hipotesis. Una sola definicion: si
 # /api/profile y /api/hypothesis usaran listas distintas podrian contradecirse.
+async def _asienta_resultados(pool: asyncpg.Pool) -> None:
+    """EL RESULTADO DE CADA DISPARADO SE GUARDA AUNQUE NADIE MIRE (campana 139, E3): cada RESULTADOS_CADA_S,
+    lo FINAL que aun no esta en entrada_resultado (app/entradas/resultados.py). Un fallo se apunta y se
+    reintenta en la vuelta siguiente: ningun resultado se pierde por esperar, porque se guarda desde la base."""
+    while True:
+        try:
+            async with pool.acquire() as conn:
+                await entradas_resultados.asentar_pendientes(conn)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - se apunta y se reintenta
+            LOGGER.exception("entradas: asentar los resultados finales fallo; se reintenta")
+        await asyncio.sleep(entradas_resultados.RESULTADOS_CADA_S)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     pool = await create_pool(SETTINGS, application_name="coinalyze-api")
     app.state.pool = pool
     async with pool.acquire() as conn:
         await heartbeat(conn, "api")
+    asienta = asyncio.create_task(_asienta_resultados(pool))
     try:
         yield
     finally:
+        asienta.cancel()
+        with suppress(asyncio.CancelledError):
+            await asienta
         await pool.close()
 
 
