@@ -78,7 +78,7 @@ REFERENCIA_YA_MEDIDO = {
 # cuenta de papel (E3) con la 139: existen. Lo que falta es lo que sigue faltando.
 FALTAN = [
     {"que": "frecuencia por version contra el equilibrio", "etapa": "E4",
-     "motivo": "sin resueltos no hay frecuencia; hasta n efectiva 30: SIN CALIBRAR · MUESTRA "
+     "motivo": "con menos de 30 DISPARADOS resueltos por celda no hay frecuencia: SIN CALIBRAR · MUESTRA "
      "INSUFICIENTE (n/30), sin porcentaje"},
 ]
 
@@ -129,14 +129,14 @@ def _prosa(ruta: str) -> bool:
             or ".zonas_origen" in ruta or ruta.endswith("fuente"))
 
 
-RESUELTOS_QUE_ES = ("resueltos = DISPARADOS de la celda con resultado FINAL guardado (entrada_resultado, "
-                    f"{RES.RESOLUTOR_VERSION}), con todas sus salidas: tambien los sin entrada y los no "
-                    "evaluables, que se cuentan aparte")
+RESUELTOS_QUE_ES = ("cuenta los DISPARADOS de la celda con resultado FINAL guardado (entrada_resultado, "
+                    f"{RES.RESOLUTOR_VERSION}) con todas sus salidas, tambien los sin entrada y los no evaluables, "
+                    "que ademas se cuentan aparte; la muestra no cuenta los no evaluables")
 RESULTADOS_QUE_ES = (
     "Como acabo cada DISPARADO, por primer toque en las velas de 1 min de su simbolo, con estas convenciones "
     "(su version y su huella). Un resultado PROVISIONAL dice hasta cuando lo es; uno FINAL esta guardado en "
     "entrada_resultado y no se reescribe: cambiar una convencion es una version nueva del resolutor. Ninguna "
-    "frecuencia: hasta n efectiva 30 por celda es la E4 la que no la da.")
+    "frecuencia: con menos de 30 resueltos por celda no se da ninguna, y la da la E4.")
 BARRIDO_QUE_ES = (
     "Descriptivo fijado por la hipotesis de v2 ANTES de su registro, NUNCA una prueba: para cada DISPARADO de v2 "
     "que toca su stop, la SOMBRA de v1 del mismo episodio (misma clave, mismo inicio y misma vela) y si su plan "

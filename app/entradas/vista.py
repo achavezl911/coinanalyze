@@ -18,7 +18,15 @@ para un plan, por que una celda esta vacia, que no puede hacer el ancla, que fal
 
 LO QUE NO SIRVE: ninguna fraccion ni tasa de aciertos. Pasa por fracciones_servidas() como
 /api/entradas (tests/test_entradas_vista.py). El rotulo de muestra sale del bloque lectura del
-reglamento, con la n servida: hoy los resueltos son 0 (la E3 no existe).
+reglamento, con la n servida.
+
+EL RESULTADO (campana 139, E3). Cada DISPARADO lleva como acabo -o hasta que vela se sabe que no ha
+tocado nada-, compuesto AQUI del resultado del resolutor (el FINAL guardado o el PROVISIONAL de las
+velas de ahora: ruta.construir): rotulo, hora, firmeza y cifras, ya escritos. Un DISPARADO que ya acabo
+no esta en «lo vivo» en ninguna respuesta posterior a la llegada de la vela que lo acaba. «Lo reciente»
+ensena ademas los ultimos DISPARADOS del activo anteriores a su ventana, en filas cortas con su
+resultado (con el plan entero no caben en el presupuesto de K106). La cuenta de papel de cada version
+va entera salvo sus operaciones, de las que van las ultimas OPERACIONES_EN_PANTALLA (todas: /api/entradas).
 """
 
 from __future__ import annotations
@@ -29,6 +37,8 @@ from typing import Any
 
 from app.entradas import foto as F
 from app.entradas import reglamento as R
+from app.entradas import resolutor as RES
+from app.entradas import resultados as RS
 from app.entradas import ruta as RUTA
 
 ESQUEMA = "mesa.entradas.v1"
@@ -75,8 +85,9 @@ QUE_ES = (
     "no guarda claves y no mueve fondos."
 )
 VIVO_QUE_ES = (
-    "VIVO quiere decir que su reloj no ha caducado. Si el precio ya toco el stop, el objetivo o la "
-    "invalidacion NO SE SABE aqui: eso es el resultado, y falta (E3)."
+    "VIVO quiere decir que su reloj no ha caducado y que, en las velas de 1 min que ya estan en la base, no ha "
+    "tocado su stop, su T1 ni su invalidacion: cada plan dice hasta que hora se sabe. Un DISPARADO que ya acabo "
+    "no esta aqui: esta abajo, en lo reciente, con su salida y su hora."
 )
 # El estado que la pantalla pone en cada plan vivo. Los dos ultimos los decide el RELOJ del
 # navegador (una cuenta atras que llega a cero, una edad que pasa su tope): las palabras son de aqui.
@@ -86,10 +97,40 @@ ROTULOS_VIVO = {
     "disparado_caducado": "DISPARADO · CADUCADO",
     "no_se_sabe": "YA NO SE SABE",
 }
-FALTA_RESULTADO = (
-    "De lo que el precio hizo despues de cada plan esta pantalla no dice nada: el resultado es lo "
-    "que falta (E3)."
+RESULTADO_QUE_ES = (
+    "Cada DISPARADO dice como acabo: su salida y su hora, por primer toque en las velas de 1 min de su simbolo "
+    "(las convenciones del resolutor, abajo). PROVISIONAL quiere decir que sus velas aun pueden reescribirse, y "
+    "dice hasta cuando. Es lo que le paso a UN plan: aqui ninguna cifra suma planes."
 )
+ROTULO_SALIDA = {
+    RES.OBJETIVO: "OBJETIVO (T1)",
+    RES.STOP: "STOP",
+    RES.MISMA_VELA: "STOP (T1 en la misma vela)",
+    RES.INVALIDADO: "INVALIDADO",
+    RES.CADUCADO: "CADUCADO",
+    RES.SIN_ENTRADA: "SIN ENTRADA",
+    RES.NO_EVALUABLE: "NO EVALUABLE",
+    RES.LIMITE_NO_LLENADA: "LIMITE NO LLENADA",
+}
+A_FAVOR_QUE_ES = ("lo que dentro de un minuto no se puede saber se cuenta en contra; este es el caso a favor, "
+                  "fuera de toda cuenta")
+ANTERIORES_N = 10
+ANTERIORES_QUE_ES = (f"los ultimos {ANTERIORES_N} DISPARADOS de este activo y de esta version anteriores a la "
+                     "ventana, con su resultado; el plan entero de cada uno, en /api/entradas?foto=true")
+OPERACIONES_EN_PANTALLA = 20
+PAPEL_QUE_ES = (
+    "CUENTA DE PAPEL de cada version en curso: su bloque papel tal como esta registrado, sobre los resultados "
+    "de sus DISPARADOS de los tres activos (nunca una SOMBRA). Sin apalancamiento: toma cada DISPARADO por orden "
+    "de registro si cabe, con la cantidad hacia abajo al paso de Bybit, y apunta los saltados con su motivo; "
+    "funding solo adverso. No mueve fondos ni ejecuta nada.")
+_ANTERIORES_SQL = """
+SELECT * FROM (
+    SELECT registro_id, version, familia, perfil, lado, symbol, clave, inicio_episodio, estado, vela_cierre,
+           registered_at, caduca_en,
+           row_number() OVER (PARTITION BY version ORDER BY vela_cierre DESC, registro_id DESC) AS n
+    FROM entrada_registro WHERE estado = 'DISPARADO' AND symbol = $1 AND vela_cierre < $2) x
+WHERE n <= $3 ORDER BY vela_cierre DESC, registro_id DESC
+"""
 # LA TABLA DE RECUENTOS (campana 137, remate R3). Su primera columna se llamaba VIGILANDO, como el estado
 # de un plan vivo, y «VIGILANDO 264» se leia «264 planes vigilados ahora». Lo que cuenta es otra cosa y sale
 # del registro: un episodio tiene UNA fila VIGILANDO y UNA terminal (app/entradas/registro.py, insertar).
@@ -313,6 +354,105 @@ def _vigilando(fila: dict[str, Any], precio: dict[str, Any]) -> dict[str, Any]:
     return plan
 
 
+def _hora(iso: str | None) -> str | None:
+    """La hora de un instante servido como la pinta la vista: «MM-DD HH:MMZ»."""
+    return None if not iso else f"{iso[5:10]} {iso[11:16]}Z"
+
+
+def _rotulo_de(r: dict[str, Any]) -> str:
+    rotulo = ROTULO_SALIDA[r["salida"]]
+    return f"{rotulo} · {_hora(r['instante'])}" if r.get("instante") else rotulo
+
+
+def _firmeza(r: dict[str, Any]) -> str:
+    if r["firmeza"] == RES.FINAL:
+        return "FINAL"
+    if r.get("asentado_en"):
+        return f"PROVISIONAL hasta las {_hora(r['asentado_en'])}"
+    return f"PROVISIONAL: sus velas de los ultimos {int(RES.ASENTAMIENTO.total_seconds() // 60)} min aun pueden reescribirse"
+
+
+def _resultado(r: dict[str, Any] | None) -> dict[str, Any]:
+    """Lo que la pantalla pinta del resultado de UN DISPARADO, ya escrito. `vivo` es lo unico que no es
+    texto: lo lee el reloj de la vista para no llamar VIVO a lo que ya acabo."""
+    if not r:
+        return {"vivo": False, "rotulo": "SIN RESULTADO", "frase": "el resolutor no devolvio nada para este plan"}
+    vivo = r["estado"] == RES.ABIERTO
+    if vivo:
+        rotulo = "VIVO"
+        frase = (f"sin tocar stop, T1 ni invalidacion en las velas de 1 min hasta las {_hora(r['sabido_hasta'])}"
+                 if r.get("sabido_hasta") else r.get("motivo"))
+    elif r["estado"] == RES.ESPERANDO:
+        rotulo, frase = "ESPERANDO VELAS", r.get("motivo")
+    else:
+        rotulo, frase = _rotulo_de(r), r.get("motivo")
+    pnl, ent = r.get("pnl") or {}, r.get("entrada") or {}
+    salida: dict[str, Any] = {"vivo": vivo, "rotulo": rotulo, "frase": frase, "firmeza": _firmeza(r)}
+    if ent:
+        salida["entrada"] = {"instante": ent.get("instante"), "precio": _precio(ent.get("precio"))}
+    if r.get("precio") is not None:
+        salida["precio_salida"] = _precio(r["precio"])
+    if pnl:
+        salida.update(r_neto=_r(pnl.get("r_neto"), 2), bps_netos=_r(pnl.get("bps_netos"), 1))
+    for t in ("t2", "t3"):
+        x = r.get(t)
+        if x and not vivo:
+            salida[t] = {"precio": _precio(x["precio"]), "frase": (
+                f"cruzado a las {_hora(x['instante'])}" if x["cruzado"] else
+                "no cruzado" if x["cruzado"] is False else "no se sabe: falto una vela")}
+    if r.get("excursion") and not vivo:
+        salida["excursion"] = {k: _r(v, 1) for k, v in r["excursion"].items()}
+    favor = r.get("a_favor")
+    if favor:
+        x = favor.get("hipotetico_a_mercado") or favor
+        salida["a_favor"] = {
+            "rotulo": ("HIPOTETICO A MERCADO: " if "hipotetico_a_mercado" in favor else "")
+            + (ROTULO_SALIDA.get(x.get("salida")) or "SIN SALIDA"),
+            "precio": _precio(x.get("precio")), "r_neto": _r((x.get("pnl") or {}).get("r_neto"), 2),
+            "frase": favor.get("que_es") or A_FAVOR_QUE_ES}
+    return salida
+
+
+def _fila_corta(fila: dict[str, Any]) -> dict[str, Any]:
+    """Un DISPARADO anterior a la ventana: quien es y como acabo."""
+    return {"registro_id": fila["registro_id"], "version": fila["version"], "familia": fila["familia"],
+            "perfil": fila["perfil"], "lado": fila["lado"], "vela_cierre": RES.iso(RES._t(fila["vela_cierre"])),
+            "caduca_en": RES.iso(RES._t(fila["caduca_en"])), "resultado": _resultado(fila.get("resultado"))}
+
+
+def _papel(cuentas: dict[str, Any], versiones: list[dict[str, str]]) -> dict[str, Any]:
+    """La cuenta de papel de cada version en curso, ya escrita: saldo, n, cada operacion con su lote, su R y su
+    P&L, los saltados con su motivo y el funding cobrado."""
+    por_version = []
+    for v in versiones:
+        c = cuentas.get(v["version"])
+        if c is None:
+            continue
+        ops = c["operaciones"][-OPERACIONES_EN_PANTALLA:]
+        por_version.append({
+            "version": v["version"], "papel": v["papel"], "capital_usd": c["capital_usd"],
+            "saldo_usd": c["saldo_usd"], "n": c["n"], "abiertas": c["abiertas"], "funding_usd": c["funding_usd"],
+            "meta_usd": c["meta_usd"], "meta": c["meta"], "no_dimensiona": c["no_dimensiona"],
+            "firmeza": "FINAL" if c["firmeza"] == RES.FINAL else (
+                f"PROVISIONAL hasta las {_hora(c['provisional_hasta'])}" if c.get("provisional_hasta") else
+                "PROVISIONAL: hay operaciones abiertas"),
+            "recortada": (f"se ven las ultimas {OPERACIONES_EN_PANTALLA} de sus operaciones: todas, en "
+                          "/api/entradas") if len(c["operaciones"]) > OPERACIONES_EN_PANTALLA else None,
+            "operaciones": [{
+                "registro_id": op["registro_id"], "activo": op["symbol"].split("USDT")[0],
+                "vela_cierre": op["vela_cierre"], "perfil": op["perfil"], "lado": op["lado"],
+                "rotulo": _rotulo_de({"salida": op["salida"], "instante": op["instante_salida"]}) if op["salida"]
+                else "ABIERTA", "firmeza": "FINAL" if op["firmeza"] == RES.FINAL else "PROVISIONAL",
+                "lote": op["lote"], "precio_entrada": _precio(op["precio_entrada"]),
+                "precio_salida": _precio(op["precio_salida"]), "r_neto": _r(op["r_neto"], 2),
+                "pnl_usd": op["pnl_usd"], "comision_usd": op["comision_usd"], "funding_usd": op["funding_usd"],
+                "funding_sin_medir": op["funding_sin_medir"] or None} for op in ops],
+            "saltados": [{"registro_id": s["registro_id"], "activo": s["symbol"].split("USDT")[0],
+                          "vela_cierre": s["vela_cierre"], "motivo": s["motivo"]} for s in c["saltados"]],
+        })
+    return {"que_es": PAPEL_QUE_ES, "por_version": por_version}
+
+
 def _disparado(fila: dict[str, Any], as_of: datetime) -> dict[str, Any]:
     """El plan ENTERO tal como su foto lo guarda. Lo unico que se anade es el coste de cada pata
     como fraccion del objetivo (sus bps entre la distancia a T1, las dos de la foto)."""
@@ -348,6 +488,7 @@ def _disparado(fila: dict[str, Any], as_of: datetime) -> dict[str, Any]:
         ],
         "coste_ida_y_vuelta_x_objetivo": _fraccion((p.get("cocientes") or {}).get("coste_objetivo")),
         "requisitos": _requisitos(foto),
+        "resultado": _resultado(fila.get("resultado")),
     })
     plan["invalidacion"]["nivel"] = _precio(plan["invalidacion"]["nivel"])
     return plan
@@ -470,13 +611,19 @@ async def construir(conn, *, symbol: str, activo: str, palabra_de_decide) -> dic
         doc = R.cargar_valido()
     except Exception:  # noqa: BLE001 - ruta.construir ya sirve el motivo en reglamento.motivo
         doc = None
+    anteriores = []
+    if registro.get("disponible"):
+        desde = datetime.fromisoformat(registro["parametros"]["desde"])
+        anteriores = [dict(f) for f in await conn.fetch(_ANTERIORES_SQL, symbol, desde, ANTERIORES_N)]
+        resultados = await RS.de_filas(conn, anteriores, datetime.fromisoformat(registro["as_of"]))
+        anteriores = [{**f, "resultado": resultados.get(f["registro_id"])} for f in anteriores]
     return componer(registro, symbol=symbol, activo=activo, precio=precio, decide=decide,
-                    decide_error=error, doc=doc)
+                    decide_error=error, doc=doc, anteriores=anteriores)
 
 
 def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict[str, Any],
              decide: dict[str, Any] | None, decide_error: str | None,
-             doc: dict[str, Any] | None) -> dict[str, Any]:
+             doc: dict[str, Any] | None, anteriores: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """De lo que sirve ruta.construir(foto=True) a lo que la vista pinta. Sin base: se prueba sola."""
     base = {
         "esquema": ESQUEMA,
@@ -533,7 +680,7 @@ def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict
                     "vigilando": vigilando,
                     "sin_planes": None if disparados or vigilando else
                     f"{v['version']} no tiene ningun plan vivo en {perfil} · {lado}: ningun episodio "
-                    "abierto ni DISPARADO sin caducar",
+                    "abierto ni DISPARADO vivo (uno que ya acabo esta en lo reciente, con su salida)",
                 })
             celdas.append({"perfil": perfil, "lado": lado, "por_version": por_version})
 
@@ -543,7 +690,9 @@ def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict
         disparados = _orden([{**_disparado(f, as_of), "vivo": f["registro_id"] in vivos_id}
                              for f in _de(filas["disparados"], v["version"])])
         sombras = _orden([_sombra(f) for f in _de(filas["sombras"], v["version"])])
+        previos = [_fila_corta(f) for f in (anteriores or []) if f["version"] == v["version"]]
         bloque = {**v, "disparados": disparados, "sombras": sombras, "no_puede": None,
+                  "anteriores": previos, "anteriores_que_es": ANTERIORES_QUE_ES if previos else None,
                   "sin_planes": None if disparados or sombras else
                   f"{v['version']} no tiene ningun DISPARADO ni SOMBRA de este activo en la ventana"}
         if v["version"] == ancla and v["papel"] == "ANCLA":
@@ -581,7 +730,7 @@ def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict
         "vivo": {"que_es": VIVO_QUE_ES, "rotulos": ROTULOS_VIVO, "celdas": celdas},
         "reciente": {
             "ventana": {"desde": registro["parametros"]["desde"], "hasta": registro["parametros"]["hasta"]},
-            "falta_el_resultado": FALTA_RESULTADO,
+            "que_es_el_resultado": RESULTADO_QUE_ES,
             "recortada": f"la ventana trae el tope de {LIMITE} planes: puede haber mas antiguos que "
             "no se ven" if n_ventana >= LIMITE else None,
             "por_version": reciente,
@@ -601,7 +750,19 @@ def componer(registro: dict[str, Any], *, symbol: str, activo: str, precio: dict
             "cuentas_rotulos": CUENTAS_ROTULOS,
             "resueltos_motivo": motivo_comun,
             "cuentas": [{**{k: v for k, v in c.items() if k != "resueltos_motivo" or motivo_comun is None},
-                         "muestra": _muestra(doc, c["resueltos"])} for c in registro["cuentas"]],
+                         "muestra": _muestra(doc, c["resueltos"] - c.get("no_evaluables", 0))}
+                        for c in registro["cuentas"]],
             "faltan": registro["faltan"],
+            "resolutor": _resolutor(registro.get("resultados") or {}),
         },
+        "papel": _papel(registro.get("papel") or {}, versiones),
     }
+
+
+def _resolutor(r: dict[str, Any]) -> dict[str, Any] | None:
+    """Las convenciones con que el resolutor da cada resultado, con su version y su huella: las sirve la ruta."""
+    if not r:
+        return None
+    return {"version": r["resolutor"], "huella": r["huella_convenciones"], "frase": r["que_es"],
+            "convenciones": [{"nombre": k, "regla": v} for k, v in r["convenciones"].items()],
+            "cambios_e3": [{"que": x} for x in r["cambios_e3"]]}

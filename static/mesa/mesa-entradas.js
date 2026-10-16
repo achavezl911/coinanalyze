@@ -7,7 +7,10 @@
  * Si algo hace falta y no llega, se anade alli: aqui no se deduce.
  *
  * SON PLANES APUNTADOS ANTES DE SABER COMO ACABAN. No es una senal. Esta vista no pinta ninguna
- * fraccion ni tasa de aciertos, y de lo que el precio hizo despues de un plan no dice nada.
+ * fraccion ni tasa de aciertos. De lo que el precio hizo despues de cada DISPARADO pinta su RESULTADO
+ * (E3, campana 139) tal como llega: es lo que le paso a UN plan, se escribe como texto, y ni el color
+ * ni el orden de una fila dependen de el. Un DISPARADO que ya acabo no se pinta VIVO: su chip dice su
+ * salida, servida.
  *
  * TODA LA PANTALLA SALE DE UNA RESPUESTA, la ultima buena. Por eso lo pintado se puede comparar
  * con ella nodo a nodo, y por eso un refresco que falla no deja media pantalla de otro instante.
@@ -17,6 +20,7 @@
  *     data-cifra="<clase>"      ese valor es una CIFRA, de una de las clases que la red permite
  *     data-calc="edad|cuenta"   lo calcula el reloj de aqui, desde el instante de data-instante
  *     data-plan="<id>"          un plan; data-vivo dice si la pantalla lo esta dando por vivo
+ *     data-resultado="vivo|acabado"  lo que dice su resultado servido; con «acabado», data-rotulo
  *     data-aviso="<cual>"       lo que se dice ARRIBA cuando no hay dato o el generador no late
  */
 
@@ -110,6 +114,7 @@ const FMT = {
   r: (v) => num(v, 2),
   p: (v) => num(v, 3),
   dias: (v) => num(v, 1) + ' d',
+  usd: (v) => num(v, 2) + ' USD',
 };
 
 function calc(tipo, iso) {
@@ -136,7 +141,7 @@ function oMotivo(nodo, valor, ruta, motivo) {
 
 /* Todos los nodos de la vista que casan, buscados en cada seccion (no se supone como anidan). */
 function entBusca(R, sel) {
-  return [R.cabeza, R.decide, R.vivo, R.reciente, R.marco]
+  return [R.cabeza, R.decide, R.vivo, R.reciente, R.papel, R.marco]
     .reduce((todos, n) => todos.concat(n ? Array.from(n.querySelectorAll(sel)) : []), []);
 }
 
@@ -149,6 +154,7 @@ function entNodos() {
     decide: g('ent-decide'),
     vivo: g('ent-vivo'),
     reciente: g('ent-reciente'),
+    papel: g('ent-papel'),
     marco: g('ent-marco'),
   };
 }
@@ -210,19 +216,62 @@ function entLinea(rotulo, ...trozos) {
   return junta(el('div', 'ent-linea'), el('span', 'rotulo', rotulo), ...trozos);
 }
 
-/* EL PLAN ENTERO de un DISPARADO, tal como su foto lo guarda. `vivo` solo decide si lleva la
- * cuenta atras corriendo o la hora en que caduco. */
+/* COMO ACABO UN DISPARADO (E3), tal como lo sirve la ruta: rotulo, firmeza, frase y cifras ya escritos.
+ * Nada se deduce aqui, y la fila no cambia de color con el: el resultado es TEXTO (K106 E6). */
+function entResultado(x, r) {
+  const l = entLinea('resultado', sv('b', 'ent-res', r + '.rotulo', x.rotulo));
+  if (x.firmeza) junta(l, ' · ', sv('span', 'ent-firmeza', r + '.firmeza', x.firmeza));
+  if (x.frase) junta(l, ' · ', sv('span', 'motivo', r + '.frase', x.frase));
+  if (x.entrada) {
+    junta(l, ' · entrada real ', cf('precio', r + '.entrada.precio', x.entrada.precio, FMT.precio), ' a las ',
+          sv('span', 'mono', r + '.entrada.instante', entHora(x.entrada.instante, true)));
+  }
+  if (!esNada(x.precio_salida)) junta(l, ' · salida ', cf('precio', r + '.precio_salida', x.precio_salida, FMT.precio));
+  if (!esNada(x.r_neto)) junta(l, ' · R neto ', cf('r', r + '.r_neto', x.r_neto, FMT.r));
+  if (!esNada(x.bps_netos)) junta(l, ' (', cf('bps-resultado', r + '.bps_netos', x.bps_netos, FMT.bps1), ' netos)');
+  ['t2', 't3'].forEach((t) => {
+    if (x[t]) {
+      junta(l, ' · ', t.toUpperCase(), ' ', cf('precio', r + '.' + t + '.precio', x[t].precio, FMT.precio), ' ',
+            sv('span', null, r + '.' + t + '.frase', x[t].frase));
+    }
+  });
+  if (x.excursion) {
+    junta(l, ' · excursión a favor ', cf('bps', r + '.excursion.favor_bps', x.excursion.favor_bps, FMT.bps1),
+          ', en contra ', cf('bps', r + '.excursion.contra_bps', x.excursion.contra_bps, FMT.bps1));
+  }
+  if (x.a_favor) {
+    const a = x.a_favor;
+    junta(l, ' · caso a favor: ', sv('span', null, r + '.a_favor.rotulo', a.rotulo), ' a ',
+          cf('precio', r + '.a_favor.precio', a.precio, FMT.precio), ', R ', cf('r', r + '.a_favor.r_neto', a.r_neto, FMT.r),
+          ' — ', sv('span', 'motivo', r + '.a_favor.frase', a.frase));
+  }
+  return l;
+}
+
+/* Lo que el reloj de la vista lee de un DISPARADO: si su resultado servido dice que ya acabo, y su rotulo. */
+function entMarcaResultado(f, x) {
+  const res = x || {};
+  f.setAttribute('data-resultado', res.vivo ? 'vivo' : 'acabado');
+  f.setAttribute('data-rotulo', res.rotulo || '');
+}
+
+/* EL PLAN ENTERO de un DISPARADO, tal como su foto lo guarda, y su resultado. `vivo` solo decide si
+ * lleva la cuenta atras corriendo o la hora en que caduco. */
 function entDisparado(p, r, papel, enVivo) {
   const f = entFila(p, r, 'disparado', papel);
   f.setAttribute('data-caduca', p.caduca_en || '');
+  entMarcaResultado(f, p.resultado);
   const chip = el('span', 'ent-chip');
   chip.setAttribute('data-chip', 'disparado');
   junta(f, chip, ' ', sv('span', null, r + '.perfil', p.perfil), ' · ', sv('span', null, r + '.lado', p.lado), ' · ',
         entZona(p, r), ' · ');
-  junta(f, calc('cuenta', p.caduca_en), ' (', sv('span', 'mono', r + '.caduca_en', entHora(p.caduca_en)), ')');
+  // Un DISPARADO que ya acabo no lleva cuenta atras: su reloj ya no dice nada de el, solo hasta cuando iba.
+  if (p.resultado && !p.resultado.vivo) junta(f, 'su reloj iba hasta ', sv('span', 'mono', r + '.caduca_en', entHora(p.caduca_en)));
+  else junta(f, calc('cuenta', p.caduca_en), ' (', sv('span', 'mono', r + '.caduca_en', entHora(p.caduca_en)), ')');
   junta(f, ' · vela ', sv('span', 'mono', r + '.vela_cierre', entHora(p.vela_cierre)),
         ' · registrado ', sv('span', 'mono', r + '.registered_at', entHora(p.registered_at, true)));
   if (!enVivo) f.setAttribute('data-ventana', p.vivo ? 'vivo' : 'caducado');
+  if (p.resultado) f.appendChild(entResultado(p.resultado, r + '.resultado'));
 
   const ref = p.entrada.referencia || {};
   f.appendChild(entLinea(
@@ -275,6 +324,22 @@ function entDisparado(p, r, papel, enVivo) {
     req.appendChild(li);
   });
   f.appendChild(junta(el('div', 'ent-linea'), el('span', 'rotulo', 'requisitos'), req));
+  return f;
+}
+
+/* UN DISPARADO ANTERIOR A LA VENTANA: una fila corta con su resultado; su plan entero esta en /api/entradas. */
+function entAnterior(p, r, papel) {
+  const f = entFila(p, r, 'disparado', papel);
+  f.setAttribute('data-caduca', p.caduca_en || '');
+  f.setAttribute('data-ventana', p.resultado && p.resultado.vivo ? 'vivo' : 'caducado');
+  f.setAttribute('data-anterior', 'si');
+  entMarcaResultado(f, p.resultado);
+  const chip = el('span', 'ent-chip');
+  chip.setAttribute('data-chip', 'disparado');
+  junta(f, chip, ' ', sv('span', null, r + '.perfil', p.perfil), ' · ', sv('span', null, r + '.lado', p.lado),
+        ' · vela ', sv('span', 'mono', r + '.vela_cierre', entHora(p.vela_cierre)),
+        ' · caduca ', sv('span', 'mono', r + '.caduca_en', entHora(p.caduca_en)));
+  f.appendChild(entResultado(p.resultado || {}, r + '.resultado'));
   return f;
 }
 
@@ -391,7 +456,7 @@ function entReciente(R, d) {
   const v0 = d.reciente.ventana;
   junta(caja, junta(el('p', 'pie'), 'ventana servida: de ', sv('span', 'mono', 'reciente.ventana.desde', entHora(v0.desde)),
                     ' a ', sv('span', 'mono', 'reciente.ventana.hasta', entHora(v0.hasta)), ' · ',
-                    sv('span', 'ent-falta', 'reciente.falta_el_resultado', d.reciente.falta_el_resultado)));
+                    sv('span', 'ent-falta', 'reciente.que_es_el_resultado', d.reciente.que_es_el_resultado)));
   if (d.reciente.recortada) caja.appendChild(sv('p', 'motivo', 'reciente.recortada', d.reciente.recortada));
   d.reciente.por_version.forEach((v, j) => {
     const rv = 'reciente.por_version[' + j + ']';
@@ -402,9 +467,75 @@ function entReciente(R, d) {
                    junta(el('h3'), sv('span', null, rv + '.papel', v.papel), ' · ', sv('span', 'ent-ver', rv + '.version', v.version))));
     if (v.no_puede) b.appendChild(sv('p', 'ent-ancla', rv + '.no_puede.frase', v.no_puede.frase));
     v.disparados.forEach((p, n) => b.appendChild(entDisparado(p, rv + '.disparados[' + n + ']', v.papel, false)));
+    // los DISPARADOS anteriores a la ventana, detras de los de la ventana y delante de las SOMBRAS: el orden es
+    // por estado y por hora (K106 E6), y todos son mas viejos que los de la ventana
+    if ((v.anteriores || []).length) {
+      b.appendChild(sv('p', 'pie', rv + '.anteriores_que_es', v.anteriores_que_es));
+      v.anteriores.forEach((p, n) => b.appendChild(entAnterior(p, rv + '.anteriores[' + n + ']', v.papel)));
+    }
     v.sombras.forEach((p, n) => b.appendChild(entSombra(p, rv + '.sombras[' + n + ']', v.papel)));
     if (v.sin_planes) b.appendChild(sv('p', 'motivo', rv + '.sin_planes', v.sin_planes));
     caja.appendChild(b);
+  });
+}
+
+/* LA CUENTA DE PAPEL de cada version, tal como la sirve la ruta: no ejecuta nada ni mueve fondos. */
+function entPapel(R, d) {
+  const caja = vaciar(R.papel);
+  if (!caja || !d.papel) return;
+  caja.appendChild(sv('p', 'pie', 'papel.que_es', d.papel.que_es));
+  (d.papel.por_version || []).forEach((c, j) => {
+    const rc = 'papel.por_version[' + j + ']';
+    const t = el('section', 'tarjeta ent-bloque papel-' + String(c.papel).split(' ')[0]);
+    t.setAttribute('data-papel-version', c.version);
+    junta(t, junta(el('div', 'panel-rotulo'), junta(el('h3'), 'cuenta de papel · ', sv('span', null, rc + '.papel', c.papel),
+                                                     ' · ', sv('span', 'ent-ver', rc + '.version', c.version))));
+    t.appendChild(entLinea('saldo', cf('usd', rc + '.saldo_usd', c.saldo_usd, FMT.usd), ' · capital ',
+                           cf('usd', rc + '.capital_usd', c.capital_usd, FMT.usd), ' · ', sv('span', null, rc + '.firmeza', c.firmeza)));
+    t.appendChild(entLinea('operaciones', 'cerradas ', cf('recuento', rc + '.n', c.n), ' · abiertas ',
+                           cf('recuento', rc + '.abiertas', c.abiertas), ' · funding cobrado ',
+                           cf('usd', rc + '.funding_usd', c.funding_usd, FMT.usd)));
+    t.appendChild(entLinea('meta', cf('usd', rc + '.meta_usd', c.meta_usd, FMT.usd), ' · ', sv('span', 'motivo', rc + '.meta', c.meta)));
+    if (c.no_dimensiona) t.appendChild(sv('p', 'ent-ancla', rc + '.no_dimensiona', c.no_dimensiona));
+    if (c.recortada) t.appendChild(sv('p', 'motivo', rc + '.recortada', c.recortada));
+    if ((c.operaciones || []).length) {
+      const tabla = el('table', 'rejilla ent-cuentas');
+      const cab = el('tr');
+      ['registro', 'activo', 'vela', 'perfil', 'lado', 'salida', 'firmeza', 'lote', 'entrada', 'salida a', 'R neto',
+       'P&L', 'comisión', 'funding'].forEach((x) => cab.appendChild(el('th', null, x)));
+      tabla.appendChild(cab);
+      c.operaciones.forEach((op, i) => {
+        const ro = rc + '.operaciones[' + i + ']';
+        const tr = el('tr');
+        const td = (...x) => tr.appendChild(junta(el('td'), ...x));
+        td(sv('span', 'mono', ro + '.registro_id', op.registro_id));
+        td(sv('span', null, ro + '.activo', op.activo));
+        td(sv('span', 'mono', ro + '.vela_cierre', entHora(op.vela_cierre)));
+        td(sv('span', null, ro + '.perfil', op.perfil));
+        td(sv('span', null, ro + '.lado', op.lado));
+        td(sv('span', null, ro + '.rotulo', op.rotulo));
+        td(sv('span', null, ro + '.firmeza', op.firmeza));
+        td(cf('cantidad', ro + '.lote', op.lote, (v) => entPrecio(v) + ' ' + op.activo));
+        td(cf('precio', ro + '.precio_entrada', op.precio_entrada, FMT.precio));
+        td(cf('precio', ro + '.precio_salida', op.precio_salida, FMT.precio));
+        td(cf('r', ro + '.r_neto', op.r_neto, FMT.r));
+        td(cf('usd', ro + '.pnl_usd', op.pnl_usd, FMT.usd));
+        td(cf('usd', ro + '.comision_usd', op.comision_usd, FMT.usd));
+        td(cf('usd', ro + '.funding_usd', op.funding_usd, FMT.usd),
+           op.funding_sin_medir ? junta(el('span', 'motivo'), ' sin medir: ',
+                                        sv('span', 'mono', ro + '.funding_sin_medir', op.funding_sin_medir.join(', '))) : null);
+        tabla.appendChild(tr);
+      });
+      t.appendChild(tabla);
+    }
+    (c.saltados || []).forEach((s, i) => {
+      const rs = rc + '.saltados[' + i + ']';
+      t.appendChild(entLinea('saltado', sv('span', 'mono', rs + '.registro_id', s.registro_id), ' ',
+                             sv('span', null, rs + '.activo', s.activo), ' · vela ',
+                             sv('span', 'mono', rs + '.vela_cierre', entHora(s.vela_cierre)), ' · ',
+                             sv('span', 'motivo', rs + '.motivo', s.motivo)));
+    });
+    caja.appendChild(t);
   });
 }
 
@@ -460,13 +591,14 @@ function entMarco(R, d) {
   const th = (x) => cab.appendChild(junta(el('th'), x));
   ['familia', 'perfil', 'lado', 'versión'].forEach(th);
   cols.forEach((k) => th(sv('span', null, 'marco.cuentas_rotulos.' + k, (m.cuentas_rotulos || {})[k])));
-  ['RESUELTOS', 'muestra'].forEach(th);
+  ['RESUELTOS', 'SIN ENTRADA', 'NO EVALUABLES', 'muestra'].forEach(th);
   tabla.appendChild(cab);
   (m.cuentas || []).forEach((q, i) => {
     const rq = 'marco.cuentas[' + i + ']';
     const tr = el('tr');
     ['familia', 'perfil', 'lado', 'version'].forEach((k) => tr.appendChild(junta(el('td'), sv('span', null, rq + '.' + k, q[k]))));
-    cols.concat(['resueltos']).forEach((k) => tr.appendChild(junta(el('td'), cf('recuento', rq + '.' + k, q[k]))));
+    cols.concat(['resueltos', 'sin_entrada', 'no_evaluables'])
+      .forEach((k) => tr.appendChild(junta(el('td'), cf('recuento', rq + '.' + k, q[k]))));
     const mu = q.muestra || {};
     const td = el('td');
     if (mu.rotulo) {
@@ -486,6 +618,23 @@ function entMarco(R, d) {
     if (q.resueltos_motivo) tc.appendChild(sv('p', 'pie', 'marco.cuentas[' + i + '].resueltos_motivo', q.resueltos_motivo));
   });
   caja.appendChild(tc);
+
+  const rs = m.resolutor;
+  if (rs) {
+    const tr = el('section', 'tarjeta');
+    tr.appendChild(entLinea('resolutor', sv('b', 'mono', 'marco.resolutor.version', rs.version), ' · huella de sus convenciones ',
+                            sv('span', 'mono', 'marco.resolutor.huella', rs.huella)));
+    tr.appendChild(sv('p', 'ent-hipotesis', 'marco.resolutor.frase', rs.frase));
+    const ul = el('ul', 'ent-convenciones');
+    rs.convenciones.forEach((c, i) => {
+      const rr = 'marco.resolutor.convenciones[' + i + ']';
+      ul.appendChild(junta(el('li'), sv('span', 'mono', rr + '.nombre', c.nombre), ': ', sv('span', null, rr + '.regla', c.regla)));
+    });
+    tr.appendChild(ul);
+    tr.appendChild(el('div', 'rotulo', 'lo que cambia de la propuesta E3 de la COLA'));
+    rs.cambios_e3.forEach((c, i) => tr.appendChild(sv('p', 'pie', 'marco.resolutor.cambios_e3[' + i + '].que', c.que)));
+    caja.appendChild(tr);
+  }
 
   const tf = el('section', 'tarjeta');
   tf.appendChild(el('div', 'rotulo', 'lo que falta'));
@@ -549,19 +698,26 @@ function entTicTac() {
   });
 
   const rot = d.vivo.rotulos;
+  // UN DISPARADO QUE YA ACABO NO SE LLAMA VIVO: si su resultado servido lo dice, su chip es su salida
+  // (data-rotulo, servido), y ni la cuenta atras ni la falta de dato lo devuelven a la vida.
   R.vivo.querySelectorAll('[data-plan]').forEach((f) => {
     const disparado = f.getAttribute('data-tipo') === 'disparado';
+    const acabado = disparado && f.getAttribute('data-resultado') === 'acabado';
     const caducado = disparado && entResta(f.getAttribute('data-caduca')) <= 0;
-    const vivo = noSeSabe ? 'no-se-sabe' : caducado ? 'no' : 'si';
+    const vivo = noSeSabe ? 'no-se-sabe' : acabado || caducado ? 'no' : 'si';
     f.setAttribute('data-vivo', vivo);
     const chip = f.querySelector('[data-chip]');
     if (chip) {
-      chip.textContent = noSeSabe ? rot.no_se_sabe
+      chip.textContent = acabado ? f.getAttribute('data-rotulo') : noSeSabe ? rot.no_se_sabe
         : !disparado ? rot.vigilando : caducado ? rot.disparado_caducado : rot.disparado_vivo;
     }
   });
   R.reciente.querySelectorAll('[data-chip]').forEach((chip) => {
     const f = chip.parentNode;
+    if (f.getAttribute('data-resultado') === 'acabado') {
+      chip.textContent = f.getAttribute('data-rotulo');
+      return;
+    }
     const vivo = f.getAttribute('data-ventana') === 'vivo' && entResta(f.getAttribute('data-caduca')) > 0;
     chip.textContent = vivo && !noSeSabe ? rot.disparado_vivo : vivo ? rot.no_se_sabe : rot.disparado_caducado;
   });
@@ -588,6 +744,7 @@ function pintarEntradas(sobre) {
     entDecide(R, d);
     entVivo(R, d);
     entReciente(R, d);
+    entPapel(R, d);
     entMarco(R, d);
   } else {
     // LA RUTA NO CONTESTA, O CONTESTA QUE NO ESTA DISPONIBLE. Lo ultimo que se supo se queda en
@@ -618,7 +775,7 @@ function vaciarEntradas() {
   _ent = null;
   _entFallo = null;
   const R = entNodos();
-  [R.aviso, R.cabeza, R.decide, R.vivo, R.reciente, R.marco].forEach((n) => n && vaciar(n));
+  [R.aviso, R.cabeza, R.decide, R.vivo, R.reciente, R.papel, R.marco].forEach((n) => n && vaciar(n));
   if (R.aviso) R.aviso.hidden = true;
 }
 

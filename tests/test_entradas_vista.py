@@ -443,3 +443,35 @@ async def test_la_ruta_rechaza_un_parametro_que_no_conoce(sembrada):
     frescura = (await _vista(conn))["frescura"]
     assert (frescura["refresco_s"], frescura["sin_dato_s"]) == (V.REFRESCO_S, V.SIN_DATO_S)
     assert (timedelta(seconds=V.VELA_GENERADOR_S * V.VELAS_SIN_LATIR)) == timedelta(minutes=30)
+
+
+
+# --------------------------------------------------------------------------- campana 139 (E3): el resultado en pantalla
+
+
+def test_un_disparado_que_ya_acabo_no_esta_en_lo_vivo_y_dice_su_salida():
+    vivo = EB.respuesta("LONG", caduca_en_s=3600.0)
+    [p] = _planes(vivo, "disparados")
+    assert p["resultado"]["vivo"] is True and p["resultado"]["rotulo"] == "VIVO"
+    assert p["resultado"]["frase"] == "sin tocar stop, T1 ni invalidacion en las velas de 1 min hasta las 10-13 12:00Z"
+    acabado = EB.respuesta("LONG", caduca_en_s=-60.0)
+    assert _planes(acabado, "disparados") == []
+    [d] = acabado["reciente"]["por_version"][0]["disparados"]
+    assert (d["vivo"], d["resultado"]["vivo"], d["resultado"]["rotulo"]) == (False, False, "CADUCADO · 10-13 11:59Z")
+    assert d["resultado"]["firmeza"] == "PROVISIONAL hasta las 10-13 12:42Z"
+    assert d["resultado"]["t2"] == {"precio": 104.5, "frase": "no cruzado"}
+    # la cuenta de papel de cada version y las convenciones del resolutor, servidas
+    papel = {c["version"]: c for c in acabado["papel"]["por_version"]}
+    assert papel["v2"]["n"] == 1 and papel["v1"]["no_dimensiona"]
+    assert len(acabado["marco"]["resolutor"]["convenciones"]) == len(V.RES.CONVENCIONES)
+    assert acabado["marco"]["resolutor"]["huella"] == V.RES.HUELLA_CONVENCIONES
+    assert RUTA.fracciones_servidas(acabado) == [] and RUTA.fracciones_servidas(vivo) == []
+
+
+@pytest.mark.parametrize("salida", V.RES.SALIDAS)
+def test_cada_salida_tiene_su_rotulo_y_ninguno_promete(salida):
+    r = {"estado": V.RES.ACABADO, "salida": salida, "firmeza": V.RES.FINAL, "instante": "2026-10-15T05:16:00Z",
+         "motivo": None}
+    rotulo = V._resultado(r)["rotulo"]
+    assert rotulo.startswith(V.ROTULO_SALIDA[salida]) and rotulo.endswith("10-15 05:16Z")
+    assert not any(x in rotulo.lower() for x in ("favorable", "exito", "acierto", "%"))

@@ -1612,108 +1612,143 @@
     },
     "app.entradas.vista._ancla_no_puede": {
       "fichero": "app/entradas/vista.py",
-      "linea": 432,
-      "sitio": "`app/entradas/vista.py:432`"
+      "linea": 573,
+      "sitio": "`app/entradas/vista.py:573`"
     },
     "app.entradas.vista._base": {
       "fichero": "app/entradas/vista.py",
-      "linea": 290,
-      "sitio": "`app/entradas/vista.py:290`"
+      "linea": 331,
+      "sitio": "`app/entradas/vista.py:331`"
     },
     "app.entradas.vista._de": {
       "fichero": "app/entradas/vista.py",
-      "linea": 366,
-      "sitio": "`app/entradas/vista.py:366`"
+      "linea": 507,
+      "sitio": "`app/entradas/vista.py:507`"
     },
     "app.entradas.vista._decide": {
       "fichero": "app/entradas/vista.py",
-      "linea": 205,
-      "sitio": "`app/entradas/vista.py:205`"
+      "linea": 246,
+      "sitio": "`app/entradas/vista.py:246`"
     },
     "app.entradas.vista._disparado": {
       "fichero": "app/entradas/vista.py",
-      "linea": 316,
-      "sitio": "`app/entradas/vista.py:316`"
+      "linea": 456,
+      "sitio": "`app/entradas/vista.py:456`"
     },
     "app.entradas.vista._distancia": {
       "fichero": "app/entradas/vista.py",
-      "linea": 277,
-      "sitio": "`app/entradas/vista.py:277`"
+      "linea": 318,
+      "sitio": "`app/entradas/vista.py:318`"
+    },
+    "app.entradas.vista._fila_corta": {
+      "fichero": "app/entradas/vista.py",
+      "linea": 416,
+      "sitio": "`app/entradas/vista.py:416`"
+    },
+    "app.entradas.vista._firmeza": {
+      "fichero": "app/entradas/vista.py",
+      "linea": 367,
+      "sitio": "`app/entradas/vista.py:367`"
     },
     "app.entradas.vista._fraccion": {
       "fichero": "app/entradas/vista.py",
-      "linea": 143,
-      "sitio": "`app/entradas/vista.py:143`"
+      "linea": 184,
+      "sitio": "`app/entradas/vista.py:184`"
+    },
+    "app.entradas.vista._hora": {
+      "fichero": "app/entradas/vista.py",
+      "linea": 357,
+      "sitio": "`app/entradas/vista.py:357`"
     },
     "app.entradas.vista._muestra": {
       "fichero": "app/entradas/vista.py",
-      "linea": 397,
-      "sitio": "`app/entradas/vista.py:397`"
+      "linea": 538,
+      "sitio": "`app/entradas/vista.py:538`"
     },
     "app.entradas.vista._orden": {
       "fichero": "app/entradas/vista.py",
-      "linea": 372,
-      "sitio": "`app/entradas/vista.py:372`"
+      "linea": 513,
+      "sitio": "`app/entradas/vista.py:513`"
+    },
+    "app.entradas.vista._papel": {
+      "fichero": "app/entradas/vista.py",
+      "linea": 423,
+      "sitio": "`app/entradas/vista.py:423`"
     },
     "app.entradas.vista._papeles": {
       "fichero": "app/entradas/vista.py",
-      "linea": 381,
-      "sitio": "`app/entradas/vista.py:381`"
+      "linea": 522,
+      "sitio": "`app/entradas/vista.py:522`"
     },
     "app.entradas.vista._precio": {
       "fichero": "app/entradas/vista.py",
-      "linea": 130,
-      "sitio": "`app/entradas/vista.py:130`"
+      "linea": 171,
+      "sitio": "`app/entradas/vista.py:171`"
     },
     "app.entradas.vista._r": {
       "fichero": "app/entradas/vista.py",
-      "linea": 139,
-      "sitio": "`app/entradas/vista.py:139`"
+      "linea": 180,
+      "sitio": "`app/entradas/vista.py:180`"
     },
     "app.entradas.vista._requisitos": {
       "fichero": "app/entradas/vista.py",
-      "linea": 302,
-      "sitio": "`app/entradas/vista.py:302`"
+      "linea": 343,
+      "sitio": "`app/entradas/vista.py:343`"
+    },
+    "app.entradas.vista._resolutor": {
+      "fichero": "app/entradas/vista.py",
+      "linea": 762,
+      "sitio": "`app/entradas/vista.py:762`"
+    },
+    "app.entradas.vista._resultado": {
+      "fichero": "app/entradas/vista.py",
+      "linea": 375,
+      "sitio": "`app/entradas/vista.py:375`"
+    },
+    "app.entradas.vista._rotulo_de": {
+      "fichero": "app/entradas/vista.py",
+      "linea": 362,
+      "sitio": "`app/entradas/vista.py:362`"
     },
     "app.entradas.vista._significado": {
       "fichero": "app/entradas/vista.py",
-      "linea": 156,
-      "sitio": "`app/entradas/vista.py:156`"
+      "linea": 197,
+      "sitio": "`app/entradas/vista.py:197`"
     },
     "app.entradas.vista._sombra": {
       "fichero": "app/entradas/vista.py",
-      "linea": 356,
-      "sitio": "`app/entradas/vista.py:356`"
+      "linea": 497,
+      "sitio": "`app/entradas/vista.py:497`"
     },
     "app.entradas.vista._vigilando": {
       "fichero": "app/entradas/vista.py",
-      "linea": 310,
-      "sitio": "`app/entradas/vista.py:310`"
+      "linea": 351,
+      "sitio": "`app/entradas/vista.py:351`"
     },
     "app.entradas.vista._zona": {
       "fichero": "app/entradas/vista.py",
-      "linea": 272,
-      "sitio": "`app/entradas/vista.py:272`"
+      "linea": 313,
+      "sitio": "`app/entradas/vista.py:313`"
     },
     "app.entradas.vista.componer": {
       "fichero": "app/entradas/vista.py",
-      "linea": 477,
-      "sitio": "`app/entradas/vista.py:477`"
+      "linea": 624,
+      "sitio": "`app/entradas/vista.py:624`"
     },
     "app.entradas.vista.construir": {
       "fichero": "app/entradas/vista.py",
-      "linea": 455,
-      "sitio": "`app/entradas/vista.py:455`"
+      "linea": 596,
+      "sitio": "`app/entradas/vista.py:596`"
     },
     "app.entradas.vista.pasada_en_curso": {
       "fichero": "app/entradas/vista.py",
-      "linea": 412,
-      "sitio": "`app/entradas/vista.py:412`"
+      "linea": 553,
+      "sitio": "`app/entradas/vista.py:553`"
     },
     "app.entradas.vista.precio_ahora": {
       "fichero": "app/entradas/vista.py",
-      "linea": 120,
-      "sitio": "`app/entradas/vista.py:120`"
+      "linea": 161,
+      "sitio": "`app/entradas/vista.py:161`"
     },
     "app.external_macro._direction": {
       "fichero": "app/external_macro.py",
@@ -14550,7 +14585,9 @@
           "app.entradas.resultados.de_filas",
           "app.entradas.resultados.guardar",
           "app.entradas.resultados.resolver_fila",
-          "app.entradas.ruta.construir"
+          "app.entradas.ruta.construir",
+          "app.entradas.vista._fila_corta",
+          "app.entradas.vista.componer"
         ],
         "por_llamada": [
           "/api/entradas",
@@ -14678,7 +14715,9 @@
           "app.entradas.resultados.asentar_pendientes",
           "app.entradas.resultados.barrido",
           "app.entradas.resultados.resolver_fila",
-          "app.entradas.ruta.construir"
+          "app.entradas.ruta.construir",
+          "app.entradas.vista._fila_corta",
+          "app.entradas.vista.componer"
         ],
         "por_llamada": [
           "/api/entradas",
@@ -14811,6 +14850,7 @@
         "llamadores_hasta_k": [
           "app.api._asienta_resultados",
           "app.api.entradas",
+          "app.api.mesa_entradas",
           "app.entradas.resultados.asentar_pendientes",
           "app.entradas.resultados.barrido",
           "app.entradas.ruta.construir",
@@ -14842,7 +14882,8 @@
           "app.entradas.resultados.asentar_pendientes",
           "app.entradas.resultados.barrido",
           "app.entradas.resultados.de_filas",
-          "app.entradas.ruta.construir"
+          "app.entradas.ruta.construir",
+          "app.entradas.vista.construir"
         ],
         "por_llamada": [
           "/api/entradas",
@@ -14875,7 +14916,8 @@
           "app.entradas.resultados.asentar_pendientes",
           "app.entradas.resultados.barrido",
           "app.entradas.resultados.de_filas",
-          "app.entradas.ruta.construir"
+          "app.entradas.ruta.construir",
+          "app.entradas.vista.construir"
         ],
         "por_llamada": [
           "/api/entradas",
@@ -15335,7 +15377,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:432",
+        "sitio": "app/entradas/vista.py:573",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15355,7 +15397,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:290",
+        "sitio": "app/entradas/vista.py:331",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15373,7 +15415,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:366",
+        "sitio": "app/entradas/vista.py:507",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15391,7 +15433,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:205",
+        "sitio": "app/entradas/vista.py:246",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15409,7 +15451,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:316",
+        "sitio": "app/entradas/vista.py:456",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15427,7 +15469,44 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:277",
+        "sitio": "app/entradas/vista.py:318",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.entradas.vista._fila_corta": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.entradas.vista.componer",
+          "app.entradas.vista.construir"
+        ],
+        "por_llamada": [
+          "/api/mesa/entradas"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/vista.py:416",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.entradas.vista._firmeza": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.entradas.vista._disparado",
+          "app.entradas.vista._fila_corta",
+          "app.entradas.vista._resultado"
+        ],
+        "por_llamada": [
+          "/api/mesa/entradas"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/vista.py:367",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15445,7 +15524,30 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:143",
+        "sitio": "app/entradas/vista.py:184",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.entradas.vista._hora": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.entradas.vista._disparado",
+          "app.entradas.vista._fila_corta",
+          "app.entradas.vista._firmeza",
+          "app.entradas.vista._papel",
+          "app.entradas.vista._resultado",
+          "app.entradas.vista._rotulo_de",
+          "app.entradas.vista.componer"
+        ],
+        "por_llamada": [
+          "/api/mesa/entradas"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/vista.py:357",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15463,7 +15565,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:397",
+        "sitio": "app/entradas/vista.py:538",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15481,7 +15583,25 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:372",
+        "sitio": "app/entradas/vista.py:513",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.entradas.vista._papel": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.entradas.vista.componer",
+          "app.entradas.vista.construir"
+        ],
+        "por_llamada": [
+          "/api/mesa/entradas"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/vista.py:423",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15499,7 +15619,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:381",
+        "sitio": "app/entradas/vista.py:522",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15511,6 +15631,9 @@
         "llamadores_hasta_k": [
           "app.entradas.vista._base",
           "app.entradas.vista._disparado",
+          "app.entradas.vista._fila_corta",
+          "app.entradas.vista._papel",
+          "app.entradas.vista._resultado",
           "app.entradas.vista._zona",
           "app.entradas.vista.componer",
           "app.entradas.vista.construir",
@@ -15521,7 +15644,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:130",
+        "sitio": "app/entradas/vista.py:171",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15533,6 +15656,9 @@
         "llamadores_hasta_k": [
           "app.entradas.vista._decide",
           "app.entradas.vista._disparado",
+          "app.entradas.vista._fila_corta",
+          "app.entradas.vista._papel",
+          "app.entradas.vista._resultado",
           "app.entradas.vista.componer"
         ],
         "por_llamada": [
@@ -15540,7 +15666,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:139",
+        "sitio": "app/entradas/vista.py:180",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15559,7 +15685,65 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:302",
+        "sitio": "app/entradas/vista.py:343",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.entradas.vista._resolutor": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.entradas.vista.componer",
+          "app.entradas.vista.construir"
+        ],
+        "por_llamada": [
+          "/api/mesa/entradas"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/vista.py:762",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.entradas.vista._resultado": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.entradas.vista._disparado",
+          "app.entradas.vista._fila_corta",
+          "app.entradas.vista.componer"
+        ],
+        "por_llamada": [
+          "/api/mesa/entradas"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/vista.py:375",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.entradas.vista._rotulo_de": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.entradas.vista._disparado",
+          "app.entradas.vista._fila_corta",
+          "app.entradas.vista._papel",
+          "app.entradas.vista._resultado",
+          "app.entradas.vista.componer"
+        ],
+        "por_llamada": [
+          "/api/mesa/entradas"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/entradas/vista.py:362",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15577,7 +15761,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:156",
+        "sitio": "app/entradas/vista.py:197",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15595,7 +15779,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:356",
+        "sitio": "app/entradas/vista.py:497",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15613,7 +15797,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:310",
+        "sitio": "app/entradas/vista.py:351",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15633,7 +15817,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:272",
+        "sitio": "app/entradas/vista.py:313",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15651,7 +15835,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:477",
+        "sitio": "app/entradas/vista.py:624",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15668,7 +15852,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:455",
+        "sitio": "app/entradas/vista.py:596",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15686,7 +15870,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:412",
+        "sitio": "app/entradas/vista.py:553",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15704,7 +15888,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/vista.py:120",
+        "sitio": "app/entradas/vista.py:161",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -30423,7 +30607,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 417,
+    "funciones_alcanzables": 424,
     "rutas": 75,
     "rutas_con_campos": 68,
     "rutas_sin_campos": 7,
@@ -36786,13 +36970,14 @@
     {
       "camino": "/api/mesa/entradas",
       "campos": {
-        "disponible": "literal en app/entradas/vista.py:566",
-        "generador": "literal en app/entradas/vista.py:569",
-        "marco": "literal en app/entradas/vista.py:589",
-        "motivo": "literal en app/entradas/vista.py:567",
-        "precio": "literal en app/entradas/vista.py:568",
-        "reciente": "literal en app/entradas/vista.py:582",
-        "vivo": "literal en app/entradas/vista.py:581"
+        "disponible": "literal en app/entradas/vista.py:715",
+        "generador": "literal en app/entradas/vista.py:718",
+        "marco": "literal en app/entradas/vista.py:738",
+        "motivo": "literal en app/entradas/vista.py:716",
+        "papel": "literal en app/entradas/vista.py:758",
+        "precio": "literal en app/entradas/vista.py:717",
+        "reciente": "literal en app/entradas/vista.py:731",
+        "vivo": "literal en app/entradas/vista.py:730"
       },
       "campos_pendientes": [
         "el objeto se expande con **base, que no se resuelve en el arbol: sus campos no se pueden derivar"
@@ -36852,13 +37037,20 @@
         "app.entradas.vista._decide",
         "app.entradas.vista._disparado",
         "app.entradas.vista._distancia",
+        "app.entradas.vista._fila_corta",
+        "app.entradas.vista._firmeza",
         "app.entradas.vista._fraccion",
+        "app.entradas.vista._hora",
         "app.entradas.vista._muestra",
         "app.entradas.vista._orden",
+        "app.entradas.vista._papel",
         "app.entradas.vista._papeles",
         "app.entradas.vista._precio",
         "app.entradas.vista._r",
         "app.entradas.vista._requisitos",
+        "app.entradas.vista._resolutor",
+        "app.entradas.vista._resultado",
+        "app.entradas.vista._rotulo_de",
         "app.entradas.vista._significado",
         "app.entradas.vista._sombra",
         "app.entradas.vista._vigilando",
@@ -36921,13 +37113,20 @@
         "app.entradas.vista._decide",
         "app.entradas.vista._disparado",
         "app.entradas.vista._distancia",
+        "app.entradas.vista._fila_corta",
+        "app.entradas.vista._firmeza",
         "app.entradas.vista._fraccion",
+        "app.entradas.vista._hora",
         "app.entradas.vista._muestra",
         "app.entradas.vista._orden",
+        "app.entradas.vista._papel",
         "app.entradas.vista._papeles",
         "app.entradas.vista._precio",
         "app.entradas.vista._r",
         "app.entradas.vista._requisitos",
+        "app.entradas.vista._resolutor",
+        "app.entradas.vista._resultado",
+        "app.entradas.vista._rotulo_de",
         "app.entradas.vista._significado",
         "app.entradas.vista._sombra",
         "app.entradas.vista._vigilando",
@@ -44219,6 +44418,11 @@
           "funcion": "app.entradas.ruta.construir",
           "origen": "literal",
           "sitio": "app/entradas/ruta.py:264"
+        },
+        {
+          "funcion": "app.entradas.vista.construir",
+          "origen": "constante _ANTERIORES_SQL",
+          "sitio": "app/entradas/vista.py:127"
         }
       ],
       "leida_por": [
@@ -45011,7 +45215,7 @@
         {
           "funcion": "app.entradas.vista.precio_ahora",
           "origen": "constante _PRECIO_SQL",
-          "sitio": "app/entradas/vista.py:113"
+          "sitio": "app/entradas/vista.py:154"
         },
         {
           "funcion": "app.ingest.rollup_ohlcv_5m",
