@@ -329,12 +329,27 @@ def test_asentamiento_y_gracia_son_los_de_signal_outcomes():
     assert RES.GRACIA == signal_outcomes.MISSING_DATA_FINAL_GRACE
 
 
+@pytest.mark.parametrize("perfil", PERFILES)
+def test_el_corte_en_ahora_se_declara_y_se_aplica(perfil):
+    """Una vela que empieza despues de `ahora` no se usa aunque este en la base: es la convencion «corte», que se
+    sirve con las demas y entra en su huella. La del minuto de `ahora` si cuenta."""
+    assert "`ahora`" in RES.CONVENCIONES["corte"] and "no se usa" in RES.CONVENCIONES["corte"]
+    f = fila(perfil)
+    vs = velas(f, {"2026-10-12T20:30": (100.0, 100.0, 98.9, 99.5)})   # todas en la base, la del stop tambien
+    antes = RES.resolver(f, vs, T + timedelta(minutes=29, seconds=59))
+    assert (antes["estado"], antes["salida"], antes["sabido_hasta"]) == (RES.ABIERTO, None, "2026-10-12T20:30:00Z")
+    en_su_minuto = RES.resolver(f, vs, T + timedelta(minutes=30, seconds=1))
+    assert (en_su_minuto["salida"], en_su_minuto["firmeza"]) == (RES.STOP, RES.PROVISIONAL)
+
+
 def test_cambiar_una_convencion_es_una_version_nueva():
     """La huella de las convenciones de entradas-resolutor-1 no se mueve: cambiar una exige subir la version
-    (un resultado guardado lleva la suya y no se reescribe)."""
+    (un resultado guardado lleva la suya y no se reescribe). Se movio UNA vez sin subirla, en el remate de la 139:
+    la de d9f4520 (717a69038e1b...) no tenia el «corte», que ya se aplicaba desde 8b33125, y no llego a guardar
+    ningun resultado en produccion."""
     registradas = {"entradas-resolutor-1": HUELLA_V1}
     assert RES.RESOLUTOR_VERSION in registradas
     assert registradas[RES.RESOLUTOR_VERSION] == RES.HUELLA_CONVENCIONES
 
 
-HUELLA_V1 = "717a69038e1b3c87124e25c81fbca3759185148e431984738841d5f6a408e99b"
+HUELLA_V1 = "d3f41674d65d37ac67906fa1fa94622b1a8c3c8a4071dc7ddb9aed049b1deca3"

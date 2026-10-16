@@ -49,6 +49,9 @@ CONVENCIONES = {
     "unidad": "cada DISPARADO, cada version por separado; sobre una SOMBRA el mismo calculo es un HIPOTETICO "
     "rotulado como tal, que nunca entra en una cuenta de DISPARADOS",
     "serie": "ohlcv de 1 min del simbolo del plan (.A, Binance), tal como esta en la base al resolver",
+    "corte": "lo que se sabia en `ahora` (el reloj de la base al resolver): una vela de 1 min que empieza despues "
+    "de `ahora` no se usa aunque ya este en la base, porque todavia no existia; la que empieza en el minuto de "
+    "`ahora` cuenta si ya esta, y si ohlcv la reescribe despues lo cubre el asentamiento",
     "entrada_mercado": "apertura de la vela de 1 min floor(registered_at)+1min, movida en contra por la banda "
     "pesimista de la foto (plan.entrada.banda_pesimista_bps: spread y deslizamiento de Bybit en T)",
     "entrada_limite": "al precio de la foto (plan.entrada.precio; si es null, su referencia), y solo si una vela "
@@ -167,7 +170,8 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
              huecos: list[tuple[Any, Any]] = ()) -> dict[str, Any]:
     """El resultado de UN plan. `velas`: las de 1 min de su simbolo ({ts, open, high, low, close}); `funding`:
     {cobro: {fr_high, fr_low}} del cubo de 5 min que acaba en cada cobro; `huecos`: los [desde, hasta) de
-    data_gap sin resolver; `ahora`: el reloj de la base, que decide final o provisional."""
+    data_gap sin resolver; `ahora`: el reloj de la base, que corta las velas (convencion «corte») y decide final
+    o provisional."""
     foto = foto_de(fila)
     plan = foto["plan"]
     lado, perfil = fila["lado"], fila["perfil"]
@@ -208,7 +212,7 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
 
     S, N = s * stop, s * nivel
     Ts = [s * t for t in objetivos]
-    # Lo que se sabia en `ahora`: una vela que empieza despues no existe todavia (la de este minuto, si esta, si).
+    # La convencion «corte»: una vela que empieza despues de `ahora` no existe todavia (la de este minuto, si esta, si).
     por_ts = {m: v for m, v in ((_t(v["ts"]), v) for v in velas) if m <= ahora}
     tapados = [(_t(a), _t(b)) for a, b in huecos]
 
