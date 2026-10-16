@@ -82,9 +82,11 @@ FALTAN = [
      "INSUFICIENTE (n/30), sin porcentaje"},
 ]
 
+# «N de M» entra con la E3 (campana 139): con resultados, «1 de 2 llegaron a T1» es una frecuencia aunque no
+# lleve barra ni porcentaje. La prosa servida («58 de 60 minutos» en un motivo) se salta como siempre (_prosa).
 _FRACCION = re.compile(
-    r"(\d+\s*/\s*\d+)|(\d+([.,]\d+)?\s*%)|\b(tasa|acierto|aciertos|win|hit|probabilidad|"
-    r"probability|fraccion|ratio_exito)\b",
+    r"(\d+\s*/\s*\d+)|(\d+([.,]\d+)?\s*%)|(\b\d+\s+de\s+(cada\s+)?\d+\b)|\b(tasa|acierto|aciertos|win|hit|"
+    r"probabilidad|probability|fraccion|ratio_exito)\b",
     re.IGNORECASE,
 )
 _CLAVES_PROHIBIDAS = re.compile(

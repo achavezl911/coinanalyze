@@ -73,13 +73,25 @@ PY
   BASE="$API_PROD"
 fi
 
+# E10 · LA VERDAD DE LA BASE (campana 139): como acabo cada DISPARADO segun sus velas, para que la sonda condene
+# una pantalla que pinta VIVO lo que ya acabo AUNQUE SU RESPUESTA NO LO DIGA. Con K106_VERDAD llega hecha (los
+# controles); contra produccion se saca por bin/prodsql (K107-resultado.py verdad). Si no se puede, E10 no se
+# juzga y la sonda lo dice en su linea: no es NO MEDIDO del check entero.
+VERDAD=()
+if [ -n "${K106_VERDAD:-}" ]; then
+  [ -r "$K106_VERDAD" ] && VERDAD=(--verdad "$K106_VERDAD")
+elif [ -z "${MESA_BASE:-}" ]; then
+  K107_HARNESS="$B" "$PY" "$REPO/harness/checks/K107-resultado.py" verdad --produccion > "$TMP/verdad.json" 2>/dev/null \
+    && grep -q '^{' "$TMP/verdad.json" && VERDAD=(--verdad "$TMP/verdad.json")
+fi
+
 rojo=0; nomed=0; n=0
 : > "$TMP/todo"
 for a in $ACTIVOS; do
   n=$((n + 1))
   extra=()
   [ "$n" = "1" ] && [ "$OBSERVA" != "0" ] && extra=(--luego "@$OBSERVA")
-  "$PY" "$SONDA" --base "$BASE" --puerta "$PUERTA" --activo "$a" "${CAB[@]}" "${extra[@]}" > "$TMP/s-$a" 2>&1
+  "$PY" "$SONDA" --base "$BASE" --puerta "$PUERTA" --activo "$a" "${CAB[@]}" "${extra[@]}" "${VERDAD[@]}" > "$TMP/s-$a" 2>&1
   rc=$?
   cat "$TMP/s-$a" >> "$TMP/todo"
   case "$rc" in

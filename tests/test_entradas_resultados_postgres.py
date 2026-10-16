@@ -217,3 +217,24 @@ async def test_antes_de_la_vela_que_lo_acaba_esta_vivo_y_dice_hasta_donde_se_sab
     [d] = resp["por_lado"]["largo"]["ventana"]["disparados"]
     assert (d["resultado"]["salida"], d["resultado"]["firmeza"]) == (RES.STOP, RES.PROVISIONAL)
     assert await base.fetchval("SELECT count(*) FROM entrada_resultado") == 0
+
+
+async def test_la_red_de_fracciones_sigue_condenando_con_resultados(base):
+    """La E3 trae resultados, papel y convenciones a /api/entradas: la red de fracciones sigue mirando TODO lo que
+    se sirve, y una frecuencia de resultados plantada en cualquiera de esos sitios la condena."""
+    await registra(base, fila())
+    await siembra(base, fila(), STOP_2030)
+    await _reloj(base, LISTO + timedelta(minutes=5))
+    resp = await RUTA.construir(base, lado="ambos", desde=T - timedelta(hours=1), hasta=T + timedelta(hours=1),
+                                version=None, symbol=None, limite=200, foto=False)
+    assert RUTA.fracciones_servidas(resp) == []
+    plantados = [
+        lambda r: r["papel"]["v2"].update(meta="1 de 1 llego a T1"),
+        lambda r: r["resultados"]["barrido_emparejado"].update(planes=[{"t1_antes_que_el_stop": "100 %"}]),
+        lambda r: r["cuentas"][0].update(tasa_objetivo=0.5),
+        lambda r: r["por_lado"]["largo"]["ventana"]["disparados"][0]["resultado"].update(salida="3/7 objetivos"),
+    ]
+    for planta in plantados:
+        r = json.loads(json.dumps(resp, default=str))
+        planta(r)
+        assert RUTA.fracciones_servidas(r), planta

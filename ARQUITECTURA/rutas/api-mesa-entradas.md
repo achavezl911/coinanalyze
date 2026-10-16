@@ -128,10 +128,10 @@ Llamadas directas del handler:
 - `app.entradas.resultados.de_filas` — `app/entradas/resultados.py:110`
 - `app.entradas.resultados.guardar` — `app/entradas/resultados.py:97`
 - `app.entradas.resultados.resolver_fila` — `app/entradas/resultados.py:82`
-- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:344`
-- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:366`
-- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:151`
-- `app.entradas.ruta.construir` — `app/entradas/ruta.py:194`
+- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:346`
+- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:368`
+- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:153`
+- `app.entradas.ruta.construir` — `app/entradas/ruta.py:196`
 - `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:573`
 - `app.entradas.vista._base` — `app/entradas/vista.py:331`
 - `app.entradas.vista._de` — `app/entradas/vista.py:507`
@@ -185,7 +185,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | — | `harness/checks/K102-mesa.py:481` |
+| **checks** | — | `harness/checks/K102-mesa.py:481`, `harness/checks/K106-plantados.py:549` |
 | **tests** | `tests/test_entradas_vista.py:148` | `tests/test_entradas_vista.py:1` |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.

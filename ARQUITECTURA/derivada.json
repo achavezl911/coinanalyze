@@ -1592,23 +1592,23 @@
     },
     "app.entradas.ruta._hipotesis": {
       "fichero": "app/entradas/ruta.py",
-      "linea": 344,
-      "sitio": "`app/entradas/ruta.py:344`"
+      "linea": 346,
+      "sitio": "`app/entradas/ruta.py:346`"
     },
     "app.entradas.ruta._reglamento": {
       "fichero": "app/entradas/ruta.py",
-      "linea": 366,
-      "sitio": "`app/entradas/ruta.py:366`"
+      "linea": 368,
+      "sitio": "`app/entradas/ruta.py:368`"
     },
     "app.entradas.ruta._resumen": {
       "fichero": "app/entradas/ruta.py",
-      "linea": 151,
-      "sitio": "`app/entradas/ruta.py:151`"
+      "linea": 153,
+      "sitio": "`app/entradas/ruta.py:153`"
     },
     "app.entradas.ruta.construir": {
       "fichero": "app/entradas/ruta.py",
-      "linea": 194,
-      "sitio": "`app/entradas/ruta.py:194`"
+      "linea": 196,
+      "sitio": "`app/entradas/ruta.py:196`"
     },
     "app.entradas.vista._ancla_no_puede": {
       "fichero": "app/entradas/vista.py",
@@ -14951,7 +14951,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/ruta.py:344",
+        "sitio": "app/entradas/ruta.py:346",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14971,7 +14971,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/ruta.py:366",
+        "sitio": "app/entradas/ruta.py:368",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -14991,7 +14991,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/ruta.py:151",
+        "sitio": "app/entradas/ruta.py:153",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15011,7 +15011,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/ruta.py:194",
+        "sitio": "app/entradas/ruta.py:196",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -34464,25 +34464,25 @@
     {
       "camino": "/api/entradas",
       "campos": {
-        "cuentas": "literal en app/entradas/ruta.py:330",
-        "disponible": "literal en app/entradas/ruta.py:323",
-        "generador": "literal en app/entradas/ruta.py:324",
-        "generador.motivo": "literal en app/entradas/ruta.py:326",
-        "generador.ultimos_latidos": "literal en app/entradas/ruta.py:325",
-        "motivo": "literal en app/entradas/ruta.py:217",
-        "papel": "literal en app/entradas/ruta.py:339",
-        "por_lado": "literal en app/entradas/ruta.py:328",
-        "reglamento": "literal en app/entradas/ruta.py:329",
-        "reglamento.disponible": "literal en app/entradas/ruta.py:225",
-        "reglamento.motivo": "literal en app/entradas/ruta.py:225",
-        "reglamento.registro_en_base": "asignado en app/entradas/ruta.py:231",
-        "resultados": "literal en app/entradas/ruta.py:331",
-        "resultados.barrido_emparejado": "literal en app/entradas/ruta.py:337",
-        "resultados.cambios_e3": "literal en app/entradas/ruta.py:336",
-        "resultados.convenciones": "literal en app/entradas/ruta.py:335",
-        "resultados.huella_convenciones": "literal en app/entradas/ruta.py:334",
-        "resultados.que_es": "literal en app/entradas/ruta.py:332",
-        "resultados.resolutor": "literal en app/entradas/ruta.py:333"
+        "cuentas": "literal en app/entradas/ruta.py:332",
+        "disponible": "literal en app/entradas/ruta.py:325",
+        "generador": "literal en app/entradas/ruta.py:326",
+        "generador.motivo": "literal en app/entradas/ruta.py:328",
+        "generador.ultimos_latidos": "literal en app/entradas/ruta.py:327",
+        "motivo": "literal en app/entradas/ruta.py:219",
+        "papel": "literal en app/entradas/ruta.py:341",
+        "por_lado": "literal en app/entradas/ruta.py:330",
+        "reglamento": "literal en app/entradas/ruta.py:331",
+        "reglamento.disponible": "literal en app/entradas/ruta.py:227",
+        "reglamento.motivo": "literal en app/entradas/ruta.py:227",
+        "reglamento.registro_en_base": "asignado en app/entradas/ruta.py:233",
+        "resultados": "literal en app/entradas/ruta.py:333",
+        "resultados.barrido_emparejado": "literal en app/entradas/ruta.py:339",
+        "resultados.cambios_e3": "literal en app/entradas/ruta.py:338",
+        "resultados.convenciones": "literal en app/entradas/ruta.py:337",
+        "resultados.huella_convenciones": "literal en app/entradas/ruta.py:336",
+        "resultados.que_es": "literal en app/entradas/ruta.py:334",
+        "resultados.resolutor": "literal en app/entradas/ruta.py:335"
       },
       "campos_pendientes": [
         "el objeto se expande con **base, que no se resuelve en el arbol: sus campos no se pueden derivar"
@@ -34603,9 +34603,19 @@
         "checks": {
           "llamadas": [
             "harness/checks/K106-banco.py:52",
+            "harness/checks/K107-control.bash:65",
+            "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35",
+            "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37",
+            "harness/checks/K107-resultado.py:167",
             "harness/checks/K43-foto-unica.sh:169"
           ],
           "menciones": [
+            "harness/checks/K107-control.bash:9",
+            "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:5",
+            "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:11",
+            "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:13",
+            "harness/checks/K107-resultado.py:4",
+            "harness/checks/K107-resultado.py:317",
             "harness/checks/K43-foto-unica.sh:172"
           ]
         },
@@ -34614,6 +34624,7 @@
             "tests/test_entradas_ruta.py:72"
           ],
           "menciones": [
+            "tests/test_entradas_resultados_postgres.py:223",
             "tests/test_entradas_ruta.py:1",
             "tests/test_entradas_vista.py:10"
           ]
@@ -34621,8 +34632,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 3,
-        "n_menciones": 3,
+        "n_llamadas": 7,
+        "n_menciones": 10,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -37154,7 +37165,8 @@
         "checks": {
           "llamadas": [],
           "menciones": [
-            "harness/checks/K102-mesa.py:481"
+            "harness/checks/K102-mesa.py:481",
+            "harness/checks/K106-plantados.py:549"
           ]
         },
         "tests": {
@@ -37169,7 +37181,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 1,
-        "n_menciones": 2,
+        "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -40345,8 +40357,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K106-plantados.py:417",
-            "harness/checks/K106-plantados.py:418",
+            "harness/checks/K106-plantados.py:461",
+            "harness/checks/K106-plantados.py:462",
             "harness/checks/K43-control.bash:29",
             "harness/checks/K43-control.bash:74",
             "harness/checks/K43-foto-unica.sh:164",
@@ -44340,7 +44352,7 @@
         {
           "funcion": "app.entradas.ruta.construir",
           "origen": "literal",
-          "sitio": "app/entradas/ruta.py:269"
+          "sitio": "app/entradas/ruta.py:271"
         }
       ],
       "leida_por": [
@@ -44392,32 +44404,32 @@
         {
           "funcion": "app.entradas.ruta.construir",
           "origen": "constante _DISPARADOS",
-          "sitio": "app/entradas/ruta.py:145"
+          "sitio": "app/entradas/ruta.py:147"
         },
         {
           "funcion": "app.entradas.ruta.construir",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/entradas/ruta.py:244"
+          "sitio": "app/entradas/ruta.py:246"
         },
         {
           "funcion": "app.entradas.ruta.construir",
           "origen": "literal",
-          "sitio": "app/entradas/ruta.py:244"
+          "sitio": "app/entradas/ruta.py:246"
         },
         {
           "funcion": "app.entradas.ruta.construir",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/entradas/ruta.py:255"
+          "sitio": "app/entradas/ruta.py:257"
         },
         {
           "funcion": "app.entradas.ruta.construir",
           "origen": "literal",
-          "sitio": "app/entradas/ruta.py:255"
+          "sitio": "app/entradas/ruta.py:257"
         },
         {
           "funcion": "app.entradas.ruta.construir",
           "origen": "literal",
-          "sitio": "app/entradas/ruta.py:264"
+          "sitio": "app/entradas/ruta.py:266"
         },
         {
           "funcion": "app.entradas.vista.construir",
@@ -44449,7 +44461,7 @@
         {
           "funcion": "app.entradas.ruta.construir",
           "origen": "literal",
-          "sitio": "app/entradas/ruta.py:228"
+          "sitio": "app/entradas/ruta.py:230"
         }
       ],
       "leida_por": [

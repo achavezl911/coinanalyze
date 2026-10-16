@@ -24,6 +24,12 @@
 #   y del remate: R2  un coste de 0,002 del objetivo, pintado («x0,002») y redondeado a «x0,00» como
 #       antes · su gemelo, un cero servido que se pinta como cero.  R3  la tabla de recuentos sin su
 #       frase (callada por la pantalla, y sin servir por la ruta) · con la cabecera VIGILANDO de antes
+#   y de la 139 (E3): el resultado de cada DISPARADO pintado tal cual -lo acabado con su salida, nunca
+#       VIVO (E11)-, el rotulo pintado distinto del servido, un anterior a la ventana con su resultado, una
+#       frecuencia de resultados escrita y otra servida en la cuenta de papel. Y C5 · sobre una COPIA DEL
+#       REGISTRO de produccion (K107-copia.json, con el reloj de su base plantado a las 2026-10-15T06:00Z:
+#       3945 toco su stop a las 05:16Z y su reloj caduca a las 08:45Z), la pantalla del arbol no lo pinta
+#       vivo y la de main si, y la red la condena por E10 con la verdad de la base; sin esa verdad, no.
 #   y el check: sus tres invocaciones (A56), los dos modos de SIGPIPE (A89), y una mesa sin la vista
 #   (NO MEDIDO, ni ROJO ni VERDE). Y el lector de cifras de la propia red: «63.385» son sesenta y
 #   tres mil, y una variante de la sonda que lo lea como K102 tiene que condenar una pagina fiel.
@@ -113,6 +119,31 @@ echo "== C2 · la NO INTERFERENCIA: dos respuestas que solo difieren en el RESUL
 comprueba no_interferencia "$([ -n "$fa" ] && [ "$fa" = "$fb" ] && echo 0 || echo 1)" "la vista real: $fa y $fb"
 "$PY" "$PLANTA" planta color_por_resultado "$T/b" > /dev/null; sonda --firma > /dev/null; fc=$(grep '^firma ' "$T/sal")
 comprueba la_firma_ve_el_color "$([ -n "$fc" ] && [ "$fc" != "$fa" ] && echo 0 || echo 1)" "con el color plantado: $fc"
+
+echo "== C5 (139) · lo que ya acabo, pintado VIVO: una COPIA del registro de produccion (K107-copia.json) a las 06:00Z"
+COPIADB="${DB}_copia"
+RELOJ=2026-10-15T06:00:00Z
+psql -h "$H" -d postgres -qc "CREATE DATABASE \"$COPIADB\"" > /dev/null
+"$PY" "$AQUI/K107-resultado.py" carga "$AQUI/K107-copia.json" "postgresql:///$COPIADB?host=$H" "$REPO/sql/schema.sql" > /dev/null
+"$PY" "$AQUI/K107-resultado.py" verdad --dsn "postgresql:///$COPIADB?host=$H" --esquema copia --reloj "$RELOJ" > "$T/verdad.json"
+mkdir -p "$T/main"; git -C "$REPO" archive main app config static | tar -x -C "$T/main"
+"$PY" -S "$PLANTA" copia "$REPO" "postgresql:///$COPIADB?host=$H" copia "$RELOJ" SOLUSDT_PERP.A "$T/c5-arbol.json" > /dev/null
+"$PY" -S "$PLANTA" copia "$T/main" "postgresql:///$COPIADB?host=$H" copia "$RELOJ" SOLUSDT_PERP.A "$T/c5-main.json" > /dev/null
+c5() {  # respuesta sobre(o -) verdad(si|no) -> rc de la sonda sobre SOL
+  cp "$1" "$T/b/respuesta.json"; rm -rf "$T/b/sobre"; mkdir -p "$T/b/sobre/mesa"
+  [ "$2" != "-" ] && cp -a "$2/." "$T/b/sobre/"
+  local v=(); [ "$3" = si ] && v=(--verdad "$T/verdad.json")
+  "$PY" "$SONDA" --base "http://127.0.0.1:$P1" --activo SOL "${v[@]}" > "$T/sal" 2>&1; echo $?
+}
+hv() { cat "$T/b/respuesta.json" $(find "$T/b/sobre" -type f | sort) | sha256sum | cut -c1-12; }
+h0=$(hv); rc=$(c5 "$T/c5-arbol.json" - si); h1=$(hv)
+comprueba c5_el_arbol_no_lo_pinta_vivo "$([ "$rc" = 0 ] && grep -q 'E10 contrasta 2 DISPARADO' "$T/sal" && grep -q '"3945": {"acabado": true' "$T/verdad.json" && echo 0 || echo 1)" \
+  "rc=$rc · $h0 -> $h1 · verdad 3945 $(grep -o '"3945": {[^}]*}' "$T/verdad.json" | cut -c1-80)"
+rc=$(c5 "$T/c5-main.json" "$T/main/static" si); h2=$(hv)
+visto=$(hallazgo "E10 el DISPARADO 3945 acabo segun la base \(stop a las 05:16Z\) y la pantalla lo pinta VIVO")
+comprueba c5_main_lo_pinta_vivo "$([ "$rc" = 1 ] && [ -n "$visto" ] && [ "$h1" != "$h2" ] && echo 0 || echo 1)" "rc=$rc · $h1 -> $h2 · ${visto:-NO SALE: $(grep -m1 '^   - ' "$T/sal" | cut -c1-110)}"
+rc=$(c5 "$T/c5-main.json" "$T/main/static" no)
+comprueba c5_sin_verdad_no_lo_ve "$([ "$rc" = 0 ] && grep -q 'E10 SIN JUZGAR' "$T/sal" && echo 0 || echo 1)" "rc=$rc · sin --verdad la pantalla de main pasa: la condena es de E10 y de nada mas"
 
 echo "== el lector de cifras: en es-ES «63.385» son sesenta y tres mil. La variante que lo lee como K102 tiene que CONDENAR una pagina fiel"
 # Una copia de la sonda con UNA linea cambiada: compara las cifras con K102.casan_valores, que solo

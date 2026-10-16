@@ -25,25 +25,25 @@ Handler `entradas` · `app/api.py:1317` (cuerpo hasta la 1343) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `cuentas` | literal en app/entradas/ruta.py:330 |
-| `disponible` | literal en app/entradas/ruta.py:323 |
-| `generador` | literal en app/entradas/ruta.py:324 |
-| `generador.motivo` | literal en app/entradas/ruta.py:326 |
-| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:325 |
-| `motivo` | literal en app/entradas/ruta.py:217 |
-| `papel` | literal en app/entradas/ruta.py:339 |
-| `por_lado` | literal en app/entradas/ruta.py:328 |
-| `reglamento` | literal en app/entradas/ruta.py:329 |
-| `reglamento.disponible` | literal en app/entradas/ruta.py:225 |
-| `reglamento.motivo` | literal en app/entradas/ruta.py:225 |
-| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:231 |
-| `resultados` | literal en app/entradas/ruta.py:331 |
-| `resultados.barrido_emparejado` | literal en app/entradas/ruta.py:337 |
-| `resultados.cambios_e3` | literal en app/entradas/ruta.py:336 |
-| `resultados.convenciones` | literal en app/entradas/ruta.py:335 |
-| `resultados.huella_convenciones` | literal en app/entradas/ruta.py:334 |
-| `resultados.que_es` | literal en app/entradas/ruta.py:332 |
-| `resultados.resolutor` | literal en app/entradas/ruta.py:333 |
+| `cuentas` | literal en app/entradas/ruta.py:332 |
+| `disponible` | literal en app/entradas/ruta.py:325 |
+| `generador` | literal en app/entradas/ruta.py:326 |
+| `generador.motivo` | literal en app/entradas/ruta.py:328 |
+| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:327 |
+| `motivo` | literal en app/entradas/ruta.py:219 |
+| `papel` | literal en app/entradas/ruta.py:341 |
+| `por_lado` | literal en app/entradas/ruta.py:330 |
+| `reglamento` | literal en app/entradas/ruta.py:331 |
+| `reglamento.disponible` | literal en app/entradas/ruta.py:227 |
+| `reglamento.motivo` | literal en app/entradas/ruta.py:227 |
+| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:233 |
+| `resultados` | literal en app/entradas/ruta.py:333 |
+| `resultados.barrido_emparejado` | literal en app/entradas/ruta.py:339 |
+| `resultados.cambios_e3` | literal en app/entradas/ruta.py:338 |
+| `resultados.convenciones` | literal en app/entradas/ruta.py:337 |
+| `resultados.huella_convenciones` | literal en app/entradas/ruta.py:336 |
+| `resultados.que_es` | literal en app/entradas/ruta.py:334 |
+| `resultados.resolutor` | literal en app/entradas/ruta.py:335 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -99,7 +99,7 @@ Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2586`
 - `app.api.validate_symbol` — `app/api.py:253`
-- `app.entradas.ruta.construir` — `app/entradas/ruta.py:194`
+- `app.entradas.ruta.construir` — `app/entradas/ruta.py:196`
 
 <details><summary>Alcanzables de forma indirecta (45)</summary>
 
@@ -145,9 +145,9 @@ Llamadas directas del handler:
 - `app.entradas.resultados.de_filas` — `app/entradas/resultados.py:110`
 - `app.entradas.resultados.guardar` — `app/entradas/resultados.py:97`
 - `app.entradas.resultados.resolver_fila` — `app/entradas/resultados.py:82`
-- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:344`
-- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:366`
-- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:151`
+- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:346`
+- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:368`
+- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:153`
 
 </details>
 
@@ -175,10 +175,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K106-banco.py:52`, `harness/checks/K43-foto-unica.sh:169` | `harness/checks/K43-foto-unica.sh:172` |
-| **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
+| **checks** | `harness/checks/K106-banco.py:52`, `harness/checks/K107-control.bash:65`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37` _(+2)_ | `harness/checks/K107-control.bash:9`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:5`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:11`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:13` _(+3)_ |
+| **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_resultados_postgres.py:223`, `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
 
-**No la llama el panel**, pero si 3 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 7 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
