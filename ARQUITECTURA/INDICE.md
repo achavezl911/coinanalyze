@@ -25,7 +25,7 @@
 | `/api/delta-profile` | GET | 3 | 1 | 13 | [ficha](rutas/api-delta-profile.md) |
 | `/api/desk/state` | GET | 26 | 13 | 80 | [ficha](rutas/api-desk-state.md) |
 | `/api/divergences` | GET | 15 | 3 | 7 | [ficha](rutas/api-divergences.md) |
-| `/api/entradas` | GET | 18 | 8 | 46 | [ficha](rutas/api-entradas.md) |
+| `/api/entradas` | GET | 19 | 8 | 48 | [ficha](rutas/api-entradas.md) |
 | `/api/external-macro` | GET | 1 | 6 | 49 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 6 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
@@ -38,7 +38,7 @@
 | `/api/market-impact` | GET | 6 | 2 | 7 | [ficha](rutas/api-market-impact.md) |
 | `/api/market-memory` | GET | 13 | 1 | 5 | [ficha](rutas/api-market-memory.md) |
 | `/api/mesa/decide` | GET | 3 | 16 | 60 | [ficha](rutas/api-mesa-decide.md) |
-| `/api/mesa/entradas` | GET | 7 | 8 | 67 | [ficha](rutas/api-mesa-entradas.md) |
+| `/api/mesa/entradas` | GET | 7 | 8 | 69 | [ficha](rutas/api-mesa-entradas.md) |
 | `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
 | `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
 | `/api/oi-context` | GET | 16 | 4 | 12 | [ficha](rutas/api-oi-context.md) |

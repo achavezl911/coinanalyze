@@ -12,8 +12,8 @@ generador; y lo que falta, con su motivo.
 LA E3 (campana 139): cada DISPARADO lleva su RESULTADO (app/entradas/resolutor.py: el FINAL guardado
 en entrada_resultado o, si no lo es todavia, el PROVISIONAL de las velas que haya ahora), y un
 DISPARADO que ya acabo deja de estar entre los vivos aunque su reloj no haya caducado. Se sirven las
-convenciones del resolutor con su version y su huella, y el barrido emparejado de la hipotesis de v2
-(plan a plan, descriptivo).
+convenciones del resolutor con su version y su huella, el barrido emparejado de la hipotesis de v2
+(plan a plan, descriptivo) y la cuenta de papel de cada version en curso (app/entradas/papel.py).
 «resueltos» cuenta DISPARADOS con resultado FINAL guardado; con n < 30 ninguna frecuencia (E4).
 
 LO QUE NO SIRVE: ninguna fraccion ni tasa de aciertos de los candidatos. «Probabilistico» sera una
@@ -35,6 +35,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from app.entradas import motor as M
+from app.entradas import papel as PAPEL
 from app.entradas import reglamento as R
 from app.entradas import resolutor as RES
 from app.entradas import resultados as RS
@@ -335,6 +336,8 @@ async def construir(conn, *, lado: str, desde: datetime | None, hasta: datetime 
             "cambios_e3": RES.CAMBIOS_E3,
             "barrido_emparejado": {"que_es": BARRIDO_QUE_ES, "planes": barrido},
         },
+        "papel": {v["version"]: PAPEL.cuenta(v, [f for f in todos if f["version"] == v["version"]], resultados)
+                  for v in (R.versiones_en_curso(doc) if doc is not None else [])},
     }
 
 

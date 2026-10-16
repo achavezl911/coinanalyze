@@ -1,0 +1,138 @@
+"""LA CUENTA DE PAPEL de cada version en curso (campana 139, C3).
+
+Es el bloque papel de su version TAL COMO ESTA REGISTRADO, aplicado a los resultados de sus DISPARADOS (nunca a
+una SOMBRA): capital_usd sin apalancamiento, una cuenta por version en curso, toma todo DISPARADO de su version
+por orden de registro SI CABE y apunta los saltados con su motivo, la cantidad redondeada HACIA ABAJO al paso de
+cantidad de Bybit de su simbolo, funding solo adverso (el que el resolutor apunta por cobro cruzado), y la meta
+es informativa: nunca motivo para cambiar, retirar o elegir una version. Sin paso (v1: null, sin fuente) la
+cuenta NO dimensiona y lo dice: el paso no se inventa. No mueve fondos ni ejecuta nada.
+
+QUE ES «SI CABE». Sin apalancamiento, el nocional de las posiciones abiertas no pasa del saldo. Cada operacion
+usa lo que quede libre, con tope en comun.tamano_plan_usd (los USD con los que el registro midio el
+deslizamiento en el libro), y con la comision de entrada dentro:
+    cantidad = floor(min(libre, tamano_plan_usd) / (precio_entrada * (1 + comision_entrada)) / paso) * paso
+Si no llega a un paso (en Bybit el paso es tambien la cantidad minima: unidad del parametro en v2), se salta.
+
+Lo que un DISPARADO trae de su resultado: precio e instante de entrada y de salida (con la banda pesimista ya
+dentro), la comision de cada pata y los cobros de funding. P&L = lado * cantidad * (salida - entrada) - las dos
+comisiones - el funding adverso, sobre el nocional de entrada. Es PURA: reproducible desde la base con los
+resultados guardados y el bloque papel registrado en entrada_reglamento.
+"""
+
+from __future__ import annotations
+
+import math
+from typing import Any
+
+from app.entradas import reglamento as R
+from app.entradas import resolutor as RES
+
+SIN_POSICION = (RES.SIN_ENTRADA, RES.LIMITE_NO_LLENADA, RES.NO_EVALUABLE)
+
+
+def _usd(x: float | None) -> float | None:
+    return None if x is None else round(x, 2)
+
+
+def cuenta(version: dict[str, Any], disparados: list[dict[str, Any]],
+           resultados: dict[int, dict[str, Any]]) -> dict[str, Any]:
+    """La cuenta de una version: `version` es su objeto del reglamento; `disparados`, sus filas DISPARADO (con
+    registro_id y symbol); `resultados`, el de cada una (guardado o recalculado ahora)."""
+    papel = R.valores(version["bloques"]["papel"])
+    comun = R.valores(version["bloques"]["comun"])
+    capital = float(papel["capital_usd"])
+    tamano = float(comun["tamano_plan_usd"])
+    pasos = papel["paso_cantidad_bybit"] or {}
+    if papel["apalancamiento"] != 1:
+        raise R.ReglamentoInvalido("la cuenta de papel solo sabe aplicar apalancamiento 1")
+    salida: dict[str, Any] = {
+        "version": version["version"], "capital_usd": capital, "meta_usd": papel["meta_usd"],
+        "meta": "informativa: nunca motivo para cambiar, retirar o elegir una version",
+        "dimensiona": any(v is not None for v in pasos.values()), "no_dimensiona": None,
+        "saldo_usd": capital, "funding_usd": 0.0, "n": 0, "abiertas": 0, "firmeza": RES.FINAL,
+        "provisional_hasta": None, "operaciones": [], "saltados": [],
+    }
+    sin_paso = [s for s, v in pasos.items() if v is None]
+    if sin_paso:
+        salida["no_dimensiona"] = (
+            f"{version['version']} no dimensiona en {', '.join(sorted(sin_paso))}: su paso de cantidad de Bybit es "
+            "null, sin fuente citada en su reglamento; el paso no se inventa, y sus DISPARADOS ahi se saltan")
+    saldo = capital
+    abiertas: list[dict[str, Any]] = []   # las que tienen la posicion abierta en el instante que se mira
+    pendientes: list[dict[str, Any]] = []  # las cerradas, a liquidar en el orden de su salida
+
+    def liquida(hasta: str | None) -> None:
+        nonlocal saldo
+        for op in sorted([p for p in pendientes if hasta is None or p["instante_salida"] <= hasta],
+                         key=lambda p: (p["instante_salida"], p["registro_id"])):
+            saldo += op["_pnl"]
+            pendientes.remove(op)
+            abiertas.remove(op)
+
+    for f in sorted(disparados, key=lambda x: x["registro_id"]):
+        rid, symbol = f["registro_id"], f["symbol"]
+        r = resultados.get(rid) or {}
+        base = {"registro_id": rid, "symbol": symbol, "familia": f["familia"], "perfil": f["perfil"],
+                "lado": f["lado"], "vela_cierre": RES.iso(RES._t(f["vela_cierre"]))}
+        paso = pasos.get(symbol)
+        if paso is None:
+            salida["saltados"].append({**base, "motivo": "no dimensiona: sin paso de cantidad de Bybit para "
+                                       f"{symbol} en el reglamento de {version['version']}"})
+            continue
+        if r.get("salida") in SIN_POSICION:
+            salida["saltados"].append({**base, "motivo": f"{r['salida'].replace('_', ' ')}: no abre posicion"
+                                       + (" (no se sabe su P&L)" if r["salida"] == RES.NO_EVALUABLE else "")})
+            continue
+        entrada = r.get("entrada")
+        if not entrada:
+            salida["saltados"].append({**base, "motivo": "aun sin entrada real: falta la vela de su entrada"})
+            continue
+        liquida(entrada["instante"])
+        libre = saldo - sum(p["nocional_usd"] for p in abiertas)
+        precio = float(entrada["precio"])
+        com_e = float(entrada["comision_bps"])  # la pone el resolutor; sin ella no se dimensiona a ciegas
+        cantidad = math.floor(round(min(libre, tamano) / (precio * (1 + com_e / RES.BPS)) / paso, 9)) * paso
+        cantidad = round(cantidad, 9)
+        if cantidad < paso:
+            ocupado = [p["registro_id"] for p in abiertas]
+            salida["saltados"].append({**base, "motivo": (
+                f"no cabe: {max(libre, 0.0):.2f} USD libres no compran {paso:g} {symbol.split('USDT')[0]} a "
+                f"{precio:g}" + (f"; el resto esta en la operacion {', '.join(map(str, ocupado))}" if ocupado else ""))})
+            continue
+        nocional = cantidad * precio
+        op = {**base, "estado": "abierta", "salida": None, "firmeza": RES.PROVISIONAL, "lote": cantidad,
+              "paso": paso, "instante_entrada": entrada["instante"], "precio_entrada": precio,
+              "nocional_usd": nocional, "instante_salida": None, "precio_salida": None, "comision_usd": None,
+              "funding_usd": None, "pnl_usd": None, "r_neto": None, "funding_sin_medir": []}
+        abiertas.append(op)
+        if r.get("estado") == RES.ACABADO and r.get("precio") is not None and r.get("pnl"):
+            s = 1.0 if f["lado"] == "largo" else -1.0
+            precio_s = float(r["precio"])
+            com_s = float(r["pnl"]["comision_bps"]["salida"])
+            comision = nocional * com_e / RES.BPS + cantidad * precio_s * com_s / RES.BPS
+            funding = sum(nocional * c["fr_adverso"] / 100 for c in r.get("funding") or [] if c["medido"])
+            pnl = s * cantidad * (precio_s - precio) - comision - funding
+            op.update(estado="cerrada", salida=r["salida"], firmeza=r["firmeza"], instante_salida=r["instante"],
+                      precio_salida=precio_s, comision_usd=comision, funding_usd=funding, pnl_usd=pnl,
+                      r_neto=r["pnl"]["r_neto"], _pnl=pnl,
+                      funding_sin_medir=[c["cobro"] for c in r.get("funding") or [] if not c["medido"]])
+            pendientes.append(op)
+            salida["funding_usd"] += funding
+            salida["n"] += 1
+            if r["firmeza"] != RES.FINAL:
+                salida["firmeza"] = RES.PROVISIONAL
+                cuando = r.get("asentado_en")
+                if cuando and (salida["provisional_hasta"] is None or cuando > salida["provisional_hasta"]):
+                    salida["provisional_hasta"] = cuando
+        salida["operaciones"].append(op)
+    liquida(None)
+    salida["abiertas"] = sum(op["estado"] == "abierta" for op in salida["operaciones"])
+    if salida["abiertas"]:
+        salida["firmeza"] = RES.PROVISIONAL
+    salida["saldo_usd"] = _usd(saldo)
+    salida["funding_usd"] = _usd(salida["funding_usd"])
+    for op in salida["operaciones"]:
+        op.pop("_pnl", None)
+        for k in ("nocional_usd", "comision_usd", "funding_usd", "pnl_usd"):
+            op[k] = _usd(op[k])
+    return salida

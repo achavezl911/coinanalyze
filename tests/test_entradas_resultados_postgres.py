@@ -194,6 +194,7 @@ async def test_la_ruta_sirve_el_resultado_saca_de_vivos_lo_acabado_y_cuenta_resu
     assert d["resultado"]["firmeza"] == RES.FINAL
     [celda] = [c for c in resp["cuentas"] if c["version"] == "v2"]
     assert (celda["resueltos"], celda["sin_entrada"], celda["no_evaluables"]) == (1, 0, 0)
+    assert resp["papel"]["v2"]["n"] == 1 and resp["papel"]["v1"]["n"] == 0
     assert resp["resultados"]["huella_convenciones"] == R.huella(RS.CONVENCIONES_DOC)
     assert [x["etapa"] for x in resp["faltan"]] == ["E4"]
     assert RUTA.fracciones_servidas(resp) == []

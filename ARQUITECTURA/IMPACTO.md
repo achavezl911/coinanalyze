@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 631 funciones con radio, 259 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 633 funciones con radio, 259 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **50** de las 631 escriben alguna tabla
+Solo **50** de las 633 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -84,7 +84,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-631 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+633 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -323,6 +323,8 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.ai_context.verdict_history`](impacto/app-ai_context.md) | `app/ai_context.py:486` | 2 | **0** | 0 | **2** |
 | [`app.api._session_window`](impacto/app-api.md) | `app/api.py:522` | 2 | **0** | 0 | **2** |
 | [`app.api.scalp_persistence`](impacto/app-api.md) | `app/api.py:3194` | 2 | **0** | 0 | **2** |
+| [`app.entradas.papel._usd`](impacto/app-entradas-papel.md) | `app/entradas/papel.py:33` | 2 | **0** | 0 | **2** |
+| [`app.entradas.papel.cuenta`](impacto/app-entradas-papel.md) | `app/entradas/papel.py:37` | 2 | **0** | 0 | **2** |
 | [`app.entradas.registro.insertar`](impacto/app-entradas-registro.md) | `app/entradas/registro.py:180` | 0 | **2** | 2 | **2** |
 | [`app.entradas.registro.latir`](impacto/app-entradas-registro.md) | `app/entradas/registro.py:219` | 0 | **2** | 2 | **2** |
 | [`app.entradas.registro.registrar_reglamento`](impacto/app-entradas-registro.md) | `app/entradas/registro.py:66` | 0 | **2** | 2 | **2** |
@@ -363,10 +365,10 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.entradas.resultados.de_filas`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:110` | 2 | **0** | 2 ↑ | **2** |
 | [`app.entradas.resultados.guardar`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:97` | 2 | **2** | 2 | **2** |
 | [`app.entradas.resultados.resolver_fila`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:82` | 2 | **0** | 2 ↑ | **2** |
-| [`app.entradas.ruta._hipotesis`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:341` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta._reglamento`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:363` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta._resumen`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:150` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta.construir`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:193` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta._hipotesis`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:344` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta._reglamento`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:366` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta._resumen`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:151` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta.construir`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:194` | 2 | **0** | 0 | **2** |
 | [`app.field_disambiguation.build`](impacto/app-field_disambiguation.md) | `app/field_disambiguation.py:72` | 2 | **0** | 0 | **2** |
 | [`app.scalp_logic.horizon_structure`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1753` | 2 | **0** | 0 | **2** |
 | [`app.scalp_logic.hypothesis_evidence`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:4992` | 2 | **0** | 0 | **2** |
