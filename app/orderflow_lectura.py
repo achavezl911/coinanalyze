@@ -417,9 +417,9 @@ SESIONES = {"dia": ("00:00", "24:00"), "asia": ("00:00", "08:00"), "europa": ("0
 REGLA_SESION = (
     "Una sesion es una ventana diaria de HH:MM a HH:MM UTC (dia 00:00-24:00, asia 00:00-08:00, europa 07:00-16:00, "
     "eeuu 13:30-20:00, o una propia). Si su fin no es posterior a su inicio, CRUZA la medianoche y es UNA sola, de un "
-    "dia al siguiente. Cada sesion que toca la ventana pedida se calcula ENTERA desde su inicio y se corta en `hasta`: "
+    "dia al siguiente. Cada sesion que toca la ventana pedida se calcula ENTERA desde su inicio y se corta en hasta: "
     "una ventana del pasado se repite igual y una sesion viva crece. La cobertura cuenta los minutos-venue de "
-    "[inicio, corte), con corte = el menor de su fin, `hasta` y el ultimo minuto que cerro hace 90 s; en_curso: el "
+    "[inicio, corte), con corte = el menor de su fin, hasta y el ultimo minuto que cerro hace 90 s; en_curso: el "
     "corte queda antes de su fin."
 )
 CIERRE = timedelta(seconds=90)  # un minuto se da por escuchado 90 s despues de cerrarse (el colector lo reescribe a 70)
