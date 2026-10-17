@@ -263,7 +263,7 @@ horas=$(for i in $(seq 0 __VH__); do LC_ALL=C date -d "-$i hours" +%d/%b/%Y:%H; 
   BEGIN { n = split(H, a, "|") }
   $0 == "@@VIVOS@@" { vivos = 1; next }
   { split($0, q, "\""); split(q[2], r, " "); p = r[2]; sub(/\?.*/, "", p)
-    if (r[1] == "GET" && (p == "/" || p == "/mesa" || p == "/panel")) { print "C " $0; next }
+    if (r[1] == "GET" && (p == "/" || p == "/mesa" || p == "/panel" || p == "/flujo")) { print "C " $0; next }
     if (vivos && p ~ /^\/api\//) for (i = 1; i <= n; i++) if (index($4, a[i]) == 2) { print "A " $0; break } }'
 grep -a -E 'current -|rolling back to|restoring previous release' /var/log/coinalyze/deploy.log 2>/dev/null | sed 's/^/D /'
 for d in /opt/coinalyze/releases/*/; do
@@ -326,7 +326,11 @@ MARGEN = float(os.environ["MARGEN_S"]); ARNES = os.environ["ARNES_IP"]; REPO = o
 FOTO = set(os.environ.get("FOTO", "").split())
 EXC = set(os.environ.get("RUTAS_EX", "").split("|")) - {""}
 PANTALLA_DE = {"index.html": "panel", "mesa.html": "mesa"}
-NOMBRE = {"panel": "el panel viejo", "mesa": "la mesa"}
+NOMBRE = {"panel": "el panel viejo", "mesa": "la mesa", "flujo": "el footprint"}
+# EL FOOTPRINT (campana 142, /flujo) pide UNA ruta y ninguna otra pantalla la pide (static/flujo/flujo-app.js: RUTA).
+# Con su carga delante esa peticion es suya, y ninguna otra lo es: asi su pestana, abierta al lado de la mesa o del
+# panel, no los vuelve ambiguos. No se juzga aqui contra nada: lo que pinta lo juzga K109.
+RUTA_FLUJO = "/api" + "/orderflow/footprint"
 LINEA = re.compile(r'^(\S+) \S+ \S+ \[([^\]]+)\] "([^"]*)" (\d{3}) \S+ "[^"]*" "([^"]*)"')
 
 def sale(*c):
@@ -366,7 +370,7 @@ with open(os.environ["CRUDO"], encoding="utf-8", errors="replace") as fh:
             completa = p[1]
             ruta = completa.split("?", 1)[0].split("#", 1)[0]
             if tag == "C":
-                if p[0] == "GET" and ruta in ("/", "/mesa", "/panel") and st in (200, 304):
+                if p[0] == "GET" and ruta in ("/", "/mesa", "/panel", "/flujo") and st in (200, 304):
                     cargas.append((t, (ip, ua), ruta))
             elif ruta.startswith("/api/"):
                 pets.append((t, (ip, ua), ruta, completa))
@@ -452,6 +456,8 @@ for (t, k, ruta) in cargas:
     if ini_c <= t <= ahora:
         if ruta == "/mesa":
             p, mot = "mesa", None
+        elif ruta == "/flujo":
+            p, mot = "flujo", None
         elif ruta == "/panel":
             p, mot = "panel", None
         else:
@@ -465,7 +471,7 @@ tiempos = defaultdict(list)   # por cliente: (t, ruta) de lo que pidio la mesa, 
 query = Counter()
 rutas_doc = {"panel": set(), "mesa": set()}
 sin = defaultdict(Counter)
-n_api, clientes = 0, set()
+n_api, clientes, n_flujo = 0, set(), 0
 for (t, k, ruta, completa) in pets:
     if not (ini <= t <= ahora):
         continue
@@ -474,6 +480,13 @@ for (t, k, ruta, completa) in pets:
     previas = [c for c in por_cliente.get(k, ()) if c[0] <= t]
     if not previas:
         sin[f"sin carga visible de ninguna pantalla en las {CH:g} h de cargas que se miran"][ruta] += 1
+        continue
+    if ruta == RUTA_FLUJO and any(c[2] == "flujo" for c in previas):
+        n_flujo += 1
+        continue
+    previas = [c for c in previas if c[2] != "flujo"]
+    if not previas:
+        sin[f"su cliente solo cargo el footprint, que no pide esta ruta (pide {RUTA_FLUJO} y nada mas)"][ruta] += 1
         continue
     ambiguas = [c for c in previas if c[2] is None]
     if ambiguas:
@@ -495,6 +508,7 @@ n_cargas = sum(1 for (t, _k, _r) in cargas if ini <= t <= ahora)
 sale("META", "n_api", n_api)
 sale("META", "n_clientes", len(clientes))
 sale("META", "n_cargas", n_cargas)
+sale("META", "n_flujo", n_flujo)
 for p in ("panel", "mesa"):
     docs = " y ".join(f"`{r}`" for r in sorted(rutas_doc[p]))
     sale("PANT", p, sum(pide[p].values()), docs)
@@ -1128,6 +1142,8 @@ fi
 echo "$primera"
 [ -n "${P_DET:-}" ] && echo "  panel viejo · $P_DET"
 [ -n "${M_DET:-}" ] && echo "  mesa · $M_DET"
+N_FLUJO=$(meta n_flujo)
+[ "${N_FLUJO:-0}" -gt 0 ] && echo "  footprint · $N_FLUJO peticion(es) a su unica ruta, suyas por ella: no se cargan a la mesa ni al panel (lo que pinta lo juzga K109)"
 [ "${N_SIN:-0}" -gt 0 ] && echo "  SIN ATRIBUIR$SIN_DET"
 echo "  puerta · ${PUERTA:-sin linea de tiempo}"
 

@@ -69,7 +69,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K108-orderflow.py:449`, `harness/checks/K108-orderflow.py:451` | — |
+| **checks** | `harness/checks/K108-orderflow.py:458`, `harness/checks/K108-orderflow.py:460` | — |
 
 **No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.

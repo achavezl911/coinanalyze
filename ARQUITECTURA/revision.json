@@ -37,7 +37,7 @@
     "/api/oi-context": "13f02ffcd05e723c",
     "/api/orderflow/cinta": "0e3e28c9bb9271f7",
     "/api/orderflow/cobertura": "0e3e28c9bb9271f7",
-    "/api/orderflow/footprint": "78fe8cf4d73aa79c",
+    "/api/orderflow/footprint": "7f16924eba6590af",
     "/api/orderflow/grandes": "0e3e28c9bb9271f7",
     "/api/orderflow/perfil": "78fe8cf4d73aa79c",
     "/api/orderflow/referencia": "0e3e28c9bb9271f7",
@@ -78,6 +78,7 @@
     "/api/whale/delta": "01cad5d6183b8b6b",
     "/api/wyckoff": "a5634651c031dd30",
     "/api/zone/analysis": "e498076eb757a056",
+    "/flujo": "b9b51dddfa2b0cf2",
     "/mesa": "cd495219affa108a",
     "/metrics": "85fd30d67170fd17",
     "/panel": "cd495219affa108a"

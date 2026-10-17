@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 653 funciones con radio, 262 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 654 funciones con radio, 262 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **53** de las 653 escriben alguna tabla
+Solo **53** de las 654 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -84,7 +84,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-653 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+654 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -434,9 +434,10 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.api.entradas`](impacto/app-api.md) | `app/api.py:1318` | 1 | **0** | 0 | **1** |
 | [`app.api.external_macro_endpoint`](impacto/app-api.md) | `app/api.py:2205` | 1 | **0** | 0 | **1** |
 | [`app.api.flow_spot_vs_perp`](impacto/app-api.md) | `app/api.py:1779` | 1 | **0** | 0 | **1** |
+| [`app.api.flujo`](impacto/app-api.md) | `app/api.py:4025` | 1 | **0** | 0 | **1** |
 | [`app.api.funding_context_endpoint`](impacto/app-api.md) | `app/api.py:1943` | 1 | **0** | 0 | **1** |
 | [`app.api.hypothesis`](impacto/app-api.md) | `app/api.py:1401` | 1 | **0** | 0 | **1** |
-| [`app.api.index`](impacto/app-api.md) | `app/api.py:4025` | 1 | **0** | 0 | **1** |
+| [`app.api.index`](impacto/app-api.md) | `app/api.py:4032` | 1 | **0** | 0 | **1** |
 | [`app.api.level_breakout_endpoint`](impacto/app-api.md) | `app/api.py:2076` | 1 | **0** | 0 | **1** |
 | [`app.api.liquidation_levels`](impacto/app-api.md) | `app/api.py:3082` | 1 | **0** | 0 | **1** |
 | [`app.api.liquidation_map_endpoint`](impacto/app-api.md) | `app/api.py:1950` | 1 | **0** | 0 | **1** |

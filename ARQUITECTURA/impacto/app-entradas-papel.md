@@ -17,7 +17,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/papel.py:63` · clave completa `app.entradas.papel._pendiente`
 
-**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -41,7 +41,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/papel.py:74` · clave completa `app.entradas.papel._sin_resultado`
 
-**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -65,7 +65,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/papel.py:59` · clave completa `app.entradas.papel._usd`
 
-**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -89,7 +89,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/papel.py:87` · clave completa `app.entradas.papel.cuenta`
 
-**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 

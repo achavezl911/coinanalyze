@@ -1122,6 +1122,35 @@ else
 fi
 
 echo
+echo "P26 · EL FOOTPRINT AL LADO DE LA MESA (campana 142): el mismo cliente carga \`/\` y \`/flujo\`; lo del footprint es suyo por su ruta"
+montav "$DIR/p26" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790; echo 'C alex -9000 /flujo'; echo "A alex -8990 60 $A/orderflow/footprint?symbol=BTC&marco=1m")"
+corrv P26 "$DIR/p26"; rc=$RC
+comprueba "P26a VERDE, rc=0 (rc=$rc): la mesa se sigue juzgando contra lo suyo" \
+  "$([ "$rc" = 0 ] && [ "$(en_primera P26 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo '"$A"'/mesa/decide 41 veces y NADA fuera de su contrato')" = si ] && echo si || echo no)"
+comprueba "P26b y las 60 del footprint salen NOMBRADAS como suyas, no sin atribuir" \
+  "$([ "$(tiene P26 'footprint · 60 peticion\(es\) a su unica ruta')" = si ] && [ "$(no_tiene P26 'SIN ATRIBUIR')" = si ] && echo si || echo no)"
+
+echo
+echo "P27 · LA RUTA DEL FOOTPRINT PEDIDA POR UN CLIENTE QUE NO LO CARGO: se le carga a la pantalla que tenia, la mesa"
+montav "$DIR/p27" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790; echo "A alex -8990 60 $A/orderflow/footprint?symbol=BTC&marco=1m")"
+corrv P27 "$DIR/p27"; rc=$RC
+comprueba "P27a ROJO, rc=1 (rc=$rc): la mesa pide FUERA de su contrato la ruta del footprint, con su cuenta" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P27 'la mesa \(static/mesa\.html, cargada por `/`\) pide FUERA de su contrato \(K44-contrato-mesa\.tsv\): '"$A"'/orderflow/footprint\(60\)')" = si ] && echo si || echo no)"
+
+echo
+echo "V3 · LOS BYTES DE K44 DE ANTES DEL FOOTPRINT (03dcf06) en la ventana de P26: le cargan a la mesa lo del footprint"
+if git -C "$ORIG" show 03dcf06:harness/checks/K44-el-sobre-que-nadie-pide.sh > "$DIR/K44-antes-flujo.sh" 2>/dev/null; then
+  rm -rf "$DIR/v3"; cp -a "$DIR/p26" "$DIR/v3"
+  sed "s#^B=/srv/coinanalyze/harness; . \"\$B/env\"#B=$DIR/v3; . \"\$B/env\"#" "$DIR/K44-antes-flujo.sh" > "$DIR/v3/K44.sh"
+  printf '%s\n' "#!/bin/bash" "printf 'LLAMADO\\n' >> $DIR/v3/senal" "cat $DIR/v3/salida" "exit 0" > "$DIR/v3/bin/prod"
+  corre V3 "$DIR/v3/K44.sh" K44_PAYLOADS="$DIR/v3/payloads" K44_SIMBOLO=TEST K44_LIMITS=/no/existe
+  comprueba "V3 el K44 de antes da ROJO (rc=$RC) en la ventana de P26: lo que lo arregla es la regla nueva" \
+    "$([ "$RC" = 1 ] && [ "$(tiene V3 'FUERA de su contrato.*'"$A"'/orderflow/footprint\(60\)')" = si ] && echo si || echo no)"
+else
+  comprueba "V3 no pude leer el K44 de 03dcf06 del historial" no
+fi
+
+echo
 echo "P16 · LA MESA SE MIRO Y SU CONTRATO NO SE PUEDE LEER"
 montav "$DIR/p16" "$(echo 'C alex -10800 /mesa'; ev_mesa alex -10790)"
 corrv P16 "$DIR/p16" K44_CONTRATO=/no/existe; rc=$RC

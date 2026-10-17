@@ -144,6 +144,11 @@ cp -r "$T/s0" "$T/s-va"
 f=$(grep -l '"que": "perfil' "$T"/s-va/*.json | head -1)
 "$PY" -c "import json,sys; p=sys.argv[1]; d=json.load(open(p)); d['value_area']['val']=d['niveles'][0]['nivel']; d['value_area']['vah']=d['niveles'][-1]['nivel']; json.dump(d,open(p,'w'))" "$f"
 planta servido_value_area 1 '\(d\) [A-Z]+ .*value area servida' "$B0" "$T/s-va" "$H_BUENA"
+# OF-2 (campana 142): la value area de CADA vela del footprint, aplastada a su VAL en una vela que no la tiene de un nivel
+cp -r "$T/s0" "$T/s-vav"
+f=$(grep -l '"que": "footprint' "$T"/s-vav/*.json | head -1)
+"$PY" -c "import json,sys; p=sys.argv[1]; d=json.load(open(p)); v=next(v for v in d['velas'] if v.get('value_area') and v['value_area']['val']!=v['value_area']['vah']); v['value_area']['vah']=v['value_area']['val']; json.dump(d,open(p,'w'))" "$f"
+planta servido_va_de_una_vela 1 '\(d\) [A-Z]+ .*value area servida .* != recalculada' "$B0" "$T/s-vav" "$H_BUENA"
 b=$(copia vieja limpia); en "$b" "SELECT ensure_temporal_partitions('2026-10-14 12:00+00', 0, 0)"
 en "$b" "INSERT INTO orderflow_cinta(ts,venue,symbol,precio,base,usd,compra,id) VALUES ('2026-10-14 12:00+00','binance_spot','BTC',80000,1,80000,true,'vieja')"
 planta retencion_cinta 1 '\(e\) 1 filas de cinta mas viejas que su retencion' "$b" "$T/s0" "$H_BUENA"

@@ -31,7 +31,9 @@ let LATIDO = null;
 let TIC = null;
 let PIDIENDO = false;
 let CARGA = 0;
-window.FLUJO_HITOS = { listo: false, vista: null, peticiones: [] };
+// LO QUE SE LEE DESDE FUERA (K109, por CDP): `listo` cuando la vista pedida ya esta pintada, la vista, las peticiones,
+// y `repinta()`, que vuelve a pintar AHORA (sincrono): asi FLUJO_PINTADO y lo que el lienzo escribio son del mismo fotograma.
+window.FLUJO_HITOS = { listo: false, vista: null, peticiones: [], repinta: () => LIENZO && LIENZO.pinta() };
 
 function reloj() {
   return (window.performance || Date).now();

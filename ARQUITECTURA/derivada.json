@@ -910,6 +910,11 @@
       "linea": 1779,
       "sitio": "`app/api.py:1779`"
     },
+    "app.api.flujo": {
+      "fichero": "app/api.py",
+      "linea": 4025,
+      "sitio": "`app/api.py:4025`"
+    },
     "app.api.funding_context_endpoint": {
       "fichero": "app/api.py",
       "linea": 1943,
@@ -932,8 +937,8 @@
     },
     "app.api.index": {
       "fichero": "app/api.py",
-      "linea": 4025,
-      "sitio": "`app/api.py:4025`"
+      "linea": 4032,
+      "sitio": "`app/api.py:4032`"
     },
     "app.api.latest_snapshot": {
       "fichero": "app/api.py",
@@ -3961,6 +3966,21 @@
         "total": 1,
         "total_exacto": 1
       },
+      "app.api.flujo": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [],
+        "por_llamada": [
+          "/flujo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/api.py:4025",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
       "app.api.funding_context_endpoint": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [],
@@ -4064,7 +4084,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4025",
+        "sitio": "app/api.py:4032",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -31466,13 +31486,13 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 433,
-    "rutas": 81,
+    "funciones_alcanzables": 434,
+    "rutas": 82,
     "rutas_con_campos": 74,
-    "rutas_sin_campos": 7,
-    "sin_clave_temporal": 24,
+    "rutas_sin_campos": 8,
+    "sin_clave_temporal": 25,
     "sin_consumidor": 8,
-    "sin_declarar": 13,
+    "sin_declarar": 14,
     "sin_llamada": 17,
     "solo_mencion": 9,
     "tablas_alcanzadas": 34,
@@ -31510,17 +31530,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 4024,
+      "decorador_linea": 4031,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4031,
+      "fin": 4038,
       "forma": [],
       "handler": "app.api.index",
       "impacto_del_handler": 1,
-      "linea": 4025,
+      "linea": 4032,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -31988,7 +32008,7 @@
             "harness/checks/K44-control.bash:648",
             "harness/checks/K44-control.bash:693",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:222",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:720",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:734",
             "harness/checks/K72-campos.js:33",
             "harness/checks/K84-dos-matrices-una-cifra.sh:203",
             "harness/checks/K84-dos-matrices-una-cifra.sh:257"
@@ -32928,7 +32948,7 @@
         "panel-html": {
           "llamadas": [],
           "menciones": [
-            "static/index.html:242"
+            "static/index.html:243"
           ]
         },
         "tests": {
@@ -34354,7 +34374,7 @@
             "harness/checks/K44-control.bash:254",
             "harness/checks/K44-control.bash:628",
             "harness/checks/K44-control.bash:720",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:812",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:826",
             "harness/checks/K72-campos.js:6",
             "harness/checks/K72-el-campo-que-no-llega.sh:10",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13",
@@ -36981,7 +37001,7 @@
         "panel-html": {
           "llamadas": [],
           "menciones": [
-            "static/index.html:244"
+            "static/index.html:245"
           ]
         },
         "panel-sobre": {
@@ -38406,7 +38426,7 @@
         "panel-html": {
           "llamadas": [],
           "menciones": [
-            "static/index.html:490"
+            "static/index.html:491"
           ]
         },
         "readme": {
@@ -38914,16 +38934,19 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K108-orderflow.py:442",
-            "harness/checks/K108-orderflow.py:444"
+            "harness/checks/K108-orderflow.py:451",
+            "harness/checks/K108-orderflow.py:453",
+            "harness/checks/K109-banco.py:159"
           ],
-          "menciones": []
+          "menciones": [
+            "harness/checks/K109-banco.py:12"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 2,
-        "n_menciones": 0,
+        "n_llamadas": 3,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -39184,8 +39207,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K108-orderflow.py:449",
-            "harness/checks/K108-orderflow.py:451"
+            "harness/checks/K108-orderflow.py:458",
+            "harness/checks/K108-orderflow.py:460"
           ],
           "menciones": []
         }
@@ -44108,8 +44131,8 @@
         "checks": {
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:170",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:707",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:711"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:721",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:725"
           ],
           "menciones": []
         },
@@ -45258,6 +45281,90 @@
       "tipo_retorno": "dict[str, Any]"
     },
     {
+      "camino": "/flujo",
+      "campos": {},
+      "campos_pendientes": [
+        "la respuesta pasa por FileResponse(), que no se puede seguir",
+        "el valor devuelto es un BinOp, que no se analiza estaticamente"
+      ],
+      "cierre": [],
+      "cierre_indirecto": [],
+      "claves_temporales": [],
+      "codigos": [],
+      "consumidores": {
+        "checks": {
+          "llamadas": [
+            "harness/checks/K109-banco.py:150",
+            "harness/checks/K109-banco.py:151",
+            "harness/checks/K109-banco.py:152",
+            "harness/checks/K109-footprint.py:267",
+            "harness/checks/K109-footprint.py:511",
+            "harness/checks/K109-footprint.py:516",
+            "harness/checks/K109-footprint.py:519",
+            "harness/checks/K44-control.bash:1125",
+            "harness/checks/K44-control.bash:1126",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:266",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:373",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:459"
+          ],
+          "menciones": [
+            "harness/checks/K109-banco.py:9",
+            "harness/checks/K109-banco.py:15",
+            "harness/checks/K109-lo-pintado-es-lo-servido.sh:4",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:330"
+          ]
+        },
+        "panel-html": {
+          "llamadas": [
+            "static/index.html:91"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": true,
+        "n_llamadas": 13,
+        "n_menciones": 4,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
+      "declarada": {
+        "completa": false,
+        "existe": false,
+        "faltan": [
+          "PREGUNTA",
+          "VENTANA",
+          "PROMESA",
+          "SUPERFICIE"
+        ],
+        "fichero": "declarada/flujo.md",
+        "secciones": []
+      },
+      "decorador_linea": 4024,
+      "familia_ventana": {
+        "candidata": 1,
+        "por": "solo pide symbol (o nada): estado ambiente"
+      },
+      "fichero": "app/api.py",
+      "fin": 4028,
+      "forma": [],
+      "handler": "app.api.flujo",
+      "impacto_del_handler": 1,
+      "linea": 4025,
+      "llama_directo": [],
+      "llama_fuera": [
+        "FileResponse"
+      ],
+      "metodos": [
+        "GET"
+      ],
+      "parametros": [],
+      "tablas_dudosas": [],
+      "tablas_escribe": [],
+      "tablas_lee": [],
+      "tipo_retorno": "FileResponse"
+    },
+    {
       "camino": "/mesa",
       "campos": {},
       "campos_pendientes": [
@@ -45304,12 +45411,12 @@
             "harness/checks/K44-control.bash:998",
             "harness/checks/K44-control.bash:1019",
             "harness/checks/K44-control.bash:1026",
-            "harness/checks/K44-control.bash:1126",
-            "harness/checks/K44-control.bash:1133",
-            "harness/checks/K44-control.bash:1171",
+            "harness/checks/K44-control.bash:1155",
+            "harness/checks/K44-control.bash:1162",
+            "harness/checks/K44-control.bash:1200",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:266",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:369",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:453"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:373",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:457"
           ],
           "menciones": [
             "harness/checks/K102-control.bash:270",
@@ -45511,8 +45618,8 @@
             "harness/checks/K44-control.bash:943",
             "harness/checks/K44-control.bash:946",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:266",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:369",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:455"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:373",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:461"
           ],
           "menciones": [
             "harness/checks/K102-sobre-plantado.py:258",
@@ -45928,7 +46035,7 @@
         {
           "funcion": "app.orderflow_lectura.cobertura",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:325"
+          "sitio": "app/orderflow_lectura.py:364"
         }
       ],
       "leida_por": [
@@ -48316,7 +48423,7 @@
         {
           "funcion": "app.orderflow_lectura.cinta",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:281"
+          "sitio": "app/orderflow_lectura.py:320"
         }
       ]
     },
@@ -48361,7 +48468,7 @@
         {
           "funcion": "app.orderflow_lectura.cobertura",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:316"
+          "sitio": "app/orderflow_lectura.py:355"
         }
       ]
     },
@@ -48389,7 +48496,7 @@
         {
           "funcion": "app.orderflow_lectura.grandes",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:298"
+          "sitio": "app/orderflow_lectura.py:337"
         }
       ]
     },

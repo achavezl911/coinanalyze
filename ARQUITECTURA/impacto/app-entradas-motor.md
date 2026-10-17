@@ -29,7 +29,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/motor.py:1022` · clave completa `app.entradas.motor._avanza`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -69,7 +69,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:988` · clave completa `app.entradas.motor._nuevo_episodio`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -109,7 +109,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:816` · clave completa `app.entradas.motor._ocupaciones`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -149,7 +149,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:443` · clave completa `app.entradas.motor.arma`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -189,7 +189,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:217` · clave completa `app.entradas.motor.atr_mediana`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -229,7 +229,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:212` · clave completa `app.entradas.motor.completa`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -269,7 +269,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:282` · clave completa `app.entradas.motor.construir_zonas`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -309,7 +309,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:176` · clave completa `app.entradas.motor.de_iso`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -349,7 +349,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:436` · clave completa `app.entradas.motor.elegible`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -389,7 +389,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:425` · clave completa `app.entradas.motor.estructura`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -429,7 +429,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:184` · clave completa `app.entradas.motor.foto_canonica`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -469,7 +469,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:253` · clave completa `app.entradas.motor.grupos_por_comun`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -511,7 +511,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:131` · clave completa `app.entradas.motor.incompatibilidades`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -551,7 +551,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:171` · clave completa `app.entradas.motor.iso`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -593,7 +593,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:861` · clave completa `app.entradas.motor.paso`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -635,7 +635,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/motor.py:239` · clave completa `app.entradas.motor.solapan`
 
-**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 82 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 

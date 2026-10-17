@@ -3,15 +3,17 @@
 
     K109-banco.py carga <dsn>      crea en <dsn> las tres tablas que lee el footprint y las llena con
                                    K109-celdas.tsv.gz (celdas, cobertura y pasos de produccion bajados una vez)
-    K109-banco.py sirve --puerto P --db <dsn> [--sobre DIR] [--altera nivel|va] [--sin-pagina] [--diario F]
+    K109-banco.py sirve --puerto P --db <dsn> [--sobre DIR] [--plantado FICHERO] [--diario F]
 
 Lo que sirve:
-    /flujo                  static/flujo.html del arbol (404 con --sin-pagina: el sujeto sin desplegar)
+    /flujo                  static/flujo.html del arbol
     /static/*               static/ del arbol; si --sobre DIR trae el fichero, ese gana (asi se planta una pagina que
                             pinta mal SIN tocar el arbol)
-    /api/orderflow/footprint  lo que calcula app/orderflow_lectura.py DEL ARBOL sobre <dsn>, con el `as_of` de la ruta;
-                            --altera lo tuerce DESPUES de calcularlo (el plantado de «lo servido no es lo de las celdas»)
+    /api/orderflow/footprint  lo que calcula app/orderflow_lectura.py DEL ARBOL sobre <dsn>, con el `as_of` de la ruta
     cualquier otra /api/*   503 «banco»
+--plantado FICHERO se RELEE en cada peticion (el control cambia el escenario sin reiniciar el banco): si existe, dice
+`nivel` o `va` (lo servido se tuerce DESPUES de calcularlo: «lo servido no es lo de las celdas») o `sin_pagina` (/flujo
+da 404: el sujeto sin desplegar).
 Con la CSP de produccion (copiada de app/api.py): un <script> o un <style> en linea fallaria aqui igual que alli.
 No aplica ninguna regla de K109: sirve. Lo usan K109-control.bash y las capturas de la entrega.
 """
@@ -116,11 +118,16 @@ def main() -> int:
     ap.add_argument("--puerto", type=int, required=True)
     ap.add_argument("--db", required=True)
     ap.add_argument("--sobre")
-    ap.add_argument("--altera", choices=("nivel", "va"))
-    ap.add_argument("--sin-pagina", action="store_true")
+    ap.add_argument("--plantado")
     ap.add_argument("--diario")
     a = ap.parse_args()
     sobre = Path(a.sobre) if a.sobre else None
+
+    def plantado() -> str:
+        try:
+            return Path(a.plantado).read_text().strip() if a.plantado else ""
+        except OSError:
+            return ""
 
     class H(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -142,7 +149,7 @@ def main() -> int:
             u = urlparse(self.path)
             if u.path == "/flujo" or u.path.startswith("/static/"):
                 rel = "flujo.html" if u.path == "/flujo" else u.path[len("/static/"):]
-                if u.path == "/flujo" and a.sin_pagina:
+                if u.path == "/flujo" and plantado() == "sin_pagina":
                     return self.manda(404, b'{"detail":"Not Found"}', TIPOS[".json"])
                 for raiz in ([sobre] if sobre else []) + [REPO / "static"]:
                     f = (raiz / rel).resolve()
@@ -152,8 +159,8 @@ def main() -> int:
             if u.path == "/api/orderflow/footprint":
                 q = {k: v[0] for k, v in parse_qs(u.query).items()}
                 estado, d = _footprint(a.db, q)
-                if estado == 200 and a.altera:
-                    d = altera(d, a.altera)
+                if estado == 200 and plantado() in ("nivel", "va"):
+                    d = altera(d, plantado())
                 return self.manda(estado, json.dumps(d).encode(), TIPOS[".json"])
             return self.manda(503, b'{"detail":"banco: aqui solo se sirve el footprint"}', TIPOS[".json"])
 
