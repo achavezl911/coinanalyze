@@ -5,7 +5,8 @@ propia aritmetica, y el algoritmo de la value area se reescribe desde su declara
 audita, (d) compararia el codigo consigo mismo.
 
 Uso: K108-orderflow.py juzga   (el entorno lo pone K108-el-dato-del-order-flow.sh)
-     K108-orderflow.py sirve <dir>   (escribe lo que serviria el arbol, para los controles)
+     K108-orderflow.py sirve <dir> [--planta X]   (escribe lo que serviria el arbol, para los controles)
+Desde OF-3 (campana 143), (d) juzga tambien lo que sirven /sesiones (con su compuesto), /vwap y /tpo.
 """
 
 from __future__ import annotations
@@ -16,7 +17,8 @@ import subprocess
 import sys
 import urllib.parse
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, localcontext
+from fractions import Fraction
 from pathlib import Path
 
 H = os.environ.get("K108_HARNESS", "/srv/coinanalyze/harness")
@@ -50,6 +52,10 @@ MINIMO = timedelta(minutes=int(os.environ.get("K108_MINIMO", "30")))  # vida min
 
 class Canal(Exception):
     pass
+
+
+class NoLaSirve(Canal):
+    """La ruta no existe en el sujeto (404): un sujeto anterior a la campana que la anadio. No es el canal caido."""
 
 
 def _ts(t: datetime) -> str:
@@ -87,6 +93,8 @@ def api(ruta: str) -> dict:
     if SUJETO == "produccion":
         r = subprocess.run(["sh", f"{H}/bin/api", ruta], capture_output=True, text=True, timeout=120,
                            env={**os.environ, "TODO": "1"})
+        if r.returncode != 0 and "HTTP 404" in r.stderr:
+            raise NoLaSirve(ruta.split("?")[0])
         if r.returncode != 0:
             raise Canal(f"api {ruta.split('?')[0]} rc={r.returncode}")
         try:
@@ -94,6 +102,8 @@ def api(ruta: str) -> dict:
         except ValueError as exc:
             raise Canal(f"api {ruta.split('?')[0]} no devolvio JSON") from exc
     nombre = Path(SERVIDO) / (urllib.parse.quote(ruta, safe="") + ".json")
+    if not nombre.is_file() and (Path(SERVIDO) / "sin-of3").is_file():  # el control: un sujeto anterior a OF-3
+        raise NoLaSirve(ruta.split("?")[0])
     if not nombre.is_file():
         raise Canal(f"no hay respuesta servida para {ruta} en {SERVIDO}")
     return json.loads(nombre.read_text())
@@ -237,6 +247,256 @@ def compara_perfil(servido: dict, rec: dict) -> list[str]:
     if va and (Decimal(sva.get("val") or -1), Decimal(sva.get("vah") or -1), Decimal(sva.get("volumen") or -1)) != va:
         malos.append(f"perfil: value area servida {sva.get('val')}-{sva.get('vah')} != recalculada "
                      f"{texto(va[0])}-{texto(va[1])}")
+    return malos
+
+
+# --------------------------------------------------------------------------------------------- OF-3 (campana 143)
+# LOS PERFILES servidos -sesiones con su compuesto, VWAP con bandas y TPO- == recalculados aqui con su propia
+# aritmetica: las sesiones se cuentan aqui, los niveles se suman aqui al paso, el VWAP sale EXACTO con Fraction y la
+# sigma con Decimal a 60 cifras por OTRA formula (dos pasadas: sum q_n (p_n - vwap)^2 / Q, con p_n = u_n / q_n), y el
+# TPO con su propio «toca», su propio paso y sus propias letras.
+LETRAS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuv"
+PLANTILLAS = {"dia": ("00:00", "24:00"), "asia": ("00:00", "08:00"), "europa": ("07:00", "16:00"),
+              "eeuu": ("13:30", "20:00")}
+
+
+def _dt(iso: str) -> datetime:
+    return datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+
+
+def plantilla_cruzada(fin: datetime) -> str:
+    """Una sesion propia de 24 h que empieza 12 h antes de `fin`: contiene la ventana de (d) y CRUZA siempre una
+    medianoche. Si el sujeto la partiera en dos, sus sesiones no serian las de aqui."""
+    s = fin - timedelta(hours=12)
+    if (s.hour, s.minute) == (0, 0):
+        s += timedelta(minutes=1)  # a las 00:00 seria el dia, que no cruza
+    return f"{s:%H:%M}-{s:%H:%M}"
+
+
+def sesiones_aqui(plantilla: str, a: datetime, b: datetime) -> list[tuple[datetime, datetime]]:
+    i, f = PLANTILLAS.get(plantilla, tuple(plantilla.split("-")))
+    ini = int(i[:2]) * 60 + int(i[3:])
+    largo = (int(f[:2]) * 60 + int(f[3:]) - ini) % 1440 or 1440
+    out, dia = [], datetime(a.year, a.month, a.day, tzinfo=UTC) - timedelta(days=2)
+    while dia <= b:
+        s = dia + timedelta(minutes=ini)
+        if s < b and s + timedelta(minutes=largo) > a:
+            out.append((s, s + timedelta(minutes=largo)))
+        dia += timedelta(days=1)
+    return out
+
+
+def peticiones_of3(desde: datetime, hasta: datetime, pasos: dict, fin: datetime) -> list[tuple[str, str, dict]]:
+    """Lo que (d) pide de OF-3 por activo, sobre su ventana: las sesiones del dia y las de la plantilla que cruza la
+    medianoche (con su compuesto), el VWAP de 5 min de la que cruza y el TPO del dia (paso automatico)."""
+    cruzada = plantilla_cruzada(fin)
+    out = []
+    for activo in ACTIVOS:
+        w = {"symbol": activo, "desde": _iso(desde), "hasta": _iso(hasta)}
+        paso = texto(pasos[activo] * PASO_D)
+        out += [(activo, "sesiones", {**w, "sesion": "dia", "paso": paso, "unidad": "base"}),
+                (activo, "sesiones", {**w, "sesion": cruzada, "paso": paso, "unidad": "base"}),
+                (activo, "vwap", {**w, "marco": f"{MARCO_D}m", "sesion": cruzada}),
+                (activo, "tpo", {**w, "sesion": "dia", "paso": "auto"})]
+    return out
+
+
+def _cobertura(db: str, activo: str, s: datetime, corte: datetime) -> tuple[int, int, int]:
+    if corte <= s:
+        return 0, 0, 0
+    f, c, g = una(db, f"""SELECT count(*), count(*) FILTER (WHERE segundos = 60), coalesce(sum(segundos), 0)
+                            FROM orderflow_cobertura WHERE symbol='{activo}' AND ts >= '{_ts(s)}' AND ts < '{_ts(corte)}'""")
+    return int(f), int(c), int(g)
+
+
+def _cuadra_cobertura(quien: str, c: dict, cob: tuple, esperados: int) -> list[str]:
+    mia = {"minutos_esperados": esperados, "minutos_con_fila": cob[0], "minutos_completos": cob[1], "segundos": cob[2]}
+    return [f"{quien}: cobertura servida {c} != recalculada {mia}"] if any((c or {}).get(k) != v
+                                                                           for k, v in mia.items()) else []
+
+
+def _cuadra_perfil(quien: str, sv: dict, mio: dict[Decimal, list]) -> list[str]:
+    serv = {Decimal(n["nivel"]): [Decimal(n["compra"]), Decimal(n["venta"]), int(n["operaciones"])]
+            for n in sv.get("niveles") or []}
+    if serv != mio:
+        return [f"{quien}: {len(serv)} niveles servidos != {len(mio)} recalculados"]
+    tot = {n: c + v for n, (c, v, _) in mio.items()}
+    poc, va = poc_de(tot), value_area(tot)
+    sva = sv.get("value_area")
+    malos = []
+    if (Decimal(sv["poc"]) if sv.get("poc") is not None else None) != poc:
+        malos.append(f"{quien}: POC servido {sv.get('poc')} != recalculado {poc}")
+    if (sva and (Decimal(sva["val"]), Decimal(sva["vah"]), Decimal(sva["volumen"]))) != va:
+        malos.append(f"{quien}: value area servida {sva and (sva['val'], sva['vah'])} != recalculada "
+                     f"{va and (texto(va[0]), texto(va[1]))}")
+    return malos
+
+
+def juzga_sesiones(db: str, activo: str, q: dict, sv: dict, hasta: datetime) -> list[str]:
+    mias = sesiones_aqui(q["sesion"], _dt(q["desde"]), hasta)
+    quien = f"sesiones {q['sesion']}"
+    servidas = [(_dt(s["inicio"]), _dt(s["fin"])) for s in sv.get("sesiones") or []]
+    if servidas != mias:
+        return [f"{quien}: sesiones servidas {[(_iso(a), _iso(b)) for a, b in servidas]} != recalculadas "
+                f"{[(_iso(a), _iso(b)) for a, b in mias]}"]
+    paso, n_ven = Decimal(q["paso"]), len(sv.get("venues") or VENUES)
+    malos, todos, cob_total, esperados = [], {}, [0, 0, 0], 0
+    for (s, e), x in zip(mias, sv["sesiones"], strict=True):
+        corte = min(e, hasta)
+        if _dt(x["corte"]) != corte or bool(x.get("en_curso")) != (corte < e):
+            malos.append(f"{quien} {_iso(s)}: corte {x.get('corte')} en curso {x.get('en_curso')}; aqui {_iso(corte)} "
+                         f"{corte < e}")
+        mio: dict[Decimal, list] = {}
+        for n, c, v, o in sql(db, f"""SELECT nivel, sum(compra_base), sum(venta_base), sum(compras + ventas)
+                                        FROM orderflow_celda WHERE symbol='{activo}' AND ts >= '{_ts(s)}'
+                                         AND ts < '{_ts(corte)}' GROUP BY nivel"""):
+            z = mio.setdefault((Decimal(n) / paso).to_integral_value(rounding="ROUND_FLOOR") * paso,
+                               [Decimal(0), Decimal(0), 0])
+            z[0], z[1], z[2] = z[0] + Decimal(c), z[1] + Decimal(v), z[2] + int(o)
+            t = todos.setdefault((Decimal(n) / paso).to_integral_value(rounding="ROUND_FLOOR") * paso,
+                                 [Decimal(0), Decimal(0), 0])
+            t[0], t[1], t[2] = t[0] + Decimal(c), t[1] + Decimal(v), t[2] + int(o)
+        malos += _cuadra_perfil(f"{quien} {_iso(s)}", x, mio)
+        cob = _cobertura(db, activo, s, corte)
+        n_esp = int((corte - s) // timedelta(minutes=1)) * n_ven
+        malos += _cuadra_cobertura(f"{quien} {_iso(s)}", x.get("cobertura"), cob, n_esp)
+        cob_total, esperados = [cob_total[i] + cob[i] for i in range(3)], esperados + n_esp
+    if mias:
+        comp = sv.get("compuesto") or {}
+        malos += _cuadra_perfil(f"{quien} compuesto", comp, todos)
+        malos += _cuadra_cobertura(f"{quien} compuesto", comp.get("cobertura"), tuple(cob_total), esperados)
+    return malos
+
+
+def _dec(f: Fraction) -> Decimal:
+    return Decimal(f.numerator) / Decimal(f.denominator)
+
+
+def juzga_vwap(db: str, activo: str, q: dict, sv: dict, hasta: datetime, base: Decimal) -> list[str]:
+    a, m = _dt(q["desde"]), int(q["marco"].rstrip("m")) * 60
+    mias = sesiones_aqui(q["sesion"], a, hasta)
+    quien = f"vwap {q['sesion']}"
+    if [_dt(s["inicio"]) for s in sv.get("sesiones") or []] != [s for s, _ in mias]:
+        return [f"{quien}: sesiones servidas {[s['inicio'] for s in sv.get('sesiones') or []]} != recalculadas "
+                f"{[_iso(s) for s, _ in mias]}"]
+    tol = base / 100 / 2  # el servidor redondea a paso_base / 100: medio quantum, y nada mas
+    malos = []
+    for (s, e), x in zip(mias, sv["sesiones"], strict=True):
+        por_vela: dict[int, list] = {}
+        for v, n, u, qq in sql(db, f"""SELECT floor(extract(epoch FROM ts) / {m})::bigint * {m}, nivel,
+                                               sum(compra_usd + venta_usd), sum(compra_base + venta_base)
+                                          FROM orderflow_celda WHERE symbol='{activo}' AND ts >= '{_ts(s)}'
+                                           AND ts < '{_ts(min(e, hasta))}' GROUP BY 1, 2"""):
+            por_vela.setdefault(int(v), []).append((Decimal(n), Fraction(u), Fraction(qq)))
+        u_n: dict[Decimal, Fraction] = {}
+        q_n: dict[Decimal, Fraction] = {}
+        esperados = []
+        for v in sorted(set(por_vela) | set(range(int(a.timestamp()), int(hasta.timestamp()), m))):
+            for n, u, qq in por_vela.get(v, []):
+                u_n[n], q_n[n] = u_n.get(n, Fraction(0)) + u, q_n.get(n, Fraction(0)) + qq
+            if v < a.timestamp() or v + m <= s.timestamp() or v >= min(e, hasta).timestamp() or not sum(q_n.values()):
+                continue
+            vw = sum(u_n.values()) / sum(q_n.values())
+            with localcontext() as ctx:
+                ctx.prec = 60
+                vwd = _dec(vw)
+                sig = abs(sum(_dec(q_n[n]) * (_dec(u_n[n]) / _dec(q_n[n]) - vwd) ** 2 for n in u_n if q_n[n])
+                          / _dec(sum(q_n.values()))).sqrt()
+            esperados.append((v, vw, vwd, sig))
+        puntos = x.get("puntos") or []
+        if [int(_dt(p["ts"]).timestamp()) for p in puntos] != [v for v, *_ in esperados]:
+            malos.append(f"{quien} {_iso(s)}: {len(puntos)} puntos servidos != {len(esperados)} velas con operaciones")
+            continue
+        for p, (_, vw, vwd, sig) in zip(puntos, esperados, strict=True):
+            if abs(Fraction(p["vwap"]) - vw) > Fraction(tol):  # el VWAP, exacto contra exacto
+                malos.append(f"{quien} vela {p['ts']}: vwap servido {p['vwap']} != recalculado {vwd:.6f}")
+                break
+            pares = [("sigma", p["sigma"], sig)] + [
+                (f"banda {s_}{k}", p["bandas"][k][i], vwd + int(s_ + "1") * int(k) * sig)
+                for k in ("1", "2", "3") for i, s_ in enumerate(("-", "+"))]
+            fuera = [f"{nombre} servido {servido} != recalculado {mio:.6f}" for nombre, servido, mio in pares
+                     if abs(Decimal(servido) - mio) > tol * Decimal("1.000001")]
+            if fuera:
+                malos.append(f"{quien} vela {p['ts']}: {fuera[0]}")
+                break
+        cob = _cobertura(db, activo, s, min(e, hasta))
+        malos += _cuadra_cobertura(f"{quien} {_iso(s)}", x.get("cobertura"), cob,
+                                   int((min(e, hasta) - s) // timedelta(minutes=1)) * len(sv.get("venues") or VENUES))
+    return malos
+
+
+def paso_tpo(rangos: list, base: Decimal) -> Decimal:
+    """La regla de paso=auto de OF-2 sobre periodos de 30 min, reescrita: el menor 1-2-5 x base con el que el periodo
+    mediano toca <= 20 niveles."""
+    if not rangos:
+        return base
+    for e in range(12):
+        for mult in (1, 2, 5):
+            p = base * mult * 10**e
+            toques = sorted(int((hi / p).to_integral_value(rounding="ROUND_FLOOR")
+                                - (lo / p).to_integral_value(rounding="ROUND_FLOOR")) + 1 for lo, hi in rangos)
+            if toques[len(toques) // 2] <= 20:
+                return p
+    return p
+
+
+def juzga_tpo(db: str, activo: str, q: dict, sv: dict, hasta: datetime, base: Decimal) -> list[str]:
+    mias = sesiones_aqui(q["sesion"], _dt(q["desde"]), hasta)
+    quien = f"tpo {q['sesion']}"
+    if [_dt(s["inicio"]) for s in sv.get("sesiones") or []] != [s for s, _ in mias]:
+        return [f"{quien}: sesiones servidas {[s['inicio'] for s in sv.get('sesiones') or []]} != recalculadas "
+                f"{[_iso(s) for s, _ in mias]}"]
+    periodos = {}
+    for s, e in mias:
+        for k, lo, hi in sql(db, f"""SELECT floor(extract(epoch FROM ts - '{_ts(s)}'::timestamptz) / 1800)::int,
+                                            min(nivel), max(nivel) FROM orderflow_celda WHERE symbol='{activo}'
+                                       AND ts >= '{_ts(s)}' AND ts < '{_ts(min(e, hasta))}' GROUP BY 1"""):
+            periodos[(s, int(k))] = (Decimal(lo), Decimal(hi))
+    paso = paso_tpo(list(periodos.values()), base) if q.get("paso") == "auto" else Decimal(q["paso"])
+    if Decimal(sv["paso"]) != paso:
+        return [f"{quien}: paso servido {sv['paso']} != el de la regla {texto(paso)}"]
+    malos, n_ven = [], len(sv.get("venues") or VENUES)
+    for (s, e), x in zip(mias, sv["sesiones"], strict=True):
+        letras: dict[Decimal, str] = {}
+        ib = []
+        for k in range(48):
+            if (s, k) not in periodos:
+                continue
+            lo, hi = ((y / paso).to_integral_value(rounding="ROUND_FLOOR") * paso for y in periodos[(s, k)])
+            n = lo
+            while n <= hi:
+                letras[n] = letras.get(n, "") + LETRAS[k]
+                n += paso
+            if k < 2:
+                ib.append((lo, hi))
+        serv = {Decimal(n["nivel"]): n["letras"] for n in x.get("niveles") or []}
+        if serv != letras:
+            malos.append(f"{quien} {_iso(s)}: letras servidas != recalculadas (primera distinta "
+                         f"{sorted(set(serv.items()) ^ set(letras.items()))[:1]})")
+            continue
+        tot = {n: len(t) for n, t in letras.items()}
+        poc, va = poc_de(tot), value_area(tot)
+        if (Decimal(x["poc"]) if x.get("poc") is not None else None) != poc or \
+                (x.get("value_area") and (Decimal(x["value_area"]["val"]), Decimal(x["value_area"]["vah"]))) != \
+                (va and (va[0], va[1])):
+            malos.append(f"{quien} {_iso(s)}: POC/value area de los TPO servidos {x.get('poc')} {x.get('value_area')} "
+                         f"!= recalculados {poc} {va and (texto(va[0]), texto(va[1]))}")
+        mib = {"lo": texto(min(i for i, _ in ib)), "hi": texto(max(j for _, j in ib))} if ib else None
+        if x.get("balance_inicial") != mib:
+            malos.append(f"{quien} {_iso(s)}: balance inicial servido {x.get('balance_inicial')} != recalculado {mib}")
+        orden, tramos = sorted(tot), []
+        for n in orden:
+            if tot[n] == 1:
+                if tramos and n - tramos[-1][-1] == paso:
+                    tramos[-1].append(n)
+                else:
+                    tramos.append([n])
+        if [(t["desde"], t["hasta"]) for t in x.get("single_prints") or []] != [(texto(t[0]), texto(t[-1]))
+                                                                                for t in tramos]:
+            malos.append(f"{quien} {_iso(s)}: single prints servidos != recalculados")
+        corte = min(e, hasta)
+        malos += _cuadra_cobertura(f"{quien} {_iso(s)}", x.get("cobertura"), _cobertura(db, activo, s, corte),
+                                   int((corte - s) // timedelta(minutes=1)) * n_ven)
     return malos
 
 
@@ -469,6 +729,37 @@ def juzga() -> int:
                     + (f"{con_va} de {velas_ok} servidas y recalculadas" if con_va
                        else "SIN JUZGAR, el sujeto no la sirve (anterior a OF-2)"))
 
+    def perfiles() -> None:
+        """(d) de OF-3: sesiones (del dia y de una que cruza la medianoche) con su compuesto, el VWAP con sus bandas
+        y el TPO, servidos sobre la ventana de (d) == recalculados aqui. Un sujeto anterior a OF-3 no los sirve."""
+        hasta_d, desde_d = ventana_d(fin, primero)
+        if hasta_d - desde_d < timedelta(minutes=MARCO_D):
+            nomed.append(f"(d) OF-3: ni una vela de {MARCO_D} min completa dentro de la vida del servicio")
+            return
+        pasos = {s: Decimal(p) for s, p in sql(db, "SELECT symbol, paso::text FROM orderflow_paso")}
+        cuenta: dict[str, int] = {}
+        for activo, nombre, q in peticiones_of3(desde_d, hasta_d, pasos, fin):
+            try:
+                sv = api(f"/api/orderflow/{nombre}?{urllib.parse.urlencode(q)}")
+            except NoLaSirve as exc:
+                info.append(f"(d) OF-3: SIN JUZGAR, el sujeto no sirve {exc} (anterior a OF-3)")
+                return
+            if not isinstance(sv.get("sesiones"), list):
+                raise Canal(f"/api/orderflow/{nombre} {activo} no tiene la forma de OF-3")
+            if nombre == "sesiones":
+                malos = juzga_sesiones(db, activo, q, sv, hasta_d)
+            elif nombre == "vwap":
+                malos = juzga_vwap(db, activo, q, sv, hasta_d, pasos[activo])
+            else:
+                malos = juzga_tpo(db, activo, q, sv, hasta_d, pasos[activo])
+            if malos:
+                rojos.append(f"(d) {activo} {_iso(desde_d)}-{_iso(hasta_d)}: {malos[0]}"
+                             + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
+            cuenta[nombre] = cuenta.get(nombre, 0) + len(sv["sesiones"])
+        info.append(f"(d) OF-3 de {_iso(desde_d)}-{_iso(hasta_d)}: {cuenta.get('sesiones', 0)} sesiones (dia y "
+                    f"{plantilla_cruzada(fin)}, que cruza la medianoche) con su compuesto, {cuenta.get('vwap', 0)} VWAP "
+                    f"con sus bandas y {cuenta.get('tpo', 0)} TPO, servidos == recalculados")
+
     def retiene() -> None:
         ret = retencion()
         hoy = ahora.date()
@@ -522,12 +813,16 @@ def juzga() -> int:
         info.append("(f) concordancia del tick con el agresor: " + "; ".join(
             f"{v} {', '.join(x)}" for v, x in sorted(juzgados.items())))
 
-    for letra, brazo in (("a", triangula), ("b", consistencia), ("c", cubre), ("d", servido), ("e", retiene),
-                         ("f", agresor)):
+    for letra, brazo in (("a", triangula), ("b", consistencia), ("c", cubre), ("d", servido), ("d", perfiles),
+                         ("e", retiene), ("f", agresor)):
         try:
             brazo()
         except Canal as exc:
             nomed.append(f"({letra}) NO MEDIDO (CANAL): {exc}")
+        except (ArithmeticError, KeyError, ValueError, TypeError) as exc:  # OF-3: un recalculo que no sabe con un
+            # dato roto no tumba a los demas brazos (el que lo ve, lo condena): se dice, y no se juzga ese brazo
+            nomed.append(f"({letra}) NO MEDIDO: el recalculo de {brazo.__name__} no pudo con lo que hay "
+                         f"({type(exc).__name__}: {str(exc)[:120]})")
 
     if rojos:
         print(f"ROJO  K108 {rojos[0][:240]}")
@@ -566,15 +861,34 @@ def retencion() -> dict:
         raise Canal(f"no se pudo leer la retencion {exc} ({origen})") from exc
 
 
-def sirve(directorio: str) -> int:
+def sirve(directorio: str, planta: str = "") -> int:
     """Lo que serviria el ARBOL para las peticiones de (d), con las rutas de verdad de app/api.py sobre K108_BASE.
-    Es lo que el control usa como «lo servido» y lo que planta torcido."""
+    Es lo que el control usa como «lo servido» y lo que planta torcido. Con `planta` (OF-3, campana 143) se sirve con
+    UN defecto inyectado en el proceso, el arbol sin tocar: `partir_medianoche` (la sesion que cruza la medianoche,
+    partida en dos) o `vwap_al_nivel` (el VWAP con el precio del NIVEL en vez de usd/base: otra cuenta)."""
     import asyncio
 
     import asyncpg
 
     sys.path.insert(0, REPO)
     import app.api as api_mod
+    from app import orderflow_lectura as lec
+
+    if planta == "partir_medianoche":
+        original = lec.instancias
+
+        def partidas(ses, a, b):
+            out = []
+            for s, e in original(ses, a, b):
+                m = s.replace(hour=0, minute=0) + timedelta(days=1)
+                out += [(s, m), (m, e)] if s < m < e else [(s, e)]
+            return [(s, e) for s, e in out if e > a and s < b]
+
+        lec.instancias = partidas
+    elif planta == "vwap_al_nivel":
+        lec.VWAP_SQL = lec.VWAP_SQL.replace("sum(compra_usd) + sum(venta_usd)", "sum(nivel * (compra_base + venta_base))")
+    elif planta:
+        raise SystemExit(f"planta desconocida: {planta}")
 
     class _Peticion:
         def __init__(self, **q):
@@ -603,6 +917,12 @@ def sirve(directorio: str) -> int:
                     ruta = f"/api/orderflow/{nombre}?{urllib.parse.urlencode(q)}"
                     (Path(directorio) / (urllib.parse.quote(ruta, safe="") + ".json")).write_text(
                         json.dumps(resp, default=str))
+            rutas = {"sesiones": api_mod.orderflow_sesiones, "vwap": api_mod.orderflow_vwap, "tpo": api_mod.orderflow_tpo}
+            for _activo, nombre, q in peticiones_of3(desde_d, hasta_d, pasos, fin):
+                resp = await rutas[nombre](_Peticion(**q), **q)
+                ruta = f"/api/orderflow/{nombre}?{urllib.parse.urlencode(q)}"
+                (Path(directorio) / (urllib.parse.quote(ruta, safe="") + ".json")).write_text(
+                    json.dumps(resp, default=str))
         finally:
             await pool.close()
 
@@ -617,5 +937,7 @@ if __name__ == "__main__":
         sys.exit(juzga())
     if orden == "sirve" and len(sys.argv) == 3:
         sys.exit(sirve(sys.argv[2]))
-    print("NO MEDIDO: uso K108-orderflow.py juzga | sirve <dir>")
+    if orden == "sirve" and len(sys.argv) == 5 and sys.argv[3] == "--planta":
+        sys.exit(sirve(sys.argv[2], sys.argv[4]))
+    print("NO MEDIDO: uso K108-orderflow.py juzga | sirve <dir> [--planta X]")
     sys.exit(2)

@@ -331,6 +331,10 @@ NOMBRE = {"panel": "el panel viejo", "mesa": "la mesa", "flujo": "el footprint"}
 # Con su carga delante esa peticion es suya, y ninguna otra lo es: asi su pestana, abierta al lado de la mesa o del
 # panel, no los vuelve ambiguos. No se juzga aqui contra nada: lo que pinta lo juzga K109.
 RUTA_FLUJO = "/api" + "/orderflow/footprint"
+# OF-3 (campana 143): /flujo pide ademas las rutas de sus capas y de su TPO (static/flujo/flujo-app.js: RUTA_SESIONES,
+# RUTA_VWAP, RUTA_PERFIL, RUTA_TPO), y tampoco las pide ninguna otra pantalla: con su carga delante, son suyas.
+RUTAS_FLUJO = (RUTA_FLUJO, "/api" + "/orderflow/sesiones", "/api" + "/orderflow/vwap", "/api" + "/orderflow/perfil",
+               "/api" + "/orderflow/tpo")
 LINEA = re.compile(r'^(\S+) \S+ \S+ \[([^\]]+)\] "([^"]*)" (\d{3}) \S+ "[^"]*" "([^"]*)"')
 
 def sale(*c):
@@ -481,12 +485,13 @@ for (t, k, ruta, completa) in pets:
     if not previas:
         sin[f"sin carga visible de ninguna pantalla en las {CH:g} h de cargas que se miran"][ruta] += 1
         continue
-    if ruta == RUTA_FLUJO and any(c[2] == "flujo" for c in previas):
+    if ruta in RUTAS_FLUJO and any(c[2] == "flujo" for c in previas):
         n_flujo += 1
         continue
     previas = [c for c in previas if c[2] != "flujo"]
     if not previas:
-        sin[f"su cliente solo cargo el footprint, que no pide esta ruta (pide {RUTA_FLUJO} y nada mas)"][ruta] += 1
+        sin[f"su cliente solo cargo el footprint, que no pide esta ruta (pide {', '.join(RUTAS_FLUJO)} y nada "
+            "mas)"][ruta] += 1
         continue
     ambiguas = [c for c in previas if c[2] is None]
     if ambiguas:
@@ -1143,7 +1148,7 @@ echo "$primera"
 [ -n "${P_DET:-}" ] && echo "  panel viejo · $P_DET"
 [ -n "${M_DET:-}" ] && echo "  mesa · $M_DET"
 N_FLUJO=$(meta n_flujo)
-[ "${N_FLUJO:-0}" -gt 0 ] && echo "  footprint · $N_FLUJO peticion(es) a su unica ruta, suyas por ella: no se cargan a la mesa ni al panel (lo que pinta lo juzga K109)"
+[ "${N_FLUJO:-0}" -gt 0 ] && echo "  footprint · $N_FLUJO peticion(es) a sus rutas (la del footprint, las de sus capas y la de su TPO), suyas por ellas: no se cargan a la mesa ni al panel (lo que pinta lo juzga K109)"
 [ "${N_SIN:-0}" -gt 0 ] && echo "  SIN ATRIBUIR$SIN_DET"
 echo "  puerta · ${PUERTA:-sin linea de tiempo}"
 

@@ -1128,7 +1128,7 @@ corrv P26 "$DIR/p26"; rc=$RC
 comprueba "P26a VERDE, rc=0 (rc=$rc): la mesa se sigue juzgando contra lo suyo" \
   "$([ "$rc" = 0 ] && [ "$(en_primera P26 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo '"$A"'/mesa/decide 41 veces y NADA fuera de su contrato')" = si ] && echo si || echo no)"
 comprueba "P26b y las 60 del footprint salen NOMBRADAS como suyas, no sin atribuir" \
-  "$([ "$(tiene P26 'footprint · 60 peticion\(es\) a su unica ruta')" = si ] && [ "$(no_tiene P26 'SIN ATRIBUIR')" = si ] && echo si || echo no)"
+  "$([ "$(tiene P26 'footprint · 60 peticion\(es\) a sus rutas')" = si ] && [ "$(no_tiene P26 'SIN ATRIBUIR')" = si ] && echo si || echo no)"
 
 echo
 echo "P27 · LA RUTA DEL FOOTPRINT PEDIDA POR UN CLIENTE QUE NO LO CARGO: se le carga a la pantalla que tenia, la mesa"
@@ -1148,6 +1148,38 @@ if git -C "$ORIG" show 03dcf06:harness/checks/K44-el-sobre-que-nadie-pide.sh > "
     "$([ "$RC" = 1 ] && [ "$(tiene V3 'FUERA de su contrato.*'"$A"'/orderflow/footprint\(60\)')" = si ] && echo si || echo no)"
 else
   comprueba "V3 no pude leer el K44 de 03dcf06 del historial" no
+fi
+
+echo
+echo "P28 · LAS CAPAS Y EL TPO DEL FOOTPRINT AL LADO DE LA MESA (campana 143): sesiones, VWAP, perfil y TPO son de /flujo"
+montav "$DIR/p28" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790; echo 'C alex -9000 /flujo'
+  echo "A alex -8990 10 $A/orderflow/footprint?symbol=BTC&marco=1m"; echo "A alex -8980 10 $A/orderflow/sesiones?symbol=BTC&sesion=dia"
+  echo "A alex -8970 10 $A/orderflow/vwap?symbol=BTC&marco=1m"; echo "A alex -8960 10 $A/orderflow/perfil?symbol=BTC"
+  echo "A alex -8950 10 $A/orderflow/tpo?symbol=BTC&sesion=dia")"
+corrv P28 "$DIR/p28"; rc=$RC
+comprueba "P28a VERDE, rc=0 (rc=$rc): la mesa se sigue juzgando contra lo suyo" \
+  "$([ "$rc" = 0 ] && [ "$(en_primera P28 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo '"$A"'/mesa/decide 41 veces y NADA fuera de su contrato')" = si ] && echo si || echo no)"
+comprueba "P28b y las 50 de /flujo (footprint, capas y TPO) salen NOMBRADAS como suyas, no sin atribuir" \
+  "$([ "$(tiene P28 'footprint · 50 peticion\(es\) a sus rutas')" = si ] && [ "$(no_tiene P28 'SIN ATRIBUIR')" = si ] && echo si || echo no)"
+
+echo
+echo "P29 · LA RUTA DE UNA CAPA PEDIDA POR UN CLIENTE QUE NO CARGO /flujo: se le carga a la mesa, que la tenia"
+montav "$DIR/p29" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790; echo "A alex -8990 20 $A/orderflow/sesiones?symbol=BTC")"
+corrv P29 "$DIR/p29"; rc=$RC
+comprueba "P29a ROJO, rc=1 (rc=$rc): la mesa pide FUERA de su contrato la ruta de las sesiones, con su cuenta" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P29 'la mesa \(static/mesa\.html, cargada por `/`\) pide FUERA de su contrato \(K44-contrato-mesa\.tsv\): '"$A"'/orderflow/sesiones\(20\)')" = si ] && echo si || echo no)"
+
+echo
+echo "V4 · LOS BYTES DE K44 DE ANTES DE LAS CAPAS (ce5f485) en la ventana de P28: le cargan a la mesa lo de las capas"
+if git -C "$ORIG" show ce5f485:harness/checks/K44-el-sobre-que-nadie-pide.sh > "$DIR/K44-antes-capas.sh" 2>/dev/null; then
+  rm -rf "$DIR/v4"; cp -a "$DIR/p28" "$DIR/v4"
+  sed "s#^B=/srv/coinanalyze/harness; . \"\$B/env\"#B=$DIR/v4; . \"\$B/env\"#" "$DIR/K44-antes-capas.sh" > "$DIR/v4/K44.sh"
+  printf '%s\n' "#!/bin/bash" "printf 'LLAMADO\\n' >> $DIR/v4/senal" "cat $DIR/v4/salida" "exit 0" > "$DIR/v4/bin/prod"
+  corre V4 "$DIR/v4/K44.sh" K44_PAYLOADS="$DIR/v4/payloads" K44_SIMBOLO=TEST K44_LIMITS=/no/existe
+  comprueba "V4 el K44 de antes da ROJO (rc=$RC) en la ventana de P28: lo que lo arregla es la regla nueva" \
+    "$([ "$RC" = 1 ] && [ "$(tiene V4 'FUERA de su contrato.*'"$A"'/orderflow/sesiones\(10\)')" = si ] && echo si || echo no)"
+else
+  comprueba "V4 no pude leer el K44 de ce5f485 del historial" no
 fi
 
 echo

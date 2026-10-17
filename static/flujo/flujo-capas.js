@@ -110,7 +110,8 @@ function pintaPerfil(ctx, g, y, paso, p, caja) {
   const niveles = p.niveles || [];
   let max = 0;
   niveles.forEach((l) => { max = Math.max(max, Number(l.total)); });
-  const va = p.value_area;
+  // /perfil sirve la value area siempre, con val y vah null si no hay niveles; /sesiones, null
+  const va = p.value_area && p.value_area.val !== null && p.value_area.val !== undefined ? p.value_area : null;
   niveles.forEach((l) => {
     const n = Number(l.nivel);
     const y0 = Math.round(y(n + paso));

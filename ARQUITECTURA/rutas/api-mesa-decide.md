@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `mesa_decide` · `app/api.py:3953` (cuerpo hasta la 3988) · decorador en la linea 3952.
+Handler `mesa_decide` · `app/api.py:4004` (cuerpo hasta la 4039) · decorador en la linea 4003.
 
 ## Parametros de entrada
 
@@ -194,7 +194,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
-| 422 | — | `app/api.py:3964` | el propio handler |
+| 422 | — | `app/api.py:4015` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

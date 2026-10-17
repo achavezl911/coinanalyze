@@ -38,6 +38,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import UTC as ZONA
 from datetime import datetime
 from decimal import ROUND_FLOOR, Decimal
 
@@ -52,6 +53,14 @@ VISTAS = [
     "#BTC/1m/perp/5/hasta=2026-10-17T11:30:00Z/ver=20",  # paso fijado y numeros; la 11:13 sin un minuto entero
     "#ETH/1m/deribit/hasta=2026-10-17T11:50:00Z/ver=40",  # paso automatico; minutos vacios e incompletos
     "#SOL/5m/spot/unidad=usd/hasta=2026-10-17T12:00:00Z/ver=60",  # en USD; huecos de antes del servicio
+    # OF-3 (campana 143): una vista fija MAS por capa, del 2026-10-17 como las de arriba: caducan con ellas, hacia el
+    # 2026-11-16 (las celdas se guardan 30 dias), y se mueven igual.
+    "#BTC/5m/perp/hasta=2026-10-17T11:30:00Z/ver=60/capas=perfil,vwap",  # la sesion del dia en curso y sin su noche
+    "#BTC/15m/perp/hasta=2026-10-17T11:30:00Z/sesion=12:00-11:00/compuesto=2",  # cruza la medianoche; una sin dato
+    "#SOL/5m/spot/unidad=usd/hasta=2026-10-17T12:00:00Z/ver=60/capas=dinamico",  # lo visible, en USD
+    "#ETH/1m/deribit/hasta=2026-10-17T11:50:00Z/ver=120/fijo=2026-10-17T10:00:00Z,2026-10-17T11:00:00Z",
+    "#BTC/1m/perp/hasta=2026-10-17T14:00:00Z/modo=tpo/sesiones=1",  # el TPO del dia: letras de la P a la b
+    "#BTC/1m/perp/hasta=2026-10-17T12:00:00Z/sesion=08:00-12:00/modo=tpo/sesiones=2",  # balance inicial; una hueca
 ]
 ANCHO, ALTO = 1920, 1080
 # Lo DECIDIDO por el encargo y por P2/P3 de la campana, escrito aqui y no leido de la pagina:
@@ -77,6 +86,7 @@ COSECHA = r"""
   window.__K109_TEXTOS = [];
   if (window.FLUJO_HITOS && window.FLUJO_HITOS.repinta) window.FLUJO_HITOS.repinta();
   return {pintado: window.FLUJO_PINTADO || null, textos: window.__K109_TEXTOS, hash: location.hash,
+          tpo: window.FLUJO_TPO || null,
           hitos: window.FLUJO_HITOS ? {listo: window.FLUJO_HITOS.listo, vista: window.FLUJO_HITOS.vista} : null};
 })()
 """
@@ -105,7 +115,7 @@ def lee_vista(h: str) -> dict:
         k, _, v = x.partition("=")
         if not v:
             e["paso"] = k
-        elif k in ("unidad", "hasta"):
+        elif k in ("unidad", "hasta", "sesion", "capas", "compuesto", "fijo", "modo", "sesiones"):
             e[k] = v
     return e
 
@@ -268,8 +278,9 @@ async def mira(K, vista: str, cab: dict) -> dict:
             listo = False
             for _ in range(200):
                 await s.drena(0.2)
-                try:
-                    listo = await s.evalua("!!(window.FLUJO_HITOS && window.FLUJO_HITOS.listo)")
+                try:  # OF-3: y las capas, si la pagina las tiene (una de antes de OF-3 no dice `capas`)
+                    listo = await s.evalua("!!(window.FLUJO_HITOS && window.FLUJO_HITOS.listo && "
+                                           "window.FLUJO_HITOS.capas !== false)")
                 except K.SystemExit2:
                     listo = False
                 if listo:
@@ -282,7 +293,7 @@ async def mira(K, vista: str, cab: dict) -> dict:
                 p, m = e.get("params", {}), e.get("method")
                 if m == "Runtime.exceptionThrown":
                     out["excepciones"].append(json.dumps(p.get("exceptionDetails", {}))[:300])
-                elif m == "Network.requestWillBeSent" and RUTA in p["request"]["url"]:
+                elif m == "Network.requestWillBeSent" and "/api" + "/orderflow/" in p["request"]["url"]:
                     porid[p["requestId"]] = {"url": p["request"]["url"], "estado": None}
                 elif m == "Network.responseReceived" and p.get("requestId") in porid:
                     porid[p["requestId"]]["estado"] = p["response"]["status"]
@@ -301,6 +312,9 @@ async def mira(K, vista: str, cab: dict) -> dict:
 # --------------------------------------------------------------------------------------------- el juicio
 def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list) -> dict:
     e = lee_vista(vista)
+    if e.get("modo") == "tpo":  # OF-3: el TPO es otra vista, con su contrato
+        juzga_tpo(e, vio, rojos, info)
+        return {}
     pref = f"[{e['activo']} {e['marco']} {e['familia']}]"
     pin = vio.get("pintado")
     # (P) la pagina
@@ -310,7 +324,7 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list) -> 
         rojos.append(f"(P) {pref} la pagina no pinto la vista (listo={vio.get('listo')}, contrato "
                      f"{'sin velas' if pin else 'ausente'}): no hay nada que comparar")
         return {}
-    pets = [p for p in vio["peticiones"] if p.get("cuerpo")]
+    pets = [p for p in vio["peticiones"] if p.get("cuerpo") and RUTA in p["url"]]
     if not pets:
         rojos.append(f"(P) {pref} la pagina no trajo ninguna respuesta buena de {RUTA}")
         return {}
@@ -417,7 +431,290 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list) -> 
     info.append(f"(F)(D) {pref} {len(pin['velas'])} velas pintadas ({', '.join(f'{k} {n}' for k, n in sorted(estados.items()))}), "
                 f"{sum(len(r['niveles']) for r in pin['velas'])} niveles, {numeros} numeros releidos del lienzo, "
                 f"{sum(1 for r in pin['velas'] for f in r['niveles'] if f['dc'] or f['dv'])} desequilibrios")
+    if e.get("capas") or e.get("compuesto") or e.get("fijo"):  # OF-3: las capas de la vista
+        juzga_capas(e, vio, q, sv, pin, y, textos, rojos, info, pref)
     return {"e": e, "q": q, "sv": sv}
+
+
+# --------------------------------------------------------------------------------------------- OF-3 (campana 143)
+# LAS CAPAS y EL TPO: lo pintado (FLUJO_PINTADO.capas, FLUJO_TPO) == lo servido por /sesiones, /vwap, /perfil y /tpo,
+# y lo pedido == lo que dice el hash. Donde empiezan las sesiones, el estado de cada capa y lo que escribe se cuentan
+# AQUI, con su propia aritmetica (no se lee nada de static/). Lo servido contra las celdas lo juzga K108 (d).
+RUTAS_OF3 = {"sesiones": "/api" + "/orderflow/sesiones", "vwap": "/api" + "/orderflow/vwap",
+             "perfil": "/api" + "/orderflow/perfil", "tpo": "/api" + "/orderflow/tpo"}
+PLANTILLAS = {"dia": ("00:00", "24:00"), "asia": ("00:00", "08:00"), "europa": ("07:00", "16:00"),
+              "eeuu": ("13:30", "20:00")}
+DIA_S, SESIONES_MAXIMO = 86400, 7
+
+
+def inicio_n(hasta: int, nombre: str, n: int) -> int:
+    """El inicio (epoch) de la n-esima sesion hacia atras de las que empiezan ANTES de `hasta`."""
+    i = PLANTILLAS.get(nombre, tuple(nombre.split("-")))[0]
+    ini = int(i[:2]) * 3600 + int(i[3:]) * 60
+    return (hasta - 1 - ini) // DIA_S * DIA_S + ini - (n - 1) * DIA_S
+
+
+def iso_s(t: int) -> str:
+    return datetime.fromtimestamp(t, tz=ZONA).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def estado_sesion(s: dict) -> tuple:
+    """(estado, en curso, faltan, esperados) de una sesion servida: su cobertura hasta su corte."""
+    c = s.get("cobertura") or {}
+    esp = c.get("minutos_esperados")
+    if esp == 0 or (c.get("minutos_con_fila") and c.get("completa")):
+        return "completa", bool(s.get("en_curso")), 0, esp
+    if not c.get("minutos_con_fila"):
+        return "hueco", bool(s.get("en_curso")), esp, esp
+    return "incompleta", bool(s.get("en_curso")), esp - c.get("minutos_completos", 0), esp
+
+
+def estado_rango(sv: dict) -> tuple:
+    """El de un rango servido por /perfil: en curso si no ha cerrado (hasta + CIERRE_S despues de as_of)."""
+    c = sv.get("cobertura") or {}
+    esp = c.get("minutos_esperados")
+    if epoch(sv["hasta"]) + CIERRE_S > epoch(sv["as_of"]):
+        return "abierta", True, None, esp
+    if not c.get("minutos_con_fila"):
+        return "hueco", False, esp, esp
+    if not c.get("completa"):
+        return "incompleta", False, esp - c["minutos_completos"], esp
+    return "completa", False, 0, esp
+
+
+def marca_de(quien: str | None, st: tuple) -> str | None:
+    estado, en_curso, faltan, esp = st
+    partes = (["en curso"] if en_curso else []) + (["hueco"] if estado == "hueco" else
+                                                   [f"faltan {faltan}/{esp}"] if faltan else [])
+    return ((quien + " · ") if quien else "") + " · ".join(partes) if partes else None
+
+
+def qs(p: dict) -> dict:
+    return {k: v[0] for k, v in urllib.parse.parse_qs(urllib.parse.urlparse(p["url"]).query).items()}
+
+
+def juzga_perfil(quien: str, r: dict, sv: dict, st: tuple, paso: Decimal, y, textos: dict) -> list:
+    """Un perfil pintado (de sesion, compuesto, dinamico o fijo) contra el servido: sus barras, POC/VAH/VAL en su
+    fila y con su numero escrito, y la marca de su cobertura."""
+    malos = []
+    if {D(b["nivel"]): D(b["total"]) for b in r.get("barras") or []} != \
+            {D(n["nivel"]): D(n["total"]) for n in sv.get("niveles") or []}:
+        malos.append(f"{quien}: barras pintadas != niveles servidos")
+    for b in r.get("barras") or []:
+        if not b.get("fuera") and (abs(b["y0"] - y(D(b["nivel"]) + paso)) > 1.01 or abs(b["y1"] - y(D(b["nivel"]))) > 1.01):
+            malos.append(f"{quien}: la barra de {b['nivel']} no esta en la fila de su precio")
+            break
+    va = sv.get("value_area") if (sv.get("value_area") or {}).get("val") is not None else None  # /perfil: val null
+    for nombre, nivel, donde in (("POC", sv.get("poc"), lambda n: y(n + paso / 2)),
+                                 ("VAH", va and va["vah"], lambda n: y(n + paso)), ("VAL", va and va["val"], y)):
+        p = r.get(nombre.lower())
+        if (D(p["nivel"]) if p else None) != (D(nivel) if nivel is not None else None):
+            malos.append(f"{quien}: {nombre} pintado en {p and p['nivel']} y servido {nivel}")
+        elif p and abs(p["y"] - 0.5 - round(donde(D(nivel)))) > 1.01:
+            malos.append(f"{quien}: la linea del {nombre} {nivel} esta en y={p['y']} y su fila en {donde(D(nivel)):.1f}")
+        elif p and p.get("texto") is not None and (p["texto"] != f"{nombre} {nivel}" or not any(
+                abs(b - (p["y"] - 1.5)) <= 1.01 for _, b in textos.get(p["texto"], ()))):
+            malos.append(f"{quien}: junto a la linea del {nombre} {nivel} escribe «{p['texto']}»")
+    marca = marca_de(quien.split(" ")[0] if not quien.startswith("compuesto") else quien, st)
+    if r.get("marca") != marca:
+        malos.append(f"{quien}: su marca dice «{r.get('marca')}» y su cobertura servida «{marca}»")
+    elif marca and not textos.get(marca):
+        malos.append(f"{quien}: la marca «{marca}» no esta escrita en el lienzo")
+    return malos
+
+
+def juzga_capas(e: dict, vio: dict, q_fp: dict, sv_fp: dict, pin: dict, y, textos: dict, rojos: list, info: list,
+                pref: str) -> None:
+    capas = pin.get("capas") or {}
+    pide = [c for c in (e.get("capas") or "").split(",") if c]
+    paso, ses = D(sv_fp["paso"]), e.get("sesion", "dia")
+    fam = FAMILIAS[e["familia"]]
+    p_malos, f_malos = [], []
+
+    def pedida(ruta: str, quiero: dict, cual: str) -> dict | None:
+        todas = [p for p in vio["peticiones"] if ruta in p["url"] and p.get("cuerpo")]
+        cands = [p for p in todas if all((epoch(qs(p).get(k, "1970-01-01T00:00:00Z")) == epoch(v)) if k in ("desde", "hasta")
+                                         else qs(p).get(k) == v for k, v in quiero.items())]
+        if not cands:
+            p_malos.append(f"{cual}: no pide lo que su hash dice ({quiero}); pidio {[qs(p) for p in todas][:1]}")
+            return None
+        if set(qs(cands[-1]).get("venues", "").split(",")) != fam:
+            p_malos.append(f"{cual}: pide {qs(cands[-1]).get('venues')}, no la familia {e['familia']}")
+        return cands[-1]["cuerpo"]
+
+    m = MARCOS[e["marco"]] * 60
+    tope = -(-inicio_n(epoch(q_fp["hasta"]), ses, SESIONES_MAXIMO) // m) * m  # el primer borde de vela que cabe
+    w = {"desde": iso_s(max(epoch(q_fp["desde"]), tope)), "hasta": q_fp["hasta"]}
+    base = {"symbol": e["activo"], "sesion": ses}
+    if "perfil" in pide:
+        sv = pedida(RUTAS_OF3["sesiones"], {**w, **base, "paso": txt(paso), "unidad": e["unidad"]}, "perfil de sesion")
+        if sv is not None:
+            pintadas = {r["inicio"]: r for r in capas.get("sesiones") or []}
+            for s in sv["sesiones"]:
+                r = pintadas.pop(s["inicio"], None)
+                visible = epoch(s["corte"]) > epoch(pin["velas"][0]["ts"]) and epoch(s["inicio"]) < \
+                    epoch(pin["velas"][-1]["ts"]) + m
+                if r is None and visible:
+                    f_malos.append(f"perfil: la sesion {s['inicio']} se ve y no se pinta")
+                elif r is not None:
+                    f_malos += juzga_perfil(f"perfil {s['inicio'][5:16]}", r, s, estado_sesion(s), paso, y, textos)
+            if pintadas:
+                f_malos.append(f"perfil: pinta sesiones que no se sirvieron: {sorted(pintadas)[:2]}")
+    if e.get("compuesto"):
+        n = int(e["compuesto"])
+        sv = pedida(RUTAS_OF3["sesiones"], {"desde": iso_s(inicio_n(epoch(q_fp["hasta"]), ses, n)), "hasta": q_fp["hasta"],
+                                            **base, "paso": txt(paso), "unidad": e["unidad"]}, f"compuesto de {n}")
+        if sv is not None:
+            if len(sv["sesiones"]) != n:
+                f_malos.append(f"compuesto: {len(sv['sesiones'])} sesiones servidas y el hash pide {n}")
+            if sv.get("compuesto") and not capas.get("compuesto"):
+                f_malos.append("compuesto: servido y no pintado")
+            elif sv.get("compuesto"):
+                c = sv["compuesto"]
+                f_malos += juzga_perfil(f"compuesto {c['sesiones']}", capas["compuesto"], c, estado_sesion(c), paso, y,
+                                        textos)
+    rangos = []
+    if e.get("fijo"):
+        rangos.append(("fijo", "fijo", e["fijo"].split(",")))
+    if "dinamico" in pide:
+        rangos.append(("dinamico", "dinámico", [pin["velas"][0]["ts"], iso_s(epoch(pin["velas"][-1]["ts"]) + m)]))
+    for nombre, rotulo, (a, b) in rangos:
+        sv = pedida(RUTAS_OF3["perfil"], {"desde": a, "hasta": b, "symbol": e["activo"], "paso": txt(paso),
+                                          "unidad": e["unidad"]}, nombre)
+        if sv is not None and not capas.get(nombre):
+            f_malos.append(f"{nombre}: servido y no pintado")
+        elif sv is not None:
+            f_malos += juzga_perfil(rotulo, capas[nombre], sv, estado_rango(sv), paso, y, textos)
+    puntos_ok = 0
+    if "vwap" in pide:
+        sv = pedida(RUTAS_OF3["vwap"], {**w, **base, "marco": e["marco"]}, "vwap")
+        if sv is not None:
+            visibles = {epoch(v["ts"]): v for v in pin["velas"]}
+            por_inicio = {s["inicio"]: s for s in sv["sesiones"]}
+            quiero = {s["inicio"] for s in sv["sesiones"] if any(epoch(p["ts"]) in visibles for p in s["puntos"])}
+            if {r["inicio"] for r in capas.get("vwap") or []} != quiero:
+                f_malos.append(f"vwap: pinta las sesiones {sorted(r['inicio'] for r in capas.get('vwap') or [])} y "
+                               f"las servidas con puntos a la vista son {sorted(quiero)}")
+            for r in capas.get("vwap") or []:
+                s = por_inicio.get(r["inicio"])
+                if s is None:
+                    continue
+                servidos = {p["ts"]: p for p in s["puntos"] if epoch(p["ts"]) in visibles}
+                if {p["ts"] for p in r["puntos"]} != set(servidos):
+                    f_malos.append(f"vwap {r['inicio'][5:16]}: {len(r['puntos'])} puntos pintados y {len(servidos)} "
+                                   "servidos en las velas que se ven")
+                for p in r["puntos"]:
+                    sp, v = servidos.get(p["ts"]), visibles.get(epoch(p["ts"]))
+                    if sp is None:
+                        continue
+                    if abs(p["x"] - (v["x0"] + v["ancho"] / 2)) > 1.01:
+                        f_malos.append(f"vwap {p['ts'][11:16]}: el punto esta en x={p['x']} y su vela en "
+                                       f"{v['x0'] + v['ancho'] / 2}")
+                    pares = [("VWAP", p["vwap"], sp["vwap"])] + [
+                        (f"banda {signo}{k}", p["bandas"][k][lado], sp["bandas"][k][i])
+                        for k in ("1", "2", "3") for i, (signo, lado) in enumerate((("-", "abajo"), ("+", "arriba")))]
+                    for nombre, pv, servido in pares:
+                        if D(pv["valor"]) != D(servido) or abs(pv["y"] - y(D(servido))) > 1.01:
+                            f_malos.append(f"vwap {p['ts'][11:16]}: la {nombre} esta pintada en {pv['valor']} "
+                                           f"(y={pv['y']}) y se sirvio {servido} (y={y(D(servido)):.1f})")
+                            break
+                    else:
+                        puntos_ok += 1
+                marca = marca_de("VWAP", estado_sesion(s))
+                if r.get("marca") != marca:
+                    f_malos.append(f"vwap {r['inicio'][5:16]}: su marca dice «{r.get('marca')}» y su cobertura «{marca}»")
+    for etiqueta, lista, brazo in (("(P)", p_malos, "las capas piden lo que su hash no dice"),
+                                   ("(F)", f_malos, "las capas pintan otra cosa que lo servido")):
+        if lista:
+            rojos.append(f"{etiqueta} {pref} {brazo}: {lista[0]}" + (f" (y {len(lista) - 1} mas)" if len(lista) > 1 else ""))
+    info.append(f"(F) {pref} capas: {len(capas.get('sesiones') or [])} perfil(es) de sesion, compuesto "
+                f"{'si' if capas.get('compuesto') else 'no'}, dinamico {'si' if capas.get('dinamico') else 'no'}, fijo "
+                f"{'si' if capas.get('fijo') else 'no'}, {puntos_ok} puntos de VWAP con sus 6 bandas en su sitio")
+
+
+def juzga_tpo(e: dict, vio: dict, rojos: list, info: list) -> None:
+    pref = f"[{e['activo']} TPO {e['familia']}]"
+    t = vio.get("tpo")
+    if vio["excepciones"]:
+        rojos.append(f"(P) {pref} la pagina lanzo {len(vio['excepciones'])} excepcion(es): {vio['excepciones'][0]}")
+    if not vio.get("listo") or not t or not t.get("sesiones"):
+        rojos.append(f"(P) {pref} la pagina no pinto el TPO (listo={vio.get('listo')}, contrato "
+                     f"{'sin sesiones' if t else 'ausente'})")
+        return
+    pets = [p for p in vio["peticiones"] if RUTAS_OF3["tpo"] in p["url"] and p.get("cuerpo")]
+    if not pets:
+        rojos.append(f"(P) {pref} la pagina no trajo ninguna respuesta buena de {RUTAS_OF3['tpo']}")
+        return
+    q, sv = qs(pets[-1]), pets[-1]["cuerpo"]
+    ses, n = e.get("sesion", "dia"), int(e.get("sesiones", "3"))
+    desde = inicio_n(epoch(e["hasta"]), ses, n)
+    malos = [f"{k}={q.get(k)} (su hash dice {v})" for k, v in (("symbol", e["activo"]), ("sesion", ses), ("paso", "auto"))
+             if q.get(k) != v]
+    if epoch(q.get("hasta", "1970-01-01T00:00:00Z")) != epoch(e["hasta"]) or \
+            epoch(q.get("desde", "1970-01-01T00:00:00Z")) != desde:
+        malos.append(f"desde-hasta {q.get('desde')} - {q.get('hasta')}, y sus {n} sesiones van de {iso_s(desde)} a "
+                     f"{e['hasta']}")
+    if malos:
+        rojos.append(f"(P) {pref} pide lo que su hash no dice: {'; '.join(malos)}")
+    if set(q.get("venues", "").split(",")) != FAMILIAS[e["familia"]] or set(t.get("venues") or ()) != FAMILIAS[e["familia"]]:
+        rojos.append(f"(V) {pref} pide {q.get('venues')} y pinta {t.get('venues')}: tiene que ser UNA familia, la de su hash")
+    esc, p = t["escala"], float(D(sv["paso"]))
+
+    def fila(nivel: str) -> tuple:
+        n = float(D(nivel))
+        return (esc["medio"] - (n + p - esc["centro"]) / p * esc["fila"], esc["medio"] - (n - esc["centro"]) / p * esc["fila"])
+
+    textos = vio.get("textos") or []
+    por_inicio = {s["inicio"]: s for s in sv["sesiones"]}
+    f_malos, letras = [], 0
+    if t.get("paso") != sv["paso"]:
+        f_malos.append(f"pinta al paso {t.get('paso')} y se sirvio {sv['paso']}")
+    for r in t["sesiones"]:
+        s = por_inicio.get(r["inicio"])
+        if s is None:
+            f_malos.append(f"pinta la sesion {r['inicio']}, que no se sirvio")
+            continue
+        quien = f"sesion {r['inicio'][5:16]}"
+        marca = marca_de(None, estado_sesion(s))
+        if r.get("marca") != marca:
+            f_malos.append(f"{quien}: su marca dice «{r.get('marca')}» y su cobertura servida «{marca}»")
+        if {D(f["nivel"]): f["letras"] for f in r["filas"]} != {D(x["nivel"]): x["letras"] for x in s["niveles"]}:
+            f_malos.append(f"{quien}: las filas pintadas no son los niveles servidos con sus letras")
+            continue
+        for f in r["filas"]:
+            y0, y1 = fila(f["nivel"])
+            if abs(f["y0"] - y0) > 1.01 or abs(f["y1"] - y1) > 1.01:
+                f_malos.append(f"{quien} nivel {f['nivel']}: su fila {f['y0']}-{f['y1']} no es la de su precio "
+                               f"({y0:.1f}-{y1:.1f})")
+                break
+            if f.get("texto") is None:
+                continue
+            ym = (f["y0"] + f["y1"]) / 2
+            leidas = "".join(x for x, _ in sorted(((tx, a) for tx, a, b in textos if len(tx) == 1 and abs(b - ym) <= 1.01
+                                                   and r["x0"] <= a <= r["x1"]), key=lambda z: z[1]))
+            if f["texto"] != f["letras"] or leidas != f["letras"]:
+                f_malos.append(f"{quien} nivel {f['nivel']}: escribe «{f['texto']}» (el lienzo, «{leidas}») y se "
+                               f"sirvio «{f['letras']}»")
+                break
+            letras += len(leidas)
+        for nombre, pinto, servido in (
+                ("POC", r.get("poc") and (r["poc"]["nivel"],), (s["poc"],) if s.get("poc") is not None else None),
+                ("value area", r.get("va") and (r["va"]["val"], r["va"]["vah"]),
+                 s.get("value_area") and (s["value_area"]["val"], s["value_area"]["vah"])),
+                ("balance inicial", r.get("ib") and (r["ib"]["lo"], r["ib"]["hi"]),
+                 s.get("balance_inicial") and (s["balance_inicial"]["lo"], s["balance_inicial"]["hi"]))):
+            if (pinto and tuple(D(x) for x in pinto)) != (servido and tuple(D(x) for x in servido)):
+                f_malos.append(f"{quien}: {nombre} pintado {pinto} y servido {servido}")
+        if r.get("poc") and (abs(r["poc"]["y0"] - fila(r["poc"]["nivel"])[0]) > 1.01):
+            f_malos.append(f"{quien}: el marco del POC no esta en la fila de {r['poc']['nivel']}")
+        if [(x["desde"], x["hasta"]) for x in r.get("single") or []] != [(x["desde"], x["hasta"])
+                                                                         for x in s["single_prints"]]:
+            f_malos.append(f"{quien}: single prints pintados != servidos")
+    if f_malos:
+        rojos.append(f"(F) {pref} el TPO pintado no es el servido: {f_malos[0]}"
+                     + (f" (y {len(f_malos) - 1} mas)" if len(f_malos) > 1 else ""))
+    info.append(f"(F) {pref} {len(t['sesiones'])} sesion(es) pintadas, {sum(len(r['filas']) for r in t['sesiones'])} "
+                f"filas, {letras} letras releidas del lienzo (paso {sv['paso']}, {e.get('sesion', 'dia')})")
 
 
 def juzga_celdas(x: dict, rojos: list, nomed: list, info: list) -> None:
@@ -522,7 +819,21 @@ def juzga() -> int:
     nomed: list[str] = []
     info: list[str] = []
     huella = hashlib.sha256()
+    # OF-3: un sujeto ANTERIOR a OF-3 (en produccion, hasta desplegar la campana 143) no sirve las rutas de las capas
+    # (404): sus vistas no se miran y se dice SIN JUZGAR; las del footprint se juzgan igual que siempre.
+    try:
+        de_of3 = hay_pagina(f"{raiz()}{RUTAS_OF3['sesiones']}", cab) != 404
+    except OSError as exc:
+        print(f"NO MEDIDO (CANAL): no se pudo preguntar por {RUTAS_OF3['sesiones']} · sujeto: {sujeto} · {str(exc)[:120]}")
+        return 2
+    saltadas = [v for v in VISTAS if not de_of3 and any(k in lee_vista(v) for k in ("capas", "compuesto", "fijo", "modo"))]
+    if saltadas:
+        info.append(f"OF-3 SIN JUZGAR: el sujeto no sirve {RUTAS_OF3['sesiones']} (404: anterior a OF-3, FALTA "
+                    f"DESPLEGAR), asi que sus {len(saltadas)} vistas de capas y de TPO no se miran")
+        huella.update(json.dumps(saltadas).encode())
     for vista in VISTAS:
+        if vista in saltadas:
+            continue
         try:
             vio = asyncio.run(asyncio.wait_for(mira(K, vista, cab), timeout=150))
         except (K.SystemExit2, TimeoutError, OSError) as exc:
@@ -532,7 +843,12 @@ def juzga() -> int:
         pin = vio.get("pintado") or {}
         huella.update(json.dumps([vista, pin.get("velas"), pin.get("venues"), pin.get("umbrales"),
                                   [p["url"].split("?", 1)[-1] for p in vio["peticiones"]],
-                                  [p.get("cuerpo") and p["cuerpo"].get("velas") for p in vio["peticiones"]]],
+                                  [p.get("cuerpo") and p["cuerpo"].get("velas") for p in vio["peticiones"]],
+                                  # OF-3: las capas y el TPO pintados (sin su numero de fotograma, que depende de
+                                  # cuantas veces se repinto) y todo lo servido salvo su as_of
+                                  pin.get("capas"), {k: v for k, v in (vio.get("tpo") or {}).items() if k != "cuadro"},
+                                  [p.get("cuerpo") and {k: v for k, v in p["cuerpo"].items() if k != "as_of"}
+                                   for p in vio["peticiones"]]],
                                  sort_keys=True, default=str).encode())
         if not x:
             continue
@@ -548,7 +864,10 @@ def juzga() -> int:
         print(f"NO MEDIDO: K109 · {nomed[0]}" + cola)
     else:
         print("VERDE  K109 · el footprint pinta lo que sirve, y lo servido es lo de las celdas: niveles, numeros, POC, "
-              "value area, desequilibrios, cobertura y una sola familia" + cola)
+              "value area, desequilibrios, cobertura y una sola familia; " + (
+                  f"las capas y el TPO, SIN JUZGAR (el sujeto es anterior a OF-3: {len(saltadas)} vistas sin mirar)"
+                  if saltadas else "y las capas (sesiones, compuesto, dinamico, fijo, VWAP y bandas) y el TPO pintan "
+                  "lo servido") + cola)
     for linea in rojos + nomed + info:
         print(f"   · {linea}")
     return 1 if rojos else 2 if nomed else 0

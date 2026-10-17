@@ -18,7 +18,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/resultados.py:178` · clave completa `app.entradas.resultados.asentar_pendientes`
 
-**Radio exacto: 0 rutas** de 82 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 85 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -70,7 +70,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/resultados.py:138` · clave completa `app.entradas.resultados.barrido`
 
-**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -94,7 +94,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/resultados.py:119` · clave completa `app.entradas.resultados.de_filas`
 
-**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -129,7 +129,7 @@ Y esas tablas las leen:
 
 `app/entradas/resultados.py:104` · clave completa `app.entradas.resultados.guardar`
 
-**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -164,7 +164,7 @@ Y esas tablas las leen:
 
 `app/entradas/resultados.py:89` · clave completa `app.entradas.resultados.resolver_fila`
 
-**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 

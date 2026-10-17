@@ -19,8 +19,16 @@
 #   (V) familias_sumadas         perpetuos y spot pedidos juntos como si fueran una familia
 #   (P) pagina_rota              una excepcion al arrancar: no pinta
 #   (P) pide_otro_paso           pide un paso que su hash no dice
+# OF-3 (campana 143), las capas y el TPO:
+#   (F) banda_a_otra_sigma       la banda de 1 desviacion pintada donde se sirvio la de 2
+#   (F) vah_pintada_movida       la linea de la VAH de un perfil, un nivel por encima de la servida
+#   (F) incompleta_pintada_completa  una capa con minutos sin escuchar enteros pintada como completa
+#   (F) letra_de_otro_periodo    cada letra del TPO, la del periodo siguiente
+#   (P) sesion_partida_a_medianoche  las sesiones empiezan a medianoche: la que la cruza se pide partida
 # Y los NO MEDIDO, que no son ni ROJO ni VERDE: sin_pagina (404, «FALTA DESPLEGAR») · sin_chromium · sin_dato (la
 # ventana sin una celda, como en produccion cuando caduque) · sin_canal (la base de las celdas no contesta).
+# Y un sujeto ANTERIOR a OF-3 (la pagina de ce5f485 y las rutas nuevas en 404, como produccion hasta desplegar la 143):
+# VERDE en lo del footprint y las seis vistas de las capas y el TPO SIN JUZGAR, nunca ROJO.
 # Y el check: A89 los dos modos de SIGPIPE, A56 las tres invocaciones; el escenario restaurado; el arbol intacto.
 #
 # No usa produccion ni el espejo. Puertos 8109 y 8110 (se niega a arrancar si estan ocupados). Al salir: 0 bases,
@@ -134,6 +142,17 @@ planta_pagina flujo-app.js 's/^function arranca() {$/function arranca() { throw 
 juzga_plantado pagina_rota P "lanzo 1 excepcion|no pinto la vista" $m "una excepcion al arrancar"
 planta_pagina flujo-app.js 's/parametros(VISTA, w\.desde, w\.hasta, VISTA\.paso)/parametros(VISTA, w.desde, w.hasta, "auto")/' 1; m=$?
 juzga_plantado pide_otro_paso P "pide lo que su hash no dice: paso=auto" $m "pide paso=auto con un paso fijado en el hash"
+# OF-3 (campana 143): las capas y el TPO, cada decision que se pinta con su plantado
+planta_pagina flujo-capas.js 's/const b = p\.bandas\[String(k)\];/const b = p.bandas[String(k === 1 ? 2 : k)];/' 1; m=$?
+juzga_plantado banda_a_otra_sigma F "las capas pintan otra cosa .*banda" $m "la banda de 1 sigma pintada en la de 2"
+planta_pagina flujo-capas.js "s/r\.vah = linea('VAH', va\.vah, y(Number(va\.vah) + paso)/r.vah = linea('VAH', va.vah, y(Number(va.vah) + 2 * paso)/" 1; m=$?
+juzga_plantado vah_pintada_movida F "las capas pintan otra cosa .*la linea del VAH" $m "la linea de la VAH un nivel arriba"
+planta_pagina flujo-calculo.js "s/if (esperados !== 0 && !c\.minutos_con_fila) estado = 'hueco';/if (false) estado = 'hueco';/; s/else if (esperados !== 0 && !c\.completa) estado = 'incompleta';/else if (false) estado = 'incompleta';/" 2; m=$?
+juzga_plantado incompleta_pintada_completa F "su marca dice .*faltan" $m "una capa con minutos sin escuchar, como completa"
+planta_pagina flujo-tpo.js 's/const letra = l\.letras\[i\];/const letra = m.letras[m.letras.indexOf(l.letras[i]) + 1] || l.letras[i];/' 1; m=$?
+juzga_plantado letra_de_otro_periodo F "el TPO pintado no es el servido: .*escribe" $m "cada letra, la del periodo siguiente"
+planta_pagina flujo-calculo.js 's/  const o = ses\.ini \* 60000;/  const o = 0;/' 1; m=$?
+juzga_plantado sesion_partida_a_medianoche P "piden lo que su hash no dice: compuesto|pide lo que su hash no dice: desde" $m "las sesiones empiezan a medianoche"
 
 echo "== lo que no se puede medir: NO MEDIDO, ni ROJO ni VERDE"
 echo sin_pagina > "$T/plantado"
@@ -147,6 +166,17 @@ rc=$(k109 $P2 "${DB}_vacia")
 comprueba sin_dato "$([ "$rc" = 2 ] && head -1 "$T/sal" | grep -q '^NO MEDIDO: K109 · (S) .*sin dato en la ventana fija' && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/sal" | cut -c1-120)"
 rc=$(k109 $P1 "${DB}_no_existe")
 comprueba sin_canal "$([ "$rc" = 2 ] && head -1 "$T/sal" | grep -q '^NO MEDIDO: K109 · (S) .*sin canal a las celdas' && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/sal" | cut -c1-120)"
+
+echo "== un sujeto ANTERIOR a OF-3 (produccion hasta desplegar la 143): la pagina de ce5f485 y sus rutas nuevas en 404"
+for f in flujo.html flujo/flujo-app.js flujo/flujo-calculo.js flujo/flujo-dibujo.js flujo/flujo.css; do
+  git -C "$REPO" show "ce5f485:static/$f" > "$T/sobre/$f" 2>/dev/null || echo "control: no pude leer static/$f de ce5f485"
+done
+echo sin_of3 > "$T/plantado"
+rc=$(k109 $P1 "$DB")
+comprueba sujeto_anterior_a_of3 "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K109 .*SIN JUZGAR (el sujeto es anterior a OF-3: 6 vistas sin mirar)' && echo 0 || echo 1)" \
+  "rc=$rc · VERDE en lo del footprint y $(head -1 "$T/sal" | grep -o 'las capas y el TPO, SIN JUZGAR[^)]*)')"
+rm -f "$T/sobre/flujo.html"
+restaura
 
 echo "== el check: A89 los dos modos de SIGPIPE, A56 las tres invocaciones"
 for modo in --ignore-signal=PIPE --default-signal=PIPE; do

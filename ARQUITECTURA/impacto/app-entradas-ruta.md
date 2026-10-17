@@ -17,7 +17,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/ruta.py:349` · clave completa `app.entradas.ruta._hipotesis`
 
-**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -41,7 +41,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/ruta.py:371` · clave completa `app.entradas.ruta._reglamento`
 
-**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -65,7 +65,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/ruta.py:156` · clave completa `app.entradas.ruta._resumen`
 
-**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -89,7 +89,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/ruta.py:199` · clave completa `app.entradas.ruta.construir`
 
-**Radio exacto: 2 rutas** de 82 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 

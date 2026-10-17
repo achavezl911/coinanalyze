@@ -10,10 +10,11 @@ Lo que sirve:
     /static/*               static/ del arbol; si --sobre DIR trae el fichero, ese gana (asi se planta una pagina que
                             pinta mal SIN tocar el arbol)
     /api/orderflow/footprint  lo que calcula app/orderflow_lectura.py DEL ARBOL sobre <dsn>, con el `as_of` de la ruta
+    /api/orderflow/{perfil,sesiones,vwap,tpo}  lo mismo para las capas y el TPO de OF-3 (campana 143)
     cualquier otra /api/*   503 «banco»
 --plantado FICHERO se RELEE en cada peticion (el control cambia el escenario sin reiniciar el banco): si existe, dice
-`nivel` o `va` (lo servido se tuerce DESPUES de calcularlo: «lo servido no es lo de las celdas») o `sin_pagina` (/flujo
-da 404: el sujeto sin desplegar).
+`nivel` o `va` (lo servido se tuerce DESPUES de calcularlo: «lo servido no es lo de las celdas»), `sin_pagina` (/flujo
+da 404: el sujeto sin desplegar) o `sin_of3` (las rutas de OF-3 dan 404: un sujeto anterior a la campana 143).
 Con la CSP de produccion (copiada de app/api.py): un <script> o un <style> en linea fallaria aqui igual que alli.
 No aplica ninguna regla de K109: sirve. Lo usan K109-control.bash y las capturas de la entrega.
 """
@@ -67,22 +68,34 @@ def carga(dsn: str) -> int:
     return 0
 
 
-def _footprint(dsn: str, q: dict[str, str]) -> tuple[int, dict]:
+# Las rutas que sirve el banco, con los parametros de cada una (los de app/api.py): el footprint (OF-2) y, desde OF-3
+# (campana 143), el perfil del rango (el dinamico y el fijo), las sesiones con su compuesto, el VWAP y el TPO.
+RUTAS = {"/api/orderflow/footprint": ("footprint", ("symbol", "desde", "hasta", "marco", "paso", "venues", "unidad")),
+         "/api/orderflow/perfil": ("perfil", ("symbol", "desde", "hasta", "paso", "venues", "unidad")),
+         "/api/orderflow/sesiones": ("sesiones", ("symbol", "desde", "hasta", "sesion", "paso", "venues", "unidad")),
+         "/api/orderflow/vwap": ("vwap", ("symbol", "desde", "hasta", "marco", "sesion", "venues")),
+         "/api/orderflow/tpo": ("tpo", ("symbol", "desde", "hasta", "sesion", "paso", "venues"))}
+
+
+def _footprint(dsn: str, q: dict[str, str], ruta: str = "/api/orderflow/footprint") -> tuple[int, dict]:
     sys.path.insert(0, str(REPO))
     import app as paquete
     from app import orderflow_lectura as lec
 
     if not Path(paquete.__file__).resolve().is_relative_to(REPO):
         raise SystemExit(f"el banco importo app/ de {paquete.__file__}, no del arbol {REPO}")
+    nombre, params = RUTAS[ruta]
 
     async def corre():
         import asyncpg
 
         conn = await asyncpg.connect(dsn)
         try:
-            return await lec.footprint(conn, symbol=q.get("symbol", ""), desde=q.get("desde"), hasta=q.get("hasta"),
-                                       marco=q.get("marco", "1m"), paso=q.get("paso"), venues=q.get("venues"),
-                                       unidad=q.get("unidad"))
+            kw = {k: q.get(k) for k in params}
+            kw["symbol"] = kw["symbol"] or ""
+            if "marco" in params:
+                kw["marco"] = kw["marco"] or "1m"
+            return await getattr(lec, nombre)(conn, **kw)
         finally:
             await conn.close()
 
@@ -156,10 +169,12 @@ def main() -> int:
                     if f.is_relative_to(raiz.resolve()) and f.is_file():
                         return self.manda(200, f.read_bytes(), TIPOS.get(f.suffix, "application/octet-stream"))
                 return self.manda(404, b'{"detail":"Not Found"}', TIPOS[".json"])
-            if u.path == "/api/orderflow/footprint":
+            if u.path in RUTAS and plantado() == "sin_of3" and RUTAS[u.path][0] in ("sesiones", "vwap", "tpo"):
+                return self.manda(404, b'{"detail":"Not Found"}', TIPOS[".json"])  # un sujeto anterior a OF-3
+            if u.path in RUTAS:
                 q = {k: v[0] for k, v in parse_qs(u.query).items()}
-                estado, d = _footprint(a.db, q)
-                if estado == 200 and plantado() in ("nivel", "va"):
+                estado, d = _footprint(a.db, q, u.path)
+                if estado == 200 and plantado() in ("nivel", "va") and u.path == "/api/orderflow/footprint":
                     d = altera(d, plantado())
                 return self.manda(estado, json.dumps(d).encode(), TIPOS[".json"])
             return self.manda(503, b'{"detail":"banco: aqui solo se sirve el footprint"}', TIPOS[".json"])

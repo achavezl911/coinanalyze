@@ -12,6 +12,10 @@
 # PLANTADOS DE DATOS (sobre una COPIA de la base buena): una celda alterada, un negativo, un hueco sin declarar, un
 #   minuto ausente, el otro colector torcido, lo servido torcido (footprint y value area), una fila mas vieja que su
 #   retencion, la particion de manana ausente, las funciones de particion de antes de OF-1, el servicio parado.
+# OF-3 (campana 143), lo servido de los perfiles: una VAH de sesion movida, una letra de TPO en otro periodo, el VWAP
+#   con otra cuenta (el precio del nivel) y la sesion que cruza la medianoche partida en dos (estos dos, con el
+#   defecto inyectado en la ruta del arbol al servir); y un sujeto anterior a OF-3, que tiene que salir VERDE con
+#   «(d) OF-3: SIN JUZGAR».
 # NO MEDIDO: sin las tablas (el esquema de antes de OF-1, d641818), cero filas, el canal caido, poca vida.
 # Cada plantado exige su rc, su frase y que la HUELLA del sujeto cambie (un plantado que no mueve nada no prueba
 # nada); al final la base buena tiene su huella de antes y el arbol esta como estaba. Despues, las TRES
@@ -68,9 +72,9 @@ k108() {  # $1 = base   $2 = servido   [$3 = reloj]   [$4 = minimo]  -> rc; sali
     bash "$CHK" > "$T/sal" 2>&1
   echo $?
 }
-sirve() {  # $1 = base   $2 = directorio
+sirve() {  # $1 = base   $2 = directorio   [$3 = planta de lo servido (OF-3), el arbol sin tocar]
   mkdir -p "$2"
-  K108_BASE="$(dsn "$1")" K108_RELOJ="$RELOJ" "$PY" "$AQUI/K108-orderflow.py" sirve "$2" > "$T/sirve.log" 2>&1
+  K108_BASE="$(dsn "$1")" K108_RELOJ="$RELOJ" "$PY" "$AQUI/K108-orderflow.py" sirve "$2" ${3:+--planta "$3"} > "$T/sirve.log" 2>&1
 }
 planta() {  # $1 nombre  $2 rc esperado  $3 patron  $4 base  $5 servido  $6 huella de antes  [$7 reloj] [$8 minimo]
   local despues rc visto
@@ -149,6 +153,31 @@ cp -r "$T/s0" "$T/s-vav"
 f=$(grep -l '"que": "footprint' "$T"/s-vav/*.json | head -1)
 "$PY" -c "import json,sys; p=sys.argv[1]; d=json.load(open(p)); v=next(v for v in d['velas'] if v.get('value_area') and v['value_area']['val']!=v['value_area']['vah']); v['value_area']['vah']=v['value_area']['val']; json.dump(d,open(p,'w'))" "$f"
 planta servido_va_de_una_vela 1 '\(d\) [A-Z]+ .*value area servida .* != recalculada' "$B0" "$T/s-vav" "$H_BUENA"
+# OF-3 (campana 143): lo servido de las sesiones, el VWAP y el TPO, cada decision con su plantado
+cp -r "$T/s0" "$T/s-vah"
+f=$(grep -l '"sesion": {"nombre": "dia"' "$T"/s-vah/*sesiones*.json | head -1)
+"$PY" -c "import json,sys,decimal; p=sys.argv[1]; d=json.load(open(p)); s=next(s for s in d['sesiones'] if s['value_area']); s['value_area']['vah']=str(decimal.Decimal(s['value_area']['vah'])+decimal.Decimal(d['paso'])); json.dump(d,open(p,'w'))" "$f"
+planta servido_vah_movida 1 '\(d\) [A-Z]+ .*sesiones dia .*value area servida' "$B0" "$T/s-vah" "$H_BUENA"
+cp -r "$T/s0" "$T/s-tpo"
+f=$(grep -l '"que": "TPO' "$T"/s-tpo/*.json | head -1)
+"$PY" -c "import json,sys; p=sys.argv[1]; d=json.load(open(p)); L=d['letras']; n=next(n for s in d['sesiones'] for n in s['niveles']); n['letras']=n['letras'][:-1]+L[L.index(n['letras'][-1])+1]; json.dump(d,open(p,'w'))" "$f"
+planta servido_letra_de_otro_periodo 1 '\(d\) [A-Z]+ .*tpo dia .*letras servidas != recalculadas' "$B0" "$T/s-tpo" "$H_BUENA"
+if sirve "$B0" "$T/s-vwn" vwap_al_nivel; then
+  planta servido_vwap_otra_cuenta 1 '\(d\) [A-Z]+ .*vwap [0-9:]+-[0-9:]+ vela .*vwap servido' "$B0" "$T/s-vwn" "$H_BUENA"
+else
+  comprueba servido_vwap_otra_cuenta 1 "sirve plantado no corrio: $(tail -1 "$T/sirve.log")"
+fi
+if sirve "$B0" "$T/s-med" partir_medianoche; then
+  planta servido_sesion_partida 1 '\(d\) [A-Z]+ .*sesiones [0-9:]+-[0-9:]+: sesiones servidas .* != recalculadas' "$B0" "$T/s-med" "$H_BUENA"
+else
+  comprueba servido_sesion_partida 1 "sirve plantado no corrio: $(tail -1 "$T/sirve.log")"
+fi
+# un sujeto ANTERIOR a OF-3 (en produccion, un 404): VERDE, con (d) OF-3 SIN JUZGAR, y nunca NO MEDIDO
+mkdir -p "$T/s-sin"
+cp "$T"/s0/*footprint* "$T"/s0/*perfil* "$T/s-sin/"
+touch "$T/s-sin/sin-of3"
+rc=$(k108 "$B0" "$T/s-sin")
+comprueba sujeto_anterior_a_of3 "$([ "$rc" = 0 ] && grep -q '^VERDE  K108' "$T/sal" && grep -q '(d) OF-3: SIN JUZGAR' "$T/sal" && echo 0 || echo 1)" "rc=$rc · $(grep -m1 'OF-3' "$T/sal" | cut -c1-100)"
 b=$(copia vieja limpia); en "$b" "SELECT ensure_temporal_partitions('2026-10-14 12:00+00', 0, 0)"
 en "$b" "INSERT INTO orderflow_cinta(ts,venue,symbol,precio,base,usd,compra,id) VALUES ('2026-10-14 12:00+00','binance_spot','BTC',80000,1,80000,true,'vieja')"
 planta retencion_cinta 1 '\(e\) 1 filas de cinta mas viejas que su retencion' "$b" "$T/s0" "$H_BUENA"
