@@ -14,9 +14,12 @@ una o dos operaciones. Lo que se fija, y como se rompe cada cosa:
 
 from __future__ import annotations
 
+import asyncio
+import json
 import math
 import os
 import uuid
+from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -384,6 +387,7 @@ async def test_las_rutas_dicen_422_y_no_recortan_en_silencio(conn, monkeypatch):
     ok = await api.orderflow_footprint(_Peticion(symbol="BTC", desde=desde, hasta=hasta), symbol="BTC",
                                        desde=desde, hasta=hasta)
     assert ok["que"].startswith("footprint") and ok["as_of"].endswith("Z")
+    json.dumps(ok)  # sin default=: ni un Decimal ni un datetime sin pasar a texto
     with pytest.raises(HTTPException) as exc:
         await api.orderflow_footprint(_Peticion(symbol="BTC", hora="15"), symbol="BTC", desde=desde, hasta=hasta)
     assert exc.value.status_code == 422
@@ -393,6 +397,7 @@ async def test_las_rutas_dicen_422_y_no_recortan_en_silencio(conn, monkeypatch):
     assert exc.value.status_code == 422 and "31 dias" in exc.value.detail
     ref = await api.orderflow_referencia(_Peticion())
     assert ref["pasos"] == {"BTC": "1", "ETH": "0.1", "SOL": "0.01"} and len(ref["mercados"]) == 9
+    json.dumps(ref)
 
 
 class _HealthConnection:
@@ -442,3 +447,46 @@ async def test_healthz_informa_de_orderflow_sin_degradar(monkeypatch, servicio, 
     assert informados == ([] if degrada else ["orderflow"])
     if not degrada:
         assert health["informative_services"][0]["failing"] is True
+
+
+class _WsMudo:
+    """Una conexion que entrega UNA operacion y despues nada: abierta, pero muda."""
+
+    def __init__(self, primero: str) -> None:
+        self.cola = [primero]
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_exc) -> bool:
+        return False
+
+    async def send(self, _texto) -> None:
+        return None
+
+    async def recv(self):
+        if self.cola:
+            return self.cola.pop()
+        await asyncio.sleep(0.01)
+        raise TimeoutError
+
+
+async def test_una_conexion_abierta_que_no_entrega_no_cubre(monkeypatch):
+    # Es el caso de Binance USD-M por /stream (medido por el operador el 10-17): conecta y no entrega. Sin la regla
+    # del silencio, la cobertura diria 60 s sobre un minuto vacio.
+    monkeypatch.setattr(of, "SILENCIO_S", 0.2)
+    monkeypatch.setattr(of.random, "uniform", lambda *_a: 0.0)
+    monkeypatch.setattr(of, "connect", lambda *_a, **_k: _WsMudo(MUESTRAS["binance_usdm"][0]))
+    alm = _alm(inicio=0.0)
+    salud = {"ultimo": {}, "caidas": defaultdict(int), "mal_formados": defaultdict(int)}
+    tarea = asyncio.create_task(of.escucha("binance_usdm", alm, salud))
+    for _ in range(300):
+        await asyncio.sleep(0.01)
+        if salud["caidas"]["binance_usdm"]:
+            break
+    tarea.cancel()
+    await asyncio.gather(tarea, return_exceptions=True)
+    assert salud["caidas"]["binance_usdm"] >= 1
+    desde, hasta = alm.coberturas["binance_usdm"].tramos[0]
+    # el tramo acaba en la ULTIMA operacion recibida, no cuando se dio por muerta la conexion
+    assert hasta is not None and hasta - desde < 0.1
