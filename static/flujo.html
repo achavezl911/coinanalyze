@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>COINALYZE · Footprint</title>
+    <!-- EL FOOTPRINT (campana 142, OF-2): por vela y nivel de precio, el volumen del agresor VENDEDOR y COMPRADOR, el
+         delta, los desequilibrios, el POC y la value area. La CSP de `app/api.py` no admite `<script>` ni `<style>` en
+         linea: todo va en ficheros servidos por `/static`. El estado vive en el hash (static/flujo/flujo-calculo.js). -->
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/static/flujo/flujo.css" />
+  </head>
+  <body>
+    <header class="cabecera">
+      <div class="cab-izq">
+        <span class="marca">COINALYZE</span>
+        <span class="pastilla-rotulo">FOOTPRINT</span>
+        <div class="seg" id="sel-activo" role="group" aria-label="Activo">
+          <button type="button" data-valor="BTC">BTC</button>
+          <button type="button" data-valor="ETH">ETH</button>
+          <button type="button" data-valor="SOL">SOL</button>
+        </div>
+        <div class="seg" id="sel-marco" role="group" aria-label="Marco">
+          <button type="button" data-valor="1m">1m</button>
+          <button type="button" data-valor="5m">5m</button>
+          <button type="button" data-valor="15m">15m</button>
+          <button type="button" data-valor="1h">1h</button>
+          <button type="button" data-valor="4h">4h</button>
+          <button type="button" data-valor="1d">1d</button>
+        </div>
+        <div class="seg" id="sel-familia" role="group" aria-label="Familia de venues">
+          <button type="button" data-valor="perp">PERPETUOS USDT</button>
+          <button type="button" data-valor="spot">SPOT USDT</button>
+          <button type="button" data-valor="coinbase">COINBASE</button>
+          <button type="button" data-valor="deribit">DERIBIT</button>
+        </div>
+        <label class="mando">paso <select id="sel-paso" aria-label="Paso de precio"></select></label>
+        <div class="seg" id="sel-unidad" role="group" aria-label="Unidad">
+          <button type="button" data-valor="base">BASE</button>
+          <button type="button" data-valor="usd">USD</button>
+        </div>
+        <label class="mando">filtro &lt;
+          <input id="sel-min" type="number" min="0" step="any" aria-label="Tamaño mínimo de celda" /></label>
+        <label class="mando"><input id="sel-esconde" type="checkbox" /> esconder</label>
+        <label class="mando">resaltar ≥
+          <input id="sel-grande" type="number" min="0" step="any" aria-label="Tamaño de celda grande" /></label>
+      </div>
+      <div class="cab-der">
+        <a class="enlace" id="ir-mesa" href="/">← MESA</a>
+      </div>
+    </header>
+
+    <div class="estado" id="estado" role="status"></div>
+
+    <main class="grafico" id="grafico">
+      <canvas id="lienzo"></canvas>
+    </main>
+    <div class="lectura" id="lectura" aria-live="polite"></div>
+
+    <footer class="leyenda">
+      <p>
+        <b>Cada celda:</b> venta × compra del AGRESOR en ese nivel (izquierda, el que vendió; derecha, el que compró),
+        en la unidad elegida; el color es el signo del delta (compra − venta) y su intensidad, su tamaño dentro de la
+        vela. Los números salen cuando la fila mide 11 px y la vela 56: si no, la celda es su color (acerque con la
+        rueda; arrastre para moverse). Debajo de cada vela: delta, volumen y operaciones.
+      </p>
+      <p>
+        <span class="muestra poc"></span> POC de la vela (el nivel de más volumen; a igualdad, el más bajo) ·
+        <span class="muestra va"></span> value area del 70 % de la vela, con el mismo algoritmo que el perfil ·
+        <span class="muestra dc"></span> desequilibrio COMPRADOR: la compra de un nivel ≥ 3 veces la venta del nivel de
+        debajo · <span class="muestra dv"></span> VENDEDOR: la venta ≥ 3 veces la compra del de encima · en los dos, el
+        lado fuerte tiene que llegar a la media de volumen por nivel de su vela, y solo se compara dentro de la vela ·
+        barra gruesa: APILADO, 3 o más niveles seguidos del mismo lado.
+      </p>
+      <p>
+        <span class="muestra incompleta"></span> vela INCOMPLETA: le faltan minutos de algún venue de la familia (dice
+        cuántos de cuántos) · <span class="muestra hueco"></span> HUECO: nadie la escuchó; no se rellena ni se pinta
+        como una vela · «en curso»: todavía puede cambiar (cierra 90 s después de su último minuto) · «0 ops»:
+        escuchada entera y sin operaciones.
+      </p>
+      <p>
+        <b>Las familias no se suman.</b> Cada venue publica el precio en su moneda (USDT, USD, USDC) y el mismo minuto no
+        cotiza igual en todos: sumarlos mezcla escalas de precio y emborrona el perfil. Por eso no se ofrece «todos los
+        venues sumados»: perpetuos USDT (Binance, Bybit, OKX, Bitget), spot USDT (Binance, Bybit, OKX), Coinbase (USD)
+        y Deribit (USD; SOL en USDC), cada uno por su lado.
+      </p>
+    </footer>
+
+    <script src="/static/mesa/mesa-datos.js"></script>
+    <script src="/static/flujo/flujo-calculo.js"></script>
+    <script src="/static/flujo/flujo-dibujo.js"></script>
+    <script src="/static/flujo/flujo-app.js"></script>
+  </body>
+</html>

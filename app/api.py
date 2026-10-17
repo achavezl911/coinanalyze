@@ -4021,6 +4021,13 @@ async def panel() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/flujo")
+async def flujo() -> FileResponse:
+    """EL FOOTPRINT (campana 142, OF-2): por vela y nivel de precio, el volumen del agresor vendedor y comprador, el
+    delta, los desequilibrios, el POC y la value area. La pinta static/flujo.html desde /api/orderflow/footprint."""
+    return FileResponse(STATIC_DIR / "flujo.html")
+
+
 @app.get("/")
 async def index() -> FileResponse:
     """LA PUERTA ES LA MESA (campana 133; lo decidio el operador por delegacion de Alejandro).
