@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "grandes_usd": {"BTC": 1000000, "ETH": 400000, "SOL": 150000},
+  "fuente": "Los mismos umbrales que el sistema ya llama 'operacion grande' (LARGE_TRADE_THRESHOLD_MAP de app/config.py). Medido el 2026-10-17 04:02-04:17Z sobre los nueve mercados (15 min, hora tranquila): 1 operacion de BTC, 14 de ETH y 13 de SOL los superan, unas 2500 al dia a ese ritmo."
+}

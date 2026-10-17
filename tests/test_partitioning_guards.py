@@ -33,10 +33,11 @@ class _RecordingConnection:
         return "SELECT 1"
 
 
-def test_managed_table_set_is_exactly_the_five_partitioned_tables() -> None:
+def test_managed_table_set_is_exactly_the_partitioned_tables() -> None:
     # La lista tambien esta escrita en sql/schema.sql, en drop_expired_temporal_partitions
     # y en ensure_temporal_partitions. Si aqui se anade una tabla y alli no, la tabla se
     # queda sin particiones nuevas y sin retencion, en silencio: por eso se fija.
+    # Las cinco de siempre mas las dos de OF-1 (campana 140).
     assert frozenset(
         {
             "futures_trades_realtime",
@@ -44,8 +45,23 @@ def test_managed_table_set_is_exactly_the_five_partitioned_tables() -> None:
             "orderbook_snapshot",
             "liquidations_realtime",
             "scalp_signal_snapshot",
+            "orderflow_celda",
+            "orderflow_cinta",
         }
     ) == PARTITIONED_TEMPORAL_TABLES
+
+
+def test_the_live_function_bodies_manage_the_same_tables_as_python() -> None:
+    # La copia de la migracion incrustada redefine las funciones con CINCO tablas; la que
+    # queda viva es la ULTIMA de sql/schema.sql. Si esa no lista lo mismo que Python, las
+    # tablas nuevas no tienen particion manana.
+    from pathlib import Path
+
+    schema = (Path(__file__).resolve().parents[1] / "sql/schema.sql").read_text(encoding="utf-8")
+    for funcion in ("ensure_temporal_partitions", "drop_expired_temporal_partitions"):
+        ultima = schema[schema.rindex(f"CREATE OR REPLACE FUNCTION {funcion}("):]
+        cuerpo = ultima[: ultima.index("$$;", ultima.index("AS $$"))]
+        assert {t for t in PARTITIONED_TEMPORAL_TABLES if f"'{t}'" in cuerpo} == PARTITIONED_TEMPORAL_TABLES
 
 
 @pytest.mark.asyncio
