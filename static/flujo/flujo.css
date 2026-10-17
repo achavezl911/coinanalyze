@@ -241,3 +241,57 @@ body {
   margin-left: 6px;
   color: var(--tx-debil);
 }
+
+/* OF-3 (campana 143): el gestor de sesiones y las capas, en su fila; las muestras de la leyenda */
+.gestor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.mando input[type="time"] {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--tx);
+  background: var(--bg-pill);
+  border: 1px solid var(--borde-boton);
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+#sel-compuesto,
+#sel-sesiones {
+  width: 48px;
+}
+
+.mando #sel-sesion {
+  width: auto;
+}
+
+#fijo-rango {
+  font-family: var(--mono);
+  color: var(--tx-debil);
+}
+
+.muestra.ses {
+  background: #b48cff;
+}
+.muestra.comp {
+  background: #6fa8ff;
+}
+.muestra.din {
+  background: #ffc65c;
+}
+.muestra.fij {
+  background: #5ce0c0;
+}
+.muestra.ib {
+  width: 3px;
+  background: var(--verde);
+}
+.muestra.sp {
+  width: 3px;
+  background: #ff9f43;
+}

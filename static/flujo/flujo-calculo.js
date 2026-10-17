@@ -51,6 +51,8 @@ function leeHash(hash) {
   const partes = String(hash || '').replace(/^#/, '').split('/').filter(Boolean);
   const e = { activo: 'BTC', marco: '1m', familia: 'perp', paso: 'auto', unidad: 'base', min: null, esconde: false,
               grande: null, hasta: null, ver: VER_DEFECTO };
+  // OF-3 (campana 143): las capas, la sesion y el modo TPO; sin sus claves, la vista es la del footprint de la 142
+  Object.assign(e, { sesion: 'dia', capas: [], compuesto: null, fijo: null, modo: 'footprint', sesiones: TPO_SESIONES });
   const a = String(partes[0] || '').toUpperCase();
   if (FLUJO_ACTIVOS.includes(a)) e.activo = a;
   if (partes[1] && tiene(FLUJO_MARCOS, partes[1])) e.marco = partes[1];
@@ -72,6 +74,15 @@ function leeHash(hash) {
       const t = Date.parse(v);
       if (!Number.isNaN(t) && t % (FLUJO_MARCOS[e.marco] * 60000) === 0) e.hasta = isoZ(t);
     }
+    else if (k === 'sesion' && leeSesion(v)) e.sesion = v;
+    else if (k === 'capas' && v) e.capas = CAPAS.filter((c) => v.split(',').includes(c));
+    else if (k === 'compuesto' && /^\d+$/.test(v || '') && Number(v) >= 2) e.compuesto = Math.min(COMPUESTO_MAXIMO, Number(v));
+    else if (k === 'fijo' && v) {
+      const [a, b] = v.split(',').map((x) => Date.parse(x));
+      if (a < b && a % 60000 === 0 && b % 60000 === 0 && b - a <= 31 * DIA_MS) e.fijo = [isoZ(a), isoZ(b)];
+    }
+    else if (k === 'modo' && v === 'tpo') e.modo = 'tpo';
+    else if (k === 'sesiones' && /^\d+$/.test(v || '') && Number(v) >= 1) e.sesiones = Math.min(TPO_MAXIMO, Number(v));
   });
   return e;
 }
@@ -85,6 +96,12 @@ function escribeHash(e) {
   if (e.grande) h += '/grande=' + e.grande;
   if (e.hasta) h += '/hasta=' + e.hasta;
   if (e.ver !== VER_DEFECTO) h += '/ver=' + e.ver;
+  if (e.sesion && e.sesion !== 'dia') h += '/sesion=' + e.sesion;
+  if (e.capas && e.capas.length) h += '/capas=' + e.capas.join(',');
+  if (e.compuesto) h += '/compuesto=' + e.compuesto;
+  if (e.fijo) h += '/fijo=' + e.fijo.join(',');
+  if (e.modo === 'tpo') h += '/modo=tpo';
+  if (e.sesiones && e.sesiones !== TPO_SESIONES) h += '/sesiones=' + e.sesiones;
   return h;
 }
 
@@ -199,9 +216,107 @@ function filtro(total, e) {
   return 'normal';
 }
 
+/* ================================================================= OF-3 · LOS PERFILES (campana 143)
+ * LAS SESIONES: la misma plantilla que el servidor (app/orderflow_lectura.py, SESIONES). Por omision el DIA UTC; si el
+ * fin no es posterior al inicio, la sesion CRUZA la medianoche y es UNA (de un dia al siguiente). Lo que se pinta de
+ * cada sesion (su perfil, su VWAP, su TPO) lo calcula y lo sirve el servidor; aqui solo se sabe DONDE empiezan, para
+ * pedir el compuesto y el TPO de las N ultimas. */
+const SESIONES = {
+  dia: { rotulo: 'Día UTC', inicio: '00:00', fin: '24:00' },
+  asia: { rotulo: 'Asia', inicio: '00:00', fin: '08:00' },
+  europa: { rotulo: 'Europa', inicio: '07:00', fin: '16:00' },
+  eeuu: { rotulo: 'EE.UU.', inicio: '13:30', fin: '20:00' },
+};
+const CAPAS = ['perfil', 'vwap', 'dinamico'];
+// El tope de la ruta (app/orderflow_lectura.py RANGO_SESIONES, medido en P1): de la primera sesion a `hasta`, 7 dias.
+const SESIONES_MAXIMO = 7;
+const COMPUESTO_DEFECTO = 5;
+const COMPUESTO_MAXIMO = SESIONES_MAXIMO;
+const TPO_SESIONES = 3;
+const TPO_MAXIMO = SESIONES_MAXIMO;
+const DIA_MS = 86400000;
+
+function minutoDelDia(t) {
+  if (!/^\d\d:\d\d$/.test(t || '')) return null;
+  const m = Number(t.slice(0, 2)) * 60 + Number(t.slice(3));
+  return Number(t.slice(3)) < 60 && m <= 1440 ? m : null;
+}
+
+/* `dia`, `asia`, `europa`, `eeuu` o `HH:MM-HH:MM` -> { nombre, rotulo, inicio, fin, ini (minuto del dia), minutos,
+ * cruza } o null si no se entiende (y entonces el hash cae al dia). */
+function leeSesion(v) {
+  const plantilla = tiene(SESIONES, v || '') ? SESIONES[v] : null;
+  const partes = plantilla ? [plantilla.inicio, plantilla.fin] : String(v || '').split('-');
+  if (partes.length !== 2) return null;
+  const ini = minutoDelDia(partes[0]);
+  const fin = minutoDelDia(partes[1]);
+  if (ini === null || fin === null || ini === 1440) return null;
+  const minutos = (((fin - ini) % 1440) + 1440) % 1440 || 1440;
+  return { nombre: v, rotulo: plantilla ? plantilla.rotulo : 'propia', inicio: partes[0], fin: partes[1], ini, minutos,
+           cruza: ini + minutos > 1440 };
+}
+
+/* El inicio de la ULTIMA sesion que empieza antes de `ms`. */
+function inicioSesion(ms, ses) {
+  const o = ses.ini * 60000;
+  return Math.floor((ms - 1 - o) / DIA_MS) * DIA_MS + o;
+}
+
+/* Las N ultimas sesiones que empiezan antes de `hastaMs`: [desde, hasta) toca exactamente esas N. */
+function ventanaSesiones(hastaMs, ses, n) {
+  return { desde: isoZ(inicioSesion(hastaMs, ses) - (n - 1) * DIA_MS), hasta: isoZ(hastaMs) };
+}
+
+/* La ventana de las capas de sesion (perfil y VWAP): la del footprint, sin pasar de las SESIONES_MAXIMO ultimas (el
+ * tope de la ruta). Con 1h, 4h o 1d la historia es mas larga: el desde se adelanta al primer borde de vela que lo
+ * cumple, y la pantalla lo dice (`recortada`). */
+function ventanaCapas(w, ses, marco) {
+  const m = FLUJO_MARCOS[marco] * 60000;
+  const tope = Math.ceil((inicioSesion(Date.parse(w.hasta), ses) - (SESIONES_MAXIMO - 1) * DIA_MS) / m) * m;
+  return Date.parse(w.desde) >= tope ? { desde: w.desde, hasta: w.hasta, recortada: false }
+    : { desde: isoZ(tope), hasta: w.hasta, recortada: true };
+}
+
+/* El estado de un RANGO de minutos [desde, hasta) servido por /perfil (el dinamico y el fijo): como una vela de
+ * cualquier largo. Si no ha cerrado (hasta + CIERRE_S despues de as_of), «en curso»: lo que falta aun puede llegar. */
+function estadoRango(desdeMs, hastaMs, c, asOfMs) {
+  const cob = c || {};
+  const esperados = cob.minutos_esperados === undefined ? null : cob.minutos_esperados;
+  if (hastaMs + CIERRE_S * 1000 > asOfMs) return { estado: 'abierta', en_curso: true, faltan: null, esperados };
+  if (!cob.minutos_con_fila) return { estado: 'hueco', en_curso: false, faltan: esperados, esperados };
+  if (!cob.completa) {
+    return { estado: 'incompleta', en_curso: false, faltan: esperados - cob.minutos_completos, esperados };
+  }
+  return { estado: 'completa', en_curso: false, faltan: 0, esperados };
+}
+
+/* El estado de una SESION servida (sesiones, vwap, tpo): el servidor dice si sigue en curso y su cobertura hasta su
+ * corte; lo que falta se dice aunque siga en curso, y una sesion que acaba de empezar no echa nada en falta. */
+function estadoSesion(s) {
+  const c = s.cobertura || {};
+  const esperados = c.minutos_esperados === undefined ? null : c.minutos_esperados;
+  let estado = 'completa';
+  if (esperados !== 0 && !c.minutos_con_fila) estado = 'hueco';
+  else if (esperados !== 0 && !c.completa) estado = 'incompleta';
+  return { estado, en_curso: !!s.en_curso, faltan: estado === 'completa' ? 0 : esperados - (c.minutos_completos || 0),
+           esperados };
+}
+
+/* La marca que se escribe sobre una capa: en curso, hueco o cuantos minutos-venue faltan (nada si no hay nada que
+ * decir). */
+function marcaCapa(st) {
+  const partes = [];
+  if (st.en_curso) partes.push('en curso');
+  if (st.estado === 'hueco') partes.push('hueco');
+  else if (st.faltan) partes.push('faltan ' + st.faltan + '/' + st.esperados);
+  return partes.join(' · ') || null;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     FLUJO_MARCOS, FLUJO_HISTORIA, FAMILIAS, CIERRE_S, VER_DEFECTO, leeHash, escribeHash, ventana, ventanaViva,
     estadoVela, desequilibrios, cifra, filtro, isoZ,
   };
+  Object.assign(module.exports, { SESIONES, CAPAS, SESIONES_MAXIMO, COMPUESTO_DEFECTO, TPO_SESIONES, leeSesion,
+                                  inicioSesion, ventanaSesiones, ventanaCapas, estadoRango, estadoSesion, marcaCapa });
 }

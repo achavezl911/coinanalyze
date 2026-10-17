@@ -117,6 +117,8 @@ function creaLienzo(canvas, alLeer) {
     ctx.clip();
     for (let i = i0; i <= i1; i++) reg.velas.push(pintaVela(ctx, m.velas[i], g.x(i), g, y, m));
     ctx.restore();
+    // OF-3 (campana 143): las capas, encima de las velas, con la misma escala y su contrato (flujo-capas.js)
+    reg.capas = m.capas && typeof pintaCapas === 'function' && i1 >= i0 ? pintaCapas(ctx, g, y, m, paso, i0, i1) : null;
     ejeTiempo(ctx, g, i0, i1, m);
     window.FLUJO_PINTADO = reg;
   }

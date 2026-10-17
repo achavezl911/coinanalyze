@@ -48,6 +48,32 @@
       <div class="cab-der">
         <a class="enlace" id="ir-mesa" href="/">← MESA</a>
       </div>
+      <!-- OF-3 (campana 143): el GESTOR DE SESIONES, las capas y el modo TPO; el estado, en el hash -->
+      <div class="gestor" id="gestor">
+        <div class="seg" id="sel-modo" role="group" aria-label="Vista">
+          <button type="button" data-valor="footprint">FOOTPRINT</button>
+          <button type="button" data-valor="tpo">TPO</button>
+        </div>
+        <label class="mando">sesión
+          <select id="sel-sesion" aria-label="Sesión">
+            <option value="dia">Día UTC · 00:00–24:00Z</option>
+            <option value="asia">Asia · 00:00–08:00Z</option>
+            <option value="europa">Europa · 07:00–16:00Z</option>
+            <option value="eeuu">EE.UU. · 13:30–20:00Z</option>
+            <option value="propia">propia…</option>
+          </select></label>
+        <span class="mando" id="sesion-propia" hidden>
+          <input id="ses-ini" type="time" step="60" aria-label="Inicio de la sesión (UTC)" /> –
+          <input id="ses-fin" type="time" step="60" aria-label="Fin de la sesión (UTC)" /> UTC</span>
+        <label class="mando"><input id="capa-perfil" type="checkbox" /> perfil de sesión</label>
+        <label class="mando"><input id="capa-compuesto" type="checkbox" /> compuesto de
+          <input id="sel-compuesto" type="number" min="2" max="7" step="1" aria-label="Sesiones del compuesto" /></label>
+        <label class="mando"><input id="capa-dinamico" type="checkbox" /> dinámico (lo visible)</label>
+        <label class="mando"><input id="capa-fijo" type="checkbox" /> fijo <span id="fijo-rango"></span></label>
+        <label class="mando"><input id="capa-vwap" type="checkbox" /> VWAP ±1·2·3σ</label>
+        <label class="mando">sesiones del TPO
+          <input id="sel-sesiones" type="number" min="1" max="7" step="1" aria-label="Sesiones del TPO" /></label>
+      </div>
     </header>
 
     <div class="estado" id="estado" role="status"></div>
@@ -55,6 +81,9 @@
     <main class="grafico" id="grafico">
       <canvas id="lienzo"></canvas>
     </main>
+    <div class="grafico" id="grafico-tpo" hidden>
+      <canvas id="lienzo-tpo"></canvas>
+    </div>
     <div class="lectura" id="lectura" aria-live="polite"></div>
 
     <footer class="leyenda">
@@ -84,11 +113,34 @@
         venues sumados»: perpetuos USDT (Binance, Bybit, OKX, Bitget), spot USDT (Binance, Bybit, OKX), Coinbase (USD)
         y Deribit (USD; SOL en USDC), cada uno por su lado.
       </p>
+      <p>
+        <b>Las capas</b> (las calcula el servidor y se pintan tal cual, sobre la misma escala; lo que cae fuera no se ve):
+        <span class="muestra ses"></span> el <b>perfil de cada sesión</b>, entera desde su inicio, con su POC, VAH y VAL
+        (la value area del 70 %, el mismo algoritmo que el footprint) · <span class="muestra comp"></span> el
+        <b>compuesto</b> de las N últimas sesiones, a la izquierda, con sus líneas discontinuas · <span
+        class="muestra din"></span> el <b>dinámico</b>, de lo que se ve, a la derecha · <span class="muestra fij"></span>
+        el <b>fijo</b>, del rango que se elige con mayúsculas + arrastre · el <b>VWAP</b> de la sesión (suma de USD /
+        suma de cantidad: exacto) y sus bandas a ±1, 2 y 3 desviaciones. La desviación se calcula al precio medio de cada
+        nivel: la de verdad está entre la pintada y la pintada + medio paso base. Cada capa dice si su sesión sigue
+        <b>en curso</b> (crece) y cuántos minutos-venue no se escucharon enteros: nunca se rellenan.
+      </p>
+      <p>
+        <b>Las sesiones</b>: el día UTC por omisión (el mercado no cierra); Asia, Europa, EE.UU. o una propia, todas en
+        UTC. Una sesión que cruza la medianoche es UNA sesión. Perfil y VWAP llegan, como mucho, a las 7 últimas
+        sesiones: es el tope de la ruta (más días tardan más de 5 s en el servidor).
+        <b>El TPO</b> (perfil de mercado): una letra por cada media hora que tocó cada nivel (A = la primera de la
+        sesión; tras la Z, a-v), con <span class="muestra va"></span> su value area del 70 % de los TPO, <span
+        class="muestra ib"></span> el balance inicial (la primera hora), su POC y <span class="muestra sp"></span> los
+        single prints (niveles con una sola letra). Las letras de una media hora incompleta van en ámbar. Rueda: filas
+        más o menos altas; arrastre: moverse.
+      </p>
     </footer>
 
     <script src="/static/mesa/mesa-datos.js"></script>
     <script src="/static/flujo/flujo-calculo.js"></script>
     <script src="/static/flujo/flujo-dibujo.js"></script>
+    <script src="/static/flujo/flujo-capas.js"></script>
+    <script src="/static/flujo/flujo-tpo.js"></script>
     <script src="/static/flujo/flujo-app.js"></script>
   </body>
 </html>
