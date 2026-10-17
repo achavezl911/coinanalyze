@@ -213,6 +213,16 @@ def test_value_area_con_el_algoritmo_declarado():
     assert lec.value_area({}) is None
 
 
+def test_el_paso_automatico_sube_la_escalera_hasta_que_la_vela_mediana_cabe():
+    # al paso 1 la mediana toca 41 niveles, al 2 toca 21: no caben en 20; al 5, 9
+    assert lec.paso_automatico([(D(100), D(140)), (D(100), D(110)), (D(100), D(200))], D(1)) == (D(5), 9)
+    # con un numero par de velas la mediana es el elemento n // 2: la de arriba
+    assert lec.paso_automatico([(D(0), D(0)), (D(0), D(30))], D(1)) == (D(2), 16)
+    # nunca por debajo del paso base, y sin velas con celdas, el paso base
+    assert lec.paso_automatico([(D("2430.0"), D("2431.5"))], D("0.1")) == (D("0.1"), 16)
+    assert lec.paso_automatico([], D("0.01")) == (D("0.01"), None)
+
+
 def test_el_paso_tiene_que_ser_multiplo_del_base():
     assert lec.paso_de(None, D(1)) == D(1) and lec.paso_de("5", D(1)) == D(5)
     assert lec.paso_de("0.3", D("0.1")) == D("0.3")
@@ -374,6 +384,31 @@ async def test_footprint_y_perfil_salen_de_las_celdas_en_texto_exacto(conn):
               "paso": None, "venues": None, "unidad": None, **malo}
         with pytest.raises(lec.Peticion):
             await lec.footprint(conn, **kw)
+
+
+async def test_footprint_con_paso_automatico_y_la_value_area_de_cada_vela(conn):
+    a = of._ts(M)
+    # una vela que toca 61 niveles al paso 1: el paso automatico es 5 (13 niveles); la siguiente vela, vacia
+    await _celdas(conn, [
+        (a, "binance_spot", D(81500), D("1"), D("0"), D("81500"), D(0), 1, 0),
+        (a, "binance_spot", D(81530), D("2"), D("1"), D("163060"), D("81530"), 2, 1),
+        (a, "binance_spot", D(81560), D("0"), D("1"), D(0), D("81560"), 0, 1),
+    ])
+    fp = await lec.footprint(conn, symbol="BTC", desde=lec.iso(a), hasta=lec.iso(of._ts(M + 120)), marco="1m",
+                             paso="auto", venues="binance_spot", unidad="base")
+    assert fp["paso"] == "5" and fp["paso_auto"]["niveles_vela_mediana"] == 13
+    assert fp["paso_auto"]["velas_con_celdas"] == 1 and fp["value_area"]["porcentaje"] == 70
+    v0, v1 = fp["velas"]
+    assert [n["nivel"] for n in v0["niveles"]] == ["81500", "81530", "81560"] and v0["poc"] == "81530"
+    # 70 % de 5 es 3.5: desde el POC (3) arriba y abajo empatan a 1, se anade el de arriba
+    assert v0["value_area"] == {"val": "81530", "vah": "81560", "volumen": "4"}
+    assert v1["niveles"] == [] and v1["value_area"] is None
+    # con un paso fijado no hay paso_auto, y una ventana sin celdas se queda en el paso base
+    assert "paso_auto" not in await lec.footprint(conn, symbol="BTC", desde=lec.iso(a), hasta=lec.iso(of._ts(M + 60)),
+                                                  marco="1m", paso="5", venues=None, unidad=None)
+    vacio = await lec.footprint(conn, symbol="ETH", desde=lec.iso(a), hasta=lec.iso(of._ts(M + 60)), marco="1m",
+                                paso="auto", venues=None, unidad=None)
+    assert vacio["paso"] == "0.1" and vacio["paso_auto"]["niveles_vela_mediana"] is None
 
 
 class _Peticion:

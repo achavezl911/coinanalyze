@@ -8,7 +8,7 @@ Los topes no recortan en silencio: si una peticion los pasa, 422 diciendo cual.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_FLOOR, Decimal, InvalidOperation
 from typing import Any
 
 from app.config import get_settings
@@ -30,6 +30,15 @@ ALGORITMO_VA = (
     "encima del area con el inmediatamente por debajo y se anade el de mas volumen (a igualdad, el de arriba; si "
     "un lado se agota, el otro). VAL y VAH son los bordes inferiores de los niveles extremos: el area cubre "
     "[VAL, VAH + paso)."
+)
+# OF-2 (campana 142, P3): con OBJETIVO_NIVELES = 20, sobre 30 dias de velas reales de los seis marcos, la vela mediana
+# toca 12-17 niveles y menos del 0.1 % pasa de 150.
+OBJETIVO_NIVELES = 20
+REGLA_PASO = (
+    "paso=auto: el menor de la escalera 1, 2, 5, 10, 20, 50... veces el paso base con el que la vela MEDIANA de la "
+    "ventana pedida (de las que tienen celdas; la mediana es el elemento n // 2 de la lista ordenada) toca como mucho "
+    f"{OBJETIVO_NIVELES} niveles. Una vela toca los niveles que van del de su celda mas baja al de la mas alta. Nunca "
+    "por debajo del paso base."
 )
 
 
@@ -101,6 +110,20 @@ def paso_de(valor: str | None, base: Decimal) -> Decimal:
     return paso
 
 
+def paso_automatico(rangos: list[tuple[Decimal, Decimal]], base: Decimal) -> tuple[Decimal, int | None]:
+    """(paso, niveles que toca la vela mediana) segun REGLA_PASO, sobre (nivel minimo, nivel maximo) de cada vela."""
+    if not rangos:
+        return base, None
+    for e in range(12):
+        for m in (1, 2, 5):
+            p = base * m * 10**e
+            n = sorted(int((hi / p).to_integral_value(ROUND_FLOOR) - (lo / p).to_integral_value(ROUND_FLOOR)) + 1
+                       for lo, hi in rangos)[len(rangos) // 2]
+            if n <= OBJETIVO_NIVELES:
+                return p, n
+    return p, n
+
+
 def ventana(desde: datetime, hasta: datetime, maximo: timedelta, minutos: int = 1) -> None:
     if hasta <= desde:
         raise Peticion("hasta tiene que ser posterior a desde")
@@ -149,6 +172,12 @@ SELECT {vela} AS vela, floor(nivel / $5) * $5 AS n,
  WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4
  GROUP BY 1, 2 ORDER BY 1, 2
  LIMIT {tope}
+"""
+RANGOS_SQL = """
+SELECT {vela} AS vela, min(nivel) AS lo, max(nivel) AS hi
+  FROM orderflow_celda
+ WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4
+ GROUP BY 1
 """
 COBERTURA_SQL = """
 SELECT {vela} AS vela, count(*) AS filas, count(*) FILTER (WHERE segundos = 60) AS completos,
@@ -200,8 +229,14 @@ async def footprint(conn: Any, *, symbol: str, desde: str | None, hasta: str | N
     if n_velas > TOPE_VELAS:
         raise Peticion(f"{n_velas} velas pasan el tope de {TOPE_VELAS}: pide un marco mayor o un rango menor")
     base = (await pasos(conn))[activo]
-    p, vs, u = paso_de(paso, base), venues_de(venues), unidad_de(unidad)
+    p, vs, u = paso_de(None if paso == "auto" else paso, base), venues_de(venues), unidad_de(unidad)
     vela = f"date_bin(interval '{minutos} minutes', ts, '{ORIGEN.isoformat()}'::timestamptz)"
+    auto: dict[str, Any] | None = None
+    if paso == "auto":
+        rangos = [(f["lo"], f["hi"]) for f in await conn.fetch(RANGOS_SQL.format(vela=vela), activo, vs, a, b)]
+        p, mediana = paso_automatico(rangos, base)
+        auto = {"regla": REGLA_PASO, "objetivo_niveles": OBJETIVO_NIVELES, "velas_con_celdas": len(rangos),
+                "niveles_vela_mediana": mediana}
     filas = await conn.fetch(CELDAS_SQL.format(vela=vela, tope=TOPE_CELDAS + 1), activo, vs, a, b, p)
     if len(filas) > TOPE_CELDAS:
         raise Peticion(f"mas de {TOPE_CELDAS} celdas: pide un paso mayor o un rango menor")
@@ -218,11 +253,13 @@ async def footprint(conn: Any, *, symbol: str, desde: str | None, hasta: str | N
         venta = sum((f[v] for f in niveles), Decimal(0))
         totales = {f["n"]: f[c] + f[v] for f in niveles}
         poc = poc_de(totales)
+        va = value_area(totales)
         velas.append({
             "ts": iso(inicio),
             "compra": texto(compra), "venta": texto(venta), "delta": texto(compra - venta),
             "total": texto(compra + venta), "operaciones": sum(int(f["nc"] + f["nv"]) for f in niveles),
             "poc": texto(poc) if poc is not None else None,
+            "value_area": {"val": texto(va[0]), "vah": texto(va[1]), "volumen": texto(va[2])} if va else None,
             "cobertura": _cobertura_json(cob.get(inicio), minutos * len(vs)),
             "niveles": [_nivel_json(f["n"], f[c], f[v], int(f["nc"] + f["nv"])) for f in niveles],
         })
@@ -230,6 +267,8 @@ async def footprint(conn: Any, *, symbol: str, desde: str | None, hasta: str | N
                         vs, u, a, b),
             "marco": marco, "velas_alineadas": "date_bin sobre UTC: cada vela empieza en un multiplo del marco",
             "poc": "por vela, el nivel de mayor total; a igualdad, el de precio mas bajo",
+            "value_area": {"porcentaje": 70, "algoritmo": "por vela, el mismo que el perfil: " + ALGORITMO_VA},
+            **({"paso_auto": auto} if auto else {}),
             "celdas": len(filas), "tope_celdas": TOPE_CELDAS, "tope_velas": TOPE_VELAS, "velas": velas}
 
 

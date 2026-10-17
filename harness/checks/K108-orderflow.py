@@ -195,6 +195,15 @@ def compara_footprint(servido: dict, rec: dict, desde: datetime, marco_min: int)
             malos.append(f"vela {vela['ts']}: totales o POC servidos != recalculados (poc {vela.get('poc')} vs "
                          f"{texto(poc) if poc is not None else None})")
             continue
+        # OF-2 (campana 142): la value area de CADA vela, con la misma regla que el perfil, reescrita aqui. Un sujeto
+        # anterior a OF-2 no la sirve: entonces no se juzga (lo dice la linea de (d)).
+        if "value_area" in vela:
+            va = value_area({n: c + v for n, (c, v, _) in niveles.items()})
+            sva = vela["value_area"]
+            mia_va = {"val": texto(va[0]), "vah": texto(va[1]), "volumen": texto(va[2])} if va else None
+            if (sva and {k: texto(Decimal(sva[k])) for k in ("val", "vah", "volumen")}) != mia_va:
+                malos.append(f"vela {vela['ts']}: value area servida {sva} != recalculada {mia_va}")
+                continue
         cob = rec["cobertura"].get(inicio, [])
         esperados = marco_min * n_ven
         mia = {"minutos_esperados": esperados, "minutos_con_fila": len(cob),
@@ -434,7 +443,7 @@ def juzga() -> int:
             nomed.append(f"(d) ni una vela de {MARCO_D} min completa dentro de la vida del servicio")
             return
         pasos = {s: Decimal(p) for s, p in sql(db, "SELECT symbol, paso::text FROM orderflow_paso")}
-        velas_ok = 0
+        velas_ok = con_va = 0
         for activo in ACTIVOS:
             paso = pasos[activo] * PASO_D
             q = urllib.parse.urlencode({"symbol": activo, "desde": _iso(desde_d), "hasta": _iso(hasta_d),
@@ -454,8 +463,11 @@ def juzga() -> int:
                 rojos.append(f"(d) {activo} {_iso(desde_d)}-{_iso(hasta_d)} paso {texto(paso)}: {malos[0]}"
                              + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
             velas_ok += len(fp["velas"])
+            con_va += sum(1 for x in fp["velas"] if "value_area" in x)
         info.append(f"(d) footprint {MARCO_D}m ({velas_ok} velas) y perfil de {_iso(desde_d)}-{_iso(hasta_d)} a 10x "
-                    "el paso base, servidos == recalculados desde las celdas")
+                    "el paso base, servidos == recalculados desde las celdas · value area por vela: "
+                    + (f"{con_va} de {velas_ok} servidas y recalculadas" if con_va
+                       else "SIN JUZGAR, el sujeto no la sirve (anterior a OF-2)"))
 
     def retiene() -> None:
         ret = retencion()
