@@ -8,14 +8,19 @@ Lo que se promete y cada plantado que tiene que fallar (el gemelo correcto pasa)
 - una version sin HIPOTESIS;
 - el ANCLA retirada;
 - un umbral sin ORIGEN;
-- un evento de calendario con hora anterior a la revision que lo trae, o una revision con una
-  huella que no es la suya (campana 136: los plantados van sobre la revision REAL, cal-2);
+- un evento de calendario con hora anterior a la revision que lo trae o sin fuente, o una
+  revision con una huella que no es la suya (los plantados van sobre la revision REAL mas
+  nueva: cal-3 desde la campana 141);
 - y, contra main, que ninguna version ni revision registrada cambie -ni un byte de su objeto,
-  salvo retirarse- ni desaparezca del fichero.
+  salvo retirarse- ni desaparezca del fichero (cal-1 y cal-2, cada una con su plantado).
 
 Campana 136: v2 es v1 con los tres cambios del lazo y ninguno mas; cada version cabe con su
 espera dentro de su tope; y las APUESTAS (las celdas que cuentan como hipotesis probadas) se
 contrastan con las versiones del fichero: una apuesta que no cuadra no entra.
+
+Campana 141: solo vale la revision vigente, asi que cal-3 (padre cal-2) trae TAL CUAL los
+eventos de cal-2 desde su vigente_desde, mas los de diciembre; la vigente pasa de cal-2 a cal-3
+el 2026-10-18T00:00:00Z.
 
 El CI clona a profundidad 1, asi que la historia se compara contra origin/main, que el paso
 «Fetch main for the reglamento history test» de .github/workflows/ci.yml trae antes de pytest.
@@ -173,7 +178,7 @@ def test_una_version_identica_a_su_padre_no_entra(doc):
 
 
 def _ultima_revision(doc: dict) -> dict:
-    """La revision de eventos mas nueva del fichero (cal-2 desde la campana 136): el sujeto de
+    """La revision de eventos mas nueva del fichero (cal-3 desde la campana 141): el sujeto de
     los plantados del calendario es la revision REAL, no una inventada por el test."""
     r = doc["calendario"]["revisiones"][-1]
     assert r["eventos"], f"{r['revision']} no trae eventos: el plantado no tendria sujeto"
@@ -195,10 +200,12 @@ def test_un_evento_anterior_a_su_revision_no_entra_y_su_gemelo_si(doc):
 
 def test_una_revision_con_una_huella_que_no_es_la_suya_no_entra(doc):
     r = _ultima_revision(doc)
-    r["huella"] = doc["calendario"]["revisiones"][0]["huella"]  # la de cal-1, que es de otra
-    errores = R.validar(doc)
-    assert len(errores) == 1 and "la huella declarada" in errores[0], errores
-    assert r["revision"] in errores[0]
+    for otra in doc["calendario"]["revisiones"][:-1]:  # la de cada anterior, la de su padre incluida
+        plantado = copy.deepcopy(doc)
+        plantado["calendario"]["revisiones"][-1]["huella"] = otra["huella"]
+        errores = R.validar(plantado)
+        assert len(errores) == 1 and "la huella declarada" in errores[0], (otra["revision"], errores)
+        assert r["revision"] in errores[0]
 
 
 def test_un_evento_cambiado_sin_recalcular_la_huella_no_entra(doc):
@@ -208,26 +215,68 @@ def test_un_evento_cambiado_sin_recalcular_la_huella_no_entra(doc):
     assert len(errores) == 1 and "la huella declarada" in errores[0], errores
 
 
-def test_una_revision_ya_registrada_tocada_no_entra(doc):
-    """cal-1 (y toda revision que ya este en main) no se toca. Sin recalcular su huella la para
-    el validador; recalculada, el validador NO puede verlo y la para la historia contra main;
-    y un byte que no decide (su motivo) tampoco pasa: la revision se queda ENTERA."""
+@pytest.mark.parametrize("etiqueta, cubre_hasta", [
+    ("cal-1", "2026-10-05T00:00:00Z"),
+    ("cal-2", "2026-12-31T23:59:59Z"),  # estirar cal-2 en vez de traer cal-3 (campana 141)
+])
+def test_una_revision_ya_registrada_tocada_no_entra(doc, etiqueta, cubre_hasta):
+    """cal-1 y cal-2 (y toda revision que ya este en main) no se tocan. Sin recalcular su huella
+    la para el validador; recalculada, el validador NO puede verlo y la para la historia contra
+    main; y un byte que no decide (su motivo) tampoco pasa: la revision se queda ENTERA."""
     main = copy.deepcopy(doc)
     assert _cambios_de_historia(main, doc) == []  # el gemelo
-    cal1 = doc["calendario"]["revisiones"][0]
-    cal1["cubre_hasta"] = "2026-10-05T00:00:00Z"
+    i = [r["revision"] for r in doc["calendario"]["revisiones"]].index(etiqueta)
+    tocada = doc["calendario"]["revisiones"][i]
+    tocada["cubre_hasta"] = cubre_hasta
     errores = R.validar(doc)
-    assert len(errores) == 1 and "cal-1" in errores[0] and "la huella declarada" in errores[0], errores
-    cal1["huella"] = R.huella_revision(cal1)
+    assert len(errores) == 1 and f"({etiqueta})" in errores[0] and "la huella declarada" in errores[0], errores
+    tocada["huella"] = R.huella_revision(tocada)
     assert R.validar(doc) == []  # lavado: el fichero solo no lo ve
-    assert any("cal-1" in c for c in _cambios_de_historia(main, doc))
+    assert f"la revision {etiqueta} de main cambio: cubre_hasta, huella" in _cambios_de_historia(main, doc)
     otro = copy.deepcopy(main)
-    otro["calendario"]["revisiones"][0]["motivo"] += " (retocado)"
+    otro["calendario"]["revisiones"][i]["motivo"] += " (retocado)"
     assert R.validar(otro) == []
-    assert _cambios_de_historia(main, otro) == ["la revision cal-1 de main cambio: motivo"]
+    assert _cambios_de_historia(main, otro) == [f"la revision {etiqueta} de main cambio: motivo"]
     otro = copy.deepcopy(main)
-    del otro["calendario"]["revisiones"][0]
-    assert "la revision cal-1 de main desaparecio" in _cambios_de_historia(main, otro)
+    del otro["calendario"]["revisiones"][i]
+    assert f"la revision {etiqueta} de main desaparecio" in _cambios_de_historia(main, otro)
+
+
+def test_un_evento_sin_fuente_no_entra(doc):
+    r = _ultima_revision(doc)
+    evento = r["eventos"][0]
+    del evento["fuente"]  # la fuente no entra en la huella: lo unico malo es que falta
+    errores = R.validar(doc)
+    assert len(errores) == 1 and f"evento {evento['clave']} sin fuente" in errores[0], errores
+
+
+def test_cal3_trae_tal_cual_los_de_cal2_que_quedan_y_los_de_diciembre(doc):
+    """Campana 141. Cuando cal-3 entra en vigor los eventos de cal-2 dejan de contar: cal-3 TRAE
+    los de cal-2 desde su vigente_desde, tal cual (su fuente incluida), mas 12 nuevos, todos
+    despues de lo que cubria cal-2 y dentro de lo que cubre ella."""
+    revisiones = {r["revision"]: r for r in doc["calendario"]["revisiones"]}
+    assert "cal-3" in revisiones, "el reglamento no trae cal-3"
+    cal2, cal3 = revisiones["cal-2"], revisiones["cal-3"]
+    assert (cal3["padre"], cal3["vigente_desde"], cal3["cubre_hasta"]) == (
+        "cal-2", "2026-10-18T00:00:00Z", "2026-12-31T23:59:59Z")
+    desde = R.instante(cal3["vigente_desde"])
+    quedan = [e for e in cal2["eventos"] if R.instante(e["hora_utc"]) >= desde]
+    de_cal2 = {e["clave"] for e in cal2["eventos"]}
+    assert [e for e in cal3["eventos"] if e["clave"] in de_cal2] == quedan and len(quedan) == 18
+    nuevos = [e for e in cal3["eventos"] if e["clave"] not in de_cal2]
+    assert len(nuevos) == 12 and all(
+        R.instante(cal2["cubre_hasta"]) < R.instante(e["hora_utc"]) <= R.instante(cal3["cubre_hasta"])
+        for e in nuevos
+    )
+
+
+def test_la_vigente_es_cal2_hasta_el_18_de_octubre_y_cal3_desde_entonces(doc):
+    def vigente(texto: str) -> str:
+        return R.revision_vigente(doc, R.instante(texto))["revision"]
+
+    assert vigente("2026-10-17T23:59:59Z") == "cal-2"
+    assert vigente("2026-10-18T00:00:00Z") == "cal-3"
+    assert vigente("2026-12-31T23:59:59Z") == "cal-3"
 
 
 def test_la_diferencia_con_el_padre_nombra_lo_que_cambia(doc):
