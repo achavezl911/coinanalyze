@@ -983,6 +983,228 @@
           }
         ],
         "huella": "6985c0639e54acf5a5dfd93e4003e63cc7bb81b18d033f349bcf4bcb0ade48ee"
+      },
+      {
+        "revision": "cal-3",
+        "padre": "cal-2",
+        "fecha": "2026-10-17",
+        "autor": "operador de campanas (141): fechas de dic-2026 traidas por un agente investigador con fuente primaria y segunda, y VERIFICADAS por el operador leyendo la fuente primaria de cada una (2026-10-17); las 18 de cal-2 que quedan, re-verificadas el mismo dia (BEA, ADP, Census, CB, UMich, ISM)",
+        "motivo": "Cubre hasta el 2026-12-31: 30 eventos = los 18 de cal-2 desde el 2026-10-18 (tal cual) + 12 nuevos de diciembre (ISM manufacturero y de servicios, ADP mensual y Pulse, Michigan, Retail Sales de Census, Conference Board, GDP tercera estimacion y PCE de BEA); 10 de importancia 3. BLS y FOMC siguen saliendo de macro_event, que hoy tiene BLS hasta el 2026-12-15 y FOMC hasta 2027-12-08: con eso, todo lo de importancia 3 de diciembre esta (manual + macro_event). NO llega a enero porque el calendario BLS de 2027 no esta en macro_event y el ADP mensual de enero no esta anunciado. vigente_desde 2026-10-18T00:00:00Z (ningun evento de cal-2 cae entre el 10-16 y el 10-19: no se pierde ni se rellena nada). Salvedades: ISM de diciembre por la REGLA publicada por ISM (primer y tercer dia habil; las frases 'next report' llegan con los comunicados de noviembre); la financiacion federal vence el 2026-12-11 segun el investigador (no verificado por el operador): un cierre podria aplazar Retail del 12-16 y GDP/PCE del 12-23; ADP Pulse del 12-29 no lo lista ADP (no entra); CB de diciembre el 12-22, no el ultimo martes (manda el calendario oficial). Renovacion: cal-4 ANTES del 2026-12-14 (K105 f con cal-3 aguanta hasta 2026-12-28T23:59:59Z).",
+        "vigente_desde": "2026-10-18T00:00:00Z",
+        "cubre_hasta": "2026-12-31T23:59:59Z",
+        "eventos": [
+          {
+            "clave": "ADP-PULSE-2026-10-20",
+            "titulo": "ADP NER Pulse semanal",
+            "hora_utc": "2026-10-20T12:15:00Z",
+            "importancia": 1,
+            "fuente": "ADP, https://adpemploymentreport.com/ner_production.json, futureReports: 'October 20, 2026'. Hora 8:15 ET según mediacenter.adp.com (nota del 2026-09-15). Leídos por mí el 2026-10-03. · SEGUNDA: Ninguna independiente verificada. Trading Economics solo la cita el investigador de agregadores, y la página del indicador solo muestra el 6-oct."
+          },
+          {
+            "clave": "UMICH-FINAL-2026-10-23",
+            "titulo": "University of Michigan Consumer Sentiment, final de octubre",
+            "hora_utc": "2026-10-23T14:00:00Z",
+            "importancia": 1,
+            "fuente": "Surveys of Consumers, PDF 'RELEASE DATES FOR 2026': 'October 23 October Final' - https://data.sca.isr.umich.edu/fetchdoc.php?docid=79628 ; hora 10am ET según https://www.sca.isr.umich.edu/ (leídos por mí el 2026-10-03) · SEGUNDA: financecalendar.com, 23-oct, final de octubre (https://www.financecalendar.com/?p=1341), y Trading Economics, 2026-10-23 14:00 UTC (los citan los investigadores, consultados el 2026-10-03)"
+          },
+          {
+            "clave": "ADP-PULSE-2026-10-27",
+            "titulo": "ADP NER Pulse semanal",
+            "hora_utc": "2026-10-27T12:15:00Z",
+            "importancia": 1,
+            "fuente": "ADP, https://adpemploymentreport.com/ner_production.json, futureReports: 'October 27, 2026'. Hora 8:15 ET según mediacenter.adp.com (nota del 2026-09-15). Leídos por mí el 2026-10-03. · SEGUNDA: Ninguna independiente verificada; Trading Economics solo la cita el investigador de agregadores."
+          },
+          {
+            "clave": "CB-CONF-2026-10-27",
+            "titulo": "Conference Board Consumer Confidence Index (octubre)",
+            "hora_utc": "2026-10-27T14:00:00Z",
+            "importancia": 2,
+            "fuente": "The Conference Board: 'The next release is Tuesday, October 27th at 10 AM ET.' - https://www.conference-board.org/topics/consumer-confidence ; y su calendario oficial https://www.conference-board.org/data/calendar/events.json.cfm?from=1790000000000&to=1798000000000, evento 20 'US: Consumer Confidence Index 10:00 AM', start 1793109600000 = 2026-10-27T14:00:00Z (los dos leídos por mí con curl el 2026-10-03) · SEGUNDA: financecalendar.com, US Consumer Confidence 2026: 27-oct 10:00 EDT - https://www.financecalendar.com/?p=1453 (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "GDP-ADV-2026-10-29",
+            "titulo": "GDP Advance Estimate, 3er trimestre de 2026 (BEA)",
+            "hora_utc": "2026-10-29T12:30:00Z",
+            "importancia": 3,
+            "fuente": "BEA, Release Schedule: 'October 29, 8:30 AM, GDP (Advance Estimate), 3rd Quarter 2026' - https://www.bea.gov/news/schedule (leído por mí con WebFetch el 2026-10-03; no hay ningún aviso de cierre ni de falta de fondos) · SEGUNDA: fedratecalc.com, octubre de 2026: jueves 29-oct 8:30 AM ET - https://fedratecalc.com/us-economic-calendar/october-2026/ ; y Trading Economics, 2026-10-29 12:30 UTC (consultados el 2026-10-03)"
+          },
+          {
+            "clave": "PCE-2026-10-29",
+            "titulo": "Personal Income and Outlays / PCE (septiembre 2026), BEA",
+            "hora_utc": "2026-10-29T12:30:00Z",
+            "importancia": 3,
+            "fuente": "BEA, Release Schedule: 'October 29, 8:30 AM, Personal Income and Outlays, September 2026' - https://www.bea.gov/news/schedule (leído por mí el 2026-10-03) · SEGUNDA: fedratecalc.com, octubre de 2026: jueves 29-oct 8:30 AM ET, Personal Income and Outlays (PCE) - https://fedratecalc.com/us-economic-calendar/october-2026/ (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "ISM-MFG-2026-11-02",
+            "titulo": "ISM Manufacturing PMI (datos de octubre 2026)",
+            "hora_utc": "2026-11-02T15:00:00Z",
+            "importancia": 3,
+            "fuente": "ISM, comunicado oficial del Manufacturing PMI de septiembre en PR Newswire: 'The next ISM Manufacturing PMI Report featuring October 2026 data will be released at 10:00 a.m. ET on Monday, November 2, 2026' - https://www.prnewswire.com/news-releases/manufacturing-pmi-at-54-5-september-2026-ism-manufacturing-pmi-report-302894520.html (leído por mí con curl el 2026-10-03) · SEGUNDA: financecalendar.com, US ISM Manufacturing PMI 2026: 2-nov 10:00 EST - https://www.financecalendar.com/?p=1457 (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "ADP-2026-11-04",
+            "titulo": "ADP National Employment Report (mensual, datos de octubre 2026)",
+            "hora_utc": "2026-11-04T13:15:00Z",
+            "importancia": 3,
+            "fuente": "ADP, nota del 2026-09-30: 'The October 2026 ADP National Employment Report will be released on November 4, 2026 at 8:15 a.m. ET.' - https://mediacenter.adp.com/2026-09-30-ADP-National-Employment-Report-Private-Sector-Employment-Increased-by-90,000-Jobs-in-September ; y https://adpemploymentreport.com/ner_production.json, futureReports: 'November 04, 2026' (los dos leídos por mí el 2026-10-03) · SEGUNDA: Trading Economics, ADP Employment Change: 2026-11-04 01:15 PM GMT - https://tradingeconomics.com/united-states/adp-employment-change (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "ISM-SVC-2026-11-04",
+            "titulo": "ISM Services PMI (datos de octubre 2026)",
+            "hora_utc": "2026-11-04T15:00:00Z",
+            "importancia": 3,
+            "fuente": "ISM, comunicado oficial del 5-oct («TEMPE, Ariz., Oct. 5, 2026 /PRNewswire/», SOURCE Institute for Supply Management): 'The next ISM Services PMI Report featuring October 2026 data will be released at 10:00 a.m. ET on Wednesday, November 4, 2026'. Leido por el operador el 2026-10-09 en una republicacion integra del comunicado (miningstockeducation.com/2026/10/services-pmi-at-54-9-september-2026-ism-services-pmi-report/); adenda del lazo 1, §2 D2: ya no va por la regla del tercer dia habil. · LO QUE CITABA EL LAZO 1 (2026-10-03), tal cual: ISM, regla oficial publicada en su comunicado de PR Newswire: el Services PMI sale el 'third business day* of every month after 10:00 a.m. ET', con la salvedad '*Unless the New York Stock Exchange is closed' - https://www.prnewswire.com/news-releases/services-pmi-at-55-4-august-2026-ism-services-pmi-report-302868046.html . El calendario oficial de la NYSE no cierra del 2 al 5 de noviembre (Election Day abierto; el primer festivo es Thanksgiving, el 26-nov) - https://www.nyse.com/markets/hours-calendars . Así, 2-nov es el 1er día hábil, 3-nov el 2º y 4-nov el 3º. Consultados el 2026-10-03. · SEGUNDA: financecalendar.com, US ISM Services PMI 2026: 4-nov 10:00 am ET - https://www.financecalendar.com/?p=2399 . El índice del buscador de ismworld.org (rob-report-calendar) también da el 4 de noviembre. Consultados el 2026-10-03."
+          },
+          {
+            "clave": "UMICH-PRELIM-2026-11-06",
+            "titulo": "University of Michigan Consumer Sentiment, preliminar de noviembre",
+            "hora_utc": "2026-11-06T15:00:00Z",
+            "importancia": 1,
+            "fuente": "Surveys of Consumers, PDF 'RELEASE DATES FOR 2026': 'November 6 November Prelim' - https://data.sca.isr.umich.edu/fetchdoc.php?docid=79628 ; hora 10am ET según https://www.sca.isr.umich.edu/ (leídos por mí el 2026-10-03) · SEGUNDA: financecalendar.com: preliminar el viernes 6 de noviembre de 2026 - https://www.financecalendar.com/?p=1341 (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "ADP-PULSE-2026-11-10",
+            "titulo": "ADP NER Pulse semanal",
+            "hora_utc": "2026-11-10T13:15:00Z",
+            "importancia": 1,
+            "fuente": "ADP, https://adpemploymentreport.com/ner_production.json, futureReports: 'November 10, 2026'. Hora 8:15 ET según mediacenter.adp.com (nota del 2026-09-15). Leídos por mí el 2026-10-03. · SEGUNDA: Ninguna independiente; los dos investigadores coinciden en que solo la respalda la regla de ADP, que es la misma organización."
+          },
+          {
+            "clave": "ADP-PULSE-2026-11-17",
+            "titulo": "ADP NER Pulse semanal",
+            "hora_utc": "2026-11-17T13:15:00Z",
+            "importancia": 1,
+            "fuente": "ADP, https://adpemploymentreport.com/ner_production.json, futureReports: 'November 17, 2026'. Hora 8:15 ET según mediacenter.adp.com (nota del 2026-09-15). Leídos por mí el 2026-10-03. · SEGUNDA: Ninguna independiente; solo la regla de ADP, que es la misma organización."
+          },
+          {
+            "clave": "RETAIL-2026-11-17",
+            "titulo": "Advance Monthly Retail Sales (octubre 2026), Census",
+            "hora_utc": "2026-11-17T13:30:00Z",
+            "importancia": 2,
+            "fuente": "Census Bureau, Economic Indicator Calendar: 'Advance Monthly Sales for Retail and Food Services | November 17, 2026 | 8:30 AM | October 2026' - https://www.census.gov/economic-indicators/calendar-listview.html (leído por mí con curl el 2026-10-03) · SEGUNDA: fedratecalc.com, noviembre de 2026: martes 17-nov 8:30 AM ET - https://fedratecalc.com/us-economic-calendar/november-2026/ (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "UMICH-FINAL-2026-11-20",
+            "titulo": "University of Michigan Consumer Sentiment, final de noviembre",
+            "hora_utc": "2026-11-20T15:00:00Z",
+            "importancia": 1,
+            "fuente": "Surveys of Consumers, PDF 'RELEASE DATES FOR 2026': 'November 20 November Final' - https://data.sca.isr.umich.edu/fetchdoc.php?docid=79628 ; hora 10am ET según https://www.sca.isr.umich.edu/ (leídos por mí el 2026-10-03) · SEGUNDA: financecalendar.com: 'FRI 20 NOV 2026 · 10:00 am ET' - https://www.financecalendar.com/?p=1341 (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "ADP-PULSE-2026-11-24",
+            "titulo": "ADP NER Pulse semanal",
+            "hora_utc": "2026-11-24T13:15:00Z",
+            "importancia": 1,
+            "fuente": "ADP, https://adpemploymentreport.com/ner_production.json, futureReports: 'November 24, 2026'. Hora 8:15 ET según mediacenter.adp.com (nota del 2026-09-15). Leídos por mí el 2026-10-03. · SEGUNDA: Ninguna independiente; solo la regla de ADP, que es la misma organización."
+          },
+          {
+            "clave": "CB-CONF-2026-11-24",
+            "titulo": "Conference Board Consumer Confidence Index (noviembre)",
+            "hora_utc": "2026-11-24T15:00:00Z",
+            "importancia": 2,
+            "fuente": "The Conference Board, calendario oficial https://www.conference-board.org/data/calendar/events.json.cfm?from=1790000000000&to=1798000000000 : evento 38 'US: Consumer Confidence Index 10:00 AM', start 1795532400000 = 2026-11-24T15:00:00Z (leído por mí con curl el 2026-10-03; sin los parámetros from/to el JSON sale vacío). Es coherente con la regla 'last Tuesday of every month' de https://www.conference-board.org/topics/consumer-confidence · SEGUNDA: financecalendar.com, US Consumer Confidence 2026: 24-nov 10:00 EST - https://www.financecalendar.com/?p=1453 (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "GDP-2ND-2026-11-25",
+            "titulo": "GDP Second Estimate y Corporate Profits, 3er trimestre de 2026 (BEA)",
+            "hora_utc": "2026-11-25T13:30:00Z",
+            "importancia": 2,
+            "fuente": "BEA, Release Schedule: 'November 25, 8:30 AM, GDP (Second Estimate) and Corporate Profits, 3rd Quarter 2026' - https://www.bea.gov/news/schedule (leído por mí el 2026-10-03) · SEGUNDA: fedratecalc.com, noviembre de 2026: miércoles 25-nov 8:30 AM ET - https://fedratecalc.com/us-economic-calendar/november-2026/ (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "PCE-2026-11-25",
+            "titulo": "Personal Income and Outlays / PCE (octubre 2026), BEA",
+            "hora_utc": "2026-11-25T13:30:00Z",
+            "importancia": 3,
+            "fuente": "BEA, Release Schedule: 'November 25, 8:30 AM, Personal Income and Outlays, October 2026' - https://www.bea.gov/news/schedule (leído por mí el 2026-10-03) · SEGUNDA: fedratecalc.com, noviembre de 2026: miércoles 25-nov 8:30 AM ET, Personal Income and Outlays (PCE Inflation) - https://fedratecalc.com/us-economic-calendar/november-2026/ (consultado el 2026-10-03)"
+          },
+          {
+            "clave": "ISM-MFG-2026-12-01",
+            "titulo": "ISM Manufacturing PMI (datos de noviembre 2026)",
+            "hora_utc": "2026-12-01T15:00:00Z",
+            "importancia": 3,
+            "fuente": "hora_et: 10:00 a.m. ET. PRIMARIA (método b: regla publicada por ISM; aún no existe frase 'next report' para diciembre): comunicado oficial ISM vía PR Newswire, Manufacturing PMI de septiembre 2026 (01-oct-2026), https://www.prnewswire.com/news-releases/manufacturing-pmi-at-54-5-september-2026-ism-manufacturing-pmi-report-302894520.html (leído 2026-10-17): sale el «first business day» de cada mes a las 10:00 a.m. ET, salvo cierre de la NYSE; el martes 1-dic-2026 es el primer día hábil. Control: ese comunicado anuncia el siguiente para «Monday, November 2, 2026» (primer hábil) y el de 1-dic-2025 salió el primer hábil. ismworld.org no consultado (puerta reCAPTCHA). SEGUNDA: mtsinsights.com/events/4135 «December 1st, 2026 · 10:00 AM»; energyexch.com (Fair Economy) calendario dic-2026: ISM Manufacturing PMI 2026-12-01 15:00Z; therighttrader.com/economic-calendar/ism-manufacturing «Tuesday, December 1, 2026 | 10:00 AM | Estimated». · VERIFICADO por el operador el 2026-10-17 leyendo la regla LITERAL del comunicado oficial (PR Newswire): 'released on the first business day* of every month ... The one exception is in January'"
+          },
+          {
+            "clave": "ADP-2026-12-02",
+            "titulo": "ADP National Employment Report (datos de noviembre 2026)",
+            "hora_utc": "2026-12-02T13:15:00Z",
+            "importancia": 3,
+            "fuente": "hora_et: 8:15 a.m. ET. PRIMARIA: calendario oficial de https://adpemploymentreport.com/ (sección Calendar, renderizada; datos en https://adpemploymentreport.com/ner_production.json, leído 2026-10-17): «Upcoming Reports: November 04, 2026 December 02, 2026». El calendario no da hora; ADP fija sus mensuales a las «8:15 a.m. ET» (comunicado 30-sep-2026, https://mediacenter.adp.com/2026-09-30-ADP-National-Employment-Report-Private-Sector-Employment-Increased-by-90,000-Jobs-in-September, para el del 4-nov). SEGUNDA: FRED https://fred.stlouisfed.org/releases/calendar?rid=194&y=2026&m=12 «Wednesday December 02, 2026» «7:15 am» (hora Central = 8:15 ET); energyexch.com dic-2026: ADP Non-Farm Employment Change 2026-12-02 13:15Z. · VERIFICADO por el operador el 2026-10-17 leyendo https://adpemploymentreport.com/ner_production.json: lista 'December 02, 2026'"
+          },
+          {
+            "clave": "ISM-SVC-2026-12-03",
+            "titulo": "ISM Services PMI (datos de noviembre 2026)",
+            "hora_utc": "2026-12-03T15:00:00Z",
+            "importancia": 3,
+            "fuente": "hora_et: 10:00 a.m. ET. PRIMARIA (método b: regla publicada): comunicado oficial ISM vía PR Newswire, Services PMI de septiembre 2026 (05-oct-2026), https://www.prnewswire.com/news-releases/services-pmi-at-54-9-september-2026-ism-services-pmi-report-302898421.html (leído 2026-10-17): sale el «third business day» del mes a las 10:00 a.m. ET (salvo cierre NYSE); 1, 2 y 3-dic-2026 son hábiles, luego jueves 3-dic. Control: anuncia el siguiente para «Wednesday, November 4, 2026» (tercer hábil) y el de 3-dic-2025 salió el tercer hábil. SEGUNDA: mtsinsights.com/events/4136 «December 3rd, 2026 · 10:00 AM»; energyexch.com dic-2026: ISM Services PMI 2026-12-03 15:00Z; therighttrader.com «Thursday, December 3, 2026 | 10:00 AM | Estimated». · VERIFICADO por el operador el 2026-10-17 leyendo la regla LITERAL del comunicado oficial (PR Newswire): 'third business day* of every month ... The one exception is in January, the report is released on the fourth business day'"
+          },
+          {
+            "clave": "UMICH-PRELIM-2026-12-04",
+            "titulo": "University of Michigan Consumer Sentiment, preliminar de diciembre",
+            "hora_utc": "2026-12-04T15:00:00Z",
+            "importancia": 1,
+            "fuente": "hora_et: 10:00 a.m. ET. PRIMARIA: Surveys of Consumers, PDF «RELEASE DATES FOR 2026» (rel_2026sca.pdf), https://data.sca.isr.umich.edu/fetchdoc.php?docid=79628 (enlazado desde survey-info.php; leído 2026-10-17): «December 4 — December Prelim». El PDF no trae hora; la portada https://www.sca.isr.umich.edu/ declara la práctica: próxima publicación «at 10am ET». SEGUNDA: mtsinsights.com/events/4372 «December 4th, 2026 · 10:00 AM»; energyexch.com dic-2026: Prelim UoM Consumer Sentiment 2026-12-04 15:00Z. · VERIFICADO por el operador el 2026-10-17 leyendo el PDF oficial RELEASE DATES FOR 2026 (data.sca.isr.umich.edu, docid=79628): 'December 4 December Prelim'"
+          },
+          {
+            "clave": "ADP-PULSE-2026-12-08",
+            "titulo": "ADP NER Pulse semanal",
+            "hora_utc": "2026-12-08T13:15:00Z",
+            "importancia": 1,
+            "fuente": "hora_et: 8:15 a.m. ET. PRIMARIA: calendario oficial de https://adpemploymentreport.com/ («Upcoming reports (weekly NER pulse):» … «December 08, 2026»; datos en https://adpemploymentreport.com/ner_production.json; leído 2026-10-17). Hora: comunicado ADP 13-oct-2026, https://mediacenter.adp.com/2026-10-13-ADP-National-Employment-Report-Preliminary-Estimate-for-September-26,-2026 : el Pulse sale los martes a las «8:15 a.m. ET». SEGUNDA: mtsinsights.com/events/4682 «December 8th, 2026 · 8:15 AM»; energyexch.com dic-2026: ADP Weekly Employment Change 2026-12-08 13:15Z. · VERIFICADO por el operador el 2026-10-17 leyendo https://adpemploymentreport.com/ner_production.json: lista 'December 08, 2026'"
+          },
+          {
+            "clave": "ADP-PULSE-2026-12-15",
+            "titulo": "ADP NER Pulse semanal",
+            "hora_utc": "2026-12-15T13:15:00Z",
+            "importancia": 1,
+            "fuente": "hora_et: 8:15 a.m. ET. PRIMARIA: calendario oficial de https://adpemploymentreport.com/ (lista del Pulse: «December 15, 2026»; datos en https://adpemploymentreport.com/ner_production.json; leído 2026-10-17). Hora: comunicado ADP 13-oct-2026 (mismo URL que el del 08-dic): martes a las «8:15 a.m. ET». SEGUNDA: mtsinsights.com/events/4682 «December 15th, 2026 · 8:15 AM»; energyexch.com dic-2026: ADP Weekly Employment Change 2026-12-15 13:15Z. · VERIFICADO por el operador el 2026-10-17 leyendo https://adpemploymentreport.com/ner_production.json: lista 'December 15, 2026'"
+          },
+          {
+            "clave": "RETAIL-2026-12-16",
+            "titulo": "Advance Monthly Retail Sales (noviembre 2026), Census",
+            "hora_utc": "2026-12-16T13:30:00Z",
+            "importancia": 2,
+            "fuente": "hora_et: 8:30 a.m. ET. PRIMARIA: Census, «2026 Economic Indicator Release Schedule: List View», https://www.census.gov/economic-indicators/calendar-listview-2026.html (leído 2026-10-17): «Advance Monthly Sales for Retail and Food Services | December 16, 2026 | 8:30 AM | November 2026». Sin aviso de lapse en la página. AVISO: la financiación federal (P.L. 119-103) vence el 11-dic-2026; un cierre podría aplazarla. SEGUNDA: FRED https://fred.stlouisfed.org/releases/calendar?rid=9&y=2026&m=12 «Wednesday December 16, 2026» «7:30 am» (Central = 8:30 ET); fedratecalc.com/us-economic-calendar/december-2026 «Wed, Dec 16, 2026 8:30 AM ET | Advance Monthly Retail Sales | November 2026». · VERIFICADO por el operador el 2026-10-17 leyendo https://www.census.gov/economic-indicators/calendar-listview-2026.html: 'December 16, 2026 8:30 AM November 2026'"
+          },
+          {
+            "clave": "UMICH-FINAL-2026-12-18",
+            "titulo": "University of Michigan Consumer Sentiment, final de diciembre",
+            "hora_utc": "2026-12-18T15:00:00Z",
+            "importancia": 1,
+            "fuente": "hora_et: 10:00 a.m. ET. PRIMARIA: PDF «RELEASE DATES FOR 2026», https://data.sca.isr.umich.edu/fetchdoc.php?docid=79628 (leído 2026-10-17): «December 18 — December Final»; hora por la práctica «at 10am ET» (portada sca.isr.umich.edu). SEGUNDA: mtsinsights.com/events/4372 «December 18th, 2026 · 10:00 AM»; energyexch.com dic-2026: Revised UoM Consumer Sentiment 2026-12-18 15:00Z. Nota: FRED (rid=91) da «Friday December 18, 2026» pero «10:00 am» hora Central (=11:00 ET), probablemente su hora de carga; se mantiene 10:00 ET. · VERIFICADO por el operador el 2026-10-17 leyendo el PDF oficial RELEASE DATES FOR 2026 (docid=79628): 'December 18 December Final'"
+          },
+          {
+            "clave": "ADP-PULSE-2026-12-22",
+            "titulo": "ADP NER Pulse semanal",
+            "hora_utc": "2026-12-22T13:15:00Z",
+            "importancia": 1,
+            "fuente": "hora_et: 8:15 a.m. ET. PRIMARIA: calendario oficial de https://adpemploymentreport.com/ (último Pulse listado: «December 22, 2026»; datos en https://adpemploymentreport.com/ner_production.json; leído 2026-10-17). Hora: comunicado ADP 13-oct-2026: martes a las «8:15 a.m. ET». SEGUNDA: mtsinsights.com/events/4682 «December 22nd, 2026 · 8:15 AM»; energyexch.com dic-2026: ADP Weekly Employment Change 2026-12-22 13:15Z. · VERIFICADO por el operador el 2026-10-17 leyendo https://adpemploymentreport.com/ner_production.json: lista 'December 22, 2026'"
+          },
+          {
+            "clave": "CB-CONF-2026-12-22",
+            "titulo": "Conference Board Consumer Confidence Index (diciembre)",
+            "hora_utc": "2026-12-22T15:00:00Z",
+            "importancia": 2,
+            "fuente": "hora_et: 10:00 a.m. ET. PRIMARIA: Conference Board, «Economic Indicator Calendar» de https://www.conference-board.org/topics/consumer-confidence/ ; su fuente de datos https://www.conference-board.org/data/calendar/events.json.cfm (leído 2026-10-17) trae «US: Consumer Confidence Index &reg; 10:00 AM» con start 1797951600000 (=2026-12-22T15:00:00Z). OJO: NO es el último martes (29-dic) de la regla general de CB; manda el calendario. SEGUNDA: mtsinsights.com/events/3934 «December 22nd, 2026 · 10:00 AM»; energyexch.com dic-2026: CB Consumer Confidence 2026-12-22 15:00Z. · VERIFICADO por el operador el 2026-10-17 leyendo https://www.conference-board.org/data/calendar/events.json.cfm: 'US: Consumer Confidence Index 10:00 AM' start 1797951600000 = 2026-12-22T15:00:00Z"
+          },
+          {
+            "clave": "GDP-3RD-2026-12-23",
+            "titulo": "GDP Third Estimate, 3er trimestre de 2026 (BEA)",
+            "hora_utc": "2026-12-23T13:30:00Z",
+            "importancia": 2,
+            "fuente": "hora_et: 8:30 a.m. ET. PRIMARIA: BEA, Release Schedule, https://www.bea.gov/news/schedule (leído 2026-10-17; «Page last modified on 10/17/26»): «December 23 | 8:30 AM | GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 3rd Quarter 2026»; JSON oficial https://apps.bea.gov/API/signup/release_dates.json «2026-12-23T13:30:00+00:00» (Gross Domestic Product). Sin aviso de cierre en la página. AVISO: financiación federal solo hasta 11-dic-2026. SEGUNDA: FRED https://fred.stlouisfed.org/releases/calendar?rid=53&y=2026&m=12 «Wednesday December 23, 2026» «7:30 am» con «All times are US Central Time» (= 8:30 ET); fedratecalc.com «Wed, Dec 23, 2026 8:30 AM ET | GDP (Third Estimate) | Q3 2026». · VERIFICADO por el operador el 2026-10-17 leyendo https://apps.bea.gov/API/signup/release_dates.json: Gross Domestic Product '2026-12-23T13:30:00+00:00'"
+          },
+          {
+            "clave": "PCE-2026-12-23",
+            "titulo": "Personal Income and Outlays / PCE (noviembre 2026), BEA",
+            "hora_utc": "2026-12-23T13:30:00Z",
+            "importancia": 3,
+            "fuente": "hora_et: 8:30 a.m. ET. PRIMARIA: BEA, https://www.bea.gov/news/schedule (leído 2026-10-17): «December 23 | 8:30 AM | Personal Income and Outlays, November 2026»; JSON oficial https://apps.bea.gov/API/signup/release_dates.json «2026-12-23T13:30:00+00:00». AVISO: financiación federal solo hasta 11-dic-2026. SEGUNDA: FRED https://fred.stlouisfed.org/releases/calendar?rid=54&y=2026&m=12 «Wednesday December 23, 2026» «7:30 am» (Central = 8:30 ET); fedratecalc.com «Wed, Dec 23, 2026 8:30 AM ET | Personal Income and Outlays (PCE Inflation) | November 2026». · VERIFICADO por el operador el 2026-10-17 leyendo https://apps.bea.gov/API/signup/release_dates.json: Personal Income and Outlays '2026-12-23T13:30:00+00:00'"
+          }
+        ],
+        "huella": "6935ce2bf85e57df9f9abe325aa759b36d509d01b6857031918134b8cc664a83"
       }
     ]
   }
