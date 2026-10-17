@@ -22,7 +22,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/insumos.py:104` · clave completa `app.entradas.insumos._f`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -62,7 +62,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/insumos.py:146` · clave completa `app.entradas.insumos.barras`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -102,7 +102,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/insumos.py:222` · clave completa `app.entradas.insumos.cargar`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -144,7 +144,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/insumos.py:186` · clave completa `app.entradas.insumos.flujos`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -184,7 +184,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/insumos.py:202` · clave completa `app.entradas.insumos.libro`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -224,7 +224,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/insumos.py:302` · clave completa `app.entradas.insumos.listos`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -266,7 +266,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/insumos.py:295` · clave completa `app.entradas.insumos.vela_de_T_completa`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -306,7 +306,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/insumos.py:120` · clave completa `app.entradas.insumos.velas_perfil`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -346,7 +346,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/insumos.py:111` · clave completa `app.entradas.insumos.ventana_velas`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 

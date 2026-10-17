@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `wyckoff_endpoint` · `app/api.py:2091` (cuerpo hasta la 2095) · decorador en la linea 2090.
+Handler `wyckoff_endpoint` · `app/api.py:2092` (cuerpo hasta la 2096) · decorador en la linea 2091.
 
 ## Parametros de entrada
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.validate_symbol` — `app/api.py:254`
 - `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1680`
 
 <details><summary>Alcanzables de forma indirecta (20)</summary>
@@ -97,7 +97,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

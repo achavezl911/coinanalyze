@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_execution` · `app/api.py:2819` (cuerpo hasta la 2893) · decorador en la linea 2818.
+Handler `signals_execution` · `app/api.py:2820` (cuerpo hasta la 2894) · decorador en la linea 2819.
 
 ## Parametros de entrada
 
@@ -23,16 +23,16 @@ Handler `signals_execution` · `app/api.py:2819` (cuerpo hasta la 2893) · decor
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2887 |
-| `count` | literal en app/api.py:2890 |
-| `exchange` | literal en app/api.py:2888 |
-| `limit` | literal en app/api.py:2889 |
-| `since` | literal en app/api.py:2884 |
-| `snapshots` | literal en app/api.py:2892 |
-| `symbol` | literal en app/api.py:2883 |
-| `truncated` | literal en app/api.py:2891 |
-| `until` | literal en app/api.py:2885 |
-| `ventana_maxima_h` | literal en app/api.py:2886 |
+| `as_of` | literal en app/api.py:2888 |
+| `count` | literal en app/api.py:2891 |
+| `exchange` | literal en app/api.py:2889 |
+| `limit` | literal en app/api.py:2890 |
+| `since` | literal en app/api.py:2885 |
+| `snapshots` | literal en app/api.py:2893 |
+| `symbol` | literal en app/api.py:2884 |
+| `truncated` | literal en app/api.py:2892 |
+| `until` | literal en app/api.py:2886 |
+| `ventana_maxima_h` | literal en app/api.py:2887 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,10 +54,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2466`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2586`
-- `app.api.records` — `app/api.py:266`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api._utc_iso` — `app/api.py:2467`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2587`
+- `app.api.records` — `app/api.py:267`
+- `app.api.validate_symbol` — `app/api.py:254`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (12)</summary>
 
@@ -82,13 +82,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
-| 422 | — | `app/api.py:2595` | una funcion de su cierre |
-| 422 | exchange tiene que ser binance o bybit | `app/api.py:2840` | el propio handler |
-| 422 | — | `app/api.py:2845` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2847` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2849` | el propio handler |
-| 422 | — | `app/api.py:2851` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 422 | — | `app/api.py:2596` | una funcion de su cierre |
+| 422 | exchange tiene que ser binance o bybit | `app/api.py:2841` | el propio handler |
+| 422 | — | `app/api.py:2846` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2848` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2850` | el propio handler |
+| 422 | — | `app/api.py:2852` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -138,8 +138,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.api._utc_iso` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
 | `app.api.signals_execution` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

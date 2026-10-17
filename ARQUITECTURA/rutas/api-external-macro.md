@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `external_macro_endpoint` · `app/api.py:2204` (cuerpo hasta la 2210) · decorador en la linea 2203.
+Handler `external_macro_endpoint` · `app/api.py:2205` (cuerpo hasta la 2211) · decorador en la linea 2204.
 
 ## Parametros de entrada
 
@@ -47,6 +47,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
 - `external_macro_observation` — `sql/schema.sql:1234`, 5 columnas
   - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:553`
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:574`
@@ -82,7 +83,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.validate_symbol` — `app/api.py:254`
 - `app.external_macro.align_with_internal` — `app/external_macro.py:415`
 - `app.external_macro.external_macro_context` — `app/external_macro.py:437`
 - `app.scalp_logic.swing_score` — `app/scalp_logic.py:6572`
@@ -150,7 +151,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

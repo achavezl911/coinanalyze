@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_delta_matrix` · `app/api.py:1355` (cuerpo hasta la 1380) · decorador en la linea 1354.
+Handler `scalp_delta_matrix` · `app/api.py:1356` (cuerpo hasta la 1381) · decorador en la linea 1355.
 
 ## Parametros de entrada
 
@@ -41,6 +41,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
 - `metric_baseline` — `sql/schema.sql:1265`, 14 columnas
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
@@ -67,7 +68,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.validate_symbol` — `app/api.py:254`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4589`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 
@@ -104,7 +105,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

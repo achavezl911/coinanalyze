@@ -16,7 +16,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/codigo.py:48` · clave completa `app.entradas.codigo.contenido`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -57,7 +57,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/codigo.py:35` · clave completa `app.entradas.codigo.piezas`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -98,7 +98,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/codigo.py:56` · clave completa `app.entradas.codigo.registradas`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 

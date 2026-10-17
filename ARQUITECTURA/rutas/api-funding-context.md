@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `funding_context_endpoint` · `app/api.py:1942` (cuerpo hasta la 1945) · decorador en la linea 1941.
+Handler `funding_context_endpoint` · `app/api.py:1943` (cuerpo hasta la 1946) · decorador en la linea 1942.
 
 ## Parametros de entrada
 
@@ -49,7 +49,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.validate_symbol` — `app/api.py:254`
 - `app.scalp_logic.funding_context` — `app/scalp_logic.py:3652`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

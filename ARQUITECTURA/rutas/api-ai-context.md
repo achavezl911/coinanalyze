@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_context` · `app/api.py:3565` (cuerpo hasta la 3578) · decorador en la linea 3564.
+Handler `ai_context` · `app/api.py:3566` (cuerpo hasta la 3579) · decorador en la linea 3565.
 
 ## Parametros de entrada
 
@@ -88,7 +88,7 @@ LEE:
 - `daily_session_agg` — `sql/schema.sql:1032`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `daily_verdict_outcome` — `sql/schema.sql:2290`, 10 columnas
+- `daily_verdict_outcome` — `sql/schema.sql:2294`, 10 columnas
   - la llena `app.daily_agg.materialize_daily_verdict_outcomes` (INSERT) — `app/daily_agg.py:525`
 - `daily_verdict_snapshot` — `sql/schema.sql:1099`, 26 columnas
   - la llena `app.daily_agg.persist_verdicts` (INSERT) — `app/daily_agg.py:436`
@@ -105,6 +105,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
 - `external_macro_observation` — `sql/schema.sql:1234`, 5 columnas
   - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:553`
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:574`
@@ -188,7 +189,7 @@ Llamadas directas del handler:
 
 - `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:891`
 - `app.ai_context.normalize_profile` — `app/ai_context.py:219`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.validate_symbol` — `app/api.py:254`
 
 <details><summary>Alcanzables de forma indirecta (168)</summary>
 
@@ -212,7 +213,7 @@ Llamadas directas del handler:
 - `app.ai_context.rough_token_estimate` — `app/ai_context.py:283`
 - `app.ai_context.sin_perder_los_nulos` — `app/ai_context.py:264`
 - `app.ai_context.verdict_history` — `app/ai_context.py:486`
-- `app.config.get_settings` — `app/config.py:291`
+- `app.config.get_settings` — `app/config.py:296`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.align_down` — `app/data_gaps.py:232`
@@ -378,8 +379,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
-| 422 | — | `app/api.py:3574` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 422 | — | `app/api.py:3575` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

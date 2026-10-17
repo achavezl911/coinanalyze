@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `daily` · `app/api.py:2325` (cuerpo hasta la 2406) · decorador en la linea 2324.
+Handler `daily` · `app/api.py:2326` (cuerpo hasta la 2407) · decorador en la linea 2325.
 
 ## Parametros de entrada
 
@@ -21,18 +21,18 @@ Handler `daily` · `app/api.py:2325` (cuerpo hasta la 2406) · decorador en la l
 
 | campo | de donde sale |
 |---|---|
-| `coverage_note` | literal en app/api.py:674 |
-| `data_gaps` | asignado en app/api.py:2389 |
-| `knowledge_time_replay` | literal en app/api.py:671 |
-| `projection_latest_session_date` | literal en app/api.py:667 |
-| `quick_read` | literal en app/api.py:672 |
-| `rows` | literal en app/api.py:663 |
-| `sources` | literal en app/api.py:673 |
-| `streak` | literal en app/api.py:661 |
-| `streak_source` | literal en app/api.py:662 |
-| `symbol` | literal en app/api.py:660 |
-| `temporal_semantics` | literal en app/api.py:670 |
-| `through_session_date` | literal en app/api.py:664 |
+| `coverage_note` | literal en app/api.py:675 |
+| `data_gaps` | asignado en app/api.py:2390 |
+| `knowledge_time_replay` | literal en app/api.py:672 |
+| `projection_latest_session_date` | literal en app/api.py:668 |
+| `quick_read` | literal en app/api.py:673 |
+| `rows` | literal en app/api.py:664 |
+| `sources` | literal en app/api.py:674 |
+| `streak` | literal en app/api.py:662 |
+| `streak_source` | literal en app/api.py:663 |
+| `symbol` | literal en app/api.py:661 |
+| `temporal_semantics` | literal en app/api.py:671 |
+| `through_session_date` | literal en app/api.py:665 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -58,6 +58,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
@@ -71,15 +72,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._session_window` — `app/api.py:522`
-- `app.api.daily_data` — `app/api.py:568`
-- `app.api.mask_gapped_series_rows` — `app/api.py:270`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api._session_window` — `app/api.py:523`
+- `app.api.daily_data` — `app/api.py:569`
+- `app.api.mask_gapped_series_rows` — `app/api.py:271`
+- `app.api.validate_symbol` — `app/api.py:254`
 - `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:197`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
-- `app.api.records` — `app/api.py:266`
+- `app.api.records` — `app/api.py:267`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
@@ -110,8 +111,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2332` | el propio handler |
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2333` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

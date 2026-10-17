@@ -37,7 +37,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/reglamento.py:387` · clave completa `app.entradas.reglamento.cargar_valido`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 10** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -95,7 +95,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/reglamento.py:119` · clave completa `app.entradas.reglamento.valores`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 10** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -154,7 +154,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/reglamento.py:395` · clave completa `app.entradas.reglamento.versiones_en_curso`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 10** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -213,7 +213,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/reglamento.py:127` · clave completa `app.entradas.reglamento._texto`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -237,7 +237,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:308` · clave completa `app.entradas.reglamento._valida_apuestas`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -261,7 +261,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:131` · clave completa `app.entradas.reglamento._valida_bloque`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -285,7 +285,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:229` · clave completa `app.entradas.reglamento._valida_calendario`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -309,7 +309,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:150` · clave completa `app.entradas.reglamento._valida_version`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -333,7 +333,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:340` · clave completa `app.entradas.reglamento.apuestas`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -357,7 +357,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:57` · clave completa `app.entradas.reglamento.canonico`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -394,7 +394,7 @@ Y esas tablas las leen:
 
 `app/entradas/reglamento.py:383` · clave completa `app.entradas.reglamento.cargar`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -430,7 +430,7 @@ Y esas tablas las leen:
 
 `app/entradas/reglamento.py:302` · clave completa `app.entradas.reglamento.celdas`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -454,7 +454,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:75` · clave completa `app.entradas.reglamento.contenido_bloque`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -491,7 +491,7 @@ Y esas tablas las leen:
 
 `app/entradas/reglamento.py:92` · clave completa `app.entradas.reglamento.contenido_revision`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -515,7 +515,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:418` · clave completa `app.entradas.reglamento.diferencia_con_padre`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -539,7 +539,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:64` · clave completa `app.entradas.reglamento.huella`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -576,7 +576,7 @@ Y esas tablas las leen:
 
 `app/entradas/reglamento.py:88` · clave completa `app.entradas.reglamento.huella_bloque`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -600,7 +600,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:115` · clave completa `app.entradas.reglamento.huella_revision`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -624,7 +624,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:68` · clave completa `app.entradas.reglamento.instante`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -659,7 +659,7 @@ Y esas tablas las leen:
 
 `app/entradas/reglamento.py:444` · clave completa `app.entradas.reglamento.registros_esperados`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -694,7 +694,7 @@ Y esas tablas las leen:
 
 `app/entradas/reglamento.py:409` · clave completa `app.entradas.reglamento.revision_vigente`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -731,7 +731,7 @@ Y esas tablas las leen:
 
 `app/entradas/reglamento.py:357` · clave completa `app.entradas.reglamento.validar`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -767,7 +767,7 @@ Y esas tablas las leen:
 
 `app/entradas/reglamento.py:405` · clave completa `app.entradas.reglamento.version`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -791,7 +791,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/reglamento.py:400` · clave completa `app.entradas.reglamento.version_activa`
 
-**Radio exacto: 2 rutas** de 75 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 81 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 

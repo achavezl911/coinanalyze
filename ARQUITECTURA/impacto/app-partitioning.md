@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`apply_temporal_retention`](#apply-temporal-retention) | 25 | 0 | **0** | 56 ↑ | **0** |
-| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 20 | 0 | **0** | 22 ↑ | **0** |
+| [`apply_temporal_retention`](#apply-temporal-retention) | 28 | 0 | **0** | 56 ↑ | **0** |
+| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 23 | 0 | **0** | 22 ↑ | **0** |
 
 ## apply_temporal_retention
 
-`app/partitioning.py:25` · clave completa `app.partitioning.apply_temporal_retention`
+`app/partitioning.py:28` · clave completa `app.partitioning.apply_temporal_retention`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 56** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -49,8 +49,12 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `oi_bybit` — la escribe `app.daily_agg.apply_retention`
 - `open_interest` — la escribe `app.daily_agg.apply_retention`
 - `open_interest_daily` — la escribe `app.daily_agg.rollup_open_interest_daily`
+- `orderflow_cinta` — la escribe `app.orderflow.vuelca`
+- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`
 - `predicted_funding_rate` — la escribe `app.daily_agg.apply_retention`
+- `service_ownership` — la escribe `app.db.acquire_service_lock`
 - `spot_trades_agg` — la escribe `app.daily_agg.apply_retention`
 
 Y esas tablas las leen:
@@ -172,13 +176,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## ensure_temporal_partitions
 
-`app/partitioning.py:20` · clave completa `app.partitioning.ensure_temporal_partitions`
+`app/partitioning.py:23` · clave completa `app.partitioning.ensure_temporal_partitions`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -202,6 +206,9 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `market_assets` — la escribe `app.db.sync_market_catalog`
 - `orderbook_snapshot` — la escribe `app.scalp_collector.flush_books`
+- `orderflow_cinta` — la escribe `app.orderflow.vuelca`
+- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_component`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
@@ -259,5 +266,5 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/structure`](../rutas/api-structure.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
