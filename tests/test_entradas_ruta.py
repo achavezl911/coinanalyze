@@ -232,8 +232,15 @@ def test_el_calendario_vigente_y_los_dias_que_le_quedan():
     assert cal["vigente_desde"] == "2026-10-10T00:00:00Z" and cal["cubre_hasta"] == "2026-11-30T23:59:59Z"
     assert cal["dias_que_le_quedan"] == pytest.approx(52.0, abs=0.01)
     assert cal["renovacion_minima_dias"] == 14
-    vencido = RUTA._reglamento(doc, datetime(2026, 12, 2, tzinfo=UTC))["calendario_vigente"]
-    assert vencido["revision"] == "cal-2" and vencido["dias_que_le_quedan"] < 0
+    cal3 = RUTA._reglamento(doc, datetime(2026, 10, 18, tzinfo=UTC))["calendario_vigente"]
+    assert cal3["revision"] == "cal-3" and cal3["eventos"] == 30
+    assert cal3["cubre_hasta"] == "2026-12-31T23:59:59Z"
+    assert cal3["dias_que_le_quedan"] == pytest.approx(75.0, abs=0.01)
+    # vencido: un dia despues de lo que cubre la ULTIMA revision (hasta la campana 141, cal-2 el 12-02)
+    ultima = doc["calendario"]["revisiones"][-1]
+    momento = R.instante(ultima["cubre_hasta"]) + timedelta(days=1)
+    vencido = RUTA._reglamento(doc, momento)["calendario_vigente"]
+    assert vencido["revision"] == ultima["revision"] and vencido["dias_que_le_quedan"] < 0
 
 
 def test_la_red_no_deja_colar_una_fraccion_dentro_de_la_hipotesis_servida():
