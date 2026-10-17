@@ -20,6 +20,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from app import orderflow_lectura
 from app.ai_context import (
     MESA_FRAME_HORIZON,
     ORDERBOOK_EDAD_SQL,
@@ -3718,6 +3719,107 @@ async def prometheus_metrics() -> Response:
     return Response("\n".join(lines) + "\n", media_type="text/plain; version=0.0.4")
 
 
+# OF-1 · EL DATO DEL ORDER-FLOW (campana 140). La logica vive en app/orderflow_lectura.py; aqui solo se rechaza lo
+# que no se reconoce y un parametro imposible se traduce a 422 con su motivo, nunca a un recorte en silencio.
+async def _orderflow(
+    request: Request, conocidos: tuple[str, ...], lectura: Callable[..., Any], **parametros: Any
+) -> dict[str, Any]:
+    rechaza_parametros_desconocidos(request, conocidos)
+    try:
+        async with app.state.pool.acquire() as conn:
+            respuesta = await lectura(conn, **parametros)
+    except orderflow_lectura.Peticion as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {**respuesta, "as_of": _utc_iso(datetime.now(UTC))}
+
+
+@app.get("/api/orderflow/referencia")
+async def orderflow_referencia(request: Request) -> dict[str, Any]:
+    return await _orderflow(request, (), orderflow_lectura.referencia)
+
+
+@app.get("/api/orderflow/footprint")
+async def orderflow_footprint(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    marco: str = "1m",
+    paso: str | None = None,
+    venues: str | None = None,
+    unidad: str | None = None,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "marco", "paso", "venues", "unidad"), orderflow_lectura.footprint,
+        symbol=symbol, desde=desde, hasta=hasta, marco=marco, paso=paso, venues=venues, unidad=unidad,
+    )
+
+
+@app.get("/api/orderflow/perfil")
+async def orderflow_perfil(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    paso: str | None = None,
+    venues: str | None = None,
+    unidad: str | None = None,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "paso", "venues", "unidad"), orderflow_lectura.perfil,
+        symbol=symbol, desde=desde, hasta=hasta, paso=paso, venues=venues, unidad=unidad,
+    )
+
+
+@app.get("/api/orderflow/cinta")
+async def orderflow_cinta(
+    request: Request,
+    symbol: str,
+    venues: str | None = None,
+    min_usd: str | None = None,
+    minutos: Annotated[int, Query(ge=1, le=2880)] = 60,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 200,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "venues", "min_usd", "minutos", "limit"), orderflow_lectura.cinta,
+        symbol=symbol, venues=venues, min_usd=min_usd, minutos=minutos, limit=limit,
+    )
+
+
+@app.get("/api/orderflow/grandes")
+async def orderflow_grandes(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    venues: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=5000)] = 500,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "venues", "limit"), orderflow_lectura.grandes,
+        symbol=symbol, desde=desde, hasta=hasta, venues=venues, limit=limit,
+    )
+
+
+@app.get("/api/orderflow/cobertura")
+async def orderflow_cobertura(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    venues: str | None = None,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "venues"), orderflow_lectura.cobertura,
+        symbol=symbol, desde=desde, hasta=hasta, venues=venues,
+    )
+
+
+# OF-1 · lo que late y se INFORMA sin degradar el status global en esta campana. Sigue gobernado -sale en
+# governed_services con su umbral, asi que K05 lo ve como a cualquiera- pero su fallo no pone degraded.
+HEALTHZ_INFORMATIVOS = ("orderflow",)
+
+
 @app.get("/api/healthz")
 async def health() -> dict[str, Any]:
     # 'required' dice que servicios tienen que EXISTIR. No dice cuales se vigilan:
@@ -3756,7 +3858,12 @@ async def health() -> dict[str, Any]:
     }
     thresholds.update(required)
     missing_services = sorted(set(required) - set(by_service))
-    degraded = bool(required_heartbeat_failures(heartbeats, thresholds))
+    informativos = sorted(s for s in thresholds if s.split(":", 1)[0] in HEALTHZ_INFORMATIVOS)
+    degraded = bool(
+        required_heartbeat_failures(
+            heartbeats, {s: t for s, t in thresholds.items() if s not in informativos}
+        )
+    )
     latest_by_symbol = {str(row["symbol"]): row for row in latest}
     missing_symbols = sorted(set(SETTINGS.SYMBOLS) - set(latest_by_symbol))
     if missing_symbols or any(float(row["lag_seconds"]) > 180.0 for row in latest):
@@ -3771,6 +3878,16 @@ async def health() -> dict[str, Any]:
         "missing_services": missing_services,
         "missing_symbols": missing_symbols,
         "governed_services": sorted(thresholds),
+        "informative_services": [
+            {
+                "service": s,
+                "status": by_service[s]["status"],
+                "lag_seconds": by_service[s]["lag_seconds"],
+                "max_age_seconds": thresholds[s],
+                "failing": bool(required_heartbeat_failures([by_service[s]], {s: thresholds[s]})),
+            }
+            for s in informativos
+        ],
         "services": records(heartbeats),
         "symbols": records(latest),
     }

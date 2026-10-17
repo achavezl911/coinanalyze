@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_orderbook` · `app/api.py:1804` (cuerpo hasta la 1816) · decorador en la linea 1803.
+Handler `scalp_orderbook` · `app/api.py:1805` (cuerpo hasta la 1817) · decorador en la linea 1804.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `scalp_orderbook` · `app/api.py:1804` (cuerpo hasta la 1816) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `freshness` | literal en app/api.py:1815 |
+| `freshness` | literal en app/api.py:1816 |
 | `freshness.age_seconds` | literal en app/ai_context.py:675 |
 | `freshness.as_of` | literal en app/ai_context.py:674 |
 | `freshness.max_age_seconds` | literal en app/ai_context.py:676 |
 | `freshness.status` | literal en app/ai_context.py:673 |
-| `rows` | literal en app/api.py:1814 |
-| `symbol` | literal en app/api.py:1813 |
+| `rows` | literal en app/api.py:1815 |
+| `symbol` | literal en app/api.py:1814 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -46,8 +46,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.orderbook_freshness` — `app/ai_context.py:668`
-- `app.api.records` — `app/api.py:266`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.records` — `app/api.py:267`
+- `app.api.validate_symbol` — `app/api.py:254`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (4)</summary>
 
@@ -64,7 +64,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

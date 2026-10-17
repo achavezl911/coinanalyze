@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-75 rutas descubiertas en el arbol. Para trabajar sobre una,
+81 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -29,7 +29,7 @@
 | `/api/external-macro` | GET | 1 | 6 | 49 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 6 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
-| `/api/healthz` | GET | 7 | 3 | 5 | [ficha](rutas/api-healthz.md) |
+| `/api/healthz` | GET | 13 | 3 | 5 | [ficha](rutas/api-healthz.md) |
 | `/api/hypothesis` | GET | 82 | 12 | 78 | [ficha](rutas/api-hypothesis.md) |
 | `/api/level/breakout` | GET | 1 | 1 | 15 | [ficha](rutas/api-level-breakout.md) |
 | `/api/liquidation-map` | GET | 16 | 2 | 6 | [ficha](rutas/api-liquidation-map.md) |
@@ -42,6 +42,12 @@
 | `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
 | `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
 | `/api/oi-context` | GET | 16 | 4 | 12 | [ficha](rutas/api-oi-context.md) |
+| `/api/orderflow/cinta` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-cinta.md) |
+| `/api/orderflow/cobertura` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-cobertura.md) |
+| `/api/orderflow/footprint` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-footprint.md) |
+| `/api/orderflow/grandes` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-grandes.md) |
+| `/api/orderflow/perfil` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-perfil.md) |
+| `/api/orderflow/referencia` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-referencia.md) |
 | `/api/passive-flow` | GET | 16 | 3 | 20 | [ficha](rutas/api-passive-flow.md) |
 | `/api/positioning` | GET | 17 | 1 | 3 | [ficha](rutas/api-positioning.md) |
 | `/api/price-barriers` | GET | 15 | 5 | 8 | [ficha](rutas/api-price-barriers.md) |
@@ -85,7 +91,7 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-7 de 75. Cada una con su motivo en la ficha.
+7 de 81. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento

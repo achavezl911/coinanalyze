@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `entradas` · `app/api.py:1317` (cuerpo hasta la 1343) · decorador en la linea 1316.
+Handler `entradas` · `app/api.py:1318` (cuerpo hasta la 1344) · decorador en la linea 1317.
 
 ## Parametros de entrada
 
@@ -70,13 +70,14 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
-- `entrada_latido` — `sql/schema.sql:2702`, 8 columnas
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
+- `entrada_latido` — `sql/schema.sql:2706`, 8 columnas
   - la llena `app.entradas.registro.latir` (INSERT) — `app/entradas/registro.py:222`
-- `entrada_registro` — `sql/schema.sql:2665`, 26 columnas
+- `entrada_registro` — `sql/schema.sql:2669`, 26 columnas
   - la llena `app.entradas.registro.insertar` (INSERT) — `app/entradas/registro.py:31`
-- `entrada_reglamento` — `sql/schema.sql:2655`, 6 columnas
+- `entrada_reglamento` — `sql/schema.sql:2659`, 6 columnas
   - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:85`
-- `entrada_resultado` — `sql/schema.sql:2843`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2847`, 12 columnas
   - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:62`
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
@@ -88,7 +89,7 @@ LEE:
 
 **ESCRIBE** (una ruta de lectura que escribe merece mirarse):
 
-- `entrada_resultado` — `sql/schema.sql:2843`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2847`, 12 columnas
 
 ## Funciones que la componen
 
@@ -97,8 +98,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2586`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2587`
+- `app.api.validate_symbol` — `app/api.py:254`
 - `app.entradas.ruta.construir` — `app/entradas/ruta.py:199`
 
 <details><summary>Alcanzables de forma indirecta (47)</summary>
@@ -166,8 +167,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
-| 422 | — | `app/api.py:2595` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 422 | — | `app/api.py:2596` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -217,10 +218,10 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
 | `app.entradas.reglamento.cargar_valido` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.valores` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.versiones_en_curso` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.api.rechaza_parametros_desconocidos` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.entradas.papel._pendiente` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel._sin_resultado` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel._usd` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |

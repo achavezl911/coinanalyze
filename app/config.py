@@ -202,6 +202,11 @@ class Settings(BaseSettings):
     HTF_DATA_RETENTION_DAYS: int = Field(default=400, ge=30, le=3650)
     SNAPSHOT_RETENTION_DAYS: int = Field(default=30, ge=2, le=730)
     REALTIME_RETENTION_HOURS: int = Field(default=2, ge=1, le=48)
+    # OF-1 · app/orderflow.py. La cinta es la que manda en disco (cada operacion de nueve mercados).
+    # La cobertura de los minutos completos se poda con las celdas; la de los incompletos no se poda.
+    ORDERFLOW_TAPE_RETENTION_HOURS: int = Field(default=48, ge=1, le=168)
+    ORDERFLOW_CELL_RETENTION_DAYS: int = Field(default=30, ge=1, le=365)
+    ORDERFLOW_LARGE_RETENTION_DAYS: int = Field(default=365, ge=1, le=3650)
     DAILY_LOOKBACK_DAYS: int = Field(default=13, ge=2, le=60)
     DAILY_SESSION_RETENTION_DAYS: int = Field(
         default=0, ge=0, le=3650

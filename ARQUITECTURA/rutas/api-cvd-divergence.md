@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd_divergence` · `app/api.py:935` (cuerpo hasta la 1049) · decorador en la linea 934.
+Handler `cvd_divergence` · `app/api.py:936` (cuerpo hasta la 1050) · decorador en la linea 935.
 
 ## Parametros de entrada
 
@@ -20,18 +20,18 @@ Handler `cvd_divergence` · `app/api.py:935` (cuerpo hasta la 1049) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:1048 |
-| `coverage.served_window` | literal en app/api.py:1048 |
+| `coverage` | literal en app/api.py:1049 |
+| `coverage.served_window` | literal en app/api.py:1049 |
 | `coverage.served_window.complete` | literal en app/data_gaps.py:279 |
 | `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:277 |
 | `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:278 |
 | `coverage.served_window.sources` | literal en app/data_gaps.py:280 |
 | `coverage.served_window.window_end` | literal en app/data_gaps.py:276 |
 | `coverage.served_window.window_start` | literal en app/data_gaps.py:275 |
-| `coverage.status` | literal en app/api.py:1048 |
-| `interval` | literal en app/api.py:1046 |
-| `rows` | literal en app/api.py:1047 |
-| `symbol` | literal en app/api.py:1045 |
+| `coverage.status` | literal en app/api.py:1049 |
+| `interval` | literal en app/api.py:1047 |
+| `rows` | literal en app/api.py:1048 |
+| `symbol` | literal en app/api.py:1046 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,6 +54,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
@@ -76,10 +77,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.historical_interval_value` — `app/api.py:259`
-- `app.api.mask_gapped_series_rows` — `app/api.py:270`
-- `app.api.records` — `app/api.py:266`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.historical_interval_value` — `app/api.py:260`
+- `app.api.mask_gapped_series_rows` — `app/api.py:271`
+- `app.api.records` — `app/api.py:267`
+- `app.api.validate_symbol` — `app/api.py:254`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:245`
 
@@ -107,8 +108,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:262` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:263` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

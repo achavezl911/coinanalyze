@@ -9,6 +9,9 @@ PARTITIONED_TEMPORAL_TABLES = frozenset(
         "orderbook_snapshot",
         "liquidations_realtime",
         "scalp_signal_snapshot",
+        # OF-1 (app/orderflow.py). Tambien en las dos copias vivas de las funciones de sql/schema.sql.
+        "orderflow_celda",
+        "orderflow_cinta",
     }
 )
 

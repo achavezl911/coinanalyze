@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1204` (cuerpo hasta la 1294) · decorador en la linea 1203.
+Handler `whale_delta` · `app/api.py:1205` (cuerpo hasta la 1295) · decorador en la linea 1204.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `whale_delta` · `app/api.py:1204` (cuerpo hasta la 1294) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:502 |
-| `data_gaps` | literal en app/api.py:508 |
-| `interval` | literal en app/api.py:500 |
-| `rows` | literal en app/api.py:501 |
-| `symbol` | literal en app/api.py:499 |
+| `coverage` | literal en app/api.py:503 |
+| `data_gaps` | literal en app/api.py:509 |
+| `interval` | literal en app/api.py:501 |
+| `rows` | literal en app/api.py:502 |
+| `symbol` | literal en app/api.py:500 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -47,6 +47,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
@@ -59,15 +60,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declarar_tramo_no_medible` — `app/api.py:1151`
-- `app.api.declared_series_response` — `app/api.py:420`
-- `app.api.historical_interval_value` — `app/api.py:259`
-- `app.api.records` — `app/api.py:266`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.declarar_tramo_no_medible` — `app/api.py:1152`
+- `app.api.declared_series_response` — `app/api.py:421`
+- `app.api.historical_interval_value` — `app/api.py:260`
+- `app.api.records` — `app/api.py:267`
+- `app.api.validate_symbol` — `app/api.py:254`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:380`
+- `app.api.minutos_de_las_filas` — `app/api.py:381`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
@@ -90,8 +91,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:262` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:263` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

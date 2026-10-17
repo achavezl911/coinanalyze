@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `level_breakout_endpoint` · `app/api.py:2075` (cuerpo hasta la 2087) · decorador en la linea 2074.
+Handler `level_breakout_endpoint` · `app/api.py:2076` (cuerpo hasta la 2088) · decorador en la linea 2075.
 
 ## Parametros de entrada
 
@@ -20,7 +20,7 @@ Handler `level_breakout_endpoint` · `app/api.py:2075` (cuerpo hasta la 2087) ·
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | asignado en app/api.py:2010 |
+| `as_of` | asignado en app/api.py:2011 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -45,13 +45,13 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.sella_respuesta` — `app/api.py:1998`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.sella_respuesta` — `app/api.py:1999`
+- `app.api.validate_symbol` — `app/api.py:254`
 - `app.scalp_logic.level_breakout` — `app/scalp_logic.py:1706`
 
 <details><summary>Alcanzables de forma indirecta (12)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2466`
+- `app.api._utc_iso` — `app/api.py:2467`
 - `app.breakout._atr` — `app/breakout.py:58`
 - `app.breakout._confirmation_checks` — `app/breakout.py:330`
 - `app.breakout._delta_usd` — `app/breakout.py:77`
@@ -80,8 +80,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
-| 422 | direction must be 'up' or 'down' | `app/api.py:2083` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 422 | direction must be 'up' or 'down' | `app/api.py:2084` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -127,8 +127,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |
-| `app.api._utc_iso` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.api.sella_respuesta` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |
 | `app.api.level_breakout_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.breakout._atr` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-breakout.md) |

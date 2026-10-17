@@ -1496,7 +1496,9 @@ BEGIN
         'spot_trades_realtime',
         'orderbook_snapshot',
         'liquidations_realtime',
-        'scalp_signal_snapshot'
+        'scalp_signal_snapshot',
+        'orderflow_celda',
+        'orderflow_cinta'
     ] LOOP
         parent_oid := to_regclass(format('%I.%I', schema_name, managed_table));
         IF parent_oid IS NULL OR NOT EXISTS (
@@ -1551,7 +1553,9 @@ DECLARE
         'spot_trades_realtime',
         'orderbook_snapshot',
         'liquidations_realtime',
-        'scalp_signal_snapshot'
+        'scalp_signal_snapshot',
+        'orderflow_celda',
+        'orderflow_cinta'
     ];
     schema_name text := current_schema();
     parent_oid regclass;
@@ -2896,5 +2900,231 @@ DROP TRIGGER IF EXISTS entrada_resultado_no_truncate ON entrada_resultado;
 CREATE TRIGGER entrada_resultado_no_truncate
 BEFORE TRUNCATE ON entrada_resultado
 FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
+
+COMMIT;
+
+
+-- =========================================================================================
+-- CAMPANA 140 · OF-1 · EL DATO DEL ORDER-FLOW. Bloque ADITIVO (IF NOT EXISTS) para app/orderflow.py.
+-- Ningun nombre lleva digitos (K01a).
+--   orderflow_paso       el paso de precio base por activo, SERVIDO (/api/orderflow/referencia).
+--   orderflow_celda      por minuto (hora de la OPERACION), venue, activo y nivel: volumen del agresor
+--                        comprador y vendedor en base y en USD, y conteos. nivel = floor(precio/paso)*paso,
+--                        el borde INFERIOR del nivel, calculado en Decimal. Retencion 30 dias.
+--   orderflow_cinta      cada operacion. Retencion 48 h. Sin unicidad A PROPOSITO: el colector deduplica por
+--                        id dentro de los minutos abiertos, y un indice unico sobre ~10 millones de filas al
+--                        dia costaria mas disco que la propia tabla.
+--   orderflow_grande     las operaciones de al menos el umbral de config/orderflow.json. Retencion 365 dias.
+--   orderflow_cobertura  por minuto, venue y activo: segundos que la conexion ESTUVO entregando (60 = el
+--                        minuto entero), operaciones, tardias, fuera de plazo, reconexiones. Los minutos
+--                        incompletos no se podan: son la prueba que K04 re-deriva de sus huecos.
+-- RETENCION: celda y cinta entran en el mecanismo de particiones diarias que ya existe
+-- (ensure_temporal_partitions / apply_temporal_retention); grande y cobertura son planas y las poda el
+-- propio servicio con DELETE cada hora. NO estan en apply_retention ni en cleanup_expired_rows.
+-- LA UNICA PIEZA QUE NO ES UN CREATE IF NOT EXISTS: ensure_temporal_partitions y
+-- drop_expired_temporal_partitions se redefinen AQUI, al final, con las cinco tablas de siempre MAS estas dos
+-- (identicas a su primera copia, que tambien las lista). Hace falta porque la migracion incrustada las vuelve
+-- a definir con cinco y, sin esto, celda y cinta no tendrian particion manana ni retencion. Para las cinco
+-- de siempre el cuerpo es el mismo byte a byte.
+-- =========================================================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS orderflow_paso (
+    symbol text PRIMARY KEY CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    paso numeric NOT NULL CHECK (paso > 0)
+);
+INSERT INTO orderflow_paso(symbol, paso) VALUES ('BTC', 1), ('ETH', 0.1), ('SOL', 0.01)
+ON CONFLICT (symbol) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS orderflow_celda (
+    ts timestamptz NOT NULL,
+    venue text NOT NULL CHECK (venue IN ('binance_spot', 'binance_usdm', 'bybit_spot', 'bybit_linear',
+                                         'okx_spot', 'okx_swap', 'coinbase_spot', 'bitget_usdt', 'deribit_perp')),
+    symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    nivel numeric NOT NULL CHECK (nivel >= 0),
+    compra_base numeric NOT NULL CHECK (compra_base >= 0),
+    venta_base numeric NOT NULL CHECK (venta_base >= 0),
+    compra_usd numeric NOT NULL CHECK (compra_usd >= 0),
+    venta_usd numeric NOT NULL CHECK (venta_usd >= 0),
+    compras integer NOT NULL CHECK (compras >= 0),
+    ventas integer NOT NULL CHECK (ventas >= 0),
+    CHECK (compras + ventas > 0),
+    PRIMARY KEY (symbol, ts, venue, nivel)
+) PARTITION BY RANGE (ts);
+
+CREATE TABLE IF NOT EXISTS orderflow_cinta (
+    ts timestamptz NOT NULL,
+    venue text NOT NULL CHECK (venue IN ('binance_spot', 'binance_usdm', 'bybit_spot', 'bybit_linear',
+                                         'okx_spot', 'okx_swap', 'coinbase_spot', 'bitget_usdt', 'deribit_perp')),
+    symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    precio numeric NOT NULL CHECK (precio > 0),
+    base numeric NOT NULL CHECK (base > 0),
+    usd numeric NOT NULL CHECK (usd > 0),
+    compra boolean NOT NULL,
+    id text NOT NULL
+) PARTITION BY RANGE (ts);
+CREATE INDEX IF NOT EXISTS orderflow_cinta_symbol_ts_idx ON orderflow_cinta (symbol, ts DESC);
+
+CREATE TABLE IF NOT EXISTS orderflow_grande (
+    ts timestamptz NOT NULL,
+    venue text NOT NULL CHECK (venue IN ('binance_spot', 'binance_usdm', 'bybit_spot', 'bybit_linear',
+                                         'okx_spot', 'okx_swap', 'coinbase_spot', 'bitget_usdt', 'deribit_perp')),
+    symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    precio numeric NOT NULL CHECK (precio > 0),
+    base numeric NOT NULL CHECK (base > 0),
+    usd numeric NOT NULL CHECK (usd > 0),
+    compra boolean NOT NULL,
+    id text NOT NULL,
+    umbral_usd numeric NOT NULL CHECK (umbral_usd > 0),
+    CHECK (usd >= umbral_usd),
+    PRIMARY KEY (venue, symbol, id)
+);
+CREATE INDEX IF NOT EXISTS orderflow_grande_symbol_ts_idx ON orderflow_grande (symbol, ts DESC);
+CREATE INDEX IF NOT EXISTS orderflow_grande_ts_idx ON orderflow_grande (ts);
+
+CREATE TABLE IF NOT EXISTS orderflow_cobertura (
+    ts timestamptz NOT NULL,
+    venue text NOT NULL CHECK (venue IN ('binance_spot', 'binance_usdm', 'bybit_spot', 'bybit_linear',
+                                         'okx_spot', 'okx_swap', 'coinbase_spot', 'bitget_usdt', 'deribit_perp')),
+    symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    segundos smallint NOT NULL CHECK (segundos BETWEEN 0 AND 60),
+    operaciones integer NOT NULL CHECK (operaciones >= 0),
+    tardias integer NOT NULL DEFAULT 0 CHECK (tardias >= 0),
+    fuera integer NOT NULL DEFAULT 0 CHECK (fuera >= 0),
+    reconexiones smallint NOT NULL DEFAULT 0 CHECK (reconexiones >= 0),
+    definitivo boolean NOT NULL DEFAULT false,
+    escrito timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (symbol, ts, venue)
+);
+CREATE INDEX IF NOT EXISTS orderflow_cobertura_ts_idx ON orderflow_cobertura (ts);
+
+CREATE OR REPLACE FUNCTION ensure_temporal_partitions(
+    reference_ts timestamptz DEFAULT now(),
+    days_before integer DEFAULT 1,
+    days_after integer DEFAULT 2
+)
+RETURNS integer
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    managed_table text;
+    partition_day date;
+    child_name text;
+    schema_name text := current_schema();
+    parent_oid regclass;
+    child_oid regclass;
+    created_count integer := 0;
+BEGIN
+    IF days_before < 0 OR days_after < 0 THEN
+        RAISE EXCEPTION 'partition lookaround must be non-negative';
+    END IF;
+    PERFORM pg_advisory_xact_lock(
+        hashtextextended(schema_name || ':ensure_temporal_partitions', 0)
+    );
+
+    FOREACH managed_table IN ARRAY ARRAY[
+        'futures_trades_realtime',
+        'spot_trades_realtime',
+        'orderbook_snapshot',
+        'liquidations_realtime',
+        'scalp_signal_snapshot',
+        'orderflow_celda',
+        'orderflow_cinta'
+    ] LOOP
+        parent_oid := to_regclass(format('%I.%I', schema_name, managed_table));
+        IF parent_oid IS NULL OR NOT EXISTS (
+            SELECT 1 FROM pg_class WHERE oid = parent_oid AND relkind = 'p'
+        ) THEN
+            CONTINUE;
+        END IF;
+
+        FOR partition_day IN
+            SELECT (reference_ts AT TIME ZONE 'UTC')::date + day_offset
+            FROM generate_series(-days_before, days_after) AS day_offset
+        LOOP
+            child_name := managed_table || '_p' || to_char(partition_day, 'YYYYMMDD');
+            child_oid := to_regclass(format('%I.%I', schema_name, child_name));
+            IF child_oid IS NULL THEN
+                EXECUTE format(
+                    'CREATE TABLE %I.%I PARTITION OF %I.%I '
+                    'FOR VALUES FROM (%L) TO (%L)',
+                    schema_name,
+                    child_name,
+                    schema_name,
+                    managed_table,
+                    partition_day::timestamp AT TIME ZONE 'UTC',
+                    (partition_day + 1)::timestamp AT TIME ZONE 'UTC'
+                );
+                created_count := created_count + 1;
+                child_oid := to_regclass(format('%I.%I', schema_name, child_name));
+            END IF;
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_inherits
+                WHERE inhparent = parent_oid AND inhrelid = child_oid
+            ) THEN
+                RAISE EXCEPTION '% exists but is not a partition of %', child_name, managed_table;
+            END IF;
+        END LOOP;
+    END LOOP;
+    RETURN created_count;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION drop_expired_temporal_partitions(
+    parent_name text,
+    cutoff timestamptz
+)
+RETURNS integer
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    allowed constant text[] := ARRAY[
+        'futures_trades_realtime',
+        'spot_trades_realtime',
+        'orderbook_snapshot',
+        'liquidations_realtime',
+        'scalp_signal_snapshot',
+        'orderflow_celda',
+        'orderflow_cinta'
+    ];
+    schema_name text := current_schema();
+    parent_oid regclass;
+    child record;
+    partition_day date;
+    dropped_count integer := 0;
+BEGIN
+    IF NOT parent_name = ANY(allowed) THEN
+        RAISE EXCEPTION 'table is not managed by temporal partitioning: %', parent_name;
+    END IF;
+    parent_oid := to_regclass(format('%I.%I', schema_name, parent_name));
+    IF parent_oid IS NULL OR NOT EXISTS (
+        SELECT 1 FROM pg_class WHERE oid = parent_oid AND relkind = 'p'
+    ) THEN
+        RAISE EXCEPTION '% is not a partitioned table', parent_name;
+    END IF;
+    PERFORM pg_advisory_xact_lock(
+        hashtextextended(schema_name || ':retention:' || parent_name, 0)
+    );
+
+    FOR child IN
+        SELECT c.relname
+        FROM pg_inherits i
+        JOIN pg_class c ON c.oid = i.inhrelid
+        WHERE i.inhparent = parent_oid
+          AND c.relname ~ ('^' || parent_name || '_p[0-9]{8}$')
+        ORDER BY c.relname
+    LOOP
+        partition_day := to_date(right(child.relname, 8), 'YYYYMMDD');
+        IF (partition_day + 1)::timestamp AT TIME ZONE 'UTC' <= cutoff THEN
+            EXECUTE format('DROP TABLE %I.%I', schema_name, child.relname);
+            dropped_count := dropped_count + 1;
+        END IF;
+    END LOOP;
+    RETURN dropped_count;
+END
+$$;
+
+SELECT ensure_temporal_partitions();
 
 COMMIT;

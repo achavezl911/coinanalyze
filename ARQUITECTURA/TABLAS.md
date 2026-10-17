@@ -20,7 +20,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`daily_session_agg`](#daily-session-agg) | 2 | 22 | 0 |
 | [`daily_verdict_outcome`](#daily-verdict-outcome) | 1 | 3 | 0 |
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
-| [`data_gap`](#data-gap) | 12 | 24 | 0 |
+| [`data_gap`](#data-gap) | 13 | 24 | 0 |
 | [`entrada_latido`](#entrada-latido) | 1 | 2 | 0 |
 | [`entrada_registro`](#entrada-registro) | 1 | 2 | 0 |
 | [`entrada_reglamento`](#entrada-reglamento) | 1 | 2 | 0 |
@@ -66,11 +66,11 @@ Definiciones, escritas antes del recuento:
 - **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
   *"periodo medido a medias"* de *"periodo no medido"*.
 
-| | de 44 tablas del esquema |
+| | de 49 tablas del esquema |
 |---|---|
-| de SERIE | **22** |
+| de SERIE | **26** |
 | de serie que DECLARAN cobertura cuantitativa | **7** |
-| de serie que NO declaran ninguna | **15** |
+| de serie que NO declaran ninguna | **19** |
 
 | tabla | columnas de cobertura |
 |---|---|
@@ -82,7 +82,7 @@ Definiciones, escritas antes del recuento:
 | `spot_trades_agg` | `covered_seconds`, `venue_count` |
 | `spot_trades_realtime` | `venue_count` |
 
-**Las 15 de serie SIN cobertura declarada.** No es un defecto por si mismo
+**Las 19 de serie SIN cobertura declarada.** No es un defecto por si mismo
 —una tabla de eventos periodicos puede no necesitarla—, pero es lo que impide
 distinguir un periodo vacio de uno no medido:
 
@@ -99,6 +99,10 @@ distinguir un periodo vacio de uno no medido:
 - `open_interest`
 - `open_interest_daily`
 - `orderbook_depth`
+- `orderflow_celda`
+- `orderflow_cinta`
+- `orderflow_cobertura`
+- `orderflow_grande`
 - `predicted_funding_rate`
 - `scalp_signal_snapshot`
 
@@ -240,7 +244,7 @@ La escriben:
 
 ### daily_verdict_outcome
 
-`sql/schema.sql:2290`, 10 columnas.
+`sql/schema.sql:2294`, 10 columnas.
 
 La escriben:
 
@@ -284,6 +288,7 @@ La escriben:
 - `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:764`
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
+- `app.orderflow.declara_hueco` — **UPDATE** en `app/orderflow.py:411`
 
 **Si cambia el contenido o el esquema de `data_gap`, estas 24 rutas lo notan:**
 
@@ -314,7 +319,7 @@ La escriben:
 
 ### entrada_latido
 
-`sql/schema.sql:2702`, 8 columnas.
+`sql/schema.sql:2706`, 8 columnas.
 
 La escriben:
 
@@ -327,7 +332,7 @@ La escriben:
 
 ### entrada_registro
 
-`sql/schema.sql:2665`, 26 columnas.
+`sql/schema.sql:2669`, 26 columnas.
 
 La escriben:
 
@@ -340,7 +345,7 @@ La escriben:
 
 ### entrada_reglamento
 
-`sql/schema.sql:2655`, 6 columnas.
+`sql/schema.sql:2659`, 6 columnas.
 
 La escriben:
 
@@ -353,7 +358,7 @@ La escriben:
 
 ### entrada_resultado
 
-`sql/schema.sql:2843`, 12 columnas.
+`sql/schema.sql:2847`, 12 columnas.
 
 La escriben:
 
@@ -828,7 +833,7 @@ La escriben:
 
 ### signal_outcome_final_visibility
 
-`sql/schema.sql:2477`, 8 columnas.
+`sql/schema.sql:2481`, 8 columnas.
 
 La escriben:
 
@@ -912,6 +917,10 @@ completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 - `market_assets` — la escriben 1: `app/db.py:247`
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`
 - `open_interest_daily` — la escriben 2: `app/daily_agg.py:600`, `app/daily_agg.py:600`
+- `orderflow_celda` — la escriben 2: `app/orderflow.py:461`, `app/orderflow.py:464`
+- `orderflow_cinta` — la escriben 1: `app/orderflow.py:502`
+- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:470`, `app/orderflow.py:520`, `app/orderflow.py:563`, `app/orderflow.py:706`
+- `orderflow_grande` — la escriben 2: `app/orderflow.py:508`, `app/orderflow.py:703`
 - `service_ownership` — la escriben 1: `app/db.py:283`
 - `signal_research_bundle_visibility` — la escriben 1: `app/signal_visibility.py:229`
 - `signal_walk_forward_manifest` — la escriben 1: `app/signal_walk_forward.py:596`

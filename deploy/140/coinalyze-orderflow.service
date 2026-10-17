@@ -1,0 +1,39 @@
+# OF-1 · el colector del order-flow (app/orderflow.py). Mismo usuario, entorno y directorio que los otros servicios
+# de 140 (coinalyze-ws/-api: /opt/coinalyze/current, /etc/coinalyze/coinalyze.env). No esta en la lista SERVICES del
+# envoltorio de root (deploy/140/deploy-coinalyze:27) y no hace falta: PartOf hace que el `systemctl stop` de la API
+# la pare (el despliegue necesita la base sin sesiones) y WantedBy hace que el `systemctl start` de la API la arranque.
+# La instala el OPERADOR una vez; la instruccion exacta esta en la entrega de la campana 140.
+# Limites: medido en el banco de 143 el 2026-10-17 con los nueve venues, 59 MB de RSS y ~2.2 % de un nucleo.
+[Unit]
+Description=Coinalyze orderflow (OF-1): cada operacion de nueve mercados, celdas, cinta, grandes y cobertura
+After=network-online.target postgresql.service coinalyze-api.service
+Wants=network-online.target
+PartOf=coinalyze-api.service
+
+[Service]
+Type=simple
+User=coinalyze
+Group=coinalyze
+WorkingDirectory=/opt/coinalyze/current
+EnvironmentFile=/etc/coinalyze/coinalyze.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/coinalyze/current/.venv/bin/python -m app.orderflow
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+MemoryMax=256M
+CPUQuota=50%
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+
+[Install]
+WantedBy=coinalyze-api.service

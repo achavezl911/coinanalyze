@@ -159,6 +159,31 @@ if [ "$total" -eq 0 ]; then
   exit 2
 fi
 
+# v6, 2026-10-17 (OF-1, campana 140): EL CUARTO CAMINO, y entra por donde la cabecera dice que tiene que
+# entrar: ensenandole a este check a verificarlo. app/orderflow.py declara cada minuto en que su conexion no
+# estuvo entregando los 60 s y NO lo rellena -un flujo de operaciones no se puede volver a pedir, y la decision
+# OF-1 es no rellenar nunca-, asi que la fila nace 'unrecoverable' con method orderflow_sin_cobertura.
+#
+#   orderflow_sin_cobertura   la ventana esta alineada a minuto y NINGUN minuto de ella esta completo
+#                             (segundos = 60) en orderflow_cobertura para ese venue y ese activo.
+#
+# Se re-deriva contra la TABLA, no contra lo que la fila dice de si misma: un archivado sobre un minuto que la
+# cobertura tiene entero no se sostiene. La rama SOLO existe si la tabla existe: si no, la consulta entera no
+# compilaria y K04 saldria NO MEDIDO en una base que aun no tiene OF-1; y una fila con ese metodo sin la tabla
+# cae por el ELSE false, que es lo que tiene que pasar. LO QUE NO EXIGE, dicho: los minutos completos se podan a
+# los 30 dias (los incompletos no), asi que pasado ese plazo la rama ya no puede desmentir un archivado falso.
+OF_RAMA=""
+of_tabla=$(leer of_tabla "SELECT (to_regclass('orderflow_cobertura') IS NOT NULL)::int") || exit 2
+if [ "$of_tabla" -eq 1 ]; then
+  OF_RAMA="WHEN 'orderflow_sin_cobertura' THEN
+              g.feed = 'orderflow' AND g.feed_class = 'event_stream'
+          AND date_trunc('minute', g.start_ts) = g.start_ts
+          AND date_trunc('minute', g.end_ts) = g.end_ts
+          AND NOT EXISTS (SELECT 1 FROM orderflow_cobertura c
+                           WHERE c.venue = g.exchange AND c.symbol = g.symbol
+                             AND c.ts >= g.start_ts AND c.ts < g.end_ts AND c.segundos = 60)"
+fi
+
 viejos=$(leer viejos "SELECT count(*) FROM data_gap
           WHERE status='unresolved' AND start_ts < now()-interval '24 hours'") || exit 2
 mudos=$(leer mudos "SELECT count(*) FROM data_gap
@@ -215,6 +240,7 @@ sin_prueba=$(leer sin_prueba "SELECT count(*) FROM data_gap g
                    AND a.symbol=g.symbol AND a.granularity=g.granularity
                    AND a.detection_source=g.recovery_metadata->>'partition_detection_source'
                    AND a.start_ts >= g.start_ts AND a.end_ts <= g.end_ts)
+        $OF_RAMA
         ELSE false
       END, false)") || exit 2
 

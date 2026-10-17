@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `mesa_decide` · `app/api.py:3836` (cuerpo hasta la 3871) · decorador en la linea 3835.
+Handler `mesa_decide` · `app/api.py:3953` (cuerpo hasta la 3988) · decorador en la linea 3952.
 
 ## Parametros de entrada
 
@@ -49,6 +49,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
 - `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
   - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1549`
   - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:813`
@@ -112,8 +113,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.build_mesa_decide` — `app/ai_context.py:1571`
-- `app.api.scalp_persistence` — `app/api.py:3194`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.scalp_persistence` — `app/api.py:3195`
+- `app.api.validate_symbol` — `app/api.py:254`
 
 <details><summary>Alcanzables de forma indirecta (57)</summary>
 
@@ -192,8 +193,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
-| 422 | — | `app/api.py:3847` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 422 | — | `app/api.py:3964` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

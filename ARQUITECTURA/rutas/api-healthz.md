@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `health` · `app/api.py:3722` (cuerpo hasta la 3776) · decorador en la linea 3721.
+Handler `health` · `app/api.py:3824` (cuerpo hasta la 3893) · decorador en la linea 3823.
 
 ## Parametros de entrada
 
@@ -12,17 +12,23 @@ _ninguno_
 
 ## Campos que publica
 
-7 campos derivados. La procedencia dice de donde sale cada uno.
+13 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `database` | literal en app/api.py:3770 |
-| `governed_services` | literal en app/api.py:3773 |
-| `missing_services` | literal en app/api.py:3771 |
-| `missing_symbols` | literal en app/api.py:3772 |
-| `services` | literal en app/api.py:3774 |
-| `status` | literal en app/api.py:3765 |
-| `symbols` | literal en app/api.py:3775 |
+| `database` | literal en app/api.py:3877 |
+| `governed_services` | literal en app/api.py:3880 |
+| `informative_services` | literal en app/api.py:3881 |
+| `informative_services.failing` | literal en app/api.py:3887 |
+| `informative_services.lag_seconds` | literal en app/api.py:3885 |
+| `informative_services.max_age_seconds` | literal en app/api.py:3886 |
+| `informative_services.service` | literal en app/api.py:3883 |
+| `informative_services.status` | literal en app/api.py:3884 |
+| `missing_services` | literal en app/api.py:3878 |
+| `missing_symbols` | literal en app/api.py:3879 |
+| `services` | literal en app/api.py:3891 |
+| `status` | literal en app/api.py:3872 |
+| `symbols` | literal en app/api.py:3892 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -57,13 +63,13 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:266`
+- `app.api.records` — `app/api.py:267`
 - `app.db.db_identity` — `app/db.py:64`
 - `app.db.heartbeat` — `app/db.py:409`
 - `app.db.heartbeat_max_age` — `app/db.py:95`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
 
-<details><summary>Llamadas que salen del arbol o no se resuelven (13)</summary>
+<details><summary>Llamadas que salen del arbol o no se resuelven (15)</summary>
 
 Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para aqui.
 
@@ -76,9 +82,11 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 - `conn.fetchval`
 - `float`
 - `max`
+- `s.split`
 - `set`
 - `sorted`
 - `str`
+- `thresholds.items`
 - `thresholds.update`
 
 </details>
@@ -112,9 +120,9 @@ K43 · (1) ventana de construccion de la foto · (2) coverage de su propia serie
 **Es una candidata derivada de la firma, no la declaracion.** La decide una persona
 en el fichero de la capa declarada y puede corregirla con cita.
 
-**Ninguna clave temporal entre los campos derivados.** O no publica marca de
-tiempo, o sus campos no se pudieron derivar (mira arriba). Lo segundo NO es lo
-mismo que lo primero: la foto de produccion lo decide, no este documento.
+Claves temporales entre los campos que publica:
+
+- `informative_services.max_age_seconds`
 
 ## Capa DECLARADA
 

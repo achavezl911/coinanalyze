@@ -22,7 +22,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/servicio.py:92` · clave completa `app.entradas.servicio._latido_suelto`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -80,7 +80,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/servicio.py:235` · clave completa `app.entradas.servicio._pasada_async`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -139,7 +139,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/servicio.py:76` · clave completa `app.entradas.servicio.plan_de_marcha`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -198,7 +198,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/servicio.py:104` · clave completa `app.entradas.servicio.pasada`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 8** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -251,7 +251,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/servicio.py:153` · clave completa `app.entradas.servicio._alineada`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -293,7 +293,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/servicio.py:63` · clave completa `app.entradas.servicio._conexion_kw`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -334,7 +334,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/servicio.py:171` · clave completa `app.entradas.servicio._hasta`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -376,7 +376,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/servicio.py:157` · clave completa `app.entradas.servicio._pendientes`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -417,7 +417,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/servicio.py:178` · clave completa `app.entradas.servicio.evaluar_vela`
 
-**Radio exacto: 0 rutas** de 75 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 81 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 

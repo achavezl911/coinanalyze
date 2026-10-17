@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ohlcv` · `app/api.py:709` (cuerpo hasta la 769) · decorador en la linea 708.
+Handler `ohlcv` · `app/api.py:710` (cuerpo hasta la 770) · decorador en la linea 709.
 
 ## Parametros de entrada
 
@@ -20,22 +20,22 @@ Handler `ohlcv` · `app/api.py:709` (cuerpo hasta la 769) · decorador en la lin
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:502 |
-| `coverage.served_window` | literal en app/api.py:503 |
-| `coverage.unit` | literal en app/api.py:448 |
-| `data_gaps` | literal en app/api.py:508 |
-| `data_gaps.declared` | literal en app/api.py:516 |
-| `data_gaps.exchanges` | literal en app/api.py:510 |
-| `data_gaps.feed` | literal en app/api.py:509 |
-| `data_gaps.market` | literal en app/api.py:511 |
-| `data_gaps.status` | literal en app/api.py:515 |
-| `data_gaps.symbol` | literal en app/api.py:512 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:517 |
-| `data_gaps.window_end` | literal en app/api.py:514 |
-| `data_gaps.window_start` | literal en app/api.py:513 |
-| `interval` | literal en app/api.py:500 |
-| `rows` | literal en app/api.py:501 |
-| `symbol` | literal en app/api.py:499 |
+| `coverage` | literal en app/api.py:503 |
+| `coverage.served_window` | literal en app/api.py:504 |
+| `coverage.unit` | literal en app/api.py:449 |
+| `data_gaps` | literal en app/api.py:509 |
+| `data_gaps.declared` | literal en app/api.py:517 |
+| `data_gaps.exchanges` | literal en app/api.py:511 |
+| `data_gaps.feed` | literal en app/api.py:510 |
+| `data_gaps.market` | literal en app/api.py:512 |
+| `data_gaps.status` | literal en app/api.py:516 |
+| `data_gaps.symbol` | literal en app/api.py:513 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:518 |
+| `data_gaps.window_end` | literal en app/api.py:515 |
+| `data_gaps.window_start` | literal en app/api.py:514 |
+| `interval` | literal en app/api.py:501 |
+| `rows` | literal en app/api.py:502 |
+| `symbol` | literal en app/api.py:500 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -58,6 +58,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
@@ -76,15 +77,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:420`
-- `app.api.historical_interval_value` — `app/api.py:259`
-- `app.api.mask_gapped_series_rows` — `app/api.py:270`
-- `app.api.records` — `app/api.py:266`
-- `app.api.validate_symbol` — `app/api.py:253`
+- `app.api.declared_series_response` — `app/api.py:421`
+- `app.api.historical_interval_value` — `app/api.py:260`
+- `app.api.mask_gapped_series_rows` — `app/api.py:271`
+- `app.api.records` — `app/api.py:267`
+- `app.api.validate_symbol` — `app/api.py:254`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:380`
+- `app.api.minutos_de_las_filas` — `app/api.py:381`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
@@ -110,8 +111,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:255` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:262` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:263` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
