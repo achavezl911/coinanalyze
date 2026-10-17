@@ -105,9 +105,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api._utc_iso` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
-| `app.api._orderflow` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 18 | **0** | 0 | **18** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 18 | **0** | 0 | **18** | [impacto](../impacto/app-api.md) |
+| `app.api._orderflow` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.api.orderflow_cobertura` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

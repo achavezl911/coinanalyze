@@ -525,3 +525,135 @@ async def test_una_conexion_abierta_que_no_entrega_no_cubre(monkeypatch):
     desde, hasta = alm.coberturas["binance_usdm"].tramos[0]
     # el tramo acaba en la ULTIMA operacion recibida, no cuando se dio por muerta la conexion
     assert hasta is not None and hasta - desde < 0.1
+
+
+# --------------------------------------------------------------------------------------------- OF-3 (campana 143)
+# La medianoche de HOY: el esquema crea particiones de ayer a pasado manana, asi que una sesion que la cruza tiene sus
+# dos lados en la base. El reloj se planta con _cerrado (el ultimo minuto que se da por escuchado).
+T0 = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _reloj(monkeypatch, cerrado: datetime) -> None:
+    monkeypatch.setattr(lec, "_cerrado", lambda _ahora: cerrado)
+
+
+async def _cobertura(conn, filas):
+    await conn.executemany(
+        """INSERT INTO orderflow_cobertura(ts,venue,symbol,segundos,operaciones,definitivo)
+           VALUES ($1,$2,'BTC',$3,$4,true)""", filas)
+
+
+async def test_una_sesion_que_cruza_la_medianoche_es_una_y_el_compuesto_suma_sus_sesiones(conn, monkeypatch):
+    _reloj(monkeypatch, T0 + timedelta(days=2))
+    m = timedelta(minutes=1)
+    await _celdas(conn, [
+        (T0 - 30 * m, "binance_spot", D(100), D(1), D(0), D("100.5"), D(0), 1, 0),
+        (T0 + 30 * m, "binance_spot", D(101), D(0), D(2), D(0), D("202.2"), 0, 1),
+        (T0 + 30 * m, "okx_spot", D(100), D(1), D(1), D("100.2"), D("100.4"), 1, 1),
+    ])
+    await _cobertura(conn, [(T0 - 30 * m, "binance_spot", 60, 1), (T0 + 30 * m, "binance_spot", 60, 1),
+                            (T0 + 30 * m, "okx_spot", 45, 2)])
+    r = await lec.sesiones(conn, symbol="BTC", desde=lec.iso(T0 - 60 * m), hasta=lec.iso(T0 + 60 * m),
+                           sesion="23:00-01:00", paso=None, venues="okx_spot,binance_spot", unidad="base")
+    assert r["sesion"]["cruza_medianoche"] and r["sesion"]["minutos"] == 120 and len(r["sesiones"]) == 1
+    s = r["sesiones"][0]
+    assert (s["inicio"], s["fin"], s["en_curso"]) == (lec.iso(T0 - 60 * m), lec.iso(T0 + 60 * m), False)
+    assert [(n["nivel"], n["compra"], n["venta"]) for n in s["niveles"]] == [("100", "2", "1"), ("101", "0", "2")]
+    # POC 100 (3); el 70 % de 5 es 3.5: se anade 101 (el unico vecino)
+    assert s["poc"] == "100" and s["value_area"] == {"val": "100", "vah": "101", "volumen": "5"}
+    assert (s["cobertura"]["minutos_esperados"], s["cobertura"]["minutos_con_fila"],
+            s["cobertura"]["minutos_completos"], s["cobertura"]["completa"]) == (240, 3, 2, False)
+    assert r["compuesto"]["sesiones"] == 1 and r["compuesto"]["niveles"] == s["niveles"]
+    # en curso: el reloj a las 00:10 corta la cobertura ahi; las celdas posteriores entran (la sesion crece)
+    _reloj(monkeypatch, T0 + 10 * m)
+    viva = (await lec.sesiones(conn, symbol="BTC", desde=lec.iso(T0 - 60 * m), hasta=lec.iso(T0 + 60 * m),
+                               sesion="23:00-01:00", paso=None, venues="okx_spot,binance_spot",
+                               unidad="base"))["sesiones"][0]
+    assert viva["en_curso"] and viva["corte"] == lec.iso(T0 + 10 * m)
+    assert viva["cobertura"]["minutos_esperados"] == 140 and viva["total"] == s["total"]
+    # dos sesiones de 00:00-00:31 (hoy y manana): el compuesto es su suma, con su cobertura sumada
+    _reloj(monkeypatch, T0 + timedelta(days=2))
+    await _celdas(conn, [(T0 + timedelta(days=1, minutes=10), "binance_spot", D(100), D(3), D(0), D("300"), D(0), 2,
+                          0)])
+    dos = await lec.sesiones(conn, symbol="BTC", desde=lec.iso(T0), hasta=lec.iso(T0 + timedelta(days=1, minutes=31)),
+                             sesion="00:00-00:31", paso="1", venues="binance_spot", unidad="usd")
+    assert [x["inicio"] for x in dos["sesiones"]] == [lec.iso(T0), lec.iso(T0 + timedelta(days=1))]
+    assert dos["sesiones"][0]["niveles"][0]["nivel"] == "101" and dos["compuesto"]["sesiones"] == 2
+    assert [(n["nivel"], n["total"]) for n in dos["compuesto"]["niveles"]] == [("100", "300"), ("101", "202.2")]
+    assert dos["compuesto"]["cobertura"]["minutos_esperados"] == 62 and dos["compuesto"]["poc"] == "100"
+    json.dumps(dos)
+
+
+async def test_el_tpo_rellena_el_rango_de_cada_periodo_con_su_letra(conn, monkeypatch):
+    _reloj(monkeypatch, T0 + timedelta(days=2))
+    m = timedelta(minutes=1)
+    await _celdas(conn, [
+        (T0 + 1 * m, "binance_spot", D(100), D(1), D(0), D(100), D(0), 1, 0),
+        (T0 + 1 * m, "binance_spot", D(140), D(1), D(0), D(140), D(0), 1, 0),
+        (T0 + 31 * m, "binance_spot", D(120), D(1), D(0), D(120), D(0), 1, 0),
+        (T0 + 31 * m, "binance_spot", D(125), D(0), D(1), D(0), D(125), 0, 1),
+        (T0 + 61 * m, "binance_spot", D(150), D(1), D(0), D(150), D(0), 1, 0),
+    ])
+    r = await lec.tpo(conn, symbol="BTC", desde=lec.iso(T0), hasta=lec.iso(T0 + 120 * m), sesion=None, paso="10",
+                      venues="binance_spot")
+    s = r["sesiones"][0]
+    assert [p["letra"] for p in s["periodos"]] == ["A", "B", "C", "D"] and s["periodos"][3]["lo"] is None
+    assert [(n["nivel"], n["letras"]) for n in s["niveles"]] == [
+        ("100", "A"), ("110", "A"), ("120", "AB"), ("130", "A"), ("140", "A"), ("150", "C")]
+    # POC 120 (2 TPO); 70 % de 7 = 4.9: se anaden 130, 140 y 150 (empates: el de arriba)
+    assert s["poc"] == "120" and s["value_area"] == {"val": "120", "vah": "150", "tpo": "5"} and s["tpo"] == 7
+    assert s["balance_inicial"] == {"lo": "100", "hi": "140"}
+    assert [(t["desde"], t["hasta"], t["extremo"]) for t in s["single_prints"]] == [
+        ("100", "110", "bajo"), ("130", "150", "alto")]
+    # paso automatico: los periodos con celdas tocan 41, 6 y 1 niveles al paso base; el mediano, 6
+    auto = await lec.tpo(conn, symbol="BTC", desde=lec.iso(T0), hasta=lec.iso(T0 + 120 * m), sesion="dia",
+                         paso="auto", venues="binance_spot")
+    assert auto["paso"] == "1" and auto["paso_auto"]["niveles_periodo_mediano"] == 6
+    assert r["letras"][25:28] == "Zab" and len(r["letras"]) == 48
+    json.dumps(auto)
+
+
+async def test_el_vwap_es_exacto_y_sus_bandas_salen_del_precio_medio_de_cada_nivel(conn, monkeypatch):
+    _reloj(monkeypatch, T0 + timedelta(days=2))
+    m = timedelta(minutes=1)
+    await _celdas(conn, [
+        (T0, "binance_spot", D(100), D(1), D(1), D("100.4"), D("100.6"), 1, 1),
+        (T0 + m, "binance_spot", D(102), D(2), D(0), D("204.8"), D(0), 2, 0),
+    ])
+    r = await lec.vwap(conn, symbol="BTC", desde=lec.iso(T0), hasta=lec.iso(T0 + 3 * m), marco="1m", sesion=None,
+                       venues="binance_spot")
+    p = r["sesiones"][0]["puntos"]
+    assert [(x["ts"], x["vwap"], x["sigma"]) for x in p] == [
+        (lec.iso(T0), "100.5", "0"), (lec.iso(T0 + m), "101.45", "0.95"), (lec.iso(T0 + 2 * m), "101.45", "0.95")]
+    # sigma^2 = (2 x (100.5 - 101.45)^2 + 2 x (102.4 - 101.45)^2) / 4 = 0.9025
+    assert p[1]["bandas"] == {"1": ["100.5", "102.4"], "2": ["99.55", "103.35"], "3": ["98.6", "104.3"]}
+    assert r["redondeo"] == "0.01" and r["bandas"] == [1, 2, 3]
+    # una ventana que empieza despues que la sesion acumula desde el inicio de la sesion
+    tarde = await lec.vwap(conn, symbol="BTC", desde=lec.iso(T0 + m), hasta=lec.iso(T0 + 3 * m), marco="1m",
+                           sesion="dia", venues="binance_spot")
+    assert [x["vwap"] for x in tarde["sesiones"][0]["puntos"]] == ["101.45", "101.45"]
+    json.dumps(r)
+
+
+async def test_las_rutas_de_of3_dicen_422_y_no_recortan_en_silencio(conn, monkeypatch):
+    monkeypatch.setattr(api.app.state, "pool", _Pool(conn), raising=False)
+    desde, hasta = lec.iso(T0), lec.iso(T0 + timedelta(minutes=5))
+    for ruta, extra in ((api.orderflow_sesiones, {}), (api.orderflow_tpo, {}), (api.orderflow_vwap, {"marco": "1m"})):
+        ok = await ruta(_Peticion(symbol="BTC"), symbol="BTC", desde=desde, hasta=hasta, **extra)
+        assert ok["as_of"].endswith("Z") and ok["sesion"]["nombre"] == "dia"
+        json.dumps(ok)
+        for malo in ({"sesion": "25:00-01:00"}, {"sesion": "noche"}, {"hasta": lec.iso(T0 + timedelta(days=40))}):
+            with pytest.raises(HTTPException) as exc:
+                await ruta(_Peticion(symbol="BTC"), **{"symbol": "BTC", "desde": desde, "hasta": hasta, **extra, **malo})
+            assert exc.value.status_code == 422
+        with pytest.raises(HTTPException) as exc:
+            await ruta(_Peticion(symbol="BTC", hora="1"), symbol="BTC", desde=desde, hasta=hasta, **extra)
+        assert exc.value.status_code == 422
+    # el tope de las sesiones es de 7 dias (P1): una sesion que empezo antes que la ventana cuenta desde su inicio
+    with pytest.raises(HTTPException) as exc:
+        await api.orderflow_sesiones(_Peticion(symbol="BTC"), symbol="BTC", desde=lec.iso(T0 - timedelta(days=6)),
+                                     hasta=lec.iso(T0 + timedelta(days=1)), sesion="23:00-22:00")
+    assert exc.value.status_code == 422 and "7 dias" in exc.value.detail and "5 s" in exc.value.detail
+    ok = await api.orderflow_sesiones(_Peticion(symbol="BTC"), symbol="BTC", desde=lec.iso(T0 - timedelta(days=6)),
+                                      hasta=lec.iso(T0 + timedelta(days=1)), sesion="dia")
+    assert len(ok["sesiones"]) == 7

@@ -14,7 +14,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/config.py:296` · clave completa `app.config.get_settings`
 
-**Radio exacto: 3 rutas** de 82 · **cota superior: 59** (mas ancha)
+**Radio exacto: 3 rutas** de 85 · **cota superior: 59** (mas ancha)
 
 ### Por llamada — 3 rutas
 

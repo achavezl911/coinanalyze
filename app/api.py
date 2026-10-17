@@ -3815,6 +3815,57 @@ async def orderflow_cobertura(
     )
 
 
+# OF-3 · LOS PERFILES (campana 143): el perfil de cada sesion y su compuesto, el TPO y el VWAP de la sesion con sus
+# bandas. Solo se anaden rutas; la logica, en app/orderflow_lectura.py, y aqui, como en OF-1, se rechaza lo desconocido.
+@app.get("/api/orderflow/sesiones")
+async def orderflow_sesiones(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    sesion: str | None = None,
+    paso: str | None = None,
+    venues: str | None = None,
+    unidad: str | None = None,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "sesion", "paso", "venues", "unidad"), orderflow_lectura.sesiones,
+        symbol=symbol, desde=desde, hasta=hasta, sesion=sesion, paso=paso, venues=venues, unidad=unidad,
+    )
+
+
+@app.get("/api/orderflow/tpo")
+async def orderflow_tpo(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    sesion: str | None = None,
+    paso: str | None = None,
+    venues: str | None = None,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "sesion", "paso", "venues"), orderflow_lectura.tpo,
+        symbol=symbol, desde=desde, hasta=hasta, sesion=sesion, paso=paso, venues=venues,
+    )
+
+
+@app.get("/api/orderflow/vwap")
+async def orderflow_vwap(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    marco: str = "1m",
+    sesion: str | None = None,
+    venues: str | None = None,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "marco", "sesion", "venues"), orderflow_lectura.vwap,
+        symbol=symbol, desde=desde, hasta=hasta, marco=marco, sesion=sesion, venues=venues,
+    )
+
+
 # OF-1 · lo que late y se INFORMA sin degradar el status global en esta campana. Sigue gobernado -sale en
 # governed_services con su umbral, asi que K05 lo ve como a cualquiera- pero su fallo no pone degraded.
 HEALTHZ_INFORMATIVOS = ("orderflow",)

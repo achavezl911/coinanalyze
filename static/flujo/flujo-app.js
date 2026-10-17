@@ -35,6 +35,31 @@ let CARGA = 0;
 // y `repinta()`, que vuelve a pintar AHORA (sincrono): asi FLUJO_PINTADO y lo que el lienzo escribio son del mismo fotograma.
 window.FLUJO_HITOS = { listo: false, vista: null, peticiones: [], repinta: () => LIENZO && LIENZO.pinta() };
 
+/* OF-3 (campana 143) · LAS CAPAS Y EL TPO. Cada capa es una peticion propia, servida y pintada tal cual
+ * (flujo-capas.js, flujo-tpo.js), y ninguna cambia lo que el footprint pide ni pinta. Se piden cuando el footprint ya
+ * esta pintado (el dinamico necesita saber que se ve) y otra vez con cada vela NUEVA del latido, nunca en cada latido:
+ * el compuesto, como mucho cada REFRESCO_COMPUESTO_S (su ventana es de dias). `capas` dice a K109 cuando han llegado
+ * todas; en el modo TPO, `repinta()` pinta el lienzo del TPO. */
+const RUTA_SESIONES = '/api/orderflow/sesiones';
+const RUTA_VWAP = '/api/orderflow/vwap';
+const RUTA_PERFIL = '/api/orderflow/perfil';
+const RUTA_TPO = '/api/orderflow/tpo';
+const TPO_VIVO_S = 30;
+const REFRESCO_COMPUESTO_S = 300;
+let LIENZO_TPO = null;
+let MODELO_TPO = null;
+let FALLO_TPO = null;
+let LATIDO_TPO = null;
+let CAPAS_FALLOS = [];
+let PENDIENTES = 0;
+const SEQ = {};
+const VISIBLE = { vista: null, pedida: null };
+let COMPUESTO_MS = 0;
+Object.assign(window.FLUJO_HITOS, {
+  capas: false,
+  repinta: () => (VISTA.modo === 'tpo' ? LIENZO_TPO && LIENZO_TPO.pinta() : LIENZO && LIENZO.pinta()),
+});
+
 function reloj() {
   return (window.performance || Date).now();
 }
@@ -75,6 +100,14 @@ async function carga() {
   ULTIMA = null;
   FALLO = null;
   window.FLUJO_HITOS.listo = false;
+  // OF-3: el footprint a la vista y el TPO no; las capas de la vista anterior, fuera
+  window.FLUJO_HITOS.capas = false;
+  document.getElementById('grafico').hidden = false;
+  document.getElementById('grafico-tpo').hidden = true;
+  MODELO_TPO = null;
+  FALLO_TPO = null;
+  CAPAS_FALLOS = [];
+  VISIBLE.vista = VISIBLE.pedida = null;
   window.FLUJO_HITOS.vista = escribeHash(VISTA);
   pintaSelectores();
   pintaEstado('pidiendo la historia…');
@@ -96,6 +129,11 @@ async function carga() {
   // listo cuando el lienzo ya pinto ESTA vista (dos fotogramas: el que la pide y el que la dibuja)
   requestAnimationFrame(() => requestAnimationFrame(() => {
     if (mia === CARGA) window.FLUJO_HITOS.listo = true;
+  }));
+  // OF-3: las capas, cuando el footprint ya esta pintado
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (mia === CARGA && MODELO) cargaCapas();
+    else if (mia === CARGA) window.FLUJO_HITOS.capas = true;
   }));
 }
 
@@ -124,6 +162,7 @@ async function late() {
   FALLO = null;
   ULTIMA = { asOfMs: Date.parse(sobre.datos.as_of), t: reloj() };
   const porTs = new Map(MODELO.velas.map((v, i) => [Date.parse(v.ts), i]));
+  const antes = MODELO.velas.length; // OF-3: con una vela NUEVA, las capas vivas se vuelven a pedir
   sobre.datos.velas.forEach((v) => {
     const nueva = prepara(v, MODELO.paso, ULTIMA.asOfMs);
     const t = Date.parse(v.ts);
@@ -135,6 +174,7 @@ async function late() {
   });
   LIENZO.actualiza();
   pintaEstado();
+  if (MODELO.velas.length > antes) refrescaCapas();
 }
 
 function arrancaLatido() {
@@ -147,6 +187,8 @@ function pararLatido() {
   if (LATIDO !== null) clearInterval(LATIDO);
   if (TIC !== null) clearInterval(TIC);
   LATIDO = TIC = null;
+  if (LATIDO_TPO !== null) clearInterval(LATIDO_TPO);
+  LATIDO_TPO = null;
 }
 
 /* ------------------------------------------------------------------ decir */
@@ -196,7 +238,48 @@ function pintaEstado(pidiendo) {
         + (inc ? ' · ' + inc + ' incompleta(s)' : '') + (huecos ? ' · ' + huecos + ' hueco(s) sin dato' : ''));
     if (MODELO.paso_auto) p.title = MODELO.paso_auto.regla;
   }
+  // OF-3: que capas se piden, sobre que sesion, y las que no llegaron (con su codigo); y la linea del TPO
+  CAPAS_FALLOS.forEach(([nombre, s]) => {
+    linea(noSe('error', 'capa ' + nombre + ': HTTP ' + s.http + ' · ' + (s.motivo || ''))).setAttribute('data-estado',
+      'error');
+  });
+  if (MODELO && (VISTA.capas.length || VISTA.compuesto || VISTA.fijo)) linea(textoCapas());
+  if (VISTA.modo === 'tpo') estadoTPO(linea);
   grafico.classList.toggle('rancio', rancio || (!!FALLO && !!MODELO));
+}
+
+function rotuloSesion() {
+  const s = leeSesion(VISTA.sesion);
+  return (s.rotulo === 'propia' ? 'propia' : s.rotulo) + ' ' + s.inicio + '–' + s.fin + 'Z'
+    + (s.cruza ? ' (cruza la medianoche: es una sola)' : '');
+}
+
+function textoCapas() {
+  const partes = [];
+  if (VISTA.capas.includes('perfil')) partes.push('perfil de cada sesión');
+  if (VISTA.compuesto) partes.push('compuesto de ' + VISTA.compuesto + ' sesiones (se rehace cada ' + REFRESCO_COMPUESTO_S / 60 + ' min)');
+  if (VISTA.capas.includes('vwap')) partes.push('VWAP de la sesión ±1·2·3σ');
+  if (VISTA.capas.includes('dinamico')) partes.push('dinámico (lo visible)');
+  if (VISTA.fijo) partes.push('fijo ' + VISTA.fijo[0].slice(5, 16).replace('T', ' ') + '–' + VISTA.fijo[1].slice(5, 16).replace('T', ' ') + 'Z');
+  const w = ventanaCapas(ventana(VISTA, ahora()), leeSesion(VISTA.sesion), VISTA.marco);
+  return 'capas · sesión ' + rotuloSesion() + ' · ' + partes.join(' · ')
+    + (w.recortada && (VISTA.capas.includes('perfil') || VISTA.capas.includes('vwap'))
+      ? ' · perfil y VWAP solo de las ' + SESIONES_MAXIMO + ' últimas sesiones (desde ' + w.desde.slice(5, 16).replace('T', ' ')
+        + 'Z: el tope de la ruta)' : '');
+}
+
+function estadoTPO(linea) {
+  if (FALLO_TPO) {
+    linea(noSe('error', 'HTTP ' + FALLO_TPO.http + ' · ' + (FALLO_TPO.motivo || ''))).setAttribute('data-estado', 'error');
+  }
+  if (!MODELO_TPO) return;
+  const p = MODELO_TPO.paso_auto;
+  linea(el('b', null, VISTA.activo + ' · TPO · ' + FAMILIAS[VISTA.familia].rotulo),
+    ' (' + MODELO_TPO.venues.join(', ') + ') · sesión ' + rotuloSesion() + ' · paso ' + MODELO_TPO.paso
+      + (p ? ' (automático: el periodo de 30 min mediano toca ' + p.niveles_periodo_mediano + ' niveles)' : '')
+      + ' · una letra por media hora (A = la primera de la sesión) · ' + MODELO_TPO.sesiones.length + ' sesión(es) · '
+      + (VISTA.hasta ? 'ventana fija hasta ' + VISTA.hasta.slice(0, 16).replace('T', ' ') + 'Z'
+        : 'vivo: se pide cada ' + TPO_VIVO_S + ' s'));
 }
 
 function lectura(v, fila) {
@@ -245,6 +328,216 @@ function pintaSelectores() {
   document.getElementById('sel-esconde').checked = VISTA.esconde;
   document.getElementById('sel-grande').value = VISTA.grande || '';
   document.getElementById('ir-mesa').setAttribute('href', '/#scalp/' + VISTA.activo);
+  // OF-3: el gestor de sesiones, las capas y el modo
+  const ses = leeSesion(VISTA.sesion);
+  const propia = !tiene(SESIONES, VISTA.sesion);
+  document.getElementById('sel-sesion').value = propia ? 'propia' : VISTA.sesion;
+  document.getElementById('sesion-propia').hidden = !propia;
+  document.getElementById('ses-ini').value = ses.inicio;
+  document.getElementById('ses-fin').value = ses.fin === '24:00' ? '00:00' : ses.fin;
+  [['capa-perfil', 'perfil'], ['capa-vwap', 'vwap'], ['capa-dinamico', 'dinamico']].forEach(([id, c]) => {
+    document.getElementById(id).checked = VISTA.capas.includes(c);
+  });
+  document.getElementById('capa-compuesto').checked = !!VISTA.compuesto;
+  document.getElementById('sel-compuesto').value = VISTA.compuesto || COMPUESTO_DEFECTO;
+  document.getElementById('capa-fijo').checked = !!VISTA.fijo;
+  document.getElementById('fijo-rango').textContent = VISTA.fijo
+    ? VISTA.fijo[0].slice(5, 16).replace('T', ' ') + '–' + VISTA.fijo[1].slice(5, 16).replace('T', ' ') + 'Z'
+    : '(mayús + arrastre sobre el gráfico)';
+  document.querySelectorAll('#sel-modo button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.valor === VISTA.modo));
+  });
+  document.getElementById('sel-sesiones').value = VISTA.sesiones;
+}
+
+/* ------------------------------------------------------------------ OF-3 · las capas */
+/* Lo que se ve: de la primera vela visible al final de la ultima, segun lo que el lienzo acaba de pintar. */
+function rangoVisible() {
+  const reg = window.FLUJO_PINTADO;
+  if (!MODELO || !reg || !reg.velas || !reg.velas.length || reg.activo !== MODELO.activo || reg.marco !== MODELO.marco) {
+    return null;
+  }
+  const m = FLUJO_MARCOS[MODELO.marco] * 60000;
+  return { desde: isoZ(Date.parse(reg.velas[0].ts)), hasta: isoZ(Date.parse(reg.velas[reg.velas.length - 1].ts) + m) };
+}
+
+/* [nombre, ruta, parametros] de cada capa que la vista pide: las sesiones de la ventana del footprint, el compuesto de
+ * las N ultimas, el VWAP de la ventana, el fijo de su rango y el dinamico de lo visible. Paso y unidad, los del
+ * footprint: las filas de las capas son las suyas. */
+function peticionesCapas() {
+  const e = VISTA;
+  const w = ventanaCapas(ventana(e, ahora()), leeSesion(e.sesion), e.marco);
+  const base = { symbol: e.activo, venues: FAMILIAS[e.familia].venues.join(',') };
+  const perfil = Object.assign({ paso: MODELO.paso, unidad: e.unidad }, base);
+  const out = [];
+  if (e.capas.includes('perfil')) out.push(['sesiones', RUTA_SESIONES, Object.assign({ desde: w.desde, hasta: w.hasta, sesion: e.sesion }, perfil)]);
+  if (e.compuesto) {
+    const wc = ventanaSesiones(Date.parse(w.hasta), leeSesion(e.sesion), e.compuesto);
+    out.push(['compuesto', RUTA_SESIONES, Object.assign({ desde: wc.desde, hasta: wc.hasta, sesion: e.sesion }, perfil)]);
+  }
+  if (e.capas.includes('vwap')) out.push(['vwap', RUTA_VWAP, Object.assign({ desde: w.desde, hasta: w.hasta, marco: e.marco, sesion: e.sesion }, base)]);
+  if (e.fijo) out.push(['fijo', RUTA_PERFIL, Object.assign({ desde: e.fijo[0], hasta: e.fijo[1] }, perfil)]);
+  const vis = e.capas.includes('dinamico') ? rangoVisible() : null;
+  if (vis) out.push(['dinamico', RUTA_PERFIL, Object.assign({}, vis, perfil)]);
+  return out;
+}
+
+/* Pide las capas (todas, o solo las nombradas) y las deja en el modelo; la ultima peticion de cada capa manda. */
+async function cargaCapas(nombres) {
+  if (!MODELO || VISTA.modo === 'tpo') return;
+  const carga = CARGA;
+  const todas = peticionesCapas();
+  const vivas = new Set(todas.map(([n]) => n));
+  MODELO.capas = Object.fromEntries(Object.entries(MODELO.capas || {}).filter(([n]) => vivas.has(n)));
+  CAPAS_FALLOS = CAPAS_FALLOS.filter(([n]) => vivas.has(n));
+  const pide = nombres ? todas.filter(([n]) => nombres.includes(n)) : todas;
+  if (pide.some(([n]) => n === 'compuesto')) COMPUESTO_MS = Date.now();
+  const din = pide.find(([n]) => n === 'dinamico');
+  if (din) VISIBLE.pedida = VISIBLE.vista = din[2].desde + '/' + din[2].hasta;
+  window.FLUJO_HITOS.capas = false;
+  PENDIENTES += pide.length;
+  await Promise.all(pide.map(async ([nombre, ruta, q]) => {
+    SEQ[nombre] = (SEQ[nombre] || 0) + 1;
+    const n = SEQ[nombre];
+    const sobre = await pedir(ruta, q);
+    PENDIENTES -= 1;
+    apuntar(sobre);
+    if (carga !== CARGA || !MODELO || n !== SEQ[nombre]) return;
+    if (!peticionesCapas().some(([x]) => x === nombre)) return;
+    CAPAS_FALLOS = CAPAS_FALLOS.filter(([x]) => x !== nombre);
+    if (!sobre.ok) {
+      delete MODELO.capas[nombre];
+      CAPAS_FALLOS.push([nombre, sobre]);
+      return;
+    }
+    const capa = { datos: sobre.datos, asOfMs: Date.parse(sobre.datos.as_of) };
+    if (nombre === 'dinamico' || nombre === 'fijo') {
+      capa.estado = estadoRango(Date.parse(sobre.datos.desde), Date.parse(sobre.datos.hasta), sobre.datos.cobertura,
+                                capa.asOfMs);
+    }
+    MODELO.capas[nombre] = capa;
+  }));
+  if (carga !== CARGA || !MODELO) return;
+  LIENZO.pide();
+  pintaEstado();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (!PENDIENTES && carga === CARGA) window.FLUJO_HITOS.capas = true;
+  }));
+}
+
+/* Una vela NUEVA: las capas que llegan al presente se vuelven a pedir (el compuesto, como mucho cada 5 min). */
+function refrescaCapas() {
+  const vivas = ['sesiones', 'vwap', 'dinamico'];
+  if (VISTA.fijo && Date.parse(VISTA.fijo[1]) > ahora() - CIERRE_S * 1000) vivas.push('fijo');
+  if (Date.now() - COMPUESTO_MS >= REFRESCO_COMPUESTO_S * 1000) vivas.push('compuesto');
+  cargaCapas(vivas);
+}
+
+/* El dinamico sigue a lo que se ve: cuando lo visible cambia y se queda quieto un tic, se pide otra vez. */
+function vigilaVisible() {
+  if (!MODELO || VISTA.modo === 'tpo' || !VISTA.capas.includes('dinamico')) return;
+  const r = rangoVisible();
+  if (!r) return;
+  const clave = r.desde + '/' + r.hasta;
+  if (clave === VISIBLE.pedida) return;
+  if (clave !== VISIBLE.vista) {
+    VISIBLE.vista = clave;
+    return;
+  }
+  cargaCapas(['dinamico']);
+}
+
+/* El fijo se elige con MAYUS + arrastre sobre el grafico: de la vela donde empieza a la vela donde acaba. */
+function seleccionFija() {
+  const g = document.getElementById('grafico');
+  let ini = null;
+  const vela = (x) => {
+    const reg = window.FLUJO_PINTADO;
+    if (!reg || !reg.velas || !reg.velas.length) return null;
+    const xx = x - g.querySelector('canvas').getBoundingClientRect().left;
+    let mejor = null;
+    reg.velas.forEach((v) => {
+      const d = Math.abs(v.x0 + v.ancho / 2 - xx);
+      if (!mejor || d < mejor.d) mejor = { d, t: Date.parse(v.ts) };
+    });
+    return mejor.t;
+  };
+  g.addEventListener('mousedown', (ev) => {
+    if (!ev.shiftKey) return;
+    ev.stopPropagation();
+    ini = vela(ev.clientX);
+  }, true);
+  window.addEventListener('mouseup', (ev) => {
+    if (ini === null) return;
+    const fin = vela(ev.clientX);
+    const m = FLUJO_MARCOS[VISTA.marco] * 60000;
+    if (fin !== null) cambia({ fijo: [isoZ(Math.min(ini, fin)), isoZ(Math.max(ini, fin) + m)] });
+    ini = null;
+  });
+}
+
+/* ------------------------------------------------------------------ OF-3 · el modo TPO */
+function peticionTPO() {
+  const hasta = VISTA.hasta ? Date.parse(VISTA.hasta) : (Math.floor(ahora() / 60000) + 1) * 60000;
+  return Object.assign(ventanaSesiones(hasta, leeSesion(VISTA.sesion), VISTA.sesiones),
+                       { symbol: VISTA.activo, sesion: VISTA.sesion, paso: 'auto',
+                         venues: FAMILIAS[VISTA.familia].venues.join(',') });
+}
+
+function modeloTPO(d) {
+  return { clave: [d.symbol, VISTA.familia, VISTA.sesion, VISTA.hasta, VISTA.sesiones].join('|'), activo: d.symbol,
+           familia: VISTA.familia, venues: d.venues, paso: d.paso, sesion: d.sesion, paso_auto: d.paso_auto || null,
+           letras: d.letras, sesiones: d.sesiones };
+}
+
+async function cargaTPO() {
+  const mia = ++CARGA;
+  pararLatido();
+  MODELO = null;
+  ULTIMA = null;
+  FALLO = null;
+  FALLO_TPO = null;
+  MODELO_TPO = null;
+  window.FLUJO_HITOS.listo = false;
+  window.FLUJO_HITOS.capas = true;
+  window.FLUJO_HITOS.vista = escribeHash(VISTA);
+  document.getElementById('grafico').hidden = true;
+  document.getElementById('grafico-tpo').hidden = false;
+  pintaSelectores();
+  pintaEstado('pidiendo el TPO…');
+  const sobre = await pedir(RUTA_TPO, peticionTPO());
+  apuntar(sobre);
+  if (mia !== CARGA) return;
+  if (!sobre.ok) {
+    FALLO_TPO = sobre;
+    LIENZO_TPO.pon({ clave: 'vacio', sesiones: [] });
+  } else {
+    ULTIMA = { asOfMs: Date.parse(sobre.datos.as_of), t: reloj() };
+    MODELO_TPO = modeloTPO(sobre.datos);
+    LIENZO_TPO.pon(MODELO_TPO);
+    if (!VISTA.hasta) LATIDO_TPO = setInterval(lateTPO, TPO_VIVO_S * 1000);
+  }
+  pintaEstado();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (mia === CARGA) window.FLUJO_HITOS.listo = true;
+  }));
+}
+
+async function lateTPO() {
+  if (!MODELO_TPO || PIDIENDO || document.hidden) return;
+  PIDIENDO = true;
+  const mia = CARGA;
+  const sobre = await pedir(RUTA_TPO, peticionTPO());
+  PIDIENDO = false;
+  apuntar(sobre);
+  if (mia !== CARGA) return;
+  FALLO_TPO = sobre.ok ? null : sobre;
+  if (sobre.ok) {
+    ULTIMA = { asOfMs: Date.parse(sobre.datos.as_of), t: reloj() };
+    MODELO_TPO = modeloTPO(sobre.datos);
+    LIENZO_TPO.pon(MODELO_TPO);
+  }
+  pintaEstado();
 }
 
 function cambia(cambios) {
@@ -258,6 +551,15 @@ function aplicaHash() {
     // lo que no se entendio se reescribe: la URL y la pantalla no dicen cosas distintas
     window.history.replaceState(null, '', hash);
   }
+  // OF-3: el MODO TPO es otra vista (cualquier cambio en el la vuelve a pedir); en el footprint, cambiar de capa o de
+  // sesion pide las capas y no el footprint
+  if (nueva.modo === 'tpo' || VISTA.modo === 'tpo') {
+    VISTA = nueva;
+    if (nueva.modo === 'tpo') cargaTPO();
+    else carga();
+    return;
+  }
+  const capasCambian = ['sesion', 'capas', 'compuesto', 'fijo'].some((k) => String(nueva[k]) !== String(VISTA[k]));
   const soloFiltro = MODELO && ['activo', 'marco', 'familia', 'paso', 'unidad', 'hasta']
     .every((k) => nueva[k] === VISTA[k]);
   VISTA = nueva;
@@ -265,6 +567,7 @@ function aplicaHash() {
     MODELO.filtro = { min: VISTA.min, esconde: VISTA.esconde, grande: VISTA.grande };
     window.FLUJO_HITOS.vista = hash;
     pintaSelectores();
+    if (capasCambian) cargaCapas();
     LIENZO.pide();
     return;
   }
@@ -289,6 +592,42 @@ function arranca() {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && LATIDO !== null) late();
   });
+  // OF-3: el gestor de sesiones (con su hora escrita), las capas, el modo TPO y el lienzo del TPO
+  LIENZO_TPO = creaLienzoTPO(document.getElementById('lienzo-tpo'));
+  document.getElementById('sel-sesion').addEventListener('change', (ev) => {
+    if (ev.target.value !== 'propia') cambia({ sesion: ev.target.value });
+    else document.getElementById('sesion-propia').hidden = false;
+  });
+  const propia = () => {
+    const s = document.getElementById('ses-ini').value + '-' + document.getElementById('ses-fin').value;
+    if (leeSesion(s)) cambia({ sesion: s });
+  };
+  document.getElementById('ses-ini').addEventListener('change', propia);
+  document.getElementById('ses-fin').addEventListener('change', propia);
+  [['capa-perfil', 'perfil'], ['capa-vwap', 'vwap'], ['capa-dinamico', 'dinamico']].forEach(([id, c]) => {
+    document.getElementById(id).addEventListener('change', (ev) => {
+      cambia({ capas: CAPAS.filter((x) => (x === c ? ev.target.checked : VISTA.capas.includes(x))) });
+    });
+  });
+  const compuesto = () => {
+    const n = Math.round(Number(document.getElementById('sel-compuesto').value)) || COMPUESTO_DEFECTO;
+    cambia({ compuesto: document.getElementById('capa-compuesto').checked ? Math.min(COMPUESTO_MAXIMO, Math.max(2, n)) : null });
+  };
+  document.getElementById('capa-compuesto').addEventListener('change', compuesto);
+  document.getElementById('sel-compuesto').addEventListener('change', compuesto);
+  document.getElementById('capa-fijo').addEventListener('change', (ev) => {
+    if (!ev.target.checked) cambia({ fijo: null });
+    else if (!VISTA.fijo) pintaSelectores(); // el fijo nace de un MAYUS + arrastre sobre el grafico
+  });
+  document.getElementById('sel-modo').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-valor]');
+    if (b) cambia({ modo: b.dataset.valor });
+  });
+  document.getElementById('sel-sesiones').addEventListener('change', (ev) => {
+    cambia({ sesiones: Math.min(TPO_MAXIMO, Math.max(1, Math.round(Number(ev.target.value)) || TPO_SESIONES)) });
+  });
+  seleccionFija();
+  setInterval(vigilaVisible, 400);
   aplicaHash();
 }
 

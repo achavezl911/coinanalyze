@@ -69,9 +69,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K108-orderflow.py:458`, `harness/checks/K108-orderflow.py:460` | — |
+| **checks** | `harness/checks/K108-orderflow.py:718`, `harness/checks/K108-orderflow.py:720`, `harness/checks/K109-banco.py:74` | — |
 
-**No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 3 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
@@ -107,9 +107,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api._utc_iso` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
-| `app.api._orderflow` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 18 | **0** | 0 | **18** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 18 | **0** | 0 | **18** | [impacto](../impacto/app-api.md) |
+| `app.api._orderflow` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-api.md) |
 | `app.api.orderflow_perfil` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

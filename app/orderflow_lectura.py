@@ -8,7 +8,7 @@ Los topes no recortan en silencio: si una peticion los pasa, 422 diciendo cual.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from decimal import ROUND_FLOOR, Decimal, InvalidOperation
+from decimal import ROUND_FLOOR, ROUND_HALF_EVEN, Decimal, InvalidOperation, localcontext
 from typing import Any
 
 from app.config import get_settings
@@ -405,3 +405,341 @@ async def referencia(conn: Any) -> dict[str, Any]:
         "aviso": "sumar venues mezcla cotizaciones en USD (Coinbase, Deribit), USDT y USDC: el nivel es el precio "
                  "tal como lo publica cada venue, sin convertir",
     }
+
+
+# =====================================================================================================================
+# OF-3 (campana 143) · LOS PERFILES: el perfil de cada SESION y su COMPUESTO, el TPO y el VWAP de la sesion con sus
+# bandas. Solo se ANADE: nada de lo de OF-1/OF-2 cambia. POC y value area son poc_de() y value_area() de arriba,
+# tambien en el TPO (sobre {nivel: numero de TPO}).
+# =====================================================================================================================
+SESIONES = {"dia": ("00:00", "24:00"), "asia": ("00:00", "08:00"), "europa": ("07:00", "16:00"),
+            "eeuu": ("13:30", "20:00")}
+REGLA_SESION = (
+    "Una sesion es una ventana diaria de HH:MM a HH:MM UTC (dia 00:00-24:00, asia 00:00-08:00, europa 07:00-16:00, "
+    "eeuu 13:30-20:00, o una propia). Si su fin no es posterior a su inicio, CRUZA la medianoche y es UNA sola, de un "
+    "dia al siguiente. Cada sesion que toca la ventana pedida se calcula ENTERA desde su inicio y se corta en hasta: "
+    "una ventana del pasado se repite igual y una sesion viva crece. La cobertura cuenta los minutos-venue de "
+    "[inicio, corte), con corte = el menor de su fin, hasta y el ultimo minuto que cerro hace 90 s; en_curso: el "
+    "corte queda antes de su fin."
+)
+CIERRE = timedelta(seconds=90)  # un minuto se da por escuchado 90 s despues de cerrarse (el colector lo reescribe a 70)
+PERIODO_TPO = 30  # minutos
+LETRAS_TPO = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuv"  # 48 periodos: un dia UTC
+REGLA_TPO = (
+    "Periodos de 30 min desde el inicio de la sesion, con letra A-Z y luego a-v (48: un dia). Un periodo TOCA todos "
+    "los niveles del de su celda mas baja al de su celda mas alta (la misma definicion de «toca» que paso=auto): un "
+    "TPO por nivel tocado. POC y value area del 70 % son las del perfil sobre el numero de TPO de cada nivel. Balance "
+    "inicial: los niveles que tocan los periodos de la primera hora. Single prints: los niveles con UN solo TPO, en "
+    "tramos de niveles seguidos; extremo dice si el tramo toca el nivel mas alto o el mas bajo de la sesion (una cola)."
+)
+REGLA_PASO_TPO = (
+    "paso=auto: el menor de la escalera 1, 2, 5, 10, 20, 50... veces el paso base con el que el periodo de 30 min "
+    "MEDIANO de las sesiones pedidas (de los que tienen celdas; el elemento n // 2 de la lista ordenada) toca como "
+    f"mucho {OBJETIVO_NIVELES} niveles: la regla de paso=auto del footprint, sobre periodos en vez de velas."
+)
+REGLA_VWAP = (
+    "VWAP = suma de usd / suma de base de todas las operaciones de la sesion hasta el final de cada vela: el precio "
+    "medio de cada operacion pesado por su cantidad, EXACTO. Las bandas son VWAP +- k desviaciones (k = 1, 2, 3). La "
+    "varianza se calcula al PRECIO DE CADA NIVEL base, que es el precio medio de sus operaciones en la sesion (suma "
+    "usd / suma base del nivel): el primer momento sigue exacto y, como la varianza dentro de un nivel de ancho "
+    "paso_base no pasa de paso_base^2/4, sigma servida <= sigma real <= sigma servida + paso_base/2. VWAP, sigma y "
+    "bandas en texto decimal redondeado (mitad al par) a paso_base/100."
+)
+BANDAS = (1, 2, 3)
+# P1 de la campana 143 (x1-tmp/c143/p1_banco_mide.py): en un banco con celdas reales de 140 replicadas 10 dias, las
+# sesiones de BTC perpetuos tardan 0.6 s con 5 dias, 1.6 s con 7 y 2.2 s con 10, casi todo SQL (barrer las celdas), al
+# ritmo de un sabado; 30 dias pasarian de 5 s (y de 15 al ritmo medio que proyecto OF-1). El tope: 7 dias.
+RANGO_SESIONES = timedelta(days=7)
+POR_QUE_SESIONES = ("las sesiones son caras: barrer 30 dias de celdas pasa de 5 s (medido en la campana 143), asi que "
+                    "de la primera sesion a hasta caben 7 dias")
+
+
+def _minuto(hhmm: str) -> int:
+    if len(hhmm) != 5 or hhmm[2] != ":" or not (hhmm[:2] + hhmm[3:]).isdigit():
+        raise Peticion(f"sesion: {hhmm!r} no es HH:MM")
+    h, m = int(hhmm[:2]), int(hhmm[3:])
+    if m > 59 or h * 60 + m > 1440:
+        raise Peticion(f"sesion: {hhmm!r} no es una hora del dia (00:00-24:00)")
+    return h * 60 + m
+
+
+def sesion_de(valor: str | None) -> dict[str, Any]:
+    """La plantilla: {nombre, inicio, fin, minutos, cruza_medianoche}, y su minuto del dia de inicio en `_ini`."""
+    nombre = valor or "dia"
+    partes = SESIONES.get(nombre) or tuple(nombre.split("-"))
+    if len(partes) != 2:
+        raise Peticion(f"sesion tiene que ser {', '.join(SESIONES)} o HH:MM-HH:MM (UTC)")
+    ini, fin = _minuto(partes[0]), _minuto(partes[1])
+    if ini == 1440:
+        raise Peticion("sesion: no puede empezar a las 24:00")
+    minutos = (fin - ini) % 1440 or 1440
+    return {"nombre": nombre, "inicio": partes[0], "fin": partes[1], "minutos": minutos,
+            "cruza_medianoche": ini + minutos > 1440, "regla": REGLA_SESION, "_ini": ini}
+
+
+def instancias(ses: dict[str, Any], a: datetime, b: datetime) -> list[tuple[datetime, datetime]]:
+    """Las sesiones [inicio, fin) que tocan [a, b), en orden. Una que cruza la medianoche es UNA."""
+    s = datetime(a.year, a.month, a.day, tzinfo=UTC) + timedelta(days=-1, minutes=ses["_ini"])
+    out = []
+    while s < b:
+        e = s + timedelta(minutes=ses["minutos"])
+        if e > a:
+            out.append((s, e))
+        s += timedelta(days=1)
+    return out
+
+
+def _cerrado(ahora: datetime) -> datetime:
+    return (ahora - CIERRE).replace(second=0, microsecond=0)
+
+
+async def _ventana_de_sesiones(conn: Any, symbol: str, desde: str | None, hasta: str | None, sesion: str | None,
+                               venues: str | None, minutos: int = 1) -> tuple:
+    activo = activo_de(symbol)
+    a, b = instante(desde, "desde"), instante(hasta, "hasta")
+    ventana(a, b, RANGO_SESIONES, minutos)
+    ses, vs = sesion_de(sesion), venues_de(venues)
+    inst = instancias(ses, a, b)
+    if inst and b - inst[0][0] > RANGO_SESIONES:
+        raise Peticion(f"la primera sesion que toca la ventana empieza el {iso(inst[0][0])} y de ahi a hasta pasa de "
+                       f"{RANGO_SESIONES.days} dias: {POR_QUE_SESIONES}")
+    base = (await pasos(conn))[activo]
+    origen = ORIGEN + timedelta(minutes=ses["_ini"])
+    return activo, a, b, ses, vs, inst, base, origen, timedelta(minutes=ses["minutos"])
+
+
+def _sesion_publica(ses: dict[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in ses.items() if not k.startswith("_")}
+
+
+EN_SESION = "AND ts < date_bin(interval '1 day', ts, $5::timestamptz) + $6::interval"
+SESIONES_SQL = f"""
+SELECT date_bin(interval '1 day', ts, $5::timestamptz) AS s, floor(nivel / $7) * $7 AS n,
+       sum(compra_base) AS cb, sum(venta_base) AS vb, sum(compra_usd) AS cu, sum(venta_usd) AS vu,
+       sum(compras)::bigint AS nc, sum(ventas)::bigint AS nv
+  FROM orderflow_celda
+ WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4 {EN_SESION}
+ GROUP BY 1, 2 ORDER BY 1, 2
+ LIMIT {{tope}}
+"""
+COBERTURA_PERIODO_SQL = f"""
+SELECT date_bin(interval '{{minutos}} minutes', ts, $5::timestamptz) AS s, count(*) AS filas,
+       count(*) FILTER (WHERE segundos = 60) AS completos, coalesce(sum(segundos), 0)::bigint AS segundos,
+       coalesce(bool_and(definitivo), false) AS definitiva
+  FROM orderflow_cobertura
+ WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4 {EN_SESION}
+ GROUP BY 1
+"""
+TPO_SQL = f"""
+SELECT date_bin(interval '{PERIODO_TPO} minutes', ts, $5::timestamptz) AS p, min(nivel) AS lo, max(nivel) AS hi
+  FROM orderflow_celda
+ WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4 {EN_SESION}
+ GROUP BY 1 ORDER BY 1
+"""
+VWAP_SQL = f"""
+SELECT date_bin(interval '1 day', ts, $5::timestamptz) AS s,
+       date_bin(interval '{{minutos}} minutes', ts, '{ORIGEN.isoformat()}'::timestamptz) AS v, nivel,
+       sum(compra_usd) + sum(venta_usd) AS u, sum(compra_base) + sum(venta_base) AS q
+  FROM orderflow_celda
+ WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4 {EN_SESION}
+ GROUP BY 1, 2, 3 ORDER BY 1, 2
+"""
+
+
+async def _coberturas(conn: Any, activo: str, vs: list[str], inst: list, hasta: datetime, origen: datetime,
+                      duracion: timedelta, minutos: int) -> dict[datetime, Any]:
+    """{inicio del periodo: fila de cobertura} de los minutos en sesion de [primer inicio, hasta)."""
+    if not inst or hasta <= inst[0][0]:
+        return {}
+    return {f["s"]: f for f in await conn.fetch(COBERTURA_PERIODO_SQL.format(minutos=minutos), activo, vs,
+                                                inst[0][0], hasta, origen, duracion)}
+
+
+def _suma_coberturas(filas: list[Any]) -> dict[str, Any] | None:
+    filas = [f for f in filas if f]
+    if not filas:
+        return None
+    return {"filas": sum(int(f["filas"]) for f in filas), "completos": sum(int(f["completos"]) for f in filas),
+            "segundos": sum(int(f["segundos"]) for f in filas), "definitiva": all(f["definitiva"] for f in filas)}
+
+
+def _perfil(niveles: dict[Decimal, list]) -> dict[str, Any]:
+    """{nivel: [compra, venta, operaciones]} -> totales, POC, value area y niveles, como el perfil de OF-1."""
+    compra = sum((x[0] for x in niveles.values()), Decimal(0))
+    venta = sum((x[1] for x in niveles.values()), Decimal(0))
+    totales = {n: x[0] + x[1] for n, x in niveles.items()}
+    poc, va = poc_de(totales), value_area(totales)
+    return {"compra": texto(compra), "venta": texto(venta), "delta": texto(compra - venta),
+            "total": texto(compra + venta), "operaciones": sum(x[2] for x in niveles.values()),
+            "poc": texto(poc) if poc is not None else None,
+            "value_area": {"val": texto(va[0]), "vah": texto(va[1]), "volumen": texto(va[2])} if va else None,
+            "niveles": [_nivel_json(n, *niveles[n]) for n in sorted(niveles)]}
+
+
+async def sesiones(conn: Any, *, symbol: str, desde: str | None, hasta: str | None, sesion: str | None,
+                   paso: str | None, venues: str | None, unidad: str | None) -> dict[str, Any]:
+    activo, a, b, ses, vs, inst, base, origen, dur = await _ventana_de_sesiones(conn, symbol, desde, hasta, sesion,
+                                                                                 venues)
+    p, u = paso_de(paso, base), unidad_de(unidad)
+    filas = await conn.fetch(SESIONES_SQL.format(tope=TOPE_NIVELES + 1), activo, vs, inst[0][0], b, origen, dur,
+                             p) if inst else []
+    if len(filas) > TOPE_NIVELES:
+        raise Peticion(f"mas de {TOPE_NIVELES} niveles entre todas las sesiones: pide un paso mayor o menos sesiones")
+    cerrado = _cerrado(datetime.now(UTC))
+    cob = await _coberturas(conn, activo, vs, inst, min(b, cerrado), origen, dur, 1440)
+    c, v = ("cb", "vb") if u == "base" else ("cu", "vu")
+    por_sesion: dict[datetime, dict[Decimal, list]] = {}
+    for f in filas:
+        por_sesion.setdefault(f["s"], {})[f["n"]] = [f[c], f[v], int(f["nc"] + f["nv"])]
+    salida, todos, esperados = [], {}, 0
+    for s, e in inst:
+        corte = max(s, min(e, b, cerrado))
+        n_esp = int((corte - s) // timedelta(minutes=1)) * len(vs)
+        esperados += n_esp
+        for n, x in por_sesion.get(s, {}).items():
+            t = todos.setdefault(n, [Decimal(0), Decimal(0), 0])
+            t[0], t[1], t[2] = t[0] + x[0], t[1] + x[1], t[2] + x[2]
+        salida.append({"inicio": iso(s), "fin": iso(e), "corte": iso(corte), "en_curso": corte < e,
+                       **_perfil(por_sesion.get(s, {})), "cobertura": _cobertura_json(cob.get(s), n_esp)})
+    compuesto = None
+    if inst:
+        compuesto = {"inicio": iso(inst[0][0]), "corte": salida[-1]["corte"], "sesiones": len(inst),
+                     "en_curso": salida[-1]["en_curso"], **_perfil(todos),
+                     "cobertura": _cobertura_json(_suma_coberturas([cob.get(s) for s, _ in inst]), esperados)}
+    return {**_cabecera("perfiles de sesion: el de cada sesion que toca la ventana, entera desde su inicio y cortada "
+                        "en hasta, y el COMPUESTO de todas", activo, p, base, vs, u, a, b),
+            "sesion": _sesion_publica(ses),
+            "poc": "el nivel de mayor total; a igualdad, el de precio mas bajo",
+            "value_area": {"porcentaje": 70, "algoritmo": ALGORITMO_VA},
+            "tope_niveles": TOPE_NIVELES, "sesiones": salida, "compuesto": compuesto}
+
+
+async def tpo(conn: Any, *, symbol: str, desde: str | None, hasta: str | None, sesion: str | None,
+              paso: str | None, venues: str | None) -> dict[str, Any]:
+    activo, a, b, ses, vs, inst, base, origen, dur = await _ventana_de_sesiones(conn, symbol, desde, hasta, sesion,
+                                                                                 venues)
+    filas = await conn.fetch(TPO_SQL, activo, vs, inst[0][0], b, origen, dur) if inst else []
+    auto = None
+    if paso in (None, "auto"):
+        p, mediana = paso_automatico([(f["lo"], f["hi"]) for f in filas], base)
+        auto = {"regla": REGLA_PASO_TPO, "objetivo_niveles": OBJETIVO_NIVELES, "periodos_con_celdas": len(filas),
+                "niveles_periodo_mediano": mediana}
+    else:
+        p = paso_de(paso, base)
+    toques = sum((f["hi"] / p).to_integral_value(ROUND_FLOOR) - (f["lo"] / p).to_integral_value(ROUND_FLOOR) + 1
+                 for f in filas)
+    if toques > TOPE_CELDAS:
+        raise Peticion(f"{toques} TPO pasan el tope de {TOPE_CELDAS}: pide un paso mayor o menos sesiones")
+    cerrado = _cerrado(datetime.now(UTC))
+    cob = await _coberturas(conn, activo, vs, inst, min(b, cerrado), origen, dur, PERIODO_TPO)
+    por_periodo = {f["p"]: f for f in filas}
+    salida = []
+    for s, e in inst:
+        corte = max(s, min(e, b, cerrado))
+        periodos, letras, ib = [], {}, []
+        k = 0
+        while s + timedelta(minutes=PERIODO_TPO * k) < min(e, b):
+            ini = s + timedelta(minutes=PERIODO_TPO * k)
+            n_esp = max(0, int((min(ini + timedelta(minutes=PERIODO_TPO), corte) - ini) // timedelta(minutes=1)))
+            per = {"letra": LETRAS_TPO[k], "inicio": iso(ini), "lo": None, "hi": None,
+                   "cobertura": _cobertura_json(cob.get(ini), n_esp * len(vs))}
+            f = por_periodo.get(ini)
+            if f is not None:
+                lo = (f["lo"] / p).to_integral_value(ROUND_FLOOR) * p
+                hi = (f["hi"] / p).to_integral_value(ROUND_FLOOR) * p
+                per["lo"], per["hi"] = texto(lo), texto(hi)
+                n = lo
+                while n <= hi:
+                    letras.setdefault(n, []).append(LETRAS_TPO[k])
+                    n += p
+                if k * PERIODO_TPO < 60:
+                    ib.append((lo, hi))
+            periodos.append(per)
+            k += 1
+        cuenta = {n: len(x) for n, x in letras.items()}
+        poc, va = poc_de(cuenta), value_area(cuenta)
+        orden = sorted(cuenta)
+        tramos: list[list[Decimal]] = []
+        for n in orden:
+            if cuenta[n] == 1:
+                if tramos and n - tramos[-1][-1] == p:
+                    tramos[-1].append(n)
+                else:
+                    tramos.append([n])
+        salida.append({
+            "inicio": iso(s), "fin": iso(e), "corte": iso(corte), "en_curso": corte < e,
+            "tpo": sum(cuenta.values()),
+            "cobertura": _cobertura_json(_suma_coberturas([f for x, f in cob.items() if s <= x < e]),
+                                         int((corte - s) // timedelta(minutes=1)) * len(vs)),
+            "poc": texto(poc) if poc is not None else None,
+            "value_area": {"val": texto(va[0]), "vah": texto(va[1]), "tpo": texto(va[2])} if va else None,
+            "balance_inicial": {"lo": texto(min(x for x, _ in ib)), "hi": texto(max(y for _, y in ib))} if ib else None,
+            "single_prints": [{"desde": texto(t[0]), "hasta": texto(t[-1]), "niveles": len(t),
+                               "extremo": ("los dos" if t[0] == orden[0] and t[-1] == orden[-1] else
+                                           "alto" if t[-1] == orden[-1] else "bajo" if t[0] == orden[0] else None)}
+                              for t in tramos],
+            "periodos": periodos,
+            "niveles": [{"nivel": texto(n), "tpo": cuenta[n], "letras": "".join(letras[n])} for n in orden],
+        })
+    return {**_cabecera("TPO (perfil de mercado): por sesion, los periodos de 30 min que tocaron cada nivel", activo, p,
+                        base, vs, None, a, b),
+            "sesion": _sesion_publica(ses), "periodo_minutos": PERIODO_TPO, "letras": LETRAS_TPO, "regla": REGLA_TPO,
+            **({"paso_auto": auto} if auto else {}), "tope_tpo": TOPE_CELDAS, "sesiones": salida}
+
+
+def _redondea(x: Decimal, q: Decimal) -> str:
+    return texto(x.quantize(q, rounding=ROUND_HALF_EVEN))
+
+
+async def vwap(conn: Any, *, symbol: str, desde: str | None, hasta: str | None, marco: str, sesion: str | None,
+               venues: str | None) -> dict[str, Any]:
+    if marco not in MARCOS:
+        raise Peticion(f"marco tiene que ser uno de {', '.join(MARCOS)}")
+    minutos = MARCOS[marco]
+    activo, a, b, ses, vs, inst, base, origen, dur = await _ventana_de_sesiones(conn, symbol, desde, hasta, sesion,
+                                                                                 venues, minutos)
+    n_velas = (b - a) // timedelta(minutes=minutos)
+    if n_velas > TOPE_VELAS:
+        raise Peticion(f"{n_velas} velas pasan el tope de {TOPE_VELAS}: pide un marco mayor o un rango menor")
+    q = base / 100
+    filas = await conn.fetch(VWAP_SQL.format(minutos=minutos), activo, vs, inst[0][0], b, origen, dur) if inst else []
+    cerrado = _cerrado(datetime.now(UTC))
+    cob = await _coberturas(conn, activo, vs, inst, min(b, cerrado), origen, dur, 1440)
+    por_sesion: dict[datetime, list] = {}
+    for f in filas:
+        por_sesion.setdefault(f["s"], []).append(f)
+    salida = []
+    with localcontext() as ctx:
+        ctx.prec = 50
+        for s, e in inst:
+            corte = max(s, min(e, b, cerrado))
+            filas_s = por_sesion.get(s, [])
+            u_n: dict[Decimal, Decimal] = {}
+            q_n: dict[Decimal, Decimal] = {}
+            suma_u = suma_q = suma_p2 = Decimal(0)  # sum usd, sum base y sum usd_n^2 / base_n por nivel
+            i, puntos = 0, []
+            for k in range(-1, n_velas):
+                limite = a + timedelta(minutes=minutos * (k + 1))
+                while i < len(filas_s) and filas_s[i]["v"] < limite:
+                    n, du, dq = filas_s[i]["nivel"], filas_s[i]["u"], filas_s[i]["q"]
+                    if n in q_n:
+                        suma_p2 -= u_n[n] * u_n[n] / q_n[n]
+                    u_n[n], q_n[n] = u_n.get(n, Decimal(0)) + du, q_n.get(n, Decimal(0)) + dq
+                    suma_p2 += u_n[n] * u_n[n] / q_n[n]
+                    suma_u, suma_q = suma_u + du, suma_q + dq
+                    i += 1
+                inicio_vela = limite - timedelta(minutes=minutos)
+                if k < 0 or not suma_q or limite <= s or inicio_vela >= min(e, b):
+                    continue
+                medio = suma_u / suma_q
+                sigma = max(suma_p2 / suma_q - medio * medio, Decimal(0)).sqrt()
+                puntos.append({"ts": iso(inicio_vela), "vwap": _redondea(medio, q), "sigma": _redondea(sigma, q),
+                               "bandas": {str(k_): [_redondea(medio - k_ * sigma, q), _redondea(medio + k_ * sigma, q)]
+                                          for k_ in BANDAS}})
+            salida.append({"inicio": iso(s), "fin": iso(e), "corte": iso(corte), "en_curso": corte < e,
+                           "cobertura": _cobertura_json(cob.get(s), int((corte - s) // timedelta(minutes=1)) * len(vs)),
+                           "puntos": puntos})
+    return {**_cabecera("VWAP de la sesion: por vela, el VWAP acumulado desde el inicio de la sesion y sus bandas",
+                        activo, base, base, vs, None, a, b),
+            "marco": marco, "sesion": _sesion_publica(ses), "regla": REGLA_VWAP, "bandas": list(BANDAS),
+            "redondeo": texto(q), "sesiones": salida}

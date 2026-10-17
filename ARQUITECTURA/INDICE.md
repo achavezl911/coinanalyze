@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-82 rutas descubiertas en el arbol. Para trabajar sobre una,
+85 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -48,6 +48,9 @@
 | `/api/orderflow/grandes` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-grandes.md) |
 | `/api/orderflow/perfil` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-perfil.md) |
 | `/api/orderflow/referencia` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-referencia.md) |
+| `/api/orderflow/sesiones` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-sesiones.md) |
+| `/api/orderflow/tpo` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-tpo.md) |
+| `/api/orderflow/vwap` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-vwap.md) |
 | `/api/passive-flow` | GET | 16 | 3 | 20 | [ficha](rutas/api-passive-flow.md) |
 | `/api/positioning` | GET | 17 | 1 | 3 | [ficha](rutas/api-positioning.md) |
 | `/api/price-barriers` | GET | 15 | 5 | 8 | [ficha](rutas/api-price-barriers.md) |
@@ -92,7 +95,7 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-8 de 82. Cada una con su motivo en la ficha.
+8 de 85. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento

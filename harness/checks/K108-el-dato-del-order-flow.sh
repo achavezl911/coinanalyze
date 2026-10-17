@@ -13,7 +13,10 @@
 #   (c) COBERTURA por venue: ningun minuto incompleto o ausente sin declarar en data_gap; al menos el 90 % de los
 #       minutos completos; y el servicio escribiendo (ultimo minuto con cobertura de hace menos de 10 min).
 #   (d) LO SERVIDO == LO RECALCULADO: footprint 5m y perfil de la ultima media hora, a 10x el paso base, contra lo
-#       que el ayudante recalcula de las celdas con su propia aritmetica y su propia value area.
+#       que el ayudante recalcula de las celdas con su propia aritmetica y su propia value area. Y desde OF-3
+#       (campana 143) lo que se sirve sobre esa ventana de las sesiones -la del dia y una de 24 h que cruza la
+#       medianoche- con su compuesto, su VWAP con bandas (exacto, Fraction) y su TPO; un sujeto anterior a OF-3 no
+#       las sirve (404) y se dice SIN JUZGAR.
 #   (e) RETENCION: nada mas viejo que su retencion (+2 h), particiones de hoy y manana, y las funciones vivas de
 #       particion gestionando celda y cinta.
 #   (f) EL AGRESOR: en cada venue y activo, el lado tiene que concordar con el movimiento del precio mas que el
