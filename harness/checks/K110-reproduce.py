@@ -99,7 +99,8 @@ def planta(nombre: str, lineas: list[dict]) -> None:
         raise SystemExit(f"planta desconocida: {nombre}")
 
 
-async def reproduce(dsn: str, fichero: str, nombre: str) -> None:
+async def reproduce(dsn: str, fichero: str, nombre: str) -> dict:
+    """Devuelve el ULTIMO aviso del relevo que el colector publico por libro (venue, activo): lo que la API oiria."""
     with (lzma.open if fichero.endswith(".xz") else gzip.open)(fichero, "rt") as g:
         lineas = [json.loads(x) for x in g]
     lineas.sort(key=lambda d: d["rx"])
@@ -122,6 +123,7 @@ async def reproduce(dsn: str, fichero: str, nombre: str) -> None:
     conexiones = {v: {"seq": None} for v in lb.VENUES}
     pedidas: dict[tuple[str, str], int] = {}
     cargas: list[int] = []
+    ultimos: dict[tuple[str, str], str] = {}
     conn = None
     if dsn != "-":
         conn = await asyncpg.connect(dsn, server_settings={"timezone": "UTC"})
@@ -145,7 +147,9 @@ async def reproduce(dsn: str, fichero: str, nombre: str) -> None:
                 for x in todos:
                     if x.cambiado:
                         x.cambiado = False
-                        cargas.append(len(lb.carga_relevo(x, BASES[x.activo], relevo_t).encode()))
+                        aviso = lb.carga_relevo(x, BASES[x.activo], relevo_t)
+                        ultimos[(x.venue, x.activo)] = aviso
+                        cargas.append(len(aviso.encode()))
             v = lb.VENUES.get(ALIAS.get(d["v"], d["v"]))
             if v is None:
                 continue
@@ -216,6 +220,7 @@ async def reproduce(dsn: str, fichero: str, nombre: str) -> None:
     finally:
         if conn is not None:
             await conn.close()
+    return ultimos
 
 
 if __name__ == "__main__":
