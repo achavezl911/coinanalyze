@@ -1183,6 +1183,37 @@ else
 fi
 
 echo
+echo "P30 · EL LIBRO AL LADO DE LA MESA (campana 145): el mismo cliente carga \`/\` y \`/libro\`; su historia, su vivo y su websocket son suyos"
+montav "$DIR/p30" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790; echo 'C alex -9000 /libro'
+  echo "A alex -8990 30 $A/libro/fotos?symbol=BTC&venues=binance_usdm"; echo "A alex -8980 30 $A/libro/ultimo?symbol=BTC"
+  echo "A alex -8970 2 $A/libro/vivo?symbol=BTC")"
+corrv P30 "$DIR/p30"; rc=$RC
+comprueba "P30a VERDE, rc=0 (rc=$rc): la mesa se sigue juzgando contra lo suyo" \
+  "$([ "$rc" = 0 ] && [ "$(en_primera P30 'la mesa \(static/mesa\.html, cargada por `/`\) pide su nucleo '"$A"'/mesa/decide 41 veces y NADA fuera de su contrato')" = si ] && echo si || echo no)"
+comprueba "P30b y las 62 del libro salen NOMBRADAS como suyas, no sin atribuir" \
+  "$([ "$(tiene P30 'libro · 62 peticion\(es\) a sus rutas')" = si ] && [ "$(no_tiene P30 'SIN ATRIBUIR')" = si ] && echo si || echo no)"
+
+echo
+echo "P31 · EL LIBRO VIVO PEDIDO POR UN CLIENTE QUE NO CARGO /libro: se le carga a la mesa, que la tenia"
+montav "$DIR/p31" "$(echo 'D -86400 mesa'; echo 'C alex -10800 /'; ev_mesa alex -10790; echo "A alex -8990 20 $A/libro/ultimo?symbol=BTC")"
+corrv P31 "$DIR/p31"; rc=$RC
+comprueba "P31a ROJO, rc=1 (rc=$rc): la mesa pide FUERA de su contrato el libro vivo, con su cuenta" \
+  "$([ "$rc" = 1 ] && [ "$(en_primera P31 'la mesa \(static/mesa\.html, cargada por `/`\) pide FUERA de su contrato \(K44-contrato-mesa\.tsv\): '"$A"'/libro/ultimo\(20\)')" = si ] && echo si || echo no)"
+
+echo
+echo "V5 · LOS BYTES DE K44 DE ANTES DEL LIBRO (e66d337) en la ventana de P30: le cargan a la mesa lo del libro"
+if git -C "$ORIG" show e66d337:harness/checks/K44-el-sobre-que-nadie-pide.sh > "$DIR/K44-antes-libro.sh" 2>/dev/null; then
+  rm -rf "$DIR/v5"; cp -a "$DIR/p30" "$DIR/v5"
+  sed "s#^B=/srv/coinanalyze/harness; . \"\$B/env\"#B=$DIR/v5; . \"\$B/env\"#" "$DIR/K44-antes-libro.sh" > "$DIR/v5/K44.sh"
+  printf '%s\n' "#!/bin/bash" "printf 'LLAMADO\\n' >> $DIR/v5/senal" "cat $DIR/v5/salida" "exit 0" > "$DIR/v5/bin/prod"
+  corre V5 "$DIR/v5/K44.sh" K44_PAYLOADS="$DIR/v5/payloads" K44_SIMBOLO=TEST K44_LIMITS=/no/existe
+  comprueba "V5 el K44 de antes da ROJO (rc=$RC) en la ventana de P30: lo que lo arregla es la regla nueva" \
+    "$([ "$RC" = 1 ] && [ "$(tiene V5 'FUERA de su contrato.*'"$A"'/libro/')" = si ] && echo si || echo no)"
+else
+  comprueba "V5 no pude leer el K44 de e66d337 del historial" no
+fi
+
+echo
 echo "P16 · LA MESA SE MIRO Y SU CONTRATO NO SE PUEDE LEER"
 montav "$DIR/p16" "$(echo 'C alex -10800 /mesa'; ev_mesa alex -10790)"
 corrv P16 "$DIR/p16" K44_CONTRATO=/no/existe; rc=$RC
