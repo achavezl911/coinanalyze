@@ -359,3 +359,35 @@ async def vivo(ws: WebSocket, pool: asyncpg.Pool, dsn: str, prohibido: str | Non
         pass
     finally:
         RELEVO.clientes.discard(cliente)
+
+
+# --------------------------------------------------------------------------------------------- OF-4b: el vivo por GET
+# OF-4b (campana 145) · EL LIBRO VIVO SIN WEBSOCKET. El nginx de 140 no deja pasar el websocket (sin Upgrade en
+# `location /`): la pantalla sondea esto cada segundo. Es lo ULTIMO que la API oyo del relevo -el mismo mensaje que
+# mandaria el websocket, por venue- y no toca la base por peticion: los pasos base se leen UNA vez por proceso.
+BASES: dict[str, Decimal] = {}
+SIN_DATO = ("la API no ha oido todavia este libro en el relevo (escucha desde la primera peticion del libro vivo; un "
+            "libro valido se publica en cuanto cambia)")
+
+
+async def ultimo(pool: asyncpg.Pool, dsn: str, query: dict[str, str]) -> dict[str, Any]:
+    if not BASES:
+        async with pool.acquire() as conn:
+            BASES.update(await pasos(conn))
+    activo, vs, paso, niveles = parametros(query, BASES)
+    RELEVO.arranca(dsn)
+    base, ahora_ms = BASES[activo], int(time.time() * 1000)
+    libros = []
+    for v in vs:
+        d = RELEVO.ultimo.get((v, activo))
+        if d is None:
+            libros.append({"tipo": "sin_dato", "venue": v, "symbol": activo, "motivo": SIN_DATO})
+            continue
+        hecho = d.setdefault("_r", {})  # el aviso es UNO para todos: cada forma (paso, niveles) se calcula una vez
+        if (paso, niveles) not in hecho:
+            hecho[(paso, niveles)] = mensaje(d, base, paso, niveles)
+        libros.append({**hecho[(paso, niveles)], "edad_ms": ahora_ms - d["l"]})
+    return {"que": "el libro VIVO por GET: por venue, lo ultimo que la API oyo del relevo (lo mismo que manda el "
+                   "websocket), o sin_dato si aun no lo oyo; edad_ms = desde que llego a la API",
+            "symbol": activo, "venues": vs, "paso": texto(paso), "paso_base": texto(base), "niveles": niveles,
+            "relevo": RELEVO.estado, "libros": libros}

@@ -1,0 +1,144 @@
+/* EL LIBRO · la hoja de la pagina (campana 145, OF-4b). La base (tokens, cabecera, mandos, estado, lectura, leyenda,
+ * los cuatro estados) es la de /flujo (static/flujo/flujo.css, que la pagina carga delante); aqui, lo propio: el mapa
+ * y la escalera lado a lado, y la escalera. */
+
+.cuerpo {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 460px;
+  gap: 8px;
+  margin: 0 8px;
+}
+
+.cuerpo .grafico {
+  margin: 0;
+}
+
+.escalera {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 400px;
+  min-height: 0;
+  border: 1px solid var(--borde);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.esc-cabeza {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--borde);
+  color: var(--tx-mudo);
+  line-height: 1.5;
+}
+
+.esc-tabla {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.escalera table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.escalera th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-strip);
+  color: var(--tx-debil);
+  font-weight: 400;
+  font-size: 9.5px;
+  text-align: right;
+  padding: 3px 6px;
+}
+
+.escalera td {
+  text-align: right;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+#esc-filas td.nivel {
+  text-align: center;
+  color: var(--tx-mudo);
+}
+
+#esc-filas td.c {
+  color: var(--verde);
+}
+
+#esc-filas td.v {
+  color: var(--rojo);
+}
+
+#esc-filas td.acum {
+  color: var(--tx-debil);
+}
+
+/* la mejor compra y la mejor venta de la familia */
+#esc-filas tr.mejor-compra td.nivel {
+  background: rgba(62, 207, 142, 0.18);
+  color: var(--tx);
+}
+
+#esc-filas tr.mejor-venta td.nivel {
+  background: rgba(224, 90, 90, 0.18);
+  color: var(--tx);
+}
+
+/* un nivel que no conocen todos los venues de la familia: lo que se suma es un minimo */
+#esc-filas tr.parcial td.n {
+  color: var(--ambar);
+}
+
+/* un nivel que no conoce ninguno: DESCONOCIDO, nunca cero */
+#esc-filas tr.desconocido td {
+  color: var(--tx-debil);
+  font-style: italic;
+}
+
+.esc-venues {
+  border-top: 1px solid var(--borde);
+}
+
+.esc-venues td:first-child,
+.esc-venues th:first-child {
+  text-align: left;
+}
+
+.esc-venues td.vivo {
+  color: var(--verde);
+}
+
+.esc-venues td.sin_libro,
+.esc-venues td.sin_dato {
+  color: var(--rojo);
+}
+
+.esc-venues td.rancio {
+  color: var(--ambar);
+}
+
+.muestra.mc {
+  height: 2px;
+  background: var(--verde);
+}
+
+.muestra.mv {
+  height: 2px;
+  background: var(--rojo);
+}
+
+.muestra.desconocido {
+  background: #2e2e2e;
+}
+
+.muestra.hueco-libro {
+  background: #463014;
+}
+
+.muestra.pendiente {
+  background: #1e242e;
+  border: 1px dashed var(--borde-hueco);
+}

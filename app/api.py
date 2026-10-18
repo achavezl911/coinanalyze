@@ -3920,6 +3920,26 @@ async def libro_vivo(websocket: WebSocket) -> None:
     await libro_lectura.vivo(websocket, app.state.pool, SETTINGS.pg_dsn, websocket_prohibido(websocket))
 
 
+# OF-4b (campana 145) · el libro VIVO por GET, para cuando el websocket no pasa (el nginx de 140 no lleva Upgrade): lo
+# ultimo que la API oyo del relevo, sin tocar la base por peticion; los parametros, los del websocket. La pantalla lo
+# sondea cada segundo.
+@app.get("/api/libro/ultimo")
+async def libro_ultimo(
+    request: Request,
+    symbol: str,
+    venues: str | None = None,
+    paso: str | None = None,
+    niveles: str | None = None,
+) -> dict[str, Any]:
+    rechaza_parametros_desconocidos(request, ("symbol", "venues", "paso", "niveles"))
+    q = {k: v for k, v in (("symbol", symbol), ("venues", venues), ("paso", paso), ("niveles", niveles)) if v}
+    try:
+        respuesta = await libro_lectura.ultimo(app.state.pool, SETTINGS.pg_dsn, q)
+    except orderflow_lectura.Peticion as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {**respuesta, "as_of": _utc_iso(datetime.now(UTC))}
+
+
 # OF-1 · lo que late y se INFORMA sin degradar el status global en esta campana. Sigue gobernado -sale en
 # governed_services con su umbral, asi que K05 lo ve como a cualquiera- pero su fallo no pone degraded. OF-4a (campana
 # 144) anade el latido del libro, por lo mismo: un venue sin libro no tumba la API.
@@ -4132,6 +4152,14 @@ async def flujo() -> FileResponse:
     """EL FOOTPRINT (campana 142, OF-2): por vela y nivel de precio, el volumen del agresor vendedor y comprador, el
     delta, los desequilibrios, el POC y la value area. La pinta static/flujo.html desde /api/orderflow/footprint."""
     return FileResponse(STATIC_DIR / "flujo.html")
+
+
+@app.get("/libro")
+async def libro() -> FileResponse:
+    """EL LIBRO (campana 145, OF-4b): la escalera en vivo y el mapa de liquidez de BTC, ETH y SOL. La pinta
+    static/libro.html con la historia de /api/libro/fotos y el vivo del websocket /api/libro/vivo o, si no pasa,
+    /api/libro/ultimo cada segundo."""
+    return FileResponse(STATIC_DIR / "libro.html")
 
 
 @app.get("/")
