@@ -211,12 +211,12 @@ function enUnidad(q, k, paso, unidad) {
 }
 
 /* ------------------------------------------------------------------ la escala de color del mapa
- * EL PERCENTIL DE LO VISIBLE (P2): el indice de color de una cantidad es su puesto entre las celdas CONOCIDAS con
- * cantidad de las columnas que se ven, floor(256 * (cuantas tienen menos) / cuantas), de 0 a 255; un cero conocido es
- * el fondo (-1). Medido sobre fotos reales de produccion (x1-tmp/c145/p2): ninguna escala fija sirve a la vez a los
- * perpetuos (colas estrechas: el p99 es ~3x la mediana) y a los libros profundos (spot, Coinbase, Deribit: de 29 a
- * 360x); el percentil es la unica que deja ver los muros en todas las ventanas medidas. Cambia al moverse: es de lo
- * que se ve. */
+ * EL PERCENTIL (P2): el indice de color de una cantidad es su puesto entre las celdas CONOCIDAS con cantidad de las
+ * columnas j0..j1 (en la pantalla, la ventana entera: P1 eligio el mapa de bits hecho una vez),
+ * floor(256 * (cuantas tienen menos) / cuantas), de 0 a 255; un cero conocido es el fondo (-1). Medido sobre fotos
+ * reales de produccion (x1-tmp/c145/p2): ninguna escala fija sirve a la vez a los perpetuos (colas estrechas: el p99 es
+ * ~3x la mediana) y a los libros profundos (spot, Coinbase, Deribit: de 29 a 360x); el percentil es la unica que deja
+ * ver los muros en todas las ventanas medidas. */
 function escalaPercentil(columnas, j0, j1, paso, unidad) {
   const xs = [];
   for (let j = j0; j <= j1; j++) {

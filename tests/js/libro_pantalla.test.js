@@ -73,7 +73,7 @@ test('un instante sin foto es HUECO si su minuto ya se escribio, y «sin escribi
   assert.strictEqual(cols[1].suma, null);
 });
 
-test('la escala es el percentil de lo visible: el puesto entre las celdas con cantidad; un cero es el fondo', () => {
+test('la escala es el percentil: el puesto entre las celdas con cantidad de las columnas dadas; un cero es el fondo', () => {
   const col = (cs) => ({ estado: 'foto', suma: { lo: 0, c: Float64Array.from(cs), v: new Float64Array(cs.length),
                                                  n: Uint8Array.from(cs.map(() => 1)) } });
   const esc = C.escalaPercentil([col([1, 2, 3, 4]), col([0, 100])], 0, 1, '1', 'base');

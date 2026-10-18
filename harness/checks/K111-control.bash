@@ -16,7 +16,7 @@
 #   (C) canal_mal_declarado       va por sondeo y escribe que va por websocket
 #   (V) familias_sumadas          perpetuos y spot pedidos como una familia
 #   (F) parcial_como_completo     un nivel que no conocen todos, pintado entero (sin su damero)
-#   (F) escala_lineal             el color por la cantidad en lineal y no por su percentil de lo visible (P2)
+#   (F) escala_lineal             el color por la cantidad en lineal y no por su percentil de la ventana (P2)
 #   (F) acumulada_sin_minimo      la acumulada que pasa por niveles parciales, escrita sin su «≥»
 #   (P) cada_fuera_de_regla       la historia pedida con un cada que no es el de la regla
 #   (P) pagina_rota               una excepcion al arrancar
@@ -152,7 +152,7 @@ juzga_plantado familias_sumadas V "2 familia\\(s\\): perp, spot" $m "perpetuos +
 planta_pagina libro/libro-mapa.js 's/  return n >= N ? 4 : Math\.max(1, Math\.round((4 \* n) \/ N));/  return 4;/' 1; m=$?
 juzga_plantado parcial_como_completo F "el mapa no pinta lo servido: .*\(DESCONOCIDO\)" $m "sin damero: lo parcial pintado entero"
 planta_pagina libro/libro-calculo.js 's/      return Math\.min(255, Math\.floor((256 \* a) \/ n));/      return Math.min(255, Math.floor((255 * q) \/ ord[n - 1]));/' 1; m=$?
-juzga_plantado escala_lineal F "el mapa no pinta lo servido: .*(color [0-9]+ y el percentil|tenia que ser .*su color)" $m "lineal y no el percentil de lo visible"
+juzga_plantado escala_lineal F "el mapa no pinta lo servido: .*(color [0-9]+ y el percentil|tenia que ser .*su color)" $m "lineal y no el percentil de la ventana"
 planta_pagina libro/libro-calculo.js 's/      parcial = parcial || f\.n < s\.N;/      parcial = false;/' 1; m=$?
 juzga_plantado acumulada_sin_minimo F "la escalera no pinta lo servido: fila .*acumulada" $m "la acumulada sin su minimo"
 planta_pagina libro/libro-calculo.js 's/  let c = LIBRO_FOTO_S;/  let c = 2 * LIBRO_FOTO_S;/' 1; m=$?

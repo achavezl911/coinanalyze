@@ -20,8 +20,8 @@ LOS BRAZOS (cualquiera pone ROJO; uno sin canal es NO MEDIDO y un ROJO de otro m
   (V) la familia  pide, sirve y pinta los venues de UNA familia (o un venue): nunca dos sumadas
   (S) lo servido  /api/libro/fotos == lo recalculado de libro_foto (lo ya escrito)
   (F) lo pintado  el mapa: sus columnas y su estado (foto, HUECO, sin escribir), cada celda con la suma de los que la
-                  conocen y cuantos son, ningun desconocido pintado (ni como cero), el color del percentil de lo
-                  visible, los pixeles de sus cuatro cuadritos y la mejor compra y venta de cada instante; la escalera:
+                  conocen y cuantos son, ningun desconocido pintado (ni como cero), el color del percentil de la
+                  ventana, los pixeles de sus cuatro cuadritos y la mejor compra y venta de cada instante; la escalera:
                   sus niveles, cantidades, acumuladas (y si son un minimo), las mejores, cuantos conocen cada nivel y el
                   estado de cada venue (un venue sin libro valido se dice y no suma)
   (C) el canal    el que la pagina dice (websocket o sondeo) == el de la red, y la hora del ultimo libro que escribe ==
@@ -408,7 +408,7 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
     m_col, m_celda, m_color, m_pix = [], [], [], []
     pix_ok, pix_saltados, celdas = 0, 0, 0
     j0, j1 = max(0, math.floor(eje["fin"] - eje["ver"] + 1)), min(len(cols) - 1, math.ceil(eje["fin"]))
-    indice = percentil(cols[j0:j1 + 1], esp["d"]["paso"], e["unidad"])
+    indice = percentil(cols, esp["d"]["paso"], e["unidad"])  # la escala es la de TODA la ventana (P1 eligio B; P2)
     px = vio.get("pixeles") or {}
     vistas_ts = [epoch_ms(c["ts"]) for c in pintadas if c.get("origen") != "vivo"]
     if vistas_ts != [c["ts"] for c in cols[j0:j1 + 1]][:len(vistas_ts)]:
@@ -476,8 +476,8 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
                                  f"({pc_n} de {s['N']}) y lo servido da {cc} / {vv} ({n} de {s['N']})")
                 ix = indice(unidad(cc + vv, k, paso, e["unidad"]))
                 if abs(pc_i - ix) > 1:
-                    m_color.append(f"columna {pc['ts']} nivel {k * float(paso):g}: color {pc_i} y el percentil de lo "
-                                 f"visible da {ix}")
+                    m_color.append(f"columna {pc['ts']} nivel {k * float(paso):g}: color {pc_i} y el percentil de la "
+                                 f"ventana da {ix}")
                 esperado_q = (ix, cuadritos(n, s["N"]))
             # los pixeles de sus cuatro cuadritos
             y0 = (eje["hi"] - k) * fh

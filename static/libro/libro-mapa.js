@@ -3,14 +3,15 @@
  * ---------------------------------------------------------------------------
  * UN MAPA DE BITS, NO UN RECTANGULO POR CELDA. Lo decidio P1 con el criterio archivado antes de medir
  * (entregas/20261018-0444-libro-pantalla-prediccion.md): en Chromium sin cabeza en 143, con fotos reales de produccion
- * (BTC perpetuos), un fillRect por celda dio un p95 de 50 ms por fotograma; el mapa de bits, 16.7-16.8 ms, tambien
- * rehaciendolo en cada fotograma con la escala de P2 (x1-tmp/c145/p1, tres repeticiones). Cada celda son 2x2 pixeles
- * del mapa de bits de LO VISIBLE, que se rehace cuando cambia lo que se ve (la escala es de lo que se ve); por
- * fotograma, UN drawImage escalado y sin suavizado, y encima el precio y los ejes.
+ * (BTC perpetuos 1 h y 4 h), un fillRect por celda dio un p95 de 50-67 ms por fotograma; el mapa de bits, 16.7-16.8 ms,
+ * hecho una vez (B) o rehecho en cada fotograma con lo visible (B'); entre los dos, el criterio se queda con el de menos
+ * trabajo por fotograma, B (pintar p95 0.6-0.7 ms contra 5.7-8.5; x1-tmp/c145/p1, tres repeticiones). Cada celda son
+ * 2x2 pixeles del mapa de bits de TODA la ventana, que se rehace solo cuando cambian las columnas (llega una del vivo);
+ * por fotograma, UN drawImage escalado y sin suavizado, y encima el precio y los ejes.
  *
  * LO QUE SE PINTA EN CADA CELDA (columna = un instante, fila = un nivel al paso):
- *   la cantidad de la familia     su color: su PERCENTIL entre lo visible (escalaPercentil, P2); un cero CONOCIDO es
- *                                 el fondo
+ *   la cantidad de la familia     su color: su PERCENTIL entre las celdas de la ventana (escalaPercentil, P2); un
+ *                                 cero CONOCIDO es el fondo
  *   un nivel que conocen n de N   damero: de los 4 subpixeles, round(4n/N) del color y el resto DESCONOCIDO
  *   un nivel que no conoce nadie  DESCONOCIDO, nunca el fondo (nunca cero)
  *   un instante HUECO             la columna entera de su color: ningun venue tenia libro; no se rellena ni se estira
@@ -170,11 +171,12 @@ function creaMapa(canvas, alLeer) {
     lo -= 2;
     hi += 2;
     const filas = hi - lo + 1;
-    // la escala (P2) es la de lo VISIBLE: el mapa de bits se rehace cuando cambia lo que se ve o llegan columnas
-    const clave = [j0, j1, lo, hi, m.unidad, m.version || 0].join('|');
+    // el mapa de bits de TODA la ventana (P1: B), con la escala (P2) de toda la ventana: se rehace cuando cambian las
+    // columnas; sus filas, las de la ventana con dos de margen (las que puede pedir lo visible)
+    const clave = [n, m.columnas[0].ts, m.columnas[n - 1].ts, r[0], r[1], m.unidad, m.version || 0].join('|');
     if (clave !== L.clave) {
-      L.esc = escalaPercentil(m.columnas, j0, j1, m.paso, m.unidad);
-      L.bmp = mapaDeBits(m, j0, j1, lo, hi, L.esc);
+      L.esc = escalaPercentil(m.columnas, 0, n - 1, m.paso, m.unidad);
+      L.bmp = mapaDeBits(m, 0, n - 1, r[0] - 2, r[1] + 2, L.esc);
       L.clave = clave;
     }
     const esc = L.esc;
@@ -187,7 +189,7 @@ function creaMapa(canvas, alLeer) {
     ctx.beginPath();
     ctx.rect(0, 0, ancho, alto);
     ctx.clip();
-    ctx.drawImage(L.bmp, 2 * (L.fin - L.ver + 1 - j0), 0, 2 * L.ver, 2 * filas, 0, 0, ancho, alto);
+    ctx.drawImage(L.bmp, 2 * (L.fin - L.ver + 1), 2 * (r[1] + 2 - hi), 2 * L.ver, 2 * filas, 0, 0, ancho, alto);
     // el precio encima: la mejor compra y la mejor venta de la familia en cada instante (con un halo oscuro, para que
     // se lea sobre cualquier color del mapa)
     [['mejorCompra', MAPA_COLOR.compra], ['mejorVenta', MAPA_COLOR.venta]].forEach(([campo, color]) => {
@@ -229,8 +231,8 @@ function creaMapa(canvas, alLeer) {
       ctx.fillText(new Date(m.columnas[j].ts).toISOString().slice(11, 19), xDe(j) + bs / 2, L.H - MAPA.EJE_T / 2);
     }
     // el contrato: lo que ACABA de pintarse
-    Object.assign(reg, { escala: { tipo: 'percentil de lo visible', celdas: esc.n, desde: isoZ(m.columnas[j0].ts),
-                                   hasta: isoZ(m.columnas[j1].ts) },
+    Object.assign(reg, { escala: { tipo: 'percentil de la ventana', celdas: esc.n, desde: isoZ(m.columnas[0].ts),
+                                   hasta: isoZ(m.columnas[n - 1].ts) },
                          eje: { lo, hi, fila: fh, columna: bs, fin: L.fin, ver: L.ver, ancho, alto } });
     for (let j = j0; j <= j1; j++) {
       const col = m.columnas[j];

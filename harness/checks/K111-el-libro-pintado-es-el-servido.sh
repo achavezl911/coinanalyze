@@ -12,7 +12,7 @@
 #   (V) pide, sirve y pinta UNA familia (o un venue): dos familias sumadas es ROJO
 #   (S) lo servido (/api/libro/fotos) == lo recalculado de libro_foto
 #   (F) lo pintado == lo servido: cada celda con la suma de los venues que la conocen y cuantos son, ningun nivel
-#       desconocido pintado (ni como cero), los HUECOS como huecos, el color (el percentil de lo visible) y sus pixeles,
+#       desconocido pintado (ni como cero), los HUECOS como huecos, el color (el percentil de la ventana) y sus pixeles,
 #       la mejor compra y venta; la escalera con sus niveles, cantidades, acumuladas y mejores, y un venue sin libro
 #       valido dicho y sin sumar
 #   (C) el canal del vivo que la pagina dice (websocket o sondeo) == el de la red, con la hora de su ultimo libro
