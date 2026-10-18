@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """K111-banco · sirve la pagina del LIBRO del ARBOL sobre una base local con fotos de produccion (campana 145).
 
-    K111-banco.py carga <dsn>   crea en <dsn> las tablas que lee el libro (libro_foto, orderflow_paso) y las llena con
-                                K111-fotos.tsv.xz (fotos de produccion bajadas una vez)
+    K111-banco.py carga <dsn> [sujeto]   crea en <dsn> las tablas que lee el libro (libro_foto, orderflow_paso) y las
+                                         llena con K111-fotos.tsv.xz (fotos de produccion bajadas una vez) u otro sujeto
+                                         del mismo formato
     K111-banco.py sirve --puerto P --db <dsn> [--sobre DIR] [--plantado F] [--avisos K111-avisos.jsonl.xz]
 
 Lo que sirve (uvicorn, con la CSP de produccion copiada de app/api.py):
@@ -51,9 +52,9 @@ CREATE TABLE libro_foto (ts timestamptz NOT NULL, venue text NOT NULL, symbol te
 """
 
 
-def carga(dsn: str) -> int:
+def carga(dsn: str, sujeto: Path = FIXTURE) -> int:
     filas: dict[str, list[str]] = {"orderflow_paso": [], "libro_foto": []}
-    with lzma.open(FIXTURE, "rt", encoding="utf-8") as f:
+    with lzma.open(sujeto, "rt", encoding="utf-8") as f:
         for linea in f:
             tabla, _, resto = linea.rstrip("\n").partition("|")
             filas[tabla].append(resto)
@@ -202,7 +203,7 @@ def sirve(a: argparse.Namespace) -> int:
 
 def main() -> int:
     if len(sys.argv) > 2 and sys.argv[1] == "carga":
-        return carga(sys.argv[2])
+        return carga(sys.argv[2], *(Path(x) for x in sys.argv[3:4]))
     ap = argparse.ArgumentParser()
     ap.add_argument("modo", choices=("sirve",))
     ap.add_argument("--puerto", type=int, required=True)

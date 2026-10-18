@@ -2,6 +2,14 @@
  * los cuatro estados) es la de /flujo (static/flujo/flujo.css, que la pagina carga delante); aqui, lo propio: el mapa
  * y la escalera lado a lado, y la escalera. */
 
+/* lo que se lee no encoge: si la pagina no cabe, encoge el mapa (que tiene su minimo), nunca el estado ni el aviso */
+.cabecera,
+.estado,
+.lectura,
+.leyenda {
+  flex: 0 0 auto;
+}
+
 .cuerpo {
   display: flex;
   flex: 1 1 auto;
