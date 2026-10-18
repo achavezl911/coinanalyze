@@ -3866,6 +3866,39 @@ async def orderflow_vwap(
     )
 
 
+# OF-5a · LOS INDICADORES (campana 146): las series de 5 min de Coinalyze y las liquidaciones sueltas en la ventana y el
+# marco del footprint, y la ORDEN AGREGADA de la cinta (vivo: solo lo nuevo). Solo se anaden rutas; la logica, en
+# app/orderflow_lectura.py, y aqui, como en OF-1, se rechaza lo desconocido.
+@app.get("/api/orderflow/indicadores")
+async def orderflow_indicadores(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    marco: str = "1m",
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "marco"), orderflow_lectura.indicadores,
+        symbol=symbol, desde=desde, hasta=hasta, marco=marco,
+    )
+
+
+@app.get("/api/orderflow/ordenes")
+async def orderflow_ordenes(
+    request: Request,
+    symbol: str,
+    venues: str | None = None,
+    min_usd: str | None = None,
+    desde: str | None = None,
+    hasta: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 200,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "venues", "min_usd", "desde", "hasta", "limit"), orderflow_lectura.ordenes,
+        symbol=symbol, venues=venues, min_usd=min_usd, desde=desde, hasta=hasta, limit=limit,
+    )
+
+
 # OF-4a · EL DATO DEL LIBRO (campana 144): la foto agregada de un rango (el mapa de liquidez) y el libro VIVO por
 # websocket (la escalera). La logica vive en app/libro_lectura.py; aqui, como en OF-1, se rechaza lo desconocido y un
 # parametro imposible es 422 con su motivo.
