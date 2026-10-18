@@ -46,7 +46,11 @@ una() {  # $1 tabla, $2 hora (AAAA-MM-DDTHH:00:00Z)
 if [ $# -eq 2 ]; then una "$1" "$2"; exit $?; fi
 ahora=$(date -u -d '-10 min' +%Y-%m-%dT%H:00:00Z); hechas=0; fallos=0   # solo horas cerradas hace >= 10 min (minutos escritos tarde)
 for t in "${TABLAS[@]}"; do
-  primera=$(sql140 "SELECT to_char(date_trunc('hour', min(ts)), 'YYYY-MM-DD\"T\"HH24:00:00\"Z\"') FROM $t") || { echo "FALLO min $t"; fallos=$((fallos+1)); continue; }
+  # min(ts) POR SIMBOLO: cinta, celdas, libro y DECIDE no tienen indice que empiece por ts y el min(ts) plano barria
+  # todas sus particiones en cada pase (la cinta, 1865 MB); asi va por (symbol, ...) en ~1 ms (campana 147, P2)
+  primera=$(sql140 "WITH RECURSIVE s AS (SELECT min(symbol) AS v FROM $t UNION ALL SELECT (SELECT min(symbol) FROM $t WHERE symbol > s.v) FROM s WHERE s.v IS NOT NULL)
+    SELECT to_char(date_trunc('hour', min(m)), 'YYYY-MM-DD\"T\"HH24:00:00\"Z\"') FROM (SELECT (SELECT min(ts) FROM $t WHERE symbol = s.v) AS m FROM s WHERE s.v IS NOT NULL) x") \
+    || { echo "FALLO min $t"; fallos=$((fallos+1)); continue; }
   [ -n "$primera" ] || continue
   h=$primera
   while [ "$h" \< "$ahora" ] && [ $hechas -lt "$MAX_HORAS" ]; do
