@@ -8,13 +8,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`get_settings`](#get-settings) | 296 | 3 | **0** | 58 ↑ | **3** |
+| [`get_settings`](#get-settings) | 300 | 3 | **0** | 58 ↑ | **3** |
 
 ## get_settings
 
-`app/config.py:296` · clave completa `app.config.get_settings`
+`app/config.py:300` · clave completa `app.config.get_settings`
 
-**Radio exacto: 3 rutas** de 85 · **cota superior: 59** (mas ancha)
+**Radio exacto: 3 rutas** de 88 · **cota superior: 59** (mas ancha)
 
 ### Por llamada — 3 rutas
 
@@ -42,6 +42,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `daily_verdict_outcome` — la escribe `app.daily_agg.materialize_daily_verdict_outcomes`
 - `daily_verdict_snapshot` — la escribe `app.daily_agg.persist_verdicts`
 - `funding_rate` — la escribe `app.daily_agg.apply_retention`
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations` — la escribe `app.daily_agg.apply_retention`
 - `long_short_ratio` — la escribe `app.daily_agg.apply_retention`
 - `metrics_snapshot` — la escribe `app.daily_agg.apply_retention`
@@ -179,5 +180,5 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 15 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

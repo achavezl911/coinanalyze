@@ -25,7 +25,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/resolutor.py:488` · clave completa `app.entradas.resolutor._cero`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -49,7 +49,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/resolutor.py:473` · clave completa `app.entradas.resolutor._cobros`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -73,7 +73,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/resolutor.py:182` · clave completa `app.entradas.resolutor._minuto`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -97,7 +97,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/resolutor.py:212` · clave completa `app.entradas.resolutor._pata`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -121,7 +121,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/resolutor.py:170` · clave completa `app.entradas.resolutor._t`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -156,7 +156,7 @@ Y esas tablas las leen:
 
 `app/entradas/resolutor.py:466` · clave completa `app.entradas.resolutor._t23`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -180,7 +180,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/resolutor.py:202` · clave completa `app.entradas.resolutor.cobros_funding`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -215,7 +215,7 @@ Y esas tablas las leen:
 
 `app/entradas/resolutor.py:191` · clave completa `app.entradas.resolutor.entrada_t`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -250,7 +250,7 @@ Y esas tablas las leen:
 
 `app/entradas/resolutor.py:186` · clave completa `app.entradas.resolutor.foto_de`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -274,7 +274,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/resolutor.py:178` · clave completa `app.entradas.resolutor.iso`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -298,7 +298,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/entradas/resolutor.py:223` · clave completa `app.entradas.resolutor.resolver`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -333,7 +333,7 @@ Y esas tablas las leen:
 
 `app/entradas/resolutor.py:196` · clave completa `app.entradas.resolutor.ventana`
 
-**Radio exacto: 2 rutas** de 85 · **cota superior: 2** (mas ancha)
+**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 2 rutas
 

@@ -14,7 +14,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/logging_setup.py:7` · clave completa `app.logging_setup.configure_logging`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 15** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 15** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -35,6 +35,7 @@ de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
@@ -79,5 +80,5 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/stream`](../rutas/api-stream.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

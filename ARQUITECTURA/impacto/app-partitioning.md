@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`apply_temporal_retention`](#apply-temporal-retention) | 28 | 0 | **0** | 56 ↑ | **0** |
-| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 23 | 0 | **0** | 22 ↑ | **0** |
+| [`apply_temporal_retention`](#apply-temporal-retention) | 30 | 0 | **0** | 56 ↑ | **0** |
+| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 25 | 0 | **0** | 22 ↑ | **0** |
 
 ## apply_temporal_retention
 
-`app/partitioning.py:28` · clave completa `app.partitioning.apply_temporal_retention`
+`app/partitioning.py:30` · clave completa `app.partitioning.apply_temporal_retention`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 56** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -42,6 +42,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `daily_verdict_snapshot` — la escribe `app.daily_agg.persist_verdicts`
 - `funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `futures_trades_agg` — la escribe `app.scalp_collector.cleanup_expired_rows`
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations` — la escribe `app.daily_agg.apply_retention`
 - `long_short_ratio` — la escribe `app.daily_agg.apply_retention`
 - `metrics_snapshot` — la escribe `app.daily_agg.apply_retention`
@@ -176,13 +177,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## ensure_temporal_partitions
 
-`app/partitioning.py:23` · clave completa `app.partitioning.ensure_temporal_partitions`
+`app/partitioning.py:25` · clave completa `app.partitioning.ensure_temporal_partitions`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -203,6 +204,7 @@ de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `market_assets` — la escribe `app.db.sync_market_catalog`
 - `orderbook_snapshot` — la escribe `app.scalp_collector.flush_books`
@@ -266,5 +268,5 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/structure`](../rutas/api-structure.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

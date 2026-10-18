@@ -183,6 +183,25 @@ if [ "$of_tabla" -eq 1 ]; then
                            WHERE c.venue = g.exchange AND c.symbol = g.symbol
                              AND c.ts >= g.start_ts AND c.ts < g.end_ts AND c.segundos = 60)"
 fi
+# v7, 2026-10-17 (OF-4a, campana 144): EL QUINTO CAMINO, igual que el cuarto. app/libro.py declara cada minuto en que
+# un libro no fue VALIDO los 60 s (salto de numeracion, conexion caida, libro cruzado, arranque o parada) y no lo
+# rellena: nace 'unrecoverable' con method libro_sin_cobertura.
+#   libro_sin_cobertura   feed 'libro', la ventana alineada a minuto y NINGUN minuto de ella completo (segundos = 60)
+#                         en libro_cobertura para ese venue y ese activo.
+# Misma prueba contra la TABLA, misma guarda (sin libro_cobertura la rama no existe y la fila cae por el ELSE false) y
+# el mismo limite dicho: pasada la retencion de las fotos, los minutos completos se podan y la rama ya no puede
+# desmentir un archivado falso.
+libro_tabla=$(leer libro_tabla "SELECT (to_regclass('libro_cobertura') IS NOT NULL)::int") || exit 2
+if [ "$libro_tabla" -eq 1 ]; then
+  OF_RAMA="$OF_RAMA
+        WHEN 'libro_sin_cobertura' THEN
+              g.feed = 'libro' AND g.feed_class = 'event_stream'
+          AND date_trunc('minute', g.start_ts) = g.start_ts
+          AND date_trunc('minute', g.end_ts) = g.end_ts
+          AND NOT EXISTS (SELECT 1 FROM libro_cobertura c
+                           WHERE c.venue = g.exchange AND c.symbol = g.symbol
+                             AND c.ts >= g.start_ts AND c.ts < g.end_ts AND c.segundos = 60)"
+fi
 
 viejos=$(leer viejos "SELECT count(*) FROM data_gap
           WHERE status='unresolved' AND start_ts < now()-interval '24 hours'") || exit 2

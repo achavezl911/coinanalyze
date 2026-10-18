@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-85 rutas descubiertas en el arbol. Para trabajar sobre una,
+88 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -32,6 +32,9 @@
 | `/api/healthz` | GET | 13 | 3 | 5 | [ficha](rutas/api-healthz.md) |
 | `/api/hypothesis` | GET | 82 | 12 | 78 | [ficha](rutas/api-hypothesis.md) |
 | `/api/level/breakout` | GET | 1 | 1 | 15 | [ficha](rutas/api-level-breakout.md) |
+| `/api/libro/cobertura` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-cobertura.md) |
+| `/api/libro/fotos` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-fotos.md) |
+| `/api/libro/referencia` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-referencia.md) |
 | `/api/liquidation-map` | GET | 16 | 2 | 6 | [ficha](rutas/api-liquidation-map.md) |
 | `/api/liquidations` | GET | 16 | 2 | 12 | [ficha](rutas/api-liquidations.md) |
 | `/api/macro-context` | GET | 7 | 1 | 10 | [ficha](rutas/api-macro-context.md) |
@@ -95,7 +98,7 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-8 de 85. Cada una con su motivo en la ficha.
+8 de 88. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento

@@ -36,7 +36,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/db.py:301` · clave completa `app.db.assert_service_ownership`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 68** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 68** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -61,12 +61,14 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `daily_verdict` — la escribe `app.daily_agg.apply_retention`, `app.daily_agg.persist_verdicts`
 - `daily_verdict_outcome` — la escribe `app.daily_agg.materialize_daily_verdict_outcomes`
 - `daily_verdict_snapshot` — la escribe `app.daily_agg.persist_verdicts`
-- `data_gap` — la escribe `app.orderflow.declara_hueco`
+- `data_gap` — la escribe `app.libro.declara_hueco`, `app.orderflow.declara_hueco`
 - `external_api_rate_event` — la escribe `app.coinalyze.PostgresSlidingWindowRateLimiter.acquire`
 - `external_macro_observation` — la escribe `app.external_macro.refresh_external_macro`
 - `funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `futures_trades_agg` — la escribe `app.scalp_collector._write_combined_minute`, `app.scalp_collector.cleanup_expired_rows`
 - `futures_trades_realtime` — la escribe `app.scalp_collector._write_combined_realtime`
+- `libro_cobertura` — la escribe `app.libro.escribe_minuto`, `app.libro.poda`
+- `libro_foto` — la escribe `app.libro.escribe_minuto`
 - `liquidations` — la escribe `app.daily_agg.apply_retention`, `app.ingest.upsert_liquidations`
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `long_short_ratio` — la escribe `app.daily_agg.apply_retention`, `app.ingest.upsert_long_short`
@@ -238,13 +240,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 26 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 29 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## fenced_transaction
 
 `app/db.py:333` · clave completa `app.db.fenced_transaction`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 68** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 68** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -269,11 +271,13 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `daily_verdict` — la escribe `app.daily_agg.apply_retention`, `app.daily_agg.persist_verdicts`
 - `daily_verdict_outcome` — la escribe `app.daily_agg.materialize_daily_verdict_outcomes`
 - `daily_verdict_snapshot` — la escribe `app.daily_agg.persist_verdicts`
-- `data_gap` — la escribe `app.orderflow.declara_hueco`
+- `data_gap` — la escribe `app.libro.declara_hueco`, `app.orderflow.declara_hueco`
 - `external_macro_observation` — la escribe `app.external_macro.refresh_external_macro`
 - `funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `futures_trades_agg` — la escribe `app.scalp_collector._write_combined_minute`, `app.scalp_collector.cleanup_expired_rows`
 - `futures_trades_realtime` — la escribe `app.scalp_collector._write_combined_realtime`
+- `libro_cobertura` — la escribe `app.libro.escribe_minuto`, `app.libro.poda`
+- `libro_foto` — la escribe `app.libro.escribe_minuto`
 - `liquidations` — la escribe `app.daily_agg.apply_retention`, `app.ingest.upsert_liquidations`
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `long_short_ratio` — la escribe `app.daily_agg.apply_retention`, `app.ingest.upsert_long_short`
@@ -446,13 +450,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 42 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 48 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## heartbeat
 
 `app/db.py:409` · clave completa `app.db.heartbeat`
 
-**Radio exacto: 8 rutas** de 85 · **cota superior: 58** (mas ancha)
+**Radio exacto: 8 rutas** de 88 · **cota superior: 58** (mas ancha)
 
 ### Por llamada — 1 rutas
 
@@ -625,13 +629,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 15 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 16 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## heartbeat_owned
 
 `app/db.py:431` · clave completa `app.db.heartbeat_owned`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 58** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 58** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -657,6 +661,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `daily_verdict_outcome` — la escribe `app.daily_agg.materialize_daily_verdict_outcomes`
 - `daily_verdict_snapshot` — la escribe `app.daily_agg.persist_verdicts`
 - `funding_rate` — la escribe `app.daily_agg.apply_retention`
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations` — la escribe `app.daily_agg.apply_retention`
 - `long_short_ratio` — la escribe `app.daily_agg.apply_retention`
 - `metrics_snapshot` — la escribe `app.daily_agg.apply_retention`
@@ -796,13 +801,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## heartbeat_component
 
 `app/db.py:443` · clave completa `app.db.heartbeat_component`
 
-**Radio exacto: 8 rutas** de 85 · **cota superior: 45** (mas ancha)
+**Radio exacto: 8 rutas** de 88 · **cota superior: 45** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -944,7 +949,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:262` · clave completa `app.db.acquire_service_lock`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -968,6 +973,7 @@ de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `orderbook_snapshot` — la escribe `app.scalp_collector.flush_books`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
@@ -1029,13 +1035,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/structure`](../rutas/api-structure.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## create_pool
 
 `app/db.py:162` · clave completa `app.db.create_pool`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1056,6 +1062,7 @@ de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `market_assets` — la escribe `app.db.sync_market_catalog`
 - `orderbook_snapshot` — la escribe `app.scalp_collector.flush_books`
@@ -1119,13 +1126,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/structure`](../rutas/api-structure.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## heartbeat_shard
 
 `app/db.py:522` · clave completa `app.db.heartbeat_shard`
 
-**Radio exacto: 8 rutas** de 85 · **cota superior: 22** (mas ancha)
+**Radio exacto: 8 rutas** de 88 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1220,7 +1227,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:343` · clave completa `app.db.monitor_service_lock`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1241,6 +1248,7 @@ de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `orderbook_snapshot` — la escribe `app.scalp_collector.flush_books`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
@@ -1302,13 +1310,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/structure`](../rutas/api-structure.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## read_db_identity
 
 `app/db.py:69` · clave completa `app.db.read_db_identity`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1329,6 +1337,7 @@ de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `market_assets` — la escribe `app.db.sync_market_catalog`
 - `orderbook_snapshot` — la escribe `app.scalp_collector.flush_books`
@@ -1392,13 +1401,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/structure`](../rutas/api-structure.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## sync_market_catalog
 
 `app/db.py:235` · clave completa `app.db.sync_market_catalog`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1422,6 +1431,7 @@ de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations_realtime` — la escribe `app.scalp_collector.flush_liquidations`
 - `market_assets` — la escribe `app.db.sync_market_catalog`
 - `orderbook_snapshot` — la escribe `app.scalp_collector.flush_books`
@@ -1485,13 +1495,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/structure`](../rutas/api-structure.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## mark_feed_shard_degraded
 
 `app/db.py:792` · clave completa `app.db.mark_feed_shard_degraded`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 21** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1575,7 +1585,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:374` · clave completa `app.db.wait_for_stop_or_lock_loss`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 15** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 15** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1596,6 +1606,7 @@ de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
+- `libro_cobertura` — la escribe `app.libro.poda`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
@@ -1640,13 +1651,13 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/stream`](../rutas/api-stream.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## mark_feed_shard_connected
 
 `app/db.py:768` · clave completa `app.db.mark_feed_shard_connected`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1710,7 +1721,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:649` · clave completa `app.db._mark_feed_shard_health`
 
-**Radio exacto: 10 rutas** de 85 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 88 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1775,7 +1786,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:599` · clave completa `app.db._mark_feed_unhealthy`
 
-**Radio exacto: 10 rutas** de 85 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 88 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1839,7 +1850,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:571` · clave completa `app.db.mark_feed_connected`
 
-**Radio exacto: 10 rutas** de 85 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 88 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1903,7 +1914,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:629` · clave completa `app.db.mark_feed_degraded`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1959,7 +1970,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:639` · clave completa `app.db.mark_feed_error`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2015,7 +2026,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:817` · clave completa `app.db.mark_feed_shard_error`
 
-**Radio exacto: 0 rutas** de 85 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 88 · **cota superior: 10** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2072,7 +2083,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:64` · clave completa `app.db.db_identity`
 
-**Radio exacto: 1 rutas** de 85 · **cota superior: 8** (mas ancha)
+**Radio exacto: 1 rutas** de 88 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 1 rutas
 
@@ -2123,7 +2134,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:95` · clave completa `app.db.heartbeat_max_age`
 
-**Radio exacto: 1 rutas** de 85 · **cota superior: 8** (mas ancha)
+**Radio exacto: 1 rutas** de 88 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 1 rutas
 
@@ -2174,7 +2185,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:110` · clave completa `app.db.required_heartbeat_failures`
 
-**Radio exacto: 5 rutas** de 85 · **cota superior: 8** (mas ancha)
+**Radio exacto: 5 rutas** de 88 · **cota superior: 8** (mas ancha)
 
 ### Por llamada — 5 rutas
 

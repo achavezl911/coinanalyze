@@ -14,13 +14,13 @@ from typing import Annotated, Any
 
 import asyncpg
 import orjson
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import orderflow_lectura
+from app import libro_lectura, orderflow_lectura
 from app.ai_context import (
     MESA_FRAME_HORIZON,
     ORDERBOOK_EDAD_SQL,
@@ -3866,9 +3866,64 @@ async def orderflow_vwap(
     )
 
 
+# OF-4a · EL DATO DEL LIBRO (campana 144): la foto agregada de un rango (el mapa de liquidez) y el libro VIVO por
+# websocket (la escalera). La logica vive en app/libro_lectura.py; aqui, como en OF-1, se rechaza lo desconocido y un
+# parametro imposible es 422 con su motivo.
+@app.get("/api/libro/referencia")
+async def libro_referencia(request: Request) -> dict[str, Any]:
+    return await _orderflow(request, (), libro_lectura.referencia)
+
+
+@app.get("/api/libro/fotos")
+async def libro_fotos(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    venues: str | None = None,
+    paso: str | None = None,
+    cada: Annotated[int | None, Query(ge=1, le=86400)] = None,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "venues", "paso", "cada"), libro_lectura.fotos,
+        symbol=symbol, desde=desde, hasta=hasta, venues=venues, paso=paso, cada=cada,
+    )
+
+
+@app.get("/api/libro/cobertura")
+async def libro_cobertura(
+    request: Request,
+    symbol: str,
+    desde: str | None = None,
+    hasta: str | None = None,
+    venues: str | None = None,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "desde", "hasta", "venues"), libro_lectura.cobertura,
+        symbol=symbol, desde=desde, hasta=hasta, venues=venues,
+    )
+
+
+def websocket_prohibido(websocket: WebSocket) -> str | None:
+    """El middleware http de arriba NO corre en un websocket: el token interno y la lista de origenes se miran aqui."""
+    if not SETTINGS.API_INTERNAL_TOKEN:
+        return "API_INTERNAL_TOKEN is not configured"
+    if not client_ip_allowed(websocket):  # type: ignore[arg-type] - lee .client y .headers, que los dos tienen
+        return "Forbidden source address"
+    if not valid_internal_token(websocket):  # type: ignore[arg-type]
+        return "Forbidden"
+    return None
+
+
+@app.websocket("/api/libro/vivo")
+async def libro_vivo(websocket: WebSocket) -> None:
+    await libro_lectura.vivo(websocket, app.state.pool, SETTINGS.pg_dsn, websocket_prohibido(websocket))
+
+
 # OF-1 · lo que late y se INFORMA sin degradar el status global en esta campana. Sigue gobernado -sale en
-# governed_services con su umbral, asi que K05 lo ve como a cualquiera- pero su fallo no pone degraded.
-HEALTHZ_INFORMATIVOS = ("orderflow",)
+# governed_services con su umbral, asi que K05 lo ve como a cualquiera- pero su fallo no pone degraded. OF-4a (campana
+# 144) anade el latido del libro, por lo mismo: un venue sin libro no tumba la API.
+HEALTHZ_INFORMATIVOS = ("orderflow", "libro")
 
 
 @app.get("/api/healthz")

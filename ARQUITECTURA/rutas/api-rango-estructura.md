@@ -189,7 +189,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 18 | **0** | 0 | **18** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 21 | **0** | 0 | **21** | [impacto](../impacto/app-api.md) |
 | `app.api.ventana_pedida` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-api.md) |
 | `app.api.rango_estructura` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.rango._prueba` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-rango.md) |

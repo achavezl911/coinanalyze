@@ -49,7 +49,7 @@ LEE:
   - la llena `app.signal_outcomes._finalize_not_evaluable` (UPDATE) — `app/signal_outcomes.py:199`
   - la llena `app.signal_outcomes._defer_missing_path` (UPDATE) — `app/signal_outcomes.py:226`
   - la llena `app.signal_outcomes._finalize_evaluated` (UPDATE) — `app/signal_outcomes.py:252`
-- `signal_outcome_final_visibility` — `sql/schema.sql:2481`, 8 columnas
+- `signal_outcome_final_visibility` — `sql/schema.sql:2483`, 8 columnas
   - la llena `app.signal_visibility._certify_final_outcomes_once` (INSERT) — `app/signal_visibility.py:308`
 
 ## Funciones que la componen
@@ -141,8 +141,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.api._utc_iso` | 18 | **0** | 0 | **18** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 18 | **0** | 0 | **18** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 21 | **0** | 0 | **21** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 21 | **0** | 0 | **21** | [impacto](../impacto/app-api.md) |
 | `app.api.signals_visibility` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
