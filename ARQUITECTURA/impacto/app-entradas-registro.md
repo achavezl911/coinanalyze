@@ -22,7 +22,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/entradas/registro.py:164` · clave completa `app.entradas.registro._argumentos`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -62,7 +62,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/registro.py:127` · clave completa `app.entradas.registro.cargar_previos`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -104,7 +104,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/registro.py:175` · clave completa `app.entradas.registro.como_sombra_tardia`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -144,7 +144,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/registro.py:54` · clave completa `app.entradas.registro.filas_esperadas`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -185,7 +185,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/registro.py:180` · clave completa `app.entradas.registro.insertar`
 
-**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 90 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -227,7 +227,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/registro.py:219` · clave completa `app.entradas.registro.latir`
 
-**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 90 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -268,7 +268,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/registro.py:66` · clave completa `app.entradas.registro.registrar_reglamento`
 
-**Radio exacto: 2 rutas** de 88 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 90 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -309,7 +309,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/registro.py:233` · clave completa `app.entradas.registro.ultimo_tick`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -350,7 +350,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/entradas/registro.py:112` · clave completa `app.entradas.registro.ventana_previos`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 2** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 2** (mas ancha)
 
 ### Por llamada — 0 rutas
 

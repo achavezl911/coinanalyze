@@ -77,11 +77,11 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | — | `harness/checks/K110-el-libro.sh:18` |
+| **checks** | — | `harness/checks/K110-el-libro.sh:18`, `harness/checks/K111-banco.py:12`, `harness/checks/K111-banco.py:18`, `harness/checks/K111-banco.py:168` _(+3)_ |
+| **tests** | `tests/test_libro.py:587` | — |
 
-**Nadie la llama.** Sus 1 rastros son todos MENCION -comentario,
-docstring o documento-. Es la forma del patron que en esta casa se ha repetido
-nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**
+**No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
+Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
 
@@ -116,8 +116,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api._utc_iso` | 21 | **0** | 0 | **21** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 21 | **0** | 0 | **21** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 22 | **0** | 0 | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 22 | **0** | 0 | **22** | [impacto](../impacto/app-api.md) |
 | `app.api._orderflow` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-api.md) |
 | `app.api.libro_fotos` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

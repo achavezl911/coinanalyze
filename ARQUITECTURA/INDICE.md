@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-88 rutas descubiertas en el arbol. Para trabajar sobre una,
+90 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -35,6 +35,7 @@
 | `/api/libro/cobertura` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-cobertura.md) |
 | `/api/libro/fotos` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-fotos.md) |
 | `/api/libro/referencia` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-referencia.md) |
+| `/api/libro/ultimo` | GET | 1 | 1 | 13 | [ficha](rutas/api-libro-ultimo.md) |
 | `/api/liquidation-map` | GET | 16 | 2 | 6 | [ficha](rutas/api-liquidation-map.md) |
 | `/api/liquidations` | GET | 16 | 2 | 12 | [ficha](rutas/api-liquidations.md) |
 | `/api/macro-context` | GET | 7 | 1 | 10 | [ficha](rutas/api-macro-context.md) |
@@ -92,19 +93,21 @@
 | `/api/wyckoff` | GET | 10 | 2 | 22 | [ficha](rutas/api-wyckoff.md) |
 | `/api/zone/analysis` | GET | 1 | 2 | 16 | [ficha](rutas/api-zone-analysis.md) |
 | `/flujo` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/flujo.md) |
+| `/libro` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/libro.md) |
 | `/mesa` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/mesa.md) |
 | `/metrics` | GET | **0 · PENDIENTE** | 6 | 1 | [ficha](rutas/metrics.md) |
 | `/panel` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/panel.md) |
 
 ## Rutas cuyos campos NO se han podido derivar
 
-8 de 88. Cada una con su motivo en la ficha.
+9 de 90. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
 - `/api/scalp/delta-matrix` — lista vacia en el literal: no se puede derivar el elemento
 - `/api/stream` — la respuesta pasa por StreamingResponse(), que no se puede seguir
 - `/flujo` — la respuesta pasa por FileResponse(), que no se puede seguir
+- `/libro` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/mesa` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/metrics` — la respuesta pasa por Response(), que no se puede seguir
 - `/panel` — la respuesta pasa por FileResponse(), que no se puede seguir
@@ -137,6 +140,7 @@
 | `open_interest` | 20 | 0 |
 | `orderbook_depth` | 1 | 0 |
 | `orderbook_snapshot` | 15 | 0 |
+| `orderflow_paso` | 1 | 0 |
 | `pipeline_heartbeat` | 8 | 1 |
 | `predicted_funding_rate` | 3 | 0 |
 | `scalp_signal_snapshot` | 5 | 0 |

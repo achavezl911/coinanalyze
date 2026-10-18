@@ -41,6 +41,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`open_interest`](#open-interest) | 1 | 20 | 0 |
 | [`orderbook_depth`](#orderbook-depth) | 1 | 1 | 0 |
 | [`orderbook_snapshot`](#orderbook-snapshot) | 2 | 15 | 0 |
+| [`orderflow_paso`](#orderflow-paso) | **0 · PENDIENTE** | 1 | 0 |
 | [`pipeline_heartbeat`](#pipeline-heartbeat) | 3 | 8 | 1 |
 | [`predicted_funding_rate`](#predicted-funding-rate) | 1 | 3 | 0 |
 | [`scalp_signal_snapshot`](#scalp-signal-snapshot) | 1 | 5 | 0 |
@@ -733,6 +734,17 @@ La escriben:
 - [`/api/scalp/summary`](rutas/api-scalp-summary.md)
 - [`/api/stream`](rutas/api-stream.md)
 - [`/metrics`](rutas/metrics.md)
+
+### orderflow_paso
+
+`sql/schema.sql:2934`, 2 columnas.
+
+**PENDIENTE · ninguna funcion de `app/` la escribe con SQL literal.** O la llena
+algo fuera del paquete analizado, o el SQL se arma en ejecucion.
+
+**Si cambia el contenido o el esquema de `orderflow_paso`, estas 1 rutas lo notan:**
+
+- [`/api/libro/ultimo`](rutas/api-libro-ultimo.md)
 
 ### pipeline_heartbeat
 

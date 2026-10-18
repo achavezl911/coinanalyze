@@ -26,8 +26,9 @@
     "/api/hypothesis": "ba33c46f8fa80fdf",
     "/api/level/breakout": "fb51b89ed3c5b4ea",
     "/api/libro/cobertura": "8bf49ad2928a191d",
-    "/api/libro/fotos": "8bf49ad2928a191d",
+    "/api/libro/fotos": "7f16924eba6590af",
     "/api/libro/referencia": "0e3e28c9bb9271f7",
+    "/api/libro/ultimo": "6afa87e4cf8bcd5c",
     "/api/liquidation-map": "51e84121244bcf8b",
     "/api/liquidations": "78ff8c195bdb0805",
     "/api/macro-context": "e5dec7a8e6f784b7",
@@ -85,6 +86,7 @@
     "/api/wyckoff": "a5634651c031dd30",
     "/api/zone/analysis": "e498076eb757a056",
     "/flujo": "b9b51dddfa2b0cf2",
+    "/libro": "cd495219affa108a",
     "/mesa": "cd495219affa108a",
     "/metrics": "85fd30d67170fd17",
     "/panel": "cd495219affa108a"

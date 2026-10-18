@@ -928,8 +928,8 @@
     },
     "app.api.flujo": {
       "fichero": "app/api.py",
-      "linea": 4131,
-      "sitio": "`app/api.py:4131`"
+      "linea": 4151,
+      "sitio": "`app/api.py:4151`"
     },
     "app.api.funding_context_endpoint": {
       "fichero": "app/api.py",
@@ -938,8 +938,8 @@
     },
     "app.api.health": {
       "fichero": "app/api.py",
-      "linea": 3930,
-      "sitio": "`app/api.py:3930`"
+      "linea": 3950,
+      "sitio": "`app/api.py:3950`"
     },
     "app.api.historical_interval_value": {
       "fichero": "app/api.py",
@@ -953,8 +953,8 @@
     },
     "app.api.index": {
       "fichero": "app/api.py",
-      "linea": 4138,
-      "sitio": "`app/api.py:4138`"
+      "linea": 4166,
+      "sitio": "`app/api.py:4166`"
     },
     "app.api.latest_snapshot": {
       "fichero": "app/api.py",
@@ -965,6 +965,11 @@
       "fichero": "app/api.py",
       "linea": 2076,
       "sitio": "`app/api.py:2076`"
+    },
+    "app.api.libro": {
+      "fichero": "app/api.py",
+      "linea": 4158,
+      "sitio": "`app/api.py:4158`"
     },
     "app.api.libro_cobertura": {
       "fichero": "app/api.py",
@@ -980,6 +985,11 @@
       "fichero": "app/api.py",
       "linea": 3873,
       "sitio": "`app/api.py:3873`"
+    },
+    "app.api.libro_ultimo": {
+      "fichero": "app/api.py",
+      "linea": 3927,
+      "sitio": "`app/api.py:3927`"
     },
     "app.api.liquidation_levels": {
       "fichero": "app/api.py",
@@ -1018,18 +1028,18 @@
     },
     "app.api.mesa": {
       "fichero": "app/api.py",
-      "linea": 4115,
-      "sitio": "`app/api.py:4115`"
+      "linea": 4135,
+      "sitio": "`app/api.py:4135`"
     },
     "app.api.mesa_decide": {
       "fichero": "app/api.py",
-      "linea": 4059,
-      "sitio": "`app/api.py:4059`"
+      "linea": 4079,
+      "sitio": "`app/api.py:4079`"
     },
     "app.api.mesa_entradas": {
       "fichero": "app/api.py",
-      "linea": 4098,
-      "sitio": "`app/api.py:4098`"
+      "linea": 4118,
+      "sitio": "`app/api.py:4118`"
     },
     "app.api.metric_baselines": {
       "fichero": "app/api.py",
@@ -1103,8 +1113,8 @@
     },
     "app.api.panel": {
       "fichero": "app/api.py",
-      "linea": 4125,
-      "sitio": "`app/api.py:4125`"
+      "linea": 4145,
+      "sitio": "`app/api.py:4145`"
     },
     "app.api.passive_flow_endpoint": {
       "fichero": "app/api.py",
@@ -1258,13 +1268,13 @@
     },
     "app.api.stream": {
       "fichero": "app/api.py",
-      "linea": 4050,
-      "sitio": "`app/api.py:4050`"
+      "linea": 4070,
+      "sitio": "`app/api.py:4070`"
     },
     "app.api.stream_generator": {
       "fichero": "app/api.py",
-      "linea": 4002,
-      "sitio": "`app/api.py:4002`"
+      "linea": 4022,
+      "sitio": "`app/api.py:4022`"
     },
     "app.api.structure": {
       "fichero": "app/api.py",
@@ -1991,6 +2001,41 @@
       "linea": 877,
       "sitio": "`app/interpretation.py:877`"
     },
+    "app.libro_lectura._escalera": {
+      "fichero": "app/libro_lectura.py",
+      "linea": 263,
+      "sitio": "`app/libro_lectura.py:263`"
+    },
+    "app.libro_lectura.mensaje": {
+      "fichero": "app/libro_lectura.py",
+      "linea": 280,
+      "sitio": "`app/libro_lectura.py:280`"
+    },
+    "app.libro_lectura.parametros": {
+      "fichero": "app/libro_lectura.py",
+      "linea": 291,
+      "sitio": "`app/libro_lectura.py:291`"
+    },
+    "app.libro_lectura.paso_de": {
+      "fichero": "app/libro_lectura.py",
+      "linea": 58,
+      "sitio": "`app/libro_lectura.py:58`"
+    },
+    "app.libro_lectura.reagrega": {
+      "fichero": "app/libro_lectura.py",
+      "linea": 70,
+      "sitio": "`app/libro_lectura.py:70`"
+    },
+    "app.libro_lectura.ultimo": {
+      "fichero": "app/libro_lectura.py",
+      "linea": 373,
+      "sitio": "`app/libro_lectura.py:373`"
+    },
+    "app.libro_lectura.venues_de": {
+      "fichero": "app/libro_lectura.py",
+      "linea": 48,
+      "sitio": "`app/libro_lectura.py:48`"
+    },
     "app.metrics.current_nyse_start": {
       "fichero": "app/metrics.py",
       "linea": 20,
@@ -2000,6 +2045,26 @@
       "fichero": "app/metrics.py",
       "linea": 31,
       "sitio": "`app/metrics.py:31`"
+    },
+    "app.orderflow.nivel_de": {
+      "fichero": "app/orderflow.py",
+      "linea": 270,
+      "sitio": "`app/orderflow.py:270`"
+    },
+    "app.orderflow_lectura.activo_de": {
+      "fichero": "app/orderflow_lectura.py",
+      "linea": 71,
+      "sitio": "`app/orderflow_lectura.py:71`"
+    },
+    "app.orderflow_lectura.pasos": {
+      "fichero": "app/orderflow_lectura.py",
+      "linea": 96,
+      "sitio": "`app/orderflow_lectura.py:96`"
+    },
+    "app.orderflow_lectura.texto": {
+      "fichero": "app/orderflow_lectura.py",
+      "linea": 49,
+      "sitio": "`app/orderflow_lectura.py:49`"
     },
     "app.rango._prueba": {
       "fichero": "app/rango.py",
@@ -3614,6 +3679,7 @@
           "app.api.libro_cobertura",
           "app.api.libro_fotos",
           "app.api.libro_referencia",
+          "app.api.libro_ultimo",
           "app.api.orderflow_cinta",
           "app.api.orderflow_cobertura",
           "app.api.orderflow_footprint",
@@ -3638,6 +3704,7 @@
           "/api/libro/cobertura",
           "/api/libro/fotos",
           "/api/libro/referencia",
+          "/api/libro/ultimo",
           "/api/orderflow/cinta",
           "/api/orderflow/cobertura",
           "/api/orderflow/footprint",
@@ -3662,8 +3729,8 @@
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
-        "total": 21,
-        "total_exacto": 21
+        "total": 22,
+        "total_exacto": 22
       },
       "app.api.ai_context": {
         "cota_mas_ancha_que_k0": false,
@@ -4044,7 +4111,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4131",
+        "sitio": "app/api.py:4151",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4083,7 +4150,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3930",
+        "sitio": "app/api.py:3950",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -4154,7 +4221,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4138",
+        "sitio": "app/api.py:4166",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4191,6 +4258,21 @@
         "por_tabla": [],
         "por_tabla_k0": [],
         "sitio": "app/api.py:2076",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.api.libro": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [],
+        "por_llamada": [
+          "/libro"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/api.py:4158",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4236,6 +4318,21 @@
         "por_tabla": [],
         "por_tabla_k0": [],
         "sitio": "app/api.py:3873",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.api.libro_ultimo": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/api.py:3927",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4404,7 +4501,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4115",
+        "sitio": "app/api.py:4135",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4419,7 +4516,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4059",
+        "sitio": "app/api.py:4079",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4434,7 +4531,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4098",
+        "sitio": "app/api.py:4118",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4672,7 +4769,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4125",
+        "sitio": "app/api.py:4145",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4793,6 +4890,7 @@
           "app.api.libro_cobertura",
           "app.api.libro_fotos",
           "app.api.libro_referencia",
+          "app.api.libro_ultimo",
           "app.api.mesa_entradas",
           "app.api.orderflow_cinta",
           "app.api.orderflow_cobertura",
@@ -4816,6 +4914,7 @@
           "/api/libro/cobertura",
           "/api/libro/fotos",
           "/api/libro/referencia",
+          "/api/libro/ultimo",
           "/api/mesa/entradas",
           "/api/orderflow/cinta",
           "/api/orderflow/cobertura",
@@ -4839,8 +4938,8 @@
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
-        "total": 21,
-        "total_exacto": 21
+        "total": 22,
+        "total_exacto": 22
       },
       "app.api.records": {
         "cota_mas_ancha_que_k0": true,
@@ -5261,7 +5360,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4050",
+        "sitio": "app/api.py:4070",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -5278,7 +5377,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4002",
+        "sitio": "app/api.py:4022",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -20993,6 +21092,142 @@
         "total": 24,
         "total_exacto": 0
       },
+      "app.libro_lectura._escalera": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.libro_lectura.mensaje",
+          "app.libro_lectura.ultimo",
+          "app.libro_lectura.vivo"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/libro_lectura.py:263",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.libro_lectura.mensaje": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.api.libro_ultimo",
+          "app.api.libro_vivo",
+          "app.libro_lectura.ultimo",
+          "app.libro_lectura.vivo"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/libro_lectura.py:280",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.libro_lectura.parametros": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.api.libro_ultimo",
+          "app.api.libro_vivo",
+          "app.libro_lectura.ultimo",
+          "app.libro_lectura.vivo"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/libro_lectura.py:291",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.libro_lectura.paso_de": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.libro_lectura.fotos",
+          "app.libro_lectura.parametros",
+          "app.libro_lectura.ultimo",
+          "app.libro_lectura.vivo"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/libro_lectura.py:58",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.libro_lectura.reagrega": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.libro_lectura._escalera",
+          "app.libro_lectura.fotos",
+          "app.libro_lectura.mensaje"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/libro_lectura.py:70",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.libro_lectura.ultimo": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.api.libro_ultimo"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/libro_lectura.py:373",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.libro_lectura.venues_de": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.libro_lectura.cobertura",
+          "app.libro_lectura.fotos",
+          "app.libro_lectura.parametros",
+          "app.libro_lectura.ultimo",
+          "app.libro_lectura.vivo"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/libro_lectura.py:48",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
       "app.logging_setup.configure_logging": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
@@ -22235,6 +22470,129 @@
         ],
         "total": 24,
         "total_exacto": 0
+      },
+      "app.orderflow.nivel_de": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.libro.carga_relevo",
+          "app.libro.escalera",
+          "app.libro.foto",
+          "app.libro_lectura._escalera",
+          "app.libro_lectura.fotos",
+          "app.libro_lectura.mensaje",
+          "app.libro_lectura.reagrega",
+          "app.orderflow.Almacen.anade"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/orderflow.py:270",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.orderflow_lectura.activo_de": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.libro_lectura.cobertura",
+          "app.libro_lectura.fotos",
+          "app.libro_lectura.parametros",
+          "app.libro_lectura.ultimo",
+          "app.libro_lectura.vivo",
+          "app.orderflow_lectura._ventana_de_sesiones",
+          "app.orderflow_lectura.cinta",
+          "app.orderflow_lectura.cobertura",
+          "app.orderflow_lectura.footprint",
+          "app.orderflow_lectura.grandes",
+          "app.orderflow_lectura.perfil",
+          "app.orderflow_lectura.sesiones",
+          "app.orderflow_lectura.tpo",
+          "app.orderflow_lectura.vwap"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/orderflow_lectura.py:71",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.orderflow_lectura.pasos": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.api.libro_ultimo",
+          "app.api.libro_vivo",
+          "app.libro_lectura.referencia",
+          "app.libro_lectura.ultimo",
+          "app.libro_lectura.vivo",
+          "app.orderflow_lectura._ventana_de_sesiones",
+          "app.orderflow_lectura.footprint",
+          "app.orderflow_lectura.perfil",
+          "app.orderflow_lectura.referencia",
+          "app.orderflow_lectura.sesiones",
+          "app.orderflow_lectura.tpo",
+          "app.orderflow_lectura.vwap"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/orderflow_lectura.py:96",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.orderflow_lectura.texto": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.api.libro_ultimo",
+          "app.api.libro_vivo",
+          "app.libro_lectura._escalera",
+          "app.libro_lectura._lado",
+          "app.libro_lectura.fotos",
+          "app.libro_lectura.mensaje",
+          "app.libro_lectura.parametros",
+          "app.libro_lectura.paso_de",
+          "app.libro_lectura.referencia",
+          "app.libro_lectura.ultimo",
+          "app.libro_lectura.vivo",
+          "app.orderflow_lectura._cabecera",
+          "app.orderflow_lectura._nivel_json",
+          "app.orderflow_lectura._operacion",
+          "app.orderflow_lectura._perfil",
+          "app.orderflow_lectura._redondea",
+          "app.orderflow_lectura.cinta",
+          "app.orderflow_lectura.footprint",
+          "app.orderflow_lectura.grandes",
+          "app.orderflow_lectura.paso_de",
+          "app.orderflow_lectura.perfil",
+          "app.orderflow_lectura.referencia",
+          "app.orderflow_lectura.sesiones",
+          "app.orderflow_lectura.tpo",
+          "app.orderflow_lectura.vwap"
+        ],
+        "por_llamada": [
+          "/api/libro/ultimo"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/orderflow_lectura.py:49",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
       },
       "app.partitioning.apply_temporal_retention": {
         "cota_mas_ancha_que_k0": true,
@@ -32322,16 +32680,16 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 440,
-    "rutas": 88,
-    "rutas_con_campos": 80,
-    "rutas_sin_campos": 8,
-    "sin_clave_temporal": 25,
+    "funciones_alcanzables": 453,
+    "rutas": 90,
+    "rutas_con_campos": 81,
+    "rutas_sin_campos": 9,
+    "sin_clave_temporal": 26,
     "sin_consumidor": 9,
-    "sin_declarar": 20,
-    "sin_llamada": 20,
-    "solo_mencion": 11,
-    "tablas_alcanzadas": 34,
+    "sin_declarar": 22,
+    "sin_llamada": 19,
+    "solo_mencion": 10,
+    "tablas_alcanzadas": 35,
     "tablas_catalogo": 51
   },
   "rutas": [
@@ -32366,17 +32724,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 4137,
+      "decorador_linea": 4165,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4144,
+      "fin": 4172,
       "forma": [],
       "handler": "app.api.index",
       "impacto_del_handler": 1,
-      "linea": 4138,
+      "linea": 4166,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -32843,8 +33201,8 @@
             "harness/checks/K44-control.bash:603",
             "harness/checks/K44-control.bash:648",
             "harness/checks/K44-control.bash:693",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:222",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:739",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:223",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:755",
             "harness/checks/K72-campos.js:33",
             "harness/checks/K84-dos-matrices-una-cifra.sh:203",
             "harness/checks/K84-dos-matrices-una-cifra.sh:257"
@@ -35193,7 +35551,7 @@
             "harness/checks/K44-control.bash:240",
             "harness/checks/K44-control.bash:246",
             "harness/checks/K44-control.bash:694",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:167",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:168",
             "harness/checks/K72-campos.js:46",
             "harness/checks/K72-campos.js:52",
             "harness/checks/K72-campos.js:58",
@@ -35210,7 +35568,7 @@
             "harness/checks/K44-control.bash:254",
             "harness/checks/K44-control.bash:628",
             "harness/checks/K44-control.bash:720",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:831",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:847",
             "harness/checks/K72-campos.js:6",
             "harness/checks/K72-el-campo-que-no-llega.sh:10",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:13",
@@ -36991,19 +37349,19 @@
     {
       "camino": "/api/healthz",
       "campos": {
-        "database": "literal en app/api.py:3983",
-        "governed_services": "literal en app/api.py:3986",
-        "informative_services": "literal en app/api.py:3987",
-        "informative_services.failing": "literal en app/api.py:3993",
-        "informative_services.lag_seconds": "literal en app/api.py:3991",
-        "informative_services.max_age_seconds": "literal en app/api.py:3992",
-        "informative_services.service": "literal en app/api.py:3989",
-        "informative_services.status": "literal en app/api.py:3990",
-        "missing_services": "literal en app/api.py:3984",
-        "missing_symbols": "literal en app/api.py:3985",
-        "services": "literal en app/api.py:3997",
-        "status": "literal en app/api.py:3978",
-        "symbols": "literal en app/api.py:3998"
+        "database": "literal en app/api.py:4003",
+        "governed_services": "literal en app/api.py:4006",
+        "informative_services": "literal en app/api.py:4007",
+        "informative_services.failing": "literal en app/api.py:4013",
+        "informative_services.lag_seconds": "literal en app/api.py:4011",
+        "informative_services.max_age_seconds": "literal en app/api.py:4012",
+        "informative_services.service": "literal en app/api.py:4009",
+        "informative_services.status": "literal en app/api.py:4010",
+        "missing_services": "literal en app/api.py:4004",
+        "missing_symbols": "literal en app/api.py:4005",
+        "services": "literal en app/api.py:4017",
+        "status": "literal en app/api.py:3998",
+        "symbols": "literal en app/api.py:4018"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -37086,19 +37444,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3929,
+      "decorador_linea": 3949,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 3999,
+      "fin": 4019,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.health",
       "impacto_del_handler": 8,
-      "linea": 3930,
+      "linea": 3950,
       "llama_directo": [
         "app.api.records",
         "app.db.db_identity",
@@ -37925,16 +38283,28 @@
         "checks": {
           "llamadas": [],
           "menciones": [
-            "harness/checks/K110-el-libro.sh:18"
+            "harness/checks/K110-el-libro.sh:18",
+            "harness/checks/K111-banco.py:12",
+            "harness/checks/K111-banco.py:18",
+            "harness/checks/K111-banco.py:168",
+            "harness/checks/K111-control.bash:12",
+            "harness/checks/K111-el-libro-pintado-es-el-servido.sh:13",
+            "harness/checks/K111-libro.py:21"
           ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_libro.py:587"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 0,
-        "n_menciones": 1,
+        "n_llamadas": 1,
+        "n_menciones": 7,
         "sin_ninguno": false,
-        "solo_mencion": true
+        "solo_mencion": false
       },
       "declarada": {
         "completa": false,
@@ -38112,6 +38482,166 @@
       "tablas_dudosas": [],
       "tablas_escribe": [],
       "tablas_lee": [],
+      "tipo_retorno": "dict[str, Any]"
+    },
+    {
+      "camino": "/api/libro/ultimo",
+      "campos": {
+        "as_of": "literal en app/api.py:3940"
+      },
+      "campos_pendientes": [
+        "el objeto se expande con **respuesta, que no se resuelve en el arbol: sus campos no se pueden derivar"
+      ],
+      "cierre": [
+        "app.api._utc_iso",
+        "app.api.rechaza_parametros_desconocidos",
+        "app.libro_lectura._escalera",
+        "app.libro_lectura.mensaje",
+        "app.libro_lectura.parametros",
+        "app.libro_lectura.paso_de",
+        "app.libro_lectura.reagrega",
+        "app.libro_lectura.ultimo",
+        "app.libro_lectura.venues_de",
+        "app.orderflow.nivel_de",
+        "app.orderflow_lectura.activo_de",
+        "app.orderflow_lectura.pasos",
+        "app.orderflow_lectura.texto"
+      ],
+      "cierre_indirecto": [
+        "app.libro_lectura._escalera",
+        "app.libro_lectura.mensaje",
+        "app.libro_lectura.parametros",
+        "app.libro_lectura.paso_de",
+        "app.libro_lectura.reagrega",
+        "app.libro_lectura.venues_de",
+        "app.orderflow.nivel_de",
+        "app.orderflow_lectura.activo_de",
+        "app.orderflow_lectura.pasos",
+        "app.orderflow_lectura.texto"
+      ],
+      "claves_temporales": [
+        "as_of"
+      ],
+      "codigos": [
+        {
+          "codigo": 422,
+          "detalle": null,
+          "donde": "app/api.py:2596",
+          "propio": false
+        },
+        {
+          "codigo": 422,
+          "detalle": null,
+          "donde": "app/api.py:3939",
+          "propio": true
+        }
+      ],
+      "consumidores": {
+        "checks": {
+          "llamadas": [
+            "harness/checks/K110-control.bash:178",
+            "harness/checks/K110-control.bash:182"
+          ],
+          "menciones": [
+            "harness/checks/K110-libro.py:561",
+            "harness/checks/K111-banco.py:20",
+            "harness/checks/K111-banco.py:182"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_libro.py:587"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 3,
+        "n_menciones": 3,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
+      "declarada": {
+        "completa": false,
+        "existe": false,
+        "faltan": [
+          "PREGUNTA",
+          "VENTANA",
+          "PROMESA",
+          "SUPERFICIE"
+        ],
+        "fichero": "declarada/api-libro-ultimo.md",
+        "secciones": []
+      },
+      "decorador_linea": 3926,
+      "familia_ventana": {
+        "candidata": null,
+        "por": "parametros ['niveles', 'paso', 'symbol', 'venues']: no encaja en 1/2/3 sin leerla"
+      },
+      "fichero": "app/api.py",
+      "fin": 3940,
+      "forma": [
+        "objeto"
+      ],
+      "handler": "app.api.libro_ultimo",
+      "impacto_del_handler": 1,
+      "linea": 3927,
+      "llama_directo": [
+        "app.api._utc_iso",
+        "app.api.rechaza_parametros_desconocidos",
+        "app.libro_lectura.ultimo"
+      ],
+      "llama_fuera": [
+        "HTTPException",
+        "datetime.now",
+        "str"
+      ],
+      "metodos": [
+        "GET"
+      ],
+      "parametros": [
+        {
+          "defecto": null,
+          "lo_inyecta_el_framework": true,
+          "nombre": "request",
+          "obligatorio": false,
+          "tipo": "Request"
+        },
+        {
+          "defecto": null,
+          "lo_inyecta_el_framework": false,
+          "nombre": "symbol",
+          "obligatorio": true,
+          "tipo": "str"
+        },
+        {
+          "defecto": "None",
+          "lo_inyecta_el_framework": false,
+          "nombre": "venues",
+          "obligatorio": false,
+          "tipo": "str | None"
+        },
+        {
+          "defecto": "None",
+          "lo_inyecta_el_framework": false,
+          "nombre": "paso",
+          "obligatorio": false,
+          "tipo": "str | None"
+        },
+        {
+          "defecto": "None",
+          "lo_inyecta_el_framework": false,
+          "nombre": "niveles",
+          "obligatorio": false,
+          "tipo": "str | None"
+        }
+      ],
+      "tablas_dudosas": [],
+      "tablas_escribe": [],
+      "tablas_lee": [
+        "orderflow_paso"
+      ],
       "tipo_retorno": "dict[str, Any]"
     },
     {
@@ -38924,7 +39454,7 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:4070",
+          "donde": "app/api.py:4090",
           "propio": true
         }
       ],
@@ -38984,17 +39514,17 @@
         "fichero": "declarada/api-mesa-decide.md",
         "secciones": []
       },
-      "decorador_linea": 4058,
+      "decorador_linea": 4078,
       "familia_ventana": {
         "candidata": null,
         "por": "parametros ['frame', 'symbol']: no encaja en 1/2/3 sin leerla"
       },
       "fichero": "app/api.py",
-      "fin": 4094,
+      "fin": 4114,
       "forma": [],
       "handler": "app.api.mesa_decide",
       "impacto_del_handler": 1,
-      "linea": 4059,
+      "linea": 4079,
       "llama_directo": [
         "app.ai_context.build_mesa_decide",
         "app.api.scalp_persistence",
@@ -39280,19 +39810,19 @@
         "fichero": "declarada/api-mesa-entradas.md",
         "secciones": []
       },
-      "decorador_linea": 4097,
+      "decorador_linea": 4117,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4111,
+      "fin": 4131,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.mesa_entradas",
       "impacto_del_handler": 1,
-      "linea": 4098,
+      "linea": 4118,
       "llama_directo": [
         "app.api.rechaza_parametros_desconocidos",
         "app.api.validate_symbol",
@@ -42831,7 +43361,7 @@
             "harness/checks/K44-control.bash:571",
             "harness/checks/K44-control.bash:604",
             "harness/checks/K44-control.bash:649",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:168",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:169",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:216",
             "harness/checks/K83-la-ventana-pide-la-fuente-que-no-tiene-el-dato.sh:217"
           ],
@@ -43228,7 +43758,7 @@
             "harness/checks/K44-control.bash:394",
             "harness/checks/K44-control.bash:468",
             "harness/checks/K44-control.bash:513",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:169"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:170"
           ],
           "menciones": [
             "harness/checks/K44-control.bash:362"
@@ -45222,17 +45752,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 4049,
+      "decorador_linea": 4069,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4055,
+      "fin": 4075,
       "forma": [],
       "handler": "app.api.stream",
       "impacto_del_handler": 1,
-      "linea": 4050,
+      "linea": 4070,
       "llama_directo": [
         "app.api.stream_generator"
       ],
@@ -45738,8 +46268,8 @@
         "checks": {
           "llamadas": [
             "harness/checks/K43-foto-unica.sh:170",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:726",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:730"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:742",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:746"
           ],
           "menciones": []
         },
@@ -46914,16 +47444,18 @@
             "harness/checks/K44-control.bash:1155",
             "harness/checks/K44-control.bash:1162",
             "harness/checks/K44-control.bash:1166",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:266",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:377",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:463"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:267",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:382",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:468"
           ],
           "menciones": [
             "harness/checks/K109-banco.py:9",
             "harness/checks/K109-banco.py:16",
             "harness/checks/K109-lo-pintado-es-lo-servido.sh:4",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:330",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:334"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:331",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:335"
           ]
         },
         "panel-html": {
@@ -46931,12 +47463,18 @@
             "static/index.html:91"
           ],
           "menciones": []
+        },
+        "tests": {
+          "llamadas": [],
+          "menciones": [
+            "tests/js/libro_pantalla.test.js:8"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 17,
-        "n_menciones": 5,
+        "n_menciones": 8,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -46952,17 +47490,103 @@
         "fichero": "declarada/flujo.md",
         "secciones": []
       },
-      "decorador_linea": 4130,
+      "decorador_linea": 4150,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4134,
+      "fin": 4154,
       "forma": [],
       "handler": "app.api.flujo",
       "impacto_del_handler": 1,
-      "linea": 4131,
+      "linea": 4151,
+      "llama_directo": [],
+      "llama_fuera": [
+        "FileResponse"
+      ],
+      "metodos": [
+        "GET"
+      ],
+      "parametros": [],
+      "tablas_dudosas": [],
+      "tablas_escribe": [],
+      "tablas_lee": [],
+      "tipo_retorno": "FileResponse"
+    },
+    {
+      "camino": "/libro",
+      "campos": {},
+      "campos_pendientes": [
+        "la respuesta pasa por FileResponse(), que no se puede seguir",
+        "el valor devuelto es un BinOp, que no se analiza estaticamente"
+      ],
+      "cierre": [],
+      "cierre_indirecto": [],
+      "claves_temporales": [],
+      "codigos": [],
+      "consumidores": {
+        "checks": {
+          "llamadas": [
+            "harness/checks/K111-libro.py:302",
+            "harness/checks/K111-libro.py:782",
+            "harness/checks/K111-libro.py:787",
+            "harness/checks/K111-libro.py:790",
+            "harness/checks/K44-control.bash:1186",
+            "harness/checks/K44-control.bash:1187",
+            "harness/checks/K44-control.bash:1197",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:267",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:382",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:470"
+          ],
+          "menciones": [
+            "harness/checks/K111-banco.py:9",
+            "harness/checks/K111-banco.py:19",
+            "harness/checks/K111-banco.py:21",
+            "harness/checks/K111-banco.py:157",
+            "harness/checks/K111-el-libro-pintado-es-el-servido.sh:4",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:339"
+          ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_libro.py:587"
+          ],
+          "menciones": []
+        }
+      },
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 11,
+        "n_menciones": 8,
+        "sin_ninguno": false,
+        "solo_mencion": false
+      },
+      "declarada": {
+        "completa": false,
+        "existe": false,
+        "faltan": [
+          "PREGUNTA",
+          "VENTANA",
+          "PROMESA",
+          "SUPERFICIE"
+        ],
+        "fichero": "declarada/libro.md",
+        "secciones": []
+      },
+      "decorador_linea": 4157,
+      "familia_ventana": {
+        "candidata": 1,
+        "por": "solo pide symbol (o nada): estado ambiente"
+      },
+      "fichero": "app/api.py",
+      "fin": 4162,
+      "forma": [],
+      "handler": "app.api.libro",
+      "impacto_del_handler": 1,
+      "linea": 4158,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -47023,12 +47647,12 @@
             "harness/checks/K44-control.bash:998",
             "harness/checks/K44-control.bash:1019",
             "harness/checks/K44-control.bash:1026",
-            "harness/checks/K44-control.bash:1187",
-            "harness/checks/K44-control.bash:1194",
-            "harness/checks/K44-control.bash:1232",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:266",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:377",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:461"
+            "harness/checks/K44-control.bash:1218",
+            "harness/checks/K44-control.bash:1225",
+            "harness/checks/K44-control.bash:1263",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:267",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:382",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:466"
           ],
           "menciones": [
             "harness/checks/K102-control.bash:270",
@@ -47042,8 +47666,8 @@
             "harness/checks/K102-sobre-plantado.py:258",
             "harness/checks/K106-banco.py:6",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:247",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:50",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:200"
           ]
         },
@@ -47077,17 +47701,17 @@
         "fichero": "declarada/mesa.md",
         "secciones": []
       },
-      "decorador_linea": 4114,
+      "decorador_linea": 4134,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4121,
+      "fin": 4141,
       "forma": [],
       "handler": "app.api.mesa",
       "impacto_del_handler": 1,
-      "linea": 4115,
+      "linea": 4135,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -47229,15 +47853,15 @@
             "harness/checks/K44-control.bash:930",
             "harness/checks/K44-control.bash:943",
             "harness/checks/K44-control.bash:946",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:266",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:377",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:465"
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:267",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:382",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:472"
           ],
           "menciones": [
             "harness/checks/K102-sobre-plantado.py:258",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:49",
-            "harness/checks/K44-el-sobre-que-nadie-pide.sh:247",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:50",
+            "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:200"
           ]
         },
@@ -47281,17 +47905,17 @@
         "fichero": "declarada/panel.md",
         "secciones": []
       },
-      "decorador_linea": 4124,
+      "decorador_linea": 4144,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4127,
+      "fin": 4147,
       "forma": [],
       "handler": "app.api.panel",
       "impacto_del_handler": 1,
-      "linea": 4125,
+      "linea": 4145,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -48041,7 +48665,7 @@
         {
           "funcion": "app.api.stream_generator",
           "origen": "literal",
-          "sitio": "app/api.py:4019"
+          "sitio": "app/api.py:4039"
         },
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
@@ -48420,7 +49044,7 @@
         {
           "funcion": "app.api.health",
           "origen": "literal",
-          "sitio": "app/api.py:3955"
+          "sitio": "app/api.py:3975"
         },
         {
           "funcion": "app.api.latest_snapshot",
@@ -49007,7 +49631,7 @@
         {
           "funcion": "app.api.stream_generator",
           "origen": "literal",
-          "sitio": "app/api.py:4030"
+          "sitio": "app/api.py:4050"
         },
         {
           "funcion": "app.entradas.insumos.libro",
@@ -49048,6 +49672,30 @@
         "/metrics"
       ]
     },
+    "orderflow_paso": {
+      "escrita_por": [],
+      "escritores_del_arbol": [],
+      "lectores_del_arbol": [
+        {
+          "funcion": "app.libro.run",
+          "origen": "literal",
+          "sitio": "app/libro.py:1048"
+        },
+        {
+          "funcion": "app.orderflow.run",
+          "origen": "literal",
+          "sitio": "app/orderflow.py:725"
+        },
+        {
+          "funcion": "app.orderflow_lectura.pasos",
+          "origen": "literal",
+          "sitio": "app/orderflow_lectura.py:98"
+        }
+      ],
+      "leida_por": [
+        "/api/libro/ultimo"
+      ]
+    },
     "pipeline_heartbeat": {
       "escrita_por": [
         "/api/healthz"
@@ -49086,7 +49734,7 @@
         {
           "funcion": "app.api.health",
           "origen": "literal",
-          "sitio": "app/api.py:3949"
+          "sitio": "app/api.py:3969"
         },
         {
           "funcion": "app.db.heartbeat_component",
@@ -49878,7 +50526,7 @@
         {
           "funcion": "app.api.stream_generator",
           "origen": "literal",
-          "sitio": "app/api.py:4008"
+          "sitio": "app/api.py:4028"
         },
         {
           "funcion": "app.scalp_logic.scalp_context",

@@ -24,7 +24,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/metrics.py:31` · clave completa `app.metrics.session_bounds`
 
-**Radio exacto: 2 rutas** de 88 · **cota superior: 56** (mas ancha)
+**Radio exacto: 2 rutas** de 90 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -185,7 +185,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:711` · clave completa `app.metrics.compute_and_store_all`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 47** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 47** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -321,7 +321,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:20` · clave completa `app.metrics.current_nyse_start`
 
-**Radio exacto: 16 rutas** de 88 · **cota superior: 27** (mas ancha)
+**Radio exacto: 16 rutas** de 90 · **cota superior: 27** (mas ancha)
 
 ### Por llamada — 16 rutas
 
@@ -400,7 +400,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:252` · clave completa `app.metrics.liquidation_history_observation`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -480,7 +480,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:315` · clave completa `app.metrics._liquidation_history_observed`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -534,7 +534,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:166` · clave completa `app.metrics.compute_regime`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -588,7 +588,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:429` · clave completa `app.metrics.compute_snapshot`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -642,7 +642,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:676` · clave completa `app.metrics.insert_snapshot`
 
-**Radio exacto: 9 rutas** de 88 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 90 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -703,7 +703,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:146` · clave completa `app.metrics.normalized_cvd_imbalance`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -757,7 +757,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:50` · clave completa `app.metrics.optional_finite`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -811,7 +811,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/metrics.py:66` · clave completa `app.metrics.whale_classification`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 9** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 0 rutas
 
