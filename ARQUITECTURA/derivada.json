@@ -1418,8 +1418,8 @@
     },
     "app.config.get_settings": {
       "fichero": "app/config.py",
-      "linea": 299,
-      "sitio": "`app/config.py:299`"
+      "linea": 300,
+      "sitio": "`app/config.py:300`"
     },
     "app.data_gaps._aware_utc": {
       "fichero": "app/data_gaps.py",
@@ -6055,7 +6055,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/config.py:299",
+        "sitio": "app/config.py:300",
         "solo_por_tabla": [
           "/api/carry/matriz",
           "/api/cross-asset",

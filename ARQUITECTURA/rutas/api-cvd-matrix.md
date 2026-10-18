@@ -87,7 +87,7 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (14)</summary>
 
-- `app.config.get_settings` — `app/config.py:299`
+- `app.config.get_settings` — `app/config.py:300`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2889`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
