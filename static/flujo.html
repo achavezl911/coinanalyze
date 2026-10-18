@@ -75,15 +75,46 @@
         <label class="mando">sesiones del TPO
           <input id="sel-sesiones" type="number" min="1" max="7" step="1" aria-label="Sesiones del TPO" /></label>
       </div>
+      <!-- OF-5a (campana 146): los INDICADORES bajo el footprint, las marcas de las grandes y la cinta; en el hash -->
+      <div class="gestor" id="mandos-ind" role="group" aria-label="Indicadores">
+        <span class="mando">indicadores:</span>
+        <label class="mando"><input type="checkbox" data-ind="delta" /> delta</label>
+        <label class="mando"><input type="checkbox" data-ind="cvd" /> CVD</label>
+        <label class="mando"><input type="checkbox" data-ind="oi" /> OI Binance</label>
+        <label class="mando"><input type="checkbox" data-ind="oib" /> OI Bybit</label>
+        <label class="mando"><input type="checkbox" data-ind="funding" /> funding</label>
+        <label class="mando"><input type="checkbox" data-ind="ls" /> largos/cortos</label>
+        <label class="mando"><input type="checkbox" data-ind="liq" /> liquidaciones</label>
+        <label class="mando"><input type="checkbox" data-ind="grandes" /> grandes</label>
+        <label class="mando"><input type="checkbox" data-ind="cinta" /> cinta ≥
+          <input id="sel-cinta" type="number" min="0" step="any" aria-label="Tamaño mínimo de la orden en la cinta (USD)" />
+          USD</label>
+      </div>
     </header>
 
     <div class="estado" id="estado" role="status"></div>
 
+    <!-- OF-5a: el footprint y sus paneles en una columna (el mismo ancho: el mismo eje de tiempo), la cinta a la derecha -->
+    <div class="graficos" id="graficos">
+    <div class="columna">
     <main class="grafico" id="grafico">
       <canvas id="lienzo"></canvas>
     </main>
     <div class="grafico" id="grafico-tpo" hidden>
       <canvas id="lienzo-tpo"></canvas>
+    </div>
+    <div class="grafico-ind" id="grafico-ind" hidden>
+      <canvas id="lienzo-ind" role="img" aria-label="Paneles de indicadores bajo el footprint"></canvas>
+    </div>
+    </div>
+    <aside class="cinta" id="cinta" hidden aria-label="Cinta: órdenes de mercado agregadas">
+      <p class="cinta-fuente" id="cinta-fuente"></p>
+      <p class="cinta-estado" id="cinta-estado" role="status"></p>
+      <table id="cinta-tabla">
+        <thead><tr><th>hora (UTC)</th><th>venue</th><th></th><th>USD</th><th>precio</th><th>ops</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </aside>
     </div>
     <div class="lectura" id="lectura" aria-live="polite"></div>
 
@@ -135,6 +166,19 @@
         single prints (niveles con una sola letra). Las letras de una media hora incompleta van en ámbar. Rueda: filas
         más o menos altas; arrastre: moverse.
       </p>
+      <p>
+        <b>Los indicadores</b> (debajo del footprint, con su mismo eje de tiempo; cada panel escribe su fuente): el
+        <b>delta</b> de cada vela y el <b>CVD</b> salen de las mismas celdas que el footprint (su familia); el CVD
+        empieza en la primera vela de la ventana y, tras un hueco, vuelve a 0 (lo que no se escuchó no se suma). El
+        <b>interés abierto</b> (Binance y Bybit, con su cambio de cubo a cubo), el <b>funding</b> y el predicho,
+        <b>largos/cortos</b> y las <b>liquidaciones</b> de 5 min son de Coinalyze cada 5 min (su BTCUSDT_PERP.A es
+        Binance): con velas de 1 min, un escalón de 5 velas. Las <b>liquidaciones sueltas</b> (puntos) son las de
+        Binance y Bybit una a una, solo las de las últimas horas que se guardan. Un cubo sin dato es un HUECO rayado
+        (o pendiente, si aún no se ha publicado): nunca un cero. Las <b>grandes</b> son círculos en su vela, a su hora
+        y a su precio. La <b>cinta</b> (a la derecha) son las órdenes de mercado agregadas: las operaciones del mismo
+        venue, el mismo milisegundo y el mismo lado del agresor, sumadas antes de filtrar por tamaño; en vivo pide
+        solo lo nuevo cada 2 s, hasta 8 s antes de ahora para que ninguna orden salga partida.
+      </p>
     </footer>
 
     <script src="/static/mesa/mesa-datos.js"></script>
@@ -142,6 +186,8 @@
     <script src="/static/flujo/flujo-dibujo.js"></script>
     <script src="/static/flujo/flujo-capas.js"></script>
     <script src="/static/flujo/flujo-tpo.js"></script>
+    <script src="/static/flujo/flujo-indicadores.js"></script>
+    <script src="/static/flujo/flujo-cinta.js"></script>
     <script src="/static/flujo/flujo-app.js"></script>
   </body>
 </html>

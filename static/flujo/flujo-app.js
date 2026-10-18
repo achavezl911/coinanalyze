@@ -60,6 +60,48 @@ Object.assign(window.FLUJO_HITOS, {
   repinta: () => (VISTA.modo === 'tpo' ? LIENZO_TPO && LIENZO_TPO.pinta() : LIENZO && LIENZO.pinta()),
 });
 
+/* OF-5a (campana 146) · LOS INDICADORES Y LA CINTA (flujo-indicadores.js, flujo-cinta.js). Se piden cuando el footprint
+ * ya esta pintado y, en vivo, otra vez con cada vela NUEVA (las series de 5 min y las grandes de la ventana del
+ * footprint); la cinta lleva su propio latido, que pide solo lo nuevo. `indicadores` dice a K112 cuando han llegado;
+ * `aplicadas`, que respuestas del footprint aplico la pantalla, en orden; y `congela()` para todos los latidos y deja
+ * sin efecto lo que estuviera en vuelo (como una vista nueva: CARGA + 1), para que lo pintado y lo recibido sean lo
+ * mismo cuando K112 los compara. */
+Object.assign(window.FLUJO_HITOS, {
+  indicadores: false,
+  aplicadas: [],
+  congela: () => {
+    CARGA += 1;
+    IND.pide += 1;
+    CINTA.pide += 1;
+    pararLatido();
+  },
+});
+
+function apunta(sobre) {
+  if (sobre.ok) window.FLUJO_HITOS.aplicadas.push({ ruta: sobre.ruta, as_of: sobre.datos.as_of });
+}
+
+/* La ventana de los indicadores es la del footprint que se pinta: de su primera vela al final de la ultima. */
+async function cargaVistaIndicadores(mia) {
+  if (!MODELO || mia !== CARGA) return;
+  window.FLUJO_HITOS.indicadores = false;
+  const m = FLUJO_MARCOS[VISTA.marco] * 60000;
+  const w = { desde: MODELO.velas[0].ts, hasta: isoZ(Date.parse(MODELO.velas[MODELO.velas.length - 1].ts) + m) };
+  await cargaIndicadores(VISTA, w, (s) => {
+    apuntar(s);
+    apunta(s); // solo llega aqui lo que se aplica (la ultima peticion de cada vista)
+  });
+  if (mia !== CARGA) return;
+  LIENZO.pide();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (mia === CARGA) window.FLUJO_HITOS.indicadores = true;
+  }));
+}
+
+function cargaVistaCinta() {
+  cargaCinta(VISTA, apuntar);
+}
+
 function reloj() {
   return (window.performance || Date).now();
 }
@@ -110,11 +152,13 @@ async function carga() {
   VISIBLE.vista = VISIBLE.pedida = null;
   window.FLUJO_HITOS.vista = escribeHash(VISTA);
   pintaSelectores();
+  midePaneles(VISTA); // OF-5a: el alto de los paneles lo fija la VISTA, no el dato
   pintaEstado('pidiendo la historia…');
   const w = ventana(VISTA, Date.now());
   const sobre = await pedir(RUTA, parametros(VISTA, w.desde, w.hasta, VISTA.paso));
   apuntar(sobre);
   if (mia !== CARGA) return;
+  apunta(sobre); // OF-5a: lo que la pantalla APLICA (K112 lo compara con lo que llego)
   if (!sobre.ok) {
     FALLO = sobre;
     LIENZO.pon({ velas: [] }, VISTA.ver);
@@ -135,6 +179,10 @@ async function carga() {
     if (mia === CARGA && MODELO) cargaCapas();
     else if (mia === CARGA) window.FLUJO_HITOS.capas = true;
   }));
+  // OF-5a: los indicadores de la ventana del footprint y la cinta
+  if (MODELO) cargaVistaIndicadores(mia);
+  else window.FLUJO_HITOS.indicadores = true;
+  cargaVistaCinta();
 }
 
 async function late() {
@@ -160,6 +208,7 @@ async function late() {
     return;
   }
   FALLO = null;
+  apunta(sobre);
   ULTIMA = { asOfMs: Date.parse(sobre.datos.as_of), t: reloj() };
   const porTs = new Map(MODELO.velas.map((v, i) => [Date.parse(v.ts), i]));
   const antes = MODELO.velas.length; // OF-3: con una vela NUEVA, las capas vivas se vuelven a pedir
@@ -175,6 +224,7 @@ async function late() {
   LIENZO.actualiza();
   pintaEstado();
   if (MODELO.velas.length > antes) refrescaCapas();
+  if (MODELO.velas.length > antes) cargaVistaIndicadores(mia); // OF-5a
 }
 
 function arrancaLatido() {
@@ -189,6 +239,7 @@ function pararLatido() {
   LATIDO = TIC = null;
   if (LATIDO_TPO !== null) clearInterval(LATIDO_TPO);
   LATIDO_TPO = null;
+  paraCinta(); // OF-5a
 }
 
 /* ------------------------------------------------------------------ decir */
@@ -348,6 +399,7 @@ function pintaSelectores() {
     b.setAttribute('aria-pressed', String(b.dataset.valor === VISTA.modo));
   });
   document.getElementById('sel-sesiones').value = VISTA.sesiones;
+  pintaMandosIndicadores(); // OF-5a
 }
 
 /* ------------------------------------------------------------------ OF-3 · las capas */
@@ -503,6 +555,8 @@ async function cargaTPO() {
   window.FLUJO_HITOS.vista = escribeHash(VISTA);
   document.getElementById('grafico').hidden = true;
   document.getElementById('grafico-tpo').hidden = false;
+  midePaneles(VISTA); // OF-5a: sin paneles ni cinta en el TPO
+  cargaVistaCinta();
   pintaSelectores();
   pintaEstado('pidiendo el TPO…');
   const sobre = await pedir(RUTA_TPO, peticionTPO());
@@ -560,6 +614,7 @@ function aplicaHash() {
     return;
   }
   const capasCambian = ['sesion', 'capas', 'compuesto', 'fijo'].some((k) => String(nueva[k]) !== String(VISTA[k]));
+  const indCambia = String(nueva.ind) !== String(VISTA.ind) || nueva.cinta !== VISTA.cinta; // OF-5a
   const soloFiltro = MODELO && ['activo', 'marco', 'familia', 'paso', 'unidad', 'hasta']
     .every((k) => nueva[k] === VISTA[k]);
   VISTA = nueva;
@@ -568,6 +623,11 @@ function aplicaHash() {
     window.FLUJO_HITOS.vista = hash;
     pintaSelectores();
     if (capasCambian) cargaCapas();
+    if (indCambia) {
+      midePaneles(VISTA);
+      cargaVistaIndicadores(CARGA);
+      cargaVistaCinta();
+    }
     LIENZO.pide();
     return;
   }
@@ -576,6 +636,8 @@ function aplicaHash() {
 
 function arranca() {
   LIENZO = creaLienzo(document.getElementById('lienzo'), lectura);
+  creaIndicadores(document.getElementById('lienzo-ind')); // OF-5a
+  atiendeMandosIndicadores();
   [['sel-activo', 'activo'], ['sel-marco', 'marco'], ['sel-familia', 'familia'], ['sel-unidad', 'unidad']]
     .forEach(([id, k]) => {
       document.getElementById(id).addEventListener('click', (ev) => {

@@ -7,11 +7,12 @@ Los topes no recortan en silencio: si una peticion los pasa, 422 diciendo cual.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from decimal import ROUND_FLOOR, ROUND_HALF_EVEN, Decimal, InvalidOperation, localcontext
 from typing import Any
 
-from app.config import get_settings
+from app.config import WS_SYMBOL_MAP, get_settings
 from app.orderflow import ACTIVOS, MERCADOS, carga_config
 
 MARCOS = {"1m": 1, "5m": 5, "15m": 15, "1h": 60, "4h": 240, "1d": 1440}  # minutos por vela
@@ -743,3 +744,209 @@ async def vwap(conn: Any, *, symbol: str, desde: str | None, hasta: str | None, 
                         activo, base, base, vs, None, a, b),
             "marco": marco, "sesion": _sesion_publica(ses), "regla": REGLA_VWAP, "bandas": list(BANDAS),
             "redondeo": texto(q), "sesiones": salida}
+
+
+# =====================================================================================================================
+# OF-5a (campana 146) · LOS INDICADORES y LA ORDEN AGREGADA. Solo se ANADE: nada de lo de OF-1..OF-4 cambia.
+# Las series de 5 min las trae app/ingest.py de Coinalyze (su BTCUSDT_PERP.A es BINANCE; el OI de Bybit, su
+# BTCUSDT.6, va aparte) y las liquidaciones sueltas el colector de scalp: aqui solo se leen y se ponen en la rejilla de
+# la ventana del footprint. Lo que falta se dice (estado de cada cubo); un cubo sin dato nunca sale como cero.
+# =====================================================================================================================
+CADENCIA = timedelta(minutes=5)
+# Un punto de 5 min que falta y cuyo intervalo acabo hace menos de esto es PENDIENTE, no hueco: en 140 el punto de las
+# 14:30Z ya estaba escrito a las 14:35:18Z (latido ingest:metrics_5m, 2026-10-18; P1 de la campana 146).
+ESPERA_PUNTO = timedelta(minutes=15)
+TOPE_SUELTAS = 5000
+COINALYZE = {activo: simbolo for simbolo, activo in WS_SYMBOL_MAP.items()}
+# (clave, tabla, {lo que se sirve: columna}, la fuente que escribe la pantalla, unidad, como llega a un cubo mayor)
+SERIES_5M = (
+    ("oi_binance", "open_interest", {"oi": "oi_close"},
+     "interes abierto · Binance (Coinalyze, cada 5 min)", "USD", "ultimo"),
+    ("oi_bybit", "oi_bybit", {"oi": "oi_close"},
+     "interes abierto · Bybit (Coinalyze, cada 5 min)", "USD", "ultimo"),
+    ("funding", "funding_rate", {"funding": "fr_close"},
+     "funding · Binance (Coinalyze, cada 5 min)", "% por periodo de funding", "ultimo"),
+    ("funding_predicho", "predicted_funding_rate", {"funding": "pfr_close"},
+     "funding predicho · Binance (Coinalyze, cada 5 min)", "% por periodo de funding", "ultimo"),
+    ("largos_cortos", "long_short_ratio", {"largos": "long_pct", "cortos": "short_pct", "ratio": "ratio"},
+     "largos/cortos · Binance (Coinalyze, cada 5 min)", "% de cuentas", "ultimo"),
+    ("liquidaciones", "liquidations", {"largos": "long_liq", "cortos": "short_liq"},
+     "liquidaciones · Binance (Coinalyze, cada 5 min)", "USD", "suma"),
+)
+COMO_CUBO = {"ultimo": "el valor de un cubo es el CIERRE de su ultimo punto de 5 min",
+             "suma": "el valor de un cubo es la SUMA de sus puntos de 5 min"}
+REGLA_CUBO = (
+    "Los puntos de Coinalyze son de 5 min: con velas de 1 min un cubo de 5 min abarca 5 velas (se pinta como ESCALON) y "
+    "con velas mayores hay un cubo por vela. Estado de cada cubo: completo (todos sus puntos), en_curso (los que faltan "
+    "aun no tocan: su intervalo acabo hace menos de 15 min), incompleto (falta alguno que ya tocaba), pendiente (ninguno, "
+    "y aun no tocaba) y hueco (ninguno, y ya tocaba). Un hueco no vale cero: su valor es null."
+)
+REGLA_LIQ = (
+    "Coinalyze no publica los cubos de 5 min SIN liquidaciones (medido en 140 el 2026-10-18: 120 de 288 cubos de BTC en "
+    "24 h tienen fila, y ninguna con los dos ceros). Un cubo sin fila es un CERO solo si lo cubre el ultimo barrido de la "
+    "ingesta (latido ingest:liquidations_history con estado ok, de source_start_ts a source_cutoff_ts); fuera, no se "
+    "sabe: falta."
+)
+FUENTE_SUELTAS = "liquidaciones sueltas · binance y bybit perpetuos (colector propio: cada liquidacion)"
+
+
+def _ahora() -> datetime:
+    return datetime.now(UTC)  # un solo reloj para las dos rutas: los tests lo plantan
+
+
+def _decimal(x: Any) -> Decimal:
+    return Decimal(str(x))  # la representacion mas corta del float de la base: exacta y repetible
+
+
+async def _barrido_liquidaciones(conn: Any) -> dict[str, Any]:
+    """Lo que certifica el ultimo barrido de liquidaciones de la ingesta: [desde, hasta) y su estado."""
+    fila = await conn.fetchrow(
+        "SELECT status, detail FROM pipeline_heartbeat WHERE service = 'ingest:liquidations_history'")
+    if not fila:
+        return {"estado": "sin_latido", "desde": None, "hasta": None}
+    try:
+        d = json.loads(fila["detail"] or "{}")
+        a = datetime.fromtimestamp(int(d["source_start_ts"]), UTC)
+        b = datetime.fromtimestamp(int(d["source_cutoff_ts"]), UTC)
+    except (ValueError, KeyError, TypeError):
+        return {"estado": f"{fila['status']} (sin ventana legible)", "desde": None, "hasta": None}
+    return {"estado": fila["status"], "desde": a, "hasta": b}
+
+
+def _cubo(inicio: datetime, cubo: timedelta, por_ts: dict, columnas: dict, como: str, barrido: dict,
+          ahora: datetime) -> dict[str, Any]:
+    puntos = [inicio + CADENCIA * k for k in range(cubo // CADENCIA)]
+    presentes = [por_ts[p] for p in puntos if p in por_ts]
+    ceros = faltan = pendientes = 0
+    for p in puntos:
+        if p in por_ts:
+            continue
+        if (como == "suma" and barrido["estado"] == "ok" and barrido["desde"] is not None
+                and barrido["desde"] <= p and p + CADENCIA <= barrido["hasta"]):
+            ceros += 1
+        elif p + CADENCIA > ahora - ESPERA_PUNTO:
+            pendientes += 1
+        else:
+            faltan += 1
+    con_dato = len(presentes) + ceros
+    if not con_dato:
+        estado = "hueco" if faltan else "pendiente"
+    else:
+        estado = "incompleto" if faltan else "en_curso" if pendientes else "completo"
+    valores = None
+    if presentes and como == "ultimo":
+        valores = {n: texto(_decimal(presentes[-1][n])) for n in columnas}
+    elif con_dato and como == "suma":
+        valores = {n: texto(sum((_decimal(f[n]) for f in presentes), Decimal(0))) for n in columnas}
+    return {"ts": iso(inicio), "estado": estado, "puntos": len(presentes), "ceros": ceros, "faltan": faltan,
+            "pendientes": pendientes, "valores": valores}
+
+
+async def indicadores(conn: Any, *, symbol: str, desde: str | None, hasta: str | None,
+                      marco: str) -> dict[str, Any]:
+    activo = activo_de(symbol)
+    if marco not in MARCOS:
+        raise Peticion(f"marco tiene que ser uno de {', '.join(MARCOS)}")
+    minutos = MARCOS[marco]
+    a, b = instante(desde, "desde"), instante(hasta, "hasta")
+    ventana(a, b, RANGO_MAXIMO, minutos)
+    n_velas = (b - a) // timedelta(minutes=minutos)
+    if n_velas > TOPE_VELAS:
+        raise Peticion(f"{n_velas} velas pasan el tope de {TOPE_VELAS}: pide un marco mayor o un rango menor")
+    cubo = max(CADENCIA, timedelta(minutes=minutos))
+    primero = a - (a - ORIGEN) % cubo  # el cubo que contiene `desde`
+    inicios = [primero + cubo * k for k in range((b - primero + cubo - timedelta(microseconds=1)) // cubo)]
+    ahora = _ahora()
+    simbolo = COINALYZE[activo]
+    barrido = await _barrido_liquidaciones(conn)
+    series = {}
+    for clave, tabla, columnas, fuente, unidad, como in SERIES_5M:
+        lista = ", ".join(f"{c} AS {n}" for n, c in columnas.items())
+        filas = await conn.fetch(
+            f"SELECT ts, {lista} FROM {tabla} WHERE symbol = $1 AND interval = '5min' AND ts >= $2 AND ts < $3",
+            simbolo, primero, inicios[-1] + cubo)
+        por_ts = {f["ts"]: f for f in filas}
+        series[clave] = {"fuente": fuente, "tabla": tabla, "unidad": unidad, "como": COMO_CUBO[como],
+                         "cubos": [_cubo(t, cubo, por_ts, columnas, como, barrido, ahora) for t in inicios]}
+    retencion = timedelta(hours=get_settings().SCALP_TRADE_RETENTION_HOURS)
+    borde = max(a, ahora - retencion)
+    sueltas = await conn.fetch(
+        """SELECT ts, exchange, side, notional_usd, price, qty FROM liquidations_realtime
+            WHERE symbol = $1 AND ts >= $2 AND ts < $3 ORDER BY ts, exchange, event_id LIMIT $4""",
+        simbolo, borde, b, TOPE_SUELTAS + 1) if borde < b else []
+    huecos = await conn.fetch(
+        """SELECT exchange, start_ts, end_ts, evidence_type, status FROM data_gap
+            WHERE feed = 'liquidations' AND symbol = $1 AND start_ts < $3 AND end_ts > $2
+            ORDER BY start_ts, exchange LIMIT $4""", simbolo, a, b, TOPE_HUECOS + 1)
+    return {
+        "que": "los indicadores de la ventana del footprint: las series de 5 min de Coinalyze y las liquidaciones "
+               "sueltas", "symbol": activo, "simbolo_coinalyze": simbolo, "desde": iso(a), "hasta": iso(b),
+        "marco": marco, "cadencia_minutos": 5, "cubo_minutos": cubo // timedelta(minutes=1), "regla": REGLA_CUBO,
+        "liquidaciones_barrido": {"estado": barrido["estado"],
+                                  "desde": iso(barrido["desde"]) if barrido["desde"] else None,
+                                  "hasta": iso(barrido["hasta"]) if barrido["hasta"] else None, "regla": REGLA_LIQ},
+        "series": series,
+        "sueltas": {
+            "fuente": FUENTE_SUELTAS, "retencion_h": retencion // timedelta(hours=1),
+            "desde_dato": iso(min(borde, b)), "truncada": len(sueltas) > TOPE_SUELTAS,
+            "eventos": [{"ts": iso(f["ts"]), "exchange": f["exchange"], "lado": f["side"],
+                         "usd": texto(_decimal(f["notional_usd"])), "precio": texto(_decimal(f["price"])),
+                         "cantidad": texto(_decimal(f["qty"]))} for f in sueltas[:TOPE_SUELTAS]],
+            "huecos": [{"exchange": f["exchange"], "desde": iso(f["start_ts"]), "hasta": iso(f["end_ts"]),
+                        "evidencia": f["evidence_type"], "estado": f["status"]} for f in huecos[:TOPE_HUECOS]],
+        },
+    }
+
+
+# LA ORDEN AGREGADA (P2 de la campana 146, x1-tmp/c146/p2*). El instante de la cinta se guarda al milisegundo (0 de las
+# operaciones de 1 h de los nueve venues con fraccion de ms) y, contra la verdad de suelo de la grabacion de OF-1
+# (taker_order_id de coinbase, seq de bybit, starbase_timestamp de deribit), ninguna orden de verdad abarca mas de un
+# milisegundo: juntar los milisegundos vecinos solo mezcla agresores distintos.
+DEFINICION_ORDEN = (
+    "una orden de mercado agregada son las operaciones del MISMO venue, el MISMO milisegundo y el MISMO lado del "
+    "agresor; su tamano es la suma, y precio_min/precio_max el rango que barrio. En el mismo milisegundo pueden caer "
+    "ordenes de agresores distintos, y salen juntas (no hay con que separarlas en la cinta)"
+)
+# El hasta servido va MARGEN_ORDENES por detras de ahora: con el, la cinta ya tiene todas las operaciones de lo servido
+# (P2: el retraso de lo ultimo en la cinta de 140 tuvo p99 3.965 s en 180 muestras; x 2, redondeado). Asi una orden no
+# sale partida entre dos peticiones y el vivo pide SOLO lo nuevo: (desde, hasta], y la siguiente desde ese hasta.
+MARGEN_ORDENES = timedelta(seconds=8)
+VENTANA_ORDENES = timedelta(minutes=60)
+ORDENES_SQL = """
+SELECT date_trunc('milliseconds', ts) AS ms, venue, compra, count(*)::int AS n, sum(base) AS base, sum(usd) AS usd,
+       min(precio) AS pmin, max(precio) AS pmax
+  FROM orderflow_cinta
+ WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts > $3 AND ts <= $4
+ GROUP BY 1, 2, 3 HAVING sum(usd) >= $5
+ ORDER BY 1 DESC, 2, 3
+ LIMIT $6
+"""
+
+
+async def ordenes(conn: Any, *, symbol: str, venues: str | None, min_usd: str | None, desde: str | None,
+                  hasta: str | None, limit: int) -> dict[str, Any]:
+    activo, vs = activo_de(symbol), venues_de(venues)
+    try:
+        minimo = Decimal(min_usd or "0")
+    except InvalidOperation as exc:
+        raise Peticion(f"min_usd no es un numero: {min_usd!r}") from exc
+    if not minimo.is_finite() or minimo < 0:
+        raise Peticion("min_usd tiene que ser >= 0")
+    cerrado = _ahora() - MARGEN_ORDENES
+    cerrado = cerrado.replace(microsecond=cerrado.microsecond // 1000 * 1000)
+    b = min(instante(hasta, "hasta"), cerrado) if hasta else cerrado
+    a = instante(desde, "desde") if desde else b - VENTANA_ORDENES
+    for nombre, t in (("desde", a), ("hasta", b)):
+        if t.microsecond % 1000:
+            raise Peticion(f"{nombre} tiene que caer en un milisegundo entero")
+    if b - a > VENTANA_ORDENES:
+        raise Peticion(f"la ventana de ordenes es de {VENTANA_ORDENES // timedelta(minutes=1)} min como mucho: "
+                       "agregar mas cinta de una vez es caro; el vivo pide solo lo nuevo")
+    filas = await conn.fetch(ORDENES_SQL, activo, vs, a, b, minimo, limit + 1) if b > a else []
+    return {"que": "las ordenes de mercado agregadas de la cinta, la mas reciente primero", "definicion": DEFINICION_ORDEN,
+            "symbol": activo, "venues": vs, "min_usd": texto(minimo), "desde": iso(a), "hasta": iso(max(a, b)),
+            "margen_s": MARGEN_ORDENES // timedelta(seconds=1), "limit": limit, "truncada": len(filas) > limit,
+            "retencion_h": get_settings().ORDERFLOW_TAPE_RETENTION_HOURS,
+            "ordenes": [{"ts": iso(f["ms"]), "venue": f["venue"], "agresor": "compra" if f["compra"] else "venta",
+                         "operaciones": f["n"], "base": texto(f["base"]), "usd": texto(f["usd"]),
+                         "precio_min": texto(f["pmin"]), "precio_max": texto(f["pmax"])} for f in filas[:limit]]}

@@ -85,6 +85,7 @@ function creaLienzo(canvas, alLeer) {
     const m = L.modelo;
     if (!m || !m.velas.length) {
       window.FLUJO_PINTADO = reg;
+      if (typeof pintaIndicadores === 'function') pintaIndicadores(null, null, 0, -1); // OF-5a: sin velas, sin paneles
       return;
     }
     Object.assign(reg, { activo: m.activo, marco: m.marco, familia: m.familia, venues: m.venues, paso: m.paso,
@@ -119,8 +120,11 @@ function creaLienzo(canvas, alLeer) {
     ctx.restore();
     // OF-3 (campana 143): las capas, encima de las velas, con la misma escala y su contrato (flujo-capas.js)
     reg.capas = m.capas && typeof pintaCapas === 'function' && i1 >= i0 ? pintaCapas(ctx, g, y, m, paso, i0, i1) : null;
+    // OF-5a (campana 146): las grandes en su vela y a su precio, y los paneles bajo el footprint, con ESTA geometria
+    reg.grandes = typeof pintaGrandes === 'function' ? pintaGrandes(ctx, g, y, m, i0, i1) : null;
     ejeTiempo(ctx, g, i0, i1, m);
     window.FLUJO_PINTADO = reg;
+    if (typeof pintaIndicadores === 'function') pintaIndicadores(g, m, i0, i1);
   }
 
   function rejilla(ctx, g, lo, hi, y, paso) {

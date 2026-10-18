@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `libro_ultimo` · `app/api.py:3927` (cuerpo hasta la 3940) · decorador en la linea 3926.
+Handler `libro_ultimo` · `app/api.py:3960` (cuerpo hasta la 3973) · decorador en la linea 3959.
 
 ## Parametros de entrada
 
@@ -22,7 +22,7 @@ Handler `libro_ultimo` · `app/api.py:3927` (cuerpo hasta la 3940) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3940 |
+| `as_of` | literal en app/api.py:3973 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -61,9 +61,9 @@ Llamadas directas del handler:
 - `app.libro_lectura.reagrega` — `app/libro_lectura.py:70`
 - `app.libro_lectura.venues_de` — `app/libro_lectura.py:48`
 - `app.orderflow.nivel_de` — `app/orderflow.py:270`
-- `app.orderflow_lectura.activo_de` — `app/orderflow_lectura.py:71`
-- `app.orderflow_lectura.pasos` — `app/orderflow_lectura.py:96`
-- `app.orderflow_lectura.texto` — `app/orderflow_lectura.py:49`
+- `app.orderflow_lectura.activo_de` — `app/orderflow_lectura.py:72`
+- `app.orderflow_lectura.pasos` — `app/orderflow_lectura.py:97`
+- `app.orderflow_lectura.texto` — `app/orderflow_lectura.py:50`
 
 </details>
 
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 422 | — | `app/api.py:2596` | una funcion de su cierre |
-| 422 | — | `app/api.py:3939` | el propio handler |
+| 422 | — | `app/api.py:3972` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -131,8 +131,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api._utc_iso` | 22 | **0** | 0 | **22** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 22 | **0** | 0 | **22** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
 | `app.api.libro_ultimo` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.libro_lectura._escalera` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-libro_lectura.md) |
 | `app.libro_lectura.mensaje` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-libro_lectura.md) |

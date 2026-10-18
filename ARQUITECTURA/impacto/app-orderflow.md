@@ -18,7 +18,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/orderflow.py:427` · clave completa `app.orderflow._ts`
 
-**Radio exacto: 0 rutas** de 90 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 92 · **cota superior: 24** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -107,7 +107,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/orderflow.py:431` · clave completa `app.orderflow.declara_hueco`
 
-**Radio exacto: 24 rutas** de 90 · **cota superior: 24** (igual al exacto)
+**Radio exacto: 24 rutas** de 92 · **cota superior: 24** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -218,7 +218,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/orderflow.py:552` · clave completa `app.orderflow.declara_parada_anterior`
 
-**Radio exacto: 0 rutas** de 90 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 92 · **cota superior: 24** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -309,7 +309,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/orderflow.py:439` · clave completa `app.orderflow.escribe_minutos`
 
-**Radio exacto: 0 rutas** de 90 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 92 · **cota superior: 24** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -401,7 +401,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/orderflow.py:270` · clave completa `app.orderflow.nivel_de`
 
-**Radio exacto: 1 rutas** de 90 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

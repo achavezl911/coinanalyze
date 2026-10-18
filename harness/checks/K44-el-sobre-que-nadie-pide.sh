@@ -334,8 +334,11 @@ NOMBRE = {"panel": "el panel viejo", "mesa": "la mesa", "flujo": "el footprint",
 RUTA_FLUJO = "/api" + "/orderflow/footprint"
 # OF-3 (campana 143): /flujo pide ademas las rutas de sus capas y de su TPO (static/flujo/flujo-app.js: RUTA_SESIONES,
 # RUTA_VWAP, RUTA_PERFIL, RUTA_TPO), y tampoco las pide ninguna otra pantalla: con su carga delante, son suyas.
+# OF-5a (campana 146): y los indicadores, la cinta de ordenes agregadas y las grandes (static/flujo/flujo-indicadores.js:
+# RUTA_IND, RUTA_GRANDES; flujo-cinta.js: RUTA_ORDENES), que tampoco pide ninguna otra pantalla: con su carga delante, suyas.
 RUTAS_FLUJO = (RUTA_FLUJO, "/api" + "/orderflow/sesiones", "/api" + "/orderflow/vwap", "/api" + "/orderflow/perfil",
-               "/api" + "/orderflow/tpo")
+               "/api" + "/orderflow/tpo", "/api" + "/orderflow/indicadores", "/api" + "/orderflow/ordenes",
+               "/api" + "/orderflow/grandes")
 # OF-4b (campana 145): EL LIBRO (/libro) pide la historia del mapa, el libro vivo por GET y su websocket
 # (static/libro/libro-app.js: RUTA_FOTOS, RUTA_ULTIMO, RUTA_VIVO; el websocket, por el nginx de 140 sin Upgrade, llega
 # como un GET mas), y ninguna otra pantalla las pide: con su carga delante, son suyas. Lo que pinta lo juzga K111.

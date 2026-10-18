@@ -295,3 +295,90 @@ body {
   width: 3px;
   background: #ff9f43;
 }
+
+/* OF-5a (campana 146): el footprint y sus paneles en una columna (el mismo ancho: el mismo eje de tiempo) y la cinta a
+ * su derecha. Con paneles, el footprint puede bajar de 420 px para que quepan en una pantalla de portatil. */
+.graficos {
+  display: flex;
+  flex: 1 0 auto;
+}
+.columna {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+body.con-ind .grafico {
+  min-height: 260px;
+}
+.grafico-ind {
+  position: relative;
+  flex: 0 0 auto;
+  margin: 0 8px;
+  border: 1px solid var(--borde);
+  border-top: 0;
+}
+.grafico-ind canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.cinta {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 300px;
+  contain: size; /* se estira a la altura de la columna; sus 200 filas no la empujan: hacen scroll */
+  margin-right: 8px;
+  border: 1px solid var(--borde);
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.cinta[hidden] {
+  display: none;
+}
+.cinta-fuente,
+.cinta-estado {
+  margin: 0;
+  padding: 4px 6px;
+  color: var(--tx-mudo);
+  font-size: 9.5px;
+  line-height: 1.35;
+}
+.cinta-estado {
+  border-bottom: 1px solid var(--borde);
+}
+#cinta-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  overflow-y: auto;
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+#cinta-tabla th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-strip);
+  color: var(--tx-debil);
+  font-weight: 400;
+  text-align: right;
+  padding: 2px 4px;
+}
+#cinta-tabla td {
+  padding: 1px 4px;
+  text-align: right;
+  white-space: nowrap;
+}
+#cinta-tabla tr.compra td.l,
+#cinta-tabla tr.compra td.u {
+  color: var(--verde);
+}
+#cinta-tabla tr.venta td.l,
+#cinta-tabla tr.venta td.u {
+  color: var(--rojo);
+}
+#cinta-tabla tr.vacia td {
+  color: var(--tx-debil);
+  text-align: left;
+}

@@ -657,3 +657,119 @@ async def test_las_rutas_de_of3_dicen_422_y_no_recortan_en_silencio(conn, monkey
     ok = await api.orderflow_sesiones(_Peticion(symbol="BTC"), symbol="BTC", desde=lec.iso(T0 - timedelta(days=6)),
                                       hasta=lec.iso(T0 + timedelta(days=1)), sesion="dia")
     assert len(ok["sesiones"]) == 7
+
+
+# ===================================================================================================================
+# OF-5a (campana 146) · LOS INDICADORES y LA ORDEN AGREGADA
+# ===================================================================================================================
+# Una hora entera de hace dos (las particiones de la cinta y de las sueltas van de ayer a pasado manana) y un reloj
+# plantado a sus 37 min: lo que acabo hace menos de 15 min es PENDIENTE, lo de antes que falta es HUECO.
+B0 = datetime.now(UTC).replace(minute=0, second=0, microsecond=0) - timedelta(hours=2)
+
+
+def _m(minutos: float) -> datetime:
+    return B0 + timedelta(minutes=minutos)
+
+
+async def test_los_indicadores_dicen_hueco_pendiente_y_el_cero_certificado(conn, monkeypatch):
+    monkeypatch.setattr(lec, "_ahora", lambda: _m(37))
+    s = "BTCUSDT_PERP.A"
+    await conn.executemany(
+        "INSERT INTO open_interest(ts,symbol,interval,oi_open,oi_high,oi_low,oi_close) VALUES ($1,$2,'5min',$3,$3,$3,$3)",
+        [(_m(k), s, 1000.0 + k) for k in (0, 5, 15, 20, 25, 30)])  # faltan el de :10 (hueco) y el de :35 (pendiente)
+    await conn.execute("INSERT INTO long_short_ratio(ts,symbol,interval,long_pct,short_pct,ratio) VALUES "
+                       "($1,$2,'5min',55.5,44.5,1.2472)", _m(0), s)
+    await conn.executemany("INSERT INTO liquidations(ts,symbol,interval,long_liq,short_liq) VALUES ($1,$2,'5min',$3,$4)",
+                           [(_m(5), s, 100.5, 0.0), (_m(20), s, 0.0, 7.25)])
+    barrido = {"source_start_ts": int(_m(5).timestamp()), "source_cutoff_ts": int(_m(25).timestamp())}
+    await conn.execute("INSERT INTO pipeline_heartbeat(service,updated_at,status,detail) VALUES "
+                       "('ingest:liquidations_history', now(), 'ok', $1)", json.dumps(barrido))
+    await conn.executemany(
+        """INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)""",
+        [(_m(2), s, "binance", "long", 5000.5, 81000.1, 0.0617, "e1"), (_m(12), s, "bybit", "short", 120.0, 81010.0,
+                                                                         0.0015, "e2")])
+    d = await lec.indicadores(conn, symbol="BTC", desde=lec.iso(_m(0)), hasta=lec.iso(_m(45)), marco="5m")
+    json.dumps(d)
+    oi = {c["ts"]: c for c in d["series"]["oi_binance"]["cubos"]}
+    assert d["cubo_minutos"] == 5 and len(oi) == 9 and d["simbolo_coinalyze"] == s
+    assert oi[lec.iso(_m(5))] == {"ts": lec.iso(_m(5)), "estado": "completo", "puntos": 1, "ceros": 0, "faltan": 0,
+                                  "pendientes": 0, "valores": {"oi": "1005"}}
+    assert oi[lec.iso(_m(10))]["estado"] == "hueco" and oi[lec.iso(_m(10))]["valores"] is None  # nunca un cero
+    assert [oi[lec.iso(_m(k))]["estado"] for k in (35, 40)] == ["pendiente", "pendiente"]
+    assert [c["estado"] for c in d["series"]["oi_bybit"]["cubos"]] == ["hueco"] * 4 + ["pendiente"] * 5
+    liq = {c["ts"]: c for c in d["series"]["liquidaciones"]["cubos"]}
+    # fuera del barrido (:00) no se sabe; dentro, sin fila es CERO certificado; despues de su corte, pendiente
+    assert [liq[lec.iso(_m(k))]["estado"] for k in (0, 5, 10, 15, 20, 25)] == \
+        ["hueco", "completo", "completo", "completo", "completo", "pendiente"]
+    assert liq[lec.iso(_m(10))]["ceros"] == 1 and liq[lec.iso(_m(10))]["valores"] == {"largos": "0", "cortos": "0"}
+    assert liq[lec.iso(_m(5))]["valores"] == {"largos": "100.5", "cortos": "0"}
+    assert d["series"]["largos_cortos"]["cubos"][0]["valores"] == {"largos": "55.5", "cortos": "44.5", "ratio": "1.2472"}
+    assert [(e["exchange"], e["lado"], e["usd"]) for e in d["sueltas"]["eventos"]] == \
+        [("binance", "long", "5000.5"), ("bybit", "short", "120")]
+    # con velas de 15 min, un cubo por vela: el cierre de su ultimo punto, o la suma; y su estado
+    q = await lec.indicadores(conn, symbol="BTC", desde=lec.iso(_m(0)), hasta=lec.iso(_m(45)), marco="15m")
+    oi15 = [(c["estado"], c["valores"]) for c in q["series"]["oi_binance"]["cubos"]]
+    assert oi15 == [("incompleto", {"oi": "1005"}), ("completo", {"oi": "1025"}), ("en_curso", {"oi": "1030"})]
+    liq15 = [(c["estado"], c["valores"]) for c in q["series"]["liquidaciones"]["cubos"]]
+    assert liq15 == [("incompleto", {"largos": "100.5", "cortos": "0"}), ("en_curso", {"largos": "0", "cortos": "7.25"}),
+                     ("pendiente", None)]
+    # con velas de 1 min, el cubo de 5 min que contiene `desde` (un escalon de 5 velas)
+    u = await lec.indicadores(conn, symbol="BTC", desde=lec.iso(_m(3)), hasta=lec.iso(_m(13)), marco="1m")
+    assert [c["ts"] for c in u["series"]["oi_binance"]["cubos"]] == [lec.iso(_m(k)) for k in (0, 5, 10)]
+    for malo in ({"marco": "2m"}, {"hasta": lec.iso(_m(0) + timedelta(days=40))}):
+        with pytest.raises(lec.Peticion):
+            await lec.indicadores(conn, **{"symbol": "BTC", "desde": lec.iso(_m(0)), "hasta": lec.iso(_m(45)),
+                                           "marco": "5m", **malo})
+
+
+async def test_la_orden_agregada_es_venue_milisegundo_y_lado_y_el_vivo_pide_solo_lo_nuevo(conn, monkeypatch):
+    t1 = _m(1) + timedelta(milliseconds=123)
+    filas = [(t1, "binance_usdm", "100", "0.1", "10", True, "a1"), (t1, "binance_usdm", "101", "0.1", "20", True, "a2"),
+             (t1, "binance_usdm", "102", "0.1", "30", True, "a3"), (t1, "binance_usdm", "100", "0.05", "5", False, "a4"),
+             (t1 + timedelta(milliseconds=1), "binance_usdm", "103", "0.07", "7", True, "a5"),
+             (t1, "bybit_linear", "99", "10", "1000", True, "b1"),
+             (_m(10) - timedelta(seconds=5), "binance_usdm", "104", "1", "104", False, "a6")]
+    await conn.executemany("""INSERT INTO orderflow_cinta(ts,venue,symbol,precio,base,usd,compra,id)
+                              VALUES ($1,$2,'BTC',$3::numeric,$4::numeric,$5::numeric,$6,$7)""", filas)
+    monkeypatch.setattr(lec, "_ahora", lambda: _m(10))
+    d = await lec.ordenes(conn, symbol="BTC", venues="binance_usdm,bybit_linear", min_usd=None, desde=None, hasta=None,
+                          limit=10)
+    json.dumps(d)
+    assert d["hasta"] == lec.iso(_m(10) - timedelta(seconds=8)) and d["margen_s"] == 8
+    assert [(o["ts"], o["venue"], o["agresor"], o["operaciones"], o["usd"], o["precio_min"], o["precio_max"])
+            for o in d["ordenes"]] == [
+        (lec.iso(t1 + timedelta(milliseconds=1)), "binance_usdm", "compra", 1, "7", "103", "103"),
+        (lec.iso(t1), "binance_usdm", "venta", 1, "5", "100", "100"),
+        (lec.iso(t1), "binance_usdm", "compra", 3, "60", "100", "102"),
+        (lec.iso(t1), "bybit_linear", "compra", 1, "1000", "99", "99")]
+    grandes = await lec.ordenes(conn, symbol="BTC", venues="binance_usdm,bybit_linear", min_usd="50", desde=None,
+                                hasta=None, limit=10)
+    assert [o["usd"] for o in grandes["ordenes"]] == ["60", "1000"]
+    # el vivo: desde el hasta servido, solo lo nuevo (la operacion de hace 5 s ya cae dentro del margen)
+    monkeypatch.setattr(lec, "_ahora", lambda: _m(10) + timedelta(seconds=10))
+    nuevo = await lec.ordenes(conn, symbol="BTC", venues="binance_usdm,bybit_linear", min_usd=None, desde=d["hasta"],
+                              hasta=None, limit=10)
+    assert [(o["usd"], o["agresor"]) for o in nuevo["ordenes"]] == [("104", "venta")]
+    for malo in ({"desde": lec.iso(_m(0)).replace(".000Z", ".000500+00:00")}, {"desde": lec.iso(_m(-90))},
+                 {"min_usd": "-1"}):
+        with pytest.raises(lec.Peticion):
+            await lec.ordenes(conn, **{"symbol": "BTC", "venues": None, "min_usd": None, "desde": None, "hasta": None,
+                                       "limit": 10, **malo})
+
+
+async def test_las_rutas_de_of5a_dicen_422_y_no_recortan_en_silencio(conn, monkeypatch):
+    monkeypatch.setattr(api.app.state, "pool", _Pool(conn), raising=False)
+    desde, hasta = lec.iso(_m(0)), lec.iso(_m(45))
+    ok = await api.orderflow_indicadores(_Peticion(symbol="BTC"), symbol="BTC", desde=desde, hasta=hasta, marco="5m")
+    assert ok["as_of"].endswith("Z") and len(ok["series"]) == 6
+    json.dumps(ok)
+    ok = await api.orderflow_ordenes(_Peticion(symbol="BTC"), symbol="BTC", limit=5)
+    assert ok["ordenes"] == [] and ok["as_of"].endswith("Z")
+    for ruta, kw in ((api.orderflow_indicadores, {"desde": desde, "hasta": hasta}), (api.orderflow_ordenes, {})):
+        with pytest.raises(HTTPException) as exc:
+            await ruta(_Peticion(symbol="BTC", hora="1"), symbol="BTC", **kw)
+        assert exc.value.status_code == 422
+    with pytest.raises(HTTPException) as exc:
+        await api.orderflow_ordenes(_Peticion(symbol="BTC"), symbol="BTC", desde=lec.iso(_m(-120)), limit=5)
+    assert exc.value.status_code == 422 and "60 min" in exc.value.detail

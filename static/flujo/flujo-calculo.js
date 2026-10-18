@@ -53,6 +53,8 @@ function leeHash(hash) {
               grande: null, hasta: null, ver: VER_DEFECTO };
   // OF-3 (campana 143): las capas, la sesion y el modo TPO; sin sus claves, la vista es la del footprint de la 142
   Object.assign(e, { sesion: 'dia', capas: [], compuesto: null, fijo: null, modo: 'footprint', sesiones: TPO_SESIONES });
+  // OF-5a (campana 146): los indicadores (paneles, marcas de grandes y la cinta) y el filtro de la cinta
+  Object.assign(e, { ind: INDICADORES_DEFECTO.slice(), cinta: null });
   const a = String(partes[0] || '').toUpperCase();
   if (FLUJO_ACTIVOS.includes(a)) e.activo = a;
   if (partes[1] && tiene(FLUJO_MARCOS, partes[1])) e.marco = partes[1];
@@ -83,6 +85,8 @@ function leeHash(hash) {
     }
     else if (k === 'modo' && v === 'tpo') e.modo = 'tpo';
     else if (k === 'sesiones' && /^\d+$/.test(v || '') && Number(v) >= 1) e.sesiones = Math.min(TPO_MAXIMO, Number(v));
+    else if (k === 'ind' && v) e.ind = leeIndicadores(v);
+    else if (k === 'cinta' && positivo(v)) e.cinta = v;
   });
   return e;
 }
@@ -102,6 +106,8 @@ function escribeHash(e) {
   if (e.fijo) h += '/fijo=' + e.fijo.join(',');
   if (e.modo === 'tpo') h += '/modo=tpo';
   if (e.sesiones && e.sesiones !== TPO_SESIONES) h += '/sesiones=' + e.sesiones;
+  if (e.ind && e.ind.join(',') !== INDICADORES_DEFECTO.join(',')) h += '/ind=' + (e.ind.join(',') || 'ninguno');
+  if (e.cinta) h += '/cinta=' + e.cinta;
   return h;
 }
 
@@ -312,6 +318,19 @@ function marcaCapa(st) {
   return partes.join(' · ') || null;
 }
 
+/* ================================================================= OF-5a · LOS INDICADORES (campana 146)
+ * En el hash, `ind=` dice que se enciende, en su orden (los paneles bajo el footprint, las marcas de las grandes y la
+ * cinta); sin la clave, lo de por omision; `ind=ninguno`, nada. Lo que no se entiende cae al defecto. */
+const INDICADORES = ['delta', 'cvd', 'oi', 'oib', 'funding', 'ls', 'liq', 'grandes', 'cinta'];
+const INDICADORES_DEFECTO = ['delta', 'cvd', 'grandes', 'cinta'];
+
+function leeIndicadores(v) {
+  if (v === 'ninguno') return [];
+  const pedidos = String(v).split(',');
+  const lista = INDICADORES.filter((c) => pedidos.includes(c));
+  return lista.length ? lista : INDICADORES_DEFECTO.slice();
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     FLUJO_MARCOS, FLUJO_HISTORIA, FAMILIAS, CIERRE_S, VER_DEFECTO, leeHash, escribeHash, ventana, ventanaViva,
@@ -319,4 +338,5 @@ if (typeof module !== 'undefined' && module.exports) {
   };
   Object.assign(module.exports, { SESIONES, CAPAS, SESIONES_MAXIMO, COMPUESTO_DEFECTO, TPO_SESIONES, leeSesion,
                                   inicioSesion, ventanaSesiones, ventanaCapas, estadoRango, estadoSesion, marcaCapa });
+  Object.assign(module.exports, { INDICADORES, INDICADORES_DEFECTO, leeIndicadores, decimales, entero });
 }

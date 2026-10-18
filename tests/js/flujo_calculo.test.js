@@ -14,6 +14,8 @@ test('el hash: por omision BTC/1m/perp con paso auto, y lo que no se entiende ca
     grande: null, hasta: null, ver: F.VER_DEFECTO,
     // OF-3 (campana 143): la sesion, las capas y el modo, apagados por omision (flujo_perfiles.test.js)
     sesion: 'dia', capas: [], compuesto: null, fijo: null, modo: 'footprint', sesiones: F.TPO_SESIONES,
+    // OF-5a (campana 146): los indicadores por omision y el filtro de la cinta (flujo_indicadores.test.js)
+    ind: F.INDICADORES_DEFECTO, cinta: null,
   });
   const e = F.leeHash('#eth/5m/deribit/0.5/unidad=usd/min=2/esconde/grande=40/hasta=2026-10-17T11:30Z/ver=20');
   assert.deepStrictEqual([e.activo, e.marco, e.familia, e.paso, e.unidad, e.min, e.esconde, e.grande, e.hasta, e.ver],
