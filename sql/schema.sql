@@ -1498,7 +1498,8 @@ BEGIN
         'liquidations_realtime',
         'scalp_signal_snapshot',
         'orderflow_celda',
-        'orderflow_cinta'
+        'orderflow_cinta',
+        'libro_foto'
     ] LOOP
         parent_oid := to_regclass(format('%I.%I', schema_name, managed_table));
         IF parent_oid IS NULL OR NOT EXISTS (
@@ -1555,7 +1556,8 @@ DECLARE
         'liquidations_realtime',
         'scalp_signal_snapshot',
         'orderflow_celda',
-        'orderflow_cinta'
+        'orderflow_cinta',
+        'libro_foto'
     ];
     schema_name text := current_schema();
     parent_oid regclass;
@@ -3029,7 +3031,8 @@ BEGIN
         'liquidations_realtime',
         'scalp_signal_snapshot',
         'orderflow_celda',
-        'orderflow_cinta'
+        'orderflow_cinta',
+        'libro_foto'
     ] LOOP
         parent_oid := to_regclass(format('%I.%I', schema_name, managed_table));
         IF parent_oid IS NULL OR NOT EXISTS (
@@ -3086,7 +3089,8 @@ DECLARE
         'liquidations_realtime',
         'scalp_signal_snapshot',
         'orderflow_celda',
-        'orderflow_cinta'
+        'orderflow_cinta',
+        'libro_foto'
     ];
     schema_name text := current_schema();
     parent_oid regclass;
@@ -3124,6 +3128,65 @@ BEGIN
     RETURN dropped_count;
 END
 $$;
+
+SELECT ensure_temporal_partitions();
+
+COMMIT;
+
+
+-- =========================================================================================
+-- CAMPANA 144 · OF-4a · EL DATO DEL LIBRO. Bloque ADITIVO (IF NOT EXISTS) para app/libro.py. Ningun nombre lleva
+-- digitos (K01a).
+--   libro_foto       cada FOTO_S segundos (rejilla UTC), por venue y activo con libro VALIDO: la mejor compra y la mejor
+--                    venta EXACTAS, la hora del venue del ultimo cambio aplicado (ts_libro), el paso de agregacion y
+--                    las cantidades en unidades del activo por nivel: compras[i] es el nivel compra_nivel - i * paso y
+--                    ventas[i] el nivel venta_nivel + i * paso (nivel = floor(precio / paso) * paso, el borde INFERIOR,
+--                    como OF-1), hasta la banda o hasta el alcance (alcance_compra / alcance_venta: hasta donde el libro
+--                    se conoce de verdad; un nivel que el alcance corta no se guarda). Retencion LIBRO_RETENTION_DAYS.
+--   libro_cobertura  por minuto, venue y activo: segundos con libro valido (60 = el minuto entero), fotos, saltos de
+--                    numeracion, resincronizaciones y reconexiones. Un minuto completo tiene 60 / FOTO_S fotos. Los
+--                    minutos incompletos se declaran en data_gap (feed 'libro') y no se podan: son la prueba que K04
+--                    re-deriva de sus huecos.
+-- RETENCION: libro_foto entra en el mecanismo de particiones diarias que ya existe: su nombre se ANADE a las listas de
+-- las dos copias vivas de ensure_temporal_partitions y drop_expired_temporal_partitions (la primera y la de OF-1, que
+-- siguen identicas entre si), y el servicio llama a apply_temporal_retention cada hora. libro_cobertura es plana y la
+-- poda el propio servicio con DELETE de los minutos completos.
+-- =========================================================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS libro_foto (
+    ts timestamptz NOT NULL,
+    venue text NOT NULL CHECK (venue IN ('binance_spot', 'binance_usdm', 'bybit_spot', 'bybit_linear',
+                                         'okx_spot', 'okx_swap', 'coinbase_spot', 'bitget_usdt', 'deribit_perp')),
+    symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    ts_libro timestamptz NOT NULL,
+    compra numeric NOT NULL CHECK (compra > 0),
+    venta numeric NOT NULL CHECK (venta > 0),
+    paso numeric NOT NULL CHECK (paso > 0),
+    compra_nivel numeric NOT NULL CHECK (compra_nivel >= 0),
+    compras numeric[] NOT NULL CHECK (cardinality(compras) >= 1 AND 0 <= ALL (compras)),
+    venta_nivel numeric NOT NULL CHECK (venta_nivel >= 0),
+    ventas numeric[] NOT NULL CHECK (cardinality(ventas) >= 1 AND 0 <= ALL (ventas)),
+    alcance_compra numeric NOT NULL CHECK (alcance_compra > 0),
+    alcance_venta numeric NOT NULL CHECK (alcance_venta > 0),
+    CHECK (compra < venta),
+    PRIMARY KEY (symbol, ts, venue)
+) PARTITION BY RANGE (ts);
+
+CREATE TABLE IF NOT EXISTS libro_cobertura (
+    ts timestamptz NOT NULL,
+    venue text NOT NULL CHECK (venue IN ('binance_spot', 'binance_usdm', 'bybit_spot', 'bybit_linear',
+                                         'okx_spot', 'okx_swap', 'coinbase_spot', 'bitget_usdt', 'deribit_perp')),
+    symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    segundos smallint NOT NULL CHECK (segundos BETWEEN 0 AND 60),
+    fotos smallint NOT NULL CHECK (fotos >= 0),
+    saltos smallint NOT NULL DEFAULT 0 CHECK (saltos >= 0),
+    resincronizaciones smallint NOT NULL DEFAULT 0 CHECK (resincronizaciones >= 0),
+    reconexiones smallint NOT NULL DEFAULT 0 CHECK (reconexiones >= 0),
+    escrito timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (symbol, ts, venue)
+);
+CREATE INDEX IF NOT EXISTS libro_cobertura_ts_idx ON libro_cobertura (ts);
 
 SELECT ensure_temporal_partitions();
 

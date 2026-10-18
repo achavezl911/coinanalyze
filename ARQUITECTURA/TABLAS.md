@@ -20,7 +20,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`daily_session_agg`](#daily-session-agg) | 2 | 22 | 0 |
 | [`daily_verdict_outcome`](#daily-verdict-outcome) | 1 | 3 | 0 |
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
-| [`data_gap`](#data-gap) | 13 | 24 | 0 |
+| [`data_gap`](#data-gap) | 14 | 24 | 0 |
 | [`entrada_latido`](#entrada-latido) | 1 | 2 | 0 |
 | [`entrada_registro`](#entrada-registro) | 1 | 2 | 0 |
 | [`entrada_reglamento`](#entrada-reglamento) | 1 | 2 | 0 |
@@ -66,11 +66,11 @@ Definiciones, escritas antes del recuento:
 - **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
   *"periodo medido a medias"* de *"periodo no medido"*.
 
-| | de 49 tablas del esquema |
+| | de 51 tablas del esquema |
 |---|---|
-| de SERIE | **26** |
+| de SERIE | **28** |
 | de serie que DECLARAN cobertura cuantitativa | **7** |
-| de serie que NO declaran ninguna | **19** |
+| de serie que NO declaran ninguna | **21** |
 
 | tabla | columnas de cobertura |
 |---|---|
@@ -82,7 +82,7 @@ Definiciones, escritas antes del recuento:
 | `spot_trades_agg` | `covered_seconds`, `venue_count` |
 | `spot_trades_realtime` | `venue_count` |
 
-**Las 19 de serie SIN cobertura declarada.** No es un defecto por si mismo
+**Las 21 de serie SIN cobertura declarada.** No es un defecto por si mismo
 —una tabla de eventos periodicos puede no necesitarla—, pero es lo que impide
 distinguir un periodo vacio de uno no medido:
 
@@ -90,6 +90,8 @@ distinguir un periodo vacio de uno no medido:
 - `daily_verdict_snapshot`
 - `external_api_rate_event`
 - `funding_rate`
+- `libro_cobertura`
+- `libro_foto`
 - `liquidations`
 - `liquidations_realtime`
 - `long_short_ratio`
@@ -244,7 +246,7 @@ La escriben:
 
 ### daily_verdict_outcome
 
-`sql/schema.sql:2294`, 10 columnas.
+`sql/schema.sql:2296`, 10 columnas.
 
 La escriben:
 
@@ -288,6 +290,7 @@ La escriben:
 - `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:764`
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
+- `app.libro.declara_hueco` — **UPDATE** en `app/libro.py:792`
 - `app.orderflow.declara_hueco` — **UPDATE** en `app/orderflow.py:411`
 
 **Si cambia el contenido o el esquema de `data_gap`, estas 24 rutas lo notan:**
@@ -319,7 +322,7 @@ La escriben:
 
 ### entrada_latido
 
-`sql/schema.sql:2706`, 8 columnas.
+`sql/schema.sql:2708`, 8 columnas.
 
 La escriben:
 
@@ -332,7 +335,7 @@ La escriben:
 
 ### entrada_registro
 
-`sql/schema.sql:2669`, 26 columnas.
+`sql/schema.sql:2671`, 26 columnas.
 
 La escriben:
 
@@ -345,7 +348,7 @@ La escriben:
 
 ### entrada_reglamento
 
-`sql/schema.sql:2659`, 6 columnas.
+`sql/schema.sql:2661`, 6 columnas.
 
 La escriben:
 
@@ -358,7 +361,7 @@ La escriben:
 
 ### entrada_resultado
 
-`sql/schema.sql:2847`, 12 columnas.
+`sql/schema.sql:2849`, 12 columnas.
 
 La escriben:
 
@@ -833,7 +836,7 @@ La escriben:
 
 ### signal_outcome_final_visibility
 
-`sql/schema.sql:2481`, 8 columnas.
+`sql/schema.sql:2483`, 8 columnas.
 
 La escriben:
 
@@ -914,6 +917,8 @@ completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
+- `libro_cobertura` — la escriben 2: `app/libro.py:1030`, `app/libro.py:810`
+- `libro_foto` — la escriben 1: `app/libro.py:806`
 - `market_assets` — la escriben 1: `app/db.py:247`
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`
 - `open_interest_daily` — la escriben 2: `app/daily_agg.py:600`, `app/daily_agg.py:600`

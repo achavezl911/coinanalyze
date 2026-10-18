@@ -58,6 +58,7 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
@@ -86,7 +87,7 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (14)</summary>
 
-- `app.config.get_settings` — `app/config.py:296`
+- `app.config.get_settings` — `app/config.py:299`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2889`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`

@@ -207,6 +207,9 @@ class Settings(BaseSettings):
     ORDERFLOW_TAPE_RETENTION_HOURS: int = Field(default=48, ge=1, le=168)
     ORDERFLOW_CELL_RETENTION_DAYS: int = Field(default=30, ge=1, le=365)
     ORDERFLOW_LARGE_RETENTION_DAYS: int = Field(default=365, ge=1, le=3650)
+    # OF-4a · app/libro.py. Las fotos del libro (la decide P2 de la campana 144); la cobertura de los minutos completos
+    # se poda con ellas y la de los incompletos no se poda.
+    LIBRO_RETENTION_DAYS: int = Field(default=7, ge=1, le=90)
     DAILY_LOOKBACK_DAYS: int = Field(default=13, ge=2, le=60)
     DAILY_SESSION_RETENTION_DAYS: int = Field(
         default=0, ge=0, le=3650

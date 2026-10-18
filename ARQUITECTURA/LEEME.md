@@ -23,7 +23,7 @@ entero de los tres simbolos durante 24 dias sin que nadie supiera el alcance.
 
 ## Como se lee sin leerlo entero
 
-1. `INDICE.md` — las 85 rutas en una tabla.
+1. `INDICE.md` — las 88 rutas en una tabla.
 2. `rutas/<ruta>.md` — **una ficha por ruta.** Si vas a tocar `/api/setup`, abre
    `rutas/api-setup.md` y nada mas.
 3. `derivada.json` — lo mismo para maquinas, y es lo que K88 compara.
@@ -38,11 +38,11 @@ directorio existe para no repetir.
 
 ## Cifras de esta regeneracion
 
-- rutas descubiertas: **85**
-- rutas con al menos un campo derivado: **77**
+- rutas descubiertas: **88**
+- rutas con al menos un campo derivado: **80**
 - rutas sin ningun campo derivado (PENDIENTE, con motivo en su ficha): **8**
-- funciones alcanzables desde alguna ruta: **437**
-- tablas del catalogo `sql/schema.sql`: **49**
+- funciones alcanzables desde alguna ruta: **440**
+- tablas del catalogo `sql/schema.sql`: **51**
 - tablas alcanzadas desde alguna ruta: **34**
 
 ## Regenerar

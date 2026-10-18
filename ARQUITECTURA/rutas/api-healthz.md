@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `health` · `app/api.py:3875` (cuerpo hasta la 3944) · decorador en la linea 3874.
+Handler `health` · `app/api.py:3930` (cuerpo hasta la 3999) · decorador en la linea 3929.
 
 ## Parametros de entrada
 
@@ -16,19 +16,19 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `database` | literal en app/api.py:3928 |
-| `governed_services` | literal en app/api.py:3931 |
-| `informative_services` | literal en app/api.py:3932 |
-| `informative_services.failing` | literal en app/api.py:3938 |
-| `informative_services.lag_seconds` | literal en app/api.py:3936 |
-| `informative_services.max_age_seconds` | literal en app/api.py:3937 |
-| `informative_services.service` | literal en app/api.py:3934 |
-| `informative_services.status` | literal en app/api.py:3935 |
-| `missing_services` | literal en app/api.py:3929 |
-| `missing_symbols` | literal en app/api.py:3930 |
-| `services` | literal en app/api.py:3942 |
-| `status` | literal en app/api.py:3923 |
-| `symbols` | literal en app/api.py:3943 |
+| `database` | literal en app/api.py:3983 |
+| `governed_services` | literal en app/api.py:3986 |
+| `informative_services` | literal en app/api.py:3987 |
+| `informative_services.failing` | literal en app/api.py:3993 |
+| `informative_services.lag_seconds` | literal en app/api.py:3991 |
+| `informative_services.max_age_seconds` | literal en app/api.py:3992 |
+| `informative_services.service` | literal en app/api.py:3989 |
+| `informative_services.status` | literal en app/api.py:3990 |
+| `missing_services` | literal en app/api.py:3984 |
+| `missing_symbols` | literal en app/api.py:3985 |
+| `services` | literal en app/api.py:3997 |
+| `status` | literal en app/api.py:3978 |
+| `symbols` | literal en app/api.py:3998 |
 
 Forma de la respuesta segun el AST: objeto.
 

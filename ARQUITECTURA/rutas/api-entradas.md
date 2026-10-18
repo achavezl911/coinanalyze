@@ -70,14 +70,15 @@ LEE:
   - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
+  - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
-- `entrada_latido` — `sql/schema.sql:2706`, 8 columnas
+- `entrada_latido` — `sql/schema.sql:2708`, 8 columnas
   - la llena `app.entradas.registro.latir` (INSERT) — `app/entradas/registro.py:222`
-- `entrada_registro` — `sql/schema.sql:2669`, 26 columnas
+- `entrada_registro` — `sql/schema.sql:2671`, 26 columnas
   - la llena `app.entradas.registro.insertar` (INSERT) — `app/entradas/registro.py:31`
-- `entrada_reglamento` — `sql/schema.sql:2659`, 6 columnas
+- `entrada_reglamento` — `sql/schema.sql:2661`, 6 columnas
   - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:85`
-- `entrada_resultado` — `sql/schema.sql:2847`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2849`, 12 columnas
   - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:62`
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
@@ -89,7 +90,7 @@ LEE:
 
 **ESCRIBE** (una ruta de lectura que escribe merece mirarse):
 
-- `entrada_resultado` — `sql/schema.sql:2847`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2849`, 12 columnas
 
 ## Funciones que la componen
 
@@ -218,7 +219,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 18 | **0** | 0 | **18** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 21 | **0** | 0 | **21** | [impacto](../impacto/app-api.md) |
 | `app.entradas.reglamento.cargar_valido` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.valores` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.reglamento.versiones_en_curso` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
