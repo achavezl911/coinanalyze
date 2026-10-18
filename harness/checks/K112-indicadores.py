@@ -538,7 +538,8 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
                                                  "F": "lo pintado no es lo servido: ", "G": "la geometria: "}[brazo]
                          + lista[0] + (f" (y {len(lista) - 1} mas)" if len(lista) > 1 else ""))
     info.append(f"(F)(G) {pref} {len(visibles)} velas a la vista · paneles {paneles_pedidos or 'ninguno'} · "
-                f"{puntos_ok} puntos y huecos en su sitio · {grandes_ok} grandes en su vela · {filas_ok} filas de la cinta"
+                f"{puntos_ok} puntos y huecos en su sitio ({sum(len(p['huecos']) for p in ind.get('paneles') or [])} "
+                f"huecos) · {grandes_ok} grandes en su vela · {filas_ok} filas de la cinta"
                 + (f" · {len(red[RUTA_ORD])} peticiones de la cinta" if vivo and "cinta" in e["ind"] else ""))
     return {"e": e, "w": w, "d": d, "vio": vio, "pref": pref} if not vivo else {}
 
@@ -579,7 +580,7 @@ def juzga_delta(caja: dict, visibles: list, y_de, malos: list) -> int:
 def juzga_cvd(caja: dict, visibles: list, serie: list, y_de, malos: list) -> int:
     pts = {p["ts"]: p for p in caja["puntos"]}
     n = 0
-    for i, v, r in visibles:
+    for i, _v, r in visibles:
         valor, origen = serie[i]
         p = pts.pop(r["ts"], None)
         if valor is None:
@@ -1004,12 +1005,14 @@ def juzga() -> int:
         except (K.SystemExit2, TimeoutError, OSError) as exc:
             nomed.append(f"(P) {vista or '(por omision)'}: la sonda no pudo mirar la pagina ({str(exc)[:120]})")
             continue
+        antes = len(rojos)
         try:
             x = juzga_vista(vista, vio, rojos, nomed, info, casa)
         except (KeyError, TypeError, ValueError, IndexError, ZeroDivisionError) as exc:  # un contrato roto no tumba al resto
             rojos.append(f"(F) [{vista or '(por omision)'}] el contrato de la pagina no se deja leer: "
                          f"{type(exc).__name__}: {str(exc)[:120]}")
             x = {}
+        brazos = [r.split("]")[0] for r in rojos[antes:]]  # que brazos condenan en esta vista, sin sus cifras
         # LA HUELLA: de las vistas del pasado, lo pintado y lo servido; del vivo, solo lo que no se mueve con el mercado
         ind = vio.get("ind") or {}
         if not vivo:
@@ -1019,9 +1022,15 @@ def juzga() -> int:
                                       [r.get("cuerpo") and {k: v for k, v in r["cuerpo"].items() if k != "as_of"}
                                        for r in vio["red"] if r["ruta"] != RUTA_FP],
                                       vio.get("cajas"), vio.get("encima")], sort_keys=True, default=str).encode())
-        else:
+        else:  # del vivo: lo que no depende del mercado, y si la cinta pide SOLO lo nuevo (la cadena de sus peticiones)
+            cin = [r for r in vio["red"] if r["ruta"] == RUTA_ORD]
+            cadena = [not cin[0]["q"].get("desde")] + [
+                bool(r["q"].get("desde")) and bool(cin[k - 1].get("cuerpo"))
+                and ms(r["q"]["desde"]) == ms(cin[k - 1]["cuerpo"]["hasta"]) for k, r in enumerate(cin) if k] if cin else []
             huella.update(json.dumps([vista, [p.get("clave") for p in ind.get("paneles") or []], vio.get("cajas"),
-                                      vio.get("encima"), vio.get("pantalla")], sort_keys=True, default=str).encode())
+                                      vio.get("encima"), vio.get("pantalla"), all(cadena) if cadena else None,
+                                      sorted((k, v) for k, v in (cin[0]["q"] if cin else {}).items() if k != "limit"),
+                                      brazos], sort_keys=True, default=str).encode())
         if not x:
             continue
         try:
