@@ -47,11 +47,13 @@ function esMultiplo(t, base) {
 }
 
 /* ------------------------------------------------------------------ el hash
- * `#<activo>/<familia|venue>[/<paso>][/<ventana>]` y detras, en cualquier orden, `unidad=usd` y `hasta=<ISO>` (una
- * ventana fija del pasado). Una vista = una URL. Lo que no se entiende cae al defecto y la pagina reescribe el hash. */
+ * `#<activo>/<familia|venue>[/<paso>][/<ventana>]` y detras, en cualquier orden, `unidad=usd`, `hasta=<ISO>` (una
+ * ventana fija del pasado) y `ver=<n>` (cuantas columnas a la vista; por omision, todas). Una vista = una URL. Lo que no
+ * se entiende cae al defecto y la pagina reescribe el hash. */
 function leeHashLibro(hash) {
   const partes = String(hash || '').replace(/^#/, '').split('/').filter(Boolean);
-  const e = { activo: 'BTC', familia: 'perp', paso: null, ventana: LIBRO_VENTANA_DEFECTO, unidad: 'base', hasta: null };
+  const e = { activo: 'BTC', familia: 'perp', paso: null, ventana: LIBRO_VENTANA_DEFECTO, unidad: 'base', hasta: null,
+              ver: null };
   const a = String(partes[0] || '').toUpperCase();
   if (LIBRO_ACTIVOS.includes(a)) e.activo = a;
   if (partes[1] && libroVenues(partes[1])) e.familia = partes[1];
@@ -60,6 +62,7 @@ function leeHashLibro(hash) {
     if (v === undefined && Object.prototype.hasOwnProperty.call(LIBRO_VENTANAS, k)) e.ventana = k;
     else if (v === undefined && esMultiplo(k, LIBRO_PASO[e.activo])) e.paso = k;
     else if (k === 'unidad' && (v === 'usd' || v === 'base')) e.unidad = v;
+    else if (k === 'ver' && /^\d+$/.test(v || '') && Number(v) >= 10) e.ver = Number(v);
     else if (k === 'hasta' && v) {
       const t = Date.parse(v);
       if (!Number.isNaN(t) && t % 60000 === 0) e.hasta = isoZ(t);
@@ -75,6 +78,7 @@ function escribeHashLibro(e) {
   if (e.ventana !== LIBRO_VENTANA_DEFECTO) h += '/' + e.ventana;
   if (e.unidad === 'usd') h += '/unidad=usd';
   if (e.hasta) h += '/hasta=' + e.hasta;
+  if (e.ver) h += '/ver=' + e.ver;
   return h;
 }
 

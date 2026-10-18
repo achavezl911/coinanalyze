@@ -38,6 +38,11 @@ const VIVO = { canal: 'ninguno', ws: null, motivoWs: null, sondeo: null, pidiend
 // venue de la familia ya dijo algo por el vivo, las peticiones, y `repinta()`, que vuelve a pintar AHORA el mapa y la
 // escalera (sincrono): asi LIBRO_PINTADO y lo pintado son del mismo fotograma.
 window.LIBRO_HITOS = { listo: false, vivo_listo: false, vista: null, peticiones: [], repinta: () => repinta() };
+// `congela()` (para K111): el vivo deja de tocar la pantalla -ni mensajes, ni sondeo, ni columnas- y se repinta; asi lo
+// pintado es lo de los mensajes ya procesados, que se cuentan por canal en `recibidos` (los primeros N marcos del
+// websocket, o las primeras N respuestas del sondeo, son exactamente los que la pantalla uso).
+Object.assign(window.LIBRO_HITOS, { recibidos: { websocket: 0, sondeo: 0 }, congelado: false,
+                                    congela: () => congela() });
 window.LIBRO_PINTADO = { mapa: null, escalera: null };
 
 function ahora() {
@@ -78,7 +83,7 @@ async function carga() {
                cada: w.cada, unidad: VISTA.unidad, desde: w.desde, hasta: w.hasta, asOfMs: asOf,
                fijo: !!VISTA.hasta, aviso: sobre.datos.aviso,
                columnas: columnasDeFotos(sobre.datos, venues, w.columnas, asOf) };
-    EL_MAPA.pon(MODELO);
+    EL_MAPA.pon(MODELO, VISTA.ver);
     pideEscalera();
     if (!VISTA.hasta) {
       arrancaVivo();
@@ -145,6 +150,8 @@ function abreVivo() {
     } catch (e) {
       return;
     }
+    if (window.LIBRO_HITOS.congelado) return;
+    window.LIBRO_HITOS.recibidos.websocket += 1;
     if (m.tipo === 'inicio' || m.tipo === 'latido') VIVO.relevo = m.relevo;
     else recibe(m, 0);
   };
@@ -160,6 +167,7 @@ function abreVivo() {
 }
 
 function recibe(m, edadMs) {
+  if (window.LIBRO_HITOS.congelado) return;
   if (!m || !m.venue || !['libro', 'sin_libro', 'sin_dato'].includes(m.tipo)) return;
   VIVO.libros[m.venue] = { m, llegadaMs: ahora() - (edadMs || 0) };
   if (!window.LIBRO_HITOS.vivo_listo && venuesVista().every((v) => VIVO.libros[v] && VIVO.libros[v].m.tipo !== 'sin_dato')) {
@@ -175,7 +183,8 @@ async function sondea() {
   const sobre = await pedir(RUTA_ULTIMO, parametrosVivo());
   VIVO.pidiendo = false;
   apuntar(sobre);
-  if (mia !== CARGA || VIVO.sondeo === null) return;
+  if (mia !== CARGA || VIVO.sondeo === null || window.LIBRO_HITOS.congelado) return;
+  window.LIBRO_HITOS.recibidos.sondeo += 1;
   if (!sobre.ok) {
     VIVO.fallo = sobre;
   } else {
@@ -281,9 +290,19 @@ function ultimaFotoComoVivo() {
   return out;
 }
 
+function congela() {
+  window.LIBRO_HITOS.congelado = true;
+  paraSondeo();
+  [VIVO.reintento, VIVO.columna].forEach((t) => { if (t !== null) clearTimeout(t); });
+  if (VIVO.tic !== null) clearInterval(VIVO.tic);
+  VIVO.reintento = VIVO.columna = VIVO.tic = null;
+  repinta();
+}
+
 function repinta() {
   if (EL_MAPA) EL_MAPA.pinta();
   if (LA_ESCALERA) pintaEscaleraYa();
+  pintaEstado();
 }
 
 function textoCanal() {

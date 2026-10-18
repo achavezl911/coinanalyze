@@ -140,8 +140,12 @@ function creaMapa(canvas, alLeer) {
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = rgb(MAPA_COLOR.fondo);
     ctx.fillRect(0, 0, L.W, L.H);
-    const reg = { cuadro: ++L.cuadros, ancho: L.W, alto: L.H, columnas: [] };
     const m = L.modelo;
+    const reg = { cuadro: ++L.cuadros, ancho: L.W, alto: L.H, columnas: [] };
+    if (m) {
+      Object.assign(reg, { activo: m.activo, familia: m.familia, venues: m.venues, N: m.N, paso: m.paso, cada: m.cada,
+                           unidad: m.unidad });
+    }
     const r = m && rango(m);
     if (!m || !m.columnas.length || !r) {
       window.LIBRO_PINTADO.mapa = reg;
@@ -225,9 +229,7 @@ function creaMapa(canvas, alLeer) {
       ctx.fillText(new Date(m.columnas[j].ts).toISOString().slice(11, 19), xDe(j) + bs / 2, L.H - MAPA.EJE_T / 2);
     }
     // el contrato: lo que ACABA de pintarse
-    Object.assign(reg, { activo: m.activo, familia: m.familia, venues: m.venues, N: m.N, paso: m.paso, cada: m.cada,
-                         unidad: m.unidad,
-                         escala: { tipo: 'percentil de lo visible', celdas: esc.n, desde: isoZ(m.columnas[j0].ts),
+    Object.assign(reg, { escala: { tipo: 'percentil de lo visible', celdas: esc.n, desde: isoZ(m.columnas[j0].ts),
                                    hasta: isoZ(m.columnas[j1].ts) },
                          eje: { lo, hi, fila: fh, columna: bs, fin: L.fin, ver: L.ver, ancho, alto } });
     for (let j = j0; j <= j1; j++) {
@@ -299,13 +301,13 @@ function creaMapa(canvas, alLeer) {
   mide();
 
   return {
-    /* el modelo entero (una vista nueva): se mira entero, la columna mas nueva a la derecha */
-    pon(modelo) {
+    /* el modelo entero (una vista nueva): `ver` columnas a la vista (por omision, todas), la mas nueva a la derecha */
+    pon(modelo, ver) {
       L.modelo = modelo;
       L.clave = null;
       L.bmp = null;
       const n = modelo ? modelo.columnas.length : 0;
-      L.ver = Math.max(10, n);
+      L.ver = Math.max(10, Math.min(n, ver || n));
       L.fin = n - 1;
       acota();
       pide();
