@@ -448,6 +448,80 @@ async def test_las_rutas_del_libro_dicen_422_y_no_recortan_en_silencio(conn, mon
     json.dumps(await api.libro_cobertura(pet(symbol="SOL", desde=d, hasta=h), symbol="SOL", desde=d, hasta=h))
 
 
+class _WsGuion:
+    """Un websocket que entrega unos mensajes, apunta lo que se le manda y despues se cae."""
+
+    def __init__(self, mensajes) -> None:
+        self.mensajes, self.mandado = list(mensajes), []
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_):
+        return False
+
+    async def send(self, texto):
+        self.mandado.append(json.loads(texto) if texto.startswith("{") else texto)
+
+    async def recv(self):
+        await asyncio.sleep(0)
+        if not self.mensajes:
+            raise ConnectionError("se cayo")
+        return self.mensajes.pop(0)
+
+
+class _WsQuieto(_WsGuion):
+    async def recv(self):
+        await asyncio.sleep(3600)
+
+
+async def test_un_salto_pide_suscribirse_otra_vez_y_una_caida_invalida_los_tres_libros(monkeypatch):
+    fotos = [_bybit("snapshot", 10, b=[("81000.0", "1")], a=[("81000.1", "1")], topic=f"orderbook.1000.{s}USDT")
+             for s in ("BTC", "ETH", "SOL")]
+    ws = _WsGuion([*fotos, _bybit("delta", 12)])  # BTC salta de 10 a 12; luego la conexion se cae
+    conexiones = [ws, _WsQuieto([])]  # la reconexion se queda quieta: una sola caida que contar
+    monkeypatch.setattr(lb, "connect", lambda *_a, **_k: conexiones.pop(0) if len(conexiones) > 1 else conexiones[0])
+    monkeypatch.setattr(lb.random, "uniform", lambda *_a: 0.0)
+    libros = _libros("bybit_linear")
+    from collections import Counter
+    salud = {"caidas": Counter(), "mal_formados": Counter(), "reconexiones": Counter()}
+    tarea = asyncio.create_task(lb.escucha(lb.VENUES["bybit_linear"], libros, salud, None))
+    for _ in range(300):
+        await asyncio.sleep(0.01)
+        if salud["caidas"]["bybit_linear"]:
+            break
+    tarea.cancel()
+    await asyncio.gather(tarea, return_exceptions=True)
+    ops = [(m["op"], m["args"]) for m in ws.mandado if isinstance(m, dict) and m.get("op") != "ping"]
+    assert ops[0][0] == "subscribe" and len(ops[0][1]) == 3  # al conectar, los tres activos
+    assert ops[1:] == [("unsubscribe", ["orderbook.1000.BTCUSDT"]), ("subscribe", ["orderbook.1000.BTCUSDT"])]
+    assert salud["caidas"]["bybit_linear"] == 1 and not any(x.valido for x in libros.values())
+    assert set().union(*libros["BTC"].causas.values()) == {"sequence_discontinuity"}
+    assert set().union(*libros["ETH"].causas.values()) == {"disconnect"}  # valido hasta que se cayo la conexion
+
+
+class _PoolRoto:
+    def acquire(self):
+        raise OSError("la base no acepta")
+
+
+async def test_con_la_base_caida_los_minutos_esperan_y_los_que_no_caben_se_declaran_al_volver(conn, monkeypatch):
+    monkeypatch.setattr(lb, "MINUTOS_TOPE", 2)
+    lib = lb.Libro("okx_spot", "SOL")
+    lib.carga({D("103"): D(1)}, {D("103.01"): D(1)}, 1, 0, 0)
+    lib.valida(M - 10.0)
+    alm = lb.Almacen(M)
+    salud = {**SALUD, "reconexiones": {}}
+    for g in range(M, M + 240, lb.FOTO_S):
+        lb.fotografia([lib], alm, g)
+    await lb.vuelca(_PoolRoto(), None, alm, [lib], M + 243.0, M, salud)  # 4 minutos cerrados, la base caida
+    assert alm.descartados == [M] and alm.proximo == M + 60 and M not in alm.fotos  # solo caben 2 + el que intenta
+    await lb.vuelca(_Pool(conn), None, alm, [lib], M + 243.0, M, salud)  # vuelve la base
+    assert await conn.fetchval("SELECT count(*) FROM libro_cobertura") == 3
+    g = await conn.fetchrow("SELECT * FROM data_gap WHERE feed = 'libro' AND evidence_type = 'queue_full'")
+    assert g["start_ts"] == lb._ts(M) and g["end_ts"] == lb._ts(M + 60)
+
+
 def test_el_paso_de_la_foto_es_multiplo_del_paso_base_de_of1():
     assert all(lb.PASOS[a] % b == 0 for a, b in {"BTC": D(1), "ETH": D("0.1"), "SOL": D("0.01")}.items())
 
