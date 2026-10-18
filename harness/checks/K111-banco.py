@@ -2,8 +2,9 @@
 """K111-banco · sirve la pagina del LIBRO del ARBOL sobre una base local con fotos de produccion (campana 145).
 
     K111-banco.py carga <dsn> [sujeto]   crea en <dsn> las tablas que lee el libro (libro_foto, orderflow_paso) y las
-                                         llena con K111-fotos.tsv.xz (fotos de produccion bajadas una vez) u otro sujeto
-                                         del mismo formato
+                                         llena con K111-fotos.tsv.xz (fotos de produccion bajadas una vez: las de las
+                                         vistas de 03:30Z y, del remate, las de R1 hasta 06:00Z) u otro sujeto del mismo
+                                         formato
     K111-banco.py sirve --puerto P --db <dsn> [--sobre DIR] [--plantado F] [--avisos K111-avisos.jsonl.xz]
 
 Lo que sirve (uvicorn, con la CSP de produccion copiada de app/api.py):

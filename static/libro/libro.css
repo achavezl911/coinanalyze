@@ -22,6 +22,13 @@
   margin: 0;
 }
 
+/* lo que se ve del mapa (cuantas columnas y niveles, y por que no mas): dos lineas fijas, para que el texto no mueva
+ * el lienzo */
+.encaje {
+  min-height: 30px;
+  color: var(--tx-mudo);
+}
+
 .escalera {
   display: flex;
   flex-direction: column;

@@ -111,3 +111,20 @@ test('un venue sin libro valido se dice con su motivo y no suma; uno con el avis
   assert.deepStrictEqual(M.suma.venues, ['a']); // solo el vivo suma
   assert.deepStrictEqual([M.venues[0].conoce_compra, M.venues[0].conoce_venta], [1, 1]);
 });
+
+test('cada celda, al menos 2x2 pixeles de pantalla: lo que no cabe no se aleja, y los niveles van en banda', () => {
+  const Mp = require('../../static/libro/libro-mapa.js');
+  // el lienzo en 1920x1080 mide 1496x818 (CSS): el mapa, 1420x798, y caben 710 columnas y 399 niveles (al doble con DPR 2)
+  assert.deepStrictEqual(Mp.cabenEn(1496, 818, 1), [710, 399]);
+  assert.deepStrictEqual(Mp.cabenEn(1496, 818, 2), [1420, 798]);
+  assert.strictEqual(Mp.verEfectivo(720, 720, 710), 710); // la vista del operador: 720 pedidas, 710 a la vista
+  assert.strictEqual(Mp.verEfectivo(360, 360, 710), 360);
+  assert.strictEqual(Mp.verEfectivo(720, 90, 710), 90);
+  assert.strictEqual(Mp.verEfectivo(720, 3, 710), 10); // al menos 10
+  assert.strictEqual(Mp.verEfectivo(720, 100.4, 710), 100); // un numero entero de columnas
+  // los niveles: todos si caben; si no, los que caben alrededor de la mejor compra, dentro de lo conocido
+  assert.deepStrictEqual(Mp.bandaDe(100, 150, 60, 120), [100, 150]);
+  assert.deepStrictEqual(Mp.bandaDe(100, 400, 101, 250), [200, 300]);
+  assert.deepStrictEqual(Mp.bandaDe(100, 400, 101, 120), [100, 200]);
+  assert.deepStrictEqual(Mp.bandaDe(100, 400, 101, 390), [300, 400]);
+});

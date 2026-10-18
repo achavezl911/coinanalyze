@@ -426,7 +426,7 @@ function aplicaHash() {
 }
 
 function arranca() {
-  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura);
+  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'));
   LA_ESCALERA = creaEscalera(document.getElementById('escalera'));
   [['sel-activo', 'activo'], ['sel-familia', 'familia'], ['sel-ventana', 'ventana'], ['sel-unidad', 'unidad']]
     .forEach(([id, k]) => {

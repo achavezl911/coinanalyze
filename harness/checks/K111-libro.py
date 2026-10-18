@@ -9,10 +9,20 @@ escalera, con sus venues) y por el propio DOM de la escalera (cada fila: su text
 juntillas: lee los PIXELES del lienzo del mapa en cada cuadrito de cada celda.
 
 LAS VISTAS, RELATIVAS A AHORA para que no caduquen (las fotos se guardan 3 dias); `hasta` es la hora entera que acabo
-hace una hora (K111_HASTA la fija), y se declara en la salida:
+hace una hora (K111_HASTA la fija; K111_HASTA_R1, la de las dos de R1), y se declara en la salida. En 1920x1080:
   #BTC/perp/hasta=<h>/ver=90                     1 h de perpetuos a una foto cada 10 s; los ultimos 15 min a la vista
   #ETH/okx_swap/1/30m/unidad=usd/hasta=<h>/ver=90  un venue solo, al paso 1 (2x el guardado), en USD
   #BTC/perp/ver=90                               el VIVO: la escalera de los ultimos avisos y el canal por el que van
+  #BTC/binance_usdm/hasta=<h>                    R1: un venue solo, 1 h a cada 5 s = 720 columnas, y caben 710
+y en 1280x720:
+  #BTC/perp/4h/hasta=<h>                         R1: 4 h de perpetuos a cada 30 s = 480 columnas, y caben 382
+  #BTC/coinbase/30m/hasta=<h> con DPR 0.5        R1 en los dos ejes (el zoom del navegador al 50 %): 360 columnas y
+                                                 ~170 niveles conocidos, y caben 191 y 110 (con DPR 1 caben 220
+                                                 niveles, y la retencion no ha dado mas de 204)
+R1 · CADA PIXEL DEL MAPA ES DE UNA CELDA: lo que cabe lo mide K111 (el lienzo y su devicePixelRatio): una celda, al
+menos 2x2 pixeles de pantalla; lo que no cabe, la pagina no lo aleja (las columnas mas nuevas que caben; en vertical,
+una banda en la mejor compra) y lo dice debajo del mapa. Y lee TODOS los pixeles del mapa: cada uno, del color del
+cuadrito que le da la geometria declarada. Una vista de R1 que deja de recortar es NO MEDIDO (ya no ejercita el caso).
 
 LOS BRAZOS (cualquiera pone ROJO; uno sin canal es NO MEDIDO y un ROJO de otro manda sobre el):
   (P) la pagina   carga su vista sin excepciones, la pinta, y pide la historia de SU hash: activo, venues, paso, la
@@ -58,8 +68,10 @@ H = os.environ.get("K111_HARNESS", "/srv/coinanalyze/harness")
 BASE = os.environ.get("K111_BASE", "")  # sin ella: PRODUCCION
 DB = os.environ.get("K111_DB", "")  # con K111_BASE: la base de las fotos del banco
 HASTA = os.environ.get("K111_HASTA", "")
+HASTA_R1 = os.environ.get("K111_HASTA_R1", "")  # el final de las vistas de R1 (por omision, el de las otras)
 ESPERA_VIVO_S = float(os.environ.get("K111_ESPERA_VIVO", "25"))
 ANCHO, ALTO = 1920, 1080
+EJE_P, EJE_T = 76, 20  # los margenes de los ejes del mapa (el de los precios a la derecha, el de las horas debajo)
 RUTA_FOTOS, RUTA_ULTIMO, RUTA_VIVO = "/api" + "/libro/fotos", "/api" + "/libro/ultimo", "/api" + "/libro/vivo"
 # Lo DECIDIDO por el encargo y por P1/P2 de la campana, escrito aqui y no leido de la pagina:
 FAMILIAS = {"perp": ["binance_usdm", "bybit_linear", "okx_swap", "bitget_usdt"],
@@ -270,10 +282,25 @@ COSECHA = r"""
   const ven = [...document.querySelectorAll('#esc-venues tbody tr')].map((tr) => Object.assign({}, tr.dataset,
     {t: tr.children[1] ? tr.children[1].textContent : ''}));
   const canal = document.querySelector('#estado p[data-estado="canal"]');
+  const cv = document.getElementById('mapa');
+  const r = cv ? cv.getBoundingClientRect() : null;
+  const encaje = document.getElementById('encaje');
   return {listo: h.listo, vivo_listo: h.vivo_listo, vista: h.vista, recibidos: h.recibidos, hash: location.hash,
           pintado: window.LIBRO_PINTADO || null, filas, ven, canal: canal ? {texto: canal.textContent,
-          dice: canal.dataset.canal} : null};
+          dice: canal.dataset.canal} : null, lienzo: r ? {w: r.width, h: r.height, pr: window.devicePixelRatio} : null,
+          encaje: encaje ? encaje.textContent : null};
 })()
+"""
+# todos los pixeles de un rectangulo del lienzo (en pixeles de pantalla), en RGB y en base64
+RGB = r"""
+(([w, h]) => {
+  const d = document.getElementById('mapa').getContext('2d').getImageData(0, 0, w, h).data;
+  const out = new Uint8Array(w * h * 3);
+  for (let i = 0, o = 0; i < d.length; i += 4, o += 3) { out[o] = d[i]; out[o + 1] = d[i + 1]; out[o + 2] = d[i + 2]; }
+  let s = '';
+  for (let i = 0; i < out.length; i += 32768) s += String.fromCharCode.apply(null, out.subarray(i, i + 32768));
+  return btoa(s);
+})
 """
 PIXELES = r"""
 ((puntos) => {
@@ -284,9 +311,10 @@ PIXELES = r"""
 """
 
 
-async def mira(K, vista: str, cab: dict, vivo: bool) -> dict:
-    out = {"vista": vista, "excepciones": [], "fotos": [], "ultimo": [], "ws": [], "ws_abiertos": 0}
-    with K.Chromium(ANCHO, ALTO) as c:
+async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: int = ALTO, dpr: float = 1) -> dict:
+    out = {"vista": vista, "excepciones": [], "fotos": [], "ultimo": [], "ws": [], "ws_abiertos": 0,
+           "pantalla": [ancho, alto, dpr]}
+    with K.Chromium(ancho, alto) as c:
         req = urllib.request.Request(f"http://127.0.0.1:{c.puerto}/json/new?about:blank", method="PUT")
         with urllib.request.urlopen(req, timeout=10) as r:
             destino = json.load(r)
@@ -295,7 +323,7 @@ async def mira(K, vista: str, cab: dict, vivo: bool) -> dict:
             for metodo in ("Page.enable", "Runtime.enable", "Network.enable"):
                 await s.pide(metodo)
             await s.pide("Network.setCacheDisabled", cacheDisabled=True)
-            await s.pide("Emulation.setDeviceMetricsOverride", width=ANCHO, height=ALTO, deviceScaleFactor=1,
+            await s.pide("Emulation.setDeviceMetricsOverride", width=ancho, height=alto, deviceScaleFactor=dpr,
                          mobile=False)
             if cab:
                 await s.pide("Network.setExtraHTTPHeaders", headers=cab)
@@ -351,6 +379,14 @@ async def mira(K, vista: str, cab: dict, vivo: bool) -> dict:
             if pedir:
                 vals = await s.evalua(PIXELES + "(" + json.dumps(pedir) + ")")
                 out["pixeles"] = {tuple(p): tuple(v) for p, v in zip(pedir, vals, strict=True)}
+            # y TODOS los pixeles del mapa: el lienzo menos sus ejes, medido aqui (no lo que declara la pagina)
+            lz = out.get("lienzo") or {}
+            if not vivo and lz.get("w"):
+                pr = lz.get("pr") or 1
+                tam = [math.floor((math.floor(lz["w"]) - EJE_P) * pr), math.floor((math.floor(lz["h"]) - EJE_T) * pr)]
+                if min(tam) > 0:
+                    out["rgb"] = base64.b64decode(await s.evalua(RGB + "(" + json.dumps(tam) + ")"))
+                    out["rgb_tam"] = tam
             del out["_s"]
             await s.cierra()
     return out
@@ -384,6 +420,7 @@ def juez_puntos(vio: dict) -> list[list[int]]:
     eje = m.get("eje")
     if not eje:
         return []
+    pr = (vio.get("lienzo") or {}).get("pr") or 1  # el lienzo esta en pixeles de PANTALLA: CSS x devicePixelRatio
     out = []
     for c in m.get("columnas") or []:
         x0, w, fh = c["x0"], eje["columna"], eje["fila"]
@@ -392,8 +429,133 @@ def juez_puntos(vio: dict) -> list[list[int]]:
         for k in range(eje["lo"], eje["hi"] + 1):
             y0 = (eje["hi"] - k) * fh
             for sx, sy in SUB:
-                out.append([math.floor(x0 + (sx + 0.5) * w / 2), math.floor(y0 + (sy + 0.5) * fh / 2)])
+                out.append([math.floor((x0 + (sx + 0.5) * w / 2) * pr), math.floor((y0 + (sy + 0.5) * fh / 2) * pr)])
     return out
+
+
+def banda(lo: int, hi: int, cy: int, kb: int) -> tuple[int, int]:
+    """Los niveles a la vista: todos [lo, hi] si caben; si no, `cy` alrededor de kb, dentro de [lo, hi]."""
+    if hi - lo + 1 <= cy:
+        return lo, hi
+    a = min(hi - cy + 1, max(lo, kb - cy // 2))
+    return a, a + cy - 1
+
+
+def juzga_encaje(vio: dict, e: dict, eje: dict, cols: list[dict], paso: str, malos: list) -> dict:
+    """R1 · LO QUE CABE lo mide K111, no la pagina: el lienzo del DOM y su devicePixelRatio, menos los ejes; una celda,
+    al menos 2x2 pixeles de pantalla (uno por cuadrito). A la vista, min(n, caben, max(10, ver)) columnas, las ultimas;
+    en vertical, los niveles que conocen (+-2) o, si no caben, la banda de la mejor compra de la columna mas nueva a la
+    vista con libro. La linea de debajo del mapa lo dice y el contrato tambien."""
+    lz = vio.get("lienzo") or {}
+    pr = lz.get("pr") or 1
+    ancho, alto = math.floor(lz.get("w") or 0) - EJE_P, math.floor(lz.get("h") or 0) - EJE_T
+    cx, cy = max(1, math.floor(ancho * pr / 2)), max(1, math.floor(alto * pr / 2))
+    n = len(cols)
+    quiere = min(n, max(10, e["ver"] or n))
+    ver = max(1, min(cx, quiere))
+    if (eje["ancho"], eje["alto"]) != (ancho, alto):
+        malos.append(f"R1: el mapa declara {eje['ancho']}x{eje['alto']} px y su lienzo mide {ancho}x{alto} sin los ejes")
+    if eje["ver"] != ver or eje["fin"] != n - 1:
+        malos.append(f"R1: ensena {eje['ver']} columnas en {ancho} px y caben {cx} (2 px por columna): tenian que ser "
+                     f"{ver}, las ultimas")
+    vis = [c["suma"] for c in cols[n - ver:] if c["suma"]] or [c["suma"] for c in cols if c["suma"]]
+    lo_d, hi_d = min(s["lo"] for s in vis) - 2, max(s["hi"] for s in vis) + 2
+    nuevo = next((c["suma"] for c in reversed(cols[n - ver:]) if c["suma"]), None)
+    kb = math.floor(float(nuevo["compra"]) / float(paso) + 1e-9) if nuevo else (lo_d + hi_d) // 2
+    lo, hi = banda(lo_d, hi_d, cy, kb)
+    if (eje["lo"], eje["hi"]) != (lo, hi):
+        malos.append(f"R1: ensena los niveles {eje['lo']}..{eje['hi']} y tenian que ser {lo}..{hi} (conocidos "
+                     f"{lo_d}..{hi_d}, caben {cy})")
+    if eje.get("caben") != [cx, cy]:
+        malos.append(f"R1: el contrato dice que caben {eje.get('caben')} y caben {[cx, cy]}")
+    txt = vio.get("encaje") or ""
+    dice = [f"{ver} de {n} columnas y {hi - lo + 1} de {hi_d - lo_d + 1} niveles"]
+    dice += [f"caben {cx} columnas"] if ver < quiere else []
+    dice += [f"caben {cy} niveles"] if hi - lo + 1 < hi_d - lo_d + 1 else []
+    falta = [x for x in dice if x not in txt]
+    if falta:
+        malos.append(f"R1: la pantalla no dice lo que ensena del mapa («{txt[:90]}»): le falta «{falta[0]}»")
+    return {"ancho": ancho, "alto": alto, "pr": pr, "cx": cx, "cy": cy, "n": n, "ver": ver, "quiere": quiere,
+            "filas": hi - lo + 1, "conocidos": hi_d - lo_d + 1}
+
+
+QIX = {sub: q for q, sub in enumerate(SUB)}  # (x, y) de un cuadrito -> su numero
+
+
+def cada_pixel(vio: dict, eje: dict, cols: list[dict], bien_de, tramos: list, paso: str) -> tuple[int, int, list]:
+    """R1 · CADA PIXEL DEL MAPA (el rectangulo que midio K111): el pixel fuente que le toca por el vecino mas cercano
+    con la geometria declarada (2 pixeles fuente por celda; en el centro del pixel de pantalla; a menos de 0.05 px fuente
+    de un borde vale cualquiera de los dos) es un cuadrito de una celda A LA VISTA, y el pixel es de su color. Bajo las
+    lineas del precio (a menos de 4 px de su trazo) no se lee. -> (de su celda, bajo el precio, malos, los 3 primeros)."""
+    rgb, tam = vio.get("rgb"), vio.get("rgb_tam")
+    if not rgb or not tam:
+        return 0, 0, 1, ["R1: no se pudieron leer los pixeles del mapa"]
+    W, H = tam
+    pr = (vio.get("lienzo") or {}).get("pr") or 1
+    filas = eje["hi"] - eje["lo"] + 1
+    ex, ey = 2 * eje["ver"] / (eje["ancho"] * pr), 2 * filas / (eje["alto"] * pr)
+    x0 = 2 * (eje["fin"] - eje["ver"] + 1)
+    j0, j1 = math.floor(eje["fin"] - eje["ver"] + 1), math.ceil(eje["fin"])
+
+    def fuente(u: float) -> tuple:
+        i = math.floor(u)
+        return (i - 1, i) if u - i < 0.05 else (i, i + 1) if u - i > 0.95 else (i,)
+
+    porx = [tuple((i // 2, i % 2) for i in fuente(x0 + (X + 0.5) * ex) if j0 <= i // 2 <= min(j1, len(cols) - 1))
+            for X in range(W)]
+    pory = [tuple((eje["hi"] - i // 2, i % 2) for i in fuente((Y + 0.5) * ey) if 0 <= i < 2 * filas) for Y in range(H)]
+    excl: list[list] = [[] for _ in range(W)]
+    for (xa, ya), (xb, yb) in tramos:
+        t = 4 * math.hypot(1, (yb - ya) / max(1e-9, xb - xa))
+        for X in range(max(0, math.floor((xa - 4) * pr)), min(W, math.ceil((xb + 4) * pr))):
+            yl = ya + (yb - ya) * min(1.0, max(0.0, ((X + 0.5) / pr - xa) / max(1e-9, xb - xa)))
+            excl[X].append((max(min(ya, yb) - 4, yl - t) * pr, min(max(ya, yb) + 4, yl + t) * pr))
+    cache: dict = {}
+
+    def acepta(j: int, k: int, qx: int, qy: int) -> list[bytes]:
+        if (j, k, qx, qy) not in cache:
+            cache[(j, k, qx, qy)] = [bytes(c) for c in bien_de(cols[j], k, QIX[(qx, qy)])]
+        return cache[(j, k, qx, qy)]
+
+    # por fila de cuadritos, la fila de pantalla que tiene que salir (el color exacto del primer candidato de cada
+    # pixel): una fila igual se da por buena de una vez; donde difiere, se mira pixel a pixel (el precio, el +-1, el borde)
+    esperadas: dict = {}
+    for cand in set(pory):
+        if cand:
+            k, qy = cand[0]
+            esperadas[cand] = b"".join(acepta(c[0][0], k, c[0][1], qy)[0] if c else b"\0\0\1" for c in porx)
+    bien, bajo, n_malos, malos = 0, 0, 0, []
+    for Y in range(H):
+        base, yc, cand_y = Y * W * 3, Y + 0.5, pory[Y]
+        fila, exp = rgb[base:base + 3 * W], esperadas.get(cand_y, b"")
+        if fila == exp:
+            bien += W
+            continue
+        for X in range(W):
+            v = fila[3 * X:3 * X + 3]
+            if v == exp[3 * X:3 * X + 3]:
+                bien += 1
+                continue
+            if excl[X] and any(a <= yc <= b for a, b in excl[X]):
+                bajo += 1
+                continue
+            vale = any(v in acepta(j, k, qx, qy) or any(all(abs(a - b) <= 1 for a, b in zip(v, c, strict=True))
+                                                        for c in acepta(j, k, qx, qy))
+                       for j, qx in porx[X] for k, qy in cand_y)
+            if vale:
+                bien += 1
+                continue
+            n_malos += 1
+            if len(malos) >= 3:
+                continue
+            if not porx[X] or not cand_y:
+                malos.append(f"R1: el pixel ({X}, {Y}) del mapa no cae en ninguna celda a la vista")
+            else:
+                (j, qx), (k, qy) = porx[X][0], cand_y[0]
+                malos.append(f"R1: el pixel ({X}, {Y}) es {tuple(v)} y es de la columna {isoz(cols[j]['ts'])} nivel "
+                             f"{k * float(paso):g} cuadrito {QIX[(qx, qy)]}: tenia que ser "
+                             f"{tuple(bien_de(cols[j], k, QIX[(qx, qy)])[0])}")
+    return bien, bajo, n_malos, malos
 
 
 def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str) -> None:
@@ -404,8 +566,9 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
         return
     cols = esp["cols"]
     por_ts = {c["ts"]: (j, c) for j, c in enumerate(cols)}
-    # los hallazgos, en cuatro cubos del mas grave al menos: una columna en otro estado tapa los colores que mueve
-    m_col, m_celda, m_color, m_pix = [], [], [], []
+    # los hallazgos, en seis cubos del mas grave al menos: lo que no cabe (R1) mueve todos los pixeles, y una columna en
+    # otro estado tapa los colores que mueve
+    m_r1, m_col, m_celda, m_color, m_pix, m_todo = [], [], [], [], [], []
     pix_ok, pix_saltados, celdas = 0, 0, 0
     j0, j1 = max(0, math.floor(eje["fin"] - eje["ver"] + 1)), min(len(cols) - 1, math.ceil(eje["fin"]))
     indice = percentil(cols, esp["d"]["paso"], e["unidad"])  # la escala es la de TODA la ventana (P1 eligio B; P2)
@@ -415,6 +578,19 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
         m_col.append(f"columnas pintadas {len(vistas_ts)} ({isoz(vistas_ts[0]) if vistas_ts else '-'} ...) y las "
                      f"de la ventana a la vista son {j1 - j0 + 1} ({isoz(cols[j0]['ts'])} ...)")
     paso, fh, w = esp["d"]["paso"], eje["fila"], eje["columna"]
+    pr = (vio.get("lienzo") or {}).get("pr") or 1
+    r1 = vio["_r1"] = juzga_encaje(vio, e, eje, cols, paso, m_r1)
+
+    def bien_de(c: dict, k: int, q_: int) -> list[tuple]:
+        """Los colores que puede tener el cuadrito q_ del nivel k en la columna c (su color: el percentil +-1)."""
+        s = c["suma"]
+        if c["estado"] != "foto":
+            return [HUECO if c["estado"] == "hueco" else PENDIENTE]
+        if not (s and k in s["n"]) or q_ >= cuadritos(s["n"][k], s["N"]):
+            return [DESCONOCIDO]
+        ix = indice(unidad(s["c"][k] + s["v"][k], k, paso, e["unidad"]))
+        return [FONDO] if ix < 0 else [LUT[i] for i in (ix, ix - 1, ix + 1) if 0 <= i <= 255]  # el exacto, primero
+
     # las lineas del precio: por los centros de las columnas con foto, de una a la siguiente (un hueco las corta); un
     # pixel a menos de 4 px de una de ellas (su halo es de 4 px) no se lee
     tramos = []
@@ -427,8 +603,13 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
                 tramos.append((ant, p_))
             ant = p_
 
+    cerca: dict = {}  # los tramos por la x entera que tocan (con 710 columnas son ~1400: recorrerlos todos tarda)
+    for tr in tramos:
+        for x_ in range(math.floor(tr[0][0] - 4), math.floor(tr[1][0] + 4) + 1):
+            cerca.setdefault(x_, []).append(tr)
+
     def bajo_el_precio(x_: float, y_: float) -> bool:
-        for (xa, ya), (xb, yb) in tramos:
+        for (xa, ya), (xb, yb) in cerca.get(math.floor(x_), ()):
             if xa - 4 <= x_ <= xb + 4:
                 yl = ya + (yb - ya) * min(1.0, max(0.0, (x_ - xa) / (xb - xa)))
                 if abs(y_ - yl) <= 4 + abs(yb - ya) * 4 / max(1e-9, xb - xa):
@@ -479,43 +660,39 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
                     m_color.append(f"columna {pc['ts']} nivel {k * float(paso):g}: color {pc_i} y el percentil de la "
                                  f"ventana da {ix}")
                 esperado_q = (ix, cuadritos(n, s["N"]))
-            # los pixeles de sus cuatro cuadritos
+            # los pixeles de sus cuatro cuadritos (en pixeles de pantalla: CSS x devicePixelRatio)
             y0 = (eje["hi"] - k) * fh
             for q_, (sx, sy) in enumerate(SUB):
-                p = (math.floor(pc["x0"] + (sx + 0.5) * w / 2), math.floor(y0 + (sy + 0.5) * fh / 2))
+                p = (math.floor((pc["x0"] + (sx + 0.5) * w / 2) * pr), math.floor((y0 + (sy + 0.5) * fh / 2) * pr))
                 if p not in px:
                     continue
-                if bajo_el_precio(p[0] + 0.5, p[1] + 0.5) or p[1] >= eje["alto"]:
+                if bajo_el_precio((p[0] + 0.5) / pr, (p[1] + 0.5) / pr) or (p[1] + 0.5) / pr >= eje["alto"]:
                     pix_saltados += 1
                     continue
                 v = px[p]
-                if c["estado"] == "hueco":
-                    bien = [HUECO]
-                elif c["estado"] == "pendiente":
-                    bien = [PENDIENTE]
-                elif esperado_q is None:
-                    bien = [DESCONOCIDO]
-                else:
-                    ix, sub = esperado_q
-                    if q_ >= sub:
-                        bien = [DESCONOCIDO]
-                    elif ix < 0:
-                        bien = [FONDO]
-                    else:
-                        bien = [LUT[i] for i in (ix - 1, ix, ix + 1) if 0 <= i <= 255]
+                bien = bien_de(c, k, q_)
                 if any(all(abs(a - b) <= 1 for a, b in zip(v, x, strict=True)) for x in bien):
                     pix_ok += 1
                 else:
                     m_pix.append(f"columna {pc['ts']} nivel {k * float(paso):g} cuadrito {q_}: el pixel es {v} y tenia "
-                                 f"que ser {bien[len(bien) // 2]} ({'HUECO' if c['estado'] == 'hueco' else 'sin escribir' if c['estado'] == 'pendiente' else 'DESCONOCIDO' if esperado_q is None or q_ >= esperado_q[1] else 'su color'})")
-    malos = m_col + m_celda + m_color + m_pix
+                                 f"que ser {bien[0]} ({'HUECO' if c['estado'] == 'hueco' else 'sin escribir' if c['estado'] == 'pendiente' else 'DESCONOCIDO' if esperado_q is None or q_ >= esperado_q[1] else 'su color'})")
+    todos_bien, todos_bajo, n_todo, m_todo = cada_pixel(vio, eje, cols, bien_de, tramos, paso)
+    malos = m_r1 + m_col + m_celda + m_color + m_pix + m_todo
+    cuantos = len(malos) - len(m_todo) + n_todo
     if malos:
-        rojos.append(f"(F) {pref} el mapa no pinta lo servido: {malos[0]}" + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
+        rojos.append(f"(F) {pref} el mapa no pinta lo servido: {malos[0]}" + (f" (y {cuantos - 1} mas)" if cuantos > 1 else ""))
     estados = {}
     for pc in pintadas:
         estados[pc["estado"]] = estados.get(pc["estado"], 0) + 1
     info.append(f"(F) {pref} mapa: {len(pintadas)} columnas a la vista ({', '.join(f'{k} {v}' for k, v in sorted(estados.items()))}), "
                 f"{celdas} celdas conocidas, {pix_ok} pixeles leidos del lienzo y en su color ({pix_saltados} bajo el precio)")
+    ancho_, alto_, dpr_ = vio.get("pantalla") or ["?", "?", 1]
+    info.append(f"(F) {pref} R1 en {ancho_}x{alto_}{f' con DPR {dpr_}' if dpr_ != 1 else ''}: "
+                f"{eje['ver']} de {r1['n']} columnas a la vista (caben {r1['cx']} en {r1['ancho']} px"
+                f"{', el recorte se ejercita' if r1['ver'] < r1['quiere'] else ''}) y {eje['hi'] - eje['lo'] + 1} de "
+                f"{r1['conocidos']} niveles (caben {r1['cy']}); cada pixel del mapa "
+                f"({'x'.join(str(z) for z in vio.get('rgb_tam') or ['?', '?'])} de pantalla): {todos_bien} de su celda, "
+                f"{todos_bajo} bajo el precio, {n_todo} de otra cosa")
 
 
 # --------------------------------------------------------------------------------------------- la escalera
@@ -764,8 +941,17 @@ def juzga() -> int:
     hasta = datetime.fromisoformat(HASTA.replace("Z", "+00:00")) if HASTA else \
         ahora.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
     h = hasta.strftime("%Y-%m-%dT%H:%M:%SZ")
-    vistas = [f"#BTC/perp/hasta={h}/ver=90", f"#ETH/okx_swap/1/30m/unidad=usd/hasta={h}/ver=90", "#BTC/perp/ver=90"]
-    declara = f"ventana del pasado hasta {h} ({'fijada por K111_HASTA' if HASTA else 'la hora entera que acabo hace una hora'})"
+    h1 = datetime.fromisoformat(HASTA_R1.replace("Z", "+00:00")).strftime("%Y-%m-%dT%H:%M:%SZ") if HASTA_R1 else h
+    # (vista, su pantalla en px CSS, su devicePixelRatio, lo que su pagina TIENE que recortar por R1: las columnas "x" y
+    # los niveles "y", porque no caben a 2 px de pantalla por celda; DPR 0.5 es el zoom del navegador al 50 %)
+    vistas = [(f"#BTC/perp/hasta={h}/ver=90", ANCHO, ALTO, 1, ""),
+              (f"#ETH/okx_swap/1/30m/unidad=usd/hasta={h}/ver=90", ANCHO, ALTO, 1, ""),
+              ("#BTC/perp/ver=90", ANCHO, ALTO, 1, ""),
+              (f"#BTC/binance_usdm/hasta={h1}", ANCHO, ALTO, 1, "x"),
+              (f"#BTC/perp/4h/hasta={h1}", 1280, 720, 1, "x"),
+              (f"#BTC/coinbase/30m/hasta={h1}", 1280, 720, 0.5, "xy")]
+    declara = f"ventana del pasado hasta {h} ({'fijada por K111_HASTA' if HASTA else 'la hora entera que acabo hace una hora'})" \
+        + (f"; las de R1, hasta {h1} (fijada por K111_HASTA_R1)" if HASTA_R1 else "")
     # LO DECIDIBLE ANTES QUE LO QUE FALTA: si la ventana no tiene fotos, no hay sujeto (y no se abre Chromium)
     try:
         n = sql(f"SELECT count(*) FROM libro_foto WHERE ts >= '{(hasta - timedelta(hours=1)).isoformat()}' "
@@ -793,22 +979,31 @@ def juzga() -> int:
     nomed: list[str] = []
     info: list[str] = [declara]
     huella = hashlib.sha256()
-    for vista in vistas:
+    for vista, ancho, alto, dpr, recorta in vistas:
         try:
-            vio = asyncio.run(asyncio.wait_for(mira(K, vista, cab, "hasta=" not in vista), timeout=180))
+            vio = asyncio.run(asyncio.wait_for(mira(K, vista, cab, "hasta=" not in vista, ancho, alto, dpr), timeout=180))
         except (K.SystemExit2, TimeoutError, OSError) as exc:
             nomed.append(f"(P) {vista}: la sonda no pudo mirar la pagina ({str(exc)[:120]})")
             continue
         x = juzga_vista(vista, vio, rojos, nomed, info, casa, K110)
-        # LA HUELLA: lo pintado y lo servido de las vistas del pasado (reproducibles); del vivo, solo por que canal
-        # dice ir y el estado de cada venue (sus cantidades cambian con cada aviso)
+        r1 = vio.get("_r1")
+        if r1 and "x" in recorta and not r1["ver"] < r1["quiere"]:
+            nomed.append(f"(F) [{vista}] R1: la vista ya no ejercita el recorte en {ancho}x{alto} (DPR {dpr}): caben "
+                         f"{r1['cx']} columnas y pide {r1['quiere']}")
+        if r1 and "y" in recorta and not r1["filas"] < r1["conocidos"]:
+            nomed.append(f"(F) [{vista}] R1: la vista ya no ejercita el recorte vertical en {ancho}x{alto} (DPR {dpr}): "
+                         f"caben {r1['cy']} niveles y conoce {r1['conocidos']}")
+        # LA HUELLA: lo pintado y lo servido de las vistas del pasado (reproducibles), con TODOS los pixeles del mapa; del
+        # vivo, solo por que canal dice ir y el estado de cada venue (sus cantidades cambian con cada aviso)
         pin = vio.get("pintado") or {}
         if "hasta=" in vista:
             mapa = {k: v for k, v in (pin.get("mapa") or {}).items() if k != "cuadro"}
             esc = {k: v for k, v in (pin.get("escalera") or {}).items() if k not in ("cuadro", "ahora_ms")}
             huella.update(json.dumps([vista, mapa, esc, vio.get("filas"), [p["url"].split("?", 1)[-1] for p in vio["fotos"]],
                                       [p.get("cuerpo") and {k: v for k, v in p["cuerpo"].items() if k != "as_of"}
-                                       for p in vio["fotos"]], sorted((vio.get("pixeles") or {}).items())],
+                                       for p in vio["fotos"]], sorted((vio.get("pixeles") or {}).items()),
+                                      vio.get("pantalla"), vio.get("lienzo"), vio.get("encaje"),
+                                      hashlib.sha256(vio.get("rgb") or b"").hexdigest()],
                                      sort_keys=True, default=str).encode())
         else:
             huella.update(json.dumps([vista, (vio.get("canal") or {}).get("dice"),
@@ -827,8 +1022,9 @@ def juzga() -> int:
         print(f"NO MEDIDO: K111 · {nomed[0]}" + cola)
     else:
         print("VERDE  K111 · el libro pinta lo que sirve y lo servido es libro_foto: el mapa (cada celda, cuantos la "
-              "conocen, lo desconocido, los huecos, el color y sus pixeles), la escalera (niveles, cantidades, "
-              "acumuladas, mejores, venues sin libro) y el canal del vivo" + cola)
+              "conocen, lo desconocido, los huecos, el color, y cada pixel de una celda a la vista: lo que no cabe, "
+              "recortado y dicho), la escalera (niveles, cantidades, acumuladas, mejores, venues sin libro) y el canal "
+              "del vivo" + cola)
     for linea in rojos + nomed + info:
         print(f"   · {linea}")
     return 1 if rojos else 2 if nomed else 0

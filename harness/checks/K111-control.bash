@@ -4,8 +4,9 @@
 #
 # EL SUJETO BUENO ES DE VERDAD: la pagina del ARBOL servida por K111-banco.py sobre una base desechable k111_ctl_<pid>
 # con las fotos de PRODUCCION de K111-fotos.tsv.xz (perpetuos de BTC 02:30-03:30Z del 2026-10-18, con 51 min de HUECO
-# de antes del servicio; okx_swap ETH 03:00-03:30Z), y el relevo alimentado con 40 s de avisos REALES
-# (K111-avisos.jsonl.xz). Sobre el, K111 tiene que salir VERDE. Cada plantado cambia LO SERVIDO (el banco), LA BASE (una
+# de antes del servicio; okx_swap ETH 03:00-03:30Z; y para las vistas de R1, hasta 06:00Z: binance_usdm de BTC
+# 05:00-06:00Z entera, con el corte de las 05:33Z, y los perpetuos de BTC 02:00-06:00Z a cada 30 s), y el relevo
+# alimentado con 40 s de avisos REALES (K111-avisos.jsonl.xz). Sobre el, K111 tiene que salir VERDE. Cada plantado cambia LO SERVIDO (el banco), LA BASE (una
 # copia con un hueco en medio) o LA PAGINA (un fichero en el --sobre del banco: el arbol no se toca, y cada `sed` tiene
 # que MORDER exactamente las lineas esperadas o el plantado cuenta como fallido); K111 tiene que condenarlo POR SU BRAZO,
 # con su frase y con la huella del escenario y la suya cambiadas; y el escenario vuelve a ser el bueno:
@@ -20,6 +21,8 @@
 #   (F) acumulada_sin_minimo      la acumulada que pasa por niveles parciales, escrita sin su «≥»
 #   (P) cada_fuera_de_regla       la historia pedida con un cada que no es el de la regla
 #   (P) pagina_rota               una excepcion al arrancar
+#   (F) pagina_de_e0fb3fb         R1: la pagina de antes del remate (libro.html y static/libro/* de e0fb3fb, por git show):
+#                                 720 columnas en 1420 px, el vecino mas cercano ensena unas celdas y esconde otras
 # Y tres escenarios BUENOS mas que tienen que salir VERDE: vivo_por_sondeo (el websocket rechazado), hueco_en_medio (la
 # base con el hueco y la pagina buena) y sin_libro_dicho (el venue sin libro y la pagina buena: lo dice y no suma).
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina («FALTA DESPLEGAR») · sin_chromium · sin_fotos (la base vacia) · sin_canal.
@@ -35,6 +38,7 @@ BANCO="$AQUI/K111-banco.py"
 PY="$REPO/.venv/bin/python"
 H=/var/run/postgresql
 HASTA=2026-10-18T03:30:00Z  # el final de las vistas del pasado: el del sujeto grabado
+HASTA_R1=2026-10-18T06:00:00Z  # el de las vistas de R1 (la del operador: la hora del corte de 140)
 for f in "$CHK" "$BANCO" "$AQUI/K111-libro.py" "$AQUI/K111-fotos.tsv.xz" "$AQUI/K111-avisos.jsonl.xz" \
          "$AQUI/K102-mesa.py" "$AQUI/K109-footprint.py" "$AQUI/K110-libro.py" "$PY"; do
   [ -r "$f" ] || { echo "control: falta $f"; exit 2; }
@@ -73,7 +77,8 @@ comprueba() {  # nombre condicion(0/1) detalle
 dsn() { echo "postgresql:///$1?host=$H"; }
 k111() {  # puerto base [env extra...] -> rc; la salida en $T/sal
   local p=$1 b=$2; shift 2
-  env "$@" K111_BASE="http://127.0.0.1:$p" K111_DB="$(dsn "$b")" K111_HASTA="$HASTA" /bin/bash "$CHK" > "$T/sal" 2>&1; echo $?
+  env "$@" K111_BASE="http://127.0.0.1:$p" K111_DB="$(dsn "$b")" K111_HASTA="$HASTA" K111_HASTA_R1="$HASTA_R1" \
+    /bin/bash "$CHK" > "$T/sal" 2>&1; echo $?
 }
 huella_k111() { head -1 "$T/sal" | grep -o 'huella [0-9a-f]*' | cut -d' ' -f2; }
 escenario() {  # [base] -> lo que el banco sirve distinto del arbol, y los sujetos de los que parte
@@ -116,7 +121,15 @@ planta_pagina() {  # fichero(en static/) patron-sed mordidas-esperadas -> 0 si m
   sed -i "$2" "$T/sobre/$1"
   [ "$(diff "$REPO/static/$1" "$T/sobre/$1" | grep -c '^>')" = "$3" ]
 }
-restaura() { rm -f "$T/sobre/libro/"* "$T/sobre/flujo/"*; : > "$T/plantado"; }
+restaura() { rm -f "$T/sobre/libro.html" "$T/sobre/libro/"* "$T/sobre/flujo/"*; : > "$T/plantado"; }
+planta_e0fb3fb() {  # la pagina de e0fb3fb entera en el sobre -> 0 si salio de git y su mapa no es el del arbol
+  local f
+  git -C "$REPO" show e0fb3fb:static/libro.html > "$T/sobre/libro.html" 2>/dev/null || return 1
+  for f in $(git -C "$REPO" ls-tree --name-only e0fb3fb static/libro/ 2>/dev/null); do
+    git -C "$REPO" show "e0fb3fb:$f" > "$T/sobre/libro/${f##*/}" 2>/dev/null || return 1
+  done
+  [ -s "$T/sobre/libro/libro-mapa.js" ] && ! cmp -s "$REPO/static/libro/libro-mapa.js" "$T/sobre/libro/libro-mapa.js"
+}
 juzga_plantado() {  # nombre brazo patron mordio(0/1) que [puerto] [base] [etiqueta de la base]
   local antes despues rc visto hk p=${6:-$P1} b=${7:-$DB}
   antes=$BUENO; despues=$(escenario "${8:-buena}")
@@ -159,6 +172,9 @@ planta_pagina libro/libro-calculo.js 's/  let c = LIBRO_FOTO_S;/  let c = 2 * LI
 juzga_plantado cada_fuera_de_regla P "pide lo que su hash no dice: cada=10 \\(su hash dice 5\\)" $m "un cada que no es el de la regla"
 planta_pagina libro/libro-app.js 's/^function arranca() {$/function arranca() { throw new Error("plantado por K111-control");/' 1; m=$?
 juzga_plantado pagina_rota P "lanzo 1 excepcion|no pinto su vista" $m "una excepcion al arrancar"
+planta_e0fb3fb; m=$?
+juzga_plantado pagina_de_e0fb3fb F "\[BTC binance_usdm\] el mapa no pinta lo servido: R1: ensena 720 columnas en 1420 px y caben 710" $m \
+  "R1: la pagina de e0fb3fb y la vista del operador"
 
 echo "== tres escenarios buenos mas: tienen que salir VERDE"
 echo sin_ws > "$T/plantado"
@@ -181,7 +197,7 @@ rc=$(k111 $P1 "${DB}_no_existe")
 comprueba sin_canal "$([ "$rc" = 2 ] && head -1 "$T/sal" | grep -q '^NO MEDIDO (CANAL)' && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/sal" | cut -c1-120)"
 
 echo "== el check: A89 los dos modos de SIGPIPE, A56 las tres invocaciones"
-ENV=(K111_BASE="http://127.0.0.1:$P1" "K111_DB=$(dsn "$DB")" "K111_HASTA=$HASTA")
+ENV=(K111_BASE="http://127.0.0.1:$P1" "K111_DB=$(dsn "$DB")" "K111_HASTA=$HASTA" "K111_HASTA_R1=$HASTA_R1")
 for modo in --ignore-signal=PIPE --default-signal=PIPE; do
   env $modo "${ENV[@]}" bash "$CHK" > "$T/chk" 2>&1; rc=$?
   comprueba "sigpipe$modo" "$([ "$rc" = 0 ] && head -1 "$T/chk" | grep -q '^VERDE  K111' && ! grep -qi 'broken pipe' "$T/chk" && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/chk" | cut -c1-80)"

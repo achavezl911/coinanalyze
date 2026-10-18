@@ -18,6 +18,13 @@
  *   un instante sin escribir aun  la columna de su color
  * Encima, la mejor compra y la mejor venta de la familia en cada instante.
  *
+ * CADA PIXEL ES DE UNA CELDA (el remate de la campana, R1). Una celda tiene al menos 2x2 pixeles de PANTALLA, uno por
+ * cuadrito: con menos, el drawImage sin suavizado REDUCE y el vecino mas cercano ensena unas celdas y esconde otras (con
+ * 720 columnas en 1420 px, 488 pixeles de K111 caian en otra celda). Lo que no cabe NO SE ALEJA: en horizontal se ven
+ * las columnas mas nuevas que caben y el resto arrastrando (la rueda no aleja mas); en vertical, si los niveles conocidos
+ * no caben, una banda en la mejor compra de la columna mas nueva a la vista. La linea de debajo del mapa lo dice, y el
+ * contrato tambien (eje.caben, eje.pedido, eje.n, eje.datos).
+ *
  * EL CONTRATO DE LO PINTADO, que lee K111: cada vez que pinta, el lienzo deja en `window.LIBRO_PINTADO.mapa` lo que
  * ACABA de dibujar: la escala, el eje (que nivel va en que pixel) y, por columna visible, su instante, su estado, sus
  * pixeles, los venues con foto, las mejores y su y, y por celda conocida su nivel, compra, venta, cuantos la conocen y
@@ -53,10 +60,27 @@ function rgb(c) {
   return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
 }
 
-function creaMapa(canvas, alLeer) {
+/* Las columnas y los niveles que caben en un lienzo de W x H (CSS) con pr pixeles de pantalla por pixel CSS: 2 por celda. */
+function cabenEn(W, H, pr) {
+  return [Math.max(1, Math.floor(((W - MAPA.EJE_P) * pr) / 2)), Math.max(1, Math.floor(((H - MAPA.EJE_T) * pr) / 2))];
+}
+
+/* Las columnas a la vista: las pedidas (al menos 10), nunca mas de las que hay ni de las que caben. */
+function verEfectivo(n, pedido, cabenX) {
+  return Math.max(1, Math.min(n, cabenX, Math.max(10, Math.round(pedido))));
+}
+
+/* Los niveles a la vista: todos [lo, hi] si caben; si no, `cy` alrededor del nivel kb, dentro de [lo, hi]. */
+function bandaDe(lo, hi, cy, kb) {
+  if (hi - lo + 1 <= cy) return [lo, hi];
+  const a = Math.min(hi - cy + 1, Math.max(lo, kb - Math.floor(cy / 2)));
+  return [a, a + cy - 1];
+}
+
+function creaMapa(canvas, alLeer, aviso) {
   const L = { cv: canvas, ctx: canvas.getContext('2d'), pr: window.devicePixelRatio || 1, W: 0, H: 0, modelo: null,
-              fin: 0, ver: 0, sigue: true, pendiente: false, cuadros: 0, arrastre: null, bmp: null, esc: null,
-              clave: null };
+              fin: 0, ver: 0, pedido: 0, sigue: true, pendiente: false, cuadros: 0, arrastre: null, bmp: null,
+              esc: null, clave: null, aviso };
 
   function mide() {
     const r = L.cv.parentElement.getBoundingClientRect();
@@ -150,26 +174,31 @@ function creaMapa(canvas, alLeer) {
     const r = m && rango(m);
     if (!m || !m.columnas.length || !r) {
       window.LIBRO_PINTADO.mapa = reg;
+      if (L.aviso) L.aviso.textContent = '';
       return;
     }
     const ancho = L.W - MAPA.EJE_P;
     const alto = L.H - MAPA.EJE_T;
     const n = m.columnas.length;
+    const [cx, cy] = cabenEn(L.W, L.H, L.pr);
     const j0 = Math.max(0, Math.floor(L.fin - L.ver + 1));
     const j1 = Math.min(n - 1, Math.ceil(L.fin));
-    // lo visible en vertical: lo que conocen las columnas que se ven, con dos filas de margen
+    // lo visible en vertical: lo que conocen las columnas que se ven, con dos filas de margen; si no cabe, la banda de
+    // la mejor compra de la columna mas nueva a la vista que tiene libro
     let lo = Infinity;
     let hi = -Infinity;
-    for (let j = j0; j <= j1; j++) {
+    let kb = null;
+    for (let j = j1; j >= j0; j--) {
       const s = m.columnas[j].suma;
       if (s) {
         lo = Math.min(lo, s.lo);
         hi = Math.max(hi, s.hi);
+        if (kb === null) kb = Math.floor(Number(s.mejorCompra) / Number(m.paso) + 1e-9);
       }
     }
     if (lo === Infinity) [lo, hi] = r;
-    lo -= 2;
-    hi += 2;
+    const datos = [lo - 2, hi + 2];
+    [lo, hi] = bandaDe(datos[0], datos[1], cy, kb === null ? Math.floor((datos[0] + datos[1]) / 2) : kb);
     const filas = hi - lo + 1;
     // el mapa de bits de TODA la ventana (P1: B), con la escala (P2) de toda la ventana: se rehace cuando cambian las
     // columnas; sus filas, las de la ventana con dos de margen (las que puede pedir lo visible)
@@ -191,7 +220,9 @@ function creaMapa(canvas, alLeer) {
     ctx.clip();
     ctx.drawImage(L.bmp, 2 * (L.fin - L.ver + 1), 2 * (r[1] + 2 - hi), 2 * L.ver, 2 * filas, 0, 0, ancho, alto);
     // el precio encima: la mejor compra y la mejor venta de la familia en cada instante (con un halo oscuro, para que
-    // se lea sobre cualquier color del mapa)
+    // se lea sobre cualquier color del mapa); juntas redondas: lo que tapa queda a menos de 3 px de su trazo (un pico
+    // de inglete llegaria a 20)
+    ctx.lineJoin = 'round';
     [['mejorCompra', MAPA_COLOR.compra], ['mejorVenta', MAPA_COLOR.venta]].forEach(([campo, color]) => {
       ctx.beginPath();
       let dentro = false;
@@ -233,7 +264,8 @@ function creaMapa(canvas, alLeer) {
     // el contrato: lo que ACABA de pintarse
     Object.assign(reg, { escala: { tipo: 'percentil de la ventana', celdas: esc.n, desde: isoZ(m.columnas[0].ts),
                                    hasta: isoZ(m.columnas[n - 1].ts) },
-                         eje: { lo, hi, fila: fh, columna: bs, fin: L.fin, ver: L.ver, ancho, alto } });
+                         eje: { lo, hi, fila: fh, columna: bs, fin: L.fin, ver: L.ver, ancho, alto, pr: L.pr,
+                                caben: [cx, cy], pedido: L.pedido, n, datos } });
     for (let j = j0; j <= j1; j++) {
       const col = m.columnas[j];
       const s = col.suma;
@@ -253,12 +285,22 @@ function creaMapa(canvas, alLeer) {
       reg.columnas.push(c);
     }
     window.LIBRO_PINTADO.mapa = reg;
+    // lo que se ve del mapa, dicho: cuanto de la ventana y por que no mas
+    const conocidos = datos[1] - datos[0] + 1;
+    if (L.aviso) {
+      L.aviso.textContent = 'mapa: ' + L.ver + ' de ' + n + ' columnas y ' + filas + ' de ' + conocidos + ' niveles a la'
+        + ' vista (cada celda, al menos 2×2 píxeles de pantalla)'
+        + (L.ver < Math.min(n, Math.max(10, Math.round(L.pedido))) ? ' · en este ancho caben ' + cx + ' columnas: no se'
+          + ' aleja más; las demás, arrastrando' : '')
+        + (filas < conocidos ? ' · en este alto caben ' + cy + ' niveles: los de la mejor compra de la última columna;'
+          + ' con un paso mayor caben más' : '');
+    }
   }
 
   /* --------------------------------------------------------- lo que se toca */
   function acota() {
     const n = L.modelo ? L.modelo.columnas.length : 0;
-    L.ver = Math.min(Math.max(n, 10), Math.max(10, L.ver));
+    L.ver = verEfectivo(n, L.pedido, cabenEn(L.W, L.H, L.pr)[0]);
     L.fin = Math.min(n - 1, Math.max(Math.min(n - 1, L.ver - 1), L.fin));
     L.sigue = L.fin >= n - 1;
   }
@@ -278,7 +320,7 @@ function creaMapa(canvas, alLeer) {
 
   L.cv.addEventListener('wheel', (ev) => {
     ev.preventDefault();
-    L.ver *= ev.deltaY > 0 ? 1.12 : 1 / 1.12;
+    L.pedido = L.ver * (ev.deltaY > 0 ? 1.12 : 1 / 1.12);
     acota();
     pide();
   }, { passive: false });
@@ -298,18 +340,20 @@ function creaMapa(canvas, alLeer) {
   });
   new ResizeObserver(() => {
     mide();
+    acota();
     pide();
   }).observe(L.cv.parentElement);
   mide();
 
   return {
-    /* el modelo entero (una vista nueva): `ver` columnas a la vista (por omision, todas), la mas nueva a la derecha */
+    /* el modelo entero (una vista nueva): `ver` columnas pedidas (por omision, todas; a la vista, las que caben), la
+     * mas nueva a la derecha */
     pon(modelo, ver) {
       L.modelo = modelo;
       L.clave = null;
       L.bmp = null;
       const n = modelo ? modelo.columnas.length : 0;
-      L.ver = Math.max(10, Math.min(n, ver || n));
+      L.pedido = ver || n;
       L.fin = n - 1;
       acota();
       pide();
@@ -328,5 +372,5 @@ function creaMapa(canvas, alLeer) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { MAPA, MAPA_COLOR, MAPA_LUT, MAPA_SUB, cuadritos };
+  module.exports = { MAPA, MAPA_COLOR, MAPA_LUT, MAPA_SUB, cuadritos, cabenEn, verEfectivo, bandaDe };
 }
