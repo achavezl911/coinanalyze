@@ -38284,9 +38284,9 @@
           "llamadas": [],
           "menciones": [
             "harness/checks/K110-el-libro.sh:18",
-            "harness/checks/K111-banco.py:12",
-            "harness/checks/K111-banco.py:18",
-            "harness/checks/K111-banco.py:168",
+            "harness/checks/K111-banco.py:13",
+            "harness/checks/K111-banco.py:19",
+            "harness/checks/K111-banco.py:169",
             "harness/checks/K111-control.bash:12",
             "harness/checks/K111-el-libro-pintado-es-el-servido.sh:13",
             "harness/checks/K111-libro.py:21"
@@ -38544,8 +38544,8 @@
           ],
           "menciones": [
             "harness/checks/K110-libro.py:561",
-            "harness/checks/K111-banco.py:20",
-            "harness/checks/K111-banco.py:182"
+            "harness/checks/K111-banco.py:21",
+            "harness/checks/K111-banco.py:183"
           ]
         },
         "tests": {
@@ -47540,10 +47540,10 @@
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:470"
           ],
           "menciones": [
-            "harness/checks/K111-banco.py:9",
-            "harness/checks/K111-banco.py:19",
-            "harness/checks/K111-banco.py:21",
-            "harness/checks/K111-banco.py:157",
+            "harness/checks/K111-banco.py:10",
+            "harness/checks/K111-banco.py:20",
+            "harness/checks/K111-banco.py:22",
+            "harness/checks/K111-banco.py:158",
             "harness/checks/K111-el-libro-pintado-es-el-servido.sh:4",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
