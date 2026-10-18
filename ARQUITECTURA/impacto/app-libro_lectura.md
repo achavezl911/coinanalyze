@@ -20,7 +20,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/libro_lectura.py:263` · clave completa `app.libro_lectura._escalera`
 
-**Radio exacto: 1 rutas** de 90 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -43,7 +43,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/libro_lectura.py:280` · clave completa `app.libro_lectura.mensaje`
 
-**Radio exacto: 1 rutas** de 90 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -66,7 +66,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/libro_lectura.py:291` · clave completa `app.libro_lectura.parametros`
 
-**Radio exacto: 1 rutas** de 90 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -89,7 +89,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/libro_lectura.py:58` · clave completa `app.libro_lectura.paso_de`
 
-**Radio exacto: 1 rutas** de 90 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -112,7 +112,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/libro_lectura.py:70` · clave completa `app.libro_lectura.reagrega`
 
-**Radio exacto: 1 rutas** de 90 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -135,7 +135,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/libro_lectura.py:373` · clave completa `app.libro_lectura.ultimo`
 
-**Radio exacto: 1 rutas** de 90 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -158,7 +158,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/libro_lectura.py:48` · clave completa `app.libro_lectura.venues_de`
 
-**Radio exacto: 1 rutas** de 90 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

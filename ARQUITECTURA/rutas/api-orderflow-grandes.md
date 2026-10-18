@@ -74,12 +74,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
 comentario no tiene consumidor, tiene quien habla de ella.
 
-**NINGUN rastro**, ni llamada ni mencion, en `static/app.js`, `static/index.html`,
-`harness/checks`, `tests`, `tools` ni `README.md`.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K112-banco.py:123` | — |
 
-No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su
-nombre-, pero es la forma exacta del patron que en esta casa se ha repetido nueve
-veces. **Merece una mirada, no una conclusion.**
+**No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
+Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
 
@@ -114,9 +114,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api._utc_iso` | 22 | **0** | 0 | **22** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 22 | **0** | 0 | **22** | [impacto](../impacto/app-api.md) |
-| `app.api._orderflow` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
+| `app.api._orderflow` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-api.md) |
 | `app.api.orderflow_grandes` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

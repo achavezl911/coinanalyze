@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-90 rutas descubiertas en el arbol. Para trabajar sobre una,
+92 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -50,6 +50,8 @@
 | `/api/orderflow/cobertura` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-cobertura.md) |
 | `/api/orderflow/footprint` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-footprint.md) |
 | `/api/orderflow/grandes` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-grandes.md) |
+| `/api/orderflow/indicadores` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-indicadores.md) |
+| `/api/orderflow/ordenes` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-ordenes.md) |
 | `/api/orderflow/perfil` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-perfil.md) |
 | `/api/orderflow/referencia` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-referencia.md) |
 | `/api/orderflow/sesiones` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-sesiones.md) |
@@ -100,7 +102,7 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-9 de 90. Cada una con su motivo en la ficha.
+9 de 92. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
