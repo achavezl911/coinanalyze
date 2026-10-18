@@ -92,7 +92,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K110-control.bash:178`, `harness/checks/K110-control.bash:182` | `harness/checks/K110-libro.py:561`, `harness/checks/K111-banco.py:21`, `harness/checks/K111-banco.py:183` |
+| **checks** | `harness/checks/K110-control.bash:178`, `harness/checks/K110-control.bash:182` | `harness/checks/K110-libro.py:561`, `harness/checks/K111-banco.py:22`, `harness/checks/K111-banco.py:184` |
 | **tests** | `tests/test_libro.py:587` | — |
 
 **No la llama el panel**, pero si 3 linea(s) de codigo fuera de el.
