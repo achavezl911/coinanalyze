@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `flujo` · `app/api.py:4131` (cuerpo hasta la 4134) · decorador en la linea 4130.
+Handler `flujo` · `app/api.py:4151` (cuerpo hasta la 4154) · decorador en la linea 4150.
 
 ## Parametros de entrada
 
@@ -50,8 +50,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K109-banco.py:163`, `harness/checks/K109-banco.py:164`, `harness/checks/K109-banco.py:165`, `harness/checks/K109-footprint.py:277` _(+12)_ | `harness/checks/K109-banco.py:9`, `harness/checks/K109-banco.py:16`, `harness/checks/K109-lo-pintado-es-lo-servido.sh:4`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:330` _(+1)_ |
+| **checks** | `harness/checks/K109-banco.py:163`, `harness/checks/K109-banco.py:164`, `harness/checks/K109-banco.py:165`, `harness/checks/K109-footprint.py:277` _(+12)_ | `harness/checks/K109-banco.py:9`, `harness/checks/K109-banco.py:16`, `harness/checks/K109-lo-pintado-es-lo-servido.sh:4`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:48` _(+3)_ |
 | **panel-html** | `static/index.html:91` | — |
+| **tests** | — | `tests/js/libro_pantalla.test.js:8` |
 
 **La llama el panel: es superficie de producto.**
 

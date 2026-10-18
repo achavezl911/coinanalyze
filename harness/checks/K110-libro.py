@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.parse
 from datetime import UTC, datetime, timedelta
 from decimal import ROUND_FLOOR, Decimal
@@ -107,7 +108,10 @@ def api(ruta: str) -> dict:
     nombre = fichero_servido(SERVIDO, ruta)
     if not nombre.is_file():
         raise Canal(f"no hay respuesta servida para {ruta} en {SERVIDO}")
-    return json.loads(nombre.read_text())
+    d = json.loads(nombre.read_text())
+    if d.get("__http__") == 404:  # el sujeto local no sirve esa ruta (uno anterior a ella)
+        raise NoLaSirve(ruta.split("?")[0])
+    return d
 
 
 def fichero_servido(directorio: str, ruta: str) -> Path:
@@ -185,6 +189,51 @@ def peticiones_d(desde: datetime, hasta: datetime, pasos: dict) -> list[tuple[st
             out.append((activo, "fotos", {**w, "paso": texto(p), "cada": str(CADA_D)}))
         out.append((activo, "cobertura", w))
     return out
+
+
+RUTA_ULTIMO = "/api" + "/libro/ultimo"
+
+
+def peticiones_ultimo(base: Decimal, grueso: Decimal) -> list[str]:
+    """(d) OF-4b: el libro VIVO por GET de un activo y sus venues, al paso BASE de OF-1 (lo que trae el aviso) y al paso
+    guardado de la foto (el grueso), con todos los niveles que caben."""
+    q = {"symbol": ACTIVOS[0], "venues": ",".join(VENUES), "niveles": "100"}
+    return [f"{RUTA_ULTIMO}?{urllib.parse.urlencode({**q, 'paso': texto(p)})}" for p in (base, grueso)]
+
+
+def juzga_ultimo(fino: dict, grueso: dict, base: Decimal, paso: Decimal) -> tuple[int, int, list[str]]:
+    """Cada libro de las dos respuestas tiene que estar bien formado (compra < venta, el primer nivel de cada lado el de
+    su mejor precio, niveles seguidos al paso, cantidades >= 0); y en los venues cuyo aviso es el MISMO en las dos (mismo
+    emitido_ms), la escalera gruesa == la fina reagregada con la aritmetica de este check. -> (venues, casados, malos)"""
+    malos: list[str] = []
+    por = [{x["venue"]: x for x in r.get("libros") or []} for r in (fino, grueso)]
+    for r, p in ((por[0], base), (por[1], paso)):
+        for v, x in r.items():
+            if x.get("tipo") != "libro":
+                continue
+            c, w = Decimal(x["compra"]), Decimal(x["venta"])
+            if not c < w:
+                malos.append(f"{v} al paso {texto(p)}: compra {x['compra']} >= venta {x['venta']}")
+            for lado, mejor, signo in (("compras", c, -1), ("ventas", w, 1)):
+                niv = [Decimal(a) for a, _ in x[lado]]
+                if niv and (niv[0] != nivel(mejor, p) or any(b - a != signo * p for a, b in zip(niv, niv[1:], strict=False))):
+                    malos.append(f"{v} al paso {texto(p)}: los niveles de {lado} no van seguidos desde su mejor precio")
+                if any(Decimal(q) < 0 for _, q in x[lado]):
+                    malos.append(f"{v} al paso {texto(p)}: una cantidad negativa en {lado}")
+    casados = 0
+    for v, f in por[0].items():
+        g = por[1].get(v)
+        if not g or f.get("tipo") != "libro" or g.get("tipo") != "libro" or f.get("emitido_ms") != g.get("emitido_ms"):
+            continue
+        casados += 1
+        for lado, abajo in (("compras", True), ("ventas", False)):
+            fin = f[lado]
+            r = reagrega(Decimal(fin[0][0]), [Decimal(q) for _, q in fin], base, paso, abajo) if fin else None
+            mio = [[texto(r[0] - i * paso if abajo else r[0] + i * paso), texto(q)] for i, q in enumerate(r[1])] if r else []
+            if mio[:100] != [[texto(Decimal(a)), texto(Decimal(q))] for a, q in g[lado]]:
+                malos.append(f"{v}: la escalera de {lado} servida al paso {texto(paso)} != la del paso {texto(base)} "
+                             "reagregada")
+    return len(por[0]), casados, malos
 
 
 # --------------------------------------------------------------------------------------------- juicio
@@ -388,6 +437,30 @@ def juzga() -> int:
             cuenta[nombre] += len(sv.get("fotos") or sv.get("venues") or [])
         info.append(f"(d) de {_iso(desde_d)}-{_iso(hasta_d)}: {cuenta['fotos']} fotos servidas (al paso guardado y a "
                     f"{MULT_D}x, una por minuto) y {cuenta['cobertura']} coberturas por venue == las guardadas")
+        # OF-4b (campana 145): el libro VIVO por GET. La primera peticion despierta la escucha del relevo en la API; luego
+        # el paso base y el guardado, seguidos, hasta tres veces si ningun venue trae el mismo aviso en las dos.
+        base = Decimal(una(db, f"SELECT paso FROM orderflow_paso WHERE symbol = '{ACTIVOS[0]}'")[0])
+        grueso = dec["pasos"][ACTIVOS[0]]
+        fino_url, grueso_url = peticiones_ultimo(base, grueso)
+        try:
+            api(grueso_url)
+        except NoLaSirve:
+            info.append(f"(d) el libro vivo por GET: SIN JUZGAR, el sujeto no sirve {RUTA_ULTIMO} (anterior a OF-4b)")
+            return
+        n, casados, malos = 0, 0, []
+        for _ in range(3 if SUJETO == "produccion" else 1):
+            if SUJETO == "produccion":
+                time.sleep(2)
+            n, casados, malos = juzga_ultimo(api(fino_url), api(grueso_url), base, grueso)
+            if casados or malos:
+                break
+        if malos:
+            rojos.append(f"(d) {ACTIVOS[0]} {RUTA_ULTIMO}: {malos[0]}" + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
+        elif not casados:
+            nomed.append(f"(d) {RUTA_ULTIMO}: ningun venue trajo el mismo aviso al paso base y al guardado")
+        else:
+            info.append(f"(d) {ACTIVOS[0]} {RUTA_ULTIMO}: {n} venues; en {casados} con el mismo aviso, la escalera al paso "
+                        f"{texto(grueso)} == la del paso {texto(base)} reagregada")
 
     def retiene() -> None:
         hoy = ahora.date()
@@ -483,6 +556,34 @@ def juzga_cobertura(db: str, activo: str, q: dict, sv: dict) -> list[str]:
     return malos
 
 
+async def sirve_ultimo(directorio: str, pool, api_mod) -> None:
+    """OF-4b: los ultimos avisos que el colector del ARBOL publico al reproducir la grabacion (K110-reproduce.py), dados
+    al relevo de la API del arbol como si llegaran por NOTIFY, y lo que su ruta /api/libro/ultimo sirve con ellos."""
+    import asyncio
+    import importlib.util
+
+    from app import libro_lectura as lec
+
+    spec = importlib.util.spec_from_file_location("k110_reproduce", Path(__file__).resolve().parent / "K110-reproduce.py")
+    rep = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rep)
+    ultimos = await rep.reproduce("-", os.environ["K110_FLUJO"], "")
+    lec.RELEVO.tarea = asyncio.get_running_loop().create_future()  # sin escucha de verdad: los avisos se dan a mano
+    for carga in ultimos.values():
+        lec.RELEVO._aviso(None, 0, "libro", carga)
+    async with pool.acquire() as c:
+        base = Decimal(await c.fetchval("SELECT paso::text FROM orderflow_paso WHERE symbol = $1", ACTIVOS[0]))
+    for url in peticiones_ultimo(base, declarado(arbol=True)["pasos"][ACTIVOS[0]]):
+        q = dict(urllib.parse.parse_qsl(url.split("?", 1)[1]))
+        resp = await api_mod.libro_ultimo(_Peticion(**q), **q)
+        fichero_servido(directorio, url).write_text(json.dumps(resp, default=str))
+
+
+class _Peticion:
+    def __init__(self, **q):
+        self.query_params = q
+
+
 def sirve(directorio: str) -> int:
     """Lo que serviria el ARBOL para las peticiones de (d), con las rutas de verdad de app/api.py sobre K110_BASE. Es
     lo que el control usa como «lo servido» y lo que planta torcido."""
@@ -492,10 +593,6 @@ def sirve(directorio: str) -> int:
 
     sys.path.insert(0, REPO)
     import app.api as api_mod
-
-    class _Peticion:
-        def __init__(self, **q):
-            self.query_params = q
 
     async def corre():
         pool = await asyncpg.create_pool(BASE, min_size=1, max_size=2, server_settings={"timezone": "UTC"})
@@ -512,6 +609,8 @@ def sirve(directorio: str) -> int:
                 resp = await f(_Peticion(**q), **kw)
                 ruta = f"/api/libro/{nombre}?{urllib.parse.urlencode(q)}"
                 fichero_servido(directorio, ruta).write_text(json.dumps(resp, default=str))
+            if os.environ.get("K110_FLUJO"):
+                await sirve_ultimo(directorio, pool, api_mod)
         finally:
             await pool.close()
 

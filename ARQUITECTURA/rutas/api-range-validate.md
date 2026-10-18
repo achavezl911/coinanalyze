@@ -132,7 +132,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.api._utc_iso` | 21 | **0** | 0 | **21** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 22 | **0** | 0 | **22** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |
 | `app.zones._atr_abs` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |
 | `app.zones._edge_episodes` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-zones.md) |

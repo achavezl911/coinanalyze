@@ -543,3 +543,46 @@ async def test_un_relevo_que_no_escucha_no_sirve_nada_como_vivo(monkeypatch):
     tarea.cancel()
     await asyncio.gather(tarea, return_exceptions=True)
     assert r.estado.startswith("caido") and not r.ultimo
+
+
+# --------------------------------------------------------------------------------------------- OF-4b: el vivo por GET
+async def test_el_libro_vivo_por_get_da_lo_ultimo_de_cada_venue_sin_tocar_la_base_y_rechaza_con_su_porque(monkeypatch):
+    monkeypatch.setattr(lec.RELEVO, "arranca", lambda _dsn: None)
+    monkeypatch.setattr(lec, "BASES", {})
+    lec.RELEVO.ultimo[("binance_usdm", "BTC")] = {"v": "binance_usdm", "s": "BTC", "t": 1, "r": 2, "e": 3, "l": 4,
+                                                  "b": "81000.5", "a": "81000.6", "kc": 2, "kv": 2,
+                                                  "c": [["81000", "2"], ["80999", "1"]], "w": [["81000", "3"]]}
+    lec.RELEVO.ultimo[("okx_swap", "BTC")] = {"v": "okx_swap", "s": "BTC", "x": "cruzado", "e": 5, "l": 6}
+    lecturas = []
+
+    class _Pool(_PoolPasos):
+        def acquire(self):
+            lecturas.append(1)
+            return super().acquire()
+
+    try:
+        d = await lec.ultimo(_Pool(), "dsn", {"symbol": "BTC", "venues": "bitget_usdt,okx_swap,binance_usdm"})
+        d2 = await lec.ultimo(_Pool(), "dsn", {"symbol": "BTC", "venues": "binance_usdm", "paso": "2", "niveles": "1"})
+        for q, frase in (({"symbol": "DOGE"}, "symbol tiene que ser"), ({"symbol": "BTC", "paso": "1.5"}, "multiplo"),
+                         ({"symbol": "BTC", "niveles": "0"}, "entre 1 y 100"),
+                         ({"symbol": "BTC", "hora": "1"}, "no reconocidos: hora")):
+            with pytest.raises(lec.Peticion, match=frase):
+                await lec.ultimo(_Pool(), "dsn", q)
+    finally:
+        lec.RELEVO.ultimo.clear()
+    assert len(lecturas) == 1  # los pasos base se leen UNA vez por proceso: despues, ni una consulta por peticion
+    assert [x["venue"] for x in d["libros"]] == ["binance_usdm", "okx_swap", "bitget_usdt"]  # en el orden de VENUES
+    por = {x["venue"]: x for x in d["libros"]}
+    assert por["binance_usdm"]["tipo"] == "libro" and por["binance_usdm"]["compras"] == [["81000", "2"], ["80999", "1"]]
+    assert por["binance_usdm"]["edad_ms"] >= 0 and por["binance_usdm"]["emitido_ms"] == 3
+    assert por["okx_swap"]["tipo"] == "sin_libro" and por["okx_swap"]["motivo"] == "cruzado"  # nunca su ultimo libro
+    assert por["bitget_usdt"]["tipo"] == "sin_dato"  # la API no lo oyo: no se inventa
+    # al paso 2: la compra 81000-81001 (2) entera; 80998-80999 necesitaria el 80998, que no se conoce: fuera
+    assert d2["paso"] == "2" and d2["libros"][0]["compras"] == [["81000", "2"]] and d2["libros"][0]["ventas"] == \
+        [["81000", "3"]]
+
+
+def test_las_rutas_del_libro_en_pantalla_existen():
+    rutas = {getattr(r, "path", None) for r in api.app.routes}
+    assert {"/libro", "/api/libro/ultimo", "/api/libro/vivo", "/api/libro/fotos"} <= rutas
+    assert Path(api.STATIC_DIR / "libro.html").is_file()

@@ -77,7 +77,8 @@ k110() {  # $1 = base   $2 = servido   [$3 = reloj]   [$4 = minimo]  -> rc; sali
 }
 sirve() {  # $1 = base   $2 = directorio
   mkdir -p "$2"
-  K110_BASE="$(dsn "$1")" K110_RELOJ="$RELOJ" K110_VENUES="$VENUES" K110_ACTIVOS="$ACTIVOS" "$PY" "$AQUI/K110-libro.py" sirve "$2" > "$T/sirve.log" 2>&1
+  K110_BASE="$(dsn "$1")" K110_RELOJ="$RELOJ" K110_VENUES="$VENUES" K110_ACTIVOS="$ACTIVOS" K110_FLUJO="$AQUI/K110-flujo.jsonl.xz" \
+    "$PY" "$AQUI/K110-libro.py" sirve "$2" > "$T/sirve.log" 2>&1
 }
 planta() {  # $1 nombre  $2 rc esperado  $3 patron  $4 base  $5 servido  $6 huella de antes  [$7 reloj] [$8 minimo]
   local despues rc visto
@@ -159,6 +160,27 @@ cp -r "$T/s0" "$T/s-co"
 f=$(grep -l '"que": "la cobertura' "$T"/s-co/*.json | head -1)
 "$PY" -c "import json,sys; p=sys.argv[1]; d=json.load(open(p)); d['venues'][0]['fotos']+=1; json.dump(d,open(p,'w'))" "$f"
 planta servido_cobertura 1 '\(d\) [A-Z]+ cobertura .*servida .* != guardada' "$B0" "$T/s-co" "$H_BUENA"
+# OF-4b (campana 145): el libro VIVO por GET (lo que la ruta del arbol sirve con los ultimos avisos que el colector del
+# arbol publico al reproducir la grabacion). Una cantidad de su escalera al paso guardado, torcida: (d) lo recalcula del
+# paso base y lo condena. Y un sujeto anterior a OF-4b (la ruta en 404): (d) lo dice SIN JUZGAR y K110 sigue VERDE.
+cp -r "$T/s0" "$T/s-ul"
+"$PY" - "$T/s-ul" <<'PY'
+import json, pathlib, sys
+from decimal import Decimal
+for f in sorted(pathlib.Path(sys.argv[1]).glob("*.json")):
+    d = json.loads(f.read_text())
+    if str(d.get("que", "")).startswith("el libro VIVO por GET") and d.get("paso") != d.get("paso_base"):
+        x = next(x for x in d["libros"] if x.get("tipo") == "libro" and x["compras"])
+        x["compras"][0][1] = format(Decimal(x["compras"][0][1]) + 1, "f")
+        f.write_text(json.dumps(d))
+        break
+PY
+planta servido_ultimo 1 '\(d\) [A-Z]+ /api/libro/ultimo: .*servida al paso .* != la del paso .* reagregada' "$B0" "$T/s-ul" "$H_BUENA"
+cp -r "$T/s0" "$T/s-404"
+for f in $(grep -l '"que": "el libro VIVO por GET' "$T"/s-404/*.json); do echo '{"__http__": 404}' > "$f"; done
+rc=$(k110 "$B0" "$T/s-404")
+comprueba sujeto_anterior_a_of4b "$([ "$rc" = 0 ] && grep -q '^VERDE  K110' "$T/sal" && grep -q 'SIN JUZGAR, el sujeto no sirve /api/libro/ultimo (anterior a OF-4b)' "$T/sal" && echo 0 || echo 1)" \
+  "rc=$rc · $(grep -o 'el libro vivo por GET: SIN JUZGAR[^(]*' "$T/sal" | head -1)"
 VIEJA=$("$PY" -c "import sys, datetime as d; print((d.datetime.fromisoformat(sys.argv[1]) - d.timedelta(days=9)).isoformat())" "$RELOJ")
 b=$(copia vieja limpia); en "$b" "SELECT ensure_temporal_partitions('$VIEJA', 0, 0)"
 en "$b" "INSERT INTO libro_foto SELECT '$VIEJA'::timestamptz, venue, symbol, ts_libro, compra, venta, paso, compra_nivel, compras, venta_nivel, ventas, alcance_compra, alcance_venta FROM libro_foto WHERE (symbol, ts, venue) = $UNA"

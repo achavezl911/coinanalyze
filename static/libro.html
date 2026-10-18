@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>COINALYZE · Libro</title>
+    <!-- EL LIBRO (campana 145, OF-4b): la ESCALERA en vivo (por nivel, lo que hay a la compra y a la venta) y el MAPA DE
+         LIQUIDEZ (la cantidad de cada nivel en el tiempo, con la mejor compra y la mejor venta encima). La CSP de
+         `app/api.py` no admite `<script>` ni `<style>` en linea: todo va en ficheros de `/static`. El estado vive en el
+         hash (static/libro/libro-calculo.js). Los estilos de base son los de /flujo. -->
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/static/flujo/flujo.css" />
+    <link rel="stylesheet" href="/static/libro/libro.css" />
+  </head>
+  <body>
+    <header class="cabecera">
+      <div class="cab-izq">
+        <span class="marca">COINALYZE</span>
+        <span class="pastilla-rotulo">LIBRO</span>
+        <div class="seg" id="sel-activo" role="group" aria-label="Activo">
+          <button type="button" data-valor="BTC">BTC</button>
+          <button type="button" data-valor="ETH">ETH</button>
+          <button type="button" data-valor="SOL">SOL</button>
+        </div>
+        <div class="seg" id="sel-familia" role="group" aria-label="Familia de venues">
+          <button type="button" data-valor="perp">PERPETUOS USDT</button>
+          <button type="button" data-valor="spot">SPOT USDT</button>
+          <button type="button" data-valor="coinbase">COINBASE</button>
+          <button type="button" data-valor="deribit">DERIBIT</button>
+        </div>
+        <label class="mando">un venue
+          <select id="sel-venue" aria-label="Un venue solo"></select></label>
+        <label class="mando">paso <select id="sel-paso" aria-label="Paso de precio"></select></label>
+        <div class="seg" id="sel-ventana" role="group" aria-label="Ventana del mapa">
+          <button type="button" data-valor="30m">30m</button>
+          <button type="button" data-valor="1h">1h</button>
+          <button type="button" data-valor="4h">4h</button>
+          <button type="button" data-valor="12h">12h</button>
+          <button type="button" data-valor="1d">1d</button>
+          <button type="button" data-valor="3d">3d</button>
+        </div>
+        <div class="seg" id="sel-unidad" role="group" aria-label="Unidad">
+          <button type="button" data-valor="base">BASE</button>
+          <button type="button" data-valor="usd">USD</button>
+        </div>
+      </div>
+      <div class="cab-der">
+        <a class="enlace" id="ir-mesa" href="/">← MESA</a>
+        <a class="enlace" id="ir-flujo" href="/flujo">FOOTPRINT →</a>
+      </div>
+    </header>
+
+    <div class="estado" id="estado" role="status"></div>
+
+    <div class="cuerpo">
+      <main class="grafico" id="grafico">
+        <canvas id="mapa" role="img" aria-label="Mapa de liquidez: la cantidad de cada nivel de precio en el tiempo, con
+          la mejor compra y la mejor venta encima (la lectura de debajo dice cada celda)"></canvas>
+      </main>
+      <aside class="escalera" id="escalera" aria-label="La escalera: el libro vivo por nivel">
+        <div class="esc-cabeza" id="esc-cabeza"></div>
+        <div class="esc-tabla">
+          <table id="esc-filas">
+            <thead>
+              <tr><th>acum.</th><th>compra</th><th>nivel</th><th>venta</th><th>acum.</th><th>conocen</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <table class="esc-venues" id="esc-venues">
+          <thead>
+            <tr><th>venue</th><th>estado</th><th>hora del libro</th><th>conoce (niveles)</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </aside>
+    </div>
+    <div class="lectura encaje" id="encaje"></div>
+    <div class="lectura" id="lectura" aria-live="polite"></div>
+
+    <footer class="leyenda">
+      <p>
+        <b>El mapa:</b> una columna por instante (cada foto del libro, o una de cada tantas para que la historia quepa en
+        una petición), una fila por nivel al paso; el color es el PUESTO de la cantidad del nivel entre las celdas de la
+        ventana (su percentil: más claro, más cantidad; la cifra la dice la lectura bajo el ratón). Encima,
+        <span class="muestra mc"></span> la mejor compra y <span class="muestra mv"></span> la mejor venta de la familia.
+        <span class="muestra desconocido"></span> DESCONOCIDO: ningún venue de la familia conoce ese nivel en ese
+        instante (su libro no llega tan lejos): no es cero. Un nivel que solo conocen algunos se pinta en damero: de cada
+        cuatro cuadritos, tantos de color como venues lo conocen (2 de 4 venues, 2 de 4 cuadritos), y la lectura dice
+        cuántos. <span class="muestra hueco-libro"></span> HUECO: ningún venue tenía libro válido en ese instante; no se
+        rellena ni se estira. <span class="muestra pendiente"></span> sin escribir aún: la base escribe cada minuto.
+      </p>
+      <p>
+        <b>La escalera:</b> el libro VIVO por nivel: compra y venta (suma de los venues de la familia que conocen el
+        nivel), la acumulada desde el medio y cuántos venues lo conocen. Las mejores, marcadas. Una acumulada con «≥»
+        pasa por niveles que no conocen todos: es un mínimo; donde ningún venue conoce el nivel, se corta. Un venue sin
+        libro válido se dice con su motivo y no suma; tampoco uno cuyo último aviso tenga más de 10 s (RANCIO).
+      </p>
+      <p>
+        <b>Las familias no se suman.</b> Perpetuos USDT (Binance, Bybit, OKX, Bitget), spot USDT (Binance, Bybit, OKX),
+        Coinbase (USD) y Deribit (USD; SOL en USDC), cada una por su lado, o un venue solo. Dentro de una familia los
+        precios difieren unos bps y las monedas de cotización no se convierten: la suma por nivel es la de lo que cada
+        venue publica en ese nivel. Cantidades en el activo (BASE) o en USD al centro de su nivel.
+      </p>
+      <p>
+        <b>El vivo</b> llega por websocket si la red lo deja pasar; si no, se pide cada segundo. La pantalla dice siempre
+        por cuál va y la hora del último libro. Más de ~30 minutos atrás, el mapa es un REGISTRO de dónde estuvo la
+        liquidez, no la que hay.
+      </p>
+    </footer>
+
+    <script src="/static/mesa/mesa-datos.js"></script>
+    <script src="/static/flujo/flujo-calculo.js"></script>
+    <script src="/static/libro/libro-calculo.js"></script>
+    <script src="/static/libro/libro-mapa.js"></script>
+    <script src="/static/libro/libro-escalera.js"></script>
+    <script src="/static/libro/libro-app.js"></script>
+  </body>
+</html>

@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-4 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
+5 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
 El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
@@ -12,12 +12,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`declara_hueco`](#declara-hueco) | 431 | 0 | **24** | 24 | **24** |
 | [`declara_parada_anterior`](#declara-parada-anterior) | 552 | 0 | **0** | 24 ↑ | **0** |
 | [`escribe_minutos`](#escribe-minutos) | 439 | 0 | **0** | 24 ↑ | **0** |
+| [`nivel_de`](#nivel-de) | 270 | 1 | **0** | 0 | **1** |
 
 ## _ts
 
 `app/orderflow.py:427` · clave completa `app.orderflow._ts`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 24** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -106,7 +107,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/orderflow.py:431` · clave completa `app.orderflow.declara_hueco`
 
-**Radio exacto: 24 rutas** de 88 · **cota superior: 24** (igual al exacto)
+**Radio exacto: 24 rutas** de 90 · **cota superior: 24** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -217,7 +218,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/orderflow.py:552` · clave completa `app.orderflow.declara_parada_anterior`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 24** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -308,7 +309,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/orderflow.py:439` · clave completa `app.orderflow.escribe_minutos`
 
-**Radio exacto: 0 rutas** de 88 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 90 · **cota superior: 24** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -395,4 +396,27 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## nivel_de
+
+`app/orderflow.py:270` · clave completa `app.orderflow.nivel_de`
+
+**Radio exacto: 1 rutas** de 90 · **cota superior: 1** (igual al exacto)
+
+### Por llamada — 1 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/libro/ultimo`](../rutas/api-libro-ultimo.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
