@@ -486,7 +486,7 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
     ctx.stroke();
-    out.push({ ts: o.ts, venue: o.venue, agresor: o.agresor, usd: o.usd, precio: o.precio, vela: m.velas[i].ts,
+    out.push({ ts: o.ts, venue: o.venue, id: o.id, agresor: o.agresor, usd: o.usd, precio: o.precio, vela: m.velas[i].ts,
                x: Math.round(x * 10) / 10, y: Math.round(yy * 10) / 10, r: Math.round(r * 10) / 10,
                fuera: yy < g.arriba || yy > g.abajo });
   });

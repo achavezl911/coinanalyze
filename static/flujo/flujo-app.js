@@ -87,7 +87,10 @@ async function cargaVistaIndicadores(mia) {
   window.FLUJO_HITOS.indicadores = false;
   const m = FLUJO_MARCOS[VISTA.marco] * 60000;
   const w = { desde: MODELO.velas[0].ts, hasta: isoZ(Date.parse(MODELO.velas[MODELO.velas.length - 1].ts) + m) };
-  await cargaIndicadores(VISTA, w, apuntar);
+  await cargaIndicadores(VISTA, w, (s) => {
+    apuntar(s);
+    apunta(s); // solo llega aqui lo que se aplica (la ultima peticion de cada vista)
+  });
   if (mia !== CARGA) return;
   LIENZO.pide();
   requestAnimationFrame(() => requestAnimationFrame(() => {
