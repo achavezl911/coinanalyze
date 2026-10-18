@@ -18,7 +18,7 @@ del arbol contra los venues, x1-tmp/c145/p3), en bucle y a su ritmo: el relevo d
     cantidad           una cantidad de /api/libro/fotos +1 DESPUES de calcularla: lo servido no es lo guardado
     sin_pagina         /libro da 404 (el sujeto sin desplegar)
     sin_ws             el websocket se rechaza (403): la pagina tiene que irse al sondeo de /api/libro/ultimo
-    sin_libro:<venue>  desde 2 s despues de la ultima carga de /libro, el alimentador publica ese venue como libro NO
+    sin_libro:<venue>  desde 1.5 s despues de la ultima carga de /libro, el alimentador publica ese venue como libro NO
                        valido, con su motivo (antes, sus avisos de verdad: la pagina llega a tener su libro)
 No aplica ninguna regla de K111: sirve. Lo usan K111-control.bash y las capturas de la entrega.
 """
@@ -114,7 +114,7 @@ def sirve(a: argparse.Namespace) -> int:
                         await asyncio.sleep(espera)
                     carga_ = x["aviso"]
                     p = plantado()
-                    if p.startswith("sin_libro:") and time.time() - estado["carga"] > 2.0:
+                    if p.startswith("sin_libro:") and time.time() - estado["carga"] > 1.5:
                         d = json.loads(carga_)
                         if d.get("v") == p.split(":", 1)[1]:
                             carga_ = json.dumps({"v": d["v"], "s": d["s"], "x": "plantado por K111-control: libro no valido",

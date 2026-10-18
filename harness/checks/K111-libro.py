@@ -404,13 +404,15 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
         return
     cols = esp["cols"]
     por_ts = {c["ts"]: (j, c) for j, c in enumerate(cols)}
-    malos, pix_ok, pix_saltados, celdas = [], 0, 0, 0
+    # los hallazgos, en cuatro cubos del mas grave al menos: una columna en otro estado tapa los colores que mueve
+    m_col, m_celda, m_color, m_pix = [], [], [], []
+    pix_ok, pix_saltados, celdas = 0, 0, 0
     j0, j1 = max(0, math.floor(eje["fin"] - eje["ver"] + 1)), min(len(cols) - 1, math.ceil(eje["fin"]))
     indice = percentil(cols[j0:j1 + 1], esp["d"]["paso"], e["unidad"])
     px = vio.get("pixeles") or {}
     vistas_ts = [epoch_ms(c["ts"]) for c in pintadas if c.get("origen") != "vivo"]
     if vistas_ts != [c["ts"] for c in cols[j0:j1 + 1]][:len(vistas_ts)]:
-        malos.append(f"columnas pintadas {len(vistas_ts)} ({isoz(vistas_ts[0]) if vistas_ts else '-'} ...) y las "
+        m_col.append(f"columnas pintadas {len(vistas_ts)} ({isoz(vistas_ts[0]) if vistas_ts else '-'} ...) y las "
                      f"de la ventana a la vista son {j1 - j0 + 1} ({isoz(cols[j0]['ts'])} ...)")
     paso, fh, w = esp["d"]["paso"], eje["fila"], eje["columna"]
     # las lineas del precio: por los centros de las columnas con foto, de una a la siguiente (un hueco las corta); un
@@ -438,30 +440,30 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
             continue
         t = epoch_ms(pc["ts"])
         if t not in por_ts:
-            malos.append(f"columna {pc['ts']} pintada y fuera de la ventana")
+            m_col.append(f"columna {pc['ts']} pintada y fuera de la ventana")
             continue
         j, c = por_ts[t]
         if abs(pc["x0"] - (eje["ancho"] - (eje["fin"] - j + 1) * w)) > 0.01:
-            malos.append(f"columna {pc['ts']}: x0 {pc['x0']:.2f} no es la de su instante")
+            m_col.append(f"columna {pc['ts']}: x0 {pc['x0']:.2f} no es la de su instante")
         if pc["estado"] != c["estado"]:
-            malos.append(f"columna {pc['ts']}: pintada {pc['estado']} y lo servido dice {c['estado']}")
+            m_col.append(f"columna {pc['ts']}: pintada {pc['estado']} y lo servido dice {c['estado']}")
             continue
         s = c["suma"]
         if c["estado"] == "foto" and s:
             if sorted(pc["venues"]) != sorted(s["venues"]):
-                malos.append(f"columna {pc['ts']}: venues con foto pintados {pc['venues']} y servidos {s['venues']}")
+                m_col.append(f"columna {pc['ts']}: venues con foto pintados {pc['venues']} y servidos {s['venues']}")
             if (pc["mejor_compra"], pc["mejor_venta"]) != (s["compra"], s["venta"]):
-                malos.append(f"columna {pc['ts']}: mejores pintadas {pc['mejor_compra']}/{pc['mejor_venta']} y servidas "
+                m_col.append(f"columna {pc['ts']}: mejores pintadas {pc['mejor_compra']}/{pc['mejor_venta']} y servidas "
                              f"{s['compra']}/{s['venta']}")
             for campo, precio in (("y_compra", s["compra"]), ("y_venta", s["venta"])):
                 yy = (eje["hi"] + 1 - float(precio) / float(paso)) * fh
                 if abs((pc.get(campo) or -1e9) - yy) > 1.01:
-                    malos.append(f"columna {pc['ts']}: la linea de {campo[2:]} esta en y={pc.get(campo)} y su precio en {yy:.1f}")
+                    m_col.append(f"columna {pc['ts']}: la linea de {campo[2:]} esta en y={pc.get(campo)} y su precio en {yy:.1f}")
         decl = {x[0]: x for x in pc.get("celdas") or []}
         for k in range(eje["lo"], eje["hi"] + 1):
             conocida = bool(c["estado"] == "foto" and s and k in s["n"])
             if conocida != (k in decl):
-                malos.append(f"columna {pc['ts']} nivel {k * float(paso):g}: "
+                m_celda.append(f"columna {pc['ts']} nivel {k * float(paso):g}: "
                              + ("conocido y no pintado" if conocida else "DESCONOCIDO pintado como conocido"))
                 continue
             esperado_q = None
@@ -470,11 +472,11 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
                 cc, vv, n = s["c"][k], s["v"][k], s["n"][k]
                 _, pc_c, pc_v, pc_n, pc_i = decl[k]
                 if abs(pc_c - cc) > 1e-9 * max(1, abs(cc)) or abs(pc_v - vv) > 1e-9 * max(1, abs(vv)) or pc_n != n:
-                    malos.append(f"columna {pc['ts']} nivel {k * float(paso):g}: pinta compra {pc_c} venta {pc_v} "
+                    m_celda.append(f"columna {pc['ts']} nivel {k * float(paso):g}: pinta compra {pc_c} venta {pc_v} "
                                  f"({pc_n} de {s['N']}) y lo servido da {cc} / {vv} ({n} de {s['N']})")
                 ix = indice(unidad(cc + vv, k, paso, e["unidad"]))
                 if abs(pc_i - ix) > 1:
-                    malos.append(f"columna {pc['ts']} nivel {k * float(paso):g}: color {pc_i} y el percentil de lo "
+                    m_color.append(f"columna {pc['ts']} nivel {k * float(paso):g}: color {pc_i} y el percentil de lo "
                                  f"visible da {ix}")
                 esperado_q = (ix, cuadritos(n, s["N"]))
             # los pixeles de sus cuatro cuadritos
@@ -504,8 +506,9 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
                 if any(all(abs(a - b) <= 1 for a, b in zip(v, x, strict=True)) for x in bien):
                     pix_ok += 1
                 else:
-                    malos.append(f"columna {pc['ts']} nivel {k * float(paso):g} cuadrito {q_}: el pixel es {v} y tenia "
+                    m_pix.append(f"columna {pc['ts']} nivel {k * float(paso):g} cuadrito {q_}: el pixel es {v} y tenia "
                                  f"que ser {bien[len(bien) // 2]} ({'HUECO' if c['estado'] == 'hueco' else 'sin escribir' if c['estado'] == 'pendiente' else 'DESCONOCIDO' if esperado_q is None or q_ >= esperado_q[1] else 'su color'})")
+    malos = m_col + m_celda + m_color + m_pix
     if malos:
         rojos.append(f"(F) {pref} el mapa no pinta lo servido: {malos[0]}" + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
     estados = {}
@@ -636,7 +639,12 @@ def juzga_vivo(vio: dict, e: dict, rojos: list, nomed: list, info: list, pref: s
     """(C) el canal que dice == el de la red; y la escalera == la de los mensajes que la pagina proceso: los primeros N
     marcos del websocket o las primeras N respuestas del sondeo (N lo cuenta la propia pagina al congelarse)."""
     rec = vio.get("recibidos") or {}
-    dice = (vio.get("canal") or {}).get("dice")
+    # lo que dice es lo que se LEE en la pantalla («vivo por WEBSOCKET» / «vivo por SONDEO»), y su data-canal lo repite
+    texto = (vio.get("canal") or {}).get("texto") or ""
+    dice = "websocket" if "vivo por WEBSOCKET" in texto else "sondeo" if "vivo por SONDEO" in texto else None
+    if dice != (vio.get("canal") or {}).get("dice"):
+        rojos.append(f"(C) {pref} escribe «{texto[:70]}» y declara data-canal={(vio.get('canal') or {}).get('dice')!r}")
+        return
     abiertos = [x for x in (vio.get("ws_ids") or {}).values() if x["abierto"] and x["apreton"] == 101 and x["marcos"]]
     sondeos = [x for x in vio.get("ultimo") or []]
     mensajes: list[dict] = []
@@ -669,6 +677,7 @@ def juzga_vivo(vio: dict, e: dict, rojos: list, nomed: list, info: list, pref: s
     for m in mensajes:
         if m.get("tipo") in ("libro", "sin_libro", "sin_dato") and m.get("venue") in e["venues"]:
             ultimo[m["venue"]] = m
+    vio["ultimos_tipos"] = [(v, m.get("tipo")) for v, m in ultimo.items()]
     if not ultimo:
         nomed.append(f"(C) {pref} el vivo no trajo ningun mensaje en {ESPERA_VIVO_S:.0f} s: no hay escalera que juzgar")
         return
@@ -799,10 +808,12 @@ def juzga() -> int:
             esc = {k: v for k, v in (pin.get("escalera") or {}).items() if k not in ("cuadro", "ahora_ms")}
             huella.update(json.dumps([vista, mapa, esc, vio.get("filas"), [p["url"].split("?", 1)[-1] for p in vio["fotos"]],
                                       [p.get("cuerpo") and {k: v for k, v in p["cuerpo"].items() if k != "as_of"}
-                                       for p in vio["fotos"]]], sort_keys=True, default=str).encode())
+                                       for p in vio["fotos"]], sorted((vio.get("pixeles") or {}).items())],
+                                     sort_keys=True, default=str).encode())
         else:
             huella.update(json.dumps([vista, (vio.get("canal") or {}).get("dice"),
-                                      [(x.get("venue"), x.get("estado")) for x in vio.get("ven") or []]]).encode())
+                                      [(x.get("venue"), x.get("estado")) for x in vio.get("ven") or []],
+                                      sorted(vio.get("ultimos_tipos") or [])]).encode())
         if not x or "hasta=" not in vista:
             continue
         try:
