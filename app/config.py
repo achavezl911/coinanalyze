@@ -186,7 +186,9 @@ class Settings(BaseSettings):
     SCALP_MINUTE_RETENTION_HOURS: int = Field(default=168, ge=26, le=168)
     SCALP_ORDERBOOK_RETENTION_HOURS: int = Field(default=6, ge=1, le=72)
     SCALP_SIGNAL_INTERVAL_SECONDS: int = Field(default=10, ge=2, le=60)
-    SCALP_SIGNAL_RETENTION_HOURS: int = Field(default=72, ge=1, le=720)
+    # DECIDE: 30 dias en la base (8.7 MB por dia en 140, campana 147); lo anterior vive en el archivo del nodo
+    # (tools/archivo/archiva.sh). 720 es el tope de este Field.
+    SCALP_SIGNAL_RETENTION_HOURS: int = Field(default=720, ge=1, le=720)
     TRADESTORE_MAX_BUCKET_MINUTES: int = Field(default=20, ge=5, le=240)
     TRADESTORE_MAX_BUCKETS_PER_KEY: int = Field(default=30, ge=5, le=240)
     BINANCE_BOOK_MAX_EVENT_LAG_SECONDS: int = Field(default=10, ge=2, le=60)

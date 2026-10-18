@@ -1,0 +1,10 @@
+[Unit]
+Description=Coinalyze · archivo del historial fino cada hora (a los :12, con las horas cerradas hace >= 10 min)
+
+[Timer]
+OnCalendar=*-*-* *:12:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

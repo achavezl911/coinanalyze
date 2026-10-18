@@ -8,11 +8,11 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`get_settings`](#get-settings) | 300 | 3 | **0** | 58 ↑ | **3** |
+| [`get_settings`](#get-settings) | 302 | 3 | **0** | 58 ↑ | **3** |
 
 ## get_settings
 
-`app/config.py:300` · clave completa `app.config.get_settings`
+`app/config.py:302` · clave completa `app.config.get_settings`
 
 **Radio exacto: 3 rutas** de 92 · **cota superior: 59** (mas ancha)
 

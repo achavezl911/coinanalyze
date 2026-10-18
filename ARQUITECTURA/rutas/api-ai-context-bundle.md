@@ -172,7 +172,7 @@ Llamadas directas del handler:
 - `app.ai_context.rough_token_estimate` — `app/ai_context.py:283`
 - `app.ai_context.sin_perder_los_nulos` — `app/ai_context.py:264`
 - `app.ai_context.verdict_history` — `app/ai_context.py:486`
-- `app.config.get_settings` — `app/config.py:300`
+- `app.config.get_settings` — `app/config.py:302`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.align_down` — `app/data_gaps.py:232`

@@ -1,0 +1,12 @@
+[Unit]
+Description=Coinalyze · archivo del historial fino de 140 en /mnt/archivo (cada hora cerrada, verificada, con manifiesto)
+# El disco de archivo: sin el, el script no escribe (comprueba el testigo /mnt/archivo/.DISCO-ARCHIVO)
+RequiresMountsFor=/mnt/archivo
+ConditionPathExists=/mnt/archivo/.DISCO-ARCHIVO
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /root/archivo-coinalyze/archiva.sh
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=3000

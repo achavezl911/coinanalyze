@@ -222,7 +222,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.zones._ols_slope`](impacto/app-zones.md) | `app/zones.py:471` | 4 | **0** | 0 | **4** |
 | [`app.zones._rotations`](impacto/app-zones.md) | `app/zones.py:483` | 4 | **0** | 0 | **4** |
 | [`app.zones.range_validate_read`](impacto/app-zones.md) | `app/zones.py:535` | 4 | **0** | 0 | **4** |
-| [`app.config.get_settings`](impacto/app-config.md) | `app/config.py:300` | 3 | **0** | 58 ↑ | **3** |
+| [`app.config.get_settings`](impacto/app-config.md) | `app/config.py:302` | 3 | **0** | 58 ↑ | **3** |
 | [`app.daily_agg.materialize_daily_verdict_outcomes`](impacto/app-daily_agg.md) | `app/daily_agg.py:521` | 0 | **3** | 56 ↑ | **3** |
 | [`app.daily_agg.persist_verdicts`](impacto/app-daily_agg.md) | `app/daily_agg.py:353` | 0 | **3** | 56 ↑ | **3** |
 | [`app.external_macro.refresh_external_macro`](impacto/app-external_macro.md) | `app/external_macro.py:478` | 0 | **3** | 13 ↑ | **3** |
