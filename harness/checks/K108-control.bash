@@ -98,6 +98,19 @@ psql -h "$H" -d "${DB}_vacia" -v ON_ERROR_STOP=1 -q \
   -c "INSERT INTO futures_trades_agg(ts,symbol,exchange,venue_count,interval,buy_vol_usd,sell_vol_usd,large_buy_usd,large_sell_usd,trade_count,covered_seconds) SELECT ts,symbol,exchange,1,'1min',b,s,0,0,n,c FROM k108_a WHERE tabla='futures_trades_agg'" \
   -c "DROP TABLE k108_a" > /dev/null || { echo "K108-control: no se cargaron los agregados"; exit 2; }
 psql -h "$H" -d "${DB}_vacia" -qc "SELECT ensure_temporal_partitions('$RELOJ', 1, 2)" > /dev/null
+# OF-5a (campana 146): las seis series de 5 min de Coinalyze de esa franja, de 140 (K108-coinalyze.tsv), SIN el latido del
+# barrido de liquidaciones: una liquidacion de 5 min sin fila no la certifica nadie, y se sirve como hueco
+grep -v '^#' "$AQUI/K108-coinalyze.tsv" > "$T/coinalyze.tsv"
+psql -h "$H" -d "${DB}_vacia" -v ON_ERROR_STOP=1 -q \
+  -c "CREATE TABLE k108_c(tabla text, ts timestamptz, symbol text, a float8, b float8, c float8, d float8)" \
+  -c "\\copy k108_c FROM '$T/coinalyze.tsv'" \
+  -c "INSERT INTO open_interest(ts,symbol,interval,oi_open,oi_high,oi_low,oi_close) SELECT ts,symbol,'5min',a,b,c,d FROM k108_c WHERE tabla='open_interest'" \
+  -c "INSERT INTO oi_bybit(ts,symbol,interval,oi_open,oi_high,oi_low,oi_close) SELECT ts,symbol,'5min',a,b,c,d FROM k108_c WHERE tabla='oi_bybit'" \
+  -c "INSERT INTO funding_rate(ts,symbol,interval,fr_open,fr_high,fr_low,fr_close) SELECT ts,symbol,'5min',a,b,c,d FROM k108_c WHERE tabla='funding_rate'" \
+  -c "INSERT INTO predicted_funding_rate(ts,symbol,interval,pfr_open,pfr_high,pfr_low,pfr_close) SELECT ts,symbol,'5min',a,b,c,d FROM k108_c WHERE tabla='predicted_funding_rate'" \
+  -c "INSERT INTO long_short_ratio(ts,symbol,interval,long_pct,short_pct,ratio) SELECT ts,symbol,'5min',a,b,c FROM k108_c WHERE tabla='long_short_ratio'" \
+  -c "INSERT INTO liquidations(ts,symbol,interval,long_liq,short_liq) SELECT ts,symbol,'5min',a,b FROM k108_c WHERE tabla='liquidations'" \
+  -c "DROP TABLE k108_c" > /dev/null || { echo "K108-control: no se cargaron las series de Coinalyze"; exit 2; }
 
 # --- LA BASE BUENA: la grabacion por el colector del arbol -------------------------------------------------------
 reproduce() {  # $1 = base   [$2 = planta]
@@ -178,6 +191,27 @@ cp "$T"/s0/*footprint* "$T"/s0/*perfil* "$T/s-sin/"
 touch "$T/s-sin/sin-of3"
 rc=$(k108 "$B0" "$T/s-sin")
 comprueba sujeto_anterior_a_of3 "$([ "$rc" = 0 ] && grep -q '^VERDE  K108' "$T/sal" && grep -q '(d) OF-3: SIN JUZGAR' "$T/sal" && echo 0 || echo 1)" "rc=$rc · $(grep -m1 'OF-3' "$T/sal" | cut -c1-100)"
+# OF-5a (campana 146): lo servido de los indicadores y de la orden agregada, cada decision con su plantado
+cp -r "$T/s0" "$T/s-ind"
+f=$(grep -l '"que": "los indicadores' "$T"/s-ind/*.json | head -1)
+"$PY" -c "import json,sys,decimal; p=sys.argv[1]; d=json.load(open(p)); c=next(c for c in d['series']['oi_binance']['cubos'] if c['valores']); c['valores']['oi']=str(decimal.Decimal(c['valores']['oi'])+1); json.dump(d,open(p,'w'))" "$f"
+planta servido_indicador_alterado 1 '\(d\) [A-Z]+ .*indicadores: oi_binance: cubos servidos != recalculados' "$B0" "$T/s-ind" "$H_BUENA"
+if sirve "$B0" "$T/s-cer" cero_sin_certificar; then
+  planta servido_hueco_como_cero 1 '\(d\) [A-Z]+ .*indicadores: el barrido servido' "$B0" "$T/s-cer" "$H_BUENA"
+else
+  comprueba servido_hueco_como_cero 1 "sirve plantado no corrio: $(tail -1 "$T/sirve.log")"
+fi
+if sirve "$B0" "$T/s-seg" orden_por_segundo; then
+  planta servido_orden_mal_sumada 1 '\(d\) [A-Z]+ .*ordenes: la orden .* sus operaciones suman' "$B0" "$T/s-seg" "$H_BUENA"
+else
+  comprueba servido_orden_mal_sumada 1 "sirve plantado no corrio: $(tail -1 "$T/sirve.log")"
+fi
+mkdir -p "$T/s-sin5"
+cp "$T"/s0/*.json "$T/s-sin5/"
+rm -f "$T"/s-sin5/*indicadores* "$T"/s-sin5/*ordenes*
+touch "$T/s-sin5/sin-of5a"
+rc=$(k108 "$B0" "$T/s-sin5")
+comprueba sujeto_anterior_a_of5a "$([ "$rc" = 0 ] && grep -q '^VERDE  K108' "$T/sal" && grep -q '(d) OF-5a: SIN JUZGAR' "$T/sal" && echo 0 || echo 1)" "rc=$rc · $(grep -m1 'OF-5a' "$T/sal" | cut -c1-100)"
 b=$(copia vieja limpia); en "$b" "SELECT ensure_temporal_partitions('2026-10-14 12:00+00', 0, 0)"
 en "$b" "INSERT INTO orderflow_cinta(ts,venue,symbol,precio,base,usd,compra,id) VALUES ('2026-10-14 12:00+00','binance_spot','BTC',80000,1,80000,true,'vieja')"
 planta retencion_cinta 1 '\(e\) 1 filas de cinta mas viejas que su retencion' "$b" "$T/s0" "$H_BUENA"

@@ -6,7 +6,8 @@ audita, (d) compararia el codigo consigo mismo.
 
 Uso: K108-orderflow.py juzga   (el entorno lo pone K108-el-dato-del-order-flow.sh)
      K108-orderflow.py sirve <dir> [--planta X]   (escribe lo que serviria el arbol, para los controles)
-Desde OF-3 (campana 143), (d) juzga tambien lo que sirven /sesiones (con su compuesto), /vwap y /tpo.
+Desde OF-3 (campana 143), (d) juzga tambien lo que sirven /sesiones (con su compuesto), /vwap y /tpo; desde OF-5a
+(campana 146), /indicadores (las series de 5 min de Coinalyze y las sueltas) y /ordenes (la orden agregada).
 """
 
 from __future__ import annotations
@@ -102,7 +103,8 @@ def api(ruta: str) -> dict:
         except ValueError as exc:
             raise Canal(f"api {ruta.split('?')[0]} no devolvio JSON") from exc
     nombre = Path(SERVIDO) / (urllib.parse.quote(ruta, safe="") + ".json")
-    if not nombre.is_file() and (Path(SERVIDO) / "sin-of3").is_file():  # el control: un sujeto anterior a OF-3
+    if not nombre.is_file() and any((Path(SERVIDO) / m).is_file() for m in ("sin-of3", "sin-of5a")):  # el control:
+        # un sujeto anterior a OF-3 o a OF-5a
         raise NoLaSirve(ruta.split("?")[0])
     if not nombre.is_file():
         raise Canal(f"no hay respuesta servida para {ruta} en {SERVIDO}")
@@ -499,6 +501,165 @@ def juzga_tpo(db: str, activo: str, q: dict, sv: dict, hasta: datetime, base: De
                                    int((corte - s) // timedelta(minutes=1)) * n_ven)
     return malos
 
+# --------------------------------------------------------------------------------------------- OF-5a (campana 146)
+# LOS INDICADORES y LA ORDEN AGREGADA servidos == recalculados aqui, con su propia aritmetica. /indicadores: los cubos
+# de 5 min de las seis tablas de Coinalyze (su BTCUSDT_PERP.A es Binance), su estado contra el reloj de lo servido, el
+# cero de las liquidaciones solo donde lo certifica el barrido de la ingesta (y el barrido servido tiene que ser el que
+# dice su latido) y las sueltas desde su retencion. /ordenes: cada orden == la suma de SUS operaciones en la cinta
+# (mismo venue, milisegundo y lado), pasa el filtro, y son las mas recientes de la ventana.
+TABLAS_OF5A = {"oi_binance": ("open_interest", {"oi": "oi_close"}, "ultimo"),
+               "oi_bybit": ("oi_bybit", {"oi": "oi_close"}, "ultimo"),
+               "funding": ("funding_rate", {"funding": "fr_close"}, "ultimo"),
+               "funding_predicho": ("predicted_funding_rate", {"funding": "pfr_close"}, "ultimo"),
+               "largos_cortos": ("long_short_ratio", {"largos": "long_pct", "cortos": "short_pct", "ratio": "ratio"},
+                                 "ultimo"),
+               "liquidaciones": ("liquidations", {"largos": "long_liq", "cortos": "short_liq"}, "suma")}
+COINALYZE_D = {"BTC": "BTCUSDT_PERP.A", "ETH": "ETHUSDT_PERP.A", "SOL": "SOLUSDT_PERP.A"}
+PERP_D, SPOT_D = "binance_usdm,bybit_linear,okx_swap,bitget_usdt", "binance_spot,bybit_spot,okx_spot"
+FILTRO_D = {"BTC": "200000", "ETH": "200000", "SOL": "50000"}  # el de la cinta en pantalla (P2 de la campana 146)
+PENDIENTE_MS, CADENCIA_MS = 15 * 60000, 300000
+
+
+def peticiones_of5a(desde: datetime, hasta: datetime) -> list[tuple[str, str, dict]]:
+    """Lo que (d) pide de OF-5a sobre su ventana: los indicadores de cada activo en velas de MARCO_D min, las ordenes
+    agregadas de los perpetuos con el filtro de la pantalla, y las de spot de BTC sin filtro (muchas ordenes pequenas
+    de varias operaciones: la agregacion entera)."""
+    w = {"desde": _iso(desde), "hasta": _iso(hasta)}
+    out = []
+    for activo in ACTIVOS:
+        out += [(activo, "indicadores", {"symbol": activo, **w, "marco": f"{MARCO_D}m"}),
+                (activo, "ordenes", {"symbol": activo, "venues": PERP_D, "min_usd": FILTRO_D[activo], **w,
+                                     "limit": "200"})]
+    return out + [("BTC", "ordenes", {"symbol": "BTC", "venues": SPOT_D, "min_usd": "0", **w, "limit": "200"})]
+
+
+def _ms(iso: str) -> int:
+    return round(datetime.fromisoformat(str(iso).replace("Z", "+00:00")).timestamp() * 1000)
+
+
+def _iso_ms(t_ms: int) -> str:
+    return datetime.fromtimestamp(t_ms / 1000, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def juzga_indicadores(db: str, activo: str, sv: dict) -> list[str]:
+    malos = []
+    simbolo = COINALYZE_D[activo]
+    a, b, ahora = _ms(sv["desde"]), _ms(sv["hasta"]), _ms(sv["as_of"])
+    cubo = max(5, int(sv["marco"].rstrip("mhd")) * {"m": 1, "h": 60, "d": 1440}[sv["marco"][-1]]) * 60000
+    origen = int(datetime(2000, 1, 1, tzinfo=UTC).timestamp() * 1000)
+    primero = a - (a - origen) % cubo
+    inicios = list(range(primero, b, cubo))
+    # el barrido servido tiene que ser el del latido (o «sin_latido» si no hay): no se cree lo que dice
+    bar = sv.get("liquidaciones_barrido") or {}
+    hb = sql(db, "SELECT status, detail, (extract(epoch FROM updated_at) * 1000)::bigint FROM pipeline_heartbeat "
+                 "WHERE service = 'ingest:liquidations_history'")
+    if not hb and bar.get("estado") != "sin_latido":
+        malos.append(f"el barrido servido es {bar.get('estado')} y la ingesta no tiene latido de liquidaciones")
+    elif hb and int(hb[0][-1]) <= ahora:  # si el latido no se ha movido desde que se sirvio, tiene que ser el mismo
+        try:
+            det = json.loads("|".join(hb[0][1:-1]))
+            suyo = (hb[0][0], _iso_ms(int(det["source_start_ts"]) * 1000), _iso_ms(int(det["source_cutoff_ts"]) * 1000))
+        except (ValueError, KeyError):
+            suyo = (hb[0][0], None, None)
+        servido = (bar.get("estado"), bar.get("desde") and _iso_ms(_ms(bar["desde"])), bar.get("hasta") and
+                   _iso_ms(_ms(bar["hasta"])))
+        if servido[0] != suyo[0] or (suyo[1] and servido[1:] != suyo[1:]):
+            malos.append(f"el barrido servido {servido} no es el del latido de la ingesta {suyo}")
+    cert = (_ms(bar["desde"]), _ms(bar["hasta"])) if bar.get("estado") == "ok" and bar.get("desde") else None
+    for clave, (tabla, cols, como) in TABLAS_OF5A.items():
+        s = (sv.get("series") or {}).get(clave)
+        if s is None:
+            malos.append(f"no sirve la serie {clave}")
+            continue
+        filas = sql(db, f"SELECT (extract(epoch FROM ts) * 1000)::bigint, {', '.join(cols.values())} FROM {tabla} "
+                        f"WHERE symbol = '{simbolo}' AND interval = '5min' AND ts >= '{_iso_ms(primero)}' "
+                        f"AND ts < '{_iso_ms(inicios[-1] + cubo)}'")
+        por = {int(f[0]): dict(zip(cols, f[1:], strict=True)) for f in filas}
+        mios = []
+        for t in inicios:
+            pts = list(range(t, t + cubo, CADENCIA_MS))
+            hay = [por[p] for p in pts if p in por]
+            ceros = faltan = pend = 0
+            for p in pts:
+                if p in por:
+                    continue
+                if como == "suma" and cert and cert[0] <= p and p + CADENCIA_MS <= cert[1]:
+                    ceros += 1  # sin fila y certificado: Coinalyze no publica los cubos sin liquidaciones
+                elif p + CADENCIA_MS > ahora - PENDIENTE_MS:
+                    pend += 1
+                else:
+                    faltan += 1
+            con = len(hay) + ceros
+            est = ("hueco" if faltan else "pendiente") if not con else \
+                ("incompleto" if faltan else "en_curso" if pend else "completo")
+            if hay and como == "ultimo":
+                val = {k: texto(Decimal(hay[-1][k])) for k in cols}
+            elif con and como == "suma":
+                val = {k: texto(sum((Decimal(x[k]) for x in hay), Decimal(0))) for k in cols}
+            else:
+                val = None
+            mios.append((_iso_ms(t), est, len(hay), ceros, faltan, pend, val))
+        suyos = [(_iso_ms(_ms(c["ts"])), c["estado"], c["puntos"], c["ceros"], c["faltan"], c["pendientes"],
+                  c["valores"] and {k: texto(Decimal(v)) for k, v in c["valores"].items()}) for c in s["cubos"]]
+        if suyos != mios:
+            par = next(((p, q) for p, q in zip(suyos, mios, strict=False) if p != q), (None, None))
+            malos.append(f"{clave}: cubos servidos != recalculados de {tabla} ({len(suyos)} y {len(mios)}; servido "
+                         f"{par[0]} y aqui {par[1]})")
+    sw = sv.get("sueltas") or {}
+    borde = min(max(a, ahora - int(sw.get("retencion_h", 0)) * 3600000), b)
+    if abs(_ms(sw.get("desde_dato", "1970-01-01T00:00:00Z")) - borde) > 2000:
+        malos.append(f"sueltas: dato desde {sw.get('desde_dato')} y su retencion de {sw.get('retencion_h')} h lo pone en "
+                     f"{_iso_ms(borde)}")
+    filas = sql(db, f"SELECT (extract(epoch FROM ts) * 1000)::bigint, exchange, side, notional_usd, price, qty "
+                    f"FROM liquidations_realtime WHERE symbol = '{simbolo}' AND ts >= '{_iso_ms(borde)}' "
+                    f"AND ts < '{_iso_ms(b)}' ORDER BY ts, exchange, event_id LIMIT 5001")
+    mias = [(int(f[0]), f[1], f[2], Decimal(f[3]), Decimal(f[4]), Decimal(f[5])) for f in filas][:5000]
+    suyas = [(_ms(e["ts"]), e["exchange"], e["lado"], Decimal(e["usd"]), Decimal(e["precio"]), Decimal(e["cantidad"]))
+             for e in sw.get("eventos") or []]
+    if mias != suyas:
+        malos.append(f"sueltas: {len(suyas)} servidas y {len(mias)} en liquidations_realtime")
+    return malos
+
+
+def juzga_ordenes(db: str, sv: dict) -> list[str]:
+    """Cada orden servida == la suma de sus operaciones (aqui, en Decimal), pasa el filtro, y son las `limit` mas
+    recientes de la ventana que lo pasan (el recuento y la mas vieja, contados en SQL)."""
+    malos = []
+    ords = sv.get("ordenes") or []
+    if ords:
+        claves = " OR ".join(f"(venue = '{o['venue']}' AND compra = {'true' if o['agresor'] == 'compra' else 'false'} "
+                             f"AND ts >= '{o['ts']}' AND ts < timestamptz '{o['ts']}' + interval '1 millisecond')"
+                             for o in ords if o["venue"] in VENUES)
+        suma: dict = {}
+        for t, venue, compra, precio, base, usd in sql(db, f"""
+                SELECT (extract(epoch FROM date_trunc('milliseconds', ts)) * 1000)::bigint, venue, compra, precio, base, usd
+                  FROM orderflow_cinta WHERE symbol = '{sv['symbol']}' AND ({claves})"""):
+            z = suma.setdefault((int(t), venue, "compra" if compra == "t" else "venta"), [0, Decimal(0), Decimal(0), [], []])
+            z[0] += 1
+            z[1] += Decimal(base)
+            z[2] += Decimal(usd)
+            z[3].append(Decimal(precio))
+        for o in ords:
+            z = suma.get((_ms(o["ts"]), o["venue"], o["agresor"]))
+            mia = z and (z[0], z[1], z[2], min(z[3]), max(z[3]))
+            suya = (o["operaciones"], Decimal(o["base"]), Decimal(o["usd"]), Decimal(o["precio_min"]),
+                    Decimal(o["precio_max"]))
+            if mia != suya or suya[2] < Decimal(sv["min_usd"]):
+                malos.append(f"la orden {o['ts'][11:23]} {o['venue']} {o['agresor']}: servida {suya} y sus operaciones "
+                             f"suman {mia} (filtro {sv['min_usd']})")
+                break
+    if not malos:
+        vs = ",".join(f"'{v}'" for v in sv["venues"] if v in VENUES)
+        n, vieja = sql(db, f"""SELECT count(*), (extract(epoch FROM min(ms)) * 1000)::bigint FROM (
+                SELECT date_trunc('milliseconds', ts) AS ms FROM orderflow_cinta
+                 WHERE symbol = '{sv['symbol']}' AND venue IN ({vs}) AND ts > '{sv['desde']}' AND ts <= '{sv['hasta']}'
+                 GROUP BY 1, venue, compra HAVING sum(usd) >= {Decimal(sv['min_usd'])}
+                 ORDER BY 1 DESC LIMIT {int(sv['limit'])}) x""")[0]
+        if int(n) != len(ords) or (ords and int(vieja) != min(_ms(o["ts"]) for o in ords)):
+            malos.append(f"sirve {len(ords)} ordenes y las {n} mas recientes de la cinta que pasan el filtro "
+                         f"{sv['min_usd']} no son esas")
+    return malos
+
 
 # --------------------------------------------------------------------------------------------- juicio
 def juzga() -> int:
@@ -760,6 +921,38 @@ def juzga() -> int:
                     f"{plantilla_cruzada(fin)}, que cruza la medianoche) con su compuesto, {cuenta.get('vwap', 0)} VWAP "
                     f"con sus bandas y {cuenta.get('tpo', 0)} TPO, servidos == recalculados")
 
+    def indicadores() -> None:
+        """(d) de OF-5a: los indicadores de cada activo y las ordenes agregadas, servidos sobre la ventana de (d) ==
+        recalculados aqui. Un sujeto anterior a OF-5a no los sirve."""
+        hasta_d, desde_d = ventana_d(fin, primero)
+        if hasta_d - desde_d < timedelta(minutes=MARCO_D):
+            nomed.append(f"(d) OF-5a: ni una vela de {MARCO_D} min completa dentro de la vida del servicio")
+            return
+        cuenta = {"cubos": 0, "sueltas": 0, "ordenes": 0}
+        for activo, nombre, q in peticiones_of5a(desde_d, hasta_d):
+            try:
+                sv = api(f"/api/orderflow/{nombre}?{urllib.parse.urlencode(q)}")
+            except NoLaSirve as exc:
+                info.append(f"(d) OF-5a: SIN JUZGAR, el sujeto no sirve {exc} (anterior a OF-5a)")
+                return
+            if nombre == "indicadores":
+                if not isinstance(sv.get("series"), dict):
+                    raise Canal(f"/api/orderflow/indicadores {activo} no tiene la forma de OF-5a")
+                malos = juzga_indicadores(db, activo, sv)
+                cuenta["cubos"] += sum(len(s_["cubos"]) for s_ in sv["series"].values())
+                cuenta["sueltas"] += len(sv["sueltas"]["eventos"])
+            else:
+                if not isinstance(sv.get("ordenes"), list):
+                    raise Canal(f"/api/orderflow/ordenes {activo} no tiene la forma de OF-5a")
+                malos = juzga_ordenes(db, sv)
+                cuenta["ordenes"] += len(sv["ordenes"])
+            if malos:
+                rojos.append(f"(d) {activo} {_iso(desde_d)}-{_iso(hasta_d)} {nombre}: {malos[0]}"
+                             + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
+        info.append(f"(d) OF-5a de {_iso(desde_d)}-{_iso(hasta_d)}: {cuenta['cubos']} cubos de las seis series de "
+                    f"Coinalyze, {cuenta['sueltas']} liquidaciones sueltas y {cuenta['ordenes']} ordenes agregadas, "
+                    "servidos == recalculados")
+
     def retiene() -> None:
         ret = retencion()
         hoy = ahora.date()
@@ -814,7 +1007,7 @@ def juzga() -> int:
             f"{v} {', '.join(x)}" for v, x in sorted(juzgados.items())))
 
     for letra, brazo in (("a", triangula), ("b", consistencia), ("c", cubre), ("d", servido), ("d", perfiles),
-                         ("e", retiene), ("f", agresor)):
+                         ("d", indicadores), ("e", retiene), ("f", agresor)):
         try:
             brazo()
         except Canal as exc:
@@ -887,6 +1080,14 @@ def sirve(directorio: str, planta: str = "") -> int:
         lec.instancias = partidas
     elif planta == "vwap_al_nivel":
         lec.VWAP_SQL = lec.VWAP_SQL.replace("sum(compra_usd) + sum(venta_usd)", "sum(nivel * (compra_base + venta_base))")
+    elif planta == "orden_por_segundo":  # OF-5a: la orden agregada por SEGUNDO, no por milisegundo: otra suma
+        lec.ORDENES_SQL = lec.ORDENES_SQL.replace("date_trunc('milliseconds', ts)", "date_trunc('second', ts)")
+    elif planta == "cero_sin_certificar":  # OF-5a: el cero de las liquidaciones sin que el barrido lo certifique
+
+        async def todo_certificado(_conn):
+            return {"estado": "ok", "desde": datetime(2000, 1, 1, tzinfo=UTC), "hasta": datetime(2100, 1, 1, tzinfo=UTC)}
+
+        lec._barrido_liquidaciones = todo_certificado
     elif planta:
         raise SystemExit(f"planta desconocida: {planta}")
 
@@ -920,6 +1121,14 @@ def sirve(directorio: str, planta: str = "") -> int:
             rutas = {"sesiones": api_mod.orderflow_sesiones, "vwap": api_mod.orderflow_vwap, "tpo": api_mod.orderflow_tpo}
             for _activo, nombre, q in peticiones_of3(desde_d, hasta_d, pasos, fin):
                 resp = await rutas[nombre](_Peticion(**q), **q)
+                ruta = f"/api/orderflow/{nombre}?{urllib.parse.urlencode(q)}"
+                (Path(directorio) / (urllib.parse.quote(ruta, safe="") + ".json")).write_text(
+                    json.dumps(resp, default=str))
+            # OF-5a (campana 146): los indicadores y las ordenes agregadas de esa misma ventana
+            rutas5 = {"indicadores": api_mod.orderflow_indicadores, "ordenes": api_mod.orderflow_ordenes}
+            for _activo, nombre, q in peticiones_of5a(desde_d, hasta_d):
+                kw = {**q, "limit": int(q["limit"])} if "limit" in q else q
+                resp = await rutas5[nombre](_Peticion(**q), **kw)
                 ruta = f"/api/orderflow/{nombre}?{urllib.parse.urlencode(q)}"
                 (Path(directorio) / (urllib.parse.quote(ruta, safe="") + ".json")).write_text(
                     json.dumps(resp, default=str))
