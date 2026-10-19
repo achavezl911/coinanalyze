@@ -649,6 +649,7 @@ async function cargaTPO() {
   MODELO_TPO = null;
   window.FLUJO_HITOS.listo = false;
   window.FLUJO_HITOS.capas = true;
+  window.FLUJO_HITOS.arranques = true; // OF-6a: el TPO no lleva filas de resumen: no hay arranque que esperar
   window.FLUJO_HITOS.vista = escribeHash(VISTA);
   document.getElementById('grafico').hidden = true;
   document.getElementById('grafico-tpo').hidden = false;

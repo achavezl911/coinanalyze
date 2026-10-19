@@ -173,7 +173,7 @@ for f in flujo.html flujo/flujo-app.js flujo/flujo-calculo.js flujo/flujo-dibujo
 done
 echo sin_of3 > "$T/plantado"
 rc=$(k109 $P1 "$DB")
-comprueba sujeto_anterior_a_of3 "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K109 .*SIN JUZGAR (el sujeto es anterior a OF-3: 6 vistas sin mirar)' && echo 0 || echo 1)" \
+comprueba sujeto_anterior_a_of3 "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K109 .*SIN JUZGAR (el sujeto es anterior a OF-3: 6 vistas sin mirar).*F-05 SIN JUZGAR (el sujeto es anterior a OF-6a' && echo 0 || echo 1)" \
   "rc=$rc · VERDE en lo del footprint y $(head -1 "$T/sal" | grep -o 'las capas y el TPO, SIN JUZGAR[^)]*)')"
 rm -f "$T/sobre/flujo.html"
 restaura

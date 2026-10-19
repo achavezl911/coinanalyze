@@ -514,6 +514,7 @@ details.menu[open] > summary {
 }
 .pagina-flujo .columna {
   position: relative;
+  overflow: hidden; /* la capa de la cruz (medida con el footprint, que el TPO esconde) no puede desbordar la pagina */
 }
 .pagina-flujo .grafico canvas {
   outline: none;
@@ -567,9 +568,12 @@ details.menu[open] > summary {
   color: var(--bg);
   background: var(--acento);
 }
-/* F-16: #lectura queda para el lector de pantalla (la ficha la dice junto al cursor) */
+/* F-16: #lectura queda para el lector de pantalla (la ficha la dice junto al cursor). FIJA arriba: con `absolute` quedaba
+ * bajo el final del cuerpo, lo desbordaba 1 px y a veces salia la barra de desplazamiento (15 px menos de lienzo) */
 .pagina-flujo .lectura {
-  position: absolute;
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   min-height: 0;

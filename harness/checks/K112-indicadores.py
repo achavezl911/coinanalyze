@@ -369,7 +369,7 @@ COSECHA = r"""
 })()
 """
 LISTO = ("!!(window.FLUJO_HITOS && FLUJO_HITOS.listo && FLUJO_HITOS.indicadores && window.FLUJO_CINTA && "
-         "(FLUJO_CINTA.apagada || (FLUJO_CINTA.aplicadas || []).length))")
+         "(FLUJO_CINTA.apagada || (FLUJO_CINTA.aplicadas || []).length) && FLUJO_HITOS.arranques !== false)")
 
 
 async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int, alto: int, dpr: float) -> dict:

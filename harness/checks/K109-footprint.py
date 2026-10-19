@@ -71,6 +71,7 @@ FAMILIAS = {"perp": {"binance_usdm", "bybit_linear", "okx_swap", "bitget_usdt"},
             "deribit": {"deribit_perp"}}
 MARCOS = {"1m": 1, "5m": 5, "15m": 15, "1h": 60, "4h": 240, "1d": 1440}
 RAZON, APILADO, CIERRE_S, OBJETIVO = Decimal(3), 3, 90, 20
+ANTERIORES_OF6A: set = set()  # las vistas cuya pagina es anterior a OF-6a: su F-05, SIN JUZGAR
 
 INTERCEPTA = r"""
 (() => {
@@ -207,9 +208,10 @@ def paso_auto(rangos: list, base: Decimal) -> tuple:
     return p, n
 
 
-def desequilibrios(niveles: list, s: Decimal) -> list:
+def desequilibrios(niveles: list, s: Decimal, cero_cuenta: bool = False) -> list:
     """[(nivel, compra, venta)] ascendente, al paso s -> [(dc, dv, ac, av)]: la regla de la campana, en Decimal.
-    OF-6a (campana 148, F-05): un lado contrario a CERO (o sin celda) no da desequilibrio."""
+    OF-6a (campana 148, F-05): un lado contrario a CERO (o sin celda) no da desequilibrio; `cero_cuenta` es la regla de
+    OF-2 (el vecino vacio vale 0), la de una pagina anterior a OF-6a."""
     if not niveles:
         return []
     P = [n for n, _, _ in niveles]
@@ -221,8 +223,8 @@ def desequilibrios(niveles: list, s: Decimal) -> list:
     out = []
     for n in P:
         abajo, arriba = V.get(n - s, Decimal(0)), C.get(n + s, Decimal(0))
-        dc = n - s >= lo and abajo > 0 and C[n] * N >= media_n and C[n] >= RAZON * abajo
-        dv = n + s <= hi and arriba > 0 and V[n] * N >= media_n and V[n] >= RAZON * arriba
+        dc = n - s >= lo and (abajo > 0 or cero_cuenta and C[n] > 0) and C[n] * N >= media_n and C[n] >= RAZON * abajo
+        dv = n + s <= hi and (arriba > 0 or cero_cuenta and V[n] > 0) and V[n] * N >= media_n and V[n] >= RAZON * arriba
         out.append([dc, dv, False, False])
     for lado, marca in ((0, 2), (1, 3)):
         ini = 0
@@ -283,8 +285,10 @@ async def mira(K, vista: str, cab: dict) -> dict:
             for _ in range(200):
                 await s.drena(0.2)
                 try:  # OF-3: y las capas, si la pagina las tiene (una de antes de OF-3 no dice `capas`)
+                    # OF-6a: y el arranque del CVD de sesion (sin el, las filas de resumen del contrato dependen
+                    # de quien llegue antes; una pagina anterior no lo tiene: undefined !== false)
                     listo = await s.evalua("!!(window.FLUJO_HITOS && window.FLUJO_HITOS.listo && "
-                                           "window.FLUJO_HITOS.capas !== false)")
+                                           "window.FLUJO_HITOS.capas !== false && window.FLUJO_HITOS.arranques !== false)")
                 except K.SystemExit2:
                     listo = False
                 if listo:
@@ -363,6 +367,10 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list) -> 
     for t, xx, yy in vio.get("textos") or []:
         textos.setdefault(t, []).append((xx, yy))
     f_malos, d_malos, numeros = [], [], 0
+    # OF-6a (F-05): una pagina anterior (sin `of6a` en su contrato) pinta con la regla de OF-2 y con esa se la juzga
+    regla_of2 = not pin.get("of6a")
+    if regla_of2:
+        ANTERIORES_OF6A.add(vista)
     for r in pin["velas"]:
         v = servidas.get(epoch(r["ts"]))
         if v is None:
@@ -383,7 +391,7 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list) -> 
                            f"(sobran {sorted(set(pn) - set(sn))[:3]}, faltan {sorted(set(sn) - set(pn))[:3]})")
             continue
         des = dict(zip(sorted(sn), desequilibrios([(n, D(sn[n]["compra"]), D(sn[n]["venta"])) for n in sorted(sn)],
-                                                  paso), strict=True))
+                                                  paso, cero_cuenta=regla_of2), strict=True))
         for n, f in pn.items():
             s_ = sn[n]
             if any(D(f[k]) != D(s_[k]) for k in ("venta", "compra", "delta", "total")):
@@ -861,7 +869,11 @@ def juzga() -> int:
             juzga_celdas(x, rojos, nomed, info)
         except (Canal, IndexError) as exc:
             nomed.append(f"(S) [{vista}] sin canal a las celdas: {str(exc)[:160]}")
-    cola = f" · sujeto: {sujeto} · huella {huella.hexdigest()[:16]}"
+    if ANTERIORES_OF6A:
+        huella.update(b"anterior a OF-6a")
+    f05 = (f"; F-05 SIN JUZGAR (el sujeto es anterior a OF-6a: sus desequilibrios, con la regla de OF-2, en "
+           f"{len(ANTERIORES_OF6A)} vistas)") if ANTERIORES_OF6A else ""
+    cola = f"{f05} · sujeto: {sujeto} · huella {huella.hexdigest()[:16]}"
     if rojos:
         print(f"ROJO  K109 · lo pintado no es lo servido, o lo servido no es lo de las celdas · {len(rojos)} hallazgo(s)"
               + cola)
