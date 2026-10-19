@@ -50,7 +50,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K111-libro.py:330`, `harness/checks/K111-libro.py:968`, `harness/checks/K111-libro.py:973`, `harness/checks/K111-libro.py:976` _(+6)_ | `harness/checks/K111-banco.py:11`, `harness/checks/K111-banco.py:21`, `harness/checks/K111-banco.py:23`, `harness/checks/K111-banco.py:159` _(+4)_ |
+| **checks** | `harness/checks/K111-libro.py:330`, `harness/checks/K111-libro.py:968`, `harness/checks/K111-libro.py:973`, `harness/checks/K111-libro.py:976` _(+6)_ | `harness/checks/K111-banco.py:11`, `harness/checks/K111-banco.py:21`, `harness/checks/K111-banco.py:23`, `harness/checks/K111-banco.py:159` _(+6)_ |
 | **tests** | `tests/test_libro.py:587` | — |
 
 **No la llama el panel**, pero si 11 linea(s) de codigo fuera de el.
