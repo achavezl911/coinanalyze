@@ -178,7 +178,7 @@ echo "== restaurado"
 FIN=$(escenario)
 rc=$(k113 $P1 "$DB"); HK_FIN=$(huella_k113)
 comprueba escenario_restaurado "$([ "$FIN" = "$BUENO" ] && [ "$rc" = 0 ] && [ "$HK_FIN" = "$HK_BUENA" ] && echo 0 || echo 1)" \
-  "escenario $BUENO -> $FIN · huella de K113 $HK_BUENA -> $HK_FIN · rc=$rc"
+  "escenario $BUENO -> $FIN · huella de K113 $HK_BUENA -> $HK_FIN · rc=$rc $(grep -m1 '^   · (' "$T/sal" | cut -c1-400)"
 ARBOL_DESPUES=$(git -C "$REPO" status --porcelain 2>/dev/null | sha256sum | cut -c1-12)
 comprueba arbol_intacto "$([ "$ARBOL_ANTES" = "$ARBOL_DESPUES" ] && echo 0 || echo 1)" "git status del arbol $ARBOL_ANTES -> $ARBOL_DESPUES"
 
