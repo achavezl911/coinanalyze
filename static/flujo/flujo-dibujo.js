@@ -38,7 +38,9 @@ const LZ = {
   FILA_DEFECTO: 12,
   ESPACIADO: 81,
   VER_MIN: 5,
-  VER_TOPE: 400,
+  // P1 de la 148 (criterio archivado: p95 <= 33.4 ms en cada gesto con los paneles; x1-tmp/c148/p1.jsonl): con 40 y
+  // 120 velas aguanta (33.4 en el borde), con 400 no (p95 de 50 a 66.7 ms en los cinco gestos): el tope es 120
+  VER_TOPE: 120,
 };
 const COLOR = {
   fondo: '#0a0d12', rejilla: 'rgba(255,255,255,0.05)', eje: '#8891a0', texto: '#e6e9ee', mudo: '#5b6472',
@@ -158,6 +160,7 @@ function creaLienzo(canvas, op) {
     ctx.fillStyle = COLOR.fondo;
     ctx.fillRect(0, 0, L.W, L.H);
     const reg = { cuadro: ++L.cuadros, ancho: L.W, alto: L.H, ver: L.ver, fin: L.fin, velas: [], of6a: true,
+                  n: L.modelo ? L.modelo.velas.length : 0,
                   sigue: L.sigue, celda: L.vista.celda, color_modo: L.vista.color, referencia: L.vista.ref,
                   numeros: L.vista.numeros, filas_resumen: (L.vista.filas || []).slice() };
     const m = L.modelo;

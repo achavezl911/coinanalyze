@@ -37,7 +37,7 @@ const CIERRE_S = 90;
 // OF-6a (campana 148): sin `ver=` en el hash, las velas a la vista salen del ESPACIADO por omision (flujo-dibujo.js):
 // la vista se mide en pixeles por vela, no en velas, para que la cifra quepa en cualquier pantalla (P2).
 const VER_DEFECTO = null;
-const VER_MAXIMO = 240;
+const VER_MAXIMO = 120; // el tope del lienzo (P1 de la 148: con 400 velas no aguanta)
 
 function tiene(obj, k) {
   return Object.prototype.hasOwnProperty.call(obj, k);

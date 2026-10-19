@@ -50,7 +50,9 @@ RUTA = "/api" + "/orderflow/footprint"
 # LAS VISTAS FIJAS, del pasado para que sean reproducibles. Las celdas se guardan 30 dias: en produccion estas caducan
 # hacia el 2026-11-16 (desde entonces, NO MEDIDO «sin dato»; se mueven cambiando estas tres lineas).
 VISTAS = [
-    "#BTC/1m/perp/5/hasta=2026-10-17T11:30:00Z/ver=20",  # paso fijado y numeros; la 11:13 sin un minuto entero
+    # OF-6a (campana 148): 18 velas y no 20: con la fila fija de 12 px (fuente de 10 px) y la semicelda de F-09
+    # (el texto + 4 px), «0.123» cabe con 18 velas a 1920 px y no con 20; y la de las 11:13 sigue a la vista
+    "#BTC/1m/perp/5/hasta=2026-10-17T11:30:00Z/ver=18",  # paso fijado y numeros; la 11:13 sin un minuto entero
     "#ETH/1m/deribit/hasta=2026-10-17T11:50:00Z/ver=40",  # paso automatico; minutos vacios e incompletos
     "#SOL/5m/spot/unidad=usd/hasta=2026-10-17T12:00:00Z/ver=60",  # en USD; huecos de antes del servicio
     # OF-3 (campana 143): una vista fija MAS por capa, del 2026-10-17 como las de arriba: caducan con ellas, hacia el
@@ -206,7 +208,8 @@ def paso_auto(rangos: list, base: Decimal) -> tuple:
 
 
 def desequilibrios(niveles: list, s: Decimal) -> list:
-    """[(nivel, compra, venta)] ascendente, al paso s -> [(dc, dv, ac, av)]: la regla de la campana, en Decimal."""
+    """[(nivel, compra, venta)] ascendente, al paso s -> [(dc, dv, ac, av)]: la regla de la campana, en Decimal.
+    OF-6a (campana 148, F-05): un lado contrario a CERO (o sin celda) no da desequilibrio."""
     if not niveles:
         return []
     P = [n for n, _, _ in niveles]
@@ -217,8 +220,9 @@ def desequilibrios(niveles: list, s: Decimal) -> list:
     lo, hi = P[0], P[-1]
     out = []
     for n in P:
-        dc = n - s >= lo and C[n] > 0 and C[n] * N >= media_n and C[n] >= RAZON * V.get(n - s, Decimal(0))
-        dv = n + s <= hi and V[n] > 0 and V[n] * N >= media_n and V[n] >= RAZON * C.get(n + s, Decimal(0))
+        abajo, arriba = V.get(n - s, Decimal(0)), C.get(n + s, Decimal(0))
+        dc = n - s >= lo and abajo > 0 and C[n] * N >= media_n and C[n] >= RAZON * abajo
+        dv = n + s <= hi and arriba > 0 and V[n] * N >= media_n and V[n] >= RAZON * arriba
         out.append([dc, dv, False, False])
     for lado, marca in ((0, 2), (1, 3)):
         ini = 0
@@ -417,7 +421,8 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list) -> 
         for k in ("delta", "total"):
             if res.get(k) is not None and not casa(res[k].lstrip("+"), v[k]):
                 f_malos.append(f"vela {r['ts']}: el resumen escribe {k} «{res[k]}» y se sirvio {v[k]}")
-        if res.get("operaciones") is not None and res["operaciones"] != str(v["operaciones"]):
+        # OF-6a: E-04 escribe las operaciones como cualquier cifra (1.2K): se releen a su precision, como las demas
+        if res.get("operaciones") is not None and not casa(res["operaciones"], str(v["operaciones"])):
             f_malos.append(f"vela {r['ts']}: el resumen escribe {res['operaciones']} operaciones y se sirvieron "
                            f"{v['operaciones']}")
     for etiqueta, lista, brazo in (("(F)", f_malos, "lo pintado != lo servido"), ("(D)", d_malos, "desequilibrios")):
