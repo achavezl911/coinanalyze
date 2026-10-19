@@ -528,7 +528,7 @@ details.menu[open] > summary {
   position: absolute;
   z-index: 10;
   pointer-events: none;
-  max-width: 340px;
+  max-width: 380px;
   padding: 6px 8px;
   background: rgba(13, 16, 23, 0.94);
   border: 1px solid var(--borde-boton);
@@ -538,7 +538,7 @@ details.menu[open] > summary {
   line-height: 1.45;
   font-variant-numeric: tabular-nums;
   color: var(--tx);
-  white-space: nowrap;
+  white-space: normal;
 }
 .ficha[hidden] {
   display: none;

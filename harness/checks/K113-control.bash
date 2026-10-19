@@ -3,7 +3,8 @@
 #
 # EL SUJETO BUENO ES DE VERDAD: la pagina del ARBOL servida por K112-banco.py sobre una base desechable k113_ctl_<pid>
 # con K112-sujeto.tsv.xz y K113-celdas.tsv.xz (celdas, series, grandes y cinta de PRODUCCION, bajadas una vez) DESPLAZADO
-# A AHORA: el vivo recibe velas nuevas mientras corre y la vista del pasado cae en sus datos. Sobre el, K113 tiene que
+# A AHORA: el vivo recibe velas nuevas mientras corre (las celdas de BTC llegan hasta 3 h despues de la hora de la
+# carga, para que una corrida entera tenga vivo) y la vista del pasado cae en sus datos. Sobre el, K113 tiene que
 # salir VERDE. Cada plantado cambia LA PAGINA (un fichero en el --sobre del banco: el arbol no se toca, y cada `sed`
 # tiene que MORDER exactamente las lineas esperadas o el plantado cuenta como fallido); K113 tiene que condenarlo POR SU
 # BRAZO, con su frase y con la huella del escenario y la suya cambiadas; y el escenario vuelve a ser el bueno:

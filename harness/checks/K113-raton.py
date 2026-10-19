@@ -776,8 +776,10 @@ def juzga_cruz(c: dict, velas: list, x: float, y: float, J: Juez, pref: str, sob
     hora = v["ts"][5:10] if pin["marco"] == "1d" else v["ts"][5:10] + " " + v["ts"][11:16] if pin["marco"] == "4h" \
         else v["ts"][11:16]
     cr = textos_de(c, "cruz")
-    if cruz.get("texto_hora") != hora or not any(t[0] == hora and abs(t[1] - cruz.get("x", -1e9)) <= TOL for t in cr):
-        J.mal("C", pref, f"la etiqueta de hora de la cruz es «{cruz.get('texto_hora')}» y la vela es de {hora} (E-05)")
+    escrita = [round(t[1], 1) for t in cr if t[0] == cruz.get("texto_hora")]
+    if cruz.get("texto_hora") != hora or not any(abs(x_ - cruz.get("x", -1e9)) <= TOL for x_ in escrita):
+        J.mal("C", pref, f"la etiqueta de hora de la cruz dice «{cruz.get('texto_hora')}» escrita en x {escrita} y su vela es "
+                         f"la de {hora}, en x {cruz.get('x')} (E-05: la cruz sobre la vela bajo el cursor)")
     if sobre == "grafico":
         if cruz.get("nivel") != nivel or cruz.get("texto_precio") != nivel or \
                 not any(t[0] == nivel and abs(t[2] - cruz.get("y", -1e9)) <= TOL for t in cr):
@@ -1063,6 +1065,10 @@ async def recorrido_color(v: Vista, out: dict, ctx: dict, paso, L, g0: dict, xm:
     El paso de cada celda pintada se recalcula en cada cosecha (juzga_footprint); aqui, que el corchete se ejercite."""
     J, pref = ctx["J"], ctx["pref"]
     resultados = {}
+    # el precio, alejado y quieto (Ctrl+rueda lo deja en MANUAL): asi las velas comunes conservan sus celdas a la vista
+    await v.tecla("End")
+    for _ in range(3):
+        await v.rueda(*L(xm, ym), 600, "ctrl")
     for ref in ("visible", "sesion"):
         await v.clic_en("#m-color > summary")
         await v.clic_en(f"#m-color input[name=ref][value={ref}]")
@@ -1086,12 +1092,13 @@ async def recorrido_color(v: Vista, out: dict, ctx: dict, paso, L, g0: dict, xm:
     if not resultados["sesion"][0]:
         ctx["nomed"].append(f"(E) {pref} F-04: con «su sesion», tras desplazarse no quedo ninguna celda comun: el corchete no se "
                             "ejercito")
-    if resultados["visible"][0] and not resultados["visible"][1]:
+    if not resultados["visible"][1]:
         ctx["nomed"].append(f"(E) {pref} F-04: con «lo que se ve», desplazarse no cambio el p98 de lo visible en ninguna de "
                             f"{resultados['visible'][0]} celdas comunes: el corchete no se ejercito")
     await v.clic_en("#m-color > summary")
     await v.clic_en("#m-color input[name=ref][value=vela]")
     await v.clic_en("#m-color > summary")
+    await v.clic(*L(g0["ancho"] + 30, ym), veces=2)
     out["pasos"].append({"gesto": "F-04", "resultados": resultados})
     J.info.append(f"{pref} F-04: desplazarse con la referencia «lo que se ve» cambio el color de {resultados['visible'][1]} de "
                   f"{resultados['visible'][0]} celdas comunes; con «su sesion», de {resultados['sesion'][1]} de "
@@ -1322,6 +1329,7 @@ def juzga() -> int:
                 await juzga_aspecto(v, out, ctx)
             await rec(v, out, ctx)
         antes = {b: len(x) for b, x in J.malos.items()}
+        t_vista = time.monotonic()
         try:
             out = asyncio.run(asyncio.wait_for(abre(K, vista, ancho, alto, cab, con_aspecto), timeout=400))
         except (K.SystemExit2, TimeoutError, OSError, Canal) as exc:
@@ -1337,9 +1345,10 @@ def juzga() -> int:
         brazos = sorted(b for b, x in J.malos.items() if len(x) > antes[b])
         if e["hasta"]:
             huella.update(json.dumps([vista, out["pasos"], brazos], sort_keys=True, default=str).encode())
-        else:  # del vivo, lo que no se mueve con el mercado
-            huella.update(json.dumps([vista, [p["gesto"] for p in out["pasos"]], brazos], sort_keys=True).encode())
-        J.info.append(f"{pref} {len(out['pasos'])} pasos · " + ", ".join(
+        else:  # del vivo, lo que no se mueve con el mercado: QUE gestos (no cuantas veces se desplazo F-04) y los brazos
+            nombres = sorted({re.sub(r" \d+$", "", p["gesto"]) for p in out["pasos"]})
+            huella.update(json.dumps([vista, nombres, brazos], sort_keys=True).encode())
+        J.info.append(f"{pref} {len(out['pasos'])} pasos en {time.monotonic() - t_vista:.0f} s · " + ", ".join(
             f"{p['gesto']}{'' if p.get('textos') is None else ' (' + str(p['textos']) + ' cifras)'}"
             for p in out["pasos"][:6]) + (" …" if len(out["pasos"]) > 6 else ""))
     cola = f" · sujeto: {sujeto} · {declara} · huella {huella.hexdigest()[:16]}"
