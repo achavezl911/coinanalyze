@@ -67,7 +67,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K108-orderflow.py:940`, `harness/checks/K112-banco.py:124`, `harness/checks/K112-control.bash:162`, `harness/checks/K112-control.bash:183` | — |
+| **checks** | `harness/checks/K108-orderflow.py:940`, `harness/checks/K112-banco.py:133`, `harness/checks/K112-control.bash:166`, `harness/checks/K112-control.bash:205` | — |
 
 **No la llama el panel**, pero si 4 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.

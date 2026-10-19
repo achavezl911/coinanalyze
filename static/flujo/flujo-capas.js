@@ -18,7 +18,7 @@
  * arriba), el valor servido que se pinto y su y. */
 
 const CAPA = {
-  sesion: '#b48cff', compuesto: '#6fa8ff', dinamico: '#ffc65c', fijo: '#5ce0c0', poc: '#f2cc60', texto: '#e6e9ee',
+  sesion: '#b48cff', compuesto: '#e879f9', dinamico: '#ffc65c', fijo: '#5ce0c0', poc: '#f2cc60', texto: '#e6e9ee',
   vwap: '#ffffff', ambar: '#e6b75a', BARRA: 160, PARTE_SESION: 0.35, PARTE_LADO: 0.22,
 };
 const BANDA_ALFA = { 1: 0.85, 2: 0.6, 3: 0.4 };

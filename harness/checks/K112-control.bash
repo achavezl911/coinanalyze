@@ -22,6 +22,10 @@
 #   (F) fila_de_otra_cifra        la cinta escribe la cantidad en base donde va el tamano en USD
 #   (F) escalon_desplazado        los escalones de 5 min una vela a la derecha de su hora
 #   (P) pagina_rota               una excepcion al arrancar
+# OF-6a (campana 148), los dos defectos del juez que encontro el ataque de la 146:
+#   (F) unidad_mal_escrita        la cabecera del delta dice «en ETH» en la vista EN USD (P146-1)
+#   (F) filtro_agrupado           el filtro de 4 cifras escrito «5.000» en vez de como la pagina, «5000» (P146-2)
+#   V   k112_de_d91d935           el K112 de antes, con las vistas nuevas, contra la pagina buena: ROJO (el defecto era suyo)
 # Y un escenario BUENO mas que tiene que salir VERDE: hueco_en_medio (la base con huecos y la pagina buena: los dice).
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina y sujeto_anterior_a_of5a («FALTA DESPLEGAR») · sin_chromium · sin_dato ·
 # sin_canal. Y el check: A89 los dos modos de SIGPIPE, A56 las tres invocaciones; el escenario restaurado; el arbol
@@ -164,12 +168,30 @@ planta_pagina flujo/flujo-calculo.js "s/'okx_swap', 'bitget_usdt'\] },/'okx_swap
 juzga_plantado familias_sumadas V "no es UNA familia, la perp" $m "perpetuos + spot en la familia perp"
 planta_pagina flujo/flujo-cinta.js 's/ desde: CINTA\.hasta,//' 1; m=$?
 juzga_plantado cinta_pide_todo P "el vivo de la cinta no pide SOLO lo nuevo" $m "el vivo vuelve a pedir la ultima hora"
-planta_pagina flujo/flujo-cinta.js 's/cifra(o\.usd),/cifra(o.base),/' 1; m=$?
+planta_pagina flujo/flujo-cinta.js 's/cifraE04(o\.usd, 0),/cifraE04(o.base, 0),/' 1; m=$?
 juzga_plantado fila_de_otra_cifra F "la fila 1 de la cinta escribe" $m "la cantidad en base donde va el tamano en USD"
 planta_pagina flujo/flujo-indicadores.js 's/^  const xT = (ms) => g\.x(0) - g\.bs \/ 2 + ((ms - t0) \/ mMs) \* g\.bs;$/  const xT = (ms) => g.x(0) + g.bs \/ 2 + ((ms - t0) \/ mMs) * g.bs;/' 1; m=$?
 juzga_plantado escalon_desplazado F "no esta en el eje de tiempo del footprint" $m "los escalones una vela a la derecha"
 planta_pagina flujo/flujo-app.js 's/^function arranca() {$/function arranca() { throw new Error("plantado por K112-control");/' 1; m=$?
 juzga_plantado pagina_rota P "lanzo 1 excepcion|no pinto su vista" $m "una excepcion al arrancar"
+# OF-6a: los dos arreglos del juez, cada uno con su plantado
+planta_pagina flujo/flujo-indicadores.js "s/  const ctxTit = { familia: FAMILIAS\[m\.familia\]\.rotulo, unidad: m\.unidad === 'usd' ? 'USD' : m\.activo,/  const ctxTit = { familia: FAMILIAS[m.familia].rotulo, unidad: m.activo,/" 1; m=$?
+juzga_plantado unidad_mal_escrita F "delta: su cabecera dice .*en ETH" $m "la vista en USD con la cabecera en ETH"
+planta_pagina flujo/flujo-cinta.js "s/Number(filtro)\.toLocaleString('es-ES')/Number(filtro).toLocaleString('de-DE')/" 1; m=$?
+juzga_plantado filtro_agrupado F "la cinta dice .*5\.000 USD" $m "el filtro de 4 cifras con punto de miles"
+
+echo "== V: el K112 de d91d935 (antes de arreglar P146-1 y P146-2) con las vistas nuevas, contra la pagina buena"
+mkdir -p "$T/viejo/harness/checks"
+git -C "$REPO" show d91d935:harness/checks/K112-indicadores.py > "$T/viejo/harness/checks/K112-indicadores.py" 2>/dev/null
+cp "$AQUI/K102-mesa.py" "$AQUI/K109-footprint.py" "$T/viejo/harness/checks/"
+sed -i -e 's|#ETH/15m/perp/hasta={h}/ver=96|#ETH/15m/perp/unidad=usd/hasta={h}/ver=96|' \
+       -e 's|/cinta=20000", 1280|/cinta=5000", 1280|' "$T/viejo/harness/checks/K112-indicadores.py"
+m=$([ "$(git -C "$REPO" show d91d935:harness/checks/K112-indicadores.py | diff - "$T/viejo/harness/checks/K112-indicadores.py" | grep -c '^>')" = 2 ] && echo 0 || echo 1)
+rc=$(k112 $P1 "$DB" K112_REPO="$T/viejo" K112_PY="$PY")
+visto=$(grep -E '^   · \(F\) .*(tiene que decir .*en ETH|tiene que decir .*5\.000 USD)' "$T/sal" | head -1 | cut -c1-150)
+comprueba k112_de_d91d935 "$([ "$m" = 0 ] && [ "$rc" = 1 ] && [ -n "$visto" ] && echo 0 || echo 1)" \
+  "rc=$rc · sed $m · ${visto:-NO SALE: $(head -1 "$T/sal" | cut -c1-110)} · el juez viejo pide «en ETH» y «5.000»"
+rm -rf "$T/viejo"
 
 echo "== un escenario bueno mas: tiene que salir VERDE"
 juzga_bueno hueco_en_medio '^   · \(F\)\(G\) \[BTC 1m perp 1920x1080\] .*\(([1-9][0-9]*) huecos\)' "la base con huecos y la pagina buena" "$P2" "${DB}_hueco" hueco

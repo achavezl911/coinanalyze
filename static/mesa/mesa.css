@@ -42,6 +42,7 @@
   /* semanticos */
   --verde: #3ecf8e;
   --rojo: #e05a5a;
+  --comprador: #60a5fa; /* E-02 (OF-6a): el comprador comun de /flujo, /libro y la mesa */
   --ambar: #e6b75a;
   --azul: #5b9dd9;
   --violeta: #8b7cf6;
@@ -686,6 +687,9 @@ table.rejilla td.acento {
 
 .pos {
   color: var(--verde);
+}
+.pos.compra {
+  color: var(--comprador);
 }
 .neg {
   color: var(--rojo);

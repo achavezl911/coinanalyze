@@ -126,7 +126,7 @@ echo va > "$T/plantado"
 juzga_plantado va_servida S "value area servida .* != celdas" 0 "VAH = VAL en la ultima vela"
 planta_pagina flujo-dibujo.js 's/y(Number(v\.poc)/y(Number(v.poc) + paso/' 2; m=$?
 juzga_plantado poc_en_otro_nivel F "el marco del POC no esta en la fila" $m "el marco un nivel arriba"
-planta_pagina flujo-dibujo.js 's/fila\.texto_venta = cifra(l\.venta)/fila.texto_venta = cifra(l.compra)/' 1; m=$?
+planta_pagina flujo-dibujo.js 's/const tv = cifraE04(l\.venta, dec);/const tv = cifraE04(l.compra, dec);/' 1; m=$?
 juzga_plantado numeros_cruzados F "escribe venta" $m "la compra donde va la venta"
 planta_pagina flujo-dibujo.js "s/const color = d > 0 ? 'compra' : d < 0 ? 'venta'/const color = d > 0 ? 'venta' : d < 0 ? 'compra'/" 1; m=$?
 juzga_plantado color_al_reves F "color (venta|compra) con delta servido" $m "el signo del color cambiado"
@@ -173,7 +173,7 @@ for f in flujo.html flujo/flujo-app.js flujo/flujo-calculo.js flujo/flujo-dibujo
 done
 echo sin_of3 > "$T/plantado"
 rc=$(k109 $P1 "$DB")
-comprueba sujeto_anterior_a_of3 "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K109 .*SIN JUZGAR (el sujeto es anterior a OF-3: 6 vistas sin mirar)' && echo 0 || echo 1)" \
+comprueba sujeto_anterior_a_of3 "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K109 .*SIN JUZGAR (el sujeto es anterior a OF-3: 6 vistas sin mirar).*F-05 SIN JUZGAR (el sujeto es anterior a OF-6a' && echo 0 || echo 1)" \
   "rc=$rc · VERDE en lo del footprint y $(head -1 "$T/sal" | grep -o 'las capas y el TPO, SIN JUZGAR[^)]*)')"
 rm -f "$T/sobre/flujo.html"
 restaura

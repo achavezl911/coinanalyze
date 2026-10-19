@@ -14,9 +14,10 @@ LAS VISTAS, RELATIVAS A AHORA (no caducan: las series se guardan 90 dias, la cin
 `h` es la hora entera que acabo hace una hora (K112_HASTA la fija), y se declara en la salida:
   (vacio)                                            LA VISTA POR OMISION (en vivo), en 1920x1080 y en 1280x720 con DPR 2
   #BTC/1m/perp/hasta=<h>/ver=60/ind=<todos>          1 h con todos los paneles: los de 5 min, escalones de 5 velas
-  #ETH/15m/perp/hasta=<h>/ver=96/ind=<todos>         24 h: un cubo por vela, y las sueltas solo en su retencion
-  #SOL/5m/spot/hasta=<h>/ind=...cinta/cinta=20000    otra familia (las series de Coinalyze siguen siendo de Binance:
-                                                     lo tiene que decir) y otro filtro de la cinta, en 1280x720
+  #ETH/15m/perp/unidad=usd/hasta=<h>/ver=96/ind=<todos>   24 h EN USD: un cubo por vela, y las sueltas solo en su
+                                                     retencion
+  #SOL/5m/spot/hasta=<h>/ind=...cinta/cinta=5000     otra familia (las series de Coinalyze siguen siendo de Binance:
+                                                     lo tiene que decir) y un filtro de 4 cifras, en 1280x720
 
 LOS BRAZOS (cualquiera pone ROJO; uno sin canal es NO MEDIDO y un ROJO de otro manda sobre el):
   (P) la pagina   carga su vista sin excepciones, la pinta y pide lo de SU hash: los indicadores de la ventana y el
@@ -58,7 +59,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 AQUI = pathlib.Path(__file__).resolve().parent
 H = os.environ.get("K112_HARNESS", "/srv/coinanalyze/harness")
@@ -78,6 +79,9 @@ MARCOS = {"1m": 1, "5m": 5, "15m": 15, "1h": 60, "4h": 240, "1d": 1440}
 CIERRE_S, FILAS_CINTA, TOPE_GRANDES = 90, 200, 5000
 FILTRO = {"BTC": "200000", "ETH": "200000", "SOL": "50000"}
 INDICADORES = ["delta", "cvd", "oi", "oib", "funding", "ls", "liq", "grandes", "cinta"]
+# OF-6a (campana 148): lo que el hash de /flujo tambien acepta (flujo-calculo.js), para leerlo TODO
+CAPAS, CELDAS, FILAS_RESUMEN = ["perfil", "vwap", "dinamico"], ["bidask", "delta", "volumen", "trades", "perfil"], \
+    ["vol", "delta", "deltap", "cvd", "ops"]
 DEFECTO = ["delta", "cvd", "grandes", "cinta"]
 PANELES = ["delta", "cvd", "oi", "oib", "funding", "ls", "liq"]
 SERIE = {"oi": ["oi_binance"], "oib": ["oi_bybit"], "funding": ["funding", "funding_predicho"], "ls": ["largos_cortos"],
@@ -178,19 +182,71 @@ def estado_http(url: str, cab: dict) -> int:
 
 # --------------------------------------------------------------------------------------------- la vista
 def lee_vista(h: str) -> dict:
+    """La vista de un hash, con TODO lo que acepta el de /flujo (leeHash de static/flujo/flujo-calculo.js, escrito
+    aqui de nuevo y no leido de la pagina); lo que no se entiende cae al defecto, como alli. OF-6a: antes solo leia
+    hasta, ver, ind y cinta, y una vista con `unidad=usd` se juzgaba como si fuera en la unidad base (P146-1)."""
     p = [x for x in h.lstrip("#").split("/") if x]
-    e = {"activo": p[0] if p else "BTC", "marco": p[1] if len(p) > 1 else "1m",
-         "familia": p[2] if len(p) > 2 else "perp", "hasta": None, "ver": 40, "ind": list(DEFECTO), "cinta": None}
-    for x in p[3:]:
+    num = re.compile(r"\d+(\.\d+)?")
+    positivo = lambda v: bool(v) and bool(num.fullmatch(v)) and Decimal(v) > 0  # noqa: E731
+    e = {"activo": "BTC", "marco": "1m", "familia": "perp", "paso": "auto", "unidad": "base", "min": None,
+         "esconde": False, "grande": None, "hasta": None, "ver": None, "sesion": "dia", "capas": [], "compuesto": None,
+         "fijo": None, "modo": "footprint", "sesiones": 3, "ind": list(DEFECTO), "cinta": None, "celda": "bidask",
+         "color": "delta", "ref": "vela", "numeros": True, "filas": list(FILAS_RESUMEN), "rueda": "zoom", "x": None,
+         "y": None, "fila": None}
+    if p and p[0].upper() in FILTRO:
+        e["activo"] = p[0].upper()
+    if len(p) > 1 and p[1] in MARCOS:
+        e["marco"] = p[1]
+    if len(p) > 2 and p[2] in FAMILIAS:
+        e["familia"] = p[2]
+    resto = p[3:]
+    if resto and "=" not in resto[0] and resto[0] != "esconde":
+        if resto[0] == "auto" or positivo(resto[0]):
+            e["paso"] = resto[0]
+        resto = resto[1:]
+    for x in resto:
         k, _, v = x.partition("=")
-        if k == "hasta":
-            e["hasta"] = v
-        elif k == "ver":
-            e["ver"] = int(v)
-        elif k == "ind":
+        if k == "unidad" and v in ("usd", "base"):
+            e["unidad"] = v
+        elif k in ("min", "grande", "cinta", "y") and positivo(v):
+            e[k] = v
+        elif k == "esconde" and not v:
+            e["esconde"] = True
+        elif k == "ver" and v.isdigit() and int(v) >= 5:
+            e["ver"] = min(240, int(v))
+        elif k == "hasta" and v:
+            try:
+                t = ms(v)
+            except ValueError:
+                continue
+            if t % (MARCOS[e["marco"]] * 60000) == 0:
+                e["hasta"] = v
+        elif k in ("sesion", "fijo") and v:
+            e[k] = v
+        elif k == "capas" and v:
+            e["capas"] = [c for c in CAPAS if c in v.split(",")]
+        elif k in ("compuesto", "sesiones") and v.isdigit():
+            e[k] = int(v)
+        elif k == "modo" and v == "tpo":
+            e["modo"] = "tpo"
+        elif k == "ind" and v:
             e["ind"] = [] if v == "ninguno" else [c for c in INDICADORES if c in v.split(",")] or list(DEFECTO)
-        elif k == "cinta":
-            e["cinta"] = v
+        elif k == "celda" and v in CELDAS:
+            e["celda"] = v
+        elif k == "color" and v == "volumen":
+            e["color"] = v
+        elif k == "ref" and v in ("visible", "sesion"):
+            e["ref"] = v
+        elif k == "numeros" and v == "no":
+            e["numeros"] = False
+        elif k == "filas" and v:
+            e["filas"] = [] if v == "ninguna" else [f for f in FILAS_RESUMEN if f in v.split(",")]
+        elif k == "rueda" and v == "desplaza":
+            e["rueda"] = v
+        elif k == "x" and re.fullmatch(r"\d+(\.\d)?", v):
+            e["x"] = float(v)
+        elif k == "fila" and v.isdigit() and 4 <= int(v) <= 60:
+            e["fila"] = int(v)
     e["filtro"] = e["cinta"] or FILTRO[e["activo"]]
     return e
 
@@ -264,9 +320,14 @@ def titulo(clave: str, d: dict | None, e: dict, origen: str) -> str:
 
 
 def es_miles(x: str) -> str:
-    """Como escribe la pagina el filtro (toLocaleString('es-ES') de un entero): 200000 -> 200.000."""
-    d = D(x)
-    return f"{int(d):,}".replace(",", ".") if d == d.to_integral_value() else str(x)
+    """Como escribe la pagina el filtro: Number(x).toLocaleString('es-ES'). Coma decimal (hasta 3 decimales, la mitad
+    hacia arriba) y punto de miles SOLO desde 5 cifras enteras: es-ES agrupa con dos cifras como minimo, asi que
+    5000 -> «5000» y 200000 -> «200.000». OF-6a: antes ponia el punto siempre (P146-2)."""
+    ent, _, fr = format(D(x).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP), "f").partition(".")
+    fr = fr.rstrip("0")
+    if len(ent) >= 5:
+        ent = f"{int(ent):,}".replace(",", ".")
+    return ent + ("," + fr if fr else "")
 
 
 # --------------------------------------------------------------------------------------------- mirar
@@ -308,7 +369,7 @@ COSECHA = r"""
 })()
 """
 LISTO = ("!!(window.FLUJO_HITOS && FLUJO_HITOS.listo && FLUJO_HITOS.indicadores && window.FLUJO_CINTA && "
-         "(FLUJO_CINTA.apagada || (FLUJO_CINTA.aplicadas || []).length))")
+         "(FLUJO_CINTA.apagada || (FLUJO_CINTA.aplicadas || []).length) && FLUJO_HITOS.arranques !== false)")
 
 
 async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int, alto: int, dpr: float) -> dict:
@@ -962,8 +1023,9 @@ def juzga() -> int:
     # (vista, pantalla en px CSS, devicePixelRatio): la vista POR OMISION en dos pantallas y tres del pasado
     vistas = [("", 1920, 1080, 1), ("", 1280, 720, 2),
               (f"#BTC/1m/perp/hasta={h}/ver=60/{todos}", 1920, 1080, 1),
-              (f"#ETH/15m/perp/hasta={h}/ver=96/{todos}", 1920, 1080, 1),
-              (f"#SOL/5m/spot/hasta={h}/ind=delta,cvd,oi,liq,grandes,cinta/cinta=20000", 1280, 720, 1)]
+              # OF-6a: una vista EN USD y otra con un filtro de 4 cifras (los dos defectos de la 146)
+              (f"#ETH/15m/perp/unidad=usd/hasta={h}/ver=96/{todos}", 1920, 1080, 1),
+              (f"#SOL/5m/spot/hasta={h}/ind=delta,cvd,oi,liq,grandes,cinta/cinta=5000", 1280, 720, 1)]
     declara = f"ventana del pasado hasta {h} ({'fijada por K112_HASTA' if HASTA else 'la hora entera que acabo hace una hora'})"
     # LO DECIDIBLE ANTES QUE LO QUE FALTA: sin puntos de 5 min en la ventana no hay sujeto (y no se abre Chromium)
     try:

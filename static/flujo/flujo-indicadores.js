@@ -25,7 +25,7 @@
 
 const IND_PANEL = { ALTO: 88, CABEZA: 16, PIE: 6 };
 const IND_COLOR = {
-  linea: '#e6e9ee', segunda: '#6fa8ff', ambar: '#e6b75a', mudo: '#5b6472', cero: 'rgba(255,255,255,0.18)',
+  linea: '#e6e9ee', segunda: '#b48cff', ambar: '#e6b75a', mudo: '#5b6472', cero: 'rgba(255,255,255,0.18)',
   hueco: 'rgba(230,183,90,0.10)', pendiente: 'rgba(136,145,160,0.10)',
 };
 // Los paneles, en su orden de arriba a abajo, y lo que necesita cada uno de /api/orderflow/indicadores
@@ -36,15 +36,8 @@ const RUTA_IND = '/api/orderflow/indicadores';
 const RUTA_GRANDES = '/api/orderflow/grandes';
 const IND = { datos: null, grandes: null, fallos: [], pide: 0, canvas: null, ctx: null, pr: 1, W: 0, H: 0, cuadros: 0 };
 
-/* ------------------------------------------------------------- lo puro (node --test y K112 lo recalculan) */
-function deEntero(n, e) {
-  const neg = n < 0n;
-  const s = (neg ? -n : n).toString().padStart(e + 1, '0');
-  let r = e ? s.slice(0, s.length - e) + '.' + s.slice(s.length - e) : s;
-  if (e) r = r.replace(/0+$/, '').replace(/\.$/, '');
-  return (neg && r !== '0' ? '-' : '') + r;
-}
-
+/* ------------------------------------------------------------- lo puro (node --test y K112 lo recalculan)
+ * (deEntero, decimales y entero son de flujo-calculo.js) */
 /* El CVD de las velas de la ventana, EXACTO (BigInt sobre el texto servido): desde la primera vela y, tras un hueco,
  * desde 0 otra vez. -> [{ts, valor (texto) | null, origen (ts de su primera vela) | null}] */
 function cvdDe(velas) {
@@ -259,7 +252,7 @@ function ejeDe(ctx, caja, g, dec) {
   const y = yDe(caja, caja.escala);
   [caja.escala.hi, caja.escala.lo].forEach((v, k) => {
     const yy = k ? caja.abajo - 4 : caja.arriba + 4;
-    ctx.fillText(dec ? v.toFixed(dec) : cifra(String(v)), g.ancho + 6, yy);
+    ctx.fillText(dec ? v.toFixed(dec) : cifraE04(String(v), 2), g.ancho + 6, yy); // E-04 (OF-6a)
   });
   if (caja.escala.lo < 0 && caja.escala.hi > 0) {
     ctx.strokeStyle = IND_COLOR.cero;
@@ -481,7 +474,7 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
     const r = Math.min(14, 3 + 3 * Math.sqrt(Number(o.usd) / umbral));
     ctx.beginPath();
     ctx.arc(x, yy, r, 0, 2 * Math.PI);
-    ctx.fillStyle = o.agresor === 'compra' ? 'rgba(62,207,142,0.35)' : 'rgba(224,90,90,0.35)';
+    ctx.fillStyle = rgba(o.agresor === 'compra' ? COLOR.compra : COLOR.venta, 0.35); // E-02 (OF-6a): los tokens
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
@@ -492,6 +485,37 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
   });
   ctx.restore();
   return { umbral_usd: d.umbral_usd_vigente, truncada: d.truncada, marcas: out };
+}
+
+/* E-05 (OF-6a, campana 148): la CRUZ sobre un panel. La vertical la pinta flujo-dibujo.js (la de la vela); aqui, la
+ * horizontal del panel bajo el cursor y su valor en el eje del panel, con la escala que el panel acaba de pintar. */
+function cruzPanel(ctx, r, dx) {
+  const reg = window.FLUJO_INDICADORES;
+  if (!reg || !reg.paneles || !IND.canvas) return {};
+  const off = IND.canvas.getBoundingClientRect().top - ctx.canvas.getBoundingClientRect().top;
+  const caja = reg.paneles.find((p) => r.panelY >= p.y0 && r.panelY < p.y1);
+  if (!caja || !caja.escala || caja.sin_dato || r.panelY < caja.arriba || r.panelY > caja.abajo) {
+    return { panel: caja ? caja.clave : null };
+  }
+  const e = caja.escala;
+  const v = e.hi - ((r.panelY - caja.arriba) / (caja.abajo - caja.arriba)) * (e.hi - e.lo);
+  const t = caja.clave === 'funding' ? v.toFixed(4) : caja.clave === 'ls' ? v.toFixed(2) : cifraE04(String(v), 2);
+  const yy = Math.round(off + r.panelY) + 0.5;
+  ctx.strokeStyle = COLOR.cruz;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(dx, yy);
+  ctx.lineTo(dx + reg.eje.ancho, yy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = COLOR.etiqueta;
+  ctx.fillRect(dx + reg.eje.ancho + 1, yy - 7, LZ.EJE_P - 2, 14);
+  ctx.fillStyle = COLOR.texto;
+  ctx.font = '10px ui-monospace, monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(t, dx + reg.eje.ancho + 6, yy);
+  return { panel: caja.clave, valor: v, texto_valor: t, y_panel: r.panelY };
 }
 
 /* ------------------------------------------------------------- los mandos (una fila de la cabecera) */
