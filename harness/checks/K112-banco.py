@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """K112-banco · sirve /flujo del ARBOL con sus indicadores sobre una base local con datos de produccion (campana 146).
 
-    K112-banco.py carga <dsn> [--ahora ISO]   crea en <dsn> las tablas que leen el footprint, las grandes, los
+    K112-banco.py carga <dsn> [--ahora ISO] [--mas F]   crea en <dsn> las tablas que leen el footprint, las grandes, los
                                               indicadores y la cinta, y las llena con K112-sujeto.tsv.xz (bajado UNA vez
                                               de 140) DESPLAZADO A AHORA: su T1 pasa a la hora entera de ahora + 2 h
                                               (asi la vista del pasado de K112, la hora que acabo hace una hora, y el
                                               vivo tienen dato), y su bloque de cinta VIVA empieza 10 min antes de ahora
                                               (y el vivo recibe ordenes nuevas mientras corre). Imprime la hora del
-                                              pasado que hay que fijarle a K112 (K112_HASTA).
+                                              pasado que hay que fijarle a K112 (K112_HASTA). Con --mas F (OF-6a,
+                                              campana 148: K113-celdas.tsv.xz), mas filas del mismo formato, que se
+                                              desplazan igual (el CVD de sesion necesita horas de celdas antes)
     K112-banco.py sirve --puerto P --db <dsn> [--sobre DIR] [--plantado F]
 
 Lo que sirve:
     /flujo, /static/*     del arbol; si --sobre DIR trae el fichero, ese gana (una pagina que pinta mal SIN tocar el arbol)
     /api/orderflow/{footprint,grandes,indicadores,ordenes}   app/orderflow_lectura.py DEL ARBOL sobre <dsn>, con as_of
+    /api/orderflow/{sesiones,perfil,vwap,tpo}   lo mismo (OF-6a, campana 148: el CVD de sesion, la regla y el TPO de K113)
     cualquier otra /api/* 503 «banco»
 --plantado F se RELEE en cada peticion: `serie` (el ultimo cubo con dato del OI de Binance, +1 despues de calcularlo:
 lo servido no es lo de las tablas), `orden` (la primera orden servida, +1 USD), `sin_pagina` (/flujo da 404) o `sin_of5a`
@@ -81,7 +84,7 @@ def _iso(ms: int) -> str:
     return datetime.fromtimestamp(ms / 1000, UTC).isoformat(timespec="milliseconds")
 
 
-def carga(dsn: str, ahora: datetime, sujeto: Path = SUJETO) -> int:
+def carga(dsn: str, ahora: datetime, sujeto: Path = SUJETO, mas: Path | None = None) -> int:
     filas: dict[str, list[list[str]]] = {}
     with lzma.open(sujeto, "rt", encoding="utf-8") as f:
         cab = f.readline().rstrip("\n").split("|")
@@ -89,6 +92,12 @@ def carga(dsn: str, ahora: datetime, sujeto: Path = SUJETO) -> int:
         for linea in f:
             tabla, _, resto = linea.rstrip("\n").partition("|")
             filas.setdefault(tabla, []).append(resto.split("|"))
+    if mas:
+        with lzma.open(mas, "rt", encoding="utf-8") as f:
+            for linea in f:
+                if not linea.startswith("#"):
+                    tabla, _, resto = linea.rstrip("\n").partition("|")
+                    filas.setdefault(tabla, []).append(resto.split("|"))
     hora = ahora.replace(minute=0, second=0, microsecond=0)
     s = int((hora + timedelta(hours=2)).timestamp() * 1000)
     dh = s - t1  # horas enteras: las velas, las sesiones de 5 min y los cubos siguen alineados
@@ -122,7 +131,12 @@ def carga(dsn: str, ahora: datetime, sujeto: Path = SUJETO) -> int:
 RUTAS = {"/api/orderflow/footprint": ("footprint", ("symbol", "desde", "hasta", "marco", "paso", "venues", "unidad")),
          "/api/orderflow/grandes": ("grandes", ("symbol", "desde", "hasta", "venues", "limit")),
          "/api/orderflow/indicadores": ("indicadores", ("symbol", "desde", "hasta", "marco")),
-         "/api/orderflow/ordenes": ("ordenes", ("symbol", "venues", "min_usd", "desde", "hasta", "limit"))}
+         "/api/orderflow/ordenes": ("ordenes", ("symbol", "venues", "min_usd", "desde", "hasta", "limit")),
+         # OF-6a (campana 148): las de OF-3, con los parametros de app/api.py (como K109-banco.py)
+         "/api/orderflow/sesiones": ("sesiones", ("symbol", "desde", "hasta", "sesion", "paso", "venues", "unidad")),
+         "/api/orderflow/perfil": ("perfil", ("symbol", "desde", "hasta", "paso", "venues", "unidad")),
+         "/api/orderflow/vwap": ("vwap", ("symbol", "desde", "hasta", "marco", "sesion", "venues")),
+         "/api/orderflow/tpo": ("tpo", ("symbol", "desde", "hasta", "sesion", "paso", "venues"))}
 
 
 def _sirve_ruta(dsn: str, ruta: str, q: dict[str, str]) -> tuple[int, dict]:
@@ -173,7 +187,8 @@ def main() -> int:
         ahora = datetime.now(UTC)
         if "--ahora" in sys.argv:
             ahora = datetime.fromisoformat(sys.argv[sys.argv.index("--ahora") + 1].replace("Z", "+00:00"))
-        return carga(sys.argv[2], ahora)
+        mas = Path(sys.argv[sys.argv.index("--mas") + 1]) if "--mas" in sys.argv else None
+        return carga(sys.argv[2], ahora, mas=mas)
     ap = argparse.ArgumentParser()
     ap.add_argument("modo", choices=("sirve",))
     ap.add_argument("--puerto", type=int, required=True)

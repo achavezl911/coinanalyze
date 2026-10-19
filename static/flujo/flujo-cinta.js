@@ -75,7 +75,7 @@ function pintaCinta() {
     const tr = el('tr', o.agresor);
     Object.assign(tr.dataset, { ts: o.ts, venue: o.venue, agresor: o.agresor, usd: o.usd, base: o.base,
                                 operaciones: String(o.operaciones), pmin: o.precio_min, pmax: o.precio_max });
-    [horaMs(o.ts), CINTA_VENUE[o.venue] || o.venue, o.agresor === 'compra' ? 'C' : 'V', cifra(o.usd), precioCinta(o),
+    [horaMs(o.ts), CINTA_VENUE[o.venue] || o.venue, o.agresor === 'compra' ? 'C' : 'V', cifraE04(o.usd, 0), precioCinta(o),
       String(o.operaciones)].forEach((t, k) => tr.appendChild(el('td', ['h', 'v', 'l', 'u', 'p', 'n'][k], t)));
     tr.title = o.venue + ' · ' + o.operaciones + ' operaciones · ' + o.base + ' base · precio ' + o.precio_min
       + (o.precio_min === o.precio_max ? '' : '–' + o.precio_max);

@@ -6,99 +6,133 @@
     <title>COINALYZE · Footprint</title>
     <!-- EL FOOTPRINT (campana 142, OF-2): por vela y nivel de precio, el volumen del agresor VENDEDOR y COMPRADOR, el
          delta, los desequilibrios, el POC y la value area. La CSP de `app/api.py` no admite `<script>` ni `<style>` en
-         linea: todo va en ficheros servidos por `/static`. El estado vive en el hash (static/flujo/flujo-calculo.js). -->
+         linea: todo va en ficheros servidos por `/static`. El estado vive en el hash (static/flujo/flujo-calculo.js).
+         OF-6a (campana 148): UNA barra de mandos (lo que no cabe, en menus que se abren), la explicacion en la AYUDA y
+         una sola linea de estado: la pantalla no es un manual. -->
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="/static/flujo/flujo.css" />
   </head>
-  <body>
+  <body class="pagina-flujo">
     <header class="cabecera">
-      <div class="cab-izq">
-        <span class="marca">COINALYZE</span>
-        <span class="pastilla-rotulo">FOOTPRINT</span>
-        <div class="seg" id="sel-activo" role="group" aria-label="Activo">
-          <button type="button" data-valor="BTC">BTC</button>
-          <button type="button" data-valor="ETH">ETH</button>
-          <button type="button" data-valor="SOL">SOL</button>
-        </div>
-        <div class="seg" id="sel-marco" role="group" aria-label="Marco">
-          <button type="button" data-valor="1m">1m</button>
-          <button type="button" data-valor="5m">5m</button>
-          <button type="button" data-valor="15m">15m</button>
-          <button type="button" data-valor="1h">1h</button>
-          <button type="button" data-valor="4h">4h</button>
-          <button type="button" data-valor="1d">1d</button>
-        </div>
-        <div class="seg" id="sel-familia" role="group" aria-label="Familia de venues">
-          <button type="button" data-valor="perp">PERPETUOS USDT</button>
-          <button type="button" data-valor="spot">SPOT USDT</button>
-          <button type="button" data-valor="coinbase">COINBASE</button>
-          <button type="button" data-valor="deribit">DERIBIT</button>
-        </div>
-        <label class="mando">paso <select id="sel-paso" aria-label="Paso de precio"></select></label>
-        <div class="seg" id="sel-unidad" role="group" aria-label="Unidad">
-          <button type="button" data-valor="base">BASE</button>
-          <button type="button" data-valor="usd">USD</button>
-        </div>
-        <label class="mando">filtro &lt;
-          <input id="sel-min" type="number" min="0" step="any" aria-label="Tamaño mínimo de celda" /></label>
-        <label class="mando"><input id="sel-esconde" type="checkbox" /> esconder</label>
-        <label class="mando">resaltar ≥
-          <input id="sel-grande" type="number" min="0" step="any" aria-label="Tamaño de celda grande" /></label>
+      <span class="marca">COINALYZE</span>
+      <div class="seg" id="sel-activo" role="group" aria-label="Activo">
+        <button type="button" data-valor="BTC">BTC</button>
+        <button type="button" data-valor="ETH">ETH</button>
+        <button type="button" data-valor="SOL">SOL</button>
       </div>
-      <div class="cab-der">
+      <div class="seg" id="sel-marco" role="group" aria-label="Marco">
+        <button type="button" data-valor="1m">1m</button>
+        <button type="button" data-valor="5m">5m</button>
+        <button type="button" data-valor="15m">15m</button>
+        <button type="button" data-valor="1h">1h</button>
+        <button type="button" data-valor="4h">4h</button>
+        <button type="button" data-valor="1d">1d</button>
+      </div>
+      <div class="seg" id="sel-familia" role="group" aria-label="Familia de venues">
+        <button type="button" data-valor="perp" title="Binance, Bybit, OKX y Bitget (USDT)">PERP USDT</button>
+        <button type="button" data-valor="spot" title="Binance, Bybit y OKX (USDT)">SPOT USDT</button>
+        <button type="button" data-valor="coinbase" title="Coinbase spot (USD)">COINBASE</button>
+        <button type="button" data-valor="deribit" title="Deribit perpetuo (USD; SOL en USDC)">DERIBIT</button>
+      </div>
+      <label class="mando">paso <select id="sel-paso" aria-label="Paso de precio"></select></label>
+      <div class="seg" id="sel-unidad" role="group" aria-label="Unidad">
+        <button type="button" data-valor="base">BASE</button>
+        <button type="button" data-valor="usd">USD</button>
+      </div>
+      <!-- F-01: los modos de la celda, siempre a la vista -->
+      <div class="seg" id="sel-celda" role="group" aria-label="Lo que dice cada celda">
+        <button type="button" data-valor="bidask" title="venta × compra del agresor">BID×ASK</button>
+        <button type="button" data-valor="delta" title="compra − venta">DELTA</button>
+        <button type="button" data-valor="volumen" title="compra + venta">VOL</button>
+        <button type="button" data-valor="trades" title="operaciones">TRADES</button>
+        <button type="button" data-valor="perfil" title="el volumen de cada nivel como barra">PERFIL</button>
+      </div>
+      <details class="menu" id="m-color">
+        <summary>COLOR</summary>
+        <div class="menu-cuerpo">
+          <fieldset><legend>color de la celda</legend>
+            <label><input type="radio" name="color" value="delta" /> por delta (comprador / vendedor)</label>
+            <label><input type="radio" name="color" value="volumen" /> por volumen</label></fieldset>
+          <fieldset><legend>el 100 % es el p98 de</legend>
+            <label><input type="radio" name="ref" value="vela" /> su vela</label>
+            <label><input type="radio" name="ref" value="visible" /> lo que se ve</label>
+            <label><input type="radio" name="ref" value="sesion" /> su sesión</label></fieldset>
+          <label><input id="sel-numeros" type="checkbox" /> números en las celdas</label>
+        </div>
+      </details>
+      <details class="menu" id="m-filtro">
+        <summary>FILTRO</summary>
+        <div class="menu-cuerpo">
+          <label class="mando">atenuar &lt;
+            <input id="sel-min" type="number" min="0" step="any" aria-label="Tamaño mínimo de celda" /></label>
+          <label class="mando"><input id="sel-esconde" type="checkbox" /> esconder en vez de atenuar</label>
+          <label class="mando">resaltar ≥
+            <input id="sel-grande" type="number" min="0" step="any" aria-label="Tamaño de celda grande" /></label>
+        </div>
+      </details>
+      <!-- OF-3 (campana 143): el GESTOR DE SESIONES y las capas; el estado, en el hash -->
+      <details class="menu" id="m-capas">
+        <summary>SESIÓN Y CAPAS</summary>
+        <div class="menu-cuerpo gestor" id="gestor">
+          <label class="mando">sesión
+            <select id="sel-sesion" aria-label="Sesión">
+              <option value="dia">Día UTC · 00:00–24:00Z</option>
+              <option value="asia">Asia · 00:00–08:00Z</option>
+              <option value="europa">Europa · 07:00–16:00Z</option>
+              <option value="eeuu">EE.UU. · 13:30–20:00Z</option>
+              <option value="propia">propia…</option>
+            </select></label>
+          <span class="mando" id="sesion-propia" hidden>
+            <input id="ses-ini" type="time" step="60" aria-label="Inicio de la sesión (UTC)" /> –
+            <input id="ses-fin" type="time" step="60" aria-label="Fin de la sesión (UTC)" /> UTC</span>
+          <label class="mando"><input id="capa-perfil" type="checkbox" /> perfil de sesión</label>
+          <label class="mando"><input id="capa-compuesto" type="checkbox" /> compuesto de
+            <input id="sel-compuesto" type="number" min="2" max="7" step="1" aria-label="Sesiones del compuesto" /></label>
+          <label class="mando"><input id="capa-dinamico" type="checkbox" /> dinámico (lo visible)</label>
+          <label class="mando"><input id="capa-fijo" type="checkbox" /> fijo <span id="fijo-rango"></span></label>
+          <label class="mando"><input id="capa-vwap" type="checkbox" /> VWAP ±1·2·3σ</label>
+          <label class="mando">sesiones del TPO
+            <input id="sel-sesiones" type="number" min="1" max="7" step="1" aria-label="Sesiones del TPO" /></label>
+        </div>
+      </details>
+      <!-- OF-5a (campana 146): los INDICADORES bajo el footprint, las marcas de las grandes y la cinta; en el hash -->
+      <details class="menu" id="m-ind">
+        <summary>INDICADORES</summary>
+        <div class="menu-cuerpo gestor" id="mandos-ind" role="group" aria-label="Indicadores">
+          <label class="mando"><input type="checkbox" data-ind="delta" /> delta</label>
+          <label class="mando"><input type="checkbox" data-ind="cvd" /> CVD</label>
+          <label class="mando"><input type="checkbox" data-ind="oi" /> OI Binance</label>
+          <label class="mando"><input type="checkbox" data-ind="oib" /> OI Bybit</label>
+          <label class="mando"><input type="checkbox" data-ind="funding" /> funding</label>
+          <label class="mando"><input type="checkbox" data-ind="ls" /> largos/cortos</label>
+          <label class="mando"><input type="checkbox" data-ind="liq" /> liquidaciones</label>
+          <label class="mando"><input type="checkbox" data-ind="grandes" /> grandes</label>
+          <label class="mando"><input type="checkbox" data-ind="cinta" /> cinta ≥
+            <input id="sel-cinta" type="number" min="0" step="any" aria-label="Tamaño mínimo de la orden en la cinta (USD)" />
+            USD</label>
+        </div>
+      </details>
+      <div class="seg" id="sel-modo" role="group" aria-label="Vista">
+        <button type="button" data-valor="footprint">FOOTPRINT</button>
+        <button type="button" data-valor="tpo">TPO</button>
+      </div>
+      <button type="button" class="boton" id="b-ayuda" aria-haspopup="dialog">AYUDA</button>
+      <span class="cab-der">
         <a class="enlace" id="ir-mesa" href="/">← MESA</a>
         <a class="enlace" id="ir-libro" href="/libro">LIBRO →</a>
-      </div>
-      <!-- OF-3 (campana 143): el GESTOR DE SESIONES, las capas y el modo TPO; el estado, en el hash -->
-      <div class="gestor" id="gestor">
-        <div class="seg" id="sel-modo" role="group" aria-label="Vista">
-          <button type="button" data-valor="footprint">FOOTPRINT</button>
-          <button type="button" data-valor="tpo">TPO</button>
-        </div>
-        <label class="mando">sesión
-          <select id="sel-sesion" aria-label="Sesión">
-            <option value="dia">Día UTC · 00:00–24:00Z</option>
-            <option value="asia">Asia · 00:00–08:00Z</option>
-            <option value="europa">Europa · 07:00–16:00Z</option>
-            <option value="eeuu">EE.UU. · 13:30–20:00Z</option>
-            <option value="propia">propia…</option>
-          </select></label>
-        <span class="mando" id="sesion-propia" hidden>
-          <input id="ses-ini" type="time" step="60" aria-label="Inicio de la sesión (UTC)" /> –
-          <input id="ses-fin" type="time" step="60" aria-label="Fin de la sesión (UTC)" /> UTC</span>
-        <label class="mando"><input id="capa-perfil" type="checkbox" /> perfil de sesión</label>
-        <label class="mando"><input id="capa-compuesto" type="checkbox" /> compuesto de
-          <input id="sel-compuesto" type="number" min="2" max="7" step="1" aria-label="Sesiones del compuesto" /></label>
-        <label class="mando"><input id="capa-dinamico" type="checkbox" /> dinámico (lo visible)</label>
-        <label class="mando"><input id="capa-fijo" type="checkbox" /> fijo <span id="fijo-rango"></span></label>
-        <label class="mando"><input id="capa-vwap" type="checkbox" /> VWAP ±1·2·3σ</label>
-        <label class="mando">sesiones del TPO
-          <input id="sel-sesiones" type="number" min="1" max="7" step="1" aria-label="Sesiones del TPO" /></label>
-      </div>
-      <!-- OF-5a (campana 146): los INDICADORES bajo el footprint, las marcas de las grandes y la cinta; en el hash -->
-      <div class="gestor" id="mandos-ind" role="group" aria-label="Indicadores">
-        <span class="mando">indicadores:</span>
-        <label class="mando"><input type="checkbox" data-ind="delta" /> delta</label>
-        <label class="mando"><input type="checkbox" data-ind="cvd" /> CVD</label>
-        <label class="mando"><input type="checkbox" data-ind="oi" /> OI Binance</label>
-        <label class="mando"><input type="checkbox" data-ind="oib" /> OI Bybit</label>
-        <label class="mando"><input type="checkbox" data-ind="funding" /> funding</label>
-        <label class="mando"><input type="checkbox" data-ind="ls" /> largos/cortos</label>
-        <label class="mando"><input type="checkbox" data-ind="liq" /> liquidaciones</label>
-        <label class="mando"><input type="checkbox" data-ind="grandes" /> grandes</label>
-        <label class="mando"><input type="checkbox" data-ind="cinta" /> cinta ≥
-          <input id="sel-cinta" type="number" min="0" step="any" aria-label="Tamaño mínimo de la orden en la cinta (USD)" />
-          USD</label>
-      </div>
+      </span>
     </header>
 
     <div class="estado" id="estado" role="status"></div>
 
-    <!-- OF-5a: el footprint y sus paneles en una columna (el mismo ancho: el mismo eje de tiempo), la cinta a la derecha -->
+    <!-- OF-5a: el footprint y sus paneles en una columna (el mismo ancho: el mismo eje de tiempo), la cinta a la derecha.
+         OF-6a: la cruz va en su propia capa, encima de los dos y sin recibir el raton; la ficha, junto al cursor -->
     <div class="graficos" id="graficos">
     <div class="columna">
     <main class="grafico" id="grafico">
-      <canvas id="lienzo"></canvas>
+      <canvas id="lienzo" tabindex="0" aria-label="Footprint: flechas, Re Pág y Av Pág para moverse, Inicio y Fin"></canvas>
+      <div class="ficha" id="ficha" hidden></div>
+      <button type="button" class="presente" id="b-presente" title="Seguir la última vela (Fin)">PRESENTE ▸|</button>
     </main>
     <div class="grafico" id="grafico-tpo" hidden>
       <canvas id="lienzo-tpo"></canvas>
@@ -106,6 +140,7 @@
     <div class="grafico-ind" id="grafico-ind" hidden>
       <canvas id="lienzo-ind" role="img" aria-label="Paneles de indicadores bajo el footprint"></canvas>
     </div>
+    <canvas class="cruz" id="cruz" aria-hidden="true"></canvas>
     </div>
     <aside class="cinta" id="cinta" hidden aria-label="Cinta: órdenes de mercado agregadas">
       <p class="cinta-fuente" id="cinta-fuente"></p>
@@ -116,70 +151,123 @@
       </table>
     </aside>
     </div>
+    <!-- F-16: la ficha se ve junto al cursor; esta linea dice lo mismo para el lector de pantalla -->
     <div class="lectura" id="lectura" aria-live="polite"></div>
 
-    <footer class="leyenda">
+    <!-- I-07: el menu del eje de precio (clic derecho) -->
+    <div class="menu-eje" id="menu-eje" role="menu" hidden>
+      <p class="menu-titulo">escala del precio</p>
+      <div class="seg" id="menu-escala">
+        <button type="button" data-valor="auto">AUTO</button>
+        <button type="button" data-valor="manual">MANUAL</button>
+      </div>
+      <p class="menu-titulo">filas de resumen</p>
+      <label><input type="checkbox" data-fila="vol" /> volumen</label>
+      <label><input type="checkbox" data-fila="delta" /> delta</label>
+      <label><input type="checkbox" data-fila="deltap" /> delta %</label>
+      <label><input type="checkbox" data-fila="cvd" /> CVD de la sesión</label>
+      <label><input type="checkbox" data-fila="ops" /> operaciones</label>
+      <p class="menu-titulo">la rueda</p>
+      <label><input type="radio" name="rueda" value="zoom" /> acerca el tiempo (Mayús: lo desplaza)</label>
+      <label><input type="radio" name="rueda" value="desplaza" /> desplaza el tiempo (Mayús: lo acerca)</label>
+    </div>
+
+    <dialog class="ayuda" id="ayuda" aria-label="Ayuda del footprint">
+      <form method="dialog"><button type="submit" class="boton cerrar">CERRAR (Esc)</button></form>
+      <h2>El ratón y el teclado</h2>
       <p>
-        <b>Cada celda:</b> venta × compra del AGRESOR en ese nivel (izquierda, el que vendió; derecha, el que compró),
-        en la unidad elegida; el color es el signo del delta (compra − venta) y su intensidad, su tamaño dentro de la
-        vela. Los números salen cuando la fila mide 11 px y la vela 56: si no, la celda es su color (acerque con la
-        rueda; arrastre para moverse). Debajo de cada vela: delta, volumen y operaciones.
+        <b>Rueda</b> sobre el gráfico: acerca o aleja el tiempo, dejando la vela bajo el cursor donde está ·
+        <b>Mayús + rueda</b>: desplaza el tiempo · <b>Ctrl + rueda</b>: acerca o aleja el precio (las filas) ·
+        <b>rueda o arrastre sobre un eje</b>: escala ese eje (el de precio, con su centro quieto; el de tiempo, el
+        espaciado de las velas) · <b>arrastrar el gráfico</b>: lo mueve en los dos ejes; en vertical, la escala del
+        precio pasa a <b>MANUAL</b> (lo dice la esquina del eje) · <b>doble clic en el eje de precio</b>: vuelve a
+        <b>AUTO</b> (la fila por omisión, siguiendo a la última vela a la vista) · <b>clic derecho en el eje de
+        precio</b>: la escala, las filas de resumen y lo que hace la rueda · <b>Ctrl + arrastre</b>: la regla (cuánto
+        cambia el precio y el tiempo, cuántas velas y su volumen) · <b>Mayús + arrastre</b>: el perfil fijo de ese
+        rango · <b>← →</b>: una vela · <b>Re Pág / Av Pág</b>: una pantalla · <b>Inicio</b>: el principio de lo
+        cargado · <b>Fin</b> o <b>AL PRESENTE</b>: vuelve a seguir la última vela (desplazarse hacia atrás deja de
+        seguirla) · <b>Esc</b>: cierra los menús, la ayuda y la regla.
+      </p>
+      <h2>La celda</h2>
+      <p>
+        <b>BID×ASK:</b> venta × compra del AGRESOR en ese nivel (izquierda, el que vendió; derecha, el que compró), en
+        la unidad elegida. <b>DELTA</b> (compra − venta), <b>VOL</b> (compra + venta), <b>TRADES</b> (operaciones) o
+        <b>PERFIL</b> (el volumen de cada nivel como barra). El color es el del delta (azul, comprador; rojo,
+        vendedor) o el del volumen, en 20 pasos: el 100 % es el p98 de la vela, de lo que se ve o de la sesión (menú
+        COLOR). Las cifras se escriben si la fila mide 10 px o más y caben en su sitio con 4 px de holgura; si no, la
+        celda es su color (acerque con la rueda o con Ctrl + rueda). Más de 999: 1.2K, 1.2M; por debajo, los
+        decimales del activo (BTC 3, ETH 2, SOL 1), uno menos por cada cifra entera de más; lo que no es cero nunca
+        se escribe «0».
       </p>
       <p>
-        <span class="muestra poc"></span> POC de la vela (el nivel de más volumen; a igualdad, el más bajo) ·
+        <span class="muestra poc"></span> POC de la vela (el nivel de más volumen; si hay empate, todos) ·
         <span class="muestra va"></span> value area del 70 % de la vela, con el mismo algoritmo que el perfil ·
-        <span class="muestra dc"></span> desequilibrio COMPRADOR: la compra de un nivel ≥ 3 veces la venta del nivel de
-        debajo · <span class="muestra dv"></span> VENDEDOR: la venta ≥ 3 veces la compra del de encima · en los dos, el
-        lado fuerte tiene que llegar a la media de volumen por nivel de su vela, y solo se compara dentro de la vela ·
-        barra gruesa: APILADO, 3 o más niveles seguidos del mismo lado.
+        desequilibrio COMPRADOR (la cifra en negrita y <span class="texto-dc">azul claro</span>, o un borde si no se
+        escribe): la compra de un nivel ≥ 3 veces la venta del nivel de debajo · VENDEDOR (<span
+        class="texto-dv">rojo claro</span>): la venta ≥ 3 veces la compra del de encima · en los dos, el lado
+        fuerte tiene que llegar a la media de volumen por nivel de su vela, el lado contrario no puede ser cero y
+        solo se compara dentro de la vela · <span class="muestra dc"></span><span class="muestra dv"></span>
+        barra en el borde: APILADO, 3 o más niveles seguidos del mismo lado.
       </p>
       <p>
-        <span class="muestra incompleta"></span> vela INCOMPLETA: le faltan minutos de algún venue de la familia (dice
-        cuántos de cuántos) · <span class="muestra hueco"></span> HUECO: nadie la escuchó; no se rellena ni se pinta
-        como una vela · «en curso»: todavía puede cambiar (cierra 90 s después de su último minuto) · «0 ops»:
+        <span class="muestra contorno"></span> la vela es su contorno: el rango de sus niveles. Las celdas no
+        guardan la apertura ni el cierre, así que no hay cuerpo ni color de dirección. ·
+        <span class="muestra incompleta"></span> vela INCOMPLETA: le faltan minutos de algún venue de la familia
+        (dice cuántos de cuántos) · <span class="muestra hueco"></span> HUECO: nadie la escuchó; no se rellena ni se
+        pinta como una vela · «en curso»: todavía puede cambiar (cierra 90 s después de su último minuto) · «0 ops»:
         escuchada entera y sin operaciones.
       </p>
       <p>
-        <b>Las familias no se suman.</b> Cada venue publica el precio en su moneda (USDT, USD, USDC) y el mismo minuto no
-        cotiza igual en todos: sumarlos mezcla escalas de precio y emborrona el perfil. Por eso no se ofrece «todos los
-        venues sumados»: perpetuos USDT (Binance, Bybit, OKX, Bitget), spot USDT (Binance, Bybit, OKX), Coinbase (USD)
-        y Deribit (USD; SOL en USDC), cada uno por su lado.
+        <b>Las filas de resumen</b>, bajo el gráfico y alineadas con cada vela: volumen, delta, delta % (delta /
+        volumen), el CVD de la sesión (desde su inicio, exacto; una vela HUECO no lo lleva y, desde ella o con
+        minutos sin escuchar, va en ámbar: le falta lo que no se escuchó) y las operaciones. El delta mínimo y máximo dentro de la vela no salen: la celda es
+        por minuto y no guarda el orden dentro del minuto.
       </p>
       <p>
-        <b>Las capas</b> (las calcula el servidor y se pintan tal cual, sobre la misma escala; lo que cae fuera no se ve):
-        <span class="muestra ses"></span> el <b>perfil de cada sesión</b>, entera desde su inicio, con su POC, VAH y VAL
-        (la value area del 70 %, el mismo algoritmo que el footprint) · <span class="muestra comp"></span> el
-        <b>compuesto</b> de las N últimas sesiones, a la izquierda, con sus líneas discontinuas · <span
-        class="muestra din"></span> el <b>dinámico</b>, de lo que se ve, a la derecha · <span class="muestra fij"></span>
-        el <b>fijo</b>, del rango que se elige con mayúsculas + arrastre · el <b>VWAP</b> de la sesión (suma de USD /
-        suma de cantidad: exacto) y sus bandas a ±1, 2 y 3 desviaciones. La desviación se calcula al precio medio de cada
-        nivel: la de verdad está entre la pintada y la pintada + medio paso base. Cada capa dice si su sesión sigue
-        <b>en curso</b> (crece) y cuántos minutos-venue no se escucharon enteros: nunca se rellenan.
+        <b>Las familias no se suman.</b> Cada venue publica el precio en su moneda (USDT, USD, USDC) y el mismo minuto
+        no cotiza igual en todos: sumarlos mezcla escalas de precio y emborrona el perfil. Por eso no se ofrece
+        «todos los venues sumados»: perpetuos USDT (Binance, Bybit, OKX, Bitget), spot USDT (Binance, Bybit, OKX),
+        Coinbase (USD) y Deribit (USD; SOL en USDC), cada uno por su lado.
+      </p>
+      <h2>Las capas y el TPO</h2>
+      <p>
+        <b>Las capas</b> (las calcula el servidor y se pintan tal cual, sobre la misma escala; lo que cae fuera no se
+        ve): <span class="muestra ses"></span> el <b>perfil de cada sesión</b>, entera desde su inicio, con su POC,
+        VAH y VAL (la value area del 70 %, el mismo algoritmo que el footprint) · <span class="muestra comp"></span>
+        el <b>compuesto</b> de las N últimas sesiones, a la izquierda, con sus líneas discontinuas · <span
+        class="muestra din"></span> el <b>dinámico</b>, de lo que se ve, a la derecha · <span class="muestra
+        fij"></span> el <b>fijo</b>, del rango que se elige con mayúsculas + arrastre · el <b>VWAP</b> de la sesión
+        (suma de USD / suma de cantidad: exacto) y sus bandas a ±1, 2 y 3 desviaciones. La desviación se calcula al
+        precio medio de cada nivel: la de verdad está entre la pintada y la pintada + medio paso base. Cada capa dice
+        si su sesión sigue <b>en curso</b> (crece) y cuántos minutos-venue no se escucharon enteros: nunca se
+        rellenan.
       </p>
       <p>
-        <b>Las sesiones</b>: el día UTC por omisión (el mercado no cierra); Asia, Europa, EE.UU. o una propia, todas en
-        UTC. Una sesión que cruza la medianoche es UNA sesión. Perfil y VWAP llegan, como mucho, a las 7 últimas
-        sesiones: es el tope de la ruta (más días tardan más de 5 s en el servidor).
-        <b>El TPO</b> (perfil de mercado): una letra por cada media hora que tocó cada nivel (A = la primera de la
-        sesión; tras la Z, a-v), con <span class="muestra va"></span> su value area del 70 % de los TPO, <span
-        class="muestra ib"></span> el balance inicial (la primera hora), su POC y <span class="muestra sp"></span> los
-        single prints (niveles con una sola letra). Las letras de una media hora incompleta van en ámbar. Rueda: filas
-        más o menos altas; arrastre: moverse.
+        <b>Las sesiones</b>: el día UTC por omisión (el mercado no cierra); Asia, Europa, EE.UU. o una propia, todas
+        en UTC. Una sesión que cruza la medianoche es UNA sesión. Perfil y VWAP llegan, como mucho, a las 7 últimas
+        sesiones: es el tope de la ruta (más días tardan más de 5 s en el servidor). <b>El TPO</b> (perfil de
+        mercado): una letra por cada media hora que tocó cada nivel (A = la primera de la sesión; tras la Z, a-v),
+        con <span class="muestra va"></span> su value area del 70 % de los TPO, <span class="muestra ib"></span> el
+        balance inicial (la primera hora), su POC y <span class="muestra sp"></span> los single prints (niveles con
+        una sola letra). Las letras de una media hora incompleta van en ámbar. Rueda: letras más o menos anchas;
+        Ctrl + rueda o el eje de precio: filas más o menos altas; Mayús + rueda: desplazarse entre sesiones;
+        arrastre: moverse; doble clic en el eje: vuelve a centrar el POC.
       </p>
+      <h2>Los indicadores y la cinta</h2>
       <p>
         <b>Los indicadores</b> (debajo del footprint, con su mismo eje de tiempo; cada panel escribe su fuente): el
-        <b>delta</b> de cada vela y el <b>CVD</b> salen de las mismas celdas que el footprint (su familia); el CVD
-        empieza en la primera vela de la ventana y, tras un hueco, vuelve a 0 (lo que no se escuchó no se suma). El
-        <b>interés abierto</b> (Binance y Bybit, con su cambio de cubo a cubo), el <b>funding</b> y el predicho,
+        <b>delta</b> de cada vela y el <b>CVD</b> salen de las mismas celdas que el footprint (su familia); el CVD del
+        panel empieza en la primera vela de la ventana y, tras un hueco, vuelve a 0 (lo que no se escuchó no se suma).
+        El <b>interés abierto</b> (Binance y Bybit, con su cambio de cubo a cubo), el <b>funding</b> y el predicho,
         <b>largos/cortos</b> y las <b>liquidaciones</b> de 5 min son de Coinalyze cada 5 min (su BTCUSDT_PERP.A es
         Binance): con velas de 1 min, un escalón de 5 velas. Las <b>liquidaciones sueltas</b> (puntos) son las de
         Binance y Bybit una a una, solo las de las últimas horas que se guardan. Un cubo sin dato es un HUECO rayado
-        (o pendiente, si aún no se ha publicado): nunca un cero. Las <b>grandes</b> son círculos en su vela, a su hora
-        y a su precio. La <b>cinta</b> (a la derecha) son las órdenes de mercado agregadas: las operaciones del mismo
-        venue, el mismo milisegundo y el mismo lado del agresor, sumadas antes de filtrar por tamaño; en vivo pide
-        solo lo nuevo cada 2 s, hasta 8 s antes de ahora para que ninguna orden salga partida.
+        (o pendiente, si aún no se ha publicado): nunca un cero. Las <b>grandes</b> son círculos en su vela, a su
+        hora y a su precio. La <b>cinta</b> (a la derecha) son las órdenes de mercado agregadas: las operaciones del
+        mismo venue, el mismo milisegundo y el mismo lado del agresor, sumadas antes de filtrar por tamaño; en vivo
+        pide solo lo nuevo cada 2 s, hasta 8 s antes de ahora para que ninguna orden salga partida.
       </p>
-    </footer>
+    </dialog>
 
     <script src="/static/mesa/mesa-datos.js"></script>
     <script src="/static/flujo/flujo-calculo.js"></script>

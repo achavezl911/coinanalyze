@@ -102,6 +102,97 @@ function cargaVistaCinta() {
   cargaCinta(VISTA, apuntar);
 }
 
+/* OF-6a (campana 148) · F-10, EL CVD DE SESION: si la sesion de la primera vela empezo antes que ella, su delta hasta
+ * ahi, de /api/orderflow/sesiones cortada en la primera vela y con un paso de PASO_ARRANQUE veces el base (una fila o
+ * dos: solo hace falta el delta). Sin la fila del CVD encendida no se pide. `arranques` dice a K113 cuando esta. */
+const PASO_ARRANQUE = 100000;
+window.FLUJO_HITOS.of6a = true;
+window.FLUJO_HITOS.arranques = false;
+
+async function cargaArranques(mia) {
+  window.FLUJO_HITOS.arranques = false;
+  if (!MODELO || mia !== CARGA) return;
+  MODELO.arranques = {};
+  const v0 = MODELO.velas[0];
+  const ses = leeSesion(VISTA.sesion);
+  const ini = v0 && ses ? sesionDe(v0.ts, ses) : null;
+  if (!VISTA.filas.includes('cvd') || ini === null || ini >= Date.parse(v0.ts)) {
+    LIENZO.pide();
+    window.FLUJO_HITOS.arranques = true;
+    return;
+  }
+  const t0 = Date.parse(v0.ts);
+  const sobre = await pedir(RUTA_SESIONES, {
+    symbol: VISTA.activo, desde: isoZ(t0 - 60000), hasta: isoZ(t0), sesion: VISTA.sesion,
+    paso: String(Number((Number(MODELO.paso_base) * PASO_ARRANQUE).toPrecision(12))),
+    venues: FAMILIAS[VISTA.familia].venues.join(','), unidad: VISTA.unidad });
+  apuntar(sobre);
+  if (mia !== CARGA || !MODELO) return;
+  const s = sobre.ok ? (sobre.datos.sesiones || []).find((x) => Date.parse(x.inicio) === ini) : null;
+  MODELO.arranques[ini] = s ? { delta: s.delta, estado: estadoSesion(s).estado, corte: s.corte }
+    : { delta: null, estado: sobre.ok ? 'hueco' : 'error', http: sobre.http };
+  LIENZO.pide();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (mia === CARGA) window.FLUJO_HITOS.arranques = true;
+  }));
+}
+
+/* Lo que el raton o el teclado dejaron en los dos ejes va al hash (sin pedir nada ni volver a cargar). */
+function vistaCambiada(est) {
+  Object.assign(VISTA, est);
+  const h = escribeHash(VISTA);
+  if (window.location.hash !== h) window.history.replaceState(null, '', h);
+  window.FLUJO_HITOS.vista = h;
+  pintaSelectores();
+}
+
+/* I-07: el menu del eje de precio, junto al clic; Esc o un clic fuera lo cierran (y los menus de la barra). */
+function abreMenu(x, y) {
+  const m = document.getElementById('menu-eje');
+  pintaSelectores();
+  m.hidden = false;
+  m.style.left = Math.max(0, Math.min(x, window.innerWidth - m.offsetWidth - 8)) + 'px';
+  m.style.top = Math.max(0, Math.min(y, window.innerHeight - m.offsetHeight - 8)) + 'px';
+}
+
+function cierraMenus(salvo) {
+  document.getElementById('menu-eje').hidden = true;
+  document.querySelectorAll('details.menu[open]').forEach((d) => {
+    if (d !== salvo) d.open = false;
+  });
+}
+
+/* I-06: el teclado. Las flechas, una vela; Re Pag / Av Pag, una pantalla; Inicio, lo primero cargado; Fin, la ultima
+ * vela (y seguirla); Esc cierra menus, la ayuda y la regla. Con el foco en un mando, el teclado es suyo. */
+function teclado(ev) {
+  if (ev.key === 'Escape') {
+    cierraMenus();
+    LIENZO.borraRegla();
+    return;
+  }
+  if (VISTA.modo === 'tpo' || ev.ctrlKey || ev.altKey || ev.metaKey) return;
+  if (ev.target && ev.target.closest && ev.target.closest('input, select, textarea, dialog')) return;
+  const accion = { ArrowLeft: () => LIENZO.mueve(-1), ArrowRight: () => LIENZO.mueve(1),
+                   PageUp: () => LIENZO.pagina(-1), PageDown: () => LIENZO.pagina(1),
+                   Home: () => LIENZO.inicio(), End: () => LIENZO.presente() }[ev.key];
+  if (!accion) return;
+  ev.preventDefault();
+  accion();
+}
+
+/* E-05: la cruz sigue al raton tambien sobre los paneles (su vertical es la de la vela; su valor, el del panel). */
+function cruzDeLosPaneles() {
+  const ind = document.getElementById('lienzo-ind');
+  ind.addEventListener('mousemove', (ev) => {
+    const r = document.getElementById('lienzo').getBoundingClientRect();
+    const g = LIENZO.geo();
+    const x = ev.clientX - r.left;
+    LIENZO.cruzEn({ x, y: ev.clientY - r.top, zona: x >= g.ancho ? 'precio' : 'grafico', sobre: 'panel',
+                    panelY: ev.clientY - ind.getBoundingClientRect().top });
+  });
+  ind.addEventListener('mouseleave', () => LIENZO.cruzEn(null));
+}
+
 function reloj() {
   return (window.performance || Date).now();
 }
@@ -161,12 +252,13 @@ async function carga() {
   apunta(sobre); // OF-5a: lo que la pantalla APLICA (K112 lo compara con lo que llego)
   if (!sobre.ok) {
     FALLO = sobre;
-    LIENZO.pon({ velas: [] }, VISTA.ver);
+    LIENZO.pon({ velas: [] }, VISTA);
   } else {
     ULTIMA = { asOfMs: Date.parse(sobre.datos.as_of), t: reloj() };
     MODELO = modelo(sobre.datos);
-    LIENZO.pon(MODELO, VISTA.ver);
+    LIENZO.pon(MODELO, VISTA);
     if (!VISTA.hasta) arrancaLatido();
+    cargaArranques(mia); // OF-6a: el CVD de sesion de la primera vela
   }
   pintaSelectores();
   pintaEstado();
@@ -242,7 +334,9 @@ function pararLatido() {
   paraCinta(); // OF-5a
 }
 
-/* ------------------------------------------------------------------ decir */
+/* ------------------------------------------------------------------ decir
+ * OF-6a (campana 148): UNA linea, corta. Lo que importa de cada vela (incompleta, hueco, en curso) lo dice la vela y
+ * la ficha; la fuente de cada panel, su cabecera; lo largo (los venues, la regla del paso, las capas), el `title`. */
 function pintaEstado(pidiendo) {
   const caja = vaciar(document.getElementById('estado'));
   const grafico = document.getElementById('grafico');
@@ -250,52 +344,54 @@ function pintaEstado(pidiendo) {
     caja.appendChild(el('span', 'cargando', pidiendo));
     return;
   }
-  const linea = (...trozos) => {
-    const p = el('p', 'estado-linea');
-    trozos.forEach((t) => p.appendChild(typeof t === 'string' ? document.createTextNode(t) : t));
-    caja.appendChild(p);
-    return p;
-  };
+  const p = el('p', 'estado-linea');
+  caja.appendChild(p);
+  const pon = (t) => p.appendChild(typeof t === 'string' ? document.createTextNode(t) : t);
+  const titulo = [];
   let rancio = false;
-  if (FALLO) {
-    const p = linea(noSe('error', 'HTTP ' + FALLO.http + ' · ' + (FALLO.motivo || '')));
-    p.setAttribute('data-estado', 'error');
-    if (MODELO) p.appendChild(document.createTextNode(' · se enseña lo último que llegó'));
-  }
+  const marca = (n, clase, texto) => {
+    const s = noSe(clase, texto);
+    s.setAttribute('data-estado', clase);
+    pon(s);
+    pon(' ');
+    return n;
+  };
+  if (FALLO) marca(0, 'error', 'HTTP ' + FALLO.http + ' · ' + (FALLO.motivo || '') + (MODELO ? ' · se enseña lo último que llegó' : ''));
+  CAPAS_FALLOS.forEach(([nombre, s]) => marca(0, 'error', 'capa ' + nombre + ': HTTP ' + s.http + ' · ' + (s.motivo || '')));
   if (MODELO && !VISTA.hasta && ULTIMA) {
     const edadS = (reloj() - ULTIMA.t) / 1000;
     rancio = edadS > RANCIO_S;
     if (rancio) {
-      linea(noSe('rancio', 'la última respuesta buena es de hace ' + Math.round(edadS) + ' s (el latido pide cada '
-        + VIVO_S + ' s)')).setAttribute('data-estado', 'rancio');
+      marca(0, 'rancio', 'la última respuesta buena es de hace ' + Math.round(edadS) + ' s (el latido pide cada '
+        + VIVO_S + ' s)');
     }
   }
   if (MODELO && !MODELO.velas.some((v) => v.niveles.length)) {
-    linea(noSe('nulo', 'la ruta contestó sin una sola celda en toda la ventana: no hay operaciones que pintar'))
-      .setAttribute('data-estado', 'nulo');
+    marca(0, 'nulo', 'la ruta contestó sin una sola celda en toda la ventana: no hay operaciones que pintar');
   }
-  if (MODELO) {
+  if (VISTA.modo === 'tpo') {
+    estadoTPO(pon, titulo);
+  } else if (MODELO) {
     const huecos = MODELO.velas.filter((v) => v.estado === 'hueco').length;
     const inc = MODELO.velas.filter((v) => v.estado === 'incompleta').length;
     const fam = FAMILIAS[VISTA.familia];
-    const p = linea(
-      el('b', null, VISTA.activo + ' · ' + VISTA.marco + ' · ' + fam.rotulo),
-      ' (' + MODELO.venues.join(', ') + ') · paso ' + MODELO.paso + (MODELO.paso_auto
-        ? ' (automático: la vela mediana toca ' + MODELO.paso_auto.niveles_vela_mediana + ' niveles)' : ' (fijado)')
-        + ' · ' + (MODELO.unidad === 'usd' ? 'en USD' : 'en ' + VISTA.activo)
-        + ' · ' + (VISTA.hasta ? 'ventana fija hasta ' + VISTA.hasta.slice(0, 16).replace('T', ' ') + 'Z'
-          : rancio ? 'RANCIO' : 'vivo: la vela en curso se pide cada ' + VIVO_S + ' s')
-        + ' · ' + MODELO.velas.length + ' velas'
-        + (inc ? ' · ' + inc + ' incompleta(s)' : '') + (huecos ? ' · ' + huecos + ' hueco(s) sin dato' : ''));
-    if (MODELO.paso_auto) p.title = MODELO.paso_auto.regla;
+    pon(el('b', null, VISTA.activo + ' · ' + VISTA.marco + ' · ' + fam.rotulo));
+    pon(' · paso ' + MODELO.paso + (MODELO.paso_auto ? ' auto' : ' fijado') + ' · '
+      + (MODELO.unidad === 'usd' ? 'USD' : VISTA.activo) + ' · '
+      + (VISTA.hasta ? 'hasta ' + VISTA.hasta.slice(5, 16).replace('T', ' ') + 'Z' : rancio ? 'RANCIO' : 'vivo')
+      + ' · ' + MODELO.velas.length + ' velas'
+      + (inc ? ' · ' + inc + ' incompleta' + (inc > 1 ? 's' : '') : '')
+      + (huecos ? ' · ' + huecos + ' hueco' + (huecos > 1 ? 's' : '') + ' sin dato' : ''));
+    titulo.push('venues: ' + MODELO.venues.join(', '));
+    if (MODELO.paso_auto) titulo.push('paso automático: la vela mediana toca ' + MODELO.paso_auto.niveles_vela_mediana
+      + ' niveles · ' + MODELO.paso_auto.regla);
+    if (!VISTA.hasta) titulo.push('vivo: la vela en curso se pide cada ' + VIVO_S + ' s');
+    if (VISTA.capas.length || VISTA.compuesto || VISTA.fijo) {
+      pon(' · capas');
+      titulo.push(textoCapas());
+    }
   }
-  // OF-3: que capas se piden, sobre que sesion, y las que no llegaron (con su codigo); y la linea del TPO
-  CAPAS_FALLOS.forEach(([nombre, s]) => {
-    linea(noSe('error', 'capa ' + nombre + ': HTTP ' + s.http + ' · ' + (s.motivo || ''))).setAttribute('data-estado',
-      'error');
-  });
-  if (MODELO && (VISTA.capas.length || VISTA.compuesto || VISTA.fijo)) linea(textoCapas());
-  if (VISTA.modo === 'tpo') estadoTPO(linea);
+  caja.title = titulo.join('\n');
   grafico.classList.toggle('rancio', rancio || (!!FALLO && !!MODELO));
 }
 
@@ -319,48 +415,49 @@ function textoCapas() {
         + 'Z: el tope de la ruta)' : '');
 }
 
-function estadoTPO(linea) {
+function estadoTPO(pon, titulo) {
   if (FALLO_TPO) {
-    linea(noSe('error', 'HTTP ' + FALLO_TPO.http + ' · ' + (FALLO_TPO.motivo || ''))).setAttribute('data-estado', 'error');
+    const n = noSe('error', 'HTTP ' + FALLO_TPO.http + ' · ' + (FALLO_TPO.motivo || ''));
+    n.setAttribute('data-estado', 'error');
+    pon(n);
+    pon(' ');
   }
   if (!MODELO_TPO) return;
   const p = MODELO_TPO.paso_auto;
-  linea(el('b', null, VISTA.activo + ' · TPO · ' + FAMILIAS[VISTA.familia].rotulo),
-    ' (' + MODELO_TPO.venues.join(', ') + ') · sesión ' + rotuloSesion() + ' · paso ' + MODELO_TPO.paso
-      + (p ? ' (automático: el periodo de 30 min mediano toca ' + p.niveles_periodo_mediano + ' niveles)' : '')
-      + ' · una letra por media hora (A = la primera de la sesión) · ' + MODELO_TPO.sesiones.length + ' sesión(es) · '
-      + (VISTA.hasta ? 'ventana fija hasta ' + VISTA.hasta.slice(0, 16).replace('T', ' ') + 'Z'
-        : 'vivo: se pide cada ' + TPO_VIVO_S + ' s'));
+  pon(el('b', null, VISTA.activo + ' · TPO · ' + FAMILIAS[VISTA.familia].rotulo));
+  pon(' · sesión ' + rotuloSesion() + ' · paso ' + MODELO_TPO.paso + (p ? ' auto' : '') + ' · '
+    + MODELO_TPO.sesiones.length + ' sesión(es) · '
+    + (VISTA.hasta ? 'hasta ' + VISTA.hasta.slice(5, 16).replace('T', ' ') + 'Z' : 'vivo'));
+  titulo.push('venues: ' + MODELO_TPO.venues.join(', '));
+  if (p) titulo.push('paso automático: el periodo de 30 min mediano toca ' + p.niveles_periodo_mediano + ' niveles');
+  titulo.push('una letra por media hora (A = la primera de la sesión)'
+    + (VISTA.hasta ? '' : ' · vivo: se pide cada ' + TPO_VIVO_S + ' s'));
 }
 
-function lectura(v, fila) {
-  const caja = document.getElementById('lectura');
-  if (!v) {
-    caja.textContent = '';
-    return;
-  }
-  const t = v.ts.slice(5, 16).replace('T', ' ') + 'Z';
-  const cob = { abierta: 'en curso', hueco: 'HUECO: nadie la escuchó', vacia: 'escuchada entera, sin operaciones',
-                completa: 'completa', incompleta: 'INCOMPLETA: faltan ' + v.faltan + ' de ' + v.esperados + ' minutos-venue' };
-  if (fila) {
-    caja.textContent = t + ' · nivel ' + fila.nivel + ' · venta ' + fila.venta + ' · compra ' + fila.compra + ' · Δ '
-      + fila.delta + (fila.dc ? ' · desequilibrio COMPRADOR' : '') + (fila.dv ? ' · desequilibrio VENDEDOR' : '')
-      + (fila.ac || fila.av ? ' (apilado)' : '');
-  } else {
-    caja.textContent = t + ' · ' + cob[v.estado] + (v.niveles.length ? ' · compra ' + v.compra + ' · venta ' + v.venta
-      + ' · Δ ' + v.delta + ' · ' + v.operaciones + ' operaciones · POC ' + v.poc
-      + (v.value_area ? ' · value area ' + v.value_area.val + '–' + v.value_area.vah : '') : '');
-  }
+/* F-16: lo que dice la ficha junto al cursor, en una linea para el lector de pantalla (#lectura, aria-live). */
+function lectura(texto) {
+  document.getElementById('lectura').textContent = texto || '';
 }
 
 /* ------------------------------------------------------------- los mandos */
 function pintaSelectores() {
-  [['sel-activo', 'activo'], ['sel-marco', 'marco'], ['sel-familia', 'familia'], ['sel-unidad', 'unidad']]
+  [['sel-activo', 'activo'], ['sel-marco', 'marco'], ['sel-familia', 'familia'], ['sel-unidad', 'unidad'],
+    ['sel-celda', 'celda']]
     .forEach(([id, k]) => {
       document.querySelectorAll('#' + id + ' button').forEach((b) => {
         b.setAttribute('aria-pressed', String(b.dataset.valor === VISTA[k]));
       });
     });
+  // OF-6a: el color, su referencia, los numeros, las filas de resumen, la rueda y si se sigue la ultima vela
+  document.querySelectorAll('#m-color input[name=color]').forEach((r) => { r.checked = r.value === VISTA.color; });
+  document.querySelectorAll('#m-color input[name=ref]').forEach((r) => { r.checked = r.value === VISTA.ref; });
+  document.getElementById('sel-numeros').checked = VISTA.numeros !== false;
+  document.querySelectorAll('#menu-eje input[data-fila]').forEach((c) => { c.checked = VISTA.filas.includes(c.dataset.fila); });
+  document.querySelectorAll('#menu-eje input[name=rueda]').forEach((r) => { r.checked = r.value === VISTA.rueda; });
+  document.querySelectorAll('#menu-escala button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.valor === (VISTA.y ? 'manual' : 'auto')));
+  });
+  document.getElementById('b-presente').classList.toggle('parado', VISTA.x !== null && VISTA.x !== undefined);
   const sel = document.getElementById('sel-paso');
   vaciar(sel);
   const base = MODELO ? MODELO.paso_base : null;
@@ -617,11 +714,14 @@ function aplicaHash() {
   const indCambia = String(nueva.ind) !== String(VISTA.ind) || nueva.cinta !== VISTA.cinta; // OF-5a
   const soloFiltro = MODELO && ['activo', 'marco', 'familia', 'paso', 'unidad', 'hasta']
     .every((k) => nueva[k] === VISTA[k]);
+  const sesionCambia = nueva.sesion !== VISTA.sesion || String(nueva.filas) !== String(VISTA.filas);
   VISTA = nueva;
   if (soloFiltro) {
     MODELO.filtro = { min: VISTA.min, esconde: VISTA.esconde, grande: VISTA.grande };
     window.FLUJO_HITOS.vista = hash;
     pintaSelectores();
+    LIENZO.vista(VISTA); // OF-6a: el modo de la celda, el color y los dos ejes: se repinta, no se pide
+    if (sesionCambia) cargaArranques(CARGA);
     if (capasCambian) cargaCapas();
     if (indCambia) {
       midePaneles(VISTA);
@@ -635,14 +735,46 @@ function aplicaHash() {
 }
 
 function arranca() {
-  LIENZO = creaLienzo(document.getElementById('lienzo'), lectura);
+  LIENZO = creaLienzo(document.getElementById('lienzo'), {
+    alLeer: lectura, alCambiar: vistaCambiada, alMenu: abreMenu, cruz: document.getElementById('cruz'),
+    ficha: document.getElementById('ficha') });
+  // OF-6a: los modos de la celda, el color, los numeros, el menu del eje, el presente, la ayuda y el teclado
+  document.getElementById('sel-celda').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-valor]');
+    if (b) cambia({ celda: b.dataset.valor });
+  });
+  document.querySelectorAll('#m-color input[name=color]').forEach((r) => r.addEventListener('change', () => cambia({ color: r.value })));
+  document.querySelectorAll('#m-color input[name=ref]').forEach((r) => r.addEventListener('change', () => cambia({ ref: r.value })));
+  document.getElementById('sel-numeros').addEventListener('change', (ev) => cambia({ numeros: ev.target.checked }));
+  document.getElementById('menu-escala').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-valor]');
+    if (b && b.dataset.valor === 'auto') LIENZO.auto();
+    else if (b) LIENZO.manual();
+  });
+  document.querySelectorAll('#menu-eje input[data-fila]').forEach((c) => c.addEventListener('change', () => {
+    const marcadas = [...document.querySelectorAll('#menu-eje input[data-fila]')].filter((x) => x.checked)
+      .map((x) => x.dataset.fila);
+    cambia({ filas: FILAS_RESUMEN.filter((f) => marcadas.includes(f)) });
+  }));
+  document.querySelectorAll('#menu-eje input[name=rueda]').forEach((r) => r.addEventListener('change', () => cambia({ rueda: r.value })));
+  document.addEventListener('mousedown', (ev) => {
+    if (!ev.target.closest('#menu-eje')) document.getElementById('menu-eje').hidden = true;
+    document.querySelectorAll('details.menu[open]').forEach((d) => {
+      if (!d.contains(ev.target)) d.open = false;
+    });
+  });
+  document.getElementById('b-presente').addEventListener('click', () => LIENZO.presente());
+  document.getElementById('b-ayuda').addEventListener('click', () => document.getElementById('ayuda').showModal());
+  document.addEventListener('keydown', teclado);
+  cruzDeLosPaneles();
   creaIndicadores(document.getElementById('lienzo-ind')); // OF-5a
   atiendeMandosIndicadores();
   [['sel-activo', 'activo'], ['sel-marco', 'marco'], ['sel-familia', 'familia'], ['sel-unidad', 'unidad']]
     .forEach(([id, k]) => {
       document.getElementById(id).addEventListener('click', (ev) => {
         const b = ev.target.closest('button[data-valor]');
-        if (b) cambia({ [k]: b.dataset.valor, paso: k === 'activo' ? 'auto' : VISTA.paso });
+        // OF-6a: otro activo, marco, familia o unidad es otra vista: los ejes vuelven a lo de por omision
+        if (b) cambia({ [k]: b.dataset.valor, paso: k === 'activo' ? 'auto' : VISTA.paso, x: null, y: null, fila: null });
       });
     });
   document.getElementById('sel-paso').addEventListener('change', (ev) => cambia({ paso: ev.target.value }));

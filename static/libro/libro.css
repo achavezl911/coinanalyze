@@ -80,7 +80,7 @@
 }
 
 #esc-filas td.c {
-  color: var(--verde);
+  color: var(--comprador); /* E-02 (OF-6a): el comprador comun */
 }
 
 #esc-filas td.v {
@@ -93,7 +93,7 @@
 
 /* la mejor compra y la mejor venta de la familia */
 #esc-filas tr.mejor-compra td.nivel {
-  background: rgba(62, 207, 142, 0.18);
+  background: rgba(96, 165, 250, 0.18);
   color: var(--tx);
 }
 
@@ -137,7 +137,7 @@
 
 .muestra.mc {
   height: 2px;
-  background: var(--verde);
+  background: var(--comprador);
 }
 
 .muestra.mv {

@@ -7,8 +7,10 @@
  * balance inicial (verde: la primera hora); el POC, un marco en su fila; los single prints, una marca naranja a la
  * derecha. Todo SERVIDO por /api/orderflow/tpo y pintado tal cual.
  *
- * Las filas tienen ALTO FIJO (rueda: mas o menos alto; arrastre: moverse en precio y entre sesiones): con 9 px o mas se
- * escriben las letras; por debajo, cada TPO es un bloque de su color.
+ * Las filas tienen ALTO FIJO: con 9 px o mas (y letras de 6 px o mas de ancho) se escriben las letras; por debajo, cada
+ * TPO es un bloque de su color. OF-6a (campana 148): EL MISMO CONVENIO QUE EL FOOTPRINT: la rueda ensancha las letras
+ * (el eje horizontal), Mayus+rueda se desplaza entre sesiones, Ctrl+rueda o el eje de precio (rueda o arrastre) cambian
+ * el alto de fila, arrastrar mueve los dos y doble clic en el eje vuelve a centrar el POC con la fila por omision.
  *
  * EL CONTRATO (lo lee K109): `window.FLUJO_TPO`, apuntado donde se dibuja: la escala, y por sesion su columna, su estado
  * y su marca, POC, value area, balance inicial y single prints con sus filas, y por fila su nivel, sus y, las letras
@@ -18,7 +20,7 @@ const TPO = { FILA: 12, LETRA: 7, EJE_P: 76, CABEZA: 34, MARGEN: 18, TEXTO_MIN: 
 
 function creaLienzoTPO(canvas) {
   const L = { cv: canvas, ctx: canvas.getContext('2d'), pr: window.devicePixelRatio || 1, W: 0, H: 0, modelo: null,
-              fila: TPO.FILA, centro: null, dx: 0, arrastre: null, pendiente: false, cuadros: 0 };
+              fila: TPO.FILA, letra: TPO.LETRA, centro: null, dx: 0, arrastre: null, pendiente: false, cuadros: 0 };
 
   function mide() {
     const r = L.cv.parentElement.getBoundingClientRect();
@@ -55,7 +57,7 @@ function creaLienzoTPO(canvas) {
     const y = (n) => medio - ((n - L.centro) / p) * L.fila;
     const ancho = L.W - TPO.EJE_P;
     Object.assign(reg, { activo: m.activo, familia: m.familia, venues: m.venues, paso: m.paso, sesion: m.sesion,
-                         escala: { centro: L.centro, fila: L.fila, medio, cabeza: TPO.CABEZA } });
+                         escala: { centro: L.centro, fila: L.fila, medio, cabeza: TPO.CABEZA, letra: L.letra, dx: L.dx } });
     // la rejilla y el eje de precios: una etiqueta cada k filas, las que dejen >= 28 px entre dos
     const k = Math.max(1, Math.ceil(28 / L.fila));
     const dec = (String(m.paso).split('.')[1] || '').length;
@@ -83,7 +85,7 @@ function creaLienzoTPO(canvas) {
     for (let i = m.sesiones.length - 1; i >= 0; i--) {
       const s = m.sesiones[i];
       const maxTpo = s.niveles.reduce((a, l) => Math.max(a, l.tpo), 0);
-      const w = Math.max(TPO.ANCHO_MIN, 16 + maxTpo * TPO.LETRA);
+      const w = Math.max(TPO.ANCHO_MIN, 16 + maxTpo * L.letra);
       const x0 = x1 - w;
       if (x1 > 0 && x0 < ancho) reg.sesiones.push(pintaSesion(ctx, s, x0, x1, y, p, m));
       x1 = x0 - TPO.MARGEN;
@@ -120,7 +122,7 @@ function creaLienzoTPO(canvas) {
     }
     const incompletos = new Set(s.periodos.filter((q) => q.cobertura.minutos_esperados > 0 && !q.cobertura.completa)
       .map((q) => q.letra));
-    const conTexto = L.fila >= TPO.TEXTO_MIN;
+    const conTexto = L.fila >= TPO.TEXTO_MIN && L.letra >= 6;
     // la value area y el balance inicial: barras a la izquierda de la columna
     if (s.value_area) {
       const a = fila(Number(s.value_area.vah));
@@ -132,7 +134,7 @@ function creaLienzoTPO(canvas) {
     if (s.balance_inicial) {
       const a = fila(Number(s.balance_inicial.hi));
       const b = fila(Number(s.balance_inicial.lo));
-      ctx.fillStyle = rgba(COLOR.compra, 0.9);
+      ctx.fillStyle = 'rgba(62,207,142,0.9)'; // el balance inicial, verde: el verde ya no es el comprador (OF-6a)
       ctx.fillRect(x0 + 5, a.y0, 2, b.y1 - a.y0);
       r.ib = { lo: s.balance_inicial.lo, hi: s.balance_inicial.hi, y0: a.y0, y1: b.y1 };
     }
@@ -155,14 +157,14 @@ function creaLienzoTPO(canvas) {
         let texto = '';
         for (let i = 0; i < l.letras.length; i++) {
           const letra = l.letras[i];
-          const xl = x0 + 10 + i * TPO.LETRA;
+          const xl = x0 + 10 + i * L.letra;
           ctx.fillStyle = incompletos.has(letra) ? COLOR.ambar : COLOR.texto;
           if (conTexto) {
             ctx.fillText(letra, xl, ym);
             texto += letra;
           } else {
             ctx.globalAlpha = 0.7;
-            ctx.fillRect(xl, f.y0, TPO.LETRA - 1, Math.max(1, f.y1 - f.y0 - 1));
+            ctx.fillRect(xl, f.y0, Math.max(1, L.letra - 1), Math.max(1, f.y1 - f.y0 - 1));
             ctx.globalAlpha = 1;
           }
         }
@@ -174,25 +176,43 @@ function creaLienzoTPO(canvas) {
       const f = fila(Number(s.poc));
       const l = s.niveles.find((x) => x.nivel === s.poc);
       ctx.strokeStyle = COLOR.poc;
-      ctx.strokeRect(x0 + 8.5, f.y0 + 0.5, 4 + (l ? l.tpo : 1) * TPO.LETRA, Math.max(1, f.y1 - f.y0 - 1));
+      ctx.strokeRect(x0 + 8.5, f.y0 + 0.5, 4 + (l ? l.tpo : 1) * L.letra, Math.max(1, f.y1 - f.y0 - 1));
       r.poc = { nivel: s.poc, y0: f.y0, y1: f.y1 };
     }
     return r;
   }
 
+  const enEje = (ev) => ev.clientX - L.cv.getBoundingClientRect().left >= L.W - TPO.EJE_P;
   L.cv.addEventListener('wheel', (ev) => {
     ev.preventDefault();
-    L.fila = Math.min(22, Math.max(4, L.fila * (ev.deltaY > 0 ? 1 / 1.15 : 1.15)));
+    const d = ev.deltaY || ev.deltaX;
+    const f = Math.exp(-d * 0.0014); // una muesca (100) = x1.15
+    if (enEje(ev) || ev.ctrlKey || ev.metaKey) L.fila = Math.min(22, Math.max(4, L.fila * f));
+    else if (ev.shiftKey) L.dx -= d;
+    else L.letra = Math.min(16, Math.max(2, L.letra * f));
     pide();
   }, { passive: false });
+  L.cv.addEventListener('dblclick', (ev) => {
+    if (!enEje(ev) || !L.modelo) return;
+    const ult = L.modelo.sesiones.slice().reverse().find((s) => s.poc !== null && s.poc !== undefined);
+    L.centro = ult ? Number(ult.poc) : 0;
+    L.fila = TPO.FILA;
+    pide();
+  });
   L.cv.addEventListener('mousedown', (ev) => {
-    L.arrastre = { x: ev.clientX, y: ev.clientY, centro: L.centro, dx: L.dx };
+    if (ev.button !== 0) return;
+    L.arrastre = { x: ev.clientX, y: ev.clientY, centro: L.centro, dx: L.dx, fila: L.fila, eje: enEje(ev) };
   });
   window.addEventListener('mouseup', () => {
     L.arrastre = null;
   });
   L.cv.addEventListener('mousemove', (ev) => {
     if (!L.arrastre || !L.modelo) return;
+    if (L.arrastre.eje) {
+      L.fila = Math.min(22, Math.max(4, L.arrastre.fila * Math.exp(-(ev.clientY - L.arrastre.y) * 0.007)));
+      pide();
+      return;
+    }
     L.dx = L.arrastre.dx + (ev.clientX - L.arrastre.x);
     L.centro = L.arrastre.centro + ((ev.clientY - L.arrastre.y) / L.fila) * Number(L.modelo.paso);
     pide();

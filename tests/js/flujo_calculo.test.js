@@ -16,6 +16,9 @@ test('el hash: por omision BTC/1m/perp con paso auto, y lo que no se entiende ca
     sesion: 'dia', capas: [], compuesto: null, fijo: null, modo: 'footprint', sesiones: F.TPO_SESIONES,
     // OF-5a (campana 146): los indicadores por omision y el filtro de la cinta (flujo_indicadores.test.js)
     ind: F.INDICADORES_DEFECTO, cinta: null,
+    // OF-6a (campana 148): la celda, el color, las filas de resumen y los dos ejes (flujo_pro.test.js)
+    celda: 'bidask', color: 'delta', ref: 'vela', numeros: true, filas: F.FILAS_RESUMEN, rueda: 'zoom', x: null,
+    y: null, fila: null,
   });
   const e = F.leeHash('#eth/5m/deribit/0.5/unidad=usd/min=2/esconde/grande=40/hasta=2026-10-17T11:30Z/ver=20');
   assert.deepStrictEqual([e.activo, e.marco, e.familia, e.paso, e.unidad, e.min, e.esconde, e.grande, e.hasta, e.ver],
@@ -32,7 +35,9 @@ test('el hash: por omision BTC/1m/perp con paso auto, y lo que no se entiende ca
 test('el hash va y vuelve: una vista = una URL', () => {
   ['#BTC/1m/perp', '#SOL/1h/spot/0.05/unidad=usd/min=10/esconde/grande=500/hasta=2026-10-17T11:00:00Z/ver=30']
     .forEach((h) => assert.strictEqual(F.escribeHash(F.leeHash(h)), h));
-  assert.strictEqual(F.escribeHash(F.leeHash('#BTC/1m/perp/auto/ver=40')), '#BTC/1m/perp');
+  assert.strictEqual(F.escribeHash(F.leeHash('#BTC/1m/perp/auto')), '#BTC/1m/perp');
+  // OF-6a: sin `ver` las velas a la vista salen del espaciado por omision; un `ver` escrito se queda
+  assert.strictEqual(F.escribeHash(F.leeHash('#BTC/1m/perp/auto/ver=40')), '#BTC/1m/perp/ver=40');
 });
 
 test('la historia acaba en la vela en curso, o en `hasta`, con las velas de su marco', () => {
@@ -69,18 +74,29 @@ test('el desequilibrio diagonal es EXACTO: 0.3 >= 3 x 0.1 (en float seria falso)
   assert.deepStrictEqual(d[1], { dc: true, dv: false, ac: false, av: false });
 });
 
-test('el desequilibrio: el vecino de fuera de la vela no se compara; dentro, un nivel sin celda vale 0', () => {
+test('el desequilibrio: el vecino de fuera de la vela no se compara; un lado contrario a CERO no marca (F-05)', () => {
   // 100 es el nivel mas bajo: su compra no se compara con nada (debajo no hay vela)
   let d = F.desequilibrios([nv('100', '9', '0'), nv('101', '1', '1')], '1');
   assert.strictEqual(d[0].dc, false);
-  // 102 no tiene celda (dentro de la vela): la compra de 103 se compara con 0
+  // 102 no tiene celda (dentro de la vela): la compra de 103 contra un CERO no es desequilibrio (OF-6a, F-05)
   d = F.desequilibrios([nv('100', '1', '1'), nv('101', '1', '1'), nv('103', '2', '0')], '1');
-  assert.strictEqual(d[2].dc, true);
+  assert.strictEqual(d[2].dc, false);
+  // ni con la celda de debajo a 0 de venta
+  d = F.desequilibrios([nv('100', '5', '0'), nv('101', '20', '0')], '1');
+  assert.strictEqual(d[1].dc, false);
+});
+
+test('F-05: a 2.9x no marca, a 3.0x marca (exacto)', () => {
+  // las dos con la media cumplida: (venta 1 abajo, compra 2.9 o 3 arriba)
+  assert.strictEqual(F.desequilibrios([nv('100', '0', '1'), nv('101', '2.9', '0')], '1')[1].dc, false);
+  assert.strictEqual(F.desequilibrios([nv('100', '0', '1'), nv('101', '3', '0')], '1')[1].dc, true);
+  assert.strictEqual(F.desequilibrios([nv('100', '0', '2.9'), nv('101', '1', '0')], '1')[0].dv, false);
+  assert.strictEqual(F.desequilibrios([nv('100', '0', '3'), nv('101', '1', '0')], '1')[0].dv, true);
 });
 
 test('el desequilibrio pide la media por nivel de su vela: un nivel fino no marca', () => {
-  // media por nivel = (1 + 0.1 + 10 + 0) / 3 = 3.7: el 1 de 101 no llega aunque sea 10 veces el 0.1 de debajo
-  const d = F.desequilibrios([nv('100', '0', '0.1'), nv('101', '1', '0'), nv('102', '10', '0')], '1');
+  // media por nivel = (0.1 + 1 + 0.2 + 10) / 3 = 3.77: el 1 de 101 no llega aunque sea 10 veces el 0.1 de debajo
+  const d = F.desequilibrios([nv('100', '0', '0.1'), nv('101', '1', '0.2'), nv('102', '10', '0')], '1');
   assert.deepStrictEqual(d.map((x) => x.dc), [false, false, true]);
 });
 
@@ -90,11 +106,13 @@ test('el desequilibrio vendedor mira la compra del nivel de ENCIMA', () => {
   assert.strictEqual(d[1].dv, false); // el de arriba del todo no se compara
 });
 
-test('apilado: tres seguidos del mismo lado; dos no; un hueco de precio lo corta', () => {
-  const sube = (n) => nv(String(n), '10', '0');
-  let d = F.desequilibrios([nv('99', '0', '0.1'), sube(100), sube(101), sube(102), nv('103', '0', '1')], '1');
+test('apilado (F-06): tres seguidos del mismo lado; dos no; un hueco de precio lo corta', () => {
+  // cada nivel compra 10 y vende 1: 10 >= 3 x 1 (la venta del de debajo) y 10 >= la media
+  const sube = (n) => nv(String(n), '10', '1');
+  let d = F.desequilibrios([nv('99', '0', '1'), sube(100), sube(101), sube(102), nv('103', '0', '1')], '1');
   assert.deepStrictEqual(d.map((x) => x.ac), [false, true, true, true, false]);
-  d = F.desequilibrios([nv('99', '0', '0.1'), sube(100), sube(101), nv('102', '0', '1')], '1');
+  d = F.desequilibrios([nv('99', '0', '1'), sube(100), sube(101), nv('102', '0', '1')], '1');
+  assert.deepStrictEqual(d.map((x) => x.dc), [false, true, true, false]);
   assert.deepStrictEqual(d.map((x) => x.ac), [false, false, false, false]);
   d = F.desequilibrios([nv('99', '0', '1'), sube(100), sube(101), sube(103), sube(104)], '1');
   assert.ok(d.every((x) => !x.ac));

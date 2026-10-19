@@ -34,7 +34,7 @@
 const MAPA = { EJE_P: 76, EJE_T: 20 };
 const MAPA_COLOR = {
   fondo: [10, 13, 18], desconocido: [46, 46, 46], hueco: [70, 48, 20], pendiente: [30, 36, 46],
-  compra: '#3ecf8e', venta: '#e05a5a', eje: '#8891a0',
+  compra: '#60a5fa', venta: '#e05a5a', eje: '#8891a0', // E-02 (OF-6a): el comprador comun
   rampa: [[28, 30, 72], [86, 30, 110], [190, 50, 70], [245, 140, 40], [255, 245, 180]],
 };
 // la rampa en 256 escalones (de la cantidad mas pequena a la mayor)

@@ -147,20 +147,22 @@ function pintarMatriz(sobre, nodo, nodoPie, nodoVenue) {
     r.appendChild(cob);
 
     // CADA CELDA SIN MEDIDA ES N/D, NUNCA 0. `spot_delta` llega null en las ventanas cortas.
-    const celdaNum = (v, f2) => {
+    const celdaNum = (v, f2, comprador) => {
       const td = el('td');
       const s = f2 ? f2(v) : usd(v);
       if (s === null) td.appendChild(el('span', 'nd', 'N/D'));
       else {
         td.textContent = s;
         td.classList.add(Number(v) < 0 ? 'neg' : 'pos');
+        // E-02 (OF-6a): un delta o un desequilibrio positivo es el COMPRADOR: su tono comun, no el verde
+        if (comprador && Number(v) >= 0) td.classList.add('compra');
       }
       return td;
     };
-    r.appendChild(celdaNum(f.spot_delta));
-    r.appendChild(celdaNum(f.fut_delta));
-    r.appendChild(celdaNum(f.spot_imbalance, (v) => num(v, 3)));
-    r.appendChild(celdaNum(f.fut_imbalance, (v) => num(v, 3)));
+    r.appendChild(celdaNum(f.spot_delta, null, true));
+    r.appendChild(celdaNum(f.fut_delta, null, true));
+    r.appendChild(celdaNum(f.spot_imbalance, (v) => num(v, 3), true));
+    r.appendChild(celdaNum(f.fut_imbalance, (v) => num(v, 3), true));
 
     // EL CUADRANTE ES DERIVADO Y SE MARCA COMO TAL en la cabecera de la tarjeta (ver pie).
     const q = el('td');
