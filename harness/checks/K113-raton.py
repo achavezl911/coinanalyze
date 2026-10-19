@@ -866,6 +866,18 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
         J.pasos += 1
         return {"c": c, **r} if r else {"c": c}
 
+    async def medido(nombre: str | None, accion) -> tuple:
+        """El estado JUSTO antes del gesto, el gesto y el estado despues (con su juicio, si lleva nombre). En el vivo
+        puede llegar una vela nueva entre medias y mover lo que se mide: entonces se vuelve a medir (tres veces como mucho)."""
+        for _ in range(3):
+            a = estado_ejes(await v.cosecha())
+            await accion()
+            pr = await paso(nombre) if nombre else {"c": await v.cosecha()}
+            b = estado_ejes(pr["c"])
+            if a["n"] == b["n"]:
+                break
+        return a, pr, b
+
     p0 = await paso("carga", c0)
     if "velas" not in p0:
         return
@@ -898,10 +910,7 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
     g0 = p0["g"]
     xm, ym = g0["ancho"] * 0.55, (g0["arriba"] + g0["abajo"]) / 2
     # I-01: la rueda acerca el tiempo anclada al cursor; el precio no se mueve
-    a = e0
-    await v.rueda(*L(xm, ym), -300)
-    pr = await paso("rueda")
-    b = estado_ejes(pr["c"])
+    a, pr, b = await medido("rueda", lambda: v.rueda(*L(xm, ym), -300))
     i_antes = a["fin"] - (g0["ancho"] - xm) / (g0["ancho"] / a["ver"]) + 0.5
     x_despues = (g0["ancho"] - (b["fin"] - i_antes + 0.5) * (g0["ancho"] / b["ver"])) if b["ver"] else None
     if igual(a["ver"], b["ver"]) or x_despues is None or abs(x_despues - xm) > TOL or not igual(a["fila"], b["fila"]):
@@ -909,18 +918,12 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
                          f"cursor de x {xm:.1f} a {x_despues} (I-01: acerca el tiempo, anclada al cursor; la escala del precio "
                          "no cambia: en AUTO solo sigue a la ultima vela a la vista)")
     # Mayus+rueda desplaza el tiempo (hacia atras: hacia adelante la vista ya esta en la ultima vela)
-    a = b
-    await v.rueda(*L(xm, ym), -300, "shift")
-    pr = await paso("mayus+rueda")
-    b = estado_ejes(pr["c"])
+    a, pr, b = await medido("mayus+rueda", lambda: v.rueda(*L(xm, ym), -300, "shift"))
     if igual(a["fin"], b["fin"]) or not igual(a["ver"], b["ver"]) or not igual(a["fila"], b["fila"]):
         J.mal("R", pref, f"Mayus+rueda: fin {a['fin']} -> {b['fin']}, ver {a['ver']} -> {b['ver']}, fila {a['fila']} -> "
                          f"{b['fila']} (I-01: desplaza el tiempo y nada mas)")
     # Ctrl+rueda acerca el precio, anclado al cursor; el tiempo no se mueve; pasa a MANUAL
-    a = b
-    await v.rueda(*L(xm, ym), -200, "ctrl")
-    pr = await paso("ctrl+rueda")
-    b = estado_ejes(pr["c"])
+    a, pr, b = await medido("ctrl+rueda", lambda: v.rueda(*L(xm, ym), -200, "ctrl"))
     alto = g0["abajo"] - g0["arriba"]
     precio = lambda s, yy: s["lo"] + (g0["abajo"] - yy) / alto * (s["hi"] - s["lo"])  # noqa: E731
     if igual(a["fila"], b["fila"]) or not igual(a["ver"], b["ver"]) or not igual(a["fin"], b["fin"]) or \
@@ -932,10 +935,7 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
         J.mal("E", pref, "tras tocar la escala del precio, la esquina del eje no dice MANUAL (I-03)")
     # en MANUAL, la rueda y Mayus+rueda no mueven el precio NADA
     for nombre, dy, mod in (("rueda en manual", 250, ""), ("mayus+rueda en manual", -300, "shift")):
-        a = b
-        await v.rueda(*L(xm, ym), dy, mod)
-        pr = await paso(nombre)
-        b = estado_ejes(pr["c"])
+        a, pr, b = await medido(nombre, lambda dy=dy, mod=mod: v.rueda(*L(xm, ym), dy, mod))
         if not (igual(a["lo"], b["lo"]) and igual(a["hi"], b["hi"])) or b["modo"] != "manual" or \
                 (igual(a["ver"], b["ver"]) and igual(a["fin"], b["fin"])):
             J.mal("R", pref, f"«{nombre}»: el precio {a['lo']:.6g}-{a['hi']:.6g} -> {b['lo']:.6g}-{b['hi']:.6g}, modo "
@@ -950,31 +950,25 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
         J.mal("R", pref, f"tras el doble clic en el eje de precio la escala es {b['modo']} con fila {b['fila']} (I-04: AUTO)")
     if completo:
         # I-02: arrastrar el eje de precio 100 px hacia arriba reduce el rango y deja el centro
-        a = b
-        await v.arrastra(*L(xe, ym), *L(xe, ym - 100))
-        pr = await paso("arrastre del eje de precio")
-        b = estado_ejes(pr["c"])
+        a, pr, b = await medido("arrastre del eje de precio", lambda: v.arrastra(*L(xe, ym), *L(xe, ym - 100)))
         if not (b["hi"] - b["lo"] < a["hi"] - a["lo"]) or not igual(a["centro"], b["centro"]) or not igual(a["ver"], b["ver"]):
             J.mal("R", pref, f"arrastrar 100 px arriba el eje de precio: rango {a['hi'] - a['lo']:.6g} -> {b['hi'] - b['lo']:.6g}, "
                              f"centro {a['centro']} -> {b['centro']}, ver {a['ver']} -> {b['ver']} (I-02)")
         await v.clic(*L(xe, ym), veces=2)
         # I-02: arrastrar el eje de tiempo cambia el espaciado y deja el final y el precio
-        a = estado_ejes(await v.cosecha())
         yt = pin0["alto"] - EJE_T / 2
-        await v.arrastra(*L(xm, yt), *L(xm + 60, yt))
-        pr = await paso("arrastre del eje de tiempo")
-        b = estado_ejes(pr["c"])
+        a, pr, b = await medido("arrastre del eje de tiempo", lambda: v.arrastra(*L(xm, yt), *L(xm + 60, yt)))
         if igual(a["ver"], b["ver"]) or not igual(a["fin"], b["fin"]) or not igual(a["lo"], b["lo"]):
             J.mal("R", pref, f"arrastrar el eje de tiempo: ver {a['ver']} -> {b['ver']}, fin {a['fin']} -> {b['fin']}, lo "
                              f"{a['lo']} -> {b['lo']} (I-02: el espaciado, y nada mas)")
     # I-03: arrastrar el grafico mueve los dos ejes y el precio pasa a MANUAL; el estado va al hash
     await v.tecla("End")
-    a = estado_ejes(await v.cosecha())
     dx, dy = 160, 50
-    await v.arrastra(*L(xm, ym), *L(xm + dx, ym + dy))
-    await v.s.drena(0.3)
-    pr = await paso("arrastre del grafico")
-    b = estado_ejes(pr["c"])
+
+    async def arrastre():
+        await v.arrastra(*L(xm, ym), *L(xm + dx, ym + dy))
+        await v.s.drena(0.3)
+    a, pr, b = await medido("arrastre del grafico", arrastre)
     bs = g0["ancho"] / a["ver"]
     if abs(b["fin"] - (a["fin"] - dx / bs)) > 0.02 or abs(b["centro"] - (a["centro"] + dy * b["paso"] / b["fila"])) > \
             b["paso"] * 0.02 or b["modo"] != "manual" or b["sigue"] or "/x=" not in (b["hash"] or "") or \
@@ -987,10 +981,8 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
         for tecla, quiero in (("ArrowRight", lambda s: s["fin"] + 1), ("ArrowLeft", lambda s: s["fin"] - 1),
                               ("PageDown", lambda s: s["fin"] + s["ver"]), ("PageUp", lambda s: s["fin"] - s["ver"]),
                               ("Home", lambda s: s["ver"] - 1)):
-            a = estado_ejes(await v.cosecha())
-            await v.tecla(tecla)
-            b = estado_ejes(await v.cosecha())
-            n = len(p0["velas"])
+            a, _, b = await medido(None, lambda tecla=tecla: v.tecla(tecla))
+            n = b["n"] or len(p0["velas"])  # las velas de AHORA: en el vivo puede haber llegado una durante la prueba
             esperado = min(n - 1 + b["ver"] * 0.3, max(b["ver"] * 0.3, quiero(a)))
             if abs(b["fin"] - esperado) > 0.01:
                 J.mal("R", pref, f"la tecla {tecla}: fin {a['fin']:.2f} -> {b['fin']:.2f} y tenia que ir a {esperado:.2f} (I-06)")
@@ -1016,9 +1008,7 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
             await v.s.drena(0.3)
             await v.clic_en("#menu-eje input[name=rueda][value=desplaza]")
             await v.s.drena(0.3)
-            a = estado_ejes(await v.cosecha())
-            await v.rueda(*L(xm, ym), 200)
-            b = estado_ejes(await v.cosecha())
+            a, _, b = await medido(None, lambda: v.rueda(*L(xm, ym), 200))
             if igual(a["fin"], b["fin"]) or not igual(a["ver"], b["ver"]):
                 J.mal("R", pref, f"con «la rueda desplaza» la rueda no desplaza: fin {a['fin']} -> {b['fin']}, ver {a['ver']} -> "
                                  f"{b['ver']} (I-01: reasignable en ajustes)")
@@ -1065,6 +1055,7 @@ async def recorrido_color(v: Vista, out: dict, ctx: dict, paso, L, g0: dict, xm:
     El paso de cada celda pintada se recalcula en cada cosecha (juzga_footprint); aqui, que el corchete se ejercite."""
     J, pref = ctx["J"], ctx["pref"]
     resultados = {}
+    diag = ""
     # el precio, alejado y quieto (Ctrl+rueda lo deja en MANUAL): asi las velas comunes conservan sus celdas a la vista
     await v.tecla("End")
     for _ in range(3):
@@ -1074,27 +1065,37 @@ async def recorrido_color(v: Vista, out: dict, ctx: dict, paso, L, g0: dict, xm:
         await v.clic_en(f"#m-color input[name=ref][value={ref}]")
         await v.s.drena(0.3)
         await v.clic_en("#m-color > summary")
-        a = (await paso(f"referencia {ref}"))["c"]["pin"]
-        media = -100 * max(1.0, a["ver"] / 2) / max(1.0, a["ver"] / 10)  # media pantalla hacia atras (desplaza() de la pagina)
-        for intento in range(4):
-            await v.rueda(*L(xm, ym), media, "shift")
-            b = (await paso(f"referencia {ref} y desplazado {intento + 1}"))["c"]["pin"]
-            ka = {(r["ts"], f["nivel"]): f["paso_color"] for r in a["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
-            kb = {(r["ts"], f["nivel"]): f["paso_color"] for r in b["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
-            comunes = set(ka) & set(kb)
-            resultados[ref] = (len(comunes), sum(ka[k] != kb[k] for k in comunes))
-            if resultados[ref][1] or not comunes or ref == "sesion":
+        for preparacion in range(3):  # sin celdas comunes, se prepara otra vez (Fin y el precio alejado)
+            if preparacion:
+                await v.tecla("End")
+                for _ in range(3):
+                    await v.rueda(*L(xm, ym), 600, "ctrl")
+            a = (await paso(f"referencia {ref}"))["c"]["pin"]
+            media = -100 * max(1.0, a["ver"] / 2) / max(1.0, a["ver"] / 10)  # media pantalla atras (desplaza() de la pagina)
+            for intento in range(4):
+                await v.rueda(*L(xm, ym), media, "shift")
+                b = (await paso(f"referencia {ref} y desplazado {intento + 1}"))["c"]["pin"]
+                ka = {(r["ts"], f["nivel"]): f["paso_color"] for r in a["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
+                kb = {(r["ts"], f["nivel"]): f["paso_color"] for r in b["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
+                comunes = set(ka) & set(kb)
+                resultados[ref] = (len(comunes), sum(ka[k] != kb[k] for k in comunes))
+                diag = (f"antes ver {a['ver']:.1f} fin {a['fin']:.1f} fila {a['escala']['fila']:.1f} modo "
+                        f"{a['escala']['modo']} {len(ka)} celdas; despues ver {b['ver']:.1f} fin {b['fin']:.1f} {len(kb)} celdas; "
+                        f"preparacion {preparacion + 1}")
+                if resultados[ref][1] or not comunes or ref == "sesion":
+                    break
+                a = b
+            if resultados[ref][0]:
                 break
-            a = b
         await v.tecla("End")
     if resultados["sesion"][1]:
         J.mal("E", pref, f"con la referencia de la sesion, desplazarse cambio el color de {resultados['sesion'][1]} celdas (F-04)")
     if not resultados["sesion"][0]:
         ctx["nomed"].append(f"(E) {pref} F-04: con «su sesion», tras desplazarse no quedo ninguna celda comun: el corchete no se "
-                            "ejercito")
+                            f"ejercito ({diag})")
     if not resultados["visible"][1]:
         ctx["nomed"].append(f"(E) {pref} F-04: con «lo que se ve», desplazarse no cambio el p98 de lo visible en ninguna de "
-                            f"{resultados['visible'][0]} celdas comunes: el corchete no se ejercito")
+                            f"{resultados['visible'][0]} celdas comunes: el corchete no se ejercito ({diag})")
     await v.clic_en("#m-color > summary")
     await v.clic_en("#m-color input[name=ref][value=vela]")
     await v.clic_en("#m-color > summary")
