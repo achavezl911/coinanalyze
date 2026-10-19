@@ -984,7 +984,10 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
             a, _, b = await medido(None, lambda tecla=tecla: v.tecla(tecla))
             n = b["n"] or len(p0["velas"])  # las velas de AHORA: en el vivo puede haber llegado una durante la prueba
             esperado = min(n - 1 + b["ver"] * 0.3, max(b["ver"] * 0.3, quiero(a)))
-            if abs(b["fin"] - esperado) > 0.01:
+            # si la tecla llega al final, la vista vuelve a seguir la ultima vela (I-05) y el latido siguiente la pone
+            # en el borde: n - 1 tambien vale, y SOLO entonces
+            al_borde = quiero(a) >= n - 1 and b["sigue"] and abs(b["fin"] - (n - 1)) <= 0.01
+            if abs(b["fin"] - esperado) > 0.01 and not al_borde:
                 J.mal("R", pref, f"la tecla {tecla}: fin {a['fin']:.2f} -> {b['fin']:.2f} y tenia que ir a {esperado:.2f} (I-06)")
         # I-07: el menu del eje de precio y lo que cambia cada opcion
         await v.clic(*L(xe, ym), boton="right")
@@ -1051,61 +1054,71 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
 
 
 async def recorrido_color(v: Vista, out: dict, ctx: dict, paso, L, g0: dict, xm: float, ym: float) -> None:
-    """F-04: con la referencia «lo que se ve», desplazarse cambia la intensidad de una misma celda; con «su sesion», no.
-    El paso de cada celda pintada se recalcula en cada cosecha (juzga_footprint); aqui, que el corchete se ejercite."""
+    """F-04: con la referencia «lo que se ve», cambiar lo que se ve cambia la intensidad de una misma celda; con «su
+    sesion», no. Lo que se ve cambia primero ACERCANDO el tiempo anclado a la ultima vela (se van las viejas) y, si eso no
+    basta, dos velas atras (se van las nuevas: una vela enorme al final fija el p98 y acercar no lo mueve). Las comunes son
+    asi las recientes, que caben en la ventana del precio aunque el mercado corra: desplazarse media pantalla las dejaba
+    fuera con una caida de 600 USD en 7 min. El paso de cada celda pintada se recalcula en cada cosecha
+    (juzga_footprint); aqui, que el corchete se ejercite."""
     J, pref = ctx["J"], ctx["pref"]
-    resultados = {}
-    diag = ""
-    # el precio, alejado y quieto (Ctrl+rueda lo deja en MANUAL): asi las velas comunes conservan sus celdas a la vista
-    await v.tecla("End")
-    for _ in range(3):
-        await v.rueda(*L(xm, ym), 600, "ctrl")
+    resultados, diag = {}, {}
+    xu = g0["ancho"] - 10  # junto a la ultima vela
     for ref in ("visible", "sesion"):
+        # Fin, AUTO (doble clic en el eje: el precio centrado en la ultima vela) y el precio alejado (Ctrl+rueda: MANUAL)
+        await v.tecla("End")
+        await v.clic(*L(g0["ancho"] + 30, ym), veces=2)
+        for _ in range(3):
+            await v.rueda(*L(xm, ym), 600, "ctrl")
         await v.clic_en("#m-color > summary")
         await v.clic_en(f"#m-color input[name=ref][value={ref}]")
         await v.s.drena(0.3)
         await v.clic_en("#m-color > summary")
-        for preparacion in range(3):  # sin celdas comunes, se prepara otra vez (Fin y el precio alejado)
-            if preparacion:
-                await v.tecla("End")
-                for _ in range(3):
-                    await v.rueda(*L(xm, ym), 600, "ctrl")
-            a = (await paso(f"referencia {ref}"))["c"]["pin"]
-            # DOS velas atras (desplaza() de la pagina): las comunes son las recientes, las que caben en la ventana del
-            # precio aunque el mercado corra (con media pantalla, una caida de 600 USD en 7 min las dejaba fuera)
-            atras = -100 * 2 / max(1.0, a["ver"] / 10)
-            for intento in range(4):
-                await v.rueda(*L(xm, ym), atras, "shift")
-                b = (await paso(f"referencia {ref} y desplazado {intento + 1}"))["c"]["pin"]
-                ka = {(r["ts"], f["nivel"]): f["paso_color"] for r in a["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
-                kb = {(r["ts"], f["nivel"]): f["paso_color"] for r in b["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
-                comunes = set(ka) & set(kb)
-                resultados[ref] = (len(comunes), sum(ka[k] != kb[k] for k in comunes))
-                diag = (f"antes ver {a['ver']:.1f} fin {a['fin']:.1f} fila {a['escala']['fila']:.1f} modo "
-                        f"{a['escala']['modo']} {len(ka)} celdas; despues ver {b['ver']:.1f} fin {b['fin']:.1f} {len(kb)} celdas; "
-                        f"preparacion {preparacion + 1}")
-                if resultados[ref][1] or not comunes or ref == "sesion":
-                    break
+        a = (await paso(f"referencia {ref}"))["c"]["pin"]
+        ver0 = a["ver"]
+        resultados[ref], diag[ref] = (0, 0), "sin comparar: llegaba una vela en cada intento"
+        for intento in range(6):
+            if intento < 3 and a["ver"] > 5.5:
+                await v.rueda(*L(xu, ym), -300)  # tres muescas: x1.4 menos velas, la ultima quieta
+            else:
+                await v.rueda(*L(xm, ym), -100 * 2 / max(1.0, a["ver"] / 10), "shift")  # dos velas atras
+            # un solo nombre para los dos gestos: la huella del vivo dice QUE gestos, y cual hace falta es del mercado
+            b = (await paso(f"referencia {ref}, cambia lo que se ve {intento + 1}"))["c"]["pin"]
+            if b.get("n") != a.get("n"):  # llego una vela: cambia el p98 de su sesion; no se compara, se repite
                 a = b
-            if resultados[ref][0]:
+                continue
+            ka ={(r["ts"], f["nivel"]): f["paso_color"] for r in a["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
+            kb = {(r["ts"], f["nivel"]): f["paso_color"] for r in b["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
+            comunes = set(ka) & set(kb)
+            resultados[ref] = (len(comunes), sum(ka[k] != kb[k] for k in comunes))
+            diag[ref] = (f"antes ver {a['ver']:.1f} fin {a['fin']:.1f} fila {a['escala']['fila']:.1f} modo "
+                         f"{a['escala']['modo']} {len(ka)} celdas; despues ver {b['ver']:.1f} fin {b['fin']:.1f} {len(kb)} "
+                         f"celdas, intento {intento + 1}")
+            if resultados[ref][1] or not comunes or ref == "sesion":
                 break
-        await v.tecla("End")
+            a = b
+        for _ in range(4):  # lo que se ve, otra vez como estaba
+            if b["ver"] >= ver0 - 0.5:
+                break
+            await v.rueda(*L(xu, ym), 300)
+            b = (await paso(f"referencia {ref} y alejado"))["c"]["pin"]
     if resultados["sesion"][1]:
-        J.mal("E", pref, f"con la referencia de la sesion, desplazarse cambio el color de {resultados['sesion'][1]} celdas (F-04)")
+        J.mal("E", pref, f"con la referencia de la sesion, acercar el tiempo cambio el color de {resultados['sesion'][1]} "
+                         f"celdas (F-04)")
     if not resultados["sesion"][0]:
-        ctx["nomed"].append(f"(E) {pref} F-04 «su sesion» ({diag}): tras desplazarse no quedo ninguna celda comun, el "
-                            f"corchete no se ejercito")
+        ctx["nomed"].append(f"(E) {pref} F-04 «su sesion» ({diag['sesion']}): no quedo ninguna celda comun, el corchete no "
+                            f"se ejercito")
     if not resultados["visible"][1]:
-        ctx["nomed"].append(f"(E) {pref} F-04 «lo que se ve» ({diag}): desplazarse no cambio el p98 de lo visible en "
+        ctx["nomed"].append(f"(E) {pref} F-04 «lo que se ve» ({diag['visible']}): cambiar lo que se ve no cambio el color de "
                             f"ninguna de {resultados['visible'][0]} celdas comunes, el corchete no se ejercito")
     await v.clic_en("#m-color > summary")
     await v.clic_en("#m-color input[name=ref][value=vela]")
     await v.clic_en("#m-color > summary")
+    await v.tecla("End")
     await v.clic(*L(g0["ancho"] + 30, ym), veces=2)
     out["pasos"].append({"gesto": "F-04", "resultados": resultados})
-    J.info.append(f"{pref} F-04: desplazarse con la referencia «lo que se ve» cambio el color de {resultados['visible'][1]} de "
-                  f"{resultados['visible'][0]} celdas comunes; con «su sesion», de {resultados['sesion'][1]} de "
-                  f"{resultados['sesion'][0]}")
+    J.info.append(f"{pref} F-04: cambiar lo que se ve con la referencia «lo que se ve» cambio el color de "
+                  f"{resultados['visible'][1]} de {resultados['visible'][0]} celdas comunes; con «su sesion», de "
+                  f"{resultados['sesion'][1]} de {resultados['sesion'][0]}")
 
 
 async def recorrido_regla(v: Vista, out: dict, ctx: dict, L, xm: float, ym: float, g0: dict, pref: str) -> None:

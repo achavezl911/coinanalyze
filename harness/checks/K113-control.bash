@@ -165,14 +165,14 @@ echo "== el check: A89 los dos modos de SIGPIPE, A56 las tres invocaciones"
 ENV=(K113_BASE="http://127.0.0.1:$P1" "K113_DB=$(dsn "$DB")" "K113_HASTA=$HASTA")
 for modo in --ignore-signal=PIPE --default-signal=PIPE; do
   env $modo "${ENV[@]}" bash "$CHK" > "$T/chk" 2>&1; rc=$?
-  comprueba "sigpipe$modo" "$([ "$rc" = 0 ] && head -1 "$T/chk" | grep -q '^VERDE  K113' && ! grep -qi 'broken pipe' "$T/chk" && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/chk" | cut -c1-80) $(grep -m1 '^   · (' "$T/chk" | cut -c1-150)"
+  comprueba "sigpipe$modo" "$([ "$rc" = 0 ] && head -1 "$T/chk" | grep -q '^VERDE  K113' && ! grep -qi 'broken pipe' "$T/chk" && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/chk" | cut -c1-80) $(grep -m1 '^   · (' "$T/chk" | cut -c1-400)"
 done
 (env "${ENV[@]}" bash "$CHK" > "$T/chk" 2>&1); rc=$?
-comprueba invocacion_absoluta "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/chk" | cut -c1-80) $(grep -m1 '^   · (' "$T/chk" | cut -c1-150)"
+comprueba invocacion_absoluta "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/chk" | cut -c1-80) $(grep -m1 '^   · (' "$T/chk" | cut -c1-400)"
 (cd "$REPO" && env "${ENV[@]}" bash harness/checks/K113-el-raton-y-el-aspecto.sh > "$T/chk" 2>&1); rc=$?
-comprueba invocacion_relativa "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/chk" | cut -c1-80) $(grep -m1 '^   · (' "$T/chk" | cut -c1-150)"
+comprueba invocacion_relativa "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/chk" | cut -c1-80) $(grep -m1 '^   · (' "$T/chk" | cut -c1-400)"
 (cd /tmp && env "${ENV[@]}" bash "$CHK" > "$T/chk" 2>&1); rc=$?
-comprueba invocacion_ajena "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/chk" | cut -c1-80) $(grep -m1 '^   · (' "$T/chk" | cut -c1-150)"
+comprueba invocacion_ajena "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc · $(head -1 "$T/chk" | cut -c1-80) $(grep -m1 '^   · (' "$T/chk" | cut -c1-400)"
 
 echo "== restaurado"
 FIN=$(escenario)
