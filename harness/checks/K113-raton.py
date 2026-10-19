@@ -1071,9 +1071,11 @@ async def recorrido_color(v: Vista, out: dict, ctx: dict, paso, L, g0: dict, xm:
                 for _ in range(3):
                     await v.rueda(*L(xm, ym), 600, "ctrl")
             a = (await paso(f"referencia {ref}"))["c"]["pin"]
-            media = -100 * max(1.0, a["ver"] / 2) / max(1.0, a["ver"] / 10)  # media pantalla atras (desplaza() de la pagina)
+            # DOS velas atras (desplaza() de la pagina): las comunes son las recientes, las que caben en la ventana del
+            # precio aunque el mercado corra (con media pantalla, una caida de 600 USD en 7 min las dejaba fuera)
+            atras = -100 * 2 / max(1.0, a["ver"] / 10)
             for intento in range(4):
-                await v.rueda(*L(xm, ym), media, "shift")
+                await v.rueda(*L(xm, ym), atras, "shift")
                 b = (await paso(f"referencia {ref} y desplazado {intento + 1}"))["c"]["pin"]
                 ka = {(r["ts"], f["nivel"]): f["paso_color"] for r in a["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
                 kb = {(r["ts"], f["nivel"]): f["paso_color"] for r in b["velas"] for f in r["niveles"] if f["paso_color"] >= 0}
@@ -1091,11 +1093,11 @@ async def recorrido_color(v: Vista, out: dict, ctx: dict, paso, L, g0: dict, xm:
     if resultados["sesion"][1]:
         J.mal("E", pref, f"con la referencia de la sesion, desplazarse cambio el color de {resultados['sesion'][1]} celdas (F-04)")
     if not resultados["sesion"][0]:
-        ctx["nomed"].append(f"(E) {pref} F-04: con «su sesion», tras desplazarse no quedo ninguna celda comun: el corchete no se "
-                            f"ejercito ({diag})")
+        ctx["nomed"].append(f"(E) {pref} F-04 «su sesion» ({diag}): tras desplazarse no quedo ninguna celda comun, el "
+                            f"corchete no se ejercito")
     if not resultados["visible"][1]:
-        ctx["nomed"].append(f"(E) {pref} F-04: con «lo que se ve», desplazarse no cambio el p98 de lo visible en ninguna de "
-                            f"{resultados['visible'][0]} celdas comunes: el corchete no se ejercito ({diag})")
+        ctx["nomed"].append(f"(E) {pref} F-04 «lo que se ve» ({diag}): desplazarse no cambio el p98 de lo visible en "
+                            f"ninguna de {resultados['visible'][0]} celdas comunes, el corchete no se ejercito")
     await v.clic_en("#m-color > summary")
     await v.clic_en("#m-color input[name=ref][value=vela]")
     await v.clic_en("#m-color > summary")
