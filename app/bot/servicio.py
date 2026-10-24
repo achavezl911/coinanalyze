@@ -111,6 +111,24 @@ class Formato(logging.Formatter):
         return limpia(super().format(record))
 
 
+def _sin_nul(x):
+    if isinstance(x, str):
+        return x.replace("\x00", "")
+    if isinstance(x, dict):
+        return {k: _sin_nul(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return [_sin_nul(v) for v in x]
+    return x
+
+
+def js(x) -> str:
+    """El JSON que el bot y el interruptor ESCRIBEN en la base. La de 140 es SQL_ASCII (medido el 2026-10-24): jsonb rechaza
+    ahi los escapes \\u de todo lo que no es ASCII (tildes, «·», comillas angulares), que es lo que json.dumps pone por
+    omision; los bytes UTF-8 tal cual (ensure_ascii=False) entran y se leen iguales. Y sin NUL, que no entra en ninguna."""
+    s = json.dumps(x, ensure_ascii=False)
+    return s if "\\u0000" not in s else json.dumps(_sin_nul(x), ensure_ascii=False)
+
+
 def causa(e: BaseException) -> str:
     """El nombre de la causa de un error, para el journal y /estado."""
     if isinstance(e, (asyncpg.PostgresError, asyncpg.InterfaceError)):
@@ -171,8 +189,9 @@ def mensaje(tarea: str, *, dec: dict, ctx: dict, posicion: dict | None = None, a
             pregunta: str | None = None) -> str:
     """El mensaje de una ruta (lo que va despues de la parte ESTABLE): el bot y app/bot/mide.py lo construyen igual."""
     partes = [f"TAREA: {tarea}"] + ([f"ALERTA: {alerta}"] if alerta else []) + ([f"PREGUNTA: {pregunta}"] if pregunta else [])
-    partes += [f"POSICION: {json.dumps(posicion)}"] if posicion is not None else []
-    return "\n".join(partes + [f"DATOS DECIDE: {json.dumps(dec)}", f"DATOS SOBRE: {json.dumps(ctx, separators=(',', ':'))}"])
+    partes += [f"POSICION: {json.dumps(posicion, ensure_ascii=False)}"] if posicion is not None else []
+    return "\n".join(partes + [f"DATOS DECIDE: {json.dumps(dec, ensure_ascii=False)}",
+                                f"DATOS SOBRE: {json.dumps(ctx, ensure_ascii=False, separators=(',', ':'))}"])
 
 
 def esfuerzos(entorno: dict) -> tuple[dict, list[str]]:
@@ -259,7 +278,7 @@ class Bot:
         self.estado = {
             "arranque": ahora_iso(), "version": os.path.basename(os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))),
             "telegram": "ok" if self.tg else "sin Telegram (faltan TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID)",
-            "bybit": {"activo": False, "solo_lectura": None, "ip_ok": None, "ips": None,
+            "bybit": {"activo": False, "solo_lectura": None, "ip_ok": None, "ips": None, "ip_salida": self.ip,
                       "error": None if self.bybit else "sin BYBIT_API_KEY/BYBIT_API_SECRET"},
             "anthropic": {"clave": bool(e.get("ANTHROPIC_API_KEY")), "tope_usd": self.tope, "esfuerzo": self.esfuerzo},
             "datos": None, "api": None, "validacion": None, "informe": None, "errores": {},
@@ -278,7 +297,7 @@ class Bot:
         await self.db.execute(
             "INSERT INTO bot_evento (tipo, symbol, minuto, lado, clase, enviada, detalle)"
             " VALUES ($1, $2, to_timestamp($3::bigint * 60), $4, $5, $6, $7::jsonb) ON CONFLICT DO NOTHING",
-            tipo, activo, minuto, lado, clase, enviada, json.dumps(detalle or {}))
+            tipo, activo, minuto, lado, clase, enviada, js(detalle or {}))
 
     async def gastado_hoy(self) -> float:
         return float(await self.db.fetchval(
@@ -306,7 +325,7 @@ class Bot:
         self.estado["anthropic"]["gastado_hoy_usd"] = round(await self.gastado_hoy(), 4)
         await self.db.execute(
             "INSERT INTO bot_estado (clave, ts, estado) VALUES ('bot', now(), $1::jsonb)"
-            " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = excluded.estado", json.dumps(self.estado))
+            " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = excluded.estado", js(self.estado))
 
     async def manda(self, texto: str) -> bool:
         if not self.tg:
@@ -353,7 +372,7 @@ class Bot:
                     "INSERT INTO bot_llamada (motivo, modelo, effort, tokens_entrada, tokens_salida, coste_usd, tope_usd, estimado, detalle)"
                     " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb) RETURNING id",
                     ruta, llm.MODELO, effort, r["entrada"], r["salida"], r["coste"], self.tope, r["estimado"],
-                    json.dumps({"estable": ESTABLE_SHA, "entrada": texto, "respuesta": r["texto"], "error": r["error"],
+                    js({"estable": ESTABLE_SHA, "entrada": texto, "respuesta": r["texto"], "error": r["error"],
                                 "cache": r["cache"], "ms": r["ms"]})))
             if r["error"]:
                 self.anota("TOPE" if r["error"].startswith("tope") else "ANTHROPIC", f"{ruta}: {r['error']}")
@@ -470,7 +489,7 @@ class Bot:
                     " VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8::bigint / 1000.0), $9::jsonb) ON CONFLICT DO NOTHING",
                     str(c.get("orderId") or f"{c.get('symbol')}:{c.get('updatedTime')}"), c.get("symbol"), num("closedSize"),
                     num("avgEntryPrice"), num("avgExitPrice"), num("closedPnl"), num("leverage"),
-                    int(c.get("updatedTime") or c.get("createdTime") or 0), json.dumps(c))).split()[-1])
+                    int(c.get("updatedTime") or c.get("createdTime") or 0), js(c))).split()[-1])
             cursor = res.get("nextPageCursor")
             if not cursor:
                 break
@@ -511,7 +530,7 @@ class Bot:
         await self.db.execute(
             "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, veredicto_decide, detalle)"
             " VALUES ('veredicto', $1, $2, $3, $4::jsonb)",
-            p["id"], v, v_dec, json.dumps({"motivo": motivo, "fuente": fuente, "posicion": p, "horas": horas,
+            p["id"], v, v_dec, js({"motivo": motivo, "fuente": fuente, "posicion": p, "horas": horas,
                                            "llamada": llamada, "decide": dec}))
         self.evaluadas[p["id"]] = v
         sesgo = ((dec.get("decide") or {}).get("bias") or {}).get("value")
@@ -530,7 +549,7 @@ class Bot:
         acierto = None if v == "NO EVALUABLE" else (pnl > 0) == (v == "A FAVOR")
         await self.db.execute(
             "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, pnl_usd, acierto, detalle) VALUES ('cierre', $1, $2, $3, $4, $5::jsonb)",
-            i, v, pnl, acierto, json.dumps({"ordenes": [f["orden"] for f in filas]}))
+            i, v, pnl, acierto, js({"ordenes": [f["orden"] for f in filas]}))
         await self.manda(f"CERRADA {activo}: {pnl:+.2f} USD · el veredicto era {v} -> {'sin puntuar' if acierto is None else ('ACIERTO' if acierto else 'FALLO')}")
 
     # ---------- C3, C5 ----------
@@ -596,7 +615,8 @@ class Bot:
         fuentes = ", ".join(f"{k} {edad(x)}" for k, x in f.items()) if isinstance(f, dict) else f
         datos = s["datos"]
         velas = f"velas 1 min: la ultima {datos['ultima_vela']} ({datos['retraso_min']} min de retraso)" if isinstance(datos, dict) else f"velas 1 min: {datos}"
-        bybit = (f"solo lectura e IP ok (leida {str(b.get('leida', '?'))[11:16]}Z)" if b["activo"] else f"APAGADO: {b['error']}")
+        ips = f"IPs de la clave en Bybit: {', '.join(map(str, b['ips'])) if b.get('ips') else 'sin dato'} · 140 sale por {b.get('ip_salida', self.ip)}"
+        bybit = (f"solo lectura e IP ok (leida {str(b.get('leida', '?'))[11:16]}Z) · {ips}" if b["activo"] else f"APAGADO: {b['error']} · {ips}")
         al = s["alertas_24h"]
         errores = ", ".join(f"{k} ({x['ultima'][11:16]}Z: {x['texto'][:60]})" for k, x in s["errores"].items()) or "ninguno"
         return "\n".join([
@@ -699,9 +719,13 @@ class Bot:
             await asyncio.sleep((20 * (periodo == 60) - time.time()) % periodo or periodo)
 
     async def tic_minuto(self):
-        await self.tic_centinela()
-        await self.tic_parte()
-        await self.tic_informe()
+        # cada paso en su try: el 2026-10-24 un parte que no entraba en la base (SQL_ASCII) cortaba el minuto ANTES del
+        # latido, y bot_estado se quedo vacio con el centinela vivo. El latido se escribe siempre.
+        for nombre, paso in (("centinela", self.tic_centinela), ("parte", self.tic_parte), ("informe", self.tic_informe)):
+            try:
+                await paso()
+            except Exception as e:
+                self.anota(causa(e), f"{nombre}: {type(e).__name__} {str(e)[:200]}")
         await self.latido()
 
     async def tic_telegram(self):

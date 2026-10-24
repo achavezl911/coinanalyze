@@ -505,3 +505,159 @@ def test_la_tarea_semanal_lee_el_uso_de_max_y_entrega_sin_lo_que_bin_prod_niega(
     orden = s.orden_entrega("2026-W44.txt", "informe con > y | y tee dentro")
     assert ">" not in orden and " tee " not in f" {orden} " and orden.endswith("/var/lib/coinalyze-bot/informes/2026-W44.txt")
     assert s.TOPE_MAX == 0.40 and (s.MODELO, s.EFFORT) == ("claude-opus-5-5", "xhigh")
+
+
+# --------------------------------------------------------------------------------------------- la base en SQL_ASCII (remate 2)
+# El primer arranque en 140 (2026-10-24 22:01Z): «UntranslatableCharacterError unsupported Unicode escape sequence ...
+# SQL_ASCII». La base de 140 es SQL_ASCII (locale C) y las de prueba eran UTF8: por eso nada lo vio. Estas, si.
+import subprocess  # noqa: E402
+import sys  # noqa: E402
+import urllib.parse  # noqa: E402
+
+NO_ASCII = "señal «cascada» · ¿ha cambiado? — 1 €"
+
+
+@pytest.fixture
+async def base_ascii():
+    """Una base DESECHABLE como la de 140: ENCODING 'SQL_ASCII' TEMPLATE template0, LC C, con sql/schema.sql entero."""
+    dsn = os.environ.get("TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    nombre = f"bot_sqlascii_{uuid.uuid4().hex[:10]}"
+    adm = await asyncpg.connect(dsn)
+    try:
+        await adm.execute(f"CREATE DATABASE {nombre} ENCODING 'SQL_ASCII' TEMPLATE template0 LC_COLLATE 'C' LC_CTYPE 'C'")
+    except asyncpg.InsufficientPrivilegeError:
+        await adm.close()
+        pytest.skip("el rol de las pruebas no puede crear bases")
+    p = urllib.parse.urlsplit(dsn)  # a mano: urlunsplit se come el «//» vacio de postgresql:///db y psql no lo traga
+    dsn_ascii = f"{p.scheme}://{p.netloc}/{nombre}" + (f"?{p.query}" if p.query else "")
+    c = await asyncpg.connect(dsn_ascii)
+    try:
+        assert await c.fetchval("SHOW server_encoding") == "SQL_ASCII"
+        await c.execute((RAIZ / "sql" / "schema.sql").read_text(encoding="utf-8"))
+        yield c, dsn_ascii
+    finally:
+        await c.close()
+        await adm.execute(f"DROP DATABASE IF EXISTS {nombre} WITH (FORCE)")
+        await adm.close()
+
+
+async def test_en_sql_ascii_el_json_de_antes_no_entra_y_el_de_ahora_si(base_ascii):
+    c, _ = base_ascii
+    with pytest.raises(asyncpg.UntranslatableCharacterError):  # lo que paso en 140
+        await c.execute("INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('parte', true, $1::jsonb)", json.dumps({"texto": NO_ASCII}))
+    await c.execute("INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('parte', true, $1::jsonb)", sv.js({"texto": NO_ASCII + "\x00"}))
+    assert await c.fetchval("SELECT detalle->>'texto' FROM bot_evento WHERE tipo = 'parte'") == NO_ASCII
+    assert sv.js({"a": "\x01"}) == '{"a": "\\u0001"}'  # los escapes de ASCII si entran (medido): se dejan
+
+
+async def test_el_bot_y_el_interruptor_escriben_y_leen_cada_tabla_en_sql_ascii(base_ascii, tmp_path):
+    c, _ = base_ascii
+
+    def responde(r):
+        if r.url.path.endswith("/count_tokens"):
+            return httpx.Response(200, json={"input_tokens": 900})
+        return httpx.Response(200, json={"content": [{"type": "text", "text": f"VEREDICTO: A FAVOR\n- {NO_ASCII} [decide.reason.value]"}],
+                                         "usage": {"input_tokens": 900, "output_tokens": 50}})
+    bot = sv.Bot({"ANTHROPIC_API_KEY": "a", "BOT_INFORMES": str(tmp_path)}, c, httpx.AsyncClient(transport=httpx.MockTransport(responde)))
+    bot.anota("BYBIT_IP", "Bybit rechaza la IP de salida de 140 (¿ha cambiado?)")
+    dec = {"decide": {"bias": {"value": "LONG"}, "evaluable": {"value": True}, "reason": {"value": NO_ASCII}}}
+
+    async def sobre(activo):
+        return {"nota": NO_ASCII}, dec
+    bot.sobre = sobre
+    await bot.evalua({"id": "BTCUSDT:Buy:1", "symbol": "BTCUSDT", "lado": 1, "entrada": 110000.0, "liquidacion": None}, "posicion nueva")
+    await bot.evento("parte", None, None, True, detalle={"texto": NO_ASCII})
+
+    class Bybit:
+        async def get(self, ruta, **kw):
+            return {"retCode": 0, "result": {"list": [{"symbol": "BTCUSDT", "orderId": "o-ñ", "closedPnl": "1.5",
+                                                        "updatedTime": "1792400999000", "nota": NO_ASCII}]}}
+    bot.bybit = Bybit()
+    await bot.operaciones()
+    await bot.latido()
+    (tmp_path / f"{sv.semana_iso(AHORA)}.falla").write_text(f"la sesión de Max caducó · {NO_ASCII}", encoding="utf-8")
+
+    async def conecta():
+        return _NoCierra(c)
+    avisos: list = []
+    await vigia.pasada({"TELEGRAM_BOT_TOKEN": "1:p", "TELEGRAM_CHAT_ID": "-1", "BOT_INFORMES": str(tmp_path)}, _telegram(avisos),
+                       {"ActiveState": "active"}, conecta, tmp_path / "vigia.json", AHORA)
+    # y se leen de vuelta TAL CUAL, tabla por tabla
+    assert await c.fetchval("SELECT detalle->>'texto' FROM bot_evento WHERE tipo = 'parte'") == NO_ASCII
+    assert await c.fetchval("SELECT detalle->'decide'->'decide'->'reason'->>'value' FROM bot_evaluacion") == NO_ASCII
+    ll = json.loads(await c.fetchval("SELECT detalle FROM bot_llamada"))
+    assert NO_ASCII in ll["respuesta"] and NO_ASCII in ll["entrada"]  # el mensaje viaja sin escapes \u
+    assert tuple(await c.fetchrow("SELECT orden, detalle->>'nota' FROM bot_operacion")) == ("o-ñ", NO_ASCII)
+    estado = json.loads(await c.fetchval("SELECT estado FROM bot_estado WHERE clave = 'bot'"))
+    assert estado["errores"]["BYBIT_IP"]["texto"].endswith("(¿ha cambiado?)")
+    assert "caducó" in await c.fetchval("SELECT estado::text FROM bot_estado WHERE clave = 'vigia'")
+    assert "caducó" in await c.fetchval("SELECT detalle->>'texto' FROM bot_evento WHERE tipo = 'vigia'") and "caducó" in avisos[0]
+
+
+async def test_k117_lee_una_base_sql_ascii_con_tildes(base_ascii, tmp_path):
+    c, dsn = base_ascii
+    b = {"activo": True, "solo_lectura": True, "ip_ok": True, "ips": ["138.186.31.141"], "ip_salida": "138.186.31.141", "error": None}
+    await c.execute("INSERT INTO bot_estado VALUES ('bot', now(), $1::jsonb), ('vigia', now(), $2::jsonb)",
+                    sv.js({"bybit": b, "errores": {"BYBIT_IP": {"texto": NO_ASCII}}}),
+                    sv.js({"problemas": {}, "notificados": {}, "envio": {"ok": None}, "canal": "puente", "nota": NO_ASCII}))
+    h = tmp_path / "h" / "bin"
+    h.mkdir(parents=True)
+    (h / "prodsql").write_text('#!/bin/sh\nexec psql "$K117_DSN" -X -A -F"|" -t -q -v ON_ERROR_STOP=1 -c "$*"\n')
+    (h / "prod").write_text('#!/bin/sh\ncase "$*" in\n'
+                            '  *journalctl*) printf "LINEAS-K117 10\\nFORMAS-K117 0\\nFIN-K117\\n" ;;\n'
+                            '  *coinalyze-bot-vigia.timer*) printf "LoadState=loaded\\nActiveState=active\\nSERVICIO-K117\\nResult=success\\nFIN-K117\\n" ;;\n'
+                            '  *systemctl*) printf "LoadState=loaded\\nActiveState=active\\nSubState=running\\nFIN-K117\\n" ;;\n'
+                            '  *grep*) printf "CODIGO-K117\\nFIN-K117\\n" ;;\nesac\n')
+    r = subprocess.run([sys.executable, "-S", str(RAIZ / "harness" / "checks" / "K117-bot.py")], capture_output=True,
+                       encoding="utf-8", errors="replace", timeout=120,
+                       env={**os.environ, "K117_REPO": str(RAIZ), "K117_HARNESS": str(tmp_path / "h"), "K117_DSN": dsn})
+    salida = r.stdout + r.stderr
+    assert "cayo" not in salida and "latido hace" in salida and "interruptor vivo" in salida, salida[-600:]
+    assert "Bybit de solo lectura y atada a la IP" in salida
+
+
+async def test_un_paso_del_minuto_que_falla_no_se_lleva_el_latido(base, monkeypatch):
+    bot = sv.Bot({}, base, None)
+
+    async def nada():
+        return None
+
+    async def parte_que_falla():
+        raise asyncpg.UntranslatableCharacterError("unsupported Unicode escape sequence")
+    monkeypatch.setattr(bot, "tic_centinela", nada)
+    monkeypatch.setattr(bot, "tic_parte", parte_que_falla)
+    await bot.tic_minuto()
+    estado = json.loads(await base.fetchval("SELECT estado FROM bot_estado WHERE clave = 'bot'"))
+    assert estado["errores"]["BASE"]["texto"].startswith("parte: UntranslatableCharacterError")
+
+
+def test_el_estado_de_bybit_dice_las_ips_de_la_clave_y_la_de_salida():
+    j = bb.juzga_clave(_clave(ips=["1.2.3.4", "5.6.7.8"]), "138.186.31.141")
+    assert j["ip_salida"] == "138.186.31.141" and j["ips"] == ["1.2.3.4", "5.6.7.8"]
+    assert j["error"] == "la clave no esta atada a 138.186.31.141 (Bybit tiene atadas: 1.2.3.4, 5.6.7.8)"
+    assert "ninguna" in bb.juzga_clave(_clave(ips=[]), "138.186.31.141")["error"]
+    assert "cualquier IP (*)" in bb.juzga_clave(_clave(ips=["*"]), "138.186.31.141")["error"]
+    assert bb.juzga_clave({"retCode": 10010}, "138.186.31.141")["ip_salida"] == "138.186.31.141"
+
+
+class _BaseQueRechaza(_NoCierra):
+    """Como 140 el 2026-10-24: el registro del aviso no entra (UntranslatableCharacterError)."""
+
+    async def execute(self, sql, *args):
+        if "INSERT INTO bot_evento" in sql or "INSERT INTO bot_estado" in sql:
+            raise asyncpg.UntranslatableCharacterError("unsupported Unicode escape sequence")
+        return await self.c.execute(sql, *args)
+
+
+async def test_si_la_base_no_registra_el_aviso_el_interruptor_no_lo_repite(base, tmp_path, capsys):
+    async def conecta():
+        return _BaseQueRechaza(base)
+    entorno = {"TELEGRAM_BOT_TOKEN": "123:puente", "TELEGRAM_CHAT_ID": "-100", "BOT_INFORMES": str(tmp_path)}
+    vivo = {"ActiveState": "active", "SubState": "running", "Result": "success"}
+    enviados: list = []
+    for minutos in (0, 5, 10):  # el bot no ha latido nunca: un problema que dura
+        p = await vigia.pasada(entorno, _telegram(enviados), vivo, conecta, tmp_path / "estado.json", AHORA.replace(hour=12) + timedelta(minutes=minutos))
+    assert len(enviados) == 1 and "latido" in p["notificados"]  # antes de este arreglo: un aviso cada 5 min
+    assert capsys.readouterr().out.count("CAUSA=VIGIA_BASE UntranslatableCharacterError") >= 3

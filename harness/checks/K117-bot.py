@@ -37,8 +37,10 @@ dichos: list[str] = []
 
 
 def corre(prog: str, orden: str) -> tuple[int, str, str]:
-    r = subprocess.run(["sh", f"{B}/bin/{prog}", orden], capture_output=True, text=True, timeout=120,
-                       env={**os.environ, "TODO": "1"})
+    # UTF-8 explicito: la base de 140 es SQL_ASCII y psql devuelve los bytes UTF-8 del bot tal cual (tildes en el estado);
+    # con text=True a secas la decodificacion dependeria del locale de quien corra el check
+    r = subprocess.run(["sh", f"{B}/bin/{prog}", orden], capture_output=True, text=True, encoding="utf-8", errors="replace",
+                       timeout=120, env={**os.environ, "TODO": "1"})
     return r.returncode, r.stdout, r.stderr
 
 
