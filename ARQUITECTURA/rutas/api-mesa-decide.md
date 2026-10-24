@@ -206,7 +206,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K102-decide-lo-primero.sh:83`, `harness/checks/K102-decide-lo-primero.sh:107`, `harness/checks/K102-decide-lo-primero.sh:109`, `harness/checks/K102-decide-lo-primero.sh:114` _(+10)_ | `harness/checks/K102-decide-lo-primero.sh:38`, `harness/checks/K102-mesa.py:667`, `harness/checks/K102-mesa.py:677`, `harness/checks/K102-mesa.py:881` _(+2)_ |
-| **tests** | `tests/js/mesa_decide.test.js:275`, `tests/js/mesa_remate.test.js:28`, `tests/test_bot.py:312` | `tests/js/mesa_decide.test.js:30` |
+| **tests** | `tests/js/mesa_decide.test.js:275`, `tests/js/mesa_remate.test.js:28`, `tests/test_bot.py:326` | `tests/js/mesa_decide.test.js:30` |
 
 **No la llama el panel**, pero si 17 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.

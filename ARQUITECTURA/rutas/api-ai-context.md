@@ -395,7 +395,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **panel** | `static/js/02-canal.js:35`, `static/js/02-canal.js:49`, `static/js/02-canal.js:53`, `static/js/10-contexto-y-estructura.js:918` _(+8)_ | — |
 | **panel-html** | `static/index.html:85` | — |
 | **readme** | — | `README.md:62`, `README.md:418`, `README.md:522` |
-| **tests** | `tests/test_bot.py:309` | `tests/test_metrics_endpoint.py:222`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:115`, `tests/test_pr22_cvd_semantics.py:1198` |
+| **tests** | `tests/test_bot.py:323` | `tests/test_metrics_endpoint.py:222`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:115`, `tests/test_pr22_cvd_semantics.py:1198` |
 
 **La llama el panel: es superficie de producto.**
 
