@@ -283,3 +283,62 @@ async def test_el_centinela_registra_cada_rafaga_una_vez_y_el_registro_es_solo_a
     await base.execute("INSERT INTO bot_llamada (motivo, modelo, effort, tokens_entrada, tokens_salida, coste_usd, tope_usd)"
                        " VALUES ('pregunta', 'claude-opus-5-5', 'xhigh', 1, 1, 0.25, 3)")
     assert await bot.gastado_hoy() == pytest.approx(0.25)
+
+
+def _mundo(posiciones: list[list[dict]], vistas: list):
+    """Bybit, la API local y Anthropic de mentira; position/list devuelve posiciones[k] en su k-esima llamada."""
+    n = {"pos": 0}
+
+    def responde(r: httpx.Request) -> httpx.Response:
+        vistas.append(f"{r.method} {r.url.host}{r.url.path}")
+        p = r.url.path
+        if p == "/v5/user/query-api":
+            return httpx.Response(200, json=_clave())
+        if p == "/v5/position/list":
+            k = min(n["pos"], len(posiciones) - 1)
+            n["pos"] += 1
+            return httpx.Response(200, json={"retCode": 0, "result": {"list": posiciones[k]}})
+        if p == "/v5/market/risk-limit":
+            return httpx.Response(200, json={"retCode": 0, "result": {"list": TRAMOS["BTCUSDT"]}})
+        if p == "/v5/position/closed-pnl":
+            return httpx.Response(200, json={"retCode": 0, "result": {"list": [{"closedPnl": "1.5", "updatedTime": "1792400999000"}]}})
+        if p == "/v5/market/instruments-info":
+            return httpx.Response(200, json={"retCode": 0, "result": {"list": [{"lotSizeFilter": {"qtyStep": "0.001"}, "fundingInterval": 480}]}})
+        if p == "/v5/market/tickers":
+            return httpx.Response(200, json={"retCode": 0, "result": {"list": [{"markPrice": "110000", "fundingRate": "0.0001"}]}})
+        if p == "/api/ai/context":
+            assert r.headers["X-Internal-Token"] == "tok"
+            return httpx.Response(200, json={"interpretation_prompt": "ROL", "cvd_matrix": {"5m": 1}})
+        if p == "/api/mesa/decide":
+            return httpx.Response(200, json={"decide": {"bias": {"value": "LONG"}, "evaluable": {"value": True}}})
+        if p.endswith("/count_tokens"):
+            assert "interpretation_prompt" not in r.content.decode()  # sus reglas no viajan
+            return httpx.Response(200, json={"input_tokens": 1000})
+        if p == "/v1/messages":
+            return httpx.Response(200, json={"content": [{"type": "text", "text": "VEREDICTO: A FAVOR\n- CVD a favor [cvd_matrix.5m]"}],
+                                             "usage": {"input_tokens": 1000, "output_tokens": 500}})
+        raise AssertionError(f"ruta no prevista: {r.url}")
+    return httpx.AsyncClient(transport=httpx.MockTransport(responde))
+
+
+async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
+    pos = {"symbol": "BTCUSDT", "side": "Buy", "size": "0.004", "avgPrice": "110000", "markPrice": "109900", "leverage": "50",
+           "liqPrice": "108163", "stopLoss": "109340", "takeProfit": "112200", "positionIM": "8.8", "createdTime": "1792400000000"}
+    vistas: list = []
+    entorno = {"BYBIT_API_KEY": "k", "BYBIT_API_SECRET": "s", "ANTHROPIC_API_KEY": "a", "API_INTERNAL_TOKEN": "tok"}
+    bot = sv.Bot(entorno, base, _mundo([[pos], []], vistas))
+    await bot.tic_bybit()  # la clave, la posicion nueva, su evaluacion
+    (v,) = await base.fetch("SELECT tipo, posicion, veredicto, veredicto_decide, detalle FROM bot_evaluacion")
+    assert (v["tipo"], v["posicion"], v["veredicto"], v["veredicto_decide"]) == ("veredicto", "BTCUSDT:Buy:1792400000000", "A FAVOR", "A FAVOR")
+    assert json.loads(v["detalle"])["fuente"] == "opus"
+    assert await base.fetchval("SELECT coste_usd FROM bot_llamada") == pytest.approx(1000 * 4e-6 + 500 * 20e-6)
+    assert not any("/v5/order" in x or x.startswith("POST api.bybit") for x in vistas)
+    otro = sv.Bot(entorno, base, _mundo([[pos]], []))  # un reinicio con la posicion abierta: no se re-evalua ni se paga
+    await otro.carga()
+    await otro.tic_bybit()
+    assert list(otro.evaluadas) == ["BTCUSDT:Buy:1792400000000"]
+    assert await base.fetchval("SELECT count(*) FROM bot_evaluacion") == 1 and await base.fetchval("SELECT count(*) FROM bot_llamada") == 1
+    await bot.tic_bybit()  # cerrada: se puntua
+    c = await base.fetchrow("SELECT veredicto, pnl_usd, acierto FROM bot_evaluacion WHERE tipo = 'cierre'")
+    assert tuple(c) == ("A FAVOR", 1.5, True) and bot.evaluadas == {}
+    assert "liquidacion" in await otro.calcula("/calc btc 110000") and "AVISO: la perdida al stop" in await otro.calcula("/calc btc")
