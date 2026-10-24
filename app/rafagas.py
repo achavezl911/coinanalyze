@@ -48,8 +48,10 @@ class Umbrales:
     DECIDE: int = 3  # minutos para clasificar
 
 
-# PROVISIONAL hasta el commit del ajuste.
-UMBRALES = Umbrales(W=3, Z=5.0, M=3.0, D=0.25, G=0.5)
+# CONGELADOS el 2026-10-24 antes de mirar la prueba: el punto elegido de 144 en el ajuste 2026-03-01..08-31
+# (`scripts/rafagas_estudio.py ajuste`, muestra d62b7618617f8de4): 276 rafagas, 108 CASCADAS, 33 BARRIDOS, la
+# politica CASCADA->(a) / BARRIDO->(c) a +0.0131 % neto por operacion. Z=7 es el BORDE de la rejilla.
+UMBRALES = Umbrales(W=5, Z=7.0, M=2.0, D=0.25, G=0.5)
 
 
 @dataclass(frozen=True)
