@@ -58,7 +58,7 @@ def posiciones(d: dict) -> list[dict]:
     for p in (d.get("result") or {}).get("list") or []:
         if float(p.get("size") or 0) <= 0:
             continue
-        num = lambda k: float(p[k]) if p.get(k) not in (None, "") else None  # noqa: E731
+        num = lambda k, p=p: float(p[k]) if p.get(k) not in (None, "") else None  # noqa: E731
         out.append({
             "id": f"{p['symbol']}:{p['side']}:{p.get('createdTime', '')}",
             "symbol": p["symbol"], "lado": 1 if p["side"] == "Buy" else -1, "cantidad": num("size"),

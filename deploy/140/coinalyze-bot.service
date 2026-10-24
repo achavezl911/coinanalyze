@@ -1,0 +1,43 @@
+# BOT-2 · el bot de Telegram (app/bot). Como coinalyze-libro: PartOf hace que el `systemctl stop` de la API del despliegue
+# lo pare y WantedBy que el `start` lo arranque; no esta en SERVICES (deploy/140/deploy-coinalyze:27) y no hace falta.
+# La instala el OPERADOR una vez (la instruccion exacta esta en la entrega de BOT-2).
+# Usuario coinalyze-ai (uid 997), decidido por Alejandro. Medido el 2026-10-24: /opt/coinalyze y el release son
+# root:coinalyze 750 y coinalyze-ai no esta en ese grupo -> SupplementaryGroups=coinalyze para leer el codigo; y como
+# /etc/coinalyze/coinalyze.env es root:coinalyze 640, InaccessiblePaths lo esconde: el bot no ve las claves de la app.
+# Las suyas llegan por EnvironmentFile, que systemd lee como root antes de bajar de usuario (el fichero sigue root 600).
+[Unit]
+Description=Coinalyze bot (BOT-2): centinela BTC/ETH/SOL, evaluacion de la operacion de Bybit, calculadora y preguntas por Telegram
+After=network-online.target postgresql.service coinalyze-api.service
+Wants=network-online.target
+PartOf=coinalyze-api.service
+
+[Service]
+Type=simple
+User=coinalyze-ai
+Group=coinalyze-ai
+SupplementaryGroups=coinalyze
+WorkingDirectory=/opt/coinalyze/current
+EnvironmentFile=/etc/coinalyze-bot/secretos.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/coinalyze/current/.venv/bin/python -m app.bot
+Restart=on-failure
+RestartSec=30s
+TimeoutStopSec=30s
+MemoryMax=256M
+CPUQuota=25%
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+InaccessiblePaths=/etc/coinalyze -/var/backups/coinalyze
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+
+[Install]
+WantedBy=coinalyze-api.service

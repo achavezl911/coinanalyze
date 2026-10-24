@@ -27,9 +27,8 @@ import asyncpg
 import httpx
 
 from app.bot import bybit as bb
-from app.bot import calc
+from app.bot import calc, llm
 from app.bot import centinela as cen
-from app.bot import llm
 
 log = logging.getLogger("app.bot")
 SECRETOS = ("ANTHROPIC_API_KEY", "BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_BOT_TOKEN", "API_INTERNAL_TOKEN")
