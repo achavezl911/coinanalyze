@@ -118,20 +118,32 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
         print(f"aviso {'enviado' if ok else 'NO enviado'}: {texto.splitlines()[0]}", flush=True)
         if not ok:
             break  # lo no avisado se queda fuera de notificados: se reintenta en la siguiente pasada
-        if db is not None:
-            await db.execute("INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('vigia', true, $1::jsonb)", js({"texto": texto}))
         if texto.startswith("INTERRUPTOR del bot (coinalyze-bot)"):
             notificados |= nuevos
         else:
             notificados = {k: v for k, v in notificados.items() if k not in resueltos}
+        # lo avisado va al fichero ANTES de tocar la base: en 140 (2026-10-24) el registro del aviso no entraba (SQL_ASCII),
+        # la pasada moria sin guardar y el aviso se repetia cada 5 min
+        estado_f.write_text(js({**previo, "notificados": notificados, "envio": envio}))
+        await en_la_base(db, "INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('vigia', true, $1::jsonb)", js({"texto": texto}))
     publica = {"ts": ahora.isoformat(), "problemas": actuales, "notificados": notificados, "envio": envio,
                "canal": "puente" if token and chat else "sin canal"}
     estado_f.write_text(js(publica))
     if db is not None:
-        await db.execute("INSERT INTO bot_estado (clave, ts, estado) VALUES ('vigia', $1, $2::jsonb)"
-                         " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = excluded.estado", ahora, js(publica))
+        await en_la_base(db, "INSERT INTO bot_estado (clave, ts, estado) VALUES ('vigia', $1, $2::jsonb)"
+                             " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = excluded.estado", ahora, js(publica))
         await db.close()
     return publica
+
+
+async def en_la_base(db, sql: str, *args) -> None:
+    """Una escritura del interruptor que, si falla, se dice (CAUSA=VIGIA_BASE) y no lo tumba: su trabajo es avisar."""
+    if db is None:
+        return
+    try:
+        await db.execute(sql, *args)
+    except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
+        print(f"CAUSA=VIGIA_BASE {type(e).__name__} {limpia(str(e))[:160]}", flush=True)
 
 
 async def principal():

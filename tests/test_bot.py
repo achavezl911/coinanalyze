@@ -640,3 +640,24 @@ def test_el_estado_de_bybit_dice_las_ips_de_la_clave_y_la_de_salida():
     assert "ninguna" in bb.juzga_clave(_clave(ips=[]), "138.186.31.141")["error"]
     assert "cualquier IP (*)" in bb.juzga_clave(_clave(ips=["*"]), "138.186.31.141")["error"]
     assert bb.juzga_clave({"retCode": 10010}, "138.186.31.141")["ip_salida"] == "138.186.31.141"
+
+
+class _BaseQueRechaza(_NoCierra):
+    """Como 140 el 2026-10-24: el registro del aviso no entra (UntranslatableCharacterError)."""
+
+    async def execute(self, sql, *args):
+        if "INSERT INTO bot_evento" in sql or "INSERT INTO bot_estado" in sql:
+            raise asyncpg.UntranslatableCharacterError("unsupported Unicode escape sequence")
+        return await self.c.execute(sql, *args)
+
+
+async def test_si_la_base_no_registra_el_aviso_el_interruptor_no_lo_repite(base, tmp_path, capsys):
+    async def conecta():
+        return _BaseQueRechaza(base)
+    entorno = {"TELEGRAM_BOT_TOKEN": "123:puente", "TELEGRAM_CHAT_ID": "-100", "BOT_INFORMES": str(tmp_path)}
+    vivo = {"ActiveState": "active", "SubState": "running", "Result": "success"}
+    enviados: list = []
+    for minutos in (0, 5, 10):  # el bot no ha latido nunca: un problema que dura
+        p = await vigia.pasada(entorno, _telegram(enviados), vivo, conecta, tmp_path / "estado.json", AHORA.replace(hour=12) + timedelta(minutes=minutos))
+    assert len(enviados) == 1 and "latido" in p["notificados"]  # antes de este arreglo: un aviso cada 5 min
+    assert capsys.readouterr().out.count("CAUSA=VIGIA_BASE UntranslatableCharacterError") >= 3
