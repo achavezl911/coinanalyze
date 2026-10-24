@@ -75,11 +75,17 @@ def main() -> int:
         if len(d) > 20:
             print(f"   - ... y {len(d) - 20} diferencias mas")
         return 1
+    # los controles van delante: verify cita 70 caracteres, y un control que no se ve no puede quedar fuera
     n = {v: len(r[v]["eventos"]) for v in ("sin_liq", "con_liq")}
-    ctl = ", ".join(f"{c['control'].lower()} {'vista' if c['visto'] else 'NO vista'}" for c in r["sin_liq"]["control"])
-    print(f"VERDE  K116 · la muestra {h[:12]} da los {n['sin_liq']} eventos sin liquidaciones y {n['con_liq']} con "
-          f"ellas, sus clases y las tablas de la entrega ({r['prueba'][0]}..{r['prueba'][1]}, {r['dias']} dias); "
-          f"controles del {r['quitado']}: {ctl}")
+    vistos = [c["visto"] for v in ("sin_liq", "con_liq") for c in r[v]["control"]]
+    ctl = "controles del 10-20 VISTOS" if all(vistos) else f"controles del 10-20 vistos {sum(vistos)} de {len(vistos)}"
+    print(f"VERDE  K116 · {ctl} · la muestra {h[:12]} da los {n['sin_liq']} eventos sin liquidaciones y "
+          f"{n['con_liq']} con ellas, sus clases y las tablas de la entrega ({r['prueba'][0]}..{r['prueba'][1]}, "
+          f"{r['dias']} dias)")
+    for v in ("sin_liq", "con_liq"):
+        for c in r[v]["control"]:
+            print(f"   - {v} {c['control']} {c['franja'][0]}..{c['franja'][1][11:]}: "
+                  f"{'visto' if c['visto'] else 'NO visto'} {c['eventos']}")
     return 0
 
 
