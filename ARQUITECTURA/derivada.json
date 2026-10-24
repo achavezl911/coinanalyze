@@ -33347,7 +33347,9 @@
           ]
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/test_bot.py:309"
+          ],
           "menciones": [
             "tests/test_metrics_endpoint.py:222",
             "tests/test_orderbook_frescura.py:116",
@@ -33358,7 +33360,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 47,
+        "n_llamadas": 48,
         "n_menciones": 21,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -39579,7 +39581,8 @@
         "tests": {
           "llamadas": [
             "tests/js/mesa_decide.test.js:275",
-            "tests/js/mesa_remate.test.js:28"
+            "tests/js/mesa_remate.test.js:28",
+            "tests/test_bot.py:312"
           ],
           "menciones": [
             "tests/js/mesa_decide.test.js:30"
@@ -39588,7 +39591,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 16,
+        "n_llamadas": 17,
         "n_menciones": 7,
         "sin_ninguno": false,
         "solo_mencion": false
