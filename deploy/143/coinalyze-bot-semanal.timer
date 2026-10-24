@@ -1,0 +1,12 @@
+# BOT-2 remate 1 · los lunes a las 12:00Z (06:00 en Ciudad de Mexico), antes del parte de las 13:00Z, que dice si llego.
+# Persistent: si 143 estaba apagado a esa hora, corre al arrancar (y si llega tarde, el interruptor ya lo habra dicho).
+[Unit]
+Description=Coinalyze bot (BOT-2): el informe semanal, los lunes
+
+[Timer]
+OnCalendar=Mon *-*-* 12:00:00 UTC
+Persistent=true
+Unit=coinalyze-bot-semanal.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,35 @@
+# BOT-2 remate 1 · el INTERRUPTOR DE HOMBRE MUERTO del bot (app/bot/vigia.py). Lo lanzan coinalyze-bot-vigia.timer (cada
+# 5 min) y el OnFailure= de coinalyze-bot (systemd 257: en CADA caida). Si el bot no late, su unidad cae, la base no
+# contesta o el parte/el informe no salen, AVISA por el bot de Telegram del PUENTE: su EnvironmentFile lo lee systemd como
+# root antes de bajar de usuario; nadie lee ni copia ese fichero. Un aviso al aparecer y otro al resolverse (estado en
+# StateDirectory). La instala el OPERADOR con el temporizador (instruccion en la entrega del remate 1). El puente no se toca.
+# Mismo usuario y mismas dos lineas que el bot: el release es root:coinalyze 750 y coinalyze.env root:coinalyze 640.
+[Unit]
+Description=Coinalyze bot (BOT-2): interruptor de hombre muerto, avisa por el bot del puente si el bot cae
+After=network-online.target postgresql.service
+
+[Service]
+Type=oneshot
+User=coinalyze-ai
+Group=coinalyze-ai
+SupplementaryGroups=coinalyze
+WorkingDirectory=/opt/coinalyze/current
+EnvironmentFile=/etc/coinalyze-ai-bridge/coinalyze-ai-bridge.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/coinalyze/current/.venv/bin/python -m app.bot.vigia
+StateDirectory=coinalyze-bot-vigia
+TimeoutStartSec=120
+MemoryMax=128M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+InaccessiblePaths=/etc/coinalyze -/var/backups/coinalyze
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077

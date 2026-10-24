@@ -1,0 +1,13 @@
+# BOT-2 remate 1 · cada 5 min (al segundo 30), el interruptor de hombre muerto del bot. Independiente del bot y de la API:
+# el despliegue no lo para (un despliegue da un aviso de caida y otro de vuelta, y es verdad).
+[Unit]
+Description=Coinalyze bot (BOT-2): el interruptor cada 5 min
+
+[Timer]
+OnCalendar=*:0/5:30
+AccuracySec=10s
+Persistent=false
+Unit=coinalyze-bot-vigia.service
+
+[Install]
+WantedBy=timers.target

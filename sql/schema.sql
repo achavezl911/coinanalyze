@@ -3191,3 +3191,120 @@ CREATE INDEX IF NOT EXISTS libro_cobertura_ts_idx ON libro_cobertura (ts);
 SELECT ensure_temporal_partitions();
 
 COMMIT;
+
+
+-- =========================================================================================
+-- CAMPANA BOT-2 · EL BOT DE TELEGRAM (y su remate 1, «el bot vigilado»). Bloque ADITIVO (IF NOT EXISTS / OR REPLACE)
+-- para app/bot: tablas NUEVAS, ninguna existente se toca. Ningun nombre lleva digitos (K01a).
+--   bot_evento      SOLO ANADIR. Cada alerta: 'rafaga' (al detectarla) y 'clase' (1-3 min despues) del centinela, una
+--                   por activo y minuto (indice unico parcial: un reinicio no duplica), con las VELAS que vio en detalle;
+--                   'stop', 'liquidacion' y 'sin_stop' de una posicion abierta; 'bybit' cuando cambia el estado de la
+--                   clave; 'arranque' en cada arranque (K117 cuenta las alertas desde el dia del primero); 'parte' (el
+--                   diario, con su texto), 'informe' (el semanal enviado), 'validacion' (la liquidacion de la formula
+--                   contra la de Bybit en una posicion real) y 'vigia' (cada aviso del interruptor). enviada = llego a
+--                   Telegram.
+--   bot_evaluacion  SOLO ANADIR. 'veredicto' de una posicion (A FAVOR / EN CONTRA / NO EVALUABLE, el de Opus o el de
+--                   DECIDE, y el de DECIDE al lado) ANTES de su resultado, con sus entradas; 'cierre' con su pnl y si acerto.
+--   bot_llamada     SOLO ANADIR. Cada llamada a Anthropic: ruta (motivo), esfuerzo, tokens, coste y el tope vigente
+--                   (estimado = cayo sin usage y se apunta el peor caso); detalle: lo que se le mando, lo que contesto,
+--                   la cache y la latencia. El gasto del dia es su suma desde las 00:00Z.
+--   bot_operacion   SOLO ANADIR. Las operaciones CERRADAS de Bybit (closed-pnl, clave de solo lectura), una por orden.
+--   bot_estado      una fila por clave: 'bot' (su latido y el estado que publica) y 'vigia' (el del interruptor).
+-- Permisos: el bot y el interruptor entran como rol "coinalyze-ai" (peer por el socket); los GRANT los da el operador.
+-- =========================================================================================
+BEGIN;
+
+CREATE OR REPLACE FUNCTION bot_rechaza_mutacion()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION '% es solo anadir; % no se permite', TG_TABLE_NAME, TG_OP
+        USING ERRCODE = '55000';
+    RETURN NULL;
+END
+$$;
+
+CREATE TABLE IF NOT EXISTS bot_evento (
+    ts timestamptz NOT NULL DEFAULT now(),
+    tipo text NOT NULL CHECK (tipo IN ('rafaga', 'clase', 'stop', 'liquidacion', 'sin_stop', 'bybit', 'arranque',
+                                       'parte', 'informe', 'validacion', 'vigia')),
+    symbol text,
+    minuto timestamptz,
+    lado smallint CHECK (lado IN (-1, 1)),
+    clase text CHECK (clase IN ('CASCADA', 'BARRIDO', 'SIN CLASE')),
+    enviada boolean NOT NULL,
+    detalle jsonb NOT NULL DEFAULT '{}'
+);
+CREATE UNIQUE INDEX IF NOT EXISTS bot_evento_unico ON bot_evento (tipo, symbol, minuto) WHERE tipo IN ('rafaga', 'clase');
+CREATE INDEX IF NOT EXISTS bot_evento_minuto_idx ON bot_evento (minuto);
+CREATE INDEX IF NOT EXISTS bot_evento_tipo_ts_idx ON bot_evento (tipo, ts);
+
+CREATE TABLE IF NOT EXISTS bot_evaluacion (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    ts timestamptz NOT NULL DEFAULT now(),
+    tipo text NOT NULL CHECK (tipo IN ('veredicto', 'cierre')),
+    posicion text NOT NULL,
+    veredicto text NOT NULL CHECK (veredicto IN ('A FAVOR', 'EN CONTRA', 'NO EVALUABLE')),
+    veredicto_decide text CHECK (veredicto_decide IN ('A FAVOR', 'EN CONTRA', 'NO EVALUABLE')),
+    pnl_usd double precision CHECK (pnl_usd IS NULL OR finite_float8(pnl_usd)),
+    acierto boolean,
+    detalle jsonb NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS bot_evaluacion_posicion_idx ON bot_evaluacion (posicion);
+
+CREATE TABLE IF NOT EXISTS bot_llamada (
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    ts timestamptz NOT NULL DEFAULT now(),
+    motivo text NOT NULL CHECK (motivo IN ('evalua', 'pregunta', 'escala')),
+    modelo text NOT NULL,
+    effort text NOT NULL,
+    tokens_entrada integer NOT NULL CHECK (tokens_entrada >= 0),
+    tokens_salida integer NOT NULL CHECK (tokens_salida >= 0),
+    coste_usd double precision NOT NULL CHECK (finite_float8(coste_usd) AND coste_usd >= 0),
+    tope_usd double precision NOT NULL CHECK (finite_float8(tope_usd) AND tope_usd > 0),
+    estimado boolean NOT NULL DEFAULT false,
+    detalle jsonb NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS bot_llamada_ts_idx ON bot_llamada (ts);
+
+CREATE TABLE IF NOT EXISTS bot_operacion (
+    orden text PRIMARY KEY,
+    ts timestamptz NOT NULL DEFAULT now(),
+    symbol text NOT NULL,
+    lado smallint CHECK (lado IN (-1, 1)),
+    cantidad double precision CHECK (cantidad IS NULL OR finite_float8(cantidad)),
+    entrada double precision CHECK (entrada IS NULL OR finite_float8(entrada)),
+    salida double precision CHECK (salida IS NULL OR finite_float8(salida)),
+    pnl_usd double precision CHECK (pnl_usd IS NULL OR finite_float8(pnl_usd)),
+    apalancamiento double precision CHECK (apalancamiento IS NULL OR finite_float8(apalancamiento)),
+    abierta timestamptz,
+    cerrada timestamptz,
+    detalle jsonb NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS bot_operacion_cerrada_idx ON bot_operacion (cerrada);
+
+CREATE TABLE IF NOT EXISTS bot_estado (
+    clave text PRIMARY KEY CHECK (clave IN ('bot', 'vigia')),
+    ts timestamptz NOT NULL,
+    estado jsonb NOT NULL
+);
+
+CREATE OR REPLACE TRIGGER bot_evento_solo_anadir BEFORE UPDATE OR DELETE ON bot_evento
+    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion();
+CREATE OR REPLACE TRIGGER bot_evento_sin_truncate BEFORE TRUNCATE ON bot_evento
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+CREATE OR REPLACE TRIGGER bot_evaluacion_solo_anadir BEFORE UPDATE OR DELETE ON bot_evaluacion
+    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion();
+CREATE OR REPLACE TRIGGER bot_evaluacion_sin_truncate BEFORE TRUNCATE ON bot_evaluacion
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+CREATE OR REPLACE TRIGGER bot_llamada_solo_anadir BEFORE UPDATE OR DELETE ON bot_llamada
+    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion();
+CREATE OR REPLACE TRIGGER bot_llamada_sin_truncate BEFORE TRUNCATE ON bot_llamada
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+CREATE OR REPLACE TRIGGER bot_operacion_solo_anadir BEFORE UPDATE OR DELETE ON bot_operacion
+    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion();
+CREATE OR REPLACE TRIGGER bot_operacion_sin_truncate BEFORE TRUNCATE ON bot_operacion
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+
+COMMIT;

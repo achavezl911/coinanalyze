@@ -1,0 +1,16 @@
+# BOT-2 remate 1 · el INFORME SEMANAL del bot por Claude Max, en 143 (tools/bot/semanal.py). Como root: es quien tiene la
+# sesion de Max de Claude Code (/root/.claude) y la llave de harness/bin/prod y prodsql. Lee las tablas del bot por el
+# canal de solo lectura y deja el texto (o la causa de que no salga) en 140, en /var/lib/coinalyze-bot/informes/.
+# Corre el arbol que este en /srv/coinanalyze/repo: si alli hay una rama de campana, corre esa (mejor un worktree de main).
+# La instala el OPERADOR con su temporizador (instruccion en la entrega del remate 1).
+[Unit]
+Description=Coinalyze bot (BOT-2): informe semanal por Claude Max (claude -p, opus, xhigh)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/coinanalyze
+Environment=HOME=/root
+ExecStart=/srv/coinanalyze/repo/.venv/bin/python /srv/coinanalyze/repo/tools/bot/semanal.py
+TimeoutStartSec=45min
