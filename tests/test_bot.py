@@ -172,22 +172,33 @@ def _anthropic(entrada=50_000, usage=None, falla=False):
     return httpx.AsyncClient(transport=httpx.MockTransport(responde)), vistas
 
 
-async def test_opus_xhigh_y_su_coste():
-    http, vistas = _anthropic()
-    r = await llm.llama(http, "k", "sys", "hola", gastado=0.0, tope=3.0)
-    assert r["texto"] == "VEREDICTO: A FAVOR" and r["coste"] == pytest.approx(50_000 * 4e-6 + 3000 * 20e-6) and not r["estimado"]
+async def test_opus_con_el_esfuerzo_de_la_ruta_la_cache_y_su_coste():
+    http, vistas = _anthropic(usage={"input_tokens": 48_700, "cache_creation_input_tokens": 1300, "output_tokens": 3000})
+    r = await llm.llama(http, "k", "estable", "hola", gastado=0.0, tope=3.0, effort="low")
+    assert r["texto"] == "VEREDICTO: A FAVOR" and not r["estimado"] and r["entrada"] == 50_000 and r["cache"] == {"leida": 0, "escrita": 1300}
+    assert r["coste"] == pytest.approx(48_700 * 4e-6 + 1300 * 5e-6 + 3000 * 20e-6)
     cuerpo = json.loads(vistas[1].content)
-    assert cuerpo["model"] == "claude-opus-5-5" and cuerpo["output_config"] == {"effort": "xhigh"} and cuerpo["max_tokens"] == 16000
+    assert cuerpo["model"] == "claude-opus-5-5" and cuerpo["output_config"] == {"effort": "low"} and cuerpo["max_tokens"] == 4000
+    assert cuerpo["system"] == [{"type": "text", "text": "estable", "cache_control": {"type": "ephemeral"}}]
     assert vistas[1].headers["anthropic-version"] == "2023-06-01"
+    assert (await llm.llama(http, "k", "e", "t", gastado=0, tope=3, effort="altisimo"))["error"].startswith("esfuerzo")
+
+
+def test_el_esfuerzo_por_ruta_sale_del_entorno_y_max_no_entra_en_tiempo_real():
+    assert sv.esfuerzos({}) == ({"escala": "low", "pregunta": "medium", "evalua": "high"}, [])
+    e, avisos = sv.esfuerzos({"BOT_EFFORT_EVALUA": "xhigh", "BOT_EFFORT_ESCALA": "max", "BOT_EFFORT_PREGUNTA": "rapido"})
+    assert e == {"escala": "low", "pregunta": "medium", "evalua": "xhigh"} and len(avisos) == 2
+    assert len(sv.ESTABLE) > 3000  # > 512 tokens: el minimo cacheable de Opus 5.5 (cl100k da 1281)
 
 
 async def test_el_tope_no_se_pasa_y_una_caida_apunta_el_peor_caso():
     http, vistas = _anthropic()
-    r = await llm.llama(http, "k", "sys", "hola", gastado=3.0 - llm.reserva(50_000) + 0.01, tope=3.0)
+    r = await llm.llama(http, "k", "sys", "hola", gastado=3.0 - llm.reserva(50_000, "high") + 0.01, tope=3.0)
     assert r["texto"] is None and "tope diario" in r["error"] and not r["llamada"] and len(vistas) == 1  # solo count_tokens
     http, _ = _anthropic(falla=True)
-    r = await llm.llama(http, "k", "sys", "hola", gastado=0.0, tope=3.0)
-    assert r["llamada"] and r["estimado"] and r["coste"] == pytest.approx(llm.reserva(50_000))
+    r = await llm.llama(http, "k", "sys", "hola", gastado=0.0, tope=3.0, effort="medium")
+    assert r["llamada"] and r["estimado"] and r["coste"] == pytest.approx(llm.reserva(50_000, "medium"))
+    assert llm.reserva(50_000, "low") < llm.reserva(50_000, "medium") < llm.reserva(50_000, "high")
 
 
 # --------------------------------------------------------------------------------------------- el servicio
@@ -301,7 +312,10 @@ def _mundo(posiciones: list[list[dict]], vistas: list):
         if p == "/v5/market/risk-limit":
             return httpx.Response(200, json={"retCode": 0, "result": {"list": TRAMOS["BTCUSDT"]}})
         if p == "/v5/position/closed-pnl":
-            return httpx.Response(200, json={"retCode": 0, "result": {"list": [{"closedPnl": "1.5", "updatedTime": "1792400999000"}]}})
+            return httpx.Response(200, json={"retCode": 0, "result": {"list": [{
+                "symbol": "BTCUSDT", "orderId": "o-1", "side": "Sell", "closedSize": "0.004", "avgEntryPrice": "110000",
+                "avgExitPrice": "110450", "closedPnl": "1.5", "leverage": "50", "createdTime": "1792400999000",
+                "updatedTime": "1792400999000"}]}})
         if p == "/v5/market/instruments-info":
             return httpx.Response(200, json={"retCode": 0, "result": {"list": [{"lotSizeFilter": {"qtyStep": "0.001"}, "fundingInterval": 480}]}})
         if p == "/v5/market/tickers":
@@ -330,8 +344,16 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
     await bot.tic_bybit()  # la clave, la posicion nueva, su evaluacion
     (v,) = await base.fetch("SELECT tipo, posicion, veredicto, veredicto_decide, detalle FROM bot_evaluacion")
     assert (v["tipo"], v["posicion"], v["veredicto"], v["veredicto_decide"]) == ("veredicto", "BTCUSDT:Buy:1792400000000", "A FAVOR", "A FAVOR")
-    assert json.loads(v["detalle"])["fuente"] == "opus"
-    assert await base.fetchval("SELECT coste_usd FROM bot_llamada") == pytest.approx(1000 * 4e-6 + 500 * 20e-6)
+    det = json.loads(v["detalle"])
+    assert det["fuente"] == "opus" and det["decide"]["decide"]["bias"]["value"] == "LONG" and det["horas"]["posicion"]
+    ll = await base.fetchrow("SELECT id, motivo, effort, coste_usd, detalle FROM bot_llamada")
+    assert (ll["motivo"], ll["effort"]) == ("evalua", "high") and ll["coste_usd"] == pytest.approx(1000 * 4e-6 + 500 * 20e-6)
+    entrada = json.loads(ll["detalle"])  # lo que vio y lo que contesto: se puede reproducir
+    assert entrada["entrada"].startswith("TAREA: EVALUA") and '"cvd_matrix"' in entrada["entrada"] and entrada["respuesta"].startswith("VEREDICTO")
+    assert det["llamada"] == str(ll["id"]) and entrada["estable"] == sv.ESTABLE_SHA
+    val = json.loads(await base.fetchval("SELECT detalle FROM bot_evento WHERE tipo = 'validacion'"))
+    assert val["bybit"] == 108163 and val["dif_pct"] == pytest.approx(0, abs=1e-6)  # la formula da 110000 - (2200 - 363)
+    assert await base.fetchval("SELECT pnl_usd FROM bot_operacion WHERE orden = 'o-1'") == 1.5
     assert not any("/v5/order" in x or x.startswith("POST api.bybit") for x in vistas)
     otro = sv.Bot(entorno, base, _mundo([[pos]], []))  # un reinicio con la posicion abierta: no se re-evalua ni se paga
     await otro.carga()
@@ -341,4 +363,8 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
     await bot.tic_bybit()  # cerrada: se puntua
     c = await base.fetchrow("SELECT veredicto, pnl_usd, acierto FROM bot_evaluacion WHERE tipo = 'cierre'")
     assert tuple(c) == ("A FAVOR", 1.5, True) and bot.evaluadas == {}
-    assert "liquidacion" in await otro.calcula("/calc btc 110000") and "AVISO: la perdida al stop" in await otro.calcula("/calc btc")
+    assert "AVISO: la perdida al stop" in await otro.calcula("/calc btc")
+    assert "validada contra Bybit: 0.00 % en BTCUSDT" in await otro.calcula("/calc btc 110000")  # carga() la recupero
+    assert "sin validar contra Bybit" in calc.texto(calc.calcula(150, tramos=TRAMOS["SOLUSDT"], paso="0.1"), "SOLUSDT")
+    lejos = {"symbol": "SOLUSDT", "dia": "2026-10-25", "dif_pct": 0.8}
+    assert "OJO: se separo de Bybit 0.80 % (> 0.5 %)" in calc.texto(calc.calcula(150, tramos=TRAMOS["SOLUSDT"], paso="0.1"), "SOLUSDT", lejos)

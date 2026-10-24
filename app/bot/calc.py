@@ -85,12 +85,23 @@ def calcula(
     }
 
 
-def texto(r: dict, simbolo: str) -> str:
+VALIDA_PCT = 0.5  # una formula que se separa de Bybit mas que esto (en % del precio) se dice junto a su cifra
+
+
+def nota_validacion(v: dict | None) -> str:
+    """v: la ultima validacion contra una posicion real {symbol, dia, dif_pct} (None: todavia ninguna)."""
+    if not v:
+        return "sin validar contra Bybit"
+    base = f"validada contra Bybit: {v['dif_pct']:.2f} % en {v['symbol']} {v['dia']}"
+    return base if v["dif_pct"] <= VALIDA_PCT else f"OJO: se separo de Bybit {v['dif_pct']:.2f} % (> {VALIDA_PCT} %) en {v['symbol']} {v['dia']}: no fiable"
+
+
+def texto(r: dict, simbolo: str, validacion: dict | None = None) -> str:
     f = r["funding_usd"]
     lineas = [
         f"{simbolo} {r['lado']} · entrada {r['entrada']:.6g} · stop {r['stop']:.6g} · objetivo {r['objetivo']:.6g}",
         f"tamano {r['cantidad']:g} ({r['valor_usd']:.2f} USD) · margen {r['margen_usd']:.2f} USD a {r['apalancamiento']:g}x",
-        f"liquidacion {r['liquidacion']:.6g} ({r['liq_pct']:+.2f} %, MMR {r['mmr'] * 100:g} %)",
+        f"liquidacion {r['liquidacion']:.6g} ({r['liq_pct']:+.2f} %, MMR {r['mmr'] * 100:g} %; {nota_validacion(validacion)})",
         f"perdida al stop {r['perdida_stop_usd']:.2f} USD · ganancia al objetivo {r['ganancia_obj_usd']:.2f} USD (con comision)",
         f"R:R {r['rr_bruto']:.2f} bruto / {r['rr_neto']:.2f} neto · la comision ({r['comision_usd']:.2f} USD) se come el"
         f" {r['comision_come_pct']:.1f} % del objetivo",

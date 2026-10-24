@@ -66,7 +66,7 @@ def rafagas_del_dia(filas: dict, dia: int, hasta: int, u: rf.Umbrales = UMBRALES
                 continue
             cl = rf.clasifica(se[a], i, s, u, [rasgos[o][0] for o in ACTIVOS if o != a])
             out.append({"activo": a, "minuto": t0 + i, "lado": s, "z": z[i], "v": v[i], "imb": imb[i],
-                        "precio": se[a].c[i], "clase": cl[0] if cl else None})
+                        "precio": se[a].c[i], "clase": cl[0] if cl else None, "clase_min": cl[1] if cl else None})
     return out
 
 
