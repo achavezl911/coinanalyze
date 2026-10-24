@@ -21,8 +21,16 @@ del inicio del bloque, simbolo, USD de largos, USD de cortos), sacadas con::
     TODO=1 sh harness/bin/prodsql "SELECT extract(epoch FROM ts)::bigint, split_part(symbol,'_',1), long_liq,
         short_liq FROM liquidations WHERE interval='5min' AND ts >= '<desde>' AND ts < '<hasta>' ORDER BY 1, 2"
 
-USO:  python scripts/rafagas_estudio.py muestra DIR 2026-03 2026-09 [2026-10-01 2026-10-23]
-          meses enteros (zip mensual) y, opcionalmente, dias sueltos (zip diario) de un mes aun sin publicar
+USO (python3 a secas: solo biblioteca estandar):
+  rafagas_estudio.py muestra DIR 2026-03 2026-09 [2026-10-01 2026-10-22]
+      meses enteros (zip mensual) y, si se dan, dias sueltos (zip diario) de un mes aun sin publicar
+  rafagas_estudio.py ajuste DIR salida.json      la rejilla sobre el AJUSTE y el punto elegido (P2 de la prediccion)
+  rafagas_estudio.py recorta DIR K116-muestra.tsv.xz 2026-08-31 2026-10-23     la muestra fija de la PRUEBA
+  rafagas_estudio.py prueba K116-muestra.tsv.xz salida.json      la prueba con los umbrales CONGELADOS de app/rafagas
+  rafagas_estudio.py informe salida.json      sus tablas en Markdown
+
+Lo que se mide y como (periodos, entrada a +35 s, esquemas, azar, VENTAJA MEDIDA) es el P2 de
+entregas/20261024-0640-bot-rafagas-prediccion.md, escrito antes de mirar la prueba; aqui van sus constantes.
 """
 
 from __future__ import annotations
@@ -344,7 +352,8 @@ def ajuste(mu: Muestra) -> dict:
                         filas.append({"W": W, "Z": Z, "M": M, "D": D, "G": G, "rafagas": len(evs),
                                       "cascadas": nc, "barridos": len(pol) - nc,
                                       "neto_medio_pct": round(100 * sum(pol) / len(pol), 4) if pol else None})
-    validas = [f for f in filas if f["cascadas"] >= MIN_POR_CLASE and f["barridos"] >= MIN_POR_CLASE]
+    validas = [f for f in filas if f["cascadas"] >= MIN_POR_CLASE and f["barridos"] >= MIN_POR_CLASE
+               and f["neto_medio_pct"] is not None]
     elegido = max(validas, key=lambda f: (f["neto_medio_pct"], f["cascadas"] + f["barridos"]))
     return {"huella": mu.huella, "periodo": AJUSTE, "puntos": len(filas), "validos": len(validas),
             "elegido": elegido, "rejilla": filas}
@@ -440,6 +449,39 @@ def _control(mu: Muestra, ctrl: list[Evento]) -> list[dict]:
     return out
 
 
+def informe(r: dict) -> str:
+    """Las tablas de una salida de `prueba` en Markdown (las de la entrega)."""
+    out = []
+    for v in ("sin_liq", "con_liq"):
+        t = r[v]["tablas"]
+        out += [f"### {v} · {len(r[v]['eventos'])} rafagas en {r['dias']} dias", "",
+                "| clase | activo | n | MFE/MAE 1 min | 5 min | 15 min | 60 min |", "|---|---|---|---|---|---|---|"]
+        for clase, filas in t.items():
+            for activo, f in filas.items():
+                rec = [f"{x[0]:.2f} / {x[1]:.2f}" if x else "-" for x in (f[f"mfe_mae_{h}m"] for h in HORIZONTES)]
+                out.append(f"| {clase} | {activo} | {f['n']} | " + " | ".join(rec) + " |")
+        out += ["", "| clase | activo | esquema | n | TP / SL / vence | acierto | Wilson 95 % | azar media [2.5, 97.5] "
+                "| equilibrio | neto medio % | |", "|---|---|---|---|---|---|---|---|---|---|---|"]
+        for clase, filas in t.items():
+            for activo, f in filas.items():
+                for esq in ("a", "b", "c"):
+                    x = f.get(esq)
+                    if not x or not f["n"]:
+                        continue
+                    az = x["azar"]
+                    out.append(f"| {clase} | {activo} | ({esq}) | {f['n']} | {x['aciertos']} / {x['stops']} / "
+                               f"{x['vencen']} | {100 * x['tasa']:.1f} % | {100 * x['wilson95'][0]:.1f}-"
+                               f"{100 * x['wilson95'][1]:.1f} | {100 * az[0]:.1f} [{100 * az[1]:.1f}, "
+                               f"{100 * az[2]:.1f}] | {100 * r['equilibrio'][esq]:.1f} % | "
+                               f"{x['neto_medio_pct']:+.3f} | {x['ventaja']} |")
+        out += ["", "Controles del " + r["quitado"] + ":"]
+        for c in r[v]["control"]:
+            out.append(f"- {c['control']} {c['franja'][0]}..{c['franja'][1]}: {'VISTO' if c['visto'] else 'NO VISTO'}"
+                       f" · {c['eventos']}")
+        out.append("")
+    return "\n".join(out)
+
+
 def _json(x: dict) -> str:
     return json.dumps(x, ensure_ascii=True, sort_keys=True, indent=1) + "\n"
 
@@ -450,6 +492,9 @@ def main(argv: list[str]) -> int:
         return 0
     if len(argv) == 5 and argv[0] == "recorta":
         recorta(Path(argv[1]), Path(argv[2]), argv[3], argv[4])
+        return 0
+    if len(argv) == 2 and argv[0] == "informe":
+        print(informe(json.loads(Path(argv[1]).read_text(encoding="ascii"))))
         return 0
     if len(argv) == 3 and argv[0] in ("ajuste", "prueba"):
         r = (ajuste if argv[0] == "ajuste" else prueba)(carga(Path(argv[1])))
