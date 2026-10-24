@@ -368,3 +368,88 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
     assert "sin validar contra Bybit" in calc.texto(calc.calcula(150, tramos=TRAMOS["SOLUSDT"], paso="0.1"), "SOLUSDT")
     lejos = {"symbol": "SOLUSDT", "dia": "2026-10-25", "dif_pct": 0.8}
     assert "OJO: se separo de Bybit 0.80 % (> 0.5 %)" in calc.texto(calc.calcula(150, tramos=TRAMOS["SOLUSDT"], paso="0.1"), "SOLUSDT", lejos)
+
+
+# --------------------------------------------------------------------------------------------- el interruptor (banco)
+from datetime import UTC, datetime, timedelta  # noqa: E402
+
+from app.bot import vigia  # noqa: E402
+
+AHORA = datetime(2026, 10, 26, 14, 0, tzinfo=UTC)  # lunes, pasado el parte (13:00Z) y la hora del informe (13:30Z)
+
+
+def test_problemas_del_interruptor():
+    vivo = {"ActiveState": "active", "SubState": "running", "Result": "success"}
+    todo_bien = dict(unidad=vivo, monitor=None, base_error=None, latido=AHORA - timedelta(seconds=40), parte_hoy=True,
+                     informe_semana=True, falla_informe=None)
+    assert vigia.problemas(AHORA, **todo_bien) == {}
+    p = vigia.problemas(AHORA, **(todo_bien | {"latido": AHORA - timedelta(minutes=9)}))
+    assert list(p) == ["latido"] and "9 min" in p["latido"]
+    caida = vigia.problemas(AHORA, **(todo_bien | {"unidad": {"ActiveState": "activating", "SubState": "auto-restart",
+                                                               "Result": "exit-code"}, "monitor": "exit-code"}))
+    assert "cayo con exit-code" in caida["unidad"]
+    assert list(vigia.problemas(AHORA, **(todo_bien | {"base_error": "OSError"}))) == ["base"]
+    sin = vigia.problemas(AHORA, **(todo_bien | {"parte_hoy": False, "informe_semana": False, "falla_informe": "uso semanal de Max 41 %"}))
+    assert sin == {"parte:2026-10-26": "el parte de hoy (13:00Z) no salio",
+                   "informe:2026-W44": "el informe semanal no llego: uso semanal de Max 41 %"}
+    temprano = AHORA.replace(hour=13, minute=10)  # antes de las 13:30Z ni el parte ni el informe se echan en falta
+    assert vigia.problemas(temprano, **(todo_bien | {"parte_hoy": False, "informe_semana": False})) == {}
+
+
+class _NoCierra:
+    def __init__(self, c):
+        self.c = c
+
+    def __getattr__(self, k):
+        return getattr(self.c, k)
+
+    async def close(self):
+        pass
+
+
+def _telegram(enviados: list, codigo: int = 200):
+    def responde(r):
+        enviados.append(json.loads(r.content)["text"])
+        return httpx.Response(codigo, json={"ok": codigo == 200})
+    return httpx.AsyncClient(transport=httpx.MockTransport(responde))
+
+
+async def test_el_interruptor_avisa_una_vez_y_otra_al_volver(base, tmp_path):
+    async def conecta():
+        return _NoCierra(base)
+    entorno = {"TELEGRAM_BOT_TOKEN": "123:puente", "TELEGRAM_CHAT_ID": "-100", "BOT_INFORMES": str(tmp_path)}
+    vivo = {"ActiveState": "active", "SubState": "running", "Result": "success"}
+    f = tmp_path / "estado.json"
+    await base.execute("INSERT INTO bot_estado VALUES ('bot', $1, '{}')", AHORA - timedelta(minutes=12))  # latido parado de mentira
+    await base.execute("INSERT INTO bot_evento (tipo, enviada, ts) VALUES ('parte', true, $1)", AHORA - timedelta(minutes=50))
+    await base.execute("INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('informe', true, '{\"semana\": \"2026-W44\"}')")
+    enviados: list = []
+    p = await vigia.pasada(entorno, _telegram(enviados), vivo, conecta, f, AHORA)
+    assert len(enviados) == 1 and "ALERTA" in enviados[0] and "no late desde hace 12 min" in enviados[0]
+    assert p["envio"]["ok"] and list(p["notificados"]) == ["latido"]
+    publicado = json.loads(await base.fetchval("SELECT estado FROM bot_estado WHERE clave = 'vigia'"))
+    assert list(publicado["problemas"]) == ["latido"] and await base.fetchval("SELECT count(*) FROM bot_evento WHERE tipo = 'vigia'") == 1
+    await vigia.pasada(entorno, _telegram(enviados), vivo, conecta, f, AHORA + timedelta(minutes=5))
+    assert len(enviados) == 1  # sigue parado: no repite
+    await base.execute("UPDATE bot_estado SET ts = $1 WHERE clave = 'bot'", AHORA + timedelta(minutes=9, seconds=30))
+    p = await vigia.pasada(entorno, _telegram(enviados), vivo, conecta, f, AHORA + timedelta(minutes=10))
+    assert len(enviados) == 2 and "resuelto" in enviados[1] and p["notificados"] == {}
+
+
+async def test_el_interruptor_dice_la_caida_la_base_y_reintenta_si_telegram_falla(base, tmp_path):
+    async def conecta():
+        return _NoCierra(base)
+
+    async def sin_base():
+        raise OSError("connection refused")
+    entorno = {"TELEGRAM_BOT_TOKEN": "123:puente", "TELEGRAM_OUTPUT_CHAT_ID": "-200", "BOT_INFORMES": str(tmp_path),
+               "MONITOR_SERVICE_RESULT": "exit-code"}
+    caido = {"ActiveState": "activating", "SubState": "auto-restart", "Result": "exit-code"}
+    f = tmp_path / "estado.json"
+    enviados: list = []
+    p = await vigia.pasada(entorno, _telegram(enviados, 500), caido, sin_base, f, AHORA.replace(hour=12))
+    assert not p["envio"]["ok"] and p["notificados"] == {} and set(p["problemas"]) == {"unidad", "base"}
+    p = await vigia.pasada(entorno, _telegram(enviados), caido, sin_base, f, AHORA.replace(hour=12, minute=5))
+    assert p["envio"]["ok"] and "cayo con exit-code" in enviados[-1] and "la base no contesta" in enviados[-1]
+    assert set(p["notificados"]) == {"unidad", "base"}
+    assert await base.fetchval("SELECT count(*) FROM bot_estado WHERE clave = 'vigia'") == 0  # sin base no publica: lo dice K117

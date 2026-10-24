@@ -10,6 +10,8 @@ Description=Coinalyze bot (BOT-2): centinela BTC/ETH/SOL, evaluacion de la opera
 After=network-online.target postgresql.service coinalyze-api.service
 Wants=network-online.target
 PartOf=coinalyze-api.service
+# remate 1: si cae, el interruptor mira YA (no espera a su temporizador) y avisa por el bot del puente, una vez
+OnFailure=coinalyze-bot-vigia.service
 
 [Service]
 Type=simple
@@ -20,6 +22,8 @@ WorkingDirectory=/opt/coinalyze/current
 EnvironmentFile=/etc/coinalyze-bot/secretos.env
 Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=/opt/coinalyze/current/.venv/bin/python -m app.bot
+# /var/lib/coinalyze-bot: su carpeta; en informes/ deja la tarea semanal de 143 (tools/bot/semanal.py) el texto
+StateDirectory=coinalyze-bot
 Restart=on-failure
 RestartSec=30s
 TimeoutStopSec=30s
