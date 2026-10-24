@@ -67,11 +67,11 @@ Definiciones, escritas antes del recuento:
 - **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
   *"periodo medido a medias"* de *"periodo no medido"*.
 
-| | de 51 tablas del esquema |
+| | de 55 tablas del esquema |
 |---|---|
-| de SERIE | **28** |
+| de SERIE | **32** |
 | de serie que DECLARAN cobertura cuantitativa | **7** |
-| de serie que NO declaran ninguna | **21** |
+| de serie que NO declaran ninguna | **25** |
 
 | tabla | columnas de cobertura |
 |---|---|
@@ -83,10 +83,14 @@ Definiciones, escritas antes del recuento:
 | `spot_trades_agg` | `covered_seconds`, `venue_count` |
 | `spot_trades_realtime` | `venue_count` |
 
-**Las 21 de serie SIN cobertura declarada.** No es un defecto por si mismo
+**Las 25 de serie SIN cobertura declarada.** No es un defecto por si mismo
 —una tabla de eventos periodicos puede no necesitarla—, pero es lo que impide
 distinguir un periodo vacio de uno no medido:
 
+- `bot_estado`
+- `bot_evaluacion`
+- `bot_evento`
+- `bot_llamada`
 - `daily_verdict`
 - `daily_verdict_snapshot`
 - `external_api_rate_event`
@@ -927,6 +931,10 @@ necesariamente un fallo -puede ser estado interno-, pero es exactamente la forma
 del patron que en esta casa se ha repetido nueve veces: algo que existe, parece
 completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
+- `bot_estado` — la escriben 1: `app/bot/servicio.py:187`
+- `bot_evaluacion` — la escriben 2: `app/bot/servicio.py:329`, `app/bot/servicio.py:349`
+- `bot_evento` — la escriben 1: `app/bot/servicio.py:166`
+- `bot_llamada` — la escriben 1: `app/bot/servicio.py:223`
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
 - `libro_cobertura` — la escriben 2: `app/libro.py:1030`, `app/libro.py:810`
