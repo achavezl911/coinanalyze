@@ -167,6 +167,14 @@ def args_calc(texto: str) -> dict:
     return a
 
 
+def mensaje(tarea: str, *, dec: dict, ctx: dict, posicion: dict | None = None, alerta: str | None = None,
+            pregunta: str | None = None) -> str:
+    """El mensaje de una ruta (lo que va despues de la parte ESTABLE): el bot y app/bot/mide.py lo construyen igual."""
+    partes = [f"TAREA: {tarea}"] + ([f"ALERTA: {alerta}"] if alerta else []) + ([f"PREGUNTA: {pregunta}"] if pregunta else [])
+    partes += [f"POSICION: {json.dumps(posicion)}"] if posicion is not None else []
+    return "\n".join(partes + [f"DATOS DECIDE: {json.dumps(dec)}", f"DATOS SOBRE: {json.dumps(ctx, separators=(',', ':'))}"])
+
+
 def esfuerzos(entorno: dict) -> tuple[dict, list[str]]:
     """El esfuerzo de cada ruta de tiempo real desde el entorno; un valor invalido o max -> el de partida, y se dice."""
     out, avisos = {}, []
@@ -394,8 +402,7 @@ class Bot:
             ctx, dec = await self.sobre(p["symbol"])
         except LookupError as e:
             return await self.manda(f"ESCALADO {p['symbol']}: {e}")
-        r = await self.opus("escala", f"TAREA: ESCALA\nALERTA: {alerta}\nPOSICION: {json.dumps(p)}\nDATOS DECIDE: {json.dumps(dec)}"
-                                      f"\nDATOS SOBRE: {json.dumps(ctx, separators=(',', ':'))}")
+        r = await self.opus("escala", mensaje("ESCALA", alerta=alerta, posicion=p, dec=dec, ctx=ctx))
         await self.manda(f"ESCALADO {p['symbol']} (propuesta, no orden):\n{r['texto'] or r['error']}")
 
     # ---------- C2 y el historial de Bybit ----------
@@ -492,8 +499,7 @@ class Bot:
             ctx, dec = await self.sobre(p["symbol"])
             horas |= {"sobre": ctx.get("generated_at"), "decide": dec.get("generated_at")}
             v_dec = veredicto_decide(dec, p["lado"])
-            r = await self.opus("evalua", f"TAREA: EVALUA\nPOSICION: {json.dumps(p)}\nDATOS DECIDE: {json.dumps(dec)}"
-                                          f"\nDATOS SOBRE: {json.dumps(ctx, separators=(',', ':'))}")
+            r = await self.opus("evalua", mensaje("EVALUA", posicion=p, dec=dec, ctx=ctx))
             texto, llamada = r["texto"] or r["error"], r["id"]
             v, fuente = (lee_veredicto(r["texto"]), "opus") if r["texto"] else (v_dec, f"DECIDE ({r['error']})")
         except LookupError as e:
@@ -545,8 +551,7 @@ class Bot:
     async def pregunta(self, texto: str) -> str:
         activo = activo_de(texto, next((p["symbol"] for p in self.pos.values()), "BTCUSDT"))
         ctx, dec = await self.sobre(activo)
-        r = await self.opus("pregunta", f"TAREA: PREGUNTA\nPREGUNTA: {texto}\nDATOS DECIDE: {json.dumps(dec)}"
-                                        f"\nDATOS SOBRE: {json.dumps(ctx, separators=(',', ':'))}")
+        r = await self.opus("pregunta", mensaje("PREGUNTA", pregunta=texto, dec=dec, ctx=ctx))
         return r["texto"] or f"no contesto: {r['error']}"
 
     # ---------- C6: la salud, el parte, el gasto y el informe ----------

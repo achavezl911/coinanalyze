@@ -453,3 +453,55 @@ async def test_el_interruptor_dice_la_caida_la_base_y_reintenta_si_telegram_fall
     assert p["envio"]["ok"] and "cayo con exit-code" in enviados[-1] and "la base no contesta" in enviados[-1]
     assert set(p["notificados"]) == {"unidad", "base"}
     assert await base.fetchval("SELECT count(*) FROM bot_estado WHERE clave = 'vigia'") == 0  # sin base no publica: lo dice K117
+
+
+# --------------------------------------------------------------------------------------------- calidad, medida y semanal
+import importlib.util  # noqa: E402
+
+from app.bot import calidad, mide  # noqa: E402
+
+
+def _semanal():
+    spec = importlib.util.spec_from_file_location("semanal", RAIZ / "tools" / "bot" / "semanal.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def test_lo_que_hizo_el_precio_con_la_regla_de_bot1():
+    sube = {m: (100 * (1 + 0.001 * m), 100 * (1 + 0.001 * m) - 0.01, 100 * (1 + 0.001 * m)) for m in range(0, 1500)}
+    assert calidad.desenlace(sube, 0, 1, *calidad.ESQUEMAS["a"]) == "TP"  # +2 % antes que -0.6 %: de verdad cascada
+    assert calidad.desenlace(sube, 0, 1, *calidad.ESQUEMAS["c"]) == "SL"
+    assert calidad.desenlace(sube, 0, -1, *calidad.ESQUEMAS["c"]) == "TP"  # rafaga bajista y el precio sube: barrido
+    ambos = {0: (100, 100, 100), 1: (103, 99, 100)}  # un minuto que toca los dos: stop
+    assert calidad.desenlace(ambos | {m: (100, 100, 100) for m in range(2, 1441)}, 0, 1, *calidad.ESQUEMAS["a"]) == "SL"
+    plano = {m: (100.1, 99.9, 100) for m in range(0, 1441)}
+    assert calidad.desenlace(plano, 0, 1, *calidad.ESQUEMAS["a"]) == "VENCE"
+    assert calidad.desenlace({0: (100, 100, 100)}, 0, 1, *calidad.ESQUEMAS["a"]) == "SIN CERRAR"
+    al = [{"activo": "BTCUSDT", "minuto": 0, "lado": 1, "clase": "CASCADA"}, {"activo": "BTCUSDT", "minuto": 5, "lado": 1, "clase": "BARRIDO"},
+          {"activo": "ETHUSDT", "minuto": 0, "lado": 1, "clase": None}]
+    r = calidad.resumen(al, {"BTCUSDT": sube, "ETHUSDT": plano}, [{"veredicto": "A FAVOR", "acierto": True, "pnl_usd": 1.5}],
+                        [{"pnl_usd": 1.5}, {"pnl_usd": -3.2}], [{"dia": "1970-01-01", "coste_usd": 0.5, "tope_usd": 3}], [], 0, 1440)
+    assert r["de_verdad"] == {"CASCADA": 2, "BARRIDO": 0} and r["falsas_alarmas"] == 1 and r["falsas_por_dia"] == {"1970-01-01": 1}
+    assert r["clase_acertada"] == {"CASCADA": "1 de 1", "BARRIDO": "0 de 1"} and r["operaciones"]["pnl_usd"] == -1.7
+    assert "de verdad cascada 2" in calidad.texto(r) and "partes diarios: 0 de 1 dias" in calidad.texto(r)
+
+
+def test_el_calificador_de_la_medida():
+    datos = {"sobre": {"funding_context": {"current": 0.0001}, "precio": 110250.5}, "decide": {"decide": {"edge": {"value": 17.6}}}}
+    t = ("el funding es 0,01 % [sobre.funding_context.current]\nedge 17.6 [decide.edge.value] y precio 110.250,5\n"
+         "objetivo 123456 y 3 velas [decide.edge.value]")
+    q = mide.califica(t, datos)
+    assert (q["bien"], q["en_datos"], q["inventadas"]) == (2, 1, 1) and q["lista"][0].startswith("123456")
+    assert mide.numero("110.000") == 110000 and mide.numero("-0,6") == -0.6 and mide.numero("1.234,5") == 1234.5
+    assert mide.percentil([1, 2, 3, 4], 0.5) == 2.5 and mide.percentil([7], 0.9) == 7
+    assert set(mide.NIVELES) == set(sv.RUTAS) and all(sv.RUTAS[r] in mide.NIVELES[r] for r in sv.RUTAS)
+
+
+def test_la_tarea_semanal_lee_el_uso_de_max_y_entrega_sin_lo_que_bin_prod_niega():
+    s = _semanal()
+    flujo = '{"type":"system"}\n{"type":"rate_limit_event","rate_limit_info":{"unifiedWindows":{"seven_day":{"utilization":0.41}}}}\n'
+    assert s.uso_max(flujo) == 0.41 and s.uso_max('{"type":"result"}') is None
+    orden = s.orden_entrega("2026-W44.txt", "informe con > y | y tee dentro")
+    assert ">" not in orden and " tee " not in f" {orden} " and orden.endswith("/var/lib/coinalyze-bot/informes/2026-W44.txt")
+    assert s.TOPE_MAX == 0.40 and (s.MODELO, s.EFFORT) == ("claude-opus-5-5", "xhigh")

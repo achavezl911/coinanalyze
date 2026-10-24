@@ -58,9 +58,10 @@ def resumen(alertas: list[dict], velas: dict[str, dict], evaluaciones: list[dict
         if a["clase"] in vistas:
             vistas[a["clase"]][1] += 1
             vistas[a["clase"]][0] += r["a" if a["clase"] == "CASCADA" else "c"] == "TP"
+    todos = sorted({_dia(m) for m in range(desde, hasta, DIA)})
     out["de_verdad"] = dict(verdad)
     out["falsas_alarmas"] = sum(falsas.values())
-    out["falsas_por_dia"] = dict(sorted(falsas.items()))
+    out["falsas_por_dia"] = {d: falsas.get(d, 0) for d in todos}  # los dias sin ninguna, con 0: que no parezcan sin dato
     out["sin_cerrar"] = sin_cerrar
     out["clase_acertada"] = {k: f"{a} de {n}" for k, (a, n) in vistas.items()}
     puntuadas = [e for e in evaluaciones if e.get("acierto") is not None]
@@ -76,7 +77,6 @@ def resumen(alertas: list[dict], velas: dict[str, dict], evaluaciones: list[dict
         g[0] += float(ll["coste_usd"])
         g[1] = min(g[1], float(ll["tope_usd"]))
     out["gasto"] = {d: f"{g:.2f} de {t:.2f}" for d, (g, t) in sorted(dias.items())}
-    todos = sorted({_dia(m) for m in range(desde, hasta, DIA)})
     out["partes"] = f"{sum(1 for d in todos if d in partes)} de {len(todos)} dias"
     return out
 
@@ -94,7 +94,7 @@ def texto(r: dict) -> str:
         f" (A FAVOR {e['por_veredicto']['A FAVOR']}, EN CONTRA {e['por_veredicto']['EN CONTRA']})",
         f"operaciones cerradas en Bybit {o['cerradas']}, ganadoras {o['ganadoras']}, pnl {o['pnl_usd']:+.2f} USD",
         f"gasto de la API por dia: {', '.join(f'{d} {g}' for d, g in r['gasto'].items()) or 'sin llamadas'}",
-        f"partes diarios: {r['partes']}",
+        f"partes diarios: {r['partes']} · avisos del interruptor: {r.get('avisos_del_interruptor', 'sin dato')}",
     ])
 
 
