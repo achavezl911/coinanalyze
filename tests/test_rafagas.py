@@ -115,6 +115,61 @@ def test_ni_detector_ni_clase_miran_el_futuro():
     assert rf.clasifica(corta(se, i + m), i, s, U, [_z(corta(otra, i + m))]) is None
 
 
+def _mu(p35, ha, la, hb, lb):
+    from scripts import rafagas_estudio as es
+
+    n = len(p35)
+    s = "BTCUSDT"
+    se = rf.Serie(0, list(p35), list(p35), list(p35), [1.0] * n, [1.0] * n)  # hi/lo: el test los toca
+    return es, es.Muestra(0, {s: se}, {s: list(p35)}, {s: list(ha)}, {s: list(la)}, {s: list(hb)},
+                          {s: list(lb)}, {s: {}}, "x"), s
+
+
+def test_resultado_objetivo_stop_y_el_medio_minuto_que_toca_los_dos():
+    n = 1500
+    es, mu, s = _mu([100.0] * n, [100.0] * n, [100.0] * n, [100.0] * n, [100.0] * n)
+    mu.hb[s][3] = 101.3  # objetivo +1.2 % en la 2.a mitad de la barra 3
+    assert es.resultado(mu, s, 0, 1, 0.012, 0.006, n) == ("TP", 0.012 - es.FEE)
+    mu.la[s][2] = 99.3  # antes, el stop
+    assert es.resultado(mu, s, 0, 1, 0.012, 0.006, n) == ("SL", -0.006 - es.FEE)
+    mu.la[s][2] = 100.0
+    mu.lb[s][3] = 99.3  # la misma mitad toca los dos: stop
+    assert es.resultado(mu, s, 0, 1, 0.012, 0.006, n)[0] == "SL"
+    # en corto, el mismo medio minuto
+    assert es.resultado(mu, s, 0, -1, 0.012, 0.006, n)[0] == "SL"
+    # la entrada no ve su propia primera mitad
+    es2, mu2, _ = _mu([100.0] * n, [200.0] * n, [100.0] * n, [100.0] * n, [100.0] * n)
+    mu2.ha[s][1:] = [100.0] * (n - 1)
+    assert es2.resultado(mu2, s, 0, 1, 0.012, 0.006, n)[0] == "VENCE"
+
+
+def test_resultado_vence_a_las_24_h_al_precio_de_ese_segundo():
+    n = 1500
+    es, mu, s = _mu([100.0] * n, [100.0] * n, [100.0] * n, [100.0] * n, [100.0] * n)
+    mu.p35[s][1440] = 100.5
+    mu.hb[s][1440] = 101.3  # despues de las 24 h: no cuenta
+    estado, neto = es.resultado(mu, s, 0, 1, 0.012, 0.006, n)
+    assert estado == "VENCE" and abs(neto - (0.005 - es.FEE)) < 1e-12
+
+
+def test_recorrido_en_el_sentido_de_la_rafaga():
+    es, mu, s = _mu([100.0] * 10, [100.0] * 10, [100.0] * 10, [100.0] * 10, [100.0] * 10)
+    mu.series[s].hi[2], mu.series[s].lo[3] = 102.0, 99.0
+    mu.ha[s][5] = 103.0  # la primera mitad de e+h entra; la segunda no
+    mu.hb[s][5] = 110.0
+    assert es.recorrido(mu, s, 0, 1, 5, 10) == (3.0000000000000027, 1.0000000000000009)
+    assert es.recorrido(mu, s, 0, -1, 5, 10) == (1.0000000000000009, 3.0000000000000027)
+    assert es.recorrido(mu, s, 0, 1, 10, 10) is None
+
+
+def test_wilson():
+    from scripts.rafagas_estudio import wilson
+
+    lo, hi = wilson(10, 40)
+    assert round(lo, 4) == 0.1419 and round(hi, 4) == 0.4019
+    assert wilson(0, 0) == (0.0, 1.0)
+
+
 def test_umbrales_congelados_son_un_punto_de_la_rejilla():
     from scripts.rafagas_estudio import REJILLA
 
