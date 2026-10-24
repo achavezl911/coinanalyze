@@ -1,9 +1,14 @@
 """K117 · el bot (BOT-2) en produccion. Lo llama K117-el-bot.sh (ver su cabecera); salida y rc del arnes.
 
-Seis brazos, cada uno en su try (uno que cae no tumba a los demas):
+Nueve brazos, cada uno en su try (uno que cae no tumba a los demas):
   servicio   systemctl show coinalyze-bot por bin/prod: active/running; no instalada -> NO MEDIDO
   latido     bot_estado: el ultimo latido hace <= LATIDO_MAX s
   bybit      el estado que el bot PUBLICA (no la clave): solo_lectura y la IP; sin juzgar -> NO MEDIDO
+  vigia      (remate 1) el interruptor: su .timer active, su ultima pasada success, su fila de bot_estado de hace
+             <= VIGIA_PASA_MAX s, y que si el bot no latia cuando paso, lo dio por problema y pudo avisar
+  parte      (remate 1) pasadas las 13:30Z, el parte de hoy; antes, el de ayer
+  journal    (remate 1) ninguna linea de 24 h del journal del bot ni del interruptor con la FORMA de una clave (se cuentan
+             en 140; nunca se imprimen)
   alertas    las rafagas y clases de bot_evento en [max(ahora - HORAS, dia del primer arranque), ahora - MARGEN) ==
              las que da el detector de app/rafagas.py (Z = 4, el resto congelado) sobre el ohlcv 1min de 140, con el
              dia UTC anclado a CALIENTA min: el pegamento (series, huecos, ancla) es de ESTE fichero, no el del bot
@@ -68,6 +73,11 @@ def servicio():
 
 
 AHORA: list[int] = []
+FILAS: dict = {}  # bot_estado por clave: (ts, estado)
+VIGIA_LATIDO, VIGIA_PASA_MAX, PARTE_HORA_UTC = 300, 900, 13  # app/bot/vigia.py LATIDO_MIN, su timer x3, servicio.PARTE_HORA_UTC
+# las FORMAS de las claves (nunca sus valores): Anthropic, el token de un bot de Telegram, y una clave de Bybit u otra
+# pegada a su nombre. Sin comillas: viaja dentro de un grep entre comillas simples por bin/prod.
+FORMAS = r"sk-ant-[A-Za-z0-9_-]{20,}|[0-9]{8,10}:[A-Za-z0-9_-]{35}|(api_key|apikey|api-key|secret|token)[^A-Za-z0-9]{1,4}[A-Za-z0-9_-]{16,}"
 
 
 def latido_y_bybit():
@@ -77,13 +87,15 @@ def latido_y_bybit():
     if not f or not f[0][0].isdigit():
         return faltas.append("ahora: 140 no dijo su hora")
     AHORA.append(int(f[0][0]))
-    f = sql("SELECT extract(epoch FROM ts)::bigint, estado::text FROM bot_estado WHERE clave = 'bot'", "latido")
+    f = sql("SELECT clave, extract(epoch FROM ts)::bigint, estado::text FROM bot_estado", "latido")
     if f is None:
         return
-    if not f:
+    for clave, ts, *resto in f:
+        FILAS[clave] = (int(ts), json.loads("|".join(resto)))
+    if "bot" not in FILAS:
         return faltas.append("latido: el bot no ha latido nunca")
-    edad = AHORA[0] - int(f[0][0])
-    estado = json.loads("|".join(f[0][1:]))
+    edad = AHORA[0] - FILAS["bot"][0]
+    estado = FILAS["bot"][1]
     if edad > LATIDO_MAX:
         condenas.append(f"el ultimo latido del bot es de hace {edad} s (tope {LATIDO_MAX})")
     else:
@@ -97,6 +109,69 @@ def latido_y_bybit():
         dichos.append("Bybit de solo lectura y atada a la IP (estado del bot)")
     else:
         faltas.append(f"bybit: el bot no pudo juzgar la clave ({b.get('error')})")
+
+
+def vigia():
+    """El interruptor: su temporizador vivo, su ultima pasada bien, su latido, y que AVISE cuando el bot no late."""
+    rc, out, _ = corre("prod", "systemctl show coinalyze-bot-vigia.timer -p LoadState -p ActiveState; echo SERVICIO-K117;"
+                               " systemctl show coinalyze-bot-vigia.service -p Result; echo FIN-K117")
+    if "FIN-K117" not in out or "SERVICIO-K117" not in out:
+        return faltas.append(f"vigia: bin/prod sin su marco ({out.strip()[:80]!r})")
+    temporizador, servicio_ = (dict(ln.split("=", 1) for ln in trozo.splitlines() if "=" in ln) for trozo in out.split("SERVICIO-K117", 1))
+    if temporizador.get("LoadState") == "not-found":
+        return faltas.append("vigia: el interruptor (coinalyze-bot-vigia.timer) no esta instalado en 140")
+    if temporizador.get("ActiveState") != "active":
+        condenas.append(f"el temporizador del interruptor esta {temporizador.get('ActiveState')}: nadie avisa si el bot cae")
+    if servicio_.get("Result") not in (None, "success"):
+        condenas.append(f"la ultima pasada del interruptor fallo ({servicio_.get('Result')})")
+    if not AHORA or "vigia" not in FILAS:
+        return faltas.append("vigia: el interruptor no ha publicado nunca en bot_estado")
+    ts, e = FILAS["vigia"]
+    if AHORA[0] - ts > VIGIA_PASA_MAX:
+        return condenas.append(f"el interruptor no pasa desde hace {AHORA[0] - ts} s (tope {VIGIA_PASA_MAX})")
+    if "bot" in FILAS and ts - FILAS["bot"][0] > VIGIA_LATIDO and "latido" not in (e.get("problemas") or {}):
+        return condenas.append(f"el interruptor no avisa: el bot no late desde hace {ts - FILAS['bot'][0]} s cuando paso, y no lo da por problema")
+    sin_avisar = set(e.get("problemas") or {}) - set(e.get("notificados") or {})
+    if sin_avisar and (e.get("envio") or {}).get("ok") is False:
+        return condenas.append(f"el interruptor no pudo avisar de {sorted(sin_avisar)} (canal: {e.get('canal')})")
+    dichos.append(f"interruptor vivo (paso hace {AHORA[0] - ts} s, {len(e.get('problemas') or {})} problema(s) avisados)")
+
+
+def parte():
+    """El parte diario: pasadas las 13:30Z, el de hoy; antes, el de ayer (salvo que el bot arrancara despues)."""
+    if not AHORA:
+        return faltas.append("parte: sin la hora de 140")
+    f = sql("SELECT coalesce(max(extract(epoch FROM ts))::bigint, 0), coalesce(min(extract(epoch FROM ts)) FILTER"
+            " (WHERE tipo = 'arranque'), 0)::bigint FROM bot_evento WHERE tipo IN ('parte', 'arranque')", "parte")
+    if f is None:
+        return
+    ultimo, primero = int(f[0][0]), int(f[0][1])
+    hoy = AHORA[0] // 86400 * 86400
+    toca = hoy + PARTE_HORA_UTC * 3600 if AHORA[0] >= hoy + PARTE_HORA_UTC * 3600 + 1800 else hoy - 86400 + PARTE_HORA_UTC * 3600
+    if not primero:
+        return faltas.append("parte: el bot no ha arrancado nunca")
+    if primero > toca:
+        return dichos.append("el primer parte aun no tocaba (el bot arranco despues)")
+    if ultimo < toca:
+        cuando = datetime.fromtimestamp(ultimo, UTC).strftime("%m-%d %H:%MZ") if ultimo else "nunca"
+        return condenas.append(f"el parte de {datetime.fromtimestamp(toca, UTC):%m-%d} no salio (el ultimo: {cuando})")
+    dichos.append(f"parte de {datetime.fromtimestamp(ultimo, UTC):%m-%d %H:%MZ}")
+
+
+def journal():
+    """Ninguna linea del journal del bot ni del interruptor (24 h) con la FORMA de una clave: se cuentan, no se imprimen."""
+    rc, out, _ = corre("prod", "echo LINEAS-K117 $(journalctl -u coinalyze-bot -u coinalyze-bot-vigia --since -24h -q --no-pager | wc -l);"
+                               f" echo FORMAS-K117 $(journalctl -u coinalyze-bot -u coinalyze-bot-vigia --since -24h -q --no-pager"
+                               f" | grep -c -E '{FORMAS}'); echo FIN-K117")
+    m = re.search(r"LINEAS-K117 (\d+)\s+FORMAS-K117 (\d+)\s+FIN-K117", out)
+    if not m:
+        return faltas.append(f"journal: bin/prod sin su marco ({out.strip()[:80]!r})")
+    lineas, formas = int(m.group(1)), int(m.group(2))
+    if formas:
+        return condenas.append(f"{formas} linea(s) del journal del bot con FORMA de clave en 24 h (no se imprimen: journalctl en 140)")
+    if not lineas:
+        return faltas.append("journal: coinalyze-bot no tiene lineas en 24 h")
+    dichos.append(f"journal sin formas de clave ({lineas} lineas en 24 h)")
 
 
 def series(filas: dict, t0: int, t1: int):
@@ -215,7 +290,7 @@ def codigo():
 
 
 sys.path.insert(0, REPO)
-for fn in (servicio, latido_y_bybit, alertas, gasto, codigo):
+for fn in (servicio, latido_y_bybit, vigia, parte, journal, alertas, gasto, codigo):
     brazo(fn)
 corta = lambda s: s if len(s) <= 380 else s[:377] + "..."  # noqa: E731
 if condenas:

@@ -10,6 +10,12 @@
 #             app/rafagas.py (Z = 4, el resto congelado) sobre el ohlcv 1min de 140, reproducido con el pegamento de K117
 #   gasto     la suma de bot_llamada de cada dia UTC de los ultimos 7 <= su tope
 #   codigo    ninguna ruta de ordenes, retiros ni transferencias de Bybit en app/bot del ARBOL ni del RELEASE de 140
+#   (remate 1, «el bot vigilado»)
+#   vigia     el interruptor de hombre muerto: coinalyze-bot-vigia.timer active, su ultima pasada success, su fila de
+#             bot_estado de hace <= 900 s, y si el bot no latia cuando paso, que lo dio por problema y pudo avisar
+#   parte     pasadas las 13:30Z, el parte diario de hoy; antes, el de ayer
+#   journal   ninguna linea de 24 h del journal del bot ni del interruptor con la FORMA de una clave (se cuenta en 140,
+#             nunca se imprime)
 # Algo que condenar -> ROJO con la primera condena (y las demas debajo); si no, lo que no se pudo mirar -> NO MEDIDO
 # (sin el servicio, todo lo de 140 es NO MEDIDO «FALTA DESPLEGAR»); todo mirado y bien -> VERDE.
 #

@@ -5,7 +5,9 @@
 # de fixtures. Las velas son ohlcv 1min REAL de 140 (K117-velas.tsv.xz, 2026-10-19 21:00Z .. 10-21 00:10Z); el
 # registro de alertas lo escribe el CODIGO DEL BOT (app/bot/centinela.py) sobre esas velas; ahora = 10-21 00:50Z (la
 # ventana de K117 cubre la cascada del 10-20 14:01-14:02Z y ETH 15:13Z); latido de hace 30 s, Bybit de solo lectura y
-# atada a la IP, la unidad active/running, gasto 1.25 de 3 USD, release sin rutas. -> VERDE, con las alertas juzgadas.
+# atada a la IP, la unidad active/running, gasto 1.25 de 3 USD, release sin rutas; y (remate 1) el interruptor con su
+# temporizador activo que paso hace 100 s sin problemas, el parte del 10-20 a las 13:00Z, y 1234 lineas de journal sin
+# ninguna forma de clave. -> VERDE, con las alertas juzgadas.
 # Cada plantado, en su copia:
 #
 #   ruta_arbol        «/v5/order/create» en app/bot/bybit.py de una copia del arbol            ROJO ruta en el arbol
@@ -22,6 +24,13 @@
 #   canal_prod        bin/prod no devuelve nada (sin marco)                                     NO MEDIDO sin su marco
 #   bybit_sin_juzgar  el estado del bot no pudo juzgar la clave                                 NO MEDIDO
 #   arbol_roto        K117_REPO a un directorio vacio                                           NO MEDIDO
+#   (remate 1)
+#   vigia_no_avisa    el bot sin latir 600 s cuando paso el interruptor, que no lo da por problema  ROJO no avisa
+#   vigia_parado      el interruptor paso hace 3600 s                                           ROJO no pasa
+#   vigia_apagado     su temporizador inactive                                                  ROJO el temporizador
+#   vigia_sin_canal   un problema sin avisar y el envio fallido                                 ROJO no pudo avisar
+#   parte_no_sale     el ultimo parte, del 10-19                                                ROJO el parte no salio
+#   clave_en_log      3 lineas del journal con forma de clave                                   ROJO forma de clave
 #
 # Y el check: sus tres invocaciones (A56) y los dos modos de SIGPIPE (A89) sobre el escenario bueno. Al salir: el
 # arbol intacto y nada en el temporal. No toca produccion, ni el espejo, ni una base.
@@ -46,7 +55,7 @@ cat > "$T/h/bin/prodsql" <<'SH'
 #!/bin/sh
 q="$*"
 case "$q" in
-  *bot_estado*) f=estado ;; *bot_evento*arranque*) f=arranque ;; *bot_evento*) f=eventos ;;
+  *bot_estado*) f=estado ;; *bot_evento*\'parte\'*) f=parte ;; *bot_evento*arranque*) f=arranque ;; *bot_evento*) f=eventos ;;
   *ohlcv*) f=velas ;; *bot_llamada*) f=gasto ;; *) f=ahora ;;
 esac
 [ -r "$K117_FX/$f" ] || { echo "psql:<stdin>:1: ERROR:  relation \"$f\" does not exist" >&2; exit 3; }
@@ -54,7 +63,9 @@ cat "$K117_FX/$f"
 SH
 cat > "$T/h/bin/prod" <<'SH'
 #!/bin/sh
-case "$*" in *systemctl*) f=systemctl ;; *grep*) f=codigo ;; *) f=nada ;; esac
+case "$*" in
+  *journalctl*) f=journal ;; *coinalyze-bot-vigia.timer*) f=vigia ;; *systemctl*) f=systemctl ;; *grep*) f=codigo ;; *) f=nada ;;
+esac
 [ -r "$K117_FX/$f" ] && cat "$K117_FX/$f"
 exit 0
 SH
@@ -85,8 +96,13 @@ for d in (datetime(2026, 10, 20, tzinfo=UTC), datetime(2026, 10, 21, tzinfo=UTC)
 estado = {"bybit": {"activo": True, "solo_lectura": True, "ip_ok": True, "ips": ["138.186.31.141"], "error": None}}
 w = lambda f, t: open(f"{fx}/{f}", "w").write(t + "\n")
 w("ahora", str(ahora))
-w("estado", f"{ahora - 30}|{json.dumps(estado)}")
-w("arranque", str(int(datetime(2026, 10, 19, 20, tzinfo=UTC).timestamp())))
+vigia = {"problemas": {}, "notificados": {}, "envio": {"ok": None, "ts": None}, "canal": "puente"}
+arranque = int(datetime(2026, 10, 19, 20, tzinfo=UTC).timestamp())
+w("estado", f"bot|{ahora - 30}|{json.dumps(estado)}\nvigia|{ahora - 100}|{json.dumps(vigia)}")
+w("arranque", str(arranque))
+w("parte", f"{int(datetime(2026, 10, 20, 13, tzinfo=UTC).timestamp())}|{arranque}")
+w("vigia", "LoadState=loaded\nActiveState=active\nSERVICIO-K117\nResult=success\nFIN-K117")
+w("journal", "LINEAS-K117 1234\nFORMAS-K117 0\nFIN-K117")
 w("eventos", "\n".join(ev))
 w("gasto", "2026-10-20|1.25|3|5")
 w("systemctl", "LoadState=loaded\nActiveState=active\nSubState=running\nFIN-K117")
@@ -146,6 +162,24 @@ planta() {  # nombre esperado_rc patron detalle fixtures arbol
     "rc=$rc · $H_BUENA -> $despues · ${visto:-NO SALE: $(head -1 "$T/sal" | cut -c1-200)} · $que"
 }
 
+estado() {  # fixtures clave segundos_atras [campo=json ...]: reescribe la fila de bot_estado de esa clave
+  "$PY" -S - "$@" <<'PY'
+import json, sys
+fx, clave, atras, *cambios = sys.argv[1:]
+ahora = int(open(f"{fx}/ahora").read())
+filas = [ln.split("|", 2) for ln in open(f"{fx}/estado").read().splitlines()]
+for f in filas:
+    if f[0] == clave:
+        f[1] = str(ahora - int(atras))
+        e = json.loads(f[2])
+        for c in cambios:
+            k, v = c.split("=", 1)
+            e[k] = json.loads(v)
+        f[2] = json.dumps(e)
+open(f"{fx}/estado", "w").write("\n".join("|".join(f) for f in filas) + "\n")
+PY
+}
+
 echo "== los plantados"
 A=$(arbol ruta_arbol); printf 'RUTA_PLANTADA = "/v5/order/create"\n' >> "$A/app/bot/bybit.py"
 planta ruta_arbol 1 "^ROJO  K117 ruta de ordenes/retiros/transferencias en el arbol: app/bot/bybit.py" "una ruta de ordenes en el codigo" "$B0" "$A"
@@ -184,19 +218,33 @@ F=$(copia bybit_opera); sustituye "$F/estado" '"solo_lectura": true' '"solo_lect
 planta bybit_opera 1 "^ROJO  K117 el bot publica que la clave de Bybit PUEDE OPERAR" "un estado de Bybit con permiso de operar" "$F" "$BUENA"
 F=$(copia ip_no_atada); sustituye "$F/estado" '"ip_ok": true' '"ip_ok": false'
 planta ip_no_atada 1 "^ROJO  K117 el bot publica que la clave de Bybit no esta atada a la IP" "ip_ok false" "$F" "$BUENA"
-F=$(copia latido_viejo); printf '%s|%s\n' "$(( $(cat "$F/ahora") - 600 ))" "$(cut -d'|' -f2- "$F/estado")" > "$F/estado"
+F=$(copia latido_viejo); estado "$F" bot 600
 planta latido_viejo 1 "^ROJO  K117 el ultimo latido del bot es de hace 600 s" "latido de hace 600 s" "$F" "$BUENA"
 F=$(copia servicio_caido); sustituye "$F/systemctl" "ActiveState=active" "ActiveState=failed"; sustituye "$F/systemctl" "SubState=running" "SubState=failed"
 planta servicio_caido 1 "^ROJO  K117 coinalyze-bot failed/failed en 140" "la unidad cayo" "$F" "$BUENA"
-F=$(copia sin_servicio); rm -f "$F/estado" "$F/eventos" "$F/arranque" "$F/gasto"
+F=$(copia sin_servicio); rm -f "$F/estado" "$F/eventos" "$F/arranque" "$F/gasto" "$F/parte"
 printf 'LoadState=not-found\nActiveState=inactive\nSubState=dead\nFIN-K117\n' > "$F/systemctl"; printf 'SIN-BOT-K117\n' > "$F/codigo"
+printf 'LoadState=not-found\nActiveState=inactive\nSERVICIO-K117\nResult=success\nFIN-K117\n' > "$F/vigia"
+printf 'LINEAS-K117 0\nFORMAS-K117 0\nFIN-K117\n' > "$F/journal"
 planta sin_servicio 2 "^NO MEDIDO: K117 servicio: coinalyze-bot no esta instalada en 140" "lo de hoy en 140" "$F" "$BUENA"
-F=$(copia canal_prod); rm -f "$F/systemctl" "$F/codigo"
+F=$(copia canal_prod); rm -f "$F/systemctl" "$F/codigo" "$F/vigia" "$F/journal"
 planta canal_prod 2 "^NO MEDIDO: K117 servicio: bin/prod sin su marco" "bin/prod mudo" "$F" "$BUENA"
 F=$(copia bybit_sin_juzgar); sustituye "$F/estado" '"solo_lectura": true, "ip_ok": true' '"solo_lectura": null, "ip_ok": null'
 planta bybit_sin_juzgar 2 "^NO MEDIDO: K117 bybit: el bot no pudo juzgar la clave" "clave sin juzgar" "$F" "$BUENA"
 mkdir -p "$T/vacio"
 planta arbol_roto 2 "^NO MEDIDO: K117 no encuentro" "K117_REPO vacio" "$B0" "$T/vacio"
+F=$(copia vigia_no_avisa); estado "$F" bot 600
+planta vigia_no_avisa 1 "ROJO el interruptor no avisa: el bot no late desde hace 500 s" "un interruptor que no avisa" "$F" "$BUENA"
+F=$(copia vigia_parado); estado "$F" vigia 3600
+planta vigia_parado 1 "^ROJO  K117 el interruptor no pasa desde hace 3600 s" "el interruptor parado" "$F" "$BUENA"
+F=$(copia vigia_apagado); sustituye "$F/vigia" "ActiveState=active" "ActiveState=inactive"
+planta vigia_apagado 1 "^ROJO  K117 el temporizador del interruptor esta inactive" "su temporizador apagado" "$F" "$BUENA"
+F=$(copia vigia_sin_canal); estado "$F" vigia 100 'problemas={"parte:2026-10-20": "el parte no salio"}' 'envio={"ok": false, "ts": null}' 'canal="sin canal"'
+planta vigia_sin_canal 1 "^ROJO  K117 el interruptor no pudo avisar de \['parte:2026-10-20'\]" "un problema sin avisar" "$F" "$BUENA"
+F=$(copia parte_no_sale); printf '%s|%s\n' "$(date -u -d 2026-10-19T13:00:00Z +%s)" "$(cat "$F/arranque")" > "$F/parte"
+planta parte_no_sale 1 "^ROJO  K117 el parte de 10-20 no salio \(el ultimo: 10-19 13:00Z\)" "un parte que no sale" "$F" "$BUENA"
+F=$(copia clave_en_log); printf 'LINEAS-K117 1234\nFORMAS-K117 3\nFIN-K117\n' > "$F/journal"
+planta clave_en_log 1 "^ROJO  K117 3 linea\(s\) del journal del bot con FORMA de clave" "una clave con su forma en el log" "$F" "$BUENA"
 
 echo "== el check: A89 los dos modos de SIGPIPE y A56 las tres invocaciones, sobre el escenario bueno"
 export K117_FX="$B0" K117_HARNESS="$T/h" K117_PY="$PY"
