@@ -46,13 +46,17 @@ def juzga_clave(d: dict, ip: str) -> dict:
     """La respuesta de /v5/user/query-api -> lo que el bot publica en su estado. activo solo con solo lectura Y la IP."""
     e = error(d)
     if e:
-        return {"activo": False, "solo_lectura": None, "ip_ok": None, "ips": None, "error": e}
+        return {"activo": False, "solo_lectura": None, "ip_ok": None, "ips": None, "ip_salida": ip, "error": e}
     r = d.get("result") or {}
     solo = r.get("readOnly") == 1
     ips = r.get("ips") if isinstance(r.get("ips"), list) else []
     ip_ok = ip in ips and "*" not in ips
-    motivo = None if solo and ip_ok else ("la clave PUEDE OPERAR" if not solo else f"la clave no esta atada a {ip}")
-    return {"activo": solo and ip_ok, "solo_lectura": solo, "ip_ok": ip_ok, "ips": ips, "error": motivo}
+    # las IPs atadas no son secretas: van en el estado al lado de la de salida de 140, para ver que falta sin abrir Bybit
+    atadas = ", ".join(map(str, ips)) or "ninguna"
+    motivo = None if solo and ip_ok else ("la clave PUEDE OPERAR" if not solo else
+                                          f"la clave admite cualquier IP (*): tiene que estar atada solo a {ip}" if "*" in ips else
+                                          f"la clave no esta atada a {ip} (Bybit tiene atadas: {atadas})")
+    return {"activo": solo and ip_ok, "solo_lectura": solo, "ip_ok": ip_ok, "ips": ips, "ip_salida": ip, "error": motivo}
 
 
 def posiciones(d: dict) -> list[dict]:

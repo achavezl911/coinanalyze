@@ -27,7 +27,7 @@ from datetime import UTC, datetime, timedelta
 import asyncpg
 import httpx
 
-from app.bot.servicio import PARTE_HORA_UTC, Telegram, limpia, semana_iso
+from app.bot.servicio import PARTE_HORA_UTC, Telegram, js, limpia, semana_iso
 
 LATIDO_MIN = 5
 MARGEN_PARTE = timedelta(minutes=30)
@@ -119,17 +119,17 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
         if not ok:
             break  # lo no avisado se queda fuera de notificados: se reintenta en la siguiente pasada
         if db is not None:
-            await db.execute("INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('vigia', true, $1::jsonb)", json.dumps({"texto": texto}))
+            await db.execute("INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('vigia', true, $1::jsonb)", js({"texto": texto}))
         if texto.startswith("INTERRUPTOR del bot (coinalyze-bot)"):
             notificados |= nuevos
         else:
             notificados = {k: v for k, v in notificados.items() if k not in resueltos}
     publica = {"ts": ahora.isoformat(), "problemas": actuales, "notificados": notificados, "envio": envio,
                "canal": "puente" if token and chat else "sin canal"}
-    estado_f.write_text(json.dumps(publica))
+    estado_f.write_text(js(publica))
     if db is not None:
         await db.execute("INSERT INTO bot_estado (clave, ts, estado) VALUES ('vigia', $1, $2::jsonb)"
-                         " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = excluded.estado", ahora, json.dumps(publica))
+                         " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = excluded.estado", ahora, js(publica))
         await db.close()
     return publica
 
