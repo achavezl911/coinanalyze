@@ -3,8 +3,10 @@ ni transferencias (tests/test_bot.py lo comprueba buscando en app/bot/, y K117 e
 se prueba intentando una orden: sus permisos se leen de /v5/user/query-api.
 
 Firma v5 de un GET: HMAC-SHA256(secreto, timestamp + clave + recv_window + query) en hexadecimal, con la query
-EXACTA que se envia. ponytail: rutas, campos y codigos de error de memoria, sin contrastar con la doc publica en BOT-2
-(WebFetch sin permiso); un campo que falta se juzga en contra (la clave se apaga), nunca a favor.
+EXACTA que se envia. Medido por el OPERADOR en la doc publica (2026-10-24, remate 1 de BOT-2): query-api trae «readOnly»
+entero (0 lectura y escritura, 1 solo lectura) e «ips» (lista); 10003 «API key is invalid», 10004 «Error sign», 10010
+«Unmatched IP». ponytail: el resto (position/list, closed-pnl y sus parametros) sigue de memoria; un campo que falta se
+juzga en contra (la clave se apaga), nunca a favor.
 """
 
 from __future__ import annotations
