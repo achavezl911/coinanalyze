@@ -3198,7 +3198,8 @@ COMMIT;
 -- existente se toca. Ningun nombre lleva digitos (K01a).
 --   bot_evento      SOLO ANADIR. Cada alerta: 'rafaga' (al detectarla) y 'clase' (1-3 min despues) del centinela, una
 --                   por activo y minuto (indice unico parcial: un reinicio no duplica); 'stop', 'liquidacion' y 'sin_stop'
---                   de una posicion abierta; 'bybit' cuando cambia el estado de la clave. enviada = llego a Telegram.
+--                   de una posicion abierta; 'bybit' cuando cambia el estado de la clave; 'arranque' en cada arranque
+--                   (K117 cuenta las alertas desde el dia del primero). enviada = llego a Telegram.
 --   bot_evaluacion  SOLO ANADIR. 'veredicto' de una posicion (A FAVOR / EN CONTRA / NO EVALUABLE, el de Opus o el de
 --                   DECIDE, y el de DECIDE al lado) ANTES de su resultado; 'cierre' con su pnl y si acerto.
 --   bot_llamada     SOLO ANADIR. Cada llamada a Anthropic: tokens, coste y el tope vigente (estimado = cayo sin usage y
@@ -3221,7 +3222,7 @@ $$;
 
 CREATE TABLE IF NOT EXISTS bot_evento (
     ts timestamptz NOT NULL DEFAULT now(),
-    tipo text NOT NULL CHECK (tipo IN ('rafaga', 'clase', 'stop', 'liquidacion', 'sin_stop', 'bybit')),
+    tipo text NOT NULL CHECK (tipo IN ('rafaga', 'clase', 'stop', 'liquidacion', 'sin_stop', 'bybit', 'arranque')),
     symbol text,
     minuto timestamptz,
     lado smallint CHECK (lado IN (-1, 1)),

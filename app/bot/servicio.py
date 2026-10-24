@@ -456,7 +456,8 @@ class Bot:
 
     async def corre(self):
         await self.carga()
-        await self.manda(f"bot arriba · {self.texto_estado()}")
+        enviada = await self.manda(f"bot arriba · {self.texto_estado()}")
+        await self.evento("arranque", None, None, enviada, detalle={"version": self.estado["version"]})
         await asyncio.gather(self.cada("centinela", 60, self.tic_minuto), self.cada("bybit", 60, self.tic_bybit),
                              self.cada("telegram", 1, self.tic_telegram))
 
