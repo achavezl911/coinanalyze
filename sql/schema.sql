@@ -3308,3 +3308,41 @@ CREATE OR REPLACE TRIGGER bot_operacion_sin_truncate BEFORE TRUNCATE ON bot_oper
     FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
 
 COMMIT;
+
+-- =========================================================================================
+-- CAMPANA BOT-2 · REMATE 7 · LA LECTURA CRUDA. Bloque ADITIVO (IF NOT EXISTS / OR REPLACE): una tabla NUEVA.
+--   bot_crudo  SOLO ANADIR, y la poda de lo de mas de 90 dias (la hace el bot cada hora): cada lectura de position/list
+--              QUE CAMBIA (side, size, avgPrice, stopLoss, updatedTime y la hora local) y cada fila de closed-pnl con sus dos
+--              horas (createdTime, updatedTime) y su fillCount, tal cual las da Bybit: con ellas se miden con Bybit de verdad
+--              los supuestos S1-S4 de app/bot/vidas.py. Nada de la cuenta mas alla de eso.
+-- Permisos: el bot entra como "coinalyze-ai"; los GRANT (INSERT, SELECT, DELETE) los da el operador.
+-- =========================================================================================
+BEGIN;
+
+CREATE OR REPLACE FUNCTION bot_crudo_solo_poda()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'DELETE' AND OLD.ts < now() - interval '90 days' THEN
+        RETURN OLD;
+    END IF;
+    RAISE EXCEPTION 'bot_crudo es solo anadir (y poda de lo de mas de 90 dias); % no se permite', TG_OP
+        USING ERRCODE = '55000';
+END
+$$;
+
+CREATE TABLE IF NOT EXISTS bot_crudo (
+    ts timestamptz NOT NULL DEFAULT now(),
+    tipo text NOT NULL CHECK (tipo IN ('posicion', 'fila')),
+    symbol text,
+    detalle jsonb NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS bot_crudo_ts_idx ON bot_crudo (ts);
+
+CREATE OR REPLACE TRIGGER bot_crudo_solo_anadir BEFORE UPDATE OR DELETE ON bot_crudo
+    FOR EACH ROW EXECUTE FUNCTION bot_crudo_solo_poda();
+CREATE OR REPLACE TRIGGER bot_crudo_sin_truncate BEFORE TRUNCATE ON bot_crudo
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+
+COMMIT;
