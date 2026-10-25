@@ -190,8 +190,9 @@ def tramo(pre: tuple, filas: list, post: tuple | None, vacias: int = 0) -> dict:
         # mas tamano a la MISMA entrada: un anadido al precio exacto de la media o cerrar y reabrir a la misma (S4 roto: A6)
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A6, "s4": True}
     if vacias >= VACIAS_SEGUIDAS:  # se fue sin filas que la cierren y volvio distinta: no se parte (A7)
+        # (volvio con MENOS sin filas que lo expliquen, o se fue de verdad -4 vacias, S3- sin filas que la cierren: faltan)
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A7,
-                "falta": post[0] < tam - pre[0] * TOL_Q}  # (volvio con MENOS sin filas que lo expliquen: faltan filas)
+                "falta": post[0] < tam - pre[0] * TOL_Q or vacias >= VACIAS_LIMPIA}
     # anadidos despues de esos cierres: subirian el tamano; si ensena MENOS de lo que dejan las filas, faltan filas
     return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "falta": post[0] < tam - pre[0] * TOL_Q}
 
@@ -331,7 +332,7 @@ class Libro:
                   [k["runs"][i][3] for i in v["runs"]]]]
             k["vacia"] = v["fin"] if v.get("amb") else fin  # (de una ambigua no hay fila segura: lo de despues, a la siguiente)
             sig = next((w for w in vidas if w["runs"] and min(w["runs"]) == hechas), None)  # su duda no se pierde al quedar primera
-            k["heredada"] = sig["amb"] if sig and str(sig["amb"]).startswith(("A6", "S1")) else None  # (A2 y A3 se recalculan)
+            k["heredada"] = sig["amb"] if sig and (sig["amb"] == A6 or str(sig["amb"]).startswith("S1")) else None  # (lo demas se recalcula)
         if hechas:
             del k["runs"][:hechas]
             if not k["runs"]:
@@ -494,8 +495,8 @@ class Libro:
                         v["faltan"] = True
                     if sl:
                         v["amb"] = v["amb"] or A3
-            if i in dudas or i - 1 in dudas:
-                v["amb"] = v["amb"] or S1
+            if i in dudas or i - 1 in dudas:  # (la duda manda sobre la A6 que trae su colocacion provisional)
+                v["amb"] = S1 if v["amb"] in (None, A6P) else v["amb"]
             dentro = entre(filas, hs, r[0] + DESFASE_MS, r[1] - DESFASE_MS)
             if any(f["h"] < r[1] - DESFASE_MS for f in dentro):
                 v["amb"] = v["amb"] or "X: una fila mientras el tamano y la entrada no cambiaban"
@@ -657,8 +658,9 @@ class Libro:
                 elegido.update(min(todas, key=lambda x: (sum(x[1]), x[0], x[2]))[3])
             elif len({x[1] for x in buenas}) == 1:
                 elegido.update(min(buenas, key=lambda x: x[2])[3])
-            elif cruda and cruda[4] == mejor_p and len({x[1] for x in buenas if x[4] == mejor_p}) == 1:
-                elegido.update(cruda[3])  # lo que aun puede llegar confirma la hora cruda (no la contradice)
+            elif cruda and cruda[4] == mejor_p and len({x[1] for x in buenas if x[4] == mejor_p}) == 1 \
+                    and all((runs[x] + [None, None])[8] and not self.u_parado for x in seg):
+                elegido.update(cruda[3])  # lo que aun puede llegar confirma la hora cruda (con un updatedTime que informa)
             else:  # dos historias posibles (o solo la contradice algo que aun puede llegar): la que menos parte, y duda
                 dudas.update(seg)
                 elegido.update(min(buenas, key=lambda x: (sum(x[1]), x[2]))[3])
