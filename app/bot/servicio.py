@@ -794,10 +794,14 @@ class Bot:
                 self.anota("BASE", f"no pode bot_crudo: {type(e).__name__}", "poda crudo")
 
     async def en_crudo(self, tipo: str, symbol: str, detalle: dict):
+        """Una lectura cruda a bot_crudo. CUALQUIER excepcion se anota y sigue (remate 8, R5: la llaman la lectura cruda y
+        closed-pnl, y una que no fuera de la base abortaba el tic con su evaluacion y su cierre)."""
         try:
             await self.db.execute("INSERT INTO bot_crudo (tipo, symbol, detalle) VALUES ($1, $2, $3::jsonb)", tipo, symbol, js(detalle))
         except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
             self.anota("BASE", f"no registro la lectura cruda ({tipo}): {type(e).__name__}", "registro crudo")
+        except Exception as e:  # noqa: BLE001
+            self.anota(causa(e), f"no registro la lectura cruda ({tipo}): {type(e).__name__} {str(e)[:120]}", "registro crudo")
         else:
             self.bien("registro crudo")
 

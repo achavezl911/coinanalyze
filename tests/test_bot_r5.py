@@ -116,9 +116,9 @@ async def test_reg5_unas_vidas_que_no_son_un_diccionario_no_impiden_arrancar(bas
 async def test_sospecha_el_plan_b_no_pega_una_posicion_nueva_a_una_vieja(base, monkeypatch):  # noqa: F811 - el fixture `base` de test_bot
     t0, ops, cuenta = _t0(), [], {}
     db = _EnFila(base)
-    # (R7: al promediar se mueve su updatedTime; con el de la apertura el libro no se fia de el -u_parado- y la separacion
-    # queda en duda hasta la ESPERA)
-    bot = sv.Bot(ENTORNO, db, _mundo([[_pos(110000, t0)], [_pos(110300, t0 + M + 30_000, size="0.008")], []], ops, cuenta))
+    # (remate 8, R4: la entrada ORIGINAL -al promediar NO se mueve el updatedTime- vuelve; R7 la habia cambiado porque con
+    # ella la nueva se evaluaba en k=40-45: la fila del cierre, 20 s detras de la lectura, caia en la ventana hacia atras)
+    bot = sv.Bot(ENTORNO, db, _mundo([[_pos(110000, t0)], [_pos(110300, t0, size="0.008")], []], ops, cuenta))
     for k in (1, 2, 3, 4):  # abierta, promediada (0.008 a 110300) y cerrada; closed-pnl todavia no trae su cierre
         await _tic(bot, monkeypatch, t0 + k * M + 20_000)
     await bot.latido()  # cae esperando la fila de su cierre
@@ -127,13 +127,14 @@ async def test_sospecha_el_plan_b_no_pega_una_posicion_nueva_a_una_vieja(base, m
     otro = sv.Bot(ENTORNO, db, _mundo([[nueva]], ops, cuenta))
     await otro.carga()
     await _tic(otro, monkeypatch, t0 + 10 * M + 20_000)
-    for k in range(11, 41):  # R7: tras ESPERA (35 min) desde que dejo de verse (un tic por minuto)
+    assert len(set(await _veredictos(db))) == 2  # la nueva se evalua YA, en k=10 (R7: k=40-45)
+    for k in range(11, 41):  # la vieja se puntua tras ESPERA (35 min) desde que dejo de verse (un tic por minuto)
         await _tic(otro, monkeypatch, t0 + k * M + 20_000)
     monkeypatch.undo()
     ids = await _veredictos(db)
     # antes: el plan B la daba por ABIERTA (no estaba en las vidas) y la nueva quedaba pegada, sin evaluar ni avisar
-    # (R7: 3 avisos sin_stop: la vieja al abrir, la vieja al promediar -otro updatedTime y sigue sin stop- y la nueva)
-    assert len(set(ids)) == 2 and await _sin_stop(db) == 3, ids
+    # (2 avisos sin_stop: la vieja -su updatedTime no cambia al promediar- y la nueva)
+    assert len(set(ids)) == 2 and await _sin_stop(db) == 2, ids
     assert await _cierres(db) == {ids[0]: 4.0}
 
 
