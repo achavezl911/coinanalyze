@@ -436,13 +436,21 @@ class Bot:
             guardado = (json.loads(e["estado"]) if isinstance(e["estado"], str) else e["estado"]) if e else None
         except ValueError:
             guardado = "ilegible"
-        filas = [{"orden": o, "symbol": s, "q": q, "e": en, "x": x, "pnl": pnl, "b": vidas.hora_fila(c, ms)}
+        filas = [{"orden": o, "symbol": s, "q": q, "e": en, "x": x, "pnl": pnl, "b": vidas.hora_fila(c, ms),
+                  "h": vidas.hora_fila(c, ms, tarde=True)}
                  for o, s, q, en, x, pnl, ms, c in await self.db.fetch(
                      "SELECT orden, symbol, cantidad, entrada, salida, pnl_usd, (extract(epoch FROM cerrada) * 1000)::bigint,"
                      " detalle->>'createdTime' FROM bot_operacion WHERE cerrada >= now() - interval '8 days' ORDER BY cerrada")]
         # la vida de cada posicion: del ultimo estado (tolerante: lo que no se entiende se descarta y se dice), lo visto al
         # evaluar cada vida sin cierre (un veredicto posterior al ultimo latido es una lectura mas: remate 6, R-B) y las filas
-        self.libro, avisos = vidas.Libro.desde(guardado, self.evaluadas, filas)
+        # las ordenes de los cierres ya apuntados: de vidas puntuadas, fuera de las abiertas (un estado de R5 no las separa)
+        usadas = set()
+        for (o,) in await self.db.fetch("SELECT detalle->'ordenes' FROM bot_evaluacion WHERE tipo = 'cierre'"
+                                        " AND ts >= now() - interval '9 days'"):
+            o = json.loads(o) if isinstance(o, str) else o
+            if isinstance(o, list):
+                usadas.update(str(x) for x in o)
+        self.libro, avisos = vidas.Libro.desde(guardado, self.evaluadas, filas, usadas)
         for a in avisos:
             self.anota("ESTADO", a, "carga")
         pend = guardado.get("cierres_pendientes") if isinstance(guardado, dict) else None
@@ -768,7 +776,7 @@ class Bot:
                     orden, c.get("symbol"), num("closedSize"), num("avgEntryPrice"), num("avgExitPrice"), num("closedPnl"),
                     num("leverage"), int(c.get("updatedTime") or c.get("createdTime") or 0), js(c))
                 self.libro.fila({"orden": orden, "symbol": c.get("symbol"), "b": vidas.hora_fila(c.get("createdTime"), c.get("updatedTime")),
-                                 "q": num("closedSize"), "e": num("avgEntryPrice"), "x": num("avgExitPrice"), "pnl": num("closedPnl")})
+                                 "h": vidas.hora_fila(c.get("createdTime"), c.get("updatedTime"), tarde=True), "q": num("closedSize"), "e": num("avgEntryPrice"), "x": num("avgExitPrice"), "pnl": num("closedPnl")})
                 await self.en_crudo("fila", c.get("symbol"), {"orderId": orden, "closedSize": c.get("closedSize"),
                                                               "avgEntryPrice": c.get("avgEntryPrice"), "createdTime": c.get("createdTime"),
                                                               "updatedTime": c.get("updatedTime"), "fillCount": c.get("fillCount"),

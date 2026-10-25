@@ -4,39 +4,52 @@ cual es nueva (se evalua una vez), cual cerro y con que filas (se puntua) y cual
 «ambigua» y NO se puntua). La comprueba tests/simulador_bot.py contra la verdad, dentro y FUERA de estos supuestos.
 
 LO QUE SE SUPONE (declarado; fuera de el, el simulador mide que sale ambigua o sin puntuar, no una cifra falsa):
- S1 la hora de una fila es min(createdTime, updatedTime) de closed-pnl MENOS MARGEN_FILA_MS (10 s), y se compara con el
-    updatedTime de la lectura de position/list: una fila con esa hora <= el updatedTime de una lectura se cuenta de antes de
-    esa lectura. Adelantarla es el lado seguro (el validador midio: closed-pnl 1 ms DETRAS del updatedTime daba cifras
-    falsas; 3 s por delante, ninguna); 10 s cubren un desfase de hasta 8 s en los dos sentidos y una orden de varias
-    ejecuciones (createdTime = la primera). Lo que adelantarla puede hacer mal -contar de antes de una lectura un cierre que
-    paso justo despues- sale como A6 o X, no como cifra.
+ S1 una fila de closed-pnl paso entre b = min(createdTime, updatedTime) - MARGEN_FILA_MS y h = max(los dos) + MARGEN_FILA_MS
+    (10 s: un desfase de hasta 8 s en los dos sentidos entre closed-pnl y position/list, y una orden de varias ejecuciones,
+    que es UNA fila: createdTime la primera, updatedTime la ultima). Una lectura de position/list ensena lo que paso hasta
+    B = max(su updatedTime, su hora local - DESFASE_MS): el updatedTime puede no moverse con un parcial o un anadido (y si
+    con el funding), y el reloj de 140 va hasta 10 s del de Bybit. La fila con h <= B va antes de esa lectura; la que esta
+    A CABALLO (b <= B < h) va al lado que no deja un tramo IMPOSIBLE (una lectura que ensena menos de lo que dejan las
+    filas) y, si los dos son posibles, al de su hora cruda min(createdTime, updatedTime) contra el updatedTime de esa
+    lectura (dentro de S1 es exacta: la ejecucion que deja lo que ensena la lectura tiene su misma hora). El validador midio que
+    una sola regla de hora no vale: closed-pnl 1 ms detras del updatedTime daba cifras falsas, y adelantarla 10 s las daba
+    al reves (un cierre de justo despues de una lectura, contado de antes).
  S2 closed-pnl trae cada cierre como mucho ESPERA_MS (35 min) despues. Por eso una vida se puntua pasados 35 min de su
     primera lectura, de cada lectura tras un tramo con anadidos y, si desaparecio, de su primera ausencia. Una fila mas
     tardia que eso puede faltar en una cifra ya emitida (el unico camino a una cifra falsa que queda; el simulador lo mide).
  S3 una lista vacia NO es un cierre: una vida solo cierra cuando sus filas cubren lo que tenia; ausente y sin filas, se
     queda ausente (nada pagado) y, si vuelve igual, es la misma; sin filas en SIN_FILAS_MS (2 h), «sin puntuar». Dos o mas
     lecturas SEGUIDAS sin la clave (VACIAS_SEGUIDAS) sirven para separar la vida siguiente si las filas cubren la de antes, y
-    para que «vacia» avance cuando no hay ninguna vida abierta.
- S4 un anadido mueve la entrada media mas de TOL_E (0.05 pb) y las entradas de position/list y closed-pnl salen con esa
-    precision. Si no (un anadido a un tick de la media y un parcial del tamano de antes; una reapertura a la misma entrada;
-    una orden de varias ejecuciones a caballo de una lectura), la vida NO se parte: sigue con el mismo id y sale A6.
+    sin ninguna vida abierta, para que lo cerrado antes de la penultima sea de vidas que el bot no vio («limpia»): un cierre
+    a otra entrada de antes de «limpia» ya no hace ambigua a la siguiente (A2 evitable); uno a SU entrada, si (puede ser un
+    parcial suyo durante unas vacias falsas).
+ S4 una entrada media IGUAL (TOL_E = 1e-9: solo el ruido de la coma flotante) es una vida sin anadidos: position/list y
+    closed-pnl dan la entrada con todos sus decimales, y un anadido -tambien a un tick de la media- la mueve. Con 0.05 pb
+    (R6) un anadido a un tick (0.045 pb en BTC) no se veia: un parcial del mismo tamano cubria justo y salia «cerrada y
+    reabierta». Si Bybit redondeara distinto en las dos rutas, cada parcial pareceria un anadido sin ver: ambigua, nunca una
+    cifra (lo mide bot_crudo). Lo que S4 no ve -una reapertura a la MISMA entrada; una orden de varias ejecuciones a caballo
+    de una lectura- no parte la vida: sigue con el mismo id y sale A6; tambien si tras las filas que la cubren hay MAS a su
+    entrada, o si tras un anadido sin ver cierran mas de lo que quedaba a la entrada que se ve despues.
 CUANDO SALE AMBIGUA (y ninguna otra vez; el simulador comprueba la verdad de cada una):
  A1 entre dos lecturas hubo un anadido que el bot no vio (una fila a otra entrada, o mas cerrado que lo visto) seguido de
     cierres, y no se puede saber si llego a 0: la lectura siguiente ensena otra entrada, o los cierres tienen mas de una.
  A2 antes de la primera lectura de una vida nueva hubo cierres a OTRA entrada que la suya, despues de la ultima fila segura
-    de la anterior (o de las ultimas lecturas seguidas sin la clave; sin registro, en cualquier momento): un anadido suyo,
-    una vida entera que el bot no vio, o la anterior tras un anadido sin ver. Es nueva (se evalua) pero no se puntua.
+    de la anterior y de «limpia» (sin registro, en cualquier momento): un anadido suyo, una vida entera que el bot no vio,
+    o la anterior tras un anadido sin ver; o cierres a SU entrada de antes de «limpia». Es nueva (se evalua) pero no se
+    puntua.
  A3 una fila sin lado (no se movio mas que la comision) cuando a su hora las dos direcciones del simbolo tenian vida y su
     entrada no casa con exactamente una de las dos.
  A4 el bot no leyo esa posicion en mas de 7 dias (lo que devuelve closed-pnl).
  A5 un registro anterior (otro bot, otro estado) separa la vida en una lectura sin una fila que la cierre.
- A6 sus filas la cierran a la misma entrada a la que se la ve despues (S4 roto: reapertura a la misma entrada, anadido a
-    un tick, orden de varias ejecuciones): no se sabe si es la misma o una nueva; sigue con el mismo id.
+ A6 sus filas la cierran a la misma entrada a la que se la ve despues (S4 roto: reapertura a la misma entrada, orden de
+    varias ejecuciones), o tras un anadido sin ver cierran mas de lo que quedaba a la entrada que se ve despues: no se sabe
+    si es la misma o una nueva; sigue con el mismo id.
  A7 desaparecio sin filas que la cierren y volvio distinta: un anadido mientras no se veia, o un cierre y otra con sus
     filas aun por llegar; sigue con el mismo id.
- X  (no deberia pasar dentro de S1-S4) una fila mientras lecturas seguidas ensenaban el mismo tamano y la misma entrada.
+ X  (no deberia pasar dentro de S1-S4) una fila sin duda entre dos lecturas que ensenaban el mismo tamano y la misma entrada.
 SIN PUNTUAR (no ambigua): desaparecio y closed-pnl no trajo en SIN_FILAS lo que cubre su tamano, o una lectura ensena menos
-de lo que dicen sus filas y en ESPERA no llega lo que falta.
+de lo que dicen sus filas y en ESPERA no llega lo que falta. Una vida ya ambigua cuyas filas cubren lo que se le vio abrir
+cierra (ambigua) cuando desaparece, sin esperar las 2 h.
 LA EVALUACION de una vida nueva se hace con su ultima lectura que es SUYA sin duda (su primera, o una enganchada por un
 tramo que se pudo comprobar): nunca con otra vida pegada a ella.
 """
@@ -47,7 +60,7 @@ import bisect
 
 from app.bot.bybit import lado_cierre
 
-TOL_E = 5e-6  # 0.05 pb: dos entradas medias «iguales» (S4)
+TOL_E = 1e-9  # dos entradas medias «iguales»: el ruido de la coma flotante (S4)
 TOL_Q = 1e-6  # relativa: dos tamanos iguales
 ESPERA_MS = 35 * 60_000  # S2
 SIN_FILAS_MS = 2 * 3600_000  # S3: ausente sin filas que la cubran -> sin puntuar
@@ -62,8 +75,9 @@ A6 = "A6: sus filas la cierran a la misma entrada a la que se la ve despues: no 
 A7 = "A7: desaparecio sin filas que la cierren y volvio distinta"
 
 
-def hora_fila(creada, actualizada) -> int | None:
-    """La hora con la que se compara una fila de closed-pnl (S1): la primera de sus dos, menos el margen."""
+def hora_fila(creada, actualizada, tarde: bool = False) -> int | None:
+    """Desde cuando pudo pasar una fila de closed-pnl (S1): la primera de sus dos horas menos el margen; con tarde, hasta
+    cuando: la ultima mas el margen."""
     hs = []
     for x in (creada, actualizada):
         try:
@@ -71,7 +85,9 @@ def hora_fila(creada, actualizada) -> int | None:
                 hs.append(int(x))
         except (TypeError, ValueError):
             continue
-    return min(hs) - MARGEN_FILA_MS if hs else None
+    if not hs:
+        return None
+    return max(hs) + MARGEN_FILA_MS if tarde else min(hs) - MARGEN_FILA_MS
 
 
 def mismo(a, b) -> bool:
@@ -87,18 +103,27 @@ def _entradas(filas: list) -> list:
     return out
 
 
+def _antes(f: dict, limpia) -> bool:
+    return limpia is not None and f["b"] <= limpia
+
+
 def _suma(filas: list) -> float:
     return sum(f["q"] or 0 for f in filas)
 
 
-def _sin_tamano(viejo: list, resto: list, post: tuple | None) -> dict:
+def _sin_tamano(viejo: list, resto: list, post: tuple | None, tam: float) -> dict:
     """Desde la primera fila que delata un anadido sin ver (otra entrada, o mas cerrado que lo visto) el tamano no se sabe:
-    cualquier cierre pudo dejarla a 0. Es la misma vida sin duda solo si esos cierres son de UNA entrada y la lectura
-    siguiente ensena esa misma entrada (una reabierta traeria otra: S4); si no, A1."""
+    cualquier cierre pudo dejarla a 0. Es la misma vida sin duda solo si esos cierres son de UNA entrada, la lectura
+    siguiente ensena esa misma entrada y no suman mas de lo que quedaba (tam) antes del anadido: si suman mas, pudo cerrar
+    entera y reabrirse a la misma entrada (S4 roto: A6). Si no, A1."""
     hasta = viejo[-1]["b"] if viejo else None  # la ultima fila segura de la vida (antes del anadido sin ver)
     viejo = viejo + resto
     es = _entradas(resto)
     if post is not None and len(es) == 1 and mismo(post[1], es[0]):
+        if _suma(resto) > tam * (1 + TOL_Q) + 1e-12:
+            return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "hasta": hasta,
+                    "amb": "A6: tras un anadido sin ver cierran mas de lo que quedaba, a la entrada que se ve despues: siguio o se"
+                           " reabrio a la misma entrada"}
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True}
     if post is None:
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sin_tamano": True, "hasta": hasta,
@@ -121,20 +146,26 @@ def tramo(pre: tuple, filas: list, post: tuple | None, vacias: int = 0) -> dict:
             tam -= f["q"]
             if tam < -pre[0] * TOL_Q:  # cierran MAS de lo que se veia: hubo un anadido sin ver (que casi no movio la media)
                 viejo.pop()
-                return _con_vacias(_sin_tamano(viejo, filas[j:], post), pre, filas, post, vacias)
+                return _con_vacias(_sin_tamano(viejo, filas[j:], post, tam + f["q"]), pre, filas, post, vacias)
             if tam <= pre[0] * TOL_Q:
                 resto = filas[j + 1:]
+                igual = [g for g in resto if mismo(g["e"], ent)]  # mas cierres a SU entrada: siguio (S4 roto) o una igual
                 if post is None:  # lo de despues: vidas enteras que el bot no vio
+                    if igual:
+                        return {"viejo": viejo + igual, "fin": igual[-1], "nuevo": [], "cuadra": False, "amb": A6}
                     return {"viejo": viejo, "fin": f, "nuevo": [], "cuadra": True}
                 if mismo(post[1], ent):  # «reabierta» a la misma entrada: S4 roto; no se parte (A6)
                     return {"viejo": viejo + resto, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A6,
                             "hasta": f["b"]}
-                otras = [g for g in resto if not mismo(g["e"], post[1])]
-                return {"viejo": viejo, "fin": f, "nuevo": [g for g in resto if mismo(g["e"], post[1])], "cuadra": True,
-                        "amb_nuevo": f"A2: antes de verla hubo {len(otras)} cierre(s) a otra entrada (un anadido suyo o una vida"
-                                     f" entera que el bot no vio)" if otras else None}
+                otras = [g for g in resto if not mismo(g["e"], post[1]) and not mismo(g["e"], ent)]
+                a2 = (f"A2: antes de verla hubo {len(otras)} cierre(s) a otra entrada (un anadido suyo o una vida entera que el"
+                      f" bot no vio)") if otras else None
+                nuevo = [g for g in resto if mismo(g["e"], post[1])]
+                if igual:
+                    return {"viejo": viejo + igual, "fin": igual[-1], "nuevo": nuevo, "cuadra": False, "amb": A6, "amb_nuevo": a2}
+                return {"viejo": viejo, "fin": f, "nuevo": nuevo, "cuadra": True, "amb_nuevo": a2}
         else:  # una fila a otra entrada: hubo un anadido que el bot no vio; desde aqui el tamano no se sabe
-            return _con_vacias(_sin_tamano(viejo, filas[j:], post), pre, filas, post, vacias)
+            return _con_vacias(_sin_tamano(viejo, filas[j:], post, tam), pre, filas, post, vacias)
     if post is None:
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False}
     if mismo(post[1], ent):
@@ -143,7 +174,8 @@ def tramo(pre: tuple, filas: list, post: tuple | None, vacias: int = 0) -> dict:
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "falta": post[0] < tam}
     if vacias >= VACIAS_SEGUIDAS:  # se fue sin filas que la cierren y volvio distinta: no se parte (A7)
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A7}
-    return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True}  # anadidos despues de esos cierres
+    # anadidos despues de esos cierres: subirian el tamano; si ensena MENOS de lo que dejan las filas, faltan filas
+    return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "falta": post[0] < tam - pre[0] * TOL_Q}
 
 
 def _con_vacias(t: dict, pre: tuple, filas: list, post: tuple | None, vacias: int) -> dict:
@@ -167,8 +199,9 @@ class Libro:
     """Las vidas de todas las posiciones. Estado serializable (estado()/desde()): por symbol:side, sus lecturas desde la
     ultima vida ya puntuada -cada tramo de lecturas seguidas con el mismo tamano y entrada: [primera, ultima, tamano,
     entrada, updatedTime primero, updatedTime ultimo, id, lecturas vacias seguidas justo antes]-, «vacia» (hora de Bybit
-    desde la que se sabe vacia), «ausente» ([primera, ultima, cuantas] lecturas seguidas sin ella) y «pasadas» (el tramo y
-    las entradas de cada vida ya puntuada, 8 dias: deciden el lado de una fila sin lado)."""
+    hasta la que todo es de vidas ya puntuadas), «limpia» (S3: hasta la que lo cerrado es de vidas que el bot no vio),
+    «ausente» ([primera, ultima, cuantas] lecturas seguidas sin ella) y «pasadas» (el tramo y las entradas de cada vida ya
+    puntuada, 8 dias: deciden el lado de una fila sin lado)."""
 
     def __init__(self):
         self.claves: dict = {}
@@ -181,10 +214,12 @@ class Libro:
 
     # ---------------------------------------------------------------- lo que entra
     def fila(self, f: dict):
-        """Una fila de closed-pnl: orden, symbol, b (hora_fila), q (closedSize), e (avgEntryPrice), x (avgExitPrice), pnl.
-        Se inserta en su sitio (sin reordenar todo)."""
+        """Una fila de closed-pnl: orden, symbol, b y h (hora_fila: desde y hasta cuando pudo pasar), q (closedSize),
+        e (avgEntryPrice), x (avgExitPrice), pnl. Se inserta en su sitio (sin reordenar todo)."""
         if f["orden"] in self.ordenes or None in (f.get("b"), f.get("q"), f.get("e")):
             return
+        if not isinstance(f.get("h"), (int, float)):
+            f = f | {"h": f["b"] + 2 * MARGEN_FILA_MS}
         self.ordenes[f["orden"]] = f["b"]
         lista, horas = self.filas.setdefault(f["symbol"], []), self.horas.setdefault(f["symbol"], [])
         i = bisect.bisect_right(horas, f["b"])
@@ -197,7 +232,7 @@ class Libro:
         for clave, p in vistas.items():
             k = self.claves.get(clave)
             if k is None:
-                k = self.claves[clave] = {"runs": [], "vacia": self.nada_desde, "ausente": None, "pasadas": []}
+                k = self.claves[clave] = {"runs": [], "vacia": None, "limpia": self.nada_desde, "ausente": None, "pasadas": []}
             u = p.get("actualizada") or ahora
             r = k["runs"][-1] if k["runs"] else None
             au = k["ausente"]
@@ -213,8 +248,8 @@ class Libro:
             au = k["ausente"]
             seguida = au and ahora - au[1] <= SEGUIDA_MS  # la anterior sin ella fue la de hace un minuto (no antes de una caida)
             k["ausente"] = [au[0], ahora, au[2] + 1] if seguida else [ahora, ahora, 1]
-            if not k["runs"] and k["ausente"][2] >= VACIAS_SEGUIDAS:  # sin vida abierta: lo de antes de estas vacias, de otras
-                k["vacia"] = max(k["vacia"] or 0, k["ausente"][0] - DESFASE_MS)
+            if not k["runs"] and seguida:  # sin vida abierta y dos vacias seguidas: lo de antes de la penultima, de otras
+                k["limpia"] = max(k.get("limpia") or -INF, au[1] - DESFASE_MS)
         self.previas = (self.previas + [ahora])[-2:]
         if len(self.previas) == 2:
             self.nada_desde = self.previas[0] - DESFASE_MS
@@ -274,8 +309,8 @@ class Libro:
         """Lo que ya no puede tocar ninguna vida abierta ni pendiente sale de la memoria (remate 7: sin cota, 207 ms por tic
         con 8000 filas)."""
         for sym in list(self.filas):
-            limite = min([k["vacia"] if k["vacia"] is not None else -INF for c, k in self.claves.items() if c.split(":")[0] == sym]
-                         + [ahora - HORIZONTE_MS])
+            limite = min([next((x for x in (k["vacia"], k.get("limpia")) if x is not None), -INF)
+                          for c, k in self.claves.items() if c.split(":")[0] == sym] + [ahora - HORIZONTE_MS])
             if limite == -INF:  # una clave sin registro desde cuando estaba vacia: todo puede ser suyo
                 continue
             i = bisect.bisect_left(self.horas[sym], limite - 86400_000)
@@ -339,10 +374,18 @@ class Libro:
         """Las vidas de un symbol:side desde su registro: lecturas + filas -> [{id, runs, filas, fin, espera, amb, nota}]."""
         filas, sin_lado = self._filas_de(clave, k)
         hs, hsl = [f["b"] for f in filas], [f["b"] for f in sin_lado]
-        runs, corte = k["runs"], k["vacia"]
+        runs, limpia = k["runs"], k.get("limpia")
 
         def entre(xs: list, h: list, a, b) -> list:
             return xs[bisect.bisect_right(h, a) if a is not None else 0:bisect.bisect_right(h, b)]
+
+        # S1: lo que ensena cada lectura llega hasta B; cada fila, al tramo de su b, y la que esta a caballo, donde cuadra
+        B = [max(r[4], r[0] - DESFASE_MS) for r in runs]
+        cortes = [k["vacia"], *B, INF]
+        grupos = [entre(filas, hs, cortes[i], cortes[i + 1]) for i in range(len(runs) + 1)]
+        for i in range(len(runs)):
+            if any(f["h"] > B[i] for f in grupos[i]):
+                grupos[i], grupos[i + 1] = self._reparte(k, i, grupos[i], grupos[i + 1], B[i])
 
         vidas: list = []
         v = None
@@ -360,15 +403,12 @@ class Libro:
             vidas.append(v)
 
         for i, r in enumerate(runs):
-            G, sl = entre(filas, hs, corte, r[4]), entre(sin_lado, hsl, corte, r[4])
+            G, sl = grupos[i], entre(sin_lado, hsl, cortes[i], cortes[i + 1])
             vacias = (r[7] or [None, 0])[1]
-            if corte is not None and r[4] - corte > HORIZONTE_MS and v is not None:
+            if cortes[i] is not None and r[4] - cortes[i] > HORIZONTE_MS and v is not None:
                 v["amb"] = v["amb"] or "A4: mas de 7 dias sin leer esta posicion"
             if v is None:
-                otras = [f for f in G if not mismo(f["e"], r[3])]
-                amb = (f"A2: antes de verla hubo {len(otras)} cierre(s) a otra entrada"
-                       + (" (el bot no tenia registro de esta clave)" if corte is None else "")) if otras else None
-                v = nueva(r, [f for f in G if mismo(f["e"], r[3])], amb, None)
+                v = nueva(r, [f for f in G if mismo(f["e"], r[3]) and not _antes(f, limpia)], self._a2(G, r, limpia, k["vacia"]), None)
                 if sl:
                     v["amb"] = v["amb"] or A3
             else:
@@ -405,29 +445,33 @@ class Libro:
                         v["faltan"] = True
                     if sl:
                         v["amb"] = v["amb"] or A3
-            if entre(filas, hs, r[4], r[5]):
+            dentro = entre(filas, hs, r[0] + DESFASE_MS, r[1] - DESFASE_MS)
+            if any(f["h"] < r[1] - DESFASE_MS for f in dentro):
                 v["amb"] = v["amb"] or "X: una fila mientras el tamano y la entrada no cambiaban"
             v["runs"].append(i)
             if v["cadena"] or len(v["runs"]) == 1:  # su primera lectura siempre es suya (remate 7: nunca None)
                 v["firme_run"] = i
-            corte = r[5]
         if v is None:
             return vidas
         if k["ausente"] is not None:  # la cola: la clave ya no esta en las lecturas
             r = runs[-1]
-            cola = entre(filas, hs, corte, INF)
-            t = tramo((r[2], r[3]), cola, None)
+            t = tramo((r[2], r[3]), grupos[-1], None)
             v["filas"] += t["viejo"]
             if t.get("amb"):
                 v["amb"] = v["amb"] or t["amb"]
-            sl = entre(sin_lado, hsl, corte, t["fin"]["b"] if t.get("fin") else INF)  # despues de su cierre: de vidas que no vio
+            sl = entre(sin_lado, hsl, B[-1], t["fin"]["b"] if t.get("fin") else INF)  # despues de su cierre: de vidas que no vio
             if sl:
                 v["amb"] = v["amb"] or A3
             cubre = t.get("fin") or (t.get("sin_tamano") and _suma(t["viejo"]) >= r[2] * (1 - TOL_Q))
-            if cubre:  # sus filas cubren lo que tenia: cerro (y se puntua pasada ESPERA desde que dejo de verse)
+            ambigua_cubierta = not cubre and v["amb"] and _suma(v["filas"]) >= self._abierto(runs, v["runs"]) * (1 - TOL_Q)
+            if cubre or ambigua_cubierta:  # sus filas cubren lo que tenia: cerro (y se puntua pasada ESPERA desde que dejo de verse)
                 v["espera"] = max(v["espera"], k["ausente"][0])
-                v["fin"] = t["fin"]["b"] if t.get("fin") else \
-                    (max(x for x in (t.get("hasta"), r[5]) if x is not None) if t.get("amb") else max(f["b"] for f in t["viejo"]))
+                if t.get("fin"):
+                    v["fin"] = t["fin"]["b"]
+                elif ambigua_cubierta or t.get("amb"):
+                    v["fin"] = max(x for x in (t.get("hasta"), r[5], *(f["b"] for f in v["filas"])) if x is not None)
+                else:
+                    v["fin"] = max(f["b"] for f in t["viejo"])
             elif ahora - k["ausente"][0] >= SIN_FILAS_MS:  # S3: sin filas que la cubran en 2 h, sin puntuar
                 v["fin"] = max([f["b"] for f in v["filas"]] + [r[5]]) if not t.get("amb") else \
                     max(x for x in (t.get("hasta"), r[5]) if x is not None)
@@ -436,16 +480,64 @@ class Libro:
         vidas.append(v)
         return vidas
 
+    @staticmethod
+    def _abierto(runs: list, mios: list) -> float:
+        """Lo que se le vio abrir a una vida: su primer tamano mas cada subida entre dos lecturas suyas (una cota baja)."""
+        out = runs[mios[0]][2]
+        for a, b in zip(mios, mios[1:], strict=False):
+            out += max(0.0, runs[b][2] - runs[a][2])
+        return out
+
+    @staticmethod
+    def _a2(G: list, r: list, limpia, vacia) -> str | None:
+        """Lo que hace ambigua a la primera vida del registro (A2): cierres a otra entrada despues de «limpia», o a la suya
+        de antes (un parcial suyo durante unas vacias falsas, o una vida igual que el bot no vio)."""
+        otras = [f for f in G if not mismo(f["e"], r[3]) and not _antes(f, limpia)]
+        if otras:
+            return (f"A2: antes de verla hubo {len(otras)} cierre(s) a otra entrada"
+                    + (" (el bot no tenia registro de esta clave)" if vacia is None and limpia is None else ""))
+        if any(mismo(f["e"], r[3]) and _antes(f, limpia) for f in G):
+            return "A2: antes de las lecturas sin la clave hubo cierres a su misma entrada"
+        return None
+
+    def _reparte(self, k: dict, i: int, G: list, siguiente: list, b: float) -> tuple[list, list]:
+        """S1: las filas a caballo de la lectura i (b <= B < h), antes o despues de ella. Solo cuenta lo IMPOSIBLE: un tramo al
+        que le faltan filas (ensena menos de lo que dejan). Dos historias posibles (cerrar y reabrir, o un anadido sin ver)
+        no se desempatan por cual cuadra mejor sino por la hora cruda de la fila, min(createdTime, updatedTime), contra el
+        updatedTime de la lectura.
+        -> (las de antes de i, las de despues con las que ya iban despues)."""
+        runs = k["runs"]
+        r = runs[i]
+
+        def faltas(antes: list, despues: list) -> int:
+            n = 0
+            if i > 0:
+                p = runs[i - 1]
+                n += bool(tramo((p[2], p[3]), antes, (r[2], r[3]), (r[7] or [None, 0])[1]).get("falta"))
+            if i + 1 < len(runs):
+                s = runs[i + 1]
+                n += bool(tramo((r[2], r[3]), despues, (s[2], s[3]), (s[7] or [None, 0])[1]).get("falta"))
+            return n
+
+        def parte(quedan: list) -> tuple[list, list]:
+            ids = {id(f) for f in quedan}
+            return [f for f in G if id(f) in ids], [f for f in G if id(f) not in ids] + siguiente
+
+        cruda = parte([f for f in G if f["h"] <= b or f["b"] + MARGEN_FILA_MS <= r[4]])
+        opciones = [cruda, (G, siguiente), parte([f for f in G if f["h"] <= b])]
+        return min(opciones, key=lambda o: faltas(*o))  # (con empate, la primera: la hora cruda)
+
     # ---------------------------------------------------------------- persistencia
     def estado(self) -> dict:
         return {"v": 7, "claves": self.claves, "nada_desde": self.nada_desde, "previas": self.previas}
 
     @classmethod
-    def desde(cls, guardado, evaluadas: dict, filas: list) -> tuple[Libro, list]:
+    def desde(cls, guardado, evaluadas: dict, filas: list, usadas=()) -> tuple[Libro, list]:
         """El libro del ultimo estado publicado, con lectura TOLERANTE (lo que no se entiende se descarta y se dice), mas lo
         visto al evaluar cada vida sin cierre (bot_evaluacion: un veredicto posterior al ultimo latido es una lectura mas,
-        con su id) y las filas de bot_operacion. De un estado de R4/R5 («vidas» y «cerradas»): cada vida con sus lecturas y
-        «vacia» desde su apertura; las cerradas sin puntuar, como ausentes desde su cierre. -> (libro, avisos)."""
+        con su id) y las filas de bot_operacion, salvo las de un cierre ya apuntado (usadas). De un estado de R4/R5 («vidas»
+        y «cerradas»): cada vida con sus lecturas y sin «vacia»; las cerradas sin puntuar, como ausentes desde su cierre.
+        -> (libro, avisos)."""
         lib, avisos = cls(), []
         g = guardado if isinstance(guardado, dict) else {}
         if guardado is not None and not isinstance(guardado, dict):
@@ -475,8 +567,10 @@ class Libro:
                 except (KeyError, TypeError, ValueError, IndexError) as e:
                     avisos.append(f"descarto la vida {clave} del estado guardado: ilegible ({type(e).__name__})")
                     continue
-                lib.claves[clave] = {"runs": [[t, t, s, e, t, t, v["id"], None] for t, s, e in obs], "vacia": ap - 1,
-                                     "ausente": None, "pasadas": []}
+                # sin «vacia»: las filas de antes de su primera lectura (sus parciales) son suyas; las de las vidas que R5
+                # ya puntuo no estan (usadas), y las demas a otra entrada la hacen ambigua (A2), no la parten
+                lib.claves[clave] = {"runs": [[t, t, s, e, max(t, ap), max(t, ap), v["id"], None] for t, s, e in obs], "vacia": None,
+                                     "limpia": None, "ausente": None, "pasadas": []}
             c5 = g.get("cerradas")
             cerradas_r5 = {i: c for i, c in c5.items() if isinstance(c, list) and c and isinstance(c[0], (int, float))} \
                 if isinstance(c5, dict) else {}
@@ -488,11 +582,7 @@ class Libro:
             t = p.get("visto") or ev.get("visto") or u
             if not all(isinstance(x, (int, float)) and x for x in (s, e, u, t)):
                 continue
-            try:
-                ap = int(i.rsplit(":", 1)[1]) - 1
-            except (IndexError, ValueError):
-                ap = lib.nada_desde
-            k = lib.claves.setdefault(clave, {"runs": [], "vacia": ap, "ausente": None, "pasadas": []})
+            k = lib.claves.setdefault(clave, {"runs": [], "vacia": None, "limpia": lib.nada_desde, "ausente": None, "pasadas": []})
             if any(r[6] == i for r in k["runs"]):
                 continue
             mismo_run = next((r for r in k["runs"] if r[4] <= u <= r[5] and r[2] == s and r[3] == e), None)
@@ -511,7 +601,10 @@ class Libro:
                 k["runs"].append([int(t), int(t), float(s), float(e), int(u), int(u), i, None])
                 k["runs"].sort(key=lambda r: (r[4], r[0]))
         for f in sorted(filas, key=lambda f: f["b"]):
-            lib.fila(f)
+            if f["orden"] in usadas:  # de una vida ya puntuada: apuntada (no se vuelve a escribir) y fuera de las vidas
+                lib.ordenes[f["orden"]] = f["b"]
+            else:
+                lib.fila(f)
         return lib, avisos
 
     @staticmethod
@@ -531,5 +624,7 @@ class Libro:
         if isinstance(a, list) and len(a) == 2:
             a = a + [VACIAS_SEGUIDAS if a[1] > a[0] else 1]
         pas = k.get("pasadas") if isinstance(k.get("pasadas"), list) else []
-        return {"runs": runs, "vacia": k.get("vacia"), "ausente": list(a) if isinstance(a, list) and len(a) == 3 else None,
+        lim = k.get("limpia")
+        return {"runs": runs, "vacia": k.get("vacia"), "limpia": lim if isinstance(lim, (int, float)) else None,
+                "ausente": list(a) if isinstance(a, list) and len(a) == 3 else None,
                 "pasadas": [p for p in pas if isinstance(p, list) and len(p) == 3 and isinstance(p[2], list)]}
