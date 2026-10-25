@@ -4,6 +4,7 @@ Telegram son las de su forma publica (las de risk-limit e instruments-info, GRAB
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -84,7 +85,7 @@ def test_posiciones_abiertas_de_la_lista():
          "unrealisedPnl": "-0.8", "createdTime": "1792400000000"},
         {"symbol": "ETHUSDT", "side": "", "size": "0", "avgPrice": "0", "createdTime": "1"}]}}
     (p,) = bb.posiciones(d)
-    assert p["id"] == "BTCUSDT:Buy:1792400000000" and p["lado"] == 1 and p["stop"] == 109340 and p["objetivo"] is None
+    assert "id" not in p and p["clave"] == "BTCUSDT:Buy" and p["actualizada"] is None and p["lado"] == 1 and p["stop"] == 109340 and p["objetivo"] is None
 
 
 async def test_el_cliente_firma_las_privadas_no_las_publicas_y_no_sale_de_su_lista():
@@ -335,13 +336,36 @@ def _mundo(posiciones: list[list[dict]], vistas: list):
     return httpx.AsyncClient(transport=httpx.MockTransport(responde))
 
 
+class _EnFila:
+    """Una conexion que pone en fila las operaciones, como el pool de produccion (el bot lanza tareas en paralelo)."""
+
+    def __init__(self, c):
+        self.c, self.candado = c, asyncio.Lock()
+
+    def __getattr__(self, k):
+        f = getattr(self.c, k)
+
+        async def en_fila(*a, **kw):
+            async with self.candado:
+                return await f(*a, **kw)
+        return en_fila
+
+
+async def _espera(bot):
+    while bot.tareas:
+        await asyncio.gather(*list(bot.tareas))
+
+
 async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
     pos = {"symbol": "BTCUSDT", "side": "Buy", "size": "0.004", "avgPrice": "110000", "markPrice": "109900", "leverage": "50",
-           "liqPrice": "108163", "stopLoss": "109340", "takeProfit": "112200", "positionIM": "8.8", "createdTime": "1792400000000"}
+           "liqPrice": "108163", "stopLoss": "109340", "takeProfit": "112200", "positionIM": "8.8", "createdTime": "1792400000000",
+           "updatedTime": "1792400000000"}
     vistas: list = []
     entorno = {"BYBIT_API_KEY": "k", "BYBIT_API_SECRET": "s", "ANTHROPIC_API_KEY": "a", "API_INTERNAL_TOKEN": "tok"}
+    base = _EnFila(base)
     bot = sv.Bot(entorno, base, _mundo([[pos], []], vistas))
-    await bot.tic_bybit()  # la clave, la posicion nueva, su evaluacion
+    await bot.tic_bybit()  # la clave, la posicion nueva, su evaluacion (en su tarea)
+    await _espera(bot)
     (v,) = await base.fetch("SELECT tipo, posicion, veredicto, veredicto_decide, detalle FROM bot_evaluacion")
     assert (v["tipo"], v["posicion"], v["veredicto"], v["veredicto_decide"]) == ("veredicto", "BTCUSDT:Buy:1792400000000", "A FAVOR", "A FAVOR")
     det = json.loads(v["detalle"])
@@ -358,6 +382,7 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
     otro = sv.Bot(entorno, base, _mundo([[pos]], []))  # un reinicio con la posicion abierta: no se re-evalua ni se paga
     await otro.carga()
     await otro.tic_bybit()
+    await _espera(otro)
     assert list(otro.evaluadas) == ["BTCUSDT:Buy:1792400000000"]
     assert await base.fetchval("SELECT count(*) FROM bot_evaluacion") == 1 and await base.fetchval("SELECT count(*) FROM bot_llamada") == 1
     await bot.tic_bybit()  # cerrada: se puntua

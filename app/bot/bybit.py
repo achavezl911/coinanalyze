@@ -32,6 +32,16 @@ ERRORES = {
 }
 
 
+# los que NO juzgan la clave: un fallo pasajero (10002 reloj/recv_window, 10006 demasiadas peticiones, 10016 error del
+# servidor; un HTTP sin JSON llega como retCode negativo): se reintenta pronto, no se apaga Bybit una hora
+TRANSITORIOS = {10002, 10006, 10016}
+
+
+def transitorio(d: dict) -> bool:
+    c = d.get("retCode")
+    return c in TRANSITORIOS or (isinstance(c, int) and c < 0)
+
+
 def firma(secreto: str, ts: str, clave: str, query: str) -> str:
     return hmac.new(secreto.encode(), f"{ts}{clave}{RECV}{query}".encode(), hashlib.sha256).hexdigest()
 
@@ -60,20 +70,35 @@ def juzga_clave(d: dict, ip: str) -> dict:
 
 
 def posiciones(d: dict) -> list[dict]:
-    """Las posiciones abiertas (size > 0) de /v5/position/list, con lo que el bot usa."""
+    """Las posiciones abiertas (size > 0) de /v5/position/list, con lo que el bot usa. SIN id: la doc (citada por el
+    operador, 2026-10-25) dice que createdTime es «the first time a position was created on this symbol» -igual para
+    todas las posiciones del simbolo- y que lo unico unico es seq + symbol, que cambia con cada actualizacion. El bot
+    pone el id (servicio.Bot.id_de) con la apertura que VE: updatedTime la primera vez que la encuentra abierta."""
     out = []
     for p in (d.get("result") or {}).get("list") or []:
         if float(p.get("size") or 0) <= 0:
             continue
         num = lambda k, p=p: float(p[k]) if p.get(k) not in (None, "") else None  # noqa: E731
         out.append({
-            "id": f"{p['symbol']}:{p['side']}:{p.get('createdTime', '')}",
+            "clave": f"{p['symbol']}:{p['side']}", "actualizada": int(p["updatedTime"]) if p.get("updatedTime") else None,
             "symbol": p["symbol"], "lado": 1 if p["side"] == "Buy" else -1, "cantidad": num("size"),
             "entrada": num("avgPrice"), "marca": num("markPrice"), "apalancamiento": num("leverage"),
             "liquidacion": num("liqPrice"), "stop": num("stopLoss") or None, "objetivo": num("takeProfit") or None,
             "margen": num("positionIM"), "pnl_abierto": num("unrealisedPnl"),
         })
     return out
+
+
+def lado_cierre(entrada: float | None, salida: float | None, cantidad: float | None, pnl: float | None) -> int | None:
+    """El lado de la posicion que cerro una fila de closed-pnl, por su ARITMETICA y no por su `side` (cuyo sentido no
+    se pudo contrastar con la doc): un largo gana si la salida sube, un corto si baja. None si el movimiento no supera
+    dos veces la comision (el signo del pnl lo puede poner la comision sola)."""
+    if None in (entrada, salida, cantidad, pnl) or not cantidad:
+        return None
+    bruto_largo = (salida - entrada) * cantidad
+    if abs(bruto_largo) <= 2 * entrada * cantidad * 0.0011:
+        return None
+    return 1 if (pnl > 0) == (bruto_largo > 0) else -1
 
 
 class Bybit:
@@ -83,7 +108,10 @@ class Bybit:
     async def get(self, ruta: str, **params) -> dict:
         if ruta not in PRIVADAS + PUBLICAS:
             raise ValueError(f"ruta fuera de la lista de lectura: {ruta}")
+        cursor = params.pop("cursor", None)
         query = urllib.parse.urlencode(params)
+        if cursor:  # nextPageCursor ya viene codificado (%3A...): se manda tal cual, no se codifica dos veces (%253A)
+            query += f"&cursor={cursor}"
         cab = {}
         if ruta in PRIVADAS:
             ts = str(int(time.time() * 1000))

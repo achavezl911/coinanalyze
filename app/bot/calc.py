@@ -39,22 +39,28 @@ def calcula(
     *,
     margen: float = MARGEN,
     apalancamiento: float = APALANCAMIENTO,
-    corto: bool = False,
+    corto: bool | None = None,
     paso: str = "0.001",
     tramos: list[dict],
     funding: float | None = None,
     funding_h: float = 8.0,
 ) -> dict:
-    lado = -1 if corto else 1
+    """corto: True CORTO, False LARGO, None (sin decir) el que diga el stop, y si no hay stop, LARGO. La direccion que se
+    DICE manda y una incoherencia se dice (remate 3, bug 13: «corto» con el stop debajo salia LARGO sin aviso, y un corto
+    dado solo por el stop daba «el objetivo esta del lado del stop» sin haber dado objetivo)."""
+    if stop == entrada:
+        raise ValueError("el stop es la entrada")
+    lado = (-1 if stop is not None and stop > entrada else 1) if corto is None else (-1 if corto else 1)
+    nombre = "CORTO" if lado < 0 else "LARGO"
+    if stop is not None and (entrada - stop) * lado <= 0:
+        raise ValueError(f"pediste {nombre} pero el stop {stop:g} esta {'por debajo' if stop < entrada else 'por encima'} de la"
+                         f" entrada {entrada:g}: en un {nombre} va {'por encima' if lado < 0 else 'por debajo'}")
     if stop is None:
         stop = entrada * (1 - lado * STOP_PCT / 100)
     if objetivo is None:
         objetivo = entrada * (1 + lado * OBJETIVO_PCT / 100)
-    if stop == entrada:
-        raise ValueError("el stop es la entrada")
-    lado = 1 if stop < entrada else -1
     if (objetivo - entrada) * lado <= 0:
-        raise ValueError("el objetivo esta del lado del stop")
+        raise ValueError(f"el objetivo {objetivo:g} esta del lado del stop para un {nombre}")
     # el tamano se redondea HACIA ABAJO al paso de Bybit, en decimal (en float 0.3/0.1 no da 3)
     p = Decimal(paso)
     cantidad = float((Decimal(str(margen * apalancamiento)) / Decimal(str(entrada)) / p).to_integral_value(ROUND_DOWN) * p)

@@ -58,7 +58,9 @@ def resumen(alertas: list[dict], velas: dict[str, dict], evaluaciones: list[dict
         if a["clase"] in vistas:
             vistas[a["clase"]][1] += 1
             vistas[a["clase"]][0] += r["a" if a["clase"] == "CASCADA" else "c"] == "TP"
-    todos = sorted({_dia(m) for m in range(desde, hasta, DIA)})
+    # todos los dias que TOCA la ventana, el ultimo parcial incluido (antes: range(desde, hasta, DIA) se lo saltaba si la
+    # ventana no empezaba a las 00:00Z: remate 3, bug 11)
+    todos = sorted({_dia(m) for m in range(desde // DIA * DIA, hasta, DIA)} | ({_dia(hasta - 1)} if hasta > desde else set()))
     out["de_verdad"] = dict(verdad)
     out["falsas_alarmas"] = sum(falsas.values())
     out["falsas_por_dia"] = {d: falsas.get(d, 0) for d in todos}  # los dias sin ninguna, con 0: que no parezcan sin dato

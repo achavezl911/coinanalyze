@@ -21,6 +21,9 @@ URL = "https://api.anthropic.com/v1/messages"
 MODELO = "claude-opus-5-5"
 ESFUERZOS = ("low", "medium", "high", "xhigh", "max")
 MAX_TOKENS = {"low": 4000, "medium": 8000, "high": 16000, "xhigh": 32000, "max": 64000}
+# el tope de espera de cada esfuerzo (la medida del operador en 140: p90 11.7 s en low, 26.2 s en medium, 44.1 s en high,
+# 71.3 s en xhigh): unas 10 veces su p90, no los 900 s de antes para todos
+TIMEOUT = {"low": 120, "medium": 240, "high": 480, "xhigh": 900, "max": 900}
 PRECIO = {"input_tokens": 4e-6, "output_tokens": 20e-6,
           "cache_creation_input_tokens": 5e-6, "cache_read_input_tokens": 0.2e-6}
 
@@ -58,12 +61,18 @@ async def llama(http: httpx.AsyncClient, clave: str, estable: str, texto: str, g
     peor = {**nada, "llamada": True, "entrada": n, "salida": MAX_TOKENS[effort], "coste": reserva(n, effort), "estimado": True}
     t0 = time.monotonic()
     try:
-        r = await http.post(URL, json=cuerpo, headers=cab, timeout=900)
-        d = r.json()
-    except (httpx.HTTPError, ValueError) as e:
+        r = await http.post(URL, json=cuerpo, headers=cab, timeout=TIMEOUT[effort])
+    except httpx.HTTPError as e:  # no se sabe si llego a procesarse: se apunta el peor caso
         return {**peor, "ms": int((time.monotonic() - t0) * 1000), "error": f"Anthropic no contesto ({type(e).__name__}): apunto el peor caso"}
     ms = int((time.monotonic() - t0) * 1000)
+    try:
+        d = r.json()
+    except ValueError:
+        d = None
     u = d.get("usage") if isinstance(d, dict) else None
+    if not u and r.status_code >= 400:  # un error que contesta (400, 429, 500, 529 overloaded...) no se cobra: 0, dicho
+        tipo = ((d or {}).get("error") or {}).get("type", "") if isinstance(d, dict) else ""
+        return {**nada, "llamada": True, "entrada": n, "ms": ms, "error": f"Anthropic HTTP {r.status_code} {tipo} (no se cobra)".replace("  ", " ")}
     if not u:
         return {**peor, "ms": ms, "error": f"Anthropic HTTP {r.status_code} sin usage: apunto el peor caso"}
     cache = {"leida": int(u.get("cache_read_input_tokens") or 0), "escrita": int(u.get("cache_creation_input_tokens") or 0)}
