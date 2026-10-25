@@ -298,6 +298,7 @@ class Simulacion:
         self.reg = Registro()
         self.minuto = 0
         self.a2_simples = 0
+        self.mirado: dict = {}  # cuantas veces se miro cada invariante en esta secuencia (que no pasen en vacio)
         self.por_u = {(v.clave, u): v for v in sec.vidas for u in v.us}
 
     # --- Bybit
@@ -430,7 +431,9 @@ def comprueba(s: Simulacion) -> list[str]:
     fallos: list = [f"el bot revento: {e[:160]}" for e in reg.errores]
     fin_lecturas = sec.minutos + sec.EXTRA
     pagadas: dict = {}
+    mira = lambda k: s.mirado.__setitem__(k, s.mirado.get(k, 0) + 1)  # noqa: E731
     for ms, tipo, p, ultima in reg.pagos:
+        mira("I5")
         if p.get("clave") not in ultima:  # I5
             fallos.append(f"I5 {tipo} pagado sobre {p.get('clave')} que la ultima lectura no ensena (a las {(ms - BASE) / M:.1f} min)")
         if tipo == "evalua":
@@ -477,6 +480,7 @@ def comprueba(s: Simulacion) -> list[str]:
             continue
         if sec.caida and desde <= sec.caida[0] <= hasta:
             continue
+        mira("I1 cota baja")
         if pagadas.get(v.n, 0) != 1:
             fallos.append(f"I1 la vida {v.n} ({v.clave}) era identificable, se vio desde el minuto {primera} y se evaluo"
                           f" {pagadas.get(v.n, 0)} veces")
@@ -489,6 +493,8 @@ def comprueba(s: Simulacion) -> list[str]:
                 siguiente = m + 1 < fin_lecturas and reg.lecturas.get(m + 1) is not None and sec.arriba(m + 1) \
                     and not (sec.caida and sec.caida[0] in (m, m + 1))
                 sym = v.clave.split(":")[0]
+                if siguiente:
+                    mira("I3")
                 if siguiente and not any(sec.lectura(m) <= ts <= sec.lectura(m + 1) and sym in t for ts, t in avisos):
                     fallos.append(f"I3 la vida {v.n} se vio sin stop en el minuto {m} y no tuvo aviso sin_stop")
                 break
@@ -505,15 +511,18 @@ def comprueba(s: Simulacion) -> list[str]:
         if v is None:
             fallos.append(f"I2 un cierre de {e['posicion']} sin vida real detras")
             continue
+        mira("I4")
         if v.fin > e["ts"]:  # I4
             fallos.append(f"I4 CERRADA de la vida {v.n} a las {(e['ts'] - BASE) / M:.1f} min y cierra a las {(v.fin - BASE) / M:.1f}")
         nota = (e["detalle"] or {}).get("nota") or ""
         if e["pnl"] is not None:
+            mira("I2")
             if abs(e["pnl"] - v.pnl) > 1e-6 * max(1.0, abs(v.pnl)):
                 fallos.append(f"I2 la vida {v.n} puntuada {e['pnl']:+.4f} y lo real es {v.pnl:+.4f}")
             elif e["veredicto"] != "NO EVALUABLE" and e["acierto"] != ((v.pnl > 0) == (e["veredicto"] == "A FAVOR")):
                 fallos.append(f"I2 la vida {v.n}: acierto {e['acierto']} con pnl {v.pnl:+.4f} y veredicto {e['veredicto']}")
         if e["pnl"] is None:
+            mira("ninguna mas")
             motivo = _ambigua_verdad(s, v, nota, vistas)
             if motivo:
                 fallos.append(f"ninguna mas: la vida {v.n} sin puntuar por «{nota[:90]}» y {motivo}")
@@ -631,11 +640,12 @@ def fijas() -> list[Secuencia]:
         _v(1, B, [(0.9, "abre", 0.004, 110000), (2 + 19 / 60, "parcial", 0.002, 110450), (6.0, "cierra", 0, 110300)], 1500, {1: 30_000})],
         desfase=1500)
     # R5 (validacion de R5, este remate)
+    # (en R-A y V2b el parcial cierra mas de lo que se ve despues: el corte por tamano de R5 dejaba fuera el cierre final)
     sec("R-A V2 anadido y parcial entre dos lecturas, despues el cierre final", [
-        _v(1, B, [(0.9, "abre", 0.004, 110000), (1.4, "anade", 0.004, 110700), (1.6, "parcial", 0.003, 110100),
-                  (3.5, "cierra", 0, 109900)], 0)])
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (1.4, "anade", 0.002, 110600), (1.6, "parcial", 0.005, 110420),
+                  (3.5, "cierra", 0, 108200)], 0)])
     sec("R-A V1 parcial antes de la primera lectura (su fila a la hora de su updatedTime)", [
-        _v(1, B, [(0.95, "abre", 0.006, 110000), (1.2, "parcial", 0.002, 110500), (3.0, "cierra", 0, 109700)], 0)])
+        _v(1, B, [(0.95, "abre", 0.006, 110000), (1.2, "parcial", 0.004, 110400), (3.0, "cierra", 0, 107800)], 0)])
     sec("R-B caida entre el veredicto y el latido, y se pone el stop", [
         _v(1, B, [(0.9, "abre", 0.004, 110000), (2.5, "stop", 0, 109400), (8.0, "cierra", 0, 110300)], 0)], caida=(1, 2, "antes_latido"))
     sec("R-C anadido visto <= 5 s antes del cierre total y reapertura en el mismo minuto", [
@@ -645,7 +655,7 @@ def fijas() -> list[Secuencia]:
         _v(1, B, [(0.9, "abre", 0.004, 110000), (1.5, "anade", 0.004, 110600), (1.7, "cierra", 0, 110700)], 0, {2: 90_000}),
         _v(2, B, [(1.9, "abre", 0.003, 111300), (8.0, "cierra", 0, 111000)], 0)])
     sec("V2b anadido y parcial en el mismo minuto, despues una lista vacia", [
-        _v(1, B, [(0.9, "abre", 0.004, 110000), (1.4, "anade", 0.004, 110600), (1.6, "parcial", 0.002, 110500),
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (1.4, "anade", 0.002, 110600), (1.6, "parcial", 0.005, 110500),
                   (6.0, "cierra", 0, 110300)], 0)], vacias={2})
     sec("V7 la primera lectura ya ensena el tamano tras un parcial y su fila va 4 s por delante", [
         _v(1, B, [(0.95, "abre", 0.006, 110000), (1.30, "parcial", 0.003, 110500), (4.0, "cierra", 0, 109800)], 4000)], desfase=4000)
