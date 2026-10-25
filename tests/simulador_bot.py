@@ -809,7 +809,11 @@ def comprueba(s: Simulacion) -> list[str]:
         if e["pnl"] is not None:
             puntuadas.add(v.n)
             ultima = corr[-1] if corr else e  # la ULTIMA cifra de la vida (remate 8: la incompleta se corrige)
-            if corr and real(e["pnl"]):
+            if ultima["pnl"] is None:  # retirada: una fila tardia que no cabe (S2 roto); su motivo, verdad
+                tard = ((ultima["detalle"] or {}).get("correccion") or {}).get("orden")
+                if not any(f["orden"] == tard and f["visible"] > e["ts"] - 60_000 for w in sec.vidas for f in w.filas):
+                    fallos.append(f"ninguna mas: la cifra de la vida {v.n} retirada por la orden {tard}, que ya se veia al darla")
+            elif corr and real(e["pnl"]):
                 fallos.append(f"I2 la vida {v.n} puntuada {e['pnl']:+.4f} (la real) y CORREGIDA a {corr[-1]['pnl']:+.4f}")
             elif not real(ultima["pnl"]):
                 # (si una fila suya aun no se ve, o se ve hace menos de 20 min -closed-pnl, cada 15 sin nada abierto-, no se juzga)
@@ -1005,6 +1009,10 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
         if ts is not None and any(f["visible"] > ts - 60_000 for f in v.filas):
             return None
         return "todas sus filas se veian cuando la dio por sin puntuar"
+    vecinas = [w for w in sec.vidas if w.clave == v.clave and w.fin <= v.inicio][-1:] + \
+        [w for w in sec.vidas if w.clave == v.clave and w.inicio >= v.inicio][:3]
+    if ts is not None and any(f["t"] < ts - ESPERA and f["visible"] > ts - 60_000 for w in vecinas for f in w.filas):
+        return None  # (S2 roto: una fila suya o de una vecina que ya tenia que estar y no estaba; su duda sale de lo que tenia)
     lecturas = sorted(m for m, lec in s.reg.lecturas.items() if lec is not None and m not in sec.vacias and m != perdida)
     misma = [w for w in sec.vidas if w.clave == v.clave]
     siguientes = [w for w in misma if w.inicio >= v.inicio]

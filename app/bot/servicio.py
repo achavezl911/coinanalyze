@@ -935,8 +935,9 @@ class Bot:
         cifra que vale) y el mensaje CORRECCION. Una vez por fila (si ya estaba, no se repite); la de una vida sin CERRADA (no
         se evaluo) no se dice. Si la base no contesta, sigue pendiente (y en el estado)."""
         i = c["id"]
-        if i in self.cierres_pendientes:
-            self.cierres_pendientes[i] = self.cierres_pendientes[i] | {"pnl": c["pnl"], "ordenes": c["ordenes"]}
+        if i in self.cierres_pendientes:  # (sin cifra si no cabia: con la nota que dice por que)
+            self.cierres_pendientes[i] = self.cierres_pendientes[i] | {"pnl": c["pnl"], "ordenes": c["ordenes"]} \
+                | ({"nota": c["nota"]} if c["pnl"] is None else {})
             self.correcciones_pendientes.pop(k, None)
             return
         try:
@@ -944,7 +945,7 @@ class Bot:
             ya = v is None or await self.db.fetchval(
                 "SELECT 1 FROM bot_evaluacion WHERE tipo = 'cierre' AND posicion = $1 AND detalle->'correccion'->>'orden' = $2 LIMIT 1",
                 i, c["orden"])
-            acierto = None if v in (None, "NO EVALUABLE") else (c["pnl"] > 0) == (v == "A FAVOR")
+            acierto = None if v in (None, "NO EVALUABLE") or c["pnl"] is None else (c["pnl"] > 0) == (v == "A FAVOR")
             if not ya:
                 await self.db.execute(
                     "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, pnl_usd, acierto, detalle) VALUES ('cierre', $1, $2, $3, $4, $5::jsonb)",
@@ -957,7 +958,8 @@ class Bot:
         if ya:
             return
         sym, lado = i.split(":")[:2]
-        await self.manda(f"CORRECCION {sym} {'LARGO' if lado == 'Buy' else 'CORTO'}: {c['pnl_antes']:+.2f} -> {c['pnl']:+.2f} USD"
+        nueva = "sin puntuar" if c["pnl"] is None else f"{c['pnl']:+.2f} USD"
+        await self.manda(f"CORRECCION {sym} {'LARGO' if lado == 'Buy' else 'CORTO'}: {c['pnl_antes']:+.2f} -> {nueva}"
                          f" · el veredicto era {v} -> {'sin puntuar' if acierto is None else ('ACIERTO' if acierto else 'FALLO')}"
                          f"\n{c['nota']}")
 
