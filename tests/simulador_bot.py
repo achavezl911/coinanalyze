@@ -938,6 +938,13 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
                     if (not misma_e and f["c"] - 10_000 > limpia - 20_000) or (misma_e and f["c"] - 10_000 <= limpia2 + 20_000):
                         return None
         return "no hubo cierres a otra entrada tras la anterior y su «limpia», ni a la suya antes, hasta su primera lectura"
+    if nota.startswith("ambigua: A6: la de antes se fue y sus filas cubren de mas"):  # (la anterior, un anadido sin ver)
+        antes = [w for w in misma if w.fin <= v.inicio and vistas.get(w.n)]
+        pred = max(antes, key=lambda w: w.fin) if antes else None
+        ult = sec.lectura(max(vistas[pred.n])) if pred else math.inf
+        if pred and any(tp == "anade" and te > ult - 20_000 for te, tp, *_ in pred.eventos) or _s4_roto(s, ([pred] if pred else []) + [v]):
+            return None
+        return "la anterior no tuvo un anadido tras su ultima lectura ni hubo una reapertura a su entrada"
     if nota.startswith("ambigua: A6: una fila a su entrada antes de verla"):  # (declarado: un parcial suyo antes de verla)
         primera = min(vistas.get(v.n, [math.inf]))
         t1 = sec.lectura(primera) if primera != math.inf else v.fin

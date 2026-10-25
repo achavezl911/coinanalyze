@@ -83,6 +83,7 @@ A3 = "A3: una fila sin lado en cobertura que no casa con la entrada de una sola 
 A6 = "A6: sus filas la cierran a la misma entrada a la que se la ve despues: no se sabe si es la misma o una nueva"
 A7 = "A7: desaparecio sin filas que la cierren y volvio distinta"
 A6P = "A6: una fila a su entrada antes de verla: un parcial suyo o una vida igual que el bot no vio (S4 roto)"
+A6S = "A6: la de antes se fue y sus filas cubren de mas: lo que sobra pudo ser suyo (reabierta a esa entrada, S4 roto)"
 S1 = "S1: una fila a caballo de una lectura cuenta dos historias (cerrar y reabrir, o seguir): la misma vida, sin puntuar"
 
 
@@ -208,7 +209,8 @@ def _con_vacias(t: dict, pre: tuple, filas: list, post: tuple | None, vacias: in
     if not resto or _suma(resto) < pre[0] * (1 - TOL_Q):  # lo de antes no la cierra sin filas de la entrada nueva: S4 roto
         return t
     if len(_entradas([g for g in resto if not mismo(g["e"], pre[1])])) <= 1:
-        return {"viejo": resto, "fin": resto[-1], "nuevo": nuevo, "cuadra": False, "amb_nuevo": A6P if nuevo else None}
+        return {"viejo": resto, "fin": resto[-1], "nuevo": nuevo, "cuadra": False,
+                "amb_nuevo": A6P if nuevo else A6S if _suma(resto) > pre[0] * (1 + TOL_Q) + 1e-12 else None}
     return {"viejo": resto, "fin": None, "nuevo": nuevo, "cuadra": False, "hasta": t.get("hasta"), "termina": True,
             "amb": "A1: un anadido sin ver y despues cierres a mas de una entrada mientras no estaba en las lecturas",
             "amb_nuevo": "A2: antes de verla hubo cierres a mas de una entrada que no se pueden repartir"}
@@ -332,7 +334,7 @@ class Libro:
                   [k["runs"][i][3] for i in v["runs"]]]]
             k["vacia"] = v["fin"] if v.get("amb") else fin  # (de una ambigua no hay fila segura: lo de despues, a la siguiente)
             sig = next((w for w in vidas if w["runs"] and min(w["runs"]) == hechas), None)  # su duda no se pierde al quedar primera
-            k["heredada"] = sig["amb"] if sig and (sig["amb"] == A6 or str(sig["amb"]).startswith("S1")) else None  # (lo demas se recalcula)
+            k["heredada"] = sig["amb"] if sig and (sig["amb"] in (A6, A6S) or str(sig["amb"]).startswith("S1")) else None  # (lo demas se recalcula)
         if hechas:
             del k["runs"][:hechas]
             if not k["runs"]:
