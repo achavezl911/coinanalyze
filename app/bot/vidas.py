@@ -208,6 +208,8 @@ def _con_vacias(t: dict, pre: tuple, filas: list, post: tuple | None, vacias: in
     resto = [g for g in filas if not mismo(g["e"], post[1])]
     if not resto or _suma(resto) < pre[0] * (1 - TOL_Q):  # lo de antes no la cierra sin filas de la entrada nueva: S4 roto
         return t
+    if _suma([g for g in resto if mismo(g["e"], pre[1])]) > pre[0] * (1 + TOL_Q) + 1e-12:  # su entrada ya la cubre DE MAS: lo
+        return t  # de otra entrada pudo ser de una vida que no vio (y lo de mas, un parcial de antes de verla): no se reparte
     if len(_entradas([g for g in resto if not mismo(g["e"], pre[1])])) <= 1:
         return {"viejo": resto, "fin": resto[-1], "nuevo": nuevo, "cuadra": False,
                 "amb_nuevo": A6P if nuevo else A6S if _suma(resto) > pre[0] * (1 + TOL_Q) + 1e-12 else None}
@@ -607,21 +609,21 @@ class Libro:
         def ajenas(filas: list, suyas: tuple) -> int:
             return sum(1 for f in filas if any(mismo(f["e"], e) for e in entradas) and not any(mismo(f["e"], e) for e in suyas))
 
-        def coste(j: int, filas: list) -> tuple[int, int, bool]:  # el tramo de la lectura j a la j+1 (o la cola)
-            """-> (lo imposible, lo que aun no lo es -faltan filas, pero pueden llegar: S2-, si parte o cierra)."""
+        def coste(j: int, filas: list) -> tuple[int, int, bool, dict | None]:  # el tramo de la lectura j a la j+1 (o la cola)
+            """-> (lo imposible, lo que aun no lo es -faltan filas, pero pueden llegar: S2-, si parte o cierra, el tramo)."""
             r = runs[j]
             if j + 1 < n:
                 s = runs[j + 1]
                 t = tramo((r[2], r[3]), filas, (s[2], s[3]), (s[7] or [None, 0])[1])
                 falta, firme = bool(t.get("falta")), ahora >= s[0] + ESPERA_MS
                 return (bool(t.get("s4")) + ajenas(filas, (r[3], s[3])) + (falta and firme), falta and not firme,
-                        bool(t.get("fin") or t.get("termina")))
+                        bool(t.get("fin") or t.get("termina")), t)
             if k["ausente"] is None:
-                return ajenas(filas, (r[3],)), 0, False
+                return ajenas(filas, (r[3],)), 0, False, None
             t = tramo((r[2], r[3]), filas, None)
             cubre = bool(t.get("fin") or (t.get("sin_tamano") and _suma(t["viejo"]) >= r[2] * (1 - TOL_Q)))
             firme = ahora >= k["ausente"][0] + ESPERA_MS
-            return bool(t.get("s4")) + ajenas(filas, (r[3],)) + (not cubre and firme), not cubre and not firme, cubre
+            return bool(t.get("s4")) + ajenas(filas, (r[3],)) + (not cubre and firme), not cubre and not firme, cubre, t
 
         def resto(x: int, quedan: list) -> list:
             ids = {id(f) for f in quedan}
@@ -648,18 +650,25 @@ class Libro:
                 quedan = {x: opciones[x][c] for x, c in zip(seg, combo, strict=True)}
                 van = {x: resto(x, quedan[x]) for x in seg}
                 total = ajenas(quedan[0], (entradas[0],)) if a == 0 else 0
-                pronto, partes = 0, []
+                pronto, partes, vida = 0, [], 0
+                de: dict = {f["orden"]: 0 if mismo(f["e"], entradas[0]) else None for f in quedan[0]} if a == 0 else {}
                 for j in range(max(a - 1, 0), i):
-                    c, p, parte = coste(j, van.get(j, []) + (quedan.get(j + 1, base[j + 1]) if j + 1 < n else cola))
+                    filas_j = van.get(j, []) + (quedan.get(j + 1, base[j + 1]) if j + 1 < n else cola)
+                    c, p, parte, t = coste(j, filas_j)
                     total, pronto, partes = total + c, pronto + p, [*partes, parte]
-                todas.append((total, tuple(partes), -sum(c == 0 for c in combo), quedan, pronto))
+                    viejo = {g["orden"] for g in t["viejo"]} if t else {g["orden"] for g in filas_j}
+                    nuevo = {g["orden"] for g in t["nuevo"]} if t and parte and j + 1 < n else set()
+                    de |= {g["orden"]: vida if g["orden"] in viejo else vida + 1 if g["orden"] in nuevo else None for g in filas_j}
+                    vida += bool(parte) and j + 1 < n
+                # la historia: donde se parte y a que vida va cada fila (una fila de mas en una vida cambia su cifra)
+                todas.append((total, (tuple(partes), frozenset(de.items())), -sum(c == 0 for c in combo), quedan, pronto, partes))
             menos = min(x[0] for x in todas)
             buenas = [x for x in todas if x[0] == menos]
             cruda = next((x for x in buenas if x[2] == -len(seg)), None)
             mejor_p = min(x[4] for x in buenas)
             if cruzan & set(seg):
                 dudas.update(seg)
-                elegido.update(min(todas, key=lambda x: (sum(x[1]), x[0], x[2]))[3])
+                elegido.update(min(todas, key=lambda x: (sum(x[5]), x[0], x[2]))[3])
             elif len({x[1] for x in buenas}) == 1:
                 elegido.update(min(buenas, key=lambda x: x[2])[3])
             elif cruda and cruda[4] == mejor_p and len({x[1] for x in buenas if x[4] == mejor_p}) == 1 \
@@ -667,7 +676,7 @@ class Libro:
                 elegido.update(cruda[3])  # lo que aun puede llegar confirma la hora cruda (con un updatedTime que informa)
             else:  # dos historias posibles (o solo la contradice algo que aun puede llegar): la que menos parte, y duda
                 dudas.update(seg)
-                elegido.update(min(buenas, key=lambda x: (sum(x[1]), x[2]))[3])
+                elegido.update(min(buenas, key=lambda x: (sum(x[5]), x[2]))[3])
         van = {x: resto(x, elegido[x]) for x in range(n)}
         for x in range(n):
             grupos[x] = van.get(x - 1, []) + elegido[x]
