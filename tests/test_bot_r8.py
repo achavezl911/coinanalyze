@@ -276,6 +276,9 @@ async def test_la_correccion_se_apunta_una_vez_y_la_semana_cuenta_la_ultima_cifr
     assert len(textos) == 1 and textos[0].startswith("CORRECCION BTCUSDT LARGO: +1.00 -> sin puntuar") and "ambigua: T" in textos[0]
     ev = (await bot.cifras_semana())["evaluaciones"]  # una vida, con su ULTIMA cifra: ya no cuenta como acierto
     assert ev["cerradas"] == 1 and ev["puntuadas"] == 0 and bot.correcciones_pendientes == {}
-    otro = sv.Bot({}, base, None)  # al arrancar, la ultima cifra manda (sus ordenes son usadas)
+    for o in ("o-1", "o-2"):
+        await base.execute("INSERT INTO bot_operacion (orden, symbol, cantidad, entrada, salida, pnl_usd, cerrada, detalle)"
+                           " VALUES ($1, 'BTCUSDT', 0.002, 110000, 110300, 0.5, now() - interval '1 hour', '{}')", o)
+    otro = sv.Bot({}, base, None)  # al arrancar, las ordenes de la CERRADA y de la correccion son usadas: fuera de las vidas
     await otro.carga()
-    assert "o-1" in otro.libro.ordenes and "o-2" in otro.libro.ordenes
+    assert {"o-1", "o-2"} <= set(otro.libro.ordenes) and not any(otro.libro.filas.values())
