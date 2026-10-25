@@ -80,6 +80,7 @@ INF = float("inf")
 A3 = "A3: una fila sin lado en cobertura que no casa con la entrada de una sola de las dos"
 A6 = "A6: sus filas la cierran a la misma entrada a la que se la ve despues: no se sabe si es la misma o una nueva"
 A7 = "A7: desaparecio sin filas que la cierren y volvio distinta"
+A6P = "A6: una fila a su entrada antes de verla: un parcial suyo o una vida igual que el bot no vio (S4 roto)"
 S1 = "S1: una fila a caballo de una lectura cuenta dos historias (cerrar y reabrir, o seguir): la misma vida, sin puntuar"
 
 
@@ -172,9 +173,11 @@ def tramo(pre: tuple, filas: list, post: tuple | None, vacias: int = 0) -> dict:
                 if igual:  # (y la siguiente tampoco se sabe: esas filas a la entrada de la de antes pudieron ser suyas)
                     return {"viejo": viejo + igual, "fin": igual[-1], "nuevo": nuevo, "cuadra": False, "amb": A6, "amb_nuevo": a2 or A6,
                             "s4": True}
-                return {"viejo": viejo, "fin": f, "nuevo": nuevo, "cuadra": True, "amb_nuevo": a2}
+                return {"viejo": viejo, "fin": f, "nuevo": nuevo, "cuadra": True, "amb_nuevo": a2 or (A6P if nuevo else None)}
         else:  # una fila a otra entrada: hubo un anadido que el bot no vio; desde aqui el tamano no se sabe
-            return _con_vacias(_sin_tamano(viejo, filas[j:], post, tam), pre, filas, post, vacias)
+            t = _con_vacias(_sin_tamano(viejo, filas[j:], post, tam), pre, filas, post, vacias)
+            # (y si despues vuelve una a la entrada de antes, no cabe: la media no vuelve atras -S4-)
+            return t | {"s4": True} if any(mismo(g["e"], ent) for g in filas[j + 1:]) else t
     if post is None:
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False}
     if mismo(post[1], ent):
@@ -202,7 +205,7 @@ def _con_vacias(t: dict, pre: tuple, filas: list, post: tuple | None, vacias: in
     if not resto or _suma(resto) < pre[0] * (1 - TOL_Q):  # lo de antes no la cierra sin filas de la entrada nueva: S4 roto
         return t
     if len(_entradas([g for g in resto if not mismo(g["e"], pre[1])])) <= 1:
-        return {"viejo": resto, "fin": resto[-1], "nuevo": nuevo, "cuadra": False}
+        return {"viejo": resto, "fin": resto[-1], "nuevo": nuevo, "cuadra": False, "amb_nuevo": A6P if nuevo else None}
     return {"viejo": resto, "fin": None, "nuevo": nuevo, "cuadra": False, "hasta": t.get("hasta"), "termina": True,
             "amb": "A1: un anadido sin ver y despues cierres a mas de una entrada mientras no estaba en las lecturas",
             "amb_nuevo": "A2: antes de verla hubo cierres a mas de una entrada que no se pueden repartir"}
@@ -445,6 +448,8 @@ class Libro:
                 lim2 = max([x for x in (lim, k.get("limpia2"), c2 - DESFASE_MS if c2 is not None else None,
                                         r[0] - SEGUIDA_MS - DESFASE_MS) if x is not None])
                 v = nueva(r, [f for f in G if mismo(f["e"], r[3]) and not _antes(f, lim2)], self._a2(G, r, lim, lim2, k["vacia"]), None)
+                if v["filas"]:  # filas a su entrada antes de verla: un parcial suyo, o una vida igual que no vio (S4 roto)
+                    v["amb"] = v["amb"] or A6P
                 if sl:
                     v["amb"] = v["amb"] or A3
                 if k.get("heredada"):  # la duda que tenia mientras la de antes seguia en el registro

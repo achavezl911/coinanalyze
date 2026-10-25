@@ -930,6 +930,12 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
                     if (not misma_e and f["c"] - 10_000 > limpia - 20_000) or (misma_e and f["c"] - 10_000 <= limpia2 + 20_000):
                         return None
         return "no hubo cierres a otra entrada tras la anterior y su «limpia», ni a la suya antes, hasta su primera lectura"
+    if nota.startswith("ambigua: A6: una fila a su entrada antes de verla"):  # (declarado: un parcial suyo antes de verla)
+        primera = min(vistas.get(v.n, [math.inf]))
+        t1 = sec.lectura(primera) if primera != math.inf else v.fin
+        if any(f["t"] <= t1 + 30_000 for f in v.filas) or _s4_roto(s, [w for w in misma if w.fin <= v.inicio][-1:] + [v]):
+            return None
+        return "no tuvo filas antes de su primera lectura ni hubo una vida igual antes"
     if nota.startswith(("ambigua: A6", "ambigua: X")):
         if _s4_roto(s, siguientes[:3] + [w for w in misma if w.fin <= v.inicio][-1:]):
             return None
@@ -1009,8 +1015,9 @@ def fijas() -> list[Secuencia]:
         " lo mismo que cerrar entera tras un anadido sin ver y reabrir a la misma entrada)", [
         _v(1, B, [(0.9, "abre", 0.004, 110000), (1.4, "anade", 0.002, 110600), (1.6, "parcial", 0.005, 110420),
                   (3.5, "cierra", 0, 108200)], 0)], {1: "ambigua"})
-    sec("R-A V1 parcial antes de la primera lectura (su fila a la hora de su updatedTime)", [
-        _v(1, B, [(0.95, "abre", 0.006, 110000), (1.2, "parcial", 0.004, 110400), (3.0, "cierra", 0, 107800)], 0)], {1: "cifra"})
+    sec("R-A V1 parcial antes de la primera lectura (R7: ambigua A6, una vida igual que cierra y otra que abre a su entrada da"
+        " las mismas lecturas y filas: s4_misma)", [
+        _v(1, B, [(0.95, "abre", 0.006, 110000), (1.2, "parcial", 0.004, 110400), (3.0, "cierra", 0, 107800)], 0)], {1: "ambigua"})
     sec("R-B caida entre el veredicto y el latido, y se pone el stop", [
         _v(1, B, [(0.9, "abre", 0.004, 110000), (2.5, "stop", 0, 109400), (8.0, "cierra", 0, 110300)], 0)], {1: "cifra"},
         caida=(1, 2, "antes_latido"))
@@ -1023,8 +1030,8 @@ def fijas() -> list[Secuencia]:
     sec("V2b anadido y parcial en el mismo minuto, despues una lista vacia (R7: ambigua A6, como R-A V2)", [
         _v(1, B, [(0.9, "abre", 0.004, 110000), (1.4, "anade", 0.002, 110600), (1.6, "parcial", 0.005, 110500),
                   (6.0, "cierra", 0, 110300)], 0)], {1: "ambigua"}, vacias={2})
-    sec("V7 la primera lectura ya ensena el tamano tras un parcial y su fila va 4 s por delante", [
-        _v(1, B, [(0.95, "abre", 0.006, 110000), (1.30, "parcial", 0.003, 110500), (4.0, "cierra", 0, 109800)], 4000)], {1: "cifra"},
+    sec("V7 la primera lectura ya ensena el tamano tras un parcial y su fila va 4 s por delante (R7: ambigua A6, como R-A V1)", [
+        _v(1, B, [(0.95, "abre", 0.006, 110000), (1.30, "parcial", 0.003, 110500), (4.0, "cierra", 0, 109800)], 4000)], {1: "ambigua"},
         desfase=4000)
     sec("sospecha: una rafaga y un /evalua cuando la lectura sale vacia", [
         _v(1, B, [(0.9, "abre", 0.004, 110000), (8.0, "cierra", 0, 110300)], 0)], {1: "cifra"}, vacias={3}, rafagas={3}, evaluas={3})
