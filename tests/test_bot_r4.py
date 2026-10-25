@@ -262,14 +262,13 @@ async def test_sospecha_las_respuestas_salen_en_el_orden_de_los_mensajes():
     bot = sv.Bot({"TELEGRAM_BOT_TOKEN": "1:t", "TELEGRAM_CHAT_ID": "42"}, None, None)
     enviadas: list = []
 
-    async def recibe():
-        return ["como esta btc", "/entrada"]
+    async def recibe():  # (R5: dos preguntas a Opus; lo que no va a Opus ya no espera: test_bot_r5 reg3)
+        return ["como esta btc", "y eth?"]
 
     async def atiende(t):
-        if t == "/entrada":
-            return sv.ENTRADAS
-        await asyncio.sleep(0.05)  # Opus tarda
-        return "BTC: lo que dice Opus"
+        if t == "como esta btc":
+            await asyncio.sleep(0.05)  # Opus tarda
+        return f"Opus: {t}"
 
     async def manda(t):
         enviadas.append(t)
@@ -277,4 +276,4 @@ async def test_sospecha_las_respuestas_salen_en_el_orden_de_los_mensajes():
     bot.tg.recibe, bot.atiende, bot.manda = recibe, atiende, manda
     await bot.tic_telegram()
     await _espera(bot)
-    assert enviadas == ["BTC: lo que dice Opus", sv.ENTRADAS]  # antes: al reves
+    assert enviadas == ["Opus: como esta btc", "Opus: y eth?"]  # antes: al reves
