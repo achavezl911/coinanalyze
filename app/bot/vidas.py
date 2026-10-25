@@ -405,9 +405,11 @@ class Libro:
             fin = max([v["fin"], k["runs"][max(v["runs"])][5]] + [f["b"] for f in v["filas"] if not v.get("amb")])
             desde = k["vacia"] if k["vacia"] is not None else min([k["runs"][min(v["runs"])][4]] + [f["b"] for f in v["filas"]]) - 1
             # (lo suyo que llegue tarde: desde el fin de la anterior -sus parciales de antes de verla, S4- hasta que dejo de verse
-            # -la primera lectura sin ella o la de la siguiente-: su cierre pasa despues de su ultima lectura)
+            # -la lectura de la siguiente o, sin ella, la cuarta sin la clave: hasta tres vacias pueden ser falsas, S3-: su
+            # cierre pasa despues de su ultima lectura)
             lo = k["vacia"] if k["vacia"] is not None else fin - HORIZONTE_MS
-            hi = max(fin, (k["runs"][hechas][0] if hechas < len(k["runs"]) else (k["ausente"] or [fin])[0]) + DESFASE_MS)
+            hi = max(fin, k["runs"][hechas][0] + DESFASE_MS if hechas < len(k["runs"]) else
+                     (k["ausente"] or [fin])[0] + VACIAS_LIMPIA * SEGUIDA_MS + DESFASE_MS)
             fs, hs = self.filas.get(clave.split(":")[0], []), self.horas.get(clave.split(":")[0], [])
             vistas = [f["orden"] for f in fs[bisect.bisect_right(hs, lo):bisect.bisect_right(hs, hi)]]
             # (con sus filas: el lado de una sin lado; y su id, ordenes, cifra, las filas que ya se veian y desde cuando: la
