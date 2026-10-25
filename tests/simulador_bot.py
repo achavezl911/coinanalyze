@@ -931,13 +931,14 @@ def _a_caballo(s: Simulacion, clave: str, f: dict, m: int) -> bool:
     return min(f["c"], f["b"]) - 10_000 <= frontera < max(f["c"], f["b"]) + 10_000
 
 
-def _fronteras(s: Simulacion, clave: str, perdida: int | None) -> list:
+def _fronteras(s: Simulacion, clave: str, perdida: int | None, vistas: dict) -> list:
     """Las lecturas que el bot CONSERVA en que cambia lo que ve de esa clave (tamano o entrada, o vuelve tras no verla): solo
-    ahi parte vidas.py un tramo (S1). -> [(minuto, updatedTime, vida)]."""
+    ahi parte vidas.py un tramo (S1). La del minuto perdido, solo la de una vida que conserva (su veredicto llego a la
+    base en ese minuto: _conservadas). -> [(minuto, updatedTime, vida)]."""
     out, antes = [], None
     for m in sorted(s.reg.lecturas):
         lec = s.reg.lecturas[m]
-        if lec is None or m == perdida:
+        if lec is None or (m == perdida and not (lec.get(clave) and m in vistas.get(lec[clave][0].n, []))):
             continue
         x = lec.get(clave)
         if x is None:
@@ -1126,7 +1127,7 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
         return None if ms and any(sin(m) and sin(m + 1) for m in range(ms[0] + 1, max(s.reg.lecturas) + 1)) \
             else "no hubo dos lecturas seguidas sin la clave tras verla y antes de su cierre"
     if nota.startswith("ambigua: S1"):  # una fila de su clave a caballo (el criterio del bot) de una FRONTERA de esa vida
-        fr = _fronteras(s, v.clave, perdida)
+        fr = _fronteras(s, v.clave, perdida, vistas)
         mias = [j for j, (_m, _u, w) in enumerate(fr) if w is v]
         js = {j for j in mias + ([min(mias) - 1, max(mias) + 1] if mias else []) if 0 <= j < len(fr)}
         for j in js:
