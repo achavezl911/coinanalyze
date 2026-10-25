@@ -116,7 +116,9 @@ async def test_reg5_unas_vidas_que_no_son_un_diccionario_no_impiden_arrancar(bas
 async def test_sospecha_el_plan_b_no_pega_una_posicion_nueva_a_una_vieja(base, monkeypatch):  # noqa: F811 - el fixture `base` de test_bot
     t0, ops, cuenta = _t0(), [], {}
     db = _EnFila(base)
-    bot = sv.Bot(ENTORNO, db, _mundo([[_pos(110000, t0)], [_pos(110300, t0, size="0.008")], []], ops, cuenta))
+    # (R7: al promediar se mueve su updatedTime; con el de la apertura el libro no se fia de el -u_parado- y la separacion
+    # queda en duda hasta la ESPERA)
+    bot = sv.Bot(ENTORNO, db, _mundo([[_pos(110000, t0)], [_pos(110300, t0 + M + 30_000, size="0.008")], []], ops, cuenta))
     for k in (1, 2, 3, 4):  # abierta, promediada (0.008 a 110300) y cerrada; closed-pnl todavia no trae su cierre
         await _tic(bot, monkeypatch, t0 + k * M + 20_000)
     await bot.latido()  # cae esperando la fila de su cierre
@@ -130,7 +132,8 @@ async def test_sospecha_el_plan_b_no_pega_una_posicion_nueva_a_una_vieja(base, m
     monkeypatch.undo()
     ids = await _veredictos(db)
     # antes: el plan B la daba por ABIERTA (no estaba en las vidas) y la nueva quedaba pegada, sin evaluar ni avisar
-    assert len(set(ids)) == 2 and await _sin_stop(db) == 2, ids
+    # (R7: 3 avisos sin_stop: la vieja al abrir, la vieja al promediar -otro updatedTime y sigue sin stop- y la nueva)
+    assert len(set(ids)) == 2 and await _sin_stop(db) == 3, ids
     assert await _cierres(db) == {ids[0]: 4.0}
 
 

@@ -819,8 +819,17 @@ def _evidencia(s: Simulacion, v: Vida, ms: list, vistas: dict) -> int | None:
             return None  # reabierta a la misma entrada (A6)
     if any(not sec.arriba(m) for m in range(desde, ms[-1] + 1)) or (sec.caida and desde <= sec.caida[0] <= ms[-1]):
         return None
-    if any(_a_caballo(s, v.clave, f, m) for f in (pred.filas if pred else []) + v.filas for m in range(max(0, desde - 1), ms[-1] + 1)):
-        return None  # una fila a caballo de una lectura con dos historias posibles (S1, declarado)
+    # una fila a caballo de una lectura con dos historias posibles (S1, declarado), de ella o de una vida anterior cuya duda
+    # aun no resolvio la ESPERA (la duda se arrastra: la misma vida hasta entonces)
+    vivas = [w for w in antes if sec.lectura(ms[0]) < w.fin + ESPERA + 3 * M] + [v]
+    desde_w = min([min(vistas[w.n]) for w in vivas if vistas.get(w.n)] + [desde])
+    if any(_a_caballo(s, v.clave, f, m) for w in vivas for f in w.filas for m in range(max(0, desde_w - 1), ms[-1] + 1)):
+        return None
+    for w in antes:  # un cierre sin lado de una vida anterior a una entrada que el bot no le conserva: no se le atribuye
+        vio_w = {w.estado(sec.lectura(m), sec.u_parcial, sec.funding)[1] for m in vistas[w.n] if w.estado(sec.lectura(m), sec.u_parcial, sec.funding)}
+        if any(s.sv.bb.lado_cierre(f["e"], f["x"], f["q"], f["pnl"]) is None and not any(abs(f["e"] / e - 1) <= 1e-9 for e in vio_w)
+               for f in w.filas):
+            return None
     # (los cierres de TODAS las vidas vistas antes, no solo de la anterior: una fila tardia de otra mas vieja tambien
     # deja la separacion en duda)
     ordenes_pred = {f["orden"] for w in antes for f in w.filas if f["t"] > sec.lectura(max(vistas[w.n]))}

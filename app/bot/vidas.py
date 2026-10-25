@@ -471,7 +471,7 @@ class Libro:
                     fin = t["fin"]["b"] if t.get("fin") else max(x for x in (t.get("hasta"), p[5]) if x is not None)
                     if t.get("amb"):
                         v["amb"] = v["amb"] or t["amb"]
-                    if sl:  # una sin lado en su tramo (tambien tras cubrirla: pudo ser suya tras un anadido sin ver)
+                    if any(f["b"] <= fin for f in sl) or (sl and not t["cuadra"]):  # una sin lado ANTES de su cierre, o sin cierre exacto
                         v["amb"] = v["amb"] or A3
                     if vacias:
                         v["espera"] = max(v["espera"], r[7][0])  # sus filas pueden tardar ESPERA desde que dejo de verse
@@ -519,7 +519,7 @@ class Libro:
             v["filas"] += t["viejo"]
             if t.get("amb"):
                 v["amb"] = v["amb"] or t["amb"]
-            sl = entre(sin_lado, hsl, B[-1], INF)  # (tambien tras cubrirla: pudo ser suya tras un anadido sin ver)
+            sl = entre(sin_lado, hsl, B[-1], t["fin"]["b"] if t.get("fin") else INF)  # despues de su cierre: de vidas que no vio
             if sl:
                 v["amb"] = v["amb"] or A3
             cubre = t.get("fin") or (t.get("sin_tamano") and _suma(t["viejo"]) >= r[2] * (1 - TOL_Q))
