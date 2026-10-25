@@ -621,7 +621,7 @@ class Simulacion:
 def simula(sec: Secuencia, sv) -> Simulacion:
     s = Simulacion(sec, sv)
     parches = [mock.patch.object(sv.time, "time", lambda: s.reloj[0] / 1000)]
-    if sec.excepciones and hasattr(sv, "vidas"):  # I8: excepciones inyectadas en la identidad, clave a clave
+    if sec.excepciones and hasattr(sv, "vidas") and hasattr(sv.vidas.Libro, "_decide_clave"):  # I8: en la identidad, clave a clave
         original = sv.vidas.Libro._decide_clave
 
         def con_fallos(libro, clave, k, ahora, out):
@@ -629,6 +629,14 @@ def simula(sec: Secuencia, sv) -> Simulacion:
                 raise RuntimeError(f"fallo inyectado en {clave}")
             return original(libro, clave, k, ahora, out)
         parches.append(mock.patch.object(sv.vidas.Libro, "_decide_clave", con_fallos))
+    elif sec.excepciones and hasattr(sv, "vidas"):  # (un libro sin decision por clave, como el de R6: en decide entero)
+        original_d = sv.vidas.Libro.decide
+
+        def decide_con_fallos(libro, ahora):
+            if s.rng.random() < sec.excepciones:
+                raise RuntimeError("fallo inyectado en decide")
+            return original_d(libro, ahora)
+        parches.append(mock.patch.object(sv.vidas.Libro, "decide", decide_con_fallos))
     for p in parches:
         p.start()
     try:
