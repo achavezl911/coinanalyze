@@ -427,7 +427,7 @@ class Libro:
         B = [r[4] if (r + [None, None])[8] and not self.u_parado else max(r[4], r[0] - DESFASE_MS) for r in runs]
         cortes = [k["vacia"], *B, INF]
         grupos = [entre(filas, hs, cortes[i], cortes[i + 1]) for i in range(len(runs) + 1)]
-        dudas = self._reparte(k, grupos, B, ahora)  # lecturas con una fila a caballo que cambia la vida: esa vida y la siguiente, ambiguas
+        dudas = self._reparte(k, grupos, B, ahora, hsl)  # lecturas con una fila a caballo que cambia la vida: esa vida y la siguiente, ambiguas
 
         vidas: list = []
         v = None
@@ -471,7 +471,7 @@ class Libro:
                     fin = t["fin"]["b"] if t.get("fin") else max(x for x in (t.get("hasta"), p[5]) if x is not None)
                     if t.get("amb"):
                         v["amb"] = v["amb"] or t["amb"]
-                    if any(f["b"] <= fin for f in sl) or (sl and not t["cuadra"]):  # una sin lado ANTES de su cierre, o sin cierre exacto
+                    if sl:  # una sin lado en su tramo (tambien tras cubrirla: pudo ser suya tras un anadido sin ver)
                         v["amb"] = v["amb"] or A3
                     if vacias:
                         v["espera"] = max(v["espera"], r[7][0])  # sus filas pueden tardar ESPERA desde que dejo de verse
@@ -519,7 +519,7 @@ class Libro:
             v["filas"] += t["viejo"]
             if t.get("amb"):
                 v["amb"] = v["amb"] or t["amb"]
-            sl = entre(sin_lado, hsl, B[-1], t["fin"]["b"] if t.get("fin") else INF)  # despues de su cierre: de vidas que no vio
+            sl = entre(sin_lado, hsl, B[-1], INF)  # (tambien tras cubrirla: pudo ser suya tras un anadido sin ver)
             if sl:
                 v["amb"] = v["amb"] or A3
             cubre = t.get("fin") or (t.get("sin_tamano") and _suma(t["viejo"]) >= r[2] * (1 - TOL_Q))
@@ -560,7 +560,7 @@ class Libro:
             return "A2: antes de las lecturas sin la clave hubo cierres a su misma entrada"
         return None
 
-    def _reparte(self, k: dict, grupos: list, B: list, ahora: int) -> set:
+    def _reparte(self, k: dict, grupos: list, B: list, ahora: int, hsl: list = ()) -> set:
         """S1: las filas a caballo de cada lectura i, antes o despues de ella (grupos se reescribe). A caballo: la que pudo
         pasar a los dos lados -h > B, y si el updatedTime no se movio con el cambio, tambien b <= hora local de la lectura +
         DESFASE_MS (la lectura pudo ser hasta 10 s despues en el reloj de Bybit)-. Cada frontera dudosa tiene tres colocaciones:
@@ -620,14 +620,16 @@ class Libro:
             if j + 1 < n:
                 s = runs[j + 1]
                 t = tramo((r[2], r[3]), filas, (s[2], s[3]), (s[7] or [None, 0])[1])
-                falta, firme = bool(t.get("falta")), ahora >= s[0] + ESPERA_MS
+                # (con una sin lado entre las dos lecturas, lo que «falta» pudo ser ella: no es firme)
+                falta = bool(t.get("falta"))
+                firme = ahora >= s[0] + ESPERA_MS and not any(B[j] < h <= B[j + 1] for h in hsl)
                 return (bool(t.get("s4")) + ajenas(filas, (r[3], s[3])) + (falta and firme), falta and not firme,
                         bool(t.get("fin") or t.get("termina")), t)
             if k["ausente"] is None:
                 return ajenas(filas, (r[3],)), 0, False, None
             t = tramo((r[2], r[3]), filas, None)
             cubre = bool(t.get("fin") or (t.get("sin_tamano") and _suma(t["viejo"]) >= r[2] * (1 - TOL_Q)))
-            firme = ahora >= k["ausente"][0] + ESPERA_MS
+            firme = ahora >= k["ausente"][0] + ESPERA_MS and not any(h > B[j] for h in hsl)  # (una sin lado: lo que falta)
             return bool(t.get("s4")) + ajenas(filas, (r[3],)) + (not cubre and firme), not cubre and not firme, cubre, t
 
         def resto(x: int, quedan: list) -> list:

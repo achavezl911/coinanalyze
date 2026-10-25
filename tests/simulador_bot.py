@@ -821,7 +821,9 @@ def _evidencia(s: Simulacion, v: Vida, ms: list, vistas: dict) -> int | None:
         return None
     if any(_a_caballo(s, v.clave, f, m) for f in (pred.filas if pred else []) + v.filas for m in range(max(0, desde - 1), ms[-1] + 1)):
         return None  # una fila a caballo de una lectura con dos historias posibles (S1, declarado)
-    ordenes_pred = {f["orden"] for f in pred.filas if f["t"] > sec.lectura(desde)} if pred else set()
+    # (los cierres de TODAS las vidas vistas antes, no solo de la anterior: una fila tardia de otra mas vieja tambien
+    # deja la separacion en duda)
+    ordenes_pred = {f["orden"] for w in antes for f in w.filas if f["t"] > sec.lectura(max(vistas[w.n]))}
     for m in ms:  # la primera lectura en que se ve y closed-pnl ya trae el cierre de la anterior
         if ordenes_pred <= reg.visibles.get(m, set()):
             return m
