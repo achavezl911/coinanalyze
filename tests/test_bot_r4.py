@@ -17,7 +17,7 @@ import pytest
 from test_bot import _EnFila, _espera, base  # noqa: F401
 from test_bot_r3 import ENTORNO, _mundo, _op, _pos, _SinRegistro
 
-from app.bot import calidad
+from app.bot import calidad, vidas
 from app.bot import servicio as sv
 
 M = 60_000
@@ -31,6 +31,12 @@ async def _tic(bot, monkeypatch, ms: int):
     monkeypatch.setattr(sv.time, "time", lambda: ms / 1000)
     await bot.tic_bybit()
     await _espera(bot)
+
+
+async def _hasta(bot, monkeypatch, desde: int, hasta: int):
+    """R7: un tic por minuto (la ausencia se cuenta seguida, como en el bot real) hasta pasada la ESPERA."""
+    for ms in range(desde, hasta + 1, M):
+        await _tic(bot, monkeypatch, ms)
 
 
 async def _veredictos(db) -> list:
@@ -50,7 +56,7 @@ async def test_r10_un_parcial_y_un_anadido_son_la_misma_posicion(base, monkeypat
     await _tic(bot, monkeypatch, t0 + 2 * M + 20_000)  # ... y anade 0.004 a 110750: 0.006 a 110500 (+0.45 %)
     ops.append(_op("final", 110500, 110300, -1.4, t0 + 2 * M + 40_000) | {"closedSize": "0.006"})
     await _tic(bot, monkeypatch, t0 + 3 * M + 20_000)  # cerrada entera
-    await _tic(bot, monkeypatch, t0 + 13 * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
+    await _hasta(bot, monkeypatch, t0 + 4 * M + 20_000, t0 + 3 * M + 20_000 + vidas.ESPERA_MS + M)  # R7: ESPERA sin verla
     monkeypatch.undo()
     textos = cuenta.get("textos", [])
     ids = await _veredictos(db)
@@ -77,7 +83,7 @@ async def test_r1_cerrada_y_reabierta_en_el_mismo_minuto_son_dos_posiciones(base
         await _tic(bot, monkeypatch, t0 + k * M + 20_000)
     ops.append(_op("cierre-2", 110150, 109550, -2.5, t0 + k * M + 30_000))
     await _tic(bot, monkeypatch, t0 + (k + 1) * M + 20_000)
-    await _tic(bot, monkeypatch, t0 + (k + 12) * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
+    await _hasta(bot, monkeypatch, t0 + (k + 2) * M + 20_000, t0 + (k + 1) * M + 20_000 + vidas.ESPERA_MS + M)  # R7: ESPERA
     monkeypatch.undo()
     ids = await _veredictos(db)
     assert len(set(ids)) == 2, ids  # antes: un solo id
@@ -97,7 +103,7 @@ async def test_r2_promediar_y_despues_cerrar_puntua(base, monkeypatch):  # noqa:
     await _tic(bot, monkeypatch, t0 + 2 * M + 20_000)  # promedia: 0.008 a 110300 (+0.27 %)
     ops.append(_op("cierre", 110300, 110800, 3.6, t0 + 2 * M + 40_000) | {"closedSize": "0.008"})
     await _tic(bot, monkeypatch, t0 + 3 * M + 20_000)
-    await _tic(bot, monkeypatch, t0 + 13 * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
+    await _hasta(bot, monkeypatch, t0 + 4 * M + 20_000, t0 + 3 * M + 20_000 + vidas.ESPERA_MS + M)  # R7: ESPERA sin verla
     monkeypatch.undo()
     ids = await _veredictos(db)
     assert await _cierres(db) == {ids[0]: 3.6}  # antes: su entrada no era la evaluada, no puntuaba, y a las 2 h «sin puntuar»
@@ -159,7 +165,7 @@ async def test_r4b_en_cobertura_una_fila_sin_lado_no_cuenta_para_ninguno(base, m
     ops += [_op("largo", 110000, 110450, 1.5, t0 + M + 30_000), _op("corto", 110100, 109600, 1.8, t0 + M + 35_000),
             _op("sin-lado", 110050, 110080, -0.3, t0 + M + 40_000)]  # se movio menos que la comision: la aritmetica no dice el lado
     await _tic(bot, monkeypatch, t0 + 2 * M + 20_000)
-    await _tic(bot, monkeypatch, t0 + 12 * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
+    await _hasta(bot, monkeypatch, t0 + 3 * M + 20_000, t0 + 2 * M + 20_000 + vidas.ESPERA_MS + M)  # R7: ESPERA sin verla
     monkeypatch.undo()
     # antes (R3): 1.2 y 1.5, la -0.3 en las dos. R6: la fila sin lado llega DESPUES de que cada una cerrara entera a su entrada
     # (sus filas cubren su tamano): no es de ninguna de las dos, que se puntuan con lo suyo

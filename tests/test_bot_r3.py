@@ -82,11 +82,13 @@ async def test_bug1_dos_posiciones_del_mismo_simbolo_son_dos_y_cada_una_puntua_c
            _op("corto", 108000, 107500, 1.9, ahora - h // 3)]  # un corto (la aritmetica lo dice): de otro lado
     cuenta: dict = {}
     db = _EnFila(base)
-    bot = sv.Bot(ENTORNO, db, _mundo([[], [], [p1], [], [p2], []], ops, cuenta))
+    bot = sv.Bot(ENTORNO, db, _mundo([[], [], [], [], [p1], [], [p2], []], ops, cuenta))
     # cada lectura un minuto despues de lo que ve (R4: las operaciones se asignan a la vida por su hora; antes las cuatro
     # lecturas eran «ahora» y la primera posicion se cerraba 2 h despues de su ultima operacion)
-    # (R6: dos lecturas sin ella antes: sin registro previo, la fila vieja a otra entrada la dejaria ambigua, A2)
-    for t in (ahora - 3 * h - 2 * 60_000, ahora - 3 * h - 60_000, ahora - 3 * h, ahora - 2 * h, ahora - h, ahora - h // 2):
+    # (R6: dos lecturas sin ella antes: sin registro previo, la fila vieja a otra entrada la dejaria ambigua, A2; R7: cuatro,
+    # S3 «limpia»; y la ultima, pasada la ESPERA de 35 min desde que la segunda dejo de verse)
+    for t in (ahora - 3 * h - 4 * 60_000, ahora - 3 * h - 3 * 60_000, ahora - 3 * h - 2 * 60_000, ahora - 3 * h - 60_000,
+              ahora - 3 * h, ahora - 2 * h, ahora - h, *range(ahora - h // 2, ahora - h // 2 + 37 * 60_000, 60_000)):
         monkeypatch.setattr(sv.time, "time", lambda t=t: (t + 60_000) / 1000)
         await bot.tic_bybit()
         await _espera(bot)

@@ -110,8 +110,8 @@ def _entradas(filas: list) -> list:
     return out
 
 
-def _antes(f: dict, limpia) -> bool:
-    return limpia is not None and f["b"] <= limpia
+def _antes(f: dict, limpia) -> bool:  # sin duda de antes de esa hora
+    return limpia is not None and f["h"] <= limpia
 
 
 def _suma(filas: list) -> float:
@@ -184,7 +184,8 @@ def tramo(pre: tuple, filas: list, post: tuple | None, vacias: int = 0) -> dict:
         # mas tamano a la MISMA entrada: un anadido al precio exacto de la media o cerrar y reabrir a la misma (S4 roto: A6)
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A6, "s4": True}
     if vacias >= VACIAS_SEGUIDAS:  # se fue sin filas que la cierren y volvio distinta: no se parte (A7)
-        return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A7}
+        return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A7,
+                "falta": post[0] < tam - pre[0] * TOL_Q}  # (volvio con MENOS sin filas que lo expliquen: faltan filas)
     # anadidos despues de esos cierres: subirian el tamano; si ensena MENOS de lo que dejan las filas, faltan filas
     return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "falta": post[0] < tam - pre[0] * TOL_Q}
 
@@ -219,7 +220,7 @@ class Libro:
         self.filas: dict = {}  # symbol -> filas en orden de hora (S1)
         self.horas: dict = {}  # symbol -> sus horas, en el mismo orden (para buscar por biseccion)
         self.ordenes: dict = {}  # orden -> su hora: las ya vistas (8 dias)
-        self.nada_desde = None  # hora desde la que toda clave sin registro estaba vacia (dos lecturas sin ella)
+        self.nada_desde = None  # hasta cuando toda clave sin registro estaba vacia (la ultima lectura sin ella)
         self.nada_desde4 = None  # (cuatro lecturas sin ella: S3, «limpia»)
         self.previas: list = []  # las cuatro ultimas lecturas (hora de 140)
         self.ultima = None
@@ -257,7 +258,7 @@ class Libro:
                 ultimas = au[3] if au and isinstance((au + [None])[3], list) else []
                 k["runs"].append([ahora, ahora, p["cantidad"], p["entrada"], u, u, None,
                                   [au[0], vacias, ultimas[0] if len(ultimas) >= VACIAS_LIMPIA else None,
-                                   ultimas[-2] if len(ultimas) >= 2 else None] if au else None,
+                                   ultimas[-1] if ultimas else None] if au else None,
                                   None if antes is None else u > antes])
             k["ausente"] = None
             k["u_ultima"] = max(k.get("u_ultima") or u, u)
@@ -271,11 +272,10 @@ class Libro:
             k["ausente"] = [au[0], ahora, au[2] + 1, ultimas] if seguida else [ahora, ahora, 1, ultimas]
             if not k["runs"] and len(ultimas) >= VACIAS_LIMPIA:  # sin vida abierta y 4 vacias seguidas: lo de antes, de otras
                 k["limpia"] = max(k.get("limpia") or -INF, ultimas[0] - DESFASE_MS)
-            if not k["runs"] and len(ultimas) >= 2:  # (con dos, lo de antes a SU entrada ya no es suyo: la hace ambigua)
-                k["limpia2"] = max(k.get("limpia2") or -INF, ultimas[-2] - DESFASE_MS)
+            if not k["runs"]:  # (lo de antes de una lectura sin ella a SU entrada: o la vacia era falsa o no es suyo: ambigua)
+                k["limpia2"] = max(k.get("limpia2") or -INF, ultimas[-1] - DESFASE_MS)
         self.previas = (self.previas + [ahora])[-VACIAS_LIMPIA:]
-        if len(self.previas) >= 2:
-            self.nada_desde = self.previas[-2] - DESFASE_MS
+        self.nada_desde = self.previas[-1] - DESFASE_MS
         if len(self.previas) >= VACIAS_LIMPIA:
             self.nada_desde4 = self.previas[0] - DESFASE_MS
         self.ultima = ahora
@@ -433,7 +433,7 @@ class Libro:
             if cortes[i] is not None and r[4] - cortes[i] > HORIZONTE_MS and v is not None:
                 v["amb"] = v["amb"] or "A4: mas de 7 dias sin leer esta posicion"
             if v is None:
-                c4, c2 = (list(r[7] or []) + [None] * 4)[2:4]  # la primera de las 4, y de las 2, ultimas vacias antes de verla
+                c4, c2 = (list(r[7] or []) + [None] * 4)[2:4]  # la primera de las 4 ultimas vacias antes de verla, y la ultima
                 lim = max([x for x in (limpia, c4 - DESFASE_MS if c4 is not None else None) if x is not None], default=None)
                 lim2 = max([x for x in (lim, k.get("limpia2"), c2 - DESFASE_MS if c2 is not None else None) if x is not None], default=None)
                 v = nueva(r, [f for f in G if mismo(f["e"], r[3]) and not _antes(f, lim2)], self._a2(G, r, lim, lim2, k["vacia"]), None)
@@ -457,9 +457,9 @@ class Libro:
                                     if t.get("fin") and not vacias else None))
                     if [f for f in sl if f["b"] > fin]:
                         v["amb"] = v["amb"] or A3
-                    corte_v = (list(r[7] or []) + [None] * 4)[3]  # la penultima vacia: lo de antes a su entrada no es suyo
-                    if corte_v is not None and any(f["b"] <= corte_v - DESFASE_MS for f in v["filas"]):  # S3: no son suyas
-                        v["filas"] = [f for f in v["filas"] if f["b"] > corte_v - DESFASE_MS]
+                    corte_v = (list(r[7] or []) + [None] * 4)[3]  # la ultima vacia: lo de antes a su entrada, o falsa o no suyo
+                    if corte_v is not None and any(_antes(f, corte_v - DESFASE_MS) for f in v["filas"]):
+                        v["filas"] = [f for f in v["filas"] if not _antes(f, corte_v - DESFASE_MS)]
                         v["amb"] = v["amb"] or "A2: antes de las lecturas sin la clave hubo cierres a su misma entrada"
                 elif r[6] and r[6] != v["id"] and r[6] not in usados:  # un registro anterior la separa aqui (A5)
                     v["amb"] = v["amb"] or "A5: un registro anterior la separa aqui sin una fila que la cierre"

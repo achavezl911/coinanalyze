@@ -869,7 +869,7 @@ def _cierra_mas_tras_anadido(s: Simulacion, vs: list, lecturas: list) -> bool:
 
 def _limpia(s: Simulacion, v: Vida, pred: Vida | None, primera: int, n: int) -> float:
     """La «limpia» del bot antes de la primera lectura de v con n lecturas seguidas sin la clave (4: lo de antes a otra
-    entrada no cuenta; 2: lo de antes a SU entrada la hace ambigua), de lo que el bot conserva: la racha justo antes de
+    entrada no cuenta; 1: lo de antes a SU entrada la hace ambigua), de lo que el bot conserva: la racha justo antes de
     verla, o (tras la puntuacion de la anterior, o sin registro) cualquier racha; la primera de las n, menos 10 s."""
     sec, reg = s.sec, s.reg
 
@@ -920,7 +920,7 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
             ids = {e["posicion"] for e in s.base.evaluacion if e["tipo"] == "veredicto" and _vida_de(s, e["detalle"].get("posicion") or {}) is pred}
             pred_anade = any(e["tipo"] == "cierre" and e["posicion"] in ids and e["pnl"] is None for e in s.base.evaluacion)
         limpia = _limpia(s, v, pred, primera, 4) if primera != math.inf else -math.inf
-        limpia2 = _limpia(s, v, pred, primera, 2) if primera != math.inf else -math.inf
+        limpia2 = _limpia(s, v, pred, primera, 1) if primera != math.inf else -math.inf
         for w in misma:
             if w not in antes or (w is pred and pred_anade):
                 for f in w.filas:

@@ -32,7 +32,7 @@ async def test_reg1_tras_una_caida_la_evaluada_puntua_solo_hasta_su_cierre(base,
     ops += [_op("suya", 110000, 110300, 1.0, t0 + 2 * M), _op("otra", 111000, 110400, -2.5, t0 + 5 * M)]
     otro = sv.Bot(ENTORNO, db, _mundo([[]], ops, cuenta))
     await otro.carga()
-    for k in (10, 11):
+    for k in range(10, 47):  # R7: se puntua pasada la ESPERA (35 min) desde que la vio sin ella (un tic por minuto)
         await _tic(otro, monkeypatch, t0 + k * M + 20_000)
     monkeypatch.undo()
     ids = await _veredictos(db)
@@ -125,7 +125,8 @@ async def test_sospecha_el_plan_b_no_pega_una_posicion_nueva_a_una_vieja(base, m
     otro = sv.Bot(ENTORNO, db, _mundo([[nueva]], ops, cuenta))
     await otro.carga()
     await _tic(otro, monkeypatch, t0 + 10 * M + 20_000)
-    await _tic(otro, monkeypatch, t0 + 14 * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
+    for k in range(11, 41):  # R7: tras ESPERA (35 min) desde que dejo de verse (un tic por minuto)
+        await _tic(otro, monkeypatch, t0 + k * M + 20_000)
     monkeypatch.undo()
     ids = await _veredictos(db)
     # antes: el plan B la daba por ABIERTA (no estaba en las vidas) y la nueva quedaba pegada, sin evaluar ni avisar

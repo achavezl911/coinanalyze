@@ -19,7 +19,7 @@ import httpx
 import pytest
 
 from app.bot import bybit as bb
-from app.bot import calc, llm
+from app.bot import calc, llm, vidas
 from app.bot import centinela as cen
 from app.bot import servicio as sv
 
@@ -364,6 +364,7 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base, monkey
     entorno = {"BYBIT_API_KEY": "k", "BYBIT_API_SECRET": "s", "ANTHROPIC_API_KEY": "a", "API_INTERNAL_TOKEN": "tok"}
     base = _EnFila(base)
     bot = sv.Bot(entorno, base, _mundo([[pos], []], vistas))
+    monkeypatch.setattr(sv.time, "time", lambda: 1792400060.0)  # R7: la lectura, un minuto despues de abrirla (su cierre, despues)
     await bot.tic_bybit()  # la clave, la posicion nueva, su evaluacion (en su tarea)
     await _espera(bot)
     (v,) = await base.fetch("SELECT tipo, posicion, veredicto, veredicto_decide, detalle FROM bot_evaluacion")
@@ -385,9 +386,12 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base, monkey
     await _espera(otro)
     assert list(otro.evaluadas) == ["BTCUSDT:Buy:1792400000000"]
     assert await base.fetchval("SELECT count(*) FROM bot_evaluacion") == 1 and await base.fetchval("SELECT count(*) FROM bot_llamada") == 1
-    luego = sv.time.time() + 11 * 60  # R6: se puntua cuando closed-pnl ha podido traer todo (ESPERA tras su primera lectura)
+    luego = 1792400999 + 60  # la lectura siguiente, tras la fila de su cierre, ya no la ensena
     monkeypatch.setattr(sv.time, "time", lambda: luego)
-    await bot.tic_bybit()  # cerrada: se puntua
+    await bot.tic_bybit()
+    for k in range(1, vidas.ESPERA_MS // 60_000 + 2):  # R7: se puntua pasada ESPERA (35 min) desde que dejo de verse
+        monkeypatch.setattr(sv.time, "time", lambda k=k: luego + 60 * k)  # (un tic por minuto, como el bot)
+        await bot.tic_bybit()  # cerrada: se puntua
     monkeypatch.undo()
     c = await base.fetchrow("SELECT veredicto, pnl_usd, acierto FROM bot_evaluacion WHERE tipo = 'cierre'")
     assert tuple(c) == ("A FAVOR", 1.5, True) and bot.evaluadas == {}
