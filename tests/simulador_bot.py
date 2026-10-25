@@ -920,7 +920,7 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
             ids = {e["posicion"] for e in s.base.evaluacion if e["tipo"] == "veredicto" and _vida_de(s, e["detalle"].get("posicion") or {}) is pred}
             pred_anade = any(e["tipo"] == "cierre" and e["posicion"] in ids and e["pnl"] is None for e in s.base.evaluacion)
         limpia = _limpia(s, v, pred, primera, 4) if primera != math.inf else -math.inf
-        limpia2 = _limpia(s, v, pred, primera, 1) if primera != math.inf else -math.inf
+        limpia2 = max(_limpia(s, v, pred, primera, 1), sec.lectura(primera) - 100_000) if primera != math.inf else -math.inf
         for w in misma:
             if w not in antes or (w is pred and pred_anade):
                 for f in w.filas:

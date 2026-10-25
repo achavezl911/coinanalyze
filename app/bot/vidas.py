@@ -62,6 +62,7 @@ from __future__ import annotations
 
 import bisect
 import itertools
+import math
 
 from app.bot.bybit import lado_cierre
 
@@ -168,8 +169,8 @@ def tramo(pre: tuple, filas: list, post: tuple | None, vacias: int = 0) -> dict:
                 a2 = (f"A2: antes de verla hubo {len(otras)} cierre(s) a otra entrada (un anadido suyo o una vida entera que el"
                       f" bot no vio)") if otras else None
                 nuevo = [g for g in resto if mismo(g["e"], post[1])]
-                if igual:
-                    return {"viejo": viejo + igual, "fin": igual[-1], "nuevo": nuevo, "cuadra": False, "amb": A6, "amb_nuevo": a2,
+                if igual:  # (y la siguiente tampoco se sabe: esas filas a la entrada de la de antes pudieron ser suyas)
+                    return {"viejo": viejo + igual, "fin": igual[-1], "nuevo": nuevo, "cuadra": False, "amb": A6, "amb_nuevo": a2 or A6,
                             "s4": True}
                 return {"viejo": viejo, "fin": f, "nuevo": nuevo, "cuadra": True, "amb_nuevo": a2}
         else:  # una fila a otra entrada: hubo un anadido que el bot no vio; desde aqui el tamano no se sabe
@@ -224,6 +225,7 @@ class Libro:
         self.nada_desde4 = None  # (cuatro lecturas sin ella: S3, «limpia»)
         self.previas: list = []  # las cuatro ultimas lecturas (hora de 140)
         self.ultima = None
+        self.u_parado = False  # S1: se vio el updatedTime NO moverse con un cambio de tamano o entrada: ya no se fia de el
 
     # ---------------------------------------------------------------- lo que entra
     def fila(self, f: dict):
@@ -249,7 +251,7 @@ class Libro:
                                           "ausente": None, "pasadas": []}
             u = p.get("actualizada") or ahora
             r = k["runs"][-1] if k["runs"] else None
-            antes = r[5] if r else k.get("u_ultima")  # ¿se movio el updatedTime con el cambio? (S1: se guarda al verlo)
+            antes = r[5] if r and not (k["ausente"] or [0, 0, 0])[2] else None  # ¿se movio con el cambio? (sin vacias entre medias)
             au = k["ausente"]
             vacias = au[2] if au else 0
             if r and r[2] == p["cantidad"] and r[3] == p["entrada"] and not vacias:
@@ -260,8 +262,9 @@ class Libro:
                                   [au[0], vacias, ultimas[0] if len(ultimas) >= VACIAS_LIMPIA else None,
                                    ultimas[-1] if ultimas else None] if au else None,
                                   None if antes is None else u > antes])
+                if antes is not None and u <= antes:
+                    self.u_parado = True
             k["ausente"] = None
-            k["u_ultima"] = max(k.get("u_ultima") or u, u)
         for clave, k in self.claves.items():
             if clave in vistas:
                 continue
@@ -322,6 +325,8 @@ class Libro:
                 [[k["vacia"] if k["vacia"] is not None else k["runs"][min(v["runs"])][4] - 1, fin,
                   [k["runs"][i][3] for i in v["runs"]]]]
             k["vacia"] = v["fin"] if v.get("amb") else fin  # (de una ambigua no hay fila segura: lo de despues, a la siguiente)
+            sig = next((w for w in vidas if w["runs"] and min(w["runs"]) == hechas), None)  # su duda no se pierde al quedar primera
+            k["heredada"] = sig["amb"] if sig and str(sig["amb"]).startswith(("A6", "S1")) else None  # (A2 y A3 se recalculan)
         if hechas:
             del k["runs"][:hechas]
             if not k["runs"]:
@@ -407,7 +412,7 @@ class Libro:
         # S1: lo que ensena cada lectura llega hasta B; cada fila, al tramo de su b, y la que esta a caballo, donde cuadra
         # (donde el updatedTime se movio con el cambio, la frontera es el; si no se movio -o es la primera lectura- puede
         # estar parado: la hora local de la lectura menos el desfase)
-        B = [r[4] if (r + [None, None])[8] else max(r[4], r[0] - DESFASE_MS) for r in runs]
+        B = [r[4] if (r + [None, None])[8] and not self.u_parado else max(r[4], r[0] - DESFASE_MS) for r in runs]
         cortes = [k["vacia"], *B, INF]
         grupos = [entre(filas, hs, cortes[i], cortes[i + 1]) for i in range(len(runs) + 1)]
         dudas = self._reparte(k, grupos, B)  # lecturas con una fila a caballo que cambia la vida: esa vida y la siguiente, ambiguas
@@ -435,10 +440,15 @@ class Libro:
             if v is None:
                 c4, c2 = (list(r[7] or []) + [None] * 4)[2:4]  # la primera de las 4 ultimas vacias antes de verla, y la ultima
                 lim = max([x for x in (limpia, c4 - DESFASE_MS if c4 is not None else None) if x is not None], default=None)
-                lim2 = max([x for x in (lim, k.get("limpia2"), c2 - DESFASE_MS if c2 is not None else None) if x is not None], default=None)
+                # (y lo de SU entrada de mas de 90 s antes de verla: con el bot mirando habria salido; si no miraba, pudo ser
+                # de otra vida a la misma entrada -S4 roto-: ambigua)
+                lim2 = max([x for x in (lim, k.get("limpia2"), c2 - DESFASE_MS if c2 is not None else None,
+                                        r[0] - SEGUIDA_MS - DESFASE_MS) if x is not None])
                 v = nueva(r, [f for f in G if mismo(f["e"], r[3]) and not _antes(f, lim2)], self._a2(G, r, lim, lim2, k["vacia"]), None)
                 if sl:
                     v["amb"] = v["amb"] or A3
+                if k.get("heredada"):  # la duda que tenia mientras la de antes seguia en el registro
+                    v["amb"] = v["amb"] or k["heredada"]
             else:
                 p = runs[i - 1]
                 t = tramo((p[2], p[3]), G, (r[2], r[3]), vacias)
@@ -457,8 +467,8 @@ class Libro:
                                     if t.get("fin") and not vacias else None))
                     if [f for f in sl if f["b"] > fin]:
                         v["amb"] = v["amb"] or A3
-                    corte_v = (list(r[7] or []) + [None] * 4)[3]  # la ultima vacia: lo de antes a su entrada, o falsa o no suyo
-                    if corte_v is not None and any(_antes(f, corte_v - DESFASE_MS) for f in v["filas"]):
+                    corte_v = max(x for x in ((list(r[7] or []) + [None] * 4)[3], r[0] - SEGUIDA_MS) if x is not None)
+                    if any(_antes(f, corte_v - DESFASE_MS) for f in v["filas"]):
                         v["filas"] = [f for f in v["filas"] if not _antes(f, corte_v - DESFASE_MS)]
                         v["amb"] = v["amb"] or "A2: antes de las lecturas sin la clave hubo cierres a su misma entrada"
                 elif r[6] and r[6] != v["id"] and r[6] not in usados:  # un registro anterior la separa aqui (A5)
@@ -556,7 +566,7 @@ class Libro:
         atras: list = []
         for i in range(n):
             ya = {id(f) for f in atras[-1]} if atras else set()
-            parado = (runs[i] + [None, None])[8] is False  # el updatedTime no se movio con el cambio: la lectura manda
+            parado = (runs[i] + [None, None])[8] is False or self.u_parado  # el updatedTime no sigue: la lectura manda
             atras.append([f for f in grupos[i + 1] if parado and f["b"] <= runs[i][0] + DESFASE_MS and id(f) not in ya])
         base = []
         for i in range(n):
@@ -570,9 +580,14 @@ class Libro:
             if not any(f["h"] > B[i] for f in G):
                 opciones.append([G])
                 continue
-            uniq: list = []
-            for c in ([f for f in G if f["h"] <= B[i] or f["b"] + MARGEN_FILA_MS <= runs[i][4]], list(G),
-                      [f for f in G if f["h"] <= B[i]]):
+            dud = [f for f in G if f["h"] > B[i]]
+            cruda = [f for f in G if f["h"] <= B[i] or f["b"] + MARGEN_FILA_MS <= runs[i][4]]
+            # cada fila a caballo, antes o despues (la de la hora cruda, la primera); con mas de 6, todas antes o todas despues
+            subs = [set(map(id, s)) for n in range(len(dud) + 1) for s in itertools.combinations(dud, n)] if len(dud) <= 6 \
+                else [set(map(id, dud)), set()]
+            uniq: list = [cruda]
+            for s in subs:
+                c = [f for f in G if f["h"] <= B[i] or id(f) in s]
                 if not any(len(c) == len(u) and all(x is y for x, y in zip(c, u, strict=True)) for u in uniq):
                     uniq.append(c)
             opciones.append(uniq)
@@ -609,7 +624,7 @@ class Libro:
             while i < n and len(opciones[i]) > 1:
                 i += 1
             seg = range(a, i)
-            if len(seg) > 5:  # ponytail: 3^5 combinaciones como mucho; mas fronteras dudosas seguidas -> hora cruda y duda
+            if math.prod(len(opciones[x]) for x in seg) > 4096:  # ponytail: hasta 4096 combinaciones; si no, hora cruda y duda
                 dudas.update(seg)
                 continue
             todas = []
@@ -641,7 +656,8 @@ class Libro:
 
     # ---------------------------------------------------------------- persistencia
     def estado(self) -> dict:
-        return {"v": 7, "claves": self.claves, "nada_desde": self.nada_desde, "nada_desde4": self.nada_desde4, "previas": self.previas}
+        return {"v": 7, "claves": self.claves, "nada_desde": self.nada_desde, "nada_desde4": self.nada_desde4, "previas": self.previas,
+                "u_parado": self.u_parado}
 
     @classmethod
     def desde(cls, guardado, evaluadas: dict, filas: list, usadas=()) -> tuple[Libro, list]:
@@ -665,6 +681,7 @@ class Libro:
                     avisos.append(f"descarto la clave {clave} del estado guardado: ilegible")
             if isinstance(libro.get("nada_desde"), (int, float)):
                 lib.nada_desde = libro["nada_desde"]
+            lib.u_parado = libro.get("u_parado") is True
             if isinstance(libro.get("nada_desde4"), (int, float)):
                 lib.nada_desde4 = libro["nada_desde4"]
         elif "vidas" in g:  # un estado de R4/R5
@@ -741,9 +758,8 @@ class Libro:
         if isinstance(a, list) and len(a) == 2:
             a = a + [VACIAS_SEGUIDAS if a[1] > a[0] else 1]
         pas = k.get("pasadas") if isinstance(k.get("pasadas"), list) else []
-        lim, lim2 = k.get("limpia"), k.get("limpia2")
+        lim, lim2, her = k.get("limpia"), k.get("limpia2"), k.get("heredada")
         return {"runs": runs, "vacia": k.get("vacia"), "limpia": lim if isinstance(lim, (int, float)) else None,
-                "limpia2": lim2 if isinstance(lim2, (int, float)) else None,
+                "limpia2": lim2 if isinstance(lim2, (int, float)) else None, "heredada": her if isinstance(her, str) else None,
                 "ausente": (list(a) + [None])[:4] if isinstance(a, list) and len(a) in (3, 4) else None,
-                "pasadas": [p for p in pas if isinstance(p, list) and len(p) == 3 and isinstance(p[2], list)],
-                "u_ultima": k["u_ultima"] if isinstance(k.get("u_ultima"), (int, float)) else None}
+                "pasadas": [p for p in pas if isinstance(p, list) and len(p) == 3 and isinstance(p[2], list)]}
