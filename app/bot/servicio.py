@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import itertools
 import json
 import logging
 import os
@@ -35,7 +34,7 @@ import asyncpg
 import httpx
 
 from app.bot import bybit as bb
-from app.bot import calc, calidad, llm
+from app.bot import calc, calidad, llm, vidas
 from app.bot import centinela as cen
 
 log = logging.getLogger("app.bot")
@@ -252,35 +251,6 @@ def semana_iso(t: datetime) -> str:
     return f"{a}-W{s:02d}"
 
 
-def apertura(i: str) -> int:
-    """El ms de apertura de una vida, de su id symbol:side:<ms> (0 si el id no lo trae)."""
-    try:
-        return int(i.rsplit(":", 1)[1])
-    except (IndexError, ValueError):
-        return 0
-
-
-def tamano_abierto(obs: list) -> float | None:
-    """Lo que llego a abrir una vida segun lo visto: su primer tamano mas cada subida entre lecturas (un anadido y un
-    cierre entre dos lecturas no se ven, y entonces lo cerrado supera esto: por eso se compara con >=)."""
-    t = [o[1] for o in obs if o[1] is not None]
-    return t[0] + sum(max(0.0, b - a) for a, b in zip(t, t[1:], strict=False)) if t else None
-
-
-def vida_valida(clave: str, v) -> tuple[dict | None, str | None]:
-    """Una vida del estado guardado -> (la vida, None) o (None, por que no se entiende). Lectura tolerante (remate 5: una
-    sin «obs» daba KeyError en cada tic, para siempre)."""
-    if not isinstance(v, dict) or not isinstance(v.get("id"), str) or v["id"].rsplit(":", 1)[0] != clave or not apertura(v["id"]):
-        return None, f"sin un id {clave}:<ms> ({str(v)[:60]})"
-    try:
-        obs = [[int(o[0]), None if o[1] is None else float(o[1]), None if o[2] is None else float(o[2])] for o in v["obs"]]
-    except (KeyError, TypeError, ValueError, IndexError) as e:
-        return None, f"obs ilegible ({type(e).__name__})"
-    r = v.get("reapertura")
-    return {"id": v["id"], "obs": obs, "reapertura": r if isinstance(r, str) else None} | \
-        ({"ausente": int(v["ausente"])} if isinstance(v.get("ausente"), int) else {}), None
-
-
 def edad(segundos: float | None) -> str:
     if segundos is None:
         return "sin dato"
@@ -289,8 +259,6 @@ def edad(segundos: float | None) -> str:
 
 
 CADUCA_H = 6
-DESFASE_MS = 5000  # el reloj de Bybit contra el de 140 (remate 5: una fila 500 ms «despues» de la lectura que ya la mostraba)
-HORIZONTE_MS = 7 * 86400_000  # lo que closed-pnl devuelve por omision (la doc dice 7 dias; no contrastado)
 
 
 def errores_vigentes(errores: dict, ahora: datetime) -> str:
@@ -360,18 +328,18 @@ class Bot:
         self.esfuerzo, avisos = esfuerzos(e)
         self.candado = asyncio.Lock()
         self.vistos: set = set()
-        self.pos: dict = {}  # id -> la posicion abierta, tal como se vio por ultima vez
-        # symbol:side -> la VIDA abierta (remate 4): {id: symbol:side:<apertura ms>, obs: [[ms, tamano, entrada]] cada vez
-        # que cambian, reapertura: None o como se supo que se reabrio sin verla a 0}. Va en el estado (bot_estado): un
-        # reinicio la recupera sin pagar otra evaluacion
-        self.abiertas: dict = {}
-        self.cerradas: dict = {}  # id -> (ms de su cierre, tamano que llego a abrir, nota), 8 dias (lo que trae closed-pnl)
+        # id -> la posicion que la ULTIMA lectura ensena (remate 6: nada se paga sobre una ausente o cerrada)
+        self.pos: dict = {}
+        self.libro = vidas.Libro()  # la vida de cada posicion (app/bot/vidas.py); va en el estado (bot_estado)
         self.evaluadas: dict = {}  # id -> {veredicto: el PRIMERO, posicion}, sin cierre todavia
         self.evaluando: set = set()
         self.intentos: dict = {}  # id -> evaluaciones intentadas; proxima_eval: id -> cuando se puede volver a intentar
         self.proxima_eval: dict = {}
-        self.ordenes: set = set()  # las ordenes de closed-pnl ya apuntadas en bot_operacion
-        self.avisados: set = set()
+        self.avisados: set = set()  # (symbol:side:updatedTime, tipo) de cada aviso de seguridad (remate 7: sin la identidad)
+        self.suspensas: set = set()  # claves en suspenso por una excepcion de la identidad (nada pagado sobre ellas)
+        self.cierres_pendientes: dict = {}  # id -> resultado que la base aun no apunto (remate 7: CERRADA una vez)
+        self.crudo_visto: dict = {}  # clave -> lo ultimo guardado en bot_crudo
+        self.crudo_podado = 0.0
         self.validadas: set = set()
         self.tareas: set = set()  # lo que va fuera de los bucles (Opus): que el latido y las alertas no esperen
         self.turno = None  # la tarea de la ultima respuesta: la siguiente sale despues (en orden)
@@ -420,6 +388,7 @@ class Bot:
         t = asyncio.create_task(seguro())
         self.tareas.add(t)
         t.add_done_callback(self.tareas.discard)
+        t.add_done_callback(lambda t: coro.close() if t.cancelled() else None)  # cancelada antes de empezar: sin aviso
         return t
 
     # ---------- registro ----------
@@ -452,16 +421,41 @@ class Bot:
         for i, v, p, ms in await self.db.fetch(
                 "SELECT DISTINCT ON (posicion) posicion, veredicto, detalle->'posicion', (extract(epoch FROM ts) * 1000)::bigint"
                 " FROM bot_evaluacion e WHERE tipo = 'veredicto' AND ts >= now() - interval '30 days'"
+                " AND detalle->>'motivo' LIKE 'posicion nueva%'"
                 " AND NOT EXISTS (SELECT 1 FROM bot_evaluacion c WHERE c.tipo = 'cierre' AND c.posicion = e.posicion)"
                 " ORDER BY posicion, ts"):
             self.evaluadas[i] = {"veredicto": v, "posicion": json.loads(p) if isinstance(p, str) else p, "visto": ms}
+        # (symbol:side:updatedTime, tipo) de cada aviso de seguridad; los de R5 (sin «visto»), por la posicion que guardaron
         self.avisados = {(i, t) for i, t in await self.db.fetch(
-            "SELECT detalle->>'posicion', tipo FROM bot_evento WHERE tipo IN ('stop', 'liquidacion', 'sin_stop')"
-            " AND ts >= now() - interval '30 days'") if i}
+            "SELECT coalesce(detalle->>'visto', (detalle->'entradas'->'posicion'->>'clave') || ':'"
+            " || (detalle->'entradas'->'posicion'->>'actualizada')), tipo FROM bot_evento"
+            " WHERE tipo IN ('stop', 'liquidacion', 'sin_stop') AND ts >= now() - interval '30 days'") if i}
         e = await self.db.fetchrow("SELECT extract(epoch FROM ts)::bigint t, estado FROM bot_estado WHERE clave = 'bot'")
         self.desde_minuto = int(e["t"]) // 60 if e else None
-        self.recupera(e)
-        self.ordenes = {r[0] for r in await self.db.fetch("SELECT orden FROM bot_operacion WHERE cerrada >= now() - interval '8 days'")}
+        try:
+            guardado = (json.loads(e["estado"]) if isinstance(e["estado"], str) else e["estado"]) if e else None
+        except ValueError:
+            guardado = "ilegible"
+        filas = [{"orden": o, "symbol": s, "q": q, "e": en, "x": x, "pnl": pnl, "b": vidas.hora_fila(c, ms),
+                  "h": vidas.hora_fila(c, ms, tarde=True)}
+                 for o, s, q, en, x, pnl, ms, c in await self.db.fetch(
+                     "SELECT orden, symbol, cantidad, entrada, salida, pnl_usd, (extract(epoch FROM cerrada) * 1000)::bigint,"
+                     " detalle->>'createdTime' FROM bot_operacion WHERE cerrada >= now() - interval '8 days' ORDER BY cerrada")]
+        # la vida de cada posicion: del ultimo estado (tolerante: lo que no se entiende se descarta y se dice), lo visto al
+        # evaluar cada vida sin cierre (un veredicto posterior al ultimo latido es una lectura mas: remate 6, R-B) y las filas
+        # las ordenes de los cierres ya apuntados: de vidas puntuadas, fuera de las abiertas (un estado de R5 no las separa)
+        usadas = set()
+        for (o,) in await self.db.fetch("SELECT detalle->'ordenes' FROM bot_evaluacion WHERE tipo = 'cierre'"
+                                        " AND ts >= now() - interval '9 days'"):
+            o = json.loads(o) if isinstance(o, str) else o
+            if isinstance(o, list):
+                usadas.update(str(x) for x in o)
+        self.libro, avisos = vidas.Libro.desde(guardado, self.evaluadas, filas, usadas)
+        for a in avisos:
+            self.anota("ESTADO", a, "carga")
+        pend = guardado.get("cierres_pendientes") if isinstance(guardado, dict) else None
+        self.cierres_pendientes = {i: x for i, x in pend.items() if i in self.evaluadas and isinstance(x, dict) and "pnl" in x
+                                   and "ordenes" in x and "nota" in x} if isinstance(pend, dict) else {}
         self.parte_hoy = await self.db.fetchval("SELECT max((ts AT TIME ZONE 'UTC')::date) FROM bot_evento WHERE tipo = 'parte'")
         self.informes_enviados = {r[0] for r in await self.db.fetch(
             "SELECT detalle->>'semana' FROM bot_evento WHERE tipo = 'informe' AND ts >= now() - interval '60 days'")}
@@ -471,64 +465,10 @@ class Bot:
             self.estado["validacion"] = {"symbol": d["symbol"], "dia": str(v["d"]), "dif_pct": d["dif_pct"]}
         self.validadas = {r[0] for r in await self.db.fetch("SELECT detalle->>'posicion' FROM bot_evento WHERE tipo = 'validacion'")}
 
-    def recupera(self, e):
-        """Las vidas del ultimo estado publicado (remate 4, R7) y las cerradas que esperaban su puntuacion (remate 5), con
-        lectura TOLERANTE: lo que no se entiende se descarta y se dice (CAUSA=ESTADO; antes una vida sin «obs» daba KeyError
-        en cada tic y unas «vidas» que no eran un diccionario no dejaban arrancar). Las evaluadas sin cierre que no estan
-        en ninguna de las dos: si el estado es de antes de R4 (sin vidas) o su vida no se entendio, la mas reciente de cada
-        symbol:side sigue abierta (el plan B); si no, ya habia cerrado cuando el bot publico su ultimo estado y se puntua
-        (antes el plan B la daba por abierta y le pegaba la posicion nueva). Un estado de mas de 7 dias no se recupera:
-        closed-pnl ya no cubre lo que paso entretanto."""
-        ahora = int(time.time() * 1000)
-        try:
-            estado = json.loads(e["estado"]) if e and isinstance(e["estado"], str) else (e["estado"] if e else {})
-        except ValueError:
-            estado = None
-        if not isinstance(estado, dict):
-            self.anota("ESTADO", f"descarto el estado guardado: no es un objeto ({type(estado).__name__})", "carga")
-            estado = {}
-        ts = int(e["t"]) * 1000 if e else ahora
-        vidas, viejo, descartadas = estado.get("vidas"), "vidas" not in estado, set()
-        if vidas is not None and not isinstance(vidas, dict):
-            self.anota("ESTADO", f"descarto las vidas del estado guardado: no son un diccionario ({type(vidas).__name__})", "carga")
-            vidas, viejo = {}, True
-        rancio = ahora - ts > HORIZONTE_MS
-        if rancio and vidas:
-            self.anota("ESTADO", f"no recupero {len(vidas)} vida(s) de un estado de hace {(ahora - ts) // 86400_000} dias:"
-                                 " closed-pnl ya no cubre lo que paso entretanto", "carga")
-            vidas = {}
-        for clave, v in (vidas or {}).items():
-            vv, motivo = vida_valida(clave, v)
-            if vv:
-                self.abiertas[clave] = vv
-            else:
-                descartadas.add(clave)
-                self.anota("ESTADO", f"descarto la vida {clave} del estado guardado: {motivo}", "carga")
-        num = lambda x: float(x) if isinstance(x, (int, float)) else None  # noqa: E731
-        cerradas = estado.get("cerradas") if isinstance(estado.get("cerradas"), dict) else {}
-        for i, c in cerradas.items():
-            if i in self.evaluadas and isinstance(c, list) and len(c) == 3 and isinstance(c[0], int):
-                self.cerradas[i] = (c[0], num(c[1]), c[2] if isinstance(c[2], str) else None)
-        abiertos, plan_b = self.ids_abiertos(), {}
-        for i in sorted(self.evaluadas, key=apertura):
-            if i in abiertos or i in self.cerradas:
-                continue
-            p, clave = self.evaluadas[i]["posicion"] if isinstance(self.evaluadas[i]["posicion"], dict) else {}, i.rsplit(":", 1)[0]
-            if not rancio and (viejo or clave in descartadas) and clave not in self.abiertas:
-                if clave in plan_b:  # una anterior de la misma clave cerro antes de que esta abriera
-                    self.cerradas[plan_b[clave]["id"]] = (apertura(i) - 1, plan_b[clave]["obs"][0][1], None)
-                # lo visto al evaluarla, a la hora en que se vio (la del veredicto), no a la de su apertura
-                visto = self.evaluadas[i].get("visto") or apertura(i)
-                plan_b[clave] = {"id": i, "obs": [[visto, num(p.get("cantidad")), num(p.get("entrada"))]],
-                                 "reapertura": p.get("reapertura") if isinstance(p.get("reapertura"), str) else None}
-            else:
-                self.cerradas[i] = (min(ts, ahora), num(p.get("cantidad")), None)
-        self.abiertas |= plan_b
-
     async def latido(self):
         self.estado["anthropic"]["gastado_hoy_usd"] = round(await self.gastado_hoy(), 4)
-        self.estado["vidas"] = self.abiertas
-        self.estado["cerradas"] = {i: c for i, c in self.cerradas.items() if i in self.evaluadas}  # las que esperan puntuacion
+        self.estado["libro"] = self.libro.estado()
+        self.estado["cierres_pendientes"] = self.cierres_pendientes
         # lo que ya no se ensena (resuelto o caducado hace mas de una hora) sale del estado: con una operacion por id
         # (evalua <id>, escala <id>) crecia sin fin (remate 5)
         ahora = datetime.now(UTC)
@@ -683,75 +623,6 @@ class Bot:
                 f"Bybit APAGADO en el bot: {b['error']}. No leo posiciones hasta que se arregle."
             await self.evento("bybit", None, None, await self.manda(txt), detalle=b)
 
-    def ids_abiertos(self) -> set:
-        return {v["id"] for v in self.abiertas.values()}
-
-    def conocidas(self) -> list:
-        """(symbol:side, apertura, cierre) de cada vida que el bot conoce: abierta, evaluada sin puntuar o cerrada."""
-        ahora = int(time.time() * 1000)
-        ids = self.ids_abiertos() | set(self.evaluadas) | set(self.cerradas)
-        return [(i.rsplit(":", 1)[0], apertura(i), self.cerradas[i][0] if i in self.cerradas else ahora) for i in ids]
-
-    def observa(self, v: dict, p: dict, ahora_ms: int):
-        """Un parcial o un anadido es la MISMA vida: su tamano y su entrada, al dia (y cada cambio, en obs)."""
-        if not v["obs"] or (v["obs"][-1][1], v["obs"][-1][2]) != (p["cantidad"], p["entrada"]):
-            v["obs"].append([ahora_ms, p["cantidad"], p["entrada"]])
-        self.pos[v["id"]] = p | {"id": v["id"]} | ({"reapertura": v["reapertura"]} if v.get("reapertura") else {})
-
-    def cierra(self, clave: str, fin_ms: int, nota: str | None = None):
-        """La vida de esa clave acaba en fin_ms (el tamano volvio a 0, o closed-pnl trajo su cierre total)."""
-        v = self.abiertas.pop(clave)
-        self.pos.pop(v["id"], None)
-        self.cerradas[v["id"]] = (fin_ms, tamano_abierto([o for o in v["obs"] if o[0] <= fin_ms] or v["obs"]), nota)
-
-    @staticmethod
-    def cierre_total(v: dict, filas: list) -> dict | None:
-        """La fila de closed-pnl que deja la vida v a 0 aunque el bot no la viera a 0 (se cerro y se reabrio entre dos
-        lecturas): desde la ultima lectura ANTERIOR a esa fila, lo cerrado a SU MISMA entrada (sin anadidos entre medias:
-        un anadido mueve la entrada media) suma todo su tamano. Un parcial no llega a sumarlo: no cierra nada (R10).
-        «Anterior» con DESFASE_MS de margen: la hora de la fila es la de Bybit y la de la lectura la de 140; sin margen,
-        un parcial fechado 500 ms despues de la lectura que ya lo mostraba se comparaba consigo mismo y partia la vida
-        (remate 5). Si no hay lectura tan anterior, la primera (una reapertura a los pocos segundos de verla).
-        LIMITE REAL (no se distingue de la misma vida, y la posicion nueva queda pegada a la vieja): un anadido entre dos
-        lecturas seguido del cierre total y la reapertura (la fila del cierre trae la entrada media nueva, que el bot no
-        vio); un cambio del tamano visto en los DESFASE_MS antes del cierre; un cierre que closed-pnl ya no devuelve (mas de
-        7 dias, o mas de 10 paginas). Y al reves (se parte una vida que seguia): un anadido a la misma entrada (+-1 pb)
-        justo antes de un parcial que iguala el tamano visto."""
-        for k, f in enumerate(filas):
-            antes = [o for o in v["obs"] if o[0] <= f["ms"] - DESFASE_MS] or [o for o in v["obs"][:1] if o[0] <= f["ms"]]
-            if not antes or not antes[-1][1] or not antes[-1][2]:
-                continue
-            t, tam, ent = antes[-1]
-            tramo = [g for g in filas[:k + 1] if g["ms"] > t]
-            if all(g["entrada"] and abs(g["entrada"] / ent - 1) <= 1e-4 for g in tramo) and \
-                    sum(g["cantidad"] or 0 for g in tramo) >= tam * (1 - 1e-6):
-                return f
-        return None
-
-    async def cubierta(self, v: dict, ahora_ms: int) -> bool:
-        """¿closed-pnl trae ya el cierre de la vida v? Lo cerrado de su hora y su lado cubre lo que llego a abrir."""
-        filas, ab = (await self.de_la_vida(v["id"], ahora_ms))[0], tamano_abierto(v["obs"])
-        return bool(filas) and (not ab or sum(f["cantidad"] or 0 for f in filas) >= ab * (1 - 1e-6))
-
-    async def reabierta(self, clave: str, ahora_ms: int):
-        """Si closed-pnl dice que la vida abierta de esa clave se cerro entera, la posicion que se ve es OTRA: la vieja se
-        cierra en esa fila (y se puntua con lo suyo) y la nueva nace despues, con su evaluacion y sus avisos. El bot no la
-        vio a 0 y lo DICE: en el registro (posicion.reapertura) y en cada aviso de la nueva (R1)."""
-        for _ in range(5):
-            v = self.abiertas[clave]
-            f = self.cierre_total(v, (await self.de_la_vida(v["id"], ahora_ms))[0])
-            if not f:
-                return
-            hora = datetime.fromtimestamp(f["ms"] / 1000, UTC).strftime("%H:%M:%SZ")
-            nota = (f"reabierta sin que el bot la viera a 0: closed-pnl cerro {f['cantidad']:g} a {f['entrada']:g} a las {hora}"
-                    f" (orden {f['orden']})")
-            p = self.pos[v["id"]]
-            self.cierra(clave, f["ms"], f"cerrada a las {hora} y reabierta entre dos lecturas (lo dijo closed-pnl)")
-            n = self.abiertas[clave] = {"id": f"{clave}:{f['ms'] + 1}", "reapertura": nota,
-                                        "obs": [o for o in v["obs"] if o[0] > f["ms"]] or [[ahora_ms, p["cantidad"], p["entrada"]]]}
-            self.observa(n, {k: x for k, x in p.items() if k != "reapertura"}, ahora_ms)
-            log.info("posicion %s: %s", n["id"], nota)
-
     async def tic_bybit(self):
         if self.bybit is None:
             return
@@ -770,58 +641,123 @@ class Bot:
                 self.clave_proxima = 0.0  # se vuelve a juzgar la clave en el proximo tic, y si cae se avisa
             return
         self.bien("position/list")
-        # LA VIDA de cada posicion (remate 4): abre cuando su symbol:side aparece (tamano > 0), cierra cuando desaparece.
-        # Que desaparezca UNA lectura no la cierra (remate 5: position/list dio una vez la lista vacia con retCode 0):
-        # cierra si closed-pnl trae su cierre o si tampoco esta en la lectura siguiente, y entonces en la primera ausencia
-        vistas, ahora_ms = {p["clave"]: p for p in bb.posiciones(d)}, int(time.time() * 1000)
-        ausentes = [(c, "ausente" in v) for c, v in self.abiertas.items() if c not in vistas]
-        for clave, _ in ausentes:
-            self.abiertas[clave].setdefault("ausente", ahora_ms)
-        for clave, p in vistas.items():
-            v = self.abiertas.setdefault(clave, {"id": f"{clave}:{p.get('actualizada') or ahora_ms}", "obs": [], "reapertura": None})
-            v.pop("ausente", None)
-            self.observa(v, p, ahora_ms)
-        if self.abiertas or set(self.evaluadas) - self.ids_abiertos() or time.time() - self.ops_leidas > 900:
-            try:  # closed-pnl cada minuto con algo abierto
-                await self.operaciones()
-            except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError, httpx.HTTPError) as e:
-                self.anota(causa(e), f"closed-pnl: {type(e).__name__} {str(e)[:120]}", "closed-pnl")
-        try:  # con lo que haya en bot_operacion, aunque operaciones() cayera a mitad (remate 5): cada vida, cada minuto
-            for clave, segunda in ausentes:
-                v = self.abiertas[clave]
-                if segunda or await self.cubierta(v, ahora_ms):
-                    self.cierra(clave, v["ausente"])
-            for clave in [c for c in self.abiertas if c in vistas]:
-                await self.reabierta(clave, ahora_ms)  # la reapertura que el bot no vio
-        except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
-            self.anota(causa(e), f"vidas: {type(e).__name__} {str(e)[:120]}", "vidas")
-        else:
-            self.bien("vidas")
-        for v in [v for c, v in self.abiertas.items() if c in vistas]:
-            i, p = v["id"], self.pos[v["id"]]
-            if i not in self.validadas:
-                await self.valida(p)
-            if i not in self.evaluadas and i not in self.evaluando and time.time() >= self.proxima_eval.get(i, 0):
-                self.evaluando.add(i)
-                self.lanza(self.evalua_una(p, "posicion nueva" + (f" · {v['reapertura']}" if v.get("reapertura") else "")), f"evalua {i}")
-            for tipo, txt in cen.alertas_posicion(p):
-                if (i, tipo) not in self.avisados:
-                    self.avisados.add((i, tipo))
-                    txt += f" · posicion NUEVA ({v['reapertura']})" if v.get("reapertura") else ""
-                    await self.evento(tipo, p["symbol"], int(time.time() // 60), await self.manda(f"{cen.LEYENDA.split(' · ')[0]} · {txt}"),
-                                      detalle={"posicion": i, "texto": txt, "entradas": {"posicion": p, "leida": ahora_iso()}})
-                    if tipo != "sin_stop":
+        lista, ahora_ms = bb.posiciones(d), int(time.time() * 1000)
+        # 1 LA SEGURIDAD PRIMERO (remate 7, I3/I8): los avisos de sin stop, stop y liquidacion, sobre la lectura CRUDA y en su
+        # propio try: no dependen de la identidad ni de sus excepciones
+        disparados: list = []
+        try:
+            disparados = await self.seguridad(lista)
+        except Exception as e:
+            self.anota(causa(e), f"seguridad: {type(e).__name__} {str(e)[:120]}", "seguridad")
+        await self.crudo_lectura(lista, ahora_ms)
+        # 2 LA VIDA de cada posicion la lleva el libro (app/bot/vidas.py): una excepcion suya se anota (CAUSA=VIDAS) y deja
+        # en suspenso SU clave (nada pagado sobre ella), sin tumbar el tic ni a las demas
+        r: dict = {"presentes": {}, "notas": {}, "resultados": [], "firmes": {}, "suspensas": {}}
+        try:
+            self.libro.lee(ahora_ms, lista)
+            if self.libro.abiertas() or self.evaluadas or time.time() - self.ops_leidas > 900:
+                try:  # closed-pnl cada minuto con algo abierto o por puntuar
+                    await self.operaciones()
+                except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError, httpx.HTTPError) as e:
+                    self.anota(causa(e), f"closed-pnl: {type(e).__name__} {str(e)[:120]}", "closed-pnl")
+            r = self.libro.decide(ahora_ms)
+        except Exception as e:
+            self.anota("VIDAS", f"el libro de vidas: {type(e).__name__} {str(e)[:120]}", "vidas")
+            r["suspensas"] = {p["clave"]: type(e).__name__ for p in lista}
+        for clave, err in r["suspensas"].items():
+            self.anota("VIDAS", f"{clave} en suspenso: {err}", f"vidas {clave}")
+        for clave in self.suspensas - set(r["suspensas"]):
+            self.bien(f"vidas {clave}")
+        self.suspensas = set(r["suspensas"])
+        vistas = {p["clave"]: p | {"visto": ahora_ms} for p in lista}
+        # solo lo que ESTA lectura ensena y no esta en suspenso (I5: nada pagado sobre una ausente, cerrada o en suspenso)
+        self.pos = {i: vistas[c] | {"id": i} | ({"reapertura": r["notas"][i]} if i in r["notas"] else {})
+                    for i, c in r["presentes"].items() if c in vistas and c not in self.suspensas}
+        for i, p in list(self.pos.items()):
+            try:
+                if i not in self.validadas:
+                    await self.valida(p)
+                seg = r["firmes"].get(i)  # se evalua con su ultima lectura SEGURA (casi siempre, esta): nunca con otra vida pegada
+                if seg and i not in self.evaluadas and i not in self.evaluando and time.time() >= self.proxima_eval.get(i, 0):
+                    pe = p if seg["actual"] else {"clave": p["clave"], "symbol": p["symbol"], "lado": p["lado"], "id": i,
+                                                  "liquidacion": None, "nota": "su ultima lectura segura"} | seg
+                    pe.pop("actual", None)
+                    pe.pop("desde", None)
+                    self.evaluando.add(i)
+                    self.lanza(self.evalua_una(pe, "posicion nueva" + (f" · {p['reapertura']}" if p.get("reapertura") else "")),
+                               f"evalua {i}")
+                for clave, tipo, txt in disparados:  # el ESCALADO (pagado), solo sobre una vida presente y no en suspenso
+                    if clave == p["clave"] and tipo != "sin_stop":
                         self.lanza(self.escala(p, txt), f"escala {i}")
-        for i in [i for i in self.evaluadas if i not in self.ids_abiertos()]:
-            await self.puntua(i)
-        self.cerradas = {i: c for i, c in self.cerradas.items() if c[0] > ahora_ms - 8 * 86400_000 or i in self.evaluadas}
+            except Exception as e:
+                self.anota("VIDAS", f"{p['clave']}: {type(e).__name__} {str(e)[:120]}", f"vidas {p['clave']}")
+                self.pos.pop(i, None)
+        for i, res in r["resultados"]:
+            if i in self.evaluadas:
+                self.cierres_pendientes[i] = res
+        for i, res in list(self.cierres_pendientes.items()):
+            try:
+                await self.cierre(i, res)
+            except Exception as e:
+                self.anota(causa(e), f"cierre de {i}: {type(e).__name__} {str(e)[:120]}", "registro cierre")
+        self.estado["bybit"]["tic"] = ahora_iso()  # el ultimo tic de Bybit COMPLETO: el interruptor avisa si se para (remate 7)
+
+    def clave_aviso(self, p: dict) -> str:
+        """De que va un aviso de seguridad: symbol:side:updatedTime (una vida nueva siempre trae otro; poner o quitar el stop
+        tambien lo cambia). No depende de la identidad."""
+        return f"{p['clave']}:{p.get('actualizada')}"
+
+    async def seguridad(self, lista: list) -> list:
+        """LOS AVISOS DE SEGURIDAD -sin stop, stop cerca, liquidacion cerca- sobre la lectura cruda, una vez por clave_aviso y
+        tipo. -> [(clave, tipo, texto)] de los que salieron (para el ESCALADO de las vidas presentes)."""
+        disparados = []
+        for p in lista:
+            for tipo, txt in cen.alertas_posicion(p):
+                visto = self.clave_aviso(p)
+                if (visto, tipo) in self.avisados:
+                    continue
+                self.avisados.add((visto, tipo))
+                if tipo == "sin_stop":
+                    txt = f"{p['symbol']} {'LARGO' if p['lado'] > 0 else 'CORTO'} sin stop puesto"
+                await self.evento(tipo, p["symbol"], int(time.time() // 60), await self.manda(f"{cen.LEYENDA.split(' · ')[0]} · {txt}"),
+                                  detalle={"visto": visto, "texto": txt, "entradas": {"posicion": p, "leida": ahora_iso()}})
+                disparados.append((p["clave"], tipo, txt))
+        return disparados
+
+    async def crudo_lectura(self, lista: list, ahora_ms: int):
+        """LA LECTURA CRUDA (remate 7, punto 13): cada posicion de position/list QUE CAMBIA, tal cual, a bot_crudo: con ella
+        se podra medir S1-S4 con Bybit de verdad. Sin nada de la cuenta mas alla de eso. Una vez por hora, la poda (90 dias)."""
+        for p in lista:
+            uno = (p["cantidad"], p["entrada"], p.get("stop"), p.get("actualizada"))
+            if self.crudo_visto.get(p["clave"]) == uno:
+                continue
+            self.crudo_visto[p["clave"]] = uno
+            await self.en_crudo("posicion", p["symbol"], {"side": p["clave"].split(":")[1], "size": p["cantidad"], "avgPrice": p["entrada"],
+                                                          "stopLoss": p.get("stop"), "updatedTime": p.get("actualizada"), "local": ahora_ms})
+        for clave in [c for c in self.crudo_visto if c not in {p["clave"] for p in lista}]:
+            del self.crudo_visto[clave]
+            await self.en_crudo("posicion", clave.split(":")[0], {"side": clave.split(":")[1], "size": 0, "local": ahora_ms})
+        if time.time() - self.crudo_podado > 3600:
+            self.crudo_podado = time.time()
+            try:
+                await self.db.execute("DELETE FROM bot_crudo WHERE ts < now() - interval '90 days'")
+            except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
+                self.anota("BASE", f"no pode bot_crudo: {type(e).__name__}", "poda crudo")
+
+    async def en_crudo(self, tipo: str, symbol: str, detalle: dict):
+        try:
+            await self.db.execute("INSERT INTO bot_crudo (tipo, symbol, detalle) VALUES ($1, $2, $3::jsonb)", tipo, symbol, js(detalle))
+        except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
+            self.anota("BASE", f"no registro la lectura cruda ({tipo}): {type(e).__name__}", "registro crudo")
+        else:
+            self.bien("registro crudo")
 
     async def operaciones(self) -> set:
         """Las operaciones CERRADAS de Bybit a bot_operacion (una por orden), para BOT-3 y para puntuar. -> los simbolos
         con alguna nueva. Las ya apuntadas no se vuelven a escribir, y se deja de paginar al llegar a ellas (se lee cada
         minuto con algo abierto). ponytail: lo que closed-pnl devuelve por omision (la doc dice 7 dias; no contrastado),
         hasta 10 paginas; el lado no se deduce aqui (bybit.lado_cierre, al puntuar)."""
-        self.ops_leidas, cursor, nuevas = time.time(), None, set()
+        self.ops_leidas, cursor, nuevas = time.time(), None, set()  # (las ya apuntadas: self.libro.ordenes)
         for _ in range(10):
             d = await self.bybit.get("/v5/position/closed-pnl", category="linear", limit=100, **({"cursor": cursor} if cursor else {}))
             if bb.error(d):
@@ -830,7 +766,7 @@ class Bot:
             res, vista = d.get("result") or {}, False
             for c in res.get("list") or []:
                 orden = str(c.get("orderId") or f"{c.get('symbol')}:{c.get('updatedTime')}")
-                if orden in self.ordenes:
+                if orden in self.libro.ordenes:
                     vista = True
                     continue
                 num = lambda k, c=c: float(c[k]) if c.get(k) not in (None, "") else None  # noqa: E731
@@ -839,7 +775,12 @@ class Bot:
                     " VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8::bigint / 1000.0), $9::jsonb) ON CONFLICT DO NOTHING",
                     orden, c.get("symbol"), num("closedSize"), num("avgEntryPrice"), num("avgExitPrice"), num("closedPnl"),
                     num("leverage"), int(c.get("updatedTime") or c.get("createdTime") or 0), js(c))
-                self.ordenes.add(orden)
+                self.libro.fila({"orden": orden, "symbol": c.get("symbol"), "b": vidas.hora_fila(c.get("createdTime"), c.get("updatedTime")),
+                                 "h": vidas.hora_fila(c.get("createdTime"), c.get("updatedTime"), tarde=True), "q": num("closedSize"), "e": num("avgEntryPrice"), "x": num("avgExitPrice"), "pnl": num("closedPnl")})
+                await self.en_crudo("fila", c.get("symbol"), {"orderId": orden, "closedSize": c.get("closedSize"),
+                                                              "avgEntryPrice": c.get("avgEntryPrice"), "createdTime": c.get("createdTime"),
+                                                              "updatedTime": c.get("updatedTime"), "fillCount": c.get("fillCount"),
+                                                              "local": int(time.time() * 1000)})
                 nuevas.add(c.get("symbol"))
             cursor = res.get("nextPageCursor")
             if vista or not cursor:
@@ -883,7 +824,8 @@ class Bot:
             liq = f"\nliquidacion Bybit {p['liquidacion']:g} · formula: {calc.nota_validacion(self.estado['validacion'])}"
         # en memoria ANTES de registrar (si la base falla no se vuelve a evaluar ni a pagar cada minuto: bug 3), y solo el
         # PRIMER veredicto: es el que se puntua (un /evalua a mano se registra, pero no lo pisa: bug 5)
-        self.evaluadas.setdefault(p["id"], {"veredicto": v, "posicion": p})
+        if motivo.startswith("posicion nueva"):  # solo la automatica se puntua: un /evalua a mano puede caer en una lectura
+            self.evaluadas.setdefault(p["id"], {"veredicto": v, "posicion": p})  # que aun no es seguro de que vida es (R6)
         self.evaluando.discard(p["id"])
         try:
             await self.db.execute(
@@ -911,65 +853,31 @@ class Bot:
         finally:
             self.evaluando.discard(i)
 
-    async def de_la_vida(self, i: str, fin: int) -> tuple[list, list]:
-        """Las operaciones cerradas (bot_operacion) de la VIDA i -> (suyas, sin lado): las de su simbolo cerradas desde su
-        apertura hasta `fin` (y antes de la vida siguiente de su symbol:side), de SU lado; sea cual sea su entrada, asi
-        cuentan lo promediado (R2) y los parciales. El lado de cada fila sale de su aritmetica (bybit.lado_cierre); si no
-        lo dice (no se movio mas que la comision), es de esta vida si el otro lado no tenia ninguna abierta a esa hora, y
-        si la tenia (modo cobertura) queda SIN LADO y no cuenta para ninguna (R4b)."""
-        clave, ap = i.rsplit(":", 1)[0], apertura(i)
-        activo, lado = clave.split(":")[0], 1 if clave.endswith(":Buy") else -1
-        vidas = self.conocidas()
-        fin = min([fin] + [a - 1 for c, a, _ in vidas if c == clave and a > ap])
-        otras = [(a, f) for c, a, f in vidas if c == f"{activo}:{'Sell' if lado > 0 else 'Buy'}"]
-        suyas, sin_lado = [], []
-        for f in await self.db.fetch(
-                "SELECT orden, pnl_usd, entrada, salida, cantidad, (extract(epoch FROM cerrada) * 1000)::bigint ms FROM bot_operacion"
-                " WHERE symbol = $1 AND cerrada >= to_timestamp($2::bigint / 1000.0) AND cerrada <= to_timestamp($3::bigint / 1000.0)"
-                " ORDER BY cerrada", activo, ap, fin):
-            ld = bb.lado_cierre(f["entrada"], f["salida"], f["cantidad"], f["pnl_usd"])
-            if ld is None and not any(a <= f["ms"] <= b for a, b in otras):
-                ld = lado
-            if ld == lado:
-                suyas.append(dict(f))
-            elif ld is None:
-                sin_lado.append(dict(f))
-        return suyas, sin_lado
-
-    async def puntua(self, i: str):
-        """La vida i ya no esta abierta: su pnl, de SUS operaciones. Se puntua cuando closed-pnl trae su cierre (lo cerrado
-        cubre lo que llego a abrir: un parcial anterior no basta); si en 2 h no lo trae, con lo que haya, y se dice. Y se
-        corta en la fila con la que lo cerrado alcanza lo abierto: lo de despues es de otra vida que el bot no vio (remate
-        5: con el bot caido, otra posicion del mismo symbol:side abrio y cerro, y se sumaba a esta)."""
-        ev = self.evaluadas[i]
-        fin, abierto, nota = self.cerradas.setdefault(i, (int(time.time() * 1000), None, None))
-        filas, sin_lado = await self.de_la_vida(i, fin + 300_000)
-        if abierto:
-            hasta = itertools.accumulate(f["cantidad"] or 0 for f in filas)
-            k = next((k for k, s in enumerate(hasta) if s >= abierto * (1 - 1e-6)), None)
-            filas = filas if k is None else filas[:k + 1]
-        completa = bool(filas) and (not abierto or sum(f["cantidad"] or 0 for f in filas) >= abierto * (1 - 1e-6))
-        if not completa and time.time() * 1000 - fin < 2 * 3600 * 1000:
-            return
-        pnl = sum(float(f["pnl_usd"] or 0) for f in filas) if filas else None
-        v = ev["veredicto"]
-        del self.evaluadas[i]  # (sigue en cerradas: su hora decide de quien es una fila sin lado de la otra vida)
+    async def cierre(self, i: str, res: dict):
+        """El resultado de una vida evaluada que el libro ya da por cerrada y segura: con SUS filas, o sin puntuar y el
+        porque. Nunca una cifra que no se sabe (I2). Y UNA VEZ (remate 7, punto 10): se escribe en la base ANTES de olvidarla,
+        y si ya estaba (un reinicio tras una base que no la apunto) ni se repite la CERRADA ni la cifra; si la base no
+        contesta, sigue pendiente (y en el estado) y se reintenta en el proximo tic."""
+        v, pnl = self.evaluadas[i]["veredicto"], res["pnl"]
         acierto = None if v == "NO EVALUABLE" or pnl is None else (pnl > 0) == (v == "A FAVOR")
-        notas = [x for x in (nota, None if completa else "sin operaciones suyas en closed-pnl en 2 h" if not filas else
-                             "closed-pnl no trajo su cierre entero en 2 h: puntuada con lo que habia",
-                             f"{len(sin_lado)} operacion(es) sin lado (cobertura, sin movimiento que lo diga): no cuentan" if sin_lado else None) if x]
         try:
-            await self.db.execute(
-                "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, pnl_usd, acierto, detalle) VALUES ('cierre', $1, $2, $3, $4, $5::jsonb)",
-                i, v, pnl, acierto, js({"ordenes": [f["orden"] for f in filas], "sin_lado": [f["orden"] for f in sin_lado],
-                                        "nota": " · ".join(notas) or None}))
+            ya = await self.db.fetchval("SELECT 1 FROM bot_evaluacion WHERE tipo = 'cierre' AND posicion = $1 LIMIT 1", i)
+            if not ya:
+                await self.db.execute(
+                    "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, pnl_usd, acierto, detalle) VALUES ('cierre', $1, $2, $3, $4, $5::jsonb)",
+                    i, v, pnl, acierto, js({"ordenes": res["ordenes"], "nota": res["nota"]}))
         except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
-            self.anota("BASE", f"no registro el cierre de {i}: {type(e).__name__}", "registro cierre")
-        else:
-            self.bien("registro cierre")
-        resultado = "sin operaciones en closed-pnl: sin puntuar" if pnl is None else f"{pnl:+.2f} USD"
-        await self.manda(f"CERRADA {i.split(':')[0]} {'LARGO' if i.split(':')[1] == 'Buy' else 'CORTO'}: {resultado} · el veredicto era {v}"
-                         f" -> {'sin puntuar' if acierto is None else ('ACIERTO' if acierto else 'FALLO')}" + "".join(f"\n{n}" for n in notas))
+            return self.anota("BASE", f"no registro el cierre de {i} (lo reintento): {type(e).__name__}", "registro cierre")
+        self.bien("registro cierre")
+        self.evaluadas.pop(i, None)
+        self.cierres_pendientes.pop(i, None)
+        if ya:
+            return
+        sym, lado = i.split(":")[:2]
+        resultado = "sin puntuar" if pnl is None else f"{pnl:+.2f} USD"
+        await self.manda(f"CERRADA {sym} {'LARGO' if lado == 'Buy' else 'CORTO'}: {resultado} · el veredicto era {v}"
+                         f" -> {'sin puntuar' if acierto is None else ('ACIERTO' if acierto else 'FALLO')}"
+                         + (f"\n{res['nota']}" if res["nota"] else ""))
 
     # ---------- C3, C5 ----------
     async def calcula(self, texto: str) -> str:
@@ -1036,6 +944,9 @@ class Bot:
         velas = f"velas 1 min: la ultima {datos['ultima_vela']} ({datos['retraso_min']} min de retraso)" if isinstance(datos, dict) else f"velas 1 min: {datos}"
         ips = f"IPs de la clave en Bybit: {', '.join(map(str, b['ips'])) if b.get('ips') else 'sin dato'} · 140 sale por {b.get('ip_salida', self.ip)}"
         bybit = (f"solo lectura e IP ok (leida {str(b.get('leida', '?'))[11:16]}Z) · {ips}" if b["activo"] else f"APAGADO: {b['error']} · {ips}")
+        if b.get("activo") and b.get("tic"):  # el ultimo tic de Bybit completo (remate 7: si se para, se dice)
+            parado = (datetime.now(UTC) - datetime.fromisoformat(b["tic"].replace("Z", "+00:00"))).total_seconds()
+            bybit += f" · ultima lectura completa {b['tic'][11:16]}Z" + (f" (SIN LEER BYBIT DESDE HACE {int(parado // 60)} MIN)" if parado > 300 else "")
         al = s["alertas_24h"]
         errores = errores_vigentes(s["errores"], datetime.now(UTC))
         return "\n".join([

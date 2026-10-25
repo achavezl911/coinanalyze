@@ -7,6 +7,8 @@ coinalyze-bot (en systemd 257 salta en CADA caida: BOT2.r1.onfailure en hechos.t
   latido   bot_estado 'bot' de hace <= LATIDO_MIN minutos
   parte    el parte del dia, pasada servicio.PARTE_HORA_UTC + 30 min
   informe  el semanal de la semana ISO, pasado su lunes a las 13:30Z (con la causa que dejo 143 si no llego)
+  bybit    (remate 7) con Bybit activo y el bot latiendo, el ultimo tic de Bybit COMPLETO de hace <= BYBIT_MIN minutos: si
+           la identidad o cualquier paso revienta cada minuto, el latido sigue y sin esto nadie lo veria
 Un aviso cuando un problema APARECE y otro cuando se VA (estado en $STATE_DIRECTORY/estado.json), no una rafaga; si el
 envio falla, se reintenta en la siguiente pasada. Su latido y lo que ve van a bot_estado 'vigia' (K117 lo juzga) y cada
 aviso enviado, a bot_evento 'vigia'.
@@ -30,11 +32,13 @@ import httpx
 from app.bot.servicio import PARTE_HORA_UTC, Telegram, js, limpia, semana_iso
 
 LATIDO_MIN = 5
+BYBIT_MIN = 5
 MARGEN_PARTE = timedelta(minutes=30)
 
 
 def problemas(ahora: datetime, unidad: dict | None, monitor: str | None, base_error: str | None, latido: datetime | None,
-              parte_hoy: bool, informe_semana: bool, falla_informe: str | None, latido_min: int = LATIDO_MIN) -> dict:
+              parte_hoy: bool, informe_semana: bool, falla_informe: str | None, latido_min: int = LATIDO_MIN,
+              bybit: dict | None = None) -> dict:
     """{clave: texto} de lo que esta mal AHORA. Pura."""
     out = {}
     if unidad is None:
@@ -49,6 +53,14 @@ def problemas(ahora: datetime, unidad: dict | None, monitor: str | None, base_er
         out["latido"] = "el bot no ha latido nunca"
     elif ahora - latido > timedelta(minutes=latido_min):
         out["latido"] = f"el bot no late desde hace {int((ahora - latido).total_seconds() // 60)} min (ultimo {latido:%H:%MZ})"
+    elif isinstance(bybit, dict) and bybit.get("activo") and bybit.get("tic"):  # late, pero ¿lee Bybit entero?
+        try:
+            tic = datetime.fromisoformat(str(bybit["tic"]).replace("Z", "+00:00"))
+        except ValueError:
+            tic = None
+        if tic and ahora - tic > timedelta(minutes=BYBIT_MIN):
+            out["bybit"] = (f"el bot late pero no completa una lectura de Bybit desde hace {int((ahora - tic).total_seconds() // 60)} min"
+                            f" (ultima {tic:%H:%MZ}): ni avisos de stop ni evaluaciones")
     if ahora >= ahora.replace(hour=PARTE_HORA_UTC, minute=0, second=0, microsecond=0) + MARGEN_PARTE and not parte_hoy:
         out[f"parte:{ahora:%Y-%m-%d}"] = f"el parte de hoy ({PARTE_HORA_UTC}:00Z) no salio"
     lunes = (ahora - timedelta(days=ahora.weekday())).replace(hour=13, minute=30, second=0, microsecond=0)
@@ -67,7 +79,7 @@ def transicion(notificados: dict, actuales: dict, base_caida: bool = False, lleg
     nuevos = {k: v for k, v in actuales.items() if k not in notificados}
     resueltos, caducados = [], []
     for k in notificados:
-        if k in actuales or (base_caida and (k == "latido" or k.startswith(CON_FECHA))):
+        if k in actuales or (base_caida and (k in ("latido", "bybit") or k.startswith(CON_FECHA))):
             continue
         (caducados if k.startswith(CON_FECHA) and k not in llegados else resueltos).append(k)
     return nuevos, resueltos, caducados
@@ -122,10 +134,15 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
     informes = entorno.get("BOT_INFORMES") or "/var/lib/coinalyze-bot/informes"
     sem = semana_iso(ahora)
     falla = pathlib.Path(informes, f"{sem}.falla")
-    db, base_error, latido, parte_hoy, informe_semana = None, None, None, False, False
+    db, base_error, latido, parte_hoy, informe_semana, bybit = None, None, None, False, False, None
     try:
         db = await conecta()
         latido = await db.fetchval("SELECT ts FROM bot_estado WHERE clave = 'bot'")
+        b = await db.fetchval("SELECT estado->'bybit' FROM bot_estado WHERE clave = 'bot'")
+        try:
+            bybit = json.loads(b) if isinstance(b, str) else b
+        except ValueError:
+            bybit = None
         parte_hoy = await db.fetchval("SELECT EXISTS (SELECT 1 FROM bot_evento WHERE tipo = 'parte' AND (ts AT TIME ZONE 'UTC')::date = $1)",
                                       ahora.date())
         informe_semana = await db.fetchval("SELECT EXISTS (SELECT 1 FROM bot_evento WHERE tipo = 'informe' AND detalle->>'semana' = $1)", sem)
@@ -133,7 +150,7 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
         base_error = f"{type(e).__name__} {limpia(str(e))[:120]}"
     actuales = problemas(ahora, unidad, entorno.get("MONITOR_SERVICE_RESULT"), base_error, latido, parte_hoy, informe_semana,
                          falla.read_text(encoding="utf-8").strip()[:200] if falla.exists() else None,
-                         int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN))
+                         int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN), bybit)
     llegados = set()  # de los avisados con fecha que ya no salen, cuales llegaron de verdad (tarde)
     for k in [k for k in notificados if k.startswith(CON_FECHA) and k not in actuales]:
         if db is None or base_error:

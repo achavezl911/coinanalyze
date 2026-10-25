@@ -19,7 +19,7 @@ import httpx
 import pytest
 
 from app.bot import bybit as bb
-from app.bot import calc, llm
+from app.bot import calc, llm, vidas
 from app.bot import centinela as cen
 from app.bot import servicio as sv
 
@@ -356,7 +356,7 @@ async def _espera(bot):
         await asyncio.gather(*list(bot.tareas))
 
 
-async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
+async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base, monkeypatch):
     pos = {"symbol": "BTCUSDT", "side": "Buy", "size": "0.004", "avgPrice": "110000", "markPrice": "109900", "leverage": "50",
            "liqPrice": "108163", "stopLoss": "109340", "takeProfit": "112200", "positionIM": "8.8", "createdTime": "1792400000000",
            "updatedTime": "1792400000000"}
@@ -364,6 +364,7 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
     entorno = {"BYBIT_API_KEY": "k", "BYBIT_API_SECRET": "s", "ANTHROPIC_API_KEY": "a", "API_INTERNAL_TOKEN": "tok"}
     base = _EnFila(base)
     bot = sv.Bot(entorno, base, _mundo([[pos], []], vistas))
+    monkeypatch.setattr(sv.time, "time", lambda: 1792400060.0)  # R7: la lectura, un minuto despues de abrirla (su cierre, despues)
     await bot.tic_bybit()  # la clave, la posicion nueva, su evaluacion (en su tarea)
     await _espera(bot)
     (v,) = await base.fetch("SELECT tipo, posicion, veredicto, veredicto_decide, detalle FROM bot_evaluacion")
@@ -385,7 +386,13 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
     await _espera(otro)
     assert list(otro.evaluadas) == ["BTCUSDT:Buy:1792400000000"]
     assert await base.fetchval("SELECT count(*) FROM bot_evaluacion") == 1 and await base.fetchval("SELECT count(*) FROM bot_llamada") == 1
-    await bot.tic_bybit()  # cerrada: se puntua
+    luego = 1792400999 + 60  # la lectura siguiente, tras la fila de su cierre, ya no la ensena
+    monkeypatch.setattr(sv.time, "time", lambda: luego)
+    await bot.tic_bybit()
+    for k in range(1, vidas.ESPERA_MS // 60_000 + 2):  # R7: se puntua pasada ESPERA (35 min) desde que dejo de verse
+        monkeypatch.setattr(sv.time, "time", lambda k=k: luego + 60 * k)  # (un tic por minuto, como el bot)
+        await bot.tic_bybit()  # cerrada: se puntua
+    monkeypatch.undo()
     c = await base.fetchrow("SELECT veredicto, pnl_usd, acierto FROM bot_evaluacion WHERE tipo = 'cierre'")
     assert tuple(c) == ("A FAVOR", 1.5, True) and bot.evaluadas == {}
     assert "AVISO: la perdida al stop" in await otro.calcula("/calc btc")
@@ -615,6 +622,7 @@ async def test_el_bot_y_el_interruptor_escriben_y_leen_cada_tabla_en_sql_ascii(b
     ll = json.loads(await c.fetchval("SELECT detalle FROM bot_llamada"))
     assert NO_ASCII in ll["respuesta"] and NO_ASCII in ll["entrada"]  # el mensaje viaja sin escapes \u
     assert tuple(await c.fetchrow("SELECT orden, detalle->>'nota' FROM bot_operacion")) == ("o-ñ", NO_ASCII)
+    assert await c.fetchval("SELECT detalle->>'orderId' FROM bot_crudo WHERE tipo = 'fila'") == "o-ñ"  # (remate 7)
     estado = json.loads(await c.fetchval("SELECT estado FROM bot_estado WHERE clave = 'bot'"))
     assert estado["errores"]["BYBIT_IP"]["texto"].endswith("(¿ha cambiado?)")
     assert "caducó" in await c.fetchval("SELECT estado::text FROM bot_estado WHERE clave = 'vigia'")
