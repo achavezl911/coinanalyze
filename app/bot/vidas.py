@@ -39,8 +39,9 @@ CUANDO SALE AMBIGUA (y ninguna otra vez; el simulador comprueba la verdad de cad
     de la anterior y de «limpia» (sin registro, en cualquier momento): un anadido suyo, una vida entera que el bot no vio,
     o la anterior tras un anadido sin ver; o cierres a SU entrada de antes de «limpia». Es nueva (se evalua) pero no se
     puntua.
- A3 una fila sin lado (no se movio mas que la comision) cuando a su hora las dos direcciones del simbolo tenian vida y su
-    entrada no casa con exactamente una de las dos.
+ A3 una fila sin lado (no se movio mas que la comision) que no casa con una entrada de una sola de las dos direcciones (de
+    una lectura o de una fila con lado): puede ser de la otra direccion o de una vida que el bot no vio. (Antes de «limpia»,
+    de una vida que no vio: no cuenta.)
  A4 el bot no leyo esa posicion en mas de 7 dias (lo que devuelve closed-pnl).
  A5 un registro anterior (otro bot, otro estado) separa la vida en una lectura sin una fila que la cierre.
  A6 (S4 roto) sus filas la cierran a la misma entrada a la que se la ve despues; tras cubrirla hay MAS filas a su entrada
@@ -332,8 +333,8 @@ class Libro:
             hechas = max(v["runs"]) + 1
             fin = max([v["fin"], k["runs"][max(v["runs"])][5]] + [f["b"] for f in v["filas"] if not v.get("amb")])
             k["pasadas"] = [p for p in k.get("pasadas", []) if p[1] > fin - HORIZONTE_MS - 86400_000] + \
-                [[k["vacia"] if k["vacia"] is not None else k["runs"][min(v["runs"])][4] - 1, fin,
-                  [k["runs"][i][3] for i in v["runs"]]]]
+                [[k["vacia"] if k["vacia"] is not None else min([k["runs"][min(v["runs"])][4]] + [f["b"] for f in v["filas"]]) - 1, fin,
+                  [k["runs"][i][3] for i in v["runs"]] + _entradas(v["filas"])]]  # (con sus filas: el lado de una sin lado)
             k["vacia"] = v["fin"] if v.get("amb") else fin  # (de una ambigua no hay fila segura: lo de despues, a la siguiente)
             sig = next((w for w in vidas if w["runs"] and min(w["runs"]) == hechas), None)  # su duda no se pierde al quedar primera
             k["heredada"] = sig["amb"] if sig and (sig["amb"] in (A6, A6S) or str(sig["amb"]).startswith("S1")) else None  # (lo demas se recalcula)
@@ -393,16 +394,17 @@ class Libro:
         filas, horas = self.filas.get(sym, []), self.horas.get(sym, [])
         desde = bisect.bisect_right(horas, k["vacia"]) if k["vacia"] is not None else 0
         suyas, sin_lado = [], []
-        for f in filas[desde:]:
-            ld = lado_cierre(f["e"], f.get("x"), f["q"], f.get("pnl"))
+        lados = [(f, lado_cierre(f["e"], f.get("x"), f["q"], f.get("pnl"))) for f in filas[desde:]]
+        mias = _entradas([f for f, ld in lados if ld == lado])  # las entradas de mis filas con lado, y las del otro
+        suyas_o = _entradas([f for f, ld in lados if ld == -lado])
+        for f, ld in lados:
             if ld == lado:
                 suyas.append(f)
             elif ld is None:
-                alli = self._viva(otra, f["b"])
-                if alli is None:
-                    suyas.append(f)
-                    continue
-                aqui = self._viva(k, f["b"]) or []
+                # (sin registro del otro lado no se excluye una vida suya que el bot no vio: solo es mia si casa con una
+                # entrada mia -de una lectura o de una fila con lado-)
+                alli = (self._viva(otra, f["b"]) or []) + suyas_o
+                aqui = (self._viva(k, f["b"]) or []) + mias
                 en_esta, en_otra = any(mismo(f["e"], e) for e in aqui), any(mismo(f["e"], e) for e in alli)
                 if en_esta and not en_otra:
                     suyas.append(f)
@@ -457,7 +459,7 @@ class Libro:
                 v = nueva(r, [f for f in G if mismo(f["e"], r[3]) and not _antes(f, lim2)], self._a2(G, r, lim, lim2, k["vacia"]), None)
                 if v["filas"]:  # filas a su entrada antes de verla: un parcial suyo, o una vida igual que no vio (S4 roto)
                     v["amb"] = v["amb"] or A6P
-                if sl:
+                if [f for f in sl if not _antes(f, lim)]:  # (una sin lado de antes de «limpia», de una vida que no vio: S3)
                     v["amb"] = v["amb"] or A3
                 if k.get("heredada"):  # la duda que tenia mientras la de antes seguia en el registro
                     v["amb"] = v["amb"] or k["heredada"]

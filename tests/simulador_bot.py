@@ -764,7 +764,7 @@ def comprueba(s: Simulacion) -> list[str]:
                 motivo = _ambigua_verdad(s, v, nota, vistas, perdida)
                 if motivo:
                     fallos.append(f"ninguna mas: la vida {v.n} sin puntuar por «{nota[:90]}» y {motivo}")
-            if sec.simple and nota.startswith(("ambigua: A2", "ambigua: S1")) and not _ambigua_verdad(s, v, nota, vistas, perdida):
+            if sec.simple and nota.startswith(("ambigua: A2", "ambigua: S1", "ambigua: A3")) and not _ambigua_verdad(s, v, nota, vistas, perdida):
                 s.a2_simples += 1  # tras una vida entera que el bot no vio, o una fila a caballo (S1): declaradas, aparte (I6)
             elif sec.simple:  # I6
                 fallos.append(f"I6 la vida {v.n} cerrada sin puntuar en una secuencia simple: {nota[:100]}")
@@ -957,13 +957,34 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
         if nota.startswith("ambigua: A6") and _cierra_mas_tras_anadido(s, siguientes[:3], lecturas):
             return None
         return "no hubo una reapertura a la misma entrada, una orden de varias ejecuciones ni cierres de mas tras un anadido"
-    if nota.startswith("ambigua: A7"):
-        return None if any(len(set(range(a, a + 2)) & sec.vacias) == 2 or sec.u_parcial is False for a in range(fin_m(sec))) \
-            else "no hubo dos lecturas vacias seguidas"
+    if nota.startswith("ambigua: A7"):  # dos lecturas seguidas sin la clave tras verla (falsas o no: lo que no cerro ninguna
+        # fila suya -tarde, o sin lado a una entrada que no le vio- la deja ambigua)
+        ms = sorted(vistas.get(v.n, []))
+        sin = [m for m in lecturas if ms and m > ms[0] and v.clave not in (s.reg.lecturas.get(m) or {})]
+        return None if any(b == a + 1 for a, b in zip(sin, sin[1:], strict=False)) or sec.u_parcial is False \
+            else "no hubo dos lecturas seguidas sin la clave tras verla"
     if nota.startswith("ambigua: S1"):  # una fila de ella, de la anterior o de las siguientes a menos de 30 s de una lectura
         cerca = [w for w in misma if w.fin <= v.inicio][-1:] + siguientes[:3]
         return None if any(abs(f["t"] - sec.lectura(m)) <= 30_000 or abs(f["c"] - sec.desfase - sec.lectura(m)) <= 30_000
                            for w in cerca for f in w.filas for m in lecturas) else "ninguna fila a menos de 30 s de una lectura"
+    if nota.startswith("ambigua: A3"):  # una fila sin lado de otra vida (del otro lado, o que el bot no vio) cerca de ella
+        sym = v.clave.split(":")[0]
+        lado_de = s.sv.bb.lado_cierre
+        def vistas_de(w):  # las entradas que el bot le conserva a w
+            return {w.estado(sec.lectura(m), sec.u_parcial, sec.funding)[1] for m in vistas.get(w.n, [])
+                    if w.estado(sec.lectura(m), sec.u_parcial, sec.funding)}
+        for w in sec.vidas:
+            if w is v or w.clave.split(":")[0] != sym:
+                continue
+            vio_w = vistas_de(w) if w.clave == v.clave else set()  # (de su lado y vista: solo si esa entrada no se le vio)
+            if any(lado_de(f["e"], f["x"], f["q"], f["pnl"]) is None and v.inicio - 40 * M <= f["t"] <= v.fin + 40 * M
+                   and not any(abs(f["e"] / e - 1) <= 1e-9 for e in vio_w) for f in w.filas):
+                return None
+        vio = {v.estado(sec.lectura(m), sec.u_parcial, sec.funding)[1] for m in vistas.get(v.n, [])
+               if v.estado(sec.lectura(m), sec.u_parcial, sec.funding)}  # (o una suya sin lado a una entrada que el bot no conserva)
+        if any(lado_de(f["e"], f["x"], f["q"], f["pnl"]) is None and not any(abs(f["e"] / e - 1) <= 1e-9 for e in vio) for f in v.filas):
+            return None
+        return "ninguna fila sin lado de otra vida (del otro lado o invisible) cerca de ella, ni suya a una entrada no vista"
     if nota.startswith("ambigua: A5"):
         return None if sec.migracion else "A5 sin un registro anterior (no hubo despliegue)"
     return "no es ninguno de los motivos declarados"
