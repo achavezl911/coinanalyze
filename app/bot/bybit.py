@@ -73,7 +73,8 @@ def posiciones(d: dict) -> list[dict]:
     """Las posiciones abiertas (size > 0) de /v5/position/list, con lo que el bot usa. SIN id: la doc (citada por el
     operador, 2026-10-25) dice que createdTime es «the first time a position was created on this symbol» -igual para
     todas las posiciones del simbolo- y que lo unico unico es seq + symbol, que cambia con cada actualizacion. El bot
-    pone el id (servicio.Bot.id_de) con la apertura que VE: updatedTime la primera vez que la encuentra abierta."""
+    pone el id de cada VIDA (servicio.Bot.tic_bybit, remate 4) con la apertura que VE: updatedTime la primera vez que la
+    encuentra abierta, o la hora del cierre de la vida anterior si closed-pnl dice que se reabrio sin verla a 0."""
     out = []
     for p in (d.get("result") or {}).get("list") or []:
         if float(p.get("size") or 0) <= 0:

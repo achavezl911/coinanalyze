@@ -72,7 +72,7 @@ def _op(orden: str, entrada: float, salida: float, pnl: float, cerrada: int) -> 
             "avgExitPrice": str(salida), "closedPnl": str(pnl), "leverage": "50", "updatedTime": str(cerrada)}
 
 
-async def test_bug1_dos_posiciones_del_mismo_simbolo_son_dos_y_cada_una_puntua_con_lo_suyo(base):  # noqa: F811 - el fixture `base` de test_bot
+async def test_bug1_dos_posiciones_del_mismo_simbolo_son_dos_y_cada_una_puntua_con_lo_suyo(base, monkeypatch):  # noqa: F811 - el fixture `base` de test_bot
     ahora = int(time.time() * 1000)
     h = 3600_000
     p1, p2 = _pos(110000, ahora - 3 * h), _pos(111000, ahora - h)  # el mismo createdTime: «first time ... on this symbol»
@@ -83,9 +83,13 @@ async def test_bug1_dos_posiciones_del_mismo_simbolo_son_dos_y_cada_una_puntua_c
     cuenta: dict = {}
     db = _EnFila(base)
     bot = sv.Bot(ENTORNO, db, _mundo([[p1], [], [p2], []], ops, cuenta))
-    for _ in range(4):
+    # cada lectura un minuto despues de lo que ve (R4: las operaciones se asignan a la vida por su hora; antes las cuatro
+    # lecturas eran «ahora» y la primera posicion se cerraba 2 h despues de su ultima operacion)
+    for t in (ahora - 3 * h, ahora - 2 * h, ahora - h, ahora - h // 2):
+        monkeypatch.setattr(sv.time, "time", lambda t=t: (t + 60_000) / 1000)
         await bot.tic_bybit()
         await _espera(bot)
+    monkeypatch.undo()
     ids = [r[0] for r in await db.fetch("SELECT posicion FROM bot_evaluacion WHERE tipo = 'veredicto' ORDER BY ts")]
     assert len(set(ids)) == 2, ids  # antes: el mismo id para las dos
     assert await db.fetchval("SELECT count(*) FROM bot_evento WHERE tipo = 'sin_stop'") == 2  # antes: la 2a sin aviso
@@ -300,7 +304,8 @@ async def test_bug10_un_estado_corrupto_no_tumba_el_interruptor(base, tmp_path):
 def test_bug11_el_ultimo_dia_parcial_entra():
     desde = 29_870_000 // 1440 * 1440 + 600  # 10:00Z
     r = calidad.resumen([], {}, [], [], [], [], desde, desde + 7 * 1440)
-    assert len(r["falsas_por_dia"]) == 8 and r["partes"] == "0 de 8 dias"  # antes: 7, sin el ultimo dia parcial
+    assert len(r["falsas_por_dia"]) == 8  # antes: 7, sin el ultimo dia parcial
+    assert r["partes"] == "0 de 7 dias"  # R4 (R8): el parte del ultimo dia (13:00Z) aun no tocaba a las 10:00Z
 
 
 def test_bug13_la_direccion_dicha_manda():
@@ -325,20 +330,21 @@ async def test_nota_una_respuesta_de_error_no_se_cobra():
 async def test_14_un_error_resuelto_se_dice_resuelto():
     http = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, json={"ok": True})))
     bot = sv.Bot({}, None, http)
-    bot.anota("API_140", "/api/ai no contesta: ConnectError")
+    bot.anota("API_140", "/api/healthz no contesta: ConnectError", "/api/healthz")  # R4: con su operacion
     await bot.api("/api/healthz")
-    assert bot.estado["errores"]["API_140"].get("resuelto")  # antes: seguia saliendo como si fuera de ahora
+    assert bot.estado["errores"]["API_140 /api/healthz"].get("resuelto")  # antes: seguia saliendo como si fuera de ahora
     hace_dos_h = datetime.now(UTC) + timedelta(hours=2)
     assert "resuelto" in sv.errores_vigentes(bot.estado["errores"], datetime.now(UTC))
     assert sv.errores_vigentes(bot.estado["errores"], hace_dos_h) == "ninguno"
 
 
 def test_15_cada_ruta_recibe_solo_su_parte_del_sobre():
-    ctx = {"wyckoff": {"x": 1}, "field_disambiguation": {}, "orderbook": {"bid": 1}, "cvd_matrix": {"5m": 2}, "snapshot": {"p": 3}}
+    ctx = {"wyckoff": {"x": 1}, "field_disambiguation": {}, "orderbook": {"bid": 1}, "divergences": {"5m": 2}, "snapshot": {"p": 3}}
     escala = sv.mensaje("ESCALA", dec={}, ctx=ctx, posicion={}, alerta="a")
     evalua = sv.mensaje("EVALUA", dec={}, ctx=ctx, posicion={})
     assert "wyckoff" not in escala and "wyckoff" not in evalua and "field_disambiguation" not in evalua  # antes: todo
-    assert '"orderbook"' in escala and '"cvd_matrix"' not in escala and '"cvd_matrix"' in evalua
+    # (R4: escala ya recibe cvd_matrix; lo que sigue sin recibir es, por ejemplo, divergences)
+    assert '"orderbook"' in escala and '"divergences"' not in escala and '"divergences"' in evalua
 
 
 async def test_s4_un_apagon_que_cruza_la_medianoche_no_pierde_las_rafagas_de_ayer(base, monkeypatch):  # noqa: F811 - el fixture `base` de test_bot

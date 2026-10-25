@@ -28,7 +28,7 @@ import pathlib
 import re
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import asyncpg
 import httpx
@@ -40,7 +40,7 @@ from app.bot import centinela as cen
 log = logging.getLogger("app.bot")
 SECRETOS = ("ANTHROPIC_API_KEY", "BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_BOT_TOKEN", "API_INTERNAL_TOKEN")
 VEREDICTOS = ("A FAVOR", "EN CONTRA", "NO EVALUABLE")
-PARTE_HORA_UTC = 13  # 07:00 en America/Mexico_City (UTC-6, la zona de 140 y 143): el parte, antes de que abra Europa
+PARTE_HORA_UTC = calidad.PARTE_HORA_UTC  # 13: 07:00 en Ciudad de Mexico; vive en calidad, que cuenta los partes que tocaban
 RUTAS = {"escala": "low", "pregunta": "medium", "evalua": "high"}  # de partida (Alejandro, 2026-10-24); se cambia por entorno
 ESTABLE = """Eres el asistente de mesa de Alejandro para perpetuos lineales USDT de BTC, ETH y SOL en Bybit. Trabajas dentro
 de un bot de Telegram que vive en su laboratorio (Coinalyze). En cada mensaje te llegan DATOS servidos por el laboratorio
@@ -125,9 +125,10 @@ def _sin_nul(x):
 def js(x) -> str:
     """El JSON que el bot y el interruptor ESCRIBEN en la base. La de 140 es SQL_ASCII (medido el 2026-10-24): jsonb rechaza
     ahi los escapes \\u de todo lo que no es ASCII (tildes, «·», comillas angulares), que es lo que json.dumps pone por
-    omision; los bytes UTF-8 tal cual (ensure_ascii=False) entran y se leen iguales. Y sin NUL, que no entra en ninguna."""
+    omision; los bytes UTF-8 tal cual (ensure_ascii=False) entran y se leen iguales. Y sin NUL, que no entra en ninguna.
+    Y por limpia(): todo lo que se guarda pasa por aqui, asi que ninguna clave llega a la base (remate 4)."""
     s = json.dumps(x, ensure_ascii=False)
-    return s if "\\u0000" not in s else json.dumps(_sin_nul(x), ensure_ascii=False)
+    return limpia(s if "\\u0000" not in s else json.dumps(_sin_nul(x), ensure_ascii=False))
 
 
 def causa(e: BaseException) -> str:
@@ -193,13 +194,17 @@ def args_calc(texto: str) -> dict:
 # citas de esas 24 respuestas (x1-tmp/bot2/r3-bloques.py): decide, posicion, orderbook, price_barriers, oi_context,
 # cvd_matrix, funding, positioning... Ninguna cito wyckoff (12768 tokens cl100k de 47926), field_disambiguation,
 # feed_quality, la macro, la memoria de 2 anos, setup ni swing_score: no se mandan a ninguna.
+# Remate 4: a todas, liq_burst (las liquidaciones de los ultimos 5 min, ~140 caracteres: lo que explica una rafaga) y
+# context_metadata (la edad de cada feed, ~1500: la regla 2 pide decir lo viejo; la cito una respuesta de evalua); y
+# ESCALA, que sale tras una rafaga o una alerta de stop, recibe el flujo y las liquidaciones para poder explicarla.
 COMUNES = ("symbol", "generated_at", "envelope_cut", "snapshot", "operator_read", "scalp", "data_confidence", "data_quality",
-           "volatility", "local_alerts")
+           "volatility", "local_alerts", "liq_burst", "context_metadata")
 FLUJO = ("cvd_matrix", "delta_matrix", "orderbook", "passive_flow", "oi_context", "funding_context", "positioning",
          "liquidation_map", "liquidation_levels", "price_barriers", "reference_levels", "structure_horizons", "structure_detail",
          "market_structure", "trend_matrix", "divergences", "absorption", "basis")
 BLOQUES = {
-    "ESCALA": COMUNES + ("orderbook", "price_barriers", "reference_levels", "liquidation_map", "liquidation_levels", "market_structure"),
+    "ESCALA": COMUNES + ("orderbook", "price_barriers", "reference_levels", "liquidation_map", "liquidation_levels", "market_structure",
+                         "cvd_matrix", "delta_matrix", "oi_context", "funding_context", "scalp_liquidations"),
     "EVALUA": COMUNES + FLUJO,
     "PREGUNTA": COMUNES + FLUJO + ("recent_signals", "market_impact", "volume_profile", "cross_asset", "scalp_liquidations"),
 }
@@ -237,6 +242,21 @@ def semana_iso(t: datetime) -> str:
     return f"{a}-W{s:02d}"
 
 
+def apertura(i: str) -> int:
+    """El ms de apertura de una vida, de su id symbol:side:<ms> (0 si el id no lo trae)."""
+    try:
+        return int(i.rsplit(":", 1)[1])
+    except (IndexError, ValueError):
+        return 0
+
+
+def tamano_abierto(obs: list) -> float | None:
+    """Lo que llego a abrir una vida segun lo visto: su primer tamano mas cada subida entre lecturas (un anadido y un
+    cierre entre dos lecturas no se ven, y entonces lo cerrado supera esto: por eso se compara con >=)."""
+    t = [o[1] for o in obs if o[1] is not None]
+    return t[0] + sum(max(0.0, b - a) for a, b in zip(t, t[1:], strict=False)) if t else None
+
+
 def edad(segundos: float | None) -> str:
     if segundos is None:
         return "sin dato"
@@ -244,15 +264,23 @@ def edad(segundos: float | None) -> str:
     return f"{s} s" if s < 120 else f"{s // 60} min" if s < 7200 else f"{s // 3600} h"
 
 
+CADUCA_H = 6
+
+
 def errores_vigentes(errores: dict, ahora: datetime) -> str:
     """Los errores que ensenan /estado y el parte: los sin resolver, y los resueltos hace menos de una hora con «resuelto
-    HH:MMZ». Uno resuelto hace mas de una hora no se ensena (remate 3, punto 14)."""
+    HH:MMZ». Uno resuelto hace mas de una hora no se ensena (remate 3, punto 14). Cada uno lo resuelve SU operacion al
+    volver a ir bien (Bot.bien); el que no se repite en CADUCA_H horas sin que su operacion vuelva a correr (una tarea
+    que no se repite) CADUCA, y se dice «caducado» durante una hora (remate 4, R6)."""
     out = []
     for k, x in errores.items():
-        r = x.get("resuelto")
+        r, nota = x.get("resuelto"), "resuelto"
+        if not r and (ahora - datetime.fromisoformat(x["ultima"].replace("Z", "+00:00"))).total_seconds() > CADUCA_H * 3600:
+            r = (datetime.fromisoformat(x["ultima"].replace("Z", "+00:00")) + timedelta(hours=CADUCA_H)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            nota = f"sin repetirse en {CADUCA_H} h: caducado"
         if r and (ahora - datetime.fromisoformat(r.replace("Z", "+00:00"))).total_seconds() > 3600:
             continue
-        out.append(f"{k} ({x['ultima'][11:16]}Z: {x['texto'][:60]}{f', resuelto {r[11:16]}Z' if r else ''})")
+        out.append(f"{k} ({x['ultima'][11:16]}Z: {x['texto'][:60]}{f', {nota} {r[11:16]}Z' if r else ''})")
     return ", ".join(out) or "ninguno"
 
 
@@ -305,14 +333,20 @@ class Bot:
         self.candado = asyncio.Lock()
         self.vistos: set = set()
         self.pos: dict = {}  # id -> la posicion abierta, tal como se vio por ultima vez
-        self.abiertas: dict = {}  # symbol:side -> id de la posicion abierta (remate 3, bug 1)
-        self.cerradas: dict = {}  # id -> ms en que el bot la vio cerrada
+        # symbol:side -> la VIDA abierta (remate 4): {id: symbol:side:<apertura ms>, obs: [[ms, tamano, entrada]] cada vez
+        # que cambian, reapertura: None o como se supo que se reabrio sin verla a 0}. Va en el estado (bot_estado): un
+        # reinicio la recupera sin pagar otra evaluacion
+        self.abiertas: dict = {}
+        self.cerradas: dict = {}  # id -> (ms de su cierre, tamano que llego a abrir, nota), 8 dias (lo que trae closed-pnl)
         self.evaluadas: dict = {}  # id -> {veredicto: el PRIMERO, posicion}, sin cierre todavia
         self.evaluando: set = set()
-        self.intentos: dict = {}
+        self.intentos: dict = {}  # id -> evaluaciones intentadas; proxima_eval: id -> cuando se puede volver a intentar
+        self.proxima_eval: dict = {}
+        self.ordenes: set = set()  # las ordenes de closed-pnl ya apuntadas en bot_operacion
         self.avisados: set = set()
         self.validadas: set = set()
         self.tareas: set = set()  # lo que va fuera de los bucles (Opus): que el latido y las alertas no esperen
+        self.turno = None  # la tarea de la ultima respuesta: la siguiente sale despues (en orden)
         self.clave_proxima = self.ops_leidas = 0.0
         self.clave_espera, self.clave_juzgada, self.tg_espera = 30.0, False, 0.0
         self.sin_registrar: dict = {}  # dia -> USD pagados que la base no apunto: cuentan igual para el tope
@@ -328,28 +362,33 @@ class Bot:
             "datos": None, "api": None, "validacion": None, "informe": None, "errores": {},
         }
         for a in avisos:
-            self.anota("CONFIGURACION", a)
+            self.anota("CONFIGURACION", a, "configuracion")
 
-    def anota(self, nombre: str, texto: str):
-        """Un error con su causa nombrada: al journal (CAUSA=...) y a /estado y al parte (el ultimo de cada causa)."""
+    def anota(self, nombre: str, texto: str, op: str | None = None):
+        """Un error con su causa nombrada y la OPERACION que fallo: al journal (CAUSA=...) y a /estado y al parte (el
+        ultimo de cada causa y operacion: «BYBIT closed-pnl», «BASE registro llamada», «KEYERROR bucle bybit»)."""
         texto = limpia(texto)[:300]
         log.warning("CAUSA=%s %s", nombre, texto)
-        self.estado["errores"][nombre] = {"ultima": ahora_iso(), "texto": texto, "resuelto": None}
+        self.estado["errores"][f"{nombre} {op}" if op else nombre] = {"ultima": ahora_iso(), "texto": texto, "resuelto": None, "op": op}
 
-    def bien(self, *causas: str):
-        """La fuente volvio: sus errores quedan «resueltos a las HH:MM» (remate 3, punto 14: el ConnectError del arranque
-        salia en /estado como si fuera de ahora)."""
-        for k, v in self.estado["errores"].items():
-            if k.startswith(causas) and not v.get("resuelto"):
+    def bien(self, *ops: str):
+        """Esas operaciones volvieron a ir bien: SUS errores quedan «resueltos a las HH:MM» (remate 3, punto 14). Por la
+        operacion exacta, no por el prefijo de la causa (remate 4, R6: position/list resolvia el fallo de closed-pnl, y el
+        latido el de un INSERT de bot_llamada)."""
+        for v in self.estado["errores"].values():
+            if v.get("op") in ops and not v.get("resuelto"):
                 v["resuelto"] = ahora_iso()
 
     def lanza(self, coro, nombre: str):
-        """Fuera del bucle (remate 3, bug 6): una llamada a Opus no para el latido ni las alertas de los otros activos."""
+        """Fuera del bucle (remate 3, bug 6): una llamada a Opus no para el latido ni las alertas de los otros activos.
+        `nombre` es la operacion: si cae se anota con el, y si la siguiente del mismo nombre va bien, lo resuelve."""
         async def seguro():
             try:
                 await coro
             except Exception as e:  # una tarea que cae se dice con su causa
-                self.anota(causa(e), f"{nombre}: {type(e).__name__} {str(e)[:200]}")
+                self.anota(causa(e), f"{nombre}: {type(e).__name__} {str(e)[:200]}", nombre)
+            else:
+                self.bien(nombre)
         t = asyncio.create_task(seguro())
         self.tareas.add(t)
         t.add_done_callback(self.tareas.discard)
@@ -365,7 +404,9 @@ class Bot:
                 " VALUES ($1, $2, to_timestamp($3::bigint * 60), $4, $5, $6, $7::jsonb) ON CONFLICT DO NOTHING",
                 tipo, activo, minuto, lado, clase, enviada, js(detalle or {}))
         except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
-            self.anota("BASE", f"no registro el evento {tipo}: {type(e).__name__} {str(e)[:120]}")
+            self.anota("BASE", f"no registro el evento {tipo}: {type(e).__name__} {str(e)[:120]}", f"registro {tipo}")
+        else:
+            self.bien(f"registro {tipo}")
 
     async def gastado_hoy(self) -> float:
         """Lo apuntado en bot_llamada hoy + lo pagado que la base no apunto (remate 3, bug 3). Si la base no contesta,
@@ -389,8 +430,17 @@ class Bot:
         self.avisados = {(i, t) for i, t in await self.db.fetch(
             "SELECT detalle->>'posicion', tipo FROM bot_evento WHERE tipo IN ('stop', 'liquidacion', 'sin_stop')"
             " AND ts >= now() - interval '30 days'") if i}
-        latido = await self.db.fetchval("SELECT extract(epoch FROM ts)::bigint FROM bot_estado WHERE clave = 'bot'")
-        self.desde_minuto = int(latido) // 60 if latido else None
+        e = await self.db.fetchrow("SELECT extract(epoch FROM ts)::bigint t, estado FROM bot_estado WHERE clave = 'bot'")
+        self.desde_minuto = int(e["t"]) // 60 if e else None
+        # las vidas abiertas, del ultimo estado publicado (remate 4, R7); de un estado de antes de R4 (sin vidas), las
+        # evaluadas sin cierre: la mas reciente de cada symbol:side sigue abierta, con lo que se vio al evaluarla
+        vidas = (json.loads(e["estado"]) if e and isinstance(e["estado"], str) else (e and e["estado"]) or {}).get("vidas") or {}
+        self.abiertas = {k: v for k, v in vidas.items() if isinstance(v, dict) and v.get("id")}
+        for i in sorted(self.evaluadas, key=apertura):
+            p, clave = self.evaluadas[i]["posicion"] or {}, i.rsplit(":", 1)[0]
+            if clave not in vidas:
+                self.abiertas[clave] = {"id": i, "obs": [[apertura(i), p.get("cantidad"), p.get("entrada")]], "reapertura": p.get("reapertura")}
+        self.ordenes = {r[0] for r in await self.db.fetch("SELECT orden FROM bot_operacion WHERE cerrada >= now() - interval '8 days'")}
         self.parte_hoy = await self.db.fetchval("SELECT max((ts AT TIME ZONE 'UTC')::date) FROM bot_evento WHERE tipo = 'parte'")
         self.informes_enviados = {r[0] for r in await self.db.fetch(
             "SELECT detalle->>'semana' FROM bot_evento WHERE tipo = 'informe' AND ts >= now() - interval '60 days'")}
@@ -402,34 +452,39 @@ class Bot:
 
     async def latido(self):
         self.estado["anthropic"]["gastado_hoy_usd"] = round(await self.gastado_hoy(), 4)
+        self.estado["vidas"] = self.abiertas
         await self.db.execute(
             "INSERT INTO bot_estado (clave, ts, estado) VALUES ('bot', now(), $1::jsonb)"
             " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = excluded.estado", js(self.estado))
-        self.bien("BASE")
+        self.bien("latido")
 
     async def manda(self, texto: str) -> bool:
         if not self.tg:
             return False
         try:
-            return await self.tg.manda(texto)
+            ok = await self.tg.manda(texto)
         except httpx.HTTPError as e:
-            self.anota("TELEGRAM", f"no envia: {type(e).__name__}")
+            self.anota("TELEGRAM", f"no envia: {type(e).__name__}", "sendMessage")
             return False
+        if ok:
+            self.bien("sendMessage")
+        return ok
 
     # ---------- laboratorio y Opus ----------
     async def api(self, ruta: str) -> dict:
+        op = ruta.split("?")[0]
         try:
             r = await self.http.get(self.api_base + ruta, headers={"X-Internal-Token": self.e.get("API_INTERNAL_TOKEN", "")}, timeout=60)
         except httpx.HTTPError as e:
             self.estado["api"] = f"no contesta ({type(e).__name__}) a las {ahora_iso()}"
-            self.anota("API_140", f"{ruta.split('?')[0]} no contesta: {type(e).__name__}")
+            self.anota("API_140", f"{op} no contesta: {type(e).__name__}", op)
             raise LookupError(f"no evaluable: la API del laboratorio no contesta ({type(e).__name__})") from e
         if r.status_code != 200:
-            self.estado["api"] = f"HTTP {r.status_code} en {ruta.split('?')[0]} a las {ahora_iso()}"
-            self.anota("API_140", f"HTTP {r.status_code} en {ruta.split('?')[0]}" + (" (token interno?)" if r.status_code == 403 else ""))
-            raise LookupError(f"no evaluable: la API del laboratorio da HTTP {r.status_code} en {ruta.split('?')[0]}")
+            self.estado["api"] = f"HTTP {r.status_code} en {op} a las {ahora_iso()}"
+            self.anota("API_140", f"HTTP {r.status_code} en {op}" + (" (token interno?)" if r.status_code == 403 else ""), op)
+            raise LookupError(f"no evaluable: la API del laboratorio da HTTP {r.status_code} en {op}")
         self.estado["api"] = "ok"
-        self.bien("API_140")
+        self.bien(op)
         return r.json()
 
     async def sobre(self, activo: str) -> tuple[dict, dict]:
@@ -460,11 +515,14 @@ class Bot:
                     # lo pagado cuenta igual para el tope aunque la base no lo apunte (remate 3, bug 3)
                     hoy = datetime.now(UTC).date()
                     self.sin_registrar[hoy] = self.sin_registrar.get(hoy, 0.0) + r["coste"]
-                    self.anota("BASE", f"no registro la llamada {ruta} ({r['coste']:.3f} USD, cuenta para el tope): {type(e).__name__}")
+                    self.anota("BASE", f"no registro la llamada {ruta} ({r['coste']:.3f} USD, cuenta para el tope): {type(e).__name__}",
+                               "registro llamada")
+                else:
+                    self.bien("registro llamada")
             if r["error"]:
-                self.anota("TOPE" if r["error"].startswith("tope") else "ANTHROPIC", f"{ruta}: {r['error']}")
+                self.anota("TOPE" if r["error"].startswith("tope") else "ANTHROPIC", f"{ruta}: {r['error']}", f"opus {ruta}")
             elif r["texto"]:
-                self.bien("ANTHROPIC", "TOPE")
+                self.bien(f"opus {ruta}")
             return r
 
     # ---------- C1 ----------
@@ -479,7 +537,7 @@ class Bot:
             filas[a][m] = tuple(x)
         if not all(filas.values()):
             self.estado["datos"] = f"sin velas de 1 min de {[a for a in cen.ACTIVOS if not filas[a]]}"
-            return self.anota("DATOS", self.estado["datos"])
+            return self.anota("DATOS", self.estado["datos"], "velas")
         hasta = min(max(f) for f in filas.values()) + 1
         self.estado["datos"] = {"ultima_vela": datetime.fromtimestamp((hasta - 1) * 60, UTC).strftime("%H:%MZ"),
                                 "retraso_min": ahora - hasta}
@@ -487,7 +545,7 @@ class Bot:
             for r in cen.rafagas_del_dia(filas, dia, hasta):
                 await self.rafaga(r, ahora, filas)
         self.desde_minuto = ahora - 15
-        self.bien("DATOS")
+        self.bien("velas")
 
     async def rafaga(self, r: dict, ahora: int, filas: dict):
         a, m, u = r["activo"], r["minuto"], cen.UMBRALES
@@ -532,37 +590,75 @@ class Bot:
             espera, self.clave_espera = self.clave_espera, min(self.clave_espera * 2, 900.0)
             self.clave_proxima = time.time() + espera
             self.estado["bybit"]["error"] = f"no pude leer la clave ({bb.error(d)}); reintento en {int(espera)} s"
-            return self.anota("BYBIT", self.estado["bybit"]["error"])
+            return self.anota("BYBIT", self.estado["bybit"]["error"], "query-api")
         primera, self.clave_juzgada = not self.clave_juzgada, True
         self.clave_proxima, self.clave_espera = time.time() + 3600, 30.0
         b = self.estado["bybit"] = bb.juzga_clave(d, self.ip) | {"leida": ahora_iso()}
         if b["activo"]:
-            self.bien("BYBIT")
+            self.bien("query-api")
         else:
-            self.anota("BYBIT_IP" if "IP" in str(b["error"]) else "BYBIT", f"Bybit apagado: {b['error']}")
+            self.anota("BYBIT_IP" if "IP" in str(b["error"]) else "BYBIT", f"Bybit apagado: {b['error']}", "query-api")
         if b["activo"] != antes or (primera and not b["activo"]):
             txt = "Bybit ACTIVO: clave de solo lectura atada a la IP de 140" if b["activo"] else \
                 f"Bybit APAGADO en el bot: {b['error']}. No leo posiciones hasta que se arregle."
             await self.evento("bybit", None, None, await self.manda(txt), detalle=b)
 
-    def id_de(self, p: dict) -> str:
-        """El id de una posicion que el bot no tenia abierta (remate 3, bug 1): el de su evaluacion pendiente si es la
-        MISMA (mismo symbol:side y misma entrada, tras un reinicio), si no symbol:side:<updatedTime al verla abierta>."""
-        for i, ev in sorted(self.evaluadas.items(), reverse=True):
-            e = (ev.get("posicion") or {}).get("entrada")
-            if i.startswith(p["clave"] + ":") and i not in self.abiertas.values() and e and p["entrada"] and abs(e / p["entrada"] - 1) <= 0.002:
-                return i
-        return f"{p['clave']}:{p.get('actualizada') or int(time.time() * 1000)}"
+    def ids_abiertos(self) -> set:
+        return {v["id"] for v in self.abiertas.values()}
 
-    async def reabierta(self, i: str, p: dict) -> bool:
-        """¿La posicion i se cerro y se volvio a abrir entre dos lecturas? Si su entrada cambio Y closed-pnl trae un cierre
-        de su lado con la entrada VIEJA despues de su apertura. ponytail: un cierre parcial seguido de otra entrada en el
-        mismo minuto tambien lo parece; se dice al registrar."""
-        vieja = (self.pos.get(i) or {}).get("entrada")
-        if not vieja or not p["entrada"] or abs(vieja / p["entrada"] - 1) <= 0.002:
-            return False
-        await self.operaciones()
-        return bool(await self.de_la_posicion(i, int(time.time() * 1000), self.pos[i]))
+    def conocidas(self) -> list:
+        """(symbol:side, apertura, cierre) de cada vida que el bot conoce: abierta, evaluada sin puntuar o cerrada."""
+        ahora = int(time.time() * 1000)
+        ids = self.ids_abiertos() | set(self.evaluadas) | set(self.cerradas)
+        return [(i.rsplit(":", 1)[0], apertura(i), self.cerradas[i][0] if i in self.cerradas else ahora) for i in ids]
+
+    def observa(self, v: dict, p: dict, ahora_ms: int):
+        """Un parcial o un anadido es la MISMA vida: su tamano y su entrada, al dia (y cada cambio, en obs)."""
+        if not v["obs"] or (v["obs"][-1][1], v["obs"][-1][2]) != (p["cantidad"], p["entrada"]):
+            v["obs"].append([ahora_ms, p["cantidad"], p["entrada"]])
+        self.pos[v["id"]] = p | {"id": v["id"]} | ({"reapertura": v["reapertura"]} if v.get("reapertura") else {})
+
+    def cierra(self, clave: str, fin_ms: int, nota: str | None = None):
+        """La vida de esa clave acaba en fin_ms (el tamano volvio a 0, o closed-pnl trajo su cierre total)."""
+        v = self.abiertas.pop(clave)
+        self.pos.pop(v["id"], None)
+        self.cerradas[v["id"]] = (fin_ms, tamano_abierto([o for o in v["obs"] if o[0] <= fin_ms] or v["obs"]), nota)
+
+    @staticmethod
+    def cierre_total(v: dict, filas: list) -> dict | None:
+        """La fila de closed-pnl que deja la vida v a 0 aunque el bot no la viera a 0 (se cerro y se reabrio entre dos
+        lecturas): desde la ultima lectura anterior a esa fila, lo cerrado a SU MISMA entrada (sin anadidos entre medias:
+        un anadido mueve la entrada media) suma todo su tamano. Un parcial no llega a sumarlo: no cierra nada (R10).
+        ponytail: un anadido a la misma entrada (+-1 pb) antes de cerrar no se distingue de una reapertura."""
+        for k, f in enumerate(filas):
+            antes = [o for o in v["obs"] if o[0] <= f["ms"]]
+            if not antes or not antes[-1][1] or not antes[-1][2]:
+                continue
+            t, tam, ent = antes[-1]
+            tramo = [g for g in filas[:k + 1] if g["ms"] > t]
+            if all(g["entrada"] and abs(g["entrada"] / ent - 1) <= 1e-4 for g in tramo) and \
+                    sum(g["cantidad"] or 0 for g in tramo) >= tam * (1 - 1e-6):
+                return f
+        return None
+
+    async def reabierta(self, clave: str, ahora_ms: int):
+        """Si closed-pnl dice que la vida abierta de esa clave se cerro entera, la posicion que se ve es OTRA: la vieja se
+        cierra en esa fila (y se puntua con lo suyo) y la nueva nace despues, con su evaluacion y sus avisos. El bot no la
+        vio a 0 y lo DICE: en el registro (posicion.reapertura) y en cada aviso de la nueva (R1)."""
+        for _ in range(5):
+            v = self.abiertas[clave]
+            f = self.cierre_total(v, (await self.de_la_vida(v["id"], ahora_ms))[0])
+            if not f:
+                return
+            hora = datetime.fromtimestamp(f["ms"] / 1000, UTC).strftime("%H:%M:%SZ")
+            nota = (f"reabierta sin que el bot la viera a 0: closed-pnl cerro {f['cantidad']:g} a {f['entrada']:g} a las {hora}"
+                    f" (orden {f['orden']})")
+            p = self.pos[v["id"]]
+            self.cierra(clave, f["ms"], f"cerrada a las {hora} y reabierta entre dos lecturas (lo dijo closed-pnl)")
+            n = self.abiertas[clave] = {"id": f"{clave}:{f['ms'] + 1}", "reapertura": nota,
+                                        "obs": [o for o in v["obs"] if o[0] > f["ms"]] or [[ahora_ms, p["cantidad"], p["entrada"]]]}
+            self.observa(n, {k: x for k, x in p.items() if k != "reapertura"}, ahora_ms)
+            log.info("posicion %s: %s", n["id"], nota)
 
     async def tic_bybit(self):
         if self.bybit is None:
@@ -574,65 +670,79 @@ class Bot:
         try:
             d = await self.bybit.get("/v5/position/list", category="linear", settleCoin="USDT")
         except httpx.HTTPError as e:
-            return self.anota("BYBIT", f"position/list no contesta: {type(e).__name__}")
+            return self.anota("BYBIT", f"position/list no contesta: {type(e).__name__}", "position/list")
         if bb.error(d):
             self.estado["bybit"]["error"] = bb.error(d)
-            self.anota("BYBIT_IP" if d.get("retCode") == 10010 else "BYBIT", f"position/list: {bb.error(d)}")
+            self.anota("BYBIT_IP" if d.get("retCode") == 10010 else "BYBIT", f"position/list: {bb.error(d)}", "position/list")
             if d.get("retCode") in (10003, 10010, 33004):
                 self.clave_proxima = 0.0  # se vuelve a juzgar la clave en el proximo tic, y si cae se avisa
             return
-        self.bien("BYBIT")
+        self.bien("position/list")
+        # LA VIDA de cada posicion (remate 4): abre cuando su symbol:side aparece (tamano > 0), cierra cuando desaparece
         vistas, ahora_ms = {p["clave"]: p for p in bb.posiciones(d)}, int(time.time() * 1000)
-        for clave, i in list(self.abiertas.items()):
-            if clave not in vistas or await self.reabierta(i, vistas[clave]):
-                self.cerradas[i] = ahora_ms
-                del self.abiertas[clave]
+        for clave in [c for c in self.abiertas if c not in vistas]:
+            self.cierra(clave, ahora_ms)
         for clave, p in vistas.items():
-            i = self.abiertas.get(clave) or self.id_de(p)
-            self.abiertas[clave], p["id"] = i, i
-            self.pos[i] = p
+            v = self.abiertas.setdefault(clave, {"id": f"{clave}:{p.get('actualizada') or ahora_ms}", "obs": [], "reapertura": None})
+            self.observa(v, p, ahora_ms)
+        if self.abiertas or set(self.evaluadas) - self.ids_abiertos() or time.time() - self.ops_leidas > 900:
+            try:  # closed-pnl cada minuto con algo abierto: lo cerrado, y la reapertura que el bot no vio
+                for activo in await self.operaciones():
+                    for clave in [c for c in self.abiertas if c.startswith(activo + ":")]:
+                        await self.reabierta(clave, ahora_ms)
+            except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError, httpx.HTTPError) as e:
+                self.anota(causa(e), f"closed-pnl: {type(e).__name__} {str(e)[:120]}", "closed-pnl")
+        for v in list(self.abiertas.values()):
+            i, p = v["id"], self.pos[v["id"]]
             if i not in self.validadas:
                 await self.valida(p)
-            if i not in self.evaluadas and i not in self.evaluando and self.intentos.get(i, 0) < 3:
+            if i not in self.evaluadas and i not in self.evaluando and time.time() >= self.proxima_eval.get(i, 0):
                 self.evaluando.add(i)
-                self.intentos[i] = self.intentos.get(i, 0) + 1  # una evaluacion que cae se reintenta, no sin limite (bug 3)
-                self.lanza(self.evalua_una(p, "posicion nueva"), f"evalua {i}")
+                self.lanza(self.evalua_una(p, "posicion nueva" + (f" · {v['reapertura']}" if v.get("reapertura") else "")), f"evalua {i}")
             for tipo, txt in cen.alertas_posicion(p):
                 if (i, tipo) not in self.avisados:
                     self.avisados.add((i, tipo))
+                    txt += f" · posicion NUEVA ({v['reapertura']})" if v.get("reapertura") else ""
                     await self.evento(tipo, p["symbol"], int(time.time() // 60), await self.manda(f"{cen.LEYENDA.split(' · ')[0]} · {txt}"),
                                       detalle={"posicion": i, "texto": txt, "entradas": {"posicion": p, "leida": ahora_iso()}})
                     if tipo != "sin_stop":
                         self.lanza(self.escala(p, txt), f"escala {i}")
-        self.pos = {i: p for i, p in self.pos.items() if i in self.abiertas.values()}
-        pendientes = [i for i in self.evaluadas if i not in self.abiertas.values()]
-        if pendientes or time.time() - self.ops_leidas > 900:
-            await self.operaciones()
-        for i in pendientes:
+        for i in [i for i in self.evaluadas if i not in self.ids_abiertos()]:
             await self.puntua(i)
+        self.cerradas = {i: c for i, c in self.cerradas.items() if c[0] > ahora_ms - 8 * 86400_000 or i in self.evaluadas}
 
-    async def operaciones(self):
-        """Las operaciones CERRADAS de Bybit a bot_operacion (una por orden), para BOT-3. ponytail: lo que closed-pnl
-        devuelve por omision (la doc dice 7 dias; no contrastado), hasta 10 paginas; el lado no se deduce: va crudo."""
-        self.ops_leidas, cursor, n = time.time(), None, 0
+    async def operaciones(self) -> set:
+        """Las operaciones CERRADAS de Bybit a bot_operacion (una por orden), para BOT-3 y para puntuar. -> los simbolos
+        con alguna nueva. Las ya apuntadas no se vuelven a escribir, y se deja de paginar al llegar a ellas (se lee cada
+        minuto con algo abierto). ponytail: lo que closed-pnl devuelve por omision (la doc dice 7 dias; no contrastado),
+        hasta 10 paginas; el lado no se deduce aqui (bybit.lado_cierre, al puntuar)."""
+        self.ops_leidas, cursor, nuevas = time.time(), None, set()
         for _ in range(10):
             d = await self.bybit.get("/v5/position/closed-pnl", category="linear", limit=100, **({"cursor": cursor} if cursor else {}))
             if bb.error(d):
-                return self.anota("BYBIT", f"closed-pnl: {bb.error(d)}")
-            res = d.get("result") or {}
+                self.anota("BYBIT", f"closed-pnl: {bb.error(d)}", "closed-pnl")
+                return nuevas
+            res, vista = d.get("result") or {}, False
             for c in res.get("list") or []:
+                orden = str(c.get("orderId") or f"{c.get('symbol')}:{c.get('updatedTime')}")
+                if orden in self.ordenes:
+                    vista = True
+                    continue
                 num = lambda k, c=c: float(c[k]) if c.get(k) not in (None, "") else None  # noqa: E731
-                n += int((await self.db.execute(
+                await self.db.execute(
                     "INSERT INTO bot_operacion (orden, symbol, cantidad, entrada, salida, pnl_usd, apalancamiento, cerrada, detalle)"
                     " VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8::bigint / 1000.0), $9::jsonb) ON CONFLICT DO NOTHING",
-                    str(c.get("orderId") or f"{c.get('symbol')}:{c.get('updatedTime')}"), c.get("symbol"), num("closedSize"),
-                    num("avgEntryPrice"), num("avgExitPrice"), num("closedPnl"), num("leverage"),
-                    int(c.get("updatedTime") or c.get("createdTime") or 0), js(c))).split()[-1])
+                    orden, c.get("symbol"), num("closedSize"), num("avgEntryPrice"), num("avgExitPrice"), num("closedPnl"),
+                    num("leverage"), int(c.get("updatedTime") or c.get("createdTime") or 0), js(c))
+                self.ordenes.add(orden)
+                nuevas.add(c.get("symbol"))
             cursor = res.get("nextPageCursor")
-            if not cursor:
+            if vista or not cursor:
                 break
-        if n:
-            log.info("bot_operacion: %s cerradas nuevas", n)
+        self.bien("closed-pnl")
+        if nuevas:
+            log.info("bot_operacion: cerradas nuevas de %s", sorted(nuevas))
+        return nuevas
 
     async def valida(self, p: dict):
         """La liquidacion de la formula contra la que da Bybit para una posicion real: se registra una vez por posicion."""
@@ -642,7 +752,8 @@ class Bot:
             t = (await self.bybit.get("/v5/market/risk-limit", category="linear", symbol=p["symbol"]))["result"]["list"]
             f, mmr = calc.liquidacion(p["entrada"], p["cantidad"], p["apalancamiento"], p["lado"], t)
         except (KeyError, TypeError, ValueError, httpx.HTTPError) as e:
-            return self.anota("BYBIT", f"risk-limit para validar la liquidacion: {type(e).__name__}")
+            return self.anota("BYBIT", f"risk-limit para validar la liquidacion: {type(e).__name__}", "risk-limit")
+        self.bien("risk-limit")
         dif = abs(f - p["liquidacion"]) / p["entrada"] * 100
         self.estado["validacion"] = {"symbol": p["symbol"], "dia": datetime.now(UTC).strftime("%Y-%m-%d"), "dif_pct": round(dif, 4)}
         self.validadas.add(p["id"])
@@ -676,54 +787,78 @@ class Bot:
                 p["id"], v, v_dec, js({"motivo": motivo, "fuente": fuente, "posicion": p, "horas": horas,
                                        "llamada": llamada, "decide": dec}))
         except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
-            self.anota("BASE", f"no registro la evaluacion de {p['id']}: {type(e).__name__}")
+            self.anota("BASE", f"no registro la evaluacion de {p['id']}: {type(e).__name__}", "registro veredicto")
+        else:
+            self.bien("registro veredicto")
         sesgo = ((dec.get("decide") or {}).get("bias") or {}).get("value")
         await self.manda(f"EVALUACION {p['symbol']} {'LARGO' if p['lado'] > 0 else 'CORTO'} ({motivo})\nVEREDICTO: {v} ({fuente})"
                          f"\nDECIDE: {sesgo} -> {v_dec}{liq}\n{texto or ''}")
 
     async def evalua_una(self, p: dict, motivo: str):
+        """La evaluacion de una vida nueva. Si cae (la base, la red...), se reintenta con espera creciente -1, 2, 4... min,
+        hasta 1 h entre intentos- y sin tope de intentos: antes, tres seguidos y nunca mas (remate 4, R11). Lo pagado no
+        se repite: evalua la da por hecha en cuanto Opus contesta, aunque la base no la apunte (remate 3, bug 3)."""
+        i = p["id"]
+        n = self.intentos[i] = self.intentos.get(i, 0) + 1
+        self.proxima_eval[i] = time.time() + min(60 * 2 ** (n - 1), 3600)
         try:
             await self.evalua(p, motivo)
         finally:
-            self.evaluando.discard(p["id"])
+            self.evaluando.discard(i)
 
-    async def de_la_posicion(self, i: str, cierre_ms: int, p: dict | None) -> list:
-        """Las operaciones cerradas (bot_operacion) de ESA posicion: su simbolo, cerradas entre su apertura y su cierre
-        visto (+5 min), con su misma entrada (closed-pnl da la entrada media de la posicion) y del lado de la posicion
-        segun la aritmetica de cada fila (bybit.lado_cierre). Antes: todas las del simbolo desde su PRIMERA posicion."""
-        activo, _, apertura = i.split(":")
-        filas = await self.db.fetch(
-            "SELECT orden, pnl_usd, entrada, salida, cantidad FROM bot_operacion WHERE symbol = $1"
-            " AND cerrada >= to_timestamp($2::bigint / 1000.0) AND cerrada <= to_timestamp($3::bigint / 1000.0)",
-            activo, int(apertura), cierre_ms + 300_000)
-        e, lado = (p or {}).get("entrada"), (p or {}).get("lado")
-        return [f for f in filas
-                if (not e or not f["entrada"] or abs(f["entrada"] / e - 1) <= 0.002)
-                and bb.lado_cierre(f["entrada"], f["salida"], f["cantidad"], f["pnl_usd"]) in (None, lado)]
+    async def de_la_vida(self, i: str, fin: int) -> tuple[list, list]:
+        """Las operaciones cerradas (bot_operacion) de la VIDA i -> (suyas, sin lado): las de su simbolo cerradas desde su
+        apertura hasta `fin` (y antes de la vida siguiente de su symbol:side), de SU lado; sea cual sea su entrada, asi
+        cuentan lo promediado (R2) y los parciales. El lado de cada fila sale de su aritmetica (bybit.lado_cierre); si no
+        lo dice (no se movio mas que la comision), es de esta vida si el otro lado no tenia ninguna abierta a esa hora, y
+        si la tenia (modo cobertura) queda SIN LADO y no cuenta para ninguna (R4b)."""
+        clave, ap = i.rsplit(":", 1)[0], apertura(i)
+        activo, lado = clave.split(":")[0], 1 if clave.endswith(":Buy") else -1
+        vidas = self.conocidas()
+        fin = min([fin] + [a - 1 for c, a, _ in vidas if c == clave and a > ap])
+        otras = [(a, f) for c, a, f in vidas if c == f"{activo}:{'Sell' if lado > 0 else 'Buy'}"]
+        suyas, sin_lado = [], []
+        for f in await self.db.fetch(
+                "SELECT orden, pnl_usd, entrada, salida, cantidad, (extract(epoch FROM cerrada) * 1000)::bigint ms FROM bot_operacion"
+                " WHERE symbol = $1 AND cerrada >= to_timestamp($2::bigint / 1000.0) AND cerrada <= to_timestamp($3::bigint / 1000.0)"
+                " ORDER BY cerrada", activo, ap, fin):
+            ld = bb.lado_cierre(f["entrada"], f["salida"], f["cantidad"], f["pnl_usd"])
+            if ld is None and not any(a <= f["ms"] <= b for a, b in otras):
+                ld = lado
+            if ld == lado:
+                suyas.append(dict(f))
+            elif ld is None:
+                sin_lado.append(dict(f))
+        return suyas, sin_lado
 
     async def puntua(self, i: str):
-        """La posicion i ya no esta abierta: su pnl, de SUS operaciones; si aun no estan, en el proximo tic, y si en 2 h
-        no aparecen, se cierra sin puntuar y se dice."""
+        """La vida i ya no esta abierta: su pnl, de SUS operaciones. Se puntua cuando closed-pnl trae su cierre (lo cerrado
+        cubre lo que llego a abrir: un parcial anterior no basta); si en 2 h no lo trae, con lo que haya, y se dice."""
         ev = self.evaluadas[i]
-        cierre = self.cerradas.get(i) or int(time.time() * 1000)
-        self.cerradas.setdefault(i, cierre)
-        filas = await self.de_la_posicion(i, cierre, ev.get("posicion"))
-        if not filas and time.time() * 1000 - cierre < 2 * 3600 * 1000:
+        fin, abierto, nota = self.cerradas.setdefault(i, (int(time.time() * 1000), None, None))
+        filas, sin_lado = await self.de_la_vida(i, fin + 300_000)
+        completa = bool(filas) and (not abierto or sum(f["cantidad"] or 0 for f in filas) >= abierto * (1 - 1e-6))
+        if not completa and time.time() * 1000 - fin < 2 * 3600 * 1000:
             return
         pnl = sum(float(f["pnl_usd"] or 0) for f in filas) if filas else None
         v = ev["veredicto"]
-        del self.evaluadas[i]
-        self.cerradas.pop(i, None)
+        del self.evaluadas[i]  # (sigue en cerradas: su hora decide de quien es una fila sin lado de la otra vida)
         acierto = None if v == "NO EVALUABLE" or pnl is None else (pnl > 0) == (v == "A FAVOR")
+        notas = [x for x in (nota, None if completa else "sin operaciones suyas en closed-pnl en 2 h" if not filas else
+                             "closed-pnl no trajo su cierre entero en 2 h: puntuada con lo que habia",
+                             f"{len(sin_lado)} operacion(es) sin lado (cobertura, sin movimiento que lo diga): no cuentan" if sin_lado else None) if x]
         try:
             await self.db.execute(
                 "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, pnl_usd, acierto, detalle) VALUES ('cierre', $1, $2, $3, $4, $5::jsonb)",
-                i, v, pnl, acierto, js({"ordenes": [f["orden"] for f in filas], "nota": None if filas else "sin operaciones suyas en closed-pnl en 2 h"}))
+                i, v, pnl, acierto, js({"ordenes": [f["orden"] for f in filas], "sin_lado": [f["orden"] for f in sin_lado],
+                                        "nota": " · ".join(notas) or None}))
         except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
-            self.anota("BASE", f"no registro el cierre de {i}: {type(e).__name__}")
-        activo = i.split(":")[0]
+            self.anota("BASE", f"no registro el cierre de {i}: {type(e).__name__}", "registro cierre")
+        else:
+            self.bien("registro cierre")
         resultado = "sin operaciones en closed-pnl: sin puntuar" if pnl is None else f"{pnl:+.2f} USD"
-        await self.manda(f"CERRADA {activo}: {resultado} · el veredicto era {v} -> {'sin puntuar' if acierto is None else ('ACIERTO' if acierto else 'FALLO')}")
+        await self.manda(f"CERRADA {i.split(':')[0]} {'LARGO' if i.split(':')[1] == 'Buy' else 'CORTO'}: {resultado} · el veredicto era {v}"
+                         f" -> {'sin puntuar' if acierto is None else ('ACIERTO' if acierto else 'FALLO')}" + "".join(f"\n{n}" for n in notas))
 
     # ---------- C3, C5 ----------
     async def calcula(self, texto: str) -> str:
@@ -837,10 +972,14 @@ class Bot:
         n = datetime.now(UTC)
         if n.hour < PARTE_HORA_UTC or self.parte_hoy == n.date():
             return
-        self.parte_hoy = n.date()  # marcado ANTES de avisar: si la base no lo apunta, no se repite cada minuto (bug 4)
         s = await self.salud()
         texto = self.texto_salud(s, f"PARTE {n:%Y-%m-%d}")
         enviada = await self.manda(texto)
+        if not enviada and self.tg:
+            return  # se reintenta al minuto siguiente; el interruptor avisa si a las 13:30Z no ha salido
+        # marcado SOLO despues de enviarlo (remate 4, R5: marcado antes, una base que tropezaba en salud() dejaba el dia
+        # sin parte) y ANTES de registrarlo (si la base no lo apunta, no se repite cada minuto: remate 3, bug 4)
+        self.parte_hoy = n.date()
         await self.evento("parte", None, None, enviada, detalle={"texto": texto, "salud": s})
 
     async def tic_informe(self):
@@ -887,7 +1026,9 @@ class Bot:
             try:
                 await fn()
             except Exception as e:  # un bucle que cae no tumba el servicio: se dice con su causa y se sigue
-                self.anota(causa(e), f"bucle {nombre}: {type(e).__name__} {str(e)[:200]}")
+                self.anota(causa(e), f"bucle {nombre}: {type(e).__name__} {str(e)[:200]}", f"bucle {nombre}")
+            else:  # y la vuelta siguiente que va bien lo resuelve, tambien las causas genericas (KEYERROR...: R6)
+                self.bien(f"bucle {nombre}")
             # los de minuto, al segundo 20 (la vela ya cerro y la ingesta la ha escrito)
             await asyncio.sleep((20 * (periodo == 60) - time.time()) % periodo or periodo)
 
@@ -898,8 +1039,13 @@ class Bot:
             try:
                 await paso()
             except Exception as e:
-                self.anota(causa(e), f"{nombre}: {type(e).__name__} {str(e)[:200]}")
-        await self.latido()
+                self.anota(causa(e), f"{nombre}: {type(e).__name__} {str(e)[:200]}", nombre)
+            else:
+                self.bien(nombre)
+        try:
+            await self.latido()
+        except Exception as e:
+            self.anota(causa(e), f"latido: {type(e).__name__} {str(e)[:200]}", "latido")
 
     async def tic_telegram(self):
         if not self.tg:
@@ -910,20 +1056,27 @@ class Bot:
             # con espera creciente (5 s .. 5 min) y dicho en el estado: antes reintentaba cada segundo y seguia «ok» (bug 9)
             self.tg_espera = min(max(5.0, self.tg_espera * 2), 300.0)
             nombre = "TELEGRAM_" + str(e).split()[1].rstrip(":") if isinstance(e, RuntimeError) else "TELEGRAM"
-            self.estado["telegram"] = f"{str(e)[:80] or type(e).__name__} (reintento en {int(self.tg_espera)} s)"
-            self.anota(nombre, self.estado["telegram"])
+            # limpia: el estado va a bot_estado y al parte, y el texto de una excepcion de red puede llevar la URL del token
+            self.estado["telegram"] = limpia(f"{str(e)[:80] or type(e).__name__} (reintento en {int(self.tg_espera)} s)")
+            self.anota(nombre, self.estado["telegram"], "getUpdates")
             return await asyncio.sleep(self.tg_espera)
         self.tg_espera, self.estado["telegram"] = 0.0, "ok"
-        self.bien("TELEGRAM")
+        self.bien("getUpdates")
         for t in textos:  # cada mensaje aparte y fuera del bucle: uno que falla no se lleva el resto del lote (bug 12)
-            self.lanza(self.responde(t), "mensaje")
+            self.turno = self.lanza(self.responde(t, self.turno), "mensaje")
 
-    async def responde(self, texto: str):
+    async def responde(self, texto: str, antes: asyncio.Task | None = None):
+        """Se contesta en paralelo, pero se ENVIA en el orden en que llegaron: cada respuesta espera a que salga la del
+        mensaje anterior (remate 4: una pregunta a Opus y un /estado detras llegaban al reves)."""
         try:
             respuesta = await self.atiende(texto)
         except Exception as e:  # atiende solo captura lo previsto: el resto tambien se contesta, con su causa
-            self.anota(causa(e), f"mensaje: {type(e).__name__} {str(e)[:200]}")
+            self.anota(causa(e), f"mensaje: {type(e).__name__} {str(e)[:200]}", "atiende")
             respuesta = f"no pude contestar ({causa(e)}: {type(e).__name__}); el error queda en /estado"
+        else:
+            self.bien("atiende")
+        if antes is not None and not antes.done():
+            await asyncio.wait([antes])
         if respuesta:
             await self.manda(respuesta)
 
