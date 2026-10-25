@@ -125,6 +125,7 @@ async def test_sospecha_el_plan_b_no_pega_una_posicion_nueva_a_una_vieja(base, m
     otro = sv.Bot(ENTORNO, db, _mundo([[nueva]], ops, cuenta))
     await otro.carga()
     await _tic(otro, monkeypatch, t0 + 10 * M + 20_000)
+    await _tic(otro, monkeypatch, t0 + 14 * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
     monkeypatch.undo()
     ids = await _veredictos(db)
     # antes: el plan B la daba por ABIERTA (no estaba en las vidas) y la nueva quedaba pegada, sin evaluar ni avisar

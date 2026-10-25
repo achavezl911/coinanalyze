@@ -356,7 +356,7 @@ async def _espera(bot):
         await asyncio.gather(*list(bot.tareas))
 
 
-async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
+async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base, monkeypatch):
     pos = {"symbol": "BTCUSDT", "side": "Buy", "size": "0.004", "avgPrice": "110000", "markPrice": "109900", "leverage": "50",
            "liqPrice": "108163", "stopLoss": "109340", "takeProfit": "112200", "positionIM": "8.8", "createdTime": "1792400000000",
            "updatedTime": "1792400000000"}
@@ -385,7 +385,10 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base):
     await _espera(otro)
     assert list(otro.evaluadas) == ["BTCUSDT:Buy:1792400000000"]
     assert await base.fetchval("SELECT count(*) FROM bot_evaluacion") == 1 and await base.fetchval("SELECT count(*) FROM bot_llamada") == 1
+    luego = sv.time.time() + 11 * 60  # R6: se puntua cuando closed-pnl ha podido traer todo (ESPERA tras su primera lectura)
+    monkeypatch.setattr(sv.time, "time", lambda: luego)
     await bot.tic_bybit()  # cerrada: se puntua
+    monkeypatch.undo()
     c = await base.fetchrow("SELECT veredicto, pnl_usd, acierto FROM bot_evaluacion WHERE tipo = 'cierre'")
     assert tuple(c) == ("A FAVOR", 1.5, True) and bot.evaluadas == {}
     assert "AVISO: la perdida al stop" in await otro.calcula("/calc btc")

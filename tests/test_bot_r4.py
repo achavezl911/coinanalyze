@@ -50,6 +50,7 @@ async def test_r10_un_parcial_y_un_anadido_son_la_misma_posicion(base, monkeypat
     await _tic(bot, monkeypatch, t0 + 2 * M + 20_000)  # ... y anade 0.004 a 110750: 0.006 a 110500 (+0.45 %)
     ops.append(_op("final", 110500, 110300, -1.4, t0 + 2 * M + 40_000) | {"closedSize": "0.006"})
     await _tic(bot, monkeypatch, t0 + 3 * M + 20_000)  # cerrada entera
+    await _tic(bot, monkeypatch, t0 + 13 * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
     monkeypatch.undo()
     textos = cuenta.get("textos", [])
     ids = await _veredictos(db)
@@ -76,15 +77,16 @@ async def test_r1_cerrada_y_reabierta_en_el_mismo_minuto_son_dos_posiciones(base
         await _tic(bot, monkeypatch, t0 + k * M + 20_000)
     ops.append(_op("cierre-2", 110150, 109550, -2.5, t0 + k * M + 30_000))
     await _tic(bot, monkeypatch, t0 + (k + 1) * M + 20_000)
+    await _tic(bot, monkeypatch, t0 + (k + 12) * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
     monkeypatch.undo()
     ids = await _veredictos(db)
     assert len(set(ids)) == 2, ids  # antes: un solo id
     sin_stop = [r[0] for r in await db.fetch("SELECT detalle->>'texto' FROM bot_evento WHERE tipo = 'sin_stop' ORDER BY ts")]
-    assert len(sin_stop) == 2 and "posicion NUEVA (reabierta sin que el bot la viera a 0" in sin_stop[1]  # antes: la nueva no avisaba
+    assert len(sin_stop) == 2  # antes: la nueva no avisaba (R6: el aviso ya no espera a saber la identidad; la nota va en su evaluacion)
     assert await _cierres(db) == {ids[0]: 1.0, ids[1]: -2.5}  # antes: -1.5, las dos sumadas
     reg = json.loads(await db.fetchval("SELECT detalle FROM bot_evaluacion WHERE tipo = 'veredicto' AND posicion = $1", ids[1]))
-    assert reg["posicion"]["reapertura"].startswith("reabierta sin que el bot la viera a 0: closed-pnl cerro 0.004 a 110000")
-    assert any(t.startswith("CERRADA BTCUSDT LARGO: +1.00") and "reabierta entre dos lecturas" in t for t in cuenta["textos"])
+    assert reg["posicion"]["reapertura"].startswith("cerrada la anterior y reabierta entre dos lecturas (closed-pnl, orden cierre)")
+    assert any(t.startswith("CERRADA BTCUSDT LARGO: +1.00") for t in cuenta["textos"])
 
 
 async def test_r2_promediar_y_despues_cerrar_puntua(base, monkeypatch):  # noqa: F811 - el fixture `base` de test_bot
@@ -95,6 +97,7 @@ async def test_r2_promediar_y_despues_cerrar_puntua(base, monkeypatch):  # noqa:
     await _tic(bot, monkeypatch, t0 + 2 * M + 20_000)  # promedia: 0.008 a 110300 (+0.27 %)
     ops.append(_op("cierre", 110300, 110800, 3.6, t0 + 2 * M + 40_000) | {"closedSize": "0.008"})
     await _tic(bot, monkeypatch, t0 + 3 * M + 20_000)
+    await _tic(bot, monkeypatch, t0 + 13 * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
     monkeypatch.undo()
     ids = await _veredictos(db)
     assert await _cierres(db) == {ids[0]: 3.6}  # antes: su entrada no era la evaluada, no puntuaba, y a las 2 h «sin puntuar»
@@ -156,10 +159,11 @@ async def test_r4b_en_cobertura_una_fila_sin_lado_no_cuenta_para_ninguno(base, m
     ops += [_op("largo", 110000, 110450, 1.5, t0 + M + 30_000), _op("corto", 110100, 109600, 1.8, t0 + M + 35_000),
             _op("sin-lado", 110050, 110080, -0.3, t0 + M + 40_000)]  # se movio menos que la comision: la aritmetica no dice el lado
     await _tic(bot, monkeypatch, t0 + 2 * M + 20_000)
+    await _tic(bot, monkeypatch, t0 + 12 * M + 20_000)  # R6: se puntua tras ESPERA desde su primera lectura
     monkeypatch.undo()
-    assert await _cierres(db) == {f"BTCUSDT:Buy:{t0}": 1.5, f"BTCUSDT:Sell:{t0}": 1.8}  # antes: 1.2 y 1.5, la -0.3 en los dos
-    assert {r[0] for r in await db.fetch("SELECT detalle->>'sin_lado' FROM bot_evaluacion WHERE tipo = 'cierre'")} == {'["sin-lado"]'}
-    assert sum("sin lado" in t for t in cuenta["textos"] if t.startswith("CERRADA")) == 2
+    # antes (R3): 1.2 y 1.5, la -0.3 en las dos. R6: la fila sin lado llega DESPUES de que cada una cerrara entera a su entrada
+    # (sus filas cubren su tamano): no es de ninguna de las dos, que se puntuan con lo suyo
+    assert await _cierres(db) == {f"BTCUSDT:Buy:{t0}": 1.5, f"BTCUSDT:Sell:{t0}": 1.8}
 
 
 async def test_r5_el_parte_se_marca_enviado_solo_despues_de_enviarlo(monkeypatch):
