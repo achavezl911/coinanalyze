@@ -6,32 +6,32 @@ cual es nueva (se evalua una vez), cual cerro y con que filas (se puntua) y cual
 LO QUE SE SUPONE (declarado; fuera de el, el simulador mide que sale ambigua o sin puntuar, no una cifra falsa):
  S1 una fila de closed-pnl paso entre b = min(createdTime, updatedTime) - MARGEN_FILA_MS y h = max(los dos) + MARGEN_FILA_MS
     (10 s: un desfase de hasta 8 s en los dos sentidos entre closed-pnl y position/list, y una orden de varias ejecuciones,
-    que es UNA fila: createdTime la primera, updatedTime la ultima). Una lectura de position/list ensena lo que paso hasta
-    B = max(su updatedTime, su hora local - DESFASE_MS): el updatedTime puede no moverse con un parcial o un anadido (y si
-    con el funding), y el reloj de 140 va hasta 10 s del de Bybit. La fila con h <= B va antes de esa lectura; la que esta
-    A CABALLO (b <= B < h) va al lado que no deja un tramo IMPOSIBLE (una lectura que ensena menos de lo que dejan las
-    filas) y, si los dos son posibles, al de su hora cruda min(createdTime, updatedTime) contra el updatedTime de esa
-    lectura (dentro de S1 es exacta: la ejecucion que deja lo que ensena la lectura tiene su misma hora). El validador midio que
-    una sola regla de hora no vale: closed-pnl 1 ms detras del updatedTime daba cifras falsas, y adelantarla 10 s las daba
-    al reves (un cierre de justo despues de una lectura, contado de antes).
+    que es UNA fila: createdTime la primera, updatedTime la ultima). Una lectura ensena lo que paso hasta su updatedTime si
+    este se movio con el cambio respecto a la lectura anterior de la MISMA vida; si no (la primera de una vida, o tras unas
+    vacias), hasta max(updatedTime, hora local - DESFASE_MS) y, si se le vio NO moverse con un cambio, hasta la hora local
+    +- 10 s (u_parado: desde la primera vez, en todas). La fila que pudo pasar a los dos lados de una lectura (A CABALLO)
+    va donde no deja un tramo IMPOSIBLE (le faltan filas; solo cabe con S4 roto; una fila a la entrada de una lectura de
+    fuera de su tramo; desaparecida, una cola que sus filas no cubren). Las fronteras dudosas seguidas se deciden juntas,
+    fila a fila. Si quedan dos historias posibles que parten la vida distinto, la que menos parte y la vida sale ambigua
+    (S1); si cuentan la misma, la hora cruda de la fila contra el updatedTime. El validador midio que una sola regla de hora
+    no vale: closed-pnl 1 ms detras del updatedTime daba cifras falsas, y adelantarla 10 s las daba al reves.
  S2 closed-pnl trae cada cierre como mucho ESPERA_MS (35 min) despues. Por eso una vida se puntua pasados 35 min de su
-    primera lectura, de cada lectura tras un tramo con anadidos y, si desaparecio, de su primera ausencia. Una fila mas
-    tardia que eso puede faltar en una cifra ya emitida (el unico camino a una cifra falsa que queda; el simulador lo mide).
+    primera lectura, de cada lectura tras un tramo con anadidos y, si desaparecio, de su primera ausencia seguida. Una fila
+    mas tardia que eso puede faltar en una cifra ya emitida (el unico camino a una cifra falsa que queda; el simulador lo mide).
  S3 una lista vacia NO es un cierre: una vida solo cierra cuando sus filas cubren lo que tenia; ausente y sin filas, se
     queda ausente (nada pagado) y, si vuelve igual, es la misma; sin filas en SIN_FILAS_MS (2 h), «sin puntuar». Dos o mas
     lecturas SEGUIDAS sin la clave (VACIAS_SEGUIDAS) sirven para separar la vida siguiente si las filas cubren la de antes.
     Cuatro (VACIAS_LIMPIA: una mas que las 3 vacias falsas seguidas que aguanta; DECIDIDO 9 pedia dos, y con dos una vida
-    nacida durante tres vacias falsas, con un parcial y un anadido antes de verla, perdia el parcial: una cifra falsa medida en
-    la variante s3) hacen que lo cerrado antes de ellas sea de vidas que el bot no vio («limpia», y lo mismo al partir): un cierre
-    a otra entrada de antes de «limpia» ya no hace ambigua a la siguiente (A2 evitable); uno a SU entrada, si (puede ser un
-    parcial suyo durante unas vacias falsas).
+    nacida durante tres vacias falsas, con un parcial y un anadido antes de verla, perdia el parcial: una cifra falsa medida
+    en la variante s3) hacen que un cierre a OTRA entrada de antes de ellas sea de vidas que el bot no vio («limpia»: ya no
+    la hace ambigua, A2 evitable). Uno a SU entrada de antes de la ultima lectura sin ella, o de mas de 90 s antes de verla
+    (el bot no miraba), la hace ambigua: o la vacia era falsa o es de otra vida a la misma entrada.
  S4 una entrada media IGUAL (TOL_E = 1e-9: solo el ruido de la coma flotante) es una vida sin anadidos: position/list y
     closed-pnl dan la entrada con todos sus decimales, y un anadido -tambien a un tick de la media- la mueve. Con 0.05 pb
     (R6) un anadido a un tick (0.045 pb en BTC) no se veia: un parcial del mismo tamano cubria justo y salia «cerrada y
     reabierta». Si Bybit redondeara distinto en las dos rutas, cada parcial pareceria un anadido sin ver: ambigua, nunca una
     cifra (lo mide bot_crudo). Lo que S4 no ve -una reapertura a la MISMA entrada; una orden de varias ejecuciones a caballo
-    de una lectura- no parte la vida: sigue con el mismo id y sale A6; tambien si tras las filas que la cubren hay MAS a su
-    entrada, o si tras un anadido sin ver cierran mas de lo que quedaba a la entrada que se ve despues.
+    de una lectura- no parte la vida: sigue con el mismo id y sale A6.
 CUANDO SALE AMBIGUA (y ninguna otra vez; el simulador comprueba la verdad de cada una):
  A1 entre dos lecturas hubo un anadido que el bot no vio (una fila a otra entrada, o mas cerrado que lo visto) seguido de
     cierres, y no se puede saber si llego a 0: la lectura siguiente ensena otra entrada, o los cierres tienen mas de una.
@@ -43,9 +43,11 @@ CUANDO SALE AMBIGUA (y ninguna otra vez; el simulador comprueba la verdad de cad
     entrada no casa con exactamente una de las dos.
  A4 el bot no leyo esa posicion en mas de 7 dias (lo que devuelve closed-pnl).
  A5 un registro anterior (otro bot, otro estado) separa la vida en una lectura sin una fila que la cierre.
- A6 sus filas la cierran a la misma entrada a la que se la ve despues (S4 roto: reapertura a la misma entrada, orden de
-    varias ejecuciones), o tras un anadido sin ver cierran mas de lo que quedaba a la entrada que se ve despues: no se sabe
-    si es la misma o una nueva; sigue con el mismo id.
+ A6 (S4 roto) sus filas la cierran a la misma entrada a la que se la ve despues; tras cubrirla hay MAS filas a su entrada
+    (y la siguiente tampoco se sabe); tras un anadido sin ver cierran mas de lo que quedaba a la entrada que se ve despues;
+    vuelve con mas tamano a la misma entrada exacta; o tiene filas a SU entrada antes de su primera lectura (un parcial
+    suyo y una vida igual que cerro y otra que abrio a esa entrada dan las mismas lecturas y filas). No se sabe si es la
+    misma o una nueva: sigue con el mismo id. Esta duda, y la S1, la hereda la siguiente cuando la de antes se puntua.
  A7 desaparecio sin filas que la cierren y volvio distinta: un anadido mientras no se veia, o un cierre y otra con sus
     filas aun por llegar; sigue con el mismo id.
  S1 una fila a caballo de una lectura (S1) cabe a los dos lados y cuenta dos historias -cerrar y reabrir, o seguir-: se

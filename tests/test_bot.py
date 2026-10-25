@@ -622,6 +622,7 @@ async def test_el_bot_y_el_interruptor_escriben_y_leen_cada_tabla_en_sql_ascii(b
     ll = json.loads(await c.fetchval("SELECT detalle FROM bot_llamada"))
     assert NO_ASCII in ll["respuesta"] and NO_ASCII in ll["entrada"]  # el mensaje viaja sin escapes \u
     assert tuple(await c.fetchrow("SELECT orden, detalle->>'nota' FROM bot_operacion")) == ("o-ñ", NO_ASCII)
+    assert await c.fetchval("SELECT detalle->>'orderId' FROM bot_crudo WHERE tipo = 'fila'") == "o-ñ"  # (remate 7)
     estado = json.loads(await c.fetchval("SELECT estado FROM bot_estado WHERE clave = 'bot'"))
     assert estado["errores"]["BYBIT_IP"]["texto"].endswith("(¿ha cambiado?)")
     assert "caducó" in await c.fetchval("SELECT estado::text FROM bot_estado WHERE clave = 'vigia'")
