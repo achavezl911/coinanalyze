@@ -33,13 +33,14 @@ def test_el_simulador_no_rompe_ninguna_invariante(semilla):
 def test_fuera_del_modelo_ningun_grave(variante, semilla):
     """0 GRAVES (I2, I4, I1 doble, I3, I9, reventon), I5-I8 y «ninguna mas» en cada variante: lo que no se puede separar
     sale ambiguo o sin puntuar (cuanto, en la entrega). Perdiendo lecturas (remate 8, R1), toda CERRADA llega con un
-    retraso ACOTADO: como mucho las 2 h de «sin puntuar» desde que la vida cerro, y unos minutos."""
+    retraso ACOTADO: como mucho las 2 h de «sin puntuar» mas la ESPERA (35 min) desde que la vida cerro (la base, sin
+    perder nada, ya llega a 143 min: una ambigua que espera sus 2 h). En 50d4c00 pasaba de 178 o no llegaba (I7)."""
     r = S.lote(sv, semilla, 1000, variante)
     assert r["graves"] == [], f"{variante}: {len(r['graves'])} secuencias con graves: {r['graves'][:3]}"
     assert r["fallos"] == [], f"{variante}: {len(r['fallos'])} secuencias rompen alguna invariante: {r['fallos'][:3]}"
     assert r["cerradas"] > 300
     if variante in S.PERDIDAS:
-        assert r["perdidos"] > 0.01 * r["tics"] and max(r["retrasos"]) <= 135, (r["perdidos"], r["tics"], max(r["retrasos"]))
+        assert r["perdidos"] > 0.01 * r["tics"] and max(r["retrasos"]) <= 155, (r["perdidos"], r["tics"], max(r["retrasos"]))
     if variante == "retraso_120":
         assert r["correcciones"] > 0  # (que de verdad haya cifras tardias que corregir)
 
