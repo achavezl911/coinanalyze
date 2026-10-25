@@ -867,22 +867,26 @@ def _cierra_mas_tras_anadido(s: Simulacion, vs: list, lecturas: list) -> bool:
     return False
 
 
-def _limpia(s: Simulacion, v: Vida, pred: Vida | None, primera: int) -> float:
-    """La «limpia» del bot antes de la primera lectura de v, de lo que el bot conserva: tras la puntuacion de la anterior
-    (o sin registro), la penultima de dos lecturas seguidas sin la clave, menos 10 s."""
+def _limpia(s: Simulacion, v: Vida, pred: Vida | None, primera: int, n: int) -> float:
+    """La «limpia» del bot antes de la primera lectura de v con n lecturas seguidas sin la clave (4: lo de antes a otra
+    entrada no cuenta; 2: lo de antes a SU entrada la hace ambigua), de lo que el bot conserva: la racha justo antes de
+    verla, o (tras la puntuacion de la anterior, o sin registro) cualquier racha; la primera de las n, menos 10 s."""
     sec, reg = s.sec, s.reg
+
+    def vacia(m: int) -> bool:
+        lec = reg.lecturas.get(m)
+        return m >= 0 and lec is not None and v.clave not in lec
+
+    out = sec.lectura(primera - n) - 10_000 if all(vacia(m) for m in range(primera - n, primera)) else -math.inf
     if pred is None:
-        return sec.lectura(primera - 2) - 10_000 if primera >= 2 and reg.lecturas.get(primera - 2) is not None \
-            and reg.lecturas.get(primera - 1) is not None else -math.inf
+        return out if primera >= n and all(reg.lecturas.get(m) is not None for m in range(primera - n, primera)) else -math.inf
     ids = {e["posicion"] for e in s.base.evaluacion if e["tipo"] == "veredicto" and _vida_de(s, e["detalle"].get("posicion") or {}) is pred}
     emitida = next((e["ts"] for e in s.base.evaluacion if e["tipo"] == "cierre" and e["posicion"] in ids), None)
     if emitida is None:
-        return -math.inf
-    out = -math.inf
-    for m in range(primera - 1):
-        a, b = reg.lecturas.get(m), reg.lecturas.get(m + 1)
-        if sec.lectura(m) > emitida and a is not None and b is not None and v.clave not in a and v.clave not in b:
-            out = sec.lectura(m) - 10_000
+        return out
+    for m in range(primera - n + 1):
+        if sec.lectura(m) > emitida and all(vacia(x) for x in range(m, m + n)):
+            out = max(out, sec.lectura(m) - 10_000)
     return out
 
 
@@ -912,14 +916,18 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
         pred = max(antes, key=lambda w: w.fin) if antes else None
         desde = sec.lectura(max(vistas[pred.n])) - 20_000 if pred else -math.inf
         pred_anade = pred is not None and any(tp == "anade" and te > desde for te, tp, *_ in pred.eventos)
-        limpia = _limpia(s, v, pred, primera) if primera != math.inf else -math.inf
+        if pred is not None and not pred_anade:  # de una anterior ambigua no hay fila segura: sus filas cuentan
+            ids = {e["posicion"] for e in s.base.evaluacion if e["tipo"] == "veredicto" and _vida_de(s, e["detalle"].get("posicion") or {}) is pred}
+            pred_anade = any(e["tipo"] == "cierre" and e["posicion"] in ids and e["pnl"] is None for e in s.base.evaluacion)
+        limpia = _limpia(s, v, pred, primera, 4) if primera != math.inf else -math.inf
+        limpia2 = _limpia(s, v, pred, primera, 2) if primera != math.inf else -math.inf
         for w in misma:
             if w not in antes or (w is pred and pred_anade):
                 for f in w.filas:
                     if not (desde < f["t"] <= t1 + abs(sec.desfase) + 20_000):
                         continue
                     misma_e = ent is not None and abs(f["e"] / ent - 1) <= 1e-9
-                    if (not misma_e and f["c"] - 10_000 > limpia - 20_000) or (misma_e and f["c"] - 10_000 <= limpia + 20_000):
+                    if (not misma_e and f["c"] - 10_000 > limpia - 20_000) or (misma_e and f["c"] - 10_000 <= limpia2 + 20_000):
                         return None
         return "no hubo cierres a otra entrada tras la anterior y su «limpia», ni a la suya antes, hasta su primera lectura"
     if nota.startswith(("ambigua: A6", "ambigua: X")):

@@ -19,8 +19,10 @@ LO QUE SE SUPONE (declarado; fuera de el, el simulador mide que sale ambigua o s
     tardia que eso puede faltar en una cifra ya emitida (el unico camino a una cifra falsa que queda; el simulador lo mide).
  S3 una lista vacia NO es un cierre: una vida solo cierra cuando sus filas cubren lo que tenia; ausente y sin filas, se
     queda ausente (nada pagado) y, si vuelve igual, es la misma; sin filas en SIN_FILAS_MS (2 h), «sin puntuar». Dos o mas
-    lecturas SEGUIDAS sin la clave (VACIAS_SEGUIDAS) sirven para separar la vida siguiente si las filas cubren la de antes, y
-    sin ninguna vida abierta, para que lo cerrado antes de la penultima sea de vidas que el bot no vio («limpia»): un cierre
+    lecturas SEGUIDAS sin la clave (VACIAS_SEGUIDAS) sirven para separar la vida siguiente si las filas cubren la de antes.
+    Cuatro (VACIAS_LIMPIA: una mas que las 3 vacias falsas seguidas que aguanta; DECIDIDO 9 pedia dos, y con dos una vida
+    nacida durante tres vacias falsas, con un parcial y un anadido antes de verla, perdia el parcial: una cifra falsa medida en
+    la variante s3) hacen que lo cerrado antes de ellas sea de vidas que el bot no vio («limpia», y lo mismo al partir): un cierre
     a otra entrada de antes de «limpia» ya no hace ambigua a la siguiente (A2 evitable); uno a SU entrada, si (puede ser un
     parcial suyo durante unas vacias falsas).
  S4 una entrada media IGUAL (TOL_E = 1e-9: solo el ruido de la coma flotante) es una vida sin anadidos: position/list y
@@ -72,6 +74,7 @@ DESFASE_MS = 10_000  # el reloj de 140 contra el de Bybit, para «vacia desde» 
 HORIZONTE_MS = 7 * 86400_000
 SEGUIDA_MS = 90_000  # dos lecturas «seguidas»: el bot lee cada minuto
 VACIAS_SEGUIDAS = 2
+VACIAS_LIMPIA = 4  # S3: «limpia» pide UNA mas que la racha de vacias falsas que aguanta (3, la variante del validador)
 INF = float("inf")
 A3 = "A3: una fila sin lado en cobertura que no casa con la entrada de una sola de las dos"
 A6 = "A6: sus filas la cierran a la misma entrada a la que se la ve despues: no se sabe si es la misma o una nueva"
@@ -176,7 +179,10 @@ def tramo(pre: tuple, filas: list, post: tuple | None, vacias: int = 0) -> dict:
     if mismo(post[1], ent):
         if abs(post[0] - tam) <= pre[0] * TOL_Q:
             return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": True, "sigue": True}
-        return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "falta": post[0] < tam}
+        if post[0] < tam:
+            return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "falta": True}
+        # mas tamano a la MISMA entrada: un anadido al precio exacto de la media o cerrar y reabrir a la misma (S4 roto: A6)
+        return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A6, "s4": True}
     if vacias >= VACIAS_SEGUIDAS:  # se fue sin filas que la cierren y volvio distinta: no se parte (A7)
         return {"viejo": viejo, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A7}
     # anadidos despues de esos cierres: subirian el tamano; si ensena MENOS de lo que dejan las filas, faltan filas
@@ -214,7 +220,8 @@ class Libro:
         self.horas: dict = {}  # symbol -> sus horas, en el mismo orden (para buscar por biseccion)
         self.ordenes: dict = {}  # orden -> su hora: las ya vistas (8 dias)
         self.nada_desde = None  # hora desde la que toda clave sin registro estaba vacia (dos lecturas sin ella)
-        self.previas: list = []  # las dos ultimas lecturas (hora de 140)
+        self.nada_desde4 = None  # (cuatro lecturas sin ella: S3, «limpia»)
+        self.previas: list = []  # las cuatro ultimas lecturas (hora de 140)
         self.ultima = None
 
     # ---------------------------------------------------------------- lo que entra
@@ -237,27 +244,40 @@ class Libro:
         for clave, p in vistas.items():
             k = self.claves.get(clave)
             if k is None:
-                k = self.claves[clave] = {"runs": [], "vacia": None, "limpia": self.nada_desde, "ausente": None, "pasadas": []}
+                k = self.claves[clave] = {"runs": [], "vacia": None, "limpia": self.nada_desde4, "limpia2": self.nada_desde,
+                                          "ausente": None, "pasadas": []}
             u = p.get("actualizada") or ahora
             r = k["runs"][-1] if k["runs"] else None
+            antes = r[5] if r else k.get("u_ultima")  # ¿se movio el updatedTime con el cambio? (S1: se guarda al verlo)
             au = k["ausente"]
             vacias = au[2] if au else 0
             if r and r[2] == p["cantidad"] and r[3] == p["entrada"] and not vacias:
                 r[1], r[5] = ahora, max(r[5], u)
             else:
-                k["runs"].append([ahora, ahora, p["cantidad"], p["entrada"], u, u, None, [au[0], vacias] if au else None])
+                ultimas = au[3] if au and isinstance((au + [None])[3], list) else []
+                k["runs"].append([ahora, ahora, p["cantidad"], p["entrada"], u, u, None,
+                                  [au[0], vacias, ultimas[0] if len(ultimas) >= VACIAS_LIMPIA else None,
+                                   ultimas[-2] if len(ultimas) >= 2 else None] if au else None,
+                                  None if antes is None else u > antes])
             k["ausente"] = None
+            k["u_ultima"] = max(k.get("u_ultima") or u, u)
         for clave, k in self.claves.items():
             if clave in vistas:
                 continue
             au = k["ausente"]
             seguida = au and ahora - au[1] <= SEGUIDA_MS  # la anterior sin ella fue la de hace un minuto (no antes de una caida)
-            k["ausente"] = [au[0], ahora, au[2] + 1] if seguida else [ahora, ahora, 1]
-            if not k["runs"] and seguida:  # sin vida abierta y dos vacias seguidas: lo de antes de la penultima, de otras
-                k["limpia"] = max(k.get("limpia") or -INF, au[1] - DESFASE_MS)
-        self.previas = (self.previas + [ahora])[-2:]
-        if len(self.previas) == 2:
-            self.nada_desde = self.previas[0] - DESFASE_MS
+            previas = au[3] if seguida and isinstance((au + [None])[3], list) else []
+            ultimas = (previas + [ahora])[-VACIAS_LIMPIA:]  # (las ultimas lecturas seguidas sin ella)
+            k["ausente"] = [au[0], ahora, au[2] + 1, ultimas] if seguida else [ahora, ahora, 1, ultimas]
+            if not k["runs"] and len(ultimas) >= VACIAS_LIMPIA:  # sin vida abierta y 4 vacias seguidas: lo de antes, de otras
+                k["limpia"] = max(k.get("limpia") or -INF, ultimas[0] - DESFASE_MS)
+            if not k["runs"] and len(ultimas) >= 2:  # (con dos, lo de antes a SU entrada ya no es suyo: la hace ambigua)
+                k["limpia2"] = max(k.get("limpia2") or -INF, ultimas[-2] - DESFASE_MS)
+        self.previas = (self.previas + [ahora])[-VACIAS_LIMPIA:]
+        if len(self.previas) >= 2:
+            self.nada_desde = self.previas[-2] - DESFASE_MS
+        if len(self.previas) >= VACIAS_LIMPIA:
+            self.nada_desde4 = self.previas[0] - DESFASE_MS
         self.ultima = ahora
 
     # ---------------------------------------------------------------- lo que sale
@@ -301,7 +321,7 @@ class Libro:
             k["pasadas"] = [p for p in k.get("pasadas", []) if p[1] > fin - HORIZONTE_MS - 86400_000] + \
                 [[k["vacia"] if k["vacia"] is not None else k["runs"][min(v["runs"])][4] - 1, fin,
                   [k["runs"][i][3] for i in v["runs"]]]]
-            k["vacia"] = v["fin"] if v.get("amb") else fin
+            k["vacia"] = v["fin"] if v.get("amb") else fin  # (de una ambigua no hay fila segura: lo de despues, a la siguiente)
         if hechas:
             del k["runs"][:hechas]
             if not k["runs"]:
@@ -385,7 +405,9 @@ class Libro:
             return xs[bisect.bisect_right(h, a) if a is not None else 0:bisect.bisect_right(h, b)]
 
         # S1: lo que ensena cada lectura llega hasta B; cada fila, al tramo de su b, y la que esta a caballo, donde cuadra
-        B = [max(r[4], r[0] - DESFASE_MS) for r in runs]
+        # (donde el updatedTime se movio con el cambio, la frontera es el; si no se movio -o es la primera lectura- puede
+        # estar parado: la hora local de la lectura menos el desfase)
+        B = [r[4] if (r + [None, None])[8] else max(r[4], r[0] - DESFASE_MS) for r in runs]
         cortes = [k["vacia"], *B, INF]
         grupos = [entre(filas, hs, cortes[i], cortes[i + 1]) for i in range(len(runs) + 1)]
         dudas = self._reparte(k, grupos, B)  # lecturas con una fila a caballo que cambia la vida: esa vida y la siguiente, ambiguas
@@ -411,7 +433,10 @@ class Libro:
             if cortes[i] is not None and r[4] - cortes[i] > HORIZONTE_MS and v is not None:
                 v["amb"] = v["amb"] or "A4: mas de 7 dias sin leer esta posicion"
             if v is None:
-                v = nueva(r, [f for f in G if mismo(f["e"], r[3]) and not _antes(f, limpia)], self._a2(G, r, limpia, k["vacia"]), None)
+                c4, c2 = (list(r[7] or []) + [None] * 4)[2:4]  # la primera de las 4, y de las 2, ultimas vacias antes de verla
+                lim = max([x for x in (limpia, c4 - DESFASE_MS if c4 is not None else None) if x is not None], default=None)
+                lim2 = max([x for x in (lim, k.get("limpia2"), c2 - DESFASE_MS if c2 is not None else None) if x is not None], default=None)
+                v = nueva(r, [f for f in G if mismo(f["e"], r[3]) and not _antes(f, lim2)], self._a2(G, r, lim, lim2, k["vacia"]), None)
                 if sl:
                     v["amb"] = v["amb"] or A3
             else:
@@ -432,6 +457,10 @@ class Libro:
                                     if t.get("fin") and not vacias else None))
                     if [f for f in sl if f["b"] > fin]:
                         v["amb"] = v["amb"] or A3
+                    corte_v = (list(r[7] or []) + [None] * 4)[3]  # la penultima vacia: lo de antes a su entrada no es suyo
+                    if corte_v is not None and any(f["b"] <= corte_v - DESFASE_MS for f in v["filas"]):  # S3: no son suyas
+                        v["filas"] = [f for f in v["filas"] if f["b"] > corte_v - DESFASE_MS]
+                        v["amb"] = v["amb"] or "A2: antes de las lecturas sin la clave hubo cierres a su misma entrada"
                 elif r[6] and r[6] != v["id"] and r[6] not in usados:  # un registro anterior la separa aqui (A5)
                     v["amb"] = v["amb"] or "A5: un registro anterior la separa aqui sin una fila que la cierre"
                     cerrar(v, p[5])
@@ -496,34 +525,48 @@ class Libro:
         return out
 
     @staticmethod
-    def _a2(G: list, r: list, limpia, vacia) -> str | None:
+    def _a2(G: list, r: list, limpia, limpia2, vacia) -> str | None:
         """Lo que hace ambigua a la primera vida del registro (A2): cierres a otra entrada despues de «limpia», o a la suya
         de antes (un parcial suyo durante unas vacias falsas, o una vida igual que el bot no vio)."""
         otras = [f for f in G if not mismo(f["e"], r[3]) and not _antes(f, limpia)]
         if otras:
             return (f"A2: antes de verla hubo {len(otras)} cierre(s) a otra entrada"
                     + (" (el bot no tenia registro de esta clave)" if vacia is None and limpia is None else ""))
-        if any(mismo(f["e"], r[3]) and _antes(f, limpia) for f in G):
+        if any(mismo(f["e"], r[3]) and _antes(f, limpia2) for f in G):
             return "A2: antes de las lecturas sin la clave hubo cierres a su misma entrada"
         return None
 
     def _reparte(self, k: dict, grupos: list, B: list) -> set:
-        """S1: las filas a caballo de cada lectura i (b <= B < h), antes o despues de ella (grupos se reescribe). Cada frontera
-        dudosa tiene tres colocaciones: la de la hora cruda de la fila, min(createdTime, updatedTime), contra el updatedTime
-        de la lectura; todas antes; todas despues. Las fronteras dudosas SEGUIDAS se deciden juntas (una fila de la frontera
-        de despues puede explicar el tramo de la de antes). Solo cuenta lo IMPOSIBLE: un tramo al que le faltan filas, uno
-        que solo cabe con S4 roto (cierra mas de lo visto a su entrada, o la cubre y sigue o vuelve a esa entrada), una fila
-        a la entrada de una lectura de fuera de su tramo (la media no vuelve atras) y, ya desaparecida, una cola que sus filas
-        no cubren (S2). Si las colocaciones de menos imposibles cuentan la MISMA historia (donde se parte la vida y si
-        cierra), la mas cercana a la hora cruda; si cuentan dos (cerrar y reabrir, o seguir tras un anadido sin ver), la que
-        menos parte, y duda: esas vidas salen ambiguas (S1) y nunca se evaluan dos veces. Tambien es duda una orden de varias
-        ejecuciones que CRUZA la lectura (una fila partida: lo imposible puede no serlo). -> las lecturas con duda."""
+        """S1: las filas a caballo de cada lectura i, antes o despues de ella (grupos se reescribe). A caballo: la que pudo
+        pasar a los dos lados -h > B, y si el updatedTime no se movio con el cambio, tambien b <= hora local de la lectura +
+        DESFASE_MS (la lectura pudo ser hasta 10 s despues en el reloj de Bybit)-. Cada frontera dudosa tiene tres colocaciones:
+        la de la hora cruda de la fila, min(createdTime, updatedTime), contra el updatedTime de la lectura; todas antes;
+        todas despues. Las fronteras dudosas SEGUIDAS se deciden juntas (una fila de la frontera de despues puede explicar el
+        tramo de la de antes). Solo cuenta lo IMPOSIBLE: un tramo al que le faltan filas, uno que solo cabe con S4 roto
+        (cierra mas de lo visto a su entrada, o la cubre y sigue o vuelve a esa entrada), una fila a la entrada de una
+        lectura de fuera de su tramo (la media no vuelve atras) y, ya desaparecida, una cola que sus filas no cubren (S2).
+        Si las colocaciones de menos imposibles cuentan la MISMA historia (donde se parte la vida y si cierra), la mas
+        cercana a la hora cruda; si cuentan dos (cerrar y reabrir, o seguir tras un anadido sin ver), la que menos parte, y
+        duda: esas vidas salen ambiguas (S1) y nunca se evaluan dos veces. Tambien es duda una orden de varias ejecuciones
+        que CRUZA la lectura (una fila partida: lo imposible puede no serlo). -> las lecturas con duda."""
         runs = k["runs"]
         n = len(runs)
         entradas = [r[3] for r in runs]
+        # las de despues de B que aun pudieron ser de antes de la lectura vuelven a la frontera (cada fila, a la primera)
+        atras: list = []
+        for i in range(n):
+            ya = {id(f) for f in atras[-1]} if atras else set()
+            parado = (runs[i] + [None, None])[8] is False  # el updatedTime no se movio con el cambio: la lectura manda
+            atras.append([f for f in grupos[i + 1] if parado and f["b"] <= runs[i][0] + DESFASE_MS and id(f) not in ya])
+        base = []
+        for i in range(n):
+            fuera = {id(f) for f in atras[i - 1]} if i else set()
+            base.append([f for f in grupos[i] if id(f) not in fuera] + atras[i])
+        fuera = {id(f) for f in atras[-1]} if n else set()
+        cola = [f for f in grupos[n] if id(f) not in fuera]
         opciones, cruzan = [], set()
         for i in range(n):
-            G = grupos[i]
+            G = base[i]
             if not any(f["h"] > B[i] for f in G):
                 opciones.append([G])
                 continue
@@ -551,6 +594,11 @@ class Libro:
             cubre = bool(t.get("fin") or (t.get("sin_tamano") and _suma(t["viejo"]) >= r[2] * (1 - TOL_Q)))
             return bool(t.get("s4")) + (not cubre) + ajenas(filas, (r[3],)), cubre
 
+        def resto(x: int, quedan: list) -> list:
+            ids = {id(f) for f in quedan}
+            return [f for f in base[x] if id(f) not in ids]
+
+        elegido = {x: opciones[x][0] for x in range(n)}
         dudas: set = set()
         i = 0
         while i < n:
@@ -563,37 +611,37 @@ class Libro:
             seg = range(a, i)
             if len(seg) > 5:  # ponytail: 3^5 combinaciones como mucho; mas fronteras dudosas seguidas -> hora cruda y duda
                 dudas.update(seg)
-                elegido = {x: opciones[x][0] for x in seg}
+                continue
+            todas = []
+            for combo in itertools.product(*[range(len(opciones[x])) for x in seg]):
+                quedan = {x: opciones[x][c] for x, c in zip(seg, combo, strict=True)}
+                van = {x: resto(x, quedan[x]) for x in seg}
+                total = ajenas(quedan[0], (entradas[0],)) if a == 0 else 0
+                partes = []
+                for j in range(max(a - 1, 0), i):
+                    c, parte = coste(j, van.get(j, []) + (quedan.get(j + 1, base[j + 1]) if j + 1 < n else cola))
+                    total, partes = total + c, [*partes, parte]
+                todas.append((total, tuple(partes), -sum(c == 0 for c in combo), quedan))
+            menos = min(x[0] for x in todas)
+            buenas = [x for x in todas if x[0] == menos]
+            if cruzan & set(seg):
+                dudas.update(seg)
+                elegido.update(min(todas, key=lambda x: (sum(x[1]), x[0], x[2]))[3])
+            elif len({x[1] for x in buenas}) > 1:
+                dudas.update(seg)
+                elegido.update(min(buenas, key=lambda x: (sum(x[1]), x[2]))[3])
             else:
-                todas = []
-                for combo in itertools.product(*[range(len(opciones[x])) for x in seg]):
-                    quedan = {x: opciones[x][c] for x, c in zip(seg, combo, strict=True)}
-                    van = {x: [f for f in grupos[x] if not any(f is g for g in quedan[x])] for x in seg}
-                    total = ajenas(quedan[0], (entradas[0],)) if a == 0 else 0
-                    partes = []
-                    for j in range(max(a - 1, 0), i):
-                        c, parte = coste(j, van.get(j, []) + (quedan.get(j + 1, grupos[j + 1]) if j + 1 < n else grupos[n]))
-                        total, partes = total + c, [*partes, parte]
-                    todas.append((total, tuple(partes), -sum(c == 0 for c in combo), quedan))
-                menos = min(x[0] for x in todas)
-                buenas = [x for x in todas if x[0] == menos]
-                if cruzan & set(seg):
-                    dudas.update(seg)
-                    elegido = min(todas, key=lambda x: (sum(x[1]), x[0], x[2]))[3]
-                elif len({x[1] for x in buenas}) > 1:
-                    dudas.update(seg)
-                    elegido = min(buenas, key=lambda x: (sum(x[1]), x[2]))[3]
-                else:
-                    elegido = min(buenas, key=lambda x: x[2])[3]
-            van = {x: [f for f in grupos[x] if not any(f is g for g in elegido[x])] for x in seg}
-            for x in seg:
-                grupos[x] = van.get(x - 1, []) + elegido[x]
-            grupos[i] = van[i - 1] + grupos[i]
+                elegido.update(min(buenas, key=lambda x: x[2])[3])
+        van = {x: resto(x, elegido[x]) for x in range(n)}
+        for x in range(n):
+            grupos[x] = van.get(x - 1, []) + elegido[x]
+        if n:
+            grupos[n] = van[n - 1] + cola
         return dudas
 
     # ---------------------------------------------------------------- persistencia
     def estado(self) -> dict:
-        return {"v": 7, "claves": self.claves, "nada_desde": self.nada_desde, "previas": self.previas}
+        return {"v": 7, "claves": self.claves, "nada_desde": self.nada_desde, "nada_desde4": self.nada_desde4, "previas": self.previas}
 
     @classmethod
     def desde(cls, guardado, evaluadas: dict, filas: list, usadas=()) -> tuple[Libro, list]:
@@ -617,6 +665,8 @@ class Libro:
                     avisos.append(f"descarto la clave {clave} del estado guardado: ilegible")
             if isinstance(libro.get("nada_desde"), (int, float)):
                 lib.nada_desde = libro["nada_desde"]
+            if isinstance(libro.get("nada_desde4"), (int, float)):
+                lib.nada_desde4 = libro["nada_desde4"]
         elif "vidas" in g:  # un estado de R4/R5
             vidas = g["vidas"]
             if not isinstance(vidas, dict):
@@ -646,7 +696,8 @@ class Libro:
             t = p.get("visto") or ev.get("visto") or u
             if not all(isinstance(x, (int, float)) and x for x in (s, e, u, t)):
                 continue
-            k = lib.claves.setdefault(clave, {"runs": [], "vacia": None, "limpia": lib.nada_desde, "ausente": None, "pasadas": []})
+            k = lib.claves.setdefault(clave, {"runs": [], "vacia": None, "limpia": lib.nada_desde4, "limpia2": lib.nada_desde,
+                                              "ausente": None, "pasadas": []})
             if any(r[6] == i for r in k["runs"]):
                 continue
             mismo_run = next((r for r in k["runs"] if r[4] <= u <= r[5] and r[2] == s and r[3] == e), None)
@@ -677,18 +728,22 @@ class Libro:
             return None
         runs = []
         for r in k["runs"]:
-            if not (isinstance(r, list) and len(r) in (7, 8) and all(isinstance(x, (int, float)) for x in r[:6])
+            if not (isinstance(r, list) and len(r) in (7, 8, 9) and all(isinstance(x, (int, float)) for x in r[:6])
                     and isinstance(r[6], (str, type(None)))):
                 return None
             h = (r + [None])[7]
             if isinstance(h, (int, float)):  # R6 guardaba solo la hora de la primera vacia (dos o mas)
                 h = [h, VACIAS_SEGUIDAS]
-            runs.append(list(r[:7]) + [h if isinstance(h, list) and len(h) == 2 else None])
+            mueve = (r + [None, None])[8]
+            runs.append(list(r[:7]) + [(h + [None, None])[:4] if isinstance(h, list) and len(h) in (2, 3, 4) else None,
+                                       mueve if isinstance(mueve, bool) else None])
         a = k.get("ausente")
         if isinstance(a, list) and len(a) == 2:
             a = a + [VACIAS_SEGUIDAS if a[1] > a[0] else 1]
         pas = k.get("pasadas") if isinstance(k.get("pasadas"), list) else []
-        lim = k.get("limpia")
+        lim, lim2 = k.get("limpia"), k.get("limpia2")
         return {"runs": runs, "vacia": k.get("vacia"), "limpia": lim if isinstance(lim, (int, float)) else None,
-                "ausente": list(a) if isinstance(a, list) and len(a) == 3 else None,
-                "pasadas": [p for p in pas if isinstance(p, list) and len(p) == 3 and isinstance(p[2], list)]}
+                "limpia2": lim2 if isinstance(lim2, (int, float)) else None,
+                "ausente": (list(a) + [None])[:4] if isinstance(a, list) and len(a) in (3, 4) else None,
+                "pasadas": [p for p in pas if isinstance(p, list) and len(p) == 3 and isinstance(p[2], list)],
+                "u_ultima": k["u_ultima"] if isinstance(k.get("u_ultima"), (int, float)) else None}
