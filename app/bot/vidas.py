@@ -197,10 +197,10 @@ def tramo(pre: tuple, filas: list, post: tuple | None, vacias: int = 0) -> dict:
 
 
 def _con_vacias(t: dict, pre: tuple, filas: list, post: tuple | None, vacias: int) -> dict:
-    """Con dos o mas lecturas SEGUIDAS sin la clave entre medias (S3) y filas que cubren lo que tenia, la de antes cerro y
+    """Con cuatro o mas lecturas SEGUIDAS sin la clave entre medias (S3) y filas que cubren lo que tenia, la de antes cerro y
     la que vuelve es otra: las filas de la entrada de la que vuelve son suyas (parciales antes de verla) y el resto, si es de
     una sola entrada, de la de antes; si es de mas de una, no se puede repartir (A1 la de antes, A2 la que vuelve)."""
-    if post is None or vacias < VACIAS_SEGUIDAS or not t.get("amb") or _suma(filas) < pre[0] * (1 - TOL_Q):
+    if post is None or vacias < VACIAS_LIMPIA or not t.get("amb") or _suma(filas) < pre[0] * (1 - TOL_Q):  # (4: S3, como limpia)
         return t
     nuevo = [g for g in filas if mismo(g["e"], post[1])]
     resto = [g for g in filas if not mismo(g["e"], post[1])]
@@ -420,7 +420,7 @@ class Libro:
         B = [r[4] if (r + [None, None])[8] and not self.u_parado else max(r[4], r[0] - DESFASE_MS) for r in runs]
         cortes = [k["vacia"], *B, INF]
         grupos = [entre(filas, hs, cortes[i], cortes[i + 1]) for i in range(len(runs) + 1)]
-        dudas = self._reparte(k, grupos, B)  # lecturas con una fila a caballo que cambia la vida: esa vida y la siguiente, ambiguas
+        dudas = self._reparte(k, grupos, B, ahora)  # lecturas con una fila a caballo que cambia la vida: esa vida y la siguiente, ambiguas
 
         vidas: list = []
         v = None
@@ -553,7 +553,7 @@ class Libro:
             return "A2: antes de las lecturas sin la clave hubo cierres a su misma entrada"
         return None
 
-    def _reparte(self, k: dict, grupos: list, B: list) -> set:
+    def _reparte(self, k: dict, grupos: list, B: list, ahora: int) -> set:
         """S1: las filas a caballo de cada lectura i, antes o despues de ella (grupos se reescribe). A caballo: la que pudo
         pasar a los dos lados -h > B, y si el updatedTime no se movio con el cambio, tambien b <= hora local de la lectura +
         DESFASE_MS (la lectura pudo ser hasta 10 s despues en el reloj de Bybit)-. Cada frontera dudosa tiene tres colocaciones:
@@ -604,17 +604,21 @@ class Libro:
         def ajenas(filas: list, suyas: tuple) -> int:
             return sum(1 for f in filas if any(mismo(f["e"], e) for e in entradas) and not any(mismo(f["e"], e) for e in suyas))
 
-        def coste(j: int, filas: list) -> tuple[int, bool]:  # el tramo de la lectura j a la j+1 (o la cola)
+        def coste(j: int, filas: list) -> tuple[int, int, bool]:  # el tramo de la lectura j a la j+1 (o la cola)
+            """-> (lo imposible, lo que aun no lo es -faltan filas, pero pueden llegar: S2-, si parte o cierra)."""
             r = runs[j]
             if j + 1 < n:
                 s = runs[j + 1]
                 t = tramo((r[2], r[3]), filas, (s[2], s[3]), (s[7] or [None, 0])[1])
-                return bool(t.get("falta")) + bool(t.get("s4")) + ajenas(filas, (r[3], s[3])), bool(t.get("fin") or t.get("termina"))
+                falta, firme = bool(t.get("falta")), ahora >= s[0] + ESPERA_MS
+                return (bool(t.get("s4")) + ajenas(filas, (r[3], s[3])) + (falta and firme), falta and not firme,
+                        bool(t.get("fin") or t.get("termina")))
             if k["ausente"] is None:
-                return ajenas(filas, (r[3],)), False
+                return ajenas(filas, (r[3],)), 0, False
             t = tramo((r[2], r[3]), filas, None)
             cubre = bool(t.get("fin") or (t.get("sin_tamano") and _suma(t["viejo"]) >= r[2] * (1 - TOL_Q)))
-            return bool(t.get("s4")) + (not cubre) + ajenas(filas, (r[3],)), cubre
+            firme = ahora >= k["ausente"][0] + ESPERA_MS
+            return bool(t.get("s4")) + ajenas(filas, (r[3],)) + (not cubre and firme), not cubre and not firme, cubre
 
         def resto(x: int, quedan: list) -> list:
             ids = {id(f) for f in quedan}
@@ -639,21 +643,25 @@ class Libro:
                 quedan = {x: opciones[x][c] for x, c in zip(seg, combo, strict=True)}
                 van = {x: resto(x, quedan[x]) for x in seg}
                 total = ajenas(quedan[0], (entradas[0],)) if a == 0 else 0
-                partes = []
+                pronto, partes = 0, []
                 for j in range(max(a - 1, 0), i):
-                    c, parte = coste(j, van.get(j, []) + (quedan.get(j + 1, base[j + 1]) if j + 1 < n else cola))
-                    total, partes = total + c, [*partes, parte]
-                todas.append((total, tuple(partes), -sum(c == 0 for c in combo), quedan))
+                    c, p, parte = coste(j, van.get(j, []) + (quedan.get(j + 1, base[j + 1]) if j + 1 < n else cola))
+                    total, pronto, partes = total + c, pronto + p, [*partes, parte]
+                todas.append((total, tuple(partes), -sum(c == 0 for c in combo), quedan, pronto))
             menos = min(x[0] for x in todas)
             buenas = [x for x in todas if x[0] == menos]
+            cruda = next((x for x in buenas if x[2] == -len(seg)), None)
+            mejor_p = min(x[4] for x in buenas)
             if cruzan & set(seg):
                 dudas.update(seg)
                 elegido.update(min(todas, key=lambda x: (sum(x[1]), x[0], x[2]))[3])
-            elif len({x[1] for x in buenas}) > 1:
+            elif len({x[1] for x in buenas}) == 1:
+                elegido.update(min(buenas, key=lambda x: x[2])[3])
+            elif cruda and cruda[4] == mejor_p and len({x[1] for x in buenas if x[4] == mejor_p}) == 1:
+                elegido.update(cruda[3])  # lo que aun puede llegar confirma la hora cruda (no la contradice)
+            else:  # dos historias posibles (o solo la contradice algo que aun puede llegar): la que menos parte, y duda
                 dudas.update(seg)
                 elegido.update(min(buenas, key=lambda x: (sum(x[1]), x[2]))[3])
-            else:
-                elegido.update(min(buenas, key=lambda x: x[2])[3])
         van = {x: resto(x, elegido[x]) for x in range(n)}
         for x in range(n):
             grupos[x] = van.get(x - 1, []) + elegido[x]
