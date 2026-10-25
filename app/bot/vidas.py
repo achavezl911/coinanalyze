@@ -462,8 +462,9 @@ class Libro:
         if not k:
             return None
         runs = k["runs"]
-        if runs and (k["vacia"] is None or b > k["vacia"]):
-            j = bisect.bisect_left([r[4] for r in runs], b)
+        if runs and (k["vacia"] is None or b > k["vacia"]):  # (remate 8: por la frontera de cada lectura, no por su updatedTime,
+            # que puede no moverse con un parcial -s1_updated-: la fila caia detras de la lectura que lo ensenaba)
+            j = bisect.bisect_left([max(r[4], r[0] - DESFASE_MS) for r in runs], b)
             return [runs[x][3] for x in (j - 1, j) if 0 <= x < len(runs)]
         return next((p[2] for p in k.get("pasadas", []) if p[0] < b <= p[1]), None)
 
@@ -559,7 +560,11 @@ class Libro:
                     if vacias:
                         v["espera"] = max(v["espera"], r[7][0])  # sus filas pueden tardar ESPERA desde que dejo de verse
                     cerrar(v, fin)
-                    v = nueva(r, t["nuevo"], t.get("amb_nuevo"), t["fin"]["b"] if t.get("fin") and not vacias else None,
+                    amb_nuevo, c4 = t.get("amb_nuevo"), (list(r[7] or []) + [None] * 4)[2]
+                    if str(amb_nuevo).startswith("A2") and c4 is not None and \
+                            all(_antes(f, c4 - DESFASE_MS) for f in G if not mismo(f["e"], r[3])):
+                        amb_nuevo = None  # (S3: lo cerrado antes de sus cuatro vacias es de la anterior o de vidas que no vio)
+                    v = nueva(r, t["nuevo"], amb_nuevo, t["fin"]["b"] if t.get("fin") and not vacias else None,
                               nota=(f"cerrada la anterior y reabierta entre dos lecturas (closed-pnl, orden {t['fin']['orden']})"
                                     if t.get("fin") and not vacias else None))
                     if [f for f in sl if f["b"] > fin]:
@@ -857,8 +862,10 @@ class Libro:
                 continue
             if not k["runs"] or u > k["runs"][-1][5]:  # la mas reciente: una lectura posterior al ultimo latido
                 au = k["ausente"]
+                ultimas = au[3] if au and isinstance((au + [None])[3], list) else []  # (remate 8: como en lee, con sus 4 vacias)
                 k["runs"].append([int(t), int(t), float(s), float(e), int(u), int(u), i,
-                                  [au[0], au[2]] if au and au[0] < t else None])
+                                  [au[0], au[2], ultimas[0] if len(ultimas) >= VACIAS_LIMPIA else None, ultimas[-1] if ultimas else None]
+                                  if au and au[0] < t else None])
                 k["ausente"] = None
                 if i in cerradas_r5:  # R5 la tenia cerrada esperando su puntuacion: ausente desde su cierre
                     fin = int(cerradas_r5[i][0])

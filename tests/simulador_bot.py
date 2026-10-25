@@ -297,6 +297,7 @@ def _migracion(rng: random.Random, sec: Secuencia) -> dict:
     estado: dict = {"vidas": {}, "cerradas": {}}
     veredictos, avisos = [], []
     puntuadas = []  # las que R5 ya habia puntuado antes del despliegue
+    vistas_r5: dict = {}
     for clave in sorted({v.clave for v in sec.vidas}):
         vs = [v for v in sec.vidas if v.clave == clave and v.inicio < t_d]
         if not vs:
@@ -318,29 +319,35 @@ def _migracion(rng: random.Random, sec: Secuencia) -> dict:
                 continue
             q, e, u, stop = vista(v, ms[0])
             vid = f"{clave}:{u + sec.desfase}"
-            p = {"clave": clave, "symbol": clave.split(":")[0], "lado": v.lado, "cantidad": q, "entrada": e,
+            p = {"clave": clave, "symbol": clave.split(":")[0], "lado": v.lado, "cantidad": round(q, 10), "entrada": e,
                  "actualizada": u + sec.desfase, "id": vid}
             veredictos.append((sec.lectura(ms[0]) + 5_000, vid, p))
             if stop is None:
                 avisos.append((sec.lectura(ms[0]) + 1_000, vid, p))
-            obs, previo = [], None
+            obs, previo, cambios = [], None, []
             for m in ms:
                 q, e, _u, _s = vista(v, m)
+                q = round(q, 10)  # (como lo da position/list: R5 guardaba el texto de Bybit, sin el ruido de la resta)
                 if (q, e) != previo:
                     obs.append([sec.lectura(m), q, e])
+                    cambios.append(m)
                     previo = (q, e)
             if papel == "vida":
                 estado["vidas"][clave] = {"id": vid, "obs": obs, "reapertura": None}
             else:
                 estado["cerradas"][vid] = [v.fin + sec.desfase, obs[0][1], None]
+            # (lo que el bot de la rama conserva de R5, con el updatedTime que le pone Libro.desde: los cambios de la abierta, con
+            # la hora de la lectura; de la cerrada, la lectura de su veredicto, con el de Bybit)
+            vistas_r5[v.n] = [(m, sec.lectura(m)) for m in cambios] if papel == "vida" else [(ms[0], u + sec.desfase)]
         for v in vs:  # las demas cerradas que R5 vio: puntuadas por R5 (con lo real), con sus ordenes apuntadas
             ms = [m for m in lecturas if vista(v, m)]
             if v.fin <= t_d and ms and not any(v is w for _p, w in elegidas):
                 q, e, u, _s = vista(v, ms[0])
-                p = {"clave": clave, "symbol": clave.split(":")[0], "lado": v.lado, "cantidad": q, "entrada": e,
+                p = {"clave": clave, "symbol": clave.split(":")[0], "lado": v.lado, "cantidad": round(q, 10), "entrada": e,
                      "actualizada": u + sec.desfase, "id": f"{clave}:{u + sec.desfase}"}
                 puntuadas.append((sec.lectura(ms[0]) + 5_000, v.fin + 1_000, p, v))
-    return {"minuto": d, "estado": estado, "veredictos": veredictos, "avisos": avisos, "tipo": tipo, "puntuadas": puntuadas}
+    return {"minuto": d, "estado": estado, "veredictos": veredictos, "avisos": avisos, "tipo": tipo, "puntuadas": puntuadas,
+            "vistas_r5": vistas_r5}
 
 
 # --------------------------------------------------------------------------------------------- lo de mentira (sin red)
@@ -752,6 +759,8 @@ def comprueba(s: Simulacion) -> list[str]:
         for v, _u, _stop in (lec or {}).values():
             vistas_todas.setdefault(v.n, []).append(m)
     vistas, perdida = _conservadas(s)
+    for n, ms in ((sec.migracion or {}).get("vistas_r5") or {}).items():  # (y lo que el despliegue le trajo de R5)
+        vistas[n] = sorted(set(vistas.get(n, [])) | {m for m, _u in ms})
     por_n = {v.n: v for v in sec.vidas}
     # I1, cota baja (en el modelo): identificable, con la evidencia mientras se veia, y el bot arriba (sin condicion de duracion)
     if not fuera_del_modelo:
@@ -939,7 +948,43 @@ def _fronteras(s: Simulacion, clave: str, perdida: int | None) -> list:
         if ahora != antes:
             out.append((m, x[1], x[0]))
         antes = ahora
-    return out
+    # (las de R5 que el despliegue le pasa al libro: vidas.Libro.desde les pone de updatedTime la hora de la lectura)
+    por_n = {v.n: v for v in s.sec.vidas}
+    for n, ms in ((s.sec.migracion or {}).get("vistas_r5") or {}).items():
+        if por_n[n].clave == clave:
+            out += [(m, u, por_n[n]) for m, u in ms]
+    return sorted(out, key=lambda x: x[0])
+
+
+def _tras_ambigua(s: Simulacion, antes: list) -> list:
+    """De `antes` (vidas anteriores de la clave que el bot vio), las que van desde la ultima EVALUADA si su CERRADA salio sin
+    cifra: de una ambigua no hay fila segura (vidas.py: «vacia» no pasa de su fin) y sus filas, y las de las que el bot le
+    pego, le llegan a la siguiente."""
+    evaluadas = [w for w in antes if any(e["tipo"] == "veredicto" and _vida_de(s, e["detalle"].get("posicion") or {}) is w
+                                         for e in s.base.evaluacion)]
+    if not evaluadas:
+        return []
+    ult = max(evaluadas, key=lambda w: w.fin)
+    ids = {e["posicion"] for e in s.base.evaluacion if e["tipo"] == "veredicto" and _vida_de(s, e["detalle"].get("posicion") or {}) is ult}
+    if any(e["tipo"] == "cierre" and e["posicion"] in ids and e["pnl"] is None for e in s.base.evaluacion):
+        return [w for w in antes if w.inicio >= ult.inicio]
+    return []
+
+
+def _u_engana(s: Simulacion, vs: list, perdida: int | None) -> bool:
+    """¿El updatedTime le mintio al bot? (s1_updated: no sigue a los parciales ni a los anadidos.) Entre dos lecturas que
+    conserva hubo un cambio de tamano de una de estas vidas y, a la vez, algo que SI mueve el updatedTime (una apertura, un
+    stop o el funding): lo ve moverse con el cambio y se fia de el."""
+    sec = s.sec
+    lecturas = sorted(m for m, lec in s.reg.lecturas.items() if lec is not None and m != perdida)
+    for a, b in zip(lecturas, lecturas[1:], strict=False):
+        t0, t1 = sec.lectura(a), sec.lectura(b)
+        tamano = any(t0 < te <= t1 and tipo in ("anade", "parcial", "cierra") for w in vs for te, tipo, *_ in w.eventos)
+        mueve = any(t0 < te <= t1 and tipo in ("abre", "stop") for w in vs for te, tipo, *_ in w.eventos) or \
+            any(t0 < f <= t1 for f in sec.funding)
+        if tamano and mueve:
+            return True
+    return False
 
 
 def _s4_roto(s: Simulacion, vs: list) -> bool:
@@ -1009,10 +1054,12 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
         if ts is not None and any(f["visible"] > ts - 60_000 for f in v.filas):
             return None
         return "todas sus filas se veian cuando la dio por sin puntuar"
-    vecinas = [w for w in sec.vidas if w.clave == v.clave and w.fin <= v.inicio][-1:] + \
-        [w for w in sec.vidas if w.clave == v.clave and w.inicio >= v.inicio][:3]
+    vecinas = [w for w in sec.vidas if w.clave == v.clave and w.fin <= v.inicio][-2:] + \
+        [w for w in sec.vidas if w.clave == v.clave and w.inicio >= v.inicio][:3]  # (dos antes: entre medias, una que no vio)
     if ts is not None and any(f["t"] < ts - ESPERA and f["visible"] > ts - 60_000 for w in vecinas for f in w.filas):
         return None  # (S2 roto: una fila suya o de una vecina que ya tenia que estar y no estaba; su duda sale de lo que tenia)
+    if not sec.u_parcial and _u_engana(s, vecinas, perdida):
+        return None  # (S1 roto, s1_updated: el updatedTime se movio por otra cosa en el mismo intervalo que un cambio de tamano)
     lecturas = sorted(m for m, lec in s.reg.lecturas.items() if lec is not None and m not in sec.vacias and m != perdida)
     misma = [w for w in sec.vidas if w.clave == v.clave]
     siguientes = [w for w in misma if w.inicio >= v.inicio]
@@ -1036,13 +1083,12 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
         pred = max(antes, key=lambda w: w.fin) if antes else None
         desde = sec.lectura(max(vistas[pred.n])) - 20_000 if pred else -math.inf
         pred_anade = pred is not None and any(tp == "anade" and te > desde for te, tp, *_ in pred.eventos)
-        if pred is not None and not pred_anade:  # de una anterior ambigua no hay fila segura: sus filas cuentan
-            ids = {e["posicion"] for e in s.base.evaluacion if e["tipo"] == "veredicto" and _vida_de(s, e["detalle"].get("posicion") or {}) is pred}
-            pred_anade = any(e["tipo"] == "cierre" and e["posicion"] in ids and e["pnl"] is None for e in s.base.evaluacion)
+        dudosas = _tras_ambigua(s, antes)
+        pred_anade = pred_anade or pred in dudosas
         limpia = _limpia(s, v, pred, primera, 4) if primera != math.inf else -math.inf
         limpia2 = max(_limpia(s, v, pred, primera, 1), sec.lectura(primera) - 100_000) if primera != math.inf else -math.inf
         for w in misma:
-            if w not in antes or (w is pred and pred_anade):
+            if w not in antes or (w is pred and pred_anade) or w in dudosas:
                 for f in w.filas:
                     if not (desde < f["t"] <= t1 + abs(sec.desfase) + 20_000):
                         continue
@@ -1098,10 +1144,12 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
         def vistas_de(w):  # las entradas que el bot le conserva a w
             return {w.estado(sec.lectura(m), sec.u_parcial, sec.funding)[1] for m in vistas.get(w.n, [])
                     if w.estado(sec.lectura(m), sec.u_parcial, sec.funding)}
+        dudosas = _tras_ambigua(s, [w for w in misma if w.fin <= v.inicio and vistas.get(w.n)])
         for w in sec.vidas:
             if w is v or w.clave.split(":")[0] != sym:
                 continue
-            vio_w = vistas_de(w) if w.clave == v.clave else set()  # (de su lado y vista: solo si esa entrada no se le vio)
+            # (de su lado y vista: solo si esa entrada no se le vio, salvo tras una CERRADA ambigua: sus filas no son seguras)
+            vio_w = vistas_de(w) if w.clave == v.clave and w not in dudosas else set()
             if any(lado_de(f["e"], f["x"], f["q"], f["pnl"]) is None and v.inicio - 40 * M <= f["t"] <= v.fin + 40 * M
                    and not any(abs(f["e"] / e - 1) <= 1e-9 for e in vio_w) for f in w.filas):
                 return None
