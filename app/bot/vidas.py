@@ -7,9 +7,11 @@ COMO SE SABE, y lo que se supone (declarado; si un supuesto falla, la vida puede
  S1 la hora de cada fila de closed-pnl y el updatedTime de position/list son del MISMO reloj (Bybit), y updatedTime cambia
     con cada apertura, anadido, cierre parcial o cambio de stop. Asi una fila con hora <= el updatedTime de una lectura
     paso ANTES de esa lectura, sin mirar el reloj de 140 (el desfase de R5). No contrastado con la doc de Bybit.
- S2 closed-pnl trae cada cierre como mucho ESPERA_MS (10 min) despues. Por eso una vida se puntua cuando han pasado ESPERA
-    desde lo que no se puede comprobar por tamanos (su primera lectura; un tramo con anadidos), o al momento si cuadra.
- S3 una lista vacia falsa (retCode 0) dura como mucho una lectura.
+ S2 closed-pnl trae cada cierre como mucho ESPERA_MS (10 min) despues. Por eso una vida se puntua cuando closed-pnl ha
+    podido traerlo todo: ESPERA despues de su primera lectura (un parcial de antes de verla puede tardar), de cada lectura
+    tras un tramo con anadidos y, si desaparecio, de su primera ausencia.
+ S3 una lista vacia falsa (retCode 0) dura como mucho una lectura: dos lecturas SEGUIDAS sin la clave (esta y la de hace
+    un minuto, no la de antes de una caida) dicen que la vida cerro; lo que se vea despues es otra.
  S4 un anadido mueve la entrada media mas de TOL_E (0.05 pb), la entrada media de position/list y la de closed-pnl salen
     con esa precision (no contrastado: si difieren por redondeo, la vida sale ambigua, nunca falsa), y una vida nueva no
     abre a +-TOL_E de la entrada media de la que cerro: una fila «a la entrada de la vida» es un cierre de esa vida sin
@@ -20,15 +22,20 @@ CUANDO SALE AMBIGUA (y ninguna otra vez; el simulador lo comprueba contra la ver
     puede saber si llego a 0: la lectura siguiente ensena otra entrada que la de esos cierres, o esos cierres tienen mas
     de una entrada, o la posicion desaparecio con cierres a mas de una entrada. La posicion que se ve SIGUE con el mismo id
     (no se paga otra evaluacion) y la vida no se puntua.
- A2 antes de la primera lectura de una vida nueva hubo cierres a OTRA entrada que la suya, despues del fin cierto de la
-    anterior (o, sin registro de esa clave, en cualquier momento): un anadido suyo antes de verla o una vida entera que el
-    bot no vio. Es nueva (se evalua) pero no se puntua.
+ A2 antes de la primera lectura de una vida nueva hubo cierres a OTRA entrada que la suya, despues de la ultima fila
+    segura de la anterior (o, sin registro de esa clave, en cualquier momento): un anadido suyo antes de verla, una vida
+    entera que el bot no vio, o la anterior tras un anadido sin ver (sus filas no se pueden repartir entre las dos). Es
+    nueva (se evalua) pero no se puntua.
  A3 una fila que no dice su lado (no se movio mas que la comision) cuando las dos direcciones del simbolo tienen vida y su
     entrada no casa con exactamente una de las dos.
  A4 el bot no leyo esa posicion en mas de 7 dias (lo que devuelve closed-pnl): lo de entretanto no se puede reconstruir.
+ A5 un registro anterior (otro bot, otro estado) separa la vida en una lectura sin una fila que la cierre.
  X  (no deberia pasar si se cumplen S1-S4) una fila mientras lecturas seguidas ensenaban el mismo tamano y la misma entrada.
     Unas filas que cierran MAS de lo que se veia abierto son un anadido sin ver (A1 si no se puede separar), no X.
-Y SIN PUNTUAR (no ambigua): la posicion desaparecio y closed-pnl no trajo en ESPERA lo que cubre su tamano visto.
+Y SIN PUNTUAR (no ambigua): la posicion desaparecio y closed-pnl no trajo en ESPERA lo que cubre su tamano visto, o no trajo
+ninguna fila suya.
+LA EVALUACION de una vida nueva se hace con su ultima lectura que es SUYA sin duda (una enganchada por un tramo con anadidos
+no lo es hasta pasar ESPERA sin que closed-pnl diga otra cosa): nunca con otra vida pegada a ella.
 """
 
 from __future__ import annotations
@@ -50,7 +57,7 @@ def mismo(a, b) -> bool:
 
 
 def _entradas(filas: list) -> list:
-    """Las entradas distintas (+-1 pb) de unas filas, en orden."""
+    """Las entradas distintas (+-TOL_E) de unas filas, en orden."""
     out: list = []
     for f in filas:
         if not any(mismo(f["e"], e) for e in out):
@@ -335,7 +342,7 @@ class Libro:
                               nota=f"cerrada la anterior y reabierta entre dos lecturas (closed-pnl, orden {t['fin']['orden']})")
                 else:
                     if r[6] and r[6] != v["id"] and r[6] not in usados:  # un registro anterior la separa aqui
-                        v["amb"] = v["amb"] or "A1: un registro anterior la separa aqui sin una fila que la cierre"
+                        v["amb"] = v["amb"] or "A5: un registro anterior la separa aqui sin una fila que la cierre"
                         v["fin"] = p[5]
                         vidas.append(v)
                         v = nueva(r, [], v["amb"], None)
