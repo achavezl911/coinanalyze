@@ -37518,11 +37518,11 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_bot_r3.py:334"
+            "tests/test_bot_r3.py:335"
           ],
           "menciones": [
-            "tests/test_bot_r3.py:333",
-            "tests/test_bot_r3.py:335",
+            "tests/test_bot_r3.py:334",
+            "tests/test_bot_r3.py:336",
             "tests/test_cobertura_proveedor.py:7",
             "tests/test_deploy_health_gate.py:38",
             "tests/test_deploy_health_gate.py:154",
@@ -50999,7 +50999,7 @@
         {
           "funcion": "app.bot.servicio.Bot.latido",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:537",
+          "sitio": "app/bot/servicio.py:459",
           "verbo": "INSERT"
         },
         {
@@ -51013,7 +51013,7 @@
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:461"
+          "sitio": "app/bot/servicio.py:428"
         },
         {
           "funcion": "app.bot.vigia.pasada",
@@ -51027,26 +51027,26 @@
         {
           "funcion": "app.bot.servicio.Bot.evalua",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:890",
+          "sitio": "app/bot/servicio.py:743",
           "verbo": "INSERT"
         },
         {
-          "funcion": "app.bot.servicio.Bot.puntua",
+          "funcion": "app.bot.servicio.Bot.cierre",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:963",
+          "sitio": "app/bot/servicio.py:774",
           "verbo": "INSERT"
         }
       ],
       "lectores": [
         {
-          "funcion": "app.bot.servicio.Bot.cifras_semana",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:1071"
-        },
-        {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:453"
+          "sitio": "app/bot/servicio.py:418"
+        },
+        {
+          "funcion": "app.bot.servicio.Bot.cifras_semana",
+          "origen": "literal",
+          "sitio": "app/bot/servicio.py:883"
         }
       ]
     },
@@ -51055,7 +51055,7 @@
         {
           "funcion": "app.bot.servicio.Bot.evento",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:431",
+          "sitio": "app/bot/servicio.py:396",
           "verbo": "INSERT"
         },
         {
@@ -51067,54 +51067,54 @@
       ],
       "lectores": [
         {
+          "funcion": "app.bot.servicio.Bot.carga",
+          "origen": "literal",
+          "sitio": "app/bot/servicio.py:413"
+        },
+        {
+          "funcion": "app.bot.servicio.Bot.carga",
+          "origen": "literal",
+          "sitio": "app/bot/servicio.py:426"
+        },
+        {
+          "funcion": "app.bot.servicio.Bot.carga",
+          "origen": "literal",
+          "sitio": "app/bot/servicio.py:442"
+        },
+        {
+          "funcion": "app.bot.servicio.Bot.carga",
+          "origen": "literal",
+          "sitio": "app/bot/servicio.py:444"
+        },
+        {
+          "funcion": "app.bot.servicio.Bot.carga",
+          "origen": "literal",
+          "sitio": "app/bot/servicio.py:445"
+        },
+        {
+          "funcion": "app.bot.servicio.Bot.carga",
+          "origen": "literal",
+          "sitio": "app/bot/servicio.py:449"
+        },
+        {
           "funcion": "app.bot.servicio.Bot.salud",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1011"
+          "sitio": "app/bot/servicio.py:823"
         },
         {
           "funcion": "app.bot.servicio.Bot.alertas_24h",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1019"
+          "sitio": "app/bot/servicio.py:831"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1064"
+          "sitio": "app/bot/servicio.py:876"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1076"
-        },
-        {
-          "funcion": "app.bot.servicio.Bot.carga",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:448"
-        },
-        {
-          "funcion": "app.bot.servicio.Bot.carga",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:459"
-        },
-        {
-          "funcion": "app.bot.servicio.Bot.carga",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:465"
-        },
-        {
-          "funcion": "app.bot.servicio.Bot.carga",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:467"
-        },
-        {
-          "funcion": "app.bot.servicio.Bot.carga",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:468"
-        },
-        {
-          "funcion": "app.bot.servicio.Bot.carga",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:472"
+          "sitio": "app/bot/servicio.py:888"
         },
         {
           "funcion": "app.bot.vigia.pasada",
@@ -51143,30 +51143,30 @@
         {
           "funcion": "app.bot.servicio.Bot.opus",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:589",
+          "sitio": "app/bot/servicio.py:511",
           "verbo": "INSERT"
         }
       ],
       "lectores": [
         {
+          "funcion": "app.bot.servicio.Bot.gastado_hoy",
+          "origen": "literal",
+          "sitio": "app/bot/servicio.py:408"
+        },
+        {
           "funcion": "app.bot.servicio.Bot.salud",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1009"
+          "sitio": "app/bot/servicio.py:821"
         },
         {
           "funcion": "app.bot.servicio.Bot.gasto",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1054"
+          "sitio": "app/bot/servicio.py:866"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1074"
-        },
-        {
-          "funcion": "app.bot.servicio.Bot.gastado_hoy",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:443"
+          "sitio": "app/bot/servicio.py:886"
         }
       ]
     },
@@ -51175,25 +51175,20 @@
         {
           "funcion": "app.bot.servicio.Bot.operaciones",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:838",
+          "sitio": "app/bot/servicio.py:689",
           "verbo": "INSERT"
         }
       ],
       "lectores": [
         {
-          "funcion": "app.bot.servicio.Bot.cifras_semana",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:1072"
-        },
-        {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:464"
+          "sitio": "app/bot/servicio.py:435"
         },
         {
-          "funcion": "app.bot.servicio.Bot.de_la_vida",
+          "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:927"
+          "sitio": "app/bot/servicio.py:884"
         }
       ]
     },
