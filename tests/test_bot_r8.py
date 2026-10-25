@@ -2,8 +2,9 @@
 de forma persistente, sin ningun tic desde el arranque y con una excepcion no prevista en el tic (R2); la lectura cruda
 que no aborta el tic (R5); los avisos de stop y de liquidacion por su CONDICION (R6); y las sospechas: los cierres
 pendientes antes de cualquier await, el arranque protegido, un try por posicion en los avisos; la CORRECCION de una cifra
-tardia con la base de verdad. Cada una cae con el app/bot de claude/bot-r7@50d4c00 por el defecto. Sin red; las de
-base, con TEST_DATABASE_URL."""
+tardia con la base de verdad. Cada una cae con el app/bot de claude/bot-r7@50d4c00 por el defecto (x1-tmp/bot2/
+r8-viejo-t.sh), salvo la de la correccion con la base, que usa lo nuevo (correcciones_pendientes): el defecto -la cifra
+incompleta que queda como buena- lo hace caer la del simulador, por I2. Sin red; las de base, con TEST_DATABASE_URL."""
 
 from __future__ import annotations
 
@@ -183,7 +184,7 @@ async def test_los_cierres_pendientes_se_apuntan_antes_de_cualquier_await():
     bot, _ = _bot([_pos("ETHUSDT", "Sell", 3900.0)])
     bot.evaluadas[i] = {"veredicto": "A FAVOR", "posicion": {"clave": "BTCUSDT:Buy"}}
     res = {"pnl": 1.5, "ordenes": ["o-1"], "nota": None, "tramos": 1}
-    original = vidas.Libro.calcula
+    original = getattr(vidas.Libro, "calcula", None)
 
     def calcula(self, ahora):
         cambios, out = original(self, ahora)
@@ -198,7 +199,7 @@ async def test_los_cierres_pendientes_se_apuntan_antes_de_cualquier_await():
         out = original_d(self, ahora)
         out["resultados"].append((i, res))
         return out
-    with mock.patch.object(vidas.Libro, "calcula", calcula), mock.patch.object(vidas.Libro, "decide", decide), \
+    with mock.patch.object(vidas.Libro, "calcula", calcula, create=True), mock.patch.object(vidas.Libro, "decide", decide), \
             mock.patch.object(sv.Bot, "valida", valida), mock.patch.object(sv.Bot, "cierre", lambda self, i, r: _nada()):
         await bot.tic_bybit()
     assert json.loads(bot.db.estado[1])["cierres_pendientes"] == {i: res}
