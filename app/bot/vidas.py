@@ -9,15 +9,17 @@ LO QUE SE SUPONE (declarado; fuera de el, el simulador mide que sale ambigua o s
     que es UNA fila: createdTime la primera, updatedTime la ultima). Una lectura ensena lo que paso hasta su updatedTime si
     este se movio con el cambio respecto a la lectura anterior de la MISMA vida; si no (la primera de una vida, o tras unas
     vacias), hasta max(updatedTime, hora local - DESFASE_MS) y, si se le vio NO moverse con un cambio, hasta la hora local
-    +- 10 s (u_parado: desde la primera vez, en todas). La fila que pudo pasar a los dos lados de una lectura (A CABALLO)
+    +- 10 s (u_parado: en ESA clave y durante U_PARADO_MS, remate 8; hacia atras, la fila cuya hora cruda menos S1_MS no
+    pasa de la hora local mas DESFASE_MS). La fila que pudo pasar a los dos lados de una lectura (A CABALLO)
     va donde no deja un tramo IMPOSIBLE (le faltan filas; solo cabe con S4 roto; una fila a la entrada de una lectura de
     fuera de su tramo; desaparecida, una cola que sus filas no cubren). Las fronteras dudosas seguidas se deciden juntas,
     fila a fila. Si quedan dos historias posibles que parten la vida distinto, la que menos parte y la vida sale ambigua
     (S1); si cuentan la misma, la hora cruda de la fila contra el updatedTime. El validador midio que una sola regla de hora
     no vale: closed-pnl 1 ms detras del updatedTime daba cifras falsas, y adelantarla 10 s las daba al reves.
  S2 closed-pnl trae cada cierre como mucho ESPERA_MS (35 min) despues. Por eso una vida se puntua pasados 35 min de su
-    primera lectura, de cada lectura tras un tramo con anadidos y, si desaparecio, de su primera ausencia seguida. Una fila
-    mas tardia que eso puede faltar en una cifra ya emitida (el unico camino a una cifra falsa que queda; el simulador lo mide).
+    primera lectura, de cada lectura tras un tramo con anadidos y, si desaparecio, de su PRIMERA ausencia (una lectura
+    perdida o una caida del bot no la reinicia: remate 8, R1). Una fila mas tardia que eso puede faltar en una cifra ya
+    emitida: cuando llega, la cifra se CORRIGE (correcciones, remate 8) en vez de quedarse la incompleta como buena.
  S3 una lista vacia NO es un cierre: una vida solo cierra cuando sus filas cubren lo que tenia; ausente y sin filas, se
     queda ausente (nada pagado) y, si vuelve igual, es la misma; sin filas en SIN_FILAS_MS (2 h), «sin puntuar». Dos o mas
     lecturas SEGUIDAS sin la clave (VACIAS_SEGUIDAS) sirven para separar la vida siguiente si las filas cubren la de antes.
@@ -74,7 +76,9 @@ TOL_Q = 1e-6  # relativa: dos tamanos iguales
 ESPERA_MS = 35 * 60_000  # S2
 SIN_FILAS_MS = 2 * 3600_000  # S3: ausente sin filas que la cubran -> sin puntuar
 MARGEN_FILA_MS = 10_000  # S1
+S1_MS = 8_000  # S1: lo que closed-pnl puede ir por delante de position/list (sin la holgura de MARGEN_FILA_MS)
 DESFASE_MS = 10_000  # el reloj de 140 contra el de Bybit, para «vacia desde» (lecturas sin la clave)
+U_PARADO_MS = 6 * 3600_000  # (remate 8, R4) cuanto dura, en SU clave, haber visto un updatedTime que no se mueve con un cambio
 HORIZONTE_MS = 7 * 86400_000
 SEGUIDA_MS = 90_000  # dos lecturas «seguidas»: el bot lee cada minuto
 VACIAS_SEGUIDAS = 2
@@ -236,7 +240,6 @@ class Libro:
         self.nada_desde4 = None  # (cuatro lecturas sin ella: S3, «limpia»)
         self.previas: list = []  # las cuatro ultimas lecturas (hora de 140)
         self.ultima = None
-        self.u_parado = False  # S1: se vio el updatedTime NO moverse con un cambio de tamano o entrada: ya no se fia de el
 
     # ---------------------------------------------------------------- lo que entra
     def fila(self, f: dict):
@@ -273,8 +276,8 @@ class Libro:
                                   [au[0], vacias, ultimas[0] if len(ultimas) >= VACIAS_LIMPIA else None,
                                    ultimas[-1] if ultimas else None] if au else None,
                                   None if antes is None else u > antes])
-                if antes is not None and u <= antes:
-                    self.u_parado = True
+                if antes is not None and u <= antes:  # S1, en SU clave y por U_PARADO_MS (remate 8, R4: no para siempre en todas)
+                    k["u_parado"] = ahora
             k["ausente"] = None
         for clave, k in self.claves.items():
             if clave in vistas:
@@ -283,7 +286,9 @@ class Libro:
             seguida = au and ahora - au[1] <= SEGUIDA_MS  # la anterior sin ella fue la de hace un minuto (no antes de una caida)
             previas = au[3] if seguida and isinstance((au + [None])[3], list) else []
             ultimas = (previas + [ahora])[-VACIAS_LIMPIA:]  # (las ultimas lecturas seguidas sin ella)
-            k["ausente"] = [au[0], ahora, au[2] + 1, ultimas] if seguida else [ahora, ahora, 1, ultimas]
+            # la PRIMERA ausencia no se reinicia con una lectura perdida ni con una caida del bot (remate 8, R1): la ESPERA y
+            # las 2 h corren desde que dejo de verse; lo SEGUIDO (cuantas, cuales) si se corta
+            k["ausente"] = [au[0], ahora, au[2] + 1, ultimas] if seguida else [au[0] if au else ahora, ahora, 1, ultimas]
             if not k["runs"] and len(ultimas) >= VACIAS_LIMPIA:  # sin vida abierta y 4 vacias seguidas: lo de antes, de otras
                 k["limpia"] = max(k.get("limpia") or -INF, ultimas[0] - DESFASE_MS)
             if not k["runs"]:  # (lo de antes de una lectura sin ella a SU entrada: o la vacia era falsa o no es suyo: ambigua)
@@ -298,18 +303,77 @@ class Libro:
     def decide(self, ahora: int) -> dict:
         """-> presentes {id: clave} (las vidas que la ULTIMA lectura ensena), firmes {id: su ultima lectura que es suya sin
         duda} (con ella se evalua), notas {id: texto}, resultados [(id, {pnl, ordenes, nota, tramos})] de las vidas cerradas y
-        ya seguras (cada una una sola vez; pnl None = sin puntuar) y suspensas {clave: error}: una excepcion en una clave la
-        deja en suspenso (nada se paga sobre ella) sin tocar a las demas (remate 7)."""
-        out: dict = {"presentes": {}, "notas": {}, "resultados": [], "firmes": {}, "suspensas": {}}
-        for clave, k in self.claves.items():
-            if not k["runs"]:
+        ya seguras (cada una una sola vez; pnl None = sin puntuar), correcciones [(id, {pnl, pnl_antes, orden, ordenes,
+        nota})] de una cifra ya dada a la que le llega tarde una fila (S2 roto, remate 8), suspensas {clave: error}: una
+        excepcion en una clave la deja en suspenso (nada se paga sobre ella) sin tocar a las demas (remate 7), y errores.
+        TRANSACCIONAL (remate 8): cada clave se calcula sobre una copia y solo se guarda si sale entera; una excepcion a mitad
+        no se lleva una CERRADA (antes borraba los tramos puntuados y despues podia caer). La poda va aparte: si cae, se dice."""
+        cambios, out = self.calcula(ahora)
+        self.aplica(cambios, ahora, out)
+        return out
+
+    def calcula(self, ahora: int) -> tuple[dict, dict]:
+        """decide SIN tocar el libro: -> (las claves nuevas, lo decidido). Se puede correr fuera del bucle (asyncio.to_thread:
+        el peor caso medido, 10 fronteras dudosas en 3 simbolos, 226 ms) mientras nada mas toca el libro."""
+        out: dict = {"presentes": {}, "notas": {}, "resultados": [], "firmes": {}, "suspensas": {}, "correcciones": [], "errores": []}
+        cambios: dict = {}
+        for clave in list(self.claves):
+            k = self.claves[clave]
+            if not k["runs"] and not any(len(p) == 7 for p in k.get("pasadas", [])):
                 continue
+            k2 = dict(k, runs=[list(r) for r in k["runs"]], pasadas=list(k.get("pasadas", [])))
+            suyo: dict = {"presentes": {}, "notas": {}, "resultados": [], "firmes": {}, "correcciones": []}
             try:
-                self._decide_clave(clave, k, ahora, out)
+                self._tardias(clave, k2, suyo)
+                if k2["runs"]:
+                    self._decide_clave(clave, k2, ahora, suyo)
             except Exception as e:  # noqa: BLE001 - la identidad no tumba la seguridad ni a las demas claves
                 out["suspensas"][clave] = f"{type(e).__name__}: {str(e)[:120]}"
-        self._poda(ahora)
-        return out
+                continue
+            cambios[clave] = k2
+            for x, val in suyo.items():
+                if isinstance(val, list):
+                    out[x] += val
+                else:
+                    out[x].update(val)
+        return cambios, out
+
+    def aplica(self, cambios: dict, ahora: int, out: dict):
+        """Lo calculado entra en el libro de una vez (en el bucle, sin await entre medias), y la poda."""
+        self.claves.update(cambios)
+        try:
+            self._poda(ahora)
+        except Exception as e:  # noqa: BLE001 - podar es memoria: lo decidido ya vale
+            out["errores"].append(f"poda: {type(e).__name__}: {str(e)[:120]}")
+
+    def _tardias(self, clave: str, k: dict, out: dict):
+        """S2 roto (remate 8, punto 7): una fila de closed-pnl que llega DESPUES de puntuada su vida -no estaba entre las que
+        se vieron al puntuarla, de su lado, a una entrada suya y dentro de su tramo- CORRIGE su cifra (la suma con ella). La
+        de una vida sin cifra (ambigua, sin puntuar) solo se apunta. -> out["correcciones"], una por fila."""
+        sym, lado = clave.split(":")[0], 1 if clave.endswith(":Buy") else -1
+        filas, horas = self.filas.get(sym, []), self.horas.get(sym, [])
+        nuevas = []
+        for p in k.get("pasadas", []):
+            if len(p) != 7 or p[1] < (self.ultima or 0) - 86400_000:
+                nuevas.append(p)
+                continue
+            vistas = set(p[6])
+            tarde = [f for f in filas[bisect.bisect_right(horas, p[0] - 2 * MARGEN_FILA_MS):bisect.bisect_right(horas, p[1])]
+                     if f["orden"] not in vistas]
+            if tarde:
+                p = [*p[:4], list(p[4]), p[5], p[6] + [f["orden"] for f in tarde]]
+                for f in tarde:
+                    if lado_cierre(f["e"], f.get("x"), f["q"], f.get("pnl")) == -lado or not any(mismo(f["e"], e) for e in p[2]):
+                        continue  # de la otra direccion, o a otra entrada (de otra vida): no es suya
+                    p[4].append(f["orden"])
+                    if p[5] is None:
+                        continue
+                    antes, p[5] = p[5], p[5] + (f["pnl"] or 0)
+                    out["correcciones"].append((p[3], {"pnl": p[5], "pnl_antes": antes, "orden": f["orden"], "ordenes": list(p[4]),
+                                                       "nota": f"llego tarde a closed-pnl la orden {f['orden']} (S2 roto): la cifra"
+                                                               f" pasa de {antes:+.4f} a {p[5]:+.4f}"}))
+            nuevas.append(p)
+        k["pasadas"] = nuevas
 
     def _decide_clave(self, clave: str, k: dict, ahora: int, out: dict):
         vidas = self._vidas(clave, k, ahora)
@@ -329,12 +393,17 @@ class Libro:
         for v in vidas:  # las cerradas y seguras, en orden; cada una sale una vez y el registro avanza tras ella
             if v["fin"] is None or ahora < v["espera"] + ESPERA_MS:
                 break
-            out["resultados"].append((v["id"], self._resultado(v) | {"tramos": len(v["runs"])}))
+            res = self._resultado(v)
+            out["resultados"].append((v["id"], res | {"tramos": len(v["runs"])}))
             hechas = max(v["runs"]) + 1
             fin = max([v["fin"], k["runs"][max(v["runs"])][5]] + [f["b"] for f in v["filas"] if not v.get("amb")])
+            desde = k["vacia"] if k["vacia"] is not None else min([k["runs"][min(v["runs"])][4]] + [f["b"] for f in v["filas"]]) - 1
+            fs, hs = self.filas.get(clave.split(":")[0], []), self.horas.get(clave.split(":")[0], [])
+            vistas = [f["orden"] for f in fs[bisect.bisect_right(hs, desde - 2 * MARGEN_FILA_MS):bisect.bisect_right(hs, fin)]]
+            # (con sus filas: el lado de una sin lado; y su id, ordenes, cifra y las filas que ya se veian: la tardia, remate 8)
             k["pasadas"] = [p for p in k.get("pasadas", []) if p[1] > fin - HORIZONTE_MS - 86400_000] + \
-                [[k["vacia"] if k["vacia"] is not None else min([k["runs"][min(v["runs"])][4]] + [f["b"] for f in v["filas"]]) - 1, fin,
-                  [k["runs"][i][3] for i in v["runs"]] + _entradas(v["filas"])]]  # (con sus filas: el lado de una sin lado)
+                [[desde, fin, [k["runs"][i][3] for i in v["runs"]] + _entradas(v["filas"]), v["id"], list(res["ordenes"]), res["pnl"],
+                  vistas]]
             k["vacia"] = v["fin"] if v.get("amb") else fin  # (de una ambigua no hay fila segura: lo de despues, a la siguiente)
             sig = next((w for w in vidas if w["runs"] and min(w["runs"]) == hechas), None)  # su duda no se pierde al quedar primera
             k["heredada"] = sig["amb"] if sig and (sig["amb"] in (A6, A6S) or str(sig["amb"]).startswith("S1")) else None  # (lo demas se recalcula)
@@ -424,7 +493,8 @@ class Libro:
         # S1: lo que ensena cada lectura llega hasta B; cada fila, al tramo de su b, y la que esta a caballo, donde cuadra
         # (donde el updatedTime se movio con el cambio, la frontera es el; si no se movio -o es la primera lectura- puede
         # estar parado: la hora local de la lectura menos el desfase)
-        B = [r[4] if (r + [None, None])[8] and not self.u_parado else max(r[4], r[0] - DESFASE_MS) for r in runs]
+        parado = self._parado(k, ahora)
+        B = [r[4] if (r + [None, None])[8] and not parado else max(r[4], r[0] - DESFASE_MS) for r in runs]
         cortes = [k["vacia"], *B, INF]
         grupos = [entre(filas, hs, cortes[i], cortes[i + 1]) for i in range(len(runs) + 1)]
         dudas = self._reparte(k, grupos, B, ahora, hsl)  # lecturas con una fila a caballo que cambia la vida: esa vida y la siguiente, ambiguas
@@ -490,8 +560,8 @@ class Libro:
                     cerrar(v, p[5])
                     v = nueva(r, [], "A5: un registro anterior la separa aqui sin una fila que la cierre", None)
                 else:
-                    if t.get("amb"):
-                        v["amb"] = v["amb"] or t["amb"]
+                    if t.get("amb"):  # (se fue sin filas que la cierren y hay una sin lado entre medias: pudo ser su cierre -A3-)
+                        v["amb"] = v["amb"] or (A3 if sl and t["amb"] == A7 else t["amb"])
                         v["cadena"] = False  # la lectura que se ve puede ser otra vida: ni esta ni las de despues son suyas seguro
                     if not t["cuadra"]:
                         v["espera"] = max(v["espera"], r[0])
@@ -541,6 +611,12 @@ class Libro:
         return vidas
 
     @staticmethod
+    def _parado(k: dict, ahora: int) -> bool:
+        """S1: en ESTA clave, hace menos de U_PARADO_MS, se vio un updatedTime que no se movio con un cambio: no se fia de el."""
+        u = k.get("u_parado")
+        return isinstance(u, (int, float)) and ahora - u < U_PARADO_MS
+
+    @staticmethod
     def _abierto(runs: list, mios: list) -> float:
         """Lo que se le vio abrir a una vida: su primer tamano mas cada subida entre dos lecturas suyas (una cota baja)."""
         out = runs[mios[0]][2]
@@ -578,13 +654,17 @@ class Libro:
         entradas = [r[3] for r in runs]
         # las de despues de B que aun pudieron ser de antes de la lectura vuelven a la frontera (cada fila, a la primera)
         atras: list = []
+        u_parado = self._parado(k, ahora)
         for i in range(n):
             ya = {id(f) for f in atras[-1]} if atras else set()
-            parado = (runs[i] + [None, None])[8] is False or self.u_parado  # el updatedTime no sigue: la lectura manda
+            parado = (runs[i] + [None, None])[8] is False or u_parado  # el updatedTime no sigue: la lectura manda
             if not parado and i:  # (o el tramo que acaba aqui deja faltar filas: el updatedTime pudo moverse por otra cosa)
                 p = runs[i - 1]
                 parado = bool(tramo((p[2], p[3]), grupos[i], (runs[i][2], runs[i][3]), (runs[i][7] or [None, 0])[1]).get("falta"))
-            atras.append([f for f in grupos[i + 1] if parado and f["b"] <= runs[i][0] + DESFASE_MS and id(f) not in ya])
+            # (pudo ser de antes de la lectura: su hora cruda menos lo que closed-pnl va por delante -S1_MS- no pasa de la hora
+            # local mas el desfase; remate 8, R4: con MARGEN_FILA_MS, una fila 20 s detras de la lectura volvia a la frontera)
+            atras.append([f for f in grupos[i + 1] if parado and f["b"] + MARGEN_FILA_MS - S1_MS <= runs[i][0] + DESFASE_MS
+                          and id(f) not in ya])
         base = []
         for i in range(n):
             fuera = {id(f) for f in atras[i - 1]} if i else set()
@@ -679,7 +759,7 @@ class Libro:
             elif len({x[1] for x in buenas}) == 1:
                 elegido.update(min(buenas, key=lambda x: x[2])[3])
             elif cruda and cruda[4] == mejor_p and len({x[1] for x in buenas if x[4] == mejor_p}) == 1 \
-                    and all((runs[x] + [None, None])[8] and not self.u_parado for x in seg):
+                    and all((runs[x] + [None, None])[8] and not u_parado for x in seg):
                 elegido.update(cruda[3])  # lo que aun puede llegar confirma la hora cruda (con un updatedTime que informa)
             else:  # dos historias posibles (o solo la contradice algo que aun puede llegar): la que menos parte, y duda
                 dudas.update(seg)
@@ -693,16 +773,16 @@ class Libro:
 
     # ---------------------------------------------------------------- persistencia
     def estado(self) -> dict:
-        return {"v": 7, "claves": self.claves, "nada_desde": self.nada_desde, "nada_desde4": self.nada_desde4, "previas": self.previas,
-                "u_parado": self.u_parado}
+        return {"v": 8, "claves": self.claves, "nada_desde": self.nada_desde, "nada_desde4": self.nada_desde4, "previas": self.previas}
 
     @classmethod
-    def desde(cls, guardado, evaluadas: dict, filas: list, usadas=()) -> tuple[Libro, list]:
+    def desde(cls, guardado, evaluadas: dict, filas: list, usadas=(), cifras: dict | None = None) -> tuple[Libro, list]:
         """El libro del ultimo estado publicado, con lectura TOLERANTE (lo que no se entiende se descarta y se dice), mas lo
         visto al evaluar cada vida sin cierre (bot_evaluacion: un veredicto posterior al ultimo latido es una lectura mas,
         con su id) y las filas de bot_operacion, salvo las de un cierre ya apuntado (usadas). De un estado de R4/R5 («vidas»
         y «cerradas»): cada vida con sus lecturas y sin «vacia»; las cerradas sin puntuar, como ausentes desde su cierre.
-        -> (libro, avisos)."""
+        cifras {id: (ordenes, pnl)}: lo ultimo apuntado de cada vida (su CERRADA o su ultima CORRECCION, remate 8) manda sobre
+        un estado mas viejo. -> (libro, avisos)."""
         lib, avisos = cls(), []
         g = guardado if isinstance(guardado, dict) else {}
         if guardado is not None and not isinstance(guardado, dict):
@@ -718,9 +798,13 @@ class Libro:
                     avisos.append(f"descarto la clave {clave} del estado guardado: ilegible")
             if isinstance(libro.get("nada_desde"), (int, float)):
                 lib.nada_desde = libro["nada_desde"]
-            lib.u_parado = libro.get("u_parado") is True
             if isinstance(libro.get("nada_desde4"), (int, float)):
                 lib.nada_desde4 = libro["nada_desde4"]
+            for k in lib.claves.values():  # (una CORRECCION apuntada despues del ultimo latido: su cifra y sus ordenes)
+                for p in k["pasadas"]:
+                    if len(p) == 7 and p[3] in (cifras or {}):
+                        p[4], p[5] = list(cifras[p[3]][0]), cifras[p[3]][1]
+                        p[6] = list(dict.fromkeys(p[6] + p[4]))
         elif "vidas" in g:  # un estado de R4/R5
             vidas = g["vidas"]
             if not isinstance(vidas, dict):
@@ -795,8 +879,12 @@ class Libro:
         if isinstance(a, list) and len(a) == 2:
             a = a + [VACIAS_SEGUIDAS if a[1] > a[0] else 1]
         pas = k.get("pasadas") if isinstance(k.get("pasadas"), list) else []
-        lim, lim2, her = k.get("limpia"), k.get("limpia2"), k.get("heredada")
+        lim, lim2, her, up = k.get("limpia"), k.get("limpia2"), k.get("heredada"), k.get("u_parado")
+        # (una pasada de R7: [desde, hasta, entradas]; de R8, ademas [id, ordenes, pnl, vistas]: corrige una cifra tardia)
+        pas = [p for p in pas if isinstance(p, list) and len(p) in (3, 7) and isinstance(p[2], list)
+               and (len(p) == 3 or (isinstance(p[3], str) and isinstance(p[4], list) and isinstance(p[6], list)
+                                    and isinstance(p[5], (int, float, type(None)))))]
         return {"runs": runs, "vacia": k.get("vacia"), "limpia": lim if isinstance(lim, (int, float)) else None,
                 "limpia2": lim2 if isinstance(lim2, (int, float)) else None, "heredada": her if isinstance(her, str) else None,
                 "ausente": (list(a) + [None])[:4] if isinstance(a, list) and len(a) in (3, 4) else None,
-                "pasadas": [p for p in pas if isinstance(p, list) and len(p) == 3 and isinstance(p[2], list)]}
+                "u_parado": up if isinstance(up, (int, float)) and not isinstance(up, bool) else None, "pasadas": pas}

@@ -18,13 +18,19 @@ comprueba contra la verdad, en cada secuencia:
  I7 VIVACIDAD: todo id evaluado cuya clave quedo vacia con tiempo recibe UNA CERRADA (cifra, «ambigua: motivo» o «sin
     puntuar: motivo"), tambien en las no simples;
  I8 la seguridad no se cae: con excepciones inyectadas en la identidad, I3 sigue (y nada revienta);
- y «ninguna mas» ESTRICTA: cada «ambigua» lo es por un motivo VERDAD con lo que el bot conserva (A1: un anadido seguido de
- un cierre entre dos lecturas conservadas; A2: cierres a otra entrada entre la ultima lectura de la anterior -o la ultima
- racha de vacias sin vida abierta- y su primera lectura; A6: un cierre total a la entrada que se ve despues; A7: se fue sin
- filas que la cubran y volvio distinta).
-LAS VARIANTES (fuera de S1-S4 de app/bot/vidas.py) piden 0 GRAVES (I2, I4, I1 doble, I3, reventon); lo que no se pueda
-separar sale ambigua o sin puntuar, y se cuenta. Ver tests/test_bot_simulador.py. Suelto: python tests/simulador_bot.py
-[semilla] [n] [variante]."""
+ I9 (remate 8) ninguna excepcion de la identidad TRAGADA (CAUSA=VIDAS o ESTADO, una clave en suspenso) que no sea la
+    inyectada: el bot sigue, pero esa clave no se evalua ni se cierra, y sin esto el simulador no lo veria;
+ y «ninguna mas» ESTRICTA, tambien en las variantes: cada «ambigua» lo es por un motivo VERDAD con lo que el bot conserva
+ (A1: un anadido seguido de un cierre entre dos lecturas conservadas; A2: cierres a otra entrada entre la ultima lectura de
+ la anterior -o la ultima racha de vacias sin vida abierta- y su primera lectura; A6: un cierre total a la entrada que se
+ ve despues; A7: se fue sin filas que la cubran -dos lecturas seguidas sin ella ANTES de su cierre- y volvio distinta; S1:
+ una fila a caballo de una frontera de ESA vida -una lectura que la cambia, la de antes de verla o la de despues-).
+ I2 mira la ULTIMA cifra de cada vida (la de su CERRADA o la de su ultima CORRECCION, remate 8): fuera de S2 (retraso_120)
+ una cifra incompleta tiene que acabar corregida.
+LAS VARIANTES (fuera de S1-S4 de app/bot/vidas.py) piden 0 GRAVES (I2, I4, I1 doble, I3, I9, reventon); lo que no se
+pueda separar sale ambigua o sin puntuar, y se cuenta. perdidas_N: position/list cae el N % de los tics (al azar y en
+rachas de 2 a 6), con las caidas del bot del modelo; se mide el retraso de cada CERRADA. Ver tests/test_bot_simulador.py.
+Suelto: python tests/simulador_bot.py [semilla] [n] [variante]."""
 
 from __future__ import annotations
 
@@ -37,14 +43,21 @@ import zlib
 from dataclasses import dataclass, field
 from unittest import mock
 
+import httpx
+
 M = 60_000
 BASE = 1_793_000_000_000 // M * M  # un minuto cualquiera (2026-10-26), solo para que las horas parezcan de verdad
 ESPERA = 35 * M  # lo que el bot espera a closed-pnl (vidas.ESPERA_MS): marca cuanto hay que dejarle para cerrar (I7)
 FEE = 0.00055
 IP = "138.186.31.141"
 VARIANTES = ("s1_desfase", "s1_ordenes", "s1_updated", "s2_retraso", "s3_vacias", "s4_tick", "s4_misma", "cobertura",
-             "migracion", "base_cierre", "excepciones")
-GRAVES = ("I2", "I4", "I1 doble", "I3", "el bot revento")
+             "migracion", "base_cierre", "excepciones", "perdidas_2", "perdidas_5", "perdidas_10", "perdidas_20", "retraso_120")
+GRAVES = ("I2", "I4", "I1 doble", "I3", "I9", "el bot revento")
+PERDIDAS = {"perdidas_2": 0.02, "perdidas_5": 0.05, "perdidas_10": 0.10, "perdidas_20": 0.20}  # tics con position/list caido
+
+
+class FalloInyectado(RuntimeError):
+    """La excepcion que el simulador mete en la identidad (I8): la unica que el bot puede tragarse sin que sea grave (I9)."""
 
 
 # ------------------------------------------------------------------------------------------------------------- la verdad
@@ -107,6 +120,7 @@ class Secuencia:
     u_parcial: bool = True  # el updatedTime cambia con cada ejecucion (S1) o solo con la apertura, el stop y el funding
     funding: tuple = ()  # horas (verdad) del funding: cambian el updatedTime de lo abierto
     excepciones: float = 0.0  # probabilidad de una excepcion inyectada en la identidad por clave y tic (I8)
+    perdidas: set = field(default_factory=set)  # minutos en que position/list falla (red o retCode de servidor)
     migracion: dict | None = None  # despliegue desde R5: {minuto, estado R5, veredictos, avisos}
     variante: str | None = None
     esperado: dict = field(default_factory=dict)  # (casos fijos) vida -> "cifra" | "ambigua" | "sin evaluar"
@@ -233,7 +247,9 @@ def genera(rng: random.Random, n: int, simple: bool, var: str | None = None) -> 
                     while ultima_e and abs(p0 / ultima_e - 1) < 0.0005:
                         p0 = precio * (1 + rng.uniform(-0.004, 0.004))
                 v = _vida(rng, num, clave, lado, t, p0, paso * rng.randint(2, 10), BASE + (minutos - 1) * M, paso, simple, var)
-                if retraso_max:
+                if var == "retraso_120":  # S2 roto: filas de closed-pnl hasta 2 h tarde (la cifra incompleta, corregida)
+                    retraso = lambda _k: rng.choice((0, rng.randint(0, 6 * M), rng.randint(0, 120 * M)))  # noqa: E731
+                elif retraso_max:
                     retraso = lambda _k: rng.randint(0, retraso_max)  # noqa: E731
                 else:
                     retraso = lambda _k: rng.choice((0, 0, 0, 0, rng.randint(1, 59_000), rng.randint(M, 2 * M), rng.randint(2 * M, 6 * M)))  # noqa: E731
@@ -260,6 +276,14 @@ def genera(rng: random.Random, n: int, simple: bool, var: str | None = None) -> 
     if var == "migracion":
         sec.migracion = _migracion(rng, sec)
         sec.caida = None
+    if var in PERDIDAS:  # (al final: no mueve el azar de las demas variantes) al azar o en rachas de 2 a 6, toda la corrida
+        m = 0
+        while m < minutos + Secuencia.EXTRA + 130:
+            if rng.random() < PERDIDAS[var] / 2.5:
+                racha = 1 if rng.random() < 0.5 else rng.randint(2, 6)
+                sec.perdidas |= set(range(m, m + racha))
+                m += racha
+            m += 1
     return sec
 
 
@@ -337,7 +361,7 @@ class Rec(tuple):
 
 class BaseFalsa:
     """La base del bot en memoria: lo que el bot escribe y lee de bot_evento, bot_evaluacion, bot_operacion, bot_estado y
-    bot_crudo (las consultas de R5, R6 y R7). Una consulta que no conoce, la dice."""
+    bot_crudo (las consultas de R5, R6, R7 y R8). Una consulta que no conoce, la dice."""
 
     def __init__(self, reloj: list, caida=None, cierre_caida=None):
         self.reloj, self.caida, self.cierre_caida = reloj, caida, cierre_caida
@@ -386,6 +410,11 @@ class BaseFalsa:
             return 0.0
         if "tipo = 'parte'" in sql:
             return None
+        if "detalle->'correccion'->>'orden'" in sql:  # R8: esa correccion ya apuntada
+            return 1 if any(e["tipo"] == "cierre" and e["posicion"] == a[0] and ((e["detalle"] or {}).get("correccion") or {}).get("orden") == a[1]
+                            for e in self.evaluacion) else None
+        if "SELECT veredicto FROM bot_evaluacion WHERE tipo = 'cierre'" in sql:  # R8: el veredicto de su CERRADA
+            return next((e["veredicto"] for e in sorted(self.evaluacion, key=lambda e: e["ts"]) if e["tipo"] == "cierre" and e["posicion"] == a[0]), None)
         if "SELECT 1 FROM bot_evaluacion WHERE tipo = 'cierre'" in sql:
             return 1 if any(e["tipo"] == "cierre" and e["posicion"] == a[0] for e in self.evaluacion) else None
         raise AssertionError(f"consulta no prevista: {sql[:120]}")
@@ -427,6 +456,9 @@ class BaseFalsa:
                     k = d.get("posicion")
                 out.append(Rec({"k": k, "tipo": e["tipo"]}))
             return out
+        if "posicion, pnl_usd, detalle->'ordenes'" in sql:  # R8: las ordenes y la ultima cifra de cada cierre apuntado
+            return [Rec({"posicion": e["posicion"], "pnl": e["pnl"], "o": json.dumps((e["detalle"] or {}).get("ordenes") or [])})
+                    for e in sorted(self.evaluacion, key=lambda e: e["ts"]) if e["tipo"] == "cierre"]
         if "detalle->'ordenes'" in sql:  # R7: las ordenes de los cierres ya apuntados
             return [Rec({"o": json.dumps((e["detalle"] or {}).get("ordenes") or [])}) for e in self.evaluacion if e["tipo"] == "cierre"]
         if "SELECT orden FROM bot_operacion" in sql:
@@ -452,6 +484,7 @@ class Registro:
     errores: list = field(default_factory=list)
     ultima: set | None = None
     visibles: dict = field(default_factory=dict)  # minuto -> ordenes que closed-pnl ensenaba en esa lectura
+    tragadas: list = field(default_factory=list)  # CAUSA=VIDAS / ESTADO que no son la excepcion inyectada (I9)
 
 
 class Simulacion:
@@ -462,6 +495,7 @@ class Simulacion:
         self.reg = Registro()
         self.minuto = 0
         self.a2_simples = 0
+        self.retrasos: list = []  # min de la hora real del cierre a su CERRADA (I7)
         self.mirado: dict = {}
         self.previas: dict = {}  # vida -> evaluaciones que hizo R5 antes del despliegue
         self.por_u = {(v.clave, u): v for v in sec.vidas for u in v.us}
@@ -496,6 +530,10 @@ class Simulacion:
         if ruta == "/v5/user/query-api":
             return {"retCode": 0, "result": {"readOnly": 1, "ips": [IP]}}
         if ruta == "/v5/position/list":
+            if self.minuto in self.sec.perdidas:  # una lectura perdida: la red o un error de servidor de Bybit
+                if self.rng.random() < 0.5:
+                    raise httpx.ConnectError("sin red (simulada)")
+                return {"retCode": 10016, "retMsg": "Server Error (simulado)"}
             return {"retCode": 0, "result": {"list": self.lista()}}
         if ruta == "/v5/position/closed-pnl":
             return {"retCode": 0, "result": {"list": self.cerradas(), "nextPageCursor": ""}}
@@ -531,10 +569,19 @@ class Simulacion:
         async def escala(p, alerta):
             reg.pagos.append((self.reloj[0], "escala", dict(p), set(reg.ultima or ())))
 
-        b.manda, b.sobre, b.opus, b.evalua, b.escala = manda, sobre, opus, evalua_registrada, escala
+        anota = b.anota
+
+        def anota_registrada(nombre, texto, op=None):  # I9: lo que la identidad se trago (salvo lo inyectado)
+            if nombre in ("VIDAS", "ESTADO") and "FalloInyectado" not in texto and "fallo inyectado" not in texto:
+                reg.tragadas.append(f"{(self.reloj[0] - BASE) / M:.0f} min CAUSA={nombre} {texto}")
+            return anota(nombre, texto, op)
+
+        b.manda, b.sobre, b.opus, b.evalua, b.escala, b.anota = manda, sobre, opus, evalua_registrada, escala, anota_registrada
         return b
 
     def pendiente(self) -> bool:
+        if any(f["visible"] + 20 * M > self.reloj[0] for v in self.sec.vidas for f in v.filas):  # (una fila tardia: su CORRECCION)
+            return True
         cerradas = {e["posicion"] for e in self.base.evaluacion if e["tipo"] == "cierre"}
         for e in self.base.evaluacion:
             if e["tipo"] == "veredicto" and e["posicion"] not in cerradas:
@@ -587,6 +634,7 @@ class Simulacion:
                 bot = self.bot()
                 await bot.carga()
             punto = sec.caida[2] if sec.caida and sec.caida[0] == m else None
+            self.reg.lecturas[m] = None  # (sin leer, si position/list falla: lista() lo pisa al leer)
             try:
                 await bot.tic_bybit()
                 if m in sec.rafagas and bot.pos:
@@ -626,7 +674,7 @@ def simula(sec: Secuencia, sv) -> Simulacion:
 
         def con_fallos(libro, clave, k, ahora, out):
             if s.rng.random() < sec.excepciones:
-                raise RuntimeError(f"fallo inyectado en {clave}")
+                raise FalloInyectado(f"fallo inyectado en {clave}")
             return original(libro, clave, k, ahora, out)
         parches.append(mock.patch.object(sv.vidas.Libro, "_decide_clave", con_fallos))
     elif sec.excepciones and hasattr(sv, "vidas"):  # (un libro sin decision por clave, como el de R6: en decide entero)
@@ -634,7 +682,7 @@ def simula(sec: Secuencia, sv) -> Simulacion:
 
         def decide_con_fallos(libro, ahora):
             if s.rng.random() < sec.excepciones:
-                raise RuntimeError("fallo inyectado en decide")
+                raise FalloInyectado("fallo inyectado en decide")
             return original_d(libro, ahora)
         parches.append(mock.patch.object(sv.vidas.Libro, "decide", decide_con_fallos))
     for p in parches:
@@ -675,6 +723,7 @@ def comprueba(s: Simulacion) -> list[str]:
     """-> las invariantes que caen en esta secuencia (vacia: todas pasan)."""
     sec, reg, base = s.sec, s.reg, s.base
     fallos: list = [f"el bot revento: {e[:160]}" for e in reg.errores]
+    fallos += [f"I9 excepcion de la identidad tragada: {t[:200]}" for t in reg.tragadas[:3]]
     mira = lambda k: s.mirado.__setitem__(k, s.mirado.get(k, 0) + 1)  # noqa: E731
     fin_lecturas = max(reg.lecturas) + 1
     fuera_del_modelo = sec.variante is not None
@@ -731,12 +780,16 @@ def comprueba(s: Simulacion) -> list[str]:
                                          and ("LARGO" not in t and "CORTO" not in t or lado in t) for ts, t in avisos):
                     fallos.append(f"I3 la vida {v.n} se vio sin stop en el minuto {m} y no tuvo aviso sin_stop")
                 break
-    # I2 e I4: cada cierre
+    # I2 e I4: cada cierre (la CORRECCION de una cifra, remate 8, va aparte: una fila 'cierre' con detalle.correccion)
     cierres: dict = {}
     de_cierre: dict = {}
     puntuadas: set = set()
+    correcciones: dict = {}
     for e in base.evaluacion:
-        if e["tipo"] != "cierre":
+        if e["tipo"] == "cierre" and (e["detalle"] or {}).get("correccion"):
+            correcciones.setdefault(e["posicion"], []).append(e)
+    for e in base.evaluacion:
+        if e["tipo"] != "cierre" or (e["detalle"] or {}).get("correccion"):
             continue
         cierres[e["posicion"]] = cierres.get(e["posicion"], 0) + 1
         ver = veredictos.get(e["posicion"])
@@ -751,19 +804,30 @@ def comprueba(s: Simulacion) -> list[str]:
         if v.fin > e["ts"]:
             fallos.append(f"I4 CERRADA de la vida {v.n} a las {(e['ts'] - BASE) / M:.1f} min y cierra a las {(v.fin - BASE) / M:.1f}")
         nota = (e["detalle"] or {}).get("nota") or ""
+        corr = sorted(correcciones.get(e["posicion"], []), key=lambda x: x["ts"])
+        real = lambda x, v=v: abs(x - v.pnl) <= 1e-6 * max(1.0, abs(v.pnl))  # noqa: E731
         if e["pnl"] is not None:
-            mira("I2")
             puntuadas.add(v.n)
-            if abs(e["pnl"] - v.pnl) > 1e-6 * max(1.0, abs(v.pnl)):
-                fallos.append(f"I2 la vida {v.n} puntuada {e['pnl']:+.4f} y lo real es {v.pnl:+.4f}")
-            elif e["veredicto"] != "NO EVALUABLE" and e["acierto"] != ((v.pnl > 0) == (e["veredicto"] == "A FAVOR")):
-                fallos.append(f"I2 la vida {v.n}: acierto {e['acierto']} con pnl {v.pnl:+.4f} y veredicto {e['veredicto']}")
+            ultima = corr[-1] if corr else e  # la ULTIMA cifra de la vida (remate 8: la incompleta se corrige)
+            if corr and real(e["pnl"]):
+                fallos.append(f"I2 la vida {v.n} puntuada {e['pnl']:+.4f} (la real) y CORREGIDA a {corr[-1]['pnl']:+.4f}")
+            elif not real(ultima["pnl"]):
+                # (si una fila suya aun no se ve, o se ve hace menos de 20 min -closed-pnl, cada 15 sin nada abierto-, no se juzga)
+                if max(f["visible"] for f in v.filas) <= sec.lectura(fin_lecturas - 1) - 20 * M:
+                    mira("I2")
+                    fallos.append(f"I2 la vida {v.n} puntuada {ultima['pnl']:+.4f}" + (f" (corregida de {e['pnl']:+.4f})" if corr else "")
+                                  + f" y lo real es {v.pnl:+.4f}")
+            else:
+                mira("I2")
+                if ultima["veredicto"] != "NO EVALUABLE" and ultima["acierto"] != ((v.pnl > 0) == (ultima["veredicto"] == "A FAVOR")):
+                    fallos.append(f"I2 la vida {v.n}: acierto {ultima['acierto']} con pnl {v.pnl:+.4f} y veredicto {ultima['veredicto']}")
         else:
-            if not fuera_del_modelo:
-                mira("ninguna mas")
-                motivo = _ambigua_verdad(s, v, nota, vistas, perdida)
-                if motivo:
-                    fallos.append(f"ninguna mas: la vida {v.n} sin puntuar por «{nota[:90]}» y {motivo}")
+            if corr:
+                fallos.append(f"I2 la vida {v.n} sin cifra en su CERRADA («{nota[:60]}») y CORREGIDA a {corr[-1]['pnl']:+.4f}")
+            mira("ninguna mas")  # (remate 8: tambien fuera del modelo)
+            motivo = _ambigua_verdad(s, v, nota, vistas, perdida, e["ts"])
+            if motivo:
+                fallos.append(f"ninguna mas: la vida {v.n} sin puntuar por «{nota[:90]}» y {motivo}")
             if sec.simple and nota.startswith(("ambigua: A2", "ambigua: S1", "ambigua: A3")) and not _ambigua_verdad(s, v, nota, vistas, perdida):
                 s.a2_simples += 1  # tras una vida entera que el bot no vio, o una fila a caballo (S1): declaradas, aparte (I6)
             elif sec.simple:  # I6
@@ -790,6 +854,11 @@ def comprueba(s: Simulacion) -> list[str]:
         mira("I7")
         if cierres.get(i, 0) != 1:
             fallos.append(f"I7 el id {i} se evaluo, su clave quedo vacia a las {(ultima_fin - BASE) / M:.1f} min y tiene {cierres.get(i, 0)} CERRADA")
+        else:  # el retraso de su CERRADA desde la hora real del cierre de esa vida (remate 8: acotado aun perdiendo lecturas)
+            v = _vida_de(s, evaluados[i]["detalle"].get("posicion") or {})
+            ts = next(e["ts"] for e in base.evaluacion if e["tipo"] == "cierre" and e["posicion"] == i)
+            if v is not None and v.fin < math.inf:
+                s.retrasos.append((ts - v.fin) / M)
     # los casos fijos: la cifra ESPERADA
     for n, que in sec.esperado.items():
         v = por_n[n]
@@ -847,6 +916,26 @@ def _a_caballo(s: Simulacion, clave: str, f: dict, m: int) -> bool:
     x = lec.get(clave)
     frontera = max(x[1] if x else -math.inf, s.sec.lectura(m) - 10_000)
     return min(f["c"], f["b"]) - 10_000 <= frontera < max(f["c"], f["b"]) + 10_000
+
+
+def _fronteras(s: Simulacion, clave: str, perdida: int | None) -> list:
+    """Las lecturas que el bot CONSERVA en que cambia lo que ve de esa clave (tamano o entrada, o vuelve tras no verla): solo
+    ahi parte vidas.py un tramo (S1). -> [(minuto, updatedTime, vida)]."""
+    out, antes = [], None
+    for m in sorted(s.reg.lecturas):
+        lec = s.reg.lecturas[m]
+        if lec is None or m == perdida:
+            continue
+        x = lec.get(clave)
+        if x is None:
+            antes = None
+            continue
+        e = x[0].estado(s.sec.lectura(m), s.sec.u_parcial, s.sec.funding)
+        ahora = (e[0], e[1]) if e else None
+        if ahora != antes:
+            out.append((m, x[1], x[0]))
+        antes = ahora
+    return out
 
 
 def _s4_roto(s: Simulacion, vs: list) -> bool:
@@ -909,9 +998,13 @@ def _limpia(s: Simulacion, v: Vida, pred: Vida | None, primera: int, n: int) -> 
     return out
 
 
-def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: int | None) -> str | None:
+def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: int | None, ts=None) -> str | None:
     """None si el motivo de «sin puntuar» es verdad en esta secuencia con lo que el bot CONSERVA; si no, por que no."""
     sec = s.sec
+    if not nota.startswith("ambigua"):  # sin puntuar por FALTA de filas: solo si una suya aun no se veia al emitirla (S2)
+        if ts is not None and any(f["visible"] > ts - 60_000 for f in v.filas):
+            return None
+        return "todas sus filas se veian cuando la dio por sin puntuar"
     lecturas = sorted(m for m, lec in s.reg.lecturas.items() if lec is not None and m not in sec.vacias and m != perdida)
     misma = [w for w in sec.vidas if w.clave == v.clave]
     siguientes = [w for w in misma if w.inicio >= v.inicio]
@@ -968,16 +1061,29 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
         if nota.startswith("ambigua: A6") and _cierra_mas_tras_anadido(s, siguientes[:3], lecturas):
             return None
         return "no hubo una reapertura a la misma entrada, una orden de varias ejecuciones ni cierres de mas tras un anadido"
-    if nota.startswith("ambigua: A7"):  # dos lecturas seguidas sin la clave tras verla (falsas o no: lo que no cerro ninguna
-        # fila suya -tarde, o sin lado a una entrada que no le vio- la deja ambigua)
+    if nota.startswith("ambigua: A7"):  # dos lecturas SEGUIDAS sin la clave tras verla y ANTES de su cierre (vacias falsas:
+        # volvio distinta sin filas que lo expliquen); fuera de S2, tambien despues: se fue y sus filas tardaron mas que la ESPERA
         ms = sorted(vistas.get(v.n, []))
-        sin = [m for m in lecturas if ms and m > ms[0] and v.clave not in (s.reg.lecturas.get(m) or {})]
-        return None if any(b == a + 1 for a, b in zip(sin, sin[1:], strict=False)) or sec.u_parcial is False \
-            else "no hubo dos lecturas seguidas sin la clave tras verla"
-    if nota.startswith("ambigua: S1"):  # una fila de ella, de la anterior o de las siguientes a menos de 30 s de una lectura
-        cerca = [w for w in misma if w.fin <= v.inicio][-1:] + siguientes[:3]
-        return None if any(abs(f["t"] - sec.lectura(m)) <= 30_000 or abs(f["c"] - sec.desfase - sec.lectura(m)) <= 30_000
-                           for w in cerca for f in w.filas for m in lecturas) else "ninguna fila a menos de 30 s de una lectura"
+        tarde = any(f["visible"] > v.fin + ESPERA for f in v.filas)
+
+        def sin(m: int) -> bool:
+            lec = s.reg.lecturas.get(m)
+            return lec is not None and m != perdida and v.clave not in lec and (tarde or sec.lectura(m) < v.fin)
+        return None if ms and any(sin(m) and sin(m + 1) for m in range(ms[0] + 1, max(s.reg.lecturas) + 1)) \
+            else "no hubo dos lecturas seguidas sin la clave tras verla y antes de su cierre"
+    if nota.startswith("ambigua: S1"):  # una fila de su clave a caballo (el criterio del bot) de una FRONTERA de esa vida
+        fr = _fronteras(s, v.clave, perdida)
+        mias = [j for j, (_m, _u, w) in enumerate(fr) if w is v]
+        js = {j for j in mias + ([min(mias) - 1, max(mias) + 1] if mias else []) if 0 <= j < len(fr)}
+        for j in js:
+            m, u, _w = fr[j]
+            local = sec.lectura(m)
+            for w in misma:
+                for f in w.filas:
+                    lo, hi = min(f["c"], f["b"]) - 10_000, max(f["c"], f["b"]) + 10_000
+                    if lo <= u < hi or (lo <= local + 10_000 and hi > max(u, local - 10_000)):
+                        return None
+        return "ninguna fila de su clave a caballo de una lectura que la cambia (ni de la de antes de verla ni de la de despues)"
     if nota.startswith("ambigua: A3"):  # una fila sin lado de otra vida (del otro lado, o que el bot no vio) cerca de ella
         sym = v.clave.split(":")[0]
         lado_de = s.sv.bb.lado_cierre
@@ -1129,7 +1235,8 @@ def lote(sv, semilla: int, n: int, variante: str | None = None) -> dict:
     """n secuencias al azar con esa semilla (en el modelo, un 30 % simples) -> {fallos: [(nombre, [..])], cuentas}."""
     rng = random.Random(semilla * 1000 + (VARIANTES.index(variante) + 1 if variante else 0))
     out = {"fallos": [], "graves": [], "secuencias": n, "simples": 0, "cerradas": 0, "ambiguas": 0, "sin_puntuar": 0,
-           "cerradas_simples": 0, "puntuadas_simples": 0, "a2_simples": 0, "mirado": {}}
+           "cerradas_simples": 0, "puntuadas_simples": 0, "a2_simples": 0, "mirado": {}, "retrasos": [], "correcciones": 0,
+           "tics": 0, "perdidos": 0}
     for i in range(n):
         simple = variante is None and rng.random() < 0.3
         sec = genera(rng, i, simple, variante)
@@ -1142,7 +1249,12 @@ def lote(sv, semilla: int, n: int, variante: str | None = None) -> dict:
                 out["graves"].append((sec.nombre, g))
         for k, x in s.mirado.items():
             out["mirado"][k] = out["mirado"].get(k, 0) + x
-        cierres = [e for e in s.base.evaluacion if e["tipo"] == "cierre"]
+        out["retrasos"] += s.retrasos
+        out["correcciones"] += sum(bool((e["detalle"] or {}).get("correccion")) for e in s.base.evaluacion if e["tipo"] == "cierre")
+        arriba = [m for m in s.reg.lecturas if sec.arriba(m)]
+        out["tics"] += len(arriba)
+        out["perdidos"] += sum(m in sec.perdidas for m in arriba)
+        cierres = [e for e in s.base.evaluacion if e["tipo"] == "cierre" and not (e["detalle"] or {}).get("correccion")]
         out["simples"] += simple
         out["a2_simples"] += s.a2_simples
         if simple:

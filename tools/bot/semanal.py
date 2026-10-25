@@ -108,7 +108,9 @@ def cifras(ahora: int) -> dict:
                                     f" AND symbol = '{SIMBOLOS[a]}' AND ts >= {t(i)} AND ts < {t(min(i + 720, hasta + calidad.DIA + 1))}"):
                 velas[a][int(m)] = (float(hi), float(lo), float(c))
     ev = [{"veredicto": v, "acierto": {"true": True, "false": False}.get(a), "pnl_usd": float(p) if p else None} for v, a, p in sql(
-        f"SELECT veredicto, coalesce(acierto::text, ''), coalesce(pnl_usd::text, '') FROM bot_evaluacion WHERE tipo = 'cierre' AND ts >= {t(desde)}")]
+        f"SELECT DISTINCT ON (posicion) veredicto, coalesce(acierto::text, ''), coalesce(pnl_usd::text, '') FROM bot_evaluacion"
+        f" WHERE tipo = 'cierre' AND posicion IN (SELECT posicion FROM bot_evaluacion WHERE tipo = 'cierre'"
+        f" AND detalle->'correccion' IS NULL AND ts >= {t(desde)}) ORDER BY posicion, ts DESC")]  # (la ultima cifra: remate 8)
     ops = [{"pnl_usd": float(p) if p else None} for (p,) in sql(f"SELECT coalesce(pnl_usd::text, '') FROM bot_operacion WHERE cerrada >= {t(desde)}")]
     ll = [{"dia": d, "coste_usd": float(c), "tope_usd": float(tp)} for d, c, tp in sql(
         f"SELECT (ts AT TIME ZONE 'UTC')::date, coste_usd, tope_usd FROM bot_llamada WHERE ts >= {t(desde)}")]
