@@ -352,7 +352,7 @@ class _EnFila:
 
 
 async def _espera(bot):
-    while bot.tareas:
+    while getattr(bot, "tareas", None):  # getattr: tambien con el bot de antes del remate 3 (sin tareas)
         await asyncio.gather(*list(bot.tareas))
 
 
