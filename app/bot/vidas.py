@@ -638,7 +638,9 @@ class Libro:
             while i < n and len(opciones[i]) > 1:
                 i += 1
             seg = range(a, i)
-            if math.prod(len(opciones[x]) for x in seg) > 4096:  # ponytail: hasta 4096 combinaciones; si no, hora cruda y duda
+            # ponytail: hasta 1024 combinaciones (medido: 12 fronteras dudosas seguidas = 4096 = 300 ms por decide); mas, hora
+            # cruda y duda (ambigua, el lado seguro)
+            if math.prod(len(opciones[x]) for x in seg) > 1024:
                 dudas.update(seg)
                 continue
             todas = []
