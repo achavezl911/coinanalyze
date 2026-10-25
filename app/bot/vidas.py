@@ -59,6 +59,7 @@ tramo que se pudo comprobar): nunca con otra vida pegada a ella.
 from __future__ import annotations
 
 import bisect
+import itertools
 
 from app.bot.bybit import lado_cierre
 
@@ -190,7 +191,7 @@ def _con_vacias(t: dict, pre: tuple, filas: list, post: tuple | None, vacias: in
         return t
     nuevo = [g for g in filas if mismo(g["e"], post[1])]
     resto = [g for g in filas if not mismo(g["e"], post[1])]
-    if not resto:
+    if not resto or _suma(resto) < pre[0] * (1 - TOL_Q):  # lo de antes no la cierra sin filas de la entrada nueva: S4 roto
         return t
     if len(_entradas([g for g in resto if not mismo(g["e"], pre[1])])) <= 1:
         return {"viejo": resto, "fin": resto[-1], "nuevo": nuevo, "cuadra": False}
@@ -387,12 +388,7 @@ class Libro:
         B = [max(r[4], r[0] - DESFASE_MS) for r in runs]
         cortes = [k["vacia"], *B, INF]
         grupos = [entre(filas, hs, cortes[i], cortes[i + 1]) for i in range(len(runs) + 1)]
-        dudas: set = set()  # lecturas con una fila a caballo que cambia la vida: la de esa lectura y la de la siguiente, ambiguas
-        for i in range(len(runs)):
-            if any(f["h"] > B[i] for f in grupos[i]):
-                grupos[i], grupos[i + 1], duda = self._reparte(k, i, grupos[i], grupos[i + 1], B[i])
-                if duda:
-                    dudas.add(i)
+        dudas = self._reparte(k, grupos, B)  # lecturas con una fila a caballo que cambia la vida: esa vida y la siguiente, ambiguas
 
         vidas: list = []
         v = None
@@ -426,7 +422,7 @@ class Libro:
                     fin = t["fin"]["b"] if t.get("fin") else max(x for x in (t.get("hasta"), p[5]) if x is not None)
                     if t.get("amb"):
                         v["amb"] = v["amb"] or t["amb"]
-                    if any(f["b"] <= fin for f in sl):  # una fila sin lado ANTES de su cierre
+                    if any(f["b"] <= fin for f in sl) or (sl and not t["cuadra"]):  # una sin lado ANTES de su cierre, o sin cierre exacto
                         v["amb"] = v["amb"] or A3
                     if vacias:
                         v["espera"] = max(v["espera"], r[7][0])  # sus filas pueden tardar ESPERA desde que dejo de verse
@@ -511,48 +507,89 @@ class Libro:
             return "A2: antes de las lecturas sin la clave hubo cierres a su misma entrada"
         return None
 
-    def _reparte(self, k: dict, i: int, G: list, siguiente: list, b: float) -> tuple[list, list, bool]:
-        """S1: las filas a caballo de la lectura i (b <= B < h), antes o despues de ella. Solo cuenta lo IMPOSIBLE: un tramo al
-        que le faltan filas (ensena menos de lo que dejan), uno que solo cabe con S4 roto (cierra mas de lo visto a su misma
-        entrada, o la cubre y sigue o vuelve a esa entrada), o una fila a la entrada de otra lectura (la media no vuelve
-        atras). Si las colocaciones posibles cuentan la MISMA historia (donde
-        se parte la vida), la de la hora cruda de la fila, min(createdTime, updatedTime), contra el updatedTime de la
-        lectura; si cuentan dos (cerrar y reabrir, o seguir tras un anadido sin ver), la que menos parte, y duda: la vida
-        sale ambigua (S1) y nunca se evalua dos veces. -> (las de antes de i, las de despues, duda)."""
+    def _reparte(self, k: dict, grupos: list, B: list) -> set:
+        """S1: las filas a caballo de cada lectura i (b <= B < h), antes o despues de ella (grupos se reescribe). Cada frontera
+        dudosa tiene tres colocaciones: la de la hora cruda de la fila, min(createdTime, updatedTime), contra el updatedTime
+        de la lectura; todas antes; todas despues. Las fronteras dudosas SEGUIDAS se deciden juntas (una fila de la frontera
+        de despues puede explicar el tramo de la de antes). Solo cuenta lo IMPOSIBLE: un tramo al que le faltan filas, uno
+        que solo cabe con S4 roto (cierra mas de lo visto a su entrada, o la cubre y sigue o vuelve a esa entrada), una fila
+        a la entrada de una lectura de fuera de su tramo (la media no vuelve atras) y, ya desaparecida, una cola que sus filas
+        no cubren (S2). Si las colocaciones de menos imposibles cuentan la MISMA historia (donde se parte la vida y si
+        cierra), la mas cercana a la hora cruda; si cuentan dos (cerrar y reabrir, o seguir tras un anadido sin ver), la que
+        menos parte, y duda: esas vidas salen ambiguas (S1) y nunca se evaluan dos veces. Tambien es duda una orden de varias
+        ejecuciones que CRUZA la lectura (una fila partida: lo imposible puede no serlo). -> las lecturas con duda."""
         runs = k["runs"]
-        r = runs[i]
+        n = len(runs)
+        entradas = [r[3] for r in runs]
+        opciones, cruzan = [], set()
+        for i in range(n):
+            G = grupos[i]
+            if not any(f["h"] > B[i] for f in G):
+                opciones.append([G])
+                continue
+            uniq: list = []
+            for c in ([f for f in G if f["h"] <= B[i] or f["b"] + MARGEN_FILA_MS <= runs[i][4]], list(G),
+                      [f for f in G if f["h"] <= B[i]]):
+                if not any(len(c) == len(u) and all(x is y for x, y in zip(c, u, strict=True)) for u in uniq):
+                    uniq.append(c)
+            opciones.append(uniq)
+            if any(f["h"] - f["b"] > 2 * MARGEN_FILA_MS + 1000 and f["b"] + MARGEN_FILA_MS <= B[i] < f["h"] - MARGEN_FILA_MS for f in G):
+                cruzan.add(i)
 
-        def vuelve(filas: list, e_otra: float) -> int:  # filas a la entrada de OTRA lectura: la media no vuelve atras (S4)
-            return sum(1 for f in filas if mismo(f["e"], e_otra) and not mismo(f["e"], r[3]))
+        def ajenas(filas: list, suyas: tuple) -> int:
+            return sum(1 for f in filas if any(mismo(f["e"], e) for e in entradas) and not any(mismo(f["e"], e) for e in suyas))
 
-        def mira(antes: list, despues: list) -> tuple[int, tuple]:
-            n, partes = 0, []
-            if i > 0:
-                p = runs[i - 1]
-                t = tramo((p[2], p[3]), antes, (r[2], r[3]), (r[7] or [None, 0])[1])
-                n, partes = n + bool(t.get("falta")) + bool(t.get("s4")), [*partes, bool(t.get("fin") or t.get("termina"))]
-                n += vuelve([f for f in despues if f in G], p[3])
-            if i + 1 < len(runs):
-                s = runs[i + 1]
-                t = tramo((r[2], r[3]), despues, (s[2], s[3]), (s[7] or [None, 0])[1])
-                n, partes = n + bool(t.get("falta")) + bool(t.get("s4")), [*partes, bool(t.get("fin") or t.get("termina"))]
-                n += vuelve(antes, s[3])
-            elif k["ausente"] is not None:
-                t = tramo((r[2], r[3]), despues, None)
-                n, partes = n + bool(t.get("s4")), [*partes, bool(t.get("fin"))]
-            return n, tuple(partes)
+        def coste(j: int, filas: list) -> tuple[int, bool]:  # el tramo de la lectura j a la j+1 (o la cola)
+            r = runs[j]
+            if j + 1 < n:
+                s = runs[j + 1]
+                t = tramo((r[2], r[3]), filas, (s[2], s[3]), (s[7] or [None, 0])[1])
+                return bool(t.get("falta")) + bool(t.get("s4")) + ajenas(filas, (r[3], s[3])), bool(t.get("fin") or t.get("termina"))
+            if k["ausente"] is None:
+                return ajenas(filas, (r[3],)), False
+            t = tramo((r[2], r[3]), filas, None)
+            cubre = bool(t.get("fin") or (t.get("sin_tamano") and _suma(t["viejo"]) >= r[2] * (1 - TOL_Q)))
+            return bool(t.get("s4")) + (not cubre) + ajenas(filas, (r[3],)), cubre
 
-        def parte(quedan: list) -> tuple[list, list]:
-            ids = {id(f) for f in quedan}
-            return [f for f in G if id(f) in ids], [f for f in G if id(f) not in ids] + siguiente
-
-        cruda = parte([f for f in G if f["h"] <= b or f["b"] + MARGEN_FILA_MS <= r[4]])
-        opciones = [(o, *mira(*o)) for o in (cruda, (G, siguiente), parte([f for f in G if f["h"] <= b]))]
-        menos = min(n for _o, n, _p in opciones)
-        buenas = [(o, p) for o, n, p in opciones if n == menos]
-        if len({p for _o, p in buenas}) == 1:
-            return (*buenas[0][0], False)
-        return (*min(buenas, key=lambda x: sum(x[1]))[0], True)
+        dudas: set = set()
+        i = 0
+        while i < n:
+            if len(opciones[i]) == 1:
+                i += 1
+                continue
+            a = i
+            while i < n and len(opciones[i]) > 1:
+                i += 1
+            seg = range(a, i)
+            if len(seg) > 5:  # ponytail: 3^5 combinaciones como mucho; mas fronteras dudosas seguidas -> hora cruda y duda
+                dudas.update(seg)
+                elegido = {x: opciones[x][0] for x in seg}
+            else:
+                todas = []
+                for combo in itertools.product(*[range(len(opciones[x])) for x in seg]):
+                    quedan = {x: opciones[x][c] for x, c in zip(seg, combo, strict=True)}
+                    van = {x: [f for f in grupos[x] if not any(f is g for g in quedan[x])] for x in seg}
+                    total = ajenas(quedan[0], (entradas[0],)) if a == 0 else 0
+                    partes = []
+                    for j in range(max(a - 1, 0), i):
+                        c, parte = coste(j, van.get(j, []) + (quedan.get(j + 1, grupos[j + 1]) if j + 1 < n else grupos[n]))
+                        total, partes = total + c, [*partes, parte]
+                    todas.append((total, tuple(partes), -sum(c == 0 for c in combo), quedan))
+                menos = min(x[0] for x in todas)
+                buenas = [x for x in todas if x[0] == menos]
+                if cruzan & set(seg):
+                    dudas.update(seg)
+                    elegido = min(todas, key=lambda x: (sum(x[1]), x[0], x[2]))[3]
+                elif len({x[1] for x in buenas}) > 1:
+                    dudas.update(seg)
+                    elegido = min(buenas, key=lambda x: (sum(x[1]), x[2]))[3]
+                else:
+                    elegido = min(buenas, key=lambda x: x[2])[3]
+            van = {x: [f for f in grupos[x] if not any(f is g for g in elegido[x])] for x in seg}
+            for x in seg:
+                grupos[x] = van.get(x - 1, []) + elegido[x]
+            grupos[i] = van[i - 1] + grupos[i]
+        return dudas
 
     # ---------------------------------------------------------------- persistencia
     def estado(self) -> dict:

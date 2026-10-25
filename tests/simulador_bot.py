@@ -534,6 +534,15 @@ class Simulacion:
         b.manda, b.sobre, b.opus, b.evalua, b.escala = manda, sobre, opus, evalua_registrada, escala
         return b
 
+    def pendiente(self) -> bool:
+        cerradas = {e["posicion"] for e in self.base.evaluacion if e["tipo"] == "cierre"}
+        for e in self.base.evaluacion:
+            if e["tipo"] == "veredicto" and e["posicion"] not in cerradas:
+                clave = e["posicion"].rsplit(":", 1)[0]
+                if all(v.fin <= self.reloj[0] for v in self.sec.vidas if v.clave == clave):
+                    return True
+        return False
+
     def _migra(self):
         """Lo que R5 dejo en la base al desplegar (estado, veredictos y avisos)."""
         mg = self.sec.migracion
@@ -563,7 +572,11 @@ class Simulacion:
         if sec.migracion:
             self._migra()
         bot = None
-        for m in range(sec.minutos + sec.EXTRA):
+        m = -1
+        while True:  # y, mientras quede una evaluada sin CERRADA con su clave ya vacia, hasta 130 min mas (I7: las 2 h de S3)
+            m += 1
+            if m >= sec.minutos + sec.EXTRA and (m >= sec.minutos + sec.EXTRA + 130 or not self.pendiente()):
+                break
             self.minuto = m
             self.reloj[0] = sec.lectura(m)
             if not sec.arriba(m):
@@ -655,7 +668,7 @@ def comprueba(s: Simulacion) -> list[str]:
     sec, reg, base = s.sec, s.reg, s.base
     fallos: list = [f"el bot revento: {e[:160]}" for e in reg.errores]
     mira = lambda k: s.mirado.__setitem__(k, s.mirado.get(k, 0) + 1)  # noqa: E731
-    fin_lecturas = sec.minutos + sec.EXTRA
+    fin_lecturas = max(reg.lecturas) + 1
     fuera_del_modelo = sec.variante is not None
     pagadas: dict = dict(s.previas)
     for ms, tipo, p, ultima in reg.pagos:
