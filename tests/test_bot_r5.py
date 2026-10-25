@@ -103,11 +103,14 @@ async def test_reg5_un_estado_mal_formado_no_tumba_al_bot(base, monkeypatch):  #
             caidas.append(repr(e)[:80])
     monkeypatch.undo()
     assert caidas == [] and len(await _veredictos(db)) == 1, caidas  # antes: KeyError 'obs' en cada tic, para siempre
-    assert any("descarto" in x["texto"] for x in bot.estado["errores"].values())  # y se dice
-    await db.execute("UPDATE bot_estado SET estado = $1::jsonb WHERE clave = 'bot'", sv.js({"vidas": ["no es un diccionario"]}))
-    otro = sv.Bot(ENTORNO, db, _mundo([[]], [], cuenta))
-    await otro.carga()  # antes: AttributeError y el bot no arrancaba
-    assert any("vidas" in x["texto"] for x in otro.estado["errores"].values())
+    assert any("descarto la vida BTCUSDT:Buy" in x["texto"] for x in bot.estado["errores"].values())  # y se dice
+
+
+async def test_reg5_unas_vidas_que_no_son_un_diccionario_no_impiden_arrancar(base):  # noqa: F811 - el fixture `base` de test_bot
+    await base.execute("INSERT INTO bot_estado VALUES ('bot', now(), $1::jsonb)", sv.js({"vidas": ["no es un diccionario"]}))
+    bot = sv.Bot(ENTORNO, base, None)
+    await bot.carga()  # antes: AttributeError y el bot no arrancaba
+    assert any("vidas" in x["texto"] for x in bot.estado["errores"].values())
 
 
 async def test_sospecha_el_plan_b_no_pega_una_posicion_nueva_a_una_vieja(base, monkeypatch):  # noqa: F811 - el fixture `base` de test_bot
