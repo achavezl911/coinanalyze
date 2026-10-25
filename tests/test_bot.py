@@ -655,7 +655,7 @@ async def test_un_paso_del_minuto_que_falla_no_se_lleva_el_latido(base, monkeypa
     monkeypatch.setattr(bot, "tic_parte", parte_que_falla)
     await bot.tic_minuto()
     estado = json.loads(await base.fetchval("SELECT estado FROM bot_estado WHERE clave = 'bot'"))
-    assert estado["errores"]["BASE"]["texto"].startswith("parte: UntranslatableCharacterError")
+    assert estado["errores"]["BASE parte"]["texto"].startswith("parte: UntranslatableCharacterError")  # causa y operacion (R4)
 
 
 def test_el_estado_de_bybit_dice_las_ips_de_la_clave_y_la_de_salida():

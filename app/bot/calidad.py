@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 
 ESQUEMAS = {"a": (0.02, 0.006, 1), "c": (0.012, 0.006, -1)}
 DIA = 1440
+PARTE_HORA_UTC = 13  # 07:00 en America/Mexico_City (UTC-6, la zona de 140 y 143): el parte, antes de que abra Europa
 
 
 def desenlace(velas: dict[int, tuple], minuto: int, lado: int, tp: float, sl: float, sentido: int) -> str:
@@ -79,7 +80,10 @@ def resumen(alertas: list[dict], velas: dict[str, dict], evaluaciones: list[dict
         g[0] += float(ll["coste_usd"])
         g[1] = min(g[1], float(ll["tope_usd"]))
     out["gasto"] = {d: f"{g:.2f} de {t:.2f}" for d, (g, t) in sorted(dias.items())}
-    out["partes"] = f"{sum(1 for d in todos if d in partes)} de {len(todos)} dias"
+    # solo los dias cuyo parte TOCABA dentro de la ventana (a las PARTE_HORA_UTC): el de hoy no cuenta hasta su hora, ni
+    # el del primer dia si la ventana empieza despues (remate 4, R8: un /informe a las 10:00Z decia «7 de 8»)
+    tocaban = [d for d in todos if desde <= _minuto(d) + PARTE_HORA_UTC * 60 < hasta]
+    out["partes"] = f"{sum(1 for d in tocaban if d in partes)} de {len(tocaban)} dias"
     return out
 
 
@@ -102,3 +106,7 @@ def texto(r: dict) -> str:
 
 def _dia(minuto: int) -> str:
     return datetime.fromtimestamp(minuto * 60, UTC).strftime("%Y-%m-%d")
+
+
+def _minuto(dia: str) -> int:
+    return int(datetime.strptime(dia, "%Y-%m-%d").replace(tzinfo=UTC).timestamp()) // 60
