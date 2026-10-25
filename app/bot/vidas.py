@@ -581,6 +581,9 @@ class Libro:
         for i in range(n):
             ya = {id(f) for f in atras[-1]} if atras else set()
             parado = (runs[i] + [None, None])[8] is False or self.u_parado  # el updatedTime no sigue: la lectura manda
+            if not parado and i:  # (o el tramo que acaba aqui deja faltar filas: el updatedTime pudo moverse por otra cosa)
+                p = runs[i - 1]
+                parado = bool(tramo((p[2], p[3]), grupos[i], (runs[i][2], runs[i][3]), (runs[i][7] or [None, 0])[1]).get("falta"))
             atras.append([f for f in grupos[i + 1] if parado and f["b"] <= runs[i][0] + DESFASE_MS and id(f) not in ya])
         base = []
         for i in range(n):
