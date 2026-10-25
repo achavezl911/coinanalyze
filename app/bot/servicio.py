@@ -416,6 +416,7 @@ class Bot:
         for i, v, p, ms in await self.db.fetch(
                 "SELECT DISTINCT ON (posicion) posicion, veredicto, detalle->'posicion', (extract(epoch FROM ts) * 1000)::bigint"
                 " FROM bot_evaluacion e WHERE tipo = 'veredicto' AND ts >= now() - interval '30 days'"
+                " AND detalle->>'motivo' LIKE 'posicion nueva%'"
                 " AND NOT EXISTS (SELECT 1 FROM bot_evaluacion c WHERE c.tipo = 'cierre' AND c.posicion = e.posicion)"
                 " ORDER BY posicion, ts"):
             self.evaluadas[i] = {"veredicto": v, "posicion": json.loads(p) if isinstance(p, str) else p, "visto": ms}
@@ -648,9 +649,13 @@ class Bot:
         for i, p in self.pos.items():
             if i not in self.validadas:
                 await self.valida(p)
-            if i not in self.evaluadas and i not in self.evaluando and time.time() >= self.proxima_eval.get(i, 0):
+            seg = r["firmes"].get(i)  # se evalua con su ultima lectura SEGURA (casi siempre, esta): nunca con otra vida pegada
+            if seg and i not in self.evaluadas and i not in self.evaluando and time.time() >= self.proxima_eval.get(i, 0):
+                pe = p if seg["actual"] else {"clave": p["clave"], "symbol": p["symbol"], "lado": p["lado"], "id": i,
+                                              "liquidacion": None, "nota": "su ultima lectura segura"} | seg
+                pe.pop("actual", None)
                 self.evaluando.add(i)
-                self.lanza(self.evalua_una(p, "posicion nueva" + (f" · {p['reapertura']}" if p.get("reapertura") else "")), f"evalua {i}")
+                self.lanza(self.evalua_una(pe, "posicion nueva" + (f" · {p['reapertura']}" if p.get("reapertura") else "")), f"evalua {i}")
             for tipo, txt in cen.alertas_posicion(p):
                 if tipo != "sin_stop" and (i, tipo) not in self.avisados:
                     self.avisados.add((i, tipo))
@@ -729,7 +734,8 @@ class Bot:
             liq = f"\nliquidacion Bybit {p['liquidacion']:g} · formula: {calc.nota_validacion(self.estado['validacion'])}"
         # en memoria ANTES de registrar (si la base falla no se vuelve a evaluar ni a pagar cada minuto: bug 3), y solo el
         # PRIMER veredicto: es el que se puntua (un /evalua a mano se registra, pero no lo pisa: bug 5)
-        self.evaluadas.setdefault(p["id"], {"veredicto": v, "posicion": p})
+        if motivo.startswith("posicion nueva"):  # solo la automatica se puntua: un /evalua a mano puede caer en una lectura
+            self.evaluadas.setdefault(p["id"], {"veredicto": v, "posicion": p})  # que aun no es seguro de que vida es (R6)
         self.evaluando.discard(p["id"])
         try:
             await self.db.execute(
