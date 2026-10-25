@@ -255,8 +255,8 @@ def genera(rng: random.Random, n: int, simple: bool, var: str | None = None) -> 
                     evaluas={m for m in range(minutos) if rng.random() < 0.04}, simple=simple and var is None,
                     u_parcial=var != "s1_updated", funding=funding, excepciones=0.15 if var == "excepciones" else 0.0, variante=var)
     if var == "base_cierre":
-        d = BASE + rng.randint(5, minutos + 20) * M
-        sec.cierre_caida = (d, d + rng.randint(2, 30) * M)
+        d = rng.randint(5, minutos + 20)  # (la base vuelve antes del final: se mira que el cierre llegue UNA vez)
+        sec.cierre_caida = (BASE + d * M, BASE + (d + rng.randint(2, max(2, min(30, minutos + Secuencia.EXTRA - 4 - d)))) * M)
     if var == "migracion":
         sec.migracion = _migracion(rng, sec)
         sec.caida = None
@@ -743,8 +743,8 @@ def comprueba(s: Simulacion) -> list[str]:
                 motivo = _ambigua_verdad(s, v, nota, vistas, perdida)
                 if motivo:
                     fallos.append(f"ninguna mas: la vida {v.n} sin puntuar por «{nota[:90]}» y {motivo}")
-            if sec.simple and nota.startswith("ambigua: A2") and not _ambigua_verdad(s, v, nota, vistas, perdida):
-                s.a2_simples += 1  # tras una vida entera que el bot no vio: declarada, se cuenta aparte (I6)
+            if sec.simple and nota.startswith(("ambigua: A2", "ambigua: S1")) and not _ambigua_verdad(s, v, nota, vistas, perdida):
+                s.a2_simples += 1  # tras una vida entera que el bot no vio, o una fila a caballo (S1): declaradas, aparte (I6)
             elif sec.simple:  # I6
                 fallos.append(f"I6 la vida {v.n} cerrada sin puntuar en una secuencia simple: {nota[:100]}")
     for i, k in cierres.items():
@@ -761,7 +761,10 @@ def comprueba(s: Simulacion) -> list[str]:
         clave = i.rsplit(":", 1)[0]
         ultima_fin = max([w.fin for w in sec.vidas if w.clave == clave] + [0])
         abierta_al_final = any(w.clave == clave and w.fin > fin_sim for w in sec.vidas)
-        if abierta_al_final or ultima_fin + ESPERA + 3 * M > fin_sim:
+        vuelta = next((sec.lectura(m) for m in range(fin_lecturas) if sec.lectura(m) >= ultima_fin and reg.lecturas.get(m) is not None),
+                      math.inf)  # la primera lectura del bot sin la vida: desde ahi cuenta su ESPERA
+        listo = max(vuelta + ESPERA, sec.cierre_caida[1] if sec.cierre_caida else 0, sec.base_caida[1] if sec.base_caida else 0)
+        if abierta_al_final or listo + 3 * M > fin_sim:
             continue
         mira("I7")
         if cierres.get(i, 0) != 1:
@@ -795,11 +798,23 @@ def _evidencia(s: Simulacion, v: Vida, ms: list, vistas: dict) -> int | None:
             return None  # reabierta a la misma entrada (A6)
     if any(not sec.arriba(m) for m in range(desde, ms[-1] + 1)) or (sec.caida and desde <= sec.caida[0] <= ms[-1]):
         return None
+    if any(_a_caballo(s, v.clave, f, m) for f in (pred.filas if pred else []) + v.filas for m in range(max(0, desde - 1), ms[-1] + 1)):
+        return None  # una fila a caballo de una lectura con dos historias posibles (S1, declarado)
     ordenes_pred = {f["orden"] for f in pred.filas if f["t"] > sec.lectura(desde)} if pred else set()
     for m in ms:  # la primera lectura en que se ve y closed-pnl ya trae el cierre de la anterior
         if ordenes_pred <= reg.visibles.get(m, set()):
             return m
     return None
+
+
+def _a_caballo(s: Simulacion, clave: str, f: dict, m: int) -> bool:
+    """¿La fila f esta a caballo de la lectura m para el bot (S1: b <= max(updatedTime, hora local - 10 s) < h)?"""
+    lec = s.reg.lecturas.get(m)
+    if not lec:
+        return False
+    x = lec.get(clave)
+    frontera = max(x[1] if x else -math.inf, s.sec.lectura(m) - 10_000)
+    return min(f["c"], f["b"]) - 10_000 <= frontera < max(f["c"], f["b"]) + 10_000
 
 
 def _s4_roto(s: Simulacion, vs: list) -> bool:
@@ -903,6 +918,10 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
     if nota.startswith("ambigua: A7"):
         return None if any(len(set(range(a, a + 2)) & sec.vacias) == 2 or sec.u_parcial is False for a in range(fin_m(sec))) \
             else "no hubo dos lecturas vacias seguidas"
+    if nota.startswith("ambigua: S1"):  # una fila de ella, de la anterior o de las siguientes a menos de 30 s de una lectura
+        cerca = [w for w in misma if w.fin <= v.inicio][-1:] + siguientes[:3]
+        return None if any(abs(f["t"] - sec.lectura(m)) <= 30_000 or abs(f["c"] - sec.desfase - sec.lectura(m)) <= 30_000
+                           for w in cerca for f in w.filas for m in lecturas) else "ninguna fila a menos de 30 s de una lectura"
     if nota.startswith("ambigua: A5"):
         return None if sec.migracion else "A5 sin un registro anterior (no hubo despliegue)"
     return "no es ninguno de los motivos declarados"

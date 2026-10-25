@@ -46,6 +46,8 @@ CUANDO SALE AMBIGUA (y ninguna otra vez; el simulador comprueba la verdad de cad
     si es la misma o una nueva; sigue con el mismo id.
  A7 desaparecio sin filas que la cierren y volvio distinta: un anadido mientras no se veia, o un cierre y otra con sus
     filas aun por llegar; sigue con el mismo id.
+ S1 una fila a caballo de una lectura (S1) cabe a los dos lados y cuenta dos historias -cerrar y reabrir, o seguir-: se
+    queda la que no parte la vida (nunca dos evaluaciones) y no se puntua.
  X  (no deberia pasar dentro de S1-S4) una fila sin duda entre dos lecturas que ensenaban el mismo tamano y la misma entrada.
 SIN PUNTUAR (no ambigua): desaparecio y closed-pnl no trajo en SIN_FILAS lo que cubre su tamano, o una lectura ensena menos
 de lo que dicen sus filas y en ESPERA no llega lo que falta. Una vida ya ambigua cuyas filas cubren lo que se le vio abrir
@@ -73,6 +75,7 @@ INF = float("inf")
 A3 = "A3: una fila sin lado en cobertura que no casa con la entrada de una sola de las dos"
 A6 = "A6: sus filas la cierran a la misma entrada a la que se la ve despues: no se sabe si es la misma o una nueva"
 A7 = "A7: desaparecio sin filas que la cierren y volvio distinta"
+S1 = "S1: una fila a caballo de una lectura cuenta dos historias (cerrar y reabrir, o seguir): la misma vida, sin puntuar"
 
 
 def hora_fila(creada, actualizada, tarde: bool = False) -> int | None:
@@ -144,25 +147,26 @@ def tramo(pre: tuple, filas: list, post: tuple | None, vacias: int = 0) -> dict:
         if mismo(f["e"], ent):
             viejo.append(f)
             tam -= f["q"]
-            if tam < -pre[0] * TOL_Q:  # cierran MAS de lo que se veia: hubo un anadido sin ver (que casi no movio la media)
+            if tam < -pre[0] * TOL_Q:  # cierran MAS de lo que se veia a SU entrada: un anadido que no movio la media (S4 roto)
                 viejo.pop()
-                return _con_vacias(_sin_tamano(viejo, filas[j:], post, tam + f["q"]), pre, filas, post, vacias)
+                return _con_vacias(_sin_tamano(viejo, filas[j:], post, tam + f["q"]), pre, filas, post, vacias) | {"s4": True}
             if tam <= pre[0] * TOL_Q:
                 resto = filas[j + 1:]
                 igual = [g for g in resto if mismo(g["e"], ent)]  # mas cierres a SU entrada: siguio (S4 roto) o una igual
                 if post is None:  # lo de despues: vidas enteras que el bot no vio
                     if igual:
-                        return {"viejo": viejo + igual, "fin": igual[-1], "nuevo": [], "cuadra": False, "amb": A6}
+                        return {"viejo": viejo + igual, "fin": igual[-1], "nuevo": [], "cuadra": False, "amb": A6, "s4": True}
                     return {"viejo": viejo, "fin": f, "nuevo": [], "cuadra": True}
                 if mismo(post[1], ent):  # «reabierta» a la misma entrada: S4 roto; no se parte (A6)
                     return {"viejo": viejo + resto, "fin": None, "nuevo": [], "cuadra": False, "sigue": True, "amb": A6,
-                            "hasta": f["b"]}
+                            "hasta": f["b"], "s4": True}
                 otras = [g for g in resto if not mismo(g["e"], post[1]) and not mismo(g["e"], ent)]
                 a2 = (f"A2: antes de verla hubo {len(otras)} cierre(s) a otra entrada (un anadido suyo o una vida entera que el"
                       f" bot no vio)") if otras else None
                 nuevo = [g for g in resto if mismo(g["e"], post[1])]
                 if igual:
-                    return {"viejo": viejo + igual, "fin": igual[-1], "nuevo": nuevo, "cuadra": False, "amb": A6, "amb_nuevo": a2}
+                    return {"viejo": viejo + igual, "fin": igual[-1], "nuevo": nuevo, "cuadra": False, "amb": A6, "amb_nuevo": a2,
+                            "s4": True}
                 return {"viejo": viejo, "fin": f, "nuevo": nuevo, "cuadra": True, "amb_nuevo": a2}
         else:  # una fila a otra entrada: hubo un anadido que el bot no vio; desde aqui el tamano no se sabe
             return _con_vacias(_sin_tamano(viejo, filas[j:], post, tam), pre, filas, post, vacias)
@@ -383,9 +387,12 @@ class Libro:
         B = [max(r[4], r[0] - DESFASE_MS) for r in runs]
         cortes = [k["vacia"], *B, INF]
         grupos = [entre(filas, hs, cortes[i], cortes[i + 1]) for i in range(len(runs) + 1)]
+        dudas: set = set()  # lecturas con una fila a caballo que cambia la vida: la de esa lectura y la de la siguiente, ambiguas
         for i in range(len(runs)):
             if any(f["h"] > B[i] for f in grupos[i]):
-                grupos[i], grupos[i + 1] = self._reparte(k, i, grupos[i], grupos[i + 1], B[i])
+                grupos[i], grupos[i + 1], duda = self._reparte(k, i, grupos[i], grupos[i + 1], B[i])
+                if duda:
+                    dudas.add(i)
 
         vidas: list = []
         v = None
@@ -445,6 +452,8 @@ class Libro:
                         v["faltan"] = True
                     if sl:
                         v["amb"] = v["amb"] or A3
+            if i in dudas or i - 1 in dudas:
+                v["amb"] = v["amb"] or S1
             dentro = entre(filas, hs, r[0] + DESFASE_MS, r[1] - DESFASE_MS)
             if any(f["h"] < r[1] - DESFASE_MS for f in dentro):
                 v["amb"] = v["amb"] or "X: una fila mientras el tamano y la entrada no cambiaban"
@@ -455,6 +464,8 @@ class Libro:
             return vidas
         if k["ausente"] is not None:  # la cola: la clave ya no esta en las lecturas
             r = runs[-1]
+            if len(runs) - 1 in dudas:
+                v["amb"] = v["amb"] or S1
             t = tramo((r[2], r[3]), grupos[-1], None)
             v["filas"] += t["viejo"]
             if t.get("amb"):
@@ -500,32 +511,48 @@ class Libro:
             return "A2: antes de las lecturas sin la clave hubo cierres a su misma entrada"
         return None
 
-    def _reparte(self, k: dict, i: int, G: list, siguiente: list, b: float) -> tuple[list, list]:
+    def _reparte(self, k: dict, i: int, G: list, siguiente: list, b: float) -> tuple[list, list, bool]:
         """S1: las filas a caballo de la lectura i (b <= B < h), antes o despues de ella. Solo cuenta lo IMPOSIBLE: un tramo al
-        que le faltan filas (ensena menos de lo que dejan). Dos historias posibles (cerrar y reabrir, o un anadido sin ver)
-        no se desempatan por cual cuadra mejor sino por la hora cruda de la fila, min(createdTime, updatedTime), contra el
-        updatedTime de la lectura.
-        -> (las de antes de i, las de despues con las que ya iban despues)."""
+        que le faltan filas (ensena menos de lo que dejan), uno que solo cabe con S4 roto (cierra mas de lo visto a su misma
+        entrada, o la cubre y sigue o vuelve a esa entrada), o una fila a la entrada de otra lectura (la media no vuelve
+        atras). Si las colocaciones posibles cuentan la MISMA historia (donde
+        se parte la vida), la de la hora cruda de la fila, min(createdTime, updatedTime), contra el updatedTime de la
+        lectura; si cuentan dos (cerrar y reabrir, o seguir tras un anadido sin ver), la que menos parte, y duda: la vida
+        sale ambigua (S1) y nunca se evalua dos veces. -> (las de antes de i, las de despues, duda)."""
         runs = k["runs"]
         r = runs[i]
 
-        def faltas(antes: list, despues: list) -> int:
-            n = 0
+        def vuelve(filas: list, e_otra: float) -> int:  # filas a la entrada de OTRA lectura: la media no vuelve atras (S4)
+            return sum(1 for f in filas if mismo(f["e"], e_otra) and not mismo(f["e"], r[3]))
+
+        def mira(antes: list, despues: list) -> tuple[int, tuple]:
+            n, partes = 0, []
             if i > 0:
                 p = runs[i - 1]
-                n += bool(tramo((p[2], p[3]), antes, (r[2], r[3]), (r[7] or [None, 0])[1]).get("falta"))
+                t = tramo((p[2], p[3]), antes, (r[2], r[3]), (r[7] or [None, 0])[1])
+                n, partes = n + bool(t.get("falta")) + bool(t.get("s4")), [*partes, bool(t.get("fin") or t.get("termina"))]
+                n += vuelve([f for f in despues if f in G], p[3])
             if i + 1 < len(runs):
                 s = runs[i + 1]
-                n += bool(tramo((r[2], r[3]), despues, (s[2], s[3]), (s[7] or [None, 0])[1]).get("falta"))
-            return n
+                t = tramo((r[2], r[3]), despues, (s[2], s[3]), (s[7] or [None, 0])[1])
+                n, partes = n + bool(t.get("falta")) + bool(t.get("s4")), [*partes, bool(t.get("fin") or t.get("termina"))]
+                n += vuelve(antes, s[3])
+            elif k["ausente"] is not None:
+                t = tramo((r[2], r[3]), despues, None)
+                n, partes = n + bool(t.get("s4")), [*partes, bool(t.get("fin"))]
+            return n, tuple(partes)
 
         def parte(quedan: list) -> tuple[list, list]:
             ids = {id(f) for f in quedan}
             return [f for f in G if id(f) in ids], [f for f in G if id(f) not in ids] + siguiente
 
         cruda = parte([f for f in G if f["h"] <= b or f["b"] + MARGEN_FILA_MS <= r[4]])
-        opciones = [cruda, (G, siguiente), parte([f for f in G if f["h"] <= b])]
-        return min(opciones, key=lambda o: faltas(*o))  # (con empate, la primera: la hora cruda)
+        opciones = [(o, *mira(*o)) for o in (cruda, (G, siguiente), parte([f for f in G if f["h"] <= b]))]
+        menos = min(n for _o, n, _p in opciones)
+        buenas = [(o, p) for o, n, p in opciones if n == menos]
+        if len({p for _o, p in buenas}) == 1:
+            return (*buenas[0][0], False)
+        return (*min(buenas, key=lambda x: sum(x[1]))[0], True)
 
     # ---------------------------------------------------------------- persistencia
     def estado(self) -> dict:
