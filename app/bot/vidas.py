@@ -319,7 +319,7 @@ class Libro:
         cambios: dict = {}
         for clave in list(self.claves):
             k = self.claves[clave]
-            if not k["runs"] and not any(len(p) == 8 for p in k.get("pasadas", [])):
+            if not k["runs"] and not any(len(p) == 9 for p in k.get("pasadas", [])):
                 continue
             k2 = dict(k, runs=[list(r) for r in k["runs"]], pasadas=list(k.get("pasadas", [])))
             suyo: dict = {"presentes": {}, "notas": {}, "resultados": [], "firmes": {}, "correcciones": []}
@@ -348,7 +348,8 @@ class Libro:
 
     def _tardias(self, clave: str, k: dict, out: dict):
         """S2 roto (remate 8, punto 7): una fila de closed-pnl que llega DESPUES de puntuada su vida -no estaba entre las que
-        se vieron al puntuarla, de su lado y entre el fin de la anterior y el suyo- CORRIGE su cifra: la RETIRA («ambigua: T»).
+        se vieron al puntuarla, de su lado y entre el fin de la anterior y la primera lectura sin ella- CORRIGE su cifra: la
+        RETIRA («ambigua: T»).
         No se suma: una vida solo se puntua cuando sus filas cierran todo lo que se le vio abrir, asi que una fila mas nunca
         la completa, la contradice (un parcial de antes de verla -A6P-, un anadido sin ver, una vida que no vio; medido en
         retraso_120: 0 de 39 cabian). La de otra direccion no cuenta; la de una vida sin cifra solo se apunta.
@@ -358,13 +359,13 @@ class Libro:
         filas, horas = self.filas.get(sym, []), self.horas.get(sym, [])
         nuevas = []
         for p in k.get("pasadas", []):
-            if len(p) != 8 or p[1] < (self.ultima or 0) - 86400_000:
+            if len(p) != 9 or p[1] < (self.ultima or 0) - 86400_000:
                 nuevas.append(p)
                 continue
             vistas = set(p[6])
-            tarde = [f for f in filas[bisect.bisect_right(horas, p[7]):bisect.bisect_right(horas, p[1])] if f["orden"] not in vistas]
+            tarde = [f for f in filas[bisect.bisect_right(horas, p[7]):bisect.bisect_right(horas, p[8])] if f["orden"] not in vistas]
             if tarde:
-                p = [*p[:4], list(p[4]), p[5], p[6] + [f["orden"] for f in tarde], p[7]]
+                p = [*p[:4], list(p[4]), p[5], p[6] + [f["orden"] for f in tarde], *p[7:]]
                 for f in tarde:
                     ld = lado_cierre(f["e"], f.get("x"), f["q"], f.get("pnl"))
                     if ld == -lado or (ld is None and not any(mismo(f["e"], e) for e in p[2])
@@ -403,15 +404,17 @@ class Libro:
             hechas = max(v["runs"]) + 1
             fin = max([v["fin"], k["runs"][max(v["runs"])][5]] + [f["b"] for f in v["filas"] if not v.get("amb")])
             desde = k["vacia"] if k["vacia"] is not None else min([k["runs"][min(v["runs"])][4]] + [f["b"] for f in v["filas"]]) - 1
-            # (lo suyo que llegue tarde: desde el fin de la anterior -sus parciales de antes de verla, S4- hasta su fin)
+            # (lo suyo que llegue tarde: desde el fin de la anterior -sus parciales de antes de verla, S4- hasta que dejo de verse
+            # -la primera lectura sin ella o la de la siguiente-: su cierre pasa despues de su ultima lectura)
             lo = k["vacia"] if k["vacia"] is not None else fin - HORIZONTE_MS
+            hi = max(fin, (k["runs"][hechas][0] if hechas < len(k["runs"]) else (k["ausente"] or [fin])[0]) + DESFASE_MS)
             fs, hs = self.filas.get(clave.split(":")[0], []), self.horas.get(clave.split(":")[0], [])
-            vistas = [f["orden"] for f in fs[bisect.bisect_right(hs, lo):bisect.bisect_right(hs, fin)]]
+            vistas = [f["orden"] for f in fs[bisect.bisect_right(hs, lo):bisect.bisect_right(hs, hi)]]
             # (con sus filas: el lado de una sin lado; y su id, ordenes, cifra, las filas que ya se veian y desde cuando: la
             # fila tardia, remate 8)
             k["pasadas"] = [p for p in k.get("pasadas", []) if p[1] > fin - HORIZONTE_MS - 86400_000] + \
                 [[desde, fin, [k["runs"][i][3] for i in v["runs"]] + _entradas(v["filas"]), v["id"], list(res["ordenes"]), res["pnl"],
-                  vistas, lo]]
+                  vistas, lo, hi]]
             k["vacia"] = v["fin"] if v.get("amb") else fin  # (de una ambigua no hay fila segura: lo de despues, a la siguiente)
             sig = next((w for w in vidas if w["runs"] and min(w["runs"]) == hechas), None)  # su duda no se pierde al quedar primera
             k["heredada"] = sig["amb"] if sig and (sig["amb"] in (A6, A6S) or str(sig["amb"]).startswith("S1")) else None  # (lo demas se recalcula)
@@ -451,16 +454,18 @@ class Libro:
         return {"pnl": sum(f["pnl"] or 0 for f in v["filas"]), "ordenes": ordenes, "nota": v.get("nota")}
 
     @staticmethod
-    def _viva(k: dict | None, b) -> list | None:
+    def _viva(k: dict | None, b, h=None) -> list | None:
         """Las entradas de la vida de k que cubre la hora b, con su hora: las de la lectura de antes y de despues de b
-        (abierta), o las de una ya puntuada cuyo tramo la contiene; None si ninguna la cubre (remate 7: antes juntaba todas)."""
+        (abierta) -y, si se da h, de todas hasta la de despues de h: la fila a caballo-, o las de una ya puntuada cuyo tramo
+        la contiene; None si ninguna la cubre (remate 7: antes juntaba todas)."""
         if not k:
             return None
         runs = k["runs"]
         if runs and (k["vacia"] is None or b > k["vacia"]):  # (remate 8: por la frontera de cada lectura, no por su updatedTime,
             # que puede no moverse con un parcial -s1_updated-: la fila caia detras de la lectura que lo ensenaba)
-            j = bisect.bisect_left([max(r[4], r[0] - DESFASE_MS) for r in runs], b)
-            return [runs[x][3] for x in (j - 1, j) if 0 <= x < len(runs)]
+            locs = [max(r[4], r[0] - DESFASE_MS) for r in runs]  # (y la de antes de una frontera a menos de los margenes)
+            j, jh = bisect.bisect_left(locs, b - MARGEN_FILA_MS - DESFASE_MS), bisect.bisect_left(locs, h if h is not None else b)
+            return [runs[x][3] for x in range(j - 1, jh + 1) if 0 <= x < len(runs)]
         return next((p[2] for p in k.get("pasadas", []) if p[0] < b <= p[1]), None)
 
     def _filas_de(self, clave: str, k: dict) -> tuple[list, list]:
@@ -481,8 +486,8 @@ class Libro:
             elif ld is None:
                 # (sin registro del otro lado no se excluye una vida suya que el bot no vio: solo es mia si casa con una
                 # entrada mia -de una lectura o de una fila con lado-)
-                alli = (self._viva(otra, f["b"]) or []) + suyas_o
-                aqui = (self._viva(k, f["b"]) or []) + mias
+                alli = (self._viva(otra, f["b"], f.get("h")) or []) + suyas_o
+                aqui = (self._viva(k, f["b"], f.get("h")) or []) + mias
                 en_esta, en_otra = any(mismo(f["e"], e) for e in aqui), any(mismo(f["e"], e) for e in alli)
                 if en_esta and not en_otra:
                     suyas.append(f)
@@ -815,7 +820,7 @@ class Libro:
                 lib.nada_desde4 = libro["nada_desde4"]
             for k in lib.claves.values():  # (una CORRECCION apuntada despues del ultimo latido: su cifra y sus ordenes)
                 for p in k["pasadas"]:
-                    if len(p) == 8 and p[3] in (cifras or {}):
+                    if len(p) == 9 and p[3] in (cifras or {}):
                         p[4], p[5] = list(cifras[p[3]][0]), cifras[p[3]][1]
                         p[6] = list(dict.fromkeys(p[6] + p[4]))
         elif "vidas" in g:  # un estado de R4/R5
@@ -895,8 +900,8 @@ class Libro:
             a = a + [VACIAS_SEGUIDAS if a[1] > a[0] else 1]
         pas = k.get("pasadas") if isinstance(k.get("pasadas"), list) else []
         lim, lim2, her, up = k.get("limpia"), k.get("limpia2"), k.get("heredada"), k.get("u_parado")
-        # (una pasada de R7: [desde, hasta, entradas]; de R8, ademas [id, ordenes, pnl, vistas, lo]: corrige una cifra tardia)
-        pas = [p for p in pas if isinstance(p, list) and len(p) in (3, 8) and isinstance(p[2], list)
+        # (una pasada de R7: [desde, hasta, entradas]; de R8, ademas [id, ordenes, pnl, vistas, lo, hi]: corrige una cifra tardia)
+        pas = [p for p in pas if isinstance(p, list) and len(p) in (3, 9) and isinstance(p[2], list)
                and (len(p) == 3 or (isinstance(p[3], str) and isinstance(p[4], list) and isinstance(p[6], list)
                                     and isinstance(p[5], (int, float, type(None)))
                                     and all(isinstance(x, (int, float)) for x in p[7:])))]

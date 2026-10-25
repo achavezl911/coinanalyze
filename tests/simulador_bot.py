@@ -718,8 +718,10 @@ def _conservadas(s: Simulacion) -> tuple[dict, int | None]:
     perdida = None
     if sec.caida and sec.caida[2] in ("antes_veredicto", "antes_latido"):
         c = sec.caida[0]
+        # (solo el veredicto automatico: carga() no recupera la lectura de un /evalua a mano)
         evaluadas = {w.n for w in (_vida_de(s, e["detalle"].get("posicion") or {}) for e in s.base.evaluacion
-                                   if e["tipo"] == "veredicto" and sec.lectura(c) <= e["ts"] < sec.lectura(c + 1)) if w}
+                                   if e["tipo"] == "veredicto" and sec.lectura(c) <= e["ts"] < sec.lectura(c + 1)
+                                   and str(e["detalle"].get("motivo", "")).startswith("posicion nueva")) if w}
         vistas = {n: [m for m in ms if m != c or (sec.caida[2] == "antes_latido" and n in evaluadas)] for n, ms in vistas.items()}
         vistas = {n: ms for n, ms in vistas.items() if ms}
         perdida = c
@@ -1094,7 +1096,9 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
                     if not (desde < f["t"] <= t1 + abs(sec.desfase) + 20_000):
                         continue
                     misma_e = ent is not None and abs(f["e"] / ent - 1) <= 1e-9
-                    if (not misma_e and f["c"] - 10_000 > limpia - 20_000) or (misma_e and f["c"] - 10_000 <= limpia2 + 20_000):
+                    # (la de otra entrada cuenta si PUDO pasar despues de «limpia»: su ultima hora mas el margen, como el bot)
+                    if (not misma_e and max(f["c"], f["b"]) + 10_000 > limpia - 1_000) or \
+                            (misma_e and f["c"] - 10_000 <= limpia2 + 20_000):
                         return None
         return "no hubo cierres a otra entrada tras la anterior y su «limpia», ni a la suya antes, hasta su primera lectura"
     if nota.startswith("ambigua: A6: la de antes se fue y sus filas cubren de mas"):  # (la anterior, un anadido sin ver)
@@ -1111,7 +1115,7 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
             return None
         return "no tuvo filas antes de su primera lectura ni hubo una vida igual antes"
     if nota.startswith(("ambigua: A6", "ambigua: X")):
-        if _s4_roto(s, siguientes[:3] + [w for w in misma if w.fin <= v.inicio][-1:]):
+        if _s4_roto(s, siguientes[:3] + [w for w in misma if w.fin <= v.inicio][-2:]):  # (la duda se hereda: dos antes)
             return None
         if nota.startswith("ambigua: A6") and _cierra_mas_tras_anadido(s, siguientes[:3], lecturas):
             return None
@@ -1159,8 +1163,11 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict, perdida: in
         if any(lado_de(f["e"], f["x"], f["q"], f["pnl"]) is None and not any(abs(f["e"] / e - 1) <= 1e-9 for e in vio) for f in v.filas):
             return None
         return "ninguna fila sin lado de otra vida (del otro lado o invisible) cerca de ella, ni suya a una entrada no vista"
-    if nota.startswith("ambigua: A5"):
-        return None if sec.migracion else "A5 sin un registro anterior (no hubo despliegue)"
+    if nota.startswith("ambigua: A5"):  # un despliegue, o una separacion que el bot decidio en un tic anterior y que lo que
+        # llego despues ya no sostiene: la misma duda que S1 (una fila a caballo de una frontera de esa vida)
+        if sec.migracion or _ambigua_verdad(s, v, "ambigua: S1", vistas, perdida, ts) is None:
+            return None
+        return "A5 sin despliegue ni una fila a caballo de una frontera suya"
     return "no es ninguno de los motivos declarados"
 
 
