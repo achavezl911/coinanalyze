@@ -389,8 +389,9 @@ class Simulacion:
                                       "precio": 1.0, "clase": None, "clase_min": None}, self.reloj[0] // M, {sym: {}})
                 if m in sec.evaluas:
                     await bot.atiende("/evalua btc")
-            except Exception as e:  # el bucle real (cada) lo anota y sigue; aqui se cuenta
-                self.reg.errores.append(f"{m}: {type(e).__name__} {e}")
+            except Exception as e:  # el bucle real (cada) lo anota y sigue; aqui se cuenta (salvo la base caida a proposito)
+                if not (isinstance(e, OSError) and sec.base_caida):
+                    self.reg.errores.append(f"{m}: {type(e).__name__} {e}")
             if punto == "antes_veredicto":
                 for t in list(bot.tareas):
                     t.cancel()
@@ -404,8 +405,9 @@ class Simulacion:
                 continue
             try:
                 await bot.latido()
-            except Exception as e:
-                self.reg.errores.append(f"{m} latido: {type(e).__name__} {e}")
+            except Exception as e:  # tic_minuto lo anota y sigue; con la base caida a proposito, es lo esperado
+                if not (isinstance(e, OSError) and sec.base_caida):
+                    self.reg.errores.append(f"{m} latido: {type(e).__name__} {e}")
             if punto == "tras_latido":
                 bot = None
 
@@ -478,15 +480,16 @@ def comprueba(s: Simulacion) -> list[str]:
         if pagadas.get(v.n, 0) != 1:
             fallos.append(f"I1 la vida {v.n} ({v.clave}) era identificable, se vio desde el minuto {primera} y se evaluo"
                           f" {pagadas.get(v.n, 0)} veces")
-    # I3: el aviso sin_stop
-    avisos = [(e["ts"], _vida_de(s, (e["detalle"].get("entradas") or {}).get("posicion") or {})) for e in base.evento if e["tipo"] == "sin_stop"]
+    # I3: el aviso sin_stop, el que SALE (Telegram): con la base caida no se registra, pero sale
+    avisos = [(ts, t) for ts, t in reg.textos if "sin stop" in t]
     for v in sec.vidas:
         for m in sorted(vistas.get(v.n, [])):
             lec = reg.lecturas[m][v.clave]
             if lec[2] is None:  # sin stop
                 siguiente = m + 1 < fin_lecturas and reg.lecturas.get(m + 1) is not None and sec.arriba(m + 1) \
                     and not (sec.caida and sec.caida[0] in (m, m + 1))
-                if siguiente and not any(w is v and ts <= sec.lectura(m + 1) for ts, w in avisos):
+                sym = v.clave.split(":")[0]
+                if siguiente and not any(sec.lectura(m) <= ts <= sec.lectura(m + 1) and sym in t for ts, t in avisos):
                     fallos.append(f"I3 la vida {v.n} se vio sin stop en el minuto {m} y no tuvo aviso sin_stop")
                 break
     # I2 e I4: cada cierre
@@ -496,7 +499,9 @@ def comprueba(s: Simulacion) -> list[str]:
             continue
         cierres[e["posicion"]] = cierres.get(e["posicion"], 0) + 1
         ver = veredictos.get(e["posicion"])
-        v = _vida_de(s, ver["detalle"].get("posicion") or {}) if ver else None
+        p_ev = ver["detalle"].get("posicion") if ver else next((p for _ms, tipo, p, _u in reg.pagos  # (veredicto sin registrar)
+                                                                 if tipo == "evalua" and p.get("id") == e["posicion"]), None)
+        v = _vida_de(s, p_ev or {})
         if v is None:
             fallos.append(f"I2 un cierre de {e['posicion']} sin vida real detras")
             continue
@@ -506,8 +511,8 @@ def comprueba(s: Simulacion) -> list[str]:
         if e["pnl"] is not None:
             if abs(e["pnl"] - v.pnl) > 1e-6 * max(1.0, abs(v.pnl)):
                 fallos.append(f"I2 la vida {v.n} puntuada {e['pnl']:+.4f} y lo real es {v.pnl:+.4f}")
-            elif ver["veredicto"] != "NO EVALUABLE" and e["acierto"] != ((v.pnl > 0) == (ver["veredicto"] == "A FAVOR")):
-                fallos.append(f"I2 la vida {v.n}: acierto {e['acierto']} con pnl {v.pnl:+.4f} y veredicto {ver['veredicto']}")
+            elif e["veredicto"] != "NO EVALUABLE" and e["acierto"] != ((v.pnl > 0) == (e["veredicto"] == "A FAVOR")):
+                fallos.append(f"I2 la vida {v.n}: acierto {e['acierto']} con pnl {v.pnl:+.4f} y veredicto {e['veredicto']}")
         if e["pnl"] is None:
             motivo = _ambigua_verdad(s, v, nota, vistas)
             if motivo:
@@ -578,6 +583,75 @@ def _ambigua_verdad(s: Simulacion, v: Vida, nota: str, vistas: dict) -> str | No
     if s.sec.caida or s.sec.base_caida:  # una caida puede dejar al bot sin lo que necesita: se acepta lo que diga
         return None
     return "no es ninguno de los motivos declarados"
+
+
+# ------------------------------------------------------------------------------------------- los casos FIJOS (validadores)
+def _v(n: int, clave: str, eventos: list, desfase: int, retrasos: dict | None = None) -> Vida:
+    """Una vida a mano: eventos [(minuto con decimales, tipo, q, precio)]; retrasos {indice del evento: ms}."""
+    v = Vida(n=n, clave=clave, lado=1 if clave.endswith(":Buy") else -1,
+             eventos=[(BASE + round(m * M), t, q, px) for m, t, q, px in eventos])
+    r = retrasos or {}
+    return construye(v, desfase, lambda i: r.get(i, 0))
+
+
+B, S_ = "BTCUSDT:Buy", "BTCUSDT:Sell"
+
+
+def fijas() -> list[Secuencia]:
+    """Los escenarios de los tres validadores (R3: R10 R1 R2 R7 R11 R4b; R4: los 5; R5: R-A R-B R-C R-D V2b V7) y la sospecha
+    de self.pos, con sus horas: las lecturas son a los :20 de cada minuto (minuto m -> m + 0.333)."""
+    out = []
+
+    def sec(nombre, vidas, desfase=0, minutos=14, **kw):
+        out.append(Secuencia(nombre=nombre, vidas=vidas, desfase=desfase, minutos=minutos, **kw))
+
+    # R3 (validacion de R3, remate 4)
+    sec("R10 parcial y anadido entre dos lecturas", [_v(1, B, [(0.9, "abre", 0.004, 110000), (1.5, "parcial", 0.002, 110450),
+                                                           (1.7, "anade", 0.004, 110750), (2.6, "cierra", 0, 110300)], 0)])
+    for tarde in (0, 70_000):
+        sec(f"R1 cerrada y reabierta a +0.14 % en el mismo minuto (cierre {tarde // 1000} s tarde)",
+            [_v(1, B, [(0.9, "abre", 0.004, 110000), (1.6, "cierra", 0, 110300)], 0, {1: tarde}),
+             _v(2, B, [(1.8, "abre", 0.004, 110150), (3.5, "cierra", 0, 109550)], 0)])
+    sec("R2 promediar y despues cerrar", [_v(1, B, [(0.9, "abre", 0.004, 110000), (1.5, "anade", 0.004, 110600),
+                                                    (2.6, "cierra", 0, 110800)], 0)])
+    sec("R7 reinicio tras promediar con el bot caido", [_v(1, B, [(0.9, "abre", 0.004, 110000), (3.5, "anade", 0.004, 110600),
+                                                                  (8.0, "cierra", 0, 110800)], 0)], caida=(2, 3, "tras_latido"))
+    sec("R11 la base cae 3 min al abrir", [_v(1, B, [(1.0, "abre", 0.004, 110000), (10.0, "cierra", 0, 110300)], 0)],
+        base_caida=(BASE + round(0.9 * M), BASE + round(3.9 * M)))
+    sec("R4b cobertura con entradas a 0.09 % y un cierre sin lado", [
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (1.6, "cierra", 0, 110010)], 0),
+        _v(2, S_, [(0.9, "abre", 0.004, 110100), (1.7, "cierra", 0, 109600)], 0)])
+    # R4 (validacion de R4, remate 5)
+    sec("R4.1 caida: la evaluada cierra y otra del mismo lado abre y cierra", [
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (3.0, "cierra", 0, 110300)], 0),
+        _v(2, B, [(4.0, "abre", 0.004, 111000), (6.0, "cierra", 0, 110400)], 0)], caida=(2, 6, "tras_latido"))
+    sec("R4.2 lista vacia una vez y el stop puesto", [_v(1, B, [(0.9, "abre", 0.004, 110000), (2.5, "stop", 0, 109400),
+                                                                (6.0, "cierra", 0, 110300)], 0)], vacias={2})
+    sec("R4.4 parcial fechado por Bybit 500 ms despues de la lectura que ya lo mostraba", [
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (2 + 19 / 60, "parcial", 0.002, 110450), (6.0, "cierra", 0, 110300)], 1500, {1: 30_000})],
+        desfase=1500)
+    # R5 (validacion de R5, este remate)
+    sec("R-A V2 anadido y parcial entre dos lecturas, despues el cierre final", [
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (1.4, "anade", 0.004, 110700), (1.6, "parcial", 0.003, 110100),
+                  (3.5, "cierra", 0, 109900)], 0)])
+    sec("R-A V1 parcial antes de la primera lectura (su fila a la hora de su updatedTime)", [
+        _v(1, B, [(0.95, "abre", 0.006, 110000), (1.2, "parcial", 0.002, 110500), (3.0, "cierra", 0, 109700)], 0)])
+    sec("R-B caida entre el veredicto y el latido, y se pone el stop", [
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (2.5, "stop", 0, 109400), (8.0, "cierra", 0, 110300)], 0)], caida=(1, 2, "antes_latido"))
+    sec("R-C anadido visto <= 5 s antes del cierre total y reapertura en el mismo minuto", [
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (2.32, "anade", 0.004, 110600), (2.40, "cierra", 0, 110700)], 0),
+        _v(2, B, [(2.6, "abre", 0.003, 111200), (6.0, "cierra", 0, 111000)], 0)])
+    sec("R-D closed-pnl tarda 90 s, anadido sin ver antes del cierre y se reabre", [
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (1.5, "anade", 0.004, 110600), (1.7, "cierra", 0, 110700)], 0, {2: 90_000}),
+        _v(2, B, [(1.9, "abre", 0.003, 111300), (8.0, "cierra", 0, 111000)], 0)])
+    sec("V2b anadido y parcial en el mismo minuto, despues una lista vacia", [
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (1.4, "anade", 0.004, 110600), (1.6, "parcial", 0.002, 110500),
+                  (6.0, "cierra", 0, 110300)], 0)], vacias={2})
+    sec("V7 la primera lectura ya ensena el tamano tras un parcial y su fila va 4 s por delante", [
+        _v(1, B, [(0.95, "abre", 0.006, 110000), (1.30, "parcial", 0.003, 110500), (4.0, "cierra", 0, 109800)], 4000)], desfase=4000)
+    sec("sospecha: una rafaga y un /evalua cuando la lectura sale vacia", [
+        _v(1, B, [(0.9, "abre", 0.004, 110000), (8.0, "cierra", 0, 110300)], 0)], vacias={3}, rafagas={3}, evaluas={3})
+    return out
 
 
 # --------------------------------------------------------------------------------------------------- el lote, y suelto

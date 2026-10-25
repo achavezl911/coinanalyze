@@ -384,6 +384,7 @@ class Bot:
         t = asyncio.create_task(seguro())
         self.tareas.add(t)
         t.add_done_callback(self.tareas.discard)
+        t.add_done_callback(lambda t: coro.close() if t.cancelled() else None)  # cancelada antes de empezar: sin aviso
         return t
 
     # ---------- registro ----------
