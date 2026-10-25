@@ -57,19 +57,51 @@ def problemas(ahora: datetime, unidad: dict | None, monitor: str | None, base_er
     return out
 
 
-def transicion(notificados: dict, actuales: dict) -> tuple[dict, list]:
-    """-> (nuevos: los que hay que avisar, resueltos: los avisados que ya no estan)."""
-    return {k: v for k, v in actuales.items() if k not in notificados}, [k for k in notificados if k not in actuales]
+CON_FECHA = ("parte:", "informe:")
 
 
-def mensajes(nuevos: dict, resueltos: list, notificados: dict) -> list[str]:
+def transicion(notificados: dict, actuales: dict, base_caida: bool = False, llegados: frozenset = frozenset()) -> tuple[dict, list, list]:
+    """-> (nuevos: los que hay que avisar, resueltos, caducados). Un avisado que ya no sale NO se da por resuelto si no se
+    pudo mirar (la base cayo y depende de ella: latido, parte, informe), y uno con fecha que salio de su dia o su semana sin
+    llegar (no esta en `llegados`) caduca: se dice «no llego nunca», no «resuelto» (remate 3, bug 7)."""
+    nuevos = {k: v for k, v in actuales.items() if k not in notificados}
+    resueltos, caducados = [], []
+    for k in notificados:
+        if k in actuales or (base_caida and (k == "latido" or k.startswith(CON_FECHA))):
+            continue
+        (caducados if k.startswith(CON_FECHA) and k not in llegados else resueltos).append(k)
+    return nuevos, resueltos, caducados
+
+
+def mensajes(nuevos: dict, resueltos: list, notificados: dict, caducados: list = ()) -> list[tuple[str, str]]:
     out = []
     if nuevos:
-        out.append("INTERRUPTOR del bot (coinalyze-bot) · ALERTA\n" + "\n".join(f"- {t}" for t in nuevos.values())
-                   + "\n(aviso una vez; aviso otra cuando se arregle)")
+        out.append(("alerta", "INTERRUPTOR del bot (coinalyze-bot) · ALERTA\n" + "\n".join(f"- {t}" for t in nuevos.values())
+                    + "\n(aviso una vez; aviso otra cuando se arregle)"))
     if resueltos:
-        out.append("INTERRUPTOR del bot · resuelto\n" + "\n".join(f"- {notificados[k]}" for k in resueltos))
+        out.append(("resuelto", "INTERRUPTOR del bot · resuelto\n" + "\n".join(f"- {notificados[k]}" for k in resueltos)))
+    if caducados:
+        out.append(("caducado", "INTERRUPTOR del bot · NO llego nunca (ya no se espera)\n" + "\n".join(f"- {notificados[k]}" for k in caducados)))
     return out
+
+
+def lee_estado(f: pathlib.Path) -> dict:
+    """El estado de la pasada anterior; uno corrupto (un apagon a mitad de escribir) no tumba el interruptor (bug 10)."""
+    try:
+        e = json.loads(f.read_text(encoding="utf-8"))
+        return e if isinstance(e, dict) else {}
+    except FileNotFoundError:
+        return {}
+    except (ValueError, OSError) as e:
+        print(f"CAUSA=VIGIA_ESTADO {f.name} ilegible ({type(e).__name__}): empiezo de cero", flush=True)
+        return {}
+
+
+def escribe_estado(f: pathlib.Path, texto: str) -> None:
+    """Atomica: a un temporal y os.replace, para que un apagon no deje medio fichero (bug 10)."""
+    tmp = f.with_name(f.name + ".tmp")
+    tmp.write_text(texto, encoding="utf-8")
+    os.replace(tmp, f)
 
 
 def unidad_bot() -> dict | None:
@@ -85,8 +117,8 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
                  ahora: datetime | None = None) -> dict:
     """Una pasada del interruptor. conecta(): la conexion a la base (o lanza). Devuelve lo que publica."""
     ahora = ahora or datetime.now(UTC)
-    previo = json.loads(estado_f.read_text()) if estado_f.exists() else {}
-    notificados = previo.get("notificados", {})
+    previo = lee_estado(estado_f)
+    notificados = previo.get("notificados", {}) if isinstance(previo.get("notificados"), dict) else {}
     informes = entorno.get("BOT_INFORMES") or "/var/lib/coinalyze-bot/informes"
     sem = semana_iso(ahora)
     falla = pathlib.Path(informes, f"{sem}.falla")
@@ -102,10 +134,22 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
     actuales = problemas(ahora, unidad, entorno.get("MONITOR_SERVICE_RESULT"), base_error, latido, parte_hoy, informe_semana,
                          falla.read_text(encoding="utf-8").strip()[:200] if falla.exists() else None,
                          int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN))
-    nuevos, resueltos = transicion(notificados, actuales)
+    llegados = set()  # de los avisados con fecha que ya no salen, cuales llegaron de verdad (tarde)
+    for k in [k for k in notificados if k.startswith(CON_FECHA) and k not in actuales]:
+        if db is None or base_error:
+            break
+        try:
+            tipo, cuando = k.split(":", 1)
+            sql = ("SELECT EXISTS (SELECT 1 FROM bot_evento WHERE tipo = 'parte' AND (ts AT TIME ZONE 'UTC')::date = $1::date)" if tipo == "parte"
+                   else "SELECT EXISTS (SELECT 1 FROM bot_evento WHERE tipo = 'informe' AND detalle->>'semana' = $1)")
+            if await db.fetchval(sql, datetime.strptime(cuando, "%Y-%m-%d").date() if tipo == "parte" else cuando):
+                llegados.add(k)
+        except (ValueError, OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
+            base_error = f"{type(e).__name__} {limpia(str(e))[:120]}"
+    nuevos, resueltos, caducados = transicion(notificados, actuales, base_error is not None, frozenset(llegados))
     token, chat = entorno.get("TELEGRAM_BOT_TOKEN"), entorno.get("TELEGRAM_OUTPUT_CHAT_ID") or entorno.get("TELEGRAM_CHAT_ID")
     envio = previo.get("envio", {"ok": None, "ts": None})
-    for texto in mensajes(nuevos, resueltos, notificados):
+    for tipo_msg, texto in mensajes(nuevos, resueltos, notificados, caducados):
         ok = False
         if token and chat:
             try:
@@ -118,17 +162,18 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
         print(f"aviso {'enviado' if ok else 'NO enviado'}: {texto.splitlines()[0]}", flush=True)
         if not ok:
             break  # lo no avisado se queda fuera de notificados: se reintenta en la siguiente pasada
-        if texto.startswith("INTERRUPTOR del bot (coinalyze-bot)"):
+        if tipo_msg == "alerta":
             notificados |= nuevos
         else:
-            notificados = {k: v for k, v in notificados.items() if k not in resueltos}
+            fuera = resueltos if tipo_msg == "resuelto" else caducados
+            notificados = {k: v for k, v in notificados.items() if k not in fuera}
         # lo avisado va al fichero ANTES de tocar la base: en 140 (2026-10-24) el registro del aviso no entraba (SQL_ASCII),
         # la pasada moria sin guardar y el aviso se repetia cada 5 min
-        estado_f.write_text(js({**previo, "notificados": notificados, "envio": envio}))
+        escribe_estado(estado_f, js({**previo, "notificados": notificados, "envio": envio}))
         await en_la_base(db, "INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('vigia', true, $1::jsonb)", js({"texto": texto}))
     publica = {"ts": ahora.isoformat(), "problemas": actuales, "notificados": notificados, "envio": envio,
                "canal": "puente" if token and chat else "sin canal"}
-    estado_f.write_text(js(publica))
+    escribe_estado(estado_f, js(publica))
     if db is not None:
         await en_la_base(db, "INSERT INTO bot_estado (clave, ts, estado) VALUES ('vigia', $1, $2::jsonb)"
                              " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = excluded.estado", ahora, js(publica))

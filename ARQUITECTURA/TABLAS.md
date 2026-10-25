@@ -932,11 +932,11 @@ necesariamente un fallo -puede ser estado interno-, pero es exactamente la forma
 del patron que en esta casa se ha repetido nueve veces: algo que existe, parece
 completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
-- `bot_estado` — la escriben 2: `app/bot/servicio.py:327`, `app/bot/vigia.py:133`
-- `bot_evaluacion` — la escriben 2: `app/bot/servicio.py:531`, `app/bot/servicio.py:551`
-- `bot_evento` — la escriben 2: `app/bot/servicio.py:298`, `app/bot/vigia.py:128`
-- `bot_llamada` — la escriben 1: `app/bot/servicio.py:372`
-- `bot_operacion` — la escriben 1: `app/bot/servicio.py:488`
+- `bot_estado` — la escriben 2: `app/bot/servicio.py:406`, `app/bot/vigia.py:178`
+- `bot_evaluacion` — la escriben 2: `app/bot/servicio.py:674`, `app/bot/servicio.py:720`
+- `bot_evento` — la escriben 2: `app/bot/servicio.py:364`, `app/bot/vigia.py:173`
+- `bot_llamada` — la escriben 1: `app/bot/servicio.py:454`
+- `bot_operacion` — la escriben 1: `app/bot/servicio.py:626`
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
 - `libro_cobertura` — la escriben 2: `app/libro.py:1030`, `app/libro.py:810`

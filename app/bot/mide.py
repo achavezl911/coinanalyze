@@ -146,6 +146,15 @@ def tabla(filas: list[dict]) -> str:
     return "\n".join(out)
 
 
+def texto_de(c: dict) -> str:
+    """El mensaje de un caso con el servicio.mensaje DE AHORA (el recorte por ruta incluido), desde sus datos grabados;
+    la tarea, la alerta y la pregunta salen de las lineas de su texto grabado (los casos de antes del remate 3 valen)."""
+    linea = lambda pre: next((ln[len(pre):] for ln in c["texto"].splitlines() if ln.startswith(pre)), None)  # noqa: E731
+    tarea, d = linea("TAREA: "), c["datos"]
+    return sv.mensaje(tarea, dec=d["decide"], ctx=d["sobre"], posicion=d.get("posicion") if tarea != "PREGUNTA" else None,
+                      alerta=linea("ALERTA: "), pregunta=linea("PREGUNTA: "))
+
+
 async def graba(carpeta: pathlib.Path, http: httpx.AsyncClient, entorno: dict) -> list[dict]:
     bot = sv.Bot(entorno, None, http)
     pub = bb.Bybit("", "", http)
@@ -176,7 +185,7 @@ async def corre(carpeta: pathlib.Path, http: httpx.AsyncClient, entorno: dict) -
     for c in casos:
         for nivel in NIVELES[c["ruta"]]:
             for vez in range(veces):
-                r = await llm.llama(http, entorno["ANTHROPIC_API_KEY"], sv.ESTABLE, c["texto"], gastado, tope, nivel)
+                r = await llm.llama(http, entorno["ANTHROPIC_API_KEY"], sv.ESTABLE, texto_de(c), gastado, tope, nivel)
                 gastado += r["coste"]
                 filas.append({"caso": c["id"], "ruta": c["ruta"], "esfuerzo": nivel, "vez": vez, "ms": r["ms"], "entrada": r["entrada"],
                               "cache": r["cache"], "salida": r["salida"], "coste": r["coste"], "error": r["error"],

@@ -136,11 +136,16 @@ def main(argv: list[str]) -> int:
             a = json.loads(corre(["claude", "auth", "status"], 60).stdout or "{}")
             if not a.get("loggedIn") or a.get("subscriptionType") != "max":
                 raise RuntimeError(f"la sesion de Max no vale (loggedIn={a.get('loggedIn')}, plan={a.get('subscriptionType')})")
-            sonda = corre(["claude", "-p", "Responde exactamente: OK", "--model", "claude-haiku-4-5-20251001", "--max-turns", "1",
-                           "--output-format", "stream-json", "--verbose", "--tools", ""], 300, cwd=vacio)
-            u = uso_max(sonda.stdout)
+            u = None
+            for intento in range(3):  # remate 3, S2: 3 de 3 sondas lo trajeron (2026-10-25); si una no, se reintenta
+                sonda = corre(["claude", "-p", "Responde exactamente: OK", "--model", "claude-haiku-4-5-20251001", "--max-turns", "1",
+                               "--output-format", "stream-json", "--verbose", "--tools", ""], 300, cwd=vacio)
+                u = uso_max(sonda.stdout)
+                if u is not None:
+                    break
+                time.sleep(30 * (intento + 1))
             if u is None:
-                raise RuntimeError("no pude leer el uso semanal de Max (sin rate_limit_event): no gasto sin saberlo")
+                raise RuntimeError("no pude leer el uso semanal de Max en 3 sondas (sin rate_limit_event): no gasto sin saberlo")
             if u >= TOPE_MAX:
                 raise RuntimeError(f"uso semanal de Max {u:.0%} >= {TOPE_MAX:.0%} (el tope de Alejandro)")
             c = json.loads(pathlib.Path(prueba).read_text()) if prueba else cifras(int(time.time() // 60))
