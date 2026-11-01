@@ -18,8 +18,11 @@ from app.bot import servicio as sv
 from app.bot import vidas
 
 
+GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes")  # (aqui y no GUARDADO: que caiga en 977ca59 por el defecto)
+
+
 def _guardado(bot) -> dict:
-    return {k: v for k, v in json.loads(bot.db.estado[1]).items() if k in ("libro", "cierres_pendientes", "correcciones_pendientes")}
+    return {k: v for k, v in json.loads(bot.db.estado[1]).items() if k in GUARDADO}
 
 
 async def _con_estado():
@@ -44,7 +47,7 @@ def _carga_lee():
     original = vidas.Libro.desde.__func__
 
     def desde(cls, guardado, *a, **k):
-        leido.append({x: guardado.get(x) for x in sv.GUARDADO if x in guardado} if isinstance(guardado, dict) else guardado)
+        leido.append({x: guardado.get(x) for x in GUARDADO if x in guardado} if isinstance(guardado, dict) else guardado)
         return original(cls, guardado, *a, **k)
     return leido, mock.patch.object(vidas.Libro, "desde", classmethod(desde))
 
@@ -77,8 +80,8 @@ async def test_keyerror_en_carga_con_la_base_contestando_el_latido_no_pisa_y_la_
         await bot.tic_minuto()  # antes: libro {} y cierres_pendientes {} encima de lo guardado
     assert db.estado[0] == db.reloj[0]  # el latido sale, con su hora
     escrito = json.loads(db.estado[1])
-    assert "ESTADO carga" in escrito["errores"] and escrito["cargado"] is False  # y sus errores
     assert _guardado(bot) == antes
+    assert "ESTADO carga" in escrito["errores"] and escrito["cargado"] is False  # y sus errores
     db.reloj[0] += 60_000
     leido, espia = _carga_lee()
     with _minuto(), espia:
@@ -148,7 +151,7 @@ async def test_la_consulta_del_latido_en_postgres_guarda_lo_suyo_sin_cargar(base
     otro.anota("ESTADO", "no pude cargar", "carga")
     await otro.latido()
     d = json.loads(await base.fetchval("SELECT estado::text FROM bot_estado WHERE clave = 'bot'"))
-    assert {k: d.get(k) for k in sv.GUARDADO} == {k: antes[k] for k in sv.GUARDADO}
+    assert {k: d.get(k) for k in GUARDADO} == {k: antes[k] for k in GUARDADO}
     assert "ESTADO carga" in d["errores"] and d["cargado"] is False and d["arranque"] == otro.estado["arranque"]
     await base.execute("UPDATE bot_estado SET estado = '[1, 2]'::jsonb WHERE clave = 'bot'")  # lo que no se entiende, entero
     await otro.latido()
