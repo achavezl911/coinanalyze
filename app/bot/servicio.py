@@ -41,6 +41,8 @@ log = logging.getLogger("app.bot")
 SECRETOS = ("ANTHROPIC_API_KEY", "BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_BOT_TOKEN", "API_INTERNAL_TOKEN")
 VEREDICTOS = ("A FAVOR", "EN CONTRA", "NO EVALUABLE")
 PARTE_HORA_UTC = calidad.PARTE_HORA_UTC  # 13: 07:00 en Ciudad de Mexico; vive en calidad, que cuenta los partes que tocaban
+# lo de bot_estado que solo el bot sabe y carga() recupera: sin cargar no se escribe encima (remate 9)
+GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes")
 RUTAS = {"escala": "low", "pregunta": "medium", "evalua": "high"}  # de partida (Alejandro, 2026-10-24); se cambia por entorno
 ESTABLE = """Eres el asistente de mesa de Alejandro para perpetuos lineales USDT de BTC, ETH y SOL en Bybit. Trabajas dentro
 de un bot de Telegram que vive en su laboratorio (Coinalyze). En cada mensaje te llegan DATOS servidos por el laboratorio
@@ -340,6 +342,7 @@ class Bot:
         self.cierres_pendientes: dict = {}  # id -> resultado que la base aun no apunto (remate 7: CERRADA una vez)
         self.correcciones_pendientes: dict = {}  # id|orden -> la CORRECCION de una cifra que la base aun no apunto (remate 8)
         self.cargado = True  # (remate 8) False si carga() fallo al arrancar: la seguridad sigue y se reintenta cada tic
+        self.cargando = asyncio.Lock()
         self.crudo_visto: dict = {}  # clave -> lo ultimo guardado en bot_crudo
         self.crudo_podado = 0.0
         self.validadas: set = set()
@@ -476,18 +479,46 @@ class Bot:
             self.estado["validacion"] = {"symbol": d["symbol"], "dia": str(v["d"]), "dif_pct": d["dif_pct"]}
         self.validadas = {r[0] for r in await self.db.fetch("SELECT detalle->>'posicion' FROM bot_evento WHERE tipo = 'validacion'")}
 
+    async def recarga(self) -> bool:
+        """(remate 9) El reintento de carga() si el arranque no pudo: desde el tic de Bybit Y desde el del minuto (con Bybit
+        apagado el de Bybit sale antes, y el parte esperaria para siempre), uno cada vez."""
+        if self.cargado:
+            return True
+        async with self.cargando:
+            if self.cargado:
+                return True
+            try:
+                await self.carga()
+            except Exception as e:
+                self.anota("ESTADO", f"sigo sin poder cargar el estado: {type(e).__name__} {str(e)[:120]}", "carga")
+                return False
+            self.cargado = True
+            self.bien("carga")
+            return True
+
     async def latido(self):
         self.estado["anthropic"]["gastado_hoy_usd"] = round(await self.gastado_hoy(), 4)
-        self.estado["libro"] = self.libro.estado()
-        self.estado["cierres_pendientes"] = self.cierres_pendientes
-        self.estado["correcciones_pendientes"] = self.correcciones_pendientes
+        # (remate 9) sin cargar, lo que el bot lleva en memoria esta VACIO: el latido sale igual (su hora y sus errores, que
+        # el vigia y K117 leen) y lo guardado se queda como estaba, para que la carga lo recupere identico. Si lo guardado no
+        # es un objeto, entero: lo que no se entiende tampoco se pisa
+        propio = {"libro": self.libro.estado(), "cierres_pendientes": self.cierres_pendientes,
+                  "correcciones_pendientes": self.correcciones_pendientes}
+        for k in GUARDADO:
+            if self.cargado:
+                self.estado[k] = propio[k]
+            else:
+                self.estado.pop(k, None)
+        self.estado["cargado"] = self.cargado
         # lo que ya no se ensena (resuelto o caducado hace mas de una hora) sale del estado: con una operacion por id
         # (evalua <id>, escala <id>) crecia sin fin (remate 5)
         ahora = datetime.now(UTC)
         self.estado["errores"] = {k: x for k, x in self.estado["errores"].items() if errores_vigentes({k: x}, ahora) != "ninguno"}
         await self.db.execute(
             "INSERT INTO bot_estado (clave, ts, estado) VALUES ('bot', now(), $1::jsonb)"
-            " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = excluded.estado", js(self.estado))
+            " ON CONFLICT (clave) DO UPDATE SET ts = excluded.ts, estado = CASE WHEN $2 THEN excluded.estado"
+            " WHEN jsonb_typeof(bot_estado.estado) <> 'object' THEN bot_estado.estado"
+            " ELSE excluded.estado || (SELECT coalesce(jsonb_object_agg(k, v), '{}'::jsonb) FROM jsonb_each(bot_estado.estado) j(k, v)"
+            " WHERE k = ANY($3::text[])) END", js(self.estado), self.cargado, list(GUARDADO))
         self.bien("latido")
 
     async def manda(self, texto: str) -> bool:
@@ -666,13 +697,8 @@ class Bot:
             await self.crudo_lectura(lista, ahora_ms)
         except Exception as e:
             self.anota(causa(e), f"lectura cruda: {type(e).__name__} {str(e)[:120]}", "registro crudo")
-        if not self.cargado:  # (remate 8) el arranque no pudo cargar el estado: sin el, nada de identidad (ni pagar dos veces)
-            try:
-                await self.carga()
-            except Exception as e:
-                return self.anota("ESTADO", f"sigo sin poder cargar el estado: {type(e).__name__} {str(e)[:120]}", "carga")
-            self.cargado = True
-            self.bien("carga")
+        if not await self.recarga():  # (remate 8) el arranque no pudo cargar el estado: sin el, nada de identidad (ni pagar dos veces)
+            return
         # 2 LA VIDA de cada posicion la lleva el libro (app/bot/vidas.py): una excepcion suya se anota (CAUSA=VIDAS) y deja
         # en suspenso SU clave (nada pagado sobre ella), sin tumbar el tic ni a las demas
         r: dict = {"presentes": {}, "notas": {}, "resultados": [], "firmes": {}, "suspensas": {}, "correcciones": [], "errores": []}
@@ -1018,6 +1044,8 @@ class Bot:
 
     def estado_informe(self) -> str:
         sem = semana_iso(datetime.now(UTC))
+        if not self.cargado:  # (remate 9) los enviados los lee carga(): sin ella, «todavia no» seria falso
+            return f"el de {sem}: no se sabe (estado sin cargar; no se envia hasta cargarlo)"
         if sem in self.informes_enviados:
             return f"el de {sem} llego y se envio"
         falla = os.path.join(self.informes, f"{sem}.falla")
@@ -1050,7 +1078,7 @@ class Bot:
             f"gasto API: hoy {s['gasto_hoy']:.2f} de {s['tope']:.2f} USD · ayer {s['gasto_ayer']:.2f} · esfuerzo {self.esfuerzo}",
             f"Telegram: {s['telegram']} · informe semanal: {s['informe']}",
             f"errores: {errores}",
-        ])
+        ] + ([] if self.cargado else ["ESTADO SIN CARGAR: avisos de seguridad si; evaluaciones, cierres, parte e informe esperan"]))
 
     async def gasto(self) -> str:
         filas = await self.db.fetch(
@@ -1087,7 +1115,8 @@ class Bot:
 
     async def tic_parte(self):
         n = datetime.now(UTC)
-        if n.hour < PARTE_HORA_UTC or self.parte_hoy == n.date():
+        # (remate 9) parte_hoy lo pone carga(): sin cargar, el parte de hoy ya enviado saldria otra vez
+        if not self.cargado or n.hour < PARTE_HORA_UTC or self.parte_hoy == n.date():
             return
         s = await self.salud()
         texto = self.texto_salud(s, f"PARTE {n:%Y-%m-%d}")
@@ -1103,7 +1132,7 @@ class Bot:
         """El informe semanal que redacta Claude Max en 143 (tools/bot/semanal.py) y deja en BOT_INFORMES/<semana>.txt."""
         sem = semana_iso(datetime.now(UTC))
         f = os.path.join(self.informes, f"{sem}.txt")
-        if sem in self.informes_enviados or not os.path.exists(f):
+        if not self.cargado or sem in self.informes_enviados or not os.path.exists(f):  # (remate 9: los enviados, de carga())
             return
         self.informes_enviados.add(sem)  # marcado ANTES de avisar (bug 4)
         texto = pathlib.Path(f).read_text(encoding="utf-8").strip()
@@ -1119,6 +1148,8 @@ class Bot:
             if orden in ("/evalua", "evalua"):
                 if not self.estado["bybit"]["activo"]:
                     return f"no evaluable: Bybit apagado en el bot ({self.estado['bybit']['error']})"
+                if not self.cargado:  # (remate 9) sin estado no se sabe de que vida es ninguna posicion: no se paga
+                    return "no evaluable: el estado del bot no esta cargado (lo reintento cada minuto); los avisos de seguridad siguen"
                 ps = [p for p in self.pos.values() if p["symbol"] == activo_de(texto, p["symbol"])]
                 for p in ps:
                     await self.evalua(p, "a peticion")
@@ -1152,6 +1183,7 @@ class Bot:
     async def tic_minuto(self):
         # cada paso en su try: el 2026-10-24 un parte que no entraba en la base (SQL_ASCII) cortaba el minuto ANTES del
         # latido, y bot_estado se quedo vacio con el centinela vivo. El latido se escribe siempre.
+        await self.recarga()  # (remate 9) captura lo suyo
         for nombre, paso in (("centinela", self.tic_centinela), ("parte", self.tic_parte), ("informe", self.tic_informe)):
             try:
                 await paso()

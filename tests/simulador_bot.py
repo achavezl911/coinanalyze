@@ -402,7 +402,12 @@ class BaseFalsa:
             self.operacion[orden] = {"orden": orden, "symbol": sym, "q": q, "e": e, "x": x, "pnl": pnl, "ms": int(ms),
                                      "c": json.loads(det).get("createdTime")}
         elif "INSERT INTO bot_estado" in sql:
-            self.estado = (ahora, a[0])
+            nuevo = a[0]
+            if len(a) > 1 and not a[1] and self.estado:  # R9: sin cargar, lo guardado del bot (a[2]) se queda como estaba
+                viejo = json.loads(self.estado[1])
+                nuevo = json.dumps(json.loads(a[0]) | {k: viejo[k] for k in a[2] if k in viejo}) if isinstance(viejo, dict) \
+                    else self.estado[1]
+            self.estado = (ahora, nuevo)
         elif "INSERT INTO bot_crudo" in sql:
             self.crudo.append((ahora, a[0], a[1], json.loads(a[2])))
         elif "DELETE FROM bot_crudo" in sql:
