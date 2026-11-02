@@ -106,9 +106,9 @@ def latido_y_bybit():
     if b.get("solo_lectura") is False:
         condenas.append(f"el bot publica que la clave de Bybit PUEDE OPERAR ({b.get('error')})")
     elif b.get("solo_lectura") is True and b.get("ip_ok") is False:
-        condenas.append(f"el bot publica que la clave de Bybit no esta atada a la IP ({b.get('ips')})")
+        condenas.append(f"el bot publica que Bybit rechaza la IP de salida de 140 (R10: la clave va sin IP; {b.get('ips')})")
     elif b.get("solo_lectura") is True and b.get("ip_ok") is True:
-        dichos.append("Bybit de solo lectura y atada a la IP (estado del bot)")
+        dichos.append("Bybit de solo lectura y acepta la IP de 140 (estado del bot)")
     else:
         faltas.append(f"bybit: el bot no pudo juzgar la clave ({b.get('error')})")
 
