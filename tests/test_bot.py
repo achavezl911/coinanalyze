@@ -648,7 +648,7 @@ async def test_k117_lee_una_base_sql_ascii_con_tildes(base_ascii, tmp_path):
                        env={**os.environ, "K117_REPO": str(RAIZ), "K117_HARNESS": str(tmp_path / "h"), "K117_DSN": dsn})
     salida = r.stdout + r.stderr
     assert "cayo" not in salida and "latido hace" in salida and "interruptor vivo" in salida, salida[-600:]
-    assert "Bybit de solo lectura y atada a la IP" in salida
+    assert "Bybit de solo lectura y acepta la IP de 140 (estado del bot)" in salida
 
 
 async def test_un_paso_del_minuto_que_falla_no_se_lleva_el_latido(base, monkeypatch):
