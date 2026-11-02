@@ -337,12 +337,13 @@ def planta(o, h, lo, c):
     lf = np.zeros(n + 1)
     paso = np.zeros(n + 1)
     g = float(os.environ.get("MAPA_EMPUJE", EMPUJE))
-    rampa = np.log1p(g * np.arange(EMPUJE_MIN) / EMPUJE_MIN)
+    M = int(os.environ.get("MAPA_EMPUJE_MIN", EMPUJE_MIN))
+    rampa = np.log1p(g * np.arange(M) / M)
     for E in ev:
-        m = min(EMPUJE_MIN, n - E)
+        m = min(M, n - E)
         lf[E:E + m] += rampa[:m]
-        if n > E + EMPUJE_MIN:
-            paso[E + EMPUJE_MIN] += np.log1p(g)
+        if n > E + M:
+            paso[E + M] += np.log1p(g)
     f = np.exp(lf[:n] + np.cumsum(paso)[:n])
     log(f"  planta {len(ev)} empujes, factor final {f[-1]:.3g}")
     return o * f, h * f, lo * f, c * f, f
