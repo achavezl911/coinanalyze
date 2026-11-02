@@ -933,12 +933,12 @@ necesariamente un fallo -puede ser estado interno-, pero es exactamente la forma
 del patron que en esta casa se ha repetido nueve veces: algo que existe, parece
 completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
-- `bot_crudo` — la escriben 2: `app/bot/servicio.py:846`, `app/bot/servicio.py:854`
-- `bot_estado` — la escriben 2: `app/bot/servicio.py:521`, `app/bot/vigia.py:218`
-- `bot_evaluacion` — la escriben 3: `app/bot/servicio.py:1009`, `app/bot/servicio.py:939`, `app/bot/servicio.py:974`
-- `bot_evento` — la escriben 2: `app/bot/servicio.py:406`, `app/bot/vigia.py:213`
-- `bot_llamada` — la escriben 1: `app/bot/servicio.py:576`
-- `bot_operacion` — la escriben 1: `app/bot/servicio.py:881`
+- `bot_crudo` — la escriben 2: `app/bot/servicio.py:849`, `app/bot/servicio.py:857`
+- `bot_estado` — la escriben 2: `app/bot/servicio.py:524`, `app/bot/vigia.py:218`
+- `bot_evaluacion` — la escriben 3: `app/bot/servicio.py:1012`, `app/bot/servicio.py:942`, `app/bot/servicio.py:977`
+- `bot_evento` — la escriben 2: `app/bot/servicio.py:409`, `app/bot/vigia.py:213`
+- `bot_llamada` — la escriben 1: `app/bot/servicio.py:579`
+- `bot_operacion` — la escriben 1: `app/bot/servicio.py:884`
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
 - `libro_cobertura` — la escriben 2: `app/libro.py:1030`, `app/libro.py:810`
