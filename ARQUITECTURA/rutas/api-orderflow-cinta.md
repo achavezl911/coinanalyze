@@ -74,12 +74,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
 comentario no tiene consumidor, tiene quien habla de ella.
 
-**NINGUN rastro**, ni llamada ni mencion, en `static/app.js`, `static/index.html`,
-`harness/checks`, `tests`, `tools` ni `README.md`.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | `harness/checks/K112-banco.py:141`, `harness/checks/K113-raton.py:406`, `harness/checks/K113-raton.py:884` | `harness/checks/K113-raton.py:404` |
 
-No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su
-nombre-, pero es la forma exacta del patron que en esta casa se ha repetido nueve
-veces. **Merece una mirada, no una conclusion.**
+**No la llama el panel**, pero si 3 linea(s) de codigo fuera de el.
+Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)
 
