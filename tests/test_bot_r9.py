@@ -17,7 +17,6 @@ from test_bot_r8 import _bot, _nada, _pos
 from app.bot import servicio as sv
 from app.bot import vidas
 
-
 GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes")  # (aqui y no GUARDADO: que caiga en 977ca59 por el defecto)
 
 
