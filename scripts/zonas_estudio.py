@@ -47,6 +47,16 @@ def log(x: str) -> None:
     print(f"{time.time() - T0:7.0f}s {x}", flush=True)
 
 
+def _num(x):
+    if isinstance(x, np.bool_):
+        return bool(x)
+    if isinstance(x, np.integer):
+        return int(x)
+    if isinstance(x, np.floating):
+        return float(x)
+    raise TypeError(type(x))
+
+
 def minuto(iso: str) -> int:
     return int(datetime.fromisoformat(iso).replace(tzinfo=UTC).timestamp()) // 60
 
@@ -195,7 +205,7 @@ def operaciones(a: Activo, L: np.ndarray, ks: np.ndarray, desde: np.ndarray):
     P0 = np.where(desde > 0, np.minimum(a.o[ks], Lk), np.maximum(a.o[ks], Lk))
     idx = np.minimum(ks[:, None] + np.arange(zc.ESPERA + 1), a.n - 1)
     C = a.c[idx]
-    upc, dnc = C >= (Lk * (1 + zc.REACCION))[:, None], C <= (Lk * (1 - zc.REACCION))[:, None]
+    upc, dnc = (Lk * (1 + zc.REACCION))[:, None] <= C, (Lk * (1 - zc.REACCION))[:, None] >= C
     fu = np.where(upc.any(1), upc.argmax(1), 99)
     fd = np.where(dnc.any(1), dnc.argmax(1), 99)
     r = ks + np.minimum(fu, fd)
@@ -225,15 +235,15 @@ def resuelve(a: Activo, s: np.ndarray, P: np.ndarray, d: np.ndarray, toq: np.nda
         H, Lo = a.h[idx], a.lo[idx]
         ult = np.minimum(ss + zc.HORIZONTE, a.n) - 1
 
-        def primero(m):
+        def primero(m, val=val):
             m &= val
             return np.where(m.any(1), m.argmax(1), BIG)
 
         fs, ft = {}, {}
         for sl in {v[1] for v in zc.ESQUEMAS.values()}:
-            fs[sl] = primero(np.where(dd[:, None], Lo <= (PP * (1 - sl))[:, None], H >= (PP * (1 + sl))[:, None]))
+            fs[sl] = primero(np.where(dd[:, None], Lo <= (PP * (1 - sl))[:, None], (PP * (1 + sl))[:, None] <= H))
         for tp in {v[0] for v in zc.ESQUEMAS.values()}:
-            m = np.where(dd[:, None], H >= (PP * (1 + tp))[:, None], Lo <= (PP * (1 - tp))[:, None])
+            m = np.where(dd[:, None], (PP * (1 + tp))[:, None] <= H, Lo <= (PP * (1 - tp))[:, None])
             m[tt, 0] = False
             ft[tp] = primero(m)
         sgn = np.where(dd, 1.0, -1.0)
@@ -376,7 +386,7 @@ def main(argv: list[str]) -> int:
     out = informe(acc, meta, fmeta)
     out["rafagas"] = rafagas(acts, aj_hasta[0] + acts[0].t0, pr_desde[0] + acts[0].t0)
     guarda_muestra(acts, tablas, out, pr_desde, muestra)
-    salida.write_text(json.dumps(out, separators=(",", ":"), ensure_ascii=True) + "\n")
+    salida.write_text(json.dumps(out, separators=(",", ":"), ensure_ascii=True, default=_num) + "\n")
     log(f"FIN {salida} {salida.stat().st_size} B")
     return 0
 
@@ -417,7 +427,7 @@ def informe(acc: np.ndarray, meta: dict, fmeta: dict) -> dict:
             "criterio": "scripts/zonas_comun.py", "esquemas": {e: list(zc.ESQUEMAS[e]) for e in ESQ},
             "equilibrio": {e: round(zc.EQUILIBRIO[e], 4) for e in ESQ}, "comision_ida_y_vuelta": zc.FEE,
             "ajuste_hasta": zc.AJUSTE_HASTA, "prueba_desde": zc.PRUEBA_DESDE, "n_min": zc.N_MIN,
-            "azar_reps": zc.AZAR_REPS, "cuenta": cuenta, "extra": extra(n, k, net),
+            "azar_reps": REPS, "humo": HUMO, "cuenta": cuenta, "extra": extra(n, k, net),
             "campos": ["esquema", "modo", "clase", "activo", "lado", "contexto", "n_ajuste", "tasa_ajuste",
                        "azar_ajuste", "candidata", "n", "aciertos", "stops", "tasa", "wilson95_lo",
                        "wilson_bonf_lo", "neto_pct", "azar", "n_azar", "veredicto"],
@@ -445,7 +455,7 @@ def extra(n, k, net) -> dict:
                 continue
             dt.append(t[bp + (v,)] - t[bp + (0,)])
             dn.append(nt[bp + (v,)] - nt[bp + (0,)])
-        pos, neg = sum(x > 0 for x in dt), sum(x < 0 for x in dt)
+        pos, neg = sum(bool(x > 0) for x in dt), sum(bool(x < 0) for x in dt)  # int de python: 2**nn exacto
         nn = pos + neg
         p = sum(math.comb(nn, i) for i in range(pos, nn + 1)) / 2 ** nn if nn else 1.0
         out[dim] = {"celdas": len(dt), "sube": pos, "baja": neg,
@@ -607,7 +617,7 @@ def guarda_muestra(acts, tablas, out, pr_desde, ruta: Path) -> None:
     dato = {"huella_historia": out["huella_historia"], "simbolo": a.s, "t0": a.t0, "modo": modo, "clase": clase,
             "activo": act, "lado": lado, "filas": filas_cel, "eventos": evs}
     ruta.parent.mkdir(parents=True, exist_ok=True)
-    ruta.write_bytes(lzma.compress(json.dumps(dato, separators=(",", ":")).encode(), preset=9))
+    ruta.write_bytes(lzma.compress(json.dumps(dato, separators=(",", ":"), default=_num).encode(), preset=9))
     log(f"muestra {ruta}: {len(evs)} eventos, {ruta.stat().st_size} B, fila {modo} {clase} {act} {lado}")
 
 
