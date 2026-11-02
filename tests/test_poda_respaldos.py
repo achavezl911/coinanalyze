@@ -138,3 +138,18 @@ def test_podar_el_directorio_de_produccion_sigue_exigiendo_root():
     )
     assert r.returncode != 0
     assert "root" in r.stderr
+
+
+
+def test_la_poda_va_ANTES_del_stage_y_tambien_al_final():
+    """PRUEBA DEL ORDEN EN EL FICHERO, no de comportamiento: correr el respaldo entero pide
+    Postgres y la llave. Si solo se podaba al final, un respaldo que moria por falta de disco
+    no podaba nunca y el disco no volvia (140, 2026-11-02). Se mira que haya una llamada a
+    `podar_respaldos` antes del `mktemp` del STAGE y que siga la del final."""
+    lineas = BACKUP.read_text(encoding="utf-8").splitlines()
+    llamadas = [i for i, ln in enumerate(lineas) if ln.strip() == "podar_respaldos"]
+    stage = next(i for i, ln in enumerate(lineas) if ln.startswith("STAGE=$(mktemp"))
+    fin_puerta = next(i for i, ln in enumerate(lineas) if "--solo-podar ]]" in ln) + 4  # su `fi`
+    assert lineas[fin_puerta].strip() == "fi"
+    assert [i for i in llamadas if fin_puerta < i < stage], "no hay poda entre la puerta --solo-podar y el mktemp del STAGE"
+    assert max(llamadas) > stage, "falta la poda del final"

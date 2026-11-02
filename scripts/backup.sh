@@ -71,6 +71,9 @@ done
 }
 
 mkdir -p "$BACKUP_DIR"
+# Poda tambien ANTES del STAGE: si solo podara al final, un respaldo que muere por falta de disco
+# no podaria nunca y el disco no volveria a liberarse (140, 2026-11-02: 41 GB de respaldos caducos).
+podar_respaldos
 STAGE=$(mktemp -d "$BACKUP_DIR/.stage-${STAMP}.XXXXXX")
 PLAIN_ARCHIVE="$STAGE/payload.tar.gz"
 trap 'rm -rf -- "$STAGE" "$FINAL_PATH.tmp"' EXIT
