@@ -22,7 +22,7 @@ import httpx
 from app.bot import bybit as bb
 
 RUTA = "/var/lib/coinalyze-bot/historial/historial.json"
-DIAS = 730
+DIAS = 729  # con 730 la ventana mas vieja cae en el limite de Bybit (retCode 10001, «earlier than 2 years»)
 VENTANA_MS = 7 * 86400 * 1000  # el tope de Bybit: endTime - startTime <= 7 dias
 CADUCA_S = 7 * 86400
 PAUSA = 0.25

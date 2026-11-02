@@ -41,9 +41,11 @@ def _baja(f, dias=21, **kw):
     return hi.descarga(f, ahora_ms=H, dias=dias, dormir=kw.pop("dormir", nada), **kw)
 
 
-def test_ventanas_de_7_dias_como_mucho_cubren_730_sin_hueco():
+def test_ventanas_de_7_dias_como_mucho_cubren_729_sin_hueco():
+    # 729 y no 730: la ventana mas vieja con 730 cae en el limite de Bybit (10001, «earlier than 2 years»)
+    assert hi.DIAS == 729
     vs = hi.ventanas(H)
-    assert vs[0][1] == H and vs[-1][0] == H - 730 * DIA
+    assert vs[0][1] == H and vs[-1][0] == H - 729 * DIA
     assert all(0 <= fin - ini <= 7 * DIA for ini, fin in vs)
     assert all(vs[i + 1][1] == vs[i][0] - 1 for i in range(len(vs) - 1))  # contiguas: ni hueco ni solape
     assert len(vs) == 105
@@ -108,7 +110,7 @@ async def test_una_clave_rechazada_para_sin_escribir():
         await _baja(Falso(lambda ruta, p, n: {"retCode": 10003, "retMsg": "invalid"}))
 
 
-def _datos(n_c, n_e, desde=H - 730 * DIA, **kw):
+def _datos(n_c, n_e, desde=H - 729 * DIA, **kw):
     return {"generado": "x", "desde": desde, "hasta": H, "n_cierres": n_c, "n_ejecuciones": n_e, "ventanas_fallidas": [],
             "permiso_ejecuciones": "ok", "cierres": [{"updatedTime": str(H - i)} for i in range(n_c)],
             "ejecuciones": [{"execTime": str(H - i)} for i in range(n_e)]} | kw
