@@ -8,7 +8,8 @@ coinalyze-bot (en systemd 257 salta en CADA caida: BOT2.r1.onfailure en hechos.t
   parte    el parte del dia, pasada servicio.PARTE_HORA_UTC + 30 min
   informe  el semanal de la semana ISO, pasado su lunes a las 13:30Z (con la causa que dejo 143 si no llego)
   bybit    (remate 7) con Bybit activo y el bot latiendo, el ultimo tic de Bybit COMPLETO de hace <= BYBIT_MIN minutos: si
-           la identidad o cualquier paso revienta cada minuto, el latido sigue y sin esto nadie lo veria
+           la identidad o cualquier paso revienta cada minuto, el latido sigue y sin esto nadie lo veria. (Remate 8) sin
+           ningun tic, pasados BYBIT_MIN del arranque, tambien; y solo se da por resuelto con un tic completo reciente
 Un aviso cuando un problema APARECE y otro cuando se VA (estado en $STATE_DIRECTORY/estado.json), no una rafaga; si el
 envio falla, se reintenta en la siguiente pasada. Su latido y lo que ve van a bot_estado 'vigia' (K117 lo juzga) y cada
 aviso enviado, a bot_evento 'vigia'.
@@ -53,14 +54,14 @@ def problemas(ahora: datetime, unidad: dict | None, monitor: str | None, base_er
         out["latido"] = "el bot no ha latido nunca"
     elif ahora - latido > timedelta(minutes=latido_min):
         out["latido"] = f"el bot no late desde hace {int((ahora - latido).total_seconds() // 60)} min (ultimo {latido:%H:%MZ})"
-    elif isinstance(bybit, dict) and bybit.get("activo") and bybit.get("tic"):  # late, pero ¿lee Bybit entero?
-        try:
-            tic = datetime.fromisoformat(str(bybit["tic"]).replace("Z", "+00:00"))
-        except ValueError:
-            tic = None
+    elif isinstance(bybit, dict) and bybit.get("activo"):  # late, pero ¿lee Bybit entero?
+        tic, arranque = _hora(bybit.get("tic")), _hora(bybit.get("arranque"))
         if tic and ahora - tic > timedelta(minutes=BYBIT_MIN):
             out["bybit"] = (f"el bot late pero no completa una lectura de Bybit desde hace {int((ahora - tic).total_seconds() // 60)} min"
                             f" (ultima {tic:%H:%MZ}): ni avisos de stop ni evaluaciones")
+        elif not tic and arranque and ahora - arranque > timedelta(minutes=BYBIT_MIN):  # (remate 8, R2: AUSENTE no es sano)
+            out["bybit"] = (f"el bot late pero no ha completado NINGUNA lectura de Bybit desde que arranco hace"
+                            f" {int((ahora - arranque).total_seconds() // 60)} min ({arranque:%H:%MZ}): ni avisos de stop ni evaluaciones")
     if ahora >= ahora.replace(hour=PARTE_HORA_UTC, minute=0, second=0, microsecond=0) + MARGEN_PARTE and not parte_hoy:
         out[f"parte:{ahora:%Y-%m-%d}"] = f"el parte de hoy ({PARTE_HORA_UTC}:00Z) no salio"
     lunes = (ahora - timedelta(days=ahora.weekday())).replace(hour=13, minute=30, second=0, microsecond=0)
@@ -72,14 +73,33 @@ def problemas(ahora: datetime, unidad: dict | None, monitor: str | None, base_er
 CON_FECHA = ("parte:", "informe:")
 
 
-def transicion(notificados: dict, actuales: dict, base_caida: bool = False, llegados: frozenset = frozenset()) -> tuple[dict, list, list]:
+def _hora(x) -> datetime | None:
+    try:
+        return datetime.fromisoformat(str(x).replace("Z", "+00:00")) if x else None
+    except ValueError:
+        return None
+
+
+def sin_juzgar(ahora: datetime, latido: datetime | None, bybit: dict | None, latido_min: int = LATIDO_MIN) -> frozenset:
+    """Lo que AHORA no se puede dar por bueno aunque no salga como problema (remate 8, R2): «bybit» solo se resuelve con el
+    bot latiendo, Bybit activo y un tic COMPLETO de hace <= BYBIT_MIN. Sin tic (recien arrancado), con Bybit apagado o con el
+    latido parado, no se sabe: el aviso sigue en pie (antes, releer la clave borraba el tic y salia un «resuelto» falso)."""
+    tic = _hora((bybit or {}).get("tic")) if isinstance(bybit, dict) else None
+    bien = latido is not None and ahora - latido <= timedelta(minutes=latido_min) and isinstance(bybit, dict) \
+        and bybit.get("activo") and tic is not None and ahora - tic <= timedelta(minutes=BYBIT_MIN)
+    return frozenset() if bien else frozenset({"bybit"})
+
+
+def transicion(notificados: dict, actuales: dict, base_caida: bool = False, llegados: frozenset = frozenset(),
+               inciertos: frozenset = frozenset()) -> tuple[dict, list, list]:
     """-> (nuevos: los que hay que avisar, resueltos, caducados). Un avisado que ya no sale NO se da por resuelto si no se
-    pudo mirar (la base cayo y depende de ella: latido, parte, informe), y uno con fecha que salio de su dia o su semana sin
-    llegar (no esta en `llegados`) caduca: se dice «no llego nunca», no «resuelto» (remate 3, bug 7)."""
+    pudo mirar (la base cayo y depende de ella: latido, parte, informe; o esta en `inciertos`: sin_juzgar), y uno con fecha
+    que salio de su dia o su semana sin llegar (no esta en `llegados`) caduca: se dice «no llego nunca», no «resuelto»
+    (remate 3, bug 7)."""
     nuevos = {k: v for k, v in actuales.items() if k not in notificados}
     resueltos, caducados = [], []
     for k in notificados:
-        if k in actuales or (base_caida and (k in ("latido", "bybit") or k.startswith(CON_FECHA))):
+        if k in actuales or k in inciertos or (base_caida and (k in ("latido", "bybit") or k.startswith(CON_FECHA))):
             continue
         (caducados if k.startswith(CON_FECHA) and k not in llegados else resueltos).append(k)
     return nuevos, resueltos, caducados
@@ -143,6 +163,8 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
             bybit = json.loads(b) if isinstance(b, str) else b
         except ValueError:
             bybit = None
+        if isinstance(bybit, dict):  # (remate 8: sin ningun tic, cuenta desde el arranque)
+            bybit = bybit | {"arranque": await db.fetchval("SELECT estado->>'arranque' FROM bot_estado WHERE clave = 'bot'")}
         parte_hoy = await db.fetchval("SELECT EXISTS (SELECT 1 FROM bot_evento WHERE tipo = 'parte' AND (ts AT TIME ZONE 'UTC')::date = $1)",
                                       ahora.date())
         informe_semana = await db.fetchval("SELECT EXISTS (SELECT 1 FROM bot_evento WHERE tipo = 'informe' AND detalle->>'semana' = $1)", sem)
@@ -163,7 +185,8 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
                 llegados.add(k)
         except (ValueError, OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
             base_error = f"{type(e).__name__} {limpia(str(e))[:120]}"
-    nuevos, resueltos, caducados = transicion(notificados, actuales, base_error is not None, frozenset(llegados))
+    nuevos, resueltos, caducados = transicion(notificados, actuales, base_error is not None, frozenset(llegados),
+                                              sin_juzgar(ahora, latido, bybit, int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN)))
     token, chat = entorno.get("TELEGRAM_BOT_TOKEN"), entorno.get("TELEGRAM_OUTPUT_CHAT_ID") or entorno.get("TELEGRAM_CHAT_ID")
     envio = previo.get("envio", {"ok": None, "ts": None})
     for tipo_msg, texto in mensajes(nuevos, resueltos, notificados, caducados):
