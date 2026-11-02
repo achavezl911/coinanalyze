@@ -22,7 +22,8 @@ import httpx
 BASE = "https://api.bybit.com"
 RECV = "5000"
 # ponytail: sin la ruta de la cartera (wallet-balance): ni C2 ni C3 la usan; se anade (es de lectura) cuando algo la pida
-PRIVADAS = ("/v5/user/query-api", "/v5/position/list", "/v5/position/closed-pnl")
+# /v5/execution/list (BOT-4a): las ejecuciones del historial (app/bot/historial.py); es un GET de lectura
+PRIVADAS = ("/v5/user/query-api", "/v5/position/list", "/v5/position/closed-pnl", "/v5/execution/list")
 PUBLICAS = ("/v5/market/risk-limit", "/v5/market/instruments-info", "/v5/market/tickers")
 ERRORES = {
     10003: "Bybit dice que la clave no es valida",

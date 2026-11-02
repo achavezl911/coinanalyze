@@ -34,7 +34,7 @@ import asyncpg
 import httpx
 
 from app.bot import bybit as bb
-from app.bot import calc, calidad, llm, vidas
+from app.bot import calc, calidad, historial, llm, vidas
 from app.bot import centinela as cen
 
 log = logging.getLogger("app.bot")
@@ -355,6 +355,9 @@ class Bot:
         self.desde_minuto = None  # el ultimo minuto que el centinela tenia visto (un apagon que cruza la medianoche)
         self.parte_hoy = None
         self.informes_enviados: set = set()
+        # BOT-4a: el historial de la cuenta, a un fichero y fuera de los bucles (nunca dentro de tic_bybit: R7)
+        self.historial_ruta = e.get("BOT_HISTORIAL") or historial.RUTA
+        self.historial_tarea, self.historial_proximo = None, 0.0
         self.estado = {
             "arranque": ahora_iso(), "version": os.path.basename(os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))),
             "telegram": "ok" if self.tg else "sin Telegram (faltan TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID)",
@@ -1197,6 +1200,24 @@ class Bot:
         except (LookupError, ValueError, KeyError, httpx.HTTPError) as e:
             return f"no evaluable: {limpia(str(e))[:300]}"
 
+    # ---------- historial (BOT-4a) ----------
+    async def tic_historial(self):
+        """Con Bybit activo y el estado cargado, si el fichero falta o tiene mas de 7 dias: UNA tarea por lanza(), sin
+        solaparse consigo misma y, salga como salga, no antes de un dia la siguiente."""
+        if self.bybit is None or not self.estado["bybit"]["activo"] or not self.cargado:
+            return
+        if self.historial_tarea is not None and not self.historial_tarea.done():
+            return
+        if time.time() < self.historial_proximo or historial.vigente(self.historial_ruta):
+            return
+        self.historial_proximo = time.time() + 86400
+        self.historial_tarea = self.lanza(self.baja_historial(), "historial")
+
+    async def baja_historial(self):
+        datos = await historial.descarga(self.bybit)
+        destino = await asyncio.to_thread(historial.guarda, self.historial_ruta, datos)
+        await self.manda(historial.resumen(datos, destino != self.historial_ruta))
+
     # ---------- bucles ----------
     async def cada(self, nombre: str, periodo: float, fn):
         while True:
@@ -1213,7 +1234,8 @@ class Bot:
         # cada paso en su try: el 2026-10-24 un parte que no entraba en la base (SQL_ASCII) cortaba el minuto ANTES del
         # latido, y bot_estado se quedo vacio con el centinela vivo. El latido se escribe siempre.
         await self.recarga()  # (remate 9) captura lo suyo
-        for nombre, paso in (("centinela", self.tic_centinela), ("parte", self.tic_parte), ("informe", self.tic_informe)):
+        for nombre, paso in (("centinela", self.tic_centinela), ("parte", self.tic_parte), ("informe", self.tic_informe),
+                            ("historial", self.tic_historial)):
             try:
                 await paso()
             except Exception as e:

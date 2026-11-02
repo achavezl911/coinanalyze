@@ -15,8 +15,14 @@ D=/mnt/archivo; R=$D/coinalyze; M=$R/MANIFIESTO.tsv; MAX_HORAS=${MAX_HORAS:-400}
 exec 9>"$R/.archiva.lock"; flock -n 9 || { echo "ABORTO: ya hay un archiva.sh corriendo"; exit 4; }
 declare -A DIR=([orderflow_cinta]=cinta [libro_foto]=libro [orderflow_celda]=celdas [scalp_signal_snapshot]=decide
                 [futures_trades_realtime]=futuros-realtime [orderbook_snapshot]=libro-l1 [libro_cobertura]=libro
-                [orderflow_cobertura]=celdas)
-TABLAS=(scalp_signal_snapshot orderbook_snapshot futures_trades_realtime orderflow_cinta libro_foto orderflow_celda libro_cobertura orderflow_cobertura)
+                [orderflow_cobertura]=celdas [liquidations_realtime]=liquidaciones-realtime
+                [liquidations]=liquidaciones-5min [open_interest]=oi [oi_bybit]=oi-bybit [funding_rate]=funding
+                [predicted_funding_rate]=funding-previsto [long_short_ratio]=largos-cortos
+                [spot_trades_agg]=spot-agregado [metrics_snapshot]=metricas)
+# liquidations_realtime (2026-10-20, operador, para el BOT): las liquidaciones segundo a segundo de los venues (retencion 12 h en 140)
+# son la materia prima para medir las cascadas y los barridos; K115 la anota como «no juzgada» hasta que la juzgue
+TABLAS=(scalp_signal_snapshot orderbook_snapshot futures_trades_realtime orderflow_cinta libro_foto orderflow_celda libro_cobertura orderflow_cobertura liquidations_realtime
+        liquidations open_interest oi_bybit funding_rate predicted_funding_rate long_short_ratio spot_trades_agg metrics_snapshot)
 [ -f "$M" ] || printf 'tabla\thora\tfilas\tbytes\tsha256\tescrito\n' > "$M"
 
 sql140() {  # $1 = SQL; salida por stdout (texto plano, sin cabeceras)
