@@ -47,7 +47,7 @@ AJUSTE de ESE activo, calculados solo con decisiones de antes de 2023-12-30):
      (Dspot24/Vspot24 - D24/V24) > p90 / < p10; spot_pesa / spot_ligero Vspot24/V24 > p90 / < p10. (6)
   F0 RUIDO (control negativo): una columna N(0,1) por decision (semilla fija): ruido_alto > p90, ruido_bajo < p10.
   F8 LO QUE NO SE VE: HistGradientBoostingClassifier (learning_rate 0.05, max_iter 200, max_leaf_nodes 15,
-     min_samples_leaf 200, l2 1.0, sin ajuste de hiperparametros) con las 28 columnas continuas de F0..F7 + activo,
+     min_samples_leaf 200, l2 1.0, sin ajuste de hiperparametros) con las 26 columnas continuas de F0..F7 + activo,
      los tres activos juntos, un modelo por esquema y lado; etiqueta neto > 0. Walk-forward: el ano Y (2022..2026)
      se predice con un modelo entrenado en las decisiones con T + tope < 1-ene-Y (embargo = horizonte). Senal: la
      probabilidad >= p95 de las predicciones fuera de muestra de los 365 dias anteriores (>= 90 dias de ellas).
