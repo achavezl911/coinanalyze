@@ -162,19 +162,25 @@ DECIL = 0.10                        # cola alta: x >= p90; baja: x <= p10 (umbra
 COLA_MAX, COLA_MIN = 0.15, 0.01
 DESPLAZAMIENTOS = 2000              # p por desplazamiento circular de la condicion contra las etiquetas
 DESPL_MIN_MIN = 360                 # minimo 6 h (en minutos; en la rejilla, 72 pasos)
+P_COLA_NORMAL = 10                  # p = (1 + k) / (1 + S), k = desplazamientos con tasa >= la observada. Si
+                                    # k < 10, 2000 desplazamientos no resuelven p < 5e-4 y BH sobre miles de
+                                    # celdas no puede pasar ninguna: entonces p = cola normal de z frente a la
+                                    # media y la desviacion de los desplazamientos (decidido antes de medir).
 SEMILLA = 20261102
 FDR_Q = 0.10                        # Benjamini-Hochberg sobre TODAS las celdas de una corrida
 N_MIN_MECANISMO = 10                # n sin solape < 10 = SIN N
 N_MIN_CONFIRMA = 30
 WILSON_Z = 1.6448536269514722       # 90 % bilateral
 MAX_CANDIDATAS, SOLO_MIRAR = 10, 5
-RUIDOS = 20                         # columnas N(0,1) de control negativo, en cada corrida: ninguna debe pasar
+RUIDOS = 10                         # columnas N(0,1) de control negativo, en cada corrida
 # todo junto: HistGradientBoosting por lado y capa, simbolos juntos (el simbolo es una columna)
 HGB = dict(learning_rate=0.05, max_iter=150, max_leaf_nodes=15, min_samples_leaf=200, l2_regularization=1.0)
 HGB_TRAMOS, HGB_PURGA_MIN, HGB_BARAJADOS, HGB_MEJOR = 5, 240, 20, 0.05
 # control positivo (--control): tras cada M1 largo, el precio sube EMPUJE en EMPUJE_MIN minutos y se queda;
 # y una columna `oraculo` = exito largo E1 + N(0, ORACULO_RUIDO). Ve el estudio si: M1 largo E1 pasa FDR en algun
-# simbolo, oraculo alto largo E1 pasa FDR en algun simbolo, y NINGUNA columna de ruido pasa FDR.
+# simbolo, oraculo alto largo E1 pasa FDR en algun simbolo, y las celdas de ruido que pasan FDR no son mas que
+# FDR_Q x todas las que pasan (los nulos conocidos se comportan como BH promete; «ninguna» fallaria por azar).
+# Las celdas planteadas arrastran a las que comparten insumos con M1 (liquidaciones, retornos): eso no cuenta.
 EMPUJE, EMPUJE_MIN, ORACULO_RUIDO = 0.015, 30, 0.5
 
 
