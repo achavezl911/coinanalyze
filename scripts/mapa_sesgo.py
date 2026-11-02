@@ -74,7 +74,7 @@ def en_tramo(juez, a, ops, e, lado, tramo):
 
 def paso2(acts, juez) -> dict:
     out = {}
-    for nom, fam in sorted({(n, f) for n, (f, _) in acts[0].cond.items()}, key=lambda x: x[1]):
+    for nom, (fam, _) in acts[0].cond.items():  # el orden de mapa_estudio: fija la posicion de cada signo al azar
         if nom not in elegibles(acts[0]):
             continue
         tr = np.concatenate([np.flatnonzero(elegibles(a)[nom]) for a in acts])
