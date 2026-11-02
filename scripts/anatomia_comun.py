@@ -349,3 +349,95 @@ def apertura_eeuu_utc(dia: datetime) -> int:
     fin = nov.replace(day=1 + (6 - nov.weekday()) % 7)
     d = dia.replace(hour=12, minute=0, second=0, microsecond=0)
     return 13 * 60 + 30 if ini <= d < fin else 14 * 60 + 30
+
+
+# ================================================================ REMATE 1 · gestion y rangos (BOT-3e r1)
+# Escrito y commiteado ANTES de medir nada. Lo usan `anatomia_gestion.py` y `anatomia_rangos.py` (143, numpy).
+#
+# GESTION. Entradas: GESTION_ENTRADAS y las candidatas de candidatas.json, por simbolo y lado, en la rejilla de 5 min
+# con la capa del estudio; descubrimiento = salida antes de CORTE_DESCUBRIMIENTO.
+# A MERCADO: entrada a la apertura de t+1 (taker), camino t+1..t+240, primer toque, si un minuto toca los dos gana el
+# stop; sin toque, cierre de t+240. TAKER al entrar y al salir.
+# MAE/MFE, sin solape a 240 min: MAE = mayor excursion en contra en t+1 .. el minuto que toca +MAE_OBJ (incluido), o
+# t+240 si no toca; MFE = mayor a favor en t+1..t+240. p50 p75 p90 de las que tocan y de todas, % de la entrada.
+# STOPS DEL MERCADO, solo con minutos <= t: «mecha» largo = min(l, t-14..t) * (1 - 0.1 %) (corto: max(h) * 1.001);
+# distancia = |1 - stop / entrada|; si la entrada ya esta al otro lado del stop, no hay operacion. «atr05» / «atr1» =
+# 0.5 / 1 x ATR 1 h = media de los 14 rangos verdaderos de las velas de 60 min que cierran en t, t-60, .. t-780
+# (contra el cierre de la vela anterior), / c_t.
+# LIMITE (sin mecanismo, capa A): niveles largos = min(l) de 1440 y de 10080 min hasta t y el minimo de la vela de
+# 3 d y de 9 d ANTERIOR (como dist_min_3d / 9d); cortos, los maximos. Se ARMA en t si 0 <= c_t / nivel - 1 <= LIM_ARMA
+# (corto: espejo). Limite = nivel * (1 - LIM_MAS_ALLA) (corto: 1 +). Se LLENA en el primer minuto f de t+1..t+240 con
+# l_f <= limite * (1 - LIM_CRUCE) (corto: h_f >= limite * (1 + LIM_CRUCE)), al precio del limite: tocar sin cruzar
+# no llena. Sin llenado, CADUCA (armada no llenada; no es operacion). Desde f la misma rejilla: en f solo cuenta el
+# stop (no se sabe el orden dentro del minuto), despues f+1..f+240; sin toque, cierre de f+240. MAKER al entrar,
+# TAKER al salir. Una orden a la vez por nivel, simbolo y lado (la siguiente, cuando la anterior caduca o sale).
+# EMPATE de una celda = empate_g(stop, objetivo, entrada, salida), con el stop medio de sus operaciones si el stop es
+# del mercado; AZAR = stop / (objetivo + stop).
+# p: desplazamiento circular como el estudio (DESPLAZAMIENTOS, DESPL_MIN_MIN, P_COLA_NORMAL) de la mascara de entrada
+# contra el exito de TODAS las decisiones validas con la misma regla de salida. LIMITE: el exito de todas las
+# decisiones es el de una orden fija a la distancia mediana (c_t -> limite) de las armadas de la celda bajo c_t; la
+# tasa observada, aciertos / llenadas de las ordenes del nivel; la de un desplazamiento, aciertos / llenadas de la
+# orden fija. BH (FDR_Q) sobre TODAS las celdas de gestion de la corrida.
+# LA MEJOR = entre celdas con n >= N_MIN_CONFIRMA, mayor tasa - empate (empate a eso: menor q). NO es un resultado:
+# va a congeladas.json con su definicion exacta; solo vale su --confirma en dias >= la fecha, con veredicto_con.
+GESTION_ENTRADAS = (("M1", "A"), ("M1e", "A"), ("M1", "B"), ("M1e", "B"), ("M2", "B"), ("M2e", "B"),
+                    ("M8", "B"), ("M8e", "B"))
+MAE_OBJ = 0.01
+G_STOPS = (0.004, 0.006, 0.008, 0.010, 0.015, 0.020)
+G_OBJETIVOS = (0.01, 0.015, 0.02, 0.03)
+STOP_MECHA_MIN, STOP_MECHA_MARGEN = 15, 0.001
+STOP_ATR = {"atr05": 0.5, "atr1": 1.0}
+ATR1H_VELAS = 14
+TAKER, MAKER = COMISION, 0.0002     # 5.5 y 2 bps por lado
+LIM_NIVELES = ("24h", "sem", "3d", "9d")
+LIM_ARMA, LIM_MAS_ALLA, LIM_CRUCE, LIM_CADUCA = 0.005, 0.0005, 0.0001, 240
+# CUENTA, celdas con n >= N_MIN_CONFIRMA: R = neto / (stop de la operacion + comision de ida y vuelta). Remuestreo
+# por SEMANAS (ts // 604800): semanas con reemplazo, sus operaciones en orden, hasta CUENTA_OPS; CUENTA_CAMINOS
+# caminos, semilla SEMILLA; riesgo fijo f: cuenta *= 1 + f * R. Da: neto medio en R, suma de R por camino (mediana),
+# peor racha de perdidas (historia; p90 de caminos), caida maxima (mediana, p90) y P(cuenta <= CUENTA_RUINA).
+# APALANCAMIENTO: nocional = APAL_RIESGO / (stop + ida y vuelta); apal = nocional / APAL_MARGEN; liquidacion = 1 /
+# apal - APAL_MANT (fraccion en contra). NO_CABE si liquidacion < stop + APAL_COLCHON. Se cuentan las operaciones
+# cuya excursion en contra hasta su salida llega a la liquidacion. No cambia ninguna etiqueta: solo el nocional.
+CUENTA_RIESGOS = (0.01, 0.02, 0.05, 0.10)
+CUENTA_CAMINOS, CUENTA_OPS, CUENTA_RUINA = 5000, 100, 0.5
+APAL_MARGEN, APAL_RIESGO, APAL_MANT, APAL_COLCHON = 10.0, 3.55, 0.005, 0.003
+
+# RANGOS (anatomia_rangos.py, HIST = historia-bot). Barras de 1 h UTC del perpetuo de 1 min: o h l c, qv, delta =
+# 2 qb - qv (perp y spot), oi (sum_open_interest) y top (sum_toptrader_long_short_ratio): ultimo valor de la hora.
+# AJUSTE: rangos que cumplen y acaban antes de RANGO_CORTE; PRUEBA: cumplen desde RANGO_CORTE. ATR diario = media de
+# los rangos verdaderos de los 14 dias UTC completos anteriores al de la barra.
+# RANGO en la barra cerrada k, ventana k-W+1..k: alto = max h, bajo = min l, altura <= RANGO_ATR x ATR diario; toques
+# altos = barras con h >= alto - RANGO_BANDA x altura (bajos: l <= bajo + banda x altura), dos de cada lado con
+# ultimo - primero >= RANGO_SEP barras; y bajo <= c_k <= alto. Se prueba la W mas larga primero; un rango ACTIVO
+# bloquea los demas hasta que acaba (quedarse a posteriori con la W larga usaria el futuro del corto: «solape» = en
+# el mismo instante).
+# FINAL, barras k+1..k+24*RANGO_DIAS: SALE si un cierre queda fuera por >= RANGO_FUERA alturas; si ningun cierre de
+# las RANGO_VUELTA barras siguientes vuelve a [bajo, alto], es definitiva y el rango acaba ahi; si vuelve, esa salida
+# fue FALSA y se sigue hasta la definitiva (lado_final). Sin definitiva en 7 d: SIN SALIDA (acaba a los 7 d).
+# Clase = ARRIBA / ABAJO (la primera salida es la definitiva), FALSA o SIN SALIDA. Y si llega a 1 altura mas alla.
+# ESTADO en k, solo barras <= k: dp_bajo, dp_alto (delta perp de las horas de la ventana cuyo cierre cae en el
+# tercio bajo / alto, / qv de la ventana), ds_bajo, ds_alto (spot), d_oi (oi_k / oi_{k-W+1} - 1), posicion
+# ((c - bajo) / altura), compresion (altura de la ultima mitad / de la primera), toques_alto, toques_bajo (grupos
+# separados >= RANGO_SEP), tend_30d (c_k / c_{k-720} - 1), top, ruido (U(0,1), control negativo).
+# CELDA = simbolo x estado x tercil (cortes del AJUSTE del simbolo) x lado (lado_final ARRIBA / ABAJO): n, % de cada
+# clase, exitos, Wilson 90 % inferior, p = P(X >= exitos | n, 0.5). n < N_MIN_CONFIRMA = SIN CALIBRAR. BH sobre las
+# celdas del AJUSTE. PASA: q <= FDR_Q y Wilson > 0.5 en ajuste y en prueba; CONTEXTO: Wilson > 0.5 en uno; RUIDO.
+# CONTROL (--control): `planta` U(0,1); un rango con planta > 2/3 recibe en las 24 h siguientes RANGO_PLANTA alturas
+# al alza que se quedan. Ve si planta tercil 2 ARRIBA PASA en algun simbolo y ninguna celda de ruido PASA.
+RANGO_W = (240, 120, 72)
+RANGO_ATR, RANGO_BANDA, RANGO_SEP = 2.0, 0.15, 6
+RANGO_DIAS, RANGO_FUERA, RANGO_VUELTA = 7, 0.25, 24
+RANGO_ATR_DIAS, RANGO_CORTE, RANGO_PLANTA = 14, "2024-01-01", 1.5
+
+
+def empate_g(stop: float, objetivo: float, entrada: float = TAKER, salida: float = TAKER) -> float:
+    """(stop + 0.11 %) / (objetivo + stop) a mercado; (stop + 0.075 %) / (objetivo + stop) con limite."""
+    return (stop + entrada + salida) / (objetivo + stop)
+
+
+def veredicto_con(exitos: int, n: int, empate_: float, azar_: float) -> str:
+    """La regla de veredicto_confirma con el empate y el azar de la celda."""
+    if n < N_MIN_CONFIRMA:
+        return "SIN N"
+    w = wilson_inferior(exitos, n)
+    return "CONFIRMA" if w > empate_ else ("CONTEXTO" if w > azar_ else "RUIDO")
