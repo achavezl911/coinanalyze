@@ -571,7 +571,10 @@ async def base_ascii():
         yield c, dsn_ascii
     finally:
         await c.close()
-        await adm.execute(f"DROP DATABASE IF EXISTS {nombre} WITH (FORCE)")
+        try:
+            await adm.execute(f"DROP DATABASE IF EXISTS {nombre} WITH (FORCE)")
+        except asyncpg.InsufficientPrivilegeError:  # FORCE no puede echar a un autovacuum sin rol; el DROP a secas lo cancela solo
+            await adm.execute(f"DROP DATABASE IF EXISTS {nombre}")
         await adm.close()
 
 
