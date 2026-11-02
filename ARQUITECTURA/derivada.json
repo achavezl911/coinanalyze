@@ -51036,7 +51036,7 @@
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:280",
+          "sitio": "app/bot/vigia.py:300",
           "verbo": "INSERT"
         }
       ],
@@ -51049,17 +51049,17 @@
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:219"
+          "sitio": "app/bot/vigia.py:238"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:220"
+          "sitio": "app/bot/vigia.py:239"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:226"
+          "sitio": "app/bot/vigia.py:245"
         }
       ]
     },
@@ -51128,7 +51128,7 @@
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:273",
+          "sitio": "app/bot/vigia.py:293",
           "verbo": "INSERT"
         }
       ],
@@ -51186,22 +51186,22 @@
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:227"
+          "sitio": "app/bot/vigia.py:246"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:229"
+          "sitio": "app/bot/vigia.py:248"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:241"
+          "sitio": "app/bot/vigia.py:261"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:242"
+          "sitio": "app/bot/vigia.py:262"
         }
       ]
     },
