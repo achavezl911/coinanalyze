@@ -70,8 +70,14 @@ EL JUICIO:
 VEREDICTO DE FAMILIA: PAGA si alguna celda PASA; si no, CONTEXTO si alguna lo es; si no, SIN MEDIR si ninguna celda
     llega a n >= 100 en el AJUSTE y en la PRUEBA; si no, RUIDO.
 CONTROL POSITIVO (en una copia en memoria, misma tuberia): (1) en cada decision de 4 h con rsi4h < 30 (calculado
-    sobre la serie original) todos los precios desde T se multiplican por 1 + 1.5 % * min(1, (t - T)/720): un empuje
-    alcista de 1.5 % en 12 h, acumulado; (2) una columna «oraculo» para F8: signo(c[T+1440]/o[T] - 1) + N(0, 1).
+    sobre la serie original) todos los precios desde T, perpetuo Y spot, se multiplican por 1 + 0.5 % *
+    min(1, (t - T)/720): un empuje alcista de 0.5 % en 12 h, acumulado; (2) una columna «oraculo» para F8:
+    signo(c[T+1440]/o[T] - 1) + N(0, 1).
+    ENMIENDA tras la primera corrida (control fallido; el resumen por familia de la real ya se habia impreso, y la
+    medida real no cambia: solo el control): con 1.5 % el empuje sube
+    el RSI y rompe las rachas, y rsi4h_bajo largo caia a n < 100 en el ajuste (sin medir); y sin empujar el spot,
+    F7 lidera_spot_baj pasaba por el hueco perp-spot plantado. El 0.5 % se eligio SOLO por potencia (el mayor de
+    {0, 0.5, 0.75, 1} % con n >= 100 en ajuste y prueba en los tres activos, esquema a; x-probe), por recuento.
     Debe salir: F2 rsi4h_bajo largo PASA y F8 PAGA; F0 RUIDO; y toda celda que pase en el control y no en la
     medida real ha de ser larga y compartir >= 50 % de sus decisiones con rsi4h < 30. Si no: el estudio esta roto.
 LIQUIDACIONES: SIN MEDIR por construccion (no hay historia fina publica: liquidationSnapshot 404).
@@ -89,7 +95,7 @@ LISTON = {k: FEE / (tp + sl) for k, (tp, sl, _) in ESQUEMAS.items()}
 PASO, DIA, CALIENTE = 240, 1440, 30
 AJUSTE_HASTA, PRUEBA_DESDE = "2023-12-30", "2024-01-01"
 N_MIN, B, SEMILLA = 100, 2000, 20261102
-EMPUJE, EMPUJE_MIN = 0.015, 720
+EMPUJE, EMPUJE_MIN = 0.005, 720
 
 
 def resultado(o, h, lo, c, T: int, lado: int, tp: float, sl: float, tope: int,

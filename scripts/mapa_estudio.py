@@ -105,7 +105,7 @@ class Activo:
         self.Eabs = self.t0 + self.E
         self.fmin, self.frate = funding(hist, s)
         if CONTROL:
-            o, h, lo, c = planta(o, h, lo, c)
+            o, h, lo, c, self.fpl = planta(o, h, lo, c)
         self.cond: dict[str, tuple[str, np.ndarray]] = {}
         self.anclas: dict[str, tuple[str, np.ndarray]] = {}
         self.col: dict[str, np.ndarray] = {}
@@ -248,6 +248,8 @@ class Activo:
         self.prima_desde = None if not np.isfinite(pm4).any() else int(np.flatnonzero(np.isfinite(pm4))[0])
         # F7
         sc = np.fromfile(hist / f"{s}.spot.c.f64", dtype="<f8")[off:off + n]
+        if CONTROL:
+            sc = sc * self.fpl  # el empuje mueve el activo, no solo el perpetuo
         sv = np.fromfile(hist / f"{s}.spot.qv.f64", dtype="<f8")[off:off + n].reshape(-1, PASO)
         sb = np.fromfile(hist / f"{s}.spot.qb.f64", dtype="<f8")[off:off + n].reshape(-1, PASO)
         SC4 = sc[PASO - 1::PASO]
@@ -334,15 +336,16 @@ def planta(o, h, lo, c):
     n = len(c)
     lf = np.zeros(n + 1)
     paso = np.zeros(n + 1)
-    rampa = np.log1p(EMPUJE * np.arange(EMPUJE_MIN) / EMPUJE_MIN)
+    g = float(os.environ.get("MAPA_EMPUJE", EMPUJE))
+    rampa = np.log1p(g * np.arange(EMPUJE_MIN) / EMPUJE_MIN)
     for E in ev:
         m = min(EMPUJE_MIN, n - E)
         lf[E:E + m] += rampa[:m]
         if n > E + EMPUJE_MIN:
-            paso[E + EMPUJE_MIN] += np.log1p(EMPUJE)
+            paso[E + EMPUJE_MIN] += np.log1p(g)
     f = np.exp(lf[:n] + np.cumsum(paso)[:n])
     log(f"  planta {len(ev)} empujes, factor final {f[-1]:.3g}")
-    return o * f, h * f, lo * f, c * f
+    return o * f, h * f, lo * f, c * f, f
 
 
 def operaciones(a: Activo, idx: np.ndarray, e: str, lado: str) -> np.ndarray:
