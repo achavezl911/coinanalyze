@@ -6,6 +6,9 @@ coinalyze-bot (en systemd 257 salta en CADA caida: BOT2.r1.onfailure en hechos.t
   base     que la base conteste
   latido   bot_estado 'bot' de hace <= LATIDO_MIN minutos
   parte    el parte del dia, pasada servicio.PARTE_HORA_UTC + 30 min
+  disco    (DISCO) espacio disponible en / (shutil.disk_usage) >= DISCO_MIN_GB
+  respaldo (DISCO) systemctl show coinalyze-backup.service: la ultima corrida acabo bien (LoadState, ActiveState, Result,
+           ExecMainStatus, ExecMainExitTimestamp; ver juicio_respaldo). No se lista /var/backups/coinalyze: es 700 root
   informe  el semanal de la semana ISO, pasado su lunes a las 13:30Z (con la causa que dejo 143 si no llego)
   bybit    (remate 7) con Bybit activo y el bot latiendo, el ultimo tic de Bybit COMPLETO de hace <= BYBIT_MIN minutos: si
            la identidad o cualquier paso revienta cada minuto, el latido sigue y sin esto nadie lo veria. (Remate 8) sin
@@ -24,6 +27,7 @@ import asyncio
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 from datetime import UTC, datetime, timedelta
 
@@ -35,18 +39,26 @@ from app.bot.servicio import PARTE_HORA_UTC, Telegram, js, limpia, semana_iso
 LATIDO_MIN = 5
 BYBIT_MIN = 5
 MARGEN_PARTE = timedelta(minutes=30)
+DISCO_MIN_GB = 5
+GB = 10**9
 
 
 def problemas(ahora: datetime, unidad: dict | None, monitor: str | None, base_error: str | None, latido: datetime | None,
               parte_hoy: bool, informe_semana: bool, falla_informe: str | None, latido_min: int = LATIDO_MIN,
-              bybit: dict | None = None) -> dict:
-    """{clave: texto} de lo que esta mal AHORA. Pura."""
+              bybit: dict | None = None, disco_libre: int | None = None, respaldo: dict | None = None) -> dict:
+    """{clave: texto} de lo que esta mal AHORA. Pura. disco_libre (bytes) y respaldo (systemctl show) a None: no se
+    pudieron leer (o quien llama no los mira); eso no es un problema, va por sin_juzgar."""
     out = {}
     if unidad is None:
         out["unidad"] = "no puedo preguntar a systemd por coinalyze-bot"
     elif unidad.get("ActiveState") not in ("active", "reloading"):
         cayo = f", cayo con {monitor}" if monitor else ""
         out["unidad"] = f"coinalyze-bot {unidad.get('ActiveState')}/{unidad.get('SubState')} ({unidad.get('Result')}{cayo})"
+    if disco_libre is not None and disco_libre < DISCO_MIN_GB * GB:
+        out["disco"] = f"disco: quedan {disco_libre / GB:.1f} GB libres en / (umbral {DISCO_MIN_GB} GB)"
+    juicio, texto = juicio_respaldo(respaldo)
+    if juicio == "mal":
+        out["respaldo"] = texto
     if base_error:
         out["base"] = f"la base no contesta: {base_error}"
         return out  # sin base no se puede mirar ni el latido ni el parte
@@ -80,14 +92,42 @@ def _hora(x) -> datetime | None:
         return None
 
 
-def sin_juzgar(ahora: datetime, latido: datetime | None, bybit: dict | None, latido_min: int = LATIDO_MIN) -> frozenset:
+def juicio_respaldo(r: dict | None) -> tuple[str, str]:
+    """-> ('mal' | 'bien' | 'sin_juzgar', texto). Type=oneshot: en curso es activating; si cayo, failed con Result distinto
+    de success (systemd lo repone a success al arrancar la siguiente). Sin ExecMainExitTimestamp no ha corrido desde el
+    arranque de la maquina y no se sabe como acabo la anterior."""
+    if not r or "ActiveState" not in r or "Result" not in r:
+        return "sin_juzgar", "respaldo: no puedo preguntar a systemd por coinalyze-backup"
+    if r.get("LoadState", "loaded") != "loaded":
+        return "sin_juzgar", f"respaldo: coinalyze-backup no esta cargada en systemd (LoadState={r.get('LoadState')})"
+    if r["ActiveState"] in ("activating", "deactivating", "reloading", "refreshing"):
+        return "sin_juzgar", f"respaldo: hay una corrida en curso ({r['ActiveState']}/{r.get('SubState')})"
+    if r["ActiveState"] == "failed" or r["Result"] != "success":
+        return "mal", (f"respaldo: la ultima corrida de coinalyze-backup no acabo bien ({r['ActiveState']}/{r['Result']},"
+                       f" salida {r.get('ExecMainStatus') or '?'}, acabo {r.get('ExecMainExitTimestamp') or '?'})")
+    if not r.get("ExecMainExitTimestamp"):
+        return "sin_juzgar", "respaldo: coinalyze-backup no ha corrido desde que arranco la maquina"
+    return "bien", ""
+
+
+def sin_leer(disco_libre: int | None, respaldo: dict | None) -> dict:
+    """{clave: causa} de disco/respaldo que no se pudieron juzgar: ni alarman ni resuelven un aviso en pie, y se publican."""
+    out = {} if disco_libre is not None else {"disco": "disco: no pude leer el espacio libre de /"}
+    juicio, texto = juicio_respaldo(respaldo)
+    if juicio == "sin_juzgar":
+        out["respaldo"] = texto
+    return out
+
+
+def sin_juzgar(ahora: datetime, latido: datetime | None, bybit: dict | None, latido_min: int = LATIDO_MIN,
+               disco_libre: int | None = None, respaldo: dict | None = None) -> frozenset:
     """Lo que AHORA no se puede dar por bueno aunque no salga como problema (remate 8, R2): «bybit» solo se resuelve con el
     bot latiendo, Bybit activo y un tic COMPLETO de hace <= BYBIT_MIN. Sin tic (recien arrancado), con Bybit apagado o con el
     latido parado, no se sabe: el aviso sigue en pie (antes, releer la clave borraba el tic y salia un «resuelto» falso)."""
     tic = _hora((bybit or {}).get("tic")) if isinstance(bybit, dict) else None
     bien = latido is not None and ahora - latido <= timedelta(minutes=latido_min) and isinstance(bybit, dict) \
         and bybit.get("activo") and tic is not None and ahora - tic <= timedelta(minutes=BYBIT_MIN)
-    return frozenset() if bien else frozenset({"bybit"})
+    return (frozenset() if bien else frozenset({"bybit"})) | frozenset(sin_leer(disco_libre, respaldo))
 
 
 def transicion(notificados: dict, actuales: dict, base_caida: bool = False, llegados: frozenset = frozenset(),
@@ -136,18 +176,37 @@ def escribe_estado(f: pathlib.Path, texto: str) -> None:
     os.replace(tmp, f)
 
 
-def unidad_bot() -> dict | None:
+def _systemctl_show(unidad: str, *props: str) -> dict | None:
     try:
-        r = subprocess.run(["systemctl", "show", "coinalyze-bot", "-p", "ActiveState", "-p", "SubState", "-p", "Result"],
+        r = subprocess.run(["systemctl", "show", unidad, *(a for p in props for a in ("-p", p))],
                            capture_output=True, text=True, timeout=20)
     except (OSError, subprocess.SubprocessError):
         return None
     return dict(ln.split("=", 1) for ln in r.stdout.splitlines() if "=" in ln) or None
 
 
+def unidad_bot() -> dict | None:
+    return _systemctl_show("coinalyze-bot", "ActiveState", "SubState", "Result")
+
+
+def unidad_respaldo() -> dict | None:
+    return _systemctl_show("coinalyze-backup.service", "LoadState", "ActiveState", "SubState", "Result", "ExecMainStatus",
+                           "ExecMainExitTimestamp")
+
+
+def disco_raiz() -> int | None:
+    """Bytes disponibles en / para un usuario normal (f_bavail), o None si no se pueden leer."""
+    try:
+        return shutil.disk_usage("/").free
+    except OSError as e:
+        print(f"CAUSA=VIGIA_DISCO {type(e).__name__}", flush=True)
+        return None
+
+
 async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, conecta, estado_f: pathlib.Path,
-                 ahora: datetime | None = None) -> dict:
-    """Una pasada del interruptor. conecta(): la conexion a la base (o lanza). Devuelve lo que publica."""
+                 ahora: datetime | None = None, disco_libre: int | None = None, respaldo: dict | None = None) -> dict:
+    """Una pasada del interruptor. conecta(): la conexion a la base (o lanza). Devuelve lo que publica. disco_libre y
+    respaldo los lee principal() (disco_raiz, unidad_respaldo); a None, sin juzgar."""
     ahora = ahora or datetime.now(UTC)
     previo = lee_estado(estado_f)
     notificados = previo.get("notificados", {}) if isinstance(previo.get("notificados"), dict) else {}
@@ -172,7 +231,7 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
         base_error = f"{type(e).__name__} {limpia(str(e))[:120]}"
     actuales = problemas(ahora, unidad, entorno.get("MONITOR_SERVICE_RESULT"), base_error, latido, parte_hoy, informe_semana,
                          falla.read_text(encoding="utf-8").strip()[:200] if falla.exists() else None,
-                         int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN), bybit)
+                         int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN), bybit, disco_libre, respaldo)
     llegados = set()  # de los avisados con fecha que ya no salen, cuales llegaron de verdad (tarde)
     for k in [k for k in notificados if k.startswith(CON_FECHA) and k not in actuales]:
         if db is None or base_error:
@@ -186,7 +245,8 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
         except (ValueError, OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
             base_error = f"{type(e).__name__} {limpia(str(e))[:120]}"
     nuevos, resueltos, caducados = transicion(notificados, actuales, base_error is not None, frozenset(llegados),
-                                              sin_juzgar(ahora, latido, bybit, int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN)))
+                                              sin_juzgar(ahora, latido, bybit, int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN),
+                                                         disco_libre, respaldo))
     token, chat = entorno.get("TELEGRAM_BOT_TOKEN"), entorno.get("TELEGRAM_OUTPUT_CHAT_ID") or entorno.get("TELEGRAM_CHAT_ID")
     envio = previo.get("envio", {"ok": None, "ts": None})
     for tipo_msg, texto in mensajes(nuevos, resueltos, notificados, caducados):
@@ -212,7 +272,9 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
         escribe_estado(estado_f, js({**previo, "notificados": notificados, "envio": envio}))
         await en_la_base(db, "INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('vigia', true, $1::jsonb)", js({"texto": texto}))
     publica = {"ts": ahora.isoformat(), "problemas": actuales, "notificados": notificados, "envio": envio,
-               "canal": "puente" if token and chat else "sin canal"}
+               "canal": "puente" if token and chat else "sin canal", "sin_juzgar": sin_leer(disco_libre, respaldo)}
+    for texto in publica["sin_juzgar"].values():
+        print(f"sin juzgar: {texto}", flush=True)
     escribe_estado(estado_f, js(publica))
     if db is not None:
         await en_la_base(db, "INSERT INTO bot_estado (clave, ts, estado) VALUES ('vigia', $1, $2::jsonb)"
@@ -235,7 +297,8 @@ async def principal():
     dsn = os.environ.get("BOT_PG_DSN") or "postgresql:///coinalyze?host=/var/run/postgresql&user=coinalyze-ai"
     carpeta = pathlib.Path(os.environ.get("STATE_DIRECTORY") or "/var/lib/coinalyze-bot-vigia")
     async with httpx.AsyncClient() as http:
-        p = await pasada(dict(os.environ), http, unidad_bot(), lambda: asyncpg.connect(dsn, timeout=10), carpeta / "estado.json")
+        p = await pasada(dict(os.environ), http, unidad_bot(), lambda: asyncpg.connect(dsn, timeout=10), carpeta / "estado.json",
+                         disco_libre=disco_raiz(), respaldo=unidad_respaldo())
     print(f"vigia: {len(p['problemas'])} problema(s) {sorted(p['problemas'])} · avisados {sorted(p['notificados'])}", flush=True)
 
 
