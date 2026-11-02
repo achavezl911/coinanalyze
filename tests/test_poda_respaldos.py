@@ -141,15 +141,30 @@ def test_podar_el_directorio_de_produccion_sigue_exigiendo_root():
 
 
 
-def test_la_poda_va_ANTES_del_stage_y_tambien_al_final():
+def test_antes_del_stage_solo_predeploy_y_los_cifrados_tras_el_respaldo():
     """PRUEBA DEL ORDEN EN EL FICHERO, no de comportamiento: correr el respaldo entero pide
-    Postgres y la llave. Si solo se podaba al final, un respaldo que moria por falta de disco
-    no podaba nunca y el disco no volvia (140, 2026-11-02). Se mira que haya una llamada a
-    `podar_respaldos` antes del `mktemp` del STAGE y que siga la del final."""
+    Postgres y la llave. Dos cosas a la vez:
+    - Antes del `mktemp` del STAGE hay una poda de PRE-DESPLIEGUE (`podar_predeploy`): si solo se
+      podaba al final, un respaldo que moria por falta de disco no podaba nunca (140, 2026-11-02).
+    - Antes del STAGE NO hay `podar_respaldos`: esa poda tambien los cifrados, y si el respaldo
+      falla 15 dias seguidos los cifrados caducarian uno a uno hasta no quedar ninguno. Los
+      cifrados se podan solo DESPUES de un respaldo correcto: `podar_respaldos` tras el STAGE.
+    Cae contra ced2f13, que llamaba a `podar_respaldos` antes del STAGE."""
     lineas = BACKUP.read_text(encoding="utf-8").splitlines()
-    llamadas = [i for i, ln in enumerate(lineas) if ln.strip() == "podar_respaldos"]
+
+    def llamadas(nombre: str) -> list[int]:
+        return [i for i, ln in enumerate(lineas) if ln.strip() == nombre]
+
     stage = next(i for i, ln in enumerate(lineas) if ln.startswith("STAGE=$(mktemp"))
     fin_puerta = next(i for i, ln in enumerate(lineas) if "--solo-podar ]]" in ln) + 4  # su `fi`
     assert lineas[fin_puerta].strip() == "fi"
-    assert [i for i in llamadas if fin_puerta < i < stage], "no hay poda entre la puerta --solo-podar y el mktemp del STAGE"
-    assert max(llamadas) > stage, "falta la poda del final"
+    tramo = range(fin_puerta + 1, stage)
+    assert [i for i in llamadas("podar_predeploy") if i in tramo], (
+        "no hay poda de pre-despliegue entre la puerta --solo-podar y el mktemp del STAGE"
+    )
+    assert not [i for i in llamadas("podar_respaldos") if i in tramo], (
+        "podar_respaldos antes del STAGE: poda cifrados sin saber si el respaldo de hoy sale"
+    )
+    assert [i for i in llamadas("podar_respaldos") if i > stage], (
+        "falta la poda de cifrados tras el respaldo"
+    )

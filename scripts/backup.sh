@@ -40,17 +40,23 @@ podar_clase() {
   find "$BACKUP_DIR" -maxdepth 1 -type f \( "${expr[@]}" \) -mtime "+$dias" -delete
 }
 
+# Los volcados PRE-DESPLIEGUE, solos. Separada porque es la unica poda que puede correr antes de
+# saber si el respaldo de hoy sale: estos no los escribe este script y no son el respaldo diario.
+podar_predeploy() {
+  # El `.sha256` va aunque hoy el wrapper no lo escriba: si algun dia lo escribe, se poda con su
+  # volcado en vez de quedarse huerfano acumulandose, que es como empezo este defecto.
+  podar_clase "$PREDEPLOY_RETENTION_DAYS" \
+    'predeploy-*.sql.gz' \
+    'predeploy-*.sql.gz.sha256'
+}
+
 # LAS DOS CLASES Y SUS DOS VIDAS. Añadir una tercera es añadir una llamada, no tocar logica.
 podar_respaldos() {
   podar_clase "$BACKUP_RETENTION_DAYS" \
     'coinalyze-full-*.tar.gz.enc' \
     'coinalyze-full-*.tar.gz.enc.sha256' \
     'coinalyze-*.dump'
-  # El `.sha256` va aunque hoy el wrapper no lo escriba: si algun dia lo escribe, se poda con su
-  # volcado en vez de quedarse huerfano acumulandose, que es como empezo este defecto.
-  podar_clase "$PREDEPLOY_RETENTION_DAYS" \
-    'predeploy-*.sql.gz' \
-    'predeploy-*.sql.gz.sha256'
+  podar_predeploy
 }
 
 # SOLO PODAR, sin respaldar. Existe para poder EJERCITAR la poda plantando ficheros: correr el
@@ -71,9 +77,11 @@ done
 }
 
 mkdir -p "$BACKUP_DIR"
-# Poda tambien ANTES del STAGE: si solo podara al final, un respaldo que muere por falta de disco
-# no podaria nunca y el disco no volveria a liberarse (140, 2026-11-02: 41 GB de respaldos caducos).
-podar_respaldos
+# Antes del STAGE se podan SOLO los pre-despliegue: si solo se podara al final, un respaldo que
+# muere por falta de disco no podaria nunca (140, 2026-11-02: 41 GB de caducos). Los CIFRADOS no:
+# se podan unicamente tras un respaldo correcto (al final). Si el respaldo falla N dias seguidos
+# (llave, Postgres, disco), podarlos aqui los haria caducar uno a uno hasta no dejar ninguno.
+podar_predeploy
 STAGE=$(mktemp -d "$BACKUP_DIR/.stage-${STAMP}.XXXXXX")
 PLAIN_ARCHIVE="$STAGE/payload.tar.gz"
 trap 'rm -rf -- "$STAGE" "$FINAL_PATH.tmp"' EXIT
