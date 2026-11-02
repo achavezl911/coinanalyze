@@ -231,7 +231,52 @@ def informe(priv: dict, doc: dict) -> list[str]:
         mio = [o for o in con if o["lado"] == lado]
         out.append(linea(f"{nom} con {txt}", [o for o in mio if cond(o["rsi4h"])]))
         out.append(linea(f"{nom} resto", [o for o in mio if not cond(o["rsi4h"])]))
+    mapa = [o for o in validas if "S" in o]
+    for o in mapa:
+        o["v"] = o["lado"] * o["S"]
+    out.append("por nivel de v = lado*S (operaciones con estado del mapa):")
+    for nom, cond in NIVELES:
+        out.append(linea(nom, [o for o in mapa if cond(o["v"])]))
+    for lado, nom in ((1, "largo"), (-1, "corto")):
+        for txt, cond in (NIVELES[0], NIVELES[-1]):
+            out.append(linea(f"{nom} con {txt}", [o for o in mapa if o["lado"] == lado and cond(o["v"])]))
+    out.append(spearman_linea([o["v"] for o in mapa], [o["r"] for o in mapa]))
     return out
+
+
+NIVELES = (("v <= -2", lambda v: v <= -2), ("v = -1", lambda v: v == -1), ("v = 0", lambda v: v == 0),
+           ("v = +1", lambda v: v == 1), ("v >= +2", lambda v: v >= 2))
+
+
+def rangos(x: list[float]) -> list[float]:
+    """Rangos 1..n; los empates reciben la media de los rangos que ocupan."""
+    orden = sorted(range(len(x)), key=lambda i: x[i])
+    r = [0.0] * len(x)
+    i = 0
+    while i < len(orden):
+        j = i
+        while j + 1 < len(orden) and x[orden[j + 1]] == x[orden[i]]:
+            j += 1
+        for t in range(i, j + 1):
+            r[orden[t]] = (i + j) / 2 + 1
+        i = j + 1
+    return r
+
+
+def spearman(x: list[float], y: list[float]) -> float:
+    """Pearson sobre rangos medios; nan si un lado no varia."""
+    rx, ry = rangos(x), rangos(y)
+    mx, my = statistics.fmean(rx), statistics.fmean(ry)
+    sxy = sum((a - mx) * (b - my) for a, b in zip(rx, ry, strict=True))
+    sxx, syy = sum((a - mx) ** 2 for a in rx), sum((b - my) ** 2 for b in ry)
+    return sxy / (sxx * syy) ** 0.5 if sxx and syy else float("nan")
+
+
+def spearman_linea(v: list[float], r: list[float]) -> str:
+    nombre = "spearman(v, rendimiento)"
+    if len(v) < N_GRUPO:
+        return f"  {nombre:<34} n={len(v)}"
+    return f"  {nombre:<34} n={len(v)} rho={spearman(v, r):+.3f}"
 
 
 def main(argv: list[str]) -> int:

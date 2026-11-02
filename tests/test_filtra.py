@@ -156,6 +156,30 @@ def test_lee_el_filtra_estados_commiteado():
     assert "operaciones sin estado del mapa: 1" in out  # solo la de SOL de 2025
 
 
+def test_spearman_con_empates_a_mano():
+    assert fi.rangos([1, 2, 2, 3]) == [1.0, 2.5, 2.5, 4.0]
+    # rx = [1, 2.5, 2.5, 4], ry = [1, 3, 2, 4]: sxy = 4.5, sxx = 4.5, syy = 5 -> rho = 3 / sqrt(22.5) = 3 / sqrt(10)
+    assert abs(fi.spearman([1, 2, 2, 3], [1, 3, 2, 4]) - 3 / 10 ** 0.5) < 1e-12
+    # empates en los dos: rx = [1.5, 1.5, 3.5, 3.5], ry = [1, 2.5, 2.5, 4]: sxy = 3, sxx = 4, syy = 4.5
+    assert abs(fi.spearman([1, 1, 2, 2], [1, 2, 2, 3]) - 3 / 18 ** 0.5) < 1e-12
+    assert fi.spearman_linea([1] * 9, list(range(9))).rstrip().endswith("n=9")  # n < 10: solo su n
+    assert "rho=+1.000" in fi.spearman_linea(list(range(10)), list(range(10)))
+
+
+def test_secciones_por_nivel_de_v():
+    out = _corre(privado(), estados())
+    lns = [ln.strip() for ln in out.splitlines()]
+    sec = lns[lns.index("por nivel de v = lado*S (operaciones con estado del mapa):") + 1:]
+    assert [ln.split("  ")[0] for ln in sec] == [
+        "v <= -2", "v = -1", "v = 0", "v = +1", "v >= +2", "largo con v <= -2", "largo con v >= +2",
+        "corto con v <= -2", "corto con v >= +2", "spearman(v, rendimiento)"]
+    # 13 BTC largos con S=3 (v=+3), el ETH corto con S=-2 (v=+2), el ETH largo (v=-2); SOL sin estado
+    assert sec[0].endswith("n=1") and sec[1].endswith("n=0") and sec[2].endswith("n=0") and sec[3].endswith("n=0")
+    assert "n=14 " in sec[4] and "acierto=" in sec[4]
+    assert sec[5].endswith("n=1") and "n=13 " in sec[6] and sec[7].endswith("n=0") and sec[8].endswith("n=1")
+    assert "n=15 rho=" in sec[9]
+
+
 def test_sin_imports_del_repo():
     src = (RAIZ / "scripts" / "filtra.py").read_text()
     mods = {ln.split()[1].split(".")[0] for ln in src.splitlines() if ln.startswith(("import ", "from "))}
